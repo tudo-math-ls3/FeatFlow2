@@ -37,7 +37,7 @@ greet:
 # If a BLAS or LAPACK library is given, BLASLAPACKLIB contains entries
 # for both, BLAS and LAPACK.
 
-$(EXEC): $(OBJDIRF90) $(OBJDIR) $(OBJF90) $(OBJ)
+$(EXEC): $(OBJDIRF90) $(OBJDIR) $(OBJF90) $(OBJ) $(FEAT) 
 	$(LD) $(FCFLAGS) $(OPTFLAGS) $(OBJF90) $(OBJ) $(LDFLAGS) $(FEAT) $(BLASLAPACKLIB) $(LDLIBS) -o $@
 
 # The variable BENCHINC is probably set by the benchmark if the user
