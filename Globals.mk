@@ -129,7 +129,7 @@ LAPACKLIB=          # will use included lapack
 LDFLAGS=
 
 # default directory for .mod files in Fortran 95.
-MODDIRF90=
+MODDIRF90=.
 
 ########################################################################
 # additional, system specific libraries, e.g. POSIX,... if necessary
@@ -396,7 +396,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -xN -ipo
-FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIRF90)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
