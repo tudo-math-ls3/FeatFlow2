@@ -84,10 +84,10 @@ LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas
 # detect a known machine, the machine-specific configuration branch
 # (see below) is used.
 #
-# Featflow needs an F77-compiler as well as a C-compiler. 
+# Featflow needs an f90-compiler as well as a C-compiler. 
 ########################################################################
 
-FC=f77     # Fortran 77 compiler
+FC=f90     # Fortran 77 compiler
 CC=cc      # ANSI C compiler
 LD=$(FC)   # linker (usually same as the Fortran Compiler) 
 AR=ar      # library creation tool (archiver)
@@ -220,7 +220,7 @@ endif
 
 ifeq ($(call match,$(ID),alpha-ev[4567]-osf1),yes)
 CC=cc
-FC=f77
+FC=f90
 OPTFLAGS  = -fast
 FCFLAGS   =
 CCFLAGS   = 
@@ -238,7 +238,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-unknown-(linux|cygwin_nt?.?)),yes)
 CC=gcc
-FC=g77
+FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops
 FCFLAGS   = -fno-globals -Wno-globals -pipe
 CCFLAGS   = -fno-globals -Wno-globals -pipe
@@ -248,7 +248,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlon-(linux|cygwin_nt?.?)),yes)
 CC=gcc
-FC=g77
+FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -march=athlon -fno-globals -Wno-globals -pipe
 CCFLAGS   = -march=athlon -fno-globals -Wno-globals -pipe
@@ -258,7 +258,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-(linux|cygwin_nt?.?)),yes)
 CC=gcc
-FC=g77
+FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -march=athlon-xp -fno-globals -Wno-globals -pipe
 CCFLAGS   = -march=athlon-xp -fno-globals -Wno-globals -pipe
@@ -268,7 +268,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-pentium3-(linux|cygwin_nt?.?)),yes)
 CC=gcc
-FC=g77
+FC=g95
 OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
 CCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
@@ -324,7 +324,7 @@ endif
 # Apple mac/osx with absoft 8 compiler
 ifeq ($(ID),power_macintosh-ppc_7450-darwin-absoft)
 CC=cc
-FC=/Applications/Absoft/bin/f77
+FC=/Applications/Absoft/bin/f90
 OPTFLAGS  = 
 FCFLAGS   = -s -N1 -N109
 CCFLAGS   = 
@@ -348,7 +348,7 @@ endif
 # Apple mac/osx with IBM compilers
 ifeq ($(ID),power_macintosh-ppc_7450-darwin-xlf)
 CC=/opt/ibmcmp/vac/6.0/bin/xlc
-FC=/opt/ibmcmp/xlf/8.1/bin/f77
+FC=/opt/ibmcmp/xlf/8.1/bin/f90
 OPTFLAGS  = -O4
 FCFLAGS   = 
 CCFLAGS   = 
@@ -384,7 +384,7 @@ endif
 
 ifeq ($(ID),pc-athlonxp-linux-pgi)
 CC=gcc
-FC=pgf77
+FC=pgf90
 OPTFLAGS  = -fastsse -O4 
 FCFLAGS   = -tp athlonxp
 BLASLIB   = 
@@ -396,7 +396,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -xN -ipo
-FCFLAGS   = -f77rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -409,7 +409,7 @@ ifeq ($(ID),pc-pentium4-linux-ifc8)
 CC=icc
 FC=ifort
 OPTFLAGS  = -O3 -xN -ipo -ipo_obj
-FCFLAGS   = -f77rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -422,7 +422,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -xB -ipo
-FCFLAGS   = -f77rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -437,7 +437,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -xB -ipo -ipo_obj
-FCFLAGS   = -f77rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -501,7 +501,7 @@ CC=gcc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo -msse2 -mtune=pentiumpro -march=pentium4
-FCFLAGS   = -f77rtl -cm -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -vec_report0 -module $(MODDIRF90)
 CCFLAGS   = -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -549,7 +549,7 @@ endif
 
 ifeq ($(ID),pc64-opteron-linux-pgi)
 CC=pgcc
-FC=pgf77
+FC=pgf90
 OPTFLAGS  = -fastsse -O4 -tp k8-64 -Mipa -mcmodel=medium -Mlarge_arrays 
 FCFLAGS   = 
 CCFLAGS   = 
@@ -560,7 +560,7 @@ endif
 
 ifeq ($(ID),ia64-itanium2-linux)
 CC=cc
-FC=f77
+FC=f90
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -pipe
 CCFLAGS   = -pipe
