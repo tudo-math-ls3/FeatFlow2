@@ -172,7 +172,7 @@ LDLIBS=
 
 ifeq ($(call match,$(ID),sun4u-sparcv[789]-sunos),yes)
 CC=cc
-FC=f77
+FC=f90
 OPTFLAGS  = -fast 
 FCFLAGS   = -xarch=native -silent
 CCFLAGS   = -xarch=native
@@ -190,7 +190,7 @@ endif
 
 ifeq ($(ID),sun4u-sparcv9-sunos-64bit)
 CC=cc
-FC=f77
+FC=f90
 OPTFLAGS  = -fast
 FCFLAGS   = -xarch=native64 -silent
 CCFLAGS   = -xarch=native64
@@ -206,7 +206,7 @@ endif
 
 ifeq ($(ID),sun4u-sparcv9-sunos-gcc)
 CC=gcc
-FC=g77
+FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -mcpu=v9 -m64 -fno-globals -Wno-globals -pipe
 CCFLAGS   = -mcpu=v9 -m64 -fno-globals -Wno-globals -pipe
