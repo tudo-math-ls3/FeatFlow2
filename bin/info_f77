@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# try to get some information about the fortran compiler used
+#
+# usage: info_f77 $(ID) $(F77)
+
+id=${1}
+ffc=${2}
+fc=`basename ${ffc}`
+
+case ${fc}-${id} in
+    g??-*-*-*|gfort-*-*-*)
+        ${ffc} -v 2>&1
+        ;;
+    f??-alpha-*-osf*)
+        ${ffc} -version 2>&1
+	;;
+    f??-sun*-*-sunos*|f??-sun*-*-solaris*)
+        ${ffc} -V 2>&1
+	;;
+    ifc-*-*-*|ifort-*-*-*)
+        ${ffc} -V -v 2>&1
+        ;;
+    f??-*-*-hpux*)
+        ${ffc} +version 2>&1
+	;;
+    *-*-*-*)
+        ${ffc} -v 2>&1
+        ${ffc} -V 2>&1
+        ${ffc} -version 2>&1
+        ;;
+esac
+exit 0

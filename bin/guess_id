@@ -1,0 +1,162 @@
+#!/bin/sh
+#$Id: guess_id,v 1.2 2006/02/27 10:33:57 mkoester Exp $
+#
+# inspired by
+# ftp://ftp.gnu.org/pub/gnu/config/config.guess
+# and
+# http://people.debian.org/~falk/gcc-arch
+#
+
+# the gnu config.guess would be good choice but it doesn't seem to
+# distinguish different pc processors like athlon/pentium4....
+
+# Purpose:
+# Checks the available machine/os information and creates an id of the
+# form machine_architecture-cpu-os
+#
+# in the ideal case it should be
+# ( uname -m ) - ( uname -p ) - ( uname -s )
+# but on pc/linux (uname -p) gives either unknown or very long answer
+# containing characters which are problematic in the directory names
+# like ()
+#
+
+
+# Don't let the script be confused by non-english messages
+# from system information programs
+unset LC_MESSAGES
+unset LANG
+
+
+arch=`(uname -m || echo none) 2>/dev/null | tr ' [A-Z]' '_[a-z]' |tr -d '*?/()-'`
+os=`(uname -s || echo none) 2>/dev/null | tr ' [A-Z]' '_[a-z]' |tr -d '*?/()-'`
+cpu=`(uname -p || echo none) 2>/dev/null | tr ' [A-Z]' '_[a-z]' |tr -d '*?/()-'`
+id=${arch}-${cpu}-${os}
+
+case ${id} in
+    x86_64-*-linux|i[65432]86-*-linux|x86-*-linux|*-*-cygwin*)  
+        # all the pc-arch with linux/cygwin/etc..
+        case ${arch} in
+            x86_64|ia64) arch="pc64";;
+            *) arch="pc";;
+        esac
+        cpu=x86  #generic version
+	# try to guess the cpu specs 
+        # (http://www.paradicesoftware.com/specs/cpuid/index.htm)
+	vendor=`awk '/^vendor_id/ { print $3; exit;}' /proc/cpuinfo`
+	family=`awk '/^cpu family/ { print $4; exit;}' /proc/cpuinfo`
+	model=`awk '/^model/ { print $3; exit;}' /proc/cpuinfo`
+	case "$vendor" in
+	    GenuineIntel)
+		case "$family" in
+		    4) cpu="i486";;
+		    5) cpu="pentium";;
+		    6) 
+			case "$model" in
+			    0|1) cpu="pentiumpro";;
+			    2|3|4|5|6) cpu="pentium2";;
+			    7|8|9|10|11) cpu="pentium3";;
+			    13) cpu="pentiumm";;
+			esac
+			;;
+		    7) cpu="itanium"
+			case "$model" in
+			    0|1) cpu="itanium";;
+			    2) cpu="itanium2";;
+			esac
+			;;
+		    15) cpu="pentium4";;
+		esac
+		;;
+	    AuthenticAMD)
+		case "$family" in
+		    4) cpu="amd486";;
+		    5)  [ $model -lt 6 ] && cpu="k5";
+			[ $model -ge 6 ] && cpu="k6";;
+		    6)  [ $model -lt 6 ] && cpu="athlon";
+			[ $model -ge 6 ] && cpu="athlonxp";;
+		    15) [ $model -eq 5 ] && cpu="opteron";
+                        [ $model -lt 5 ] && cpu="athlon64";
+			[ $model -gt 5 ] && cpu="athlon64";;
+		esac
+		;;
+	esac
+	;;
+    alpha-*-osf*)   # alpha more specific version
+	family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The alpha \([evEV0-9]*\).* processor.*$/\1/p' | head -n 1 )`
+	cpu=`(echo ${family} | tr '[ A-Z]' '[_a-z]' || echo ${cpu})`
+	;;
+    sun*-*-sunos*|sun*-*-solaris*) # sparc more specific version
+	family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The \([sparcv0-9]*\).* processor.*$/\1/p' | head -n 1 )`
+	cpu=`(echo ${family} | tr '[ A-Z]' '[_a-z]' || echo ${cpu})`
+	;;
+    alpha-*-linux)   # alpha more specific version
+	family=`(sed -n 's/^cpu model.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
+	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
+	;;
+    ia64-*-linux)
+	family=`(sed -n 's/^family.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
+	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
+	;;
+    *-*-hpux*)
+	arch=hp`( echo ${arch} | tr '/' 's' )`;
+	cpu=hppa;
+	;;
+    sr8000-*-hiux/mpp)
+	cpu=hppa;
+	os=hiuxmpp;
+        ;;
+    *-powerpc-aix)
+        ibm_cpu_id=`/usr/sbin/lsdev -C -c processor -S available | head -1 | awk '{ print $1 }'`
+        if /usr/sbin/lsattr -El ${ibm_cpu_id} | grep ' POWER' >/dev/null 2>&1; then
+            cpu=rs6000
+        else
+            cpu=`/usr/sbin/lsattr -El ${ibm_cpu_id} | grep "Processor type" | awk '{print $2}' | tr 'A-Z' 'a-z' | tr -d ' '`
+        fi
+        
+	arch=`uname -M | tr 'A-Z' 'a-z' | tr -d ' ' | awk -F, '{print $1; exit;}'`;
+	;;
+    ppc*-*-linux)
+	family=`(sed -n 's/^cpu.*: \([^ ]*\).*$/\1/p' /proc/cpuinfo | head -n 1)`
+	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
+        ;;
+    *-*-*bsd|*-*-darwin*)  #from /usr/include/mach/machine.h
+        cputype=`sysctl hw.cputype | awk '{print $2 ; exit;}'`
+        cpusubt=`sysctl hw.cpusubtype | awk '{print $2; exit;}'`
+        case "${cputype}" in
+            7) cpu=i386
+                case "${cpusubt}" in
+                    3) cpu=i386 ;;
+                    4) cpu=i486 ;;
+                    5) cpu=pentium ;;
+                    6) cpu=pentiumpro ;;
+                esac
+                ;;
+            11) cpu=hppa ;;
+            12) cpu=arm ;;
+            14) cpu=sparc ;;
+            16) cpu=alpha ;;
+            18) cpu=ppc 
+                case "${cpusubt}" in
+                    1) cpu=ppc_601 ;;
+                    2) cpu=ppc_602 ;;
+                    3|4|5) cpu=ppc_603 ;;
+                    6|7) cpu=ppc_604 ;;
+                    8) cpu=ppc_620 ;;
+                    9) cpu=ppc_750 ;;
+                    10) cpu=ppc_7400 ;;
+                    11) cpu=ppc_7450 ;;
+                    100) cpu=ppc_970 ;;
+                esac
+                ;;            
+            82) cpu=ppc64   # 64+18
+                case "${cpusubt}" in
+                    100) cpu=ppc64_970 ;;
+                esac
+                ;;            
+        esac
+        ;;
+esac
+
+id=${arch}-${cpu}-${os}
+echo ${id}

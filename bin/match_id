@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+
+# Don't let the script be confused by non-english messages
+# from system information programs
+unset LC_MESSAGES
+unset LANG
+
+id=$1
+st=$2
+
+#arch=`awk -F- '{print $1}'`
+#os=`awk -F- '{print $3}'`
+#cpu=`awk -F- '{print $2}'`
+#alt=`awk -F- '{print $4}'`
+
+#id_base=${arch}-${cpu}-${os}
+
+cmd="/${st}/ {print \"yes\"}"
+echo ${id} | awk "${cmd}"
+#echo "no"

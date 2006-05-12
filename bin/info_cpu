@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# try to get some cpu information from the system
+#
+
+id=${1}
+
+case ${id} in
+    *-*-linux*|*-*-cygwin*)
+        cat /proc/cpuinfo
+        ;;
+    alpha-*-osf*|sun*-*-sunos*|sun*-*-solaris*)
+        /usr/sbin/psrinfo -v
+	;;
+    *-*-hpux*)
+        /usr/sbin/ioscan -k -C processor
+        model
+	;;
+    *-*-irix*)
+        /usr/sbin/mpadmin -n
+        ;;
+    *-*-aix*)
+        /usr/sbin/lsdev -C -c processor -S available
+        /usr/sbin/lsattr -El proc0
+	;;
+    *-*-*bsd|*-*-darwin*)
+        sysctl hw.model hw.machine hw.machine_arch 
+        sysctl hw.cputype hw.cpusubtype hw.cpufrequency
+        ;;
+esac

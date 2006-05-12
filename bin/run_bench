@@ -1,0 +1,31 @@
+#!/bin/sh
+
+run_bench() {
+    ssh $2 "( cd $1 ; make -s $3 purge bench )"
+}
+
+
+dir=`pwd`
+
+#run_bench ${dir} sarimner ALT=ifc
+#run_bench ${dir} sarimner 
+#run_bench ${dir} cerberus 
+#run_bench ${dir} cerberus ALT=64bit
+#run_bench ${dir} yggdrasill 
+#run_bench ${dir} mariner
+#run_bench ${dir} evanescence ALT=t4
+#run_bench ${dir} huygens
+#run_bench ${dir} viking
+#run_bench ${dir} oomph ALT=t4
+#run_bench ${dir} mariner
+#run_bench ${dir} cassini
+#run_bench ${dir} pioneer
+run_bench ${dir} venera
+run_bench ${dir} pathfinder
+#run_bench ${dir} viking ALT=t1
+#run_bench ${dir} viking ALT=ifc
+#run_bench ${dir} melbourne ALT=ifc
+#run_bench ${dir} melbourne 
+#run_bench ${dir} jerusalem 
+#run_bench ${dir} jerusalem ALT=64bit
+#run_bench ${dir} huygens 
