@@ -4,6 +4,7 @@
 # compiler.
 
 KERNEL=$(FEATFLOW)/kernel
+INCOMING=$(FEATFLOW)/incoming
 
 SRCF90:=$(SRCF90) fsystem.f90 basicgeometry.f90 afc_util.f90  \
 	genoutput.f90 linearalgebra.f90 storage.f90 derivatives.f90 \
@@ -18,24 +19,24 @@ SRCF90:=$(SRCF90) fsystem.f90 basicgeometry.f90 afc_util.f90  \
 
 # path for the make where to look for which files
 
-vpath %.f kernel/System kernel/BasicGeometry \
-	kernel/LinearAlgebra kernel/ElementCubature \
-	kernel/Triangulation kernel/ContinuousFormulation \
-	kernel/Boundary kernel/DOFMaintainance \
-	kernel/LinearSystem kernel/LinearSolver \
-	kernel/ProblemSupport kernel
+vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \
+	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
+	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
+	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
+	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
+	$(KERNEL)/ProblemSupport $(KERNEL) $(INCOMING)
 
 vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
-	$(KERNEL)/ProblemSupport $(KERNEL)
+	$(KERNEL)/ProblemSupport $(KERNEL) $(INCOMING)
 
 vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
-	$(KERNEL)/ProblemSupport $(KERNEL)
+	$(KERNEL)/ProblemSupport $(KERNEL) $(INCOMING)
 
