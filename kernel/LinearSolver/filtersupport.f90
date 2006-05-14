@@ -13,14 +13,19 @@
 !# To build a filter chain, the application must declare an array
 !# of type t_filterChain (e.g. of length FILTER_MAXFILTERS) and set the
 !# filer type identifier.
-!# The routine filter_applyFilterChain can be used to apply such a filter
+!# The routine filter_applyFilterChainVec can be used to apply such a filter
 !# chain to a vector. The routine stops when either the end of the array
 !# is reached or if a filter is found that contains the tag FILTER_NOFILTER.
 !#
-!# A filter is always applied to the whole solution vector. One filter is
-!# for example the "apply-discrete-boundary-conditions" filter
+!# A filter is always applied to the whole solution/defect vector. One filter
+!# is for example the "apply-discrete-boundary-conditions" filter
 !# that loops about all subvectors of a given vector to implement the
 !# discrete boundary conditions. 
+!#
+!# The following routines can be found here:
+!#
+!# 1.) filter_applyFilterChainVec
+!#     -> Applies a given filter chain onto a (block) vector.
 !# </purpose>
 !##############################################################################
 
@@ -35,14 +40,14 @@ MODULE filtersupport
 
 !<constants>
 
-  !<constantblock description="General constants concerning filters">
+!<constantblock description="General constants concerning filters">
 
   ! A standard length for arrays holding a filter chain.
   INTEGER, PARAMETER :: FILTER_MAXFILTERS        =  32
 
-  !</constantblock>
+!</constantblock>
 
-  !<constantblock description="Filter type flags for t_filterChain%ifilterType">
+!<constantblock description="Filter type flags for t_filterChain%ifilterType">
 
   ! Undefined filter
   INTEGER, PARAMETER :: FILTER_NOFILTER          =  0
@@ -66,7 +71,10 @@ MODULE filtersupport
   ! the fictitious boundary into a defect vector.
   INTEGER, PARAMETER :: FILTER_DISCBCDEFFICT     =  4
 
-  !</constantblock>
+  ! Vector filter for bringing a subvector of a vector to the space $L^2_0$.
+  INTEGER, PARAMETER :: FILTER_TOL20             =  5
+
+!</constantblock>
   
 !</constants>
 
@@ -83,6 +91,11 @@ MODULE filtersupport
     ! One of the FILTER_XXXX constants
     INTEGER                            :: ifilterType = FILTER_NOFILTER
     
+    ! Information tag for the TOL20 filterif ifilterType=FILTER_TOL20:
+    ! Number of the subvector that should be filtered to be in the
+    ! space $L^2_0$.
+    INTEGER                            :: itoL20component = 0
+    
   END TYPE
   
   !</typeblock>
@@ -93,28 +106,28 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE filter_applyFilterChain (rx, RfilterChain)
+  SUBROUTINE filter_applyFilterChainVec (rx, RfilterChain)
 
-  !<description>
-  
+!<description>
   ! This routine applies a filter chain on a vector rx. All filters in the
   ! chain are applied one after the other until the end of the array is reached
   ! or the first filter is found with the filter tag FILTER_NOFILTER.
-  
-  !</description>
+!</description>
 
-  !<input>
+!<input>
   
   ! The filter chain
   TYPE(t_filterChain), DIMENSION(:), INTENT(IN) :: RfilterChain
+  
+!</input>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The vector where the filter will be applied to.
   ! This is also the result vector.
   TYPE(t_vectorBlock), INTENT(INOUT)            :: rx
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -137,13 +150,19 @@ CONTAINS
       ! Cancel if we reached the last filter before reaching the end of the
       ! array
       EXIT
+      
+    CASE (FILTER_DISCBCSOLREAL)
+      ! Impose Dirichlet boundary contitions into the defect vector rx
+      CALL vecfil_discreteBC (rx)
+    
     CASE (FILTER_DISCBCDEFREAL)
       ! Impose Dirichlet boundary contitions into the defect vector rx
-      CALL vecfil_imposeDiscreteDefectBC (rx)
+      CALL vecfil_discreteBCDefect (rx)
+
+    CASE (FILTER_TOL20)
+      ! Bring the subvector itoL20component of rx to the space $L^2_0$:
+      CALL vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
     END SELECT
-  
-    ! Apply the filter
-    PRINT *,'to be implemented'
   
   END DO
   

@@ -30,7 +30,7 @@ MODULE cmsort
   
   CONTAINS
 
-  !<subroutine>
+!<subroutine>
   SUBROUTINE cmsort_calcColumnNumbering (Ild, Icol, Icon, Ideg, neq, ndeg)
   
     !<description>
@@ -47,7 +47,7 @@ MODULE cmsort
     !Matrix storage technique 7 only!
     !</description>
   
-    !<input>
+  !<input>
   
     ! Number of equations
     INTEGER(I32),INTENT(IN)                    :: neq
@@ -66,17 +66,19 @@ MODULE cmsort
     ! INTENT(IN) would create here compiler errors
     INTEGER(I32), DIMENSION(ndeg)              :: Ideg
   
-    !</input>
+  !</input>
   
-    !<inputoutput>
+  !<inputoutput>
   
     ! Auxiliary vector; the column numbers of KCOL are assigned to this in
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
     INTEGER(I32), DIMENSION(:), INTENT(INOUT)  :: Icon
-    !</inputoutput>
-  
+  !</inputoutput>
+
+!</subroutine>
+
     ! local variables
     INTEGER(I32) :: ieq, idegIdx, ildIdx, idegIdx1, idegIdx2
     INTEGER(I32) :: idegMin, iidxMin
@@ -190,7 +192,7 @@ MODULE cmsort
       ! Clear auxiliary vector; only some entries were used. This is only for
       ! reasons of safetyness, as if the upper loops are processed correctly,
       ! (no nodes were forgotten), all Ideg-arrays should already be 0.
-      DO idegIdx=1, Ild(ieq)+1, Ild(ieq+1)-1 !Achtung: Ist dies so richtig?
+      DO idegIdx=1, Ild(ieq+1)-Ild(ieq)-1
         Ideg(idegIdx) = 0
       END DO
       
@@ -198,9 +200,8 @@ MODULE cmsort
     END DO 
   
   END SUBROUTINE cmsort_calcColumnNumbering
-  !</subroutine>
 
-  !<subroutine>
+!<subroutine>
   SUBROUTINE cmsort_calcPermutation (Ild, Icon, neq, Itr1, Itr2)
   
     !<description>
@@ -240,6 +241,8 @@ MODULE cmsort
     INTEGER(I32), DIMENSION(neq), INTENT(OUT) :: Itr2
 
     !</output>    
+
+  !</subroutine>
     
     ! local variables
     INTEGER(I32) :: ineqIdx, icount, ildIdx, icolIdx
@@ -364,7 +367,6 @@ MODULE cmsort
     END DO
 
   END SUBROUTINE cmsort_calcPermutation	  
-  !</subroutine>
         
 
 END MODULE

@@ -180,7 +180,7 @@ C Clear auxiliary vector; only some entries were used. This is only for
 C reasons of safetyness, as if the upper loops are processed correctly,
 C (no nodes were forgotten), all KDEG-arrays should already be 0.
 
-          DO IDEG=1,KLD(IEQ)+1,KLD(IEQ+1)-1
+          DO IDEG=1,KLD(IEQ+1)-KLD(IEQ)-1
             KDEG(IDEG)=0
           END DO  
 

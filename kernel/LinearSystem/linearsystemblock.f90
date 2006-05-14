@@ -20,15 +20,15 @@ MODULE linearsystemblock
 
 !<constants>
 
-  !<constantblock description="Global constants for block matrices">
+!<constantblock description="Global constants for block matrices">
 
   ! Maximum number of blocks that is allowed in 'usual' block matrices,
   ! supported by the routines in this file.
   INTEGER, PARAMETER :: LSYSBL_MAXBLOCKS = 16
   
-  !</constantblock>
+!</constantblock>
 
-  !<constantblock description="Flags for the matrix specification bitfield">
+!<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
   INTEGER, PARAMETER :: LSYSBS_MSPEC_GENERAL           =        0
@@ -47,13 +47,13 @@ MODULE linearsystemblock
   ! with C~0 being a stabilisation matrix
   INTEGER, PARAMETER :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =     2**2
 
-  !</constantblock>
+!</constantblock>
 
 !</constants>
 
 !<types>
   
-  !<typeblock>
+!<typeblock>
   
   ! A block vector that can be used by block linear algebra routines.
   
@@ -74,9 +74,9 @@ MODULE linearsystemblock
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
-  !<typeblock>
+!<typeblock>
   
   ! A block matrix that can be used by scalar linear algebra routines.
   
@@ -100,9 +100,9 @@ MODULE linearsystemblock
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
-  !<typeblock>
+!<typeblock>
   
   ! This structure encapsules a pointer to a block matrix.
   
@@ -113,7 +113,7 @@ MODULE linearsystemblock
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 !</types>
 
@@ -130,16 +130,14 @@ CONTAINS
 
   SUBROUTINE lsysbl_createVecBlockDirect (rx, Isize, iclear)
   
-  !<description>
-  
+!<description>
   ! Initialises the vector block structure rx. Isize is an array
   ! of integers containing the length of the individual blocks.
   ! Memory is allocated on the heap to hold vectors of the size
   ! according to Isize.
-  
-  !</description>
+!</description>
 
-  !<input>
+!<input>
   
   ! An array with length-tags for the different blocks
   INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Isize
@@ -147,14 +145,14 @@ CONTAINS
   ! Optional: If set to YES, the vector will be filled with zero initially.
   INTEGER, INTENT(IN), OPTIONAL             :: iclear
   
-  !</input>
+!</input>
 
-  !<output>
+!<output>
   
   ! Destination structure. Memory is allocated for each of the blocks.
   TYPE(t_vectorBlock),INTENT(OUT) :: rx
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -198,16 +196,14 @@ CONTAINS
 
   SUBROUTINE lsysbl_createVecBlockIndirect (rx, rtemplate,iclear)
   
-  !<description>
-  
+!<description>
   ! Initialises the vector block structure rx. rtemplate is an
   ! existing block vector structure.
   ! Memory is allocated on the heap for rx, the different components
   ! of rx will have the same size as the corresponding ones in rtemplate.
+!</description>
   
-  !</description>
-  
-  !<input>
+!<input>
   
   ! A template vector structure
   TYPE(t_vectorBlock),INTENT(IN) :: rtemplate
@@ -216,14 +212,14 @@ CONTAINS
   ! Otherwise the content of rx is undefined.
   INTEGER, INTENT(IN), OPTIONAL             :: iclear
   
-  !</input>
+!</input>
 
-  !<output>
+!<output>
   
   ! Destination structure. Memory is allocated for each of the blocks.
   TYPE(t_vectorBlock),INTENT(OUT) :: rx
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -251,18 +247,16 @@ CONTAINS
 
   SUBROUTINE lsysbl_releaseVectorBlock (rx)
   
-  !<description>
-  
+!<description>
   ! Releases the memory that is reserved by rx.
+!</description>
   
-  !</description>
-  
-  !<inputoutput>
+!<inputoutput>
   
   ! Vector structure that is to be released.
   TYPE(t_vectorBlock),INTENT(OUT) :: rx
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -287,15 +281,13 @@ CONTAINS
 !<subroutine>
   
   SUBROUTINE lsysbl_blockMatVec (rMatrix, rx, ry, cx, cy)
-  
-  !<description>
-  
+ 
+!<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
   !    $$ Dy   =   cx * rMatrix * rx   +   cy * ry $$
+!</description>
   
-  !</description>
-  
-  !<input>
+!<input>
   
   ! Block matrix
   TYPE(t_matrixBlock), INTENT(IN)                   :: rMatrix
@@ -309,14 +301,14 @@ CONTAINS
   ! Multiplicative factor for ry
   REAL(DP), INTENT(IN)                              :: cy
   
-  !</input>
+!</input>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! Additive vector. Receives the result of the matrix-vector multiplication
   TYPE(t_vectorBlock), INTENT(OUT)                 :: ry
   
-  !</inputoutput>
+!</inputoutput>
 
 !</subroutine>
   
@@ -368,18 +360,16 @@ CONTAINS
 
   SUBROUTINE lsysbl_blockCopy (rx,ry)
   
-  !<description>
-  
+!<description>
   ! Copies vector dx: Dy = Dx
-  
-  !<input>
+!<input>
   
   ! Source vector
   TYPE(t_vectorBlock),INTENT(IN) :: rx
   
-  !</input>
+!</input>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! Destination vector
   TYPE(t_vectorBlock),INTENT(INOUT) :: ry
@@ -405,25 +395,23 @@ CONTAINS
 
   SUBROUTINE lsysbl_blockScale (rx,c)
   
-  !<description>
-  
+!<description>
   ! Scales a vector vector rx: rx = c * rx
+!</description>
   
-  !</description>
-  
-  !<inputoutput>
+!<inputoutput>
   
   ! Source and destination vector
   TYPE(t_vectorBlock), INTENT(INOUT) :: rx
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
   
   ! Multiplication factor
   REAL(DP), INTENT(IN) :: c
   
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -442,16 +430,14 @@ CONTAINS
 
   SUBROUTINE lsysbl_blockClear (rx)
   
-  !<description>
-  
+!<description>
   ! Clears the block vector dx: Dx = 0
-
-  !<inputoutput>
+!<inputoutput>
   
   ! Destination vector to be cleared
   TYPE(t_vectorBlock), INTENT(INOUT) :: rx
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -470,11 +456,11 @@ CONTAINS
 
   SUBROUTINE lsysbl_blockLinearComb (rx,ry,cx,cy)
   
-  !<description>
-  
+!<description>
   ! Performs a linear combination: ry = cx * rx  +  cy * ry
-
-  !<input>
+!</description>  
+  
+!<input>
   
   ! First source vector
   TYPE(t_vectorBlock), INTENT(IN)    :: rx
@@ -485,14 +471,14 @@ CONTAINS
   ! Scaling factor for Dy
   REAL(DP), INTENT(IN)               :: cy
   
-  !</input>
+!</input>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! Second source vector; also receives the result
   TYPE(t_vectorBlock), INTENT(INOUT) :: ry
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 

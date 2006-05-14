@@ -541,15 +541,15 @@ CONTAINS
                              TRIA(OLEBD),rtriangulation%h_IelementsAtBoundary)
 
   ! *******************************************************
-  ! Copy KVBDP, create p_DvertexParameterValue.
+  ! Copy DVBDP, create p_DvertexParameterValue.
   
-  CALL copy_featarray_double1d ('KVBDP',INT(rtriangulation%NVBD),&
+  CALL copy_featarray_double1d ('DVBDP',INT(rtriangulation%NVBD),&
                                 TRIA(OLVBDP),rtriangulation%h_DvertexParameterValue)
 
   ! *******************************************************
-  ! Copy KMBDP, create p_DedgeParameterValue.
+  ! Copy DMBDP, create p_DedgeParameterValue.
   
-  CALL copy_featarray_double1d ('KMBDP',INT(rtriangulation%NMBD),&
+  CALL copy_featarray_double1d ('DMBDP',INT(rtriangulation%NMBD),&
                                 TRIA(OLMBDP),rtriangulation%h_DedgeParameterValue)
 
 
@@ -780,7 +780,7 @@ CONTAINS
     ! Copy the FEAT array
     p_array2 => feat_htpdouble(idim1,ifeathandle)
     DO i=1,SIZE(p_array2)
-      p_array2(i) = p_array(i)
+      p_array(i) = p_array2(i)
     END DO
     
     END SUBROUTINE

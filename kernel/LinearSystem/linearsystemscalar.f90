@@ -36,10 +36,12 @@ MODULE linearsystemscalar
   USE storage
   USE spatialdiscretisation
   USE discretebc
+  
+  IMPLICIT NONE
 
 !<constants>
 
-  !<constantblock description="Global format flags for matrices">
+!<constantblock description="Global format flags for matrices">
 
   ! Unidentified matrix format
   INTEGER, PARAMETER :: LSYSSC_MATRIXUNDEFINED = 0
@@ -74,9 +76,9 @@ MODULE linearsystemscalar
   ! Matrix not present in memory
   INTEGER, PARAMETER :: LSYSSC_MSPEC_NOTINMEMORY =     2**3
   
-  !</constantblock>
+!</constantblock>
 
-  !<constantblock description="KIND values for matrix/vector data">
+!<constantblock description="KIND values for matrix/vector data">
   
   ! kind value for indices in matrices
   INTEGER, PARAMETER :: PREC_MATIDX = I32
@@ -87,14 +89,14 @@ MODULE linearsystemscalar
   ! kind value for precision that should be used in matrices
   INTEGER, PARAMETER :: PREC_MATRIX = DP
 
-  !</constantblock>
+!</constantblock>
   
 !</constants>
 
 
 !<types>
   
-  !<typeblock>
+!<typeblock>
   
   ! A scalar vector that can be used by scalar linear algebra routines.
   
@@ -133,9 +135,9 @@ MODULE linearsystemscalar
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
-  !<typeblock>
+!<typeblock>
   
   ! A scalar matrix that can be used by scalar linear algebra routines.
   
@@ -172,11 +174,11 @@ MODULE linearsystemscalar
     
     ! Format-7 and Format-9: Handle identifying the column structure
     !INTEGER(PREC_MATIDX), DIMENSION(:), POINTER    :: KCOL       => NULL()
-    INTEGER                    :: h_KCOL = ST_NOHANDLE
+    INTEGER                    :: h_Kcol = ST_NOHANDLE
     
     ! Format-7 and Format-9: Handle identifying the row structure
     !INTEGER, DIMENSION(:), POINTER            :: KLD        => NULL()
-    INTEGER                    :: h_KLD = ST_NOHANDLE
+    INTEGER                    :: h_Kld = ST_NOHANDLE
     
     ! Format-9: Similar to row structure. Handle top array of length NEQ.
     ! For each row, pointer to the first element on the upper
@@ -185,7 +187,7 @@ MODULE linearsystemscalar
     ! For matrices with no elements in the upper right part of the
     ! matrix, this points to the first element on the next line.
     !INTEGER, DIMENSION(:), POINTER            :: Kdiagonal  => NULL()
-    INTEGER                    :: h_KDiagonal = ST_NOHANDLE
+    INTEGER                    :: h_Kdiagonal = ST_NOHANDLE
     
     ! A pointer to the spatial discretisation
     TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscretisation => NULL()
@@ -201,7 +203,7 @@ MODULE linearsystemscalar
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 !</types>
 
@@ -211,14 +213,12 @@ CONTAINS
   
   SUBROUTINE lsyssc_scalarMatVec (rMatrix, rx, ry, cx, cy)
   
-  !<description>
-  
+!<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
   !    $$ Dy   =   cx * rMatrix * rx   +   cy * ry $$
+!</description>
   
-  !</description>
-  
-  !<input>
+!<input>
   
   ! Scalar matrix
   TYPE(t_matrixScalar), INTENT(IN)                  :: rMatrix
@@ -232,17 +232,15 @@ CONTAINS
   ! Multiplicative factor for ry
   REAL(DP), INTENT(IN)                              :: cy
   
-  !</input>
+!</input>
 
-  !<inputoutput>
-  
+!<inputoutput>
   ! Additive vector. Receives the result of the matrix-vector multiplication
   TYPE(t_vectorScalar), INTENT(OUT)                 :: ry
-  
-  !</inputoutput>
+!</inputoutput>
 
   !...
-  PRINT *,'Not implemented'
+  PRINT *,'MV not implemented'
    
   END SUBROUTINE
   
@@ -303,7 +301,7 @@ CONTAINS
 
   ! Which handles do we have to release?
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .EQ. 0) THEN
-    SELECT CASE (imatrixFormat)
+    SELECT CASE (rmatrix%imatrixFormat)
     CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
       ! Release matrix data, structure 9,7
       IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
@@ -315,14 +313,14 @@ CONTAINS
   IF ((IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .EQ. 0) .AND. &
       (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0)) THEN
     ! Release matrix structure
-    SELECT CASE (imatrixFormat)
+    SELECT CASE (rmatrix%imatrixFormat)
     CASE (LSYSSC_MATRIX9)
-      IF (rmatrix%h_KCOL .NE. ST_NOHANDLE)      CALL storage_free(rmatrix%h_KCOL)
-      IF (rmatrix%h_KLD .NE. ST_NOHANDLE)       CALL storage_free(rmatrix%h_KLD)
-      IF (rmatrix%h_KDiagonal .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_KDiagonal)
+      IF (rmatrix%h_Kcol .NE. ST_NOHANDLE)      CALL storage_free(rmatrix%h_Kcol)
+      IF (rmatrix%h_Kld .NE. ST_NOHANDLE)       CALL storage_free(rmatrix%h_Kld)
+      IF (rmatrix%h_Kdiagonal .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_Kdiagonal)
     CASE (LSYSSC_MATRIX7)
-      IF (rmatrix%h_KCOL .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_KCOL)
-      IF (rmatrix%h_KLD .NE. ST_NOHANDLE)  CALL storage_free(rmatrix%h_KLD)
+      IF (rmatrix%h_Kcol .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_Kcol)
+      IF (rmatrix%h_Kld .NE. ST_NOHANDLE)  CALL storage_free(rmatrix%h_Kld)
     END SELECT
   END IF
   

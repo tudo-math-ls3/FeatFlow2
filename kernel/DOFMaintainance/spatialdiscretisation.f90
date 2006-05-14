@@ -110,7 +110,12 @@ MODULE spatialdiscretisation
   
   ! The central discretisation structure corresponding to one mesh level.
   ! Here, all information about the discretisation are collected (mesh
-  ! information, trial functions, test functions,...)
+  ! information, trial functions, test functions,...).
+  !
+  ! Remark: The structure realises only the discretisation of 'a scalar
+  !  equation'. For multidimensional problems, there are multiple of
+  !  these structures, each one for one PDE. The structure is 'hung into'
+  !  the scalar matrix that discretises that equation.
   
   TYPE t_spatialDiscretisation
   

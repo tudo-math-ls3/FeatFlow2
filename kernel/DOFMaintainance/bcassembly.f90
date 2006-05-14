@@ -10,6 +10,24 @@
 !# This structure is used during the solution process to impose the boundary
 !# conditions into the solution vector. Therefore, this module contains
 !# the bridge how to put analytic boundary conditions into a discrete vector.
+!#
+!# The module works in tight relationship to the module 'vectorfilters'.
+!# While bcassembly provides the functionality to *create* the structures,
+!# the module 'vectorfilters' contains routines to *apply* the structure
+!# to a given vector.
+!# (This separation is necessary to prevent circular dependencies!)
+!#
+!# The following routines can be found here:
+!#
+!# 1.) bcasm_discretiseBC
+!#     -> Discretises the analytic boundary definitions in a discretisation
+!#        structure
+!#
+!# 2.) bcasm_releaseDiscreteBC
+!#     -> Cleans up a structure with discrete boundary conditions and
+!#        releases all memory allocated by it.
+!#
+!#
 !# </purpose>
 !##############################################################################
 
@@ -34,6 +52,14 @@ CONTAINS
                                  fgetBoundaryValues,p_rcollection)
   
 !<description>
+  ! This routine discretises an analytic definition of boundary conditions.
+  ! The definition of the boundary conditions is taken from the discretisation
+  ! structure rspatialDiscretisation. The discrete version is build up in
+  ! p_RdiscreteBC. If p_RdiscreteBC is NULL(), a new structure is created,
+  ! otherwise the old structure is updated (or even destroyed and recreaded if
+  ! necessary).
+  ! Note that the poiinter p_RdiscreteBC may be changed in trhis routine
+  ! if a given structure must completely be recreated!
 !</description>
 
 !<input>
@@ -61,7 +87,7 @@ CONTAINS
   ! OPTIONAL: A collection structure to inform the callback function with
   ! additional information. Can be NULL() or undefined if there is no
   ! information to pass.
-  TYPE(t_collctSection), POINTER, INTENT(IN), OPTIONAL :: p_rcollection
+  TYPE(t_collection), POINTER, INTENT(IN), OPTIONAL :: p_rcollection
 !</input>
 
 !<inputoutput>
@@ -71,7 +97,7 @@ CONTAINS
   ! special way.
   ! If this pointer points to NULL(), a complete new structure is
   ! set up.
-  TYPE(t_discreteBC), DIMENSION(:), INTENT(INOUT), POINTER :: p_RdiscreteBC
+  TYPE(t_discreteBC), DIMENSION(:), POINTER :: p_RdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -80,7 +106,7 @@ CONTAINS
   INTEGER :: icurrentRegion
   TYPE(t_bcRegion), POINTER :: p_rbcRegion
   LOGICAL :: bbuildAll
-  TYPE(t_collctSection), POINTER :: p_rcoll
+  TYPE(t_collection), POINTER :: p_rcoll
   TYPE(t_discreteBCDirichlet), POINTER :: p_rdiscreteBCDirichlet
   
   ! Pointer to the boundary condition object
@@ -109,26 +135,14 @@ CONTAINS
     ! Is there a massive change or do we have o rebuild everything?
     IF ((p_rboundaryConditions%iregionCount .NE. SIZE(p_RdiscreteBC)) &
         .OR. bforceRebuild) THEN
+        
       ! Oh, we have to destroy the structure completely!
-      DO icurrentRegion = 1,p_rboundaryConditions%iregionCount
-        
-        ! Get a pointer to it so we can deal with it more easily
-        p_rbcRegion => p_rboundaryConditions%p_Rregions(icurrentRegion)
-      
-        ! Release all allocated information to this boundary region
-        SELECT CASE (p_RdiscreteBC(icurrentRegion)%itype)
-        CASE (DISCBC_TPDIRICHLET)
-          ! Discrete Dirichlet boundary conditions. Release the old structure.
-          p_rdiscreteBCDirichlet => p_RdiscreteBC(icurrentRegion)%rdirichletBCs
-          CALL bcasm_releaseDirichlet(p_rdiscreteBCDirichlet)
-        END SELECT
-        
-      END DO  
-      
-      ! Deallocate and allocate a new structure array with iregionCount 
+      CALL bcasm_releaseDiscreteBC (p_RdiscreteBC)
+
+      ! Allocate a new structure array with iregionCount 
       ! entries for all the boundary conditions.
-      DEALLOCATE(p_RdiscreteBC)
       ALLOCATE(p_RdiscreteBC(p_rboundaryConditions%iregionCount))
+      
       bbuildAll = .TRUE.
     ELSE
       ! Otherwise, release only those information belonging to 
@@ -142,12 +156,18 @@ CONTAINS
         
           ! Release all allocated information to this boundary region
           SELECT CASE (p_RdiscreteBC(icurrentRegion)%itype)
+
           CASE (DISCBC_TPDIRICHLET)
+
             ! Discrete Dirichlet boundary conditions. Release the old structure.
             p_rdiscreteBCDirichlet => p_RdiscreteBC(icurrentRegion)%rdirichletBCs
             CALL bcasm_releaseDirichlet(p_rdiscreteBCDirichlet)
+
+            ! BC released, indicate this
+            p_RdiscreteBC(icurrentRegion)%itype = DISCBC_TPUNDEFINED
+
           END SELECT
-        
+          
         END IF
       
       END DO  
@@ -172,12 +192,68 @@ CONTAINS
     IF (bforceRebuild .OR. .NOT. p_rbcRegion%bisStatic) THEN
     
       ! Ok, let's go...
-    
-    
-    
+      ! What for BC do we have here?
+      SELECT CASE (p_rbcRegion%ctype)
+      
+      CASE (BC_DIRICHLET)
+        CALL bcasm_discrBCDirichlet (rspatialDiscretisation, &
+                   p_rbcRegion, p_RdiscreteBC(icurrentRegion), &
+                   fgetBoundaryValues,p_rcoll)
+      END SELECT
+        
     END IF
   
   END DO  
+
+  END SUBROUTINE
+      
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_releaseDiscreteBC (p_RdiscreteBC)
+  
+!<description>
+  ! This routine cleans up an array of t_discreteBC describing discrete
+  ! boundary conditions. All allocated memory is release. The array
+  ! is released itself from memory, returníng p_RdiscreteBC=NULL()
+!</description>
+
+!<inputoutput>
+  ! A pointer to discretised boundary conditions. All memory allocated
+  ! in and by this array is released from the heap. 
+  TYPE(t_discreteBC), DIMENSION(:), POINTER :: p_RdiscreteBC
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: icurrentRegion
+  TYPE(t_discreteBCDirichlet), POINTER :: p_rdiscreteBCDirichlet
+  
+  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) THEN
+    PRINT *,'Warning in bcasm_releaseDiscreteBC: Nothing to cleanup!'
+    RETURN
+  END IF
+  
+  ! Destroy the structure completely!
+  DO icurrentRegion = 1,SIZE(p_RdiscreteBC)  
+    
+    ! Release all allocated information to this boundary region
+    SELECT CASE (p_RdiscreteBC(icurrentRegion)%itype)
+    CASE (DISCBC_TPDIRICHLET)
+      ! Discrete Dirichlet boundary conditions. Release the old structure.
+      p_rdiscreteBCDirichlet => p_RdiscreteBC(icurrentRegion)%rdirichletBCs
+      CALL bcasm_releaseDirichlet(p_rdiscreteBCDirichlet)
+
+      ! BC released, indicate this
+      p_RdiscreteBC(icurrentRegion)%itype = DISCBC_TPUNDEFINED
+    END SELECT
+    
+  END DO  
+  
+  ! Deallocate the structure, finish.
+  DEALLOCATE(p_RdiscreteBC)
 
   END SUBROUTINE
       
@@ -313,10 +389,12 @@ CONTAINS
     ! Save the last vertex number
     ImaxIndex(1) = p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
     icount = 1
-  ELSE IF (ImaxIndex(1) .EQ. 0)  THEN
-    ! Nothing inside - that's it.
-    icount = 0
-    RETURN
+  ELSE IF (ImaxIndex(1) .LE. 0)  THEN
+    IF (icount .NE. 2) THEN
+      ! Nothing inside - that's it.
+      icount = 0
+      RETURN
+    END IF
   END IF
   
   ! Ok, we found at least one segment. 
@@ -371,7 +449,7 @@ CONTAINS
       ImaxIndex(2) = p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
       icount = 2
       RETURN
-    ELSE IF (ImaxIndex(1) .EQ. 0)  THEN
+    ELSE IF (ImaxIndex(2) .LE. 0)  THEN
       ! Nothing inside - only one component
       icount = 1
       RETURN
@@ -611,6 +689,10 @@ CONTAINS
                                      rbcRegion, rdiscreteBC,fgetBoundaryValues,p_rcollection)
   
 !<description>
+  ! Creates a discrete version of Dirichlet boundary conditions.
+  ! rbcRegion describes the region which is to be discretised. The discretised
+  ! boundary conditions are created in rdiscreteBC, which is assumed
+  ! to be undefined when entering this routine.
 !</description>
 
 !<input>
@@ -630,18 +712,18 @@ CONTAINS
   TYPE(t_collection), POINTER, INTENT(IN) :: p_rcollection
 !</input>  
 
-!<inputoutput>
+!<output>
   ! This structure receives the result of the discretisation of rbcRegion.
   ! When entering the routine, the content of this structure is undefined,
   ! all pointers are invalid. The routine fills everything with appropriate
   ! data.
-  TYPE(t_discreteBC), INTENT(INOUT), TARGET :: rdiscreteBC
-!</inputoutput>
+  TYPE(t_discreteBC), INTENT(OUT), TARGET :: rdiscreteBC
+!</output>
 
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
   INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j
-  INTEGER(I32) :: iedge,ipoint1,ipoint2
+  INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
   TYPE(t_discreteBCDirichlet),POINTER         :: p_rdirichletBCs
   TYPE(t_triangulation2D), POINTER            :: p_rtriangulation
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary,p_IverticesAtBoundary
@@ -660,14 +742,14 @@ CONTAINS
   p_rtriangulation => rspatialDiscretisation%p_rtriangulation2D
   CALL storage_getbase_int(p_rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
-  CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IedgesAtBoundary)
+  CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
   CALL storage_getbase_int(rspatialDiscretisation%h_ItrialElements,p_ItrialElements)
   CALL storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,p_DedgeParameterValue)
   CALL storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
   CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
   CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+  NVT = p_rtriangulation%NVT
   
-
   ! We have Dirichlet boundary conditions
   rdiscreteBC%itype = DISCBC_TPDIRICHLET
   
@@ -694,13 +776,15 @@ CONTAINS
                                  rbcRegion%rboundaryRegion, &
                                  IminEdge,ImaxEdge,icount2)
                                  
-  ! Cancel if the set is empty
-  IF (icount2 .EQ. 0) THEN
+  ! Cancel if the set is empty!
+  IF ((icount .EQ. 0) .AND. (icount2 .EQ. 0)) THEN
     RETURN
   END IF
                                  
   ! Reserve some memory to save temporarily all DOF's of all boundary
   ! elements.
+  ! We handle all boundary elements simultaneously - let's hope that there are 
+  ! never so many elements on the boundary that our memory runs out :-)
   ALLOCATE (Idofs(EL_MAXNBAS,imaxidx(1)-iminidx(1)+1+imaxidx(2)-iminidx(2)+1))
   ALLOCATE (DdofValue(EL_MAXNBAS,imaxidx(1)-iminidx(1)+1+imaxidx(2)-iminidx(2)+1))
   Idofs = 0
@@ -710,7 +794,7 @@ CONTAINS
   ! to the BC region while the endpoints do not and vice versa, so we
   ! have to make sure to get an index which covers everything.
   Iminidx = MIN(IminVertex,IminEdge)
-  Imaxidx = MIN(ImaxVertex,ImaxEdge)
+  Imaxidx = MAX(ImaxVertex,ImaxEdge)
   
   ! Now the elements with indices iminidx..imaxidx in the ItrialElements
   ! of the triangulation are on the boundary. Some elements may appear
@@ -718,13 +802,15 @@ CONTAINS
   !
   ! Ask the DOF-mapping routine to get us those DOF's belonging to elements
   ! on the boundary.
-  CALL dof_locGlobMapping_mult(rspatialDiscretisation, &
-            p_IelementsAtBoundary(Iminidx(1):Imaxidx(1)), .FALSE., Idofs)
+  IF (icount .GE. 1) THEN
+    CALL dof_locGlobMapping_mult(rspatialDiscretisation, &
+              p_IelementsAtBoundary(Iminidx(1):Imaxidx(1)), .FALSE., Idofs)
+  END IF
             
-  IF (icount2 .GT. 1) THEN
+  IF (icount2 .GE. 1) THEN
     CALL dof_locGlobMapping_mult(rspatialDiscretisation, &
               p_IelementsAtBoundary(Iminidx(2):Imaxidx(2)), .FALSE., &
-              Idofs( :, imaxidx(1)-iminidx(1)+1 : ))
+              Idofs( :, Imaxidx(1)-Iminidx(1)+1 : ))
   END IF
                                
   ! Loop through the index sets
@@ -742,8 +828,8 @@ CONTAINS
       ! Where are we at the boundary? Element? Edge? Adjacent vertices?  
       ielement = p_IelementsAtBoundary(I)
       iedge = p_IedgesAtBoundary(I)
-      ipoint1 = p_IverticesAtEdge(1,I)
-      ipoint2 = p_IverticesAtEdge(2,I)
+      ipoint1 = p_IverticesAtEdge(1,iedge-NVT)
+      ipoint2 = p_IverticesAtEdge(2,iedge-NVT)
       
       ! Maybe the points are in the wrong order...
       IF (ipoint1 .NE. p_IverticesAtBoundary(I)) THEN
@@ -767,7 +853,7 @@ CONTAINS
       ! corresponding to the 'global' edge number iedge
       
       ! Element type?
-      ieltype = p_ItrialElements(I)
+      ieltype = p_ItrialElements(p_IelementsAtBoundary(I))
       SELECT CASE (ieltype)
       CASE (EL_Q0)
         ! Nice element, only one DOF :-)
@@ -779,10 +865,10 @@ CONTAINS
                                 p_rcollection, Dvalues)
                                  
         ! Dvalues(1) gives us the function value in the point. Save it
-        DdofValue(1,I-iminidx+1) = Dvalues(1)
+        DdofValue(1,I-Iminidx(ipart)+1) = Dvalues(1)
         
         ! Set the DOF number < 0 to indicate that it is Dirichlet
-        Idofs(1,I-iminidx+1) = -ABS(Idofs(1,I-iminidx+1))
+        Idofs(1,I-Iminidx(ipart)+1) = -ABS(Idofs(1,I-Iminidx(ipart)+1))
         
       CASE (EL_Q1)
 
@@ -793,10 +879,13 @@ CONTAINS
                                   p_rcollection, Dvalues)
                                   
           ! Save the computed function value
-          DdofValue(ilocalEdge,I-iminidx+1) = Dvalues(1) 
+          DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 
           
-          ! Set the DOF number < 0 to indicate that it is Dirichlet
-          Idofs(ilocalEdge,I-iminidx+1) = -ABS(Idofs(ilocalEdge,I-iminidx+1))
+          ! Set the DOF number < 0 to indicate that it is Dirichlet.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,I-Iminidx(ipart)+1) = -ABS(Idofs(ilocalEdge,I-Iminidx(ipart)+1))
         END IF
         
         ! The right point does not have to be checked! It comes later
@@ -816,10 +905,10 @@ CONTAINS
                                   p_rcollection, Dvalues)
                                   
           ! Save the computed function value
-          DdofValue(ilocalEdge,I-iminidx+1) = Dvalues(1) 
+          DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 
           
           ! Set the DOF number < 0 to indicate that it is Dirichlet
-          Idofs(ilocalEdge,I-iminidx+1) = -ABS(Idofs(ilocalEdge,I-iminidx+1))
+          Idofs(ilocalEdge,I-Iminidx(ipart)+1) = -ABS(Idofs(ilocalEdge,I-Iminidx(ipart)+1))
         END IF
       
       END SELECT
@@ -836,29 +925,41 @@ CONTAINS
     END DO
   END DO
   
-  ! Allocate arrays for storing these DOF's and their values
-  CALL storage_new('bcasm_discrBCDirichlet', 'h_IdirichletDOFs', &
-                   icount, ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
-                   ST_NEWBLOCK_NOINIT)
-  CALL storage_new('bcasm_discrBCDirichlet', 'h_IdirichletValues', & 
-                   icount, ST_DOUBLE, p_rdirichletBCs%h_IdirichletValues, &
-                   ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
-  CALL storage_getbase_double(p_rdirichletBCs%h_IdirichletValues,p_IdirichletValues)
+  p_rdirichletBCs%nDOF = icount
   
-  ! Transfer the DOF's and their values to these arrays.
-  icount = 0
-  DO J=1,SIZE(Idofs,2)
-    DO I=1,SIZE(Idofs,1)
-      IF (Idofs(I,J) < 0) THEN
-        icount = icount + 1
-        p_IdirichletDOFs(icount) = ABS(Idofs(I,J))
-        p_IdirichletValues(icount) = Dvalues(icount)
-      END IF
+  IF (icount .GT. 0) THEN
+  
+    ! Allocate arrays for storing these DOF's and their values
+    CALL storage_new('bcasm_discrBCDirichlet', 'h_IdirichletDOFs', &
+                    icount, ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
+                    ST_NEWBLOCK_NOINIT)
+    CALL storage_new('bcasm_discrBCDirichlet', 'h_IdirichletValues', & 
+                    icount, ST_DOUBLE, p_rdirichletBCs%h_IdirichletValues, &
+                    ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
+    CALL storage_getbase_double(p_rdirichletBCs%h_IdirichletValues,p_IdirichletValues)
+    
+    ! Transfer the DOF's and their values to these arrays.
+    icount = 0
+    DO J=1,SIZE(Idofs,2)
+      DO I=1,SIZE(Idofs,1)
+        IF (Idofs(I,J) < 0) THEN
+          icount = icount + 1
+          p_IdirichletDOFs(icount) = ABS(Idofs(I,J))
+          p_IdirichletValues(icount) = Dvalues(icount)
+        END IF
+      END DO
     END DO
-  END DO
   
-  ! REmove temporary memory, finish.
+  ELSE
+  
+    ! Let's hope there is nothing saved here :-)
+    p_rdirichletBCs%h_IdirichletDOFs = ST_NOHANDLE
+    p_rdirichletBCs%h_IdirichletValues = ST_NOHANDLE
+  
+  END IF
+  
+  ! Remove temporary memory, finish.
   DEALLOCATE (DdofValue)
   DEALLOCATE (Idofs)
 
@@ -890,5 +991,6 @@ CONTAINS
 
   END SUBROUTINE
   
+
 END MODULE
   

@@ -316,7 +316,7 @@ CONTAINS
   INTEGER, PARAMETER :: NmemBlkCount = 5
 
   ! Pointer to KLD, KCOL, diagonal
-  INTEGER(I32), DIMENSION(:), POINTER :: p_KLD, p_KCOL, p_KDiagonal
+  INTEGER(I32), DIMENSION(:), POINTER :: p_KLD, p_KCOL, p_Kdiagonal
   
   ! Size of memory currently allocated
   INTEGER(PREC_DOFIDX) :: iallocated
@@ -367,11 +367,11 @@ CONTAINS
                       ST_NEWBLOCK_NOINIT)
   CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
   
-  ! Allocate h_KDiagonal
-  CALL storage_new1D ('bilf_createMatrixStructure9_uni', 'KDiagonal', &
-                      NEQ, ST_INT, rmatrixScalar%h_KDiagonal, &
+  ! Allocate h_Kdiagonal
+  CALL storage_new1D ('bilf_createMatrixStructure9_uni', 'Kdiagonal', &
+                      NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rmatrixScalar%h_KDiagonal,p_KDiagonal)
+  CALL storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
