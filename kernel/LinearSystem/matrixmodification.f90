@@ -86,10 +86,10 @@ CONTAINS
       DO irow = 1,SIZE(Irows)
       
         ! Clear the row
-        p_DA(p_Kld(irow):p_Kld(irow+1)-1) = 0.0_DP
+        p_DA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_DP
         
         ! And put a unit vector there
-        p_Kdiagonal(irow) = 1.0_DP
+        p_DA(p_Kdiagonal(Irows(irow))) = 1.0_DP
       
       END DO
       
@@ -126,10 +126,10 @@ CONTAINS
       DO irow = 1,SIZE(Irows)
       
         ! Put a unit vector there
-        p_DA(p_Kld(irow)) = 1.0_DP
+        p_DA(p_Kld(Irows(irow))) = 1.0_DP
 
         ! and clear the row
-        p_DA(p_Kld(irow)+1:p_Kld(irow+1)-1) = 0.0_DP
+        p_DA(p_Kld(Irows(irow))+1:p_Kld(Irows(irow)+1)-1) = 0.0_DP
       
       END DO
       

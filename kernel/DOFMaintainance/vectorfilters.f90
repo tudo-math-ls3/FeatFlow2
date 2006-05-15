@@ -115,7 +115,7 @@ CONTAINS
   
   ! Loop over the BC's that are to be imposed
   
-  DO ibc = 1,SIZE(RdiscreteBC)
+  DO ibc = 1,SIZE(p_RdiscreteBC)
     
     ! Choose the right boundary condition implementation routine
     ! and call it for the vector.
@@ -181,7 +181,7 @@ CONTAINS
   
   ! Loop over the BC's that are to be imposed
   
-  DO ibc = 1,SIZE(RdiscreteBC)
+  DO ibc = 1,SIZE(p_RdiscreteBC)
     
     ! Choose the right boundary condition implementation routine
     ! and call it for the vector.

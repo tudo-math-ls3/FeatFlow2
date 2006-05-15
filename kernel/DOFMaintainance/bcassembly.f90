@@ -314,12 +314,12 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  LOGICAL binside
+  LOGICAL binside,bfinish
   REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
   REAL(DP), DIMENSION(2) :: dbegin,dend
   REAL(DP) :: dmaxpar
   INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
-  INTEGER :: I
+  INTEGER :: i, ifoundRegions
   
   ! Get the parameter value array from the triangulation
   CALL storage_getbase_double (rtriangulation%h_DvertexParameterValue, &
@@ -354,13 +354,23 @@ CONTAINS
     END IF
   END IF
   
-  ! For now, use a simple linear search.
+  ! All regions in [dbegin(.),dend(.)] are now in asecnding order.
+  ! icount indicates the maximum number of regions we expect to have
+  ! vertices inside.
+  ! Remark: dbegin/dend are not used anymore here - maybe in a later
+  ! version if necessary for some reasons...
+  !
+  ! For now, use a simple linear search. 
   ! The boundary region structure tells us which boundary component
   ! to use; loop through all vertices there.
   
+  ifoundRegions = 0
   IminIndex = 0
   ImaxIndex = -1
   binside = .FALSE.
+  bfinish = .FALSE.
+  
+  ! Loop through all vertices in the current boundary component
   
   DO I = p_IboundaryCpIdx(rregion%iboundCompIdx), &
          p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
@@ -371,103 +381,49 @@ CONTAINS
       IF (.NOT. binside) THEN
         ! We are inside for the first time
         binside = .TRUE.
-        IminIndex(1) = I
+        IminIndex(ifoundRegions+1) = I
       END IF
     ELSE
       ! We are outside - for the first time?
       ! If yes, quit the loop.
       IF (binside) THEN
         binside = .FALSE.
-        ImaxIndex(1) = I-1
-        EXIT
+        ImaxIndex(ifoundRegions+1) = I-1
+        
+        ! We completed the current region successfully
+        ifoundRegions = ifoundRegions + 1
+        
+        ! Decrement icount. If it's still > 0, there's another region
+        ! in dbegin/dend that may contain points
+        icount = icount - 1
+        
+        IF (icount .LE. 0) THEN
+          ! Finish that, we quit the search here as no more regions
+          ! are expected.
+          icount = ifoundRegions
+          RETURN
+        END IF
       END IF
     END IF
          
   END DO
   
+  ! The loop is completed. Question: Are we still inside a region or not?
+  ! If yes...
+  
   IF (binside) THEN
     ! Save the last vertex number
-    ImaxIndex(1) = p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
-    icount = 1
-  ELSE IF (ImaxIndex(1) .LE. 0)  THEN
-    IF (icount .NE. 2) THEN
-      ! Nothing inside - that's it.
-      icount = 0
-      RETURN
-    END IF
+    ImaxIndex(ifoundRegions+1) = p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
+    ! Complete the region and finish.
+    icount = ifoundRegions + 1
+  ELSE 
+    ! No we aren't. So we were awaiting points for another part of the region
+    ! that never came! Reset the last index pair and quit.
+    IminIndex(ifoundRegions+1) = 0
+    ImaxIndex(ifoundRegions+1) = -1
+    icount = ifoundRegions
   END IF
   
-  ! Ok, we found at least one segment. 
-  ! If the segment starts at the beginning of the index set, it max have
-  ! a counterpart at the end!
-  IF ( (IminIndex(1) .NE. p_IboundaryCpIdx(rregion%iboundCompIdx)) .OR. &
-       ((IminIndex(1) .EQ. p_IboundaryCpIdx(rregion%iboundCompIdx)) .AND. &
-        (ImaxIndex(1) .EQ. p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1) ) ) THEN
-    
-    ! No, it's starting in the inner.
-    !     ........Vertex Vertex Vertex........
-    ! So we only have one set - probably the whole index vector.
-    icount = 1
-    RETURN
-  
-  ELSE
-    ! Hmmm, maybe that's the situation where we have two sets crossing
-    ! the maximum parameter Vertex.
-    !      Vertex Vertex Vertex .......... Vertex Vertex Vertex
-    ! Then we found the first set. Let's see if there is another region at the
-    ! beginning belonging to the current segment, too.
-    !
-    ! Let's make another loop to figure out which vertices are inside...
-    
-    binside = .FALSE.
-    
-    DO I = ImaxIndex(1)+1, &
-           p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
-           
-      ! Check if the vertex is inside the region.
-      IF (boundary_isInRegion (rregion,rregion%iboundCompIdx,p_DvertexParameterValue(I))) THEN
-        ! We are inside
-        IF (.NOT. binside) THEN
-          ! We are inside for the first time
-          binside = .TRUE.
-          IminIndex(1) = I
-        END IF
-      ELSE
-        ! We are outside - for the first time?
-        ! If yes, quit the loop.
-        IF (binside) THEN
-          binside = .FALSE.
-          ImaxIndex(1) = I-1
-          EXIT
-        END IF
-      END IF
-      
-    END DO
-  
-    IF (binside) THEN
-      ! Save the last vertex number
-      ImaxIndex(2) = p_IboundaryCpIdx(rregion%iboundCompIdx+1)-1
-      icount = 2
-      RETURN
-    ELSE IF (ImaxIndex(2) .LE. 0)  THEN
-      ! Nothing inside - only one component
-      icount = 1
-      RETURN
-    ELSE
-      ! Oh, bad case. We have a second segment, but it ends not
-      ! at the end of the index set!
-      ! Vertex Vertex ...... Vertex Vertex ...... End
-      ! This case might be supported in a future version, but
-      ! not now. But we don't want to throw an error here.
-      ! Simply go back to the situation of one set.
-      IminIndex(2) = 0
-      ImaxIndex(2) = -1
-      icount = 1
-      RETURN
-    END IF
-  
-  END IF
-    
   END SUBROUTINE
     
   ! ***************************************************************************

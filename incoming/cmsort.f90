@@ -110,7 +110,7 @@ MODULE cmsort
         Ideg(ildIdx-Ild(ieq)) = Icol(ildIdx)
       END DO
       
-      !Loop about every column in the current row. The entries in the
+      ! Loop about every column in the current row. The entries in the
       ! row (=column numbers) of the matrix represent the node numbers of
       ! those nodes in the graph of the matrix, which are connected to the
       ! current node ieq.
@@ -192,7 +192,7 @@ MODULE cmsort
       ! Clear auxiliary vector; only some entries were used. This is only for
       ! reasons of safetyness, as if the upper loops are processed correctly,
       ! (no nodes were forgotten), all Ideg-arrays should already be 0.
-      DO idegIdx=1, Ild(ieq+1)-Ild(ieq)-1
+      DO idegIdx=1, Ild(ieq+1)-Ild(ieq)
         Ideg(idegIdx) = 0
       END DO
       

@@ -886,15 +886,15 @@ CONTAINS
         
       END DO ! JCOL
       
-      ! Grab the diagonal
-      DO JCOL=p_KLD(IEQ),p_KLD(IEQ+1)-1
-        IF (p_KCOL(JCOL) .GE. IEQ) THEN
-          p_Kdiagonal(IEQ) = JCOL
-          EXIT
-        END IF
-      END DO      
+    END DO ! (not BSORT)      
 
-    END DO ! WHILE          
+    ! Grab the diagonal
+    DO JCOL=p_KLD(IEQ),p_KLD(IEQ+1)-1
+      IF (p_KCOL(JCOL) .GE. IEQ) THEN
+        p_Kdiagonal(IEQ) = JCOL
+        EXIT
+      END IF
+    END DO      
 
   END DO ! IEQ
     

@@ -998,14 +998,16 @@ MODULE boundary
 !</input>
 
 !<result>
-  ! TRUE if the point is inside the region, FALSE otherwise.
+  ! TRUE, if the point is inside the region,
+  ! FALSE otherwise.
 !</result>
 
 !</function>
 
   ! local variables
-  REAL(DP) :: dminpar,dmaxpar, dpar
+  REAL(DP) :: dminpar,dmaxpar, dpar1,dpar2
   
+  ! Default setting: not inside.
   boundary_isInRegion = .FALSE.
   
   ! Correct boundary component?
@@ -1017,45 +1019,55 @@ MODULE boundary
     RETURN
   END IF
   
-  ! Get the real bounds
+  ! Region does not cover the complete boundary, but a part of it.
+  ! Which part?
+  
+  ! Get the real bounds...
   dminpar = MOD(rregion%dminParam,rregion%dmaxParamBC)
   dmaxpar = MOD(rregion%dmaxParam,rregion%dmaxParamBC)
-  IF ((dminpar .EQ. dmaxpar) .AND. &
+  
+  ! And make sure, dmaxpar >= dminpar!
+  IF ((dmaxpar .LE. dminpar) .AND. &
       (rregion%dminParam .NE. rregion%dmaxParam)) THEN
-    dmaxpar = rregion%dmaxParamBC
+    dmaxpar = dmaxpar + rregion%dmaxParamBC
   END IF
-  dpar = MOD(dparam,rregion%dmaxParamBC)
   
-  ! Do we have to search for everything *except* the segment?
-  IF (dmaxpar .LT. dminpar) THEN
-    
-    ! Inside the outside?
-    IF ((dpar .GT. dmaxpar) .OR. &
-        (dpar .LT. dminpar)) RETURN
+  ! Get the parameter value on the boundary - in the set [0..TMAX)
+  ! and [TMAX..2*TMAX).
+  dpar1 = MOD(dparam,rregion%dmaxParamBC)
+  dpar2 = dpar1 + rregion%dmaxParamBC
   
+  ! Check if dpar1 or dpar2 is in that region.
+  ! For 'normal' boundary regions, dpar1 should be inside, dpar2 not.
+  ! For boundary regions crossing the maximum parameter value,
+  ! dpar2 will be inside and dpar1 not.
+  
+  IF ((dpar1 .GE. dminpar) .AND. &
+      (dpar1 .LE. dmaxpar)) THEN
+
     ! What's up with the endpoints?
-    IF ( (dpar .EQ. dminpar) .AND. & 
-        (IAND(rregion%iproperties,BDR_PROP_WITHSTART) .NE. 0)) RETURN
-    IF ( (dpar .EQ. dmaxpar) .AND. &
-        (IAND(rregion%iproperties,BDR_PROP_WITHEND) .NE. 0)) RETURN
-        
-  ELSE
-  
-    ! Too large ot too small parameter value?
-    IF ((dpar .LT. rregion%dminParam) .OR. &
-        (dpar .GT. rregion%dmaxParam)) RETURN
-  
-    ! What's up with the endpoints?
-    IF ( (dpar .EQ. rregion%dminParam) .AND. &
+    IF ( (dpar1 .EQ. dminpar) .AND. &
         (IAND(rregion%iproperties,BDR_PROP_WITHSTART) .EQ. 0)) RETURN
-    IF ( (dpar .EQ. rregion%dmaxParam) .AND. &
+    IF ( (dpar1 .EQ. dmaxpar) .AND. &
         (IAND(rregion%iproperties,BDR_PROP_WITHEND) .EQ. 0)) RETURN
         
+    ! It's inside.
+    boundary_isInRegion = .TRUE.
+    
+  ELSE IF ((dpar2 .GE. dminpar) .AND. &
+           (dpar2 .LE. dmaxpar)) THEN
+
+    ! What's up with the endpoints?
+    IF ( (dpar2 .EQ. dminpar) .AND. &
+        (IAND(rregion%iproperties,BDR_PROP_WITHSTART) .EQ. 0)) RETURN
+    IF ( (dpar2 .EQ. dmaxpar) .AND. &
+        (IAND(rregion%iproperties,BDR_PROP_WITHEND) .EQ. 0)) RETURN
+        
+    ! It's inside.
+    boundary_isInRegion = .TRUE.
+    
   END IF
-  
-  ! It's inside. Finally :-)
-  boundary_isInRegion = .TRUE.
-  
+
   END FUNCTION
  
   END MODULE 
