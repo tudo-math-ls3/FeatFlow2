@@ -211,7 +211,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE lsyssc_scalarMatVec (rMatrix, rx, ry, cx, cy)
+  SUBROUTINE lsyssc_scalarMatVec (rmatrix, rx, ry, cx, cy)
   
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
@@ -221,7 +221,7 @@ CONTAINS
 !<input>
   
   ! Scalar matrix
-  TYPE(t_matrixScalar), INTENT(IN)                  :: rMatrix
+  TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
 
   ! Vector to multiply with the matrix.
   TYPE(t_vectorScalar), INTENT(IN)                  :: rx
@@ -239,12 +239,122 @@ CONTAINS
   TYPE(t_vectorScalar), INTENT(OUT)                 :: ry
 !</inputoutput>
 
-  !...
-  PRINT *,'MV not implemented'
+!</subroutine>
+  
+  ! local variables
+  REAL(DP) :: dtmp
+  REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+  INTEGER(PREC_MATIDX) :: irow,icol
+  INTEGER(PREC_VECIDX) :: NEQ
+  
+  ! rx and ry must have at least the same data type!
+  IF (rx%cdataType .NE. ry%cdataType) THEN
+    PRINT *,'MV with different data types for rx and ry not supported!'
+    STOP
+  END IF
+
+  ! Select the right MV multiplication routine from the matrix format
+  SELECT CASE (rmatrix%imatrixFormat)
+  CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
+    ! Take care of the precision o fthe entries
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Format 7 and Format 9 multiplication., double precision.
+      !
+      ! What precision is the vector?
+      SELECT CASE (rx%cdataType)
+      
+      CASE (ST_DOUBLE)
+        ! Get the matrix and the two vectors
+        CALL storage_getbase_double (rmatrix%h_DA,p_DA)
+        CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+        CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+        CALL storage_getbase_double (rx%h_Ddata,p_Dx)
+        CALL storage_getbase_double (ry%h_Ddata,p_Dy)
+        NEQ = rx%NEQ
+        
+        ! Perform the multiplication
+        IF (cx .NE. 0.0_DP) THEN
+        
+          IF (cy .EQ. 0.0_DP) THEN
+          
+            ! cy = 0. We have simply to make matrix*vector without adding ry.
+            ! Multiply the first entry in each line of the matrix with the
+            ! corresponding entry in rx and add it to ry.
+            ! Don't multiply with cy, this comes later.
+            !
+            ! What is this complicated IF-THEN structure for?
+            ! Well, to prevent an initialisation of rx with zero in case cy=0!
+            
+            DO irow=1,NEQ
+              icol = p_Kcol(p_Kld(irow))
+              p_Dy(irow) = p_Dx(icol) * p_DA(p_Kld(irow))
+            END DO
+            
+            ! Now we have an initial ry where we can do a usual MV
+            ! with the rest of the matrix...
+            
+          ELSE 
+          
+            ! cy <> 0. We have to perform matrix*vector + vector.
+            ! What we actually calculate here is:
+            !    ry  =  cx * A * x  +  cy * y
+            !        =  cx * ( A * x  +  cy/cx * y).
+            !
+            ! Scale down y:
+          
+            dtmp = cy/cx
+            IF (dtmp .NE. 1.0_DP) THEN
+              CALL lalg_vectorScale(p_Dy,dtmp)
+            END IF
+            
+            ! Multiply the first entry in each line of the matrix with the
+            ! corresponding entry in rx and add it to the (scaled) ry.
+            
+            DO irow=1,NEQ
+              ICOL = p_Kcol(p_Kld(irow))
+              p_Dy(irow) = p_Dx(icol)*p_DA(p_Kld(irow)) + p_Dy(irow) 
+            END DO
+            
+          ENDIF
+          
+          ! Multiply the rest of rx with the matrix and add it to ry:
+          
+          DO irow=1,NEQ
+            DO icol = p_Kld(irow)+1,p_Kld(irow+1)-1
+              p_Dy(irow) = p_Dy(irow) + p_DA(icol)*p_Dx(p_Kcol(icol))
+            END DO
+          END DO
+          
+          ! Scale by cy, finish.
+          
+          IF (cx .NE. 1.0_DP) THEN
+            CALL lalg_vectorScale (p_Dy,cx)
+          END IF
+          
+        ELSE 
+          ! cx = 0. The formula is just a scaling of the vector ry!
+          CALL lalg_vectorScale(p_Dy,cy)
+        ENDIF
+        
+      CASE DEFAULT
+        PRINT *,'Only double precision vectors supported for now in MV!'
+        STOP
+      END SELECT
+    
+    CASE DEFAULT
+      PRINT *,'Only double precision matrices supported for now in MV!'
+      STOP
+    END SELECT
+    
+  CASE DEFAULT
+    PRINT *,'Unknown matrix format in MV-multiplication!'
+    STOP
+  END SELECT
    
   END SUBROUTINE
-  
-!</subroutine>
   
   !****************************************************************************
   
