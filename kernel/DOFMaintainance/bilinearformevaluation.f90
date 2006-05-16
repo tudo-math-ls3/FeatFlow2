@@ -1122,7 +1122,7 @@ CONTAINS
 
     ! If desired, clear the matrix before assembling.
     IF (bclear) THEN
-      CALL lalg_vectorClear (p_DA)
+      CALL lalg_vectorClearDble (p_DA)
     END IF
     
   END IF

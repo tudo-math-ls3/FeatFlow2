@@ -93,6 +93,9 @@ MODULE storage
     ! Dimension associated to the handle (0=not assigned, 1=1D, 2=2D array)
     INTEGER :: idimension = 0
     
+    ! The name of the array that is associated to that handle
+    CHARACTER(LEN=SYS_NAMELEN) :: sname = ''
+    
     ! Amount of memory (in bytes) associated to this block.
     ! We store that as a double to allow storing numbers > 2GB !
     REAL(DP) :: dmemBytes = 0_DP
@@ -471,6 +474,7 @@ CONTAINS
   
   p_rnode%idataType = ctype
   p_rnode%idimension = 1
+  p_rnode%sname = sname
   
   ! Allocate memory according to isize:
   
@@ -581,6 +585,7 @@ CONTAINS
   
   p_rnode%idataType = ctype
   p_rnode%idimension = 2
+  p_rnode%sname = sname
   
   ! Allocate memory according to isize:
   

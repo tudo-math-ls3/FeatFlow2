@@ -51,8 +51,11 @@ MODULE fsystem
   ! constant for breaking line in a string
   CHARACTER(len=1), PARAMETER :: NEWLINE = ACHAR(10)
 
-  ! standard length for strings in FEAST
+  ! standard length for strings in FEAT
   INTEGER, PARAMETER :: SYS_STRLEN = 256
+
+  ! standard length for name strings in FEAT
+  INTEGER, PARAMETER :: SYS_NAMELEN = 32
 
   ! maximal values for real variables
   REAL(DP)           :: SYS_MAXREAL = HUGE(1.0_DP)

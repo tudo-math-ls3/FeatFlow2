@@ -65,7 +65,7 @@ MODULE linearsolver
 
 !<constants>
 
-  !<constantblock description="Algorithm identifiers">
+!<constantblock description="Algorithm identifiers">
 
   ! Undefined algorithm
   INTEGER, PARAMETER :: LINSOL_ALG_UNDEFINED     = 0
@@ -121,9 +121,9 @@ MODULE linearsolver
   ! VANCA iteration (2D Nav.St., pure $\tilde Q_1/P_0$ discretisation)
   INTEGER, PARAMETER :: LINSOL_ALG_VANCAQ1TP02DNS = 55
   
-  !</constantblock>
+!</constantblock>
 
-  !<constantblock description="Identifiers for stopping criteria">
+!<constantblock description="Identifiers for stopping criteria">
 
   ! Use standard stopping criterion.
   ! If depsRel>0: use relative stopping criterion.
@@ -131,11 +131,11 @@ MODULE linearsolver
   ! If both are > 0: use both, i.e. stop if both criteria hold
   INTEGER, PARAMETER :: LINSOL_STOP_STANDARD     = 0
   
-  !</constantblock>
+!</constantblock>
 
 ! *****************************************************************************
 
-  !<constantblock description="Bitfield identifiers for the ability of a linear solver">
+!<constantblock description="Bitfield identifiers for the ability of a linear solver">
 
   ! Solver can handle scalar systems
   INTEGER, PARAMETER :: LINSOL_ABIL_SCALAR       = 2**0
@@ -162,7 +162,7 @@ MODULE linearsolver
   ! Solver supports filtering
   INTEGER, PARAMETER :: LINSOL_ABIL_USEFILTER    = 2**6
   
-  !</constantblock>
+!</constantblock>
 
 !</constants>
 
@@ -172,7 +172,7 @@ MODULE linearsolver
 
 !<types>
   
-  !<typeblock>
+!<typeblock>
   
   ! Object that gives the connection to the linear system and the 
   ! discretisation. Contains stuff like pointers to system matrices,
@@ -186,11 +186,11 @@ MODULE linearsolver
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 ! *****************************************************************************
 
-  !<typeblock>
+!<typeblock>
   
   ! This is the central structure which repesents a solver.
   ! It collects all information for the solution process.
@@ -225,7 +225,8 @@ MODULE linearsolver
     
     ! OUTPUT: Result
     ! The result of the solution process.
-    ! =0: success. =1: error in the parameters, =2: iteration broke down, diverging
+    ! =0: success. =1: iteration broke down, diverging, =2: error in the parameters,
+    ! <0: algorithm-specific error
     INTEGER                    :: iresult
     
     ! OUTPUT: Number of performed iterations, if the solver
@@ -334,6 +335,12 @@ MODULE linearsolver
     ! =0: no output, =1: basic output, =2, extended output
     INTEGER                    :: ioutputLevel = 0
 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK:
+    ! Number of iterations to perform before printing out the
+    ! norm of the residual to screen.
+    ! =1: Print residual in every iteration
+    INTEGER                    :: niteResOutput = 1
+
     ! INPUT PARAMETER: Solver subgroup
     ! By default, every solver in a soler tree belongs to solver
     ! subgroup 0. This means, the solver is initialised  the default
@@ -396,11 +403,11 @@ MODULE linearsolver
 
   END TYPE
   
-  !</typeblock>
+!</typeblock>
   
 ! *****************************************************************************
 
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises the subnode for the scalar ILU(0) solver in
   ! FEAT style.
@@ -413,11 +420,11 @@ MODULE linearsolver
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
   
 ! *****************************************************************************
 
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises the subnode for the BiCGStab solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
@@ -429,6 +436,9 @@ MODULE linearsolver
     ! t_LinearSystemInfo structure that holds information
     ! about the linear system (system matrices,...)
     TYPE(t_LinearSystemInfo)          :: rlinearSystemInfo
+    
+    ! Temporary vectors to use during the solution process
+    TYPE(t_vectorBlock), DIMENSION(5) :: RtempVectors
 
     ! A pointer to the solver node for the preconditioner or NULL(),
     ! if no preconditioner is used.
@@ -439,11 +449,11 @@ MODULE linearsolver
   
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 ! *****************************************************************************
 
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises the subnode for the UMFPACK4 solver.
   
@@ -468,11 +478,11 @@ MODULE linearsolver
 
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 ! *****************************************************************************
 
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises the subnode for the VANCA solver.
   ! Specialised VANCA, $\tilde Q_1/P_0$, 2D Navier Stokes.
@@ -485,11 +495,11 @@ MODULE linearsolver
 
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 ! *****************************************************************************
 
-  !<typeblock>
+!<typeblock>
 
   ! This structure collects timing information for the multigrid solver.
 
@@ -515,11 +525,11 @@ MODULE linearsolver
   
   END TYPE
 
-  !</typeblock>
+!</typeblock>
 
 ! *****************************************************************************
 
-  !<typeblock>
+!<typeblock>
   
   ! Level data for multigrid. This structure forms an entry in a linked list
   ! of levels which multigrid uses for solving the given problem.
@@ -575,11 +585,11 @@ MODULE linearsolver
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
   ! ***************************************************************************
 
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises the subnode for the Multigrid solver.
   ! There are pointers to the head and the tail of a linked list of
@@ -615,7 +625,7 @@ MODULE linearsolver
   
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 !</types>
 
@@ -639,29 +649,29 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_setMatricesIndirect (rsolverNode,RlinsysInfo)
   
-  !<description>
+!<description>
   
   ! Initialises the system matrices in the solver node rsolverNode and
   ! in all nodes attached to it (preconditioners,...). For this purpose,
   ! the corresponding initialisation routine of each solver is called.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Array of pointers to system matrices on all levels of the discretisation.
   ! This is passed through all initialisation routines, but actually used 
   ! only by the multigrid initialisation routine.
   TYPE(t_LinearSystemInfo), DIMENSION(:), INTENT(IN) :: RlinsysInfo
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -707,7 +717,7 @@ CONTAINS
   
   SUBROUTINE linsol_setMatricesDirect (rsolverNode,Rmatrices)
   
-  !<description>
+!<description>
   
   ! Initialises the system matrices in the solver node rsolverNode and
   ! in all nodes attached to it (preconditioners,...). For this purpose,
@@ -720,23 +730,23 @@ CONTAINS
   !   matrices anywhere in memory, without the restriction of being
   !   restricted to an array of t_matrixBlock structures!
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Array of pointers to system matrices on all levels of the discretisation.
   ! This is passed through all initialisation routines, but actually used 
   ! only by the multigrid initialisation routine.
   TYPE(t_matrixBlock), DIMENSION(:), INTENT(IN),TARGET :: Rmatrices
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
 
 !</subroutine>
 
@@ -765,29 +775,29 @@ CONTAINS
   
   SUBROUTINE linsol_setOnelevelMatrixDirect (rsolverNode,rmatrix)
   
-  !<description>
+!<description>
   
   ! This is a special-case subroutine for the case that there is only
   ! one level to solve (e.g. when solving directly with UMFPACK).
   ! rmatrix is exactly one matrix of the level where to solve.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Array of pointers to system matrices on all levels of the discretisation.
   ! This is passed through all initialisation routines, but actually used 
   ! only by the multigrid initialisation routine.
   TYPE(t_matrixBlock), INTENT(IN),TARGET :: rmatrix
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
 
 !</subroutine>
 
@@ -814,7 +824,7 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_initStructure (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Initialises the problem structure in the solver node rsolverNode by calling
   ! the initialisation routine of the appropriate solver. The solver
@@ -825,16 +835,16 @@ CONTAINS
   ! perform a symbolical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g..
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -844,7 +854,7 @@ CONTAINS
   ! isolverSubgroup are initialised.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
   
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -878,7 +888,7 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_initData (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Initialises the problem data in the solver node rsolverNode by calling
   ! the initialisation routine of the appropriate solver. The solver
@@ -889,11 +899,11 @@ CONTAINS
   ! perform a numerical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
 
-  !<input>
+!<input>
     
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -903,14 +913,14 @@ CONTAINS
   ! isolverSubgroup are initialised.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
   
-  !</input>
+!</input>
 
   !<inputpoutput>
     
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
 
 !</subroutine>
 
@@ -944,20 +954,20 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_updateStructure (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Reinitialises the problem structure in the solver node rsolverNode
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node which should be reinitialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
     
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -967,7 +977,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
   
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -992,20 +1002,20 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_updateData (rsolverNode,isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Reinitialises the problem data in the solver node rsolverNode.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node containing the solver confuguration
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
     
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1015,7 +1025,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
   
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -1040,22 +1050,22 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_doneStructure (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Releases the problem structure in the solver node rsolverNode.
   ! This is done by calling the appropriate routine of the
   ! actual solver.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node which should be reinitialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1065,7 +1075,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -1099,20 +1109,20 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_doneData (rsolverNode,isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Releases the problem data in the solver node rsolverNode.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node containing the solver confuguration
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1122,7 +1132,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -1155,15 +1165,15 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_releaseSolver (p_rsolverNode)
   
-  !<description>
+!<description>
   
   ! This routine releases the solver node rsolverNode and all attached
   ! sub-solver nodes (for preconditioning, smoothing etc. if specified)
   ! from the heap.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node which is to be released. If the node contains attached
   ! subsolvers (preconditioners, smoothers,...) they are also released.
@@ -1171,7 +1181,7 @@ CONTAINS
   
   TYPE(t_linsolNode), POINTER     :: p_rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1208,7 +1218,7 @@ CONTAINS
   
   LOGICAL FUNCTION linsol_testConvergence (rsolverNode, rx) RESULT(loutput)
   
-  !<description>
+!<description>
   
   ! Tests a defect vector rx whether it is in a defined tolerance configured 
   ! in the solver node, so the iteration of an iterative solver can be
@@ -1217,14 +1227,14 @@ CONTAINS
   ! absolute convergence criterion are fulfilled (or only one of them,
   ! respectively, if the other is switched off).
   
-  !</description>
+!</description>
   
   !<result>
   ! Boolean value. =TRUE if the convergence criterion is reached; 
   ! =FALSE otherwise.
   !</result>
   
-  !<input>
+!<input>
   
   ! The solver node that contains the convergence criterion
   TYPE(t_linsolNode), INTENT(IN) :: rsolverNode
@@ -1232,7 +1242,7 @@ CONTAINS
   ! The defect vector which norm should be tested.
   TYPE(t_vectorBlock), INTENT(IN) :: rx
   
-  !</input>
+!</input>
   
 !</function>
 
@@ -1268,7 +1278,7 @@ CONTAINS
   
   LOGICAL FUNCTION linsol_testDivergence (rsolverNode, rx) RESULT(loutput)
   
-  !<description>
+!<description>
   
   ! Tests a defect vector rx whether it is out of a defined tolerance configured 
   ! in the solver node, so the iteration of an iterative solver can be
@@ -1276,14 +1286,14 @@ CONTAINS
   ! The iteration is treated as 'diverged' if one criterion, the relative or the
   ! absolute divergence criterion is fulfilled.
   
-  !</description>
+!</description>
   
   !<result>
   ! Boolean value. =TRUE if the convergence criterion is reached; 
   ! =FALSE otherwise.
   !</result>
   
-  !<input>
+!<input>
   
   ! The solver node that contains the convergence criterion
   TYPE(t_linsolNode), INTENT(IN) :: rsolverNode
@@ -1291,7 +1301,7 @@ CONTAINS
   ! The defect vector which norm should be tested.
   TYPE(t_vectorBlock), INTENT(IN) :: rx
   
-  !</input>
+!</input>
   
 !</function>
 
@@ -1331,7 +1341,7 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_performSolve (rsolverNode,rx,rb,Dtemp)
   
-  !<description>
+!<description>
   
   ! This routine starts the solution process to solve a linear system of the
   ! form $Ax=b$. The solver configuration must be given by rsolverNode.
@@ -1344,16 +1354,16 @@ CONTAINS
   ! for intermediate computation. Whether is's used or not dependens
   ! on the actual solver.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The RHS vector of the system
   TYPE(t_vectorBlock), INTENT(IN), TARGET            :: rb
 
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
 
   ! The solver node containing the solver configuration
   TYPE(t_linsolNode), INTENT(INOUT)                :: rsolverNode
@@ -1364,7 +1374,7 @@ CONTAINS
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_vectorBlock), INTENT(INOUT)               :: Dtemp
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1395,7 +1405,7 @@ CONTAINS
   
   SUBROUTINE linsol_performSolveAdaptively (rsolverNode,rMatrix,rx,rb,Dtemp)
   
-  !<description>
+!<description>
   
   ! This routine starts the solution process to solve a linear system of the
   ! form $Ax=b$. The solver configuration must be given by rsolverNode.
@@ -1413,9 +1423,9 @@ CONTAINS
   ! for intermediate computation. Whether is's used or not dependens
   ! on the actual solver.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The RHS vector of the system
   TYPE(t_vectorBlock), INTENT(IN), TARGET            :: rb
@@ -1423,9 +1433,9 @@ CONTAINS
   ! The system matrix
   TYPE(t_matrixBlock), INTENT(IN)                    :: rMatrix
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver node containing the solver configuration
   TYPE(t_linsolNode), INTENT(INOUT)                  :: rsolverNode
@@ -1436,7 +1446,7 @@ CONTAINS
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_vectorBlock), INTENT(INOUT)                 :: Dtemp
 
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1489,28 +1499,28 @@ CONTAINS
   
   SUBROUTINE linsol_convertToSmoother (rsolverNode,nsmoothingSteps)
   
-  !<description>
+!<description>
   
   ! Converts a t_linsolNode to a smoother structure. A smoother is a solver
   ! that performs a fixed number of iterations without respecting any
   ! residuum. nsmoothingSteps is the number of steps the smoother should
   ! perform.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Number of steps the smoother should perform
   INTEGER, INTENT(IN)          :: nsmoothingSteps
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! Solver node which should be configured as smoother.
   TYPE(t_linsolNode), INTENT(INOUT) :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1528,19 +1538,19 @@ CONTAINS
   
   SUBROUTINE linsol_initSolverGeneral (p_rsolverNode)
   
-  !<description>
+!<description>
   
   ! Creates a new solver node p_rsolverNode on the heap with default
   ! settings and returns a pointer to it.
   
-  !</description>
+!</description>
   
-  !<output>
+!<output>
   
   ! A pointer to a new solver node on the heap.
   TYPE(t_linsolNode), POINTER         :: p_rsolverNode
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -1558,7 +1568,7 @@ CONTAINS
   
   SUBROUTINE linsol_initVANCAQ1TP0NS2D (p_rsolverNode)
   
-  !<description>
+!<description>
   
   ! Creates a t_linsolNode solver structure for the VANCA solver. The node
   ! can be used to directly solve a problem or to be attached as solver
@@ -1568,15 +1578,15 @@ CONTAINS
   ! This VANCA solver has no done-routine as there is no dynamic information
   ! allocated.
   
-  !</description>
+!</description>
   
-  !<output>
+!<output>
   
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   TYPE(t_linsolNode), POINTER         :: p_rsolverNode
    
-  !</output>
+!</output>
   
 !</subroutine>
   
@@ -1603,21 +1613,21 @@ CONTAINS
   
   SUBROUTINE linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,Dtemp)
   
-  !<description>
+!<description>
   
   ! Solves the linear system $Ax=b$ with VANCA. The matrix $A$ must be
   ! attached to the solver previously by linsol_setMatrices.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Right hand side of the system
   TYPE(t_vectorBlock), INTENT(IN)           :: rb
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
@@ -1628,7 +1638,7 @@ CONTAINS
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_vectorBlock), INTENT(INOUT)        :: Dtemp
 
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1645,22 +1655,22 @@ CONTAINS
   
   SUBROUTINE linsol_initUMFPACK4 (rsolverNode)
   
-  !<description>
+!<description>
   
   ! Creates a t_linsolNode solver structure for the UMFPACK4 solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
   
-  !</description>
+!</description>
   
-  !<output>
+!<output>
   
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   TYPE(t_linsolNode), POINTER         :: rsolverNode
    
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -1687,20 +1697,20 @@ CONTAINS
   
   SUBROUTINE linsol_initStructureUMFPACK4 (rsolverNode,isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Performs a symbolic factorisation on the assigned matrix.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1710,7 +1720,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -1747,20 +1757,20 @@ CONTAINS
   
   SUBROUTINE linsol_initDataUMFPACK4 (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Performs a numeric factorisation on the assigned matrix.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1770,7 +1780,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -1807,20 +1817,20 @@ CONTAINS
   
   SUBROUTINE linsol_doneDataUMFPACK4 (rsolverNode,isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Releases the memory of teh numeric factorisation of the given matrix.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1830,7 +1840,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -1859,20 +1869,20 @@ CONTAINS
   
   SUBROUTINE linsol_doneStructureUMFPACK4 (rsolverNode, isolverSUbgroup)
   
-  !<description>
+!<description>
   
   ! Releases the memory of teh numeric factorisation of the given matrix.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1882,7 +1892,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -1911,21 +1921,21 @@ CONTAINS
   
   SUBROUTINE linsol_doneUMFPACK4 (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! This routine releases all temporary memory for the UMFPACK4 solver from
   ! the heap.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -1935,7 +1945,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
   
@@ -1958,23 +1968,23 @@ CONTAINS
   
   SUBROUTINE linsol_solveUMFPACK4 (rsolverNode,rx,rb)
   
-  !<description>
+!<description>
   
   ! Solves the linear system $Ax=b$ with UMFPACK4. The matrix $A$ must be
   ! attached to the solver previously by linsol_setMatrices.
   ! Symbolical and numerical factorisation must already be performed
   ! on the matrix.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Right hand side of the system
   TYPE(t_vectorBlock), INTENT(IN)           :: rb
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
@@ -1982,7 +1992,7 @@ CONTAINS
   ! Receives the solution vector
   TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1999,16 +2009,16 @@ CONTAINS
   
   SUBROUTINE linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_rfilter)
   
-  !<description>
+!<description>
   
   ! Creates a t_linsolNode solver structure for the BiCGStab solver. The node
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Optional: A pointer to the solver structure of a solver that should be 
   ! used for preconditioning. If not given or set to NULL(), no preconditioning 
@@ -2021,15 +2031,15 @@ CONTAINS
   ! The filter chain (i.e. the array) must exist until the system is solved!
   TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_rfilter
   
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   TYPE(t_linsolNode), POINTER         :: p_rsolverNode
    
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -2071,15 +2081,15 @@ CONTAINS
   RECURSIVE SUBROUTINE linsol_setMatrixBiCGStab (rsolverNode,rsystemMatrix, &
                                                   Rmatrices)
   
-  !<description>
+!<description>
   
   ! This routine is called if the pointer to the system matrix changes.
   ! The routine calls linsol_setMatrices for the preconditioner of BiCGStab
   ! to inform also that one about the change of the matrix pointer.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The system matrix that is to be assigned to BiCGStab
   TYPE(t_LinearSystemInfo), INTENT(IN), TARGET   :: rsystemMatrix
@@ -2088,14 +2098,14 @@ CONTAINS
   ! routine of the preconditioner.
   TYPE(t_LinearSystemInfo), INTENT(IN), DIMENSION(:)   :: Rmatrices
 
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -2115,23 +2125,23 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_initStructureBiCGStab (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2141,12 +2151,20 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: isubgroup
+  INTEGER :: isubgroup,i
+  TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
+  
+  ! BiCGStab needs 5 temporary vectors. Allocate that here!
+  p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+  DO i=1,5
+    CALL lsysbl_createVecBlockIndMat (p_rsubnode%RtempVectors(i), &
+         p_rsubnode%rlinearSystemInfo%p_rsystemMatrix,.FALSE.)
+  END DO
   
   ! by default, initialise solver subroup 0
   isubgroup = 0
@@ -2172,23 +2190,23 @@ CONTAINS
   
   SUBROUTINE linsol_initDataBiCGStab (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2198,7 +2216,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -2229,23 +2247,23 @@ CONTAINS
   
   SUBROUTINE linsol_doneDataBiCGStab (rsolverNode, isolverSUbgroup)
   
-  !<description>
+!<description>
   
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2255,7 +2273,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -2286,23 +2304,23 @@ CONTAINS
   
   SUBROUTINE linsol_doneStructureBiCGStab (rsolverNode, isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2312,12 +2330,13 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: isubgroup
+  INTEGER :: isubgroup,i
+  TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
   
   ! by default, initialise solver subroup 0
   isubgroup = 0
@@ -2335,6 +2354,12 @@ CONTAINS
                                isubgroup)
   END IF
   
+  ! Release temporary data
+  p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+  DO i=5,1,-1
+    CALL lsysbl_releaseVectorBlock (p_rsubnode%RtempVectors(i))
+  END DO
+  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -2343,7 +2368,7 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_doneBiCGStab (rsolverNode)
   
-  !<description>
+!<description>
   
   ! This routine releases all temporary memory for the BiCGStab solver from
   ! the heap. In particular, if a preconditioner is attached to the solver
@@ -2352,14 +2377,14 @@ CONTAINS
   ! This DONE routine is declared as RECURSIVE to prevent a clean
   ! interaction with linsol_releaseSolver.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! A pointer to a t_linsolNode structure of the BiCGStab solver.
   TYPE(t_linsolNode), POINTER         :: rsolverNode
    
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -2376,21 +2401,21 @@ CONTAINS
   
   SUBROUTINE linsol_solveBiCGStab (rsolverNode,rx,rb,Dtemp)
   
-  !<description>
+!<description>
   
   ! Solves the linear system $Ax=b$ with BiCGStab. The matrix $A$ must be
   ! attached to the solver previously by linsol_setMatrices.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Right hand side of the system
   TYPE(t_vectorBlock), INTENT(IN)           :: rb
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
@@ -2402,12 +2427,341 @@ CONTAINS
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_vectorBlock), INTENT(INOUT)        :: Dtemp
 
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
-  ! solve the system
-  PRINT *,'to be implemented...'
+!  ! local variables
+!  REAL(DP) :: rho0,dalpha,omega0
+!
+!  ! The queue saves the current residual and the two previous residuals.
+!  REAL(DP), DIMENSION(32) :: Dresqueue
+!  
+!  ! The system matrix
+!  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+!  
+!  ! Minimum number of iterations, print-sequence for residuals
+!  INTEGER :: nminIterations, niteResOutput
+!  
+!  ! Whether to filter/prcondition
+!  LOGICAL bprec,bfilter
+!  
+!  ! Our structure
+!  TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
+!  
+!  ! Pointers to temporary vectors - named for easier access
+!  TYPE(t_vectorBlock), POINTER :: p_DR,p_DR0,p_DP,p_DPA,p_DSA
+!  
+!  ! Solve the system!
+!  
+!    ! Status reset
+!    rsolverNode%iresult = 0
+!    
+!    ! Getch some information
+!    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+!    p_rmatrix => p_rsubnode%rlinearSystemInfo%p_rsystemMatrix
+!
+!    ! Check the parameters
+!    IF ((rx%NEQ .EQ. 0) .OR. (rb%NEQ .EQ. 0) .OR. (rtemp%NEQ .EQ. 0) .OR. &
+!        (rb%NEQ .NE. rx%NEQ) .OR. (rtemp%NEQ .NE. rx%NEQ) .OR.
+!        (p_rmatrix%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .NE. rx%NEQ) ) THEN
+!    
+!      ! Parameters wrong
+!      rsolverNode%iresult = 2
+!      RETURN
+!    END IF
+!
+!    ! Length of the queue of last residuals for the computation of
+!    ! the asymptotic convergence rate
+!
+!    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+!
+!    ! Minimum number of iterations
+! 
+!    nminIterations = MAX(IPARAM(rsolverNode%nminIterations),0)
+!      
+!    ! Use preconditioning? Filtering?
+!
+!    bprec = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%rlinearSystemInfo%p_rpreconditioner)
+!    bfilter = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%rlinearSystemInfo%p_rfilterChain)
+!      
+!    ! Iteration when the residuum is printed:
+!
+!    niteResOutput = MAX(1,rsolverNode%niteResOutput)
+!
+!    ! Set pointers to the temporary vectors
+!    p_DR   => p_rsubnode%RtempVectors(1)
+!    p_DR0  => p_rsubnode%RtempVectors(2)
+!    p_DP   => p_rsubnode%RtempVectors(3)
+!    p_DPA  => p_rsubnode%RtempVectors(4)
+!    p_DSA  => p_rsubnode%RtempVectors(5)
+!
+!    ! Initialize used vectors with zero
+!      
+!    CALL lsysbl_blockClear(p_DP)
+!    CALL lsysbl_blockClear(p_DPA)
+!
+!    ! Initialization
+!
+!    rho0   = 1.0_DP
+!    dalpha = 1.0_DP
+!    omega0 = 1.0_DP
+!
+!    ! Matrix-vector multiplication with preconditioning
+!
+!    CALL lsysbl_blockCopy(p_DP,p_DR)
+!    CALL lsysbl_blockMatVec (p_rmatrix, p_DX,p_DR, -1.0_DP, 1.0_DP)
+!    IF (bfilter) CALL DFILT(DR,NEQ,0,IPARAM,DPARAM,IDATA,DDATA)
+!    IF (BPREC) CALL DCG0C(DR,NEQ,IPARAM,DPARAM,IDATA,DDATA)
+!    
+!    CALL LL21(DR,NEQ,RES)
+!
+!    ! Scaling for the vektor (1111...) to have norm = 1
+!      
+!    IF (IPARAM(OINRM).EQ.0) THEN
+!      dres = dres / DSQRT (DBLE(NEQ))
+!      IF (.NOT.((dres .GE. 1D-99) .AND. &
+!                (dres .LE. 1D99))) dres = 0.0_DP
+!    END IF
+!
+!    rsolverNode%dinitialResiduum = dres
+!
+!    ! Initialize starting residuum
+!      
+!    defini = res
+!
+!    ! initialize the queue of the last residuals with RES
+!
+!    Dresqueue = res
+!
+!    ! Check if out initial defect is zero. This may happen if the filtering
+!    ! routine filters "everything out"!
+!    ! In that case we can directly stop our computation.
+!
+!    IF ( defini .LT. rsolverNode%drhsZero ) THEN
+!     
+!C final defect is 0, as initialised in the output variable above
+!
+!      CALL lsysbl_blockClear(rx)
+!      ite = 0
+!      rsolverNode%dfinalResiduum = dres
+!      GOTO 200
+!          
+!    ELSE
+!
+!      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+!        PRINT *,&
+!          'II01X: Iteration ',0,',  !!RES!! = ',DPARAM(ODEFINI)
+!      END IF
+!
+!      CALL lsysbl_blockCopy(p_DR,p_DR0)
+!
+!      ! Perform at most nmaxIterations loops to get a new vector
+!
+!      DO ite = 1,rsolverNode%nmaxIterations
+!      
+!        rsolverNode%icurrentIteration = ite
+!
+!        drho1 = lsysbl_scalarProduct (p_DR0,p_DR) 
+!
+!        IF (drho0*domega0 .EQ. 0.0_DP) THEN
+!          ! Should not happen
+!          IF (IPARAM(OMSGTRM).GE.2) THEN
+!            PRINT *,&
+!     *'II01X: Iteration prematurely stopped! Correction vector is zero!'
+!          END IF
+!
+!          ! Some tuning for the output, then cancel.
+!
+!          rsolverNode%iresult = -1
+!          rsolverNode&iiterations = ITE-1
+!          GOTO 220
+!          
+!        END IF
+!
+!        DBETA=(RHO1*DALPHA)/(RHO0*OMEGA0)
+!        RHO0 =RHO1
+!
+!        CALL LLC1(DR ,DP,NEQ,1D0,DBETA)
+!        CALL LLC1(DPA,DP,NEQ,-DBETA*OMEGA0,1D0)
+!
+!        CALL YMVMUL(DP,DPA,NEQ,1D0,0D0,IPARAM,DPARAM,IDATA,DDATA)
+!        IF (bfilter) CALL DFILT(DPA,NEQ,0,IPARAM,DPARAM,IDATA,DDATA)
+!        IF (BPREC) CALL DCG0C(DPA,NEQ,IPARAM,DPARAM,IDATA,DDATA)
+!
+!        CALL LSP1(DR0,DPA,NEQ,DALPHA)
+!        
+!        IF (DALPHA.EQ.0D0) THEN
+!C We are below machine exactness - we can't do anything more...
+!C May happen with very small problems with very few unknowns!
+!          IF (IPARAM(OMSGTRM).GE.2) THEN
+!            WRITE (MTERM,'(A)') 'II01X: Convergence failed!'
+!            IPARAM(OSTATUS) = 2
+!            GOTO 200
+!          END IF
+!        END IF
+!        
+!        DALPHA=RHO1/DALPHA
+!
+!        CALL LLC1(DPA,DR,NEQ,-DALPHA,1D0)
+!
+!        CALL YMVMUL(DR,DSA,NEQ,1D0,0D0,IPARAM,DPARAM,IDATA,DDATA)
+!        IF (bfilter) CALL DFILT(DSA,NEQ,0,IPARAM,DPARAM,IDATA,DDATA)
+!        IF (BPREC) CALL DCG0C(DSA,NEQ,IPARAM,DPARAM,IDATA,DDATA)
+!
+!        CALL LSP1(DSA,DR ,NEQ,OMEGA1)
+!        CALL LSP1(DSA,DSA,NEQ,OMEGA2)
+!        IF (OMEGA1.EQ.0D0) THEN
+!          OMEGA0 = 0D0
+!        ELSE
+!          IF (OMEGA2.EQ.0D0) THEN
+!            IF (IPARAM(OMSGTRM).GE.2) THEN
+!              WRITE (MTERM,'(A)') 'II01X: Convergence failed!'
+!              IPARAM(OSTATUS) = 2
+!              GOTO 200
+!            END IF
+!          END IF
+!          OMEGA0=OMEGA1/OMEGA2
+!        END IF
+!
+!        CALL LLC1(DP ,DX ,NEQ,DALPHA,1D0)
+!        CALL LLC1(DR ,DX ,NEQ,OMEGA0,1D0)
+!
+!        CALL LLC1(DSA,DR,NEQ,-OMEGA0,1D0)
+!
+!        CALL LL21(DR,NEQ,FR)
+!
+!C Scaling for the vektor (1111...) to have norm = 1
+!        
+!        IF (IPARAM(OINRM).EQ.0) THEN
+!          FR = FR / SQRT (DBLE(NEQ))
+!          IF (.NOT.((FR.GE.1D-99).AND.(FR.LE.1D99))) FR = 0D0
+!        END IF
+!     
+!C shift the queue with the last residuals and add the new
+!C residual to it
+!
+!        DO I=1,IASRLN-1
+!          RESQUE(I)=RESQUE(I+1)
+!        END DO  
+!        RESQUE(IASRLN) = FR
+!
+!        DPARAM(ODEFFIN) = FR
+!     
+!C At least perform nminIterations iterations
+!
+!        IF (ITE.GE.nminIterations) THEN
+!        
+!C         Both stopping criteria given? Stop if both are fulfilled.
+!
+!          IF ((DPARAM(OEPSREL).NE.0D0) .AND.
+!     *        (DPARAM(OEPSABS).NE.0D0)) THEN
+!
+!            IF (( FR.LE.RES*DPARAM(OEPSREL) ) .AND.
+!     *          ( FR.LE.DPARAM(OEPSABS) )) GOTO 200
+!
+!          ELSE IF (DPARAM(OEPSREL).NE.0D0) THEN
+!                    
+!C           Use only relative stopping criterion
+!                    
+!            IF ( FR.LE.RES*DPARAM(OEPSREL) ) GOTO 200
+!            
+!          ELSE
+!          
+!C           Use only absolute stopping criterion
+!
+!            IF ( FR.LE.DPARAM(OEPSABS) ) GOTO 200        
+!            
+!          END IF
+!          
+!        END IF
+!
+!C print out the current residuum
+!
+!        IF ((IPARAM(OMSGTRM).GE.2).AND.(MOD(ITE,MTDV).EQ.0)) THEN
+!          WRITE (MTERM,'(A,I7,A,D25.16)') 
+!     *        'II01X: Iteration ',ITE,',  !!RES!! = ',DPARAM(ODEFFIN)
+!        END IF
+!
+!      END DO
+!
+!C Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+!C completed
+!
+!      ITE = IPARAM(ONITMAX)
+!
+!200   CONTINUE
+!
+!C Finish - either with an error or if converged.
+!C Print the last residuum.
+!
+!      IF ((IPARAM(OMSGTRM).GE.2).AND.
+!     *    (ITE.GE.1).AND.(ITE.LT.IPARAM(ONITMAX))) THEN
+!        WRITE (MTERM,'(A,I7,A,D25.16)') 
+!     *        'II01X: Iteration ',ITE,',  !!RES!! = ',DPARAM(ODEFFIN)
+!      END IF
+!
+!      IPARAM(OITE) = ITE
+!      
+!220   CONTINUE
+!
+!C Don't calculate anything if the final residuum is out of bounds -
+!C would result in NaN's,...
+!      
+!      IF (DPARAM(ODEFFIN).LT.1D99) THEN
+!      
+!C Calculate asymptotic convergence rate
+!      
+!        IF (RESQUE(1).GE.1D-70) THEN
+!          I = MAX(1,MIN(IPARAM(OITE),IASRLN-1))
+!          DPARAM(ORHOASM) = (DPARAM(ODEFFIN)/RESQUE(1))**(1D0/DBLE(I))
+!        END IF
+!
+!C If the initial defect was zero, the solver immediately
+!C exits - and so the final residuum is zero and we performed
+!C no steps; so the resulting multigrid convergence rate stays zero.
+!C In the other case the multigrid convergence rate computes as
+!C (final defect/initial defect) ** 1/nit :
+!
+!        IF (DPARAM(ODEFINI).GT.DPARAM(OVECZER)) THEN
+!          DPARAM(ORHO) = (DPARAM(ODEFFIN) / DPARAM(ODEFINI)) ** 
+!     *                     (1D0/DBLE(IPARAM(OITE)))
+!        END IF
+!        
+!        IF (IPARAM(OMSGTRM).GE.2) THEN
+!          WRITE (MTERM,'(A)') ''
+!          WRITE (MTERM,'(A)') 'BiCGStab statistics:'
+!          WRITE (MTERM,'(A)') ''
+!          WRITE (MTERM,'(A,I5)')     'Iterations              : ',
+!     *            IPARAM(OITE)
+!          WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
+!     *            DPARAM(ODEFINI)
+!          WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
+!     *            DPARAM(ODEFFIN)
+!          IF (DPARAM(ODEFINI).GT.DPARAM(OVECZER)) THEN     
+!            WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+!     *              DPARAM(ODEFFIN) / DPARAM(ODEFINI)
+!          ELSE
+!            WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+!     *              0D0
+!          END IF
+!          WRITE (MTERM,'(A)') ''
+!          WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
+!     *            DPARAM(ORHO)
+!
+!        END IF
+!
+!        IF (IPARAM(OMSGTRM).EQ.1) THEN
+!          WRITE (MTERM,'(A,I5,A,D24.12)') 
+!     *          'BiCGStab: Iterations/Rate of convergence: ',
+!     *          IPARAM(OITE),' /',DPARAM(ORHO)
+!        END IF
+!        
+!      ELSE
+!C DEF=Infinity; RHO=Infinity, set to 1
+!        DPARAM(ORHO) = 1D0
+!        DPARAM(ORHOASM) = 1D0
+!      END IF  
   
   END SUBROUTINE
   
@@ -2420,7 +2774,7 @@ CONTAINS
   SUBROUTINE linsol_addMultigridLevel (p_rlevelInfo,rsolverNode, &
                     p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver,iappend)
                     
-  !<description>
+!<description>
   
   ! This routine adds a new level to the linked list of levels in the multigrid
   ! solver. The given coarse-grid solver and smoother-structures are attached
@@ -2428,9 +2782,9 @@ CONTAINS
   ! in p_rlevelInfo to allow the caller to modify the standard settings of
   ! that level if necessary.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Optional: A pointer to the solver structure of a solver that should be 
   ! used for presmoothing. This structure is used as a template to create an
@@ -2458,18 +2812,18 @@ CONTAINS
   ! that the coarse grid solver on the previous lowest level is removed!
   INTEGER, INTENT(IN), OPTIONAL                  :: iappend
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The solver structure of the multigrid solver, where the level
   ! should be added to. Must already be initialised for the multigrid
   ! solver.
   TYPE(t_linsolNode), POINTER, OPTIONAL :: rsolverNode
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<output>
+!<output>
   
 !</subroutine>
 
@@ -2480,7 +2834,7 @@ CONTAINS
   ! multigrid solver.
   TYPE(t_linsolMGLevelInfo), POINTER     :: p_rlevelInfo
   
-  !</output>
+!</output>
   
   ! Make sure the solver node is configured for multigrid
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
@@ -2549,7 +2903,7 @@ CONTAINS
   
   SUBROUTINE linsol_initMultigrid (p_rsolverNode,p_rfilter)
   
-  !<description>
+!<description>
   
   ! Creates a t_linsolNode solver structure for the Multigrid solver. The node
   ! can be used to directly solve a problem or to be attached as solver
@@ -2559,9 +2913,9 @@ CONTAINS
   ! information about all levels (matrices,...) to the solver. 
   ! This can be done by linsol_addMultigridLevel.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Optional: A pointer to a filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
@@ -2569,15 +2923,15 @@ CONTAINS
   ! The filter chain (i.e. the array) must exist until the system is solved!
   TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_rfilter
   
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
   ! value of the pointer is destroyed.
   TYPE(t_linsolNode), POINTER             :: p_rsolverNode
    
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -2612,27 +2966,27 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_setMatrixMultigrid (rsolverNode,Rmatrices)
   
-  !<description>
+!<description>
   
   ! Assigns the system matrix rsystemMatrix to the Multigrid solver on 
   ! all levels.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! An array of system matrices on all levels.
   ! Each level in multigrid is initialised separately.
   TYPE(t_LinearSystemInfo), INTENT(IN), DIMENSION(:)   :: Rmatrices
 
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -2688,23 +3042,23 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_initStructureMultigrid (rsolverNode,isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2714,7 +3068,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -2766,23 +3120,23 @@ CONTAINS
   
   SUBROUTINE linsol_initDataMultigrid (rsolverNode,isolverSUbgroup)
   
-  !<description>
+!<description>
   
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2792,7 +3146,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -2844,23 +3198,23 @@ CONTAINS
   
   SUBROUTINE linsol_doneDataMultigrid (rsolverNode,isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Calls the doneData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneData.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2870,7 +3224,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -2922,23 +3276,23 @@ CONTAINS
   
   SUBROUTINE linsol_doneStructureMultigrid (rsolverNode,isolverSubgroup)
   
-  !<description>
+!<description>
   
   ! Calls the doneStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_doneStructure.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
@@ -2948,7 +3302,7 @@ CONTAINS
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -3000,7 +3354,7 @@ CONTAINS
   
   RECURSIVE SUBROUTINE linsol_doneMultigrid (rsolverNode)
   
-  !<description>
+!<description>
   
   ! This routine releases all temporary memory for the multigrid solver from
   ! the heap. In particular, this releases the solver structures of all
@@ -3008,14 +3362,14 @@ CONTAINS
   ! This DONE routine is declared as RECURSIVE to prevent a clean
   ! interaction with linsol_releaseSolver.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! A pointer to a t_linsolNode structure of the Multigrid solver.
   TYPE(t_linsolNode), INTENT(OUT)                  :: rsolverNode
    
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3054,22 +3408,22 @@ CONTAINS
   
   SUBROUTINE linsol_solveMultigrid (rsolverNode,rx,rb,Dtemp)
   
-  !<description>
+!<description>
   
   ! Solves the linear system $Ax=b$ with Multigrid. The matrices $A$ on all
   ! levels must be attached to the solver previously by linsol_setMatrices.
   ! rb is the RHS and rx is the initial iteration vector.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! Right hand side of the system
   TYPE(t_vectorBlock), INTENT(IN),TARGET    :: rb
   
-  !</input>
+!</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
@@ -3081,7 +3435,7 @@ CONTAINS
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_vectorBlock), INTENT(INOUT)        :: Dtemp
 
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 

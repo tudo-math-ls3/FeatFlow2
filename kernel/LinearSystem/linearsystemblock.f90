@@ -8,6 +8,33 @@
 !# matrices and block vectors. A block matrix is realised as 2D-array of
 !# scalar matrices, while a block vector is realised as 1D-array of
 !# scalar vectors.
+!#
+!# The following routines can be found here:
+!#
+!# 1.) lsysbl_createVecBlockDirect
+!#     -> Create a block vector by specifying the size of the subblocks
+!# 
+!# 2.) lsysbl_createVecBlockInirect
+!#     -> Create a block vector by copying the structure of another block
+!#        vector
+!#
+!# 3.) lsysbl_releaseVectorBlock
+!#     -> Release a block vector from memory
+!#
+!# 4.) lsysbl_blockMatVec
+!#     -> Multiply a block matrix with a block vector
+!#
+!# 5.) lsysbl_blockCopy
+!#     -> Copy a block vector over to another one
+!#
+!# 6.) lsysbl_blockScale
+!#     -> Scale a block vector by a constant
+!#
+!# 7.) lsysbl_blockClear
+!#     -> Clear a block vector
+!#
+!# 8.) lsysbl_blockLinearComb
+!#     -> Linear combination of two block vectors
 !# </purpose>
 !##############################################################################
 
@@ -65,6 +92,10 @@ MODULE linearsystemblock
     ! Handle identifying the vector entries or = ST_NOHANDLE if not
     ! allocated.
     INTEGER                    :: h_Ddata
+    
+    ! Data type of the entries in the vector. Either ST_SINGLE or
+    ! ST_DOUBLE. The subvectors are all of the same type.
+    INTEGER                    :: cdataType = ST_DOUBLE
     
     ! A 1D array with scalar vectors for all the blocks.
     ! The handle identifier inside of these blocks are set to h_Ddata.
@@ -171,10 +202,13 @@ CONTAINS
     IF (Isize(i) .GT. 0) THEN
       rx%RvectorBlock(i)%NEQ = Isize(i)
       rx%RvectorBlock(i)%iidxFirstEntry = n
+      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType = rx%cdataType
       n = n+Isize(i)
     ELSE
       rx%RvectorBlock(i)%NEQ = 0
       rx%RvectorBlock(i)%iidxFirstEntry = 0
+      rx%RvectorBlock(i)%h_Ddata = ST_NOHANDLE
     END IF
   END DO
   
@@ -230,6 +264,9 @@ CONTAINS
   ! Allocate one large new vector holding all data.
   CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplate%NEQ, ST_DOUBLE, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+                      
+  ! Put the new handle to all subvectors
+  rx%RvectorBlock(:)%h_Ddata = rx%h_Ddata
 
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
@@ -239,6 +276,73 @@ CONTAINS
     END IF
   END IF
   
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_createVecBlockIndMat (rx, rtemplateMat,bclear)
+  
+!<description>
+  ! Initialises the vector block structure rx. rtemplateMat is an
+  ! existing block matrix structure. The vector rx will be created
+  ! according to the size of the blocks of the submatrices.
+  ! Memory is allocated on the heap for rx, the different components
+  ! of rx will have the same size as the corresponding diagonal
+  ! blocks in rtemplateMat.
+!</description>
+  
+!<input>
+  ! A template vector structure
+  TYPE(t_matrixBlock), INTENT(IN) :: rtemplateMat
+  
+  ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
+  ! Otherwise the content of rx is undefined.
+  LOGICAL, INTENT(IN), OPTIONAL   :: bclear
+!</input>
+
+!<output>
+  ! Destination structure. Memory is allocated for each of the blocks.
+  TYPE(t_vectorBlock),INTENT(OUT) :: rx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i,n
+  
+  ! Allocate one large vector holding all data.
+  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplateMat%NEQ, &
+                      ST_DOUBLE, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+  
+  ! Initialise the sub-blocks. Save a pointer to the starting address of
+  ! each sub-block.
+  
+  n=1
+  DO i = 1,rtemplateMat%NEQ
+    IF (rtemplateMat%RmatrixBlock(i,i)%NEQ .GT. 0) THEN
+      rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(i,i)%NEQ
+      rx%RvectorBlock(i)%iidxFirstEntry = n
+      n = n+rtemplateMat%RmatrixBlock(i,i)%NEQ
+    ELSE
+      ! Let's hope this situation (an empty equation) never occurs - 
+      ! might produce some errors elsewhere :)
+      rx%RvectorBlock(i)%NEQ = 0
+      rx%RvectorBlock(i)%iidxFirstEntry = 0
+    END IF
+  END DO
+  
+  rx%NEQ = rtemplateMat%NEQ
+  
+  ! Warning: don't reformulate the following check into one IF command
+  ! as this might give problems with some compilers!
+  IF (PRESENT(bclear)) THEN
+    IF (bclear) THEN
+      CALL lsysbl_blockClear (rx)
+    END IF
+  END IF
+
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -315,7 +419,6 @@ CONTAINS
   ! local variables
   INTEGER :: x,y,mvok
   REAL(DP)     :: cyact
-  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
   
   ! loop through all the sub matrices and multiply.
   DO y=1,rMatrix%ndiagBlocks
@@ -344,10 +447,7 @@ CONTAINS
     ! simply scale the vector ry by cyact!
     
     IF (mvok .EQ.NO) THEN
-      IF (ry%RvectorBlock(x)%h_Ddata .NE. ST_NOHANDLE) THEN
-        CALL storage_getbase_double(ry%RvectorBlock(x)%h_Ddata,p_Ddata)
-        CALL lalg_vectorScale (p_Ddata,cy)
-      END IF
+      CALL lsysbl_blockScale (ry,cy)
     END IF
     
   END DO
@@ -380,12 +480,28 @@ CONTAINS
 
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest
+  REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
   
-  ! Get the pointers and copy the whole data array.
-  CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
-  CALL storage_getbase_double(ry%h_Ddata,p_Ddest)
+  ! Take care of the data type
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointers and copy the whole data array.
+    CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
+    CALL storage_getbase_double(ry%h_Ddata,p_Ddest)
+    
+    CALL lalg_vectorCopyDBle (p_Dsource,p_Ddest)
   
-  CALL lalg_vectorCopy (p_Dsource,p_Ddest)
+  CASE (ST_SINGLE)
+    ! Get the pointers and copy the whole data array.
+    CALL storage_getbase_double(rx%h_Ddata,p_Ssource)
+    CALL storage_getbase_double(ry%h_Ddata,p_Sdest)
+    
+    CALL lalg_vectorCopySngl (p_Ssource,p_Sdest)
+
+  CASE DEFAULT
+    PRINT *,'lsysbl_blockCopy: unsupported data type!'
+    STOP
+  END SELECT
   
   END SUBROUTINE
   
@@ -416,11 +532,25 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  REAL(DP), DIMENSION(:), POINTER :: p_Dsource
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Sdata
   
-  ! Get the pointer and scale the whole data array.
-  CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
-  CALL lalg_vectorScale (p_DSource,c)  
+  ! Taje care of the data type!
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointer and scale the whole data array.
+    CALL storage_getbase_double(rx%h_Ddata,p_Ddata)
+    CALL lalg_vectorScaleDble (p_Ddata,c)  
+
+  CASE (ST_SINGLE)
+    ! Get the pointer and scale the whole data array.
+    CALL storage_getbase_single(rx%h_Ddata,p_Sdata)
+    CALL lalg_vectorScaleSngl (p_Sdata,REAL(c,SP))  
+
+  CASE DEFAULT
+    PRINT *,'lsysbl_blockScale: Unsupported data type!'
+    STOP
+  END SELECT
   
   END SUBROUTINE
   
@@ -443,10 +573,24 @@ CONTAINS
 
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource
+  REAL(SP), DIMENSION(:), POINTER :: p_Ssource
   
-  ! Get the pointer and scale the whole data array.
-  CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
-  CALL lalg_vectorClear (p_Dsource)
+  ! Take care of the data type
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointer and scale the whole data array.
+    CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
+    CALL lalg_vectorClearDble (p_Dsource)
+  
+  CASE (ST_SINGLE)
+    ! Get the pointer and scale the whole data array.
+    CALL storage_getbase_single(rx%h_Ddata,p_Ssource)
+    CALL lalg_vectorClearSngl (p_Ssource)
+
+  CASE DEFAULT
+    PRINT *,'lsysbl_blockClear: Unsupported data type!'
+    STOP
+  END SELECT
   
   END SUBROUTINE
   
@@ -484,13 +628,168 @@ CONTAINS
 
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest
+  REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
   
-  ! Get the pointers and copy the whole data array.
-  CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
-  CALL storage_getbase_double(ry%h_Ddata,p_Ddest)
+  IF (rx%cdataType .NE. ry%cdataType) THEN
+    PRINT *,'lsysbl_blockLinearComb: different data types not supported!'
+    STOP
+  END IF
   
-  CALL lalg_vectorLinearComb (p_Dsource,p_Ddest,cx,cy)
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointers and copy the whole data array.
+    CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
+    CALL storage_getbase_double(ry%h_Ddata,p_Ddest)
+    
+    CALL lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
+
+  CASE (ST_SINGLE)
+    ! Get the pointers and copy the whole data array.
+    CALL storage_getbase_single(rx%h_Ddata,p_Ssource)
+    CALL storage_getbase_single(ry%h_Ddata,p_Sdest)
+    
+    CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,cx,cy)
+  
+  CASE DEFAULT
+    PRINT *,'lsysbl_blockLinearComb: Unsupported data type!'
+    STOP
+  END SELECT
 
   END SUBROUTINE
   
+  !****************************************************************************
+!<subroutine>
+  
+  REAL(DP) FUNCTION lsysbl_scalarProduct (rx, ry)
+  
+!<description>
+  ! Calculates a scalar product of two block vectors.
+!</description>
+  
+!<input>
+  ! First vector
+  TYPE(t_vectorBlock), INTENT(IN)                  :: rx
+
+  ! Second vector
+  TYPE(t_vectorBlock), INTENT(IN)                  :: ry
+
+!</input>
+
+!<result>
+  ! The scalar product <rx,ry> of the two block vectors.
+!</result>
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: h_Ddata1dp
+  REAL(DP), DIMENSION(:), POINTER :: h_Ddata2dp
+  INTEGER(PREC_VECIDX) :: i
+  REAL(DP) :: res
+  
+  ! Is there data at all?
+  res = 0.0_DP
+  
+  IF ( (rx%NEQ .EQ. 0) .OR. (ry%NEQ .EQ. 0) .OR. (rx%NEQ .NE. rx%NEQ)) THEN
+    PRINT *,'Error in lsyssc_scalarProduct: Vector dimensions wrong!'
+    STOP
+  END IF
+  
+  ! Take care of the data type before doing a scalar product!
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    
+    CALL storage_getbase_double (rx%h_Ddata,h_Ddata1dp)
+    
+    SELECT CASE (ry%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data arrays
+      CALL storage_getbase_double (ry%h_Ddata,h_Ddata2dp)
+      
+      ! Perform the scalar product
+      res = 0.0_DP
+      DO i=1,rx%NEQ
+        res = res + h_Ddata1dp(i)*h_Ddata2dp(i)
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
+      STOP
+    END SELECT
+    
+  CASE DEFAULT
+    PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
+    STOP
+  END SELECT
+  
+  ! Return the scalar product, finish
+  lsysbl_scalarProduct = res
+
+  END FUNCTION
+
+  !****************************************************************************
+!<subroutine>
+  
+  REAL(DP) FUNCTION lsysbl_vectorNorm (rx,cnorm,iposMax)
+  
+!<description>
+  ! Calculates the norm of a vector. cnorm specifies the type of norm to
+  ! calculate.
+!</description>
+  
+!<input>
+  ! Vector to calculate the norm of.
+  TYPE(t_vectorBlock), INTENT(IN)                  :: rx
+
+  ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
+  INTEGER, INTENT(IN) :: cnorm
+!</input>
+
+!<output>
+  ! OPTIONAL: If the MAX norm is to calculate, this returns the
+  ! position of the largest element. If another norm is to be
+  ! calculated, the result is undefined.
+  INTEGER(I32), INTENT(OUT), OPTIONAL :: iposMax
+!</output>
+
+!<result>
+  ! The norm of the given array.
+  ! < 0, if an error occurred (unknown norm).
+!</result>
+
+!<result>
+  ! The scalar product <rx,ry> of the two block vectors.
+!</result>
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Sdata
+
+  ! Is there data at all?
+  IF (rx%h_Ddata .EQ. ST_NOHANDLE) THEN
+    PRINT *,'Error in lsysbl_vectorNorm: Vector empty!'
+    STOP
+  END IF
+  
+  ! Take care of the data type before doing a scalar product!
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the array and calculate the norm
+    CALL storage_getbase_double (rx%h_Ddata,p_Ddata)
+    lsysbl_vectorNorm = lalg_normDble (p_Ddata,cnorm,iposMax) 
+    
+  CASE (ST_SINGLE)
+    ! Get the array and calculate the norm
+    CALL storage_getbase_single (rx%h_Ddata,p_Sdata)
+    lsysbl_vectorNorm = lalg_normSngl (p_Sdata,cnorm,iposMax) 
+    
+  CASE DEFAULT
+    PRINT *,'lsysbl_vectorNorm: Unsupported data type!'
+    STOP
+  END SELECT
+  
+  END FUNCTION
+
 END MODULE

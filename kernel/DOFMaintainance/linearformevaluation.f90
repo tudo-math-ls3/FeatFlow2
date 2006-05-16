@@ -318,7 +318,7 @@ CONTAINS
 
     ! If desired, clear the vector before assembling.
     IF (bclear) THEN
-      CALL lalg_vectorClear (p_Ddata)
+      CALL lalg_vectorClearDble (p_Ddata)
     END IF
     
   END IF
