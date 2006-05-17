@@ -273,8 +273,8 @@ MODULE mattransp
         ! Ringshift the slice Icol(Irow(i):j) by 1 to the right.
         ! This puts the diagonal element to the front
         ! The same operation is also done for Da(Irow(i):j)
-        CALL CSHIFT(Icol(Irow(i):j),-1)
-        CALL CSHIFT(Da  (Irow(i):j),-1)
+        Icol(Irow(i):j) = CSHIFT(Icol(Irow(i):j),-1)
+        Da  (Irow(i):j) = CSHIFT(Da  (Irow(i):j),-1)
       END IF
     END DO
 
