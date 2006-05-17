@@ -14,36 +14,43 @@
 !#  1.) lsysbl_createVecBlockDirect
 !#      -> Create a block vector by specifying the size of the subblocks
 !# 
-!#  2.) lsysbl_createVecBlockInirect
+!#  2.) lsysbl_createVecBlockIndirect
 !#      -> Create a block vector by copying the structure of another block
 !#         vector
 !#
-!#  3.) lsysbl_releaseVectorBlock
-!#      -> Release a block vector from memory
+!#  3.) lsysbl_createVecBlockIndMat
+!#      -> Create a block vector according to a block matrix.
 !#
-!#  4.) lsysbl_blockMatVec
-!#      -> Multiply a block matrix with a block vector
-!#
-!#  5.) lsysbl_vectorCopy
-!#       -> Copy a block vector over to another one
-!#
-!#  6.) lsysbl_vectorScale
-!#      -> Scale a block vector by a constant
-!#
-!#  7.) lsysbl_vectorClear
-!#      -> Clear a block vector
-!#
-!#  8.) lsysbl_vectorLinearComb
-!#      -> Linear combination of two block vectors
-!#
-!#  9.) lsysbl_scalarProduct
-!#      -> Calculate a scalar product of two vectors
-!#
-!# 10.) lsysbl_createMatFromScalar
+!#  4.) lsysbl_createMatFromScalar
 !#      -> Creates a 1x1 block matrix from a scalar matrix
 !#
-!# 11.) lsysbl_createVecFromScalar
-!#      -> Creates a 1 block vector from a scalar vector
+!#  5.) lsysbl_createVecFromScalar
+!#      -> Creates a 1-block vector from a scalar vector
+!#
+!#  6.) lsysbl_assignDiscretIndirect
+!#      -> Assign discretisation related information of one vector
+!#         to another
+!#
+!#  7.) lsysbl_releaseVectorBlock
+!#      -> Release a block vector from memory
+!#
+!#  8.) lsysbl_blockMatVec
+!#      -> Multiply a block matrix with a block vector
+!#
+!#  9.) lsysbl_vectorCopy
+!#       -> Copy a block vector over to another one
+!#
+!# 10.) lsysbl_vectorScale
+!#      -> Scale a block vector by a constant
+!#
+!# 11.) lsysbl_vectorClear
+!#      -> Clear a block vector
+!#
+!# 12.) lsysbl_vectorLinearComb
+!#      -> Linear combination of two block vectors
+!#
+!# 13.) lsysbl_scalarProduct
+!#      -> Calculate a scalar product of two vectors
 !#
 !# </purpose>
 !##############################################################################
@@ -54,6 +61,8 @@ MODULE linearsystemblock
   USE storage
   USE linearsystemscalar
   USE linearalgebra
+  
+  IMPLICIT NONE
 
 !<constants>
 
@@ -106,6 +115,9 @@ MODULE linearsystemblock
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE. The subvectors are all of the same type.
     INTEGER                    :: cdataType = ST_DOUBLE
+
+    ! Number of blocks allocated in RvectorBlock
+    INTEGER                    :: nblocks = 0
     
     ! A 1D array with scalar vectors for all the blocks.
     ! The handle identifier inside of these blocks are set to h_Ddata.
@@ -226,6 +238,7 @@ CONTAINS
   END DO
   
   rx%NEQ = n
+  rx%nblocks = SIZE(Isize)
   
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
@@ -343,6 +356,10 @@ CONTAINS
       rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
       rx%RvectorBlock(i)%iidxFirstEntry = n
       
+      ! Give the vector the dicretisation of the matrix
+      rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+        rtemplateMat%RmatrixBlock(i,i)%p_rspatialDiscretisation
+      
       ! Denote in the subvector that the handle belongs to us - not to
       ! the subvector.
       rx%RvectorBlock(i)%bisCopy = .TRUE.
@@ -357,6 +374,7 @@ CONTAINS
   END DO
   
   rx%NEQ = rtemplateMat%NEQ
+  rx%nblocks = rtemplateMat%ndiagBlocks
   
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
@@ -366,6 +384,52 @@ CONTAINS
     END IF
   END IF
 
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_assignDiscretIndirect (rtemplate,rx)
+  
+!<description>
+  ! Assigns discretisation-related information (spatial discretisation, 
+  ! boundary conditions,...) to rx. The vector rtemplate is used as a
+  ! template, so at the end of the routine, rx and rtemplate share the
+  ! same discretisation.
+!</description>
+  
+!<input>
+  ! A template vector structure
+  TYPE(t_vectorBlock),INTENT(IN) :: rtemplate
+!</input>
+
+!<inputoutput>
+  ! Destination structure. Discretisation-related information of rtemplate
+  ! is assigned to rx.
+  TYPE(t_vectorBlock),INTENT(INOUT) :: rx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+
+  ! Simply modify all pointers of all subvectors, that's it.
+  DO i=1,rx%nblocks
+    ! Spatial discretisation
+    rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+      rtemplate%RvectorBlock(i)%p_rspatialDiscretisation 
+
+    ! Discrete boundary conditions
+    rx%RvectorBlock(i)%p_RdiscreteBC => &
+      rtemplate%RvectorBlock(i)%p_RdiscreteBC
+
+    ! Discrete fictitious boundary conditions
+    rx%RvectorBlock(i)%p_RdiscreteBCfict => &
+      rtemplate%RvectorBlock(i)%p_RdiscreteBCfict
+  END DO
+  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -400,6 +464,7 @@ CONTAINS
     rx%RvectorBlock%iidxFirstEntry = 0
   END DO
   rx%NEQ = 0
+  rx%nblocks = 0
   
   END SUBROUTINE
   

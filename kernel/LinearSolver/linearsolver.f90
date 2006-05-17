@@ -441,7 +441,8 @@ MODULE linearsolver
     TYPE(t_linsolNode), POINTER       :: p_rpreconditioner            => NULL()
     
     ! A pointer to a filter chain, as this solver supports filtering.
-    TYPE(t_filterChain), DIMENSION(:), POINTER      :: p_rfilterChain => NULL()
+    ! The filter chain must be configured for being applied to defect vectors.
+    TYPE(t_filterChain), DIMENSION(:), POINTER      :: p_RfilterChain => NULL()
   
   END TYPE
   
@@ -563,7 +564,8 @@ MODULE linearsolver
     TYPE(t_linsolNode), POINTER         :: p_rcoarseGridSolver    => NULL()
     
     ! A pointer to a filter chain, as this solver supports filtering.
-    TYPE(t_filterChain), DIMENSION(:),POINTER      :: p_rfilterChain => NULL()
+    ! The filter chain must be configured for being applied to defect vectors.
+    TYPE(t_filterChain), DIMENSION(:),POINTER      :: p_RfilterChain => NULL()
     
     ! STATUS/INTERNAL: MG cycle information.
     ! Number of cycles to perform on this level.
@@ -611,7 +613,8 @@ MODULE linearsolver
     REAL(DP)                           :: dmaxStep                 = 1.0_DP
     
     ! A pointer to a filter chain, as this solver supports filtering.
-    TYPE(t_filterChain), DIMENSION(:),POINTER :: p_rfilterChain     => NULL()
+    ! The filter chain must be configured for being applied to defect vectors.
+    TYPE(t_filterChain), DIMENSION(:),POINTER :: p_RfilterChain     => NULL()
   
   END TYPE
   
@@ -2026,7 +2029,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_rfilter)
+  SUBROUTINE linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter)
   
 !<description>
   
@@ -2048,7 +2051,8 @@ CONTAINS
   ! structures) if filtering should be applied to the vector during the 
   ! iteration. If not given or set to NULL(), no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
-  TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_rfilter
+  ! The filter chain must be configured for being applied to defect vectors.
+  TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_Rfilter
   
 !</input>
   
@@ -2087,8 +2091,8 @@ CONTAINS
 
   ! Attach the filter if given. 
   
-  IF (PRESENT(p_rfilter)) THEN
-    p_rsolverNode%p_rsubnodeBiCGStab%p_rfilterChain => p_rfilter
+  IF (PRESENT(p_Rfilter)) THEN
+    p_rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain => p_Rfilter
   END IF
   
   END SUBROUTINE
@@ -2458,7 +2462,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  REAL(DP) :: rho0,dalpha,dbeta,domega0,domega1,domega2,dres,ddefini
+  REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres,ddefini
   REAL(DP) :: drho1,drho0,dfr
   INTEGER :: ireslength,ite,i
 
@@ -2513,7 +2517,7 @@ CONTAINS
     ! Use preconditioning? Filtering?
 
     bprec = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
-    bfilter = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rfilterChain)
+    bfilter = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain)
     
     ! Iteration when the residuum is printed:
 
@@ -2525,12 +2529,22 @@ CONTAINS
     p_DP   => p_rsubnode%RtempVectors(3)
     p_DPA  => p_rsubnode%RtempVectors(4)
     p_DSA  => p_rsubnode%RtempVectors(5)
+    
+    ! All vectors share the same boundary conditions as rx!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    CALL lsysbl_assignDiscretIndirect (rx,p_DR )
+    CALL lsysbl_assignDiscretIndirect (rx,p_DR0)
+    CALL lsysbl_assignDiscretIndirect (rx,p_DP )
+    CALL lsysbl_assignDiscretIndirect (rx,p_DPA)
+    CALL lsysbl_assignDiscretIndirect (rx,p_DSA)
+    
     IF (bprec) THEN
       p_rprec => p_rsubnode%RtempVectors(6)
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     END IF
     IF (bfilter) THEN
-      p_RfilterChain = p_rsubnode%p_RfilterChain
+      p_RfilterChain => p_rsubnode%p_RfilterChain
     END IF
       
     ! Initialize used vectors with zero
@@ -2540,7 +2554,7 @@ CONTAINS
 
     ! Initialization
 
-    rho0   = 1.0_DP
+    drho0  = 1.0_DP
     dalpha = 1.0_DP
     domega0 = 1.0_DP
 
@@ -2951,7 +2965,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_initMultigrid (p_rsolverNode,p_rfilter)
+  SUBROUTINE linsol_initMultigrid (p_rsolverNode,p_Rfilter)
   
 !<description>
   
@@ -2971,7 +2985,8 @@ CONTAINS
   ! structures) if filtering should be applied to the vector during the 
   ! iteration. If not given or set to NULL(), no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
-  TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_rfilter
+  ! The filter chain must be configured for being applied to defect vectors.
+  TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_Rfilter
   
 !</input>
   
@@ -3004,8 +3019,8 @@ CONTAINS
   
   ! Attach the filter if given. 
   
-  IF (PRESENT(p_rfilter)) THEN
-    p_rsolverNode%p_rsubnodeMultigrid%p_rfilterChain => p_rfilter
+  IF (PRESENT(p_Rfilter)) THEN
+    p_rsolverNode%p_rsubnodeMultigrid%p_RfilterChain => p_Rfilter
   END IF
   
   END SUBROUTINE

@@ -441,7 +441,7 @@ CONTAINS
   
   ! Loop over the blocks
   
-  DO iblock = 1,LSYSBL_MAXBLOCKS
+  DO iblock = 1,rx%nblocks
 
     ! Is there a vector in block iblock of rx?
     
@@ -481,7 +481,7 @@ CONTAINS
   
   ! Loop over the blocks
   
-  DO iblock = 1,LSYSBL_MAXBLOCKS
+  DO iblock = 1,rx%nblocks
 
     ! Is there a vector in block iblock of rx?
     IF (rx%RvectorBlock(iblock)%h_Ddata .NE. ST_NOHANDLE) THEN
