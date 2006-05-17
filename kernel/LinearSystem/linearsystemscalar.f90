@@ -123,6 +123,13 @@ MODULE linearsystemscalar
     ! in a larger memory block allocated on the heap.
     INTEGER(PREC_VECIDX) :: iidxFirstEntry = 1
     
+    ! Is set to true, if the handle h_Ddata belongs to another vector,
+    ! i.e. when this vector shares data with another vector.
+    ! This is usually used for block vectors containing a couple of
+    ! scalar subvectors; in this case, the block vector is the actual
+    ! 'owner' of the handle!
+    LOGICAL              :: bisCopy        = .FALSE.
+    
     ! A pointer to the spatial discretisation or NULL(), if the vector is
     ! just an array, not belonging to any discretisation.
     TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscretisation => NULL()
@@ -241,8 +248,8 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: p_Ddata2dp
   REAL(SP), DIMENSION(:), POINTER :: p_Sdata1dp
   REAL(SP), DIMENSION(:), POINTER :: p_Sdata2dp
-  INTEGER(PREC_VECIDX) :: i
   REAL(DP) :: res
+  INTEGER(PREC_VECIDX) ioffsetx,ioffsety,i
   
   ! Is there data at all?
   res = 0.0_DP
@@ -257,12 +264,20 @@ CONTAINS
     STOP
   END IF
   
+  ! Get the offset positions from the vector structures
+  ioffsetx = rx%iidxFirstEntry
+  ioffsety = ry%iidxFirstEntry
+  
   ! Take care of the data type before doing a scalar product!
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
     
     CALL storage_getbase_double (rx%h_Ddata,p_Ddata1dp)
     CALL storage_getbase_double (ry%h_Ddata,p_Ddata2dp)
+    
+    ! Change the pointer to point to the subvector
+    p_Ddata1dp => p_Ddata1dp(ioffsetx:ioffsetx+rx%NEQ-1)
+    p_Ddata2dp => p_Ddata2dp(ioffsety:ioffsety+ry%NEQ-1)
     
     ! Perform the scalar product
     res = p_Ddata1dp(1)*p_Ddata2dp(1)
@@ -275,6 +290,10 @@ CONTAINS
     CALL storage_getbase_single (rx%h_Ddata,p_Sdata1dp)
     CALL storage_getbase_single (ry%h_Ddata,p_Sdata2dp)
     
+    ! Change the pointer to point to the subvector
+    p_Sdata1dp => p_Sdata1dp(ioffsetx:ioffsetx+rx%NEQ-1)
+    p_Sdata2dp => p_Sdata2dp(ioffsety:ioffsety+ry%NEQ-1)
+
     ! Perform the scalar product
     res = p_Sdata1dp(1)*p_Sdata2dp(1)
     DO i=2,rx%NEQ
@@ -320,17 +339,12 @@ CONTAINS
 
 !<inputoutput>
   ! Additive vector. Receives the result of the matrix-vector multiplication
-  TYPE(t_vectorScalar), INTENT(OUT)                 :: ry
+  TYPE(t_vectorScalar), INTENT(INOUT)               :: ry
 !</inputoutput>
 
 !</subroutine>
   
   ! local variables
-  REAL(DP) :: dtmp
-  REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
-  INTEGER(PREC_MATIDX) :: irow,icol
   INTEGER(PREC_VECIDX) :: NEQ
   
   ! rx and ry must have at least the same data type!
@@ -402,6 +416,14 @@ CONTAINS
     REAL(DP), INTENT(IN)                              :: cy
     TYPE(t_vectorScalar), INTENT(INOUT)               :: ry
 
+    REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_MATIDX) :: irow,icol
+    INTEGER(PREC_VECIDX) :: ioffsetx,ioffsety
+    REAL(DP) :: dtmp
+    INTEGER(PREC_VECIDX) :: NEQ
+
       ! Get the matrix and the two vectors
       CALL storage_getbase_double (rmatrix%h_DA,p_DA)
       CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
@@ -409,6 +431,14 @@ CONTAINS
       CALL storage_getbase_double (rx%h_Ddata,p_Dx)
       CALL storage_getbase_double (ry%h_Ddata,p_Dy)
       NEQ = rx%NEQ
+
+      ! Get the offset positions from the vector structures
+      ioffsetx = rx%iidxFirstEntry
+      ioffsety = rx%iidxFirstEntry
+
+      ! Change the pointer to point to the subvector
+      p_Dx => p_Dx(ioffsetx:ioffsetx+NEQ-1)
+      p_Dy => p_Dy(ioffsetx:ioffsety+NEQ-1)
       
       ! Perform the multiplication
       IF (cx .NE. 0.0_DP) THEN
@@ -497,13 +527,18 @@ CONTAINS
 
 !</subroutine>
 
-  ! Clean up the data structure
-  IF (rvector%h_Ddata .NE. ST_NOHANDLE) THEN
+  ! Clean up the data structure.
+  ! Don't release the vector data if the handle belongs to another
+  ! vector!
+  IF ((.NOT. rvector%bisCopy) .AND. (rvector%h_Ddata .NE. ST_NOHANDLE)) THEN
     CALL storage_free(rvector%h_Ddata)
+  ELSE
+    rvector%h_Ddata = ST_NOHANDLE
   END IF
   rvector%NEQ = 0
   rvector%cdataType = ST_NOHANDLE
   rvector%iidxFirstEntry = 1
+  rvector%bisCopy = .FALSE.
   rvector%p_rspatialDiscretisation => NULL()
   rvector%p_RdiscreteBC => NULL()
   rvector%p_RdiscreteBCfict => NULL()
@@ -532,6 +567,8 @@ CONTAINS
 !</subroutine>
 
   ! Which handles do we have to release?
+  !
+  ! Release the matrix data if the handle is not a copy of another matrix
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .EQ. 0) THEN
     SELECT CASE (rmatrix%imatrixFormat)
     CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
@@ -542,6 +579,7 @@ CONTAINS
     END SELECT
   END IF
   
+  ! Release the structure if it doesn't belong to another vector
   IF ((IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .EQ. 0) .AND. &
       (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0)) THEN
     ! Release matrix structure
@@ -557,7 +595,11 @@ CONTAINS
   END IF
   
   ! Clean up the rest
-  rmatrix%cdataType = ST_DOUBLE
+  rmatrix%h_DA        = ST_NOHANDLE
+  rmatrix%h_Kcol      = ST_NOHANDLE
+  rmatrix%h_Kld       = ST_NOHANDLE
+  rmatrix%h_Kdiagonal = ST_NOHANDLE
+  rmatrix%cdataType   = ST_DOUBLE
   rmatrix%NA  = 0
   rmatrix%NEQ = 0
   rmatrix%dScaleFactor = 1.0_DP

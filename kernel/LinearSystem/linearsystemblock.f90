@@ -11,30 +11,40 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) lsysbl_createVecBlockDirect
-!#     -> Create a block vector by specifying the size of the subblocks
+!#  1.) lsysbl_createVecBlockDirect
+!#      -> Create a block vector by specifying the size of the subblocks
 !# 
-!# 2.) lsysbl_createVecBlockInirect
-!#     -> Create a block vector by copying the structure of another block
-!#        vector
+!#  2.) lsysbl_createVecBlockInirect
+!#      -> Create a block vector by copying the structure of another block
+!#         vector
 !#
-!# 3.) lsysbl_releaseVectorBlock
-!#     -> Release a block vector from memory
+!#  3.) lsysbl_releaseVectorBlock
+!#      -> Release a block vector from memory
 !#
-!# 4.) lsysbl_blockMatVec
-!#     -> Multiply a block matrix with a block vector
+!#  4.) lsysbl_blockMatVec
+!#      -> Multiply a block matrix with a block vector
 !#
-!# 5.) lsysbl_blockCopy
-!#     -> Copy a block vector over to another one
+!#  5.) lsysbl_vectorCopy
+!#       -> Copy a block vector over to another one
 !#
-!# 6.) lsysbl_blockScale
-!#     -> Scale a block vector by a constant
+!#  6.) lsysbl_vectorScale
+!#      -> Scale a block vector by a constant
 !#
-!# 7.) lsysbl_blockClear
-!#     -> Clear a block vector
+!#  7.) lsysbl_vectorClear
+!#      -> Clear a block vector
 !#
-!# 8.) lsysbl_blockLinearComb
-!#     -> Linear combination of two block vectors
+!#  8.) lsysbl_vectorLinearComb
+!#      -> Linear combination of two block vectors
+!#
+!#  9.) lsysbl_scalarProduct
+!#      -> Calculate a scalar product of two vectors
+!#
+!# 10.) lsysbl_createMatFromScalar
+!#      -> Creates a 1x1 block matrix from a scalar matrix
+!#
+!# 11.) lsysbl_createVecFromScalar
+!#      -> Creates a 1 block vector from a scalar vector
+!#
 !# </purpose>
 !##############################################################################
 
@@ -159,7 +169,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecBlockDirect (rx, Isize, iclear)
+  SUBROUTINE lsysbl_createVecBlockDirect (rx, Isize, bclear)
   
 !<description>
   ! Initialises the vector block structure rx. Isize is an array
@@ -174,7 +184,7 @@ CONTAINS
   INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Isize
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
-  INTEGER, INTENT(IN), OPTIONAL             :: iclear
+  LOGICAL, INTENT(IN), OPTIONAL             :: bclear
   
 !</input>
 
@@ -196,6 +206,8 @@ CONTAINS
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
   ! each sub-block.
+  ! Denote in the subvector that the handle belongs to us - not to
+  ! the subvector.
   
   n=1
   DO i = 1,SIZE(Isize)
@@ -204,6 +216,7 @@ CONTAINS
       rx%RvectorBlock(i)%iidxFirstEntry = n
       rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
       rx%RvectorBlock(i)%cdataType = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy = .TRUE.
       n = n+Isize(i)
     ELSE
       rx%RvectorBlock(i)%NEQ = 0
@@ -216,9 +229,9 @@ CONTAINS
   
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
-  IF (PRESENT(iclear)) THEN
-    IF (iclear .EQ. YES) THEN
-      CALL lsysbl_blockClear (rx)
+  IF (PRESENT(bclear)) THEN
+    IF (bclear) THEN
+      CALL lsysbl_vectorClear (rx)
     END IF
   END IF
   
@@ -228,7 +241,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecBlockIndirect (rx, rtemplate,iclear)
+  SUBROUTINE lsysbl_createVecBlockIndirect (rtemplate,rx,bclear)
   
 !<description>
   ! Initialises the vector block structure rx. rtemplate is an
@@ -244,7 +257,7 @@ CONTAINS
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  INTEGER, INTENT(IN), OPTIONAL             :: iclear
+  LOGICAL, INTENT(IN), OPTIONAL             :: bclear
   
 !</input>
 
@@ -270,9 +283,9 @@ CONTAINS
 
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
-  IF (PRESENT(iclear)) THEN
-    IF (iclear .EQ. YES) THEN
-      CALL lsysbl_blockClear (rx)
+  IF (PRESENT(bclear)) THEN
+    IF (bclear) THEN
+      CALL lsysbl_vectorClear (rx)
     END IF
   END IF
   
@@ -282,7 +295,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecBlockIndMat (rx, rtemplateMat,bclear)
+  SUBROUTINE lsysbl_createVecBlockIndMat (rtemplateMat,rx, bclear)
   
 !<description>
   ! Initialises the vector block structure rx. rtemplateMat is an
@@ -320,10 +333,20 @@ CONTAINS
   ! each sub-block.
   
   n=1
-  DO i = 1,rtemplateMat%NEQ
+  DO i = 1,rtemplateMat%ndiagBlocks
     IF (rtemplateMat%RmatrixBlock(i,i)%NEQ .GT. 0) THEN
       rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(i,i)%NEQ
+      
+      ! Take the handle of the complete-solution vector, but set the index of
+      ! the first entry to a value >= 1 - so that it points to the first
+      ! entry in the global solution vector!
+      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
       rx%RvectorBlock(i)%iidxFirstEntry = n
+      
+      ! Denote in the subvector that the handle belongs to us - not to
+      ! the subvector.
+      rx%RvectorBlock(i)%bisCopy = .TRUE.
+      
       n = n+rtemplateMat%RmatrixBlock(i,i)%NEQ
     ELSE
       ! Let's hope this situation (an empty equation) never occurs - 
@@ -339,7 +362,7 @@ CONTAINS
   ! as this might give problems with some compilers!
   IF (PRESENT(bclear)) THEN
     IF (bclear) THEN
-      CALL lsysbl_blockClear (rx)
+      CALL lsysbl_vectorClear (rx)
     END IF
   END IF
 
@@ -358,7 +381,7 @@ CONTAINS
 !<inputoutput>
   
   ! Vector structure that is to be released.
-  TYPE(t_vectorBlock),INTENT(OUT) :: rx
+  TYPE(t_vectorBlock),INTENT(INOUT) :: rx
   
 !</inputoutput>
   
@@ -368,7 +391,7 @@ CONTAINS
   INTEGER :: i
   
   ! Release the data
-  CALL storage_free (rx%RvectorBlock(i)%h_Ddata)
+  CALL storage_free (rx%h_Ddata)
   
   ! Clean up the structure
   DO i = 1,SIZE(rx%RvectorBlock)
@@ -410,7 +433,7 @@ CONTAINS
 !<inputoutput>
   
   ! Additive vector. Receives the result of the matrix-vector multiplication
-  TYPE(t_vectorBlock), INTENT(OUT)                 :: ry
+  TYPE(t_vectorBlock), INTENT(INOUT)                :: ry
   
 !</inputoutput>
 
@@ -447,7 +470,7 @@ CONTAINS
     ! simply scale the vector ry by cyact!
     
     IF (mvok .EQ.NO) THEN
-      CALL lsysbl_blockScale (ry,cy)
+      CALL lsysbl_vectorScale (ry,cy)
     END IF
     
   END DO
@@ -458,7 +481,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_blockCopy (rx,ry)
+  SUBROUTINE lsysbl_vectorCopy (rx,ry)
   
 !<description>
   ! Copies vector dx: Dy = Dx
@@ -499,7 +522,7 @@ CONTAINS
     CALL lalg_vectorCopySngl (p_Ssource,p_Sdest)
 
   CASE DEFAULT
-    PRINT *,'lsysbl_blockCopy: unsupported data type!'
+    PRINT *,'lsysbl_vectorCopy: unsupported data type!'
     STOP
   END SELECT
   
@@ -509,7 +532,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_blockScale (rx,c)
+  SUBROUTINE lsysbl_vectorScale (rx,c)
   
 !<description>
   ! Scales a vector vector rx: rx = c * rx
@@ -548,7 +571,7 @@ CONTAINS
     CALL lalg_vectorScaleSngl (p_Sdata,REAL(c,SP))  
 
   CASE DEFAULT
-    PRINT *,'lsysbl_blockScale: Unsupported data type!'
+    PRINT *,'lsysbl_vectorScale: Unsupported data type!'
     STOP
   END SELECT
   
@@ -558,7 +581,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_blockClear (rx)
+  SUBROUTINE lsysbl_vectorClear (rx)
   
 !<description>
   ! Clears the block vector dx: Dx = 0
@@ -588,7 +611,7 @@ CONTAINS
     CALL lalg_vectorClearSngl (p_Ssource)
 
   CASE DEFAULT
-    PRINT *,'lsysbl_blockClear: Unsupported data type!'
+    PRINT *,'lsysbl_vectorClear: Unsupported data type!'
     STOP
   END SELECT
   
@@ -598,7 +621,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_blockLinearComb (rx,ry,cx,cy)
+  SUBROUTINE lsysbl_vectorLinearComb (rx,ry,cx,cy)
   
 !<description>
   ! Performs a linear combination: ry = cx * rx  +  cy * ry
@@ -631,7 +654,7 @@ CONTAINS
   REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
   
   IF (rx%cdataType .NE. ry%cdataType) THEN
-    PRINT *,'lsysbl_blockLinearComb: different data types not supported!'
+    PRINT *,'lsysbl_vectorLinearComb: different data types not supported!'
     STOP
   END IF
   
@@ -651,7 +674,7 @@ CONTAINS
     CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,cx,cy)
   
   CASE DEFAULT
-    PRINT *,'lsysbl_blockLinearComb: Unsupported data type!'
+    PRINT *,'lsysbl_vectorLinearComb: Unsupported data type!'
     STOP
   END SELECT
 
@@ -791,5 +814,75 @@ CONTAINS
   END SELECT
   
   END FUNCTION
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_createMatFromScalar (rscalarMat,rmatrix)
+  
+!<description>
+  ! This routine creates a 1x1 block matrix rmatrix from a scalar matrix
+  ! rscalarMat. Both, rscalarMat and rmatrix will share the same handles,
+  ! so changing the content of rmatrix will change rscalarMat, too.
+!</description>
+  
+!<input>
+  ! The scalar matrix which should provide the data
+  TYPE(t_matrixScalar), INTENT(IN) :: rscalarMat
+!</input>
+
+!<output>
+  ! The 1x1 block matrix, created from rscalarMat.
+  TYPE(t_matrixBlock), INTENT(OUT) :: rmatrix
+!</output>
+  
+!</subroutine>
+
+    ! Fill the rmatrix structure with data.
+    rmatrix%NEQ         = rscalarMat%NEQ
+    rmatrix%ndiagBlocks = 1
+    rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
+    
+    ! Copy the content of the scalar matrix structure into the
+    ! first block of the block matrix
+    rmatrix%RmatrixBlock(1,1) = rscalarMat
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_createVecFromScalar (rscalarVec,rvector)
+  
+!<description>
+  ! This routine creates a 1 block vector rvector from a scalar vector
+  ! rscalarVec. Both, rscalarVec and rvector will share the same handles,
+  ! so changing the content of rvector will change rscalarVec, too.
+!</description>
+  
+!<input>
+  ! The scalar vector which should provide the data
+  TYPE(t_vectorScalar), INTENT(IN) :: rscalarVec
+!</input>
+
+!<output>
+  ! The 1x1 block matrix, created from rscalarMat.
+  TYPE(t_vectorBlock), INTENT(OUT) :: rvector
+!</output>
+  
+!</subroutine>
+
+    ! Fill the rvector structure with data.
+    rvector%NEQ         = rscalarVec%NEQ
+    rvector%cdataType   = rscalarVec%cdataType
+    rvector%h_Ddata     = rscalarVec%h_Ddata
+    
+    ! Copy the content of the scalar matrix structure into the
+    ! first block of the block vector
+    rvector%RvectorBlock(1) = rscalarVec
+
+  END SUBROUTINE
 
 END MODULE

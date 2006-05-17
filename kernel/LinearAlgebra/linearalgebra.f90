@@ -41,16 +41,16 @@ MODULE linearalgebra
 
 !<constantblock description="Constants identifying vector norms">
 
-  ! Sum of the entries
+  ! Sum of the absolute values of entries
   INTEGER, PARAMETER :: LINALG_NORMSUM    = -1
 
-  ! Euclidian vector norm
+  ! Euclidian vector norm: <vector,vector>
   INTEGER, PARAMETER :: LINALG_NORMEUCLID = 0
 
-  ! $l_1$-norm
+  ! $l_1$-norm: 1/NEQ * sum(abs(entries))
   INTEGER, PARAMETER :: LINALG_NORML1     = 1
   
-  ! $l_2$-norm
+  ! $l_2$-norm: 1/sqrt(SEQ) * <vector,vector>
   INTEGER, PARAMETER :: LINALG_NORML2     = 2
   
   ! max-norm
@@ -617,6 +617,7 @@ CONTAINS
     DO i=2,SIZE(Dx)
       resnorm = resnorm + Dx(i)*Dx(i)
     END DO
+    resnorm = DSQRT(resnorm)
 
   CASE (LINALG_NORML1)
     ! L1-norm: sum all entries, divide by sqrt(vector length).
@@ -634,7 +635,7 @@ CONTAINS
     DO i=2,SIZE(Dx)
       resnorm = resnorm + Dx(i)*Dx(i)
     END DO
-    resnorm = resnorm / DSQRT(REAL(SIZE(Dx),DP))
+    resnorm = DSQRT(resnorm / REAL(SIZE(Dx),DP))
     
   CASE (LINALG_NORMMAX)
     ! MAX-norm. Find the absolute largest entry.
@@ -703,6 +704,7 @@ CONTAINS
     DO i=2,SIZE(Sx)
       resnorm = resnorm + Sx(i)*Sx(i)
     END DO
+    resnorm = SQRT(resnorm)
 
   CASE (LINALG_NORML1)
     ! L1-norm: sum sum absolute value of all entries, divide by sqrt(vector length).
@@ -720,7 +722,7 @@ CONTAINS
     DO i=2,SIZE(Sx)
       resnorm = resnorm + Sx(i)*Sx(i)
     END DO
-    resnorm = resnorm / SQRT(REAL(SIZE(Sx),SP))
+    resnorm = SQRT(resnorm / REAL(SIZE(Sx),SP))
     
   CASE (LINALG_NORMMAX)
     ! MAX-norm. Find the absolute largest entry.

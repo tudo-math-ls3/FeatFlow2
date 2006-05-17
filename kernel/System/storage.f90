@@ -658,6 +658,11 @@ CONTAINS
     p_rheap => rbase
   END IF
   
+  IF (ihandle .LE. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_free: Releasing ST_NOHANDLE is not allowed!'
+    STOP
+  END IF
+  
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
 

@@ -237,11 +237,11 @@ MODULE linearsolver
     
     ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
     ! Norm of initial residuum
-    REAL(DP)                        :: dinitialResiduum
+    REAL(DP)                        :: dinitialDefect
 
     ! OUTPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
     ! Norm of final residuum
-    REAL(DP)                        :: dfinalResiduum
+    REAL(DP)                        :: dfinalDefect
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK: 
     ! Convergence rate
@@ -319,9 +319,9 @@ MODULE linearsolver
     INTEGER                    :: iresCheck = YES
 
     ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
-    ! Type of norm to use in the residual checking.
-    ! =0: euclidian norm, =1: l2-norm
-    INTEGER                    :: iresNorm = 1
+    ! Type of norm to use in the residual checking (cf. linearalgebra.f90).
+    ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
+    INTEGER                    :: iresNorm = 2
     
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Number of iterations that should be used to calculate
@@ -333,7 +333,7 @@ MODULE linearsolver
     ! INPUT PARAMETER: Output level
     ! This determines the output level of the solver.
     ! =0: no output, =1: basic output, =2, extended output
-    INTEGER                    :: ioutputLevel = 0
+    INTEGER                    :: ioutputLevel = 2
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK:
     ! Number of iterations to perform before printing out the
@@ -433,12 +433,8 @@ MODULE linearsolver
   
   TYPE t_linsolSubnodeBiCGStab
   
-    ! t_LinearSystemInfo structure that holds information
-    ! about the linear system (system matrices,...)
-    TYPE(t_LinearSystemInfo)          :: rlinearSystemInfo
-    
     ! Temporary vectors to use during the solution process
-    TYPE(t_vectorBlock), DIMENSION(5) :: RtempVectors
+    TYPE(t_vectorBlock), DIMENSION(6) :: RtempVectors
 
     ! A pointer to the solver node for the preconditioner or NULL(),
     ! if no preconditioner is used.
@@ -459,10 +455,6 @@ MODULE linearsolver
   
   TYPE t_linsolSubnodeUMFPACK4
   
-    ! t_LinearSystemInfo structure that holds information
-    ! about the linear system (system matrices,...)
-    TYPE(t_LinearSystemInfo)          :: rlinearSystemInfo
-
     ! Control structure for UMFPACK4; contains parameter for the solver
     REAL(DP), DIMENSION(20) :: Control
 
@@ -488,10 +480,8 @@ MODULE linearsolver
   ! Specialised VANCA, $\tilde Q_1/P_0$, 2D Navier Stokes.
   
   TYPE t_linsolSubnodeVANCAQ1TP0NS2D
-  
-    ! t_LinearSystemInfo structure that holds information
-    ! about the linear system (system matrices,...)
-    TYPE(t_LinearSystemInfo)          :: rlinearSystemInfo
+
+    INTEGER DUMMY  
 
   END TYPE
   
@@ -557,7 +547,7 @@ MODULE linearsolver
     ! A temporary vector of the same size and structure as the solution vector
     ! corresponding to this level. The memorya for this is allocated
     ! in initStructure and released in doneStructure.
-    TYPE(t_vectorBlock)                 :: Dtemp
+    TYPE(t_vectorBlock)                 :: rtemp
 
     ! A pointer to the solver node for the presmoothing or NULL(),
     ! if no presmoother is used.
@@ -1216,42 +1206,58 @@ CONTAINS
 
 !<function>
   
-  LOGICAL FUNCTION linsol_testConvergence (rsolverNode, rx) RESULT(loutput)
+  LOGICAL FUNCTION linsol_testConvergence (rsolverNode, dvecNorm, rdef) RESULT(loutput)
   
 !<description>
   
-  ! Tests a defect vector rx whether it is in a defined tolerance configured 
+  ! Tests a defect vector rdef whether it is in a defined tolerance configured 
   ! in the solver node, so the iteration of an iterative solver can be
   ! can be treated as 'converged'.
   ! The iteration is treated as 'converged' if both, the relative and the
   ! absolute convergence criterion are fulfilled (or only one of them,
   ! respectively, if the other is switched off).
+  !
+  ! The solver must have initialised the 'dinitialDefect' variable
+  ! of the solver structure for this routine to work properly!
   
 !</description>
   
-  !<result>
+!<result>
   ! Boolean value. =TRUE if the convergence criterion is reached; 
   ! =FALSE otherwise.
-  !</result>
+!</result>
   
 !<input>
   
   ! The solver node that contains the convergence criterion
   TYPE(t_linsolNode), INTENT(IN) :: rsolverNode
   
-  ! The defect vector which norm should be tested.
-  TYPE(t_vectorBlock), INTENT(IN) :: rx
+  ! OPTIONAL: The defect vector which norm should be tested.
+  ! If existent, the norm of the vector is returned in dvecNorm.
+  ! If not existent, the routine assumes that ddvecNrm is the norm
+  ! of the vector and checks convergence depending on dvecNorm.
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rdef
   
 !</input>
+
+!<inputoutput>
+  
+  ! Norm of the defect vector. 
+  ! If rdef if present, the routine will calculate the norm of dx and return
+  ! it in dvecNorm.
+  ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
+  ! vector and convergence is tested using dvecNorm.
+  REAL(DP), INTENT(INOUT) :: dvecNorm
+
+!</inputoutput>
   
 !</function>
 
-  ! local variables
-  REAL(DP) :: dvecNorm
-  
-  ! Calculate the norm f the vector
-  dvecNorm = 1.0_DP
-  PRINT *,'To be implemented...'
+  ! Calculate the norm of the vector or take the one given
+  ! as parameter
+  IF (PRESENT(rdef)) THEN
+    dvecNorm = lsysbl_vectorNorm (rdef,rsolverNode%iresNorm)
+  END IF
   
   loutput = .TRUE.
   
@@ -1265,7 +1271,7 @@ CONTAINS
   ! Relative convergence criterion? Multiply with initial residuum
   ! and check the norm. 
   IF (rsolverNode%depsRel .NE. 0.0_DP) THEN
-    IF (dvecNorm*rsolverNode%dinitialResiduum .GT. rsolverNode%depsRel) THEN
+    IF (dvecNorm .GT. rsolverNode%depsRel * rsolverNode%dinitialDefect) THEN
       loutput = .FALSE.
     END IF
   END IF
@@ -1276,7 +1282,7 @@ CONTAINS
 
 !<function>
   
-  LOGICAL FUNCTION linsol_testDivergence (rsolverNode, rx) RESULT(loutput)
+  LOGICAL FUNCTION linsol_testDivergence (rsolverNode, dvecNorm, rdef) RESULT(loutput)
   
 !<description>
   
@@ -1285,32 +1291,47 @@ CONTAINS
   ! can be treated as 'diverged'.
   ! The iteration is treated as 'diverged' if one criterion, the relative or the
   ! absolute divergence criterion is fulfilled.
-  
+  !
+  ! The solver must have initialised the 'dinitialDefect' variable
+  ! of the solver structure for this routine to work properly!
+
 !</description>
   
   !<result>
-  ! Boolean value. =TRUE if the convergence criterion is reached; 
+  ! Boolean value. =TRUE if the divergence criterion is reached; 
   ! =FALSE otherwise.
   !</result>
   
 !<input>
   
-  ! The solver node that contains the convergence criterion
+  ! The solver node that contains the divergence criterion
   TYPE(t_linsolNode), INTENT(IN) :: rsolverNode
   
-  ! The defect vector which norm should be tested.
-  TYPE(t_vectorBlock), INTENT(IN) :: rx
+  ! OPTIONAL: The defect vector which norm should be tested.
+  ! If existent, the norm of the vector is returned in dvecNorm.
+  ! If not existent, the routine assumes that ddvecNrm is the norm
+  ! of the vector and checks divergence depending on dvecNorm.
+  TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rdef
   
 !</input>
+
+!<inputoutput>
   
+  ! Norm of the defect vector. 
+  ! If rdef if present, the routine will calculate the norm of dx and return
+  ! it in dvecNorm.
+  ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
+  ! vector and divergence is tested using dvecNorm.
+  REAL(DP), INTENT(INOUT) :: dvecNorm
+
+!</inputoutput>
 !</function>
 
-  ! local variables
-  REAL(DP) :: dvecNorm
-  
-  ! Calculate the norm f the vector
-  dvecNorm = 1.0_DP
-  PRINT *,'To be implemented...'
+  ! Calculate the norm of the vector if not given
+  ! as parameter
+  IF (PRESENT(rdef)) THEN
+    dvecNorm = lsysbl_vectorNorm (rdef,rsolverNode%iresNorm)
+  END IF
   
   loutput = .FALSE.
   
@@ -1327,7 +1348,7 @@ CONTAINS
   ! Relative convergence criterion? Multiply with initial residuum
   ! and check the norm. 
   IF (rsolverNode%depsRel .NE. SYS_INFINITY) THEN
-    IF ( .NOT. (dvecNorm*rsolverNode%dinitialResiduum .LE. &
+    IF ( .NOT. (dvecNorm*rsolverNode%dinitialDefect .LE. &
                 rsolverNode%ddivRel) ) THEN
       loutput = .TRUE.
     END IF
@@ -1339,7 +1360,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_performSolve (rsolverNode,rx,rb,Dtemp)
+  RECURSIVE SUBROUTINE linsol_performSolve (rsolverNode,rx,rb,rtemp)
   
 !<description>
   
@@ -1350,7 +1371,7 @@ CONTAINS
   ! The matrix must have been attached to the system before calling
   ! this routine.
   !
-  ! Dtemp is a temporary vector of the same size as rx which is used
+  ! rtemp is a temporary vector of the same size as rx which is used
   ! for intermediate computation. Whether is's used or not dependens
   ! on the actual solver.
   
@@ -1372,7 +1393,7 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT)               :: rx
 
   ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)               :: Dtemp
+  TYPE(t_vectorBlock), INTENT(INOUT)               :: rtemp
   
 !</inputoutput>
   
@@ -1388,13 +1409,13 @@ CONTAINS
   CASE (LINSOL_ALG_VANCA)
     ! not yet implemented
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
-    CALL linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,Dtemp)
+    CALL linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,rtemp)
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_solveUMFPACK4 (rsolverNode,rx,rb)
   CASE (LINSOL_ALG_BICGSTAB)
-    CALL linsol_solveBiCGStab (rsolverNode,rx,rb,Dtemp)
+    CALL linsol_solveBiCGStab (rsolverNode,rx,rb,rtemp)
   CASE (LINSOL_ALG_MULTIGRID)
-    CALL linsol_solveMultigrid (rsolverNode,rx,rb,Dtemp)
+    CALL linsol_solveMultigrid (rsolverNode,rx,rb,rtemp)
   END SELECT
 
   END SUBROUTINE
@@ -1403,7 +1424,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_performSolveAdaptively (rsolverNode,rMatrix,rx,rb,Dtemp)
+  SUBROUTINE linsol_performSolveAdaptively (rsolverNode,rMatrix,rx,rb,rtemp)
   
 !<description>
   
@@ -1419,7 +1440,7 @@ CONTAINS
   ! The matrix must have been attached to the system before calling
   ! this routine.
   !
-  ! Dtemp is a temporary vector of the same size as rx which is used
+  ! rtemp is a temporary vector of the same size as rx which is used
   ! for intermediate computation. Whether is's used or not dependens
   ! on the actual solver.
   
@@ -1444,7 +1465,7 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT)                 :: rx
   
   ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)                 :: Dtemp
+  TYPE(t_vectorBlock), INTENT(INOUT)                 :: rtemp
 
 !</inputoutput>
   
@@ -1466,26 +1487,26 @@ CONTAINS
   ! Calculate the defect:
   
   ! Create rdef as temporary vector based on rx.
-  CALL lsysbl_createVectorBlock (rdef, rx, NO)
+  CALL lsysbl_createVectorBlock (rdef, rx, .FALSE.)
   
   ! To build (b-Ax), copy the RHS to the temporary vector
-  CALL lsysbl_blockCopy (rb,rdef)
+  CALL lsysbl_vectorCopy (rb,rdef)
   
   CALL lsysbl_blockMatVec (rMatrix, rx, rdef, 1.0_DP, 1.0_DP)
   
   ! Allocate memory for the correction vector,
   ! Fill it with zero.
-  CALL lsysbl_createVectorBlock (rcorr, rx, YES)
+  CALL lsysbl_createVectorBlock (rcorr, rx, .TRUE.)
   
   ! Call linsol_performSolve to solve the subproblem $Ay = b-Ax$.
-  CALL linsol_performSolve (rsolverNode,rx,rb,Dtemp)
+  CALL linsol_performSolve (rsolverNode,rx,rb,rtemp)
   
   ! Add the correction vector to the solution vector and release the memory.
   ! In case we have one... If the initial vector was assumed as zero, we don't
   ! have a correction vector, the result is directly in rx.
   
   ! Correct the solution vector: x=x+y
-  CALL lsysbl_blockLinearComb (rdef,rx,1.0_DP,1.0_DP)
+  CALL lsysbl_vectorLinearComb (rdef,rx,1.0_DP,1.0_DP)
 
   ! Release memory
   CALL lsysbl_releaseVectorBlock (rcorr)
@@ -1611,7 +1632,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,Dtemp)
+  SUBROUTINE linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,rtemp)
   
 !<description>
   
@@ -1636,7 +1657,7 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
   
   ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: Dtemp
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rtemp
 
 !</inputoutput>
   
@@ -1733,8 +1754,7 @@ CONTAINS
 
   ! Stop if there's no matrix assigned
   
-  IF (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeUMFPACK4% &
-                       rlinearSystemInfo%p_rsystemMatrix)) THEN
+  IF (.NOT. ASSOCIATED(rsolverNode%rlinearSystemInfo%p_rsystemMatrix)) THEN
     PRINT *,'Error: No matrix associated!'
     STOP
   END IF
@@ -1793,8 +1813,7 @@ CONTAINS
 
   ! Stop if there's no matrix assigned
   
-  IF (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeUMFPACK4% &
-                       rlinearSystemInfo%p_rsystemMatrix)) THEN
+  IF (.NOT. ASSOCIATED(rsolverNode%rlinearSystemInfo%p_rsystemMatrix)) THEN
     PRINT *,'Error: No matrix associated!'
     STOP
   END IF
@@ -2159,11 +2178,11 @@ CONTAINS
   INTEGER :: isubgroup,i
   TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
   
-  ! BiCGStab needs 5 temporary vectors. Allocate that here!
+  ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. Allocate that here!
   p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-  DO i=1,5
-    CALL lsysbl_createVecBlockIndMat (p_rsubnode%RtempVectors(i), &
-         p_rsubnode%rlinearSystemInfo%p_rsystemMatrix,.FALSE.)
+  DO i=1,6
+    CALL lsysbl_createVecBlockIndMat (rsolverNode%rlinearSystemInfo%p_rsystemMatrix, &
+         p_rsubnode%RtempVectors(i),.FALSE.)
   END DO
   
   ! by default, initialise solver subroup 0
@@ -2356,7 +2375,7 @@ CONTAINS
   
   ! Release temporary data
   p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-  DO i=5,1,-1
+  DO i=6,1,-1
     CALL lsysbl_releaseVectorBlock (p_rsubnode%RtempVectors(i))
   END DO
   
@@ -2399,12 +2418,19 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_solveBiCGStab (rsolverNode,rx,rb,Dtemp)
+  SUBROUTINE linsol_solveBiCGStab (rsolverNode,rx,rb,rtemp)
   
 !<description>
   
   ! Solves the linear system $Ax=b$ with BiCGStab. The matrix $A$ must be
   ! attached to the solver previously by linsol_setMatrices.
+  ! linsol_initProblemStructure and linsol_initProblemData must have
+  ! been called so that BiCGStab is prepared to solve the system. 
+  !
+  ! The implementation follows the original paper introducing BiCGStab:
+  !   van der Vorst, H.A.; BiCGStab: A Fast and Smoothly Converging
+  !   Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems;
+  !   SIAM J. Sci. Stat. Comput. 1992, Vol. 13, No. 2, pp. 631-644
   
 !</description>
   
@@ -2425,343 +2451,367 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
    
   ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: Dtemp
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rtemp
 
 !</inputoutput>
   
 !</subroutine>
 
-!  ! local variables
-!  REAL(DP) :: rho0,dalpha,omega0
-!
-!  ! The queue saves the current residual and the two previous residuals.
-!  REAL(DP), DIMENSION(32) :: Dresqueue
-!  
-!  ! The system matrix
-!  TYPE(t_matrixBlock), POINTER :: p_rmatrix
-!  
-!  ! Minimum number of iterations, print-sequence for residuals
-!  INTEGER :: nminIterations, niteResOutput
-!  
-!  ! Whether to filter/prcondition
-!  LOGICAL bprec,bfilter
-!  
-!  ! Our structure
-!  TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
-!  
-!  ! Pointers to temporary vectors - named for easier access
-!  TYPE(t_vectorBlock), POINTER :: p_DR,p_DR0,p_DP,p_DPA,p_DSA
-!  
-!  ! Solve the system!
-!  
-!    ! Status reset
-!    rsolverNode%iresult = 0
-!    
-!    ! Getch some information
-!    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-!    p_rmatrix => p_rsubnode%rlinearSystemInfo%p_rsystemMatrix
-!
-!    ! Check the parameters
-!    IF ((rx%NEQ .EQ. 0) .OR. (rb%NEQ .EQ. 0) .OR. (rtemp%NEQ .EQ. 0) .OR. &
-!        (rb%NEQ .NE. rx%NEQ) .OR. (rtemp%NEQ .NE. rx%NEQ) .OR.
-!        (p_rmatrix%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .NE. rx%NEQ) ) THEN
-!    
-!      ! Parameters wrong
-!      rsolverNode%iresult = 2
-!      RETURN
-!    END IF
-!
-!    ! Length of the queue of last residuals for the computation of
-!    ! the asymptotic convergence rate
-!
-!    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
-!
-!    ! Minimum number of iterations
-! 
-!    nminIterations = MAX(IPARAM(rsolverNode%nminIterations),0)
-!      
-!    ! Use preconditioning? Filtering?
-!
-!    bprec = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%rlinearSystemInfo%p_rpreconditioner)
-!    bfilter = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%rlinearSystemInfo%p_rfilterChain)
-!      
-!    ! Iteration when the residuum is printed:
-!
-!    niteResOutput = MAX(1,rsolverNode%niteResOutput)
-!
-!    ! Set pointers to the temporary vectors
-!    p_DR   => p_rsubnode%RtempVectors(1)
-!    p_DR0  => p_rsubnode%RtempVectors(2)
-!    p_DP   => p_rsubnode%RtempVectors(3)
-!    p_DPA  => p_rsubnode%RtempVectors(4)
-!    p_DSA  => p_rsubnode%RtempVectors(5)
-!
-!    ! Initialize used vectors with zero
-!      
-!    CALL lsysbl_blockClear(p_DP)
-!    CALL lsysbl_blockClear(p_DPA)
-!
-!    ! Initialization
-!
-!    rho0   = 1.0_DP
-!    dalpha = 1.0_DP
-!    omega0 = 1.0_DP
-!
-!    ! Matrix-vector multiplication with preconditioning
-!
-!    CALL lsysbl_blockCopy(p_DP,p_DR)
-!    CALL lsysbl_blockMatVec (p_rmatrix, p_DX,p_DR, -1.0_DP, 1.0_DP)
-!    IF (bfilter) CALL DFILT(DR,NEQ,0,IPARAM,DPARAM,IDATA,DDATA)
-!    IF (BPREC) CALL DCG0C(DR,NEQ,IPARAM,DPARAM,IDATA,DDATA)
-!    
-!    CALL LL21(DR,NEQ,RES)
-!
-!    ! Scaling for the vektor (1111...) to have norm = 1
-!      
-!    IF (IPARAM(OINRM).EQ.0) THEN
-!      dres = dres / DSQRT (DBLE(NEQ))
-!      IF (.NOT.((dres .GE. 1D-99) .AND. &
-!                (dres .LE. 1D99))) dres = 0.0_DP
-!    END IF
-!
-!    rsolverNode%dinitialResiduum = dres
-!
-!    ! Initialize starting residuum
-!      
-!    defini = res
-!
-!    ! initialize the queue of the last residuals with RES
-!
-!    Dresqueue = res
-!
-!    ! Check if out initial defect is zero. This may happen if the filtering
-!    ! routine filters "everything out"!
-!    ! In that case we can directly stop our computation.
-!
-!    IF ( defini .LT. rsolverNode%drhsZero ) THEN
-!     
-!C final defect is 0, as initialised in the output variable above
-!
-!      CALL lsysbl_blockClear(rx)
-!      ite = 0
-!      rsolverNode%dfinalResiduum = dres
-!      GOTO 200
-!          
-!    ELSE
-!
-!      IF (rsolverNode%ioutputLevel .GE. 2) THEN
-!        PRINT *,&
-!          'II01X: Iteration ',0,',  !!RES!! = ',DPARAM(ODEFINI)
-!      END IF
-!
-!      CALL lsysbl_blockCopy(p_DR,p_DR0)
-!
-!      ! Perform at most nmaxIterations loops to get a new vector
-!
-!      DO ite = 1,rsolverNode%nmaxIterations
-!      
-!        rsolverNode%icurrentIteration = ite
-!
-!        drho1 = lsysbl_scalarProduct (p_DR0,p_DR) 
-!
-!        IF (drho0*domega0 .EQ. 0.0_DP) THEN
-!          ! Should not happen
-!          IF (IPARAM(OMSGTRM).GE.2) THEN
-!            PRINT *,&
-!     *'II01X: Iteration prematurely stopped! Correction vector is zero!'
-!          END IF
-!
-!          ! Some tuning for the output, then cancel.
-!
-!          rsolverNode%iresult = -1
-!          rsolverNode&iiterations = ITE-1
-!          GOTO 220
-!          
-!        END IF
-!
-!        DBETA=(RHO1*DALPHA)/(RHO0*OMEGA0)
-!        RHO0 =RHO1
-!
-!        CALL LLC1(DR ,DP,NEQ,1D0,DBETA)
-!        CALL LLC1(DPA,DP,NEQ,-DBETA*OMEGA0,1D0)
-!
-!        CALL YMVMUL(DP,DPA,NEQ,1D0,0D0,IPARAM,DPARAM,IDATA,DDATA)
-!        IF (bfilter) CALL DFILT(DPA,NEQ,0,IPARAM,DPARAM,IDATA,DDATA)
-!        IF (BPREC) CALL DCG0C(DPA,NEQ,IPARAM,DPARAM,IDATA,DDATA)
-!
-!        CALL LSP1(DR0,DPA,NEQ,DALPHA)
-!        
-!        IF (DALPHA.EQ.0D0) THEN
-!C We are below machine exactness - we can't do anything more...
-!C May happen with very small problems with very few unknowns!
-!          IF (IPARAM(OMSGTRM).GE.2) THEN
-!            WRITE (MTERM,'(A)') 'II01X: Convergence failed!'
-!            IPARAM(OSTATUS) = 2
-!            GOTO 200
-!          END IF
-!        END IF
-!        
-!        DALPHA=RHO1/DALPHA
-!
-!        CALL LLC1(DPA,DR,NEQ,-DALPHA,1D0)
-!
-!        CALL YMVMUL(DR,DSA,NEQ,1D0,0D0,IPARAM,DPARAM,IDATA,DDATA)
-!        IF (bfilter) CALL DFILT(DSA,NEQ,0,IPARAM,DPARAM,IDATA,DDATA)
-!        IF (BPREC) CALL DCG0C(DSA,NEQ,IPARAM,DPARAM,IDATA,DDATA)
-!
-!        CALL LSP1(DSA,DR ,NEQ,OMEGA1)
-!        CALL LSP1(DSA,DSA,NEQ,OMEGA2)
-!        IF (OMEGA1.EQ.0D0) THEN
-!          OMEGA0 = 0D0
-!        ELSE
-!          IF (OMEGA2.EQ.0D0) THEN
-!            IF (IPARAM(OMSGTRM).GE.2) THEN
-!              WRITE (MTERM,'(A)') 'II01X: Convergence failed!'
-!              IPARAM(OSTATUS) = 2
-!              GOTO 200
-!            END IF
-!          END IF
-!          OMEGA0=OMEGA1/OMEGA2
-!        END IF
-!
-!        CALL LLC1(DP ,DX ,NEQ,DALPHA,1D0)
-!        CALL LLC1(DR ,DX ,NEQ,OMEGA0,1D0)
-!
-!        CALL LLC1(DSA,DR,NEQ,-OMEGA0,1D0)
-!
-!        CALL LL21(DR,NEQ,FR)
-!
-!C Scaling for the vektor (1111...) to have norm = 1
-!        
-!        IF (IPARAM(OINRM).EQ.0) THEN
-!          FR = FR / SQRT (DBLE(NEQ))
-!          IF (.NOT.((FR.GE.1D-99).AND.(FR.LE.1D99))) FR = 0D0
-!        END IF
-!     
-!C shift the queue with the last residuals and add the new
-!C residual to it
-!
-!        DO I=1,IASRLN-1
-!          RESQUE(I)=RESQUE(I+1)
-!        END DO  
-!        RESQUE(IASRLN) = FR
-!
-!        DPARAM(ODEFFIN) = FR
-!     
-!C At least perform nminIterations iterations
-!
-!        IF (ITE.GE.nminIterations) THEN
-!        
-!C         Both stopping criteria given? Stop if both are fulfilled.
-!
-!          IF ((DPARAM(OEPSREL).NE.0D0) .AND.
-!     *        (DPARAM(OEPSABS).NE.0D0)) THEN
-!
-!            IF (( FR.LE.RES*DPARAM(OEPSREL) ) .AND.
-!     *          ( FR.LE.DPARAM(OEPSABS) )) GOTO 200
-!
-!          ELSE IF (DPARAM(OEPSREL).NE.0D0) THEN
-!                    
-!C           Use only relative stopping criterion
-!                    
-!            IF ( FR.LE.RES*DPARAM(OEPSREL) ) GOTO 200
-!            
-!          ELSE
-!          
-!C           Use only absolute stopping criterion
-!
-!            IF ( FR.LE.DPARAM(OEPSABS) ) GOTO 200        
-!            
-!          END IF
-!          
-!        END IF
-!
-!C print out the current residuum
-!
-!        IF ((IPARAM(OMSGTRM).GE.2).AND.(MOD(ITE,MTDV).EQ.0)) THEN
-!          WRITE (MTERM,'(A,I7,A,D25.16)') 
-!     *        'II01X: Iteration ',ITE,',  !!RES!! = ',DPARAM(ODEFFIN)
-!        END IF
-!
-!      END DO
-!
-!C Set ITE to NIT to prevent printing of "NIT+1" of the loop was
-!C completed
-!
-!      ITE = IPARAM(ONITMAX)
-!
-!200   CONTINUE
-!
-!C Finish - either with an error or if converged.
-!C Print the last residuum.
-!
-!      IF ((IPARAM(OMSGTRM).GE.2).AND.
-!     *    (ITE.GE.1).AND.(ITE.LT.IPARAM(ONITMAX))) THEN
-!        WRITE (MTERM,'(A,I7,A,D25.16)') 
-!     *        'II01X: Iteration ',ITE,',  !!RES!! = ',DPARAM(ODEFFIN)
-!      END IF
-!
-!      IPARAM(OITE) = ITE
-!      
-!220   CONTINUE
-!
-!C Don't calculate anything if the final residuum is out of bounds -
-!C would result in NaN's,...
-!      
-!      IF (DPARAM(ODEFFIN).LT.1D99) THEN
-!      
-!C Calculate asymptotic convergence rate
-!      
-!        IF (RESQUE(1).GE.1D-70) THEN
-!          I = MAX(1,MIN(IPARAM(OITE),IASRLN-1))
-!          DPARAM(ORHOASM) = (DPARAM(ODEFFIN)/RESQUE(1))**(1D0/DBLE(I))
-!        END IF
-!
-!C If the initial defect was zero, the solver immediately
-!C exits - and so the final residuum is zero and we performed
-!C no steps; so the resulting multigrid convergence rate stays zero.
-!C In the other case the multigrid convergence rate computes as
-!C (final defect/initial defect) ** 1/nit :
-!
-!        IF (DPARAM(ODEFINI).GT.DPARAM(OVECZER)) THEN
-!          DPARAM(ORHO) = (DPARAM(ODEFFIN) / DPARAM(ODEFINI)) ** 
-!     *                     (1D0/DBLE(IPARAM(OITE)))
-!        END IF
-!        
-!        IF (IPARAM(OMSGTRM).GE.2) THEN
-!          WRITE (MTERM,'(A)') ''
-!          WRITE (MTERM,'(A)') 'BiCGStab statistics:'
-!          WRITE (MTERM,'(A)') ''
-!          WRITE (MTERM,'(A,I5)')     'Iterations              : ',
-!     *            IPARAM(OITE)
-!          WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
-!     *            DPARAM(ODEFINI)
-!          WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
-!     *            DPARAM(ODEFFIN)
-!          IF (DPARAM(ODEFINI).GT.DPARAM(OVECZER)) THEN     
-!            WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-!     *              DPARAM(ODEFFIN) / DPARAM(ODEFINI)
-!          ELSE
-!            WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-!     *              0D0
-!          END IF
-!          WRITE (MTERM,'(A)') ''
-!          WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
-!     *            DPARAM(ORHO)
-!
-!        END IF
-!
-!        IF (IPARAM(OMSGTRM).EQ.1) THEN
+  ! local variables
+  REAL(DP) :: rho0,dalpha,dbeta,domega0,domega1,domega2,dres,ddefini
+  REAL(DP) :: drho1,drho0,dfr
+  INTEGER :: ireslength,ite,i
+
+  ! The queue saves the current residual and the two previous residuals.
+  REAL(DP), DIMENSION(32) :: Dresqueue
+  
+  ! The system matrix
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  
+  ! Minimum number of iterations, print-sequence for residuals
+  INTEGER :: nminIterations, niteResOutput
+  
+  ! Whether to filter/prcondition
+  LOGICAL bprec,bfilter
+  
+  ! Our structure
+  TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
+  
+  ! Pointers to temporary vectors - named for easier access
+  TYPE(t_vectorBlock), POINTER :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rprec
+  TYPE(t_linsolNode), POINTER :: p_rprecSubnode
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  
+  ! Solve the system!
+  
+    ! Status reset
+    rsolverNode%iresult = 0
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+    p_rmatrix => rsolverNode%rlinearSystemInfo%p_rsystemMatrix
+
+    ! Check the parameters
+    IF ((rx%NEQ .EQ. 0) .OR. (rb%NEQ .EQ. 0) .OR. (rtemp%NEQ .EQ. 0) .OR. &
+        (rb%NEQ .NE. rx%NEQ) .OR. (rtemp%NEQ .NE. rx%NEQ) .OR. &
+        (p_rmatrix%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .NE. rx%NEQ) ) THEN
+    
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+
+    ! Length of the queue of last residuals for the computation of
+    ! the asymptotic convergence rate
+
+    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+
+    ! Minimum number of iterations
+ 
+    nminIterations = MAX(rsolverNode%nminIterations,0)
+      
+    ! Use preconditioning? Filtering?
+
+    bprec = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
+    bfilter = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rfilterChain)
+    
+    ! Iteration when the residuum is printed:
+
+    niteResOutput = MAX(1,rsolverNode%niteResOutput)
+
+    ! Set pointers to the temporary vectors
+    p_DR   => p_rsubnode%RtempVectors(1)
+    p_DR0  => p_rsubnode%RtempVectors(2)
+    p_DP   => p_rsubnode%RtempVectors(3)
+    p_DPA  => p_rsubnode%RtempVectors(4)
+    p_DSA  => p_rsubnode%RtempVectors(5)
+    IF (bprec) THEN
+      p_rprec => p_rsubnode%RtempVectors(6)
+      p_rprecSubnode => p_rsubnode%p_rpreconditioner
+    END IF
+    IF (bfilter) THEN
+      p_RfilterChain = p_rsubnode%p_RfilterChain
+    END IF
+      
+    ! Initialize used vectors with zero
+      
+    CALL lsysbl_vectorClear(p_DP)
+    CALL lsysbl_vectorClear(p_DPA)
+
+    ! Initialization
+
+    rho0   = 1.0_DP
+    dalpha = 1.0_DP
+    domega0 = 1.0_DP
+
+    ! Build the initial defect precond*(b-Ax) using
+    ! Matrix-vector multiplication with preconditioning.
+
+    CALL lsysbl_vectorCopy(rb,p_DR)
+    CALL lsysbl_blockMatVec (p_rmatrix, rx,p_DR, -1.0_DP, 1.0_DP)
+    IF (bfilter) THEN
+      ! Apply the filter chain to the vector
+      CALL filter_applyFilterChainVec (p_DR, p_RfilterChain)
+    END IF
+    IF (bprec) THEN
+      ! Perform preconditioning with the assigned preconditioning
+      ! solver structure.
+      CALL lsysbl_vectorCopy(p_DR,p_rprec)
+      CALL linsol_performSolve (p_rprecSubnode,p_DR,p_Rprec,rtemp)
+    END IF
+    
+    ! Get the norm of the residuum
+    dres = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
+    IF (.NOT.((dres .GE. 1D-99) .AND. &
+              (dres .LE. 1D99))) dres = 0.0_DP
+
+    rsolverNode%dinitialDefect = dres
+
+    ! Initialize starting residuum
+      
+    ddefini = dres
+
+    ! initialize the queue of the last residuals with RES
+
+    Dresqueue = dres
+
+    ! Check if out initial defect is zero. This may happen if the filtering
+    ! routine filters "everything out"!
+    ! In that case we can directly stop our computation.
+
+    IF ( ddefini .LT. rsolverNode%drhsZero ) THEN
+     
+      ! final defect is 0, as initialised in the output variable above
+
+      CALL lsysbl_vectorClear(rx)
+      ite = 0
+      rsolverNode%dfinalDefect = dres
+          
+    ELSE
+
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        PRINT *,&
+          'BiCGStab: Iteration ',0,',  !!RES!! = ',ddefini
+      END IF
+
+      CALL lsysbl_vectorCopy(p_DR,p_DR0)
+
+      ! Perform at most nmaxIterations loops to get a new vector
+
+      DO ite = 1,rsolverNode%nmaxIterations
+      
+        rsolverNode%icurrentIteration = ite
+
+        drho1 = lsysbl_scalarProduct (p_DR0,p_DR) 
+
+        IF (drho0*domega0 .EQ. 0.0_DP) THEN
+          ! Should not happen
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            PRINT *,&
+      'BiCGStab: Iteration prematurely stopped! Correction vector is zero!'
+          END IF
+
+          ! Some tuning for the output, then cancel.
+
+          rsolverNode%iresult = -1
+          rsolverNode%iiterations = ITE-1
+          EXIT
+          
+        END IF
+
+        dbeta=(drho1*dalpha)/(drho0*domega0)
+        drho0 = drho1
+
+        CALL lsysbl_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
+        CALL lsysbl_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
+
+        CALL lsysbl_blockMatVec (p_rmatrix, p_DP,p_DPA, 1.0_DP,0.0_DP)
+        IF (bfilter) THEN
+          ! Apply the filter chain to the vector
+          CALL filter_applyFilterChainVec (p_DPA, p_RfilterChain)
+        END IF
+        IF (bprec) THEN
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          CALL lsysbl_vectorCopy(p_DPA,p_rprec)
+          CALL linsol_performSolve (p_rprecSubnode,p_DPA,p_Rprec,rtemp)
+        END IF
+
+        dalpha = lsysbl_scalarProduct (p_DR0,p_DPA)
+        
+        IF (dalpha .EQ. 0.0_DP) THEN
+          ! We are below machine exactness - we can't do anything more...
+          ! May happen with very small problems with very few unknowns!
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            PRINT *,'BiCGStab: Convergence failed!'
+            rsolverNode%iresult = 1
+            EXIT
+          END IF
+        END IF
+        
+        dalpha = drho1/dalpha
+
+        CALL lsysbl_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
+
+        CALL lsysbl_blockMatVec (p_rmatrix, p_DR,p_DSA, 1.0_DP,0.0_DP)
+        
+        IF (bfilter) THEN
+          ! Apply the filter chain to the vector
+          CALL filter_applyFilterChainVec (p_DSA, p_RfilterChain)
+        END IF
+        IF (bprec) THEN
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          CALL lsysbl_vectorCopy(p_DSA,p_rprec)
+          CALL linsol_performSolve (p_rprecSubnode,p_DSA,p_Rprec,rtemp)
+        END IF
+        
+        domega1 = lsysbl_scalarProduct (p_DSA,p_DR)
+        domega2 = lsysbl_scalarProduct (p_DSA,p_DSA)
+        
+        IF (domega1 .EQ. 0.0_DP) THEN
+          domega0 = 0.0_DP
+        ELSE
+          IF (domega2 .EQ. 0.0_DP) THEN
+            IF (rsolverNode%ioutputLevel .GE. 2) THEN
+              PRINT *,'BiCGStab: Convergence failed!'
+              rsolverNode%iresult = 1
+              EXIT
+            END IF
+          END IF
+          domega0 = domega1/domega2
+        END IF
+
+        CALL lsysbl_vectorLinearComb (p_DP ,rx,dalpha,1.0_DP)
+        CALL lsysbl_vectorLinearComb (p_DR ,rx,domega0,1.0_DP)
+
+        CALL lsysbl_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
+
+        ! Get the norm of the new residuum
+        dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
+     
+        ! Shift the queue with the last residuals and add the new
+        ! residual to it
+        dresqueue(1:ireslength) = EOSHIFT(dresqueue(1:ireslength),1,dfr)
+
+        rsolverNode%dfinalDefect = dfr
+     
+        ! At least perform nminIterations iterations
+
+        IF (ite .GE. nminIterations) THEN
+        
+          ! Check if the iteration converged
+          IF (linsol_testConvergence(rsolverNode,dfr)) EXIT
+          
+        END IF
+
+        ! print out the current residuum
+
+        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+            (MOD(ite,niteResOutput).EQ.0)) THEN
+          !WRITE (MTERM,'(A,I7,A,D25.16)') 
+          PRINT *,'BiCGStab: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+        END IF
+
+      END DO
+
+      ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+      ! completed
+
+      IF (ite .GT. rsolverNode%nmaxIterations) &
+        ite = rsolverNode%nmaxIterations
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+
+
+      IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+          (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
+          (rsolverNode%iresult .GE. 0)) THEN
+        !WRITE (MTERM,'(A,I7,A,D25.16)') 
+        PRINT *,'BiCGStab: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+      END IF
+
+    END IF
+
+    rsolverNode%iiterations = ite
+      
+    ! Don't calculate anything if the final residuum is out of bounds -
+    ! would result in NaN's,...
+      
+      IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+      
+        ! Calculate asymptotic convergence rate
+      
+        IF (dresqueue(1) .GE. 1E-70_DP) THEN
+          I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+          rsolverNode%dasymptoticConvergenceRate = &
+            (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+        END IF
+
+        ! If the initial defect was zero, the solver immediately
+        ! exits - and so the final residuum is zero and we performed
+        ! no steps; so the resulting multigrid convergence rate stays zero.
+        ! In the other case the multigrid convergence rate computes as
+        ! (final defect/initial defect) ** 1/nit :
+
+        IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN
+          rsolverNode%dconvergenceRate = &
+                      (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                      (1.0_DP/REAL(rsolverNode%iiterations,DP))
+        END IF
+        
+        IF (rsolverNode%ioutputLevel .GE. 2) THEN
+          !WRITE (MTERM,'(A)') ''
+          PRINT *
+          !WRITE (MTERM,'(A)') 
+          PRINT *,'BiCGStab statistics:'
+          !WRITE (MTERM,'(A)') ''
+          PRINT *
+          !WRITE (MTERM,'(A,I5)')     'Iterations              : ',
+     !*            IPARAM(OITE)
+          PRINT *,'Iterations              : ',rsolverNode%iiterations
+          !WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
+     !*            DPARAM(ODEFINI)
+          PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
+          !WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
+     !*            DPARAM(ODEFFIN)
+          PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
+          IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
+            !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+     !*              rparam%dfinalDefect / rparam%dinitialDefect
+            PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
+                    rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
+          ELSE
+            !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+     !*              0D0
+            PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
+          END IF
+          !WRITE (MTERM,'(A)') ''
+          PRINT *
+          !WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
+     !*            DPARAM(ORHO)
+          PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
+
+        END IF
+
+        IF (rsolverNode%ioutputLevel .EQ. 1) THEN
 !          WRITE (MTERM,'(A,I5,A,D24.12)') 
 !     *          'BiCGStab: Iterations/Rate of convergence: ',
 !     *          IPARAM(OITE),' /',DPARAM(ORHO)
-!        END IF
-!        
-!      ELSE
-!C DEF=Infinity; RHO=Infinity, set to 1
-!        DPARAM(ORHO) = 1D0
-!        DPARAM(ORHOASM) = 1D0
-!      END IF  
+!          WRITE (MTERM,'(A,I5,A,D24.12)') 
+!     *          'BiCGStab: Iterations/Rate of convergence: ',
+!     *          IPARAM(OITE),' /',DPARAM(ORHO)
+          PRINT *,&
+                'BiCGStab: Iterations/Rate of convergence: ',&
+                rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
+        END IF
+        
+      ELSE
+        ! DEF=Infinity; RHO=Infinity, set to 1
+        rsolverNode%dconvergenceRate = 1.0_DP
+        rsolverNode%dasymptoticConvergenceRate = 1.0_DP
+      END IF  
   
   END SUBROUTINE
   
@@ -3406,7 +3456,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_solveMultigrid (rsolverNode,rx,rb,Dtemp)
+  SUBROUTINE linsol_solveMultigrid (rsolverNode,rx,rb,rtemp)
   
 !<description>
   
@@ -3433,7 +3483,7 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
   
   ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: Dtemp
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rtemp
 
 !</inputoutput>
   
