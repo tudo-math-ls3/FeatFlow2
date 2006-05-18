@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains routines to discretise analytically given boundary
 !# conditions. Analytically given boundary conditions are 'discretised', i.e.
-!# a discrete version (realised by the structure t_discreteBC) is calculated.
+!# a discrete version (realised by the structure t_discreteBCEntry) is calculated.
 !# This structure is used during the solution process to impose the boundary
 !# conditions into the solution vector. Therefore, this module contains
 !# the bridge how to put analytic boundary conditions into a discrete vector.
@@ -26,7 +26,6 @@
 !# 2.) bcasm_releaseDiscreteBC
 !#     -> Cleans up a structure with discrete boundary conditions and
 !#        releases all memory allocated by it.
-!#
 !#
 !# </purpose>
 !##############################################################################
@@ -48,18 +47,16 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bcasm_discretiseBC (rspatialDiscretisation,p_RdiscreteBC,bforceRebuild, &
+  SUBROUTINE bcasm_discretiseBC (rspatialDiscretisation,p_rdiscreteBC,bforceRebuild, &
                                  fgetBoundaryValues,p_rcollection)
   
 !<description>
   ! This routine discretises an analytic definition of boundary conditions.
   ! The definition of the boundary conditions is taken from the discretisation
   ! structure rspatialDiscretisation. The discrete version is build up in
-  ! p_RdiscreteBC. If p_RdiscreteBC is NULL(), a new structure is created,
+  ! p_rdiscreteBC. If p_rdiscreteBC is NULL(), a new structure is created,
   ! otherwise the old structure is updated (or even destroyed and recreaded if
   ! necessary).
-  ! Note that the poiinter p_RdiscreteBC may be changed in trhis routine
-  ! if a given structure must completely be recreated!
 !</description>
 
 !<input>
@@ -92,12 +89,12 @@ CONTAINS
 
 !<inputoutput>
   ! A discretised version of the analytic boundary conditions.
-  ! This is a pointer to a list of t_discreteBC structures, each one
-  ! representing a part on the boundary discretised in its own
-  ! special way.
+  ! This is a pointer to a t_discreteBC structures, 
+  ! representing the boundary discretised in a discretisation-
+  ! dependent way.
   ! If this pointer points to NULL(), a complete new structure is
   ! set up.
-  TYPE(t_discreteBC), DIMENSION(:), POINTER :: p_RdiscreteBC
+  TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -130,18 +127,27 @@ CONTAINS
   bbuildAll = bforceRebuild
   
   ! Is there a structure we can work with?
-  IF (ASSOCIATED(p_RdiscreteBC)) THEN
+  IF (.NOT. ASSOCIATED(p_rdiscreteBC)) THEN
+    ! Create a new structure on the heap.
+    ALLOCATE(p_rdiscreteBC)
+  END IF
+  
+  ! Now we work with the array in the structure. Does it exist?
+  
+  IF (ASSOCIATED(p_rdiscreteBC%p_RdiscBCList)) THEN
   
     ! Is there a massive change or do we have o rebuild everything?
-    IF ((p_rboundaryConditions%iregionCount .NE. SIZE(p_RdiscreteBC)) &
+    IF ((p_rboundaryConditions%iregionCount .NE. SIZE(p_rdiscreteBC%p_RdiscBCList)) &
         .OR. bforceRebuild) THEN
         
-      ! Oh, we have to destroy the structure completely!
-      CALL bcasm_releaseDiscreteBC (p_RdiscreteBC)
+      ! Oh, we have to destroy the structure completely.
+      ! Don't remove the structure itself from the heap - we want to
+      ! fill it with data immediately afterwards!
+      CALL bcasm_releaseDiscreteBC (p_rdiscreteBC,.TRUE.)
 
       ! Allocate a new structure array with iregionCount 
       ! entries for all the boundary conditions.
-      ALLOCATE(p_RdiscreteBC(p_rboundaryConditions%iregionCount))
+      ALLOCATE(p_rdiscreteBC%p_RdiscBCList(p_rboundaryConditions%iregionCount))
       
       bbuildAll = .TRUE.
     ELSE
@@ -155,16 +161,17 @@ CONTAINS
         IF (.NOT. p_rbcRegion%bisStatic) THEN
         
           ! Release all allocated information to this boundary region
-          SELECT CASE (p_RdiscreteBC(icurrentRegion)%itype)
+          SELECT CASE (p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype)
 
           CASE (DISCBC_TPDIRICHLET)
 
             ! Discrete Dirichlet boundary conditions. Release the old structure.
-            p_rdiscreteBCDirichlet => p_RdiscreteBC(icurrentRegion)%rdirichletBCs
+            p_rdiscreteBCDirichlet => &
+              p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rdirichletBCs
             CALL bcasm_releaseDirichlet(p_rdiscreteBCDirichlet)
 
             ! BC released, indicate this
-            p_RdiscreteBC(icurrentRegion)%itype = DISCBC_TPUNDEFINED
+            p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
 
           END SELECT
           
@@ -177,7 +184,7 @@ CONTAINS
   
     ! Allocate a structure array with iregionCount entries
     ! for all the boundary conditions.
-    ALLOCATE(p_RdiscreteBC(p_rboundaryConditions%iregionCount))
+    ALLOCATE(p_rdiscreteBC%p_RdiscBCList(p_rboundaryConditions%iregionCount))
     bbuildAll = .TRUE.
   
   END IF
@@ -197,7 +204,7 @@ CONTAINS
       
       CASE (BC_DIRICHLET)
         CALL bcasm_discrBCDirichlet (rspatialDiscretisation, &
-                   p_rbcRegion, p_RdiscreteBC(icurrentRegion), &
+                   p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
                    fgetBoundaryValues,p_rcoll)
       END SELECT
         
@@ -211,18 +218,26 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bcasm_releaseDiscreteBC (p_RdiscreteBC)
+  SUBROUTINE bcasm_releaseDiscreteBC (p_rdiscreteBC,bkeepBCStructure)
   
 !<description>
-  ! This routine cleans up an array of t_discreteBC describing discrete
-  ! boundary conditions. All allocated memory is release. The array
-  ! is released itself from memory, returníng p_RdiscreteBC=NULL()
+  ! This routine cleans up an array of t_discreteBCEntry describing discrete
+  ! boundary conditions. All allocated memory is released. The structure
+  ! p_rdiscreteBC is released from the heap as well.
 !</description>
+
+!<input>
+  ! OPTIONAL: If set to TRUE, the structure p_rdiscreteBC is not released
+  ! from memory. If set to FALSE or not existent (the usual setting), the 
+  ! structure p_rdiscreteBC will also be removed from the heap after 
+  ! cleaning up.
+  LOGICAL, INTENT(IN), OPTIONAL :: bkeepBCStructure
+!</input>
 
 !<inputoutput>
   ! A pointer to discretised boundary conditions. All memory allocated
   ! in and by this array is released from the heap. 
-  TYPE(t_discreteBC), DIMENSION(:), POINTER :: p_RdiscreteBC
+  TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -231,29 +246,41 @@ CONTAINS
   INTEGER :: icurrentRegion
   TYPE(t_discreteBCDirichlet), POINTER :: p_rdiscreteBCDirichlet
   
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) THEN
+  IF (.NOT. ASSOCIATED(p_rdiscreteBC)) THEN
     PRINT *,'Warning in bcasm_releaseDiscreteBC: Nothing to cleanup!'
     RETURN
   END IF
   
-  ! Destroy the structure completely!
-  DO icurrentRegion = 1,SIZE(p_RdiscreteBC)  
-    
-    ! Release all allocated information to this boundary region
-    SELECT CASE (p_RdiscreteBC(icurrentRegion)%itype)
-    CASE (DISCBC_TPDIRICHLET)
-      ! Discrete Dirichlet boundary conditions. Release the old structure.
-      p_rdiscreteBCDirichlet => p_RdiscreteBC(icurrentRegion)%rdirichletBCs
-      CALL bcasm_releaseDirichlet(p_rdiscreteBCDirichlet)
-
-      ! BC released, indicate this
-      p_RdiscreteBC(icurrentRegion)%itype = DISCBC_TPUNDEFINED
-    END SELECT
-    
-  END DO  
+  ! Destroy the content of the structure completely!
+  IF (ASSOCIATED(p_rdiscreteBC%p_RdiscBCList)) THEN
   
-  ! Deallocate the structure, finish.
-  DEALLOCATE(p_RdiscreteBC)
+    ! Destroy all the substructures in the array.
+    DO icurrentRegion = 1,SIZE(p_rdiscreteBC%p_RdiscBCList)  
+      
+      ! Release all allocated information to this boundary region
+      SELECT CASE (p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype)
+      CASE (DISCBC_TPDIRICHLET)
+        ! Discrete Dirichlet boundary conditions. Release the old structure.
+        p_rdiscreteBCDirichlet => &
+          p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rdirichletBCs
+        CALL bcasm_releaseDirichlet(p_rdiscreteBCDirichlet)
+
+        ! BC released, indicate this
+        p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
+      END SELECT
+      
+    END DO  
+    
+  END IF
+  
+  ! Deallocate the structure (if we are allowed to), finish.
+  IF (.NOT. PRESENT(bkeepBCStructure)) THEN
+    DEALLOCATE(p_rdiscreteBC)
+  ELSE
+    IF (.NOT. bkeepBCStructure) THEN
+      DEALLOCATE(p_rdiscreteBC)
+    END IF
+  END IF
 
   END SUBROUTINE
       
@@ -631,7 +658,7 @@ CONTAINS
   ! When entering the routine, the content of this structure is undefined,
   ! all pointers are invalid. The routine fills everything with appropriate
   ! data.
-  TYPE(t_discreteBC), INTENT(OUT), TARGET :: rdiscreteBC
+  TYPE(t_discreteBCEntry), INTENT(OUT), TARGET :: rdiscreteBC
 !</output>
 
   ! local variables
@@ -671,7 +698,7 @@ CONTAINS
   rdiscreteBC%p_rboundaryConditions => rspatialDiscretisation%p_rboundaryConditions
   
   ! Fill the structure for discrete Dirichlet BC's in the
-  ! t_discreteBC structure
+  ! t_discreteBCEntry structure
   p_rdirichletBCs => rdiscreteBC%rdirichletBCs
   
   ! We have to deal with all DOF's on the boundary. This is highly element

@@ -78,7 +78,7 @@ CONTAINS
   ! OPTIONAL: The boundary conditions that are to be imposed into the vector.
   ! If not given, the discrete boundary conditions associated to the vector
   ! rx (in rx%p_RdiscreteBC) are imposed to rx.
-  TYPE(t_discreteBC), DIMENSION(:), OPTIONAL, INTENT(IN), TARGET :: RdiscreteBC
+  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
   
 !</inputoutput>
 
@@ -86,13 +86,16 @@ CONTAINS
 
   ! local variables
   INTEGER :: ibc, ibctype
-  TYPE(t_discreteBC), DIMENSION(:), POINTER :: p_RdiscreteBC
+  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
   
   ! Which BC to impose?
   IF (PRESENT(RdiscreteBC)) THEN
-    p_RdiscreteBC => RdiscreteBC
+    p_RdiscreteBC => RdiscreteBC%p_RdiscBCList
   ELSE
-    p_RdiscreteBC => rmatrix%p_RdiscreteBC
+    ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
+    IF (.NOT. ASSOCIATED(rmatrix%p_rdiscreteBC)) RETURN
+    
+    p_RdiscreteBC => rmatrix%p_RdiscreteBC%p_RdiscBCList
   END IF
   
   ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!

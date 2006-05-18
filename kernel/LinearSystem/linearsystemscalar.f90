@@ -137,11 +137,11 @@ MODULE linearsystemscalar
     ! A pointer to discretised boundary conditions for real boundary components.
     ! For every discrete BC that is valid for this scalar vector, there
     ! is an entry in the following list.
-    TYPE(t_discreteBC), DIMENSION(:), POINTER  :: p_RdiscreteBC => NULL()
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC => NULL()
     
     ! A pointer to discretised boundary conditions for fictitious boundary
     ! components
-    TYPE(t_discreteBC), DIMENSION(:), POINTER  :: p_RdiscreteBCfict => NULL()
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
     
   END TYPE
   
@@ -205,11 +205,11 @@ MODULE linearsystemscalar
     ! A pointer to discretised boundary conditions for real boundary components.
     ! For every discrete BC that is valid for this scalar vector, there
     ! is an entry in the following list.
-    TYPE(t_discreteBC), DIMENSION(:), POINTER  :: p_RdiscreteBC     => NULL()
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC     => NULL()
     
     ! A pointer to discretised boundary conditions for fictitious boundary
     ! components
-    TYPE(t_discreteBC), DIMENSION(:), POINTER  :: p_RdiscreteBCfict => NULL()
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
     
   END TYPE
   
@@ -540,8 +540,8 @@ CONTAINS
   rvector%iidxFirstEntry = 1
   rvector%bisCopy = .FALSE.
   rvector%p_rspatialDiscretisation => NULL()
-  rvector%p_RdiscreteBC => NULL()
-  rvector%p_RdiscreteBCfict => NULL()
+  rvector%p_rdiscreteBC => NULL()
+  rvector%p_rdiscreteBCfict => NULL()
    
   END SUBROUTINE
   
@@ -604,8 +604,8 @@ CONTAINS
   rmatrix%NEQ = 0
   rmatrix%dScaleFactor = 1.0_DP
   rmatrix%p_rspatialDiscretisation => NULL()
-  rmatrix%p_RdiscreteBC     => NULL()
-  rmatrix%p_RdiscreteBCfict => NULL()
+  rmatrix%p_rdiscreteBC     => NULL()
+  rmatrix%p_rdiscreteBCfict => NULL()
 
   END SUBROUTINE
 

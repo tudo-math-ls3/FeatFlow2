@@ -273,7 +273,7 @@ MODULE collection
     TYPE(t_linsolNode), POINTER  :: p_rlinearSolver => NULL()
 
     ! A structure containing discretised boundary conditions
-    TYPE(t_discreteBC), DIMENSION(:), POINTER  :: p_RdiscreteBC     => NULL()
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC     => NULL()
 
     ! Pointer to a collection structure
     TYPE(t_collection), POINTER :: p_rcollection => NULL()
@@ -2283,7 +2283,7 @@ CONTAINS
   ! A standard value if the value does not exist.
   !</result>
   
-  TYPE(t_discreteBC), DIMENSION(:), POINTER :: value
+  TYPE(t_discreteBC), POINTER :: value
 
   !<input>
     
@@ -2340,7 +2340,7 @@ CONTAINS
       STOP
     END IF
     
-    value => p_rvalue%p_RdiscreteBC
+    value => p_rvalue%p_rdiscreteBC
   ELSE
     NULLIFY(value)
   END IF
@@ -3559,7 +3559,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
   
   ! The value of the parameter.
-  TYPE(t_discreteBC), INTENT(IN), DIMENSION(:), TARGET :: value
+  TYPE(t_discreteBC), INTENT(IN), TARGET :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
@@ -3611,7 +3611,7 @@ CONTAINS
   END IF
   
   ! Set the value
-  p_rvalue%p_RdiscreteBC => value
+  p_rvalue%p_rdiscreteBC => value
 
   END SUBROUTINE
 

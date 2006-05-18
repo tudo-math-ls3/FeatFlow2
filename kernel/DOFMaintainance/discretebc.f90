@@ -97,7 +97,7 @@ MODULE discretebc
   ! describes. Depending on the type, one of the information blocks
   ! is filled with data about the discrete BC's.
   
-  TYPE t_discreteBC
+  TYPE t_discreteBCEntry
     
     ! The type identifier. Identifies the type of discrete BC's, this
     ! structure describes.
@@ -115,6 +115,21 @@ MODULE discretebc
   END TYPE
   
 !</typeblock>
+
+!<typeblock>
+
+  ! The main structure for discrete boundary conditions.
+  ! This is just an array of t_discreteBCEntry structures, each describing
+  ! a single discrete boundary condition (so to speak, a segment on the
+  ! boundary discretised in a special way).
+  TYPE t_discreteBC
+  
+    ! An array of t_discreteBCEntry structures. Each structure describes
+    ! one discrete boundary condition - so one part of the boundary discretised
+    ! in a special, discretisation-dependent way.
+    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscBCList => NULL()
+  
+  END TYPE
 
 !</types>
   

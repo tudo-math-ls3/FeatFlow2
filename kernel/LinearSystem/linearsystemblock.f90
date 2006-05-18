@@ -436,12 +436,12 @@ CONTAINS
       rtemplate%RvectorBlock(i)%p_rspatialDiscretisation 
 
     ! Discrete boundary conditions
-    rx%RvectorBlock(i)%p_RdiscreteBC => &
-      rtemplate%RvectorBlock(i)%p_RdiscreteBC
+    rx%RvectorBlock(i)%p_rdiscreteBC => &
+      rtemplate%RvectorBlock(i)%p_rdiscreteBC
 
     ! Discrete fictitious boundary conditions
-    rx%RvectorBlock(i)%p_RdiscreteBCfict => &
-      rtemplate%RvectorBlock(i)%p_RdiscreteBCfict
+    rx%RvectorBlock(i)%p_rdiscreteBCfict => &
+      rtemplate%RvectorBlock(i)%p_rdiscreteBCfict
   END DO
   
   END SUBROUTINE

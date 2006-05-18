@@ -1158,24 +1158,29 @@ CONTAINS
   
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_releaseSolver (p_rsolverNode)
+  RECURSIVE SUBROUTINE linsol_releaseSolver (p_rsolverNode,bkeepSolverNode)
   
 !<description>
-  
   ! This routine releases the solver node rsolverNode and all attached
   ! sub-solver nodes (for preconditioning, smoothing etc. if specified)
   ! from the heap.
-  
 !</description>
   
+!<input>
+  ! OPTIONAL: If set to TRUE, the structure p_rsolverNode is not released
+  ! from memory. If set to FALSE or not existent (the usual setting), the 
+  ! structure p_rsolverNode will also be removed from the heap after 
+  ! cleaning up.
+  ! Remark: The subnodes of the solver (if there are any) are always
+  ! removed from the heap!
+  LOGICAL, INTENT(IN), OPTIONAL :: bkeepSolverNode
+!</input>
+
 !<inputoutput>
-  
   ! The solver node which is to be released. If the node contains attached
   ! subsolvers (preconditioners, smoothers,...) they are also released.
   ! On return, rsolverNode is NULL().
-  
   TYPE(t_linsolNode), POINTER     :: p_rsolverNode
-  
 !</inputoutput>
   
 !</subroutine>
@@ -1201,9 +1206,17 @@ CONTAINS
   CASE DEFAULT
   END SELECT
   
-  ! Finally release the node itself.
+  ! Finally release the node itself (if we are allowed to).
+  ! Deallocate the structure (if we are allowed to), finish.
+  IF (.NOT. PRESENT(bkeepSolverNode)) THEN
+    DEALLOCATE(p_rsolverNode)
+  ELSE
+    IF (.NOT. bkeepSolverNode) THEN
+      DEALLOCATE(p_rsolverNode)
+    END IF
+  END IF
   
-  DEALLOCATE(p_rsolverNode)
+  
   
   END SUBROUTINE
   
