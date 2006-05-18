@@ -29,25 +29,27 @@
 !# solvers are available for these kind of systems which allow faster solving.
 !#
 !# To solve a problem, one has basically to call the following routines
-!# 1.) linsol_initXXXX              - Initialises a solver, returns a solver
-!#                                    structure identifying the solver
-!# 2.) linsol_setMatrices           - Attach the system matrix/matrices to the
-!#                                    solver
-!# 3.) linsol_initStructure         - Allow the solvers to perform problem-
-!#                                    structure specific initialisation
-!#                                    (e.g. symbolical factorisation).
-!#                                    During this phase, each solver allocates
-!#                                    temporary memory it needs for the solution
-!#                                    process
-!# 3.) linsol_initData              - Allow the solvers to perform problem-
-!#                                    data specific initialisation
-!#                                    (e.g. numerical factorisation)
-!# 4.) linsol_performSolve          - Solve the problem
-!# 5.) linsol_doneData              - Release problem-data specific information
-!# 6.) linsol_doneStructure         - Release problem-structure specific 
-!#                                    information. Release temporary memory.
-!# 7.) linsol_releaseSolver         - Clean up solver structures, remove the
-!#                                    solver structure from the heap.
+!# 1.) linsol_initXXXX                - Initialises a solver, returns a solver
+!#                                      structure identifying the solver
+!# 2.) linsol_setMatrices             - Attach the system matrix/matrices to the
+!#                                      solver
+!# 3.) linsol_initStructure           - Allow the solvers to perform problem-
+!#                                      structure specific initialisation
+!#                                      (e.g. symbolical factorisation).
+!#                                      During this phase, each solver allocates
+!#                                      temporary memory it needs for the solution
+!#                                      process
+!# 3.) linsol_initData                - Allow the solvers to perform problem-
+!#                                      data specific initialisation
+!#                                      (e.g. numerical factorisation)
+!# 4.) linsol_performSolve            - Solve the problem for a defect vector
+!# or  linsol_performSolveAdaptively  - Solve the problem with an initial 
+!#                                      solution vector
+!# 5.) linsol_doneData                - Release problem-data specific information
+!# 6.) linsol_doneStructure           - Release problem-structure specific 
+!#                                      information. Release temporary memory.
+!# 7.) linsol_releaseSolver           - Clean up solver structures, remove the
+!#                                      solver structure from the heap.
 !# </purpose>
 !##############################################################################
 
@@ -146,10 +148,10 @@ MODULE linearsolver
   ! Solver can handle multiple levels
   INTEGER, PARAMETER :: LINSOL_ABIL_MULTILEVEL   = 2**2
   
-  ! Solver allows checking the residuum during the iteration.
+  ! Solver allows checking the defect during the iteration.
   ! Solvers not capable of this perform only a fixed number of solution
   ! steps (e.g. UMFPACK performs always one step).
-  INTEGER, PARAMETER :: LINSOL_ABIL_CHECKRES     = 2**3
+  INTEGER, PARAMETER :: LINSOL_ABIL_CHECKDEF     = 2**3
   
   ! Solver is a direct solver (e.g. UMFPACK, ILU).
   ! Otherwise the solver is of iterative nature and might perform
@@ -1490,7 +1492,7 @@ CONTAINS
   ! Calculate the defect:
   
   ! Create rdef as temporary vector based on rx.
-  CALL lsysbl_createVectorBlock (rdef, rx, .FALSE.)
+  CALL lsysbl_createVectorBlock (rx, rdef, .FALSE.)
   
   ! To build (b-Ax), copy the RHS to the temporary vector
   CALL lsysbl_vectorCopy (rb,rdef)
@@ -1499,7 +1501,7 @@ CONTAINS
   
   ! Allocate memory for the correction vector,
   ! Fill it with zero.
-  CALL lsysbl_createVectorBlock (rcorr, rx, .TRUE.)
+  CALL lsysbl_createVectorBlock (rx, rcorr, .TRUE.)
   
   ! Call linsol_performSolve to solve the subproblem $Ay = b-Ax$.
   CALL linsol_performSolve (rsolverNode,rx,rb,rtemp)
@@ -1512,8 +1514,8 @@ CONTAINS
   CALL lsysbl_vectorLinearComb (rdef,rx,1.0_DP,1.0_DP)
 
   ! Release memory
-  CALL lsysbl_releaseVectorBlock (rcorr)
-  CALL lsysbl_releaseVectorBlock (rdef)
+  CALL lsysbl_releaseVector (rcorr)
+  CALL lsysbl_releaseVector (rdef)
   
   END SUBROUTINE
   
@@ -1622,7 +1624,7 @@ CONTAINS
   p_rsolverNode%calgorithm = LINSOL_ALG_VANCAQ1TP02DNS 
   
   ! Initialise the ability bitfield with the ability of this solver:
-  p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + LINSOL_ABIL_CHECKRES
+  p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + LINSOL_ABIL_CHECKDEF
   
   ! Allocate the subnode for VANCA.
   ! This initialises most of the variables with default values appropriate
@@ -2074,7 +2076,7 @@ CONTAINS
   
   ! Initialise the ability bitfield with the ability of this solver:
   p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK    + &
-                              LINSOL_ABIL_CHECKRES + &
+                              LINSOL_ABIL_CHECKDEF + &
                               LINSOL_ABIL_USESUBSOLVER + &
                               LINSOL_ABIL_USEFILTER
   
@@ -2380,7 +2382,7 @@ CONTAINS
   ! Release temporary data
   p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
   DO i=6,1,-1
-    CALL lsysbl_releaseVectorBlock (p_rsubnode%RtempVectors(i))
+    CALL lsysbl_releaseVector (p_rsubnode%RtempVectors(i))
   END DO
   
   END SUBROUTINE
@@ -2462,7 +2464,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres,ddefini
+  REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
   REAL(DP) :: drho1,drho0,dfr
   INTEGER :: ireslength,ite,i
 
@@ -2579,11 +2581,9 @@ CONTAINS
     IF (.NOT.((dres .GE. 1D-99) .AND. &
               (dres .LE. 1D99))) dres = 0.0_DP
 
-    rsolverNode%dinitialDefect = dres
-
     ! Initialize starting residuum
       
-    ddefini = dres
+    rsolverNode%dinitialDefect = dres
 
     ! initialize the queue of the last residuals with RES
 
@@ -2593,7 +2593,7 @@ CONTAINS
     ! routine filters "everything out"!
     ! In that case we can directly stop our computation.
 
-    IF ( ddefini .LT. rsolverNode%drhsZero ) THEN
+    IF ( rsolverNode%dinitialDefect .LT. rsolverNode%drhsZero ) THEN
      
       ! final defect is 0, as initialised in the output variable above
 
@@ -2605,7 +2605,7 @@ CONTAINS
 
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
         PRINT *,&
-          'BiCGStab: Iteration ',0,',  !!RES!! = ',ddefini
+          'BiCGStab: Iteration ',0,',  !!RES!! = ',rsolverNode%dinitialDefect
       END IF
 
       CALL lsysbl_vectorCopy(p_DR,p_DR0)
@@ -2701,7 +2701,7 @@ CONTAINS
 
         CALL lsysbl_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
 
-        ! Get the norm of the new residuum
+        ! Get the norm of the new (final?) residuum
         dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
      
         ! Shift the queue with the last residuals and add the new
@@ -3008,7 +3008,7 @@ CONTAINS
   
   ! Initialise the ability bitfield with the ability of this solver:
   p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR     + LINSOL_ABIL_BLOCK        + &
-                              LINSOL_ABIL_MULTILEVEL + LINSOL_ABIL_CHECKRES     + &
+                              LINSOL_ABIL_MULTILEVEL + LINSOL_ABIL_CHECKDEF     + &
                               LINSOL_ABIL_USESUBSOLVER + &
                               LINSOL_ABIL_USEFILTER
   

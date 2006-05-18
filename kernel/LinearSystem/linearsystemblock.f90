@@ -31,7 +31,7 @@
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!#  7.) lsysbl_releaseVectorBlock
+!#  7.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
 !#  8.) lsysbl_blockMatVec
@@ -115,6 +115,10 @@ MODULE linearsystemblock
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE. The subvectors are all of the same type.
     INTEGER                    :: cdataType = ST_DOUBLE
+
+    ! Is set to true, if the handle h_Ddata belongs to another vector,
+    ! i.e. when this vector shares data with another vector.
+    LOGICAL                    :: bisCopy   = .FALSE.
 
     ! Number of blocks allocated in RvectorBlock
     INTEGER                    :: nblocks = 0
@@ -240,6 +244,10 @@ CONTAINS
   rx%NEQ = n
   rx%nblocks = SIZE(Isize)
   
+  ! The data of the vector belongs to us (we created the handle), 
+  ! not to somebody else.
+  rx%bisCopy = .FALSE.
+  
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
   IF (PRESENT(bclear)) THEN
@@ -293,6 +301,12 @@ CONTAINS
                       
   ! Put the new handle to all subvectors
   rx%RvectorBlock(:)%h_Ddata = rx%h_Ddata
+  
+  ! Note in the subvectors, that the handle belongs to somewhere else... to us!
+  rx%RvectorBlock(:)%bisCopy = .TRUE.
+  
+  ! Our handle belongs to us, so it's not a copy of another vector.
+  rx%bisCopy = .FALSE.
 
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
@@ -436,7 +450,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_releaseVectorBlock (rx)
+  SUBROUTINE lsysbl_releaseVector (rx)
   
 !<description>
   ! Releases the memory that is reserved by rx.
@@ -454,20 +468,61 @@ CONTAINS
   ! local variables
   INTEGER :: i
   
-  ! Release the data
-  CALL storage_free (rx%h_Ddata)
+  ! Release the data - if the handle is not a copy of another vector!
+  IF (.NOT. rx%bisCopy) THEN
+    CALL storage_free (rx%h_Ddata)
+  END IF
   
   ! Clean up the structure
   DO i = 1,SIZE(rx%RvectorBlock)
     rx%RvectorBlock%NEQ = 0
     rx%RvectorBlock%h_Ddata = ST_NOHANDLE
     rx%RvectorBlock%iidxFirstEntry = 0
+    rx%bisCopy = .FALSE.
   END DO
   rx%NEQ = 0
   rx%nblocks = 0
   
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE lsysbl_releaseMatrix (rmatrix)
+ 
+!<description>
+  ! Releases the memory that is reserved by rmatrix.
+!</description>
+  
+!<inputoutput>
+  ! Block matrix to be released
+  TYPE(t_matrixBlock), INTENT(INOUT)                :: rMatrix
+!</inputoutput>
+
+!</subroutine>
+  
+  ! local variables
+  INTEGER :: x,y
+  
+  ! loop through all the submatrices and release them
+  DO x=1,rmatrix%ndiagBlocks
+    DO y=1,rmatrix%ndiagBlocks
+      
+      ! Only release the matrix if there is one.
+      IF (rmatrix%RmatrixBlock(y,x)%NA .NE. 0) THEN
+        CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(y,x))
+      END IF
+      
+    END DO
+  END DO
+  
+  ! Clean up the other variables, finish
+  rmatrix%NEQ = 0
+  rmatrix%ndiagBlocks = 0
+   
+  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -890,6 +945,9 @@ CONTAINS
   ! This routine creates a 1x1 block matrix rmatrix from a scalar matrix
   ! rscalarMat. Both, rscalarMat and rmatrix will share the same handles,
   ! so changing the content of rmatrix will change rscalarMat, too.
+  ! Therefore, the imatrixSpec flag of the submatrix in the block matrix
+  ! will be set to LSYSSC_MSPEC_ISCOPY to indicate that the matrix is a
+  ! copy of another one.
 !</description>
   
 !<input>
@@ -911,8 +969,11 @@ CONTAINS
     
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block matrix
-    rmatrix%RmatrixBlock(1,1) = rscalarMat
+    rmatrix%RmatrixBlock(1,1)             = rscalarMat
 
+    ! The matrix is a copy of another one. Note this!
+    rmatrix%RmatrixBlock(1,1)%imatrixSpec = LSYSSC_MSPEC_ISCOPY
+    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -925,6 +986,8 @@ CONTAINS
   ! This routine creates a 1 block vector rvector from a scalar vector
   ! rscalarVec. Both, rscalarVec and rvector will share the same handles,
   ! so changing the content of rvector will change rscalarVec, too.
+  ! Therefore, the bisCopy flag of the subvector in the block vector
+  ! will be set to TRUE.
 !</description>
   
 !<input>
@@ -943,10 +1006,18 @@ CONTAINS
     rvector%NEQ         = rscalarVec%NEQ
     rvector%cdataType   = rscalarVec%cdataType
     rvector%h_Ddata     = rscalarVec%h_Ddata
+    rvector%nblocks     = 1
     
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block vector
-    rvector%RvectorBlock(1) = rscalarVec
+    rvector%RvectorBlock(1)             = rscalarVec
+
+    ! The handle belongs to another vector - note this in the structure.
+    rvector%RvectorBlock(1)%bisCopy     = .TRUE.
+    
+    ! The data of the vector actually belongs to another one - to the
+    ! scalar one. Note this in the structure.
+    rvector%bisCopy = .TRUE.
 
   END SUBROUTINE
 

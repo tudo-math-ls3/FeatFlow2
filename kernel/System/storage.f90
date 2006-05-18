@@ -98,7 +98,7 @@ MODULE storage
     
     ! Amount of memory (in bytes) associated to this block.
     ! We store that as a double to allow storing numbers > 2GB !
-    REAL(DP) :: dmemBytes = 0_DP
+    REAL(DP) :: dmemBytes = 0.0_DP
     
     ! Pointer to 1D real array or NULL() if not assigned
     REAL(SP), DIMENSION(:), POINTER       :: p_Ssingle1D   => NULL()
@@ -161,7 +161,11 @@ MODULE storage
     
     ! Total amount of memory (in bytes) that is in use. We maintain it
     ! as a double as this allows to save values > 2GB!
-    REAL(DP) :: dtotalMem = 0_DP
+    REAL(DP) :: dtotalMem = 0.0_DP
+    
+    ! Maximum amount of memory that was in use ofer the whole lifetime
+    ! of this structure.
+    REAL(DP) :: dtotalMemMax = 0.0_DP
 
   END TYPE
 
@@ -189,7 +193,7 @@ CONTAINS
 
   SUBROUTINE storage_init(ihandleCount, ihandlesDelta, rheap)
 
-  !<description>
+!<description>
 
   ! This routine initializes the storage management.
   ! ihandleCount is the initial number of handles maintained by the
@@ -199,9 +203,9 @@ CONTAINS
   ! rheap allows to specify a 'local' heap structure to initialise.
   ! If not given, the global memory management is initialised.
 
-  !</description>
+!</description>
 
-  !<input>
+!<input>
 
   ! Initial number of handles maintained by the storage routines.
   INTEGER, INTENT(IN) :: ihandleCount
@@ -210,7 +214,7 @@ CONTAINS
   ! not enough handles available. Standard setting is 1/2*ihandleCount.
   INTEGER, INTENT(IN), OPTIONAL :: ihandlesDelta
   
-  !</input>
+!</input>
   
   !<inputoutput>
   
@@ -271,11 +275,11 @@ CONTAINS
 
   INTEGER FUNCTION storage_newhandle (rheap) RESULT(ihandle)
   
-  !<description>
+!<description>
   ! This routine creates a new handle in the heap structure rheap and
   ! returns the handle number in ihandle. If there is no handle
   ! available, the heap structure is changed to take more handles.
-  !</description>
+!</description>
   
   !<result>
   ! The new handle number.
@@ -354,17 +358,17 @@ CONTAINS
 
   SUBROUTINE storage_releasehandle (ihandle,rheap)
   
-  !<description>
+!<description>
   ! This routine releases a handle from the heap structure rheap.
   ! Memory is not deallocated, simply the structures are cleaned up.
-  !</description>
+!</description>
   
-  !<input>
+!<input>
 
   ! The handle to release
   INTEGER, INTENT(IN) :: ihandle
   
-  !</input>
+!</input>
 
   !<inputoutput>
   
@@ -380,10 +384,13 @@ CONTAINS
   ! Where is the descriptor of the handle?
   p_rnode => rheap%p_Rdescriptors(ihandle)
   
+  ! Subtract the memory amount from the statistics
+  rheap%dtotalMem = rheap%dtotalMem - p_rnode%dmemBytes
+  
   ! Clear the descriptor structure
   p_rnode%idataType = ST_NOHANDLE
   p_rnode%idimension = 0
-  p_rnode%dmemBytes = 0_DP
+  p_rnode%dmemBytes = 0.0_DP
   NULLIFY(p_rnode%p_Ssingle1D)
   NULLIFY(p_rnode%p_Ddouble1D)
   NULLIFY(p_rnode%p_Iinteger1D)
@@ -406,11 +413,11 @@ CONTAINS
   SUBROUTINE storage_new1D (scall, sname, isize, ctype, ihandle, &
                             cinitNewBlock, rheap)
 
-  !<description>
+!<description>
   !This routine reserves a 1D memory block of desired size and type.
-  !</description>
+!</description>
 
-  !<input>
+!<input>
 
   !name of the calling routine
   CHARACTER(LEN=*), INTENT(IN) :: scall
@@ -427,7 +434,7 @@ CONTAINS
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
   INTEGER, INTENT(IN) :: cinitNewBlock
 
-  !</input>
+!</input>
   
   !<inputoutput>
   
@@ -437,12 +444,12 @@ CONTAINS
 
   !</inputouotput>
 
-  !<output>
+!<output>
 
   ! Handle of the memory block.
   INTEGER :: ihandle
 
-  !</output>
+!</output>
   
 !</subroutine>
   
@@ -494,6 +501,8 @@ CONTAINS
   END SELECT
   
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
+  IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
+    p_rheap%dtotalMemMax = p_rheap%dtotalMem
   
   ! Clear the vector if necessary
   IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
@@ -517,11 +526,11 @@ CONTAINS
   SUBROUTINE storage_new2D (scall, sname, isize, ctype, ihandle, &
                             cinitNewBlock, rheap)
 
-  !<description>
+!<description>
   !This routine reserves a 2D memory block of desired size and type.
-  !</description>
+!</description>
 
-  !<input>
+!<input>
 
   !name of the calling routine
   CHARACTER(LEN=*), INTENT(IN) :: scall
@@ -538,7 +547,7 @@ CONTAINS
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
   INTEGER, INTENT(IN) :: cinitNewBlock
 
-  !</input>
+!</input>
   
   !<inputoutput>
   
@@ -548,12 +557,12 @@ CONTAINS
 
   !</inputouotput>
 
-  !<output>
+!<output>
 
   ! Handle of the memory block.
   INTEGER :: ihandle
 
-  !</output>
+!</output>
   
 !</subroutine>
   
@@ -626,10 +635,10 @@ CONTAINS
 
   SUBROUTINE storage_free (ihandle, rheap)
 
-  !<description>
+!<description>
   ! This routine releases a handle from a heap and deallocates the
   ! associated memory. ihandle is set to ST_NOHANDLE upon return.
-  !</description>
+!</description>
 
   !<inputoutput>
   
@@ -665,6 +674,13 @@ CONTAINS
   
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
+  
+  ! Is the node associated at all?
+  IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_free: Trying to release nonexistent handle!'
+    PRINT *,'Handle number: ',ihandle
+    STOP
+  END IF
 
   ! Release the memory assigned to that handle.
   IF (ASSOCIATED(p_rnode%p_Ssingle1D))  DEALLOCATE(p_rnode%p_Ssingle1D)
@@ -685,14 +701,14 @@ CONTAINS
 
   SUBROUTINE storage_getbase_int (ihandle, p_Iarray, rheap)
   
-  !<description>
+!<description>
   
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
@@ -701,14 +717,14 @@ CONTAINS
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! The pointer associated to the handle.
   INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray 
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -747,14 +763,14 @@ CONTAINS
 
   SUBROUTINE storage_getbase_single (ihandle, p_Sarray, rheap)
   
-  !<description>
+!<description>
   
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
@@ -763,14 +779,14 @@ CONTAINS
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! The pointer associated to the handle.
   REAL(SP), DIMENSION(:), POINTER :: p_Sarray
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -809,14 +825,14 @@ CONTAINS
 
   SUBROUTINE storage_getbase_double (ihandle, p_Darray, rheap)
   
-  !<description>
+!<description>
   
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
@@ -825,14 +841,14 @@ CONTAINS
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! The pointer associated to the handle.
   REAL(DP), DIMENSION(:), POINTER :: p_Darray
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -871,14 +887,14 @@ CONTAINS
 
   SUBROUTINE storage_getbase_int2D (ihandle, p_Iarray, rheap)
   
-  !<description>
+!<description>
   
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
@@ -887,14 +903,14 @@ CONTAINS
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! The pointer associated to the handle.
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_Iarray
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -928,14 +944,14 @@ CONTAINS
 
   SUBROUTINE storage_getbase_single2D (ihandle, p_Sarray, rheap)
   
-  !<description>
+!<description>
   
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
   
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
@@ -944,14 +960,14 @@ CONTAINS
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! The pointer associated to the handle.
   REAL(SP), DIMENSION(:,:), POINTER :: p_Sarray
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -985,30 +1001,26 @@ CONTAINS
 
   SUBROUTINE storage_getbase_double2D (ihandle, p_Darray, rheap)
   
-  !<description>
+!<description>
   
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
   
-  !</description>
+!</description>
   
-  !<input>
-  
+!<input>
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
   
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
-
-  !</input>
+!</input>
   
-  !<output>
-  
+!<output>
   ! The pointer associated to the handle.
   REAL(DP), DIMENSION(:,:), POINTER :: p_Darray
-  
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -1034,6 +1046,47 @@ CONTAINS
   
   p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D
   
+  END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE storage_info(rheap)
+  
+!<description>
+  ! This routine prints information about the current memory consumption
+  ! in a memory block to screen.
+!</description>
+
+!<input>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(IN), TARGET, OPTIONAL :: rheap
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  
+    ! Get the heap to use - local or global one.
+    
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbase
+    END IF
+    
+    PRINT *,'Heap statistics:'
+    PRINT *,'----------------'
+    PRINT *,'Number of allocated handles:     ',p_rheap%ihandlesInUse
+    PRINT *,'Current total number of handles: ',SIZE(p_rheap%p_IfreeHandles)
+    PRINT *,'Memory in use:                   ',INT(p_rheap%dtotalMem)
+    PRINT *,'Maximum used memory:             ',INT(p_rheap%dtotalMemMax)
+
   END SUBROUTINE
   
 END MODULE

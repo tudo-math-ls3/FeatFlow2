@@ -414,25 +414,21 @@ MODULE boundary
 
   SUBROUTINE boundary_read_prm(rboundary, sfilename)
 
-  !<description>
+!<description>
   ! This routine reads a .PRM file into memory. The boundary structure
   ! rboundary is initialised with the data from the file.
   ! The parameter sfilename gives the name of the .prm file to read.
-  !</description>
+!</description>
 
-  !<input>
-
+!<input>
   ! The name of the .prm file to read.
   CHARACTER(LEN=*), INTENT(IN) :: sfilename
-
-  ! </input>
+! </input>
   
-  !<output>
-
+!<output>
   ! Boundary structure, to be filled with data
   TYPE(t_boundary), INTENT(OUT) :: rboundary
-
-  !</output>
+!</output>
   
 !</subroutine>
 

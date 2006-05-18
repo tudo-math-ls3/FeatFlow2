@@ -505,6 +505,15 @@ CONTAINS
                               RelementDistribution(icurrentElementDistr)%h_IelementList, &
                               p_IelementList)
     
+
+    ! Set the pointers/indices to the initial position. During the
+    ! search for new DOF's, these might be changed if there's not enough
+    ! memory in the first block.    
+    icurrentblock = 1
+    istartidx = 0
+    p_Icol => Rmemblock(1)%p_Icol
+    p_Iindx => Rmemblock(1)%p_Iindx
+    
     ! Loop over the elements. 
     DO IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
     

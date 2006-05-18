@@ -246,7 +246,7 @@ MODULE collection
     INTEGER(I32) :: ivalue = 0
     
     ! Double precision value 
-    REAL(DP)     :: dvalue = 0_DP
+    REAL(DP)     :: dvalue = 0.0_DP
 
     ! Pointer to a spatial discretisation structure
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation => NULL()

@@ -25,10 +25,10 @@
 !# 2.) lsyssc_scalarMatVec
 !#     -> Multiply a scalar matrix with a scalar vector
 !#
-!# 3.) lsyssc_releaseScalarMatrix
+!# 3.) lsyssc_releaseMatrix
 !#     -> Release a scalar matrix from memory.
 !#
-!# 4.) lsyssc_releaseScalarVector
+!# 4.) lsyssc_releaseVector
 !#     -> Release a scalar vector from memory.
 !# </purpose>
 !##############################################################################
@@ -512,7 +512,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_releaseScalarVector (rvector)
+  SUBROUTINE lsyssc_releaseVector (rvector)
   
 !<description>
   ! Releases a vector from memory. The vector structure is cleaned up.
@@ -549,7 +549,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_releaseScalarMatrix (rmatrix)
+  SUBROUTINE lsyssc_releaseMatrix (rmatrix)
   
 !<description>
   ! Releases a matrix from memory. The structure is cleaned up.

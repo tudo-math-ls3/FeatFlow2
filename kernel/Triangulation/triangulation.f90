@@ -12,6 +12,16 @@
 !# Each polygon (or just called "element" or "element primitive") consists
 !# of a number of lines and a number of corner points. The polygons must not
 !# overlap, but usually share common edges and/or points.
+!#
+!# The following routines can be found here:
+!#
+!# 1.) tria_wrp_tria2Structure
+!#     -> Wrapper. Create a FEAT 2.0 triangulation structure from a
+!#        FEAT 1.x triangulation structure.
+!#
+!# 2.) tria_done
+!#     -> Cleans up a triangulation structure, releases memory from the heap.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -407,6 +417,8 @@ MODULE triangulation
 
 CONTAINS
 
+  ! ***************************************************************************
+
 !<subroutine>
 
   SUBROUTINE tria_wrp_tria2Structure (TRIA, rtriangulation)
@@ -461,6 +473,12 @@ CONTAINS
   rtriangulation%nverticesInEachElement   = TRIA(ONVEDT)
   rtriangulation%nverticesInAllElements   = TRIA(ONIEVT)
   rtriangulation%nadditionalVertices      = TRIA(ONANT )
+  
+  ! The duplication flag stays at 0 - as for now, all
+  ! arrays are created from the feat arrays as new arrays, and
+  ! so they are not a copy of another array.
+  
+  rtriangulation%iduplicationFlag = 0
   
   ! *******************************************************
   ! Copy DCORVG, create p_RcornerCoordinates.
@@ -883,6 +901,128 @@ CONTAINS
     ! Set up last element in the index array.
     p_arrayidx(NVT+1) = nentries+1
     
+    END SUBROUTINE
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_done (rtriangulation)
+  
+!<description>
+  ! This routine cleans up a triangulation structure.
+  ! All memory allocated by handles in the structure is released from the heap.
+  ! The routine does not clean up old FEAT 1.x legacy arrays in the
+  ! rtriangulation%Itria substructure!
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be cleaned up.
+  TYPE(t_triangulation2D), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    INTEGER :: idupflag
+    
+    idupflag = rtriangulation%iduplicationFlag
+    
+    ! Bit  8: KMM    is a copy of another structure
+    ! ... does not exist!?!
+
+    ! Just release all allocated handles.
+    ! Take care of which handles are duplicates from other structures - 
+    ! these must not be released, as we are not the owner of them!
+    
+    ! Bit  0: DCORVG is a copy of another structure
+    CALL checkAndRelease(idupflag, 0,rtriangulation%h_DcornerCoordinates)
+
+    ! Bit  2: KVERT  is a copy of another structure
+    CALL checkAndRelease(idupflag, 2,rtriangulation%h_IverticesAtElement)
+
+    ! Bit  3: KMID   is a copy of another structure
+    CALL checkAndRelease(idupflag, 3,rtriangulation%h_IedgesAtElement)
+    
+    ! Bit  4: KADJ   is a copy of another structure
+    CALL checkAndRelease(idupflag, 4,rtriangulation%h_IneighboursAtElement)
+
+    ! Bit  6: KMEL   is a copy of another structure
+    CALL checkAndRelease(idupflag, 6,rtriangulation%h_IelementsAtEdge)
+
+    ! Bit 16: KEAN   is a copy of another structure
+    CALL checkAndRelease(idupflag,16,rtriangulation%h_IverticesAtEdge)
+
+    ! Bit  7: KNPR   is a copy of another structure
+    CALL checkAndRelease(idupflag, 7,rtriangulation%h_InodalProperty)
+
+    ! Bit 19: DAREA  is a copy of another structure
+    CALL checkAndRelease(idupflag,19,rtriangulation%h_DelementArea)
+
+    ! Bit  5: KVEL   is a copy of another structure
+    CALL checkAndRelease(idupflag, 5,rtriangulation%h_IelementsAtVertexIdx)
+    CALL checkAndRelease(idupflag, 5,rtriangulation%h_IelementsAtVertex)
+
+    ! Bit 11: KBCT   is a copy of another structure
+    CALL checkAndRelease(idupflag,11,rtriangulation%h_IboundaryCpIdx)
+
+    ! Bit  9: KVBD   is a copy of another structure
+    CALL checkAndRelease(idupflag, 9,rtriangulation%h_IverticesAtBoundary)
+
+    ! Bit 14: KMBD   is a copy of another structure
+    CALL checkAndRelease(idupflag,14,rtriangulation%h_IedgesAtBoundary)
+
+    ! Bit 10: KEBD   is a copy of another structure
+    CALL checkAndRelease(idupflag,10,rtriangulation%h_IelementsAtBoundary)
+
+    ! Bit 12: DVBDP  is a copy of another structure
+    CALL checkAndRelease(idupflag,12,rtriangulation%h_DvertexParameterValue)
+
+    ! Bit 13: DMBDP  is a copy of another structure
+    CALL checkAndRelease(idupflag,13,rtriangulation%h_DedgeParameterValue)
+
+    ! Bit 17: KVBDI  is a copy of another structure
+    CALL checkAndRelease(idupflag,17,rtriangulation%h_IboundaryVertexPos)
+
+    ! Bit 18: KMBDI  is a copy of another structure
+    CALL checkAndRelease(idupflag,18,rtriangulation%p_IboundaryEdgePos)
+    
+    ! Bit  1: DCORMG is a copy of another structure
+    CALL checkAndRelease(idupflag, 1,rtriangulation%h_RfreeVertexCoordinates)
+    
+    ! Clean up the rest of the structure
+
+    rtriangulation%iduplicationFlag = 0
+    rtriangulation%NVT = 0
+    rtriangulation%NMT = 0
+    rtriangulation%NEL = 0
+    rtriangulation%NBCT = 0
+    rtriangulation%NVBD = 0
+    rtriangulation%NMBD = 0
+    rtriangulation%nverticesPerEdge = 0
+    rtriangulation%nVerticesOnAllEdges = 0
+    rtriangulation%nverticesInEachElement = 0
+    rtriangulation%nverticesInAllElements = 0
+    rtriangulation%nadditionalVertices = 0
+
+  CONTAINS
+  
+    ! **********************************************************
+    ! Release handle ihandle if bit ibit in idubFlag is not set.
+    ! Otherwise, ihandle is set to ST_NOHANDLE.    
+    SUBROUTINE checkAndRelease (idupFlag,ibit,ihandle)
+    
+    INTEGER, INTENT(IN) :: ibit
+    INTEGER(I32), INTENT(IN) :: idupFlag
+    INTEGER, INTENT(INOUT) :: ihandle
+    
+      IF (IAND(idupFlag,2**ibit) .EQ. 0) THEN
+        IF (ihandle .NE. ST_NOHANDLE) CALL storage_free(ihandle)
+      ELSE
+        ihandle = ST_NOHANDLE
+      END IF
+      
     END SUBROUTINE
 
   END SUBROUTINE

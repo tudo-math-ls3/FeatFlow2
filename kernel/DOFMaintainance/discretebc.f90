@@ -64,7 +64,7 @@ MODULE discretebc
 
 !<types>
   
-  !<typeblock>
+!<typeblock>
   
   ! This structure describes the typical way, Dirichlet boundary conditions
   ! can be discretised. This is done by two arrays: one array is a list of all
@@ -88,9 +88,9 @@ MODULE discretebc
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
   
-  !<typeblock>
+!<typeblock>
   
   ! This describes the basic structure for discrete boundary conditions.
   ! A type identifier decides on which boundary conditions this structure
@@ -114,7 +114,7 @@ MODULE discretebc
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 !</types>
   

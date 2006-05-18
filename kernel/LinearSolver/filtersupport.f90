@@ -34,6 +34,7 @@ MODULE filtersupport
   USE fsystem
   USE linearsystemblock
   USE spatialdiscretisation
+  USE matrixfilters
   USE vectorfilters
   
   IMPLICIT NONE
@@ -104,14 +105,16 @@ MODULE filtersupport
   
 CONTAINS
 
+  ! ***************************************************************************
+  
 !<subroutine>
 
   SUBROUTINE filter_applyFilterChainVec (rx, RfilterChain)
 
 !<description>
-  ! This routine applies a filter chain on a vector rx. All filters in the
-  ! chain are applied one after the other until the end of the array is reached
-  ! or the first filter is found with the filter tag FILTER_NOFILTER.
+  ! This routine applies a filter chain on a (block) vector rx. All filters in
+  ! the chain are applied one after the other until the end of the array is 
+  ! reached or the first filter is found with the filter tag FILTER_NOFILTER.
 !</description>
 
 !<input>
@@ -140,10 +143,6 @@ CONTAINS
   
     ifilterType = RfilterChain(i)%ifilterType
   
-    ! Cancel if we reached the last filter before reaching the end of the
-    ! array
-    IF (ifilterType .EQ. FILTER_NOFILTER) EXIT
-    
     ! Choose the filter and apply it
     SELECT CASE (ifilterType)
     CASE (FILTER_NOFILTER)
@@ -162,6 +161,64 @@ CONTAINS
     CASE (FILTER_TOL20)
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
       CALL vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
+    END SELECT
+  
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE filter_applyFilterChainMat (rmatrix, RfilterChain)
+
+!<description>
+  ! This routine applies a filter chain on a (block) matrix rmatrix. All 
+  ! filters in the chain are applied one after the other until the end of 
+  ! the array is reached or the first filter is found with the filter 
+  ! tag FILTER_NOFILTER.
+!</description>
+
+!<input>
+  
+  ! The filter chain
+  TYPE(t_filterChain), DIMENSION(:), INTENT(IN) :: RfilterChain
+  
+!</input>
+
+!<inputoutput>
+  
+  ! The matrix where the filter will be applied to.
+  ! This is also the result matrix.
+  TYPE(t_matrixBlock), INTENT(INOUT)            :: rmatrix
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i, ifilterType
+  
+  ! Apply the filters to matrixx - one after the other
+  
+  DO i=LBOUND(RfilterChain,1),UBOUND(RfilterChain,1)
+  
+    ifilterType = RfilterChain(i)%ifilterType
+  
+    ! Choose the filter and apply it
+    SELECT CASE (ifilterType)
+    CASE (FILTER_NOFILTER)
+      ! Cancel if we reached the last filter before reaching the end of the
+      ! array
+      EXIT
+      
+    CASE (FILTER_DISCBCSOLREAL,FILTER_DISCBCDEFREAL)
+      ! Impose Dirichlet boundary contitions into the matrix rmatrix.
+      ! The filter is the same for both, solution and defect filter,
+      ! as the matrix modification is teh same (for now).
+      CALL matfil_discreteBC (rmatrix)
+    
     END SELECT
   
   END DO

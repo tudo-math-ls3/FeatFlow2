@@ -328,24 +328,25 @@ CONTAINS
 !</inputoutput>
 
 !<output>
-  ! A pointer to the added boundary region. The caller can make more specific
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make more specific
   ! modifications to this.
-  TYPE(t_bcRegion), POINTER :: p_rbcRegion
+  TYPE(t_bcRegion), OPTIONAL, POINTER :: p_rbcRegion
 !</output>
 
 !</subroutine>
 
   ! local variables
-  TYPE(t_bcRegion), DIMENSION(:), POINTER :: p_region,p_temp
+  TYPE(t_bcRegion), DIMENSION(:), POINTER :: p_Rregion,p_temp
+  TYPE(t_bcRegion), POINTER :: p_rbcRegionLocal
   INTEGER, POINTER :: ifull
 
   ! Select the type of boundary where to add:
   SELECT CASE (cbdtype)
   CASE (BC_RTYPE_REAL,BC_RTYPE_FREE)
-    p_region => rboundaryConditions%p_Rregions
+    p_Rregion => rboundaryConditions%p_Rregions
     ifull => rboundaryConditions%iregionCount
   !CASE (BC_RTYPE_FREE)
-  !  p_region => rboundaryConditions%p_RregionsFree
+  !  p_Rregion => rboundaryConditions%p_RregionsFree
   !  ifull => rboundaryConditions%iregionCountFree
   CASE (BC_RTYPE_FBCOBJECT)
     PRINT *,'Fictitious boundary conditions not supported by scbc_newBCrealBD!'
@@ -356,30 +357,35 @@ CONTAINS
   END SELECT
 
   ! Space left, or do we have to reallocate?
-  IF (ifull .GE. SIZE(p_region)) THEN
+  IF (ifull .GE. SIZE(p_Rregion)) THEN
     ALLOCATE(p_temp(ifull+BC_LISTBLOCKSIZE))
-    p_temp = p_region
-    DEALLOCATE(p_region)
-    p_region => p_temp
+    p_temp = p_Rregion
+    DEALLOCATE(p_Rregion)
+    p_Rregion => p_temp
     
     SELECT CASE (cbdtype)
     CASE (BC_RTYPE_REAL,BC_RTYPE_FREE)
-      rboundaryConditions%p_Rregions => p_region
+      rboundaryConditions%p_Rregions => p_Rregion
     !CASE (BC_RTYPE_FREE)
-    !  rboundaryConditions%p_RregionsFree => p_region
+    !  rboundaryConditions%p_RregionsFree => p_Rregion
     CASE (BC_RTYPE_FBCOBJECT)
-      rboundaryConditions%p_RregionsFBC => p_region
+      rboundaryConditions%p_RregionsFBC => p_Rregion
     END SELECT
   END IF
   
   ! Add the region
   ifull = ifull + 1
-  p_rbcRegion => p_region(ifull)
+  p_rbcRegionLocal => p_Rregion(ifull)
 
   ! Initialise the structure
-  p_rbcRegion%cbcRegionType = cbdtype
-  p_rbcRegion%ctype = ctype
-  p_rbcRegion%rboundaryRegion = rboundaryRegion
+  p_rbcRegionLocal%cbcRegionType = cbdtype
+  p_rbcRegionLocal%ctype = ctype
+  p_rbcRegionLocal%rboundaryRegion = rboundaryRegion
+  
+  ! If p_rbcRegion is given, return the pointer
+  IF (PRESENT(p_rbcRegion)) THEN
+    p_rbcRegion => p_rbcRegionLocal
+  END IF
   
   END SUBROUTINE
       
