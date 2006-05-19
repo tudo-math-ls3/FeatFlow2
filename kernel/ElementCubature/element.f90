@@ -411,6 +411,9 @@ CONTAINS
   ! Element type identifier
   INTEGER, INTENT(IN)  :: ieltyp
   
+  ! Number of points where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
@@ -434,9 +437,6 @@ CONTAINS
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
-  
-  ! Number of points where to evalate the basis functions.
-  INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
@@ -713,6 +713,9 @@ CONTAINS
   ! Element type identifier. Must be =EL_Q0.
   INTEGER, INTENT(IN)  :: ieltyp
   
+  ! Number of points where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
@@ -738,9 +741,6 @@ CONTAINS
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
-  
-  ! Number of points where to evalate the basis functions.
-  INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
@@ -1005,6 +1005,9 @@ CONTAINS
   ! Element type identifier. Must be =EL_Q1.
   INTEGER, INTENT(IN)  :: ieltyp
   
+  ! Number of points where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
@@ -1032,9 +1035,6 @@ CONTAINS
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
-  
-  ! Number of points where to evalate the basis functions.
-  INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
@@ -1536,6 +1536,9 @@ CONTAINS
   ! Element type identifier. Must be =EL_EM30.
   INTEGER, INTENT(IN)  :: ieltyp
   
+  ! Number of points where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
@@ -1561,9 +1564,6 @@ CONTAINS
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
   LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
-  
-  ! Number of points where to evalate the basis functions.
-  INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
