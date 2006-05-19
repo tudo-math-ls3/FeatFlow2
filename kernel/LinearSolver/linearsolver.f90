@@ -2431,6 +2431,9 @@ CONTAINS
     CALL linsol_releaseSolver(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
   END IF
   
+  ! Release the BiCGStab subnode
+  DEALLOCATE(rsolverNode%p_rsubnodeBiCGStab)
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -2671,7 +2674,7 @@ CONTAINS
           ! May happen with very small problems with very few unknowns!
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
             PRINT *,'BiCGStab: Convergence failed!'
-            rsolverNode%iresult = 1
+            rsolverNode%iresult = -2
             EXIT
           END IF
         END IF
@@ -2702,7 +2705,7 @@ CONTAINS
           IF (domega2 .EQ. 0.0_DP) THEN
             IF (rsolverNode%ioutputLevel .GE. 2) THEN
               PRINT *,'BiCGStab: Convergence failed!'
-              rsolverNode%iresult = 1
+              rsolverNode%iresult = -2
               EXIT
             END IF
           END IF
@@ -2722,9 +2725,15 @@ CONTAINS
         dresqueue(1:ireslength) = EOSHIFT(dresqueue(1:ireslength),1,dfr)
 
         rsolverNode%dfinalDefect = dfr
+
+        ! Test if the iteration is diverged
+        IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          PRINT *,'BiCGStab: Solution diverging!'
+          rsolverNode%iresult = 1
+          EXIT
+        END IF
      
         ! At least perform nminIterations iterations
-
         IF (ite .GE. nminIterations) THEN
         
           ! Check if the iteration converged

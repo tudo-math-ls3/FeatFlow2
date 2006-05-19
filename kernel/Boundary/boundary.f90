@@ -693,6 +693,9 @@ MODULE boundary
     p_DmaxPar(ibcomponent) = dmaxPar
     
   END DO
+  
+  ! Close the file, finish
+  CLOSE(iunit)
     
   END SUBROUTINE 
 

@@ -186,7 +186,7 @@ CONTAINS
 
 !<inputoutput>
   ! The discretisation structure to be released.
-  TYPE(t_spatialDiscretisation), INTENT(INOUT), POINTER :: p_rspatialDiscr
+  TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscr
 !</inputoutput>
   
 !</subroutine>

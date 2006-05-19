@@ -37,7 +37,7 @@ greet:
 # If a BLAS or LAPACK library is given, BLASLAPACKLIB contains entries
 # for both, BLAS and LAPACK.
 
-$(EXEC): $(OBJDIRF90) $(OBJDIR) $(OBJF90) $(OBJ) $(FEAT) 
+$(EXEC): $(OBJDIRF90) $(OBJDIR) $(FEAT) Deps.mk Depsf90.mk $(OBJ) $(OBJF90) 
 	$(LD) $(FCFLAGS) $(OPTFLAGS) $(OBJF90) $(OBJ) $(LDFLAGS) $(FEAT) $(BLASLAPACKLIB) $(LDLIBS) -o $@
 
 # The variable BENCHINC is probably set by the benchmark if the user
@@ -67,8 +67,12 @@ $(FEAT):
 Deps.mk: $(SRC)
 	($(FEATFLOW)/bin/f77mkdep.sh $^ >$@)
 
+Depsf90.mk: $(SRCF90)
+	($(FEATFLOW)/bin/f90mkdep.sh $^ >$@)
+
 clean:
 	-rm -f Deps.mk
+	-rm -f Depsf90.mk
 	-rm -f $(OBJDIR)/*.o 
 	-rm -f $(OBJDIRF90)/*.o 
 	-rm -f $(OBJDIRF90)/*.mod

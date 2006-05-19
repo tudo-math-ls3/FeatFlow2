@@ -84,7 +84,7 @@ CONTAINS
   ! OPTIONAL: A collection structure to inform the callback function with
   ! additional information. Can be NULL() or undefined if there is no
   ! information to pass.
-  TYPE(t_collection), POINTER, INTENT(IN), OPTIONAL :: p_rcollection
+  TYPE(t_collection), POINTER, OPTIONAL :: p_rcollection
 !</input>
 
 !<inputoutput>
@@ -270,6 +270,9 @@ CONTAINS
       END SELECT
       
     END DO  
+    
+    ! Release the array itself.
+    DEALLOCATE(p_rdiscreteBC%p_RdiscBCList)
     
   END IF
   
@@ -650,7 +653,7 @@ CONTAINS
   
   ! A collection structure to inform the callback function with
   ! additional information. Can be NULL() if there is no information to pass.
-  TYPE(t_collection), POINTER, INTENT(IN) :: p_rcollection
+  TYPE(t_collection), POINTER :: p_rcollection
 !</input>  
 
 !<output>

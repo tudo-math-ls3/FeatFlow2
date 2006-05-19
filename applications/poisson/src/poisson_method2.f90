@@ -14,7 +14,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE poissonmeth2
+MODULE poisson_method2
 
   USE fsystem
   USE storage
@@ -83,18 +83,18 @@ CONTAINS
     ! it to rboundary.
     ! Set p_rboundary to NULL() to create a new structure.
     NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, 'pre/QUAD.prm')
+    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
         
     ! Remark that this does not read in the parametrisation for FEAT 1.x.
     ! Unfortunately we still need it for creating the initial triangulation!
     ! Therefore, read the file again wihh FEAT 1.x routines.
     IMESH = 1
-    CFILE = 'pre/QUAD.prm'
+    CFILE = './pre/QUAD.prm'
     CALL GENPAR (.TRUE.,IMESH,CFILE)
 
     ! Now read in the triangulation - in FEAT 1.x syntax.
     ! Refine it to level LV...
-    CFILE = 'pre/QUAD.tri'
+    CFILE = './pre/QUAD.tri'
     CALL INMTRI (2,TRIAS,ilv,ilv,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
@@ -801,7 +801,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson_method2
+  SUBROUTINE poisson2
   
   include 'cmem.inc'
   

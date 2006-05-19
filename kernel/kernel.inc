@@ -15,7 +15,8 @@ SRCF90:=$(SRCF90) fsystem.f90 basicgeometry.f90 afc_util.f90  \
 	linearsystemblock.f90 matrixmodification.f90 matrixfilters.f90\
 	vectorfilters.f90 filtersupport.f90 linearsolver.f90 \
 	linearsolverautoinitialise.f90 collection.f90 \
-	bilinearformevaluation.f90 linearformevaluation.f90
+	bilinearformevaluation.f90 linearformevaluation.f90 \
+	bcassembly.f90
 
 # path for the make where to look for which files
 

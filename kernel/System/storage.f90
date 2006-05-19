@@ -271,6 +271,57 @@ CONTAINS
   
 !************************************************************************
 
+!<subroutine>
+
+  SUBROUTINE storage_done(rheap)
+
+!<description>
+  ! This routine cleans up the storage management. All data on the
+  ! heap is released from memory.
+!</description>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is cleaned up.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</inputouotput>
+  
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap to initialise
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  
+  INTEGER :: i
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  ! Delete all data from the heap
+  DO i = 1,SIZE(p_rheap%p_Rdescriptors)
+    IF (p_rheap%p_Rdescriptors(i)%idataType .NE. ST_NOHANDLE) &
+      CALL storage_free(i)
+  END DO
+  
+  ! Clean up the memory management block
+  p_rheap%nhandlesTotal = 0
+  p_rheap%ihandlesDelta = 0
+  p_rheap%p_inextFreeHandle = 0
+  p_rheap%p_ilastFreeHandle = 0
+  p_rheap%ihandlesInUse = 0
+  
+  ! Release the descriptors
+  DEALLOCATE(p_rheap%p_IfreeHandles)
+  DEALLOCATE(p_rheap%p_Rdescriptors)
+  
+  END SUBROUTINE
+  
+!************************************************************************
+
 !<function>
 
   INTEGER FUNCTION storage_newhandle (rheap) RESULT(ihandle)

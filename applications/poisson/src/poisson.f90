@@ -24,8 +24,8 @@
 
 PROGRAM poisson
 
-  USE poissonmeth1
-  USE poissonmeth2
+  USE poisson_method1
+  USE poisson_method2
   
   IMPLICIT NONE
   
@@ -55,21 +55,25 @@ PROGRAM poisson
              'data/cc2d.sys','data/cc2d.trc') 
   
   ! Call the problem to solve. Poisson 1:
+  PRINT *
   PRINT *,'Calculating Laplace-Problem with method 1'
   PRINT *,'-----------------------------------------'
-  CALL poisson_method1
+  CALL poisson1
   
   PRINT *
 
   ! Call the problem to solve. Poisson 2:
   PRINT *,'Calculating Laplace-Problem with method 2'
   PRINT *,'-----------------------------------------'
-  CALL poisson_method2
+  CALL poisson2
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
   PRINT *
   CALL storage_info()
+  
+  ! Clean up the storage management, finish
+  CALL storage_done()
   
 END PROGRAM
