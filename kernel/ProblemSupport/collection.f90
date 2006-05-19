@@ -123,6 +123,12 @@
 !#     -> Modifies a value in the list. Add a value if it does not exist.
 !#        xxx corresponds to the type of  the variable.
 !#
+!# - collct_detelevalue
+!#     -> Deletes a value from the list.
+!#
+!# - collct_printStatistics 
+!#     -> Prints out the current content of the structure to the terminal
+!#
 !# </purpose>
 !##############################################################################
 
@@ -135,12 +141,13 @@ MODULE collection
   USE paramlist
   USE spatialdiscretisation
   USE linearsolver
+  USE boundary
   
   IMPLICIT NONE
 
 !<constants>
 
-  !<constantblock>
+!<constantblock>
   
   ! Maximum length of a section name.
   INTEGER, PARAMETER :: COLLCT_MLSECTION = 64
@@ -166,9 +173,9 @@ MODULE collection
   ! entries.
   INTEGER, PARAMETER :: COLLCT_NSECTIONS = 5
 
-  !</constantblock>
+!</constantblock>
 
-  !<constantblock description='Type identifier for values'>
+!<constantblock description='Type identifier for values'>
   
   ! Undefined value
   INTEGER, PARAMETER :: COLLCT_UNDEFINED = 0
@@ -212,16 +219,22 @@ MODULE collection
   ! Discretised-boundary-conditions structure
   INTEGER, PARAMETER :: COLLCT_DISCRBC    = 13
 
-  ! The collection structure itself
-  INTEGER, PARAMETER :: COLLCT_COLLECTION = 14
+  ! A domain
+  INTEGER, PARAMETER :: COLLCT_BOUNDARY   = 14
 
-  !</constantblock>
+  ! Scalar analytic boundary conditions
+  INTEGER, PARAMETER :: COLLCT_BOUNDARYCOND = 15
+
+  ! The collection structure itself
+  INTEGER, PARAMETER :: COLLCT_COLLECTION = 16
+
+!</constantblock>
 
 !</constants>
 
 !<types>
   
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises a value in the scalar collection.
   ! It contains a type and some data variables that contain the value.
@@ -275,14 +288,20 @@ MODULE collection
     ! A structure containing discretised boundary conditions
     TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC     => NULL()
 
+    ! Pointer to a domain
+    TYPE(t_boundary), POINTER      :: p_rdomain => NULL()
+
+    ! Pointer to scalar boundary conditions
+    TYPE(t_boundaryConditions), POINTER      :: p_rboundaryConditions => NULL()
+
     ! Pointer to a collection structure
-    TYPE(t_collection), POINTER :: p_rcollection => NULL()
+    TYPE(t_collection), POINTER              :: p_rcollection => NULL()
 
   END TYPE
   
-  !</typeblock>
+!</typeblock>
   
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises a level structure containing multiple values.
   
@@ -293,14 +312,18 @@ MODULE collection
     ! Actual number of values in this section.
     INTEGER :: ivalueCount = 0
     
+    ! Indicates whether the first ivalueCount values are 'en-block'
+    ! or if there are 'holes' inbetween because of deleted values.
+    LOGICAL :: bisFull = .TRUE.
+    
     ! A list of values.
     TYPE(t_collctValue), DIMENSION(:), POINTER :: p_Rvalues => NULL()
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
-  !<typeblock>
+!<typeblock>
   
   ! This structure realises a section. Each section contains a list of
   ! level substructures and one substructure not assigned to a level,
@@ -327,9 +350,9 @@ MODULE collection
     
   END TYPE
   
-  !<typeblock>
+!<typeblock>
   
-  !</typeblock>
+!</typeblock>
   
   ! This structure realises a collection.
   ! A collection contains one unnamed section (containing general data)
@@ -356,7 +379,7 @@ MODULE collection
     
   END TYPE
 
-  !</typeblock>
+!</typeblock>
 
 !</types>
 
@@ -393,6 +416,9 @@ CONTAINS
   ! No variables in here for the moment
   rcollctLevel%ivalueCount = 0
   
+  ! No holes.
+  rcollctLevel%bisFull = .TRUE.
+  
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -408,6 +434,9 @@ CONTAINS
   
   ! No variables in here for the moment
   rcollctLevel%ivalueCount = 0
+  
+  ! No holes anymore.
+  rcollctLevel%bisFull = .TRUE.
   
   END SUBROUTINE
 
@@ -509,19 +538,54 @@ CONTAINS
     ! Create an array for the entries
     ALLOCATE(p_rLevel%p_Rvalues(COLLCT_NVALUES))
     
+    ! Take a pointer to the first position for storing data.
+    p_rvalue => p_Rlevel%p_Rvalues(1)
+    
   ELSE IF (p_rLevel%ivalueCount .GE. SIZE(p_rLevel%p_Rvalues)) THEN
   
     ! Reallocate the entry array to get space for the new entry
-    ALLOCATE(p_Rvalues(p_rLevel%ivalueCount+COLLCT_NVALUES))
+    ALLOCATE(p_Rvalues(SIZE(p_Rvalues)+COLLCT_NVALUES))
     p_Rvalues(1:p_rLevel%ivalueCount) = p_rLevel%p_Rvalues (1:p_rLevel%ivalueCount)
     DEALLOCATE(p_rLevel%p_Rvalues)
     p_rLevel%p_Rvalues => p_Rvalues
     
+    ! Store the value at the new free position.
+    p_rvalue => p_Rlevel%p_Rvalues(p_rLevel%ivalueCount+1)
+    
+    ! There are definitely no holes anymore in the list on this
+    ! level, as all free positions are filled up when we are here.
+    p_rLevel%bisFull = .TRUE.
+    
+  ELSE
+    ! Are there holes or can we directly take the maximum position?
+    IF (p_rLevel%bisFull) THEN
+      ! No holes, take the next free position.
+      i = p_rLevel%ivalueCount + 1
+    ELSE
+      ! Find an empty position in the array.
+      DO i=1,SIZE(p_Rvalues)
+        IF (p_rLevel%p_Rvalues(i)%itype .EQ. COLLCT_UNDEFINED) EXIT
+      END DO
+    
+      ! This must work, otherwise ivalueCount is wrong!
+      IF (i .GT. SIZE(p_Rvalues)) THEN
+        PRINT *,'Error in collct_addvalue: Collection structure inconsistent!'
+        STOP
+      END IF
+      
+      ! If i is larger than ivalueCount, all holes are filled up again,
+      ! i.e. we add 'behind' all elements.
+      IF (i .GT. p_rLevel%ivalueCount) p_rLevel%bisFull = .TRUE.
+      
+    END IF
+
+    ! Take that value for storing data.
+    p_rvalue => p_Rlevel%p_Rvalues(i)
+    
   END IF
-  
-  ! Add a value structure and return a pointer to it
+
+  ! Fill the value with initial data and increase the counter.
   p_rLevel%ivalueCount = p_rLevel%ivalueCount + 1
-  p_rvalue => p_Rlevel%p_Rvalues(p_Rlevel%ivalueCount)
   p_rvalue%sname = sparamName
   p_rvalue%itype = itype
   
@@ -667,7 +731,7 @@ CONTAINS
   INTEGER, INTENT(OUT) :: iparamnum
   
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,nsections
   CHARACTER(LEN=LEN(sname))  :: sname2
   
   ! Convert the name to uppercase
@@ -680,7 +744,13 @@ CONTAINS
   IF (rlevel%ivalueCount .EQ. 0) RETURN
   
   ! Loop through all sections to see if the section exists
-  DO i=1,rlevel%ivalueCount
+  IF (rlevel%bisfull) THEN
+    nsections = rlevel%ivalueCount
+  ELSE
+    nsections = SIZE(rlevel%p_Rvalues)
+  END IF
+
+  DO i=1,nsections
     IF (rlevel%p_Rvalues(i)%sname .EQ. sname2) THEN
       iparamnum = i
       RETURN
@@ -829,7 +899,12 @@ CONTAINS
   i = MAX(0,ilevel)
   IF (i .GT. p_rsection%ilevelCount) RETURN
   
-  p_rlevel => p_rsection%p_Rlevels(i)
+  IF (i .EQ. 0) THEN
+    ! Get level 0 - the always-existing level
+    p_rlevel => p_rsection%rlevel0
+  ELSE
+    p_rlevel => p_rsection%p_Rlevels(i)
+  END IF
 
   END SUBROUTINE
 
@@ -839,19 +914,19 @@ CONTAINS
   
   SUBROUTINE collct_init (rcollection)
   
-  !<description>
+!<description>
   
   ! This routine initialises a collection. It must be applied 
   ! before doing anything to it, just to initialise.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list to initialise.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -871,19 +946,19 @@ CONTAINS
   
   SUBROUTINE collct_done (rcollection)
   
-  !<description>
+!<description>
   
   ! This routine releases a parameter list. All memory allocated by the
   ! parameter list is released.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list to release.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -915,13 +990,11 @@ CONTAINS
 
   INTEGER FUNCTION collct_getmaxlevel_direct (rcollection,ssectionName) RESULT (ilevel)
 
-  !<description>
-
+!<description>
   ! Returns the maximum available level in section ssectionname of a collection.
-  
-  !</description>
+!</description>
 
-  !<input>
+!<input>
 
   ! The collection
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -929,11 +1002,11 @@ CONTAINS
   ! The name of the section
   CHARACTER(LEN=*), INTENT(IN) :: ssectionName
   
-  !</input>
+!</input>
   
-  !<result>
+!<result>
   ! The maximum level in rcollection.
-  !</result>
+!</result>
   
 !</function>
 
@@ -957,24 +1030,22 @@ CONTAINS
 
   INTEGER FUNCTION collct_getmaxlevel_indir (rsection) RESULT (ilevel)
 
-  !<description>
-
+!<description>
   ! Returns the maximum available level in section rsection.
   ! A return value of 0 indicates that only level-independent information
   ! is available in the block at the moment.
-  
-  !</description>
+!</description>
 
-  !<input>
+!<input>
 
   ! The collection
   TYPE(t_collctsection), INTENT(IN) :: rsection
   
-  !</input>
+!</input>
   
-  !<result>
+!<result>
   ! The maximum level in rcollection.
-  !</result>
+!</result>
   
 !</function>
 
@@ -988,26 +1059,24 @@ CONTAINS
 
   SUBROUTINE collct_addlevel_indir (rsection, ilevelid)
   
-  !<description>
-  
+!<description>
   ! Adds a new level to a section rsection.
   ! ilevelid returns the id of the new level and is >= 1.
-  
-  !</description>
+!</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The section where to add the level
   TYPE(t_collctSection), INTENT(INOUT) :: rsection
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<output>
+!<output>
   
   ! OPTIONAL: The id of the newly added level.
   INTEGER, INTENT(OUT), OPTIONAL :: ilevelid
   
-  !</output>
+!</output>
 
 !</subroutine>
 
@@ -1032,41 +1101,38 @@ CONTAINS
 
   SUBROUTINE collct_addlevel_direct (rcollection, ilevelid, ssectionName)
   
-  !<description>
-  
+!<description>
   ! Adds a new level to a section with the name ssectionName.
   ! If ssectionName='', the new level is added to the unnamed section.
   ! ilevelid returns the id of the new level and is >= 1.
-  
-  !</description>
+!</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The collection where to add the level
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
 
   ! OPTIONAL: The section name where to add the level. If ='' or not
   ! given, the level is added to the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>  
+!</input>  
   
-  !<output>
+!<output>
   
   ! The id of the newly added level.
   INTEGER, INTENT(OUT) :: ilevelid
   
-  !</output>
+!</output>
 
 !</subroutine>
 
   ! local variables
   TYPE(t_collctSection), POINTER :: p_rsection
-  INTEGER :: isecnum
   
   IF (rcollection%isectionCount .EQ. 0) THEN
     PRINT *,'Error: Collection not initalised!'
@@ -1076,7 +1142,7 @@ CONTAINS
   ! Get the section
   IF (PRESENT(ssectionName)) THEN
     CALL collct_fetchsection(rcollection, ssectionName, p_rsection) 
-    IF (isecnum .EQ. 0) THEN
+    IF (.NOT. ASSOCIATED(p_rsection)) THEN
       PRINT *,'Error: section not found: ',ssectionName
       STOP
     END IF
@@ -1096,18 +1162,16 @@ CONTAINS
 
   SUBROUTINE collct_addlevel_all (rcollection)
   
-  !<description>
-  
+!<description>
   ! Adds a new level to all sections in the collection.
-  
-  !</description>
+!</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The collection where to add the level
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1133,25 +1197,23 @@ CONTAINS
 
   SUBROUTINE collct_addsection (rcollection, ssectionName)
   
-  !<description>
-  
+!<description>
   ! Adds a new section to a collection. The section gets the name ssectionName.
-  
-  !</description>
+!</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list where to add the section.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
   
   ! The name of the section. Must not be ''!
   CHARACTER(LEN=*), INTENT(IN) :: ssectionName
   
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -1180,22 +1242,194 @@ CONTAINS
   
   ! ***************************************************************************
   
+!<subroutine>
+
+  SUBROUTINE collct_deletevalue (rcollection, sparameter, ilevel, ssectionName) 
+
+!<description>
+  ! Deletes the stored parameter 'sparameter' from the collection.
+  ! This simply removes a pointer or value from the collection, no memory
+  ! is released.
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  TYPE(t_collctLevel), POINTER :: p_rlevel
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Does the value exist?
+  IF (ASSOCIATED(p_rvalue)) THEN
+  
+    ! Ok, we have the parameter.
+    ! Deleting it is simple: Clear the name and assign all values
+    ! to default values. Then the node is 'dead' and can be reused
+    ! later.
+
+    p_rvalue%itype = COLLCT_UNDEFINED
+    p_rvalue%sname = ''
+    p_rvalue%csvalue = " "
+    NULLIFY(p_rvalue%p_svalue)
+    p_rvalue%ivalue = 0
+    p_rvalue%dvalue = 0.0_DP
+    NULLIFY(p_rvalue%p_rdiscretisation)
+    NULLIFY(p_rvalue%p_rtriangulation2D)
+    NULLIFY(p_rvalue%p_rvectorScalar)
+    NULLIFY(p_rvalue%p_rmatrixScalar)
+    NULLIFY(p_rvalue%p_rvector)
+    NULLIFY(p_rvalue%p_rmatrix)
+    NULLIFY(p_rvalue%p_rparlist)
+    NULLIFY(p_rvalue%p_rlinearSolver)
+    NULLIFY(p_rvalue%p_rdiscreteBC)
+    NULLIFY(p_rvalue%p_rdomain)
+    NULLIFY(p_rvalue%p_rboundaryConditions)
+    NULLIFY(p_rvalue%p_rcollection)
+    
+    ! Modify the level info:
+    CALL collct_fetchlevel(rcollection, ssectionName, ilv, p_rlevel)     
+    
+    ! Decrement the value counter
+    p_rLevel%ivalueCount = p_rLevel%ivalueCount - 1
+    
+    ! Indicate that there's at least one free position now
+    p_rLevel%bisFull = .FALSE.
+    
+  END IF
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_printStatistics (rcollection)
+
+!<description>
+  ! This routine prints the current content of the whole collection in
+  ! user-readable form to screen.
+!</description>  
+  
+!<input>
+  ! The parameter list.
+  TYPE(t_collection), INTENT(IN) :: rcollection
+!</input>
+
+!</subroutine>
+
+  INTEGER :: isection, ilevel
+  
+  ! Loop through all sections in the collection
+  DO isection=1,rcollection%isectionCount
+  
+    ! Print the segment name:
+    PRINT *,'['//TRIM(rcollection%p_Rsections(isection)%ssectionName)//']'
+    
+    ! Print the content of level 0 of the current section
+    CALL printlevel(0,rcollection%p_Rsections(isection)%rlevel0)
+    
+    ! Loop through all levels and print them
+    DO ilevel = 1,rcollection%p_Rsections(isection)%ilevelCount
+      CALL printlevel(ilevel,rcollection%p_Rsections(isection)%p_Rlevels(ilevel))
+    END DO
+    
+  END DO
+  
+  CONTAINS
+  
+    !****************************************************************
+    ! Print out the content of a level to screen
+    SUBROUTINE printlevel (ilevel,rlevel)
+    
+    ! Number of the level; 0=level 0
+    INTEGER, INTENT(IN) :: ilevel
+    
+    ! The level structure
+    TYPE(t_collctLevel), INTENT(IN) :: rlevel
+    
+    ! local variables
+    INTEGER :: ivalue
+    TYPE(t_collctValue), POINTER :: p_rvalue
+    
+      ! Is there data in the level?
+      IF (rlevel%ivalueCount .NE. 0) THEN
+      
+        ! A level > 0 has a name:
+        IF (ilevel .GT. 0) THEN
+          PRINT *,'  [Level ',ilevel,']'
+        END IF
+        
+        ! Loop through all values
+        DO ivalue = 1,SIZE(rlevel%p_Rvalues)
+          ! Get the value structure
+          p_rvalue => rlevel%p_Rvalues(ivalue)
+          
+          ! Is there data in it?
+          IF (p_rvalue%itype .NE. COLLCT_UNDEFINED) THEN
+          
+            ! Print that there is data:
+            PRINT *,'  '//TRIM(p_rvalue%sname)//' (Type: ',&
+                    p_rvalue%itype,')'
+          
+          END IF
+        END DO
+      
+      END IF
+      
+    END SUBROUTINE
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
 !<function>
 
   INTEGER FUNCTION collct_queryvalue_indir (rsection, sparameter, ilevel) &
                RESULT (exists)
           
-  !<description>
-  
+!<description>
   ! Checks whether a parameter sparameter exists in in section rsection.
+!</description>  
   
-  !<result>
+!<result>
   ! >0, if the parameter exists in the section rsection (it's the index of the
   !     parameter within the section),
   ! =0, if the parameter does not exist whithin the section.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collctSection), INTENT(IN), TARGET :: rsection
@@ -1207,9 +1441,9 @@ CONTAINS
   ! If =0 or not given, the search is in the level-independent parameter block.
   INTEGER, INTENT(IN), OPTIONAL :: ilevel
   
-  !</input>
+!</input>
   
-  !</description>
+!</description>
   
 !</function>
 
@@ -1247,22 +1481,22 @@ CONTAINS
   INTEGER FUNCTION collct_queryvalue_direct (rcollection, sparameter, &
                         ilevel, ssectionName) RESULT (exists)
           
-  !<description>
-  
+!<description>
   ! Checks whether a parameter sparameter exists in in section.
   ! ilevel and ssectionName are optional parameters.
   ! If ilevel=0 or not given, the parameter is searched in the level-independent
   ! parameter set, otherwise on level ilevel.
   ! If ssectionName='' or not given, the parameter is searched in the unnamed
   ! section, otherwise in section ssectionName.
+!</description>  
   
-  !<result>
+!<result>
   ! >0, if the parameter exists in the section (it's the index of the
   !     parameter within the section),
   ! =0, if the parameter does not exist whithin the section.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1278,9 +1512,9 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !</description>
+!</description>
   
 !</function>
 
@@ -1320,15 +1554,15 @@ CONTAINS
 
   INTEGER FUNCTION collct_gettype (rcollection, sparameter, &
                         ilevel, ssectionName, bexists) RESULT (itype)
-  !<description>
-  
+!<description>
   ! Returns the data type of the parameter sparameter.
+!</description>  
   
-  !<result>
+!<result>
   ! One of the COLLCT_XXXX constants (COLLCT_UNDEFINED,...).
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1344,15 +1578,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -1390,17 +1624,17 @@ CONTAINS
 
   CHARACTER FUNCTION collct_getvalue_char (rcollection, sparameter, &
                                    ilevel, ssectionName, bexists) RESULT (value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as character.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1416,15 +1650,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -1451,7 +1685,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_CHARACTER) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -1468,17 +1702,17 @@ CONTAINS
 
   SUBROUTINE collct_getvalue_string (rcollection, sparameter, value, &
                                      ilevel, ssectionName, bexists)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as string.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1494,9 +1728,9 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! The string.
   CHARACTER(LEN=*) :: value
@@ -1505,7 +1739,7 @@ CONTAINS
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
   
-  !</output>
+!</output>
 
 !</subroutine>
 
@@ -1532,7 +1766,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_STRING) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -1553,17 +1787,17 @@ CONTAINS
 
   INTEGER(I32) FUNCTION collct_getvalue_int (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as integer.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1579,15 +1813,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -1614,7 +1848,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_INTEGER) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -1631,17 +1865,17 @@ CONTAINS
 
   REAL(DP) FUNCTION collct_getvalue_real (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as real.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1657,15 +1891,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -1692,7 +1926,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_REAL) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -1709,20 +1943,20 @@ CONTAINS
 
   FUNCTION collct_getvalue_discr (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a discretisation 
   ! structure.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_spatialDiscretisation), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1738,15 +1972,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -1773,7 +2007,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_DISCR) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -1790,20 +2024,20 @@ CONTAINS
 
   FUNCTION collct_getvalue_tria (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a triangulation 
   ! structure.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_triangulation2D), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1819,15 +2053,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -1854,7 +2088,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_TRIA) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -1869,21 +2103,22 @@ CONTAINS
   
 !<function>
 
-  FUNCTION collct_getvalue_vecsca (rcollection, sparameter, &
-                                  ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
-  ! Returns the the parameter sparameter as pointer to a scalar vector.
+  FUNCTION collct_getvalue_domain (rcollection, sparameter, &
+                                   ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a triangulation 
+  ! structure.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
-  TYPE(t_vectorScalar), POINTER :: value
+  TYPE(t_boundary), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1899,15 +2134,176 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Return whether or not that thing exists
+  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
+  
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    ! Throw an error if the type is wrong. Otherwise, get the value.
+    IF (p_rvalue%itype .NE. COLLCT_BOUNDARY) THEN
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
+      STOP
+    END IF
+    
+    value => p_rvalue%p_rdomain
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  FUNCTION collct_getvalue_bc (rcollection, sparameter, &
+                               ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a triangulation 
+  ! structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_boundaryConditions), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(IN) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Return whether or not that thing exists
+  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
+  
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    ! Throw an error if the type is wrong. Otherwise, get the value.
+    IF (p_rvalue%itype .NE. COLLCT_BOUNDARYCOND) THEN
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
+      STOP
+    END IF
+    
+    value => p_rvalue%p_rboundaryConditions
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  FUNCTION collct_getvalue_vecsca (rcollection, sparameter, &
+                                  ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a scalar vector.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_vectorScalar), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(IN) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
 
 !</function>
 
@@ -1934,7 +2330,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_SCAVECTOR) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -1951,19 +2347,19 @@ CONTAINS
 
   FUNCTION collct_getvalue_matsca (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a scalar matrix.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_matrixScalar), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -1979,15 +2375,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -2014,7 +2410,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_SCAMATRIX) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -2031,19 +2427,19 @@ CONTAINS
 
   FUNCTION collct_getvalue_vec (rcollection, sparameter, &
                                 ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a block vector.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_vectorBlock), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -2059,15 +2455,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -2094,7 +2490,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_BLKVECTOR) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -2111,19 +2507,19 @@ CONTAINS
 
   FUNCTION collct_getvalue_mat (rcollection, sparameter, &
                                ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a scalar matrix.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_matrixBlock), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -2139,15 +2535,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -2174,7 +2570,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_BLKMATRIX) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -2191,20 +2587,20 @@ CONTAINS
 
   FUNCTION collct_getvalue_linsol (rcollection, sparameter, &
                                    ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a linear solver
   ! configuration node.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_linsolNode), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -2220,15 +2616,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -2255,7 +2651,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_PARAMETERS) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -2272,20 +2668,20 @@ CONTAINS
 
   FUNCTION collct_getvalue_discbc (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a discrete boundary
   ! condition structure
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_discreteBC), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -2301,95 +2697,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
-
-!</function>
-
-  ! local variables
-  TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
-  ! Return the quantity
-  IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_LINSOL) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
-    value => p_rvalue%p_rdiscreteBC
-  ELSE
-    NULLIFY(value)
-  END IF
-
-  END FUNCTION
-
-  ! ***************************************************************************
-  
-!<function>
-
-  FUNCTION collct_getvalue_plst (rcollection, sparameter, &
-                                 ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
-  ! Returns the the parameter sparameter as pointer to a parameter list.
-  ! An error is thrown if the value is of the wrong type.
-  
-  !<result>
-  ! The value of the parameter.
-  ! A standard value if the value does not exist.
-  !</result>
-  
-  TYPE(t_parlist), POINTER :: value
-
-  !<input>
-    
-  ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
-  
-  ! The parameter name to search for.
-  CHARACTER(LEN=*), INTENT(IN) :: sparameter
-  
-  ! OPTIONAL: The level where to search.
-  ! If =0 or not given, the search is in the level-independent parameter block.
-  INTEGER, INTENT(IN), OPTIONAL :: ilevel
-
-  ! OPTIONAL: The section name where to search.
-  ! If ='' or not given, the search is in the unnamed section.
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
-
-  !</input>
-  
-  !<output>
-
-  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
-  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
-
-  !</output>
+!</output>
 
 !</function>
 
@@ -2416,7 +2732,87 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_DISCRBC) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
+      STOP
+    END IF
+    
+    value => p_rvalue%p_rdiscreteBC
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  FUNCTION collct_getvalue_plst (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a parameter list.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_parlist), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(IN) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Return whether or not that thing exists
+  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
+  
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    ! Throw an error if the type is wrong. Otherwise, get the value.
+    IF (p_rvalue%itype .NE. COLLCT_DISCRBC) THEN
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -2433,19 +2829,19 @@ CONTAINS
 
   FUNCTION collct_getvalue_coll (rcollection, sparameter, &
                                  ilevel, ssectionName, bexists) RESULT(value)
-  !<description>
-  
+!<description>
   ! Returns the the parameter sparameter as pointer to a collection object.
   ! An error is thrown if the value is of the wrong type.
+!</description>  
   
-  !<result>
+!<result>
   ! The value of the parameter.
   ! A standard value if the value does not exist.
-  !</result>
+!</result>
   
   TYPE(t_collection), POINTER :: value
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -2461,15 +2857,15 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
   LOGICAL, INTENT(OUT), OPTIONAL :: bexists
 
-  !</output>
+!</output>
 
 !</function>
 
@@ -2496,7 +2892,7 @@ CONTAINS
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
     IF (p_rvalue%itype .NE. COLLCT_COLLECTION) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, 'is of type ',p_rvalue%itype
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
     
@@ -2513,8 +2909,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_char (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Sets the value of the parameter: sparameter=value
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -2522,15 +2917,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2551,7 +2947,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -2598,8 +2994,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_string (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Sets the value of the parameter: sparameter=value
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -2607,15 +3002,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2636,7 +3032,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -2686,8 +3082,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_int (rcollection, sparameter, value, badd, &
                                   ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Sets the value of the parameter: sparameter=value
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -2695,15 +3090,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2724,7 +3120,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -2771,8 +3167,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_real (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Sets the value of the parameter: sparameter=value
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -2780,15 +3175,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2809,7 +3205,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -2856,8 +3252,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_discr (rcollection, sparameter, value, badd, &
                                     ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -2865,15 +3260,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2894,7 +3290,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -2941,8 +3337,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_tria (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -2950,15 +3345,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2979,7 +3375,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3024,10 +3420,9 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE collct_setvalue_vecsca (rcollection, sparameter, value, badd, &
+  SUBROUTINE collct_setvalue_domain (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3035,15 +3430,186 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_boundary), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Add the value if necessary
+  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
+    IF (badd) THEN
+      IF (PRESENT(ssectionName)) THEN
+        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
+                              COLLCT_BOUNDARY, ilv, p_rvalue)
+      ELSE
+        CALL collct_addvalue (rcollection, '', sparameter, &
+                              COLLCT_BOUNDARY, ilv, p_rvalue)
+      END IF
+    ELSE
+      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
+      STOP
+    END IF
+  END IF
+  
+  ! Set the value
+  p_rvalue%p_rdomain => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_bc (rcollection, sparameter, value, badd, &
+                                 ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_boundaryConditions), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Add the value if necessary
+  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
+    IF (badd) THEN
+      IF (PRESENT(ssectionName)) THEN
+        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
+                              COLLCT_BOUNDARYCOND, ilv, p_rvalue)
+      ELSE
+        CALL collct_addvalue (rcollection, '', sparameter, &
+                              COLLCT_BOUNDARYCOND, ilv, p_rvalue)
+      END IF
+    ELSE
+      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
+      STOP
+    END IF
+  END IF
+  
+  ! Set the value
+  p_rvalue%p_rboundaryConditions => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_vecsca (rcollection, sparameter, value, badd, &
+                                     ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3064,7 +3630,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3111,8 +3677,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_matsca (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3120,15 +3685,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3149,7 +3715,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3196,8 +3762,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_vec (rcollection, sparameter, value, badd, &
                                   ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3205,15 +3770,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3234,7 +3800,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3281,8 +3847,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_mat (rcollection, sparameter, value, badd, &
                                   ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3290,15 +3855,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3319,7 +3885,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3366,8 +3932,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_parlst (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3375,15 +3940,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3404,7 +3970,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3451,8 +4017,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_linsol (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3460,15 +4025,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3489,7 +4055,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3536,8 +4102,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_discbc (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3545,15 +4110,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3574,7 +4140,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -3621,8 +4187,7 @@ CONTAINS
 
   SUBROUTINE collct_setvalue_coll (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
-  !<description>
-  
+!<description>
   ! Stores a pointer to 'value' using the parametre name 'sparameter'.
   ! If the parameter does not exist, the behaviour depends on the 
   ! parameter badd:
@@ -3630,15 +4195,16 @@ CONTAINS
   !  badd=true : the parameter is created at the position defined by
   !              ilevel and ssectionName (if given). When the position
   !              defined by these variables does not exist, an error is thrown
+!</description>  
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
     
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3659,7 +4225,7 @@ CONTAINS
   ! If ='' or not given, the search is in the unnamed section.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
-  !</input>
+!</input>
   
 !</subroutine>
 

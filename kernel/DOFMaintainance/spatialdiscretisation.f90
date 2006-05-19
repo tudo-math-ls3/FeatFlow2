@@ -60,7 +60,7 @@ MODULE spatialdiscretisation
 
 !<types>
 
-  !<typeblock>
+!<typeblock>
   
   ! Element distribution structure. This structure collects for one type
   ! of element (e.g. $Q_1$), on which geometric element primitives it is
@@ -104,9 +104,9 @@ MODULE spatialdiscretisation
 
   END TYPE
   
-  !</typeblock>
+!</typeblock>
   
-  !<typeblock>
+!<typeblock>
   
   ! The central discretisation structure corresponding to one mesh level.
   ! Here, all information about the discretisation are collected (mesh
@@ -170,20 +170,24 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE spdiscr_releaseDiscr (rspatialDiscr)
+  SUBROUTINE spdiscr_releaseDiscr (p_rspatialDiscr,bkeepStructure)
   
-  !<description>
-  
+!<description>
   ! This routine releases a discretisation structure from memory.
-  
-  !</description>
+!</description>
 
-  !<inputoutput>
-  
+!<input>
+  ! OPTIONAL: If set to TRUE, the structure p_rspatialDiscr is not released
+  ! from memory. If set to FALSE or not existent (the usual setting), the 
+  ! structure p_rspatialDiscr will also be removed from the heap after 
+  ! cleaning up.
+  LOGICAL, INTENT(IN), OPTIONAL :: bkeepStructure
+!</input>
+
+!<inputoutput>
   ! The discretisation structure to be released.
-  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rspatialDiscr
-  
-  !</inputoutput>
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), POINTER :: p_rspatialDiscr
+!</inputoutput>
   
 !</subroutine>
 
@@ -191,24 +195,26 @@ CONTAINS
   INTEGER :: i
   TYPE(t_elementDistribution), POINTER :: p_relementDistr
 
+  IF (.NOT. ASSOCIATED(p_rspatialDiscr)) RETURN
+
   ! Cut the connection to the other structures
-  NULLIFY(rspatialDiscr%p_rtriangulation2D)
-  NULLIFY(rspatialDiscr%p_rdomain)
-  NULLIFY(rspatialDiscr%p_rboundaryConditions)
+  NULLIFY(p_rspatialDiscr%p_rtriangulation2D)
+  NULLIFY(p_rspatialDiscr%p_rdomain)
+  NULLIFY(p_rspatialDiscr%p_rboundaryConditions)
   
   ! Release element identifier lists.
   ! The handles may coincide, so release them only once!
-  IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
-    CALL storage_free (rspatialDiscr%h_ItestElements)
+  IF (p_rspatialDiscr%h_ItestElements .NE. p_rspatialDiscr%h_ItrialElements) THEN
+    CALL storage_free (p_rspatialDiscr%h_ItestElements)
   ELSE
-    rspatialDiscr%h_ItestElements = ST_NOHANDLE
+    p_rspatialDiscr%h_ItestElements = ST_NOHANDLE
   END IF
-  CALL storage_free (rspatialDiscr%h_ItrialElements)
+  CALL storage_free (p_rspatialDiscr%h_ItrialElements)
   
   ! Loop through all element distributions
-  DO i=1,rspatialDiscr%inumFESpaces
+  DO i=1,p_rspatialDiscr%inumFESpaces
   
-    p_relementDistr => rspatialDiscr%RelementDistribution(i)
+    p_relementDistr => p_rspatialDiscr%RelementDistribution(i)
     
     ! Release the element list there
     CALL storage_free (p_relementDistr%h_IelementList)
@@ -219,11 +225,18 @@ CONTAINS
   END DO
   
   ! No FE-spaces in here anymore...
-  rspatialDiscr%inumFESpaces = 0
+  p_rspatialDiscr%inumFESpaces = 0
   
   ! Structure not initialised anymore
-  rspatialDiscr%ndimension = 0
+  p_rspatialDiscr%ndimension = 0
   
+  ! Deallocate the structure (if we are allowed to), finish.
+  IF (.NOT. PRESENT(bkeepStructure)) THEN
+    DEALLOCATE(p_rspatialDiscr)
+  ELSE
+    IF (.NOT. bkeepStructure) DEALLOCATE(p_rspatialDiscr)
+  END IF
+
   END SUBROUTINE  
 
   ! ***************************************************************************
@@ -231,17 +244,20 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE spdiscr_initDiscr_simple (rtriangulation, rdomain, rboundaryConditions, &
-             ieltyp, ccubType, rspatialDiscr)
+             ieltyp, ccubType, p_rspatialDiscr)
   
-  !<description>
+!<description>
   
   ! This routine initialises a discretisation structure for a uniform
   ! discretisation with one element for all geometric element primitives, 
   ! for trial as well as for test functions.
+  !
+  ! If p_rspatialDiscr is NULL(), a new structure will be created. Otherwise,
+  ! the existing structure is recreated/updated.
   
-  !</description>
+!</description>
 
-  !<input>
+!<input>
   
   ! The triangulation structure underlying to the discretisation.
   TYPE(t_triangulation2D), INTENT(IN), TARGET    :: rtriangulation
@@ -258,14 +274,14 @@ CONTAINS
   ! Cubature formula to use for calculating integrals
   INTEGER, INTENT(IN)                       :: ccubType
   
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! The discretisation structure to be initialised.
-  TYPE(t_spatialDiscretisation), INTENT(OUT), TARGET :: rspatialDiscr
+  TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscr
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -273,32 +289,40 @@ CONTAINS
   INTEGER :: i
   INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
   TYPE(t_elementDistribution), POINTER :: p_relementDistr
+  
+  ! Do we have a structure?
+  IF (.NOT. ASSOCIATED(p_rspatialDiscr)) THEN
+    ALLOCATE(p_rspatialDiscr)
+  ELSE
+    ! Release the old structure without removing it from the heap.
+    CALL spdiscr_releaseDiscr(p_rspatialDiscr,.TRUE.)
+  END IF
 
   ! Initialise the variables of the structure for the simple discretisation
-  rspatialDiscr%ndimension             = NDIM2D
-  rspatialDiscr%p_rtriangulation2D     => rtriangulation
-  rspatialDiscr%p_rdomain              => rdomain
-  rspatialDiscr%p_rboundaryConditions  => rboundaryConditions
-  rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
+  p_rspatialDiscr%ndimension             = NDIM2D
+  p_rspatialDiscr%p_rtriangulation2D     => rtriangulation
+  p_rspatialDiscr%p_rdomain              => rdomain
+  p_rspatialDiscr%p_rboundaryConditions  => rboundaryConditions
+  p_rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   ! All trial elements are ieltyp:
   
   CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
-        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
+        rtriangulation%NEL, ST_INT, p_rspatialDiscr%h_ItrialElements,   &
         ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+  CALL storage_getbase_int (p_rspatialDiscr%h_ItrialElements,p_Iarray)
   DO i=1,rtriangulation%NEL
     p_Iarray(i) = ieltyp
   END DO
   
   ! All test elements are ieltyp.
   ! Use the same handle for trial and test functions to save memory!
-  rspatialDiscr%bidenticalTrialAndTest = .TRUE.
-  rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements  
+  p_rspatialDiscr%bidenticalTrialAndTest = .TRUE.
+  p_rspatialDiscr%h_ItestElements = p_rspatialDiscr%h_ItrialElements  
   
   ! Initialise the first element distribution
-  rspatialDiscr%inumFESpaces           = 1
-  p_relementDistr => rspatialDiscr%RelementDistribution(1)
+  p_rspatialDiscr%inumFESpaces           = 1
+  p_relementDistr => p_rspatialDiscr%RelementDistribution(1)
   
   ! Initialise test and trial space for that block
   p_relementDistr%itrialElement = ieltyp

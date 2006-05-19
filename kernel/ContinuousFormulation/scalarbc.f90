@@ -221,10 +221,12 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE scbc_initScalarBC (rboundaryConditions,rdomain,ibcRegionsCount)
+  SUBROUTINE scbc_initScalarBC (p_rboundaryConditions,rdomain,ibcRegionsCount)
   
 !<description>
   ! This routine initialises a boundary condition structure.
+  ! If p_rboundaryConditions is NULL(), a new structure will be created. 
+  ! Otherwise, the existing structure is recreated/updated.
 !</description>
 
 !<input>
@@ -240,7 +242,7 @@ CONTAINS
 
 !<output>
   ! The structure to be initialised.
-  TYPE(t_boundaryConditions), INTENT(OUT) :: rboundaryConditions
+  TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
 !</output>
 
 !</subroutine>
@@ -248,19 +250,27 @@ CONTAINS
   ! local variables
   INTEGER ibcCount
 
+  ! Do we have a structure?
+  IF (.NOT. ASSOCIATED(p_rboundaryConditions)) THEN
+    ALLOCATE(p_rboundaryConditions)
+  ELSE
+    ! Release the old structure without removing it from the heap.
+    CALL scbc_doneScalarBC(p_rboundaryConditions,.TRUE.)
+  END IF
+
   ! The 'default constructor' does most of the necessary work, as
   ! rboundaryConditions is assumed as 'intent=out'. We only have to make
   ! the connection to the domain.
   
-  rboundaryConditions%rdomain => rdomain
+  p_rboundaryConditions%rdomain => rdomain
   
   ! Allocate memory for boundary condition lists
   ibcCount = BC_LISTBLOCKSIZE
   IF (PRESENT(ibcRegionsCount)) ibcCount = MAX(1,ibcRegionsCount)
   
-  ALLOCATE(rboundaryConditions%p_Rregions(ibcCount))
-  !ALLOCATE(rboundaryConditions%p_RregionsFree(ibcCount))
-  ALLOCATE(rboundaryConditions%p_RregionsFBC(ibcCount))
+  ALLOCATE(p_rboundaryConditions%p_Rregions(ibcCount))
+  !ALLOCATE(p_rboundaryConditions%p_RregionsFree(ibcCount))
+  ALLOCATE(p_rboundaryConditions%p_RregionsFBC(ibcCount))
 
   END SUBROUTINE
 
@@ -268,27 +278,45 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE scbc_doneScalarBC (rboundaryConditions)
+  SUBROUTINE scbc_doneScalarBC (p_rboundaryConditions,bkeepStructure)
   
 !<description>
   ! This routine cleans up a boundary condition structure. All reserved
   ! memory is released.
 !</description>
 
+!<input>
+  ! OPTIONAL: If set to TRUE, the structure p_rboundaryConditions itself is not 
+  ! released from memory. If set to FALSE or not existent (the usual setting), 
+  ! the structure p_rboundaryConditions will also be removed from the heap after 
+  ! cleaning up.
+  LOGICAL, INTENT(IN), OPTIONAL :: bkeepStructure
+!</input>
+
 !<inputoutput>
-  ! The structure to be initialised.
-  TYPE(t_boundaryConditions), INTENT(INOUT) :: rboundaryConditions
+  ! The structure to be cleaned up..
+  TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
 !</inputoutput>
 
 !</subroutine>
 
-  DEALLOCATE(rboundaryConditions%p_RregionsFBC)
-  !DEALLOCATE(rboundaryConditions%p_RregionsFree)
-  DEALLOCATE(rboundaryConditions%p_Rregions)
-  rboundaryConditions%iregionCountFBC = 0
-  !rboundaryConditions%iregionCountFree = 0
-  rboundaryConditions%iregionCount = 0
-  rboundaryConditions%rdomain => NULL()
+  IF (.NOT. ASSOCIATED(p_rboundaryConditions)) RETURN
+
+  ! Clean up
+  DEALLOCATE(p_rboundaryConditions%p_RregionsFBC)
+  !DEALLOCATE(p_rboundaryConditions%p_RregionsFree)
+  DEALLOCATE(p_rboundaryConditions%p_Rregions)
+  p_rboundaryConditions%iregionCountFBC = 0
+  !p_rboundaryConditions%iregionCountFree = 0
+  p_rboundaryConditions%iregionCount = 0
+  p_rboundaryConditions%rdomain => NULL()
+
+  ! Deallocate the structure (if we are allowed to), finish.
+  IF (.NOT. PRESENT(bkeepStructure)) THEN
+    DEALLOCATE(p_rboundaryConditions)
+  ELSE
+    IF (.NOT. bkeepStructure) DEALLOCATE(p_rboundaryConditions)
+  END IF
 
   END SUBROUTINE
   

@@ -421,34 +421,29 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_wrp_tria2Structure (TRIA, rtriangulation)
+  SUBROUTINE tria_wrp_tria2Structure (TRIA, p_rtriangulation)
   
   USE afc_util
   
-  !<description>
-  
+!<description>
   ! Wrapper routine. Accepts an 'old' triangulation structure array of CC2D
   ! and converts it completely to a triangulation structure. All 'old'
   ! information in the triangulation structure is overwritten.
+  ! If p_rtriangulation is NULL(), a new structure will be created. 
+  ! Otherwise, the existing structure is recreated/updated.
+!</description>
   
-  !</description>
-  
-  !<input>
-  
+!<input>
   ! The old triangulation structure array that should be converted to
   ! the new triangulation structure.
-  
   INTEGER, DIMENSION(SZTRIA), INTENT(IN) :: TRIA
+!</input>
   
-  !</input>
-  
-  !<inputoutput>
-  
+!<inputoutput>
   ! The triangulation structure which will be overwritten by the information
   ! in TRIA.
-  TYPE(t_triangulation2D), INTENT(INOUT)      :: rtriangulation
-  
-  !</inputoutput>
+  TYPE(t_triangulation2D), POINTER      :: p_rtriangulation
+!</inputoutput>
   
 !</subroutine>
 
@@ -458,124 +453,133 @@ CONTAINS
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_vertptr, p_vertptr2
   INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_list, p_list2
   
+  ! Do we have a structure?
+  IF (.NOT. ASSOCIATED(p_rtriangulation)) THEN
+    ALLOCATE(p_rtriangulation)
+  ELSE
+    ! Release the old structure without removing it from the heap.
+    CALL tria_done (p_rtriangulation,.TRUE.)
+  END IF
+
+  ! We take the ownership of the triangulation structure - for compatibility
+  ! to old FEAT 1.x:
+  p_rtriangulation%Itria = TRIA
+  
   ! Copy static entries
-  
-  rtriangulation%Itria = TRIA
-  
-  rtriangulation%NVT                      = TRIA(ONVT  )
-  rtriangulation%NMT                      = TRIA(ONMT  )
-  rtriangulation%NEL                      = TRIA(ONEL  )
-  rtriangulation%NBCT                     = TRIA(ONBCT )
-  rtriangulation%NVBD                     = TRIA(ONVBD )
-  rtriangulation%NMBD                     = TRIA(ONVBD ) ! NMBD=NVBD !!!
-  rtriangulation%nverticesPerEdge         = TRIA(ONVPED)
-  rtriangulation%nVerticesOnAllEdges      = TRIA(ONVEDT)
-  rtriangulation%nverticesInEachElement   = TRIA(ONVEDT)
-  rtriangulation%nverticesInAllElements   = TRIA(ONIEVT)
-  rtriangulation%nadditionalVertices      = TRIA(ONANT )
+  p_rtriangulation%NVT                      = TRIA(ONVT  )
+  p_rtriangulation%NMT                      = TRIA(ONMT  )
+  p_rtriangulation%NEL                      = TRIA(ONEL  )
+  p_rtriangulation%NBCT                     = TRIA(ONBCT )
+  p_rtriangulation%NVBD                     = TRIA(ONVBD )
+  p_rtriangulation%NMBD                     = TRIA(ONVBD ) ! NMBD=NVBD !!!
+  p_rtriangulation%nverticesPerEdge         = TRIA(ONVPED)
+  p_rtriangulation%nVerticesOnAllEdges      = TRIA(ONVEDT)
+  p_rtriangulation%nverticesInEachElement   = TRIA(ONVEDT)
+  p_rtriangulation%nverticesInAllElements   = TRIA(ONIEVT)
+  p_rtriangulation%nadditionalVertices      = TRIA(ONANT )
   
   ! The duplication flag stays at 0 - as for now, all
   ! arrays are created from the feat arrays as new arrays, and
   ! so they are not a copy of another array.
   
-  rtriangulation%iduplicationFlag = 0
+  p_rtriangulation%iduplicationFlag = 0
   
   ! *******************************************************
   ! Copy DCORVG, create p_RcornerCoordinates.
   
-  CALL copy_featarray_double2d ('DCORVG',2,INT(rtriangulation%NVT),TRIA(OLCORVG),&
-                                rtriangulation%h_DcornerCoordinates)
+  CALL copy_featarray_double2d ('DCORVG',2,INT(p_rtriangulation%NVT),TRIA(OLCORVG),&
+                                p_rtriangulation%h_DcornerCoordinates)
   
   ! *******************************************************
   ! Copy KVERT, create p_RverticesAtElement.
   
-  CALL copy_featarray_int2d ('KVERT',4,INT(rtriangulation%NEL),TRIA(OLVERT),&
-                             rtriangulation%h_IverticesAtElement)
+  CALL copy_featarray_int2d ('KVERT',4,INT(p_rtriangulation%NEL),TRIA(OLVERT),&
+                             p_rtriangulation%h_IverticesAtElement)
 
   ! *******************************************************
   ! Copy KMID, create p_RedgesAtElement.
   
-  CALL copy_featarray_int2d ('KMID',4,INT(rtriangulation%NEL),TRIA(OLMID),&
-                             rtriangulation%h_IedgesAtElement)
+  CALL copy_featarray_int2d ('KMID',4,INT(p_rtriangulation%NEL),TRIA(OLMID),&
+                             p_rtriangulation%h_IedgesAtElement)
 
   ! *******************************************************
   ! Copy KADJ, create p_RneighboursAtElement.
   
-  CALL copy_featarray_int2d ('KADJ',4,INT(rtriangulation%NEL),TRIA(OLADJ),&
-                             rtriangulation%h_IneighboursAtElement)
+  CALL copy_featarray_int2d ('KADJ',4,INT(p_rtriangulation%NEL),TRIA(OLADJ),&
+                             p_rtriangulation%h_IneighboursAtElement)
 
   ! *******************************************************
   ! Copy KMEL, create p_IelementsAtEdge.
   
-  CALL copy_featarray_int2d ('KMEL',2,INT(rtriangulation%NMT),TRIA(OLMEL),&
-                             rtriangulation%h_IelementsAtEdge)
+  CALL copy_featarray_int2d ('KMEL',2,INT(p_rtriangulation%NMT),TRIA(OLMEL),&
+                             p_rtriangulation%h_IelementsAtEdge)
 
   ! *******************************************************
   ! Copy KEAN, create p_IverticesAtEdge.
   
-  CALL copy_featarray_int2d ('KEAN',2,INT(rtriangulation%NMT),TRIA(OLEAN),&
-                             rtriangulation%h_IverticesAtEdge)
+  CALL copy_featarray_int2d ('KEAN',2,INT(p_rtriangulation%NMT),TRIA(OLEAN),&
+                             p_rtriangulation%h_IverticesAtEdge)
 
   ! *******************************************************
   ! Copy KNPR, create p_InodalProperty.
   
-  CALL copy_featarray_int1d ('KNPR',INT(rtriangulation%NVT+rtriangulation%NMT),&
-                             TRIA(OLNPR),rtriangulation%h_InodalProperty)
+  CALL copy_featarray_int1d ('KNPR',INT(p_rtriangulation%NVT+p_rtriangulation%NMT),&
+                             TRIA(OLNPR),p_rtriangulation%h_InodalProperty)
                              
   ! *******************************************************
   ! Copy KAREA, create hpDelementArea.
   
-  CALL copy_featarray_double1d ('KAREA',INT(rtriangulation%NEL+1),&
-                                TRIA(OLAREA),rtriangulation%h_DelementArea)
+  CALL copy_featarray_double1d ('KAREA',INT(p_rtriangulation%NEL+1),&
+                                TRIA(OLAREA),p_rtriangulation%h_DelementArea)
                              
   ! *******************************************************
   ! Initialise the new KADJ, create p_IelementsAtVertexIdx/p_IelementsAtVertex.
                              
-  CALL translate_KADJ (TRIA(ONVEL),INT(rtriangulation%NVT),TRIA(OLADJ), &
-                       rtriangulation%h_IelementsAtVertex,rtriangulation%h_IelementsAtVertexIdx)
+  CALL translate_KADJ (TRIA(ONVEL),INT(p_rtriangulation%NVT),TRIA(OLADJ), &
+                       p_rtriangulation%h_IelementsAtVertex,p_rtriangulation%h_IelementsAtVertexIdx)
 
   ! *******************************************************
   ! Copy KBCT, create p_IboundaryCpIdx.
   
-  CALL copy_featarray_int1d ('KBCT',(rtriangulation%NBCT+1),&
-                             TRIA(OLBCT),rtriangulation%h_IboundaryCpIdx)
+  CALL copy_featarray_int1d ('KBCT',(p_rtriangulation%NBCT+1),&
+                             TRIA(OLBCT),p_rtriangulation%h_IboundaryCpIdx)
   
   ! *******************************************************
   ! Copy KVBD, create p_IverticesAtBoundary.
   
-  CALL copy_featarray_int1d ('KVBD',INT(rtriangulation%NVBD),&
-                             TRIA(OLVBD),rtriangulation%h_IverticesAtBoundary)
+  CALL copy_featarray_int1d ('KVBD',INT(p_rtriangulation%NVBD),&
+                             TRIA(OLVBD),p_rtriangulation%h_IverticesAtBoundary)
 
   ! *******************************************************
   ! Copy KMBD, create p_IedgesAtBoundary.
   
-  CALL copy_featarray_int1d ('KMBD',(rtriangulation%NMBD),&
-                             TRIA(OLMBD),rtriangulation%h_IedgesAtBoundary)
+  CALL copy_featarray_int1d ('KMBD',(p_rtriangulation%NMBD),&
+                             TRIA(OLMBD),p_rtriangulation%h_IedgesAtBoundary)
 
   ! *******************************************************
   ! Copy KEBD, create p_IelementsAtBoundary.
   
-  CALL copy_featarray_int1d ('KEBD',INT(rtriangulation%NMBD),&
-                             TRIA(OLEBD),rtriangulation%h_IelementsAtBoundary)
+  CALL copy_featarray_int1d ('KEBD',INT(p_rtriangulation%NMBD),&
+                             TRIA(OLEBD),p_rtriangulation%h_IelementsAtBoundary)
 
   ! *******************************************************
   ! Copy DVBDP, create p_DvertexParameterValue.
   
-  CALL copy_featarray_double1d ('DVBDP',INT(rtriangulation%NVBD),&
-                                TRIA(OLVBDP),rtriangulation%h_DvertexParameterValue)
+  CALL copy_featarray_double1d ('DVBDP',INT(p_rtriangulation%NVBD),&
+                                TRIA(OLVBDP),p_rtriangulation%h_DvertexParameterValue)
 
   ! *******************************************************
   ! Copy DMBDP, create p_DedgeParameterValue.
   
-  CALL copy_featarray_double1d ('DMBDP',INT(rtriangulation%NMBD),&
-                                TRIA(OLMBDP),rtriangulation%h_DedgeParameterValue)
+  CALL copy_featarray_double1d ('DMBDP',INT(p_rtriangulation%NMBD),&
+                                TRIA(OLMBDP),p_rtriangulation%h_DedgeParameterValue)
 
 
   ! *******************************************************
   ! Copy DCORMG, create p_RfreeVertexCoordinates.
   
-  CALL copy_featarray_double2d ('DCORMG',2,INT(rtriangulation%NMT),TRIA(OLCORMG),&
-                                rtriangulation%h_RfreeVertexCoordinates)
+  CALL copy_featarray_double2d ('DCORMG',2,INT(p_rtriangulation%NMT),TRIA(OLCORMG),&
+                                p_rtriangulation%h_RfreeVertexCoordinates)
   
 
   CONTAINS
@@ -909,7 +913,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_done (rtriangulation)
+  SUBROUTINE tria_done (p_rtriangulation,bkeepStructure)
   
 !<description>
   ! This routine cleans up a triangulation structure.
@@ -918,16 +922,26 @@ CONTAINS
   ! rtriangulation%Itria substructure!
 !</description>
 
+!<input>
+  ! OPTIONAL: If set to TRUE, the structure rtriangulation itself is not 
+  ! released from memory. If set to FALSE or not existent (the usual setting), 
+  ! the structure p_rboundary will also be removed from the heap after 
+  ! cleaning up.
+  LOGICAL, INTENT(IN), OPTIONAL :: bkeepStructure
+!</input>
+
 !<inputoutput>
   ! The triangulation structure to be cleaned up.
-  TYPE(t_triangulation2D), INTENT(INOUT) :: rtriangulation
+  TYPE(t_triangulation2D), POINTER :: p_rtriangulation
 !</inputoutput>
   
 !</subroutine>
 
     INTEGER :: idupflag
     
-    idupflag = rtriangulation%iduplicationFlag
+    IF (.NOT. ASSOCIATED(p_rtriangulation)) RETURN
+    
+    idupflag = p_rtriangulation%iduplicationFlag
     
     ! Bit  8: KMM    is a copy of another structure
     ! ... does not exist!?!
@@ -937,74 +951,83 @@ CONTAINS
     ! these must not be released, as we are not the owner of them!
     
     ! Bit  0: DCORVG is a copy of another structure
-    CALL checkAndRelease(idupflag, 0,rtriangulation%h_DcornerCoordinates)
+    CALL checkAndRelease(idupflag, 0,p_rtriangulation%h_DcornerCoordinates)
 
     ! Bit  2: KVERT  is a copy of another structure
-    CALL checkAndRelease(idupflag, 2,rtriangulation%h_IverticesAtElement)
+    CALL checkAndRelease(idupflag, 2,p_rtriangulation%h_IverticesAtElement)
 
     ! Bit  3: KMID   is a copy of another structure
-    CALL checkAndRelease(idupflag, 3,rtriangulation%h_IedgesAtElement)
+    CALL checkAndRelease(idupflag, 3,p_rtriangulation%h_IedgesAtElement)
     
     ! Bit  4: KADJ   is a copy of another structure
-    CALL checkAndRelease(idupflag, 4,rtriangulation%h_IneighboursAtElement)
+    CALL checkAndRelease(idupflag, 4,p_rtriangulation%h_IneighboursAtElement)
 
     ! Bit  6: KMEL   is a copy of another structure
-    CALL checkAndRelease(idupflag, 6,rtriangulation%h_IelementsAtEdge)
+    CALL checkAndRelease(idupflag, 6,p_rtriangulation%h_IelementsAtEdge)
 
     ! Bit 16: KEAN   is a copy of another structure
-    CALL checkAndRelease(idupflag,16,rtriangulation%h_IverticesAtEdge)
+    CALL checkAndRelease(idupflag,16,p_rtriangulation%h_IverticesAtEdge)
 
     ! Bit  7: KNPR   is a copy of another structure
-    CALL checkAndRelease(idupflag, 7,rtriangulation%h_InodalProperty)
+    CALL checkAndRelease(idupflag, 7,p_rtriangulation%h_InodalProperty)
 
     ! Bit 19: DAREA  is a copy of another structure
-    CALL checkAndRelease(idupflag,19,rtriangulation%h_DelementArea)
+    CALL checkAndRelease(idupflag,19,p_rtriangulation%h_DelementArea)
 
     ! Bit  5: KVEL   is a copy of another structure
-    CALL checkAndRelease(idupflag, 5,rtriangulation%h_IelementsAtVertexIdx)
-    CALL checkAndRelease(idupflag, 5,rtriangulation%h_IelementsAtVertex)
+    CALL checkAndRelease(idupflag, 5,p_rtriangulation%h_IelementsAtVertexIdx)
+    CALL checkAndRelease(idupflag, 5,p_rtriangulation%h_IelementsAtVertex)
 
     ! Bit 11: KBCT   is a copy of another structure
-    CALL checkAndRelease(idupflag,11,rtriangulation%h_IboundaryCpIdx)
+    CALL checkAndRelease(idupflag,11,p_rtriangulation%h_IboundaryCpIdx)
 
     ! Bit  9: KVBD   is a copy of another structure
-    CALL checkAndRelease(idupflag, 9,rtriangulation%h_IverticesAtBoundary)
+    CALL checkAndRelease(idupflag, 9,p_rtriangulation%h_IverticesAtBoundary)
 
     ! Bit 14: KMBD   is a copy of another structure
-    CALL checkAndRelease(idupflag,14,rtriangulation%h_IedgesAtBoundary)
+    CALL checkAndRelease(idupflag,14,p_rtriangulation%h_IedgesAtBoundary)
 
     ! Bit 10: KEBD   is a copy of another structure
-    CALL checkAndRelease(idupflag,10,rtriangulation%h_IelementsAtBoundary)
+    CALL checkAndRelease(idupflag,10,p_rtriangulation%h_IelementsAtBoundary)
 
     ! Bit 12: DVBDP  is a copy of another structure
-    CALL checkAndRelease(idupflag,12,rtriangulation%h_DvertexParameterValue)
+    CALL checkAndRelease(idupflag,12,p_rtriangulation%h_DvertexParameterValue)
 
     ! Bit 13: DMBDP  is a copy of another structure
-    CALL checkAndRelease(idupflag,13,rtriangulation%h_DedgeParameterValue)
+    CALL checkAndRelease(idupflag,13,p_rtriangulation%h_DedgeParameterValue)
 
     ! Bit 17: KVBDI  is a copy of another structure
-    CALL checkAndRelease(idupflag,17,rtriangulation%h_IboundaryVertexPos)
+    CALL checkAndRelease(idupflag,17,p_rtriangulation%h_IboundaryVertexPos)
 
     ! Bit 18: KMBDI  is a copy of another structure
-    CALL checkAndRelease(idupflag,18,rtriangulation%p_IboundaryEdgePos)
+    CALL checkAndRelease(idupflag,18,p_rtriangulation%p_IboundaryEdgePos)
     
     ! Bit  1: DCORMG is a copy of another structure
-    CALL checkAndRelease(idupflag, 1,rtriangulation%h_RfreeVertexCoordinates)
+    CALL checkAndRelease(idupflag, 1,p_rtriangulation%h_RfreeVertexCoordinates)
     
     ! Clean up the rest of the structure
 
-    rtriangulation%iduplicationFlag = 0
-    rtriangulation%NVT = 0
-    rtriangulation%NMT = 0
-    rtriangulation%NEL = 0
-    rtriangulation%NBCT = 0
-    rtriangulation%NVBD = 0
-    rtriangulation%NMBD = 0
-    rtriangulation%nverticesPerEdge = 0
-    rtriangulation%nVerticesOnAllEdges = 0
-    rtriangulation%nverticesInEachElement = 0
-    rtriangulation%nverticesInAllElements = 0
-    rtriangulation%nadditionalVertices = 0
+    p_rtriangulation%iduplicationFlag = 0
+    p_rtriangulation%NVT = 0
+    p_rtriangulation%NMT = 0
+    p_rtriangulation%NEL = 0
+    p_rtriangulation%NBCT = 0
+    p_rtriangulation%NVBD = 0
+    p_rtriangulation%NMBD = 0
+    p_rtriangulation%nverticesPerEdge = 0
+    p_rtriangulation%nVerticesOnAllEdges = 0
+    p_rtriangulation%nverticesInEachElement = 0
+    p_rtriangulation%nverticesInAllElements = 0
+    p_rtriangulation%nadditionalVertices = 0
+
+    ! Deallocate the structure (if we are allowed to), finish.
+    IF (.NOT. PRESENT(bkeepStructure)) THEN
+      DEALLOCATE(p_rtriangulation)
+    ELSE
+      IF (.NOT. bkeepStructure) DEALLOCATE(p_rtriangulation)
+    END IF
+
+    ! That's it...
 
   CONTAINS
   

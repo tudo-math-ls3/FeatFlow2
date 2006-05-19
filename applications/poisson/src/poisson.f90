@@ -25,10 +25,19 @@
 PROGRAM poisson
 
   USE poissonmeth1
+  USE poissonmeth2
   
   IMPLICIT NONE
   
   INCLUDE 'cmem.inc'
+  INCLUDE 'cout.inc'
+  INCLUDE 'cerr.inc'
+
+  ! As we still use some FEAT 1.x routines, we have to initialise some
+  ! output variables.
+
+  M = 0
+  ICHECK = 0
 
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
@@ -46,11 +55,21 @@ PROGRAM poisson
              'data/cc2d.sys','data/cc2d.trc') 
   
   ! Call the problem to solve. Poisson 1:
+  PRINT *,'Calculating Laplace-Problem with method 1'
+  PRINT *,'-----------------------------------------'
   CALL poisson_method1
+  
+  PRINT *
+
+  ! Call the problem to solve. Poisson 2:
+  PRINT *,'Calculating Laplace-Problem with method 2'
+  PRINT *,'-----------------------------------------'
+  CALL poisson_method2
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
+  PRINT *
   CALL storage_info()
   
 END PROGRAM

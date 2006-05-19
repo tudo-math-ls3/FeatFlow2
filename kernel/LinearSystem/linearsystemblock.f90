@@ -31,25 +31,29 @@
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!#  7.) lsysbl_releaseVector
+!#  7.) lsysbl_updateMatStrucInfo
+!#      -> Recalculate structural data of a block matrix from
+!#         the submatrices
+!#
+!#  8.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!#  8.) lsysbl_blockMatVec
+!#  9.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!#  9.) lsysbl_vectorCopy
+!# 10.) lsysbl_vectorCopy
 !#       -> Copy a block vector over to another one
 !#
-!# 10.) lsysbl_vectorScale
+!# 11.) lsysbl_vectorScale
 !#      -> Scale a block vector by a constant
 !#
-!# 11.) lsysbl_vectorClear
+!# 12.) lsysbl_vectorClear
 !#      -> Clear a block vector
 !#
-!# 12.) lsysbl_vectorLinearComb
+!# 13.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 13.) lsysbl_scalarProduct
+!# 14.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
 !# </purpose>
@@ -1018,6 +1022,49 @@ CONTAINS
     ! The data of the vector actually belongs to another one - to the
     ! scalar one. Note this in the structure.
     rvector%bisCopy = .TRUE.
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_updateMatStrucInfo (rmatrix)
+  
+!<description>
+  ! Updates structural information of a block matrix by recalculation
+  ! from submatrices.
+  ! This routine must be called, if the application changes structural
+  ! information in one or more of the matrix blocks of a submatrix.
+  ! In this case, this routine recalculates crucial information
+  ! of the global matrix (number of blocks, global NEQ,...) by checking 
+  ! the submatrices.
+!</description>
+  
+!<inputoutput>
+  ! The block matrix which is to be updated.
+  TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  INTEGER :: i,j,NEQ
+  
+  ! At first, recalculate the number of diagonal blocks in the
+  ! block matrix
+  DO i=LSYSBL_MAXBLOCKS,1,-1
+    IF (rmatrix%RmatrixBlock(i,i)%NA .NE. 0) EXIT
+  END DO
+  
+  ! i is the new number of diagonal blocks
+  rmatrix%ndiagBlocks = i
+  
+  ! Calculate the new NEQ
+  NEQ = 0
+  DO j=1,i
+    NEQ = NEQ + rmatrix%RmatrixBlock(i,i)%NEQ
+  END DO
+  rmatrix%NEQ = NEQ
 
   END SUBROUTINE
 

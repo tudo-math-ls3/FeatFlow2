@@ -84,6 +84,10 @@ C       Clear the TRIA-structure
 
         CALL LCL3(TRIAS(1,NLMIN),SZTRIA)
         
+C       Put the TRIA structure to the COMMON block - so the FEAT library
+C       assumes that there is no triangulation (because everything is 0)!
+        CALL TRIA2C(TRIAS(1,NLMIN))
+        
 C       Set up the coarse grid, read it from the file, pre-refine it
 
         MF = 0

@@ -335,7 +335,7 @@ MODULE linearsolver
     ! INPUT PARAMETER: Output level
     ! This determines the output level of the solver.
     ! =0: no output, =1: basic output, =2, extended output
-    INTEGER                    :: ioutputLevel = 2
+    INTEGER                    :: ioutputLevel = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS WITH RESIDUAL CHECK:
     ! Number of iterations to perform before printing out the
