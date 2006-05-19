@@ -12,7 +12,7 @@ SRCF90:=$(SRCF90) fsystem.f90 basicgeometry.f90 afc_util.f90  \
 	error.f90 element.f90 io.f90 boundary.f90 scalarbc.f90 \
 	paramlist.f90 spatialdiscretisation.f90 dofmapping.f90 \
 	multilevelprojection.f90 discretebc.f90 linearsystemscalar.f90 \
-	linearsystemblock.f90 \
+	linearsystemblock.f90 matrixmodification.f90 matrixfilters.f90\
 	vectorfilters.f90 filtersupport.f90 linearsolver.f90 \
 	linearsolverautoinitialise.f90 collection.f90 \
 	bilinearformevaluation.f90 linearformevaluation.f90
