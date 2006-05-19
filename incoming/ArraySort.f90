@@ -97,38 +97,38 @@ MODULE ArraySort
     
     CONTAINS
 
-    SUBROUTINE reheap(Start, Ende)
-      INTEGER(I32), INTENT(IN) :: Start, Ende
-      INTEGER(I32)::t1, t2
+    SUBROUTINE reheap(istart, istop)
+      INTEGER(I32), INTENT(IN) :: istart, istop
+      INTEGER(I32)::ielem1, ielem2
       INTEGER(I32)::i,j, k, idx
 
-      if(Ende.eq.Start) return
+      if(istop.eq.istart) return
       ! Follow patho of bigger children
-      i=Start
+      i=istart
       j=ishft(i,1)
       ! While there is a child...
-      DO WHILE ((j .LE. Ende) .AND. (j .GT. 0))
+      DO WHILE ((j .LE. istop) .AND. (j .GT. 0))
         ! Go one level up
         i = j
         ! Sole child => exit loop
-        IF(i .EQ. Ende) EXIT
+        IF(i .EQ. istop) EXIT
         ! Path of bigger child
         if(Ielem(iindex,i+1) .GT. Ielem(iindex,i)) i=i+1
         j=ishft(i,1)
       END DO
       ! Search for the correct position along the path
-      DO WHILE ((i .GT. Start) .AND. &
-                (Ielem(iindex,i) .LT. Ielem(iindex,Start)))
+      DO WHILE ((i .GT. istart) .AND. &
+                (Ielem(iindex,i) .LT. Ielem(iindex,istart)))
         i=ishft(i,-1)
       END DO
       ! Move the nodes
       k=i
       DO idx=1, nindex
-        t1=Ielem(idx,Start)
-        DO WHILE (i .GE. Start)
-          t2=Ielem(idx,i)
-          Ielem(idx,i)=t1
-          t1=t2
+        ielem1=Ielem(idx,istart)
+        DO WHILE (i .GE. istart)
+          ielem2=Ielem(idx,i)
+          Ielem(idx,i)=ielem1
+          ielem1=ielem2
           i=ishft(i,-1)
         END DO
         i=k
