@@ -23,6 +23,35 @@
 !#
 !# Before any memory is allocated, the memory management must be initialised
 !# by a call to 'storage_init'!
+!#
+!# The following routines can be found here:
+!#
+!# 1.) storage_init
+!#     -> Initialises the storage management
+!#
+!# 2.) storage_done
+!#     -> Cleans up the storage management
+!#
+!# 3.) storage_info
+!#     -> Prints statistics about the heap to the terminal
+!#
+!# 4.) storage_new  =  storage_new1D / storage_new2D
+!#     -> Allocates a new 1D or 2D array
+!#
+!# 5.) storage_free
+!#     -> Releases a handle and the associated memory
+!#
+!# 6.) storage_getbase_single,
+!#     storage_getbase_double,
+!#     storage_getbase_int,
+!#     -> Determine pointer associated to a handle for singles, doubles
+!#        or 32-Bit integers
+!#
+!# 7.) storage_getbase_single2D,
+!#     storage_getbase_double2D,
+!#     storage_getbase_int2D,
+!#     -> Determine pointer associated to a handle for singles, doubles
+!#        or 32-Bit integers, 2D array
 !# </purpose>
 !##############################################################################
 

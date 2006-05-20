@@ -26,6 +26,9 @@
 !#
 !# 1.) filter_applyFilterChainVec
 !#     -> Applies a given filter chain onto a (block) vector.
+!#
+!# 2.) filter_applyFilterChainMat
+!#     -> Applies a given filter chain onto a (block) matrix.
 !# </purpose>
 !##############################################################################
 

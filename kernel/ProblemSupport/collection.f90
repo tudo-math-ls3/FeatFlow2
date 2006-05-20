@@ -93,41 +93,41 @@
 !#
 !# The following routines can be used to maintain a parameter
 !# list:
-!# - collct_init 
+!# 1.) collct_init 
 !#     -> Initialises an empty list of named scalar values.
 !#
-!# - collct_done
+!# 2.) collct_done
 !#     -> Cleans up a list, releases all allocated memory from the heap.
 !#
-!# - collct_getmaxlevel
+!# 3.) collct_getmaxlevel
 !#     -> Determines the number of levels.
 !#
-!# - collct_addlevel
+!# 4.) collct_addlevel
 !#     -> Adds a new level.
 !#
-!# - collct_deletelevel
+!# 5.) collct_deletelevel
 !#     -> Deletes the maximum level
 !#        (not yet implemented)
 !#
-!# - collct_queryvalue
+!# 6.) collct_queryvalue
 !#     -> Determines whether or not a parameter exists
 !#
-!# - collct_gettype
+!# 7.) collct_gettype
 !#     -> Get the type of a variable. 
 !#
-!# - collct_getvalue_xxx
+!# 8.) collct_getvalue_xxx
 !#     -> Get a value from the list. xxx corresponds to the type of 
 !#        the variable.
 !#
-!# - collct_setvalue_xxx
+!# 9.) collct_setvalue_xxx
 !#     -> Modifies a value in the list. Add a value if it does not exist.
 !#        xxx corresponds to the type of  the variable.
 !#
-!# - collct_detelevalue
-!#     -> Deletes a value from the list.
+!# 10.) collct_detelevalue
+!#      -> Deletes a value from the list.
 !#
-!# - collct_printStatistics 
-!#     -> Prints out the current content of the structure to the terminal
+!# 11.) collct_printStatistics 
+!#      -> Prints out the current content of the structure to the terminal
 !#
 !# </purpose>
 !##############################################################################

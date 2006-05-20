@@ -46,32 +46,32 @@
 !#
 !# The following routines can be used to maintain a parameter
 !# list:
-!# - parlst_init 
-!#     -> Initialises an empty parameter list
+!# 1.) parlst_init 
+!#      -> Initialises an empty parameter list
 !#
-!# - parlst_readfromfile
+!# 2.) parlst_readfromfile
 !#     -> Reads the content of a .INI file into a parameter list.
 !#
-!# - parlst_done
+!# 3.) parlst_done
 !#     -> Cleans up a parameter list, releases all allocated memory
 !#        from the heap
 !#
-!# - parlst_querysection
+!# 4.) parlst_querysection
 !#     -> Determines whether or not a section exists
 !#
-!# - parlst_addsection
+!# 5.) parlst_addsection
 !#     -> Adds a new section
 !#
-!# - parlst_queryvalue
+!# 6.) parlst_queryvalue
 !#     -> Determines whether or not a parameter exists
 !#
-!# - parlst_getvalue_string
+!# 7.) parlst_getvalue_string
 !#     -> Get the string value of a parameter from the parameter list
 !#
-!# - parlst_addvalue
+!# 8.) parlst_addvalue
 !#     -> Adds a new parameter to the parameter list
 !#
-!# - parlst_setvalue
+!# 9.) parlst_setvalue
 !#     -> Modifies the value of a parameter in the list
 !# 
 !# </purpose>

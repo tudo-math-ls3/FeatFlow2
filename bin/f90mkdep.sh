@@ -16,6 +16,6 @@ for i in $@
   do 
   j=`basename $i .f90`
   printf "\$(OBJDIRF90)/%s.o: %s.f90" $j $j
-  awk '/^[ ]*(U|u)(S|s)(E|e)/ {printf(" %s.f90",$2);}' $i | tr -d \' 
+  awk '/^[ ]*(U|u)(S|s)(E|e)/ {printf(" (OBJDIRF90)/%s.o",$2);}' $i | tr -d \' 
   printf "\n" 
 done

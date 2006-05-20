@@ -5,6 +5,15 @@
 !#
 !# <purpose>
 !# This module contains several routines for input/output purposes.
+!#
+!# The following routines can be found here:
+!#
+!# 1.) io_openFileForReading
+!#     -> Opens a file for reading; the file handle is automatically determined
+!#
+!# 2.) io_openFileForWriting
+!#     -> Opens a file for writing; the file handle is automatically determined
+!#
 !# </purpose>
 !##############################################################################
 

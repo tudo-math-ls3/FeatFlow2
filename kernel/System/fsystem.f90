@@ -11,6 +11,26 @@
 !# On start of the main program, the routine system_init() must be called
 !# once to initialise internal values!
 !#
+!# The following routines can be found here
+!#
+!#  1.) system_init
+!#      -> Initialise system-wide settings
+!#
+!#  2.) sys_toupper
+!#      -> Convert a string to uppercase
+!#
+!#  3.) sys_upcase
+!#      -> Convert a string to uppercase, function version
+!#
+!#  4.) sys_throwFPE
+!#      -> Throw a floating point exception
+!#
+!#
+!#  5.) sys_getFreeUnit
+!#      -> Determine a free file handle for use in an OPEN() command
+!#
+!# 
+!#  ... (documentation incomplete)
 !# </purpose>
 !##############################################################################
 
