@@ -512,6 +512,10 @@ CONTAINS
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
 
+    ! An array for the system matrix(matrices) during the initialisation of
+    ! the linear solver.
+    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
+
     ! Get our matrix and right hand side from the collection.
     p_rrhs    => collct_getvalue_vec(rcollection,'RHS')
     p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
@@ -539,8 +543,16 @@ CONTAINS
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
-    ! Attach the system matrix to the solver
-    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+    ! Attach the system matrix to the solver.
+    ! First create an array with the matrix data (on all levels, but we
+    ! only have one level here), then call the initialisation 
+    ! routine to attach all these matrices.
+    ! Remark: Don't make a call like
+    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+    ! This doesn't work on all compilers, since the compiler would have
+    ! to create a temp array on the stack - which does not always work!
+    Rmatrices = (/p_rmatrix/)
+    CALL linsol_setMatrices(p_RsolverNode,Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -859,8 +871,8 @@ CONTAINS
     
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *
-    PRINT *,'Collection statistics:'
-    PRINT *,'----------------------'
+    PRINT *,'Remaining collection statistics:'
+    PRINT *,'--------------------------------'
     PRINT *
     CALL collct_printStatistics (rcollection)
     

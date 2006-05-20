@@ -118,6 +118,16 @@ MODULE boundary
 
 !</constantblock>
 
+!<constantblock description="Type constants for type of parametrisation to use.">
+
+  ! Use 0-1 parametrisation
+  INTEGER, PARAMETER :: BDR_PAR_01       = 0
+
+  ! Use parametrisation for the length
+  INTEGER, PARAMETER :: BDR_PAR_LENGTH   = 1
+
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -127,6 +137,10 @@ MODULE boundary
   ! Structure defining a boundary region with minimum/maximum parameter
   ! value in 2D.
   TYPE t_boundaryRegion
+  
+    ! Type of parametrisation, the parameters refer to.
+    ! One of the BDR_PAR_xxxx constants.
+    INTEGER  :: cparType  = BDR_PAR_01
   
     ! Minimum parameter value of the region
     REAL(DP) :: dminParam = 0.0_DP
@@ -175,7 +189,7 @@ MODULE boundary
     INTEGER :: iboundarycount   = -1
 
     ! handle to double precision array: For every boundary component, maximum
-    ! parameter value.
+    ! parameter value in length-parametrisation.
     INTEGER :: h_DmaxPar = ST_NOHANDLE
 
     ! handle for a vector containing the number of segments per boundary component
@@ -200,20 +214,20 @@ MODULE boundary
 
   INTEGER FUNCTION boundary_igetNBoundComp(rboundary) RESULT (iresult)
 
-  !<description>
+!<description>
   ! This function returns the total number of boundary components.
-  !</description>
+!</description>
 
-  !<result>
+!<result>
   ! Total number of boundary components
-  !</result>
+!</result>
 
-  !<input>
+!<input>
 
   !boundary structure
   TYPE(t_boundary), INTENT(IN) :: rboundary
   
-  !</input>
+!</input>
   
 !</function>
 
@@ -325,29 +339,34 @@ MODULE boundary
 
 !<function>
 
-  REAL(DP) FUNCTION boundary_dgetMaxParVal(rboundary, iboundCompIdx)
+  REAL(DP) FUNCTION boundary_dgetMaxParVal(rboundary, iboundCompIdx, cparType)
 
-  !<description>
+!<description>
   ! This function returns the parametric length of the boundary component iboundCompIdx
-  !</description>
+!</description>
 
-  !<result>
+!<result>
   ! Parametric length of boundary component iboundCompIdx.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
 
-  !boundary structure
+  ! boundary structure
   TYPE(t_boundary), INTENT(IN) :: rboundary
 
-  !index of boundary component
+  ! index of boundary component
   INTEGER, INTENT(IN) :: iboundCompIdx
   
-  !</input>
+  ! OPTIONAL: Type of parametrisation to use.
+  ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: cparType
+  
+!</input>
   
 !</function>
 
   REAL(DP),DIMENSION(:),POINTER :: p_DmaxPar
+  INTEGER(I32),DIMENSION(:),POINTER :: p_IsegCount
 
   !if iboundCompIdx exceeds the total number of boundary components or is negative, abort
   if ((iboundCompIdx .gt. rboundary%iboundarycount) .or. (iboundCompIdx.lt.0)) then
@@ -356,11 +375,25 @@ MODULE boundary
     RETURN
   ENDIF
 
-  !get vector with component length
-  CALL storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
+  IF (PRESENT(cparType)) THEN
+    SELECT CASE (cparType)
+    CASE (BDR_PAR_LENGTH)
+      ! Length-parametrisation
+      ! Get vector with component length - depending on the parametrisation
+      ! to use.
+      CALL storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
+
+      ! Get the maximum parameter value
+      boundary_dgetMaxParVal = p_DmaxPar(iboundCompIdx)
+      
+      RETURN
+    END SELECT
+  END IF  
   
-  ! Get the maximum parameter value
-  boundary_dgetMaxParVal = p_DmaxPar(iboundCompIdx)
+  ! 0-1 parametrisation. Maximum parameter value is just the number of
+  ! segments.
+  CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
+  boundary_dgetMaxParVal = REAL(p_IsegCount(iboundCompIdx),DP)
 
   END FUNCTION 
 
@@ -370,16 +403,16 @@ MODULE boundary
 
   INTEGER FUNCTION boundary_dgetNsegments(rboundary, iboundCompIdx)
 
-  !<description>
+!<description>
   ! This function returns the number of boundary segments in
   ! the boundary component iboundCompIdx.
-  !</description>
+!</description>
 
-  !<result>
+!<result>
   ! Parametric length of boundary component iboundCompIdx.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
 
   !boundary structure
   TYPE(t_boundary), INTENT(IN) :: rboundary
@@ -387,7 +420,7 @@ MODULE boundary
   !index of boundary component
   INTEGER, INTENT(IN) :: iboundCompIdx
   
-  !</input>
+!</input>
   
 !</function>
 
@@ -445,7 +478,10 @@ MODULE boundary
   INTEGER :: ityp, nspline, npar
   INTEGER :: isegrel
   INTEGER :: idblemem  ! Counts the memory we need
-  REAL(DP) :: dl,dmaxpar
+  REAL(DP) :: dl
+  
+  ! Current parameter value in length-parametrisation
+  REAL(DP) :: dmaxpar
   
   ! Do we have a structure?
   IF (.NOT. ASSOCIATED(p_rboundary)) THEN
@@ -484,7 +520,7 @@ MODULE boundary
   CALL storage_getbase_int(p_rboundary%h_Iintdatavec_handles, p_IintSegInfo_handles)
 
   ! Allocate an array containing the maximum parameter values for each
-  ! boundary component.
+  ! boundary component in length-parametrisation
   CALL storage_new("boundary_read", "h_DmaxPar", &
                   p_rboundary%iboundarycount, ST_DOUBLE, &
                   p_rboundary%h_DmaxPar, ST_NEWBLOCK_ZERO)
@@ -631,7 +667,7 @@ MODULE boundary
         ! We read the startpoint and the relative endpoint.
         ! The line is then saved as 
         ! - startpoint
-        ! - normalised direction vector
+        ! - direction vector
         ! - length of the line.
         !
         ! Startpoint
@@ -640,15 +676,20 @@ MODULE boundary
         ! Relative endpoint
         READ(iunit,*) p_DsegInfo(isegrel+5),p_DsegInfo(isegrel+6)
         
-        ! Save the initial parameter value in the first entry
+        ! Save the initial parameter value (in of the length-parametrisation)
+        ! to the first entry
         p_DsegInfo(isegrel+1) = dmaxpar
         
-        ! Calculate the length and save it in the first position
+        ! This is just necessary for the length-parametrisation. The
+        ! 0-1 parametrisation defines the starting point just as the
+        ! integer number isegment.
+        
+        ! Calculate the length and save it in the 2nd position
         dl = SQRT(p_DsegInfo(isegrel+5)**2 + p_DsegInfo(isegrel+6)**2)
         p_DsegInfo(isegrel+2) = dl
         
         ! Normalise the direction vector
-        p_DsegInfo(isegrel+4:isegrel+6) = p_DsegInfo(isegrel+4:isegrel+7)/dl
+        !p_DsegInfo(isegrel+4:isegrel+6) = p_DsegInfo(isegrel+4:isegrel+7)/dl
         
         ! Increase the maximum parameter value
         dmaxPar = dmaxPar + dl
@@ -675,7 +716,8 @@ MODULE boundary
         ! of the arc:
         READ(iunit,*) p_DsegInfo(isegrel+7),p_DsegInfo(isegrel+8)
         
-        ! Save the initial parameter value in the first entry
+        ! Save the initial parameter value (in length-parametrisation)
+        ! to the first entry
         p_DsegInfo(isegrel+1) = dmaxpar
         
         ! Now compute the real length of the arc.
@@ -767,9 +809,9 @@ MODULE boundary
 
 !<subroutine>
 
-  SUBROUTINE boundary_getcoords(rboundary, iboundCompIdx, dt, dx, dy)
+  SUBROUTINE boundary_getcoords(rboundary, iboundCompIdx, dt, dx, dy, cparType)
 
-  !<description>
+!<description>
   ! This routine returns for a given parameter value dt the
   ! cartesian coordinates of the point on the boundary component 
   ! iboundCompIdx.\\
@@ -777,7 +819,7 @@ MODULE boundary
   ! larger than the maximum parameter value, dt=0 is taken.
   !</description>
 
-  !<input>
+!<input>
 
   !boundary structure
   TYPE(t_boundary), INTENT(IN) :: rboundary
@@ -788,9 +830,13 @@ MODULE boundary
   !parametric value of boundary point
   REAL(DP), INTENT(IN) :: dt
   
-  !</input>
+  ! OPTIONAL: Type of parametrisation to use.
+  ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: cparType
+  
+!</input>
 
-  !<output>
+!<output>
 
   !x-coordinate of boundary point
   REAL(DP), INTENT(OUT) :: dx
@@ -798,7 +844,7 @@ MODULE boundary
   !y-coordinate of boundary point
   REAL(DP), INTENT(OUT) :: dy
     
-  !</output>
+!</output>
 
 !</subroutine>
 
@@ -806,9 +852,13 @@ MODULE boundary
   INTEGER(I32), DIMENSION(:), POINTER :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
   INTEGER(I32), DIMENSION(:), POINTER :: p_IsegInfo, p_IsegCount
   REAL(DP), DIMENSION(:), POINTER     :: p_DsegInfo, p_DmaxPar
+  INTEGER :: cpar ! local copy of cparType
   
-  REAL(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar
+  REAL(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength
   INTEGER :: iseg,isegtype,istartidx
+
+  cpar = BDR_PAR_01
+  IF (PRESENT(cparType)) cpar = cparType
 
   if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
     PRINT *,'Error in boundary_getcoords'
@@ -829,11 +879,21 @@ MODULE boundary
 
   !if the parameter value exceeds the parameter interval on the boundary component
   
-  IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
-    dpar = 0.0 
-  ELSE
-    dpar = dt
-  ENDIF
+  ! Truncate the parameter value!
+  SELECT CASE (cpar)
+  CASE (BDR_PAR_01)
+    IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
+      dpar = 0.0_DP
+    ELSE
+      dpar = dt
+    ENDIF
+  CASE (BDR_PAR_LENGTH)
+    IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
+      dpar = 0.0_DP
+    ELSE
+      dpar = dt
+    ENDIF
+  END SELECT
 
   ! Find segment iseg the parameter value belongs to.
   ! Remember that in the first element in the double precision block of
@@ -841,20 +901,37 @@ MODULE boundary
   
   dcurrentpar = 0.0_DP
   
-  DO iseg = 0,p_IsegCount(iboundCompIdx)-1
+  ! Determine the segment
+  SELECT CASE (cpar)
+  CASE (BDR_PAR_01)
+  
+    ! Easy case: 0-1 parametrisation
+    iseg = AINT(dpar)
+    dcurrentpar = iseg
+    dendpar     = iseg + 1.0_DP
+    dseglength  = p_DsegInfo(2+istartidx)
     
-    ! Determine Start index of the segment in the double-prec. block
-    istartidx = p_IsegInfo(1+2*iseg+1) 
-    
-    ! Get the start and end parameter value
-    dcurrentpar = p_DsegInfo(1+istartidx)
-    dendpar = dcurrentpar + p_DsegInfo(2+istartidx)
-    
-    ! At least one of the IF-commands in the loop will activate
-    ! the exit - because of the 'dt' check above!
-    IF (dpar .LT. dendpar) EXIT
-    
-  END DO
+  CASE (BDR_PAR_LENGTH)
+  
+    ! In the length-parametrisation, we have to search.
+    DO iseg = 0,p_IsegCount(iboundCompIdx)-1
+      
+      ! Determine Start index of the segment in the double-prec. block
+      istartidx = p_IsegInfo(1+2*iseg+1) 
+      
+      ! Get the start and end parameter value
+      dcurrentpar = p_DsegInfo(1+istartidx)
+      dendpar = dcurrentpar + p_DsegInfo(2+istartidx)
+      dseglength = p_DsegInfo(2+istartidx)
+      
+      ! At least one of the IF-commands in the loop will activate
+      ! the exit - because of the 'dt' check above!
+      IF (dpar .LT. dendpar) EXIT
+      
+    END DO
+  END SELECT
+  
+  IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
 
   ! Subtract the start position of the current boundary component
   ! from the parameter value to get the 'local' parameter value
@@ -872,6 +949,11 @@ MODULE boundary
   ! case of line
   CASE (BOUNDARY_TYPE_LINE)
   
+    ! As we save the parametrisation in 0-1 parametrisation,
+    ! when we have length-parametrisation, we have to normalise
+    ! dparloc to 0 <= dparloc <= 1.
+    IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
+  
     ! Calculate the x/y coordinates from the startpoint and
     ! the unid direction vector.
     dx = p_DsegInfo(istartidx+3) + dparloc*p_DsegInfo(istartidx+5)
@@ -881,8 +963,9 @@ MODULE boundary
   CASE (BOUNDARY_TYPE_CIRCLE)
 
     ! Rescale dparloc with the length of the arc to get a value
-    ! between 0 and 1; important for sin/cos functions later
-    dparloc = dparloc / p_DsegInfo(istartidx+2)
+    ! between 0 and 1; important for sin/cos functions later.
+    ! In the 0-1 parametrisation, this is already the case.
+    IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
 
     ! Get the rotation angle.
     ! Use the initial rotation angle, saved at position 6 of the double
@@ -908,9 +991,9 @@ MODULE boundary
 !<subroutine>
 
   SUBROUTINE boundary_createRegion (rboundary, iboundCompIdx, iboundSegIdx, &
-                                    rregion)
+                                    rregion, cpartype)
                                     
-  !<description>
+!<description>
   ! This routine creates a boundary region from a boundary segment.
   ! Where the boundary segment is saved internally, the boundary region
   ! is a parametrised description of the boundary segment, i.e.
@@ -918,9 +1001,9 @@ MODULE boundary
   ! value etc.
   ! In the standard setting, the startpoint belongs to the boundary
   ! segment, the endpoint not.
-  !</description>
+!</description>
   
-  !<input>
+!<input>
 
   ! boundary structure
   TYPE(t_boundary), INTENT(IN) :: rboundary
@@ -931,14 +1014,18 @@ MODULE boundary
   ! index of the boundary segment
   INTEGER, INTENT(IN) :: iboundSegIdx
   
-  !</input>
+!</input>
 
-  !<output>
+!<output>
 
   ! Boundary region that is characterised by the boundary segment
   TYPE(t_boundaryRegion), INTENT(OUT) :: rregion
-    
-  !</output>
+  
+  ! OPTIONAL: Type of parametrisation to use.
+  ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: cparType
+
+!</output>
   
 !</subroutine>
 
@@ -947,8 +1034,13 @@ MODULE boundary
   INTEGER(I32), DIMENSION(:), POINTER :: p_IsegInfo, p_IsegCount
   REAL(DP), DIMENSION(:), POINTER     :: p_DsegInfo, p_DmaxPar
   
-  REAL(DP) :: dcurrentpar, dendpar
+  REAL(DP) :: dcurrentpar, dendpar, dmaxpar
   INTEGER :: istartidx
+
+  INTEGER :: cpar ! local copy of cparType
+  
+  cpar = BDR_PAR_01
+  IF (PRESENT(cparType)) cpar = cparType
 
   IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) THEN
     PRINT *,'Error in boundary_createregion'
@@ -982,11 +1074,20 @@ MODULE boundary
   ! Determine Start index of the segment in the double-prec. block
   istartidx = p_IsegInfo(1+2*(iboundSegIdx-1)+1) 
   
-  ! Get the start and end parameter value
-  dcurrentpar = p_DsegInfo(1+istartidx)
-  dendpar = dcurrentpar + p_DsegInfo(2+istartidx)
+  ! Get the start and end parameter value - depending on the parametrisation
+  SELECT CASE (cpar)
+  CASE (BDR_PAR_01)
+    dcurrentpar = REAL(iboundSegIdx,DP)
+    dendpar     = REAL(iboundSegIdx+1,DP)
+    dmaxpar     = REAL(p_IsegCount(iboundCompIdx),DP)
+  CASE (BDR_PAR_LENGTH)
+    dcurrentpar = p_DsegInfo(1+istartidx)
+    dendpar     = dcurrentpar + p_DsegInfo(2+istartidx)
+    dmaxpar     = p_DmaxPar(iboundCompIdx)
+  END SELECT
   
   ! Create the boundary region structure
+  rregion%cparType = cpar
   rregion%dminParam = dcurrentpar
   rregion%dmaxParam = dendpar
   rregion%ctype = BDR_TP_CURVE
@@ -994,7 +1095,7 @@ MODULE boundary
   rregion%isegmentType = p_IsegInfo(1+2*(iboundSegIdx-1))
   rregion%iboundCompIdx = iboundCompIdx
   rregion%iboundSegIdx = iboundSegIdx
-  rregion%dmaxParamBC = p_DmaxPar(iboundCompIdx)
+  rregion%dmaxParamBC = dmaxpar
 
   END SUBROUTINE
                                     

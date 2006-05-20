@@ -56,6 +56,7 @@
 MODULE linearsolver
 
   USE fsystem
+  USE storage
   USE linearsystemblock
   USE filtersupport
   
@@ -2656,6 +2657,7 @@ CONTAINS
         CALL lsysbl_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
 
         CALL lsysbl_blockMatVec (p_rmatrix, p_DP,p_DPA, 1.0_DP,0.0_DP)
+        
         IF (bfilter) THEN
           ! Apply the filter chain to the vector
           CALL filter_applyFilterChainVec (p_DPA, p_RfilterChain)
@@ -2673,7 +2675,7 @@ CONTAINS
           ! We are below machine exactness - we can't do anything more...
           ! May happen with very small problems with very few unknowns!
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
-            PRINT *,'BiCGStab: Convergence failed!'
+            PRINT *,'BiCGStab: Convergence failed, ALPHA=0!'
             rsolverNode%iresult = -2
             EXIT
           END IF
@@ -2704,7 +2706,7 @@ CONTAINS
         ELSE
           IF (domega2 .EQ. 0.0_DP) THEN
             IF (rsolverNode%ioutputLevel .GE. 2) THEN
-              PRINT *,'BiCGStab: Convergence failed!'
+              PRINT *,'BiCGStab: Convergence failed: omega=0!'
               rsolverNode%iresult = -2
               EXIT
             END IF

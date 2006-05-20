@@ -95,6 +95,10 @@ CONTAINS
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
 
+    ! An array for the system matrix(matrices) during the initialisation of
+    ! the linear solver.
+    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
+
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
@@ -114,7 +118,7 @@ CONTAINS
     !
     ! We want to solve our Laplace problem on level...
 
-    LV = 5
+    LV = 7
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -301,13 +305,21 @@ CONTAINS
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    CALL linsol_initBiCGStab (p_rsolverNode,NULL(),p_RfilterChain)
+    CALL linsol_initBiCGStab (p_rsolverNode,NULL(),NULL()) !p_RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
     
-    ! Attach the system matrix to the solver
-    CALL linsol_setMatrices(p_RsolverNode,(/rmatrixBlock/))
+    ! Attach the system matrix to the solver.
+    ! First create an array with the matrix data (on all levels, but we
+    ! only have one level here), then call the initialisation 
+    ! routine to attach all these matrices.
+    ! Remark: Don't make a call like
+    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+    ! This doesn't work on all compilers, since the compiler would have
+    ! to create a temp array on the stack - which does not always work!
+    Rmatrices = (/rmatrixBlock/)
+    CALL linsol_setMatrices(p_RsolverNode,Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation

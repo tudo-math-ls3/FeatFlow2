@@ -258,7 +258,7 @@ CONTAINS
   ! Pointer to the coefficients that are computed by the callback routine.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
   
-  REAL(DP), DIMENSION(11) :: DT
+  !REAL(DP), DIMENSION(11) :: DT
   
   !CHARACTER(LEN=20) :: CFILE
   
