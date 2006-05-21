@@ -10,15 +10,21 @@
 !#
 !# on a 2D domain for a scalar function u.
 !#
-!# There are two examples provided how to solve this problem:
+!# There are three examples provided how to solve this problem:
 !#
-!# The first example (module poissonmeth1) discretises and solves this 
+!# The first example (module poisson_method1) discretises and solves this 
 !# equation in a direct way, just listing all commands necessary for 
 !# initialisation, discretisation, solving and cleanup.
 !#
-!# The second example (module poissonmeth2) separates the different stages
+!# The second example (module poisson_method2) separates the different stages
 !# of the solution process into different subroutines, which communicate
 !# via a collection-structure.
+!#
+!# The third example (module poisson_method3) separates the different stages
+!# of the solution process into different subroutines like example 2.
+!# The communication is done using a problem-related structure. For the
+!# communication with callback rouitines during the assembly, a
+!# collection structure is set up.
 !# </purpose>
 !##############################################################################
 
