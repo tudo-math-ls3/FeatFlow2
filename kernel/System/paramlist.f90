@@ -1208,13 +1208,16 @@ CONTAINS
   !              parameter name. svalue is the value of the parameter,
   !              trimmed and left adjusted.
   
-  SUBROUTINE parlst_parseline (sdata, ityp, ssecname, sparamname, svalue)
+  SUBROUTINE parlst_parseline (sdata, ityp, ilinenum, ssecname, sparamname, svalue)
   
   ! The line to be parsed
   CHARACTER(LEN=*), INTENT(IN) :: sdata
   
   ! The typ of the line
   INTEGER, INTENT(OUT) :: ityp
+
+  ! Line number
+  INTEGER, INTENT(IN) :: ilinenum
   
   ! Section name, if it's a section
   CHARACTER(LEN=*), INTENT(INOUT) :: ssecname
@@ -1226,65 +1229,68 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(INOUT) :: svalue
   
   ! local variables
-  INTEGER :: i,ltr
+  INTEGER :: i,ltr,j
   CHARACTER(LEN=PARLST_LENLINEBUF) :: sbuf
   
-  ityp = 0
-  
-  ! Do we have data in sdata?
-  IF (sdata .EQ. '') RETURN
-  
-  ! Copy the input string - left adjusted - and get the string length
-  sbuf = ADJUSTL(sdata)
-  
-  ! Do we start with '[' and end with ']'?
-  IF (sbuf(1:1) .EQ. "[") THEN
-  
-    ! Find the final ']'.
-    DO ltr = 1,LEN(sbuf)
-      IF (sbuf(ltr:ltr) .EQ. "]") EXIT
-    END DO
+    ityp = 0
     
-    IF (sbuf(ltr:ltr) .NE. ']') THEN
-      PRINT *,'Wrong syntax of section name. Line:'
-      PRINT *,sbuf
-      STOP
+    ! Do we have data in sdata?
+    ! The check of the first character against 0 is necessary as some compilers
+    ! interpret a very last emty line in a text file as '0 32 32 32 ...'!?!
+    IF ((sdata .EQ. '') .OR. (ICHAR(sdata(1:1)) .EQ. 0)) RETURN
+    
+    ! Copy the input string - left adjusted - and get the string length
+    sbuf = ADJUSTL(sdata)
+    
+    ! Do we start with '[' and end with ']'?
+    IF (sbuf(1:1) .EQ. "[") THEN
+    
+      ! Find the final ']'.
+      DO ltr = 1,LEN(sbuf)
+        IF (sbuf(ltr:ltr) .EQ. "]") EXIT
+      END DO
+      
+      IF (sbuf(ltr:ltr) .NE. ']') THEN
+        PRINT *,'Wrong syntax of section name. Line ',ilinenum,':'
+        PRINT *,sbuf
+        STOP
+      END IF
+      
+      ! Get the section name
+      ssecname = sbuf(2:ltr-1)
+      ityp = 1
+      RETURN
+      
+    ELSE IF (sbuf(1:1) .EQ. PARLST_COMMENT) THEN
+    
+      ! Comment sign
+      RETURN
+      
+    ELSE
+    
+      ! Must be a parameter. Get the length of the string without comment
+      ! at the end.
+      CALL linelength(sbuf, ltr)
+      
+      ! ltr=0 means: empty line. Ignore that.
+      IF (ltr .EQ. 0) RETURN
+      
+      ! Is there a '=' sign?
+      i = INDEX(sbuf(1:ltr),'=')
+      IF (i .EQ. 0) THEN
+        PRINT *,'Invalid parameter syntax. Line ',ilinenum,':'
+        STOP
+      END IF
+    
+      ityp = 2
+      
+      ! Get the name of the parameter
+      sparamname = ADJUSTL(sbuf(1:i-1))
+      
+      ! Get the parameter value
+      svalue = ADJUSTL(sbuf(i+1:ltr))
+    
     END IF
-    
-    ! Get the section name
-    ssecname = sbuf(2:ltr-1)
-    ityp = 1
-    RETURN
-    
-  ELSE IF (sbuf(1:1) .EQ. PARLST_COMMENT) THEN
-  
-    ! Comment sign
-    RETURN
-    
-  ELSE
-  
-    ! Must be a parameter. Get the length of the string without comment
-    ! at the end.
-    CALL linelength(sbuf, ltr)
-    
-    ! Is there a '=' sign?
-    i = INDEX(sbuf(1:ltr),'=')
-    IF (i .EQ. 0) THEN
-      PRINT *,'Invalid parameter syntax. Line:'
-      PRINT *,sbuf
-      STOP
-    END IF
-    
-    ityp = 2
-    
-    ! Get the name of the parameter
-    sparamname = ADJUSTL(sbuf(1:i-1))
-    
-    ! Get the parameter value
-    svalue = ADJUSTL(sbuf(i+1:ltr))
-  
-  END IF
-  
   
   CONTAINS
     
@@ -1293,10 +1299,10 @@ CONTAINS
     
     SUBROUTINE linelength (sdata, l)
     
-    ! The string to parse
+    ! The string to parse. Must not be ''!
     CHARACTER(LEN=*), INTENT(IN) :: sdata
     
-    ! The length without any comment at the end.
+    ! The index of the last character without any comment at the end.
     INTEGER, INTENT(OUT) :: l
     
     ! local variables
@@ -1373,7 +1379,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: iunit,ios,isbuflen,ityp
+  INTEGER :: iunit,ios,isbuflen,ityp,ilinenum
   TYPE(t_parlstSection), POINTER :: p_currentsection
   CHARACTER(LEN=PARLST_LENLINEBUF) :: sdata
   CHARACTER(LEN=PARLST_MLSECTION) :: ssectionname
@@ -1394,15 +1400,17 @@ CONTAINS
   
   ! Read all lines from the file
   ios = 0
+  ilinenum = 0
   DO WHILE (ios .EQ. 0) 
     
     ! Read a line from the file into sbuf
     CALL parlst_readlinefromfile (iunit, sdata, isbuflen, ios)
+    ilinenum = ilinenum + 1
     
     IF (isbuflen .NE. 0) THEN
     
       ! Parse the line
-      CALL parlst_parseline (sdata, ityp, ssectionname, sparname, svalue)  
+      CALL parlst_parseline (sdata, ityp, ilinenum, ssectionname, sparname, svalue)  
       
       SELECT CASE (ityp)
       CASE (1)

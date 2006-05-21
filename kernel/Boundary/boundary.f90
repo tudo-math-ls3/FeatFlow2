@@ -1077,8 +1077,8 @@ MODULE boundary
   ! Get the start and end parameter value - depending on the parametrisation
   SELECT CASE (cpar)
   CASE (BDR_PAR_01)
-    dcurrentpar = REAL(iboundSegIdx,DP)
-    dendpar     = REAL(iboundSegIdx+1,DP)
+    dcurrentpar = REAL(iboundSegIdx-1,DP)
+    dendpar     = REAL(iboundSegIdx-1+1,DP)
     dmaxpar     = REAL(p_IsegCount(iboundCompIdx),DP)
   CASE (BDR_PAR_LENGTH)
     dcurrentpar = p_DsegInfo(1+istartidx)

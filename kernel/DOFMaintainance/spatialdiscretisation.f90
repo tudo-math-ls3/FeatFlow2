@@ -127,7 +127,7 @@ MODULE spatialdiscretisation
     TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
     
     ! Pointer to the underlying triangulation of the mesh (2D)
-    TYPE(t_triangulation), POINTER :: p_rtriangulation2D     => NULL()
+    TYPE(t_triangulation), POINTER :: p_rtriangulation     => NULL()
 
     ! Pointer to the analytical description of the boundary conditions
     TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions => NULL()
@@ -198,7 +198,7 @@ CONTAINS
   IF (.NOT. ASSOCIATED(p_rspatialDiscr)) RETURN
 
   ! Cut the connection to the other structures
-  NULLIFY(p_rspatialDiscr%p_rtriangulation2D)
+  NULLIFY(p_rspatialDiscr%p_rtriangulation)
   NULLIFY(p_rspatialDiscr%p_rdomain)
   NULLIFY(p_rspatialDiscr%p_rboundaryConditions)
   
@@ -300,7 +300,7 @@ CONTAINS
 
   ! Initialise the variables of the structure for the simple discretisation
   p_rspatialDiscr%ndimension             = NDIM2D
-  p_rspatialDiscr%p_rtriangulation2D     => rtriangulation
+  p_rspatialDiscr%p_rtriangulation     => rtriangulation
   p_rspatialDiscr%p_rdomain              => rdomain
   p_rspatialDiscr%p_rboundaryConditions  => rboundaryConditions
   p_rspatialDiscr%ccomplexity            = SPDISC_UNIFORM

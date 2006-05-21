@@ -378,7 +378,7 @@ CONTAINS
     ! Ok, easy case. Get from the triangulation the AREA-array for calculating
     ! a simple integral of rx:
     
-    CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation2D%h_DelementArea, &
+    CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementArea, &
                                  p_DelementArea)
                                  
     ! Get the vector data of rx

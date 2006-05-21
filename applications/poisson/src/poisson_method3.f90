@@ -658,7 +658,7 @@ CONTAINS
     
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
-      p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation2D
+      p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. Call the GMV library to write out

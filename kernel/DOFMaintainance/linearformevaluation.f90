@@ -324,7 +324,7 @@ CONTAINS
   END IF
   
   ! Get a pointer to the triangulation - for easier access.
-  p_rtriangulation => rdiscretisation%p_rtriangulation2D
+  p_rtriangulation => rdiscretisation%p_rtriangulation
   
   ! Let p_rcollection point to rcollection - or NULL if it's not
   ! given.

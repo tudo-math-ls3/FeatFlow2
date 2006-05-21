@@ -265,7 +265,7 @@ MODULE collection
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation => NULL()
 
     ! Pointer to a triangulation structure, 2D
-    TYPE(t_triangulation), POINTER :: p_rtriangulation2D => NULL()
+    TYPE(t_triangulation), POINTER :: p_rtriangulation => NULL()
 
     ! Pointer to a scalar vector
     TYPE(t_vectorScalar), POINTER :: p_rvectorScalar => NULL()
@@ -1306,7 +1306,7 @@ CONTAINS
     p_rvalue%ivalue = 0
     p_rvalue%dvalue = 0.0_DP
     NULLIFY(p_rvalue%p_rdiscretisation)
-    NULLIFY(p_rvalue%p_rtriangulation2D)
+    NULLIFY(p_rvalue%p_rtriangulation)
     NULLIFY(p_rvalue%p_rvectorScalar)
     NULLIFY(p_rvalue%p_rmatrixScalar)
     NULLIFY(p_rvalue%p_rvector)
@@ -2092,7 +2092,7 @@ CONTAINS
       STOP
     END IF
     
-    value => p_rvalue%p_rtriangulation2D
+    value => p_rvalue%p_rtriangulation
   ELSE
     NULLIFY(value)
   END IF
@@ -3412,7 +3412,7 @@ CONTAINS
   END IF
   
   ! Set the value
-  p_rvalue%p_rtriangulation2D => value
+  p_rvalue%p_rtriangulation => value
 
   END SUBROUTINE
 

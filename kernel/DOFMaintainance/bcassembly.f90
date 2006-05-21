@@ -682,7 +682,7 @@ CONTAINS
   REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
   
   ! For easier access:
-  p_rtriangulation => rspatialDiscretisation%p_rtriangulation2D
+  p_rtriangulation => rspatialDiscretisation%p_rtriangulation
   CALL storage_getbase_int(p_rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
@@ -816,7 +816,7 @@ CONTAINS
       CASE (EL_Q1)
 
         ! Left point inside? -> Corresponding DOF must be computed
-        IF ( (I .GE. IminVertex(ipart)) .AND. (I .LT. ImaxVertex(ipart)) ) THEN
+        IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
           CALL fgetBoundaryValues (rspatialDiscretisation,rbcRegion,ielement, &
                                   DISCBC_NEEDFUNC,ipoint1,p_DvertexParameterValue(I), &
                                   p_rcollection, Dvalues)

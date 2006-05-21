@@ -82,7 +82,7 @@ CONTAINS
       rdiscretisation%bidenticalTrialAndTest) THEN
   
     ! Uniform discretisation - fall back to the old FEAT mapping
-    dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation2D, &
+    dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, &
                        rdiscretisation%RelementDistribution(1)%itrialElement)
   
   END IF
@@ -231,7 +231,7 @@ CONTAINS
 
   ! local variables
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray
-  TYPE(t_triangulation), POINTER :: p_rtriangulation2D     
+  TYPE(t_triangulation), POINTER :: p_rtriangulation     
   INTEGER :: ieltype
 
   ! 3D currently not supported
@@ -243,7 +243,7 @@ CONTAINS
   ! At first we deal only with uniform discretisations
   IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
   
-    p_rtriangulation2D => rdiscretisation%p_rtriangulation2D
+    p_rtriangulation => rdiscretisation%p_rtriangulation
   
     ! Call the right 'multiple-get' routines for global DOF's.
     ! For this purpose we evaluate the pointers in the discretisation
@@ -262,7 +262,7 @@ CONTAINS
       CALL dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
     CASE (EL_P1, EL_Q1)
       ! DOF's in the vertices
-      CALL storage_getbase_int2D (p_rtriangulation2D%h_IverticesAtElement,p_2darray)
+      CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
       CALL dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
     CASE (EL_P2)
     CASE (EL_Q2)
@@ -270,8 +270,8 @@ CONTAINS
     CASE (EL_Q3)
     CASE (EL_E030, EL_E031, EL_EM30, EL_EM31)
       ! DOF's in the edges
-      CALL storage_getbase_int2D (p_rtriangulation2D%h_IedgesAtElement,p_2darray)
-      CALL dof_locGlobUniMult_E30(p_rtriangulation2D%NVT,p_2darray, IelIdx, IdofGlob)
+      CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
+      CALL dof_locGlobUniMult_E30(p_rtriangulation%NVT,p_2darray, IelIdx, IdofGlob)
     END SELECT
   
   END IF

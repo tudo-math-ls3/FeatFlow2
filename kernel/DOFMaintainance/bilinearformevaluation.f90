@@ -351,7 +351,7 @@ CONTAINS
   rmatrixScalar%NEQ                      = dof_igetNDofGlob(rdiscretisation)
   
   ! and get a pointer to the triangulation.
-  p_rtriangulation => rdiscretisation%p_rtriangulation2D
+  p_rtriangulation => rdiscretisation%p_rtriangulation
   
   ! Get NEQ - we need it for guessing memory...
   NEQ = rmatrixScalar%NEQ
@@ -1137,7 +1137,7 @@ CONTAINS
   END IF
   
   ! Get a pointer to the triangulation - for easier access.
-  p_rtriangulation => rdiscretisation%p_rtriangulation2D
+  p_rtriangulation => rdiscretisation%p_rtriangulation
   
   ! Let p_rcollection point to rcollection - or NULL if it's not
   ! given.

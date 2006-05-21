@@ -1489,7 +1489,7 @@ CONTAINS
 !</inputoutput>
   
 !</subroutine>
-
+    
   ! Method-specific remarks:
   ! The linear system $Ax=b$ is reformulated into a one-step defect-correction 
   ! approach
@@ -1519,7 +1519,7 @@ CONTAINS
   
   ! Call linsol_performSolve to solve the subproblem $Ay = b-Ax$.
   CALL linsol_performSolve (rsolverNode,rx,rb,rtemp)
-  
+
   ! Add the correction vector to the solution vector and release the memory.
   ! In case we have one... If the initial vector was assumed as zero, we don't
   ! have a correction vector, the result is directly in rx.
