@@ -75,7 +75,7 @@ PROGRAM poisson
   PRINT *,'-----------------------------------------'
   CALL poisson2
   
-  ! Call the problem to solve. Poisson 2:
+  ! Call the problem to solve. Poisson 3:
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 3'
   PRINT *,'-----------------------------------------'
