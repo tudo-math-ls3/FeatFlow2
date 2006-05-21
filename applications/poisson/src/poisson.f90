@@ -23,7 +23,7 @@
 !# The third example (module poisson_method3) separates the different stages
 !# of the solution process into different subroutines like example 2.
 !# The communication is done using a problem-related structure. For the
-!# communication with callback rouitines during the assembly, a
+!# communication with callback routines during the assembly, a
 !# collection structure is set up.
 !# </purpose>
 !##############################################################################
