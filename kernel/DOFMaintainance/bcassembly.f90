@@ -40,7 +40,6 @@ MODULE bcassembly
   
   IMPLICIT NONE
 
-
 CONTAINS
 
   ! ***************************************************************************
@@ -48,7 +47,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE bcasm_discretiseBC (rspatialDiscretisation,p_rdiscreteBC,bforceRebuild, &
-                                 fgetBoundaryValues,p_rcollection)
+                                 fgetBoundaryValues,rcollection)
   
 !<description>
   ! This routine discretises an analytic definition of boundary conditions.
@@ -82,9 +81,9 @@ CONTAINS
   INCLUDE 'intf_bcassembly.inc'
   
   ! OPTIONAL: A collection structure to inform the callback function with
-  ! additional information. Can be NULL() or undefined if there is no
+  ! additional information. Can undefined if there is no
   ! information to pass.
-  TYPE(t_collection), POINTER, OPTIONAL :: p_rcollection
+  TYPE(t_collection), TARGET, OPTIONAL :: rcollection
 !</input>
 
 !<inputoutput>
@@ -113,8 +112,8 @@ CONTAINS
   p_rboundaryConditions => rspatialDiscretisation%p_rboundaryConditions
   
   ! We replace the optional parameter by NULL() if it does not exist
-  IF (PRESENT(p_rcollection)) THEN
-    p_rcoll => p_rcollection
+  IF (PRESENT(rcollection)) THEN
+    p_rcoll => rcollection
   ELSE
     p_rcoll => NULL()
   END IF
@@ -317,7 +316,7 @@ CONTAINS
 
 !<input>
   ! The triangulation structure.
-  TYPE(t_triangulation2D), INTENT(IN) :: rtriangulation
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
   
   ! The description of the domain boundary
   TYPE(t_boundary), INTENT(IN) :: rboundary
@@ -486,7 +485,7 @@ CONTAINS
 
 !<input>
   ! The triangulation structure.
-  TYPE(t_triangulation2D), INTENT(IN) :: rtriangulation
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
   
   ! The description of the domain boundary
   TYPE(t_boundary), INTENT(IN) :: rboundary
@@ -669,7 +668,7 @@ CONTAINS
   INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j
   INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
   TYPE(t_discreteBCDirichlet),POINTER         :: p_rdirichletBCs
-  TYPE(t_triangulation2D), POINTER            :: p_rtriangulation
+  TYPE(t_triangulation), POINTER            :: p_rtriangulation
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary,p_IverticesAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IedgesAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_ItrialElements

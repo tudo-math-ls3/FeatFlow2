@@ -99,4 +99,4 @@ run: all
 id: .id
 help: .help
 -include Deps.mk
-
+-include Depsf90.mk

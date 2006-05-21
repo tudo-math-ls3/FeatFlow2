@@ -26,6 +26,7 @@ PROGRAM poisson
 
   USE poisson_method1
   USE poisson_method2
+  USE poisson_method3
   
   IMPLICIT NONE
   
@@ -63,9 +64,16 @@ PROGRAM poisson
   PRINT *
 
   ! Call the problem to solve. Poisson 2:
+  PRINT *
   PRINT *,'Calculating Laplace-Problem with method 2'
   PRINT *,'-----------------------------------------'
   CALL poisson2
+  
+  ! Call the problem to solve. Poisson 2:
+  PRINT *
+  PRINT *,'Calculating Laplace-Problem with method 2'
+  PRINT *,'-----------------------------------------'
+  CALL poisson3
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

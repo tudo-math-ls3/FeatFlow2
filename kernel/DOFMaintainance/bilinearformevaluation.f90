@@ -163,7 +163,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collctSection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -179,7 +179,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  TYPE(t_collctSection), POINTER :: p_rcollection
+  TYPE(t_collection), POINTER :: p_rcollection
   
   ! Let p_rcollection point to rcollection - or NULL if it's not
   ! given.
@@ -331,7 +331,7 @@ CONTAINS
   INTEGER :: indofTrial, indofTest
   
   ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+  TYPE(t_triangulation), POINTER :: p_rtriangulation
   
   ! A pointer to an element-number list
   INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
@@ -956,7 +956,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collctSection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -1014,7 +1014,7 @@ CONTAINS
   INTEGER :: indofTrial, indofTest
   
   ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+  TYPE(t_triangulation), POINTER :: p_rtriangulation
   
   ! A pointer to an element-number list
   INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
@@ -1061,12 +1061,12 @@ CONTAINS
   ! Some variables to support nonconstant coefficients in the matrix.
   
   ! Pointer to the collection structure or to NULL()
-  TYPE(t_collctSection), POINTER :: p_rcollection
+  TYPE(t_collection), POINTER :: p_rcollection
   
   ! Pointer to the coefficients that are computed by the callback routine.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
   
-  REAL(DP), DIMENSION(11) :: DT
+  !REAL(DP), DIMENSION(11) :: DT
   
   !CHARACTER(LEN=20) :: CFILE
   

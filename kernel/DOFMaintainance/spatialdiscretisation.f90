@@ -127,7 +127,7 @@ MODULE spatialdiscretisation
     TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
     
     ! Pointer to the underlying triangulation of the mesh (2D)
-    TYPE(t_triangulation2D), POINTER :: p_rtriangulation2D     => NULL()
+    TYPE(t_triangulation), POINTER :: p_rtriangulation2D     => NULL()
 
     ! Pointer to the analytical description of the boundary conditions
     TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions => NULL()
@@ -260,7 +260,7 @@ CONTAINS
 !<input>
   
   ! The triangulation structure underlying to the discretisation.
-  TYPE(t_triangulation2D), INTENT(IN), TARGET    :: rtriangulation
+  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
   
   ! The underlying domain.
   TYPE(t_boundary), INTENT(IN), TARGET           :: rdomain

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> Triangulation </name>
+!# <name> triangulation </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -38,7 +38,7 @@ MODULE triangulation
 
 !<constants>
 
-  !<constantblock description="Triangulation constants">
+!<constantblock description="Triangulation constants">
   
   ! Maximum number of corner-vertices in each element.
   ! We set this to 4 to allow triangle and quadrilateral polygons.
@@ -52,9 +52,9 @@ MODULE triangulation
   ! This is the old NNVE, too.
   INTEGER, PARAMETER :: TRIA_MAXNME2D = TRIA_MAXNVE2D
   
-  !</constantblock>
+!</constantblock>
 
-  !<constantblock description="KIND values for triangulation data">
+!<constantblock description="KIND values for triangulation data">
   
   ! kind value for indexing the points in a triangulation
   INTEGER, PARAMETER :: PREC_POINTIDX   = I32
@@ -65,14 +65,14 @@ MODULE triangulation
   ! kind value for indexing the elements in a triangulation
   INTEGER, PARAMETER :: PREC_ELEMENTIDX = I32
 
-  !</constantblock>
+!</constantblock>
   
 !</constants>
 
 
 !<types>
 
-  !<typeblock>
+!<typeblock>
   
   ! Each element consists of at most TRIA_MAXNVE2D points.
   ! Each point has a number, which is usually an integer value.
@@ -96,12 +96,12 @@ MODULE triangulation
     INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNME2D) :: Ineighbours
   END TYPE
   
-  !<typeblock>
+!<typeblock>
   
-  !</typeblock>
+!</typeblock>
   
-  ! The basic triangulation structure for 2D triangulation.
-  TYPE t_triangulation2D
+  ! The basic triangulation structure for a triangulation.
+  TYPE t_triangulation
   
     ! The 'old' triangulation structure for compatibility.
     ! This was just an array of length SZTRIA emulating a structure,
@@ -411,7 +411,7 @@ MODULE triangulation
     
   END TYPE
 
-  !<typeblock>
+!<typeblock>
   
 !</types>
 
@@ -442,17 +442,11 @@ CONTAINS
 !<inputoutput>
   ! The triangulation structure which will be overwritten by the information
   ! in TRIA.
-  TYPE(t_triangulation2D), POINTER      :: p_rtriangulation
+  TYPE(t_triangulation), POINTER      :: p_rtriangulation
 !</inputoutput>
   
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i
-  REAL(DP), DIMENSION(:,:), POINTER :: p_coordptr, p_coordptr2
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_vertptr, p_vertptr2
-  INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_list, p_list2
-  
   ! Do we have a structure?
   IF (.NOT. ASSOCIATED(p_rtriangulation)) THEN
     ALLOCATE(p_rtriangulation)
@@ -932,7 +926,7 @@ CONTAINS
 
 !<inputoutput>
   ! The triangulation structure to be cleaned up.
-  TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+  TYPE(t_triangulation), POINTER :: p_rtriangulation
 !</inputoutput>
   
 !</subroutine>

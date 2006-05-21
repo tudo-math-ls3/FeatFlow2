@@ -14,6 +14,8 @@ MODULE multilevelprojection
 
   USE fsystem
   USE spatialdiscretisation
+  USE linearsystemscalar
+  USE linearsystemblock
   
   IMPLICIT NONE
 
@@ -109,29 +111,23 @@ CONTAINS
 
   SUBROUTINE mlevprj_initProjection (rprojection,DelementList)
   
-  !<description>
-  
+!<description>
   ! This subroutine initialises an t_interlevelProjectionBlock with default
   ! values for a given PDE systen. DelementList is a list of element identifiers
   ! for all the equations in the system. 
+!</description>
   
-  !</description>
-  
-  !<input>
-  
+!<input>
   ! An array of element identifiers for each equation in the solution vector
   ! of the PDE. E.g. for CC2D: /elem_Q1Tnonpar,elem_Q1Tnonpar,elem_P0/
   INTEGER, DIMENSION(:), INTENT(IN) :: DelementList 
+!</input>
   
-  !</input>
-  
-  !<output>
-  
+!<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
   ! about the projection.
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
-  
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -158,19 +154,15 @@ CONTAINS
 
   SUBROUTINE mlevprj_doneProjection (rprojection)
   
-  !<description>
-  
+!<description>
   ! Cleans up a t_interlevelProjectionBlock structure. All dynamically allocated
   ! memory is released.
+!</description>
   
-  !</description>
-  
-  !<inputoutput>
-  
+!<inputoutput>
   ! The t_interlevelProjectionBlock structure which is to be cleaned up.
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
-  
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -191,8 +183,7 @@ CONTAINS
   SUBROUTINE mlevprj_performProlongation (rprojection,DcoarseVector, &
                      DfineVector,rdiscrCoarse,rdiscrFine)
   
-  !<description>
-  
+!<description>
   ! Performs a prolongation for a given block vector (i.e. a projection
   ! in the primal space where the solution lives). The vector
   ! DcoarseVector on a coarser grid is projected to the vector
@@ -200,31 +191,26 @@ CONTAINS
   ! represent the coarse and fine grid discretisation structures 
   ! (triangulations,...). rprojection configures how the grid transfer
   ! is performed.
+!</description>
   
-  !</description>
-  
-  !<input>
-  
+!<input>
   ! The t_interlevelProjectionBlock structure that configures the grid transfer
-  TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
+  TYPE(t_interlevelProjectionBlock), INTENT(IN) :: rprojection 
   
   ! Coarse grid vector
-  REAL(DP), DIMENSION(:), INTENT(IN) :: DcoarseVector
+  TYPE(t_vectorBlock), INTENT(IN) :: DcoarseVector
   
   ! Coarse grid discretisation
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscrCoarse
 
   ! Fine grid discretisation
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscrFine
+!</input>
   
-  !</input>
-  
-  !<output>
-  
+!<inputoutput>
   ! Fine grid vector
-  REAL(DP), DIMENSION(:), INTENT(OUT) :: DfineVector
-  
-  !</output>
+  TYPE(t_vectorBlock), INTENT(INOUT) :: DfineVector
+!</inputoutput>
   
 !</subroutine>
 
@@ -240,8 +226,7 @@ CONTAINS
   SUBROUTINE mlevprj_performRestriction (rprojection,DcoarseVector, &
                      DfineVector,rdiscrCoarse,rdiscrFine)
   
-  !<description>
-  
+!<description>
   ! Performs a restriction for a given block vector (i.e. a projection
   ! in the dual space where the RHS vector lives). The vector
   ! DfineVector on a finer grid is projected to the vector
@@ -249,31 +234,26 @@ CONTAINS
   ! represent the coarse and fine grid discretisation structures 
   ! (triangulations,...). rprojection configures how the grid transfer
   ! is performed.
+!</description>
   
-  !</description>
-  
-  !<input>
-  
+!<input>
   ! The t_interlevelProjectionBlock structure that configures the grid transfer
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
   
-  ! Coarse grid vector
-  REAL(DP), DIMENSION(:), INTENT(IN) :: DcoarseVector
-  
   ! Fine grid vector
-  REAL(DP), DIMENSION(:), INTENT(IN) :: DfineVector
+  TYPE(t_vectorBlock), INTENT(INOUT) :: DfineVector
 
   ! Fine grid discretisation
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscrFine
-  
-  !</input>
-  
-  !<output>
-  
+
   ! Coarse grid discretisation
-  TYPE(t_spatialDiscretisation), INTENT(OUT) :: rdiscrCoarse
+  TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscrCoarse
+!</input>
   
-  !</output>
+!<inputoutput>
+  ! Coarse grid vector
+  TYPE(t_vectorBlock), INTENT(IN) :: DcoarseVector
+!</inputoutput>
   
 !</subroutine>
 
@@ -289,8 +269,7 @@ CONTAINS
   SUBROUTINE mlevprj_performInterpolation (rprojection,DcoarseVector, &
                      DfineVector,rdiscrCoarse,rdiscrFine)
   
-  !<description>
-  
+!<description>
   ! Performs an interpolation for a given block vector (i.e. a projection
   ! in the primal space where the solution vector lives). The vector
   ! DfineVector on a finer grid is projected to the vector
@@ -298,31 +277,27 @@ CONTAINS
   ! represent the coarse and fine grid discretisation structures 
   ! (triangulations,...). rprojection configures how the grid transfer
   ! is performed.
+!</description>
   
-  !</description>
-  
-  !<input>
+!<input>
   
   ! The t_interlevelProjectionBlock structure that configures the grid transfer
   TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
   
-  ! Coarse grid vector
-  REAL(DP), DIMENSION(:), INTENT(IN) :: DcoarseVector
-  
   ! Fine grid vector
-  REAL(DP), DIMENSION(:), INTENT(IN) :: DfineVector
+  TYPE(t_vectorBlock), INTENT(IN) :: DfineVector
 
   ! Fine grid discretisation
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscrFine
-  
-  !</input>
-  
-  !<output>
-  
+
   ! Coarse grid discretisation
-  TYPE(t_spatialDiscretisation), INTENT(OUT) :: rdiscrCoarse
+  TYPE(t_spatialDiscretisation), INTENT(INOUT) :: rdiscrCoarse
+!</input>
   
-  !</output>
+!<inputoutput>
+  ! Coarse grid vector
+  TYPE(t_vectorBlock), INTENT(IN) :: DcoarseVector
+!</inputoutput>
   
 !</subroutine>
   

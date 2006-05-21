@@ -344,9 +344,6 @@ CONTAINS
 
 !</subroutine>
   
-  ! local variables
-  INTEGER(PREC_VECIDX) :: NEQ
-  
   ! rx and ry must have at least the same data type!
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'MV with different data types for rx and ry not supported!'

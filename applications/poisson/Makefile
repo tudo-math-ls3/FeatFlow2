@@ -21,7 +21,7 @@ SRCF90=
 include $(FEATFLOW)/kernel/kernel.inc
 SRCF90:=$(SRCF90) \
         poisson_callback.f90 poisson_method1.f90 \
-        poisson_method2.f90 poisson.f90
+        poisson_method2.f90 poisson_method3.f90 poisson.f90
 
 # put all files together
 

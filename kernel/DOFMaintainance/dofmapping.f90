@@ -98,7 +98,7 @@ CONTAINS
     INTEGER(PREC_DOFIDX) FUNCTION NDFG_uniform2D (rtriangulation, ieltype)
     
     ! IN: The underlying triangulation
-    TYPE(t_triangulation2D), INTENT(IN) :: rtriangulation
+    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
     
     ! IN: The element type of the discretisation
     INTEGER, INTENT(IN) :: ieltype
@@ -231,7 +231,7 @@ CONTAINS
 
   ! local variables
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray
-  TYPE(t_triangulation2D), POINTER :: p_rtriangulation2D     
+  TYPE(t_triangulation), POINTER :: p_rtriangulation2D     
   INTEGER :: ieltype
 
   ! 3D currently not supported

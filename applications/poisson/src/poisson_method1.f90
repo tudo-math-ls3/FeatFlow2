@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poissonmeth1 </name>
+!# <name> poisson_method1 </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -63,7 +63,7 @@ CONTAINS
     TYPE(t_boundary), POINTER :: p_rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! For compatibility to old F77: an array accepting a set of triangulations
     INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
@@ -112,7 +112,8 @@ CONTAINS
     ! a GMV file.
     CHARACTER(LEN=60) :: CFILE
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER NCELLS,NVERTS
+    INTEGER :: NCELLS,NVERTS
+    INTEGER :: ihandle
 
     ! Ok, let's start. 
     !
@@ -338,16 +339,17 @@ CONTAINS
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. Call the GMV library to write out
     ! a GMV file for our solution.
-    CALL GMVOF0 (69,-2,'gmv/u1.gmv')
-    CALL GMVHEA (69)
-    CALL GMVTRI (69,p_rtriangulation%Itria,0,NCELLS,NVERTS)
+    ihandle = sys_getFreeUnit()
+    CALL GMVOF0 (ihandle,-2,'gmv/u1.gmv')
+    CALL GMVHEA (ihandle)
+    CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
     CALL storage_getbase_double (rvectorBlock%RvectorBlock(1)%h_Ddata,p_Ddata)
-    CALL GMVSCA (69,p_rtriangulation%Itria,1,NVERTS,&
+    CALL GMVSCA (ihandle,p_rtriangulation%Itria,1,NVERTS,&
                  rvectorBlock%RvectorBlock(1)%NEQ,p_Ddata,'sol')
     
-    CALL GMVFOT (69)
-    CLOSE(69)
+    CALL GMVFOT (ihandle)
+    CLOSE(ihandle)
     
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.

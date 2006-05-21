@@ -129,7 +129,7 @@ CONTAINS
   
   ! A pointer to a collection structure to provide additional 
   ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collctSection), POINTER                   :: p_rcollection
+  TYPE(t_collection), POINTER                   :: p_rcollection
   
 !</input>
 
@@ -224,7 +224,7 @@ CONTAINS
   
   ! A pointer to a collection structure to provide additional 
   ! information to the coefficient routine. May point to NULL() if not defined.
-  TYPE(t_collctSection), POINTER                   :: p_rcollection
+  TYPE(t_collection), POINTER                   :: p_rcollection
   
 !</input>
 

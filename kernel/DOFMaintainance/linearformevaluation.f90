@@ -64,7 +64,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  TYPE(t_collctSection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
   
   ! A callback routine for the function to be discretised.
   INCLUDE 'intf_coefficientVectorSc.inc'
@@ -79,7 +79,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  TYPE(t_collctSection), POINTER :: p_rcollection
+  TYPE(t_collection), POINTER :: p_rcollection
   
   ! Let p_rcollection point to rcollection - or NULL if it's not
   ! given.
@@ -157,7 +157,7 @@ CONTAINS
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  TYPE(t_collctSection), INTENT(IN), TARGET, OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(IN), TARGET, OPTIONAL :: rcollection
   
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -210,7 +210,7 @@ CONTAINS
   INTEGER :: indofTest
   
   ! The triangulation structure - to shorten some things...
-  TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+  TYPE(t_triangulation), POINTER :: p_rtriangulation
   
   ! A pointer to an element-number list
   INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
@@ -253,7 +253,7 @@ CONTAINS
   INTEGER :: nelementsPerBlock
   
   ! Pointer to the collection structure or to NULL()
-  TYPE(t_collctSection), POINTER :: p_rcollection
+  TYPE(t_collection), POINTER :: p_rcollection
   
   ! Pointer to the coefficients that are computed by the callback routine.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients

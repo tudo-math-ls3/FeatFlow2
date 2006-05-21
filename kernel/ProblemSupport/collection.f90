@@ -238,7 +238,7 @@ MODULE collection
   
   ! This structure realises a value in the scalar collection.
   ! It contains a type and some data variables that contain the value.
-  
+
   TYPE t_collctValue
   
     PRIVATE
@@ -265,7 +265,7 @@ MODULE collection
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation => NULL()
 
     ! Pointer to a triangulation structure, 2D
-    TYPE(t_triangulation2D), POINTER :: p_rtriangulation2D => NULL()
+    TYPE(t_triangulation), POINTER :: p_rtriangulation2D => NULL()
 
     ! Pointer to a scalar vector
     TYPE(t_vectorScalar), POINTER :: p_rvectorScalar => NULL()
@@ -365,9 +365,6 @@ MODULE collection
   
     PRIVATE
   
-    ! The name of the section. '' identifies an/the unnamed section.
-    CHARACTER(LEN=PARLST_MLSECTION) :: ssectionName = ''
-
     ! Actual number of sections in this collection.
     ! This is at least one, as every collection contains at least an
     ! unnamed section.
@@ -387,6 +384,9 @@ MODULE collection
   PRIVATE :: collct_initsection, collct_donesection, collct_reallocsection
   PRIVATE :: collct_realloccollection
   PRIVATE :: collct_fetchparameter_indir, collct_fetchparameter_direct
+  
+  PRIVATE :: collct_addlevel_indir, collct_queryvalue_indir, collct_addvalue
+  PRIVATE :: collct_fetchsection, collct_fetchlevel,collct_getmaxlevel_indir 
   
   INTERFACE collct_addlevel
     MODULE PROCEDURE collct_addlevel_indir
@@ -2035,7 +2035,7 @@ CONTAINS
   ! A standard value if the value does not exist.
 !</result>
   
-  TYPE(t_triangulation2D), POINTER :: value
+  TYPE(t_triangulation), POINTER :: value
 
 !<input>
     
@@ -3360,7 +3360,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
   
   ! The value of the parameter.
-  TYPE(t_triangulation2D), INTENT(IN), TARGET :: value
+  TYPE(t_triangulation), INTENT(IN), TARGET :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error

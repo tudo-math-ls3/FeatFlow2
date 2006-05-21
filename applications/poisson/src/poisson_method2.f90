@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poissonmeth1 </name>
+!# <name> poisson_method2 </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -71,7 +71,7 @@ CONTAINS
     TYPE(t_boundary), POINTER :: p_rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! For compatibility to old F77: an array accepting a set of triangulations
     INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
@@ -137,7 +137,7 @@ CONTAINS
     TYPE(t_boundary), POINTER :: p_rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
     
     ! An object for the spatial discretisation
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
@@ -601,11 +601,12 @@ CONTAINS
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER NCELLS,NVERTS
+    INTEGER :: NCELLS,NVERTS
+    INTEGER :: ihandle
 
     ! A pointer to the solution vector and to the triangulation.
     TYPE(t_vectorBlock), POINTER :: p_rvector
-    TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! Get the solution vector from the collection.
     p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
@@ -617,16 +618,17 @@ CONTAINS
     ! p_rvector now contains our solution. We can now
     ! start the postprocessing. Call the GMV library to write out
     ! a GMV file for our solution.
-    CALL GMVOF0 (69,-2,'gmv/u2.gmv')
-    CALL GMVHEA (69)
-    CALL GMVTRI (69,p_rtriangulation%Itria,0,NCELLS,NVERTS)
+    ihandle = sys_getFreeUnit()
+    CALL GMVOF0 (ihandle,-2,'gmv/u2.gmv')
+    CALL GMVHEA (ihandle)
+    CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
     CALL storage_getbase_double (p_rvector%RvectorBlock(1)%h_Ddata,p_Ddata)
-    CALL GMVSCA (69,p_rtriangulation%Itria,1,NVERTS,&
+    CALL GMVSCA (ihandle,p_rtriangulation%Itria,1,NVERTS,&
                  p_rvector%RvectorBlock(1)%NEQ,p_Ddata,'sol')
     
-    CALL GMVFOT (69)
-    CLOSE(69)
+    CALL GMVFOT (ihandle)
+    CLOSE(ihandle)
     
   END SUBROUTINE
 
@@ -781,7 +783,7 @@ CONTAINS
     TYPE(t_boundary), POINTER :: p_rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation2D), POINTER :: p_rtriangulation
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
@@ -815,12 +817,16 @@ CONTAINS
 
   SUBROUTINE poisson2
   
-  include 'cmem.inc'
+  INCLUDE 'cmem.inc'
   
 !<description>
-  ! This is an all-in-one poisson solver for directly solving a Poisson
-  ! problem without making use of special features like collections
-  ! and so on. The routine performs the following tasks:
+  ! This is a 'separated' poisson solver for solving a Poisson
+  ! problem. The different tasks of the problem are separated into
+  ! subroutines. The problem uses a collection structure for the communication:
+  ! All subroutines add their generated information to the collection, so that
+  ! the other subroutines can work with them. 
+  !
+  ! The following tasks are performed by the subroutines:
   !
   ! 1.) Read in parametrisation
   ! 2.) Read in triangulation

@@ -246,7 +246,7 @@ CONTAINS
     INTEGER :: itry !free unit candidate
 
     sys_getFreeUnit = -1
-    do itry = 1,10000
+    do itry = 20,10000
       !does unit exist?
       inquire(unit=itry, exist=bexists)
       if (bexists) then
