@@ -56,6 +56,13 @@
 !# 14.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
+!# 15.) lsysbl_setSortStrategy
+!#      -> Assigns a sorting strategy/permutation to every subvector
+!#
+!# 16.) lsysbl_sortVector
+!#      -> Resort the entries of all subvectors according to an assigned
+!#         sorting strategy
+!#
 !# </purpose>
 !##############################################################################
 
@@ -680,7 +687,7 @@ CONTAINS
 
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-  REAL(SP), DIMENSION(:), POINTER :: p_Sdata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
   
   ! Taje care of the data type!
   SELECT CASE (rx%cdataType)
@@ -691,8 +698,8 @@ CONTAINS
 
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
-    CALL storage_getbase_single(rx%h_Ddata,p_Sdata)
-    CALL lalg_vectorScaleSngl (p_Sdata,REAL(c,SP))  
+    CALL storage_getbase_single(rx%h_Ddata,p_Fdata)
+    CALL lalg_vectorScaleSngl (p_Fdata,REAL(c,SP))  
 
   CASE DEFAULT
     PRINT *,'lsysbl_vectorScale: Unsupported data type!'
@@ -912,7 +919,7 @@ CONTAINS
 
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-  REAL(SP), DIMENSION(:), POINTER :: p_Sdata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
 
   ! Is there data at all?
   IF (rx%h_Ddata .EQ. ST_NOHANDLE) THEN
@@ -929,8 +936,8 @@ CONTAINS
     
   CASE (ST_SINGLE)
     ! Get the array and calculate the norm
-    CALL storage_getbase_single (rx%h_Ddata,p_Sdata)
-    lsysbl_vectorNorm = lalg_normSngl (p_Sdata,cnorm,iposMax) 
+    CALL storage_getbase_single (rx%h_Ddata,p_Fdata)
+    lsysbl_vectorNorm = lalg_normSngl (p_Fdata,cnorm,iposMax) 
     
   CASE DEFAULT
     PRINT *,'lsysbl_vectorNorm: Unsupported data type!'
@@ -1065,6 +1072,111 @@ CONTAINS
     NEQ = NEQ + rmatrix%RmatrixBlock(i,i)%NEQ
   END DO
   rmatrix%NEQ = NEQ
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_sortVector (rvector,rtemp,bsort)
+  
+!<description>
+  ! This routine sorts a block vector or unsorts it.
+  ! If bsort=TRUE, the vector is sorted, otherwise it's unsorted.
+  !
+  ! The sorting uses the associated permutation of every subvector,
+  ! so before calling this routine, a permutation should be assigned
+  ! to every subvector, either manually or using lsysbl_setSortStrategy.
+  ! The associated sorting strategy tag will change to
+  !  + |subvector%isortStrategy|  - if bsort = TRUE
+  !  - |subvector%isortStrategy|  - if bsort = false
+  ! so the absolute value of rvector%isortStrategy indicates the sorting
+  ! strategy and the sign determines whether the (sub)vector is
+  ! actually sorted for the associated sorting strategy.
+!</description>
+
+!<input>
+  ! Whether to sort the vector (TRUE) or sort it back to unsorted state
+  ! (FALSE).
+  LOGICAL, INTENT(IN) :: bsort
+!</input>
+  
+!<inputoutput>
+  ! The vector which is to be resorted
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+
+  ! A temporary vector of the same size and data type as rvector
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtemp
+!</inputoutput>
+
+!</subroutine>
+
+  INTEGER :: iblock
+  
+  ! Loop over the blocks
+  IF (bsort) THEN
+    DO iblock = 1,rvector%nblocks
+      CALL lsyssc_sortVector (&
+          rvector%RvectorBlock(iblock), rtemp%RvectorBlock(iblock),&
+          ABS(rvector%RvectorBlock(iblock)%isortStrategy))
+    END DO
+  ELSE
+    DO iblock = 1,rvector%nblocks
+      CALL lsyssc_sortVector (&
+          rvector%RvectorBlock(iblock), rtemp%RvectorBlock(iblock),&
+          -ABS(rvector%RvectorBlock(iblock)%isortStrategy))
+    END DO
+  END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_setSortStrategy (rvector,IsortStrategy,Hpermutations)
+  
+!<description>
+  ! This routine simultaneously connects all subvectors of a block
+  ! vector with a sorting strategy. IsortStrategy is an array of tags
+  ! that identify the sorting strategy of each subvector. Hpermutation
+  ! is an array of handles. Each handle identifies the permutation
+  ! that is to assign to the corresponding subvector.
+  !
+  ! The routine does not resort the vector. Only the identifier in
+  ! IsortStrategy and the handle of the permutation are saved to the
+  ! vector. To indicate that the subvector is not sorted, the negative
+  ! value of IsortStrategy is saved to subvector%isortStrategy.
+!</description>
+
+!<inputoutput>
+  ! The vector which is to be resorted
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+!</inputoutput>
+
+!<input>
+  ! An array of sorting strategy identifiers (SSTRAT_xxxx), each for one
+  ! subvector of the global vector. 
+  ! The negative value of this identifier is saved to the corresponding
+  ! subvector.
+  INTEGER, DIMENSION(rvector%nblocks), INTENT(IN) :: IsortStrategy
+  
+  ! An array of handles. Each handle corresponds to a subvector and
+  ! defines a permutation how to resort the subvector.
+  ! Each permutation associated to a handle must be of the form
+  !    array [1..2*NEQ] of integer  (NEQ=NEQ(subvector))
+  ! with entries (1..NEQ)       = permutation
+  ! and  entries (NEQ+1..2*NEQ) = inverse permutation.
+  INTEGER, DIMENSION(rvector%nblocks), INTENT(IN) :: Hpermutations
+
+!</input>
+  
+!</subroutine>
+
+  ! Install the sorting strategy in every block. 
+  rvector%RvectorBlock%isortStrategy = -ABS(IsortStrategy)
+  rvector%RvectorBlock%h_IsortPermutation = Hpermutations
 
   END SUBROUTINE
 

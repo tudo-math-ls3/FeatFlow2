@@ -52,12 +52,16 @@
 !#     storage_getbase_int2D,
 !#     -> Determine pointer associated to a handle for singles, doubles
 !#        or 32-Bit integers, 2D array
+!#
+!# 8.) storage_copy
+!#     -> Copies the content of one array to another.
 !# </purpose>
 !##############################################################################
 
 MODULE storage
 
   USE fsystem
+  USE linearalgebra
   
   IMPLICIT NONE
   
@@ -130,7 +134,7 @@ MODULE storage
     REAL(DP) :: dmemBytes = 0.0_DP
     
     ! Pointer to 1D real array or NULL() if not assigned
-    REAL(SP), DIMENSION(:), POINTER       :: p_Ssingle1D   => NULL()
+    REAL(SP), DIMENSION(:), POINTER       :: p_Fsingle1D   => NULL()
 
     ! Pointer to 1D double precision array or NULL() if not assigned
     REAL(DP), DIMENSION(:), POINTER       :: p_Ddouble1D   => NULL()
@@ -139,7 +143,7 @@ MODULE storage
     INTEGER(I32), DIMENSION(:), POINTER   :: p_Iinteger1D   => NULL()
 
     ! Pointer to 2D real array or NULL() if not assigned
-    REAL(SP), DIMENSION(:,:), POINTER     :: p_Ssingle2D   => NULL()
+    REAL(SP), DIMENSION(:,:), POINTER     :: p_Fsingle2D   => NULL()
 
     ! Pointer to 2D double precision array or NULL() if not assigned
     REAL(DP), DIMENSION(:,:), POINTER     :: p_Ddouble2D   => NULL()
@@ -471,10 +475,10 @@ CONTAINS
   p_rnode%idataType = ST_NOHANDLE
   p_rnode%idimension = 0
   p_rnode%dmemBytes = 0.0_DP
-  NULLIFY(p_rnode%p_Ssingle1D)
+  NULLIFY(p_rnode%p_Fsingle1D)
   NULLIFY(p_rnode%p_Ddouble1D)
   NULLIFY(p_rnode%p_Iinteger1D)
-  NULLIFY(p_rnode%p_Ssingle2D)
+  NULLIFY(p_rnode%p_Fsingle2D)
   NULLIFY(p_rnode%p_Ddouble2D)
   NULLIFY(p_rnode%p_Iinteger2D)
   
@@ -567,7 +571,7 @@ CONTAINS
   
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
-    ALLOCATE(p_rnode%p_Ssingle1D(isize))
+    ALLOCATE(p_rnode%p_Fsingle1D(isize))
     p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
   CASE (ST_DOUBLE)
     ALLOCATE(p_rnode%p_Ddouble1D(isize))
@@ -588,7 +592,7 @@ CONTAINS
   IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
     SELECT CASE (ctype)
     CASE (ST_SINGLE)
-      p_rnode%p_Ssingle1D = 0.0_SP
+      p_rnode%p_Fsingle1D = 0.0_SP
     CASE (ST_DOUBLE)
       p_rnode%p_Ddouble1D = 0.0_DP
     CASE (ST_INT)
@@ -603,7 +607,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_new2D (scall, sname, isize, ctype, ihandle, &
+  SUBROUTINE storage_new2D (scall, sname, Isize, ctype, ihandle, &
                             cinitNewBlock, rheap)
 
 !<description>
@@ -619,7 +623,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sname
 
   !requested storage size for 1st and 2nd dimension
-  INTEGER, DIMENSION(2), INTENT(IN) :: isize
+  INTEGER, DIMENSION(2), INTENT(IN) :: Isize
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
   INTEGER, INTENT(IN) :: ctype
@@ -680,7 +684,7 @@ CONTAINS
   
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
-    ALLOCATE(p_rnode%p_Ssingle2D(isize(1),isize(2)))
+    ALLOCATE(p_rnode%p_Fsingle2D(isize(1),isize(2)))
     p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize(1),DP)*REAL(isize(1),DP)*REAL(ST_SINGLE2BYTES)
   CASE (ST_DOUBLE)
     ALLOCATE(p_rnode%p_Ddouble2D(isize(1),isize(2)))
@@ -699,7 +703,7 @@ CONTAINS
   IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
     SELECT CASE (ctype)
     CASE (ST_SINGLE)
-      p_rnode%p_Ssingle2D = 0.0_SP
+      p_rnode%p_Fsingle2D = 0.0_SP
     CASE (ST_DOUBLE)
       p_rnode%p_Ddouble2D = 0.0_DP
     CASE (ST_INT)
@@ -763,10 +767,10 @@ CONTAINS
   END IF
 
   ! Release the memory assigned to that handle.
-  IF (ASSOCIATED(p_rnode%p_Ssingle1D))  DEALLOCATE(p_rnode%p_Ssingle1D)
+  IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
   IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
   IF (ASSOCIATED(p_rnode%p_Iinteger1D)) DEALLOCATE(p_rnode%p_Iinteger1D)
-  IF (ASSOCIATED(p_rnode%p_Ssingle2D))  DEALLOCATE(p_rnode%p_Ssingle2D)
+  IF (ASSOCIATED(p_rnode%p_Fsingle2D))  DEALLOCATE(p_rnode%p_Fsingle2D)
   IF (ASSOCIATED(p_rnode%p_Ddouble2D))  DEALLOCATE(p_rnode%p_Ddouble2D)
   IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
   
@@ -895,7 +899,7 @@ CONTAINS
 
   ! Get the pointer  
   
-  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Ssingle1D
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D
   
   END SUBROUTINE
 
@@ -1027,7 +1031,7 @@ CONTAINS
 !<description>
   
   ! This routine returns the pointer to a handle associated to an
-  ! interger array.
+  ! single precision array.
   
 !</description>
   
@@ -1071,7 +1075,7 @@ CONTAINS
   
   ! Get the pointer  
   
-  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Ssingle2D
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D
   
   END SUBROUTINE
 
@@ -1084,7 +1088,7 @@ CONTAINS
 !<description>
   
   ! This routine returns the pointer to a handle associated to an
-  ! interger array.
+  ! double precision array.
   
 !</description>
   
@@ -1126,6 +1130,176 @@ CONTAINS
   
   p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D
   
+  END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE storage_copy(h_source, h_dest, rheap)
+  
+!<description>
+  ! This routine copies the information of one array to another.
+  ! The structure of the arrays behind h_source and h_dest must be the
+  ! same!
+!</description>
+
+!<input>
+  ! Handle of the source array to copy
+  INTEGER, INTENT(IN) :: h_source
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(IN), TARGET, OPTIONAL :: rheap
+!</input>
+
+!<inputoutput>
+  ! Handle of the destination array.
+  ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
+  ! and structure as h_source and data is copied to it.
+  INTEGER, INTENT(INOUT) :: h_dest
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
+  INTEGER(I32) :: i,j
+  INTEGER(I32), DIMENSION(2) :: Isize
+  
+    ! Get the heap to use - local or global one.
+    
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbase
+    END IF
+
+    IF (h_source .EQ. ST_NOHANDLE) THEN
+      PRINT *,'Wrong handle'
+      STOP
+    END IF
+    IF (.NOT. ASSOCIATED(p_rheap%p_Rdescriptors)) THEN
+      PRINT *,'Heap not initialised!'
+      STOP
+    END IF
+
+    p_rsource => p_rheap%p_Rdescriptors(h_source)
+    
+    ! Create a new array?
+    IF (h_dest .EQ. ST_NOHANDLE) THEN
+      ! Create a new array in the same size and structure
+      ! as h_source.
+      SELECT CASE (p_rsource%idimension)
+      CASE (1)
+        SELECT CASE (p_rsource%IdataType)
+        CASE (ST_DOUBLE)
+          CALL storage_new ('storage_copy',p_rsource%sname,SIZE(p_rsource%p_Ddouble1D),&
+                            ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_SINGLE)
+          CALL storage_new ('storage_copy',p_rsource%sname,SIZE(p_rsource%p_Fsingle1D),&
+                            ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_INT)
+          CALL storage_new ('storage_copy',p_rsource%sname,SIZE(p_rsource%p_Iinteger1D),&
+                            ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        END SELECT
+      CASE (2) 
+        SELECT CASE (p_rsource%IdataType)
+        CASE (ST_DOUBLE)
+          Isize = UBOUND(p_rsource%p_Ddouble2D)   ! =SIZE(...) here
+          CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+                            ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_SINGLE)
+          Isize = UBOUND(p_rsource%p_Fsingle2D)   ! =SIZE(...) here
+          CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+                            ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_INT)
+          Isize = UBOUND(p_rsource%p_Iinteger2D)      ! =SIZE(...) here
+          CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+                            ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        END SELECT
+      END SELECT
+      
+    END IF
+    
+    p_rdest => p_rheap%p_Rdescriptors(h_dest)
+
+    ! Data types the same?
+    IF (p_rsource%idataType .NE. p_rdest%idataType) THEN
+      PRINT *,'storage_copy: Data types different!'
+      STOP
+    END IF
+
+    IF (p_rsource%idimension .NE. p_rdest%idimension) THEN
+      PRINT *,'storage_copy: Structure different!'
+      STOP
+    END IF
+
+    ! What is to copy
+    SELECT CASE (p_rsource%idimension)
+    CASE (1)
+      SELECT CASE (p_rsource%idataType)
+      CASE (ST_DOUBLE)
+        CALL lalg_vectorCopyDble (p_rsource%p_Ddouble1D,p_rdest%p_Ddouble1D)
+      CASE (ST_SINGLE)
+        CALL lalg_vectorCopySngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
+      CASE (ST_INT)
+        CALL lalg_vectorCopyInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
+      CASE DEFAULT
+        PRINT *,'storage_copy: Unknown data type'
+        STOP
+      END SELECT  
+      
+    CASE (2)
+      SELECT CASE (p_rsource%idataType)
+      CASE (ST_DOUBLE)
+        IF ((SIZE(p_rsource%p_Ddouble2D,1) .NE. SIZE(p_rdest%p_Ddouble2D,1)) .OR.&
+            (SIZE(p_rsource%p_Ddouble2D,2) .NE. SIZE(p_rdest%p_Ddouble2D,2))) THEN
+          PRINT *,'storage_copy: Structure different!'
+          STOP
+        END IF
+        ! Copy by hand
+        DO j=1,SIZE(p_rsource%p_Ddouble2D,2)
+          DO i=1,SIZE(p_rsource%p_Ddouble2D,1)
+            p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Ddouble2D(i,j)
+          END DO
+        END DO
+        
+      CASE (ST_SINGLE)
+        IF ((SIZE(p_rsource%p_Fsingle2D,1) .NE. SIZE(p_rdest%p_Fsingle2D,1)) .OR.&
+            (SIZE(p_rsource%p_Fsingle2D,2) .NE. SIZE(p_rdest%p_Fsingle2D,2))) THEN
+          PRINT *,'storage_copy: Structure different!'
+          STOP
+        END IF
+        ! Copy by hand
+        DO j=1,SIZE(p_rsource%p_Fsingle2D,2)
+          DO i=1,SIZE(p_rsource%p_Fsingle2D,1)
+            p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Fsingle2D(i,j)
+          END DO
+        END DO
+
+      CASE (ST_INT)
+        IF ((SIZE(p_rsource%p_Iinteger2D,1) .NE. SIZE(p_rdest%p_Iinteger2D,1)) .OR.&
+            (SIZE(p_rsource%p_Iinteger2D,2) .NE. SIZE(p_rdest%p_Iinteger2D,2))) THEN
+          PRINT *,'storage_copy: Structure different!'
+          STOP
+        END IF
+        ! Copy by hand
+        DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
+          DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
+            p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Iinteger2D(i,j)
+          END DO
+        END DO
+
+      CASE DEFAULT
+        PRINT *,'storage_copy: Unknown data type'
+        STOP
+      END SELECT  
+    END SELECT
+
   END SUBROUTINE
 
   !************************************************************************

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> LinearAlgebra </name>
+!# <name> linearalgebra </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -27,6 +27,9 @@
 !#
 !# 6.) lalg_norm
 !#     -> Calculate a specific norm of a vector
+!#
+!# 7.) lalg_vectorSort
+!#     -> Resort the entries of a vector according to a given permutation
 !#
 !# </purpose>
 !##############################################################################
@@ -740,5 +743,110 @@ CONTAINS
   END SELECT
     
   END FUNCTION
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorSortDble (Dx, Dd, Itr)
+  
+  !<description>
+    ! Resorts the entries in the vector Dx corresponding to Itr.
+    ! The result is written to Dd.
+  !</description>
+    
+  !<input>
+    ! Source vector to be sorted
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Dx
+    
+    ! Array with permutation of 1..neq
+    INTEGER(I32), DIMENSION(SIZE(Dx)), INTENT(IN) :: Itr
+  !</input>
+    
+  !<output>
+    ! The resorted vector
+    REAL(DP), DIMENSION(SIZE(Dx)), INTENT(OUT) :: Dd
+  !</output>
+    
+!</subroutine>
+    
+    ! local variable
+    INTEGER(I32) :: ieq
+    
+    DO ieq=1, SIZE(Dx)
+      Dd(ieq) = Dx(Itr(ieq))
+    END DO
+  
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorSortSngl (Fx, Fd, Itr)
+  
+  !<description>
+    ! Resorts the entries in the vector Fx corresponding to Itr.
+    ! The result is written to Fd.
+  !</description>
+    
+  !<input>
+    ! Source vector to be sorted
+    REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
+    
+    ! Array with permutation of 1..neq
+    INTEGER(I32), DIMENSION(SIZE(Fx)), INTENT(IN) :: Itr
+  !</input>
+    
+  !<output>
+    ! The resorted vector
+    REAL(SP), DIMENSION(SIZE(Fx)), INTENT(OUT) :: Fd
+  !</output>
+    
+!</subroutine>
+    
+    ! local variable
+    INTEGER(I32) :: ieq
+    
+    DO ieq=1, SIZE(Fx)
+      Fd(ieq) = Fx(Itr(ieq))
+    END DO
+  
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorSortInt (Ix, Id, Itr)
+  
+  !<description>
+    ! Resorts the entries in the vector Ix corresponding to Itr.
+    ! The result is written to Id.
+  !</description>
+    
+  !<input>
+    ! Source vector to be sorted
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Ix
+    
+    ! Array with permutation of 1..neq
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Itr
+  !</input>
+    
+  !<output>
+    ! The resorted vector
+    INTEGER(I32), DIMENSION(SIZE(Ix)), INTENT(OUT) :: Id
+  !</output>
+    
+!</subroutine>
+    
+    ! local variable
+    INTEGER(I32) :: ieq
+    
+    DO ieq=1, SIZE(Ix)
+      Id(ieq) = Ix(Itr(ieq))
+    END DO
+  
+  END SUBROUTINE 
 
 END MODULE
