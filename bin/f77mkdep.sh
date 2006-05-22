@@ -12,6 +12,6 @@ for i in $@
   do 
   j=`basename $i .f`
   printf "\$(OBJDIR)/%s.o: %s.f" $j $j
-  awk '/^[ ]*(I|i)(N|n)(C|c)(L|l)(U|u)(D|d)(E|e)/ {printf(" %s",$2);}' $i | tr -d \' 
+  awk '/^[ ]*(I|i)(N|n)(C|c)(L|l)(U|u)(D|d)(E|e)/ {printf(" %s",$2);}' $i | tr -d \'
   printf "\n" 
 done

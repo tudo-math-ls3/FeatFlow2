@@ -1,9 +1,12 @@
 #!/usr/bin/env gmake
 
+# define the root directory of the Featflow installation
 FEATFLOW=../..
 
+# include compiler definitions
 include $(FEATFLOW)/Globals.mk
 
+# application include dirs
 INCDIR= -I./src/geometry      -I./src/nonstationary    -I./src/postprocessing  \
 	-I./src/triangulation -I./src/discr_linear     -I./src/gridadapt  \
 	-I./src/stationary    -I./src/core             -I./src/init \
@@ -93,15 +96,15 @@ SRC15= srchquad.f      triutil2d.f \
 	gmv2doutput.f  initria.f   scalareval.f  structria.f \
 	quad2tri.f     tracers.f umf4_f77wrapper_dummy.f
 	
-SRCF90=
 
+# include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
+SRC += $(KERNELSRC)
 	
-SRCF90:=$(SRCF90) testcode.f90
+SRC += testcode.f90
 
 # put all files together
-
-SRC=$(SRC1) $(SRC2) $(SRC3) $(SRC4) $(SRC5) $(SRC6) $(SRC7) $(SRC8) \
+SRC += $(SRC1) $(SRC2) $(SRC3) $(SRC4) $(SRC5) $(SRC6) $(SRC7) $(SRC8) \
 	$(SRC9) $(SRC10) $(SRC11) $(SRC12) $(SRC13) $(SRC14) $(SRC15) 
 
 # path for the make where to look for which files
@@ -110,52 +113,26 @@ vpath %.f src/geometry	  src/nonstationary src/postprocessing  \
 	src/triangulation src/discr_linear  src/gridadapt  \
 	src/stationary    src/core          src/init	 \
 	src/optimization  src/solvers	    src/discr_nonlinear \
-	src/misc src/parametrization \
-	kernel/System kernel/BasicGeometry \
-	kernel/LinearAlgebra kernel/ElementCubature \
-	kernel/Triangulation kernel/ContinuousFormulation \
-	kernel/Boundary kernel/DOFMaintainance \
-	kernel/LinearSystem kernel/LinearSolver \
-	kernel/ProblemSupport kernel
-
-vpath %.f90 \
-	kernel/System kernel/BasicGeometry \
-	kernel/LinearAlgebra kernel/ElementCubature \
-	kernel/Triangulation kernel/ContinuousFormulation \
-	kernel/Boundary kernel/DOFMaintainance \
-	kernel/LinearSystem kernel/LinearSolver \
-	kernel/ProblemSupport kernel
+	src/misc src/parametrization
 
 vpath %.for src/geometry	  src/nonstationary src/postprocessing  \
 	src/triangulation src/discr_linear  src/gridadapt  \
 	src/stationary    src/core          src/init	 \
 	src/optimization  src/solvers	    src/discr_nonlinear \
-	src/misc src/parametrization \
-	kernel/System kernel/BasicGeometry \
-	kernel/LinearAlgebra kernel/ElementCubature \
-	kernel/Triangulation kernel/ContinuousFormulation \
-	kernel/Boundary kernel/DOFMaintainance \
-	kernel/LinearSystem kernel/LinearSolver \
-	kernel/ProblemSupport kernel
+	src/misc src/parametrization
 
 vpath %.inc src/geometry	  src/nonstationary src/postprocessing  \
 	src/triangulation src/discr_linear  src/gridadapt  \
 	src/stationary    src/core          src/init	 \
 	src/optimization  src/solvers	    src/discr_nonlinear \
 	src/misc src/parametrization \
-	include \
-	kernel/System kernel/BasicGeometry \
-	kernel/LinearAlgebra kernel/ElementCubature \
-	kernel/Triangulation kernel/ContinuousFormulation \
-	kernel/Boundary kernel/DOFMaintainance \
-	kernel/LinearSystem kernel/LinearSolver \
-	kernel/ProblemSupport kernel
+	include
 
 EXEC=cc2d_movbc-$(ID)
 
 FEATLIB= feat2d sysutils #umfpack4 amd
 
-include $(FEATFLOW)/Rules_apps_f90.mk
+include $(FEATFLOW)/Rules_apps.mk
 -include Deps.mk
 
 test: clean_exec run

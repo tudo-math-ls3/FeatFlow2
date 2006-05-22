@@ -12,10 +12,12 @@
 # For this meothod to work properly, it's necessary that each
 # module has the same name as the filename!
 
+# creates dependency as: if file xxx.f90 is using module yyy then
+# objdir/xxx.o moddir/xxx.mod: xxx.f90 moddir/yyy.mod 
+
 for i in $@ 
   do 
   j=`basename $i .f90`
-  printf "\$(OBJDIRF90)/%s.o: %s.f90" $j $j
-  awk '/^[ ]*(U|u)(S|s)(E|e)/ {printf(" $(OBJDIRF90)/%s.o",$2);}' $i | tr -d \' 
-  printf "\n" 
+  iuse=`awk '/^[ ]*(U|u)(S|s)(E|e)/ {printf(" $(MODDIR)/%s.mod",$2);}' $i | tr -d \'`
+  printf "\$(OBJDIR)/%s.o \$(MODDIR)/%s.mod: %s %s\n" $j $j $i "${iuse}"
 done

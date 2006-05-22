@@ -4,13 +4,29 @@
 # FEATLIB = list of feat libs to use (feat2d sysutils are required)
 # SRC     = list of source files
 
+# optionaly it can define
+# INCDIR ... include directive for the compiler ( -Idir )
+# DEFS   ... additional defines for compilations (-Dvar )
 
 OBJDIR=obj/$(ID)
-OBJ=$(SRC:%.f=$(OBJDIR)/%.o)
+MODDIR=obj/$(ID)
 
 #vpath %.inc include
 #vpath %.c src
 #vpath %.f src
+
+#OBJ =$($(filter %.f,$(SRC)):%.f=$(OBJDIR)/%.o)
+#OBJ+=$($(filter %.f90,$(SRC)):%.f90=$(OBJDIR)/%.o)
+#OBJ+=$($(filter %.c,$(SRC)):%.c=$(OBJDIR)/%.o)
+
+OBJ=$(filter %.o,$(SRC:%.f=$(OBJDIR)/%.o)) 
+OBJ+=$(filter %.o,$(SRC:%.f90=$(OBJDIR)/%.o))
+OBJ+=$(filter %.o,$(SRC:%.c=$(OBJDIR)/%.o))
+
+CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
+FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
+F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
+
 
 # If the BLASLIB is not defined add the included blas to the libs.
 # If the LAPACKLIB is not defined add the included lapack to the libs.
@@ -30,15 +46,16 @@ greet:
 # for both, BLAS and LAPACK.
 
 $(EXEC): $(OBJDIR) $(FEAT) Deps.mk $(OBJ) 
-	$(LD) $(FCFLAGS) $(OPTFLAGS) $(OBJ) $(LDFLAGS) $(FEAT) $(BLASLAPACKLIB) $(LDLIBS) -o $@
-
-# The variable BENCHINC is probably set by the benchmark if the user
-# executes it. This variable adds additionally INCLUDE directories
-# to the call of the compiler, otherwise some INC files would not
-# be found!
+	$(F90COMP) $(OBJ) $(LDFLAGS) $(FEAT) $(BLASLIB) -o $@
 
 $(OBJDIR)/%.o : %.f
-	$(FC) $(FCFLAGS) $(OPTFLAGS) $(INCDIR) $(BENCHINC) $(DEFS) -c -o $@ $<
+	$(FCOMP) -c -o $@ $<
+
+$(OBJDIR)/%.o $(MODDIR)/%.mod : %.f90
+	$(F90COMP) -c -o $(OBJDIR)/$*.o $<
+
+$(OBJDIR)/%.o : %.c
+	$(CCOMP) -c -o $@ $<
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -50,12 +67,15 @@ $(FEAT):
 	@echo "Library" $(@:$(LIBDIR)/lib%.a=%) "is needed by" $(EXEC)
 	( cd $(FEATFLOW)/libraries/$(@:$(LIBDIR)/lib%.a=%) && $(MAKE) all )
 
-Deps.mk: $(SRC)
-	($(FEATFLOW)/bin/f77mkdep.sh $^ >$@)
+Deps.mk: $(SRC) $(INC)
+	@echo "Recomputing the include dependency file Deps.mk"
+	@($(FEATFLOW)/bin/f77mkdep.sh $(filter %.f,$^) >$@)
+	@($(FEATFLOW)/bin/f90mkdep.sh $(filter %.f90,$^) >>$@)
 
 clean:
 	-rm -f Deps.mk
 	-rm -f $(OBJDIR)/*.o 
+	-rm -f $(MODDIR)/*.mod 
 
 clean_exec: 
 	-rm -f $(EXEC)

@@ -283,7 +283,7 @@ FC=g95
 #FCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
 #CCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
 OPTFLAGS  = -O3 -mfpmath=sse -msse2 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -march=pentium3 -pipe -fmod=$(MODDIRF90)
+FCFLAGS   = -march=pentium3 -pipe -fmod=$(MODDIR)
 CCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
 BLASLIB   = 
 LAPACKLIB = 
@@ -293,7 +293,7 @@ ifeq ($(call match,$(ID),pc-pentium4-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -march=pentium4 -pipe -fmod=$(MODDIRF90)
+FCFLAGS   = -march=pentium4 -pipe -fmod=$(MODDIR)
 CCFLAGS   = -march=pentium4 -fno-globals -Wno-globals -pipe
 BLASLIB   = 
 LAPACKLIB = 
@@ -338,7 +338,7 @@ ifeq ($(ID),power_macintosh-ppc_7450-darwin-gcc3)
 CC=gcc
 FC=g95
 OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -pipe -fmod=$(MODDIRF90)
+FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 LDFLAGS   = 
 BLASLIB   = 
@@ -362,7 +362,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo -tpp6
-FCFLAGS   = -cm -vec_report0 -fpe0 -module $(MODDIRF90)
+FCFLAGS   = -cm -vec_report0 -fpe0 -module $(MODDIR)
 CCFLAGS   = -cm -vec_report0 -fpe0
 LDFLAGS   = -L/usr/local/ifc/lib -lifcore 
 BLASLIB   = 
@@ -375,7 +375,7 @@ ifeq ($(ID),pc-athlonxp-linux-ifc8)
 CC=icc
 FC=ifort
 OPTFLAGS  = -O3 -ipo -ipo_obj -tpp6
-FCFLAGS   = -cm -vec_report0 -fpe0  -module $(MODDIRF90)
+FCFLAGS   = -cm -vec_report0 -fpe0  -module $(MODDIR)
 CCFLAGS   = -cm -vec_report0 -fpe0
 LDFLAGS   = -L/usr/local/ifc/lib -lifcore 
 BLASLIB   = 
@@ -396,7 +396,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -xN -ipo
-FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -409,7 +409,7 @@ ifeq ($(ID),pc-pentium4-linux-ifc8)
 CC=icc
 FC=ifort
 OPTFLAGS  = -O3 -xN -ipo -ipo_obj
-FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -422,7 +422,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -xB -ipo
-FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -437,7 +437,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -xB -ipo -ipo_obj
-FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -450,7 +450,7 @@ FC=g95
 OPTFLAGS  = -O3 -m64 -mmmx -msse -msse2 -m3dnow -mfpmath=sse \
             -ffast-math -fexpensive-optimizations -ffinite-math-only \
             -fgcse -floop-optimize -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
-FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIRF90)
+FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
 CCFLAGS   = -march=opteron -fno-globals -Wno-globals -pipe
 BLASLIB   = 
 LAPACKLIB = 
@@ -470,7 +470,7 @@ ifeq ($(ID),pc64-athlon64-linux)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -m64 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -fmove-all-movables -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
-FCFLAGS   = -march=athlon64 -pipe -fmod=$(MODDIRF90)
+FCFLAGS   = -march=athlon64 -pipe -fmod=$(MODDIR)
 CCFLAGS   = -march=athlon64 -fno-globals -Wno-globals -pipe
 BLASLIB   = 
 LAPACKLIB = 
@@ -480,7 +480,7 @@ ifeq ($(call match,$(ID),pc-opteron-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -m32 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -fmove-all-movables -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
-FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIRF90)
+FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
 CCFLAGS   = -march=opteron -fno-globals -Wno-globals -pipe
 BLASLIB   = 
 LAPACKLIB = 
@@ -501,7 +501,7 @@ CC=gcc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo -msse2 -mtune=pentiumpro -march=pentium4
-FCFLAGS   = -f90rtl -cm -vec_report0 -module $(MODDIRF90)
+FCFLAGS   = -f90rtl -cm -vec_report0 -module $(MODDIR)
 CCFLAGS   = -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
@@ -515,7 +515,7 @@ ifeq ($(ID),pc64-opteron-linux-ifclargegoto)
 CC=/usr/local/icce/bin/icc
 FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = -O2 -ip -no-prec-div
-FCFLAGS   = -mcmodel=medium -module $(MODDIRF90)
+FCFLAGS   = -mcmodel=medium -module $(MODDIR)
 CCFLAGS   = -mcmodel=medium 
 LDFLAGS   = -i-dynamic -threads
 BLASLIB   = ./libgoto_opteron64p-r1.00.so 
@@ -529,7 +529,7 @@ ifeq ($(ID),pc64-opteron-linux-ifclarge)
 CC=/usr/local/icce/bin/icc
 FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = 
-FCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 -module $(MODDIRF90)
+FCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 -module $(MODDIR)
 CCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 
 BLASLIB   = 
 LAPACKLIB = 
@@ -541,7 +541,7 @@ ifeq ($(ID),pc64-opteron-linux-gcclarge)
 CC=g++
 FC=g95
 OPTFLAGS  = 
-FCFLAGS   = -mcmodel=medium -m64 -fmod=$(MODDIRF90)
+FCFLAGS   = -mcmodel=medium -m64 -fmod=$(MODDIR)
 CCFLAGS   = -mcmodel=medium -m64
 BLASLIB   = 
 LAPACKLIB = 
@@ -573,7 +573,7 @@ CC=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -fast
-FCFLAGS   = -module $(MODDIRF90)
+FCFLAGS   = -module $(MODDIR)
 CCFLAGS   = 
 BLASLIB   = 
 LAPACKLIB = 

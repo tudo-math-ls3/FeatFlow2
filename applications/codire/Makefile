@@ -1,46 +1,47 @@
 #!/usr/bin/env gmake
 
+# define the root directory of the Featflow installation
 FEATFLOW=../..
 
+# include compiler definitions
 include $(FEATFLOW)/Globals.mk
 
+# application include dirs
 INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I./src/triangulation -I./src -I./include
 
 # The f77 source files
-
 SRC = qtrafo.f \
       condoutput.f dstrings1.f dstrings2.f dstrings3.f dstringsaux.f \
       heapsort.f invert.f\
       inipar.f parq2d.f parq2domega.f parq2dwrap.f rdparm.f\
       gmv2doutput.f initria.f inmtri.f quad2tri.f structria.f triutil2d.f
 
-# The F90 source files
+# The f90 source files
+SRC +=  codire_callback.f90 codire_method3.f90 codire.f90
 
-SRCF90=
+# include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
-SRCF90:=$(SRCF90) \
-        codire_callback.f90 codire_method3.f90 codire.f90
+SRC += $(KERNELSRC)
 
-# put all files together
+# path for the make where to look for application source files
+vpath %.f src/geometry src/misc src/parametrization src/triangulation src
 
-# path for the make where to look for which files
+vpath %.f90 src/geometry src/misc src/parametrization src/triangulation src
 
-vpath %.f \
+vpath %.inc include \
       src/geometry src/misc src/parametrization src/triangulation src
 
-vpath %.f90 \
-      src/geometry src/misc src/parametrization src/triangulation src
-
-vpath %.inc \
-      include \
-      src/geometry src/misc src/parametrization src/triangulation src
-
+# The name of the final executable
 EXEC=codire-$(ID)
 
+# used libraries
 FEATLIB= feat2d sysutils #umfpack4 amd
 
-include $(FEATFLOW)/Rules_apps_f90.mk
+# include make rules
+include $(FEATFLOW)/Rules_apps.mk
+
+# include automatic dependencies
 -include Deps.mk
 
 test: clean_exec run
