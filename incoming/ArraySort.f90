@@ -36,7 +36,7 @@ MODULE ArraySort
   ! Insertionsort (stable, for small or presorted problems)
   INTEGER, PARAMETER :: SORT_INSERT = 2
   
-  ! Mergesort (stable) (not yet implemented!)
+  ! Mergesort (stable)
   INTEGER, PARAMETER :: SORT_MERGE = 3
   
   !</constantblock>
@@ -85,11 +85,9 @@ MODULE ArraySort
         CASE (SORT_INSERT)
           CALL insertSort
         CASE (SORT_MERGE)
-          PRINT *, 'arraySort_sortByIndex: Mergesort not yet implemented!'
-          PRINT *, 'arraySort_sortByIndex: Reverting to Insertionsort'
-          CALL insertSort
+          CALL mergeSort(1,nnode)
         CASE DEFAULT
-          STOP 'arraySort_sortByIndex: unknown Method'
+          STOP 'arraySort_sortByIndex: unknown Method:' // sys_i6(cmethod)
       END SELECT
     ELSE
       CALL heapSort
@@ -212,7 +210,47 @@ MODULE ArraySort
       END DO
     
     END SUBROUTINE insertSort
-  
+    
+    RECURSIVE SUBROUTINE mergesort(ilow, ihigh)
+    
+      ! A modification of an algorithm by
+      ! Jason Harrison, University of
+      ! British Columbia.
+      ! Porting to F90 by J-P Moreau, Paris.
+    
+      INTEGER(I32), INTENT(IN) :: ilow, ihigh
+      
+      INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
+      
+      
+      ! Nothing to sort
+      IF (ilow .GE. ihigh) RETURN
+      
+      ilo = ilow
+      ihi = ihigh
+      
+      ! Find midpoint of field
+      imid = (ilo+ihi)/2
+      
+      ! Recursive sorting with mergesort
+      CALL mergesort(ilow,      imid)
+      CALL mergesort(imid+1, ihigh )
+      
+      ! Merge the two sorted lists in a stable way
+      istart_hi = imid+1
+      iend_lo = imid
+      DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
+        IF (Ielem(iindex,ilo) .le. Ielem(iindex,istart_hi)) THEN
+	  ilo = ilo+1
+	ELSE
+	  CALL circShiftRight(ilo, istart_hi)
+	  ilo = ilo+1
+	  iend_lo = iend_lo+1
+	  istart_hi = istart_hi+1
+	ENDIF
+      END DO
+    
+    END SUBROUTINE mergesort
 
     SUBROUTINE swapNode(i,j)
       ! Swaps node Ielem(:,i) and Ielem(:,j)

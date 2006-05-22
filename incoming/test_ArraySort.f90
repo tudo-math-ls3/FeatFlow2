@@ -24,7 +24,7 @@ PROGRAM test_ArraySort
   DO iindex=1, nindex
     PRINT *, ''
     PRINT *, 'Sort by index:',iindex
-    CALL arraySort_sortByIndex(Ielem,iindex,nnode,nindex)
+    CALL arraySort_sortByIndex(Ielem,iindex,nnode,nindex,SORT_MERGE)
     DO inode=1, nnode
       PRINT *, Ielem(:,inode)
     END DO
