@@ -306,7 +306,7 @@ CONTAINS
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    CALL linsol_initBiCGStab (p_rsolverNode,NULL(),NULL()) !p_RfilterChain)
+    CALL linsol_initBiCGStab (p_rsolverNode,NULL(),p_RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
