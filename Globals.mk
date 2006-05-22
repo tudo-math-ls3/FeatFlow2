@@ -87,7 +87,7 @@ LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas
 # Featflow needs an f90-compiler as well as a C-compiler. 
 ########################################################################
 
-FC=f90     # Fortran 77 compiler
+FC=f90     # Fortran 90 compiler
 CC=cc      # ANSI C compiler
 LD=$(FC)   # linker (usually same as the Fortran Compiler) 
 AR=ar      # library creation tool (archiver)
@@ -222,7 +222,7 @@ ifeq ($(call match,$(ID),alpha-ev[4567]-osf1),yes)
 CC=cc
 FC=f90
 OPTFLAGS  = -fast
-FCFLAGS   =
+FCFLAGS   = -module $(MODDIR)
 CCFLAGS   = 
 BLASLIB   = -ldxml
 LAPACKLIB = -ldxml
@@ -501,9 +501,9 @@ CC=gcc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo -msse2 -mtune=pentiumpro -march=pentium4
-FCFLAGS   = -f90rtl -cm -vec_report0 -module $(MODDIR)
+FCFLAGS   = -cm -vec_report0 -module $(MODDIR)
 CCFLAGS   = -vec_report0
-LDFLAGS   = 
+LDFLAGS   = -f90rtl 
 BLASLIB   = 
 LAPACKLIB = 
 endif
