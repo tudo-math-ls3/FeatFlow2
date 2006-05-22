@@ -1183,9 +1183,8 @@ CONTAINS
     ios = 0
     
 30  CONTINUE    
-    
     ! Don't do anything in case of an error
-    IF (ios .LE. 0) THEN
+    IF (ios .EQ. 0) THEN
     
       ilinelen = ilinelen + 1
       sdata (ilinelen:ilinelen) = c
@@ -1229,15 +1228,13 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(INOUT) :: svalue
   
   ! local variables
-  INTEGER :: i,ltr,j
+  INTEGER :: i,ltr
   CHARACTER(LEN=PARLST_LENLINEBUF) :: sbuf
   
     ityp = 0
     
     ! Do we have data in sdata?
-    ! The check of the first character against 0 is necessary as some compilers
-    ! interpret a very last emty line in a text file as '0 32 32 32 ...'!?!
-    IF ((sdata .EQ. '') .OR. (ICHAR(sdata(1:1)) .EQ. 0)) RETURN
+    IF (sdata .EQ. '') RETURN
     
     ! Copy the input string - left adjusted - and get the string length
     sbuf = ADJUSTL(sdata)

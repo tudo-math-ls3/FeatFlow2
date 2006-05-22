@@ -90,6 +90,18 @@
 !# ... (parameters for the grid adaption)
 !#
 !# -------------------SNIP--------------------
+!# Additionally to these 'named variables', the collection contains
+!# a small integer and double precision 'temporary quick access'
+!# array directly in the t_collection structure with size of at
+!# least 128 elemens. 
+!# Care must be taken when an application wants to use these arays.
+!# Not maintained by the collection internally, they are of 
+!# *pure temprary nature*. Long-life information should never be stored
+!# in there! They can be used e.g. in assembly routines to provide 
+!# callback routines with information that must quickly be accessed 
+!# without the need of asking the collection for a named variable.
+!# Their content can be described at best as 'only valid for one
+!# operation' (e.g. for one matrix asembly).
 !#
 !# The following routines can be used to maintain a parameter
 !# list:
@@ -173,6 +185,8 @@ MODULE collection
   ! entries.
   INTEGER, PARAMETER :: COLLCT_NSECTIONS = 5
 
+  ! Length of each 'quick-access' array in the collection.
+  INTEGER, PARAMETER :: COLLCT_QALENGTH = 128
 !</constantblock>
 
 !<constantblock description='Type identifier for values'>
@@ -363,7 +377,23 @@ MODULE collection
   
   TYPE t_collection
   
-    PRIVATE
+    ! Quick-access array for integers. This is a short, temporary
+    ! array that can be used by the application to save intermediate
+    ! values (e.g. some information that is to pass and to be accessed
+    ! by callback routines). 
+    ! No long life information should be stored here. Long-life
+    ! information should be named and added as such to the collection 
+    ! directly. The collection itself does not maintain this array!
+    INTEGER(I32), DIMENSION(COLLCT_QALENGTH) :: IquickAccess
+  
+    ! Quick-access array for reals. This is a short, temporary
+    ! array that can be used by the application to save intermediate
+    ! values (e.g. some information that is to pass and to be accessed
+    ! by callback routines). 
+    ! No long life information should be stored here. Long-life
+    ! information should be named and added as such to the collection 
+    ! directly. The collection itself does not maintain this array!
+    REAL(DP), DIMENSION(COLLCT_QALENGTH) :: DquickAccess
   
     ! Actual number of sections in this collection.
     ! This is at least one, as every collection contains at least an
