@@ -95,7 +95,7 @@ SRC15= srchquad.f      triutil2d.f \
 	
 SRCF90=
 
-include $(FEATFLOW)/kernel/kernel.inc
+include $(FEATFLOW)/kernel/kernel.mk
 	
 SRCF90:=$(SRCF90) testcode.f90
 

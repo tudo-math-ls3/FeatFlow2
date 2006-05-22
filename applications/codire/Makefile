@@ -18,7 +18,7 @@ SRC = qtrafo.f \
 # The F90 source files
 
 SRCF90=
-include $(FEATFLOW)/kernel/kernel.inc
+include $(FEATFLOW)/kernel/kernel.mk
 SRCF90:=$(SRCF90) \
         codire_callback.f90 codire_method3.f90 codire.f90
 
