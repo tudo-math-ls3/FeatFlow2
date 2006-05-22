@@ -128,9 +128,6 @@ LAPACKLIB=          # will use included lapack
 # additional linker options
 LDFLAGS=
 
-# default directory for .mod files in Fortran 95.
-MODDIRF90=.
-
 ########################################################################
 # additional, system specific libraries, e.g. POSIX,... if necessary
 #

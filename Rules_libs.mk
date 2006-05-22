@@ -13,6 +13,7 @@ LIB=$(LIBNAME:%=$(LIBDIR)/lib%.a)
 
 SRCDIR=src
 OBJDIR=obj/$(ID)
+MODDIR=obj/$(ID)
 
 #vpath %.inc include
 #vpath %.c src

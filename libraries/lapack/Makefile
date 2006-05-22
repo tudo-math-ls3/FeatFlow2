@@ -259,10 +259,10 @@ include $(FEATFLOW)/Rules_libs.mk
 OBJ+= $(OBJDIR)/slamch.o $(OBJDIR)/dlamch.o
 
 $(OBJDIR)/slamch.o : $(SRCDIR)/slamch.f
-	$(FC) $(FCFLAGS) -c -o $@ $<
+	$(FC) $(FCFLAGS) $(INCDIR) $(DEFS) -c -o $@ $<
 
 $(OBJDIR)/dlamch.o : $(SRCDIR)/dlamch.f
-	$(FC) $(FCFLAGS) -c -o $@ $<
+	$(FC) $(FCFLAGS) $(INCDIR) $(DEFS) -c -o $@ $<
 
 update:
 	@rm -f lapack.tgz
