@@ -39,6 +39,10 @@ MODULE ArraySort
   ! Mergesort (stable)
   INTEGER, PARAMETER :: SORT_MERGE = 3
   
+  ! Stable sorting algorithm
+  ! Defaults to mergesort, but this can change in the future
+  INTEGER, PARAMETER :: SORT_STABLE = 10
+  
   !</constantblock>
   !</constants>
   
@@ -84,7 +88,7 @@ MODULE ArraySort
           CALL insertSort
         CASE (SORT_INSERT)
           CALL insertSort
-        CASE (SORT_MERGE)
+        CASE (SORT_MERGE,SORT_STABLE)
           CALL mergeSort(1,nnode)
         CASE DEFAULT
           STOP 'arraySort_sortByIndex: unknown Method:' // sys_i6(cmethod)
