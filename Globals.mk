@@ -70,7 +70,8 @@ BENCHLOG:=$(FEATFLOW)/$(BENCHLOGFILENAME)
 LIBDIR=$(FEATFLOW)/object/libraries/lib-$(ID)
 
 # list of application modules to create by the top level make
-APPS= trigen2d trigen3d tr2to3 cc2d pp2d cc3d pp3d 
+#APPS= trigen2d trigen3d tr2to3 cc2d pp2d cc3d pp3d 
+APPS:= $(shell ls $(FEATFLOW)/applications)
 
 # list of all library modules available at the top level
 LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas
@@ -169,9 +170,9 @@ LDLIBS=
 
 ifeq ($(call match,$(ID),sun4u-sparcv[789]-sunos),yes)
 CC=cc
-FC=f90
+FC=f95
 OPTFLAGS  = -fast 
-FCFLAGS   = -xarch=native -silent
+FCFLAGS   = -xarch=native -moddir=$(MODDIR)
 CCFLAGS   = -xarch=native
 BLASLIB   = -xlic_lib=sunperf
 LAPACKLIB = -xlic_lib=sunperf
@@ -187,9 +188,9 @@ endif
 
 ifeq ($(ID),sun4u-sparcv9-sunos-64bit)
 CC=cc
-FC=f90
+FC=f95
 OPTFLAGS  = -fast
-FCFLAGS   = -xarch=native64 -silent
+FCFLAGS   = -xarch=native64 -moddir=$(MODDIR)
 CCFLAGS   = -xarch=native64
 BLASLIB   = -xlic_lib=sunperf
 LAPACKLIB = -xlic_lib=sunperf
@@ -201,11 +202,11 @@ endif
 # the ALT variable is set to gcc, i.e.
 # make ALT=gcc ...
 
-ifeq ($(ID),sun4u-sparcv9-sunos-gcc)
+ifeq ($(ID),sun4u-sparcv9-sunos-g95)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -mcpu=v9 -m64 -fno-globals -Wno-globals -pipe
+FCFLAGS   = -mcpu=v9 -m64 -pipe -fmod=$(MODDIR)
 CCFLAGS   = -mcpu=v9 -m64 -fno-globals -Wno-globals -pipe
 BLASLIB   = 
 LAPACKLIB =
@@ -236,9 +237,9 @@ endif
 ifeq ($(call match,$(ID),pc-unknown-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops
-FCFLAGS   = -fno-globals -Wno-globals -pipe
-CCFLAGS   = -fno-globals -Wno-globals -pipe
+OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
+FCFLAGS   = -pipe -fmod=$(MODDIR)
+CCFLAGS   = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -247,8 +248,8 @@ ifeq ($(call match,$(ID),pc-athlon-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -march=athlon -fno-globals -Wno-globals -pipe
-CCFLAGS   = -march=athlon -fno-globals -Wno-globals -pipe
+FCFLAGS   = -march=athlon -pipe -fmod=$(MODDIR)
+CCFLAGS   = -march=athlon -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -256,9 +257,9 @@ endif
 ifeq ($(call match,$(ID),pc-athlonxp-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -march=athlon-xp -fno-globals -Wno-globals -pipe
-CCFLAGS   = -march=athlon-xp -fno-globals -Wno-globals -pipe
+OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
+FCFLAGS   = -march=athlon-xp -pipe -fmod=$(MODDIR)
+CCFLAGS   = -march=athlon-xp -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -266,9 +267,9 @@ endif
 ifeq ($(call match,$(ID),pc-pentium3-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
-OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
-CCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
+OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
+FCFLAGS   = -march=pentium3 -pipe -fmod=$(MODDIR)
+CCFLAGS   = -march=pentium3 -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -276,12 +277,9 @@ endif
 ifeq ($(call match,$(ID),pc-pentiumm-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
-#OPTFLAGS  = -O3 -mfpmath=sse -msse2 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-#FCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
-#CCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
-OPTFLAGS  = -O3 -mfpmath=sse -msse2 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
+OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
 FCFLAGS   = -march=pentium3 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=pentium3 -fno-globals -Wno-globals -pipe
+CCFLAGS   = -march=pentium3 -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -289,9 +287,9 @@ endif
 ifeq ($(call match,$(ID),pc-pentium4-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
-OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
+OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
 FCFLAGS   = -march=pentium4 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=pentium4 -fno-globals -Wno-globals -pipe
+CCFLAGS   = -march=pentium4 -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -311,7 +309,7 @@ ifeq ($(ID),power_macintosh-ppc_7450-darwin)
 CC=gcc
 FC=gfortran
 OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -pipe
+FCFLAGS   = -pipe -J$(MODDIR) -I$(MODDIR)
 CCFLAGS   = -pipe
 LDFLAGS   = -bind_at_load
 BLASLIB   = -faltivec -framework Accelerate
@@ -383,15 +381,15 @@ ifeq ($(ID),pc-athlonxp-linux-pgi)
 CC=gcc
 FC=pgf90
 OPTFLAGS  = -fastsse -O4 
-FCFLAGS   = -tp athlonxp
+FCFLAGS   = -tp athlonxp -module $(MODDIR)
 BLASLIB   = 
 LAPACKLIB = 
 endif
 
 ifeq ($(ID),pc-pentium4-linux-ifc)
-CC=icc
-FC=ifort
-AR=xiar
+CC=/usr/local/icce/bin/icc
+FC=/usr/local/ifce/bin/ifort
+AR=/usr/local/ifce/bin/xiar
 OPTFLAGS  = -O3 -xN -ipo
 FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
@@ -448,7 +446,7 @@ OPTFLAGS  = -O3 -m64 -mmmx -msse -msse2 -m3dnow -mfpmath=sse \
             -ffast-math -fexpensive-optimizations -ffinite-math-only \
             -fgcse -floop-optimize -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
 FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=opteron -fno-globals -Wno-globals -pipe
+CCFLAGS   = -march=opteron -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -468,7 +466,7 @@ CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -m64 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -fmove-all-movables -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
 FCFLAGS   = -march=athlon64 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=athlon64 -fno-globals -Wno-globals -pipe
+CCFLAGS   = -march=athlon64 -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -478,29 +476,29 @@ CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -m32 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -fmove-all-movables -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
 FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=opteron -fno-globals -Wno-globals -pipe
+CCFLAGS   = -march=opteron -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
 
 ifeq ($(ID),pc64-opteron-linux-gcc4)
-CC=gcc
-FC=gfortran
+CC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gcc
+FC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gfortran
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
-FCFLAGS   = -march=opteron -pipe
+FCFLAGS   = -march=opteron -pipe -J$(MODDIR)
 CCFLAGS   = -march=opteron -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
 
 ifeq ($(ID),pc64-opteron-linux-ifc)
-CC=gcc
-FC=ifort
-AR=xiar
-OPTFLAGS  = -O3 -ipo -msse2 -mtune=pentiumpro -march=pentium4
-FCFLAGS   = -cm -vec_report0 -module $(MODDIR)
-CCFLAGS   = -vec_report0
-LDFLAGS   = -f90rtl 
+CC=/usr/local/icce/bin/icc
+FC=/usr/local/ifce/bin/ifort
+AR=/usr/local/ifce/bin/xiar
+OPTFLAGS  = -O3 -ipo -mtune=pentiumpro -march=pentium4
+FCFLAGS   = -vec_report0 -mcmodel=medium -module $(MODDIR)
+CCFLAGS   = -vec_report0 -mcmodel=medium
+LDFLAGS   = -i-dynamic
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -535,7 +533,7 @@ endif
 # GCC compiler, standard BLAS, large arrays > 2GB
 
 ifeq ($(ID),pc64-opteron-linux-gcclarge)
-CC=g++
+CC=gcc
 FC=g95
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=medium -m64 -fmod=$(MODDIR)
@@ -546,9 +544,9 @@ endif
 
 ifeq ($(ID),pc64-opteron-linux-pgi)
 CC=pgcc
-FC=pgf90
+FC=pgf95
 OPTFLAGS  = -fastsse -O4 -tp k8-64 -Mipa -mcmodel=medium -Mlarge_arrays 
-FCFLAGS   = 
+FCFLAGS   = -module $(MODDIR)
 CCFLAGS   = 
 LDFLAGS   = -lpgftnrtl -lm
 BLASLIB   = 
