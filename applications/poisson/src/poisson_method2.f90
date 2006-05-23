@@ -157,8 +157,9 @@ CONTAINS
     ! discretisation structure for every component of the solution!
     ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
     NULLIFY(p_rdiscretisation)
-    CALL spdiscr_initDiscr_simple (p_rtriangulation, p_rboundary, NULL(), &
-                                   EL_E011,CUB_TRZ,p_rdiscretisation)
+    CALL spdiscr_initDiscr_simple (p_rdiscretisation, &
+                                   EL_E011,CUB_TRZ,&
+                                   p_rtriangulation, p_rboundary)
                                    
     ! Add the discretisation structure to the collection so that
     ! we can use it later.

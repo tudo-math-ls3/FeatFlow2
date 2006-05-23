@@ -198,9 +198,9 @@ CONTAINS
     ! discretisation structure for every component of the solution!
     ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
     NULLIFY(rproblem%RlevelInfo(1)%p_rdiscretisation)
-    CALL spdiscr_initDiscr_simple (p_rtriangulation, p_rboundary, NULL(), &
+    CALL spdiscr_initDiscr_simple (rproblem%RlevelInfo(1)%p_rdiscretisation, &
                                    EL_E011,CUB_TRZ,&
-                                   rproblem%RlevelInfo(1)%p_rdiscretisation)
+                                   p_rtriangulation, p_rboundary)
                                    
   END SUBROUTINE
 

@@ -203,9 +203,9 @@ CONTAINS
     ! discretisation structure for every component of the solution!
     ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
     NULLIFY(rproblem%RlevelInfo(1)%p_rdiscretisation)
-    CALL spdiscr_initDiscr_simple (p_rtriangulation, p_rboundary, NULL(), &
+    CALL spdiscr_initDiscr_simple (rproblem%RlevelInfo(1)%p_rdiscretisation,&
                                    EL_E011,CUB_TRZ,&
-                                   rproblem%RlevelInfo(1)%p_rdiscretisation)
+                                   p_rtriangulation, p_rboundary)
                                    
   END SUBROUTINE
 
@@ -610,7 +610,7 @@ CONTAINS
     TYPE(t_vectorBlock), TARGET :: rtempBlock
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    TYPE(t_linsolNode), POINTER :: p_rsolverNode, p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -638,7 +638,8 @@ CONTAINS
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    CALL linsol_initBiCGStab (p_rsolverNode,NULL(),p_RfilterChain)
+    NULLIFY(p_rpreconditioner)
+    CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2

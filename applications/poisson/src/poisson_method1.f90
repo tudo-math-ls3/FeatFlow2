@@ -93,7 +93,7 @@ CONTAINS
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -154,8 +154,8 @@ CONTAINS
     !
     ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
     NULLIFY(p_rdiscretisation)
-    CALL spdiscr_initDiscr_simple (p_rtriangulation, p_rboundary, NULL(), &
-                                   EL_E011,CUB_TRZ,p_rdiscretisation)
+    CALL spdiscr_initDiscr_simple (p_rdiscretisation, &
+                                   EL_E011,CUB_TRZ,p_rtriangulation, p_rboundary)
                                    
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -258,7 +258,7 @@ CONTAINS
     ! in p_rdiscreteBC!
     NULLIFY(p_rdiscreteBC)
     CALL bcasm_discretiseBC (p_rdiscretisation,p_rdiscreteBC,.FALSE., &
-                             getBoundaryValues,NULL())
+                             getBoundaryValues)
                              
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
@@ -306,7 +306,8 @@ CONTAINS
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    CALL linsol_initBiCGStab (p_rsolverNode,NULL(),p_RfilterChain)
+    NULLIFY(p_rpreconditioner)
+    CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2

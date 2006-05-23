@@ -243,8 +243,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE spdiscr_initDiscr_simple (rtriangulation, rdomain, rboundaryConditions, &
-             ieltyp, ccubType, p_rspatialDiscr)
+  SUBROUTINE spdiscr_initDiscr_simple (p_rspatialDiscr,ieltyp, ccubType,&
+                                       rtriangulation, rdomain, rboundaryConditions)
   
 !<description>
   
@@ -259,20 +259,21 @@ CONTAINS
 
 !<input>
   
-  ! The triangulation structure underlying to the discretisation.
-  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
-  
-  ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET           :: rdomain
-  
-  ! The analytical description of the boundary conditions
-  TYPE(t_boundaryConditions), INTENT(IN), TARGET :: rboundaryConditions
-  
   ! The element type identifier that is to be used for all elements.
   INTEGER, INTENT(IN)                       :: ieltyp
   
   ! Cubature formula to use for calculating integrals
   INTEGER, INTENT(IN)                       :: ccubType
+  
+  ! The triangulation structure underlying to the discretisation.
+  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
+  
+  ! The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rdomain
+  
+  ! OPTIONAL: The analytical description of the boundary conditions.
+  ! Parameter can be ommitted if boundary conditions are not defined.
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
   
 !</input>
   
@@ -300,9 +301,13 @@ CONTAINS
 
   ! Initialise the variables of the structure for the simple discretisation
   p_rspatialDiscr%ndimension             = NDIM2D
-  p_rspatialDiscr%p_rtriangulation     => rtriangulation
+  p_rspatialDiscr%p_rtriangulation       => rtriangulation
   p_rspatialDiscr%p_rdomain              => rdomain
-  p_rspatialDiscr%p_rboundaryConditions  => rboundaryConditions
+  IF (PRESENT(rboundaryConditions)) THEN
+    p_rspatialDiscr%p_rboundaryConditions  => rboundaryConditions
+  ELSE
+    NULLIFY(p_rspatialDiscr%p_rboundaryConditions)
+  END IF
   p_rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   ! All trial elements are ieltyp:
