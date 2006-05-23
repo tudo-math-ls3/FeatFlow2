@@ -10,7 +10,7 @@ include $(FEATFLOW)/Globals.mk
 INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I./src/triangulation -I./src -I./include
 
-# The f77 source files
+# The f77 source files 
 SRC = qtrafo.f \
       condoutput.f dstrings1.f dstrings2.f dstrings3.f dstringsaux.f \
       heapsort.f invert.f\
