@@ -632,7 +632,7 @@ CONTAINS
     ! Copy the FEAT array
     p_array2 => feat_htpint2D(idim1,idim2,ifeathandle)
     DO j=1,SIZE(p_array,2)
-      p_array(1:idim1,j) = p_array2(1:idim2,j)
+      p_array(1:idim1,j) = p_array2(1:idim1,j)
     END DO
     
     END SUBROUTINE
@@ -742,7 +742,7 @@ CONTAINS
     ! Copy the FEAT array
     p_array2 => feat_htpdouble2D(idim1,idim2,ifeathandle)
     DO j=1,SIZE(p_array,2)
-      p_array(1:idim1,j) = p_array2(1:idim2,j)
+      p_array(1:idim1,j) = p_array2(1:idim1,j)
     END DO
     
     END SUBROUTINE
