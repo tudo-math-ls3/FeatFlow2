@@ -387,9 +387,9 @@ LAPACKLIB =
 endif
 
 ifeq ($(ID),pc-pentium4-linux-ifc)
-CC=/usr/local/icce/bin/icc
-FC=/usr/local/ifce/bin/ifort
-AR=/usr/local/ifce/bin/xiar
+CC=/usr/local/icc/bin/icc
+FC=/usr/local/ifc/bin/ifort
+AR=/usr/local/ifc/bin/xiar
 OPTFLAGS  = -O3 -xN -ipo
 FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
@@ -485,8 +485,9 @@ ifeq ($(ID),pc64-opteron-linux-gcc4)
 CC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gcc
 FC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gfortran
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
-FCFLAGS   = -march=opteron -pipe -J$(MODDIR)
+FCFLAGS   = -march=opteron -pipe -J$(MODDIR) -I$(MODDIR)
 CCFLAGS   = -march=opteron -pipe
+LDFLAGS   = -Wl,-rpath,/home/user/hron/nobackup/apps/gfortran/irun/lib64
 BLASLIB   = 
 LAPACKLIB = 
 endif
