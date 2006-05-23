@@ -418,7 +418,7 @@ CONTAINS
     ! values on the boundary.
     NULLIFY(p_rdiscreteBC)
     CALL bcasm_discretiseBC (p_rdiscretisation,p_rdiscreteBC,.FALSE., &
-                             getBoundaryValues,NULL())
+                             getBoundaryValues)
                              
     ! Hang the pointer into the vectors and the matrix - more precisely,
     ! to the first block matrix and the first subvector. That way, these
