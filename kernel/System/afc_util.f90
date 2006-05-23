@@ -16,7 +16,7 @@ CONTAINS
     DOUBLE PRECISION, DIMENSION(:), POINTER :: p
     INCLUDE 'cmem.inc'
     
-    p => feat_vr(n,DWORK(L(handle):))
+    p => feat_vr(n,DWORK(L(handle)))
     
   END FUNCTION
 
