@@ -97,6 +97,16 @@ MODULE fsystem
 
   ! flag for replacing a file
   INTEGER, PARAMETER :: SYS_REPLACE = 1
+  
+  ! bitflag for using noadvance mode with files
+  INTEGER, PARAMETER :: SYS_NOADVANCE = 2
+  
+  ! additional constant for comfort
+  INTEGER, PARAMETER :: SYS_APPEND_NOADVANCE = 2
+  
+  ! additional constant for comfort
+  INTEGER, PARAMETER :: SYS_REPLACE_NOADVANCE = 3
+  
 
 !<constantblock description="system signals">
 
