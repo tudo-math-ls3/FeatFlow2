@@ -107,16 +107,16 @@ MODULE linearsolver
   INTEGER, PARAMETER :: LINSOL_ALG_UMFPACK4      = 11
   
   ! ILU(0) iteration (scalar system)
-  INTEGER, PARAMETER :: LINSOL_ALG_ILU0          = 50
+  INTEGER, PARAMETER :: LINSOL_ALG_ILU01x1       = 50
   
   ! (M)ILU(s) iteration (scalar system)
-  INTEGER, PARAMETER :: LINSOL_ALG_MILUS         = 51
+  INTEGER, PARAMETER :: LINSOL_ALG_MILUS1x1      = 51
   
   ! SPAI(0) iteration (scalar system)
-  INTEGER, PARAMETER :: LINSOL_ALG_SPAI0         = 52
+  INTEGER, PARAMETER :: LINSOL_ALG_SPAI01x1      = 52
 
   ! SPAI(k) iteration (scalar system)
-  INTEGER, PARAMETER :: LINSOL_ALG_SPAIK         = 53
+  INTEGER, PARAMETER :: LINSOL_ALG_SPAIK1x1      = 53
   
   ! VANCA iteration (general)
   INTEGER, PARAMETER :: LINSOL_ALG_VANCA         = 54
@@ -154,7 +154,7 @@ MODULE linearsolver
   ! steps (e.g. UMFPACK performs always one step).
   INTEGER, PARAMETER :: LINSOL_ABIL_CHECKDEF     = 2**3
   
-  ! Solver is a direct solver (e.g. UMFPACK, ILU).
+  ! Solver is a direct solver / 1-step solver (e.g. UMFPACK, ILU).
   ! Otherwise the solver is of iterative nature and might perform
   ! multiple steps to solve the problem.
   INTEGER, PARAMETER :: LINSOL_ABIL_DIRECT       = 2**4
@@ -403,6 +403,9 @@ MODULE linearsolver
 
     ! Pointer to a structure for the ILU0 1x1 solver; NULL() if not set
     TYPE (t_linsolSubnodeILU01x1), POINTER        :: p_rsubnodeILU01x1     => NULL()
+    
+    ! Pointer to a structure for (M)ILUs 1x1 solver; NULL() if not set
+    TYPE (t_linsolSubnodeMILUs1x1), POINTER       :: p_rsubnodeMILUs1x1    => NULL()
 
   END TYPE
   
@@ -486,6 +489,37 @@ MODULE linearsolver
   TYPE t_linsolSubnodeVANCAQ1TP0NS2D
 
     INTEGER DUMMY  
+
+  END TYPE
+  
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This saves information about ILU(k) matrices as defined in SPLIB.
+  
+  TYPE t_linsolSubnodeMILUs1x1
+
+    ! Fill-in level for decomposition
+    INTEGER :: ifill
+    
+    ! Relaxation factor for (M)ILU(s)
+    REAL(DP) :: drelax
+
+    ! Handle to array [1..*] of integer.
+    ! Workspace containing the decomposed matrix.
+    INTEGER :: h_Idata = ST_NOHANDLE
+
+    ! Parameter 1 returned by SPLIB for factorised matrix
+    INTEGER :: lu
+    
+    ! Parameter 2 returned by SPLIB for factorised matrix
+    INTEGER :: jlu
+    
+    ! Parameter 3 returned by SPLIB for factorised matrix
+    INTEGER :: ilup
 
   END TYPE
   
@@ -870,6 +904,8 @@ CONTAINS
     ! VANCA: no init-routine.
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_initStructureUMFPACK4 (rsolverNode,isubgroup)
+  CASE (LINSOL_ALG_MILUS1X1)
+    ! No structure routine for (M)ILU(s)
   CASE (LINSOL_ALG_BICGSTAB)
     CALL linsol_initStructureBiCGStab (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_MULTIGRID)
@@ -936,6 +972,8 @@ CONTAINS
     ! VANCA: no init-routine.
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_initDataUMFPACK4 (rsolverNode,isubgroup)
+  CASE (LINSOL_ALG_MILUS1X1)
+    CALL linsol_initDataMILUs1x1 (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_BICGSTAB)
     CALL linsol_initDataBiCGStab (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_MULTIGRID)
@@ -1090,11 +1128,13 @@ CONTAINS
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     ! VANCA: no done-routine.
   CASE (LINSOL_ALG_UMFPACK4)
-    CALL linsol_doneStructureUMFPACK4 (rsolverNode)
+    CALL linsol_doneStructureUMFPACK4 (rsolverNode,isubgroup)
+  CASE (LINSOL_ALG_MILUS1X1)
+    ! No structure routine for (M)ILU(s)
   CASE (LINSOL_ALG_BICGSTAB)
-    CALL linsol_doneStructureBiCGStab (rsolverNode)
+    CALL linsol_doneStructureBiCGStab (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_MULTIGRID)
-    CALL linsol_doneStructureMultigrid (rsolverNode)
+    CALL linsol_doneStructureMultigrid (rsolverNode,isubgroup)
   END SELECT
 
   END SUBROUTINE
@@ -1147,11 +1187,13 @@ CONTAINS
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     ! VANCA: no done-routine.
   CASE (LINSOL_ALG_UMFPACK4)
-    CALL linsol_doneDataUMFPACK4 (rsolverNode)
+    CALL linsol_doneDataUMFPACK4 (rsolverNode,isubgroup)
+  CASE (LINSOL_ALG_MILUS1X1)
+    CALL linsol_initDataMILUs1x1 (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_BICGSTAB)
-    CALL linsol_doneDataBiCGStab (rsolverNode)
+    CALL linsol_doneDataBiCGStab (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_MULTIGRID)
-    CALL linsol_doneDataMultigrid (rsolverNode)
+    CALL linsol_doneDataMultigrid (rsolverNode,isubgroup)
   END SELECT
   END SUBROUTINE
   
@@ -1202,6 +1244,8 @@ CONTAINS
     CALL linsol_doneUMFPACK4 (p_rsolverNode)
   CASE (LINSOL_ALG_BICGSTAB)
     CALL linsol_doneBiCGStab (p_rsolverNode)
+  CASE (LINSOL_ALG_MILUS1X1)
+    CALL linsol_doneMILUs1x1 (p_rsolverNode)
   CASE (LINSOL_ALG_MULTIGRID)
     CALL linsol_doneMultigrid (p_rsolverNode)
   CASE DEFAULT
@@ -1431,6 +1475,8 @@ CONTAINS
     CALL linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,rtemp)
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_solveUMFPACK4 (rsolverNode,rx,rb)
+  CASE (LINSOL_ALG_MILUS1x1)
+    CALL linsol_solveMILUS1x1 (rsolverNode,rx,rb)
   CASE (LINSOL_ALG_BICGSTAB)
     CALL linsol_solveBiCGStab (rsolverNode,rx,rb,rtemp)
   CASE (LINSOL_ALG_MULTIGRID)
@@ -1443,7 +1489,8 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_performSolveAdaptively (rsolverNode,rMatrix,rx,rb,rtemp)
+  RECURSIVE SUBROUTINE linsol_performSolveAdaptively (rsolverNode,&
+                       rMatrix,rx,rb,rtemp, rcorr,rdef)
   
 !<description>
   
@@ -1486,6 +1533,16 @@ CONTAINS
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_vectorBlock), INTENT(INOUT)                 :: rtemp
 
+  ! OPTIONAL: A temporary vector of the same size and structure as rx.
+  ! If not existent, the vector is allocated and deallocated
+  ! automatically.
+  TYPE(t_vectorBlock), INTENT(INOUT),OPTIONAL,TARGET :: rcorr
+
+  ! OPTIONAL: A temporary vector of the same size and structure as rx.
+  ! If not existent, the vector is allocated and deallocated
+  ! automatically.
+  TYPE(t_vectorBlock), INTENT(INOUT),OPTIONAL,TARGET :: rdef
+
 !</inputoutput>
   
 !</subroutine>
@@ -1501,21 +1558,37 @@ CONTAINS
   ! local variables
   
   ! Defect vector, to be build from rb and rx
-  TYPE(t_vectorBlock)               :: rdef,rcorr
+  TYPE(t_vectorBlock),TARGET        :: rdef1,rcorr1
+  TYPE(t_vectorBlock),POINTER       :: p_rdef,p_rcorr
+  
+  ! If the two last temporary vectors do not exist, we have to
+  ! allocate them.
+  IF (PRESENT(rdef)) THEN
+    p_rdef => rdef
+  ELSE
+    ! Create rdef as temporary vector based on rx.
+    CALL lsysbl_createVectorBlock (rx, rdef1, .FALSE.)
+    p_rdef => rdef1
+  END IF
+  
+  IF (PRESENT(rcorr)) THEN
+    p_rdef => rcorr
+  ELSE
+    ! Allocate memory for the correction vector,
+    ! Fill it with zero.
+    CALL lsysbl_createVectorBlock (rx, rcorr1, .FALSE.)
+    p_rcorr => rcorr1
+  END IF
+  
+  ! Fill it the correction vector with zero
+  CALL lsysbl_vectorClear (p_rcorr)
   
   ! Calculate the defect:
   
-  ! Create rdef as temporary vector based on rx.
-  CALL lsysbl_createVectorBlock (rx, rdef, .FALSE.)
-  
   ! To build (b-Ax), copy the RHS to the temporary vector
-  CALL lsysbl_vectorCopy (rb,rdef)
+  CALL lsysbl_vectorCopy (rb,p_rdef)
   
-  CALL lsysbl_blockMatVec (rMatrix, rx, rdef, 1.0_DP, 1.0_DP)
-  
-  ! Allocate memory for the correction vector,
-  ! Fill it with zero.
-  CALL lsysbl_createVectorBlock (rx, rcorr, .TRUE.)
+  CALL lsysbl_blockMatVec (rMatrix, rx, p_rdef, 1.0_DP, 1.0_DP)
   
   ! Call linsol_performSolve to solve the subproblem $Ay = b-Ax$.
   CALL linsol_performSolve (rsolverNode,rx,rb,rtemp)
@@ -1525,11 +1598,11 @@ CONTAINS
   ! have a correction vector, the result is directly in rx.
   
   ! Correct the solution vector: x=x+y
-  CALL lsysbl_vectorLinearComb (rdef,rx,1.0_DP,1.0_DP)
+  CALL lsysbl_vectorLinearComb (p_rdef,rx,1.0_DP,1.0_DP)
 
   ! Release memory
-  CALL lsysbl_releaseVector (rcorr)
-  CALL lsysbl_releaseVector (rdef)
+  IF (.NOT. PRESENT(rcorr)) CALL lsysbl_releaseVector (rcorr1)
+  IF (.NOT. PRESENT(rdef)) CALL lsysbl_releaseVector (rdef1)
   
   END SUBROUTINE
   
@@ -1778,16 +1851,13 @@ CONTAINS
     STOP
   END IF
   
-  ! If isubgroup coincides with isolverSubgroup from the solver
-  ! structure, we must initialise - otherwise we simply
-  ! skip the initialisation.
-  IF (isubgroup .EQ. rsolverNode%isolverSubgroup) THEN
+  ! If isubgroup does not coincide with isolverSubgroup from the solver
+  ! structure, skip the rest here.
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
   
-    ! perform a symbolic factorization...
-    PRINT *,'to be implemented'
+  ! perform a symbolic factorization...
+  PRINT *,'to be implemented'
     
-  END IF
-  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1837,16 +1907,13 @@ CONTAINS
     STOP
   END IF
   
-  ! If isubgroup coincides with isolverSubgroup from the solver
-  ! structure, we must initialise - otherwise we simply
-  ! skip the initialisation.
-  IF (isubgroup .EQ. rsolverNode%isolverSubgroup) THEN
+  ! If isubgroup does not coincide with isolverSubgroup from the solver
+  ! structure, skip the rest here.
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
   
-    ! perform a numerical factorization...
-    PRINT *,'to be implemented'
+  ! perform a numerical factorization...
+  PRINT *,'to be implemented'
     
-  END IF
-  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1889,15 +1956,12 @@ CONTAINS
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
 
-  ! If isubgroup coincides with isolverSubgroup from the solver
-  ! structure, we must proceed - otherwise we simply
-  ! skip the handling.
-  IF (isubgroup .EQ. rsolverNode%isolverSubgroup) THEN
+  ! If isubgroup does not coincide with isolverSubgroup from the solver
+  ! structure, skip the rest here.
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
   
-    ! Release the numerical factorisation
-    PRINT *,'to be implemented'
-  
-  END IF
+  ! Release the numerical factorisation
+  PRINT *,'to be implemented'
   
   END SUBROUTINE
   
@@ -1941,15 +2005,12 @@ CONTAINS
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
 
-  ! If isubgroup coincides with isolverSubgroup from the solver
-  ! structure, we must proceed - otherwise we simply
-  ! skip the handling.
-  IF (isubgroup .EQ. rsolverNode%isolverSubgroup) THEN
-    
-    ! Release the symbolical factorisation
-    PRINT *,'to be implemented'
-    
-  END IF
+  ! If isubgroup does not coincide with isolverSubgroup from the solver
+  ! structure, skip the rest here.
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+  
+  ! Release the symbolical factorisation
+  PRINT *,'to be implemented'
   
   END SUBROUTINE
   
@@ -1957,7 +2018,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneUMFPACK4 (rsolverNode, isolverSubgroup)
+  SUBROUTINE linsol_doneUMFPACK4 (rsolverNode)
   
 !<description>
   
@@ -1973,30 +2034,19 @@ CONTAINS
    
 !</inputoutput>
   
-!<input>
-  
-  ! Optional parameter. isolverSubgroup allows to specify a specific 
-  ! subgroup of solvers in the solver tree to be processed. By default,
-  ! all solvers in subgroup 0 (the default solver group) are processed,
-  ! solvers in other solver subgroups are ignored.
-  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
-  ! isolverSubgroup are processed.
-  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
-!</input>
-
 !</subroutine>
   
   ! local variables
   INTEGER :: isubgroup
   
-  ! by default, initialise solver subroup 0
-  isubgroup = 0
-  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+  ! The done routine always releases everything.
+  isubgroup = rsolverNode%isolverSubgroup
 
   ! Release symbolical and numerical factorisation if still associated...
   CALL linsol_doneDataUMFPACK4 (rsolverNode, isubgroup)
   CALL linsol_doneStructureUMFPACK4 (rsolverNode, isubgroup)
+  
+  DEALLOCATE(rsolverNode%p_rsubnodeUMFPACK4)
   
   END SUBROUTINE
   
@@ -2036,6 +2086,382 @@ CONTAINS
 
   ! solve the system
   PRINT *,'to be implemented...'
+  
+  END SUBROUTINE
+  
+! *****************************************************************************
+! Routines for the (M)ILUs 1x1 solver
+! *****************************************************************************
+! This is a 1-step solver usually used for preconditioning: x_1 = C^-1 x_0.
+! As we use SPLIB, we have only a numerical factorisation, no symbolical
+! factorisation.
+
+!<subroutine>
+  
+  SUBROUTINE linsol_initMILUs1x1 (rsolverNode,ifill,drelax)
+  
+!<description>
+  
+  ! Creates a t_linsolNode solver structure for the (M)ILUs 1x1 solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  
+!</description>
+  
+!<input>
+  ! Fill-in level for factorisation.
+  ! 0=ILU(0), 1=ILU(1),...
+  INTEGER, INTENT(IN) :: ifill
+  
+  ! Relaxation parameter.
+  ! 0.0=ILU(s), 1.0=MILU(s), between 0.0 and 1.0=multiplier to use before
+  ! adding discarded fill to the diagonal.
+  REAL(DP), INTENT(IN) :: drelax
+!</input>
+  
+!<output>
+  
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER         :: rsolverNode
+   
+!</output>
+
+!</subroutine>
+
+  ! Create a default solver structure
+  
+  CALL linsol_initSolverGeneral(rsolverNode)
+  
+  ! Normally this solver iterates only once (used e.g. in a preconditioner).
+  ! This is the default value. The application can set it higher to
+  ! apply it multiple times.
+  rsolverNode%nminIterations = 1
+  rsolverNode%nmaxIterations = 1
+  
+  ! Initialise the type of the solver
+  rsolverNode%calgorithm = LINSOL_ALG_MILUS1x1
+  
+  ! Initialise the ability bitfield with the ability of this solver.
+  ! The solver only solves scalar (1x1) systems.
+  ! The solver is a 1-step solver, i.e. does not support to solve
+  ! by iteration (it basically perfoms only a forward-backward-substitution
+  ! with the (M)ILUs matrix).
+  rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_DIRECT
+  
+  ! Allocate the subnode for MILUs.
+  ! This initialises most of the variables with default values appropriate
+  ! to this solver.
+  ALLOCATE(rsolverNode%p_rsubnodeMILUs1x1)
+  
+  ! Save the (M)ILU(s) parameters to the structure
+  rsolverNode%p_rsubnodeMILUs1x1%ifill = ifill
+  rsolverNode%p_rsubnodeMILUs1x1%drelax = drelax
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_initDataMILUs1x1 (rsolverNode, isolverSubgroup)
+  
+!<description>
+  
+  ! Performs a numeric factorisation on the assigned matrix, i.e.
+  ! computes the (M)ILU(s) decomposition.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: isubgroup,mneed,ierr,maxstr
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  TYPE(t_matrixScalar), POINTER :: p_rmatrixSc
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld, p_Kcol
+  REAL(DP), DIMENSION(:), POINTER :: p_DA
+  INTEGER(PREC_MATIDX) :: lu,jlu,ilup
+  INTEGER, DIMENSION(:), POINTER :: p_Iwork
+  INTEGER :: h_Iwork
+  INTEGER :: ifill
+  REAL(DP) :: drelax
+  
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! Stop if there's no matrix assigned
+  
+  IF (.NOT. ASSOCIATED(rsolverNode%rlinearSystemInfo%p_rsystemMatrix)) THEN
+    PRINT *,'Error: No matrix associated!'
+    STOP
+  END IF
+  
+  ! If isubgroup does not coincide with isolverSubgroup from the solver
+  ! structure, skip the rest here.
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+  
+  p_rmatrix => rsolverNode%rlinearSystemInfo%p_rsystemMatrix
+
+  ! We only support scalar 1x1 matrices in structure 7 and 9.
+  IF (p_rmatrix%ndiagBlocks .NE. 1) THEN
+    PRINT *,'(M)ILU(s) supports only 1x1 matrices!'
+    STOP
+  END IF
+
+  p_rmatrixSc => p_rmatrix%RmatrixBlock(1,1)
+
+  ! We only support scalar 1x1 matrices in structure 7 and 9.
+  IF (p_rmatrixSc%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'(M)ILU(s) supports only double precision matrices!'
+    STOP
+  END IF
+  
+  IF ((p_rmatrixSc%imatrixFormat .NE. LSYSSC_MATRIX9) .AND.&
+      (p_rmatrixSc%imatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    PRINT *,'(M)ILU(s) supports only structure 7 and 9 matrices!'
+    STOP
+  END IF
+  
+  ! Get the matrix description
+  CALL storage_getbase_int (p_rmatrixSc%h_Kld,p_Kld)
+  CALL storage_getbase_int (p_rmatrixSc%h_Kcol,p_Kcol)
+  CALL storage_getbase_double (p_rmatrixSc%h_DA,p_DA)
+
+  ! Calculate a memory guess for how much memory the matrix needs.
+  NULLIFY(p_Iwork)
+  maxstr = 0
+
+  ! Now calculate the decomposition. Probably allocate more memory if it's
+  ! not enough.
+  ! Calculate the (M)ILUs matrix using SPLIB.
+  ! Get the parameters from the solver node; they were set during the
+  ! initialisatin of the solver.
+  ifill = rsolverNode%p_rsubnodeMILUs1x1%ifill
+  drelax = rsolverNode%p_rsubnodeMILUs1x1%drelax
+  
+  CALL ilus(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld,&
+            ifill,drelax,&
+            lu,jlu,ilup,&
+            p_Iwork,maxstr,&
+            ierr,mneed)
+            
+  maxstr = MAX(mneed,4*p_rmatrixSc%NA)
+  DO
+    ! Allocate the memory
+    CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', maxstr, &
+                        ST_INT, h_Iwork, ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int(h_Iwork,p_Iwork)
+  
+    ! Calculate the (M)ILUs matrix using SPLIB.
+    CALL ilus(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld,&
+              ifill,drelax,&
+              lu,jlu,ilup,&
+              p_Iwork,maxstr,&
+              ierr,mneed)
+
+    ! Error?
+    SELECT CASE (ierr)
+    CASE (:-1)
+      PRINT *,'Warning: (M)ILU(s) decomposition singular!'
+      EXIT
+    CASE (0)
+      EXIT   ! all ok
+    CASE (1)
+      ! Reallocate memory, we need more
+      maxstr = maxstr + mneed
+    CASE (2:)
+      PRINT *,'Error calculating (M)ILU(s)!'
+      STOP
+    END SELECT
+    
+    ! Try again...
+    CALL storage_free(h_Iwork)
+  
+  END DO
+  
+  IF (h_Iwork .NE. ST_NOHANDLE) THEN
+    ! Save the handle and the matrix parameters to the MILU structure
+    rsolverNode%p_rsubnodeMILUs1x1%h_Idata = h_Iwork
+    rsolverNode%p_rsubnodeMILUs1x1%lu = lu
+    rsolverNode%p_rsubnodeMILUs1x1%jlu = jlu
+    rsolverNode%p_rsubnodeMILUs1x1%ilup = ilup
+  END IF
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_doneDataMILUs1x1 (rsolverNode,isolverSubgroup)
+  
+!<description>
+  
+  ! Releases the memory of teh numeric factorisation of the given matrix.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: isubgroup
+  
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! If isubgroup does not coincide with isolverSubgroup from the solver
+  ! structure, skip the rest here.
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+  
+  ! Release the ILU matrix.
+  IF (rsolverNode%p_rsubnodeMILUs1x1%h_Idata .NE. ST_NOHANDLE) THEN
+    CALL storage_free (rsolverNode%p_rsubnodeMILUs1x1%h_Idata)
+  END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_doneMILUs1x1 (rsolverNode)
+  
+!<description>
+  
+  ! This routine releases all temporary memory for the UMFPACK4 solver from
+  ! the heap.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! local variables
+  INTEGER :: isubgroup
+  
+  ! The done-routine always releases everything.
+  isubgroup = rsolverNode%isolverSubgroup
+  
+  ! Release symbolical and numerical factorisation if still associated...
+  CALL linsol_doneDataMILUs1x1 (rsolverNode, isubgroup)
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_solveMILUs1x1 (rsolverNode,rx,rb)
+  
+!<description>
+  
+  ! Solves the linear system $Ax=b$ with (M)ILU(s) from SPLIB.
+  ! This performs one iteration of the form
+  !     $x_1  =  x_0 + C^{-1} (b-Ax_0)  =  C^{-1} b$
+  ! where $x_0=0$ is assumed
+  ! The matrix $A$ must be attached to the solver previously by 
+  ! linsol_setMatrices.
+  ! Numerical factorisation must already be performed on the matrix,
+  ! so that the factorised matix exists.
+  
+  
+!</description>
+  
+!<input>
+  
+  ! Right hand side of the system
+  TYPE(t_vectorBlock), INTENT(IN)           :: rb
+  
+!</input>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+
+  ! Receives the solution vector
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Db,p_Dx
+  INTEGER(PREC_MATIDX) :: lu,jlu,ilup
+  INTEGER, DIMENSION(:), POINTER :: p_Iwork
+  INTEGER :: h_Iwork
+  
+  IF ((rb%cdataType .NE. ST_DOUBLE) .OR.&
+      (rx%cdataType .NE. ST_DOUBLE)) THEN
+    PRINT *,'(M)ILU(s) only supports double precision vectors!'
+    STOP
+  END IF
+  
+  ! Get the iteration vectors
+  CALL storage_getbase_double (rx%h_Ddata,p_Dx)
+  CALL storage_getbase_double (rb%h_Ddata,p_Db)
+  
+  ! Get MILUs information from the parameter block
+  h_Iwork = rsolverNode%p_rsubnodeMILUs1x1%h_Idata 
+  lu = rsolverNode%p_rsubnodeMILUs1x1%lu 
+  jlu = rsolverNode%p_rsubnodeMILUs1x1%jlu 
+  ilup = rsolverNode%p_rsubnodeMILUs1x1%ilup 
+  CALL storage_getbase_int (h_Iwork,p_Iwork)
+
+  ! Put the RHS to the solution vector
+  CALL lsysbl_vectorCopy (rb,rx)
+
+  ! solve the system. Call SPLIB.
+  CALL lusolt (SIZE(p_Dx),p_Dx, p_Iwork(lu), p_Iwork(jlu), p_Iwork(ilup))
   
   END SUBROUTINE
   
