@@ -181,7 +181,7 @@ MODULE collection
 
   ! Minimum number of sections - additionally to the unnamed one.
   ! If there are too many sections in a collection block, the
-  ! structure is dynamically extended in terms of PARLST_NSECTIONS
+  ! structure is dynamically extended in terms of COLLCT_NSECTIONS
   ! entries.
   INTEGER, PARAMETER :: COLLCT_NSECTIONS = 5
 
@@ -348,7 +348,7 @@ MODULE collection
     PRIVATE
   
     ! The name of the section. '' identifies an/the unnamed section.
-    CHARACTER(LEN=PARLST_MLSECTION) :: ssectionName = ''
+    CHARACTER(LEN=COLLCT_MLSECTION) :: ssectionName = ''
 
     ! Actual number of levels in this section. There's at least
     ! one section - the unnamed section. If this value is =0, the parameter
@@ -762,9 +762,9 @@ CONTAINS
   
   ! local variables
   INTEGER :: i,nsections
-  CHARACTER(LEN=LEN(sname))  :: sname2
+  CHARACTER(LEN=COLLCT_MLNAME)  :: sname2
   
-  ! Convert the name to uppercase
+  ! Convert the name to uppercase.
   sname2 = sname
   CALL sys_toupper (sname2)
   
@@ -874,9 +874,9 @@ CONTAINS
   
   ! local variables
   INTEGER :: i
-  CHARACTER(LEN=LEN(sname)) :: sname2
+  CHARACTER(LEN=COLLCT_MLSECTION) :: sname2
   
-  ! Convert the name to uppercase
+  ! Convert the name to uppercase.
   sname2 = sname
   CALL sys_toupper (sname2)
   
@@ -1349,7 +1349,11 @@ CONTAINS
     NULLIFY(p_rvalue%p_rcollection)
     
     ! Modify the level info:
-    CALL collct_fetchlevel(rcollection, ssectionName, ilv, p_rlevel)     
+    IF (PRESENT(ssectionName)) THEN
+      CALL collct_fetchlevel(rcollection, ssectionName, ilv, p_rlevel)     
+    ELSE
+      CALL collct_fetchlevel(rcollection, '', ilv, p_rlevel)      
+    END IF
     
     ! Decrement the value counter
     p_rLevel%ivalueCount = p_rLevel%ivalueCount - 1

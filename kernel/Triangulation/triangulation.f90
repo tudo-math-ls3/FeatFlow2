@@ -594,10 +594,12 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ihandle
     
     INTEGER(I32), DIMENSION(:,:), POINTER :: p_array
-    INTEGER, DIMENSION(:,:), POINTER :: p_array2
+    !INTEGER, DIMENSION(:), POINTER :: p_array2
     
     INTEGER(I32), DIMENSION(2) :: Isize
-    INTEGER(I32) :: j
+    INTEGER(I32) :: j,i,kpos
+    
+    INCLUDE 'cmem.inc'
     
     ! Clear the array if no FEAT handle assigned.
     
@@ -630,9 +632,14 @@ CONTAINS
     CALL storage_getbase_int2D (ihandle,p_array)
 
     ! Copy the FEAT array
-    p_array2 => feat_htpint2D(idim1,idim2,ifeathandle)
-    DO j=1,SIZE(p_array,2)
-      p_array(1:idim1,j) = p_array2(1:idim1,j)
+    !p_array2 => feat_htpint(idim1*idim2,ifeathandle)
+    kpos = L(ifeathandle)
+    !p_array2 => KWORK(L(ifeathandle):L(ifeathandle)+idim1*idim2-1)
+
+    DO j=0,idim2-1
+      DO i=0,idim1-1
+        p_array(i+1,j+1) = KWORK(kpos+idim1*j+i)
+      END DO
     END DO
     
     END SUBROUTINE
@@ -651,8 +658,10 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ihandle
     
     INTEGER(I32), DIMENSION(:), POINTER :: p_array
-    INTEGER, DIMENSION(:), POINTER :: p_array2
-    INTEGER(I32) :: i
+    !INTEGER, DIMENSION(:), POINTER :: p_array2
+    INTEGER(I32) :: i,kpos
+    
+    INCLUDE 'cmem.inc'
     
     ! Clear the array if no FEAT handle assigned.
     
@@ -683,10 +692,12 @@ CONTAINS
     CALL storage_getbase_int (ihandle,p_array)
 
     ! Copy the FEAT array
-    p_array2 => feat_htpint(idim1,ifeathandle)
+    !p_array2 => feat_htpint(idim1,ifeathandle)
+    kpos = L(ifeathandle)
+    !p_array2 => KWORK(L(ifeathandle):L(ifeathandle)+idim1-1)
     
-    DO i=1,SIZE(p_array2)
-      p_array(i) = p_array2(i)
+    DO i=0,idim1-1
+      p_array(i+1) = KWORK(kpos+i) !p_array2(i)
     END DO
     
     END SUBROUTINE
@@ -705,9 +716,11 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ihandle
     
     REAL(DP), DIMENSION(:,:), POINTER :: p_array
-    DOUBLE PRECISION, DIMENSION(:,:), POINTER :: p_array2
+    !DOUBLE PRECISION, DIMENSION(:), POINTER :: p_array2
     INTEGER(I32), DIMENSION(2) :: Isize
-    INTEGER(I32) :: j    
+    INTEGER(I32) :: j,i,kpos
+    
+    INCLUDE 'cmem.inc'
     
     ! Clear the array if no FEAT handle assigned.
     
@@ -740,9 +753,14 @@ CONTAINS
     CALL storage_getbase_double2D (ihandle,p_array)
 
     ! Copy the FEAT array
-    p_array2 => feat_htpdouble2D(idim1,idim2,ifeathandle)
-    DO j=1,SIZE(p_array,2)
-      p_array(1:idim1,j) = p_array2(1:idim1,j)
+    !p_array2 => feat_htpdouble(idim1*idim2,ifeathandle)
+    kpos = L(ifeathandle)
+    !p_array2 => DWORK(L(ifeathandle):L(ifeathandle)+idim1*idim2-1)
+    
+    DO j=0,idim2-1
+      DO i=0,idim1-1
+        p_array(i+1,j+1) = DWORK(kpos+idim1*j+i)
+      END DO
     END DO
     
     END SUBROUTINE
@@ -761,9 +779,11 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ihandle
     
     REAL(DP), DIMENSION(:), POINTER :: p_array
-    DOUBLE PRECISION, DIMENSION(:), POINTER :: p_array2
+    !DOUBLE PRECISION, DIMENSION(:), POINTER :: p_array2
     
-    INTEGER :: i
+    INTEGER :: i,kpos
+    
+    INCLUDE 'cmem.inc'
     
     ! Clear the array if no FEAT handle assigned.
     
@@ -794,9 +814,11 @@ CONTAINS
     CALL storage_getbase_double (ihandle,p_array)
 
     ! Copy the FEAT array
-    p_array2 => feat_htpdouble(idim1,ifeathandle)
-    DO i=1,SIZE(p_array2)
-      p_array(i) = p_array2(i)
+    !p_array2 => feat_htpdouble(idim1,ifeathandle)
+    kpos = L(ifeathandle)
+    !p_array2 => DWORK(L(ifeathandle):L(ifeathandle)+idim1-1)
+    DO i=0,idim1-1
+      p_array(i+1) = DWORK(kpos+i)
     END DO
     
     END SUBROUTINE
@@ -812,8 +834,10 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: ihandle,ihandleidx
     
     INTEGER(I32), DIMENSION(:), POINTER :: p_array, p_arrayidx
-    INTEGER, DIMENSION(:), POINTER :: p_kadj
-    INTEGER :: i,j, nentries
+    !INTEGER, DIMENSION(:), POINTER :: p_kadj
+    INTEGER :: i,j, nentries, kpos
+    
+    INCLUDE 'cmem.inc'
     
     ! Clear the array if no FEAT handle assigned.
     
@@ -830,14 +854,16 @@ CONTAINS
     ! Do we have to reallocate?
 
     ! Get the KADJ array - as 1D representation of length NVEL*NVT
-    p_kadj => feat_htpint(NVEL*NVT,ifeathandle)
+    !p_kadj => feat_htpint(NVEL*NVT,ifeathandle)
+    kpos = L(ifeathandle)
     
     ! Count the number of entries in the translated KADJ array.
     ! This is the number of nonzero entries in KADJ - and at least 1
     ! (if there's only one cell...)
     nentries = 0
     DO i=1,NVEL*NVT
-      IF (p_kadj(i) .NE. 0) nentries = nentries+1
+      IF (KWORK(kpos+i-1) .NE. 0) nentries = nentries+1
+      !IF (p_kadj(i) .NE. 0) nentries = nentries+1
     END DO
     nentries = MAX(1,nentries)
     
@@ -887,9 +913,10 @@ CONTAINS
       
       ! Copy the entries
       DO j=1,NVEL
-        IF (p_kadj(i*NVEL+j) .NE. 0) THEN
+        !IF (p_kadj(i*NVEL+j) .NE. 0) THEN
+        IF (KWORK(kpos+(i-1)*NVEL+j-1) .NE. 0) THEN
           nentries = nentries+1
-          p_array(nentries) = p_kadj(i*NVEL+j)
+          p_array(nentries) = KWORK(kpos+(i-1)*NVEL+j-1) ! p_kadj(i*NVEL+j)
         ELSE
           EXIT
         END IF

@@ -2723,8 +2723,11 @@ CONTAINS
         dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
      
         ! Shift the queue with the last residuals and add the new
-        ! residual to it
-        dresqueue(1:ireslength) = EOSHIFT(dresqueue(1:ireslength),1,dfr)
+        ! residual to it. Check length of ireslength to be larger than
+        ! 0 as some compilers might produce Floating exceptions
+        ! otherwise! (stupid pgf95)
+        IF (ireslength .GT. 0) &
+          dresqueue(1:ireslength) = EOSHIFT(dresqueue(1:ireslength),1,dfr)
 
         rsolverNode%dfinalDefect = dfr
 

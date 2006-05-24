@@ -58,11 +58,11 @@
 
       INTEGER NWORK, IWORK, IWMAX, L
       
-      DOUBLE PRECISION DWORK
-      REAL VWORK(NNWORK*2)
-      INTEGER KWORK(NNWORK*2)
+      DOUBLE PRECISION, DIMENSION(NNWORK) :: DWORK
+      REAL, DIMENSION(NNWORK*2)           :: VWORK
+      INTEGER, DIMENSION(NNWORK*2)        :: KWORK
       
-      COMMON  NWORK,IWORK,IWMAX,L(NNARR),DWORK(NNWORK)
+      COMMON  NWORK,IWORK,IWMAX,L(NNARR),DWORK
 
 ! Equivalence statement; essential for pseudodyn. memory management
 
