@@ -50,8 +50,8 @@ PROGRAM codire
   CALL storage_init(999, 100)
 
   ! 3.) Initialise old FEAT 1.x storage management for compatibility.
-  CALL ZINIT(NNWORK,'feat.msg','data/cc2d.err','data/cc2d.prt',&
-             'data/cc2d.sys','data/cc2d.trc') 
+  CALL ZINIT(NNWORK,'feat.msg','log/feat1.err','log/feat1.prt',&
+             'log/feat1.sys','log/feat1.trc') 
   
   ! Call the problem to solve. 
   PRINT *
