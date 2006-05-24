@@ -130,8 +130,8 @@ c     ===============
 c     Instrumentation variables for timing.
 c     =====================================
       include '../include/heads.inc'
-      double precision mytime, tstart
-      external mytime
+c      double precision mytime, tstart
+c      external mytime
 
 c========================================================================
 c      Beginning of Executable Statements

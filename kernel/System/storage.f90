@@ -1195,7 +1195,7 @@ CONTAINS
       ! as h_source.
       SELECT CASE (p_rsource%idimension)
       CASE (1)
-        SELECT CASE (p_rsource%IdataType)
+        SELECT CASE (p_rsource%idataType)
         CASE (ST_DOUBLE)
           CALL storage_new ('storage_copy',p_rsource%sname,SIZE(p_rsource%p_Ddouble1D),&
                             ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)

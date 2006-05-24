@@ -19,13 +19,8 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# Cuthill-McKee Renumbering:
-!# --------------------------
-!# 1.) sstrat_calcColumnNumbering
-!#     -> Calculate column numbering
-!#
-!# 2.) sstrat_calcPermutation
-!#     -> Calculate permutation
+!# 1.) sstrat_calcCuthillMcKee
+!#     -> Calculate column numbering using the Cuthill McKee algorithm
 !#
 !# </purpose>
 !#########################################################################
@@ -84,7 +79,7 @@ CONTAINS
   ! local variables
   INTEGER :: h_Ideg,h_IcolTmp
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Ideg
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_IcolTmp, p_Kcol,p_Kdiag
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_IcolTmp, p_Kcol,p_Kdiag
   INTEGER(PREC_VECIDX) :: NEQ
   
   NEQ = rmatrix%NEQ
@@ -180,10 +175,10 @@ CONTAINS
     INTEGER(PREC_VECIDX), INTENT(IN)                   :: ndeg    
    
     ! Row description of matrix
-    INTEGER(PREC_VECIDX), DIMENSION(neq+1), INTENT(IN) :: Ild
+    INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(IN) :: Ild
   
     ! Column description of matrix
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)     :: Icol
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)     :: Icol
     
   !</input>
 
@@ -196,7 +191,7 @@ CONTAINS
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT)  :: Icon
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT)  :: Icon
   !</inputoutput>
 
 !</subroutine>
@@ -355,7 +350,7 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(neq+1), INTENT(IN) :: Ild
   
     ! Column description of matrix
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)     :: Icol
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)     :: Icol
     
     ! Incides of diagonal elements in structure 9 matrix
     INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)     :: Idiag
@@ -371,7 +366,7 @@ CONTAINS
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT)  :: Icon
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT)  :: Icon
   !</inputoutput>
 
 !</subroutine>
@@ -404,12 +399,12 @@ CONTAINS
       ! The entries of the vector are set to 0 one after the other in the
       ! order of the degree of the following nodes.
       DO ildIdx=Ild(ieq), Ild(ieq+1)-1
-        Ideg(ildIdx-Ild(ieq)) = Icol(ildIdx)
+        Ideg(ildIdx-Ild(ieq)+1) = Icol(ildIdx)
       END DO
 
       ! Set Ideg of the diagonal entry to 0 to prevent it from being 
       ! processed later.
-      Ideg(Idiag(ieq)-Ild(ieq)) = 0
+      Ideg(Idiag(ieq)-Ild(ieq)+1) = 0
       
       ! Loop about every column in the current row. The entries in the
       ! row (=column numbers) of the matrix represent the node numbers of

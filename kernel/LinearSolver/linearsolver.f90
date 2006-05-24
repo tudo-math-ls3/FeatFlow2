@@ -2202,8 +2202,8 @@ CONTAINS
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld, p_Kcol
   REAL(DP), DIMENSION(:), POINTER :: p_DA
   INTEGER(PREC_MATIDX) :: lu,jlu,ilup
-  INTEGER, DIMENSION(:), POINTER :: p_Iwork
-  INTEGER :: h_Iwork
+  INTEGER, DIMENSION(:), POINTER :: p_Iwork,p_Iwork2
+  INTEGER :: h_Iwork,h_Iwork2
   INTEGER :: ifill
   REAL(DP) :: drelax
   
@@ -2267,7 +2267,7 @@ CONTAINS
             p_Iwork,maxstr,&
             ierr,mneed)
             
-  maxstr = MAX(mneed,4*p_rmatrixSc%NA)
+  maxstr = MAX(mneed,3*p_rmatrixSc%NA+3*p_rmatrixSc%NEQ)
   DO
     ! Allocate the memory
     CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', maxstr, &
@@ -2302,6 +2302,17 @@ CONTAINS
   END DO
   
   IF (h_Iwork .NE. ST_NOHANDLE) THEN
+    ! If less than the half of the memory ILU wanted to have is used,
+    ! we reallocate the memory. It does not make sense to have that much
+    ! waste!
+    IF (mneed .LT. MAXSTR/2) THEN
+      CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', mneed, &
+                          ST_INT, h_Iwork2, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_int(h_Iwork2,p_Iwork2)
+      CALL lalg_vectorCopyInt (p_Iwork(1:SIZE(p_Iwork2)),p_Iwork2)
+      CALL storage_free (h_Iwork)
+      h_Iwork = h_Iwork2
+    END IF
     ! Save the handle and the matrix parameters to the MILU structure
     rsolverNode%p_rsubnodeMILUs1x1%h_Idata = h_Iwork
     rsolverNode%p_rsubnodeMILUs1x1%lu = lu
@@ -2392,6 +2403,8 @@ CONTAINS
   
   ! Release symbolical and numerical factorisation if still associated...
   CALL linsol_doneDataMILUs1x1 (rsolverNode, isubgroup)
+  
+  DEALLOCATE(rsolverNode%p_rsubnodeMILUs1x1)
   
   END SUBROUTINE
   

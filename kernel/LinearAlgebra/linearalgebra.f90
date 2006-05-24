@@ -759,7 +759,9 @@ CONTAINS
     ! Source vector to be sorted
     REAL(DP), DIMENSION(:), INTENT(IN) :: Dx
     
-    ! Array with permutation of 1..neq
+    ! Array with permutation of 1..neq.
+    ! Itr(i) defines the number of the entry in Dx that should
+    ! move to position i.
     INTEGER(I32), DIMENSION(SIZE(Dx)), INTENT(IN) :: Itr
   !</input>
     

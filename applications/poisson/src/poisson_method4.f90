@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson_method3 </name>
+!# <name> poisson_method4 </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -13,10 +13,15 @@
 !# is done using an application-specific structure saving problem data
 !# as well as a collection structure for the communication with callback
 !# routines.
+!#
+!# The routines here do exactly the same as in poisson_method3. The only
+!# difference is that the solver uses an ILU(0) decomposition as
+!# preconditioner and resorts the vectors using the Cuthill-McKee
+!# resorting algorithm.
 !# </purpose>
 !##############################################################################
 
-MODULE poisson_method3
+MODULE poisson_method4
 
   USE fsystem
   USE storage
@@ -30,6 +35,7 @@ MODULE poisson_method3
   USE bcassembly
   USE triangulation
   USE spatialdiscretisation
+  USE sortstrategy
   
   USE collection
     
@@ -95,7 +101,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initParamTriang (ilv,rproblem)
+  SUBROUTINE pm4_initParamTriang (ilv,rproblem)
   
     INCLUDE 'cout.inc'
     INCLUDE 'cerr.inc'
@@ -163,7 +169,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initDiscretisation (rproblem)
+  SUBROUTINE pm4_initDiscretisation (rproblem)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
@@ -208,7 +214,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initMatVec (rproblem,rcollection)
+  SUBROUTINE pm4_initMatVec (rproblem,rcollection)
   
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
@@ -239,6 +245,10 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
   
+    ! Arrays for the Cuthill McKee renumbering strategy
+    INTEGER, DIMENSION(1) :: H_Iresort,IsortStrategy
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iresort
+    
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation
     
@@ -291,6 +301,21 @@ CONTAINS
     CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,&
                                  p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
                                  rcollection)
+                                 
+    ! Allocate an array for holding the resorting strategy.
+    CALL storage_new ('pm4_initMatVec', 'Iresort', &
+          p_rmatrix%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), ST_NEWBLOCK_ZERO)
+    CALL storage_getbase_int(h_Iresort(1),p_Iresort)
+    
+    ! Calculate the resorting strategy.
+    CALL sstrat_calcCuthillMcKee (p_rmatrix%RmatrixBlock(1,1),p_Iresort)
+    
+    ! Save the handle of the resorting strategy to the collection.
+    CALL collct_setvalue_int(rcollection,'LAPLACE-CM',h_Iresort(1),.TRUE.)
+    
+    ! Resort the matrix according to the resorting strategy.
+    CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
+                            SSTRAT_CM,h_Iresort(1))
     
     ! Now we want to build up the right hand side. At first we need a block
     ! vector of the right structure. Although we could manually create
@@ -314,12 +339,19 @@ CONTAINS
     CALL bilf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
                                  p_rrhs%RvectorBlock(1),coeff_RHS,&
                                  rcollection)
-    
+                                 
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution. 
     ! Create them using the RHS as template.
     ! Fill the solution vector with 0:
     CALL lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .TRUE.)
+    
+    ! Install the resorting strategy in the RHS- and the solution
+    ! vector, but don't resort them yet!
+    ! We resort the vectors just before solving.
+    IsortStrategy(1) = p_rmatrix%RmatrixBlock(1,1)%isortStrategy
+    CALL lsysbl_setSortStrategy (p_rrhs,IsortStrategy,h_Iresort)
+    CALL lsysbl_setSortStrategy (p_rvector,IsortStrategy,h_Iresort)
     
   END SUBROUTINE
 
@@ -327,7 +359,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initAnalyticBC (rproblem)
+  SUBROUTINE pm4_initAnalyticBC (rproblem)
   
 !<description>
   ! This initialises the analytic bonudary conditions of the problem
@@ -418,7 +450,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initDiscreteBC (rproblem,rcollection)
+  SUBROUTINE pm4_initDiscreteBC (rproblem,rcollection)
   
 !<description>
   ! This calculates the discrete version of the boundary conditions and
@@ -485,7 +517,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_implementBC (rproblem)
+  SUBROUTINE pm4_implementBC (rproblem)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -531,7 +563,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_solve (rproblem)
+  SUBROUTINE pm4_solve (rproblem)
   
 !<description>
   ! Solves the given problem by applying a linear solver.
@@ -561,7 +593,7 @@ CONTAINS
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
-
+    
     ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
     p_rvector => rproblem%RlevelInfo(1)%rvector
@@ -569,6 +601,17 @@ CONTAINS
     
     ! Create a temporary vector for the solver - it needs that.
     CALL lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .FALSE.)
+    
+    ! Resort the RHS and solution vector according to the resorting
+    ! strategy given in the matrix.
+    IF (p_rmatrix%RmatrixBlock(1,1)%isortStrategy .NE. SSTRAT_UNSORTED) THEN
+      ! Use the temporary vector from above to store intermediate data.
+      ! The vectors are assumed to know how they are resorted (the strategy
+      ! is already attached to them). So call the resorting routines
+      ! to resort them as necessary!
+      CALL lsysbl_sortVector (p_rrhs,rtempBlock,.TRUE.)
+      CALL lsysbl_sortVector (p_rvector,rtempBlock,.TRUE.)
+    END IF
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -585,6 +628,11 @@ CONTAINS
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
     NULLIFY(p_rpreconditioner)
+    
+    ! Calculate an ILU preconditioner for our solver.
+    CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+    
+    ! Then initialise the solver and use the above preconditioner.
     CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
@@ -622,6 +670,11 @@ CONTAINS
     ! Release the solver node and all subnodes attached to it (if at all):
     CALL linsol_releaseSolver (p_rsolverNode)
     
+    ! Unsort the vectors again in case they were resorted before calling 
+    ! the solver. Again use the temporary vector.
+    CALL lsysbl_sortVector (p_rrhs,rtempBlock,.FALSE.)
+    CALL lsysbl_sortVector (p_rvector,rtempBlock,.FALSE.)
+    
     ! Release the temporary vector
     CALL lsysbl_releaseVector (rtempBlock)
     
@@ -631,7 +684,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_postprocessing (rproblem)
+  SUBROUTINE pm4_postprocessing (rproblem)
   
 !<description>
   ! Writes the solution into a GMV file.
@@ -682,7 +735,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneMatVec (rproblem,rcollection)
+  SUBROUTINE pm4_doneMatVec (rproblem,rcollection)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -708,6 +761,9 @@ CONTAINS
     CALL collct_deletevalue (rcollection,'RHS')
     CALL collct_deletevalue (rcollection,'SOLUTION')
     CALL collct_deletevalue (rcollection,'LAPLACE')
+    
+    ! Release the permutation for sorting matrix/vectors
+    CALL collct_deletevalue (rcollection,'LAPLACE-CM')
 
   END SUBROUTINE
 
@@ -715,7 +771,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneBC (rproblem)
+  SUBROUTINE pm4_doneBC (rproblem)
   
 !<description>
   ! Releases discrete and analytic boundary conditions from the heap.
@@ -741,7 +797,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneDiscretisation (rproblem)
+  SUBROUTINE pm4_doneDiscretisation (rproblem)
   
 !<description>
   ! Releases the discretisation from the heap.
@@ -763,7 +819,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneParamTriang (rproblem)
+  SUBROUTINE pm4_doneParamTriang (rproblem)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
@@ -800,7 +856,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson3
+  SUBROUTINE poisson4
   
   include 'cmem.inc'
   
@@ -845,26 +901,26 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm3_initParamTriang (LV,rproblem)
-    CALL pm3_initDiscretisation (rproblem)    
-    CALL pm3_initMatVec (rproblem,rcollection)    
-    CALL pm3_initAnalyticBC (rproblem)   
-    CALL pm3_initDiscreteBC (rproblem,rcollection)
+    CALL pm4_initParamTriang (LV,rproblem)
+    CALL pm4_initDiscretisation (rproblem)    
+    CALL pm4_initMatVec (rproblem,rcollection)    
+    CALL pm4_initAnalyticBC (rproblem)   
+    CALL pm4_initDiscreteBC (rproblem,rcollection)
     
     ! Implementation of boundary conditions
-    CALL pm3_implementBC (rproblem)
+    CALL pm4_implementBC (rproblem)
     
     ! Solve the problem
-    CALL pm3_solve (rproblem)
+    CALL pm4_solve (rproblem)
     
     ! Postprocessing
-    CALL pm3_postprocessing (rproblem)
+    CALL pm4_postprocessing (rproblem)
     
     ! Cleanup
-    CALL pm3_doneMatVec (rproblem,rcollection)
-    CALL pm3_doneBC (rproblem)
-    CALL pm3_doneDiscretisation (rproblem)
-    CALL pm3_doneParamTriang (rproblem)
+    CALL pm4_doneMatVec (rproblem,rcollection)
+    CALL pm4_doneBC (rproblem)
+    CALL pm4_doneDiscretisation (rproblem)
+    CALL pm4_doneParamTriang (rproblem)
 
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *

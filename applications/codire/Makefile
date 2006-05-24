@@ -36,7 +36,7 @@ vpath %.inc include \
 EXEC=codire-$(ID)
 
 # used libraries
-FEATLIB= feat2d sysutils #umfpack4 amd
+FEATLIB= minisplib feat2d sysutils #umfpack4 amd
 
 # include make rules
 include $(FEATFLOW)/Rules_apps.mk
