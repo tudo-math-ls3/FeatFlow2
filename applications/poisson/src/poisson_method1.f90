@@ -331,11 +331,11 @@ CONTAINS
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
-    ! we use linsol_performSolveAdaptively. If b would be a defect
+    ! we use linsol_solveAdaptively. If b would be a defect
     ! RHS and x a defect update to be added to a solution vector,
-    ! we would have to use linsol_performSolve instead.
-    CALL linsol_performSolveAdaptively (p_rsolverNode,rmatrixBlock,&
-                                        rvectorBlock,rrhsBlock,rtempBlock)
+    ! we would have to use linsol_precondDefect instead.
+    CALL linsol_solveAdaptively (p_rsolverNode,rmatrixBlock,&
+                                 rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. Call the GMV library to write out

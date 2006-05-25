@@ -42,14 +42,80 @@
 !# 3.) linsol_initData                - Allow the solvers to perform problem-
 !#                                      data specific initialisation
 !#                                      (e.g. numerical factorisation)
-!# 4.) linsol_performSolve            - Solve the problem for a defect vector
-!# or  linsol_performSolveAdaptively  - Solve the problem with an initial 
+!# 4.) linsol_precondDefect           - Precondition a defect vector with
+!#                                      a linear solver
+!# or  linsol_solveAdaptively         - Solve the problem with an initial 
 !#                                      solution vector
 !# 5.) linsol_doneData                - Release problem-data specific information
 !# 6.) linsol_doneStructure           - Release problem-structure specific 
 !#                                      information. Release temporary memory.
 !# 7.) linsol_releaseSolver           - Clean up solver structures, remove the
 !#                                      solver structure from the heap.
+!#
+!# Implementational details / structure of the solver library
+!# ----------------------------------------------------------
+!# When going through this library, a newcomer would think: 
+!#       'Where are the solvers? I can only find preconditioners!?!'
+!# 
+!# The reason is simple: 'Everything is a preconditioner!'
+!#
+!# A short explaination: Let's assume we want to solve a linear system:
+!#
+!#                  $$ Ax=b $$
+!#
+!# For this we have a linear solver $P^{-1} \approx A^{-1}$ (Gauss elimination
+!# or whatever), so we get our solution vector x by saying:
+!#
+!#                 $$ x = P^{-1} b $$
+!#
+!# This is the usual way how to deal with a linear system in Numrics 1,
+!# but it's a little bit hard to deal with in computer science. But we can
+!# deal with the linear system more easily if we perform a simple
+!# modification to this equation:
+!# 
+!#                          $$ Ax = b $$
+!# $$ \Rightarrow        P^{-1}Ax = P^{-1}b             $$ 
+!# $$ \Rightarrow               0 = P^{-1} (b-Ax)       $$
+!#
+!# $$ \Rightarrow         x_{n+1} = x_n  +  P^{-1} (b-Ax) $$
+!#
+!# So the linear solver $P^{-1}$ can equivalently be used in a defect
+!# correction approach as a preconditioner for the defect $(b-Ax)$!
+!# This can obviously be done for every linear solver.
+!# So, this allows us to make a normalisation: 
+!#
+!# ! All linear solvers can be formulated as a preconditioner to be applied
+!#   to defect vectors, we don't have to take care of solution vectors !
+!#
+!# (and with the problems related to that like implementing boundary
+!# conditions...)
+!#
+!# So everything that can be found in this library is a preconditioner.
+!# The xxx_solve routines are all formulated that way, that they accept
+!# the defect vector $d := (b-Ax)$ and overwrite it by the preconditioned
+!# defect: 
+!#             $$ d := P^{-1}d $$
+!#
+!# which is actually the same as solving the linear system 
+!'
+!#             $$ Pd_{new} = d $$ 
+!#
+!# with the right hand side $d$ being a defect vector given from outside. 
+!# Solving $Pd_{new} = d$ can then be done by an arbitrary linear solver, 
+!# e.g. BiCGStab, UMFPACK (which takes $P=A$ and solves directly using Gauss),
+!# or can even be the application pf a single Jacobi or ILU(s) 
+!# preconditioner - everything is the same!
+!#
+!# Remark: As sometimes ( :-) ) the user wants to solve a system $Ax=b$ with
+!#   a given solution vector and a given RHS which is not a defect vector,
+!#   the routine 'linsol_solveAdaptively' can be called. This builds the
+!#   defect, performs a preconditioning and corrects the solution vector -
+!#   which is indeed solving the problem.
+!#   When calling this routine with x:=0, the defect is exactly the RHS, so
+!#   this routine falls back to the solution method known from Numerics 1:
+!#
+!#      $$  x_{new}  =  x + P^{-1}(b-Ax)  =  P^{-1}b  $$
+!#
 !# </purpose>
 !##############################################################################
 
@@ -1423,64 +1489,50 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_performSolve (rsolverNode,rx,rb,rtemp)
+  RECURSIVE SUBROUTINE linsol_precondDefect (rsolverNode,rd)
   
-!<description>
+!<This>
   
-  ! This routine starts the solution process to solve a linear system of the
-  ! form $Ax=b$. The solver configuration must be given by rsolverNode.
-  ! rb is the right hand side vector of the system.
-  ! rx is assumed to be =0 and receives the solution vector.
-  ! The matrix must have been attached to the system before calling
-  ! this routine.
+  ! This routine applies the linear solver configured in rsolverNode
+  ! as preconditioner to the defect vector rd.
+  ! rd will be overwritten by the preconditioned defect.
   !
-  ! rtemp is a temporary vector of the same size as rx which is used
-  ! for intermediate computation. Whether is's used or not dependens
-  ! on the actual solver.
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
   
 !</description>
-  
-!<input>
-  
-  ! The RHS vector of the system
-  TYPE(t_vectorBlock), INTENT(IN), TARGET            :: rb
-
-!</input>
   
 !<inputoutput>
 
   ! The solver node containing the solver configuration
   TYPE(t_linsolNode), INTENT(INOUT)                :: rsolverNode
   
-  ! The initial solution vector; receives the solution of the system
-  TYPE(t_vectorBlock), INTENT(INOUT)               :: rx
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)               :: rd
 
-  ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)               :: rtemp
-  
 !</inputoutput>
   
 !</subroutine>
 
-  ! Call the solver routine of the specific solver to calculate
-  ! the correction vector.
-  ! Use p_rdef as RHS and p_rcorr as solution vector - which
-  ! either point to the real RHS/solution or to the defect/correction
-  ! vector we just allocated.
+  ! Select the solver as configured in rsolverNode and let it perform
+  ! the actual preconditioning task.
   
   SELECT CASE(rsolverNode%calgorithm)
   CASE (LINSOL_ALG_VANCA)
     ! not yet implemented
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
-    CALL linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,rtemp)
+    CALL linsol_precVANCAQ1TP0NS2D (rsolverNode,rd)
   CASE (LINSOL_ALG_UMFPACK4)
-    CALL linsol_solveUMFPACK4 (rsolverNode,rx,rb)
+    CALL linsol_precUMFPACK4 (rsolverNode,rd)
   CASE (LINSOL_ALG_MILUS1x1)
-    CALL linsol_solveMILUS1x1 (rsolverNode,rx,rb)
+    CALL linsol_precMILUS1x1 (rsolverNode,rd)
   CASE (LINSOL_ALG_BICGSTAB)
-    CALL linsol_solveBiCGStab (rsolverNode,rx,rb,rtemp)
+    CALL linsol_precBiCGStab (rsolverNode,rd)
   CASE (LINSOL_ALG_MULTIGRID)
-    CALL linsol_solveMultigrid (rsolverNode,rx,rb,rtemp)
+    CALL linsol_precMultigrid (rsolverNode,rd)
   END SELECT
 
   END SUBROUTINE
@@ -1489,8 +1541,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_performSolveAdaptively (rsolverNode,&
-                       rMatrix,rx,rb,rtemp, rcorr,rdef)
+  RECURSIVE SUBROUTINE linsol_solveAdaptively (rsolverNode,&
+                       rMatrix,rx,rb,rtemp)
   
 !<description>
   
@@ -1504,11 +1556,9 @@ CONTAINS
   ! if necessary!
   !
   ! The matrix must have been attached to the system before calling
-  ! this routine.
-  !
-  ! rtemp is a temporary vector of the same size as rx which is used
-  ! for intermediate computation. Whether is's used or not dependens
-  ! on the actual solver.
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
   
 !</description>
   
@@ -1533,16 +1583,6 @@ CONTAINS
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_vectorBlock), INTENT(INOUT)                 :: rtemp
 
-  ! OPTIONAL: A temporary vector of the same size and structure as rx.
-  ! If not existent, the vector is allocated and deallocated
-  ! automatically.
-  TYPE(t_vectorBlock), INTENT(INOUT),OPTIONAL,TARGET :: rcorr
-
-  ! OPTIONAL: A temporary vector of the same size and structure as rx.
-  ! If not existent, the vector is allocated and deallocated
-  ! automatically.
-  TYPE(t_vectorBlock), INTENT(INOUT),OPTIONAL,TARGET :: rdef
-
 !</inputoutput>
   
 !</subroutine>
@@ -1551,59 +1591,30 @@ CONTAINS
   ! The linear system $Ax=b$ is reformulated into a one-step defect-correction 
   ! approach
   !     $$ x  =  x_0  +  A^{-1}  ( b - A x_0 ) $$
-  ! The standard solver above is then used to solve
+  ! The standard solver P configured in rsovlverNode above is then used to 
+  ! solve
   !     $$ Ay = b-Ax_0 $$
   ! and the solution $x$ is then calculated by $x=x+y$. 
   
   ! local variables
   
-  ! Defect vector, to be build from rb and rx
-  TYPE(t_vectorBlock),TARGET        :: rdef1,rcorr1
-  TYPE(t_vectorBlock),POINTER       :: p_rdef,p_rcorr
-  
-  ! If the two last temporary vectors do not exist, we have to
-  ! allocate them.
-  IF (PRESENT(rdef)) THEN
-    p_rdef => rdef
-  ELSE
-    ! Create rdef as temporary vector based on rx.
-    CALL lsysbl_createVectorBlock (rx, rdef1, .FALSE.)
-    p_rdef => rdef1
-  END IF
-  
-  IF (PRESENT(rcorr)) THEN
-    p_rdef => rcorr
-  ELSE
-    ! Allocate memory for the correction vector,
-    ! Fill it with zero.
-    CALL lsysbl_createVectorBlock (rx, rcorr1, .FALSE.)
-    p_rcorr => rcorr1
-  END IF
-  
-  ! Fill it the correction vector with zero
-  CALL lsysbl_vectorClear (p_rcorr)
-  
   ! Calculate the defect:
-  
   ! To build (b-Ax), copy the RHS to the temporary vector
-  CALL lsysbl_vectorCopy (rb,p_rdef)
+  ! and make a matrix/vector multiplication.
+  CALL lsysbl_vectorCopy (rb,rtemp)
+  CALL lsysbl_blockMatVec (rMatrix, rx, rtemp, -1.0_DP, 1.0_DP)
   
-  CALL lsysbl_blockMatVec (rMatrix, rx, p_rdef, 1.0_DP, 1.0_DP)
-  
-  ! Call linsol_performSolve to solve the subproblem $Ay = b-Ax$.
-  CALL linsol_performSolve (rsolverNode,rx,rb,rtemp)
+  ! Call linsol_precondDefect to solve the subproblem $Ay = b-Ax$.
+  ! This overwrites rtemp with the correction vector.
+  CALL linsol_precondDefect (rsolverNode,rtemp)
 
   ! Add the correction vector to the solution vector and release the memory.
   ! In case we have one... If the initial vector was assumed as zero, we don't
   ! have a correction vector, the result is directly in rx.
   
   ! Correct the solution vector: x=x+y
-  CALL lsysbl_vectorLinearComb (p_rdef,rx,1.0_DP,1.0_DP)
+  CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
 
-  ! Release memory
-  IF (.NOT. PRESENT(rcorr)) CALL lsysbl_releaseVector (rcorr1)
-  IF (.NOT. PRESENT(rdef)) CALL lsysbl_releaseVector (rdef1)
-  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1724,32 +1735,29 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE linsol_solveVANCAQ1TP0NS2D (rsolverNode,rx,rb,rtemp)
+  SUBROUTINE linsol_precVANCAQ1TP0NS2D (rsolverNode,rd)
   
 !<description>
   
-  ! Solves the linear system $Ax=b$ with VANCA. The matrix $A$ must be
-  ! attached to the solver previously by linsol_setMatrices.
+  ! Applies the VANCA preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
   
 !</description>
   
-!<input>
-  
-  ! Right hand side of the system
-  TYPE(t_vectorBlock), INTENT(IN)           :: rb
-  
-!</input>
-  
 !<inputoutput>
   
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the VANCA solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
 
-  ! Receives the solution vector
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
-  
-  ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rtemp
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
 
 !</inputoutput>
   
@@ -2054,31 +2062,29 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_solveUMFPACK4 (rsolverNode,rx,rb)
+  SUBROUTINE linsol_precUMFPACK4 (rsolverNode,rd)
   
 !<description>
-  
-  ! Solves the linear system $Ax=b$ with UMFPACK4. The matrix $A$ must be
-  ! attached to the solver previously by linsol_setMatrices.
-  ! Symbolical and numerical factorisation must already be performed
-  ! on the matrix.
+
+  ! Applies UMFPACK preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
   
 !</description>
-  
-!<input>
-  
-  ! Right hand side of the system
-  TYPE(t_vectorBlock), INTENT(IN)           :: rb
-  
-!</input>
   
 !<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
 
-  ! Receives the solution vector
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
   
 !</inputoutput>
   
@@ -2412,56 +2418,47 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_solveMILUs1x1 (rsolverNode,rx,rb)
+  SUBROUTINE linsol_precMILUS1x1 (rsolverNode,rd)
   
 !<description>
   
-  ! Solves the linear system $Ax=b$ with (M)ILU(s) from SPLIB.
-  ! This performs one iteration of the form
-  !     $x_1  =  x_0 + C^{-1} (b-Ax_0)  =  C^{-1} b$
-  ! where $x_0=0$ is assumed
-  ! The matrix $A$ must be attached to the solver previously by 
-  ! linsol_setMatrices.
-  ! Numerical factorisation must already be performed on the matrix,
-  ! so that the factorised matix exists.
-  
+  ! Applies (M)ILU(s) preconditioner $LU \approx A$ to the defect 
+  ! vector rd and solves $LUd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
   
 !</description>
   
-!<input>
-  
-  ! Right hand side of the system
-  TYPE(t_vectorBlock), INTENT(IN)           :: rb
-  
-!</input>
-  
 !<inputoutput>
   
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the (M)ILU(s) solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
 
-  ! Receives the solution vector
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
   
 !</inputoutput>
   
 !</subroutine>
 
   ! local variables
-  REAL(DP), DIMENSION(:), POINTER :: p_Db,p_Dx
+  REAL(DP), DIMENSION(:), POINTER :: p_Dd
   INTEGER(PREC_MATIDX) :: lu,jlu,ilup
   INTEGER, DIMENSION(:), POINTER :: p_Iwork
   INTEGER :: h_Iwork
   
-  IF ((rb%cdataType .NE. ST_DOUBLE) .OR.&
-      (rx%cdataType .NE. ST_DOUBLE)) THEN
+  IF (rd%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'(M)ILU(s) only supports double precision vectors!'
     STOP
   END IF
   
-  ! Get the iteration vectors
-  CALL storage_getbase_double (rx%h_Ddata,p_Dx)
-  CALL storage_getbase_double (rb%h_Ddata,p_Db)
+  ! Get the data array of rd
+  CALL storage_getbase_double (rd%h_Ddata,p_Dd)
   
   ! Get MILUs information from the parameter block
   h_Iwork = rsolverNode%p_rsubnodeMILUs1x1%h_Idata 
@@ -2470,11 +2467,9 @@ CONTAINS
   ilup = rsolverNode%p_rsubnodeMILUs1x1%ilup 
   CALL storage_getbase_int (h_Iwork,p_Iwork)
 
-  ! Put the RHS to the solution vector
-  CALL lsysbl_vectorCopy (rb,rx)
-
-  ! solve the system. Call SPLIB.
-  CALL lusolt (SIZE(p_Dx),p_Dx, p_Iwork(lu), p_Iwork(jlu), p_Iwork(ilup))
+  ! Solve the system. Call SPLIB, this overwrites the defect vector
+  ! with the preconditioned one.
+  CALL lusolt (SIZE(p_Dd),p_Dd, p_Iwork(lu), p_Iwork(jlu), p_Iwork(ilup))
   
   END SUBROUTINE
   
@@ -2880,14 +2875,18 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_solveBiCGStab (rsolverNode,rx,rb,rtemp)
+  SUBROUTINE linsol_precBiCGStab (rsolverNode,rd)
   
 !<description>
   
-  ! Solves the linear system $Ax=b$ with BiCGStab. The matrix $A$ must be
-  ! attached to the solver previously by linsol_setMatrices.
-  ! linsol_initProblemStructure and linsol_initProblemData must have
-  ! been called so that BiCGStab is prepared to solve the system. 
+  ! Applies BiCGStab preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
   !
   ! The implementation follows the original paper introducing BiCGStab:
   !   van der Vorst, H.A.; BiCGStab: A Fast and Smoothly Converging
@@ -2896,24 +2895,14 @@ CONTAINS
   
 !</description>
   
-!<input>
-  
-  ! Right hand side of the system
-  TYPE(t_vectorBlock), INTENT(IN)           :: rb
-  
-!</input>
-  
 !<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  ! Initial solution vector; receives the final solution vector when the
-  ! iteration finishes.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
-   
-  ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rtemp
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
 
 !</inputoutput>
   
@@ -2940,7 +2929,7 @@ CONTAINS
   TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
   
   ! Pointers to temporary vectors - named for easier access
-  TYPE(t_vectorBlock), POINTER :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rprec
+  TYPE(t_vectorBlock), POINTER :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rx
   TYPE(t_linsolNode), POINTER :: p_rprecSubnode
   TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
   
@@ -2954,9 +2943,8 @@ CONTAINS
     p_rmatrix => rsolverNode%rlinearSystemInfo%p_rsystemMatrix
 
     ! Check the parameters
-    IF ((rx%NEQ .EQ. 0) .OR. (rb%NEQ .EQ. 0) .OR. (rtemp%NEQ .EQ. 0) .OR. &
-        (rb%NEQ .NE. rx%NEQ) .OR. (rtemp%NEQ .NE. rx%NEQ) .OR. &
-        (p_rmatrix%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .NE. rx%NEQ) ) THEN
+    IF ((rd%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .EQ. 0) .OR. &
+        (p_rmatrix%NEQ .NE. rd%NEQ) ) THEN
     
       ! Parameters wrong
       rsolverNode%iresult = 2
@@ -2987,28 +2975,37 @@ CONTAINS
     p_DP   => p_rsubnode%RtempVectors(3)
     p_DPA  => p_rsubnode%RtempVectors(4)
     p_DSA  => p_rsubnode%RtempVectors(5)
+    p_rx   => p_rsubnode%RtempVectors(6)
     
-    ! All vectors share the same boundary conditions as rx!
+    ! All vectors share the same boundary conditions as rd!
     ! So assign now all discretisation-related information (boundary
     ! conditions,...) to the temporary vectors.
-    CALL lsysbl_assignDiscretIndirect (rx,p_DR )
-    CALL lsysbl_assignDiscretIndirect (rx,p_DR0)
-    CALL lsysbl_assignDiscretIndirect (rx,p_DP )
-    CALL lsysbl_assignDiscretIndirect (rx,p_DPA)
-    CALL lsysbl_assignDiscretIndirect (rx,p_DSA)
+    CALL lsysbl_assignDiscretIndirect (rd,p_DR )
+    CALL lsysbl_assignDiscretIndirect (rd,p_DR0)
+    CALL lsysbl_assignDiscretIndirect (rd,p_DP )
+    CALL lsysbl_assignDiscretIndirect (rd,p_DPA)
+    CALL lsysbl_assignDiscretIndirect (rd,p_DSA)
+    CALL lsysbl_assignDiscretIndirect (rd,p_rx)
     
     IF (bprec) THEN
-      p_rprec => p_rsubnode%RtempVectors(6)
       p_rprecSubnode => p_rsubnode%p_rpreconditioner
     END IF
     IF (bfilter) THEN
       p_RfilterChain => p_rsubnode%p_RfilterChain
     END IF
+    
+    ! rd is our RHS. p_rx points to a new vector which will be our
+    ! iteration vector. At the end of this routine, we replace
+    ! rd by p_rx.
+    ! Clear our iteration vector p_rx.
+    CALL lsysbl_vectorClear (p_rx)
       
     ! Initialize used vectors with zero
       
     CALL lsysbl_vectorClear(p_DP)
     CALL lsysbl_vectorClear(p_DPA)
+    
+    ! Initialise the iteration vector with zero.
 
     ! Initialization
 
@@ -3016,11 +3013,10 @@ CONTAINS
     dalpha = 1.0_DP
     domega0 = 1.0_DP
 
-    ! Build the initial defect precond*(b-Ax) using
-    ! Matrix-vector multiplication with preconditioning.
+    ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
+    ! is also our initial defect.
 
-    CALL lsysbl_vectorCopy(rb,p_DR)
-    CALL lsysbl_blockMatVec (p_rmatrix, rx,p_DR, -1.0_DP, 1.0_DP)
+    CALL lsysbl_vectorCopy(rd,p_DR)
     IF (bfilter) THEN
       ! Apply the filter chain to the vector
       CALL filter_applyFilterChainVec (p_DR, p_RfilterChain)
@@ -3028,8 +3024,7 @@ CONTAINS
     IF (bprec) THEN
       ! Perform preconditioning with the assigned preconditioning
       ! solver structure.
-      CALL lsysbl_vectorCopy(p_DR,p_rprec)
-      CALL linsol_performSolve (p_rprecSubnode,p_DR,p_Rprec,rtemp)
+      CALL linsol_precondDefect (p_rprecSubnode,p_DR)
     END IF
     
     ! Get the norm of the residuum
@@ -3053,7 +3048,7 @@ CONTAINS
      
       ! final defect is 0, as initialised in the output variable above
 
-      CALL lsysbl_vectorClear(rx)
+      CALL lsysbl_vectorClear(p_rx)
       ite = 0
       rsolverNode%dfinalDefect = dres
           
@@ -3104,8 +3099,7 @@ CONTAINS
         IF (bprec) THEN
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
-          CALL lsysbl_vectorCopy(p_DPA,p_rprec)
-          CALL linsol_performSolve (p_rprecSubnode,p_DPA,p_Rprec,rtemp)
+          CALL linsol_precondDefect (p_rprecSubnode,p_DPA)
         END IF
 
         dalpha = lsysbl_scalarProduct (p_DR0,p_DPA)
@@ -3133,8 +3127,7 @@ CONTAINS
         IF (bprec) THEN
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
-          CALL lsysbl_vectorCopy(p_DSA,p_rprec)
-          CALL linsol_performSolve (p_rprecSubnode,p_DSA,p_Rprec,rtemp)
+          CALL linsol_precondDefect (p_rprecSubnode,p_DSA)
         END IF
         
         domega1 = lsysbl_scalarProduct (p_DSA,p_DR)
@@ -3153,8 +3146,8 @@ CONTAINS
           domega0 = domega1/domega2
         END IF
 
-        CALL lsysbl_vectorLinearComb (p_DP ,rx,dalpha,1.0_DP)
-        CALL lsysbl_vectorLinearComb (p_DR ,rx,domega0,1.0_DP)
+        CALL lsysbl_vectorLinearComb (p_DP ,p_rx,dalpha,1.0_DP)
+        CALL lsysbl_vectorLinearComb (p_DR ,p_rx,domega0,1.0_DP)
 
         CALL lsysbl_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
 
@@ -3215,83 +3208,87 @@ CONTAINS
     END IF
 
     rsolverNode%iiterations = ite
+    
+    ! Overwrite our previous RHS by the new correction vector p_rx.
+    ! This completes the preconditioning.
+    CALL lsysbl_vectorCopy (p_rx,rd)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
       
-      IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+    IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+    
+      ! Calculate asymptotic convergence rate
+    
+      IF (dresqueue(1) .GE. 1E-70_DP) THEN
+        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+        rsolverNode%dasymptoticConvergenceRate = &
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+      END IF
+
+      ! If the initial defect was zero, the solver immediately
+      ! exits - and so the final residuum is zero and we performed
+      ! no steps; so the resulting multigrid convergence rate stays zero.
+      ! In the other case the multigrid convergence rate computes as
+      ! (final defect/initial defect) ** 1/nit :
+
+      IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN
+        rsolverNode%dconvergenceRate = &
+                    (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                    (1.0_DP/REAL(rsolverNode%iiterations,DP))
+      END IF
       
-        ! Calculate asymptotic convergence rate
-      
-        IF (dresqueue(1) .GE. 1E-70_DP) THEN
-          I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
-          rsolverNode%dasymptoticConvergenceRate = &
-            (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        !WRITE (MTERM,'(A)') ''
+        PRINT *
+        !WRITE (MTERM,'(A)') 
+        PRINT *,'BiCGStab statistics:'
+        !WRITE (MTERM,'(A)') ''
+        PRINT *
+        !WRITE (MTERM,'(A,I5)')     'Iterations              : ',
+    !*            IPARAM(OITE)
+        PRINT *,'Iterations              : ',rsolverNode%iiterations
+        !WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
+    !*            DPARAM(ODEFINI)
+        PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
+        !WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
+    !*            DPARAM(ODEFFIN)
+        PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
+        IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
+          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+    !*              rparam%dfinalDefect / rparam%dinitialDefect
+          PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
+                  rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
+        ELSE
+          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+    !*              0D0
+          PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
         END IF
+        !WRITE (MTERM,'(A)') ''
+        PRINT *
+        !WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
+    !*            DPARAM(ORHO)
+        PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
 
-        ! If the initial defect was zero, the solver immediately
-        ! exits - and so the final residuum is zero and we performed
-        ! no steps; so the resulting multigrid convergence rate stays zero.
-        ! In the other case the multigrid convergence rate computes as
-        ! (final defect/initial defect) ** 1/nit :
+      END IF
 
-        IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN
-          rsolverNode%dconvergenceRate = &
-                      (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
-                      (1.0_DP/REAL(rsolverNode%iiterations,DP))
-        END IF
-        
-        IF (rsolverNode%ioutputLevel .GE. 2) THEN
-          !WRITE (MTERM,'(A)') ''
-          PRINT *
-          !WRITE (MTERM,'(A)') 
-          PRINT *,'BiCGStab statistics:'
-          !WRITE (MTERM,'(A)') ''
-          PRINT *
-          !WRITE (MTERM,'(A,I5)')     'Iterations              : ',
-     !*            IPARAM(OITE)
-          PRINT *,'Iterations              : ',rsolverNode%iiterations
-          !WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
-     !*            DPARAM(ODEFINI)
-          PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
-          !WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
-     !*            DPARAM(ODEFFIN)
-          PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
-          IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
-            !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-     !*              rparam%dfinalDefect / rparam%dinitialDefect
-            PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
-                    rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
-          ELSE
-            !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-     !*              0D0
-            PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
-          END IF
-          !WRITE (MTERM,'(A)') ''
-          PRINT *
-          !WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
-     !*            DPARAM(ORHO)
-          PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
-
-        END IF
-
-        IF (rsolverNode%ioutputLevel .EQ. 1) THEN
+      IF (rsolverNode%ioutputLevel .EQ. 1) THEN
 !          WRITE (MTERM,'(A,I5,A,D24.12)') 
 !     *          'BiCGStab: Iterations/Rate of convergence: ',
 !     *          IPARAM(OITE),' /',DPARAM(ORHO)
 !          WRITE (MTERM,'(A,I5,A,D24.12)') 
 !     *          'BiCGStab: Iterations/Rate of convergence: ',
 !     *          IPARAM(OITE),' /',DPARAM(ORHO)
-          PRINT *,&
-                'BiCGStab: Iterations/Rate of convergence: ',&
-                rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
-        END IF
-        
-      ELSE
-        ! DEF=Infinity; RHO=Infinity, set to 1
-        rsolverNode%dconvergenceRate = 1.0_DP
-        rsolverNode%dasymptoticConvergenceRate = 1.0_DP
-      END IF  
+        PRINT *,&
+              'BiCGStab: Iterations/Rate of convergence: ',&
+              rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
+      END IF
+      
+    ELSE
+      ! DEF=Infinity; RHO=Infinity, set to 1
+      rsolverNode%dconvergenceRate = 1.0_DP
+      rsolverNode%dasymptoticConvergenceRate = 1.0_DP
+    END IF  
   
   END SUBROUTINE
   
@@ -3937,7 +3934,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_solveMultigrid (rsolverNode,rx,rb,rtemp)
+  SUBROUTINE linsol_precMultigrid (rsolverNode,rd)
   
 !<description>
   
@@ -3947,13 +3944,6 @@ CONTAINS
   
 !</description>
   
-!<input>
-  
-  ! Right hand side of the system
-  TYPE(t_vectorBlock), INTENT(IN),TARGET    :: rb
-  
-!</input>
-  
 !<inputoutput>
   
   ! The t_linsolNode structure of the UMFPACK4 solver
@@ -3961,11 +3951,8 @@ CONTAINS
    
   ! Initial solution vector; receives the final solution vector when the
   ! iteration finishes.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rx
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
   
-  ! A temporary vector of the same size and structure as rx.
-  TYPE(t_vectorBlock), INTENT(INOUT)        :: rtemp
-
 !</inputoutput>
   
 !</subroutine>
