@@ -459,8 +459,10 @@ CONTAINS
   
   TYPE(t_collctLevel), INTENT(INOUT) :: rcollctLevel
   
-  ! Deallocate the pointers with an empty list
-  DEALLOCATE(rcollctLevel%p_Rvalues)
+  ! Deallocate the value list on the current level if there is one.
+  IF (ASSOCIATED(rcollctLevel%p_Rvalues)) THEN
+    DEALLOCATE(rcollctLevel%p_Rvalues)
+  END IF
   
   ! No variables in here for the moment
   rcollctLevel%ivalueCount = 0

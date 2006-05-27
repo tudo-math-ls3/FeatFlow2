@@ -63,6 +63,11 @@
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
+!# 17.) lsysbl_compatibleVector
+!#      -> Checks whether two vectors are compatible to each other
+!#
+!# 18.) lsysbl_compatibleMatrix
+!#      -> Checks whether a matrix and a vector are compatible to each other
 !# </purpose>
 !##############################################################################
 
@@ -117,11 +122,11 @@ MODULE linearsystemblock
   TYPE t_vectorBlock
     
     ! Total number of equations in the vector
-    INTEGER                    :: NEQ
+    INTEGER                    :: NEQ = 0
     
     ! Handle identifying the vector entries or = ST_NOHANDLE if not
     ! allocated.
-    INTEGER                    :: h_Ddata
+    INTEGER                    :: h_Ddata = ST_NOHANDLE
     
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE. The subvectors are all of the same type.
@@ -191,6 +196,210 @@ MODULE linearsystemblock
   END INTERFACE
 
 CONTAINS
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_compatibleVector (rvector1,rvector2,bcompatible)
+  
+!<description>
+  ! Checks whether two vectors are compatible to each other, i.e. share
+  ! the same structure, size and sorting strategy.
+!</description>
+
+!<input>
+  ! The first vector
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector1
+  
+  ! The second vector
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector2
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether the vectors are compatible or not.
+  ! If not given, an error will inform the user if the two vectors are
+  ! not compatible and the program will halt.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+
+  ! We assume that we are not compatible
+  IF (PRESENT(bcompatible)) bcompatible = .FALSE.
+  
+  ! Vectors must have the same size and number of blocks
+  IF (rvector1%NEQ .NE. rvector2%NEQ) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vectors not compatible, different size!'
+      STOP
+    END IF
+  END IF
+
+  IF (rvector1%nblocks .NE. rvector2%nblocks) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vectors not compatible, different block structure!'
+      STOP
+    END IF
+  END IF
+  
+  ! All the subblocks must be the same size and must be sorted the same way.
+  DO i=1,rvector1%nblocks
+    IF (rvector1%RvectorBlock(i)%NEQ .NE. rvector2%RvectorBlock(i)%NEQ) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vectors not compatible, different block structure!'
+        STOP
+      END IF
+    END IF
+    
+    ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+    
+    IF ((rvector1%RvectorBlock(i)%isortStrategy .GT. 0) .OR. &
+        (rvector2%RvectorBlock(i)%isortStrategy .GT. 0)) THEN
+
+      IF (rvector1%RvectorBlock(i)%isortStrategy .NE. &
+          rvector2%RvectorBlock(i)%isortStrategy) THEN
+        IF (PRESENT(bcompatible)) THEN
+          bcompatible = .FALSE.
+          RETURN
+        ELSE
+          PRINT *,'Vectors not compatible, differently sorted!'
+          STOP
+        END IF
+      END IF
+
+      IF (rvector1%RvectorBlock(i)%h_isortPermutation .NE. &
+          rvector2%RvectorBlock(i)%h_isortPermutation) THEN
+        IF (PRESENT(bcompatible)) THEN
+          bcompatible = .FALSE.
+          RETURN
+        ELSE
+          PRINT *,'Vectors not compatible, differently sorted!'
+          STOP
+        END IF
+      END IF
+    END IF
+  END DO
+
+  ! Ok, they are compatible
+  IF (PRESENT(bcompatible)) bcompatible = .TRUE.
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_compatibleMatrix (rvector,rmatrix,bcompatible)
+  
+!<description>
+  ! Checks whether a vector and a matrix are compatible to each other, i.e. 
+  ! share the same structure, size and sorting strategy.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  
+  ! The matrix
+  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether vector and matrix are compatible or not.
+  ! If not given, an error will inform the user if the vector/matrix are
+  ! not compatible and the program will halt.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+
+  ! We assume that we are not compatible
+  IF (PRESENT(bcompatible)) bcompatible = .FALSE.
+  
+  ! Vector/Matrix must have the same size and number of blocks
+  IF (rvector%NEQ .NE. rmatrix%NEQ) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vector/Matrix not compatible, different size!'
+      STOP
+    END IF
+  END IF
+
+  IF (rvector%nblocks .NE. rmatrix%ndiagBlocks) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vector/Matrix not compatible, different block structure!'
+      STOP
+    END IF
+  END IF
+  
+  ! All the subblocks must be the same size and must be sorted the same way.
+  DO i=1,rvector%nblocks
+    IF (rvector%RvectorBlock(i)%NEQ .NE. rmatrix%RmatrixBlock(i,i)%NEQ) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vector/Matrix not compatible, different block structure!'
+        STOP
+      END IF
+    END IF
+
+    ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+
+    IF ((rvector%RvectorBlock(i)%isortStrategy .GT. 0) .OR. &
+        (rmatrix%RmatrixBlock(i,i)%isortStrategy .GT. 0)) THEN
+
+      IF (rvector%RvectorBlock(i)%isortStrategy .NE. &
+          rmatrix%RmatrixBlock(i,i)%isortStrategy) THEN
+        IF (PRESENT(bcompatible)) THEN
+          bcompatible = .FALSE.
+          RETURN
+        ELSE
+          PRINT *,'Vector/Matrix not compatible, differently sorted!'
+          STOP
+        END IF
+      END IF
+
+      IF (rvector%RvectorBlock(i)%h_isortPermutation .NE. &
+          rmatrix%RmatrixBlock(i,i)%h_isortPermutation) THEN
+        IF (PRESENT(bcompatible)) THEN
+          bcompatible = .FALSE.
+          RETURN
+        ELSE
+          PRINT *,'Vector/Matrix not compatible, differently sorted!'
+          STOP
+        END IF
+      END IF
+    END IF
+  END DO
+
+  ! Ok, they are compatible
+  IF (PRESENT(bcompatible)) bcompatible = .TRUE.
+
+  END SUBROUTINE
 
   ! ***************************************************************************
 
@@ -384,6 +593,14 @@ CONTAINS
       ! Give the vector the dicretisation of the matrix
       rx%RvectorBlock(i)%p_rspatialDiscretisation => &
         rtemplateMat%RmatrixBlock(i,i)%p_rspatialDiscretisation
+        
+      ! Give the vector the same sorting strategy as the matrix, so that
+      ! the matrix and vector get compatible. Otherwise, things
+      ! like matrix vector multiplication won't work...
+      rx%RvectorBlock(i)%isortStrategy = &
+        rtemplateMat%RmatrixBlock(i,i)%isortStrategy
+      rx%RvectorBlock(i)%h_IsortPermutation = &
+        rtemplateMat%RmatrixBlock(i,i)%h_IsortPermutation
       
       ! Denote in the subvector that the handle belongs to us - not to
       ! the subvector.
@@ -465,6 +682,8 @@ CONTAINS
   
 !<description>
   ! Releases the memory that is reserved by rx.
+  ! Remark: The memory associated to the vector is only released if this
+  !  vector structure is the owner of the data.
 !</description>
   
 !<inputoutput>
@@ -485,11 +704,8 @@ CONTAINS
   END IF
   
   ! Clean up the structure
-  DO i = 1,SIZE(rx%RvectorBlock)
-    rx%RvectorBlock%NEQ = 0
-    rx%RvectorBlock%h_Ddata = ST_NOHANDLE
-    rx%RvectorBlock%iidxFirstEntry = 0
-    rx%bisCopy = .FALSE.
+  DO i = 1,rx%nblocks
+    CALL lsyssc_releaseVector (rx%RvectorBlock(i))
   END DO
   rx%NEQ = 0
   rx%nblocks = 0
@@ -531,24 +747,26 @@ CONTAINS
   ! Clean up the other variables, finish
   rmatrix%NEQ = 0
   rmatrix%ndiagBlocks = 0
-   
+  
   END SUBROUTINE
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE lsysbl_blockMatVec (rMatrix, rx, ry, cx, cy)
+  SUBROUTINE lsysbl_blockMatVec (rmatrix, rx, ry, cx, cy)
  
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
   !    $$ Dy   =   cx * rMatrix * rx   +   cy * ry $$
+  ! Vector and matrix must be compatible to each other (same size, sorting 
+  ! strategy,...).
 !</description>
   
 !<input>
   
   ! Block matrix
-  TYPE(t_matrixBlock), INTENT(IN)                   :: rMatrix
+  TYPE(t_matrixBlock), INTENT(IN)                   :: rmatrix
 
   ! Block vector to multiply with the matrix.
   TYPE(t_vectorBlock), INTENT(IN)                   :: rx
@@ -574,8 +792,14 @@ CONTAINS
   INTEGER :: x,y,mvok
   REAL(DP)     :: cyact
   
+  ! The vectors must be compatible to each other.
+  CALL lsysbl_compatibleVector (rx,ry)
+
+  ! and compatible to the matrix
+  CALL lsysbl_compatibleMatrix (rx,rmatrix)
+
   ! loop through all the sub matrices and multiply.
-  DO y=1,rMatrix%ndiagBlocks
+  DO y=1,rmatrix%ndiagBlocks
   
     ! The original vector ry must only be respected once in the first
     ! matrix-vector multiplication. The additive contributions of
@@ -615,7 +839,9 @@ CONTAINS
   SUBROUTINE lsysbl_vectorCopy (rx,ry)
   
 !<description>
-  ! Copies vector dx: Dy = Dx
+  ! Copies vector data: ry = rx.
+  ! Both vectors must have the same size. All structural data of rx is
+  ! transferred to ry, so rx and ry are compatible to each other afterwards.
 !<input>
   
   ! Source vector
@@ -633,29 +859,30 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest
-  REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
+  INTEGER :: h_Ddata, i
+  LOGICAL :: bisCopy
   
-  ! Take care of the data type
-  SELECT CASE (rx%cdataType)
-  CASE (ST_DOUBLE)
-    ! Get the pointers and copy the whole data array.
-    CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
-    CALL storage_getbase_double(ry%h_Ddata,p_Ddest)
-    
-    CALL lalg_vectorCopyDBle (p_Dsource,p_Ddest)
+  ! First, make a backup of some crucial data so that it does not
+  ! get destroyed.
+  h_Ddata = ry%h_Ddata
+  bisCopy = ry%bisCopy
   
-  CASE (ST_SINGLE)
-    ! Get the pointers and copy the whole data array.
-    CALL storage_getbase_double(rx%h_Ddata,p_Ssource)
-    CALL storage_getbase_double(ry%h_Ddata,p_Sdest)
-    
-    CALL lalg_vectorCopySngl (p_Ssource,p_Sdest)
-
-  CASE DEFAULT
-    PRINT *,'lsysbl_vectorCopy: unsupported data type!'
-    STOP
-  END SELECT
+  ! Then transfer all structural information of rx to ry.
+  ! This automatically makes both vectors compatible to each other.
+  ry = rx
+  
+  ! Restore crucial data
+  ry%h_Ddata = h_Ddata
+  ry%bisCopy = bisCopy
+  
+  ! Restore the handle in all subvectors
+  DO i=1,ry%nblocks
+    ry%RvectorBlock(i)%h_Ddata = h_Ddata
+  END DO
+  
+  ! And finally copy the data. 
+  ! Use storage_copy to copy data by handles.
+  CALL storage_copy(rx%h_Ddata, ry%h_Ddata)
   
   END SUBROUTINE
   
@@ -756,6 +983,8 @@ CONTAINS
   
 !<description>
   ! Performs a linear combination: ry = cx * rx  +  cy * ry
+  ! Both vectors must be compatible to each other (same size, sorting 
+  ! strategy,...).
 !</description>  
   
 !<input>
@@ -784,6 +1013,9 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest
   REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
   
+  ! The vectors must be compatible to each other.
+  CALL lsysbl_compatibleVector (rx,ry)
+
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsysbl_vectorLinearComb: different data types not supported!'
     STOP
@@ -818,6 +1050,8 @@ CONTAINS
   
 !<description>
   ! Calculates a scalar product of two block vectors.
+  ! Both vectors must be compatible to each other (same size, sorting 
+  ! strategy,...).
 !</description>
   
 !<input>
@@ -841,6 +1075,9 @@ CONTAINS
   INTEGER(PREC_VECIDX) :: i
   REAL(DP) :: res
   
+  ! The vectors must be compatible to each other.
+  CALL lsysbl_compatibleVector (rx,ry)
+
   ! Is there data at all?
   res = 0.0_DP
   
@@ -1029,7 +1266,7 @@ CONTAINS
     ! The data of the vector actually belongs to another one - to the
     ! scalar one. Note this in the structure.
     rvector%bisCopy = .TRUE.
-
+    
   END SUBROUTINE
 
   ! ***************************************************************************

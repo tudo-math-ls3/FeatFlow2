@@ -195,7 +195,7 @@ CONTAINS
     IF (rmatrixScalar%cdataType .EQ. ST_DOUBLE) THEN
   
       ! Which matrix structure do we have?
-      SELECT CASE (rmatrixScalar%imatrixFormat) 
+      SELECT CASE (rmatrixScalar%cmatrixFormat) 
       CASE (LSYSSC_MATRIX9)
         IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           CALL bilf_buildMatrix9d_conf (rdiscretisation,rform,bclear,rmatrixScalar,&  
@@ -219,7 +219,7 @@ CONTAINS
     IF (rmatrixScalar%cdataType .EQ. ST_DOUBLE) THEN
   
       ! Which matrix structure do we have?
-      SELECT CASE (rmatrixScalar%imatrixFormat) 
+      SELECT CASE (rmatrixScalar%cmatrixFormat) 
       CASE (LSYSSC_MATRIX9)
         IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           CALL bilf_buildMatrix9d_conf (rdiscretisation,rform,bclear,rmatrixScalar,&  
@@ -347,7 +347,7 @@ CONTAINS
   ! At first, initialise the structure-9 matrix:
   
   rmatrixScalar%p_rspatialDiscretisation => rdiscretisation
-  rmatrixScalar%imatrixFormat            = LSYSSC_MATRIX9
+  rmatrixScalar%cmatrixFormat            = LSYSSC_MATRIX9
   rmatrixScalar%NEQ                      = dof_igetNDofGlob(rdiscretisation)
   
   ! and get a pointer to the triangulation.

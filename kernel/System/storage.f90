@@ -446,20 +446,16 @@ CONTAINS
   ! This routine releases a handle from the heap structure rheap.
   ! Memory is not deallocated, simply the structures are cleaned up.
 !</description>
-  
-!<input>
 
+!<input>  
   ! The handle to release
-  INTEGER, INTENT(IN) :: ihandle
-  
+  INTEGER, INTENT(INOUT) :: ihandle
 !</input>
 
-  !<inputoutput>
-  
+!<inputoutput>
   ! The heap structure where to release the handle from.
   TYPE(t_storageBlock), INTENT(INOUT) :: rheap
-  
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -776,6 +772,9 @@ CONTAINS
   
   ! Release the handle itself.
   CALL storage_releasehandle (ihandle,p_rheap)
+
+  ! And finally reset the handle to ST_NOHANDLE.
+  ihandle = ST_NOHANDLE
 
   END SUBROUTINE
 

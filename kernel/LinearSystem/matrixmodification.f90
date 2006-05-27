@@ -50,7 +50,7 @@ CONTAINS
 !</subroutine>
 
   ! At first we must take care of the matrix type.
-  SELECT CASE (rmatrix%imatrixFormat)
+  SELECT CASE (rmatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
     CALL replaceLines_format9 (rmatrix,Irows)
   CASE (LSYSSC_MATRIX7)

@@ -537,7 +537,7 @@ CONTAINS
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
-
+    
     ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
     p_rvector => rproblem%RlevelInfo(1)%rvector
@@ -552,7 +552,7 @@ CONTAINS
     ! Apply the filter chain to the matrix and the vectors.
     ! As the filter consists only of an implementation filter for
     ! boundary conditions, this implements the boundary conditions
-    ! into the vectors and matrices
+    ! into the vectors and matrices.
     CALL filter_applyFilterChainVec (p_rrhs, RfilterChain)
     CALL filter_applyFilterChainVec (p_rvector, RfilterChain)
     CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
@@ -575,6 +575,9 @@ CONTAINS
 !</inputoutput>
 
   ! local variables
+
+    ! Error indicator during initialisation of the solver
+    INTEGER :: ierror    
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
@@ -604,7 +607,7 @@ CONTAINS
     
     ! Resort the RHS and solution vector according to the resorting
     ! strategy given in the matrix.
-    IF (p_rmatrix%RmatrixBlock(1,1)%isortStrategy .NE. SSTRAT_UNSORTED) THEN
+    IF (p_rmatrix%RmatrixBlock(1,1)%isortStrategy .GT. SSTRAT_UNSORTED) THEN
       ! Use the temporary vector from above to store intermediate data.
       ! The vectors are assumed to know how they are resorted (the strategy
       ! is already attached to them). So call the resorting routines
@@ -652,8 +655,10 @@ CONTAINS
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode)
-    CALL linsol_initData (p_rsolverNode)
+    CALL linsol_initStructure (p_rsolverNode,ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    CALL linsol_initData (p_rsolverNode,ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
@@ -677,7 +682,7 @@ CONTAINS
     
     ! Release the temporary vector
     CALL lsysbl_releaseVector (rtempBlock)
-    
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -718,7 +723,7 @@ CONTAINS
     ! start the postprocessing. Call the GMV library to write out
     ! a GMV file for our solution.
     ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u3.gmv')
+    CALL GMVOF0 (ihandle,-2,'gmv/u4.gmv')
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
@@ -752,6 +757,8 @@ CONTAINS
 
 !</subroutine>
 
+    INTEGER :: ihandle
+
     ! Release matrix and vectors
     CALL lsysbl_releaseVector (rproblem%RlevelInfo(1)%rvector)
     CALL lsysbl_releaseVector (rproblem%RlevelInfo(1)%rrhs)
@@ -763,6 +770,8 @@ CONTAINS
     CALL collct_deletevalue (rcollection,'LAPLACE')
     
     ! Release the permutation for sorting matrix/vectors
+    ihandle = collct_getvalue_int (rcollection,'LAPLACE-CM')
+    CALL storage_free (ihandle)
     CALL collct_deletevalue (rcollection,'LAPLACE-CM')
 
   END SUBROUTINE

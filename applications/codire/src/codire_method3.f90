@@ -616,6 +616,9 @@ CONTAINS
     ! the linear solver.
     TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
     
+    ! Error indicator during initialisation of the solver
+    INTEGER :: ierror    
+
     ! Get our matrix and right hand side from the problem structure.
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
     p_rvector => rproblem%RlevelInfo(1)%rvector
@@ -658,8 +661,10 @@ CONTAINS
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode)
-    CALL linsol_initData (p_rsolverNode)
+    CALL linsol_initStructure (p_rsolverNode,ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    CALL linsol_initData (p_rsolverNode,ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,

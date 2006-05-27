@@ -38,7 +38,7 @@ vpath %.inc include \
 EXEC=poisson-$(ID)
 
 # used libraries
-FEATLIB= minisplib feat2d sysutils #umfpack4 amd
+FEATLIB= minisplib feat2d sysutils umfpack4 amd
 
 # include make rules
 include $(FEATFLOW)/Rules_apps.mk

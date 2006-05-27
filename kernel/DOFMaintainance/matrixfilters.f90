@@ -50,7 +50,7 @@ CONTAINS
 ! *****************************************************************************
 
   ! ***************************************************************************
-  ! Implementation of discrete boundary conditions into scalar matrix,
+  ! Implementation of discrete boundary conditions into scalar matrix
   ! ***************************************************************************
 
 !<subroutine>
@@ -149,6 +149,10 @@ CONTAINS
     
   ! local variables
   INTEGER(I32), DIMENSION(:), POINTER :: p_idx
+  INTEGER, PARAMETER :: NBLOCKSIZE = 1000
+  INTEGER(PREC_VECIDX), DIMENSION(1000) :: Idofs
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+  INTEGER i,ilenleft
 
   ! Get pointers to the structures. For the vector, get the pointer from
   ! the storage management.
@@ -167,11 +171,37 @@ CONTAINS
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
   !
-  ! Use mmod_replaceLinesByUnit to replace the corresponding rows in the
-  ! matrix by unit vectors. For more complicated FE spaces, this might have
-  ! to be modified in the future...
+  ! Is the matrix sorted?
+  IF (rmatrix%isortStrategy .LE. 0) THEN
+    ! Use mmod_replaceLinesByUnit to replace the corresponding rows in the
+    ! matrix by unit vectors. For more complicated FE spaces, this might have
+    ! to be modified in the future...
+    
+    CALL mmod_replaceLinesByUnit (rmatrix,p_idx(1:rdbcStructure%nDOF))
+  ELSE
+    ! Ok, matrix is sorted, so we have to filter all the DOF's through the
+    ! permutation before using them for implementing boundary conditions.
+    ! We do this in blocks with 1000 DOF's each to prevent the stack
+    ! from being destroyed!
+    !
+    ! Get the permutation from the matrix - or more precisely, the
+    ! back-permutation, as we need this one for the loop below.
+    CALL storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
+    p_Iperm => p_Iperm(rmatrix%NEQ+1:)
+    
+    ! How many entries to handle in the first block?
+    ilenleft = MIN(rdbcStructure%nDOF,NBLOCKSIZE)
+    
+    ! Loop through the DOF-blocks
+    DO i=0,rdbcStructure%nDOF / NBLOCKSIZE
+      ! Filter the DOF's through the permutation
+      Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
+      
+      ! And implement the BC's with mmod_replaceLinesByUnit.
+      CALL mmod_replaceLinesByUnit (rmatrix,Idofs(1:ilenleft))
+    END DO
   
-  CALL mmod_replaceLinesByUnit (rmatrix,p_idx(1:rdbcStructure%nDOF))
+  END IF
   
   END SUBROUTINE
   
@@ -188,14 +218,15 @@ CONTAINS
   SUBROUTINE matfil_discreteBC (rmatrix)
 
 !<description>
-  ! This routine realises the 'impose discrete boundary conditions to solution'
-  ! filter. This filter imposes the discrete boundary conditions which are
-  ! associated to the vector rx (with rx%p_discreteBC) to this (block) vector.
+  ! This routine realises the 'impose discrete boundary conditions to 
+  ! block matrix' filter. This imposes the discrete boundary conditions 
+  ! associated to each submatrix of the block matrix rmatrix to this
+  ! submatrix.
 !</description>
   
 !<inputoutput>
 
-  ! The block vector where the boundary conditions should be imposed.
+  ! The block matrix where the boundary conditions should be imposed.
   TYPE(t_matrixBlock), INTENT(INOUT),TARGET :: rmatrix
   
 !</inputoutput>

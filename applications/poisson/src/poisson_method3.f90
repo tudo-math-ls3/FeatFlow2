@@ -543,6 +543,9 @@ CONTAINS
 !</inputoutput>
 
   ! local variables
+
+    ! Error indicator during initialisation of the solver
+    INTEGER :: ierror    
   
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
@@ -604,8 +607,10 @@ CONTAINS
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode)
-    CALL linsol_initData (p_rsolverNode)
+    CALL linsol_initStructure (p_rsolverNode,ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    CALL linsol_initData (p_rsolverNode,ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,

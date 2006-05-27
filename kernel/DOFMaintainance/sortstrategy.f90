@@ -85,7 +85,7 @@ CONTAINS
   NEQ = rmatrix%NEQ
   
   ! Currently, only matrix structure 7 and 9 are supported:
-  SELECT CASE (rmatrix%imatrixFormat)
+  SELECT CASE (rmatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
     ! At first, duplicate KCOL and also get a temporary Ideg array
     h_IcolTmp = ST_NOHANDLE

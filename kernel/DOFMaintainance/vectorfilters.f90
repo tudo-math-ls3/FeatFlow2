@@ -234,6 +234,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER    :: p_vec
   INTEGER(I32), DIMENSION(:), POINTER :: p_idx
   REAL(DP), DIMENSION(:), POINTER    :: p_val
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
 
   ! Get pointers to the structures. For the vector, get the pointer from
   ! the storage management.
@@ -263,9 +264,24 @@ CONTAINS
   ! Take care of where the vector starts in p_vec!
   ioffset = rx%iidxFirstEntry-1
 
-  DO i=1,rdbcStructure%nDOF
-    p_vec(ioffset+p_idx(i)) = p_val(i)
-  END DO
+  ! Is the vector sorted?
+  IF (rx%isortStrategy .LE. 0) THEN
+    ! No. Implement directly.
+    DO i=1,rdbcStructure%nDOF
+      p_vec(ioffset+p_idx(i)) = p_val(i)
+    END DO
+  ELSE
+    ! Ups, vector sorted. At first get the permutation how its sorted
+    ! - or more precisely, the back-permutation, as we need this one for 
+    ! the loop below.
+    CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+    p_Iperm => p_Iperm(rx%NEQ+1:)
+    
+    ! And 'filter' each DOF during the boundary value implementation!
+    DO i=1,rdbcStructure%nDOF
+      p_vec(ioffset+p_Iperm(p_idx(i))) = p_val(i)
+    END DO
+  END IF
   
   END SUBROUTINE
   
@@ -299,6 +315,7 @@ CONTAINS
   INTEGER(PREC_DOFIDX) :: i, ioffset
   REAL(DP), DIMENSION(:), POINTER :: p_vec
   INTEGER(I32), DIMENSION(:), POINTER :: p_idx
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
   
   ! Get pointers to the structures. For the vector, get the pointer from
   ! the storage management.
@@ -327,9 +344,24 @@ CONTAINS
   ! Take care of where the vector starts in p_vec!
   ioffset = rx%iidxFirstEntry-1
 
-  DO i=1,rdbcStructure%nDOF
-    p_vec(ioffset+p_idx(i)) = 0.0_DP
-  END DO
+  ! Is the vector sorted?
+  IF (rx%isortStrategy .LE. 0) THEN
+    ! No. Implement directly.
+    DO i=1,rdbcStructure%nDOF
+      p_vec(ioffset+p_idx(i)) = 0.0_DP
+    END DO
+  ELSE
+    ! Ups, vector sorted. At first get the permutation how its sorted -
+    ! or more precisely, the back-permutation, as we need this one for 
+    ! the loop below.
+    CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+    p_Iperm => p_Iperm(rx%NEQ+1:)
+    
+    ! And 'filter' each DOF during the boundary value implementation!
+    DO i=1,rdbcStructure%nDOF
+      p_vec(ioffset+p_Iperm(p_idx(i))) = 0.0_DP
+    END DO
+  END IF
   
   END SUBROUTINE
 

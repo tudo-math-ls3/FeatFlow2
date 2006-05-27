@@ -108,6 +108,9 @@ CONTAINS
     ! LV receives the level where we want to solve
     INTEGER :: LV
     
+    ! Error indicator during initialisation of the solver
+    INTEGER :: ierror    
+    
     ! We need some more variables for pre/postprocessing - i.e. writing
     ! a GMV file.
     CHARACTER(LEN=60) :: CFILE
@@ -326,8 +329,10 @@ CONTAINS
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
     ! to the problem.
-    CALL linsol_initStructure (p_rsolverNode)
-    CALL linsol_initData (p_rsolverNode)
+    CALL linsol_initStructure (p_rsolverNode, ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+    CALL linsol_initData (p_rsolverNode, ierror)
+    IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,

@@ -116,6 +116,107 @@
 !#
 !#      $$  x_{new}  =  x + P^{-1}(b-Ax)  =  P^{-1}b  $$
 !#
+!#  FAQ - Frequently asked Questions
+!# ----------------------------------
+!# Ok, the solver library seems to be a little bit complicated. Therefore
+!# here a small chapter about how to set up specific tasks for newbies:
+!#
+!# 1.) I'd like to set up a simple BiCGStab solver with ILU(0) preconditioner.
+!#     How to do that?
+!#
+!#     Declare two solver structures, create the ILU(0) solver in the first,
+!#     BiCGStab solver in the second and hang in the ILU(0) solver as
+!#     preconditioner. Use NULL() for the filter chain as long as
+!#     you don't need it:
+!#
+!#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
+!#      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+!#
+!#      NULLIFY(p_RfilterChain)
+!#      NULLIFY(p_rpreconditioner)
+!#      CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#
+!#      -> p_rsolverNode is the solver identifying your BiCGStab(ILU(0)) 
+!#         solver.
+!#
+!# 2.) In numerics 1 I learned the pure Richardson iteration. Where can I
+!#     find it?
+!#
+!#     Pure Richardson iteration ($x_{n+1} = x_n + \omega (b-Ax)$) is called
+!#     'defect correction' here. Set up a defect correction solver and
+!#     modify the domega parameter in the solver node:
+!#
+!#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
+!#      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+!#
+!#      NULLIFY(p_RfilterChain)
+!#      NULLIFY(p_rpreconditioner)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#      p_rsolverNode%domega = 0.001   ! or whatever you like
+!#
+!# 3.) And where's the good old Jacobi iteration hidden? There's only that
+!#     preconditioner!?!
+!#
+!#     Yes, i have only the Jacobi preconditioner. To get a Jacobi iteration,
+!#     you must use it as a preconditioner in a defect correction loop:
+!#
+!#       $$ x_{n+1}  =  x_n  +  \omega D^{-1}  (b-Ax) $$
+!#          ------------------  ^^^^^^^^^^^^^  ------  Defect correction loop
+!#                              Jacobi preconditioner
+!#     So,
+!#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
+!#      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+!#
+!#      NULLIFY(p_RfilterChain)
+!#      NULLIFY(p_rpreconditioner)
+!#      CALL linsol_initJacobi (p_rpreconditioner,0.7_DP)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#
+!#    Alternatively, you can use the domega parameter from the defect
+!#    correction to specify the $\omega$, while using no damping parameter
+!#    in the actual Jacobi preconditioner:
+!#
+!#      NULLIFY(p_RfilterChain)
+!#      NULLIFY(p_rpreconditioner)
+!#      CALL linsol_initJacobi (p_rpreconditioner)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#      p_rsolverNode%domega = 0.7_DP
+!#
+!#  4.) I want to plug in my own solver XY. What do I have to do?
+!#
+!#      Well, the all solvers are build up in the same way with the same
+!#      interfaces - that's the reason why every solver can be used as
+!#      a preconditioner in another one. If you want to create your
+!#      own solver and plug it into here, use the following guidline
+!#      of what to do:
+!#      a) Add new solver identifier LINSOL_ALG_xxxx
+!#      b) Create solver-specific substructure (t_linsolSubnodeXXXX) if 
+!#         necessary and add a pointer to the subnode in the main solver 
+!#         structure.
+!#      c) Copy/Paste solver-specific routines and rename them:
+!#          - linsol_initXXXX
+!#          - linsol_setMatrixXXXX
+!#          - linsol_initStructureXXXX
+!#          - linsol_initDataXXXX
+!#          - linsol_doneDataXXXX
+!#          - linsol_doneStructureXXXX
+!#          - linsol_doneXXXX
+!#         Don't forget to deallocate in linsol_doneXXXX everything that
+!#         was allocated in linsol_initXXXX!!!
+!#      d) Modify the routines so that they do their work.
+!#      e) Alter the central solver routines to make your solver
+!#         interface public:
+!#          - linsol_initStructure
+!#          - linsol_initData
+!#          - linsol_doneData
+!#          - linsol_doneStructure
+!#          - linsol_releaseSolver
+!#          - linsol_precondDefect
+!#          - linsol_setMatricesIndirect
+!#         Add calls to the new solver routines there.
+!#      That's it, your solver should now be able to work ;-)
+!#      
 !# </purpose>
 !##############################################################################
 
@@ -139,16 +240,14 @@ MODULE linearsolver
   ! Undefined algorithm
   INTEGER, PARAMETER :: LINSOL_ALG_UNDEFINED     = 0
   
-  ! Richardson iteration $x_{n+1} = x_n + \omega(b-Ax)$
-  INTEGER, PARAMETER :: LINSOL_ALG_RICHARDSON    = 1
+  ! Preconditioned defect correction (Richardson iteration);
+  ! $x_{n+1} = x_n + \omega P^{-1} (b-Ax)$
+  INTEGER, PARAMETER :: LINSOL_ALG_DEFCORR       = 1
   
-  ! Jacobi iteration $x_{n+1} = x_n + \omega D^{-1}(b-Ax)$
+  ! Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
   INTEGER, PARAMETER :: LINSOL_ALG_JACOBI        = 2
-
-  ! Preconditioned defect correction $x_{n+1} = x_n + \omega P^{-1}(b-Ax)$
-  INTEGER, PARAMETER :: LINSOL_ALG_DEFCOR        = 3
   
-  ! SOR/GS iteration $x_{n+1} = x_n + (L+\omega D)^{-1}(b-Ax)$
+  ! SOR/GS iteration $x_1 = x_0 + (L+\omega D)^{-1}(b-Ax_0)$
   INTEGER, PARAMETER :: LINSOL_ALG_SOR           = 4
   
   ! SSOR iteration
@@ -220,7 +319,7 @@ MODULE linearsolver
   ! steps (e.g. UMFPACK performs always one step).
   INTEGER, PARAMETER :: LINSOL_ABIL_CHECKDEF     = 2**3
   
-  ! Solver is a direct solver / 1-step solver (e.g. UMFPACK, ILU).
+  ! Solver is a direct solver (e.g. UMFPACK, ILU).
   ! Otherwise the solver is of iterative nature and might perform
   ! multiple steps to solve the problem.
   INTEGER, PARAMETER :: LINSOL_ABIL_DIRECT       = 2**4
@@ -230,6 +329,24 @@ MODULE linearsolver
   
   ! Solver supports filtering
   INTEGER, PARAMETER :: LINSOL_ABIL_USEFILTER    = 2**6
+  
+!</constantblock>
+
+! *****************************************************************************
+
+!<constantblock description="Error constants returned by initialisation routines">
+
+  ! Initialisation routine went fine
+  INTEGER, PARAMETER :: LINSOL_ERR_NOERROR       = 0
+
+  ! Warning: Singular matrix
+  INTEGER, PARAMETER :: LINSOL_ERR_SINGULAR      = -1
+
+  ! Error during the initialisation: Not enough memory
+  INTEGER, PARAMETER :: LINSOL_ERR_NOMEMORY      = 1
+
+  ! General error during the initialisation
+  INTEGER, PARAMETER :: LINSOL_ERR_INITERROR     = 2
   
 !</constantblock>
 
@@ -329,7 +446,9 @@ MODULE linearsolver
     REAL(DP)                        :: dtimeFiltering
     
     ! INPUT PARAMETER:
-    ! General solver parameter; solver specific use
+    ! General solver parameter; solver specific use.
+    ! Standard value = 1.0 (corresponds to 'no damping' e.g. with the defect
+    ! correction iteration)
     REAL(DP)                        :: domega  = 1.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
@@ -352,7 +471,7 @@ MODULE linearsolver
     !   !!defect!! >= DIVREL * !!initial defect!!
     ! A value of SYS_INFINITY disables the relative divergence check.
     ! standard = 1E3
-    REAL(DP)                        :: ddivRel = SYS_INFINITY
+    REAL(DP)                        :: ddivRel = 1E3_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Absolute divergence criterion.  Treat iteration as
@@ -454,6 +573,9 @@ MODULE linearsolver
     
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     INTEGER                    :: icurrentIteration
+
+    ! Pointer to a structure for the Defect correction solver; NULL() if not set
+    TYPE (t_linsolSubnodeDefCorr), POINTER        :: p_rsubnodeDefCorr     => NULL()
     
     ! Pointer to a structure for the BiCGStab solver; NULL() if not set
     TYPE (t_linsolSubnodeBiCGStab), POINTER       :: p_rsubnodeBiCGStab    => NULL()
@@ -503,6 +625,35 @@ MODULE linearsolver
   ! t_linsolNode structure for the solver that realises the 
   ! preconditioning.
   
+  TYPE t_linsolSubnodeDefCorr
+  
+    ! Temporary vector to use during the solution process
+    TYPE(t_vectorBlock) :: rtempVector
+
+    ! 2nd Temporary vector to use during the solution process
+    TYPE(t_vectorBlock) :: rtempVector2
+
+    ! A pointer to the solver node for the preconditioner or NULL(),
+    ! if no preconditioner is used.
+    TYPE(t_linsolNode), POINTER       :: p_rpreconditioner            => NULL()
+    
+    ! A pointer to a filter chain, as this solver supports filtering.
+    ! The filter chain must be configured for being applied to defect vectors.
+    TYPE(t_filterChain), DIMENSION(:), POINTER      :: p_RfilterChain => NULL()
+  
+  END TYPE
+  
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the BiCGStab solver.
+  ! The entry p_rpreconditioner points either to NULL() or to another
+  ! t_linsolNode structure for the solver that realises the 
+  ! preconditioning.
+  
   TYPE t_linsolSubnodeBiCGStab
   
     ! Temporary vectors to use during the solution process
@@ -529,17 +680,18 @@ MODULE linearsolver
   TYPE t_linsolSubnodeUMFPACK4
   
     ! Control structure for UMFPACK4; contains parameter for the solver
-    REAL(DP), DIMENSION(20) :: Control
+    REAL(DP), DIMENSION(20) :: Dcontrol
 
-    ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
-    ! of a call to the solver routines.
-    REAL(DP), DIMENSION(90) :: Info
-
-    ! Handle for symbolic factorisation
-    INTEGER(I32) :: symbolic = ST_NOHANDLE
+    ! Handle for symbolic factorisation.
+    ! This is not a FEAT-Handle!
+    INTEGER(I32) :: isymbolic = 0
 
     ! Handle for numeric factorisation
-    INTEGER(I32) :: numeric = ST_NOHANDLE
+    ! This is not a FEAT-Handle!
+    INTEGER(I32) :: inumeric = 0
+    
+    ! Handle to a temporary vector for storing the solution
+    TYPE(t_vectorBlock) :: rtempVector
 
   END TYPE
   
@@ -789,6 +941,8 @@ CONTAINS
   ! the sub-nodes of each solver.
   
   SELECT CASE(rsolverNode%calgorithm)
+  CASE (LINSOL_ALG_DEFCORR)
+    CALL linsol_setMatrixDefCorr (rsolverNode,RlinsysInfo)
   CASE (LINSOL_ALG_UMFPACK4)
     ! UMFPACK needs no matrix initialisation routine, as it does not
     ! contain subsolvers. An attached matrix is processed in the 
@@ -798,8 +952,7 @@ CONTAINS
     ! contain subsolvers. An attached matrix is processed in the 
     ! symbolical/numerical factorisation.
   CASE (LINSOL_ALG_BICGSTAB)
-    CALL linsol_setMatrixBiCGStab (rsolverNode, &
-                                    RlinsysInfo(UBOUND(RlinsysInfo,1)),RlinsysInfo)
+    CALL linsol_setMatrixBiCGStab (rsolverNode, RlinsysInfo)
   CASE (LINSOL_ALG_MULTIGRID)
     CALL linsol_setMatrixMultigrid (rsolverNode, RlinsysInfo)
   CASE DEFAULT
@@ -918,7 +1071,7 @@ CONTAINS
   
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_initStructure (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initStructure (rsolverNode, ierror, isolverSubgroup)
   
 !<description>
   
@@ -934,14 +1087,11 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
-  
 !</inputoutput>
 
 !<input>
-    
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -949,13 +1099,22 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are initialised.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-  
 !</input>
+
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
   
 !</subroutine>
 
   ! local variables
   INTEGER :: isubgroup
+  
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
   
   ! by default, initialise solver subroup 0
   isubgroup = 0
@@ -968,14 +1127,16 @@ CONTAINS
     ! VANCA: no init-routine.
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     ! VANCA: no init-routine.
+  CASE (LINSOL_ALG_DEFCORR)
+    CALL linsol_initStructureDefCorr (rsolverNode,ierror,isubgroup)
   CASE (LINSOL_ALG_UMFPACK4)
-    CALL linsol_initStructureUMFPACK4 (rsolverNode,isubgroup)
+    CALL linsol_initStructureUMFPACK4 (rsolverNode,ierror,isubgroup)
   CASE (LINSOL_ALG_MILUS1X1)
     ! No structure routine for (M)ILU(s)
   CASE (LINSOL_ALG_BICGSTAB)
-    CALL linsol_initStructureBiCGStab (rsolverNode,isubgroup)
+    CALL linsol_initStructureBiCGStab (rsolverNode,ierror,isubgroup)
   CASE (LINSOL_ALG_MULTIGRID)
-    CALL linsol_initStructureMultigrid (rsolverNode,isubgroup)
+    CALL linsol_initStructureMultigrid (rsolverNode,ierror,isubgroup)
   END SELECT
   
   END SUBROUTINE
@@ -984,10 +1145,9 @@ CONTAINS
   
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_initData (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initData (rsolverNode, ierror,isolverSubgroup)
   
 !<description>
-  
   ! Initialises the problem data in the solver node rsolverNode by calling
   ! the initialisation routine of the appropriate solver. The solver
   ! initialisation routine itself can call this procedure to initialise
@@ -996,13 +1156,16 @@ CONTAINS
   ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can 
   ! perform a numerical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g.
-  
 !</description>
   
-!<inputoutput>
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
 
 !<input>
-    
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -1010,14 +1173,11 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are initialised.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-  
 !</input>
 
-  !<inputpoutput>
-    
+!<inputpoutput>
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
-  
 !</inputoutput>
 
 !</subroutine>
@@ -1025,6 +1185,9 @@ CONTAINS
   ! local variables
   INTEGER :: isubgroup
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -1036,14 +1199,16 @@ CONTAINS
     ! VANCA: no init-routine.
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     ! VANCA: no init-routine.
+  CASE (LINSOL_ALG_DEFCORR)
+    CALL linsol_initDataDefCorr (rsolverNode,ierror,isubgroup)
   CASE (LINSOL_ALG_UMFPACK4)
-    CALL linsol_initDataUMFPACK4 (rsolverNode,isubgroup)
+    CALL linsol_initDataUMFPACK4 (rsolverNode,ierror,isubgroup)
   CASE (LINSOL_ALG_MILUS1X1)
-    CALL linsol_initDataMILUs1x1 (rsolverNode,isubgroup)
+    CALL linsol_initDataMILUs1x1 (rsolverNode,ierror,isubgroup)
   CASE (LINSOL_ALG_BICGSTAB)
-    CALL linsol_initDataBiCGStab (rsolverNode,isubgroup)
+    CALL linsol_initDataBiCGStab (rsolverNode,ierror,isubgroup)
   CASE (LINSOL_ALG_MULTIGRID)
-    CALL linsol_initDataMultigrid (rsolverNode,isubgroup)
+    CALL linsol_initDataMultigrid (rsolverNode,ierror,isubgroup)
   END SELECT
   
   END SUBROUTINE
@@ -1052,7 +1217,7 @@ CONTAINS
   
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_updateStructure (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_updateStructure (rsolverNode, ierror,isolverSubgroup)
   
 !<description>
   
@@ -1061,14 +1226,18 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  
   ! The solver node which should be reinitialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
-  
 !</inputoutput>
   
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+  
 !<input>
-    
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -1076,7 +1245,6 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-  
 !</input>
 
 !</subroutine>
@@ -1084,6 +1252,9 @@ CONTAINS
   ! local variables
   INTEGER :: isubgroup
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -1092,7 +1263,7 @@ CONTAINS
   ! Maybe rewritten later for higher performance or special cases...
   
   CALL linsol_doneStructure (rsolverNode,isubgroup)
-  CALL linsol_initStructure (rsolverNode,isubgroup)
+  CALL linsol_initStructure (rsolverNode,ierror,isubgroup)
   
   END SUBROUTINE
   
@@ -1100,23 +1271,25 @@ CONTAINS
   
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_updateData (rsolverNode,isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_updateData (rsolverNode,ierror,isolverSubgroup)
   
 !<description>
-  
   ! Reinitialises the problem data in the solver node rsolverNode.
-  
 !</description>
   
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
 !<inputoutput>
-  
   ! The solver node containing the solver confuguration
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
-  
 !</inputoutput>
   
 !<input>
-    
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -1124,7 +1297,6 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-  
 !</input>
   
 !</subroutine>
@@ -1132,6 +1304,9 @@ CONTAINS
   ! local variables
   INTEGER :: isubgroup
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -1140,7 +1315,7 @@ CONTAINS
   ! Maybe rewritten later for higher performance or special cases...
   
   CALL linsol_doneData (rsolverNode, isubgroup)
-  CALL linsol_initData (rsolverNode, isubgroup)
+  CALL linsol_initData (rsolverNode, isubgroup,ierror)
 
   END SUBROUTINE
   
@@ -1193,6 +1368,8 @@ CONTAINS
     ! VANCA: no done-routine.
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     ! VANCA: no done-routine.
+  CASE (LINSOL_ALG_DEFCORR)
+    CALL linsol_doneStructureDefCorr (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_doneStructureUMFPACK4 (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_MILUS1X1)
@@ -1252,10 +1429,12 @@ CONTAINS
     ! VANCA: no done-routine.
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     ! VANCA: no done-routine.
+  CASE (LINSOL_ALG_DEFCORR)
+    CALL linsol_doneDataDefCorr (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_doneDataUMFPACK4 (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_MILUS1X1)
-    CALL linsol_initDataMILUs1x1 (rsolverNode,isubgroup)
+    CALL linsol_doneDataMILUs1x1 (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_BICGSTAB)
     CALL linsol_doneDataBiCGStab (rsolverNode,isubgroup)
   CASE (LINSOL_ALG_MULTIGRID)
@@ -1306,6 +1485,8 @@ CONTAINS
     ! VANCA: no done-routine.
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     ! VANCA: no done-routine.
+  CASE (LINSOL_ALG_DEFCORR)
+    CALL linsol_doneDefCorr (p_rsolverNode)
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_doneUMFPACK4 (p_rsolverNode)
   CASE (LINSOL_ALG_BICGSTAB)
@@ -1464,7 +1645,7 @@ CONTAINS
   
   loutput = .FALSE.
   
-  ! Absolute convergence criterion? Check the norm directly.
+  ! Absolute divergence criterion? Check the norm directly.
   IF (rsolverNode%ddivAbs .NE. SYS_INFINITY) THEN
    
     ! use NOT here - gives a better handling of special cases like NaN!
@@ -1474,11 +1655,10 @@ CONTAINS
     
   END IF
   
-  ! Relative convergence criterion? Multiply with initial residuum
+  ! Relative divergence criterion? Multiply with initial residuum
   ! and check the norm. 
   IF (rsolverNode%depsRel .NE. SYS_INFINITY) THEN
-    IF ( .NOT. (dvecNorm*rsolverNode%dinitialDefect .LE. &
-                rsolverNode%ddivRel) ) THEN
+    IF ( .NOT. (dvecNorm .LE. rsolverNode%dinitialDefect*rsolverNode%ddivRel) ) THEN
       loutput = .TRUE.
     END IF
   END IF
@@ -1525,6 +1705,8 @@ CONTAINS
     ! not yet implemented
   CASE (LINSOL_ALG_VANCAQ1TP02DNS)
     CALL linsol_precVANCAQ1TP0NS2D (rsolverNode,rd)
+  CASE (LINSOL_ALG_DEFCORR)
+    CALL linsol_precDefCorr (rsolverNode,rd)
   CASE (LINSOL_ALG_UMFPACK4)
     CALL linsol_precUMFPACK4 (rsolverNode,rd)
   CASE (LINSOL_ALG_MILUS1x1)
@@ -1685,6 +1867,969 @@ CONTAINS
   END SUBROUTINE
   
 ! *****************************************************************************
+! Routines for the Defect Correction iteration
+! *****************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_Rfilter)
+  
+!<description>
+  
+  ! Creates a t_linsolNode solver structure for the defect correction iteration.
+  ! The node can be used to directly solve a problem or to be attached 
+  ! as solver or preconditioner to another solver structure. The node can be 
+  ! deleted by linsol_releaseSolver.
+  !
+  ! The defect correction performs nmaxIterations iterations of the type
+  !    $$ x_{n+1}  =  x_n  +  (b-Ax_n} $$
+  ! with $x_0:=0$. 
+  ! It's possible to include a damping parameter to this operation by 
+  ! changing rsolverNode%domega to a value $\not =1$. In this case, the
+  ! defect correction iteration changes to the Richardson iteration
+  !
+  !    $$ x_{n+1}  =  x_n  +  \omega(b-Ax_n} $$
+  !
+  ! By specifying an additional preconditioner, it's possible to perform
+  ! the preconditioned defect correction iteration
+  !
+  !    $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax_n} $$
+  !
+  ! By specifying an additional filter, the defect vector is filtered before
+  ! each preconditioner step.
+  
+  
+!</description>
+  
+!<input>
+  
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be 
+  ! used for preconditioning. If not given or set to NULL(), no preconditioning 
+  ! will be used.
+  TYPE(t_linsolNode), POINTER, OPTIONAL   :: p_rpreconditioner
+  
+  ! OPTIONAL: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! structures) if filtering should be applied to the vector during the 
+  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! The filter chain (i.e. the array) must exist until the system is solved!
+  ! The filter chain must be configured for being applied to defect vectors.
+  TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_Rfilter
+  
+!</input>
+  
+!<output>
+  
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER         :: p_rsolverNode
+   
+!</output>
+  
+!</subroutine>
+  
+  ! Create a default solver structure
+  
+  CALL linsol_initSolverGeneral(p_rsolverNode)
+  
+  ! Initialise the type of the solver
+  p_rsolverNode%calgorithm = LINSOL_ALG_DEFCORR
+  
+  ! Initialise the ability bitfield with the ability of this solver:
+  p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK    + &
+                              LINSOL_ABIL_CHECKDEF + &
+                              LINSOL_ABIL_USESUBSOLVER + &
+                              LINSOL_ABIL_USEFILTER
+  
+  ! Allocate a subnode for our solver.
+  ! This initialises most of the variables with default values appropriate
+  ! to this solver.
+  ALLOCATE(p_rsolverNode%p_rsubnodeDefCorr)
+  
+  ! Attach the preconditioner if given. 
+  
+  IF (PRESENT(p_rpreconditioner)) THEN 
+    p_rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner => p_rpreconditioner
+  END IF
+
+  ! Attach the filter if given. 
+  
+  IF (PRESENT(p_Rfilter)) THEN
+    p_rsolverNode%p_rsubnodeDefCorr%p_RfilterChain => p_Rfilter
+  END IF
+  
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneDefCorr (rsolverNode)
+  
+!<description>
+  
+  ! This routine releases all temporary memory for the UMFPACK4 solver from
+  ! the heap.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! Check if there's a preconditioner attached. If yes, release it.
+  IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
+    CALL linsol_releaseSolver(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
+  END IF
+  
+  ! Release the subnode structure
+  DEALLOCATE(rsolverNode%p_rsubnodeDefCorr)
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_setMatrixDefCorr (rsolverNode,Rmatrices)
+  
+!<description>
+  
+  ! This routine is called if the pointer to the system matrix changes.
+  ! The routine calls linsol_setMatrices for the preconditioner
+  ! to inform also that one about the change of the matrix pointer.
+  
+!</description>
+  
+!<input>
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  TYPE(t_LinearSystemInfo), INTENT(IN), DIMENSION(:)   :: Rmatrices
+!</input>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!</subroutine>
+
+  ! Do we have a preconditioner given? If yes, call the general initialisation
+  ! routine to initialise it.
+  
+  IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
+    CALL linsol_setMatrices (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
+                             Rmatrices)
+  END IF
+
+  END SUBROUTINE
+  
+! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_initStructureDefCorr (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  
+  ! Solver preparation. Perform symbolic factorisation (not of the defect
+  ! correcion solver, but of subsolvers). Allocate temporary memory.
+  
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: isubgroup
+  
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the init routine of the preconditioner.
+  IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
+    CALL linsol_initStructure (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
+                               isubgroup,ierror)
+  END IF
+  
+  ! Cancel here, if we don't belong to the subgroup to be initialised
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+  
+  ! Intialisation. In our case: allocate temporary vectors for our data
+  ! by using the associated matrix as template.
+  ! That vectors are used in the defect correction so save the intermediate
+  ! 'solution' vector.
+  
+  CALL lsysbl_createVecBlockIndMat (rsolverNode%rlinearSystemInfo%p_rsystemMatrix, &
+        rsolverNode%p_rsubnodeDefCorr%rtempVector,.FALSE.)
+
+  CALL lsysbl_createVecBlockIndMat (rsolverNode%rlinearSystemInfo%p_rsystemMatrix, &
+        rsolverNode%p_rsubnodeDefCorr%rtempVector2,.FALSE.)
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_initDataDefCorr (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initData.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: isubgroup
+  
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the init routine of the preconditioner.
+  IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
+    CALL linsol_initData (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
+                          isubgroup,ierror)
+  END IF
+  
+  ! Nothing to do here.
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneDataDefCorr (rsolverNode, isolverSUbgroup)
+  
+!<description>
+  
+  ! Calls the doneData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneData.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: isubgroup
+  
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the done routine of the preconditioner.
+  IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
+    CALL linsol_doneData (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
+                          isubgroup)
+  END IF
+  
+  ! Nothing to do here.
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneStructureDefCorr (rsolverNode, isolverSubgroup)
+  
+!<description>
+  
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneStructure.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the UMFPACK4 solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: isubgroup
+  
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the init routine of the preconditioner.
+  IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
+    CALL linsol_doneStructure (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner, &
+                               isubgroup)
+  END IF
+  
+  ! Cancel here, if we don't belong to the subgroup to be initialised
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+
+  ! Ok, we are the one to be released. We have temp-vectors to be released!
+  IF (rsolverNode%p_rsubnodeDefCorr%rtempVector%NEQ .NE. 0) THEN
+    CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector)
+    CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector2)
+  END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_precDefCorr (rsolverNode,rd)
+  
+!<description>
+  
+  ! Applies the Defect Correction preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: ireslength,ite,i
+  REAL(DP) :: dres,dfr
+  TYPE(t_vectorBlock), POINTER :: p_rx,p_rdef
+  TYPE(t_linsolNode), POINTER :: p_rprecSubnode
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  
+  ! Damping parameter
+  REAL(DP) :: domega
+
+  ! The queue saves the current residual and the two previous residuals.
+  REAL(DP), DIMENSION(32) :: Dresqueue
+  
+  ! The system matrix
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  
+  ! Minimum number of iterations, print-sequence for residuals
+  INTEGER :: nminIterations, niteResOutput
+  
+  ! Whether to filter/prcondition
+  LOGICAL bprec,bfilter
+  
+  ! The local subnode
+  TYPE(t_linsolSubnodeDefCorr), POINTER :: p_rsubnode
+
+    ! Status reset
+    rsolverNode%iresult = 0
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeDefCorr
+    p_rmatrix => rsolverNode%rlinearSystemInfo%p_rsystemMatrix
+
+    ! Check the parameters
+    IF ((rd%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .EQ. 0) .OR. &
+        (p_rmatrix%NEQ .NE. rd%NEQ) ) THEN
+    
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+
+    ! Length of the queue of last residuals for the computation of
+    ! the asymptotic convergence rate
+
+    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+
+    ! Minimum number of iterations
+ 
+    nminIterations = MAX(rsolverNode%nminIterations,0)
+    
+    ! Damping parameter
+    domega = rsolverNode%domega
+      
+    ! Use preconditioning? Filtering?
+
+    bprec = ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
+    bfilter = ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_RfilterChain)
+    
+    IF (bprec) THEN
+      p_rprecSubnode => p_rsubnode%p_rpreconditioner
+    END IF
+    IF (bfilter) THEN
+      p_RfilterChain => p_rsubnode%p_RfilterChain
+    END IF
+
+    ! Iteration when the residuum is printed:
+
+    niteResOutput = MAX(1,rsolverNode%niteResOutput)
+
+    ! We want to perform <= nmaxIterations of the form
+    !
+    !    $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax) $$
+    !
+    ! At first, set up our temporary vectors, which holds the current
+    ! 'solution' and the current 'defect'. We already allocated them 
+    ! during the initialisation phase - now we want to use them!
+    
+    p_rx   => rsolverNode%p_rsubnodeDefCorr%rtempVector
+    p_rdef => rsolverNode%p_rsubnodeDefCorr%rtempVector2
+    
+    ! The vectors share the same boundary conditions as rd!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    CALL lsysbl_assignDiscretIndirect (rd,p_rx)
+    CALL lsysbl_assignDiscretIndirect (rd,p_rdef)
+  
+    ! rd is our RHS. p_rx points to a new vector which will be our
+    ! iteration vector. At the end of this routine, we replace
+    ! rd by p_rx.
+    ! Clear our iteration vector p_rx.
+    CALL lsysbl_vectorClear (p_rx)
+  
+    ! Copy our RHS rd to p_rdef. As the iteration vector is 0, this
+    ! is also our initial defect.
+
+    CALL lsysbl_vectorCopy(rd,p_rdef)
+    IF (bfilter) THEN
+      ! Apply the filter chain to the vector
+      CALL filter_applyFilterChainVec (p_rdef, p_RfilterChain)
+    END IF
+    IF (bprec) THEN
+      ! Perform preconditioning with the assigned preconditioning
+      ! solver structure.
+      CALL linsol_precondDefect (p_rprecSubnode,p_rdef)
+    END IF
+    
+    ! Get the norm of the residuum
+    dres = lsysbl_vectorNorm (p_rdef,rsolverNode%iresNorm)
+    IF (.NOT.((dres .GE. 1D-99) .AND. &
+              (dres .LE. 1D99))) dres = 0.0_DP
+
+    ! Initialize starting residuum
+      
+    rsolverNode%dinitialDefect = dres
+
+    ! initialize the queue of the last residuals with RES
+
+    Dresqueue = dres
+
+    ! Check if out initial defect is zero. This may happen if the filtering
+    ! routine filters "everything out"!
+    ! In that case we can directly stop our computation.
+
+    IF ( rsolverNode%dinitialDefect .LT. rsolverNode%drhsZero ) THEN
+     
+      ! final defect is 0, as initialised in the output variable above
+
+      CALL lsysbl_vectorClear(p_rx)
+      ite = 0
+      rsolverNode%dfinalDefect = dres
+          
+    ELSE
+
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        PRINT *,&
+          'DefCorr: Iteration ',0,',  !!RES!! = ',rsolverNode%dinitialDefect
+      END IF
+
+      ! Perform at most nmaxIterations loops to get a new vector
+
+      DO ite = 1,rsolverNode%nmaxIterations
+      
+        rsolverNode%icurrentIteration = ite
+        
+        ! In p_rdef, we now have the current residuum $P^{-1} (b-Ax)$.
+        ! Add it (damped) to the current iterate p_x to get
+        !   $$ x  :=  x  +  \omega P^{-1} (b-Ax) $$
+
+        CALL lsysbl_vectorLinearComb (p_rdef ,p_rx,domega,1.0_DP)
+
+        ! Calculate the residuum for the next step : (b-Ax)
+        CALL lsysbl_vectorCopy (rd,p_rdef)
+        CALL lsysbl_blockMatVec (p_rmatrix, p_rx,p_rdef, -1.0_DP,1.0_DP)
+        IF (bfilter) THEN
+          ! Apply the filter chain to the vector
+          CALL filter_applyFilterChainVec (p_rdef, p_RfilterChain)
+        END IF
+        IF (bprec) THEN
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          CALL linsol_precondDefect (p_rprecSubnode,p_rdef)
+        END IF
+        
+        ! Get the norm of the new (final?) residuum
+        dfr = lsysbl_vectorNorm (p_rdef,rsolverNode%iresNorm)
+     
+        ! Shift the queue with the last residuals and add the new
+        ! residual to it. Check length of ireslength to be larger than
+        ! 0 as some compilers might produce Floating exceptions
+        ! otherwise! (stupid pgf95)
+        IF (ireslength .GT. 0) &
+          dresqueue(1:ireslength) = EOSHIFT(dresqueue(1:ireslength),1,dfr)
+
+        rsolverNode%dfinalDefect = dfr
+
+        ! Test if the iteration is diverged
+        IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          PRINT *,'DefCorr: Solution diverging!'
+          rsolverNode%iresult = 1
+          EXIT
+        END IF
+     
+        ! At least perform nminIterations iterations
+        IF (ite .GE. nminIterations) THEN
+        
+          ! Check if the iteration converged
+          IF (linsol_testConvergence(rsolverNode,dfr)) EXIT
+          
+        END IF
+
+        ! print out the current residuum
+
+        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+            (MOD(ite,niteResOutput).EQ.0)) THEN
+          !WRITE (MTERM,'(A,I7,A,D25.16)') 
+          PRINT *,'DefCorr: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+        END IF
+
+      END DO
+
+      ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+      ! completed
+
+      IF (ite .GT. rsolverNode%nmaxIterations) &
+        ite = rsolverNode%nmaxIterations
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+
+      IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+          (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
+          (rsolverNode%iresult .GE. 0)) THEN
+        !WRITE (MTERM,'(A,I7,A,D25.16)') 
+        PRINT *,'DefCorr: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+      END IF
+
+    END IF
+
+    rsolverNode%iiterations = ite
+    
+    ! Overwrite our previous RHS by the new correction vector p_rx.
+    ! This completes the preconditioning.
+    CALL lsysbl_vectorCopy (p_rx,rd)
+      
+    ! Don't calculate anything if the final residuum is out of bounds -
+    ! would result in NaN's,...
+      
+    IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+    
+      ! Calculate asymptotic convergence rate
+    
+      IF (dresqueue(1) .GE. 1E-70_DP) THEN
+        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+        rsolverNode%dasymptoticConvergenceRate = &
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+      END IF
+
+      ! If the initial defect was zero, the solver immediately
+      ! exits - and so the final residuum is zero and we performed
+      ! no steps; so the resulting multigrid convergence rate stays zero.
+      ! In the other case the multigrid convergence rate computes as
+      ! (final defect/initial defect) ** 1/nit :
+
+      IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN
+        rsolverNode%dconvergenceRate = &
+                    (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                    (1.0_DP/REAL(rsolverNode%iiterations,DP))
+      END IF
+      
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        !WRITE (MTERM,'(A)') ''
+        PRINT *
+        !WRITE (MTERM,'(A)') 
+        PRINT *,'DefCorr statistics:'
+        !WRITE (MTERM,'(A)') ''
+        PRINT *
+        !WRITE (MTERM,'(A,I5)')     'Iterations              : ',
+    !*            IPARAM(OITE)
+        PRINT *,'Iterations              : ',rsolverNode%iiterations
+        !WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
+    !*            DPARAM(ODEFINI)
+        PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
+        !WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
+    !*            DPARAM(ODEFFIN)
+        PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
+        IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
+          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+    !*              rparam%dfinalDefect / rparam%dinitialDefect
+          PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
+                  rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
+        ELSE
+          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
+    !*              0D0
+          PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
+        END IF
+        !WRITE (MTERM,'(A)') ''
+        PRINT *
+        !WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
+    !*            DPARAM(ORHO)
+        PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
+
+      END IF
+
+      IF (rsolverNode%ioutputLevel .EQ. 1) THEN
+!          WRITE (MTERM,'(A,I5,A,D24.12)') 
+!     *          'DefCorr: Iterations/Rate of convergence: ',
+!     *          IPARAM(OITE),' /',DPARAM(ORHO)
+!          WRITE (MTERM,'(A,I5,A,D24.12)') 
+!     *          'DefCorr: Iterations/Rate of convergence: ',
+!     *          IPARAM(OITE),' /',DPARAM(ORHO)
+        PRINT *,&
+              'DefCorr: Iterations/Rate of convergence: ',&
+              rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
+      END IF
+      
+    ELSE
+      ! DEF=Infinity; RHO=Infinity, set to 1
+      rsolverNode%dconvergenceRate = 1.0_DP
+      rsolverNode%dasymptoticConvergenceRate = 1.0_DP
+    END IF  
+  
+  END SUBROUTINE
+  
+! *****************************************************************************
+! Routines for the Jacobi solver
+! *****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_initJacobi (p_rsolverNode, domega)
+  
+!<description>
+  
+  ! Creates a t_linsolNode solver structure for the Jacobi solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  !
+  ! This Jacobi solver has no done-routine as there is no dynamic information
+  ! allocated. The given damping parameter domega is saved to the solver
+  ! structure rsolverNode%domega.
+  
+!</description>
+  
+!<input>
+  ! OPTIONAL: Damping parameter. Is saved to rsolverNode%domega if specified.
+  REAL(DP), OPTIONAL :: domega
+!</input>
+  
+!<output>
+  
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER         :: p_rsolverNode
+   
+!</output>
+  
+!</subroutine>
+  
+  ! Create a default solver structure
+  
+  CALL linsol_initSolverGeneral(p_rsolverNode)
+  
+  ! Initialise the type of the solver
+  p_rsolverNode%calgorithm = LINSOL_ALG_VANCAQ1TP02DNS 
+  
+  ! Initialise the ability bitfield with the ability of this solver:
+  p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
+                              LINSOL_ABIL_DIRECT
+  
+    ! No subnode for Jacobi. Only save domega to the structure.
+  IF (PRESENT(domega)) THEN
+    p_rsolverNode%domega = domega
+  END IF
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_precJacobi (rsolverNode,rd)
+  
+!<description>
+  
+  ! Applies the Jacobi preconditioner $D \in A$ to the defect 
+  ! vector rd and solves $Dd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the Jacobi solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER iblock
+  INTEGER(PREC_VECIDX) :: ieq
+  
+  TYPE (t_matrixScalar), POINTER :: p_rmatrix
+  INTEGER (PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiag
+  REAL(DP) :: dlocOmega
+  REAL(SP) :: flocOmega
+  REAL(DP), DIMENSION(:), POINTER :: p_Dvector, p_Dmatrix
+  REAL(SP), DIMENSION(:), POINTER :: p_Fvector, p_Fmatrix
+  
+  ! Loop through all blocks. Each block corresponds to one
+  ! diagonal block in the matrix.
+  DO iblock = 1,rd%nblocks
+    ! Get the matrix
+    p_rmatrix => rsolverNode%rlinearSystemInfo% &
+                 p_rsystemMatrix%RmatrixBlock(iblock,iblock)
+    
+    ! Now we have to make some decisions. At first, which matrix
+    ! structure do we have?
+    SELECT CASE (p_rmatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+      ! In case of structure 9, Kdiagonal points to the diagonal elements.
+      ! In case of structure 7, Kld points to the diagonal elements
+      IF (p_rmatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+        CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiag)
+      ELSE
+        CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kdiag)
+      END IF
+    
+      ! Get the omega parameter for the matrix. Don't forget the scaling 
+      ! factor in the matrix!
+      dlocomega = rsolverNode%domega * p_rmatrix%dScaleFactor
+
+      ! Now, which data format do we have? Single or double?
+      SELECT CASE (p_rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+        ! Get the matrix data arrays
+        CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+        
+        ! Take care of the accuracy of the vector
+        SELECT CASE (rd%cdataType)
+        CASE (ST_DOUBLE)
+          ! Get the data array
+          CALL storage_getbase_double (rd%h_Ddata,p_Dvector)
+          
+          ! and multiply all entries with the diagonal of the matrix.
+          DO ieq = 1,rd%NEQ
+            p_Dvector(ieq) = dlocOmega * p_Dmatrix(p_Kdiag(ieq)) * p_Dvector(ieq)
+          END DO
+          
+        CASE (ST_SINGLE)
+          ! Get the data array
+          CALL storage_getbase_double (rd%h_Ddata,p_Fvector)
+          
+          ! and multiply all entries with the diagonal of the matrix.
+          DO ieq = 1,rd%NEQ
+            p_Dvector(ieq) = dlocOmega * p_Dmatrix(p_Kdiag(ieq)) * p_Fvector(ieq)
+          END DO
+
+        CASE DEFAULT
+          PRINT *,'Jacobi: Unsupported vector format.'
+          STOP
+        END SELECT
+        
+      CASE (ST_SINGLE)
+
+        ! Get the matrix data arrays
+        CALL storage_getbase_double (p_rmatrix%h_Da,p_Fmatrix)
+        
+        ! Take care of the accuracy of the vector
+        SELECT CASE (rd%cdataType)
+        CASE (ST_DOUBLE)
+          ! Get the data array
+          CALL storage_getbase_double (rd%h_Ddata,p_Dvector)
+          
+          ! And multiply all entries with the diagonal of the matrix.
+          DO ieq = 1,rd%NEQ
+            p_Dvector(ieq) = dlocOmega * p_Fmatrix(p_Kdiag(ieq)) * p_Dvector(ieq)
+          END DO
+          
+        CASE (ST_SINGLE)
+          ! Get the data array
+          CALL storage_getbase_double (rd%h_Ddata,p_Fvector)
+          
+          ! Multiplication with Omega can be speeded up as we use
+          ! sigle-precision only.
+          flocOmega = REAL(dlocOmega,SP)
+          
+          ! Multiply all entries with the diagonal of the matrix.
+          DO ieq = 1,rd%NEQ
+            p_Dvector(ieq) = flocOmega * p_Fmatrix(p_Kdiag(ieq)) * p_Fvector(ieq)
+          END DO
+
+        CASE DEFAULT
+          PRINT *,'Jacobi: Unsupported vector format.'
+          STOP
+        END SELECT
+
+      CASE DEFAULT
+        PRINT *,'Jacobi: Unsupported matrix format.'
+        STOP
+      END SELECT
+    
+    CASE DEFAULT
+      PRINT *,'Jacobi: Unsupported matrix format.'
+      STOP
+    END SELECT
+    
+  END DO
+
+  
+  END SUBROUTINE
+  
+! *****************************************************************************
 ! Routines for the VANCA CC2D solver
 ! *****************************************************************************
 
@@ -1735,7 +2880,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE linsol_precVANCAQ1TP0NS2D (rsolverNode,rd)
+  RECURSIVE SUBROUTINE linsol_precVANCAQ1TP0NS2D (rsolverNode,rd)
   
 !<description>
   
@@ -1810,29 +2955,35 @@ CONTAINS
   ! to this solver.
   ALLOCATE(rsolverNode%p_rsubnodeUMFPACK4)
   
+  ! Initialize the UMFPACK4 control structure:
+        
+  CALL UMF4DEF(rsolverNode%p_rsubnodeUMFPACK4%Dcontrol)
+  
   END SUBROUTINE
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE linsol_initStructureUMFPACK4 (rsolverNode,isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initStructureUMFPACK4 (rsolverNode,ierror,isolverSubgroup)
   
 !<description>
-  
   ! Performs a symbolic factorisation on the assigned matrix.
-  
 !</description>
   
 !<inputoutput>
-  
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
-   
 !</inputoutput>
   
-!<input>
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
   
+!<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -1840,14 +2991,25 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
 !</input>
 
 !</subroutine>
 
   ! local variables
   INTEGER :: isubgroup
+  TYPE(t_matrixScalar), POINTER :: p_rmatrix
+  TYPE(t_matrixScalar) :: rtempMatrix
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+  REAL(DP), DIMENSION(:), POINTER :: p_DA
+
+  ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
+  ! of a call to the solver routines.
+  REAL(DP), DIMENSION(90) :: Dinfo
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -1862,9 +3024,76 @@ CONTAINS
   ! If isubgroup does not coincide with isolverSubgroup from the solver
   ! structure, skip the rest here.
   IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+
+  ! Check out that we can handle the matrix.
+  IF (rsolverNode%rlinearSystemInfo%p_rsystemMatrix%ndiagBlocks .NE. 1) THEN
+    PRINT *,'UMFPACK can only handle scalar matrices!'
+    STOP
+  END IF
   
-  ! perform a symbolic factorization...
-  PRINT *,'to be implemented'
+  p_rmatrix => rsolverNode%rlinearSystemInfo%p_rsystemMatrix%RmatrixBlock (1,1)
+
+  IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'UMFPACK can only handle double precision matrices!'
+    STOP
+  END IF
+
+  IF (p_rmatrix%dScaleFactor .NE. 1.0_DP) THEN
+    PRINT *,'UMFPACK cannot handle scaled matrices!'
+    STOP
+  END IF
+  
+  SELECT CASE (p_rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9)
+    ! Format 9 is exactly the UMFPACK matrix.
+    ! Make a copy of the matrix structure, but use the same matrix entries.
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_STRUCTURE)
+  CASE (LSYSSC_MATRIX7)
+    ! For format 7, we have to modify the matrix slightly.
+    ! Make a copy of the whole matrix:
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_ALL)
+    ! Resort the entries to put the diagonal entry to the correct position.
+    ! This means: Convert the structure-7 matrix to a structure-9 matrix:
+    PRINT *,'UMFPACK: Convert 7->9 matrix not implemented!'
+    STOP
+  END SELECT
+  
+  ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
+  CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
+  CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1)
+  
+  ! Get the data arrays.
+  CALL storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
+  CALL storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
+  CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
+  
+  ! Perform a symbolic factorization...
+  CALL UMF4SYM(rtempMatrix%NEQ,rtempMatrix%NEQ,p_Kld,p_Kcol,p_Da, &
+               rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
+               rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
+               Dinfo)
+               
+  ! Check Dinfo(1) if there is an error
+  SELECT CASE (INT(Dinfo(1)))
+  CASE (0)
+    ! ok.
+  CASE (1)
+    ! Singular matrix
+    ierror = LINSOL_ERR_SINGULAR
+  CASE (-1)
+    ! no memory
+    ierror = LINSOL_ERR_NOMEMORY
+  CASE DEFAULT
+    ! don't know what went wrong
+    ierror = LINSOL_ERR_INITERROR
+  END SELECT
+
+  ! Throw away the temporary matrix
+  CALL lsyssc_releaseMatrix (rtempmatrix)
+  
+  ! Allocate a temporary vector
+  CALL lsysbl_createVecBlockIndMat (rsolverNode%rlinearSystemInfo%p_rsystemMatrix, &
+        rsolverNode%p_rsubnodeUMFPACK4%rtempVector,.FALSE.)
     
   END SUBROUTINE
   
@@ -1872,7 +3101,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_initDataUMFPACK4 (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initDataUMFPACK4 (rsolverNode, ierror,isolverSubgroup)
   
 !<description>
   
@@ -1881,14 +3110,19 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
-   
 !</inputoutput>
+
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+  
   
 !<input>
-  
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -1896,14 +3130,25 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
 !</input>
 
 !</subroutine>
 
   ! local variables
   INTEGER :: isubgroup
+  TYPE(t_matrixScalar), POINTER :: p_rmatrix
+  TYPE(t_matrixScalar) :: rtempMatrix
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+  REAL(DP), DIMENSION(:), POINTER :: p_DA
+
+  ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
+  ! of a call to the solver routines.
+  REAL(DP), DIMENSION(90) :: Dinfo
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -1919,8 +3164,82 @@ CONTAINS
   ! structure, skip the rest here.
   IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
   
-  ! perform a numerical factorization...
-  PRINT *,'to be implemented'
+  ! Stop if there's no matrix assigned
+  
+  IF (.NOT. ASSOCIATED(rsolverNode%rlinearSystemInfo%p_rsystemMatrix)) THEN
+    PRINT *,'Error: No matrix associated!'
+    STOP
+  END IF
+  
+  ! If isubgroup does not coincide with isolverSubgroup from the solver
+  ! structure, skip the rest here.
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+  
+  ! Check out that we can handle the matrix.
+  IF (rsolverNode%rlinearSystemInfo%p_rsystemMatrix%ndiagBlocks .NE. 1) THEN
+    PRINT *,'UMFPACK can only handle scalar matrices!'
+    STOP
+  END IF
+  p_rmatrix => rsolverNode%rlinearSystemInfo%p_rsystemMatrix%RmatrixBlock (1,1)
+  
+  IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'UMFPACK can only handle double precision matrices!'
+    STOP
+  END IF
+
+  IF (p_rmatrix%dScaleFactor .NE. 1.0_DP) THEN
+    PRINT *,'UMFPACK cannot handle scaled matrices!'
+    STOP
+  END IF
+
+  SELECT CASE (p_rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9)
+    ! Format 9 is exactly the UMFPACK matrix.
+    ! Make a copy of the matrix structure, but use the same matrix entries.
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_STRUCTURE)
+  CASE (LSYSSC_MATRIX7)
+    ! For format 7, we have to modify the matrix slightly.
+    ! Make a copy of the whole matrix:
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_ALL)
+    ! Resort the entries to put the diagonal entry to the correct position.
+    ! This means: Convert the structure-7 matrix to a structure-9 matrix:
+    PRINT *,'UMFPACK: Convert 7->9 matrix not implemented!'
+    STOP
+  END SELECT
+  
+  ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
+  CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
+  CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1)
+  
+  ! Get the data arrays.
+  CALL storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
+  CALL storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
+  CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
+  
+  ! Perform a numeric factorization...
+  CALL UMF4NUM(p_Kld,p_Kcol,p_Da, &
+          rsolverNode%p_rsubnodeUMFPACK4%isymbolic,&
+          rsolverNode%p_rsubnodeUMFPACK4%inumeric,&
+          rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,&
+          Dinfo)
+          
+  ! Check Dinfo(1) if there is an error
+  SELECT CASE (INT(Dinfo(1)))
+  CASE (0)
+    ! ok.
+  CASE (1)
+    ! Singular matrix
+    ierror = LINSOL_ERR_SINGULAR
+  CASE (-1)
+    ! no memory
+    ierror = LINSOL_ERR_NOMEMORY
+  CASE DEFAULT
+    ! don't know what went wrong
+    ierror = LINSOL_ERR_INITERROR
+  END SELECT
+
+  ! Throw away the temporary matrix
+  CALL lsyssc_releaseMatrix (rtempMatrix)
     
   END SUBROUTINE
   
@@ -1928,7 +3247,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneDataUMFPACK4 (rsolverNode,isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_doneDataUMFPACK4 (rsolverNode,isolverSubgroup)
   
 !<description>
   
@@ -1968,8 +3287,11 @@ CONTAINS
   ! structure, skip the rest here.
   IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
   
-  ! Release the numerical factorisation
-  PRINT *,'to be implemented'
+  ! Release the numerical factorisation if associated
+  IF (rsolverNode%p_rsubnodeUMFPACK4%inumeric .NE. 0) THEN
+    CALL UMF4FNUM(rsolverNode%p_rsubnodeUMFPACK4%inumeric)
+    rsolverNode%p_rsubnodeUMFPACK4%inumeric = 0
+  END IF  
   
   END SUBROUTINE
   
@@ -1977,7 +3299,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneStructureUMFPACK4 (rsolverNode, isolverSUbgroup)
+  RECURSIVE SUBROUTINE linsol_doneStructureUMFPACK4 (rsolverNode, isolverSUbgroup)
   
 !<description>
   
@@ -2017,8 +3339,16 @@ CONTAINS
   ! structure, skip the rest here.
   IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
   
-  ! Release the symbolical factorisation
-  PRINT *,'to be implemented'
+  ! Release the symbolical factorisation if associated
+  IF (rsolverNode%p_rsubnodeUMFPACK4%isymbolic .NE. 0) THEN
+    CALL UMF4FSYM(rsolverNode%p_rsubnodeUMFPACK4%isymbolic)
+    rsolverNode%p_rsubnodeUMFPACK4%isymbolic = 0
+  END IF
+  
+  ! Release the temp vector if associated
+  IF (rsolverNode%p_rsubnodeUMFPACK4%rtempVector%NEQ .NE. 0) THEN
+    CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeUMFPACK4%rtempVector)
+  END IF
   
   END SUBROUTINE
   
@@ -2026,7 +3356,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneUMFPACK4 (rsolverNode)
+  RECURSIVE SUBROUTINE linsol_doneUMFPACK4 (rsolverNode)
   
 !<description>
   
@@ -2062,7 +3392,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_precUMFPACK4 (rsolverNode,rd)
+  RECURSIVE SUBROUTINE linsol_precUMFPACK4 (rsolverNode,rd)
   
 !<description>
 
@@ -2089,9 +3419,74 @@ CONTAINS
 !</inputoutput>
   
 !</subroutine>
+ 
+  ! local variables
+  INTEGER KSYS
+  REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Db
+  TYPE(t_vectorBlock), POINTER :: p_rb
+  TYPE(t_linsolSubnodeUMFPACK4), POINTER :: p_rsubnode
 
-  ! solve the system
-  PRINT *,'to be implemented...'
+  ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
+  ! of a call to the solver routines.
+  REAL(DP), DIMENSION(90) :: Dinfo
+  
+    ! Check that our RHS db is double precision - UMFPACK supports only
+    ! this.
+    IF (rd%cdataType .NE. ST_DOUBLE) THEN
+      PRINT *,'UMFPACK only supports double precision vectors!'
+      STOP
+    END IF
+
+    ! The vector must be scalar
+    IF (rd%nblocks .NE. 1) THEN
+      PRINT *,'UMFPACK supports only scalar vectors.'
+      STOP
+    END IF
+    
+    IF (rd%RvectorBlock(1)%isortStrategy .NE. rsolverNode%rlinearSystemInfo% &
+                              p_rsystemMatrix%RmatrixBlock (1,1)%isortStrategy) THEN
+     PRINT *,'UMFPACK: Matrix and vector are sorted differently!'
+     STOP
+    END IF
+    
+    ! Status reset
+    rsolverNode%iresult = 0
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeUMFPACK4
+    p_rb   => p_rsubnode%rtempVector
+    
+    ! All vectors share the same boundary conditions as rd!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    CALL lsysbl_assignDiscretIndirect (rd,p_rb)
+    
+    ! Copy the RHS rd to the temp vector; it will be overwritten
+    ! by the solution vector
+    CALL lsysbl_vectorCopy (rd,p_rb)
+
+    ! Get the RHS and solution vector data
+    CALL storage_getbase_double(rd%h_Ddata,p_Dx)
+    CALL storage_getbase_double(p_rb%h_Ddata,p_Db)
+
+    ! Solve the system
+    ! Solve the system. Note that UMFPACK expects the matrix in
+    ! CSR format, which is transposed to our matrix format 9 --
+    ! So we solve the transposed system:
+    KSYS = 1
+    CALL UMF4SOL(KSYS,p_Dx,p_Db,rsolverNode%p_rsubnodeUMFPACK4%inumeric,&
+                 rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,Dinfo)
+                
+    ! Check the solver status
+    SELECT CASE (INT(Dinfo(1)))
+    CASE (0) 
+      ! All ok.
+      rsolverNode%iiterations = 1
+      rsolverNode%dconvergenceRate = 0.0_DP
+    CASE DEFAULT
+      ! We had an error. Don't know which one.
+      rsolverNode%iresult = -1
+    END SELECT
   
   END SUBROUTINE
   
@@ -2171,24 +3566,26 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_initDataMILUs1x1 (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initDataMILUs1x1 (rsolverNode, ierror,isolverSubgroup)
   
 !<description>
-  
   ! Performs a numeric factorisation on the assigned matrix, i.e.
   ! computes the (M)ILU(s) decomposition.
-  
 !</description>
   
 !<inputoutput>
-  
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
-   
 !</inputoutput>
   
-!<input>
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
   
+!<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -2196,7 +3593,6 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
 !</input>
 
 !</subroutine>
@@ -2213,6 +3609,9 @@ CONTAINS
   INTEGER :: ifill
   REAL(DP) :: drelax
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -2244,8 +3643,8 @@ CONTAINS
     STOP
   END IF
   
-  IF ((p_rmatrixSc%imatrixFormat .NE. LSYSSC_MATRIX9) .AND.&
-      (p_rmatrixSc%imatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+  IF ((p_rmatrixSc%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND.&
+      (p_rmatrixSc%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
     PRINT *,'(M)ILU(s) supports only structure 7 and 9 matrices!'
     STOP
   END IF
@@ -2273,6 +3672,7 @@ CONTAINS
             p_Iwork,maxstr,&
             ierr,mneed)
             
+  !maxstr = MAX(mneed,3*p_rmatrixSc%NA+(3+4*ifill)*p_rmatrixSc%NEQ)
   maxstr = MAX(mneed,3*p_rmatrixSc%NA+3*p_rmatrixSc%NEQ)
   DO
     ! Allocate the memory
@@ -2297,9 +3697,9 @@ CONTAINS
     CASE (1)
       ! Reallocate memory, we need more
       maxstr = maxstr + mneed
-    CASE (2:)
-      PRINT *,'Error calculating (M)ILU(s)!'
-      STOP
+    CASE DEFAULT
+      ierror = LINSOL_ERR_INITERROR
+      RETURN
     END SELECT
     
     ! Try again...
@@ -2332,7 +3732,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneDataMILUs1x1 (rsolverNode,isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_doneDataMILUs1x1 (rsolverNode,isolverSubgroup)
   
 !<description>
   
@@ -2383,7 +3783,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneMILUs1x1 (rsolverNode)
+  RECURSIVE SUBROUTINE linsol_doneMILUs1x1 (rsolverNode)
   
 !<description>
   
@@ -2418,7 +3818,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_precMILUS1x1 (rsolverNode,rd)
+  RECURSIVE SUBROUTINE linsol_precMILUS1x1 (rsolverNode,rd)
   
 !<description>
   
@@ -2492,12 +3892,12 @@ CONTAINS
   
 !<input>
   
-  ! Optional: A pointer to the solver structure of a solver that should be 
+  ! OPTIONAL: A pointer to the solver structure of a solver that should be 
   ! used for preconditioning. If not given or set to NULL(), no preconditioning 
   ! will be used.
   TYPE(t_linsolNode), POINTER, OPTIONAL   :: p_rpreconditioner
   
-  ! Optional: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! OPTIONAL: A pointer to a filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
   ! iteration. If not given or set to NULL(), no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
@@ -2551,8 +3951,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_setMatrixBiCGStab (rsolverNode,rsystemMatrix, &
-                                                  Rmatrices)
+  RECURSIVE SUBROUTINE linsol_setMatrixBiCGStab (rsolverNode,Rmatrices)
   
 !<description>
   
@@ -2563,14 +3962,9 @@ CONTAINS
 !</description>
   
 !<input>
-  
-  ! The system matrix that is to be assigned to BiCGStab
-  TYPE(t_LinearSystemInfo), INTENT(IN), TARGET   :: rsystemMatrix
-
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
   TYPE(t_LinearSystemInfo), INTENT(IN), DIMENSION(:)   :: Rmatrices
-
 !</input>
   
 !<inputoutput>
@@ -2596,26 +3990,28 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_initStructureBiCGStab (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initStructureBiCGStab (rsolverNode, ierror,isolverSubgroup)
   
 !<description>
-  
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
-  
 !</description>
   
 !<inputoutput>
-  
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
-   
 !</inputoutput>
   
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
 !<input>
-  
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -2623,7 +4019,6 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
 !</input>
 
 !</subroutine>
@@ -2632,13 +4027,9 @@ CONTAINS
   INTEGER :: isubgroup,i
   TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
   
-  ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. Allocate that here!
-  p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-  DO i=1,6
-    CALL lsysbl_createVecBlockIndMat (rsolverNode%rlinearSystemInfo%p_rsystemMatrix, &
-         p_rsubnode%RtempVectors(i),.FALSE.)
-  END DO
-  
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -2655,32 +4046,44 @@ CONTAINS
                                isubgroup)
   END IF
   
+  ! Cancel here, if we don't belong to the subgroup to be initialised
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+
+  ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. Allocate that here!
+  p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+  DO i=1,6
+    CALL lsysbl_createVecBlockIndMat (rsolverNode%rlinearSystemInfo%p_rsystemMatrix, &
+         p_rsubnode%RtempVectors(i),.FALSE.)
+  END DO
+  
   END SUBROUTINE
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE linsol_initDataBiCGStab (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initDataBiCGStab (rsolverNode, ierror,isolverSubgroup)
   
 !<description>
-  
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
-  
 !</description>
   
 !<inputoutput>
-  
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
-   
 !</inputoutput>
   
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
 !<input>
-  
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -2688,7 +4091,6 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
 !</input>
 
 !</subroutine>
@@ -2696,6 +4098,9 @@ CONTAINS
   ! local variables
   INTEGER :: isubgroup
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -2709,7 +4114,7 @@ CONTAINS
   ! Call the init routine of the preconditioner.
   IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
     CALL linsol_initData (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
-                          isubgroup)
+                          isubgroup,ierror)
   END IF
   
   END SUBROUTINE
@@ -2718,7 +4123,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneDataBiCGStab (rsolverNode, isolverSUbgroup)
+  RECURSIVE SUBROUTINE linsol_doneDataBiCGStab (rsolverNode, isolverSubgroup)
   
 !<description>
   
@@ -2775,7 +4180,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneStructureBiCGStab (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_doneStructureBiCGStab (rsolverNode, isolverSubgroup)
   
 !<description>
   
@@ -2827,12 +4232,17 @@ CONTAINS
                                isubgroup)
   END IF
   
-  ! Release temporary data
+  ! Cancel here, if we don't belong to the subgroup to be released
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+
+  ! Release temporary data if associated
   p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-  DO i=6,1,-1
-    CALL lsysbl_releaseVector (p_rsubnode%RtempVectors(i))
-  END DO
-  
+  IF (p_rsubnode%RtempVectors(1)%NEQ .NE. 0) THEN
+    DO i=6,1,-1
+      CALL lsysbl_releaseVector (p_rsubnode%RtempVectors(i))
+    END DO
+  END IF
+    
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -2847,7 +4257,7 @@ CONTAINS
   ! the heap. In particular, if a preconditioner is attached to the solver
   ! structure, it's also released from the heap by calling 
   ! linsol_releaseSolver for it.
-  ! This DONE routine is declared as RECURSIVE to prevent a clean
+  ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
   
 !</description>
@@ -2866,6 +4276,10 @@ CONTAINS
     CALL linsol_releaseSolver(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
   END IF
   
+  ! Release memory if still associated
+  CALL linsol_doneDataBiCGStab (rsolverNode, rsolverNode%isolverSubgroup)
+  CALL linsol_doneStructureBiCGStab (rsolverNode, rsolverNode%isolverSubgroup)
+  
   ! Release the BiCGStab subnode
   DEALLOCATE(rsolverNode%p_rsubnodeBiCGStab)
 
@@ -2875,7 +4289,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_precBiCGStab (rsolverNode,rd)
+  RECURSIVE SUBROUTINE linsol_precBiCGStab (rsolverNode,rd)
   
 !<description>
   
@@ -3568,26 +4982,28 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_initStructureMultigrid (rsolverNode,isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_initStructureMultigrid (rsolverNode,ierror,isolverSubgroup)
   
 !<description>
-  
   ! Calls the initStructure subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initStructure.
-  
 !</description>
   
 !<inputoutput>
-  
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
-   
 !</inputoutput>
   
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
 !<input>
-  
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -3595,7 +5011,6 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
 !</input>
 
 !</subroutine>
@@ -3604,6 +5019,9 @@ CONTAINS
   TYPE(t_linsolMGLevelInfo), POINTER :: p_rcurrentLevel
   INTEGER :: isubgroup
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -3646,26 +5064,28 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_initDataMultigrid (rsolverNode,isolverSUbgroup)
+  RECURSIVE SUBROUTINE linsol_initDataMultigrid (rsolverNode,ierror,isolverSubgroup)
   
 !<description>
-  
   ! Calls the initData subroutine of the subsolver.
   ! Maybe the subsolver needs that...
   ! The routine is declared RECURSIVE to get a clean interaction
   ! with linsol_initData.
-  
 !</description>
   
 !<inputoutput>
-  
   ! The t_linsolNode structure of the UMFPACK4 solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
-   
 !</inputoutput>
   
-!<input>
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
   
+!<input>
   ! Optional parameter. isolverSubgroup allows to specify a specific 
   ! subgroup of solvers in the solver tree to be processed. By default,
   ! all solvers in subgroup 0 (the default solver group) are processed,
@@ -3673,7 +5093,6 @@ CONTAINS
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
-
 !</input>
 
 !</subroutine>
@@ -3682,6 +5101,9 @@ CONTAINS
   TYPE(t_linsolMGLevelInfo), POINTER :: p_rcurrentLevel
   INTEGER :: isubgroup
   
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
   ! by default, initialise solver subroup 0
   isubgroup = 0
   IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
@@ -3707,13 +5129,13 @@ CONTAINS
   p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
   DO WHILE(ASSOCIATED(p_rcurrentLevel))
     IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
-      CALL linsol_initData(p_rcurrentLevel%p_rpreSmoother,isubgroup)
+      CALL linsol_initData(p_rcurrentLevel%p_rpreSmoother,isubgroup,ierror)
     END IF
     IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother)) THEN
-      CALL linsol_initData(p_rcurrentLevel%p_rpostSmoother,isubgroup)
+      CALL linsol_initData(p_rcurrentLevel%p_rpostSmoother,isubgroup,ierror)
     END IF
     IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
-      CALL linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
+      CALL linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup,ierror)
     END IF
     p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
   END DO
@@ -3724,7 +5146,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneDataMultigrid (rsolverNode,isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_doneDataMultigrid (rsolverNode,isolverSubgroup)
   
 !<description>
   
@@ -3802,7 +5224,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_doneStructureMultigrid (rsolverNode,isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_doneStructureMultigrid (rsolverNode,isolverSubgroup)
   
 !<description>
   
@@ -3887,7 +5309,7 @@ CONTAINS
   ! This routine releases all temporary memory for the multigrid solver from
   ! the heap. In particular, this releases the solver structures of all
   ! subsolvers (smoother, coarse grid solver).
-  ! This DONE routine is declared as RECURSIVE to prevent a clean
+  ! This DONE routine is declared as RECURSIVE to permit a clean
   ! interaction with linsol_releaseSolver.
   
 !</description>
@@ -3934,7 +5356,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_precMultigrid (rsolverNode,rd)
+  RECURSIVE SUBROUTINE linsol_precMultigrid (rsolverNode,rd)
   
 !<description>
   

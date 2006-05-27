@@ -154,16 +154,20 @@ MODULE linearsystemscalar
     INTEGER         :: h_Ddata   = ST_NOHANDLE
     
     ! Flag whether or not the vector is resorted.
-    ! <=0: Vector is unsorted.
-    !  >0: Vector is resorted according to a sorting strategy.
+    !  <0: Vector is unsorted, sorting strategy is prepared in 
+    !      h_IsortPermutation for a possible resorting of the entries.
+    !  =0: Vector is unsorted, no sorting strategy attached.
+    !  >0: Vector is sorted according to a sorting strategy.
     ! The value identifies the sorting strategy used; this is
     ! usually one of the SSTRAT_xxxx constants from the module
     ! 'sortstrategy'.
-    ! In most applications, the absolute value 
-    !               |isortStrategy| = SSTRAT_xxxx
-    ! indicates the sorting trategy to use, while the sign
+    ! If <> 0, the absolute value 
+    !               |isortStrategy| > 0
+    ! indicates the sorting strategy to use, while the sign
     ! indicates whether the sorting strategy is active on the
     ! vector (+) or not (-).
+    ! The value is usually one of the SSTRAT_xxxx constants from
+    ! the module 'sortstrategy'.
     INTEGER         :: isortStrategy   = 0
     
     ! Handle to renumbering strategy for resorting the vector.
@@ -174,7 +178,7 @@ MODULE linearsystemscalar
     ! represent the inverse permutation.
     ! Whether or not the vector is actually sorted depends on the
     ! flag isortStrategy!
-    INTEGER         :: h_IsortPermutation
+    INTEGER         :: h_IsortPermutation = ST_NOHANDLE
     
     ! Start position of the vector data in the array identified by
     ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
@@ -213,7 +217,7 @@ MODULE linearsystemscalar
     
     ! Format-tag. Identifies the format of the matrix. 
     ! Can tage one of the LSYSSC_MATRIXx format flags.
-    INTEGER :: imatrixFormat = LSYSSC_MATRIXUNDEFINED
+    INTEGER :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
     
     ! Matrix specification tag. This is a bitfield coming from an OR 
     ! combination of different LSYSSC_MSPEC_xxxx constants and specifies
@@ -232,11 +236,17 @@ MODULE linearsystemscalar
     REAL(DP)         :: dScaleFactor = 1.0_DP
     
     ! Flag whether or not the matrix is resorted.
-    ! <=0: Matrix is unsorted.
-    !  >0: Matrix is resorted according to a sorting strategy.
-    ! The value identifies the sorting strategy used; this is
-    ! usually one of the SSTRAT_xxxx constants from the module
-    ! 'sortstrategy'.
+    !  <0: Matrix is unsorted, sorting strategy is prepared in 
+    !      h_IsortPermutation for a possible resorting of the entries.
+    !  =0: Matrix is unsorted, no sorting strategy attached.
+    !  >0: Matrix is sorted according to a sorting strategy.
+    ! If <> 0, the absolute value 
+    !               |isortStrategy| > 0
+    ! indicates the sorting strategy to use, while the sign
+    ! indicates whether the sorting strategy is active on the
+    ! matrix (+) or not (-).
+    ! The value is usually one of the SSTRAT_xxxx constants from
+    ! the module 'sortstrategy'.
     INTEGER         :: isortStrategy   = 0
     
     ! Handle to renumbering strategy for resorting the matrix.
@@ -247,7 +257,7 @@ MODULE linearsystemscalar
     ! represent the inverse permutation.
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
-    INTEGER         :: h_IsortPermutation
+    INTEGER         :: h_IsortPermutation = ST_NOHANDLE
     
     
     ! Data type of the entries in the vector. Either ST_SINGLE or
@@ -295,6 +305,158 @@ MODULE linearsystemscalar
 
 CONTAINS
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_compatibleVector (rvector1,rvector2,bcompatible)
+  
+!<description>
+  ! Checks whether two vectors are compatible to each other, i.e. share
+  ! the same structure, size and sorting strategy.
+!</description>
+
+!<input>
+  ! The first vector
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector1
+  
+  ! The second vector
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector2
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether the vectors are compatible or not.
+  ! If not given, an error will inform the user if the two vectors are
+  ! not compatible and the program will halt.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+!</output>
+
+!</subroutine>
+
+  ! We assume that we are not compatible
+  IF (PRESENT(bcompatible)) bcompatible = .FALSE.
+  
+  ! Vectors must have the same size
+  IF (rvector1%NEQ .NE. rvector2%NEQ) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vectors not compatible, different size!'
+      STOP
+    END IF
+  END IF
+    
+  ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+  
+  IF ((rvector1%isortStrategy .GT. 0) .OR. &
+      (rvector2%isortStrategy .GT. 0)) THEN
+
+    IF (rvector1%isortStrategy .NE. &
+        rvector2%isortStrategy) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vectors not compatible, differently sorted!'
+        STOP
+      END IF
+    END IF
+
+    IF (rvector1%h_isortPermutation .NE. &
+        rvector2%h_isortPermutation) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vectors not compatible, differently sorted!'
+        STOP
+      END IF
+    END IF
+  END IF
+
+  ! Ok, they are compatible
+  IF (PRESENT(bcompatible)) bcompatible = .TRUE.
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_compatibleMatrix (rvector,rmatrix,bcompatible)
+  
+!<description>
+  ! Checks whether a vector and a matrix are compatible to each other, i.e. 
+  ! share the same structure, size and sorting strategy.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector
+  
+  ! The matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether vector and matrix are compatible or not.
+  ! If not given, an error will inform the user if the vector/matrix are
+  ! not compatible and the program will halt.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+!</output>
+
+!</subroutine>
+
+  ! We assume that we are not compatible
+  IF (PRESENT(bcompatible)) bcompatible = .FALSE.
+  
+  ! Vector/Matrix must have the same size 
+  IF (rvector%NEQ .NE. rmatrix%NEQ) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vector/Matrix not compatible, different block structure!'
+      STOP
+    END IF
+  END IF
+
+  ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+
+  IF ((rvector%isortStrategy .GT. 0) .OR. &
+      (rmatrix%isortStrategy .GT. 0)) THEN
+
+    IF (rvector%isortStrategy .NE. &
+        rmatrix%isortStrategy) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vector/Matrix not compatible, differently sorted!'
+        STOP
+      END IF
+    END IF
+
+    IF (rvector%h_isortPermutation .NE. &
+        rmatrix%h_isortPermutation) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vector/Matrix not compatible, differently sorted!'
+        STOP
+      END IF
+    END IF
+  END IF
+
+  ! Ok, they are compatible
+  IF (PRESENT(bcompatible)) bcompatible = .TRUE.
+
+  END SUBROUTINE
+
   !****************************************************************************
 !<subroutine>
   
@@ -326,6 +488,9 @@ CONTAINS
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata2dp
   REAL(DP) :: res
   INTEGER(PREC_VECIDX) ioffsetx,ioffsety,i
+  
+  ! Vectors must be compatible!
+  CALL lsyssc_compatibleVector (rx,ry)
   
   ! Is there data at all?
   res = 0.0_DP
@@ -420,6 +585,12 @@ CONTAINS
 
 !</subroutine>
   
+  ! Vectors must be compatible...
+  CALL lsyssc_compatibleVector (rx,ry)
+
+  ! and compatible to the matrix!
+  CALL lsyssc_compatibleMatrix (rx,rmatrix)
+  
   ! rx and ry must have at least the same data type!
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'MV with different data types for rx and ry not supported!'
@@ -438,7 +609,7 @@ CONTAINS
   END IF
 
   ! Select the right MV multiplication routine from the matrix format
-  SELECT CASE (rmatrix%imatrixFormat)
+  SELECT CASE (rmatrix%cmatrixFormat)
   
   CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
   
@@ -668,6 +839,7 @@ CONTAINS
   ! LSYSSC_DUP_ASIS      : Duplicate by ownership. What belongs to the 
   !   matrix is duplicated, what belongs to another matrix is left as-is.
   ! LSYSSC_DUP_CONTENT   : Duplicate the content, share the structure
+  ! LSYSSC_DUP_STRUCTURE : Duplicate the structure, share the content
   ! LSYSSC_DUP_ALL       : Duplicate both, structure and content
   INTEGER, INTENT(IN)                            :: idupflag
   
@@ -691,9 +863,12 @@ CONTAINS
   CASE (LSYSSC_DUP_ASIS)
     bdupContent = IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0
     bdupStructure = IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0
-  CASE (LSYSSC_DUP_CONTENT)
+  CASE (LSYSSC_DUP_STRUCTURE)
     bdupContent = .FALSE.
     bdupStructure = .TRUE.
+  CASE (LSYSSC_DUP_CONTENT)
+    bdupContent = .TRUE.
+    bdupStructure = .FALSE.
   CASE (LSYSSC_DUP_ALL)
     bdupContent = .TRUE.
     bdupStructure = .TRUE.
@@ -703,7 +878,7 @@ CONTAINS
   END SELECT
   
   ! Depending on the matrix format choose how to duplicate
-  SELECT CASE (rsourceMatrix%imatrixFormat)
+  SELECT CASE (rsourceMatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
     IF (bdupContent) THEN
       ! Put the destination handle to ST_NOHANDLE, so storage_copy
@@ -773,6 +948,8 @@ CONTAINS
   
 !<description>
   ! Releases a vector from memory. The vector structure is cleaned up.
+  ! Remark: The memory associated to the vector is only released if this
+  !  vector structure is the owner of the data.
 !</description>
   
 !<inputoutput>
@@ -796,6 +973,8 @@ CONTAINS
   rvector%cdataType = ST_NOHANDLE
   rvector%iidxFirstEntry = 1
   rvector%bisCopy = .FALSE.
+  rvector%isortStrategy = 0
+  rvector%h_IsortPermutation = ST_NOHANDLE
   rvector%p_rspatialDiscretisation => NULL()
   rvector%p_rdiscreteBC => NULL()
   rvector%p_rdiscreteBCfict => NULL()
@@ -827,7 +1006,7 @@ CONTAINS
   !
   ! Release the matrix data if the handle is not a copy of another matrix
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0) THEN
-    SELECT CASE (rmatrix%imatrixFormat)
+    SELECT CASE (rmatrix%cmatrixFormat)
     CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
       ! Release matrix data, structure 9,7
       IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
@@ -839,7 +1018,7 @@ CONTAINS
   ! Release the structure if it doesn't belong to another vector
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0) THEN
     ! Release matrix structure
-    SELECT CASE (rmatrix%imatrixFormat)
+    SELECT CASE (rmatrix%cmatrixFormat)
     CASE (LSYSSC_MATRIX9)
       IF (rmatrix%h_Kcol .NE. ST_NOHANDLE)      CALL storage_free(rmatrix%h_Kcol)
       IF (rmatrix%h_Kld .NE. ST_NOHANDLE)       CALL storage_free(rmatrix%h_Kld)
@@ -859,6 +1038,8 @@ CONTAINS
   rmatrix%NA  = 0
   rmatrix%NEQ = 0
   rmatrix%dScaleFactor = 1.0_DP
+  rmatrix%isortStrategy = 0
+  rmatrix%h_IsortPermutation = ST_NOHANDLE
   rmatrix%p_rspatialDiscretisation => NULL()
   rmatrix%p_rdiscreteBC     => NULL()
   rmatrix%p_rdiscreteBCfict => NULL()
@@ -941,6 +1122,7 @@ CONTAINS
         IF (h_IsortPermutation .NE. rvector%h_IsortPermutation) THEN
           ! Vector is unsorted and should stay unsorted, but
           ! permutation should change.
+          rvector%isortStrategy = isortStrategy
           rvector%h_IsortPermutation = h_IsortPermutation
         END IF
         RETURN
@@ -1061,6 +1243,9 @@ CONTAINS
     
     ! Inform the vector about which sorting strategy we now use.
     rvector%isortStrategy = isortStrategy
+
+    ! If h_IsortPermutation was given, change the permutation
+    IF (PRESENT(h_IsortPermutation)) rvector%h_IsortPermutation = h_IsortPermutation
   
   END SUBROUTINE
 
@@ -1138,8 +1323,9 @@ CONTAINS
     
       IF ((isortStrategy .LE. 0) .AND. (rmatrix%isortStrategy .LE. 0)) THEN
         IF (h_IsortPermutation .NE. rmatrix%h_IsortPermutation) THEN
-          ! Vector is unsorted and should stay unsorted, but
+          ! Matrix is unsorted and should stay unsorted, but
           ! permutation should change.
+          rmatrix%isortStrategy = isortStrategy
           rmatrix%h_IsortPermutation = h_IsortPermutation
         END IF
         RETURN
@@ -1192,6 +1378,9 @@ CONTAINS
     
     ! Inform the vector about which sorting strategy we now use.
     rmatrix%isortStrategy = isortStrategy
+    
+    ! If h_IsortPermutation was given, change the permutation
+    IF (PRESENT(h_IsortPermutation)) rmatrix%h_IsortPermutation = h_IsortPermutation
   
   CONTAINS
     
@@ -1227,7 +1416,7 @@ CONTAINS
       NEQ = rmatrix%NEQ
     
       ! Which matrix configuration do we have?
-      SELECT CASE (rmatrix%imatrixFormat)
+      SELECT CASE (rmatrix%cmatrixFormat)
       CASE (LSYSSC_MATRIX9)
         ! Duplicate the matrix before resorting.
         ! We need either a copy only of the structure or of the full matrix.
@@ -1259,16 +1448,14 @@ CONTAINS
             ! Double precision version
             CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
             CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
-            ! Switch the two permutations. This gives the 'back-sorting'
             CALL lsyssc_sortMat9_double (p_Ddata,p_DdataTmp,p_Kcol, p_KcolTmp, &
                                          p_Kld, p_KldTmp, p_Kdiag, &
                                          Itr1, Itr2, NEQ)        
           CASE (ST_SINGLE)
             ! Single precision version
-            CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
-            CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
-            ! Switch the two permutations. This gives the 'back-sorting'
-            CALL lsyssc_sortMat9_double (p_Ddata,p_DdataTmp,p_Kcol, p_KcolTmp, &
+            CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+            CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+            CALL lsyssc_sortMat9_single (p_Fdata,p_FdataTmp,p_Kcol, p_KcolTmp, &
                                          p_Kld, p_KldTmp, p_Kdiag, &
                                          Itr1, Itr2, NEQ)        
           CASE DEFAULT
@@ -1310,16 +1497,14 @@ CONTAINS
             ! Double precision version
             CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
             CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
-            ! Switch the two permutations. This gives the 'back-sorting'
             CALL lsyssc_sortMat7_double (p_Ddata,p_DdataTmp,p_Kcol, p_KcolTmp, &
                                          p_Kld, p_KldTmp, &
                                          Itr1, Itr2, NEQ)        
           CASE (ST_SINGLE)
             ! Single precision version
-            CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
-            CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
-            ! Switch the two permutations. This gives the 'back-sorting'
-            CALL lsyssc_sortMat7_double (p_Ddata,p_DdataTmp,p_Kcol, p_KcolTmp, &
+            CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+            CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+            CALL lsyssc_sortMat7_single (p_Fdata,p_FdataTmp,p_Kcol, p_KcolTmp, &
                                          p_Kld, p_KldTmp, &
                                          Itr1, Itr2, NEQ)        
           CASE DEFAULT
@@ -1339,7 +1524,6 @@ CONTAINS
 
     END SUBROUTINE
     
-  
   END SUBROUTINE
 
   !****************************************************************************
@@ -1850,7 +2034,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_sortMat9_dingle (Fa, FaH, Icol, IcolH, &
+  SUBROUTINE lsyssc_sortMat9_single (Fa, FaH, Icol, IcolH, &
                                      Ild, IldH, Idiag, Itr1, Itr2, neq)
   
   !<description>
@@ -2157,5 +2341,63 @@ CONTAINS
     END DO
   
   END SUBROUTINE 
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_addIndex (h_Ix,ivalue,istartpos,ilength)
+  
+!<description>
+
+  ! This is an auxiliary routine. It accepts a handle to an integer array
+  ! and adds the value ivalue to each entry of this vector.
+  ! This can be used e.g. to convert the index vector of a matrix
+  ! von 1-based to 0-based for an external library (UMFPACK).
+
+!</description>
+  
+!<input>
+  ! Handle to an integer data array.
+  INTEGER, INTENT(IN) :: h_Ix
+
+  ! The value to add to every entry.
+  INTEGER(I32) :: ivalue
+
+  ! OPTIONAL: Starting position of a part of the vector to modify; usually = 1
+  INTEGER(I32), OPTIONAL :: istartpos
+
+  ! OPTIONAL: Length of the part of the vector to modify; <= SIZE(Ix)
+  INTEGER(I32), OPTIONAL :: ilength
+
+!</input>
+    
+    ! Actual length
+    INTEGER(I32) :: iactlength,istart,i
+    
+    ! Vector
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Ix
+    
+    ! Get the array
+    CALL storage_getbase_int (h_Ix,p_Ix)
+    IF (PRESENT(istartpos)) THEN
+      istart = MIN(istartpos,SIZE(p_Ix)+1)
+    ELSE
+      istart = 1
+    END IF
+    IF (PRESENT(ilength)) THEN
+      iactlength = MIN(ilength,SIZE(p_Ix)-istart+1)
+    ELSE
+      iactlength = SIZE(p_Ix)-istart+1
+    END IF
+    p_Ix => p_Ix(istart:istart + iactlength - 1)
+    
+    ! Increase by ivalue
+    DO i=1,iactlength
+      p_Ix(i) = p_Ix(i) + ivalue
+    END DO
+    
+  END SUBROUTINE
+  
 
 END MODULE

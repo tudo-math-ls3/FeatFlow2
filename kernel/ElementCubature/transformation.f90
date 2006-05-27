@@ -225,7 +225,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: iel, ipt
+  INTEGER :: ipt
   
   ! auxiliary factors for the bilinear quad mapping
   REAL(DP), DIMENSION(TRAFO_NAUXJAC) :: DjacPrep
