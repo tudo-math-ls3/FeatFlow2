@@ -1,5 +1,5 @@
   ! This file describes the interface for a coefficient function that is called
-  ! during the matrix assembly of scalar matrices.
+  ! during the matrix assembly of scalar vectors.
   
   INTERFACE
   
@@ -16,13 +16,13 @@
     USE scalarpde
     
   !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points), in reference as well as in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
     ! the corresponding coefficients in front of the terms.
   !</description>
     
@@ -88,10 +88,10 @@
   !</input>
   
   !<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
+    ! with itermCount the number of terms in the linear form.
     REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
   !</output>
     
