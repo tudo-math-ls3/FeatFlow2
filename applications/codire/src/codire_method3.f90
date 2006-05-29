@@ -88,6 +88,11 @@ MODULE codire_method3
     ! only one level supported, identified by LV!
     TYPE(t_problem_lvl), DIMENSION(1) :: RlevelInfo
     
+    ! A collection object that saves structural data and some 
+    ! problem-dependent information which is e.g. passed to 
+    ! callback routines.
+    TYPE(t_collection) :: rcollection
+    
   END TYPE
 
 !</typeblock>
@@ -213,7 +218,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm2_initMatVec (rproblem,rcollection,rparams)
+  SUBROUTINE pm2_initMatVec (rproblem,rparams)
   
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
@@ -226,10 +231,6 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 
-  ! A collection object for saving structural data and some problem-dependent 
-  ! information.
-  TYPE(t_collection), INTENT(INOUT) :: rcollection
-  
   ! A parameter list with informations from the DAT file.
   TYPE(t_parlist), INTENT(IN) :: rparams
 !</inputoutput>
@@ -260,9 +261,9 @@ CONTAINS
     
     ! Save matrix and vectors to the collection.
     ! They maybe used later, expecially in nonlinear problems.
-    CALL collct_setvalue_vec(rcollection,'RHS',p_rrhs,.TRUE.)
-    CALL collct_setvalue_vec(rcollection,'SOLUTION',p_rvector,.TRUE.)
-    CALL collct_setvalue_mat(rcollection,'LAPLACE',p_rmatrix,.TRUE.)
+    CALL collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.TRUE.)
+    CALL collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.TRUE.)
+    CALL collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrix,.TRUE.)
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -344,7 +345,7 @@ CONTAINS
     ! in the collection.
     CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,&
                                  p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
-                                 rcollection)
+                                 rproblem%rcollection)
     
     ! Now we want to build up the right hand side. At first we need a block
     ! vector of the right structure. Although we could manually create
@@ -367,7 +368,7 @@ CONTAINS
     ! in the collection.
     CALL bilf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
                                  p_rrhs%RvectorBlock(1),coeff_RHS,&
-                                 rcollection)
+                                 rproblem%rcollection)
     
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution. 
@@ -472,7 +473,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm2_initDiscreteBC (rproblem,rcollection)
+  SUBROUTINE pm2_initDiscreteBC (rproblem)
   
 !<description>
   ! This calculates the discrete version of the boundary conditions and
@@ -482,10 +483,6 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A collection object for saving structural data and some problem-dependent 
-  ! information.
-  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
 !</inputoutput>
 
   ! local variables
@@ -521,7 +518,7 @@ CONTAINS
     ! in the collection.
     NULLIFY(rproblem%RlevelInfo(1)%p_rdiscreteBC)
     CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(1)%p_rdiscreteBC, &
-                             .FALSE.,getBoundaryValues,rcollection)
+                             .FALSE.,getBoundaryValues,rproblem%rcollection)
                              
     ! Hang the pointer into the vectors and the matrix - more precisely,
     ! to the first block matrix and the first subvector. That way, these
@@ -741,7 +738,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm2_doneMatVec (rproblem,rcollection)
+  SUBROUTINE pm2_doneMatVec (rproblem)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -750,10 +747,6 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A collection object for saving structural data and some problem-dependent 
-  ! information.
-  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -764,9 +757,9 @@ CONTAINS
     CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(1)%rmatrix)
 
     ! Delete the variables from the collection.
-    CALL collct_deletevalue (rcollection,'RHS')
-    CALL collct_deletevalue (rcollection,'SOLUTION')
-    CALL collct_deletevalue (rcollection,'LAPLACE')
+    CALL collct_deletevalue (rproblem%rcollection,'RHS')
+    CALL collct_deletevalue (rproblem%rcollection,'SOLUTION')
+    CALL collct_deletevalue (rproblem%rcollection,'LAPLACE')
 
   END SUBROUTINE
 
@@ -893,15 +886,12 @@ CONTAINS
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
     
-    ! A collection structure for our problem
-    TYPE(t_collection) :: rcollection
-    
     ! A temporary string
     CHARACTER(LEN=10) :: Sstr
     
     ! Ok, let's start. 
     ! Initialise the collection.
-    CALL collct_init (rcollection)
+    CALL collct_init (rproblem%rcollection)
     
     ! Initialise the parameter list
     CALL parlst_init(rparams)
@@ -909,7 +899,7 @@ CONTAINS
     ! Read the parameters from disc and put a reference to it
     ! to the collection
     CALL parlst_readfromfile(rparams, 'data/codire.dat')
-    CALL collct_setvalue_parlst (rcollection, 'PARAMS', rparams, .TRUE.)
+    CALL collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .TRUE.)
 
     ! We want to solve our Laplace problem on level...
 
@@ -921,9 +911,9 @@ CONTAINS
     ! Initialisation
     CALL pm2_initParamTriang (LV,rproblem)
     CALL pm2_initDiscretisation (rproblem)    
-    CALL pm2_initMatVec (rproblem,rcollection,rparams)    
+    CALL pm2_initMatVec (rproblem,rparams)    
     CALL pm2_initAnalyticBC (rproblem)   
-    CALL pm2_initDiscreteBC (rproblem,rcollection)
+    CALL pm2_initDiscreteBC (rproblem)
     
     ! Implementation of boundary conditions
     CALL pm2_implementBC (rproblem)
@@ -935,13 +925,13 @@ CONTAINS
     CALL pm2_postprocessing (rproblem)
     
     ! Cleanup
-    CALL pm2_doneMatVec (rproblem,rcollection)
+    CALL pm2_doneMatVec (rproblem)
     CALL pm2_doneBC (rproblem)
     CALL pm2_doneDiscretisation (rproblem)
     CALL pm2_doneParamTriang (rproblem)
     
     ! Release parameter list
-    CALL collct_deletevalue (rcollection,'PARAMS')
+    CALL collct_deletevalue (rproblem%rcollection,'PARAMS')
     CALL parlst_done (rparams)
 
     ! Print some statistical data about the collection - anything forgotten?
@@ -949,10 +939,10 @@ CONTAINS
     PRINT *,'Remaining collection statistics:'
     PRINT *,'--------------------------------'
     PRINT *
-    CALL collct_printStatistics (rcollection)
+    CALL collct_printStatistics (rproblem%rcollection)
     
     ! Finally release the collection.
-    CALL collct_done (rcollection)
+    CALL collct_done (rproblem%rcollection)
     
   END SUBROUTINE
 

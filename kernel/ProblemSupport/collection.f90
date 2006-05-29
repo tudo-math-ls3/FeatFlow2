@@ -141,6 +141,74 @@
 !# 11.) collct_printStatistics 
 !#      -> Prints out the current content of the structure to the terminal
 !#
+!#
+!# GUILDLINE
+!# ---------
+!# Here a small guidline how and when to use a collection:
+!#
+!# HOLDING PROBLEM DEPENDENT DATA FOR CALLBACK ROUTINES,
+!# PRINCIPLE OF MINIMALISM
+!#
+!#  Use a collection to store data that must be available to callback routines
+!#  for solving a problem. Data that is only used in the main application
+!#  should be stored in a problem-dependent structure.
+!#  Try to save as few information in it as possible. This helps you not to
+!#  loose control about what is in the container and what not.
+!#
+!# NO PROBLEM-SPECIFIC STRUCTURES
+!#
+!#  The collection is a black-box container. It's designed to hold low- and 
+!#  mid-level information (numbers, strings, as well as linear algebra stuff
+!#  like vectors, matrices) that is used for solving linear problems. It's
+!#  clearly NOT designed that a user adds problem-specific data structures
+!#  there. Trying this will result in circular dependencies! Adding information
+!#  from a problem-dependent structure to the collection with the 'add' 
+!#  routines is completely right, but don't extent the collection
+!#  by new data types / structures unless you are absolutely sure that this 
+!#  is relevant for all users and that you won't get circular dependencies!
+!#
+!# USE THE COLLECTION IS AN INDEX
+!#
+!#  Although it's possible to use the collection as a data container for most
+!#  (if not all) of your information, you should not use the collection
+!#  as the main data container. Put your problem-dependent data into
+!#  a problem-dependent structure and add pointers to them to the collection
+!#  (think of pointers to vectors/matrices)
+!#  Therefore, use the collection as an *index* to your data and not as
+!#  the main data container. This helps you to prevent memory holes,
+!#  since the collection does not delete anything from the heap when you
+!#  remove a variable from it - it simply deletes a pointer!
+!#
+!# USE THE TEMPORARY QUICK ACCESS ARRAYS FOR INFORMATION TO BE ACCESSED QUICKLY
+!#
+!#  Although the quick-access arrays are only of temporary nature,
+!#  you can use them to store information of simple type that you often 
+!#  need in a callback routine. Make use of this feature to get speed,
+!#  but don't use this feature for storing long-life information!
+!#  Example:
+!#
+!#    PROGRAM Test
+!#      TYPE(t_collection) :: rcollection
+!#      ...
+!#      rcollection%Iquickaccess(1) = 1       ! Number of boundary component e.g.
+!#      rcollection%Iquickaccess(2) = 3       ! Number of Dirichlet-segment e.g.
+!#      rcollection%Dquickaccess(1) = 1.0_DP  ! Inflow speed e.g.
+!#      CALL bcasm_discretiseBC (...,callback,rcollection)
+!#      ...
+!#    END PROGRAM
+!#
+!#    SUBROUTINE callback(...,rbcRegion,...,rcollection,...,Dvalues)
+!#      ...
+!#      iboundaryComponent = rcollection%Iquickaccess(1)
+!#      iinflowSegment = rcollection%Iquickaccess(2)
+!#      dinfowSpeed    = rcollection%Dquickaccess(1)
+!#      IF ((iboundaryComponent .EQ. rbcRegion%iboundCompIdx) .AND.
+!#          (iinflowSegment .EQ. rbcRegion%iboundSegIdx)) THEN
+!#        Dvalues(1) = dinflowSpeed
+!#      END IF
+!#      ...
+!#    END SUBROUTINE
+!# 
 !# </purpose>
 !##############################################################################
 
