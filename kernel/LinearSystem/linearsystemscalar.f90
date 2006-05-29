@@ -19,29 +19,36 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) lsyssc_scalarProduct
-!#     -> Calculate the scalar product of two vectors
+!#  1.) lsyssc_scalarProduct
+!#      -> Calculate the scalar product of two vectors
 !#
-!# 2.) lsyssc_scalarMatVec
-!#     -> Multiply a scalar matrix with a scalar vector
+!#  2.) lsyssc_scalarMatVec
+!#      -> Multiply a scalar matrix with a scalar vector
 !#
-!# 3.) lsyssc_releaseMatrix
-!#     -> Release a scalar matrix from memory.
+!#  3.) lsyssc_releaseMatrix
+!#      -> Release a scalar matrix from memory.
 !#
-!# 4.) lsyssc_releaseVector
-!#     -> Release a scalar vector from memory.
+!#  4.) lsyssc_releaseVector
+!#      -> Release a scalar vector from memory.
 !#
-!# 5.) lsyssc_duplicateMatrix
-!#     -> Create a duplicate of a given matrix or matrix-structure
+!#  5.) lsyssc_duplicateMatrix
+!#      -> Create a duplicate of a given matrix or matrix-structure
 !#
-!# 6.) lsyssc_duplicateVector
-!#     -> Create a duplicate of a given vector
+!#  6.) lsyssc_duplicateVector
+!#      -> Create a duplicate of a given vector
 !#
-!# 7.) lsyssc_sortVector
-!#     -> Resort the entries of a vector or unsort them
+!#  7.) lsyssc_sortVector
+!#      -> Resort the entries of a vector or unsort them
 !#
-!# 8.) lsyssc_sortMatrix
-!#     -> Resort the entries of a matrix or unsort them
+!#  8.) lsyssc_sortMatrix
+!#      -> Resort the entries of a matrix or unsort them
+!#
+!#  9.) lsyssc_isVectorCompatible
+!#      -> Checks whether two vectors are compatible to each other
+!#
+!# 10.) lsyssc_isMatrixCompatible
+!#      -> Checks whether a matrix and a vector are compatible to each other
+!#
 !# </purpose>
 !##############################################################################
 
@@ -309,7 +316,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_compatibleVector (rvector1,rvector2,bcompatible)
+  SUBROUTINE lsyssc_isVectorCompatible (rvector1,rvector2,bcompatible)
   
 !<description>
   ! Checks whether two vectors are compatible to each other, i.e. share
@@ -385,7 +392,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_compatibleMatrix (rvector,rmatrix,bcompatible)
+  SUBROUTINE lsyssc_isMatrixCompatible (rvector,rmatrix,bcompatible)
   
 !<description>
   ! Checks whether a vector and a matrix are compatible to each other, i.e. 
@@ -490,7 +497,7 @@ CONTAINS
   INTEGER(PREC_VECIDX) ioffsetx,ioffsety,i
   
   ! Vectors must be compatible!
-  CALL lsyssc_compatibleVector (rx,ry)
+  CALL lsyssc_isVectorCompatible (rx,ry)
   
   ! Is there data at all?
   res = 0.0_DP
@@ -586,10 +593,10 @@ CONTAINS
 !</subroutine>
   
   ! Vectors must be compatible...
-  CALL lsyssc_compatibleVector (rx,ry)
+  CALL lsyssc_isVectorCompatible (rx,ry)
 
   ! and compatible to the matrix!
-  CALL lsyssc_compatibleMatrix (rx,rmatrix)
+  CALL lsyssc_isMatrixCompatible (rx,rmatrix)
   
   ! rx and ry must have at least the same data type!
   IF (rx%cdataType .NE. ry%cdataType) THEN

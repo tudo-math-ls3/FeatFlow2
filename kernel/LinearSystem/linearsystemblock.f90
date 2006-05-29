@@ -63,10 +63,10 @@
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 17.) lsysbl_compatibleVector
+!# 17.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 18.) lsysbl_compatibleMatrix
+!# 18.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !# </purpose>
 !##############################################################################
@@ -201,7 +201,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_compatibleVector (rvector1,rvector2,bcompatible)
+  SUBROUTINE lsysbl_isVectorCompatible (rvector1,rvector2,bcompatible)
   
 !<description>
   ! Checks whether two vectors are compatible to each other, i.e. share
@@ -303,7 +303,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_compatibleMatrix (rvector,rmatrix,bcompatible)
+  SUBROUTINE lsysbl_isMatrixCompatible (rvector,rmatrix,bcompatible)
   
 !<description>
   ! Checks whether a vector and a matrix are compatible to each other, i.e. 
@@ -793,10 +793,10 @@ CONTAINS
   REAL(DP)     :: cyact
   
   ! The vectors must be compatible to each other.
-  CALL lsysbl_compatibleVector (rx,ry)
+  CALL lsysbl_isVectorCompatible (rx,ry)
 
   ! and compatible to the matrix
-  CALL lsysbl_compatibleMatrix (rx,rmatrix)
+  CALL lsysbl_isMatrixCompatible (rx,rmatrix)
 
   ! loop through all the sub matrices and multiply.
   DO y=1,rmatrix%ndiagBlocks
@@ -1014,7 +1014,7 @@ CONTAINS
   REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
   
   ! The vectors must be compatible to each other.
-  CALL lsysbl_compatibleVector (rx,ry)
+  CALL lsysbl_isVectorCompatible (rx,ry)
 
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsysbl_vectorLinearComb: different data types not supported!'
@@ -1076,7 +1076,7 @@ CONTAINS
   REAL(DP) :: res
   
   ! The vectors must be compatible to each other.
-  CALL lsysbl_compatibleVector (rx,ry)
+  CALL lsysbl_isVectorCompatible (rx,ry)
 
   ! Is there data at all?
   res = 0.0_DP
