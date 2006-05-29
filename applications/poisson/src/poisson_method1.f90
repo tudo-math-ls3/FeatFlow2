@@ -195,7 +195,7 @@ CONTAINS
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to get a discrete version of it.
-    CALL bilf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,rrhs,coeff_RHS)
+    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,rrhs,coeff_RHS)
     
     ! Now we have the raw problem. What is missing is the definition of the boudary
     ! conditions.

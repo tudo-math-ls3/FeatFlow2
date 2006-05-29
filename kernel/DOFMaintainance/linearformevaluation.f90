@@ -41,7 +41,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bilf_buildVectorScalar (rdiscretisation,rform,bclear,rvectorScalar,&
+  SUBROUTINE linf_buildVectorScalar (rdiscretisation,rform,bclear,rvectorScalar,&
                                      fcoeff_buildVectorSc_sim,rcollection)
   
 !<description>
@@ -94,10 +94,10 @@ CONTAINS
   
     IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   
-      CALL bilf_buildVectord_conf (rdiscretisation,rform,bclear,rVectorScalar,&  
+      CALL linf_buildVectord_conf (rdiscretisation,rform,bclear,rVectorScalar,&  
                                    fcoeff_buildVectorSc_sim,p_rcollection)
     ELSE
-      PRINT *,'bilf_buildVectorScalar: Single precision matrices currently not supported!'
+      PRINT *,'linf_buildVectorScalar: Single precision matrices currently not supported!'
     END IF
   
   ! Do we have a uniform triangulation? Would simplify a lot...
@@ -105,14 +105,14 @@ CONTAINS
   
     IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
   
-      CALL bilf_buildVectord_conf (rdiscretisation,rform,bclear,rVectorScalar,&  
+      CALL linf_buildVectord_conf (rdiscretisation,rform,bclear,rVectorScalar,&  
                                    fcoeff_buildVectorSc_sim,p_rcollection)
     ELSE
-      PRINT *,'bilf_buildVectorScalar: Single precision matrices currently not supported!'
+      PRINT *,'linf_buildVectorScalar: Single precision matrices currently not supported!'
     END IF
   
   ELSE
-    PRINT *,'bilf_buildVectorScalar: General discretisation &
+    PRINT *,'linf_buildVectorScalar: General discretisation &
             & not implemented!'
     STOP
   END IF
@@ -123,7 +123,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bilf_buildVectord_conf (rdiscretisation,rform,bclear,rVectorScalar,&
+  SUBROUTINE linf_buildVectord_conf (rdiscretisation,rform,bclear,rVectorScalar,&
                                      fcoeff_buildVectorSc_sim,rcollection)
 
 !<description>
@@ -277,7 +277,7 @@ CONTAINS
     I1=rform%Idescriptors(i)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      PRINT *,'bilf_buildVectord_conf: Invalid descriptor'
+      PRINT *,'linf_buildVectord_conf: Invalid descriptor'
       STOP
     ENDIF
     
@@ -297,7 +297,7 @@ CONTAINS
 
     ! Clear the entries in the vector - we need to start with zero
     ! when assembling a new vector.
-    CALL storage_new1D ('bilf_buildVectord_conf', 'vector', &
+    CALL storage_new1D ('linf_buildVectord_conf', 'vector', &
                         NEQ, ST_DOUBLE, rvectorScalar%h_Ddata, &
                         ST_NEWBLOCK_ZERO)
     CALL storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)

@@ -258,7 +258,7 @@ CONTAINS
     
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector.
-    CALL bilf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
+    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
                                  p_rrhs%RvectorBlock(1),coeff_RHS)
     
     ! Now we have block vectors for the RHS and the matrix. What we

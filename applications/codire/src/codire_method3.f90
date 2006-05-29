@@ -366,7 +366,7 @@ CONTAINS
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is
     ! in the collection.
-    CALL bilf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
+    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
                                  p_rrhs%RvectorBlock(1),coeff_RHS,&
                                  rproblem%rcollection)
     
