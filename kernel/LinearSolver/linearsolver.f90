@@ -225,6 +225,7 @@ MODULE linearsolver
   USE fsystem
   USE storage
   USE linearsystemblock
+  USE multilevelprojection
   USE filtersupport
   
   IMPLICIT NONE
@@ -821,6 +822,14 @@ MODULE linearsolver
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
     TYPE(t_filterChain), DIMENSION(:),POINTER      :: p_RfilterChain => NULL()
+    
+    ! An interlevel projection structure that configures the transport
+    ! of defect/solution vectors from one level to another.
+    ! For the coarse grid, this structure is ignored.
+    ! For a finer grid (e.g. level 4), this defines the grid transfer
+    ! between the current and the lower level (so here between level 3 and
+    ! level 4).
+    TYPE(t_interlevelProjectionBlock)   :: rinterlevelProjection
     
     ! STATUS/INTERNAL: MG cycle information.
     ! Number of cycles to perform on this level.
@@ -4713,19 +4722,30 @@ CONTAINS
 !<subroutine>
   
   SUBROUTINE linsol_addMultigridLevel (p_rlevelInfo,rsolverNode, &
-                    p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver,iappend)
+                    rinterlevelProjection, &
+                    p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver, &
+                    iappend)
                     
 !<description>
-  
   ! This routine adds a new level to the linked list of levels in the multigrid
-  ! solver. The given coarse-grid solver and smoother-structures are attached
+  ! solver identified by rsolverNode. 
+  ! The given coarse-grid solver and smoother-structures are attached
   ! to the level. The routine returns a pointer to the new level-info structure
   ! in p_rlevelInfo to allow the caller to modify the standard settings of
   ! that level if necessary.
-  
 !</description>
   
 !<input>
+  
+  ! An interlevel projection structure that configures the projection
+  ! between the solutions on a finer and a coarser grid. The structure
+  ! must have been initialised with mlprj_initProjection.
+  !
+  ! Note that this structure is level-independent (as long as the
+  ! spatial discretisation structures on different levels are 'compatible'
+  ! what they have to be anyway), so the same structure can be used
+  ! to initialise all levels!
+  TYPE(t_interlevelProjectionBlock) :: rinterlevelProjection
   
   ! Optional: A pointer to the solver structure of a solver that should be 
   ! used for presmoothing. This structure is used as a template to create an
@@ -4751,6 +4771,8 @@ CONTAINS
   ! higher level.
   ! NO: Insert the structure as new lowest level. The caller has to make sure
   ! that the coarse grid solver on the previous lowest level is removed!
+  ! (i.e. removed from the p_rlevelInfo node corresponding to the lowest
+  ! level!)
   INTEGER, INTENT(IN), OPTIONAL                  :: iappend
   
 !</input>
@@ -4800,6 +4822,10 @@ CONTAINS
   IF (ASSOCIATED(p_rpostsmoother)) THEN
     p_rlevelInfo%p_rpostsmoother => p_rpostsmoother
   END IF
+  
+  ! Initialise the interlevel projection structure,
+  ! copy the data of our given template.
+  p_rlevelInfo%rinterlevelProjection = rinterlevelProjection
 
   ! Attach the level-info structure to the linked list.
   ! Does the list exist?
@@ -4925,7 +4951,7 @@ CONTAINS
   
 !<inputoutput>
   
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the Multigrid solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
 !</inputoutput>
@@ -4992,7 +5018,7 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the Multigrid solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
 !</inputoutput>
   
@@ -5074,7 +5100,7 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the Multigrid solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
 !</inputoutput>
   
@@ -5159,7 +5185,7 @@ CONTAINS
   
 !<inputoutput>
   
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the Multigrid solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
 !</inputoutput>
@@ -5237,7 +5263,7 @@ CONTAINS
   
 !<inputoutput>
   
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the Multigrid solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
 !</inputoutput>
@@ -5359,22 +5385,25 @@ CONTAINS
   RECURSIVE SUBROUTINE linsol_precMultigrid (rsolverNode,rd)
   
 !<description>
-  
-  ! Solves the linear system $Ax=b$ with Multigrid. The matrices $A$ on all
-  ! levels must be attached to the solver previously by linsol_setMatrices.
-  ! rb is the RHS and rx is the initial iteration vector.
+  ! Applies Multigrid preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The structure of the levels (pre/postsmoothers, interlevel projection
+  ! structures) must have been prepared with linsol_addMultigridLevel
+  ! before calling this routine.
+  ! The matrices $A$ on all levels must be attached to the solver previously 
+  ! by linsol_setMatrices.
   
 !</description>
   
 !<inputoutput>
-  
-  ! The t_linsolNode structure of the UMFPACK4 solver
+  ! The t_linsolNode structure of the Multigrid solver
   TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
    
-  ! Initial solution vector; receives the final solution vector when the
-  ! iteration finishes.
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
   TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
-  
 !</inputoutput>
   
 !</subroutine>

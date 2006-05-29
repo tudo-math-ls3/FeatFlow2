@@ -76,11 +76,11 @@ MODULE spatialdiscretisation
   
     ! Element identifier for trial functions to use in this element list
     ! during the evaluation of bilinear forms (matrix generation).
-    INTEGER :: itrialElement        = 0
+    INTEGER :: itrialElement        = EL_UNDEFINED
     
     ! Element identifier for test functions to use in this element list
     ! during the evaluation of linear and bilinear forms.
-    INTEGER :: itestElement         = 0
+    INTEGER :: itestElement         = EL_UNDEFINED
     
     ! Cubature formula to use for the discretisation of this element pair
     ! during the evaluation of bilinear forms.

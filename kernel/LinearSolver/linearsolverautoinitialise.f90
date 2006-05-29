@@ -81,10 +81,14 @@ CONTAINS
   
   ! Maximum iterations on the coarse grid
   INTEGER, INTENT(IN)               :: nmaxCoarseGridSteps
+
+  ! A list of spatial discretisation structures for the three equations
+  ! that are supported by CC2D: x-velocity, y-velocity, pressure
+  TYPE(t_spatialDiscretisation), DIMENSION(3) :: RspatialDiscretisation
   
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! The solver node that identifies the solver. The caller must attach
   ! level-dependent data (matrix information) to it with the standard
@@ -93,7 +97,7 @@ CONTAINS
   
   TYPE(t_linsolNode),POINTER :: p_rsolverNode
   
-  !</output>
+!</output>
   
 !</subroutine>
 
@@ -104,6 +108,7 @@ CONTAINS
   TYPE(t_linsolNode),POINTER :: p_rpostSmoother
   TYPE(t_linsolNode),POINTER :: p_rcoarseGridSolver
   TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
+  TYPE(t_interlevelProjectionBlock) :: rprojection 
   
   ! Create the solver node - either BiCGStab or Multigrid.
   ! If we create BiCGStab, attach multigrid as preconditioner.
@@ -133,6 +138,9 @@ CONTAINS
   p_rsolverNode%depsRel = daccuracyRel
   p_rsolverNode%depsAbs = daccuracyAbs
   
+  ! Initialise a standard interlevel projection structure for all levels.
+  CALL mlprj_initProjection (rprojection,RspatialDiscretisation)
+  
   ! Continue to configure MG by accessing p_rmgSolver.
   ! Loop through the levels.
   
@@ -161,7 +169,7 @@ CONTAINS
     
     ! Create the level, attrach it to the solver and proceed to the 
     ! next level
-    CALL linsol_addMultigridLevel (p_rlevelInfo,p_rmgSolver, &
+    CALL linsol_addMultigridLevel (p_rlevelInfo,p_rmgSolver, rprojection,&
                     p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver)
     
   END DO
