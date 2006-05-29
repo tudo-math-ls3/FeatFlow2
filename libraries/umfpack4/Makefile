@@ -8,6 +8,11 @@ LIBNAME=umfpack4
 
 INCDIR=-I./include -I./src -I../amd/include -I../amd/src
 
+ifdef ARC
+AR=$(ARC)
+endif
+
+
 UMF4= umf_2by2 umf_analyze umf_apply_order umf_assemble \
   umf_blas3_update umf_build_tuples umf_colamd \
   umf_create_element umf_dump umf_extend_front umf_free \

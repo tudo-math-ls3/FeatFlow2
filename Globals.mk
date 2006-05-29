@@ -92,6 +92,7 @@ FC=f90     # Fortran 90 compiler
 CC=cc      # ANSI C compiler
 LD=$(FC)   # linker (usually same as the Fortran Compiler) 
 AR=ar      # library creation tool (archiver)
+ARC=       # for C libraries, if undifined AR is used
 
 ########################################################################
 # compiler settings for various machine types, list to be extended
@@ -390,6 +391,7 @@ ifeq ($(ID),pc-pentium4-linux-ifc)
 CC=/usr/local/icc/bin/icc
 FC=/usr/local/ifc/bin/ifort
 AR=/usr/local/ifc/bin/xiar
+ARC=/usr/local/icc/bin/xiar
 OPTFLAGS  = -O3 -xN -ipo
 FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
@@ -496,6 +498,7 @@ ifeq ($(ID),pc64-opteron-linux-ifc)
 CC=/usr/local/icce/bin/icc
 FC=/usr/local/ifce/bin/ifort
 AR=/usr/local/ifce/bin/xiar
+ARC=/usr/local/icce/bin/xiar
 OPTFLAGS  = -O3 -ipo -mtune=pentiumpro -march=pentium4
 FCFLAGS   = -vec_report0 -mcmodel=medium -module $(MODDIR)
 CCFLAGS   = -vec_report0 -mcmodel=medium

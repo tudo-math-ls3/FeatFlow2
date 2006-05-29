@@ -13,6 +13,10 @@ AMD = amd_aat amd_1 amd_2 amd_dump amd_postorder amd_post_tree amd_defaults \
 
 UMF4FLAGS ?= -DINT -DLP64  #fall back definition if not defined
 
+ifdef ARC
+AR=$(ARC)
+endif
+
 SRCLIST= $(addsuffix .c, $(AMD))
 DEFS= $(UMF4FLAGS)
 
