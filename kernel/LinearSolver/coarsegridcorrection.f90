@@ -132,18 +132,22 @@ CONTAINS
 
 !</subroutine>
 
-  ! Which method to use?
-  
-  SELECT CASE (rcoarseGridCorrection%ccorrectionType)
-  CASE (CGCOR_SCALARENERGYMIN)
-    CALL cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
-                                  rtempVector,p_RfilterChain,dalpha)
-  CASE (CGCOR_SCALARDEFMIN)
-    CALL cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
-                               rtempVector,p_RfilterChain,dalpha)
-  CASE DEFAULT !(=CGCOR_STANDARD)
-    dalpha = 1.0_DP   ! Standard setting
-  END SELECT
+  IF (rcoarseGridCorrection%dalphaMax .LE. rcoarseGridCorrection%dalphaMax) THEN
+    dalpha = 1.0_DP
+  ELSE
+    ! Which method to use?
+    
+    SELECT CASE (rcoarseGridCorrection%ccorrectionType)
+    CASE (CGCOR_SCALARENERGYMIN)
+      CALL cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
+                                    rtempVector,p_RfilterChain,dalpha)
+    CASE (CGCOR_SCALARDEFMIN)
+      CALL cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
+                                rtempVector,p_RfilterChain,dalpha)
+    CASE DEFAULT !(=CGCOR_STANDARD)
+      dalpha = 1.0_DP   ! Standard setting
+    END SELECT
+  END IF
 
   ! Make sure it's in the interval given by the dalphaMin/dalphaMax
   dalpha = MAX(MIN(dalpha,rcoarseGridCorrection%dalphaMax), &
