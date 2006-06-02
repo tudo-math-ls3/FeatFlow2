@@ -1040,7 +1040,7 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm5_initParamTriang (1,LV,rproblem)
+    CALL pm5_initParamTriang (6,LV,rproblem)
     CALL pm5_initDiscretisation (rproblem)    
     CALL pm5_initMatVec (rproblem,rcollection)    
     CALL pm5_initAnalyticBC (rproblem)   

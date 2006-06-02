@@ -22,6 +22,7 @@ MODULE coarsegridcorrection
   USE fsystem
   USE linearsystemscalar
   USE linearsystemblock
+  USE filtersupport
   
   IMPLICIT NONE
 
@@ -84,7 +85,7 @@ CONTAINS
 
   SUBROUTINE cgcor_calcOptimalCorrection (rcoarseGridCorrection,&
                                           rmatrix,rvector,rrhs,rcorrVector,&
-                                          rtempVector,dalpha)
+                                          rtempVector,p_RfilterChain,dalpha)
                                           
 !<description>
   ! This routine calculates the optimal coarse grid correction parameter
@@ -111,6 +112,10 @@ CONTAINS
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
   TYPE(t_vectorBlock), INTENT(IN) :: rcorrVector
+  
+  ! Either NULL() or a pointer to a filter chain which must be applied
+  ! to every defect vector (b-Ax).
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 !</input>
   
 !<inputoutput>
@@ -130,15 +135,14 @@ CONTAINS
   ! Which method to use?
   
   SELECT CASE (rcoarseGridCorrection%ccorrectionType)
-  CASE (CGCOR_STANDARD)
-    dalpha = 1.0_DP   ! Standard setting
   CASE (CGCOR_SCALARENERGYMIN)
     CALL cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
-                                  rtempVector,dalpha)
+                                  rtempVector,p_RfilterChain,dalpha)
   CASE (CGCOR_SCALARDEFMIN)
     CALL cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
-                               rtempVector,dalpha)
-                                 
+                               rtempVector,p_RfilterChain,dalpha)
+  CASE DEFAULT !(=CGCOR_STANDARD)
+    dalpha = 1.0_DP   ! Standard setting
   END SELECT
 
   ! Make sure it's in the interval given by the dalphaMin/dalphaMax
@@ -152,7 +156,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
-                                      rtempVector,dalpha)
+                                      rtempVector,p_RfilterChain,dalpha)
                                           
 !<description>
   ! This routine calculates the optimal coarse grid correction parameter
@@ -174,6 +178,10 @@ CONTAINS
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
   TYPE(t_vectorBlock), INTENT(IN) :: rcorrVector
+
+  ! Either NULL() or a pointer to a filter chain which must be applied
+  ! to every defect vector (b-Ax).
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 !</input>
   
 !<inputoutput>
@@ -218,11 +226,19 @@ CONTAINS
       
     CALL lsysbl_vectorCopy(rrhs,rtempVecBlock)
     CALL lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
+    ! This is a defect vector - apply the filter chain.
+    IF (ASSOCIATED(p_RfilterChain)) THEN
+      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    END IF
     
     a = lsysbl_scalarProduct(rtempVecBlock,rcorrVector)
     
     ! Calculate the demoninator of the fraction
-    CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, -1.0_DP,0.0_DP)
+    CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempVecBlock, 1.0_DP,0.0_DP)
+    ! Apply the filter
+    IF (ASSOCIATED(p_RfilterChain)) THEN
+      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    END IF
     
     b = lsysbl_scalarProduct(rtempVecBlock,rcorrVector)
     
@@ -240,7 +256,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
-                                   rtempVector,dalpha)
+                                   rtempVector,p_RfilterChain,dalpha)
                                           
 !<description>
   ! This routine calculates the optimal coarse grid correction parameter
@@ -262,6 +278,10 @@ CONTAINS
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
   TYPE(t_vectorBlock), INTENT(IN) :: rcorrVector
+
+  ! Either NULL() or a pointer to a filter chain which must be applied
+  ! to every defect vector (b-Ax).
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 !</input>
   
 !<inputoutput>
@@ -311,7 +331,16 @@ CONTAINS
       
     CALL lsysbl_vectorCopy(rrhs,rtempVecBlock)
     CALL lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
-    CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempBlock2, -1.0_DP,0.0_DP)
+    ! This is a defect vector - apply the filter chain.
+    IF (ASSOCIATED(p_RfilterChain)) THEN
+      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    END IF
+    
+    CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempBlock2, 1.0_DP,0.0_DP)
+    ! Apply the filter
+    IF (ASSOCIATED(p_RfilterChain)) THEN
+      CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
+    END IF
     
     a = lsysbl_scalarProduct(rtempVecBlock,rtempBlock2)
     

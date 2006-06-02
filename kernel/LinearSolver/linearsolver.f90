@@ -6332,6 +6332,7 @@ CONTAINS
                                           p_rcurrentLevel%rrhsVector,&
                                           p_rcurrentLevel%rtempVector,&
                                           p_rsubnode%rprjTempVector,&
+                                          p_RfilterChain,&
                                           dstep)
               
               ! Perform the coarse grid correction by adding the coarse grid
