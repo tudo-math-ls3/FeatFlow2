@@ -27,56 +27,60 @@
 !#  5.) lsysbl_createVecFromScalar
 !#      -> Creates a 1-block vector from a scalar vector
 !#
-!#  6.) lsysbl_assignDiscretIndirect
+!#  6.) lsysbl_enforceStructure
+!#      -> Enforces the structure of a given block vector in another
+!#         block vector
+!#
+!#  7.) lsysbl_assignDiscretIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!#  6.) lsysbl_assignDiscretIndirectMat
+!#  8.) lsysbl_assignDiscretIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector tp make it compatible.
 !#
-!#  8.) lsysbl_updateMatStrucInfo
+!#  9.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!#  9.) lsysbl_releaseVector
+!# 10.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 10.) lsysbl_blockMatVec
+!# 11.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 11.) lsysbl_vectorCopy
+!# 12.) lsysbl_vectorCopy
 !#       -> Copy a block vector over to another one
 !#
-!# 12.) lsysbl_vectorScale
+!# 13.) lsysbl_vectorScale
 !#      -> Scale a block vector by a constant
 !#
-!# 13.) lsysbl_vectorClear
+!# 14.) lsysbl_vectorClear
 !#      -> Clear a block vector
 !#
-!# 14.) lsysbl_vectorLinearComb
+!# 15.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 15.) lsysbl_scalarProduct
+!# 16.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 16.) lsysbl_setSortStrategy
+!# 17.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 17.) lsysbl_sortVectorInSitu
+!# 18.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 18.) lsysbl_isVectorCompatible
+!# 19.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 19.) lsysbl_isMatrixCompatible
+!# 20.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 20.) lsysbl_isMatrixSorted
+!# 21.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 21.) lsysbl_isVectorSorted
+!# 22.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !# </purpose>
 !##############################################################################
@@ -1435,6 +1439,76 @@ CONTAINS
     ! The data of the vector actually belongs to another one - to the
     ! scalar one. Note this in the structure.
     rvector%bisCopy = .TRUE.
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_enforceStructure (rtemplateVec,rvector)
+  
+!<description>
+  ! This routine enforces the structure of the vector rtemplale
+  ! in the vector rvector. 
+  !
+  ! WARNING: This routine should be used with care if you knwo
+  !          what you are doing !!!
+  ! All structural data of rtemplate (boundary conditions, spatial 
+  ! discretisation, size,sorting,...) are copied from rtemplate to 
+  ! rvector without checking the compatibility!!!
+  !
+  ! The only check in this routine is that the memory rvector provides
+  ! must be at least as large as rtemplate%NEQ; otherwise an error
+  ! is thrown. The data type of rvector is also not changed.
+!</description>
+  
+!<input>
+  ! A template vector specifying structural data
+  TYPE(t_vectorBlock), INTENT(IN) :: rtemplateVec
+!</input>
+
+!input<output>
+  ! The vector which structural data should be overwritten
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: cdata,h_Ddata
+  INTEGER(PREC_VECIDX) :: length
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+
+    ! Only basic check: there must be enough memory
+    SELECT CASE (rvector%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
+      length = SIZE(p_Ddata)
+    CASE (ST_SINGLE)
+      CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
+      length = SIZE(p_Ddata)
+    CASE DEFAULT
+      PRINT *,'lsysbl_enforceStructure: Unsupported data type'
+      STOP
+    END SELECT
+    
+    IF (length .LT. rtemplateVec%NEQ) THEN
+      PRINT *,'lsysbl_enforceStructure: Destination vector too small!'
+      STOP
+    END IF
+  
+    ! Get data type and handle from rvector
+    cdata = rvector%cdataType
+    h_Ddata = rvector%h_Ddata
+    
+    ! Overwrite rvector
+    rvector = rtemplateVec
+    
+    ! Restore the data array
+    rvector%cdataType = cdata
+    rvector%h_Ddata = h_Ddata
     
   END SUBROUTINE
 

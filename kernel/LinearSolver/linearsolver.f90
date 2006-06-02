@@ -301,6 +301,7 @@ MODULE linearsolver
   USE linearsystemblock
   USE multilevelprojection
   USE filtersupport
+  USE coarsegridcorrection
   
   IMPLICIT NONE
 
@@ -930,11 +931,11 @@ MODULE linearsolver
     ! INPUT PARAMETER: Number of levels in the linked list of multigrid levels
     INTEGER                       :: nlevels                  = 0
     
-    ! INPUT PARAMETER: Minimum step length for optimal coarse grid correction
-    REAL(DP)                           :: dminStep                 = 1.0_DP
-
-    ! INPUT PARAMETER: Maximum step length for optimal coarse grid correction
-    REAL(DP)                           :: dmaxStep                 = 1.0_DP
+    ! INPUT PARAMETER: Coarse grid correction structure for step length control. 
+    ! Defines the algorithm for computing the optimal correction as well as the
+    ! minimum and maximum step length ALPHAMIN/ALPHAMAX.
+    ! The standard setting/initialisation is suitable for conforming elements.
+    TYPE(t_coarseGridCorrection)  :: rcoarseGridCorrection
     
     ! Pointer to the head of the linked list of levels; corresponds
     ! to the lowest level.
@@ -4993,7 +4994,7 @@ CONTAINS
       ! release RHS/solution vector of the next higher level as that
       ! this one gets the new coarse grid.
       IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead)) THEN
-        ! The vectory may not exist - if the application has not called
+        ! The vector may not exist - if the application has not called
         ! initStructure!
         IF (rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead%rrhsVector%NEQ .NE. 0) &
           CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeMultigrid% &
@@ -5751,7 +5752,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  TYPE(t_linsolMGLevelInfo), POINTER :: p_rcurrentLevel
+  !TYPE(t_linsolMGLevelInfo), POINTER :: p_rcurrentLevel
   
   ! Make sure the solver node is configured for multigrid
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
@@ -6323,9 +6324,15 @@ CONTAINS
                       p_rsubnode%rprjTempVector,.TRUE.)
               END IF
               
-              ! Step length control
-              PRINT *,'step length control to be implemented'
-              dstep = 1.0_DP
+              ! Step length control. Get the optimal damping parameter for the
+              ! defect correction.
+              CALL cgcor_calcOptimalCorrection (p_rsubnode%rcoarseGridCorrection,&
+                                          p_rcurrentLevel%rsystemMatrix,&
+                                          p_rcurrentLevel%rsolutionVector,&
+                                          p_rcurrentLevel%rrhsVector,&
+                                          p_rcurrentLevel%rtempVector,&
+                                          p_rsubnode%rprjTempVector,&
+                                          dstep)
               
               ! Perform the coarse grid correction by adding the coarse grid
               ! solution (with the calculated step-length parameter) to

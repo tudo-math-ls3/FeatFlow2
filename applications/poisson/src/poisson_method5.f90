@@ -269,7 +269,7 @@ CONTAINS
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
   
     ! Arrays for the Cuthill McKee renumbering strategy
-    INTEGER, DIMENSION(1) :: H_Iresort,IsortStrategy
+    INTEGER, DIMENSION(1) :: H_Iresort 
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iresort
     
     DO i=rproblem%ilvmin,rproblem%ilvmax

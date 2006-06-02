@@ -63,7 +63,7 @@ PROGRAM codire
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
   PRINT *
-  CALL storage_info()
+  CALL storage_info(.TRUE.)
   
   ! Clean up the storage management, finish
   CALL storage_done()

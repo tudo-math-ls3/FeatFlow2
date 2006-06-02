@@ -67,25 +67,25 @@ PROGRAM poisson
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 1'
   PRINT *,'-----------------------------------------'
-  !CALL poisson1
+  CALL poisson1
   
   ! Call the problem to solve. Poisson 2:
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 2'
   PRINT *,'-----------------------------------------'
-  !CALL poisson2
+  CALL poisson2
   
   ! Call the problem to solve. Poisson 3:
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 3'
   PRINT *,'-----------------------------------------'
-  !CALL poisson3
+  CALL poisson3
   
   ! Call the problem to solve. Poisson 4:
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 4'
   PRINT *,'-----------------------------------------'
-  !CALL poisson4
+  CALL poisson4
   
   ! Call the problem to solve. Poisson 5:
   PRINT *
