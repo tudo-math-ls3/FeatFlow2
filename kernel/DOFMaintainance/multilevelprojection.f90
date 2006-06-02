@@ -446,9 +446,9 @@ CONTAINS
 !<input>
   ! The t_interlevelProjectionBlock structure that configures the grid transfer
   TYPE(t_interlevelProjectionBlock), INTENT(IN) :: rprojection 
-  
+
   ! Coarse grid vector
-  TYPE(t_vectorBlock), INTENT(IN) :: rcoarseVector
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rcoarseVector
 !</input>
   
 !<inputoutput>
@@ -459,16 +459,19 @@ CONTAINS
   ! The vector does not have to be connected to a discretisation structure
   ! or something similar; the content is undefined at entry and will be
   ! undefined when leaving this routine.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
-  
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rtempVector
+!</inputoutput>
+
+!<output>
   ! Fine grid vector
   TYPE(t_vectorBlock), INTENT(INOUT) :: rfineVector
-!</inputoutput>
+!</output>
   
 !</subroutine>
 
   ! local variables
   INTEGER :: i
+  LOGICAL :: bsort1,bsort2
   TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrCoarse,p_rdiscrFine
   TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtriaFine
   TYPE(t_interlevelProjectionScalar) :: ractProjection
@@ -494,6 +497,11 @@ CONTAINS
       STOP
     END IF
     
+    IF (lsysbl_isVectorSorted(rfineVector) .OR. lsysbl_isVectorSorted(rcoarseVector)) THEN
+      PRINT *,'Vectors must be unsorted for level change!'
+      STOP
+    END IF
+
     ! Calls the correct prolongation routine for each block in the 
     ! discretisation...
     DO i=1,rcoarseVector%nblocks
@@ -519,12 +527,12 @@ CONTAINS
         CALL storage_getbase_double (rcoarseVector%RvectorBlock(1)%h_Ddata,p_DuCoarse)
         p_DuCoarse => p_DuCoarse( &
           rcoarseVector%RvectorBlock(1)%iidxFirstEntry: &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ)
+          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ-1)
 
         CALL storage_getbase_double (rfineVector%RvectorBlock(1)%h_Ddata,p_DuFine)
         p_DuFine => p_DuFine( &
           rfineVector%RvectorBlock(1)%iidxFirstEntry: &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ)
+          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ-1)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -568,9 +576,11 @@ CONTAINS
                                p_IverticesAtElementFine)
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
           CALL mlprj_prolUniformQ1_double (p_DuCoarse,p_DuFine, &
                p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
-               p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL)
+               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,p_rtriaCoarse%NEL)
         CASE DEFAULT
           PRINT *,'Unsupported prolongation!'
           STOP
@@ -615,7 +625,7 @@ CONTAINS
   ! The vector does not have to be connected to a discretisation structure
   ! or something similar; the content is undefined at entry and will be
   ! undefined when leaving this routine.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rtempVector
 
   ! Coarse grid vector
   TYPE(t_vectorBlock), INTENT(INOUT) :: rcoarseVector
@@ -650,6 +660,11 @@ CONTAINS
       STOP
     END IF
     
+    IF (lsysbl_isVectorSorted(rfineVector) .OR. lsysbl_isVectorSorted(rcoarseVector)) THEN
+      PRINT *,'Vectors must be unsorted for level change!'
+      STOP
+    END IF
+    
     ! Calls the correct prolongation routine for each block in the 
     ! discretisation...
     DO i=1,rcoarseVector%nblocks
@@ -675,12 +690,12 @@ CONTAINS
         CALL storage_getbase_double (rcoarseVector%RvectorBlock(1)%h_Ddata,p_DuCoarse)
         p_DuCoarse => p_DuCoarse( &
           rcoarseVector%RvectorBlock(1)%iidxFirstEntry: &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ)
+          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ-1)
 
         CALL storage_getbase_double (rfineVector%RvectorBlock(1)%h_Ddata,p_DuFine)
         p_DuFine => p_DuFine( &
           rfineVector%RvectorBlock(1)%iidxFirstEntry: &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ)
+          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ-1)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -724,7 +739,7 @@ CONTAINS
                                p_IneighboursAtElementFine)
           CALL mlprj_restUniformQ1_double (p_DuCoarse,p_DuFine, &
                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
-               p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+               p_rtriaFine%NEL)
                
         CASE DEFAULT
           PRINT *,'Unsupported restriction!'
@@ -806,6 +821,11 @@ CONTAINS
       STOP
     END IF
     
+    IF (lsysbl_isVectorSorted(rfineVector) .OR. lsysbl_isVectorSorted(rcoarseVector)) THEN
+      PRINT *,'Vectors must be unsorted for level change!'
+      STOP
+    END IF
+
     ! Calls the correct prolongation routine for each block in the 
     ! discretisation...
     DO i=1,rcoarseVector%nblocks
@@ -831,12 +851,12 @@ CONTAINS
         CALL storage_getbase_double (rcoarseVector%RvectorBlock(1)%h_Ddata,p_DuCoarse)
         p_DuCoarse => p_DuCoarse( &
           rcoarseVector%RvectorBlock(1)%iidxFirstEntry: &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ)
+          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ-1)
 
         CALL storage_getbase_double (rfineVector%RvectorBlock(1)%h_Ddata,p_DuFine)
         p_DuFine => p_DuFine( &
           rfineVector%RvectorBlock(1)%iidxFirstEntry: &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ)
+          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ-1)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -1230,7 +1250,7 @@ CONTAINS
 
   SUBROUTINE mlprj_prolUniformQ1_double (DuCoarse,DuFine, &
                IverticesAtElementCoarse,IverticesAtElementFine,&
-               IneighboursAtElementCoarse,NELcoarse)
+               IneighboursAtElementCoarse,IneighboursAtElementFine,NELcoarse)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
@@ -1250,6 +1270,9 @@ CONTAINS
   ! IneighboursAtElement array on the coarse grid
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
   
+  ! IneighboursAtElement array on the fine grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
   ! Number of elements in the coarse grid
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
 !</input>
@@ -1265,7 +1288,7 @@ CONTAINS
   REAL(DP), PARAMETER :: Q2 = .5_DP
   REAL(DP), PARAMETER :: Q4 = .25_DP
   
-  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX) :: iel,ielh1,ielh2,ielh3,ielh4
   REAL(DP) :: duh1,duh2,duh3,duh4
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
@@ -1280,20 +1303,25 @@ CONTAINS
       duh3=DuCoarse(IverticesAtElementCoarse(3,iel))
       duh4=DuCoarse(IverticesAtElementCoarse(4,iel))
 
+      ielh1=iel
+      ielh2=IneighboursAtElementFine(2,ielh1)
+      ielh3=IneighboursAtElementFine(2,ielh2)
+      ielh4=IneighboursAtElementFine(2,ielh3)
+
       ! Now check on every of the edges, if we already computed
       ! the value in the midpoint: Compute only if the neighbour
       ! element has smaller number.
       IF (IneighboursAtElementCoarse(1,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,iel)) = Q2*(duh1+duh2)
+        DuFine(IverticesAtElementFine(2,ielh1)) = Q2*(duh1+duh2)
 
       IF (IneighboursAtElementCoarse(2,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,iel)) = Q2*(duh2+duh3)
+        DuFine(IverticesAtElementFine(2,ielh2)) = Q2*(duh2+duh3)
 
       IF (IneighboursAtElementCoarse(3,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,iel)) = Q2*(duh3+duh4)
+        DuFine(IverticesAtElementFine(2,ielh3)) = Q2*(duh3+duh4)
 
       IF (IneighboursAtElementCoarse(4,iel) .LT. iel) &
-        DuFine(IverticesAtElementFine(2,iel)) = Q2*(duh4+duh1)
+        DuFine(IverticesAtElementFine(2,ielh4)) = Q2*(duh4+duh1)
         
       ! Don't forget the DOF in the midpoint of the element
       DuFine(IverticesAtElementFine(3,iel)) = Q4*(duh1+duh2+duh3+duh4)
@@ -1308,7 +1336,7 @@ CONTAINS
 
   SUBROUTINE mlprj_restUniformQ1_double (DuCoarse,DuFine, &
                IverticesAtElementFine,IneighboursAtElementFine,&
-               NELcoarse,NELfine)
+               NELfine)
   
 !<description>
   ! Restricts a RHS vector from a fine grid to a coarse grid.
@@ -1325,9 +1353,6 @@ CONTAINS
   ! IneighboursAtElement array on the coarse grid
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
   
-  ! Number of elements in the coarse grid
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
-
   ! Number of elements in the fine grid
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
 !</input>
@@ -1353,7 +1378,7 @@ CONTAINS
     CALL lalg_vectorCopyDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
     
     ! Loop over the elements to collect the missing additive contributions:
-    DO iel=NELcoarse+1,NELfine
+    DO iel=1,NELfine
       i1=IverticesAtElementFine(1,iel)
       i2=IverticesAtElementFine(2,iel)
       i3=IverticesAtElementFine(3,iel)

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson_method3 </name>
+!# <name> poisson_method5 </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -13,10 +13,14 @@
 !# is done using an application-specific structure saving problem data
 !# as well as a collection structure for the communication with callback
 !# routines.
+!#
+!# The routines here behave similar to poisson_method3. In difference,
+!# a multigrid-solver with ILU(0) smoother and BiCGStab coarse grid solver
+!# is used and matrices/vectors are sorted for Cuthill-McKee.
 !# </purpose>
 !##############################################################################
 
-MODULE poisson_method3
+MODULE poisson_method5
 
   USE fsystem
   USE storage
@@ -30,12 +34,17 @@ MODULE poisson_method3
   USE bcassembly
   USE triangulation
   USE spatialdiscretisation
+  USE sortstrategy
   
   USE collection
     
   USE poisson_callback
   
   IMPLICIT NONE
+  
+  ! Maximum allowed level in this application; must be =9 for 
+  ! FEAT 1.x compatibility (still)!
+  INTEGER, PARAMETER :: NLMAX = 9
   
 !<types>
 
@@ -49,10 +58,9 @@ MODULE poisson_method3
     ! An object specifying the discretisation (trial/test functions,...)
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
     
-    ! A matrix and vector. The vector accepts the RHS of the problem
-    ! in scalar form. The matrix will receive the discrete Laplace operator.
+    ! A system matrix for that specific level. The matrix will receive the 
+    ! discrete Laplace operator.
     TYPE(t_matrixBlock) :: rmatrix
-    TYPE(t_vectorBlock) :: rvector,rrhs
 
     ! A variable describing the discrete boundary conditions.    
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
@@ -66,11 +74,17 @@ MODULE poisson_method3
 
   TYPE t_problem
   
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+    ! Minimum refinement level; = Level i in RlevelInfo
+    INTEGER :: ilvmin
+    
+    ! Maximum refinement level
+    INTEGER :: ilvmax
 
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
+
+    ! A solution vector and a RHS vector on the finest level. 
+    TYPE(t_vectorBlock) :: rvector,rrhs
 
     ! A variable describing the analytic boundary conditions.    
     TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
@@ -81,12 +95,7 @@ MODULE poisson_method3
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by LV!
-    TYPE(t_problem_lvl), DIMENSION(1) :: RlevelInfo
-    
-    ! A collection object that saves structural data and some 
-    ! problem-dependent information which is e.g. passed to 
-    ! callback routines.
-    TYPE(t_collection) :: rcollection
+    TYPE(t_problem_lvl), DIMENSION(NLMAX) :: RlevelInfo
     
   END TYPE
 
@@ -100,7 +109,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initParamTriang (ilv,rproblem)
+  SUBROUTINE pm5_initParamTriang (ilvmin,ilvmax,rproblem)
   
     INCLUDE 'cout.inc'
     INCLUDE 'cerr.inc'
@@ -114,8 +123,11 @@ CONTAINS
 !</description>
 
 !<input>
-  ! The level up to where we refine the coarse mesh.
-  INTEGER, INTENT(IN) :: ilv
+  ! Minimum refinement level of the mesh; = coarse grid = level 1
+  INTEGER, INTENT(IN) :: ilvmin
+  
+  ! Maximum refinement level
+  INTEGER, INTENT(IN) :: ilvmax
 !</input>
 
 !<inputoutput>
@@ -124,15 +136,17 @@ CONTAINS
 !</inputoutput>
 
   ! local variables
+  INTEGER :: i
   
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
 
     ! Variable for a filename:  
     CHARACTER(LEN=60) :: CFILE
 
     ! Initialise the level in the problem structure
-    rproblem%LV = ilv
+    rproblem%ilvmin = ilvmin
+    rproblem%ilvmax = ilvmax
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -148,16 +162,22 @@ CONTAINS
     CALL GENPAR (.TRUE.,IMESH,CFILE)
 
     ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level LV...
+    ! Refine it to level ilvmin/ilvmax.
+    ! This will probably modify ilvmin/ilvmax in case of a level
+    ! shift, i.e. if ilvmax > ilvmin+9 !
+    ! After this routine, we have to rely on ilvmin/ilvmax in the
+    ! problem structure ratzher than those in the parameters.
     CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,ilv,ilv,0,CFILE)
+    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
     ! to get a triangulation.
     ! Set p_rtriangulation to NULL() to create a new structure on the heap.
-    NULLIFY(rproblem%RlevelInfo(1)%p_rtriangulation)
-    CALL tria_wrp_tria2Structure(TRIAS(:,ilv),rproblem%RlevelInfo(1)%p_rtriangulation)
+    DO i=rproblem%ilvmin,rproblem%ilvmax
+      NULLIFY(rproblem%RlevelInfo(i)%p_rtriangulation)
+      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%p_rtriangulation)
+    END DO
     
     ! The TRIAS(,)-array is now part pf the triangulation structure,
     ! we don't need it anymore.
@@ -168,7 +188,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initDiscretisation (rproblem)
+  SUBROUTINE pm5_initDiscretisation (rproblem)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
@@ -181,6 +201,7 @@ CONTAINS
 !</inputoutput>
 
   ! local variables
+  INTEGER :: I
   
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
@@ -188,24 +209,26 @@ CONTAINS
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation), POINTER :: p_rtriangulation
     
-    ! Ask the problem structure to give us the boundary and triangulation.
-    ! We need it for the discretisation.
-    p_rboundary => rproblem%p_rboundary
-    p_rtriangulation => rproblem%RlevelInfo(1)%p_rtriangulation
-    
-    ! Now we can start to initialise the discretisation. Set up
-    ! a simple discretisation structure suing the boundary and
-    ! triangulation information. Specify the element and cubature rule
-    ! to use during the assembly of matrices.
-    !
-    ! Note that we initialise only one discretisation structure here,
-    ! as our solution is scalar. Normally, we have to initialise one
-    ! discretisation structure for every component of the solution!
-    ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
-    NULLIFY(rproblem%RlevelInfo(1)%p_rdiscretisation)
-    CALL spdiscr_initDiscr_simple (rproblem%RlevelInfo(1)%p_rdiscretisation, &
-                                   EL_E011,CUB_TRZ,&
-                                   p_rtriangulation, p_rboundary)
+    DO i=rproblem%ilvmin,rproblem%ilvmax
+      ! Ask the problem structure to give us the boundary and triangulation.
+      ! We need it for the discretisation.
+      p_rboundary => rproblem%p_rboundary
+      p_rtriangulation => rproblem%RlevelInfo(i)%p_rtriangulation
+      
+      ! Now we can start to initialise the discretisation. Set up
+      ! a simple discretisation structure suing the boundary and
+      ! triangulation information. Specify the element and cubature rule
+      ! to use during the assembly of matrices.
+      !
+      ! Note that we initialise only one discretisation structure here,
+      ! as our solution is scalar. Normally, we have to initialise one
+      ! discretisation structure for every component of the solution!
+      ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
+      NULLIFY(rproblem%RlevelInfo(i)%p_rdiscretisation)
+      CALL spdiscr_initDiscr_simple (rproblem%RlevelInfo(i)%p_rdiscretisation, &
+                                    EL_E011,CUB_TRZ,&
+                                    p_rtriangulation, p_rboundary)
+    END DO
                                    
   END SUBROUTINE
 
@@ -213,7 +236,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initMatVec (rproblem)
+  SUBROUTINE pm5_initMatVec (rproblem,rcollection)
   
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
@@ -225,9 +248,14 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! A collection object for saving structural data and some problem-dependent 
+  ! information.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
   ! local variables
+  INTEGER :: i
   
     ! A bilinear and linear form describing the analytic problem to solve
     TYPE(t_bilinearForm) :: rform
@@ -240,66 +268,95 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
   
-    ! Ask the problem structure to give us the discretisation structure
-    p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation
+    ! Arrays for the Cuthill McKee renumbering strategy
+    INTEGER, DIMENSION(1) :: H_Iresort,IsortStrategy
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iresort
     
-    p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
-    p_rvector => rproblem%RlevelInfo(1)%rvector
-    
-    ! Save matrix and vectors to the collection.
-    ! They maybe used later, expecially in nonlinear problems.
-    CALL collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.TRUE.)
-    CALL collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.TRUE.)
-    CALL collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrix,.TRUE.)
+    DO i=rproblem%ilvmin,rproblem%ilvmax
+      ! Ask the problem structure to give us the discretisation structure
+      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      
+      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+      
+      ! Save matrix to the collection.
+      ! They maybe used later, expecially in nonlinear problems.
+      CALL collct_setvalue_mat(rcollection,'LAPLACE',p_rmatrix,.TRUE.,i)
 
-    ! Now as the discretisation is set up, we can start to generate
-    ! the structure of the system matrix which is to solve.
-    ! We create that directly in the block (1,1) of the block matrix.
-    CALL bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,&
-                                     p_rmatrix%RmatrixBlock(1,1))
-    
-    ! Update the structural information of the block matrix, as we manually
-    ! changed one of the submatrices:
-    CALL lsysbl_updateMatStrucInfo (p_rmatrix)
-    
-    ! And now to the entries of the matrix. For assembling of the entries,
-    ! we need a bilinear form, which first has to be set up manually.
-    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-    ! scalar system matrix in 2D.
-    
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_DERIV_Y
-    rform%Idescriptors(2,2) = DER_DERIV_Y
+      ! Now as the discretisation is set up, we can start to generate
+      ! the structure of the system matrix which is to solve.
+      ! We create that directly in the block (1,1) of the block matrix.
+      CALL bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,&
+                                      p_rmatrix%RmatrixBlock(1,1))
+      
+      ! Update the structural information of the block matrix, as we manually
+      ! changed one of the submatrices:
+      CALL lsysbl_updateMatStrucInfo (p_rmatrix)
+      
+      ! And now to the entries of the matrix. For assembling of the entries,
+      ! we need a bilinear form, which first has to be set up manually.
+      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+      ! scalar system matrix in 2D.
+      
+      rform%itermCount = 2
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_DERIV_Y
 
-    ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .TRUE.
-    rform%BconstantCoeff = .TRUE.
-    rform%Dcoefficients(1)  = 1.0 
-    rform%Dcoefficients(2)  = 1.0 
+      ! In the standard case, we have constant coefficients:
+      rform%ballCoeffConstant = .TRUE.
+      rform%BconstantCoeff = .TRUE.
+      rform%Dcoefficients(1)  = 1.0 
+      rform%Dcoefficients(2)  = 1.0 
 
-    ! Now we can build the matrix entries.
-    ! We specify the callback function coeff_Laplace for the coefficients.
-    ! As long as we use constant coefficients, this routine is not used.
-    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-    ! the framework will call the callback routine to get analytical data.
-    !
-    ! We pass our collection structure as well to this routine, 
-    ! so the callback routine has access to everything what is
-    ! in the collection.
-    CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,&
-                                 p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
-                                 rproblem%rcollection)
+      ! Now we can build the matrix entries.
+      ! We specify the callback function coeff_Laplace for the coefficients.
+      ! As long as we use constant coefficients, this routine is not used.
+      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! the framework will call the callback routine to get analytical data.
+      !
+      ! We pass our collection structure as well to this routine, 
+      ! so the callback routine has access to everything what is
+      ! in the collection.
+      CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,&
+                                  p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
+                                  rcollection)
+                                   
+      ! Allocate an array for holding the resorting strategy.
+      CALL storage_new ('pm5_initMatVec', 'Iresort', &
+            p_rmatrix%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(h_Iresort(1),p_Iresort)
+      
+      ! Calculate the resorting strategy.
+      CALL sstrat_calcCuthillMcKee (p_rmatrix%RmatrixBlock(1,1),p_Iresort)
+      
+      ! Save the handle of the resorting strategy to the collection.
+      CALL collct_setvalue_int(rcollection,'LAPLACE-CM',h_Iresort(1),.TRUE.,i)
+      
+      ! Resort the matrix according to the resorting strategy.
+      CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
+                              SSTRAT_CM,h_Iresort(1))
+      
+    END DO
+
+    ! (Only) on the finest level, we need to calculate a RHS vector
+    ! and to allocate a solution vector.
     
-    ! Now we want to build up the right hand side. At first we need a block
-    ! vector of the right structure. Although we could manually create
-    ! that vector, the easiest way to set up the vector structure is
+    p_rrhs    => rproblem%rrhs   
+    p_rvector => rproblem%rvector
+
+    ! Although we could manually create the solution/RHS vector,
+    ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template:
     CALL lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .FALSE.)
+    CALL lsysbl_createVecBlockIndMat (p_rmatrix,p_rvector, .FALSE.)
+
+    ! Save the solution/RHS vector to the collection. Might be used
+    ! later (e.g. in nonlinear problems)
+    CALL collct_setvalue_vec(rcollection,'RHS',p_rrhs,.TRUE.)
+    CALL collct_setvalue_vec(rcollection,'SOLUTION',p_rvector,.TRUE.)
     
-    ! The vector structure is done but the entries are missing. 
+    ! The vector structure is ready but the entries are missing. 
     ! So the next thing is to calculate the content of that vector.
     !
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -312,15 +369,14 @@ CONTAINS
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is
     ! in the collection.
-    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
-                                 p_rrhs%RvectorBlock(1),coeff_RHS,&
-                                 rproblem%rcollection)
-    
-    ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution. 
-    ! Create them using the RHS as template.
-    ! Fill the solution vector with 0:
-    CALL lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .TRUE.)
+    !
+    ! Note that the vector is unsorted after calling this routine!
+    CALL linf_buildVectorScalar(p_rdiscretisation,rlinform,.TRUE.,&
+                                p_rrhs%RvectorBlock(1),coeff_RHS,&
+                                rcollection)
+                                
+    ! Clear the solution vector on the finest level.
+    CALL lsysbl_vectorClear(rproblem%rvector)
     
   END SUBROUTINE
 
@@ -328,7 +384,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initAnalyticBC (rproblem)
+  SUBROUTINE pm5_initAnalyticBC (rproblem)
   
 !<description>
   ! This initialises the analytic bonudary conditions of the problem
@@ -351,13 +407,12 @@ CONTAINS
     
     ! A pointer to the domain
     TYPE(t_boundary), POINTER :: p_rboundary
+    
+    INTEGER :: i
   
-    ! Ask the problem structure to give us the discretisation structure and
-    p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation
-    
-    ! Get the domain from the discretisation
-    p_rboundary => p_rdiscretisation%p_rdomain
-    
+    ! Get the domain from the problem structure
+    p_rboundary => rproblem%p_rboundary
+
     ! For implementing boundary conditions, we use a 'filter technique with
     ! discretised boundary conditions'. This means, we first have to calculate
     ! a discrete version of the analytic BC, which we can implement into the
@@ -369,8 +424,7 @@ CONTAINS
     !
     ! Set p_rboundaryConditions to NULL() to create a new structure on the heap.
     NULLIFY (rproblem%p_rboundaryConditions)
-    CALL scbc_initScalarBC (rproblem%p_rboundaryConditions,&
-                            p_rdiscretisation%p_rdomain)
+    CALL scbc_initScalarBC (rproblem%p_rboundaryConditions,p_rboundary)
     
     ! We 'know' already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for inforcing
@@ -390,28 +444,36 @@ CONTAINS
     ! The routine also returns the created object in p_rbcRegion so that we can
     ! modify it - but accept it as it is, so we can ignore that.
     CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
-                             
+                            rboundaryRegion,p_rbcRegion)
+                              
     ! Now to the edge 2 of boundary component 1 the domain. We use the
     ! same two routines to add the boundary condition to p_rboundaryConditions.
     CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
     CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
-                             
+                            rboundaryRegion,p_rbcRegion)
+                              
     ! Edge 3 of boundary component 1.
     CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
     CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
+                            rboundaryRegion,p_rbcRegion)
     
     ! Edge 4 of boundary component 1. That's it.
     CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
     CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
-                             
-    ! The boundary conditions are set up, but still the discretisation
-    ! does not know about it. So inform the discretisation which
-    ! analytic boundary conditions to use:
-    p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditions
+                            rboundaryRegion,p_rbcRegion)
+      
+    ! Install these boundary conditions into all discretisation structures
+    ! on all levels.
+                               
+    DO i=rproblem%ilvmin,rproblem%ilvmax
+      
+      ! Ask the problem structure to give us the discretisation structure and
+      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      
+      ! inform the discretisation which analytic boundary conditions to use:
+      p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditions
+      
+    END DO
     
   END SUBROUTINE
 
@@ -419,7 +481,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_initDiscreteBC (rproblem)
+  SUBROUTINE pm5_initDiscreteBC (rproblem,rcollection)
   
 !<description>
   ! This calculates the discrete version of the boundary conditions and
@@ -429,50 +491,66 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! A collection object for saving structural data and some problem-dependent 
+  ! information.
+  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
 !</inputoutput>
 
   ! local variables
+  INTEGER :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
-    ! the discretisation
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-    
-    ! Pointer to structure for saving discrete BC's:
-    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+  ! A pointer to the system matrix and the RHS vector as well as 
+  ! the discretisation
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
 
-    ! Get our matrix and right hand side from the problem structure.
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
-    p_rvector => rproblem%RlevelInfo(1)%rvector
-    p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
+  ! Pointer to structure for saving discrete BC's:
+  TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
     
-    ! From the matrix or the RHS we have access to the discretisation and the
-    ! analytic boundary conditions.
-    p_rdiscretisation => p_rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation
+    DO i=rproblem%ilvmin,rproblem%ilvmax
     
-    ! For the discrete problem, we need a discrete version of the above
-    ! boundary conditions. So we have to discretise them.
-    ! The following routine gives back p_rdiscreteBC, a pointer to a
-    ! discrete version of the boundary conditions. Remark that
-    ! the pointer has to be nullified before calling the routine,
-    ! otherwise, the routine tries to update the boundary conditions
-    ! in p_rdiscreteBC!
-    ! getBoundaryValues is a callback routine that specifies the
-    ! values on the boundary. We pass our collection structure as well
-    ! to this routine, so the callback routine has access to everything what is
-    ! in the collection.
-    NULLIFY(rproblem%RlevelInfo(1)%p_rdiscreteBC)
-    CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(1)%p_rdiscreteBC, &
-                             .FALSE.,getBoundaryValues,rproblem%rcollection)
-                             
-    ! Hang the pointer into the vectors and the matrix - more precisely,
-    ! to the first block matrix and the first subvector. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.
-    p_rdiscreteBC => rproblem%RlevelInfo(1)%p_rdiscreteBC
+      ! Get our matrix from the problem structure.
+      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+      
+      ! From the matrix or the RHS we have access to the discretisation and the
+      ! analytic boundary conditions.
+      p_rdiscretisation => p_rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation
+      
+      ! For the discrete problem, we need a discrete version of the above
+      ! boundary conditions. So we have to discretise them.
+      ! The following routine gives back p_rdiscreteBC, a pointer to a
+      ! discrete version of the boundary conditions. Remark that
+      ! the pointer has to be nullified before calling the routine,
+      ! otherwise, the routine tries to update the boundary conditions
+      ! in p_rdiscreteBC!
+      ! getBoundaryValues is a callback routine that specifies the
+      ! values on the boundary. We pass our collection structure as well
+      ! to this routine, so the callback routine has access to everything what is
+      ! in the collection.
+      NULLIFY(rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%p_rdiscreteBC, &
+                              .FALSE.,getBoundaryValues,rcollection)
+                               
+      ! Hang the pointer into the vectors and the matrix - more precisely,
+      ! to the first block matrix and the first subvector. That way, these
+      ! boundary conditions are always connected to that matrix and that
+      ! vector.
+      p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBC
+      
+      p_rmatrix%RmatrixBlock(1,1)%p_rdiscreteBC => p_rdiscreteBC
+      
+    END DO
+
+    ! On the finest level, attach the discrete BC also
+    ! to the solution and RHS vector. They need it to be compatible
+    ! to the matrix on the finest level.
+    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%ilvmax)%p_rdiscreteBC
     
-    p_rmatrix%RmatrixBlock(1,1)%p_rdiscreteBC => p_rdiscreteBC
+    p_rrhs    => rproblem%rrhs   
+    p_rvector => rproblem%rvector
+    
     p_rrhs%RvectorBlock(1)%p_rdiscreteBC => p_rdiscreteBC
     p_rvector%RvectorBlock(1)%p_rdiscreteBC => p_rdiscreteBC
                 
@@ -482,7 +560,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_implementBC (rproblem)
+  SUBROUTINE pm5_implementBC (rproblem)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -494,6 +572,7 @@ CONTAINS
 !</inputoutput>
 
   ! local variables
+  INTEGER :: i,ilvmax
   
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
@@ -502,25 +581,33 @@ CONTAINS
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
-
-    ! Get our matrix and right hand side from the problem structure.
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
-    p_rvector => rproblem%RlevelInfo(1)%rvector
-    p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
     
-    ! The next step is to set up a filter that modifies the block
-    ! vectors according to boundary conditions.
+    ! Set up a filter that modifies the block vectors/matrix
+    ! according to boundary conditions.
     ! Initialise the first filter of the filter chain as boundary
     ! implementation filter:
     RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
     
-    ! Apply the filter chain to the matrix and the vectors.
+    ! Get our the right hand side and solution from the problem structure
+    ! on the finest level
+    ilvmax = rproblem%ilvmax
+    p_rrhs    => rproblem%rrhs   
+    p_rvector => rproblem%rvector
+    
+    ! Apply the filter chain to the vectors.
     ! As the filter consists only of an implementation filter for
     ! boundary conditions, this implements the boundary conditions
-    ! into the vectors and matrices
+    ! into the vectors and matrices.
     CALL filter_applyFilterChainVec (p_rrhs, RfilterChain)
     CALL filter_applyFilterChainVec (p_rvector, RfilterChain)
-    CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+
+    ! Apply the filter chain to the matrices on all levels, too.
+    ! This modifies all matrices according to the discrete boundary 
+    ! conditions.
+    DO i=rproblem%ilvmin,rproblem%ilvmax
+      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+      CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+    END DO
 
   END SUBROUTINE
 
@@ -528,7 +615,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_solve (rproblem)
+  SUBROUTINE pm5_solve (rproblem)
   
 !<description>
   ! Solves the given problem by applying a linear solver.
@@ -540,6 +627,8 @@ CONTAINS
 !</inputoutput>
 
   ! local variables
+    INTEGER :: ilvmin,ilvmax
+    INTEGER :: i
 
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
@@ -556,19 +645,44 @@ CONTAINS
     TYPE(t_vectorBlock), TARGET :: rtempBlock
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
+    TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rsmoother
+    TYPE(t_linsolNode), POINTER :: p_rcoarseGridSolver,p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
-
-    ! Get our matrix and right hand side from the problem structure.
-    p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
-    p_rvector => rproblem%RlevelInfo(1)%rvector
-    p_rmatrix => rproblem%RlevelInfo(1)%rmatrix
+    TYPE(t_matrixBlock), DIMENSION(NLMAX) :: Rmatrices
     
-    ! Create a temporary vector for the solver - it needs that.
+    ! An interlevel projection structure for changing levels
+    TYPE(t_interlevelProjectionBlock) :: rprojection
+    TYPE(t_spatialDiscretisation), DIMENSION(1) :: RspatialDiscretisation
+
+    ! One level of multigrid
+    TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
+    
+    ilvmin = rproblem%ilvmin
+    ilvmax = rproblem%ilvmax
+    
+    ! Get our right hand side / solution / matrix on the finest
+    ! level from the problem structure.
+    p_rrhs    => rproblem%rrhs   
+    p_rvector => rproblem%rvector
+    p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
+    
+    ! Create a temporary vector we need that for some preparation.
     CALL lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .FALSE.)
+    
+    ! Resort the RHS and solution vector according to the resorting
+    ! strategy given in the matrix.
+    IF (lsysbl_isMatrixSorted(p_rmatrix)) THEN
+      ! Use the temporary vector from above to store intermediate data.
+      ! The vectors are assumed to know how they are resorted (the strategy
+      ! is already attached to them). So call the resorting routines
+      ! to resort them as necessary!
+      ! We use the first subvector of rtempBlock as temporary data; it's
+      ! large enough, as we only have one block.
+      CALL lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.TRUE.)
+      CALL lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.TRUE.)
+    END IF
     
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -585,21 +699,59 @@ CONTAINS
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
     NULLIFY(p_rpreconditioner)
-    CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    
+    ! Then initialise the solver and use the above preconditioner.
+    CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    
+    ! Now we have to build up the level information for multigrid.
+    !
+    ! At first, initialise a standard interlevel projection structure. We
+    ! can use the same structure for all levels.
+    RspatialDiscretisation(1) = p_rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation
+    CALL mlprj_initProjection (rprojection,RspatialDiscretisation)
+    
+    ! Then set up smoothers / coarse grid solver:
+    DO i=ilvmin,ilvmax
+      
+      ! On the coarsest grid, set up a coarse grid solver and no smoother
+      ! On finer grids, set up a smoother but no coarse grid solver.
+      NULLIFY(p_rpreconditioner)
+      NULLIFY(p_rsmoother)
+      NULLIFY(p_rcoarseGridSolver)
+      IF (i .EQ. ilvmin) THEN
+        ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
+        ! would be:
+        ! CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+        ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+        
+        ! Set up UMFPACK coarse grid solver.
+        CALL linsol_initUMFPACK4 (p_rcoarseGridSolver)
+
+      ELSE
+        ! Set up Jacobi smoother for multigrid would be:
+        ! CALL linsol_initJacobi (p_rsmoother)
+
+        ! Set up an ILU smoother for multigrid with damping parameter 0.7,
+        ! 4 smoothing steps:
+        CALL linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+        CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
+      END IF
+    
+      ! Add the level.
+      CALL linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, rprojection,&
+                                     p_rsmoother,p_rsmoother,p_rcoarseGridSolver)
+    END DO
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
-    ! Attach the system matrix to the solver.
-    ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
-    ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
-    ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/p_rmatrix/)
-    CALL linsol_setMatrices(p_RsolverNode,Rmatrices)
+    ! Attach the system matrices to the solver.
+    !
+    ! We copy our matrices to a big matrix array and transfer that
+    ! to the setMatrices routines. This intitialises then the matrices
+    ! on all levels according to that array.
+    Rmatrices(ilvmin:ilvmax) = rproblem%RlevelInfo(ilvmin:ilvmax)%rmatrix
+    CALL linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -623,16 +775,23 @@ CONTAINS
     ! Release the solver node and all subnodes attached to it (if at all):
     CALL linsol_releaseSolver (p_rsolverNode)
     
+    ! Unsort the vectors again in case they were resorted before calling 
+    ! the solver.
+    ! We use the first subvector of rtempBlock as temporary data; it's
+    ! large enough, as we only have one block.
+    CALL lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.FALSE.)
+    CALL lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.FALSE.)
+    
     ! Release the temporary vector
     CALL lsysbl_releaseVector (rtempBlock)
-    
+
   END SUBROUTINE
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE pm3_postprocessing (rproblem)
+  SUBROUTINE pm5_postprocessing (rproblem)
   
 !<description>
   ! Writes the solution into a GMV file.
@@ -656,7 +815,7 @@ CONTAINS
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! Get the solution vector from the problem structure.
-    p_rvector => rproblem%RlevelInfo(1)%rvector
+    p_rvector => rproblem%rvector
     
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
@@ -666,7 +825,7 @@ CONTAINS
     ! start the postprocessing. Call the GMV library to write out
     ! a GMV file for our solution.
     ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u3.gmv')
+    CALL GMVOF0 (ihandle,-2,'gmv/u4.gmv')
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
@@ -683,7 +842,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneMatVec (rproblem)
+  SUBROUTINE pm5_doneMatVec (rproblem,rcollection)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -692,19 +851,37 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! A collection object for saving structural data and some problem-dependent 
+  ! information.
+  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
 !</inputoutput>
 
 !</subroutine>
 
-    ! Release matrix and vectors
-    CALL lsysbl_releaseVector (rproblem%RlevelInfo(1)%rvector)
-    CALL lsysbl_releaseVector (rproblem%RlevelInfo(1)%rrhs)
-    CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(1)%rmatrix)
+    INTEGER :: ihandle,i
+
+    ! Release matrices and vectors on all levels
+    DO i=rproblem%ilvmax,rproblem%ilvmin,-1
+      ! Delete the matrix
+      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
+
+      ! Delete the variables from the collection.
+      CALL collct_deletevalue (rcollection,'LAPLACE',i)
+      
+      ! Release the permutation for sorting matrix/vectors
+      ihandle = collct_getvalue_int (rcollection,'LAPLACE-CM',i)
+      CALL storage_free (ihandle)
+      CALL collct_deletevalue (rcollection,'LAPLACE-CM',i)
+    END DO
+
+    ! Delete solution/RHS vector
+    CALL lsysbl_releaseVector (rproblem%rvector)
+    CALL lsysbl_releaseVector (rproblem%rrhs)
 
     ! Delete the variables from the collection.
-    CALL collct_deletevalue (rproblem%rcollection,'RHS')
-    CALL collct_deletevalue (rproblem%rcollection,'SOLUTION')
-    CALL collct_deletevalue (rproblem%rcollection,'LAPLACE')
+    CALL collct_deletevalue (rcollection,'RHS')
+    CALL collct_deletevalue (rcollection,'SOLUTION')
 
   END SUBROUTINE
 
@@ -712,7 +889,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneBC (rproblem)
+  SUBROUTINE pm5_doneBC (rproblem)
   
 !<description>
   ! Releases discrete and analytic boundary conditions from the heap.
@@ -725,11 +902,16 @@ CONTAINS
 
 !</subroutine>
 
-    ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(1)%p_rdiscreteBC)
+  ! local variables
+  INTEGER :: i
 
-    ! ...and also the corresponding analytic description.
-    CALL scbc_doneScalarBC (rproblem%p_rboundaryConditions)
+    DO i=rproblem%ilvmax,rproblem%ilvmin,-1
+      ! Release our discrete version of the boundary conditions
+      CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
+
+      ! ...and also the corresponding analytic description.
+      CALL scbc_doneScalarBC (rproblem%p_rboundaryConditions)
+    END DO
     
   END SUBROUTINE
 
@@ -738,7 +920,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneDiscretisation (rproblem)
+  SUBROUTINE pm5_doneDiscretisation (rproblem)
   
 !<description>
   ! Releases the discretisation from the heap.
@@ -751,8 +933,13 @@ CONTAINS
 
 !</subroutine>
 
-    ! Delete the discretisation.
-    CALL spdiscr_releaseDiscr(rproblem%RlevelInfo(1)%p_rdiscretisation)
+  ! local variables
+  INTEGER :: i
+
+    DO i=rproblem%ilvmax,rproblem%ilvmin,-1
+      ! Delete the discretisation.
+      CALL spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
+    END DO
     
   END SUBROUTINE
     
@@ -760,7 +947,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm3_doneParamTriang (rproblem)
+  SUBROUTINE pm5_doneParamTriang (rproblem)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
@@ -773,17 +960,23 @@ CONTAINS
 
 !</subroutine>
 
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
+  ! local variables
+  INTEGER :: i
 
-    ! Release the old FEAT 1.x handles.
-    ! Get the old triangulation structure of level ilv from the
-    ! FEAT2.0 triangulation:
-    TRIAS(:,rproblem%LV) = rproblem%RlevelInfo(1)%p_rtriangulation%Itria
-    CALL DNMTRI (rproblem%LV,rproblem%LV,TRIAS)
-    
-    ! then the FEAT 2.0 stuff...
-    CALL tria_done (rproblem%RlevelInfo(1)%p_rtriangulation)
+    ! For compatibility to old F77: an array accepting a set of triangulations
+    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
+
+
+    DO i=rproblem%ilvmax,rproblem%ilvmin,-1
+      ! Release the old FEAT 1.x handles.
+      ! Get the old triangulation structure of level ilv from the
+      ! FEAT2.0 triangulation:
+      TRIAS(:,i) = rproblem%RlevelInfo(i)%p_rtriangulation%Itria
+      CALL DNMTRI (i,i,TRIAS)
+      
+      ! then the FEAT 2.0 stuff...
+      CALL tria_done (rproblem%RlevelInfo(i)%p_rtriangulation)
+    END DO
     
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)
@@ -797,7 +990,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE poisson3
+  SUBROUTINE poisson5
   
   include 'cmem.inc'
   
@@ -828,47 +1021,55 @@ CONTAINS
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
     
+    ! A collection structure for our problem
+    TYPE(t_collection) :: rcollection
+    
+    INTEGER :: i
+    
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
 
     LV = 7
     
-    ! Initialise the collection.
-    CALL collct_init (rproblem%rcollection)
+    ! Initialise the collection
+    CALL collct_init (rcollection)
+    DO i=1,NLMAX
+      CALL collct_addlevel_all (rcollection)
+    END DO
 
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm3_initParamTriang (LV,rproblem)
-    CALL pm3_initDiscretisation (rproblem)    
-    CALL pm3_initMatVec (rproblem)
-    CALL pm3_initAnalyticBC (rproblem)   
-    CALL pm3_initDiscreteBC (rproblem)
+    CALL pm5_initParamTriang (1,LV,rproblem)
+    CALL pm5_initDiscretisation (rproblem)    
+    CALL pm5_initMatVec (rproblem,rcollection)    
+    CALL pm5_initAnalyticBC (rproblem)   
+    CALL pm5_initDiscreteBC (rproblem,rcollection)
     
     ! Implementation of boundary conditions
-    CALL pm3_implementBC (rproblem)
+    CALL pm5_implementBC (rproblem)
     
     ! Solve the problem
-    CALL pm3_solve (rproblem)
+    CALL pm5_solve (rproblem)
     
     ! Postprocessing
-    CALL pm3_postprocessing (rproblem)
+    CALL pm5_postprocessing (rproblem)
     
     ! Cleanup
-    CALL pm3_doneMatVec (rproblem)
-    CALL pm3_doneBC (rproblem)
-    CALL pm3_doneDiscretisation (rproblem)
-    CALL pm3_doneParamTriang (rproblem)
+    CALL pm5_doneMatVec (rproblem,rcollection)
+    CALL pm5_doneBC (rproblem)
+    CALL pm5_doneDiscretisation (rproblem)
+    CALL pm5_doneParamTriang (rproblem)
 
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *
     PRINT *,'Remaining collection statistics:'
     PRINT *,'--------------------------------'
     PRINT *
-    CALL collct_printStatistics (rproblem%rcollection)
+    CALL collct_printStatistics (rcollection)
     
     ! Finally release the collection.
-    CALL collct_done (rproblem%rcollection)
+    CALL collct_done (rcollection)
     
   END SUBROUTINE
 

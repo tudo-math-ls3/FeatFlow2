@@ -99,32 +99,98 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorCopySngl (Sx,Sy)
+  SUBROUTINE lalg_vectorCopySngl (Fx,Fy)
   
 !<description>
-  ! Copies a single precision vector: Sy = Sx
+  ! Copies a single precision vector: Fy = Fx
 !</description>
 
 !<input>
   
   ! Source vector
-  REAL(SP), DIMENSION(:), INTENT(IN) :: Sx
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
   
 !</input>
 
 !<output>
   
   ! Destination vector
-  REAL(SP), DIMENSION(:), INTENT(IN) :: Sy
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fy
   
 !</output>
   
 !</subroutine>
 
-  CALL SCOPY(SIZE(Sx),Sx,1,Sy,1)
+  CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
   
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorCopySnglDbl (Fx,Dy)
+  
+!<description>
+  ! Copies single precision vector to double precision vector: Dy = Fx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
+  
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dy
+  
+!</output>
+  
+!</subroutine>
+  INTEGER(I32) :: i
+  
+  DO i=1,SIZE(Fx)
+    Dy(i) = REAL(Fx(i),DP)
+  END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorCopyDblSngl (Dx,Fy)
+  
+!<description>
+  ! Copies double precision vector to single precision vector: Fy = Dx
+!</description>
+
+!<input>
+  
+  ! Source vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dx
+  
+!</input>
+
+!<output>
+  
+  ! Destination vector
+  REAL(SP), DIMENSION(:), INTENT(OUT) :: Fy
+  
+!</output>
+  
+!</subroutine>
+  INTEGER(I32) :: i
+  
+  DO i=1,SIZE(Dx)
+    Fy(i) = REAL(Dx(i),SP)
+  END DO
+
+  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -194,7 +260,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lalg_vectorScaleSngl (Sx,sc)
+  SUBROUTINE lalg_vectorScaleSngl (Fx,sc)
   
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
@@ -203,7 +269,7 @@ CONTAINS
 !<inputoutput>
   
   ! Source and destination vector
-  REAL(SP), DIMENSION(:), INTENT(INOUT) :: Sx
+  REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fx
   
 !</inputoutput>
 
@@ -216,7 +282,7 @@ CONTAINS
   
 !</subroutine>
 
-  CALL SSCAL(SIZE(Sx),sc,Sx,1)
+  CALL SSCAL(SIZE(Fx),sc,Fx,1)
   
   END SUBROUTINE
   
@@ -295,16 +361,16 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorClearSngl (Sx)
+  SUBROUTINE lalg_vectorClearSngl (Fx)
   
 !<description>
-  ! Clears a single precision vector: Sx = 0
+  ! Clears a single precision vector: Fx = 0
 !</description>
 
 !<output>
   
   ! Destination vector to be cleared
-  REAL(SP), DIMENSION(:), INTENT(OUT) :: Sx
+  REAL(SP), DIMENSION(:), INTENT(OUT) :: Fx
   
 !</output>
   
@@ -321,8 +387,8 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-  DO i = 1,SIZE(Sx)
-    Sx(i) = 0.0_SP
+  DO i = 1,SIZE(Fx)
+    Fx(i) = 0.0_SP
   END DO
   
   END SUBROUTINE
@@ -415,16 +481,16 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorLinearCombSngl (Sx,Sy,scx,scy)
+  SUBROUTINE lalg_vectorLinearCombSngl (Fx,Fy,scx,scy)
   
 !<description>
-  ! Performs a linear combination: Sy = scx * Sx  +  scy * Sy
+  ! Performs a linear combination: Fy = scx * Fx  +  scy * Fy
 !</description>
 
 !<input>
   
   ! First source vector
-  REAL(SP), DIMENSION(:), INTENT(IN) :: Sx
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
   
   ! Scaling factor for Dx
   REAL(SP), INTENT(IN)               :: scx
@@ -437,7 +503,7 @@ CONTAINS
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  REAL(SP), DIMENSION(:), INTENT(INOUT) :: Sy
+  REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fy
   
 !</inputoutput>
   
@@ -447,14 +513,14 @@ CONTAINS
   REAL(SP) :: c
   
   IF (scy .EQ. 0.0_SP) THEN
-    CALL SCOPY(SIZE(Sx),Sx,1,Sy,1)
-    IF (scx .NE. 1.0_SP) CALL SSCAL(SIZE(Sx),scx,Sy,1)
+    CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
+    IF (scx .NE. 1.0_SP) CALL SSCAL(SIZE(Fx),scx,Fy,1)
   ELSE IF (scy .EQ. 1D0) THEN
-    CALL SAXPY(SIZE(Sx),scx,Sx,1,Sy,1)
+    CALL SAXPY(SIZE(Fx),scx,Fx,1,Fy,1)
   ELSE
     c=scx/scy
-    CALL SAXPY(SIZE(Sx),c,Sx,1,Sy,1)
-    CALL SSCAL(SIZE(Sx),scy,Sy,1)
+    CALL SAXPY(SIZE(Fx),c,Fx,1,Fy,1)
+    CALL SSCAL(SIZE(Fx),scy,Fy,1)
   ENDIF
   
   END SUBROUTINE
@@ -500,7 +566,7 @@ CONTAINS
 
 !<function>
 
-  REAL(SP) FUNCTION lalg_scalarProductSngl (Sx,Sy) RESULT (res)
+  REAL(SP) FUNCTION lalg_scalarProductSngl (Fx,Fy) RESULT (res)
   
 !<description>
   ! Calculates the scalar product of two single precision vectors: 
@@ -510,10 +576,10 @@ CONTAINS
 !<input>
   
   ! First source vector
-  REAL(SP), DIMENSION(:), INTENT(IN) :: Sx
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
   
   ! Second source vector
-  REAL(SP), DIMENSION(:), INTENT(IN) :: Sy
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fy
   
 !</input>
 
@@ -526,9 +592,9 @@ CONTAINS
   ! local variables
   INTEGER(I32) :: i
   
-  res = Sx(1)*Sy(1)
-  DO i=2,SIZE(Sx)
-    res = res + Sx(i)*Sy(i)
+  res = Fx(1)*Fy(1)
+  DO i=2,SIZE(Fx)
+    res = res + Fx(i)*Fy(i)
   END DO
   
   END FUNCTION
@@ -661,7 +727,7 @@ CONTAINS
 
 !<subroutine>
 
-  REAL(SP) FUNCTION lalg_normSngl (Sx,cnorm,iposMax) RESULT(resnorm)
+  REAL(SP) FUNCTION lalg_normSngl (Fx,cnorm,iposMax) RESULT(resnorm)
   
 !<description>
   ! Calculates the norm of a single precision vector. cnorm identifies the 
@@ -670,7 +736,7 @@ CONTAINS
 
 !<input>
   ! Vector to calculate the norm of.
-  REAL(SP), DIMENSION(:), INTENT(IN) :: Sx
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
   INTEGER, INTENT(IN) :: cnorm
@@ -696,45 +762,45 @@ CONTAINS
   SELECT CASE (cnorm)
   CASE (LINALG_NORMSUM)
     ! L1-norm: sum absolute value of all entries
-    resnorm = Sx(1)
-    DO i=2,SIZE(Sx)
-      resnorm = resnorm + ABS(Sx(i))
+    resnorm = Fx(1)
+    DO i=2,SIZE(Fx)
+      resnorm = resnorm + ABS(Fx(i))
     END DO
 
   CASE (LINALG_NORMEUCLID)
     ! Euclidian norm = scalar product <vector,vector>
-    resnorm = Sx(1)*Sx(1)
-    DO i=2,SIZE(Sx)
-      resnorm = resnorm + Sx(i)*Sx(i)
+    resnorm = Fx(1)*Fx(1)
+    DO i=2,SIZE(Fx)
+      resnorm = resnorm + Fx(i)*Fx(i)
     END DO
     resnorm = SQRT(resnorm)
 
   CASE (LINALG_NORML1)
     ! L1-norm: sum sum absolute value of all entries, divide by sqrt(vector length).
     ! So, scale such that the vektor (1111...) to has norm = 1.
-    resnorm = Sx(1)
-    DO i=2,SIZE(Sx)
-      resnorm = resnorm + ABS(Sx(i))
+    resnorm = Fx(1)
+    DO i=2,SIZE(Fx)
+      resnorm = resnorm + ABS(Fx(i))
     END DO
-    resnorm = resnorm / REAL(SIZE(Sx),SP)
+    resnorm = resnorm / REAL(SIZE(Fx),SP)
 
   CASE (LINALG_NORML2)
     ! l_2-norm - like euclidian norm, but divide by sqrt(vector length).
     ! So, scale such that the vektor (1111...) to has norm = 1.
-    resnorm = Sx(1)*Sx(1)
-    DO i=2,SIZE(Sx)
-      resnorm = resnorm + Sx(i)*Sx(i)
+    resnorm = Fx(1)*Fx(1)
+    DO i=2,SIZE(Fx)
+      resnorm = resnorm + Fx(i)*Fx(i)
     END DO
-    resnorm = SQRT(resnorm / REAL(SIZE(Sx),SP))
+    resnorm = SQRT(resnorm / REAL(SIZE(Fx),SP))
     
   CASE (LINALG_NORMMAX)
     ! MAX-norm. Find the absolute largest entry.
-    resnorm = ABS(Sx(1))
+    resnorm = ABS(Fx(1))
     j=1
-    DO i=2,SIZE(Sx)
-      IF (ABS(Sx(i)) .GT. resnorm) THEN
+    DO i=2,SIZE(Fx)
+      IF (ABS(Fx(i)) .GT. resnorm) THEN
         j = i
-        resnorm = ABS(Sx(i))
+        resnorm = ABS(Fx(i))
       END IF
     END DO
     IF (PRESENT(iposMax)) iposMax = j

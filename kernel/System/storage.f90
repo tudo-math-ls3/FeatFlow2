@@ -1226,12 +1226,7 @@ CONTAINS
     
     p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
-    ! Data types the same?
-    IF (p_rsource%idataType .NE. p_rdest%idataType) THEN
-      PRINT *,'storage_copy: Data types different!'
-      STOP
-    END IF
-
+    ! 1D/2D the same?
     IF (p_rsource%idimension .NE. p_rdest%idimension) THEN
       PRINT *,'storage_copy: Structure different!'
       STOP
@@ -1242,11 +1237,34 @@ CONTAINS
     CASE (1)
       SELECT CASE (p_rsource%idataType)
       CASE (ST_DOUBLE)
-        CALL lalg_vectorCopyDble (p_rsource%p_Ddouble1D,p_rdest%p_Ddouble1D)
+        SELECT CASE (p_rdest%idataType)
+        CASE (ST_DOUBLE)
+          CALL lalg_vectorCopyDble (p_rsource%p_Ddouble1D,p_rdest%p_Ddouble1D)
+        CASE (ST_SINGLE)
+          CALL lalg_vectorCopyDblSngl (p_rsource%p_Ddouble1D,p_rdest%p_Fsingle1D)
+        CASE DEFAULT
+          PRINT *,'storage_copy: Unsupported data type combination'
+          STOP
+        END SELECT
+        
       CASE (ST_SINGLE)
-        CALL lalg_vectorCopySngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
+        SELECT CASE (p_rdest%idataType)
+        CASE (ST_DOUBLE)
+          CALL lalg_vectorCopyDblSngl (p_rsource%p_Fsingle1D,p_rdest%p_Ddouble1D)
+        CASE (ST_SINGLE)
+          CALL lalg_vectorCopySngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
+        CASE DEFAULT
+          PRINT *,'storage_copy: Unsupported data type combination'
+          STOP
+        END SELECT
+        
       CASE (ST_INT)
-        CALL lalg_vectorCopyInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
+        IF (p_rdest%idataType .EQ. ST_INT) THEN
+          CALL lalg_vectorCopyInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
+        ELSE
+          PRINT *,'storage_copy: Unsupported data type combination'
+          STOP
+        END IF
       CASE DEFAULT
         PRINT *,'storage_copy: Unknown data type'
         STOP
@@ -1260,12 +1278,33 @@ CONTAINS
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
-        ! Copy by hand
-        DO j=1,SIZE(p_rsource%p_Ddouble2D,2)
-          DO i=1,SIZE(p_rsource%p_Ddouble2D,1)
-            p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Ddouble2D(i,j)
+        
+        SELECT CASE (p_rdest%idataType)
+        CASE (ST_DOUBLE)
+          ! Copy by hand
+          DO j=1,SIZE(p_rsource%p_Ddouble2D,2)
+            DO i=1,SIZE(p_rsource%p_Ddouble2D,1)
+              p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Ddouble2D(i,j)
+            END DO
           END DO
-        END DO
+          
+        CASE (ST_SINGLE)
+          ! Copy by hand
+          DO j=1,SIZE(p_rsource%p_Fsingle2D,2)
+            DO i=1,SIZE(p_rsource%p_Fsingle2D,1)
+              p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Ddouble2D(i,j)
+            END DO
+          END DO
+        
+        CASE (ST_INT)
+          ! Copy by hand
+          DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
+            DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
+              p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Fsingle2D(i,j)
+            END DO
+          END DO
+          
+        END SELECT
         
       CASE (ST_SINGLE)
         IF ((SIZE(p_rsource%p_Fsingle2D,1) .NE. SIZE(p_rdest%p_Fsingle2D,1)) .OR.&
@@ -1273,12 +1312,32 @@ CONTAINS
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
-        ! Copy by hand
-        DO j=1,SIZE(p_rsource%p_Fsingle2D,2)
-          DO i=1,SIZE(p_rsource%p_Fsingle2D,1)
-            p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Fsingle2D(i,j)
+
+        SELECT CASE (p_rdest%idataType)
+        CASE (ST_DOUBLE)
+          ! Copy by hand
+          DO j=1,SIZE(p_rsource%p_Ddouble2D,2)
+            DO i=1,SIZE(p_rsource%p_Ddouble2D,1)
+              p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Fsingle2D(i,j)
+            END DO
           END DO
-        END DO
+
+        CASE (ST_SINGLE)
+          ! Copy by hand
+          DO j=1,SIZE(p_rsource%p_Fsingle2D,2)
+            DO i=1,SIZE(p_rsource%p_Fsingle2D,1)
+              p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Fsingle2D(i,j)
+            END DO
+          END DO
+
+        CASE (ST_INT)
+          ! Copy by hand
+          DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
+            DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
+              p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Fsingle2D(i,j)
+            END DO
+          END DO
+        END SELECT
 
       CASE (ST_INT)
         IF ((SIZE(p_rsource%p_Iinteger2D,1) .NE. SIZE(p_rdest%p_Iinteger2D,1)) .OR.&
@@ -1286,6 +1345,11 @@ CONTAINS
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
+        IF (p_rdest%idataType .NE. ST_INT) THEN
+          PRINT *,'storage_copy: unsupported data type combination'
+          STOP
+        END IF
+        
         ! Copy by hand
         DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
           DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
@@ -1305,7 +1369,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE storage_info(rheap)
+  SUBROUTINE storage_info(bprintHandles,rheap)
   
 !<description>
   ! This routine prints information about the current memory consumption
@@ -1313,6 +1377,10 @@ CONTAINS
 !</description>
 
 !<input>
+  ! OPTIONAL: If set to TRUE, the handles still remaining in the
+  ! heap together with their names are printed to the terminal.
+  LOGICAL, INTENT(IN), OPTIONAL :: bprintHandles
+  
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(IN), TARGET, OPTIONAL :: rheap
@@ -1321,6 +1389,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
+  INTEGER :: i
   
   ! Pointer to the heap 
   TYPE(t_storageBlock), POINTER :: p_rheap
@@ -1335,6 +1404,30 @@ CONTAINS
     
     PRINT *,'Heap statistics:'
     PRINT *,'----------------'
+    IF (PRESENT(bprintHandles)) THEN
+      IF (bprintHandles .AND. (p_rheap%ihandlesInUse .GT. 0)) THEN
+        PRINT *,'Handles on the heap: '
+        PRINT *
+        ! Loop through the heap and search allocated handles
+        DO i=1,SIZE(p_rheap%p_IfreeHandles)
+          IF (p_rheap%p_Rdescriptors(i)%idataType .NE. ST_NOHANDLE) THEN
+            IF (p_rheap%p_Rdescriptors(i)%idimension .EQ. 1) THEN
+              PRINT *,'Handle ',i,', 1D, Length=',&
+                      INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),&
+                      ', Type=',p_rheap%p_Rdescriptors(i)%idataType,&
+                      ' Name=',TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname))
+            ELSE
+              PRINT *,'Handle ',i,', 2D, Length=',&
+                      INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),&
+                      ', Type=',p_rheap%p_Rdescriptors(i)%idataType,&
+                      ' Name=',TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname))
+            END IF
+          END IF
+        END DO
+        PRINT *
+      END IF
+    END IF
+    
     PRINT *,'Number of allocated handles:     ',p_rheap%ihandlesInUse
     PRINT *,'Current total number of handles: ',SIZE(p_rheap%p_IfreeHandles)
     PRINT *,'Memory in use:                   ',INT(p_rheap%dtotalMem)

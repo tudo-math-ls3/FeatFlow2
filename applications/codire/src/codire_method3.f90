@@ -668,8 +668,7 @@ CONTAINS
     ! we use linsol_solveAdaptively. If b would be a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    CALL linsol_solveAdaptively (p_rsolverNode,p_rmatrix,&
-                                 p_rvector,p_rrhs,rtempBlock)
+    CALL linsol_solveAdaptively (p_rsolverNode,p_rvector,p_rrhs,rtempBlock)
     
     ! Release solver data and structure
     CALL linsol_doneData (p_rsolverNode)

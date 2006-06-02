@@ -19,34 +19,37 @@
 !#
 !# The following routines can be found in this module:
 !#
-!#  1.) lsyssc_scalarProduct
+!#  1.) lsyssc_createVector
+!#      -> Create a simple scalar vector of length NEQ
+!#
+!#  2.) lsyssc_scalarProduct
 !#      -> Calculate the scalar product of two vectors
 !#
-!#  2.) lsyssc_scalarMatVec
+!#  3.) lsyssc_scalarMatVec
 !#      -> Multiply a scalar matrix with a scalar vector
 !#
-!#  3.) lsyssc_releaseMatrix
+!#  4.) lsyssc_releaseMatrix
 !#      -> Release a scalar matrix from memory.
 !#
-!#  4.) lsyssc_releaseVector
+!#  5.) lsyssc_releaseVector
 !#      -> Release a scalar vector from memory.
 !#
-!#  5.) lsyssc_duplicateMatrix
+!#  6.) lsyssc_duplicateMatrix
 !#      -> Create a duplicate of a given matrix or matrix-structure
 !#
-!#  6.) lsyssc_duplicateVector
+!#  7.) lsyssc_duplicateVector
 !#      -> Create a duplicate of a given vector
 !#
-!#  7.) lsyssc_sortVector
+!#  8.) lsyssc_sortVectorInSitu
 !#      -> Resort the entries of a vector or unsort them
 !#
-!#  8.) lsyssc_sortMatrix
+!#  9.) lsyssc_sortMatrix
 !#      -> Resort the entries of a matrix or unsort them
 !#
-!#  9.) lsyssc_isVectorCompatible
+!# 10.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 10.) lsyssc_isMatrixCompatible
+!# 11.) lsyssc_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
 !# </purpose>
@@ -204,8 +207,6 @@ MODULE linearsystemscalar
     TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscretisation => NULL()
     
     ! A pointer to discretised boundary conditions for real boundary components.
-    ! For every discrete BC that is valid for this scalar vector, there
-    ! is an entry in the following list.
     TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC => NULL()
     
     ! A pointer to discretised boundary conditions for fictitious boundary
@@ -224,7 +225,7 @@ MODULE linearsystemscalar
     
     ! Format-tag. Identifies the format of the matrix. 
     ! Can tage one of the LSYSSC_MATRIXx format flags.
-    INTEGER :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
+    INTEGER      :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
     
     ! Matrix specification tag. This is a bitfield coming from an OR 
     ! combination of different LSYSSC_MSPEC_xxxx constants and specifies
@@ -462,6 +463,62 @@ CONTAINS
   ! Ok, they are compatible
   IF (PRESENT(bcompatible)) bcompatible = .TRUE.
 
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE lsyssc_createVector (rvector,NEQ,bclear,cdataType)
+  
+!<description>
+  ! This creates a simple scalar vector of length NEQ. Memory is 
+  ! allocated on the heap and can be released by lsyssc_releaseVector.
+!</description>
+  
+!<input>
+  
+  ! Desired length of the vector
+  INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+
+  ! Whether to fill the vector with zero initially
+  LOGICAL, INTENT(IN)                               :: bclear
+
+  ! OPTIONAL: Data type of the vector.
+  ! If not specified, ST_DOUBLE is assumed.
+  INTEGER, INTENT(IN), OPTIONAL                     :: cdataType  
+  
+!</input>
+
+!<output>
+  ! Scalar vector structure
+  TYPE(t_vectorScalar), INTENT(OUT)                 :: rvector
+!</output>
+
+!</subroutine>
+
+  INTEGER ::cdata
+
+    cdata = ST_DOUBLE
+    IF (PRESENT(cdataType)) cdata=cdataType
+
+    ! The INTENT(OUT) already initialises rvector with the most important
+    ! information. The rest comes now:
+    !
+    ! Size:
+    rvector%NEQ = MAX(0,NEQ)
+    
+    ! Handle - if NEQ > 0
+    IF (rvector%NEQ .GT. 0) THEN
+      IF (bclear) THEN
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', rvector%NEQ, &
+                            cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
+      ELSE
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', rvector%NEQ, &
+                            cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
+      END IF
+    END IF
+  
   END SUBROUTINE
 
   !****************************************************************************
@@ -744,7 +801,7 @@ CONTAINS
           END DO
         END DO
         
-        ! Scale by cy, finish.
+        ! Scale by cx, finish.
         
         IF (cx .NE. 1.0_DP) THEN
           CALL lalg_vectorScaleDble (p_Dy,cx)
@@ -968,6 +1025,10 @@ CONTAINS
 
 !</subroutine>
 
+  IF (rvector%h_Ddata .EQ. ST_NOHANDLE) THEN
+    PRINT *,'lsyssc_releaseVector warning: releasing unused vector.'
+  END IF
+  
   ! Clean up the data structure.
   ! Don't release the vector data if the handle belongs to another
   ! vector!
@@ -1057,7 +1118,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_sortVector (rvector,rtemp,isortStrategy,h_IsortPermutation)
+  SUBROUTINE lsyssc_sortVectorInSitu (rvector,rtemp,isortStrategy,h_IsortPermutation)
   
 !<description>
   ! Resorts the entries of the given vector rvector or unsorts it.
@@ -1074,7 +1135,8 @@ CONTAINS
   ! Vector to resort
   TYPE(t_vectorScalar), INTENT(INOUT)               :: rvector
 
-  ! A temporary vector of the same size and data type as rvector
+  ! A temporary vector. Must be of the same data type as rvector.
+  ! Must be at least as large as rvector.
   TYPE(t_vectorScalar), INTENT(INOUT)               :: rtemp
 !</inputoutput>
 
@@ -1156,7 +1218,7 @@ CONTAINS
       p_Fdata => p_Fdata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+NEQ-1)
       p_Fdata2 => p_Fdata2(rtemp%iidxFirstEntry:rtemp%iidxFirstEntry+NEQ-1)
     CASE DEFAULT
-      PRINT *,'lsyssc_sortVector: unsuppported data type'
+      PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
       STOP
     END SELECT
 
@@ -1180,7 +1242,7 @@ CONTAINS
         CALL lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
         
       CASE DEFAULT
-        PRINT *,'lsyssc_sortVector: unsuppported data type'
+        PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
         STOP
         
       END SELECT
@@ -1215,7 +1277,7 @@ CONTAINS
         CALL lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
         
       CASE DEFAULT
-        PRINT *,'lsyssc_sortVector: unsuppported data type'
+        PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
         STOP
         
       END SELECT
@@ -1243,7 +1305,7 @@ CONTAINS
       CALL lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(1:NEQ))
       
     CASE DEFAULT
-      PRINT *,'lsyssc_sortVector: unsuppported data type'
+      PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
       STOP
       
     END SELECT

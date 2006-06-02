@@ -336,6 +336,8 @@ CONTAINS
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is
     ! in the collection.
+    !
+    ! Note that the vector is unsorted after calling this routine!
     CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
                                  p_rrhs%RvectorBlock(1),coeff_RHS,&
                                  rcollection)
@@ -612,8 +614,10 @@ CONTAINS
       ! The vectors are assumed to know how they are resorted (the strategy
       ! is already attached to them). So call the resorting routines
       ! to resort them as necessary!
-      CALL lsysbl_sortVector (p_rrhs,rtempBlock,.TRUE.)
-      CALL lsysbl_sortVector (p_rvector,rtempBlock,.TRUE.)
+      ! We use the first subvector of rtempBlock as temporary data; it's
+      ! large enough, as we only have one block.
+      CALL lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.TRUE.)
+      CALL lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.TRUE.)
     END IF
     
     ! During the linear solver, the boundary conditions must
@@ -662,10 +666,10 @@ CONTAINS
     
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
-    ! we use linsol_solveAdaptively. If b would be a defect
+    ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    CALL linsol_solveAdaptively (p_rsolverNode,p_rmatrix,&
+    CALL linsol_solveAdaptively (p_rsolverNode,&
                                  p_rvector,p_rrhs,rtempBlock)
     
     ! Release solver data and structure
@@ -676,9 +680,11 @@ CONTAINS
     CALL linsol_releaseSolver (p_rsolverNode)
     
     ! Unsort the vectors again in case they were resorted before calling 
-    ! the solver. Again use the temporary vector.
-    CALL lsysbl_sortVector (p_rrhs,rtempBlock,.FALSE.)
-    CALL lsysbl_sortVector (p_rvector,rtempBlock,.FALSE.)
+    ! the solver. 
+    ! We use the first subvector of rtempBlock as temporary data; it's
+    ! large enough, as we only have one block.
+    CALL lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.FALSE.)
+    CALL lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.FALSE.)
     
     ! Release the temporary vector
     CALL lsysbl_releaseVector (rtempBlock)

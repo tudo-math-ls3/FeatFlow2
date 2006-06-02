@@ -521,7 +521,7 @@ CONTAINS
 
   ! ***************************************************************************
 
-  ! Internal subroutine: Releases a section from memory.
+  ! Internal subroutine: Releases a level and all values inside from memory.
   
   SUBROUTINE collct_donelevel (rcollctLevel)
   
@@ -726,8 +726,15 @@ CONTAINS
   
   TYPE(t_collctSection), INTENT(INOUT) :: rcollctSection
   
+  INTEGER :: i
+  
   ! Clean up level 0
   CALL collct_donelevel (rcollctSection%rlevel0)
+  
+  ! Clean up the other levels in this section
+  DO i=rcollctSection%ilevelCount,1,-1
+    CALL collct_donelevel (rcollctSection%p_Rlevels(i))
+  END DO
   
   ! Deallocate the pointers with an empty list
   DEALLOCATE(rcollctSection%p_Rlevels)

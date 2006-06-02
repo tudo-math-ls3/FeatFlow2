@@ -5,22 +5,23 @@
   
   !<subroutine>
 
-    SUBROUTINE fcoeff_buildMatrixSc_sim (rdiscretisation,ielementDistribution, rform, &
-                  ielementStartIdx,nelements,npointsPerElement,Ielements,Dcoords, &
-                  DcubPtsRef,DcubPtsReal,IdofsTrial,IdofsTest,Djac,Ddetj,p_rcollection, &
+    SUBROUTINE fcoeff_buildMatrixSc_sim (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
                   Dcoefficients)
     
     USE BasicGeometry
     USE triangulation
     USE collection
     USE scalarpde
+    USE domainintegration
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
     !
     ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points), in reference as well as in real coordinates.
+    ! elements (cubature points) in real coordinates.
     ! According to the terms in the bilinear form, the routine has to compute
     ! simultaneously for all these points and all the terms in the bilinear form
     ! the corresponding coefficients in front of the terms.
@@ -32,62 +33,36 @@
     ! analytic boundary boundary description etc.
     TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
     
-    ! The currently active element distribution in the discretisation.
-    ! Allows the routine to get the currently active element type for
-    ! trial and test functions.
-    INTEGER, INTENT(IN)                                         :: ielementDistribution
-    
-    ! The bilinear form which is currently to be evaluated:
+    ! The bilinear form which is currently being evaluated:
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
     
-    ! Start index of the current element block Ielements in the current element 
-    ! distribution ielementDistribution. If this is =1, the routine is called the 
-    ! first time for the current element distribution.
-    INTEGER(I32), INTENT(IN)                                    :: ielementStartIdx
-
     ! Number of elements, where the coefficients must be computed.
-    ! This is always a part of the element distribution.
     INTEGER, INTENT(IN)                                         :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     INTEGER, INTENT(IN)                                         :: npointsPerElement
     
-    ! A list of elements of length nelements where coefficients must
-    ! be computed by this routine.
-    INTEGER(I32), DIMENSION(nelements), INTENT(IN)              :: Ielements
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
     
-    ! A list of the corner vertices of all elements in Ielements
-    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D,nelements), INTENT(IN)  :: Dcoords
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in trial space,Number of elements)
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
     
-    ! A list of points in coordinates on the reference element.
-    ! Each set of points corresponds to the corresponding element
-    ! in Ielements
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN) :: DcubPtsRef
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,Number of elements)
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
 
-    ! A list of points, corresponding to DcubPtsRef, in real coordinates.
-    ! Each set of points corresponds to the corresponding element
-    ! in Ielements.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN) :: DcubPtsReal
-    
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:) :: IdofsTrial
-    
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:) :: IdofsTest
-    
-    ! The Jacobian matrix of the mapping between the reference and each
-    ! real element, for all points on all elements.
-    REAL(DP), DIMENSION(TRAFO_NJACENTRIES,npointsPerElement,nelements), INTENT(IN) :: Djac
-    
-    ! The Jacobian determinant of the mapping of each point from the
-    ! reference element to each real element
-    REAL(DP), DIMENSION(npointsPerElement,nelements), INTENT(IN) :: Ddetj
-    
     ! A pointer to a collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    TYPE(t_collection), POINTER                   :: p_rcollection
+    TYPE(t_collection), POINTER                      :: p_rcollection
     
   !</input>
   

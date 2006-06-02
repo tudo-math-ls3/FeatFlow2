@@ -31,43 +31,53 @@
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!#  7.) lsysbl_updateMatStrucInfo
+!#  6.) lsysbl_assignDiscretIndirectMat
+!#      -> Assign discretisation related information of a matrix
+!#         to a vector tp make it compatible.
+!#
+!#  8.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!#  8.) lsysbl_releaseVector
+!#  9.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!#  9.) lsysbl_blockMatVec
+!# 10.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 10.) lsysbl_vectorCopy
+!# 11.) lsysbl_vectorCopy
 !#       -> Copy a block vector over to another one
 !#
-!# 11.) lsysbl_vectorScale
+!# 12.) lsysbl_vectorScale
 !#      -> Scale a block vector by a constant
 !#
-!# 12.) lsysbl_vectorClear
+!# 13.) lsysbl_vectorClear
 !#      -> Clear a block vector
 !#
-!# 13.) lsysbl_vectorLinearComb
+!# 14.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 14.) lsysbl_scalarProduct
+!# 15.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 15.) lsysbl_setSortStrategy
+!# 16.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 16.) lsysbl_sortVector
+!# 17.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 17.) lsysbl_isVectorCompatible
+!# 18.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 18.) lsysbl_isMatrixCompatible
+!# 19.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
+!#
+!# 20.) lsysbl_isMatrixSorted
+!#      -> Checks if a block matrix is sorted
+!#
+!# 21.) lsysbl_isVectorSorted
+!#      -> Checks if a block vector is sorted
 !# </purpose>
 !##############################################################################
 
@@ -204,8 +214,11 @@ CONTAINS
   SUBROUTINE lsysbl_isVectorCompatible (rvector1,rvector2,bcompatible)
   
 !<description>
-  ! Checks whether two vectors are compatible to each other, i.e. share
-  ! the same structure, size and sorting strategy.
+  ! Checks whether two vectors are compatible to each other.
+  ! Two vectors are compatible if
+  ! - they have the same size,
+  ! - they have the same structure of subvectors,
+  ! - they have the same sorting strategy OR they are both unsorted
 !</description>
 
 !<input>
@@ -306,8 +319,13 @@ CONTAINS
   SUBROUTINE lsysbl_isMatrixCompatible (rvector,rmatrix,bcompatible)
   
 !<description>
-  ! Checks whether a vector and a matrix are compatible to each other, i.e. 
-  ! share the same structure, size and sorting strategy.
+  ! Checks whether a vector and a matrix are compatible to each other.
+  ! A vector and a matrix are compatible if
+  ! - they have the same NEQ,
+  ! - they have the same structure of subvectors and diagonal blocks,
+  ! - they have the same sorting strategy OR they are both unsorted
+  ! - they have the same spatial discretisation,
+  ! - they have the same boundary conditions.
 !</description>
 
 !<input>
@@ -330,6 +348,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: i
+  LOGICAL :: b1,b2,b3
 
   ! We assume that we are not compatible
   IF (PRESENT(bcompatible)) bcompatible = .FALSE.
@@ -357,6 +376,49 @@ CONTAINS
   
   ! All the subblocks must be the same size and must be sorted the same way.
   DO i=1,rvector%nblocks
+
+    b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC)
+    b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,i)%p_rdiscreteBC)
+    b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC, &
+                    rmatrix%RmatrixBlock(i,i)%p_rdiscreteBC)
+    IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
+        STOP
+      END IF
+    END IF
+
+    b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict)
+    b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,i)%p_rdiscreteBCfict)
+    b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict, &
+                    rmatrix%RmatrixBlock(i,i)%p_rdiscreteBCfict)
+    IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
+        STOP
+      END IF
+    END IF
+
+    b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation)
+    b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,i)%p_rspatialDiscretisation)
+    b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation, &
+                    rmatrix%RmatrixBlock(i,i)%p_rspatialDiscretisation)
+    IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vector/Matrix not compatible, different discretisation!'
+        STOP
+      END IF
+    END IF
+
     IF (rvector%RvectorBlock(i)%NEQ .NE. rmatrix%RmatrixBlock(i,i)%NEQ) THEN
       IF (PRESENT(bcompatible)) THEN
         bcompatible = .FALSE.
@@ -405,7 +467,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecBlockDirect (rx, Isize, bclear)
+  SUBROUTINE lsysbl_createVecBlockDirect (rx, Isize, bclear, cdataType)
   
 !<description>
   ! Initialises the vector block structure rx. Isize is an array
@@ -415,13 +477,15 @@ CONTAINS
 !</description>
 
 !<input>
-  
   ! An array with length-tags for the different blocks
   INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Isize
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
   LOGICAL, INTENT(IN), OPTIONAL             :: bclear
   
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
+  INTEGER, INTENT(IN),OPTIONAL              :: cdataType
 !</input>
 
 !<output>
@@ -435,10 +499,15 @@ CONTAINS
 
   ! local variables
   INTEGER :: i,n
+  INTEGER :: cdata
+  
+  cdata = ST_DOUBLE
+  IF (PRESENT(cdataType)) cdata = cdataType
   
   ! Allocate one large vector holding all data.
-  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', SUM(Isize), ST_DOUBLE, &
+  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', SUM(Isize), cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+  rx%cdataType = cdata
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
   ! each sub-block.
@@ -453,6 +522,7 @@ CONTAINS
       rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
       rx%RvectorBlock(i)%cdataType = rx%cdataType
       rx%RvectorBlock(i)%bisCopy = .TRUE.
+      rx%RvectorBlock(i)%cdataType = cdata
       n = n+Isize(i)
     ELSE
       rx%RvectorBlock(i)%NEQ = 0
@@ -482,7 +552,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecBlockIndirect (rtemplate,rx,bclear)
+  SUBROUTINE lsysbl_createVecBlockIndirect (rtemplate,rx,bclear,cdataType)
   
 !<description>
   ! Initialises the vector block structure rx. rtemplate is an
@@ -492,7 +562,6 @@ CONTAINS
 !</description>
   
 !<input>
-  
   ! A template vector structure
   TYPE(t_vectorBlock),INTENT(IN) :: rtemplate
   
@@ -500,6 +569,10 @@ CONTAINS
   ! Otherwise the content of rx is undefined.
   LOGICAL, INTENT(IN), OPTIONAL             :: bclear
   
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, the new vector will
+  ! receive the same data type as rtemplate.
+  INTEGER, INTENT(IN),OPTIONAL              :: cdataType
 !</input>
 
 !<output>
@@ -511,19 +584,30 @@ CONTAINS
   
 !</subroutine>
 
+  INTEGER :: cdata
+  
+  cdata = rtemplate%cdataType
+  IF (PRESENT(cdataType)) cdata = cdataType
+
   ! Copy the vector structure with all pointers.
   ! The handle identifying the vector data on the heap will be overwritten later.
   rx = rtemplate
   
   ! Allocate one large new vector holding all data.
-  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplate%NEQ, ST_DOUBLE, &
+  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplate%NEQ, cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
-                      
-  ! Put the new handle to all subvectors
-  rx%RvectorBlock(:)%h_Ddata = rx%h_Ddata
+  rx%cdataType = cdata
   
-  ! Note in the subvectors, that the handle belongs to somewhere else... to us!
-  rx%RvectorBlock(:)%bisCopy = .TRUE.
+  WHERE (rtemplate%RvectorBlock%h_Ddata .NE. ST_NOHANDLE)
+    ! Initialise the data type
+    rx%RvectorBlock%cdataType = cdata
+                     
+    ! Put the new handle to all subvectors
+    rx%RvectorBlock(:)%h_Ddata = rx%h_Ddata
+  
+    ! Note in the subvectors, that the handle belongs to somewhere else... to us!
+    rx%RvectorBlock%bisCopy = .TRUE.
+  END WHERE
   
   ! Our handle belongs to us, so it's not a copy of another vector.
   rx%bisCopy = .FALSE.
@@ -542,15 +626,18 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecBlockIndMat (rtemplateMat,rx, bclear)
+  SUBROUTINE lsysbl_createVecBlockIndMat (rtemplateMat,rx, bclear, cdataType)
   
 !<description>
   ! Initialises the vector block structure rx. rtemplateMat is an
   ! existing block matrix structure. The vector rx will be created
   ! according to the size of the blocks of the submatrices.
-  ! Memory is allocated on the heap for rx, the different components
+  !
+  ! Memory is allocated on the heap for rx. The different components
   ! of rx will have the same size as the corresponding diagonal
   ! blocks in rtemplateMat.
+  ! The sorting strategies of the subvectors are initialised
+  ! with the sorting strategies of the diagonal blocks of rtemplateMat.
 !</description>
   
 !<input>
@@ -560,6 +647,10 @@ CONTAINS
   ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
   LOGICAL, INTENT(IN), OPTIONAL   :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
+  INTEGER, INTENT(IN),OPTIONAL              :: cdataType
 !</input>
 
 !<output>
@@ -571,10 +662,14 @@ CONTAINS
 
   ! local variables
   INTEGER :: i,n
+  INTEGER :: cdata
+  
+  cdata = ST_DOUBLE
+  IF (PRESENT(cdataType)) cdata = cdataType
   
   ! Allocate one large vector holding all data.
   CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplateMat%NEQ, &
-                      ST_DOUBLE, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+                      cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
   ! each sub-block.
@@ -590,9 +685,14 @@ CONTAINS
       rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
       rx%RvectorBlock(i)%iidxFirstEntry = n
       
-      ! Give the vector the dicretisation of the matrix
+      ! Give the vector the discretisation of the matrix
       rx%RvectorBlock(i)%p_rspatialDiscretisation => &
         rtemplateMat%RmatrixBlock(i,i)%p_rspatialDiscretisation
+        
+      ! Give the vector the discrete boundary conditions
+      rx%RvectorBlock(i)%p_rdiscreteBC => rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBC
+      rx%RvectorBlock(i)%p_rdiscreteBCfict => &
+        rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBCfict
         
       ! Give the vector the same sorting strategy as the matrix, so that
       ! the matrix and vector get compatible. Otherwise, things
@@ -606,6 +706,9 @@ CONTAINS
       ! the subvector.
       rx%RvectorBlock(i)%bisCopy = .TRUE.
       
+      ! Set the data type
+      rx%RvectorBlock(i)%cdataType = cdata
+      
       n = n+rtemplateMat%RmatrixBlock(i,i)%NEQ
     ELSE
       ! Let's hope this situation (an empty equation) never occurs - 
@@ -617,6 +720,7 @@ CONTAINS
   
   rx%NEQ = rtemplateMat%NEQ
   rx%nblocks = rtemplateMat%ndiagBlocks
+  rx%cdataType = cdata
   
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
@@ -678,6 +782,65 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE lsysbl_assignDiscretIndirectMat (rtemplateMat,rx)
+  
+!<description>
+  ! Assigns discretisation-related information (spatial discretisation, 
+  ! boundary conditions,...) of a matrix to rx. The matrix rtemplateMat is 
+  ! used as a template, so at the end of the routine, rx and rtemplate 
+  ! share the same discretisation and boundary conditions.
+  ! (More precisely, the blocks in rx and the diagonal blocks of
+  !  rtemplateMat!)
+  !
+  ! In case the vector is completely incompatiblew to the matrix
+  ! (different number of blocks, different NEQ), an error is thrown.
+!</description>
+  
+!<input>
+  ! A template vector structure
+  TYPE(t_matrixBlock),INTENT(IN) :: rtemplateMat
+!</input>
+
+!<inputoutput>
+  ! Destination structure. Discretisation-related information of rtemplate
+  ! is assigned to rx.
+  TYPE(t_vectorBlock),INTENT(INOUT) :: rx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+
+  ! There must be at least some compatibility between the matrix
+  ! and the vector!
+  IF ((rtemplateMat%NEQ .NE. rx%NEQ) .OR. &
+      (rtemplateMat%ndiagBlocks .NE. rx%nblocks)) THEN
+    PRINT *,'lsysbl_assignDiscretIndirectMat error: Matrix/Vector incompatible!'
+    STOP
+  END IF
+
+  ! Simply modify all pointers of all subvectors, that's it.
+  DO i=1,rx%nblocks
+    ! Spatial discretisation
+    rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+      rtemplateMat%RmatrixBlock(i,i)%p_rspatialDiscretisation 
+
+    ! Discrete boundary conditions
+    rx%RvectorBlock(i)%p_rdiscreteBC => &
+      rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBC
+
+    ! Discrete fictitious boundary conditions
+    rx%RvectorBlock(i)%p_rdiscreteBCfict => &
+      rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBCfict
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE lsysbl_releaseVector (rx)
   
 !<description>
@@ -698,9 +861,15 @@ CONTAINS
   ! local variables
   INTEGER :: i
   
+  IF (rx%h_Ddata .EQ. ST_NOHANDLE) THEN
+    PRINT *,'lsysbl_releaseVector warning: releasing unused vector.'
+  END IF
+  
   ! Release the data - if the handle is not a copy of another vector!
-  IF (.NOT. rx%bisCopy) THEN
+  IF ((.NOT. rx%bisCopy) .AND. (rx%h_Ddata .NE. ST_NOHANDLE)) THEN
     CALL storage_free (rx%h_Ddata)
+  ELSE
+    rx%h_Ddata = ST_NOHANDLE
   END IF
   
   ! Clean up the structure
@@ -859,12 +1028,13 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: h_Ddata, i
+  INTEGER :: h_Ddata, cdataType
   LOGICAL :: bisCopy
   
   ! First, make a backup of some crucial data so that it does not
   ! get destroyed.
   h_Ddata = ry%h_Ddata
+  cdataType = ry%cdataType
   bisCopy = ry%bisCopy
   
   ! Then transfer all structural information of rx to ry.
@@ -876,9 +1046,8 @@ CONTAINS
   ry%bisCopy = bisCopy
   
   ! Restore the handle in all subvectors
-  DO i=1,ry%nblocks
-    ry%RvectorBlock(i)%h_Ddata = h_Ddata
-  END DO
+  ry%RvectorBlock(1:ry%nblocks)%h_Ddata = h_Ddata
+  ry%RvectorBlock(1:ry%nblocks)%cdataType = cdataType
   
   ! And finally copy the data. 
   ! Use storage_copy to copy data by handles.
@@ -1044,7 +1213,7 @@ CONTAINS
   END SUBROUTINE
   
   !****************************************************************************
-!<subroutine>
+!<function>
   
   REAL(DP) FUNCTION lsysbl_scalarProduct (rx, ry)
   
@@ -1067,7 +1236,7 @@ CONTAINS
   ! The scalar product <rx,ry> of the two block vectors.
 !</result>
 
-!</subroutine>
+!</function>
 
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: h_Ddata1dp
@@ -1316,7 +1485,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_sortVector (rvector,rtemp,bsort)
+  SUBROUTINE lsysbl_sortVectorInSitu (rvector,rtemp,bsort)
   
 !<description>
   ! This routine sorts a block vector or unsorts it.
@@ -1343,8 +1512,9 @@ CONTAINS
   ! The vector which is to be resorted
   TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
 
-  ! A temporary vector of the same size and data type as rvector
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtemp
+  ! A scalar temporary vector. Must be of the same data type as rvector.
+  ! Must be at least as large as the longest subvector in rvector.
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -1354,14 +1524,14 @@ CONTAINS
   ! Loop over the blocks
   IF (bsort) THEN
     DO iblock = 1,rvector%nblocks
-      CALL lsyssc_sortVector (&
-          rvector%RvectorBlock(iblock), rtemp%RvectorBlock(iblock),&
+      CALL lsyssc_sortVectorInSitu (&
+          rvector%RvectorBlock(iblock), rtemp,&
           ABS(rvector%RvectorBlock(iblock)%isortStrategy))
     END DO
   ELSE
     DO iblock = 1,rvector%nblocks
-      CALL lsyssc_sortVector (&
-          rvector%RvectorBlock(iblock), rtemp%RvectorBlock(iblock),&
+      CALL lsyssc_sortVectorInSitu (&
+          rvector%RvectorBlock(iblock), rtemp,&
           -ABS(rvector%RvectorBlock(iblock)%isortStrategy))
     END DO
   END IF
@@ -1416,5 +1586,81 @@ CONTAINS
   rvector%RvectorBlock%h_IsortPermutation = Hpermutations
 
   END SUBROUTINE
+
+  !****************************************************************************
+!<function>
+  
+  LOGICAL FUNCTION lsysbl_isMatrixSorted (rmatrix)
+  
+!<description>
+  ! Loops through all submatrices in a block matrix and checks if any of
+  ! them is sorted. If yes, the block matrix is given the state 'sorted'.
+  ! If not, the matrix is stated 'unsorted'
+!</description>
+  
+!<input>
+  ! Block matrix to check
+  TYPE(t_matrixBlock), INTENT(IN)                  :: rmatrix
+!</input>
+
+!<result>
+  ! Whether the matrix is sorted or not.
+!</result>
+
+!</function>
+
+  INTEGER(PREC_VECIDX) :: i,j,k
+  
+  ! Loop through all matrices and get the largest sort-identifier
+  k = 0
+  DO j=1,rmatrix%ndiagBlocks
+    DO i=1,rmatrix%ndiagBlocks
+      IF (rmatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+        k = MAX(k,rmatrix%RmatrixBlock(i,j)%isortStrategy)
+      END IF
+    END DO
+  END DO
+  
+  ! If k is greater than 0, at least one submatrix is sorted
+  lsysbl_isMatrixSorted = k .GT. 0
+
+  END FUNCTION
+
+  !****************************************************************************
+!<function>
+  
+  LOGICAL FUNCTION lsysbl_isVectorSorted (rvector)
+  
+!<description>
+  ! Loops through all subvectors in a block vector and checks if any of
+  ! them is sorted. If yes, the block vector is given the state 'sorted'.
+  ! If not, the vector is stated 'unsorted'
+!</description>
+  
+!<input>
+  ! Block matrix to check
+  TYPE(t_vectorBlock), INTENT(IN)                  :: rvector
+!</input>
+
+!<result>
+  ! Whether the vector is sorted or not.
+!</result>
+
+!</function>
+
+  INTEGER(PREC_VECIDX) :: i,k
+  
+  ! Loop through all matrices and get the largest sort-identifier
+  k = 0
+  DO i=1,rvector%nblocks
+    IF (rvector%RvectorBlock(i)%NEQ .NE. 0) THEN
+      k = MAX(k,rvector%RvectorBlock(i)%isortStrategy)
+    END IF
+  END DO
+  
+  ! If k is greater than 0, at least one submatrix is sorted
+  lsysbl_isVectorSorted = k .GT. 0
+
+  END FUNCTION
 
 END MODULE

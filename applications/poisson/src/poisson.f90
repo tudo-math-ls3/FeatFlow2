@@ -34,6 +34,7 @@ PROGRAM poisson
   USE poisson_method2
   USE poisson_method3
   USE poisson_method4
+  USE poisson_method5
   
   IMPLICIT NONE
   
@@ -66,33 +67,37 @@ PROGRAM poisson
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 1'
   PRINT *,'-----------------------------------------'
-  CALL poisson1
+  !CALL poisson1
   
-  PRINT *
-
   ! Call the problem to solve. Poisson 2:
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 2'
   PRINT *,'-----------------------------------------'
-  CALL poisson2
+  !CALL poisson2
   
   ! Call the problem to solve. Poisson 3:
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 3'
   PRINT *,'-----------------------------------------'
-  CALL poisson3
+  !CALL poisson3
   
   ! Call the problem to solve. Poisson 4:
   PRINT *
   PRINT *,'Calculating Laplace-Problem with method 4'
   PRINT *,'-----------------------------------------'
-  CALL poisson4
+  !CALL poisson4
   
+  ! Call the problem to solve. Poisson 5:
+  PRINT *
+  PRINT *,'Calculating Laplace-Problem with method 5'
+  PRINT *,'-----------------------------------------'
+  CALL poisson5
+
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
   PRINT *
-  CALL storage_info()
+  CALL storage_info(.TRUE.)
   
   ! Clean up the storage management, finish
   CALL storage_done()
