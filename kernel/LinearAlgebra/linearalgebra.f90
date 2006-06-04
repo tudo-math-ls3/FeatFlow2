@@ -818,7 +818,8 @@ CONTAINS
   
   !<description>
     ! Resorts the entries in the vector Dx corresponding to Itr.
-    ! The result is written to Dd.
+    ! In particular, the first SIZE(Itr) entries of Dx are written resortedly
+    ! to Dd.
   !</description>
     
   !<input>
@@ -828,12 +829,12 @@ CONTAINS
     ! Array with permutation of 1..neq.
     ! Itr(i) defines the number of the entry in Dx that should
     ! move to position i.
-    INTEGER(I32), DIMENSION(SIZE(Dx)), INTENT(IN) :: Itr
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Itr
   !</input>
     
   !<output>
     ! The resorted vector
-    REAL(DP), DIMENSION(SIZE(Dx)), INTENT(OUT) :: Dd
+    REAL(DP), DIMENSION(:), INTENT(OUT) :: Dd
   !</output>
     
 !</subroutine>
@@ -841,7 +842,11 @@ CONTAINS
     ! local variable
     INTEGER(I32) :: ieq
     
-    DO ieq=1, SIZE(Dx)
+    ieq = SIZE(Itr)
+    ieq = SIZE(Dx)
+    ieq = SIZE(Dd)
+    
+    DO ieq=1, SIZE(Itr)
       Dd(ieq) = Dx(Itr(ieq))
     END DO
   
@@ -855,20 +860,21 @@ CONTAINS
   
   !<description>
     ! Resorts the entries in the vector Fx corresponding to Itr.
-    ! The result is written to Fd.
+    ! In particular, the first SIZE(Itr) entries of Dx are written resortedly
+    ! to Dd.
   !</description>
     
   !<input>
+    ! Array with permutation of 1..neq
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Itr
+
     ! Source vector to be sorted
     REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
-    
-    ! Array with permutation of 1..neq
-    INTEGER(I32), DIMENSION(SIZE(Fx)), INTENT(IN) :: Itr
   !</input>
     
   !<output>
     ! The resorted vector
-    REAL(SP), DIMENSION(SIZE(Fx)), INTENT(OUT) :: Fd
+    REAL(SP), DIMENSION(:), INTENT(OUT) :: Fd
   !</output>
     
 !</subroutine>
@@ -876,7 +882,7 @@ CONTAINS
     ! local variable
     INTEGER(I32) :: ieq
     
-    DO ieq=1, SIZE(Fx)
+    DO ieq=1, SIZE(Itr)
       Fd(ieq) = Fx(Itr(ieq))
     END DO
   
@@ -890,20 +896,21 @@ CONTAINS
   
   !<description>
     ! Resorts the entries in the vector Ix corresponding to Itr.
-    ! The result is written to Id.
+    ! In particular, the first SIZE(Itr) entries of Dx are written resortedly
+    ! to Dd.
   !</description>
     
   !<input>
-    ! Source vector to be sorted
-    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Ix
-    
     ! Array with permutation of 1..neq
     INTEGER(I32), DIMENSION(:), INTENT(IN) :: Itr
+
+    ! Source vector to be sorted
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: Ix
   !</input>
     
   !<output>
     ! The resorted vector
-    INTEGER(I32), DIMENSION(SIZE(Ix)), INTENT(OUT) :: Id
+    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Id
   !</output>
     
 !</subroutine>
@@ -911,7 +918,7 @@ CONTAINS
     ! local variable
     INTEGER(I32) :: ieq
     
-    DO ieq=1, SIZE(Ix)
+    DO ieq=1, SIZE(Itr)
       Id(ieq) = Ix(Itr(ieq))
     END DO
   

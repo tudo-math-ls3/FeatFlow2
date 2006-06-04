@@ -82,6 +82,12 @@
 !#
 !# 22.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
+!#
+!# 23.) lsyssc_getbase_double
+!#      -> Get a pointer to the double precision data array of the vector
+!#
+!# 24.) lsyssc_getbase_single
+!#      -> Get a pointer to the single precision data array of the vector
 !# </purpose>
 !##############################################################################
 
@@ -142,6 +148,11 @@ MODULE linearsystemblock
     ! allocated.
     INTEGER                    :: h_Ddata = ST_NOHANDLE
     
+    ! Start position of the vector data in the array identified by
+    ! h_Ddata. Normally = 1. Can be set to > 1 if the vector is a subvector
+    ! in a larger memory block allocated on the heap.
+    INTEGER(PREC_VECIDX)       :: iidxFirstEntry = 1
+
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE. The subvectors are all of the same type.
     INTEGER                    :: cdataType = ST_DOUBLE
@@ -468,6 +479,94 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_getbase_double (rvector,p_Ddata)
+  
+!<description>
+  ! Returns a pointer to the double precision data array of the vector.
+  ! An error is thrown if the vector is not double precision.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+
+!<output>
+  ! Pointer to the double precision data array of the vector.
+  ! NULL() if the vector has no data array.
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+   NULLIFY(p_Ddata)
+   RETURN
+ END IF
+
+  ! Check that the vector is really double precision
+  IF (rvector%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'lsysbl_getbase_double: Vector is of wrong precision!'
+    STOP
+  END IF
+
+  ! Get the data array
+  CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Ddata => p_Ddata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_getbase_single (rvector,p_Fdata)
+  
+!<description>
+  ! Returns a pointer to the single precision data array of the vector.
+  ! An error is thrown if the vector is not single precision.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+
+!<output>
+  ! Pointer to the double precision data array of the vector.
+  ! NULL() if the vector has no data array.
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+   NULLIFY(p_Fdata)
+   RETURN
+ END IF
+
+  ! Check that the vector is really double precision
+  IF (rvector%cdataType .NE. ST_SINGLE) THEN
+    PRINT *,'lsysbl_getbase_single: Vector is of wrong precision!'
+    STOP
+  END IF
+
+  ! Get the data array
+  CALL storage_getbase_single (rvector%h_Ddata,p_Fdata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Fdata => p_Fdata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -508,6 +607,9 @@ CONTAINS
   cdata = ST_DOUBLE
   IF (PRESENT(cdataType)) cdata = cdataType
   
+  ! rx is initialised by INTENT(OUT) with the most common data.
+  ! What is missing is the data array.
+  !
   ! Allocate one large vector holding all data.
   CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', SUM(Isize), cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
@@ -588,7 +690,8 @@ CONTAINS
   
 !</subroutine>
 
-  INTEGER :: cdata
+  INTEGER :: cdata,i
+  INTEGER(PREC_VECIDX) :: n
   
   cdata = rtemplate%cdataType
   IF (PRESENT(cdataType)) cdata = cdataType
@@ -602,6 +705,11 @@ CONTAINS
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
+  ! As we have a new handle, reset the starting index of the vector
+  ! in the array back to 1. This is necessary, as "rx = rtemplate" copied
+  ! the of index from rtemplate to rx.
+  rx%iidxFirstEntry = 1
+  
   WHERE (rtemplate%RvectorBlock%h_Ddata .NE. ST_NOHANDLE)
     ! Initialise the data type
     rx%RvectorBlock%cdataType = cdata
@@ -612,6 +720,13 @@ CONTAINS
     ! Note in the subvectors, that the handle belongs to somewhere else... to us!
     rx%RvectorBlock%bisCopy = .TRUE.
   END WHERE
+  
+  ! Relocate the starting indices of the subvector.
+  n = 1
+  DO i=1,rx%nblocks
+    rx%RvectorBlock(i)%iidxFirstEntry = n
+    n = n + rx%RvectorBlock(i)%NEQ
+  END DO
   
   ! Our handle belongs to us, so it's not a copy of another vector.
   rx%bisCopy = .FALSE.
@@ -882,6 +997,7 @@ CONTAINS
   END DO
   rx%NEQ = 0
   rx%nblocks = 0
+  rx%iidxFirstEntry = 1
   
   END SUBROUTINE
   
@@ -1034,6 +1150,8 @@ CONTAINS
   ! local variables
   INTEGER :: h_Ddata, cdataType
   LOGICAL :: bisCopy
+  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
   
   ! First, make a backup of some crucial data so that it does not
   ! get destroyed.
@@ -1054,9 +1172,22 @@ CONTAINS
   ry%RvectorBlock(1:ry%nblocks)%cdataType = cdataType
   
   ! And finally copy the data. 
-  ! Use storage_copy to copy data by handles.
-  CALL storage_copy(rx%h_Ddata, ry%h_Ddata)
-  
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    CALL lsysbl_getbase_double (rx,p_Dsource)
+    CALL lsysbl_getbase_double (ry,p_Ddest)
+    CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+    
+  CASE (ST_SINGLE)
+    CALL lsysbl_getbase_single (rx,p_Fsource)
+    CALL lsysbl_getbase_single (ry,p_Fdest)
+    CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+
+  CASE DEFAULT
+    PRINT *,'lsysbl_vectorCopy: Unsupported data type!'
+    STOP
+  END SELECT
+   
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1093,12 +1224,12 @@ CONTAINS
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
-    CALL storage_getbase_double(rx%h_Ddata,p_Ddata)
+    CALL lsysbl_getbase_double(rx,p_Ddata)
     CALL lalg_vectorScaleDble (p_Ddata,c)  
 
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
-    CALL storage_getbase_single(rx%h_Ddata,p_Fdata)
+    CALL lsysbl_getbase_single(rx,p_Fdata)
     CALL lalg_vectorScaleSngl (p_Fdata,REAL(c,SP))  
 
   CASE DEFAULT
@@ -1133,12 +1264,12 @@ CONTAINS
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
-    CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
+    CALL lsysbl_getbase_double(rx,p_Dsource)
     CALL lalg_vectorClearDble (p_Dsource)
   
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
-    CALL storage_getbase_single(rx%h_Ddata,p_Ssource)
+    CALL lsysbl_getbase_single(rx,p_Ssource)
     CALL lalg_vectorClearSngl (p_Ssource)
 
   CASE DEFAULT
@@ -1197,15 +1328,15 @@ CONTAINS
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
     ! Get the pointers and copy the whole data array.
-    CALL storage_getbase_double(rx%h_Ddata,p_Dsource)
-    CALL storage_getbase_double(ry%h_Ddata,p_Ddest)
+    CALL lsysbl_getbase_double(rx,p_Dsource)
+    CALL lsysbl_getbase_double(ry,p_Ddest)
     
     CALL lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
 
   CASE (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
-    CALL storage_getbase_single(rx%h_Ddata,p_Ssource)
-    CALL storage_getbase_single(ry%h_Ddata,p_Sdest)
+    CALL lsysbl_getbase_single(rx,p_Ssource)
+    CALL lsysbl_getbase_single(ry,p_Sdest)
     
     CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,cx,cy)
   
@@ -1263,12 +1394,12 @@ CONTAINS
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
     
-    CALL storage_getbase_double (rx%h_Ddata,h_Ddata1dp)
+    CALL lsysbl_getbase_double (rx,h_Ddata1dp)
     
     SELECT CASE (ry%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data arrays
-      CALL storage_getbase_double (ry%h_Ddata,h_Ddata2dp)
+      CALL lsysbl_getbase_double (ry,h_Ddata2dp)
       
       ! Perform the scalar product
       res = 0.0_DP
@@ -1341,12 +1472,12 @@ CONTAINS
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
     ! Get the array and calculate the norm
-    CALL storage_getbase_double (rx%h_Ddata,p_Ddata)
+    CALL lsysbl_getbase_double (rx,p_Ddata)
     lsysbl_vectorNorm = lalg_normDble (p_Ddata,cnorm,iposMax) 
     
   CASE (ST_SINGLE)
     ! Get the array and calculate the norm
-    CALL storage_getbase_single (rx%h_Ddata,p_Fdata)
+    CALL lsysbl_getbase_single (rx,p_Fdata)
     lsysbl_vectorNorm = lalg_normSngl (p_Fdata,cnorm,iposMax) 
     
   CASE DEFAULT
@@ -1404,7 +1535,7 @@ CONTAINS
   SUBROUTINE lsysbl_createVecFromScalar (rscalarVec,rvector)
   
 !<description>
-  ! This routine creates a 1 block vector rvector from a scalar vector
+  ! This routine creates a 1-block vector rvector from a scalar vector
   ! rscalarVec. Both, rscalarVec and rvector will share the same handles,
   ! so changing the content of rvector will change rscalarVec, too.
   ! Therefore, the bisCopy flag of the subvector in the block vector
@@ -1431,7 +1562,10 @@ CONTAINS
     
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block vector
-    rvector%RvectorBlock(1)             = rscalarVec
+    rvector%RvectorBlock(1) = rscalarVec
+    
+    ! Copy the starting address of the scalar vector to our block vector.
+    rvector%iidxFirstEntry  = rscalarVec%iidxFirstEntry
 
     ! The handle belongs to another vector - note this in the structure.
     rvector%RvectorBlock(1)%bisCopy     = .TRUE.
@@ -1458,8 +1592,8 @@ CONTAINS
   ! discretisation, size,sorting,...) are copied from rtemplate to 
   ! rvector without checking the compatibility!!!
   !
-  ! The only check in this routine is that the memory rvector provides
-  ! must be at least as large as rtemplate%NEQ; otherwise an error
+  ! The only check in this routine is that rvector%NEQ is
+  ! at least as large as rtemplate%NEQ; otherwise an error
   ! is thrown. The data type of rvector is also not changed.
 !</description>
   
@@ -1476,25 +1610,28 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: cdata,h_Ddata
-  INTEGER(PREC_VECIDX) :: length
-  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+  INTEGER :: cdata,h_Ddata,i
+  INTEGER(PREC_VECIDX) :: istart,n !,length
 
-    ! Only basic check: there must be enough memory
-    SELECT CASE (rvector%cdataType)
-    CASE (ST_DOUBLE)
-      CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
-      length = SIZE(p_Ddata)
-    CASE (ST_SINGLE)
-      CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
-      length = SIZE(p_Ddata)
-    CASE DEFAULT
-      PRINT *,'lsysbl_enforceStructure: Unsupported data type'
-      STOP
-    END SELECT
+!  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+!  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+!
+! Here, we check the real size of the array on the heap, not
+! simply NEQ. Allows to enlarge a vector if there's enough space.
+!    SELECT CASE (rvector%cdataType)
+!    CASE (ST_DOUBLE)
+!      CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
+!      length = SIZE(p_Ddata)-rvector%iidxFirstEntry+1
+!    CASE (ST_SINGLE)
+!      CALL storage_getbase_double (rvector%h_Ddata,p_Fdata)
+!      length = SIZE(p_Fdata)-rvector%iidxFirstEntry+1
+!    CASE DEFAULT
+!      PRINT *,'lsysbl_enforceStructure: Unsupported data type'
+!      STOP
+!    END SELECT
     
-    IF (length .LT. rtemplateVec%NEQ) THEN
+    ! Only basic check: there must be enough memory.
+    IF (rvector%NEQ .LT. rtemplateVec%NEQ) THEN
       PRINT *,'lsysbl_enforceStructure: Destination vector too small!'
       STOP
     END IF
@@ -1502,6 +1639,7 @@ CONTAINS
     ! Get data type and handle from rvector
     cdata = rvector%cdataType
     h_Ddata = rvector%h_Ddata
+    istart = rvector%iidxFirstEntry
     
     ! Overwrite rvector
     rvector = rtemplateVec
@@ -1509,6 +1647,14 @@ CONTAINS
     ! Restore the data array
     rvector%cdataType = cdata
     rvector%h_Ddata = h_Ddata
+    rvector%iidxFirstEntry = istart
+    
+    ! Relocate the starting indices of the subvectors.
+    n = istart
+    DO i=1,rvector%nblocks
+      rvector%RvectorBlock(i)%iidxFirstEntry = n
+      n = n + rvector%RvectorBlock(i)%NEQ
+    END DO
     
   END SUBROUTINE
 

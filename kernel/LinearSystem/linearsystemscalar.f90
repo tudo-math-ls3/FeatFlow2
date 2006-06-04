@@ -52,6 +52,15 @@
 !# 11.) lsyssc_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
+!# 12.) lsyssc_getbase_double
+!#      -> Get a pointer to the double precision data array of the vector
+!#
+!# 13.) lsyssc_getbase_single
+!#      -> Get a pointer to the single precision data array of the vector
+!#
+!# 14.) lsyssc_addIndex
+!#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
+!#         array.
 !# </purpose>
 !##############################################################################
 
@@ -465,6 +474,94 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_double (rvector,p_Ddata)
+  
+!<description>
+  ! Returns a pointer to the double precision data array of the vector.
+  ! An error is thrown if the vector is not double precision.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector
+!</input>
+
+!<output>
+  ! Pointer to the double precision data array of the vector.
+  ! NULL() if the vector has no data array.
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+   NULLIFY(p_Ddata)
+   RETURN
+ END IF
+
+  ! Check that the vector is really double precision
+  IF (rvector%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'lsyssc_getbase_double: Vector is of wrong precision!'
+    STOP
+  END IF
+
+  ! Get the data array
+  CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Ddata => p_Ddata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_single (rvector,p_Fdata)
+  
+!<description>
+  ! Returns a pointer to the single precision data array of the vector.
+  ! An error is thrown if the vector is not single precision.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector
+!</input>
+
+!<output>
+  ! Pointer to the double precision data array of the vector.
+  ! NULL() if the vector has no data array.
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+   NULLIFY(p_Fdata)
+   RETURN
+ END IF
+
+  ! Check that the vector is really double precision
+  IF (rvector%cdataType .NE. ST_SINGLE) THEN
+    PRINT *,'lsyssc_getbase_single: Vector is of wrong precision!'
+    STOP
+  END IF
+
+  ! Get the data array
+  CALL storage_getbase_single (rvector%h_Ddata,p_Fdata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Fdata => p_Fdata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  
+  END SUBROUTINE
+
   !****************************************************************************
 
 !<subroutine>
@@ -551,7 +648,7 @@ CONTAINS
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata1dp
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata2dp
   REAL(DP) :: res
-  INTEGER(PREC_VECIDX) ioffsetx,ioffsety,i
+  INTEGER(PREC_VECIDX) i
   
   ! Vectors must be compatible!
   CALL lsyssc_isVectorCompatible (rx,ry)
@@ -569,20 +666,13 @@ CONTAINS
     STOP
   END IF
   
-  ! Get the offset positions from the vector structures
-  ioffsetx = rx%iidxFirstEntry
-  ioffsety = ry%iidxFirstEntry
-  
   ! Take care of the data type before doing a scalar product!
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
-    
-    CALL storage_getbase_double (rx%h_Ddata,p_Ddata1dp)
-    CALL storage_getbase_double (ry%h_Ddata,p_Ddata2dp)
-    
-    ! Change the pointer to point to the subvector
-    p_Ddata1dp => p_Ddata1dp(ioffsetx:ioffsetx+rx%NEQ-1)
-    p_Ddata2dp => p_Ddata2dp(ioffsety:ioffsety+ry%NEQ-1)
+     
+    ! Get the data arrays
+    CALL lsyssc_getbase_double (rx,p_Ddata1dp)
+    CALL lsyssc_getbase_double (ry,p_Ddata2dp)
     
     ! Perform the scalar product
     res = p_Ddata1dp(1)*p_Ddata2dp(1)
@@ -591,14 +681,11 @@ CONTAINS
     END DO
     
   CASE (ST_SINGLE)
-    
-    CALL storage_getbase_single (rx%h_Ddata,p_Fdata1dp)
-    CALL storage_getbase_single (ry%h_Ddata,p_Fdata2dp)
-    
-    ! Change the pointer to point to the subvector
-    p_Fdata1dp => p_Fdata1dp(ioffsetx:ioffsetx+rx%NEQ-1)
-    p_Fdata2dp => p_Fdata2dp(ioffsety:ioffsety+ry%NEQ-1)
 
+    ! Get the data arrays
+    CALL lsyssc_getbase_single (rx,p_Fdata1dp)
+    CALL lsyssc_getbase_single (ry,p_Fdata2dp)
+    
     ! Perform the scalar product
     res = p_Fdata1dp(1)*p_Fdata2dp(1)
     DO i=2,rx%NEQ
@@ -728,25 +815,18 @@ CONTAINS
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_MATIDX) :: irow,icol
-    INTEGER(PREC_VECIDX) :: ioffsetx,ioffsety
     REAL(DP) :: dtmp
     INTEGER(PREC_VECIDX) :: NEQ
 
-      ! Get the matrix and the two vectors
+      ! Get the matrix
       CALL storage_getbase_double (rmatrix%h_DA,p_DA)
       CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
       CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-      CALL storage_getbase_double (rx%h_Ddata,p_Dx)
-      CALL storage_getbase_double (ry%h_Ddata,p_Dy)
       NEQ = rx%NEQ
 
-      ! Get the offset positions from the vector structures
-      ioffsetx = rx%iidxFirstEntry
-      ioffsety = rx%iidxFirstEntry
-
-      ! Change the pointer to point to the subvector
-      p_Dx => p_Dx(ioffsetx:ioffsetx+NEQ-1)
-      p_Dy => p_Dy(ioffsetx:ioffsety+NEQ-1)
+      ! Get the vectors
+      CALL lsyssc_getbase_double (rx,p_Dx)
+      CALL lsyssc_getbase_double (ry,p_Dy)
       
       ! Perform the multiplication
       IF (cx .NE. 0.0_DP) THEN
@@ -859,20 +939,21 @@ CONTAINS
                     roldVector%cdataType, rnewVector%h_Ddata, &
                     ST_NEWBLOCK_NOINIT)
 
+  ! The new vector starts at index position 1
+  rnewVector%iidxFirstEntry = 1
+
   ! Take care of the index of the first entry when copying the data!
 
   SELECT CASE (roldVector%cdataType)
   CASE (ST_DOUBLE)
-    CALL storage_getbase_double (roldVector%h_Ddata,p_Dsource)
-    CALL storage_getbase_double (rnewVector%h_Ddata,p_Ddest)
-    CALL lalg_vectorCopyDble (&
-      p_Dsource(roldVector%iidxFirstEntry:roldVector%iidxFirstEntry+NEQ-1),p_Ddest)
+    CALL lsyssc_getbase_double (roldVector,p_Dsource)
+    CALL lsyssc_getbase_double (rnewVector,p_Ddest)
+    CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
     
   CASE (ST_SINGLE)
-    CALL storage_getbase_single (roldVector%h_Ddata,p_Fsource)
-    CALL storage_getbase_single (rnewVector%h_Ddata,p_Fdest)
-    CALL lalg_vectorCopySngl (&
-      p_Fsource(roldVector%iidxFirstEntry:roldVector%iidxFirstEntry+NEQ-1),p_Fdest)
+    CALL lsyssc_getbase_single (roldVector,p_Fsource)
+    CALL lsyssc_getbase_single (rnewVector,p_Fdest)
+    CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
 
   CASE DEFAULT
     PRINT *,'lsyssc_duplicateVector: Unsupported data type!'
@@ -1206,17 +1287,11 @@ CONTAINS
     ! Get pointers to the vector data
     SELECT CASE (rvector%cdataType)
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double(rvector%h_Ddata,p_Ddata)
-      CALL storage_getbase_double(rtemp%h_Ddata,p_Ddata2)
-      ! Don't forget to take care of where the first entry is!
-      p_Ddata => p_Ddata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+NEQ-1)
-      p_Ddata2 => p_Ddata2(rtemp%iidxFirstEntry:rtemp%iidxFirstEntry+NEQ-1)
+      CALL lsyssc_getbase_double(rvector,p_Ddata)
+      CALL lsyssc_getbase_double(rtemp,p_Ddata2)
     CASE (ST_SINGLE)   
-      CALL storage_getbase_single(rvector%h_Ddata,p_Fdata)
-      CALL storage_getbase_single(rtemp%h_Ddata,p_Fdata2)
-      ! Don't forget to take care of where the first entry is!
-      p_Fdata => p_Fdata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+NEQ-1)
-      p_Fdata2 => p_Fdata2(rtemp%iidxFirstEntry:rtemp%iidxFirstEntry+NEQ-1)
+      CALL lsyssc_getbase_single(rvector,p_Fdata)
+      CALL lsyssc_getbase_single(rtemp,p_Fdata2)
     CASE DEFAULT
       PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
       STOP
@@ -2372,7 +2447,7 @@ CONTAINS
   
   !<description>
     ! Performs bubble sort for the vector Ih1 and does the
-    ! same swaps also on vector Ih2
+    ! same swaps also on vector Ih2.
   !</description>
     
   !<inputoutput>
