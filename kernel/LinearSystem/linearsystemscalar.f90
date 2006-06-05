@@ -61,6 +61,9 @@
 !# 14.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
 !#         array.
+!#
+!# 15.) lsyssc_vectorNorm
+!#      -> Calculate the norm of a vector.
 !# </purpose>
 !##############################################################################
 
@@ -2543,5 +2546,70 @@ CONTAINS
     
   END SUBROUTINE
   
+  !****************************************************************************
+!<subroutine>
+  
+  REAL(DP) FUNCTION lsyssc_vectorNorm (rx,cnorm,iposMax)
+  
+!<description>
+  ! Calculates the norm of a vector. cnorm specifies the type of norm to
+  ! calculate.
+!</description>
+  
+!<input>
+  ! Vector to calculate the norm of.
+  TYPE(t_vectorScalar), INTENT(IN)                  :: rx
+
+  ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
+  INTEGER, INTENT(IN) :: cnorm
+!</input>
+
+!<output>
+  ! OPTIONAL: If the MAX norm is to calculate, this returns the
+  ! position of the largest element. If another norm is to be
+  ! calculated, the result is undefined.
+  INTEGER(I32), INTENT(OUT), OPTIONAL :: iposMax
+!</output>
+
+!<result>
+  ! The norm of the given array.
+  ! < 0, if an error occurred (unknown norm).
+!</result>
+
+!<result>
+  ! The scalar product <rx,ry> of the two block vectors.
+!</result>
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+
+  ! Is there data at all?
+  IF (rx%h_Ddata .EQ. ST_NOHANDLE) THEN
+    PRINT *,'Error in lsyssc_vectorNorm: Vector empty!'
+    STOP
+  END IF
+  
+  ! Take care of the data type before doing a scalar product!
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the array and calculate the norm
+    CALL lsyssc_getbase_double (rx,p_Ddata)
+    lsyssc_vectorNorm = lalg_normDble (p_Ddata,cnorm,iposMax) 
+    
+  CASE (ST_SINGLE)
+    ! Get the array and calculate the norm
+    CALL lsyssc_getbase_single (rx,p_Fdata)
+    lsyssc_vectorNorm = lalg_normSngl (p_Fdata,cnorm,iposMax) 
+    
+  CASE DEFAULT
+    PRINT *,'lsyssc_vectorNorm: Unsupported data type!'
+    STOP
+  END SELECT
+  
+  END FUNCTION
+
 
 END MODULE

@@ -88,6 +88,13 @@
 !#
 !# 24.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
+!#
+!# 25.) lsysbl_vectorNorm
+!#      -> Calculates the norm of a vector. the vector is treated as one
+!#         long data array.
+!#
+!# 26.) lsysbl_vectorNormblock
+!#      -> Calculates the norm of all subvectors in a given block vector.
 !# </purpose>
 !##############################################################################
 
@@ -1452,10 +1459,6 @@ CONTAINS
   ! < 0, if an error occurred (unknown norm).
 !</result>
 
-!<result>
-  ! The scalar product <rx,ry> of the two block vectors.
-!</result>
-
 !</subroutine>
 
   ! local variables
@@ -1484,6 +1487,56 @@ CONTAINS
     PRINT *,'lsysbl_vectorNorm: Unsupported data type!'
     STOP
   END SELECT
+  
+  END FUNCTION
+
+  !****************************************************************************
+!<subroutine>
+  
+  FUNCTION lsysbl_vectorNormBlock (rx,Cnorms,IposMax) RESULT (Dnorms)
+  
+!<description>
+  ! Calculates the norms of all subvectors in a given block vector.
+  ! Cnorms is an array containing the type of norm to compute for each
+  ! subvector. 
+!</description>
+  
+!<input>
+  ! Vector to calculate the norm of.
+  TYPE(t_vectorBlock), INTENT(IN)                  :: rx
+
+  ! Identifier list. For every subvector in rx, this identifies the norm 
+  ! to calculate. Each entry is a LINALG_NORMxxxx constants.
+  INTEGER, DIMENSION(:), INTENT(IN) :: Cnorms
+!</input>
+
+!<output>
+  ! OPTIONAL: For each subvector: if the MAX norm is to calculate, 
+  ! this returns the position of the largest element in that subvector. 
+  ! If another norm is to be calculated, the result is undefined.
+  INTEGER(I32), DIMENSION(:), INTENT(OUT), OPTIONAL :: IposMax
+!</output>
+
+!<result>
+  ! An array of norms for each subvector.
+  ! An entry might be < 0, if an error occurred (unknown norm).
+  REAL(DP), DIMENSION(SIZE(Cnorms)) :: Dnorms
+!</result>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+
+  ! Loop over the subvectors
+  DO i=1,rx%nblocks
+    ! Calculate the norm of that subvector.
+    IF (PRESENT(IposMax)) THEN
+      Dnorms(i) = lsyssc_vectorNorm (rx%RvectorBlock(i),Cnorms(i),IposMax(i))
+    ELSE
+      Dnorms(i) = lsyssc_vectorNorm (rx%RvectorBlock(i),Cnorms(i))
+    END IF
+  END DO
   
   END FUNCTION
 
