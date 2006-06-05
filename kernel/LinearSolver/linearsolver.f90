@@ -1582,7 +1582,7 @@ CONTAINS
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the vector is returned in dvecNorm.
-  ! If not existent, the routine assumes that ddvecNrm is the norm
+  ! If not existent, the routine assumes that dvecNrm is the norm
   ! of the vector and checks convergence depending on dvecNorm.
   TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rdef
   
@@ -1591,7 +1591,7 @@ CONTAINS
 !<inputoutput>
   
   ! Norm of the defect vector. 
-  ! If rdef if present, the routine will calculate the norm of dx and return
+  ! If rdef if present, the routine will calculate the norm of rdef and return
   ! it in dvecNorm.
   ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
   ! vector and convergence is tested using dvecNorm.
@@ -1657,7 +1657,7 @@ CONTAINS
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the vector is returned in dvecNorm.
-  ! If not existent, the routine assumes that ddvecNrm is the norm
+  ! If not existent, the routine assumes that dvecNrm is the norm
   ! of the vector and checks divergence depending on dvecNorm.
   TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rdef
   
@@ -1666,7 +1666,7 @@ CONTAINS
 !<inputoutput>
   
   ! Norm of the defect vector. 
-  ! If rdef if present, the routine will calculate the norm of dx and return
+  ! If rdef if present, the routine will calculate the norm of rdef and return
   ! it in dvecNorm.
   ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
   ! vector and divergence is tested using dvecNorm.
@@ -2614,8 +2614,8 @@ CONTAINS
 
       ! If the initial defect was zero, the solver immediately
       ! exits - and so the final residuum is zero and we performed
-      ! no steps; so the resulting multigrid convergence rate stays zero.
-      ! In the other case the multigrid convergence rate computes as
+      ! no steps; so the resulting convergence rate stays zero.
+      ! In the other case the convergence rate computes as
       ! (final defect/initial defect) ** 1/nit :
 
       IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN
@@ -4681,8 +4681,8 @@ CONTAINS
 
       ! If the initial defect was zero, the solver immediately
       ! exits - and so the final residuum is zero and we performed
-      ! no steps; so the resulting multigrid convergence rate stays zero.
-      ! In the other case the multigrid convergence rate computes as
+      ! no steps; so the resulting convergence rate stays zero.
+      ! In the other case the convergence rate computes as
       ! (final defect/initial defect) ** 1/nit :
 
       IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN

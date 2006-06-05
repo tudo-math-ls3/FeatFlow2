@@ -93,8 +93,11 @@
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 26.) lsysbl_vectorNormblock
+!# 26.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
+!#
+!# 27.) lsysbl_invertedDiagMatVec
+!#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !# </purpose>
 !##############################################################################
 
@@ -1128,6 +1131,55 @@ CONTAINS
    
   END SUBROUTINE
   
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
+  
+!<description>
+  ! This routine multiplies the weighted inverted diagonal domega*D^{-1}
+  ! of the diagonal blocks in the matrix rmatrix with the vector rvectorSrc and 
+  ! stores the result into the vector rvectorDst:
+  !   rvectorDst_i = dscale * D_i^{-1} * rvectorSrc_i  , i=1..nblocks
+  ! Both, rvectorSrc and rvectorDst may coincide.
+!</description>
+  
+!<input>
+  ! The matrix. 
+  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+
+  ! The source vector.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvectorSrc
+
+  ! A multiplication factor. Standard value is 1.0_DP
+  REAL(DP), INTENT(IN) :: dscale
+!</input>
+
+!<inputoutput>
+  ! The destination vector which receives the result.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvectorDst
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: iblock
+  
+    ! Vectors and matrix must be compatible
+    CALL lsysbl_isVectorCompatible (rvectorSrc,rvectorDst)
+    CALL lsysbl_isMatrixCompatible (rvectorSrc,rmatrix)
+  
+    ! Loop over the blocks
+    DO iblock = 1,rvectorSrc%nblocks
+      ! Multiply with the inverted diagonal of the submatrix.
+      CALL lsyssc_invertedDiagMatVec (rmatrix%RmatrixBlock(iblock,iblock),&
+            rvectorSrc%RvectorBlock(iblock),dscale,&
+            rvectorDst%RvectorBlock(iblock))
+    END DO
+
+  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1503,11 +1555,11 @@ CONTAINS
   
 !<input>
   ! Vector to calculate the norm of.
-  TYPE(t_vectorBlock), INTENT(IN)                  :: rx
+  TYPE(t_vectorBlock), INTENT(IN)                   :: rx
 
   ! Identifier list. For every subvector in rx, this identifies the norm 
   ! to calculate. Each entry is a LINALG_NORMxxxx constants.
-  INTEGER, DIMENSION(:), INTENT(IN) :: Cnorms
+  INTEGER, DIMENSION(:), INTENT(IN)                 :: Cnorms
 !</input>
 
 !<output>
@@ -1577,7 +1629,8 @@ CONTAINS
     rmatrix%RmatrixBlock(1,1)             = rscalarMat
 
     ! The matrix is a copy of another one. Note this!
-    rmatrix%RmatrixBlock(1,1)%imatrixSpec = LSYSSC_MSPEC_ISCOPY
+    rmatrix%RmatrixBlock(1,1)%imatrixSpec = &
+      IOR(rmatrix%RmatrixBlock(1,1)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
     
   END SUBROUTINE
 

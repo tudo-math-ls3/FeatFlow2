@@ -64,6 +64,10 @@
 !#
 !# 15.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
+!#
+!# 16.) lsyssc_invertedDiagMatVec
+!#      -> Multiply a vector with the inverse of the diagonal of a scalar
+!#         matrix
 !# </purpose>
 !##############################################################################
 
@@ -2611,5 +2615,131 @@ CONTAINS
   
   END FUNCTION
 
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
+  
+!<description>
+  ! This routine multiplies the weighted inverted diagonal domega*D^{-1}
+  ! of the matrix rmatrix with the vector rvectorSrc and stores the result 
+  ! into the vector rvectorDst:
+  !   rvectorDst = dscale * D^{-1} * rvectorSrc
+  ! Both, rvectorSrc and rvectorDst may coincide.
+!</description>
+  
+!<input>
+  ! The matrix. 
+  TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+
+  ! The source vector.
+  TYPE(t_vectorScalar), INTENT(IN) :: rvectorSrc
+
+  ! A multiplication factor. Standard value is 1.0_DP
+  REAL(DP), INTENT(IN) :: dscale
+!</input>
+
+!<inputoutput>
+  ! The destination vector which receives the result.
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rvectorDst
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: h_Idiag
+  INTEGER(PREC_VECIDX) :: i
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiag
+  REAL(DP), DIMENSION(:), POINTER :: p_Da, p_Dvec, p_Dvec2
+  REAL(SP), DIMENSION(:), POINTER :: p_Fa, p_Fvec, p_Fvec2
+  REAL(DP) :: dmyscale
+  REAL(SP) :: fmyscale
+
+  ! Let's hope, the matrix and the vectors are compatible...
+  CALL lsyssc_isVectorCompatible (rvectorSrc,rvectorDst)
+  CALL lsyssc_isMatrixCompatible (rvectorSrc,rmatrix)
+
+  IF (rvectorSrc%cdataType .NE. rvectorDst%cdataType) THEN
+    PRINT *,'lsyssc_invertedDiagMatVec: Vectors have different precisions!'
+    STOP
+  END IF
+
+  ! Which matrix structure do we have?
+  SELECT CASE (rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+    ! Get a pointer to the diagonal - either h_KLD or h_Kdiagonal
+    IF (rmatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+      h_Idiag = rmatrix%h_Kdiagonal
+    ELSE
+      h_Idiag = rmatrix%h_Kld
+    END IF
+    CALL storage_getbase_int(h_Idiag,p_Kdiag)
+    
+    ! Data type?
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
+      dmyscale = dscale * rmatrix%dscaleFactor
+
+      ! And the vector(s)?
+      SELECT CASE (rvectorSrc%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
+        CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(p_Kdiag(i))
+        END DO
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
+        CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(p_Kdiag(i))
+        END DO
+        
+      CASE DEFAULT
+        PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        STOP
+      END SELECT
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (rmatrix%h_Da,p_Fa)
+      fmyscale = REAL(dscale * rmatrix%dscaleFactor,SP)
+
+      ! And the vector(s)?
+      SELECT CASE (rvectorSrc%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
+        CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(p_Kdiag(i))
+        END DO
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
+        CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(p_Kdiag(i))
+        END DO
+        
+      CASE DEFAULT
+        PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        STOP
+      END SELECT
+    CASE DEFAULT
+      PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
+      STOP
+    END SELECT
+    
+  CASE DEFAULT
+    PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix format!'
+    STOP
+  END SELECT
+    
+  END SUBROUTINE
 
 END MODULE
