@@ -2807,7 +2807,7 @@ CONTAINS
         SELECT CASE (rd%cdataType)
         CASE (ST_DOUBLE)
           ! Get the data array
-          CALL storage_getbase_double (rd%h_Ddata,p_Dvector)
+          CALL lsysbl_getbase_double (rd,p_Dvector)
           
           ! and multiply all entries with the inverse of the diagonal 
           ! of the matrix.
@@ -2817,7 +2817,7 @@ CONTAINS
           
         CASE (ST_SINGLE)
           ! Get the data array
-          CALL storage_getbase_double (rd%h_Ddata,p_Fvector)
+          CALL lsysbl_getbase_single (rd,p_Fvector)
           
           ! and multiply all entries with the inverse of the diagonal 
           ! of the matrix.
@@ -2839,7 +2839,7 @@ CONTAINS
         SELECT CASE (rd%cdataType)
         CASE (ST_DOUBLE)
           ! Get the data array
-          CALL storage_getbase_double (rd%h_Ddata,p_Dvector)
+          CALL lsysbl_getbase_double (rd,p_Dvector)
           
           ! and multiply all entries with the inverse of the diagonal 
           ! of the matrix.
@@ -2849,7 +2849,7 @@ CONTAINS
           
         CASE (ST_SINGLE)
           ! Get the data array
-          CALL storage_getbase_double (rd%h_Ddata,p_Fvector)
+          CALL lsysbl_getbase_single (rd,p_Fvector)
           
           ! Multiplication with Omega can be speeded up as we use
           ! sigle-precision only.
@@ -3503,8 +3503,8 @@ CONTAINS
     CALL lsysbl_vectorCopy (rd,p_rb)
 
     ! Get the RHS and solution vector data
-    CALL storage_getbase_double(rd%h_Ddata,p_Dx)
-    CALL storage_getbase_double(p_rb%h_Ddata,p_Db)
+    CALL lsysbl_getbase_double(rd,p_Dx)
+    CALL lsysbl_getbase_double(p_rb,p_Db)
 
     ! Solve the system
     ! Solve the system. Note that UMFPACK expects the matrix in
@@ -3895,7 +3895,7 @@ CONTAINS
   END IF
   
   ! Get the data array of rd
-  CALL storage_getbase_double (rd%h_Ddata,p_Dd)
+  CALL lsysbl_getbase_double (rd,p_Dd)
   
   ! Get MILUs information from the parameter block
   h_Iwork = rsolverNode%p_rsubnodeMILUs1x1%h_Idata 
@@ -5870,8 +5870,8 @@ CONTAINS
     ! form
     !     $$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$
     ! with $x_0 = 0$.
-    !DEBUG: CALL storage_getbase_double (rx%h_Ddata,p_Ddata)
-    !DEBUG: CALL storage_getbase_double (rtemp%h_Ddata,p_Ddata2)
+    !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
+    !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
     DO i=1,rsolverNode%nmaxIterations
       CALL lsysbl_vectorCopy(rb,rtemp)
       CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
