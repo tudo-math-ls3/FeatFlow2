@@ -130,7 +130,7 @@ vpath %.inc src/geometry	  src/nonstationary src/postprocessing  \
 
 EXEC=cc2d_movbc-$(ID)
 
-FEATLIB= feat2d sysutils #umfpack4 amd
+FEATLIB= feat2d sysutils umfpack4 amd minisplib
 
 include $(FEATFLOW)/Rules_apps.mk
 -include Deps.mk

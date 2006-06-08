@@ -825,7 +825,7 @@ CONTAINS
     ! start the postprocessing. Call the GMV library to write out
     ! a GMV file for our solution.
     ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u4.gmv')
+    CALL GMVOF0 (ihandle,-2,'gmv/u5.gmv')
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     

@@ -68,6 +68,9 @@
 !# 16.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
+!#
+!# 17.) lsyssc_clearMatrix
+!#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !# </purpose>
 !##############################################################################
 
@@ -1200,6 +1203,38 @@ CONTAINS
   rmatrix%p_rdiscreteBC     => NULL()
   rmatrix%p_rdiscreteBCfict => NULL()
 
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsyssc_clearMatrix (rmatrix)
+  
+!<description>
+  ! Clears the entries in a matrix. All entries are overwritten with 0.0.
+!</description>
+  
+!<inputoutput>
+  
+  ! Matrix to release.
+  TYPE(t_matrixScalar), INTENT(INOUT)               :: rmatrix
+  
+!</inputoutput>
+
+!</subroutine>
+
+  IF (rmatrix%NEQ .LE. 0) RETURN ! Empty matrix
+
+  ! Which matrix type do we have?
+  SELECT CASE (rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+    ! Get the handle, the associated memory and clear that.
+    IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
+      CALL storage_clear(rmatrix%h_DA)
+    END IF
+  END SELECT
+  
   END SUBROUTINE
 
   !****************************************************************************

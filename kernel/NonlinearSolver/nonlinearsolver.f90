@@ -147,16 +147,16 @@ MODULE nonlinearsolver
     INTEGER                    :: iiterations
     
     ! OUTPUT PARAMETER:
-    ! Norm of initial residuum for each subvector of the given block vector
+    ! Norm of initial residuum for each subvector of the given block vector.
+    ! Only valid, if the fcb_resNormCheck callback procedure is not specified
+    ! in the call to the solver, otherwise undefined!
     REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS)  :: DinitialDefect
 
     ! OUTPUT PARAMETER:
-    ! Norm of final residuum
+    ! Norm of final residuum for each subvector of the given block vector.
+    ! Only valid, if the fcb_resNormCheck callback procedure is not specified
+    ! in the call to the solver, otherwise undefined!
     REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS)  :: DfinalDefect
-
-    ! OUTPUT PARAMETER:
-    ! Nonlinear convergence rate
-    REAL(DP)                        :: dconvergenceRate
 
     ! OUTPUT PARAMETER:
     ! Total time for nonlinear solver
@@ -655,7 +655,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE nlsol_performSolve (rsolverNode,rx,rb,rd,&
-                                 fcb_getDefect,fcb_resNormCheck,fcb_precondDefect,&
+                                 fcb_getDefect,fcb_precondDefect,fcb_resNormCheck,&
                                  rcollection)
              
 !<description>
@@ -744,7 +744,7 @@ CONTAINS
 
   ! local variables
   TYPE(t_collection), POINTER :: p_rcollection
-  INTEGER :: ite
+  INTEGER :: ite,i
   REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS) :: DvecNorm
   TYPE(t_vectorBlock) :: rtemp
   REAL(DP) :: domega
@@ -765,9 +765,10 @@ CONTAINS
     rsolverNode%iresult = 0
     
     ! Calculate the initial nonlinear defect to rd:   d = b-A(x)x
-    CALL fcb_getDefect (rx,rb,rd,p_rcollection)
+    CALL fcb_getDefect (0,rx,rb,rd,p_rcollection)
     
-    rsolverNode%icurrentIteration = 0
+    ite = 0
+    rsolverNode%icurrentIteration = ite
     
     ! Initial test for convergence/divergence.
     IF (PRESENT(fcb_resNormCheck)) THEN
@@ -779,9 +780,15 @@ CONTAINS
       WHERE (.NOT.((DvecNorm .GE. 1D-99) .AND. (DvecNorm .LE. 1D99))) 
         DvecNorm = 0.0_DP
       END WHERE
+      rsolverNode%DinitialDefect = DvecNorm
+      rsolverNode%DfinalDefect = DvecNorm
       
       bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, rd%nblocks)
       bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
+      
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        PRINT *,'ITE:',ite,' !!RES!! = ',(DvecNorm(i),i=1,rb%nblocks)
+      END IF
     END IF
 
     ! Perform at least nminIterations iterations
@@ -837,7 +844,7 @@ CONTAINS
         END IF
 
         ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
-        CALL fcb_getDefect (rx,rb,rd,p_rcollection)
+        CALL fcb_getDefect (ite,rx,rb,rd,p_rcollection)
 
         ! Check the defect for convergence        
         IF (PRESENT(fcb_resNormCheck)) THEN
@@ -849,9 +856,14 @@ CONTAINS
           WHERE (.NOT.((DvecNorm .GE. 1D-99) .AND. (DvecNorm .LE. 1D99))) 
             DvecNorm = 0.0_DP
           END WHERE
+          rsolverNode%DfinalDefect = DvecNorm
           
           bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, rd%nblocks)
           bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
+
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            PRINT *,'ITE:',ite,' !!RES!! = ',(DvecNorm(i),i=1,rb%nblocks)
+          END IF
         END IF
 
         ! Perform at least nminIterations iterations
@@ -892,7 +904,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE nlsol_performSolveSc (rsolverNode,rx,rb,rd,&
-                          fcb_getDefect,fcb_resNormCheck,fcb_precondDefect,&
+                          fcb_getDefect,fcb_precondDefect,fcb_resNormCheck,&
                           rcollection)
              
 !<description>
@@ -961,7 +973,7 @@ CONTAINS
   
   ! Invoke the solver - that's all. 
   CALL nlsol_performSolve (rsolverNode,rxBlock,rbBlock,rdBlock,&
-                          fcb_getDefect,fcb_resNormCheck,fcb_precondDefect,&
+                          fcb_getDefect,fcb_precondDefect,fcb_resNormCheck,&
                           rcollection)
                         
   END SUBROUTINE

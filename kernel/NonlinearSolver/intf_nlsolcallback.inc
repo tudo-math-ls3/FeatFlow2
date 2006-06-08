@@ -5,7 +5,7 @@
   
   INTERFACE 
   
-    SUBROUTINE fcb_getDefect (rx,rb,rd,p_rcollection)
+    SUBROUTINE fcb_getDefect (ite,rx,rb,rd,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -19,6 +19,9 @@
   !</description>
 
   !<input>
+    ! Number of current iteration. 0=build initial defect
+    INTEGER, INTENT(IN)                           :: ite
+  
     ! Current iteration vector
     TYPE(t_vectorBlock), INTENT(IN)               :: rx
 
@@ -111,7 +114,7 @@
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
-    TYPE(t_collection), INTENT(INOUT), POINTER    :: p_rcollection
+    TYPE(t_collection), POINTER                   :: p_rcollection
   !</inputoutput>
   
   !<output>

@@ -164,6 +164,10 @@ CONTAINS
     CASE (FILTER_TOL20)
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
       CALL vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
+
+    CASE DEFAULT
+      PRINT *,'filter_applyFilterChainVec: Unknown filter.'
+      EXIT
     END SELECT
   
   END DO
@@ -221,6 +225,10 @@ CONTAINS
       ! The filter is the same for both, solution and defect filter,
       ! as the matrix modification is teh same (for now).
       CALL matfil_discreteBC (rmatrix)
+    
+    CASE DEFAULT
+      PRINT *,'filter_applyFilterChainMat: Unknown filter.'
+      EXIT
     
     END SELECT
   

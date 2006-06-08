@@ -10,7 +10,7 @@
 !#
 !# on a 2D domain for a scalar function u.
 !#
-!# There are three examples provided how to solve this problem:
+!# There are five examples provided how to solve this problem:
 !#
 !# The first example (module poisson_method1) discretises and solves this 
 !# equation in a direct way, just listing all commands necessary for 
@@ -25,6 +25,12 @@
 !# The communication is done using a problem-related structure. For the
 !# communication with callback routines during the assembly, a
 !# collection structure is set up.
+!#
+!# The fourth example (module poisson_method4) demonstrates the use of a
+!# BiCGStab-solver with ILU(0) preconditioner.
+!#
+!# The fith example (module poisson_method5) demonstrates the use of a
+!# Multigrid solver with with ILU(0) smoother and BiCGStab-coarse grid solver.
 !# </purpose>
 !##############################################################################
 

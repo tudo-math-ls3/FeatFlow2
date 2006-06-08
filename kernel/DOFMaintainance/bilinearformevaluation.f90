@@ -15,6 +15,10 @@
 !# 2.) bilf_buildMatrixScalar
 !#     -> Assembles the entries of a matrix, which structure was build
 !#        with bilf_createMatrixStructure before.
+!#
+!# 3.) bilf_createEmptyMatrixScalar
+!#     -> Allocates memory for en empty matrix whose structure was
+!#        created by bilf_createMatrixStructure.
 !# </purpose>
 !##############################################################################
 
@@ -1110,7 +1114,7 @@ CONTAINS
     BderTrialTempl(I1)=.TRUE.
 
     ! Then those of the test functions
-    I1=rform%Idescriptors(1,I)
+    I1=rform%Idescriptors(2,I)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
@@ -1783,7 +1787,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,i1,j,icurrentElementDistr,IDFG, ICUBP, IALBET, IA, IB
+  INTEGER :: i,i1,j,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB
   LOGICAL :: bIdenticalTrialAndTest, bnonparTest, bnonparTrial
   INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
   INTEGER(PREC_DOFIDX) :: JCOL0,JCOL
@@ -1912,7 +1916,7 @@ CONTAINS
     BderTrialTempl(I1)=.TRUE.
 
     ! Then those of the test functions
-    I1=rform%Idescriptors(1,I)
+    I1=rform%Idescriptors(2,I)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
@@ -2090,7 +2094,7 @@ CONTAINS
       ! As we evaluate only once, what the element must calculate is an
       ! OR combination of the BDER from trial and test functions.
       BderTrial = BderTrialTempl .OR. BderTestTempl
-      BderTest = BderTestTempl
+      BderTest = BderTrial
     ELSE
       p_IdofsTrial => IdofsTrial
       p_DbasTrial  => DbasTrial
@@ -2174,17 +2178,19 @@ CONTAINS
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
       DO IEL=1,IELmax-IELset+1
-
-        ! Loop through the trial functions
-        DO JDOFE=1,indofTrial
+      
+        ! For building the local matrices, we have first to
+        ! loop through the test functions (the "O"'s), as these
+        ! define the rows in the matrix.
+        DO IDOFE=1,indofTest
         
-          ! Row JDOFE of the local matrix corresponds 
-          ! to row=global DOF KDFG(JDOFE) in the global matrix.
-          ! This is the "X" in the above picture.
+          ! Row IDOFE of the local matrix corresponds 
+          ! to row=global DOF KDFG(IDOFE) in the global matrix.
+          ! This is one of the the "O"'s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
-          JCOL0=p_KLD(p_IdofsTrial(JDOFE,IEL))
+          JCOL0=p_KLD(IdofsTest(IDOFE,IEL))
           
           ! Now we loop through the other DOF's on the current element
           ! (the "O"'s).
@@ -2192,12 +2198,12 @@ CONTAINS
           ! and will therefore give an additive value to the global
           ! matrix.
           
-          DO IDOFE=1,indofTest
+          DO JDOFE=1,indofTrial
             
-            ! Get the global DOF of the "O" which interacts with 
-            ! our "X".
+            ! Get the global DOF of the "X" which interacts with 
+            ! our "O".
             
-            IDFG=IdofsTest(IDOFE,IEL)
+            JDFG=p_IdofsTrial(JDOFE,IEL)
             
             ! Starting in JCOL0 (which points to the beginning of
             ! the line initially), loop through the elements in
@@ -2205,7 +2211,7 @@ CONTAINS
             ! Jump out of the DO loop if we find the column.
             
             DO JCOL=JCOL0,NA
-              IF (p_KCOL(JCOL) .EQ. IDFG) EXIT
+              IF (p_KCOL(JCOL) .EQ. JDFG) EXIT
             END DO
 
             ! Because columns in the global matrix are sorted 
@@ -2340,11 +2346,10 @@ CONTAINS
               ! test and trial functions. The summand we calculate
               ! here will be:
               !
-              ! int_... ( phi_i )_IA  *  ( psi_j )_IB
+              ! a_ij  =  int_... ( psi_j )_IB  *  ( phi_i )_IA
               !
               ! -> Ix=0: function value, 
-              !      =1: first derivative, 
-              !      =2: 2nd derivative,...
+              !      =1: first derivative, ...
               !    as defined in the module 'derivative'.
               
               IA = rform%Idescriptors(1,IALBET)
@@ -2432,11 +2437,10 @@ CONTAINS
               ! test and trial functions. The summand we calculate
               ! here will be:
               !
-              ! int_... ( phi_i )_IA  *  ( psi_j )_IB
+              ! a_ij  =  int_... ( psi_j )_IA  *  ( phi_i )_IB
               !
               ! -> Ix=0: function value, 
-              !      =1: first derivative, 
-              !      =2: 2nd derivative,...
+              !      =1: first derivative, ...
               !    as defined in the module 'derivative'.
               
               IA = rform%Idescriptors(1,IALBET)
@@ -2532,4 +2536,59 @@ CONTAINS
 
   END SUBROUTINE
   
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bilf_createEmptyMatrixScalar (rmatrixScalar,bclear)
+  
+!<description>
+  ! This routine allocates memory for the matrix itself without computing
+  ! the entries. This can be used to attach an 'empty' matrix to a matrix
+  ! structure.
+!</description>
+
+!<input>
+  ! Whether to clear the matrix / fill it with 0.0.
+  LOGICAL, INTENT(IN) :: bclear
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER(PREC_MATIDX) :: NA
+  
+  NA = rmatrixScalar%NA
+
+  ! Which matrix structure do we have?
+  SELECT CASE (rmatrixScalar%cmatrixFormat) 
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+    
+    ! Check if the matrix entries exist. If not, allocate the matrix.
+    IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
+    
+      IF (bclear) THEN
+        CALL storage_new1D ('bilf_createEmptyMatrixScalar', 'DA', &
+                            NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+                            ST_NEWBLOCK_ZERO)
+      ELSE
+        CALL storage_new1D ('bilf_createEmptyMatrixScalar', 'DA', &
+                            NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+                            ST_NEWBLOCK_NOINIT)
+      END IF
+      
+    END IF
+    
+  CASE DEFAULT
+    PRINT *,'bilf_createEmptyMatrixScalar: Not supported matrix structure!'
+    STOP
+  END SELECT
+    
+  END SUBROUTINE
+
 END MODULE

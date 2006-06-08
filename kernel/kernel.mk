@@ -14,11 +14,11 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 afc_util.f90  \
 	discretebc.f90 linearsystemscalar.f90 linearsystemblock.f90 \
 	matrixmodification.f90 matrixfilters.f90 sortstrategy.f90 \
 	multilevelprojection.f90 domainintegration.f90 \
-	coarsegridcorrection.f90 \
+	coarsegridcorrection.f90 feevaluation.f90\
 	vectorfilters.f90 filtersupport.f90 linearsolver.f90 \
 	linearsolverautoinitialise.f90 collection.f90 \
 	bilinearformevaluation.f90 linearformevaluation.f90 \
-	bcassembly.f90
+	bcassembly.f90 matrixio.f90
 
 # path for the make where to look for which files
 
@@ -27,19 +27,22 @@ vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
-	$(KERNEL)/ProblemSupport $(KERNEL) $(INCOMING)
+	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
+	$(KERNEL) $(INCOMING)
 
 vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
-	$(KERNEL)/ProblemSupport $(KERNEL) $(INCOMING)
+	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
+	$(KERNEL) $(INCOMING)
 
 vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
-	$(KERNEL)/ProblemSupport $(KERNEL) $(INCOMING)
+	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
+	$(KERNEL) $(INCOMING)
 

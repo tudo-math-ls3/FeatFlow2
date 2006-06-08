@@ -55,6 +55,9 @@
 !#
 !# 8.) storage_copy
 !#     -> Copies the content of one array to another.
+!#
+!# 9.) storage_clear
+!#     -> Clears an array by overwriting the entries with 0.
 !# </purpose>
 !##############################################################################
 
@@ -775,6 +778,86 @@ CONTAINS
 
   ! And finally reset the handle to ST_NOHANDLE.
   ihandle = ST_NOHANDLE
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_clear (ihandle, rheap)
+
+!<description>
+  ! This routine clears an array identified by ihandle; all entries are
+  ! overwritten by 0.
+!</description>
+
+  !<inputoutput>
+  
+  ! Handle of the memory block to be releases
+  INTEGER :: ihandle
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+  !</inputouotput>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  IF (ihandle .LE. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_clear: Handle invalid!'
+    STOP
+  END IF
+  
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+  
+  ! Is the node associated at all?
+  IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_clear: Trying to release nonexistent handle!'
+    PRINT *,'Handle number: ',ihandle
+    STOP
+  END IF
+
+  ! What are we?
+  SELECT CASE (p_rnode%idimension)
+  CASE (1)
+    SELECT CASE (p_rnode%idataType)
+    CASE (ST_SINGLE)
+      p_rnode%p_Fsingle1D = 0.0_SP
+    CASE (ST_DOUBLE)
+      p_rnode%p_Ddouble1D = 0.0_DP
+    CASE (ST_INT)
+      p_rnode%p_Iinteger1D = 0_I32
+    END SELECT
+  CASE (2)
+    SELECT CASE (p_rnode%idataType)
+    CASE (ST_SINGLE)
+      p_rnode%p_Fsingle2D = 0.0_SP
+    CASE (ST_DOUBLE)
+      p_rnode%p_Ddouble2D = 0.0_DP
+    CASE (ST_INT)
+      p_rnode%p_Iinteger2D = 0_I32
+    END SELECT
+  CASE DEFAULT
+    PRINT *,'storage_clear: invalid dimension.'
+    STOP
+  END SELECT
 
   END SUBROUTINE
 

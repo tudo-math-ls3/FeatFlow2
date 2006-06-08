@@ -1811,6 +1811,36 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE lsysbl_clearMatrix (rmatrix)
+  
+!<description>
+  ! Clears the entries in all submatrices of a block matrix. 
+  ! All entries are overwritten with 0.0.
+!</description>
+  
+!<inputoutput>
+  ! The block matrix which is to be updated.
+  TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  INTEGER :: i,j
+  
+  ! Loop through all blocks and clear the matrices
+  ! block matrix
+  DO i=1,rmatrix%ndiagBlocks
+    DO j=1,rmatrix%ndiagBlocks
+      CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j))
+    END DO
+  END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE lsysbl_sortVectorInSitu (rvector,rtemp,bsort)
   
 !<description>

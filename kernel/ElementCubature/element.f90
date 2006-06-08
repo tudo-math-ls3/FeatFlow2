@@ -411,7 +411,7 @@ CONTAINS
   ! Element type identifier
   INTEGER, INTENT(IN)  :: ieltyp
   
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
@@ -500,7 +500,7 @@ CONTAINS
   ! Element type identifier
   INTEGER, INTENT(IN)  :: ieltyp
   
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Number of elements, the basis functions are evaluated at
@@ -542,7 +542,10 @@ CONTAINS
   LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
-  ! The coordinates are expected on the reference element.
+  ! The coordinates are expected 
+  ! - on the reference element, if ieltyp identifies a parametric element
+  ! - on the real element, if ieltyp identifies a nonparametric element
+  ! It's assumed that:
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -556,6 +559,7 @@ CONTAINS
   !<output>
   
   ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..EL_MAXNDER,1..npoints,nelements] of double
   ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
@@ -713,7 +717,7 @@ CONTAINS
   ! Element type identifier. Must be =EL_Q0.
   INTEGER, INTENT(IN)  :: ieltyp
   
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
@@ -792,7 +796,7 @@ CONTAINS
   ! Element type identifier. Must be =EL_Q0.
   INTEGER, INTENT(IN)  :: ieltyp
   
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Number of elements, the basis functions are evaluated at
@@ -1005,7 +1009,7 @@ CONTAINS
   ! Element type identifier. Must be =EL_Q1.
   INTEGER, INTENT(IN)  :: ieltyp
   
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
@@ -1140,7 +1144,7 @@ CONTAINS
   ! Element type identifier. Must be =EL_Q1.
   INTEGER, INTENT(IN)  :: ieltyp
 
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Number of elements, the basis functions are evaluated at
@@ -1536,7 +1540,7 @@ CONTAINS
   ! Element type identifier. Must be =EL_EM30.
   INTEGER, INTENT(IN)  :: ieltyp
   
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
@@ -1785,7 +1789,7 @@ CONTAINS
   ! Element type identifier. Must be =EL_EM30.
   INTEGER, INTENT(IN)  :: ieltyp
   
-  ! Number of points where to evalate the basis functions.
+  ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
   
   ! Number of elements, the basis functions are evaluated at

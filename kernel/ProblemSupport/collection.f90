@@ -663,12 +663,12 @@ CONTAINS
       i = p_rLevel%ivalueCount + 1
     ELSE
       ! Find an empty position in the array.
-      DO i=1,SIZE(p_Rvalues)
+      DO i=1,SIZE(p_rLevel%p_Rvalues)
         IF (p_rLevel%p_Rvalues(i)%itype .EQ. COLLCT_UNDEFINED) EXIT
       END DO
     
       ! This must work, otherwise ivalueCount is wrong!
-      IF (i .GT. SIZE(p_Rvalues)) THEN
+      IF (i .GT. SIZE(p_rLevel%p_Rvalues)) THEN
         PRINT *,'Error in collct_addvalue: Collection structure inconsistent!'
         STOP
       END IF
