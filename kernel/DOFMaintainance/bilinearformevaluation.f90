@@ -142,7 +142,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bilf_buildMatrixScalar (rdiscretisation,rform,bclear,rmatrixScalar,&
+  SUBROUTINE bilf_buildMatrixScalar (rform,bclear,rmatrixScalar,&
                                      fcoeff_buildMatrixSc_sim,rcollection)
   
 !<description>
@@ -152,15 +152,15 @@ CONTAINS
   ! In case the array for the matrix entries does not exist, the routine
   ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
+  ! For setting up the entries, the discretisation structure attached to
+  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! normally attached to the matrix by bilf_createMatrixStructure.
+  !
   ! The matrix must be unsorted when this routine is called, 
   ! otherwise an error is thrown.
 !</description>
 
 !<input>
-  ! The underlying discretisation structure which is to be used to
-  ! create the matrix.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
-  
   ! The bilinear form specifying the underlying PDE of the discretisation.
   TYPE(t_bilinearForm), INTENT(IN) :: rform
   
@@ -207,58 +207,57 @@ CONTAINS
   END IF
 
   ! Do we have a uniform triangulation? Would simplify a lot...
-  IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN 
-  
-    IF (rmatrixScalar%cdataType .EQ. ST_DOUBLE) THEN
-  
+  SELECT CASE (rmatrixScalar%p_rspatialDiscretisation%ccomplexity)
+  CASE (SPDISC_UNIFORM) 
+    ! Uniform discretisation; only one type of elements, e.g. P1 or Q1
+    SELECT CASE (rmatrixScalar%cdataType)
+    CASE (ST_DOUBLE) 
       ! Which matrix structure do we have?
       SELECT CASE (rmatrixScalar%cmatrixFormat) 
       CASE (LSYSSC_MATRIX9)
-        IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-          CALL bilf_buildMatrix9d_conf2 (rdiscretisation,rform,bclear,rmatrixScalar,&  
-                                        fcoeff_buildMatrixSc_sim,p_rcollection)
-        ELSE
-          CALL bilf_buildMatrix9d_conf2 (rdiscretisation,rform,bclear,rmatrixScalar)
-        END IF
+        !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
+          CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&  
+                                         fcoeff_buildMatrixSc_sim,rcollection)
+        !ELSE
+        !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
+        !END IF
       CASE (LSYSSC_MATRIX7)
       CASE DEFAULT
         PRINT *,'bilf_buildMatrix: Not supported matrix structure!'
         STOP
       END SELECT
-    
-    ELSE
+    CASE DEFAULT
       PRINT *,'bilf_buildMatrix: Single precision matrices currently not supported!'
-    END IF
-  
-  ! Do we have a uniform triangulation? Would simplify a lot...
-  ELSE IF (rdiscretisation%ccomplexity .EQ. SPDISC_CONFORMAL) THEN 
-  
-    IF (rmatrixScalar%cdataType .EQ. ST_DOUBLE) THEN
-  
+      STOP
+    END SELECT
+    
+  CASE (SPDISC_CONFORMAL) 
+    
+    ! Conformal discretisation; may have mixed P1/Q1 elements e.g.
+    SELECT CASE (rmatrixScalar%cdataType)
+    CASE (ST_DOUBLE) 
       ! Which matrix structure do we have?
       SELECT CASE (rmatrixScalar%cmatrixFormat) 
       CASE (LSYSSC_MATRIX9)
-        IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-          CALL bilf_buildMatrix9d_conf2 (rdiscretisation,rform,bclear,rmatrixScalar,&  
-                                        fcoeff_buildMatrixSc_sim,p_rcollection)
-        ELSE
-          CALL bilf_buildMatrix9d_conf2 (rdiscretisation,rform,bclear,rmatrixScalar)
-        END IF
+        !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
+          CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&  
+                                         fcoeff_buildMatrixSc_sim,rcollection)
+        !ELSE
+        !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
+        !END IF
       CASE (LSYSSC_MATRIX7)
       CASE DEFAULT
         PRINT *,'bilf_buildMatrix: Not supported matrix structure!'
         STOP
       END SELECT
-    
-    ELSE
+    CASE DEFAULT
       PRINT *,'bilf_buildMatrix: Single precision matrices currently not supported!'
-    END IF
-  
-  ELSE
-    PRINT *,'bilf_buildMatrix: General discretisation &
-            & not implemented!'
+      STOP
+    END SELECT
+  CASE DEFAULT
+    PRINT *,'bilf_buildMatrix: General discretisation not implemented!'
     STOP
-  END IF
+  END SELECT
 
   END SUBROUTINE
   
@@ -1741,7 +1740,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bilf_buildMatrix9d_conf2 (rdiscretisation,rform,bclear,rmatrixScalar,&
+  SUBROUTINE bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&
                                        fcoeff_buildMatrixSc_sim,rcollection)
   
 !<description>
@@ -1753,14 +1752,14 @@ CONTAINS
   ! In case the array for the matrix entries does not exist, the routine
   ! allocates memory in size of the matrix of the heap for the matrix entries.
   !
+  ! For setting up the entries, the discretisation structure attached to
+  ! the matrix is used (rmatrixScalar%p_rdiscretisation). This is
+  ! normally attached to the matrix by bilf_createMatrixStructure.
+  !
   ! Double-precision version.
 !</description>
 
 !<input>
-  ! The underlying discretisation structure which is to be used to
-  ! create the matrix.
-  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
-  
   ! The bilinear form specifying the underlying PDE of the discretisation.
   TYPE(t_bilinearForm), INTENT(IN) :: rform
   
@@ -1885,6 +1884,9 @@ CONTAINS
   ! and passing it to callback routines.
   TYPE(t_domainIntSubset) :: rintSubset
   
+  ! The discretisation - for easier access
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+  
   !REAL(DP), DIMENSION(11) :: DT
   
   !CHARACTER(LEN=20) :: CFILE
@@ -1955,8 +1957,16 @@ CONTAINS
     
   END IF
   
+  ! Get the discretisation
+  p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
+  
+  IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
+    PRINT *,'bilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
+    STOP
+  END IF
+  
   ! Get a pointer to the triangulation - for easier access.
-  p_rtriangulation => rdiscretisation%p_rtriangulation
+  p_rtriangulation => p_rdiscretisation%p_rtriangulation
   
   ! Let p_rcollection point to rcollection - or NULL if it's not
   ! given.
@@ -1982,10 +1992,10 @@ CONTAINS
   ! of trial and test functions) in the discretisation.
   !CALL ZTIME(DT(2))
 
-  DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+  DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
   
     ! Activate the current element distribution
-    p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+    p_elementDistribution => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
   
     ! Get the number of local DOF's for trial and test functions
     indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
@@ -2144,12 +2154,12 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   .TRUE.,IdofsTest)
                                    
       ! If the DOF's for the test functions are different, calculate them, too.
       IF (.NOT.bIdenticalTrialAndTest) THEN
-        CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+        CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                     .FALSE.,IdofsTrial)
       END IF
       !CALL ZTIME(DT(4))
@@ -2272,7 +2282,7 @@ CONTAINS
       IF (bnonparTrial .OR. bnonparTest .OR. (.NOT. rform%ballCoeffConstant)) THEN
       
         CALL trafo_calctrafo_sim (&
-             rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+             p_rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),p_DcubPtsReal)
       
@@ -2291,7 +2301,7 @@ CONTAINS
         rintSubset%ielementDistribution = icurrentElementDistr
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-        CALL fcoeff_buildMatrixSc_sim (rdiscretisation,rform, &
+        CALL fcoeff_buildMatrixSc_sim (p_rdiscretisation,rform, &
                   IELmax-IELset+1,ncubp,&
                   p_DcubPtsReal,p_IdofsTrial,IdofsTest,rintSubset,p_rcollection, &
                   Dcoefficients)

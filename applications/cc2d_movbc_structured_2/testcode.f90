@@ -335,7 +335,7 @@ CONTAINS
     rform%BconstantCoeff = .TRUE.
     !BILF_NELEMSIM = 100
     !BILF_NELEMSIM = 300000
-    CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,rmatrix,coeff_Laplace)
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
     CALL ZTIME(TTT2)
 
     PRINT *,'Time1 assembly: ',TTT1-TTT0
@@ -438,7 +438,7 @@ CONTAINS
     rform%BconstantCoeff = .TRUE.
     !BILF_NELEMSIM = 100
     !BILF_NELEMSIM = 300000
-    CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,rmatrix,coeff_Laplace)
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
     CALL ZTIME(TTT2)
 
     PRINT *,'Time1 assembly: ',TTT1-TTT0
@@ -734,7 +734,7 @@ CONTAINS
     rform%BconstantCoeff = .TRUE.
     !BILF_NELEMSIM = 100
     !BILF_NELEMSIM = 300000
-    CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,rmatrix,coeff_Laplace)
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
     CALL ZTIME(TTT2)
 
     PRINT *,'Time1 assembly: ',TTT1-TTT0

@@ -697,10 +697,9 @@ CONTAINS
       ! We pass our collection structure as well to this routine, 
       ! so the callback routine has access to everything what is
       ! in the collection.
-      CALL bilf_buildMatrixScalar (p_rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation,&
-                                  rform,.TRUE.,&
-                                  p_rmatrix%RmatrixBlock(1,1),coeff_burgers,&
-                                  p_rcollection)
+      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+                                   p_rmatrix%RmatrixBlock(1,1),coeff_burgers,&
+                                   p_rcollection)
 
       ! Remove the vector from the collection - not necessary anymore.
       CALL collct_deletevalue (p_rcollection,'RX')

@@ -240,7 +240,7 @@ CONTAINS
     ! As long as we use constant coefficients, this routine is not used.
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical data.
-    CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,&
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,&
                                  p_rmatrix%RmatrixBlock(1,1),coeff_Laplace)
     
     ! Now we want to build up the right hand side. At first we need a block

@@ -298,7 +298,7 @@ CONTAINS
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is
     ! in the collection.
-    CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,&
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,&
                                  p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
                                  rcollection)
                                  

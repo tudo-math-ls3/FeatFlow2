@@ -55,7 +55,7 @@ CONTAINS
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
 
-    ! Variable definitions.
+    ! Definitions of variables.
     !
     ! We need a couple of variables for this problem. Let's see...
     !
@@ -187,7 +187,7 @@ CONTAINS
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical
     ! data.
-    CALL bilf_buildMatrixScalar (p_rdiscretisation,rform,.TRUE.,rmatrix,coeff_Laplace)
+    CALL bilf_buildMatrixScalar (rform,.TRUE.,rmatrix,coeff_Laplace)
     
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
