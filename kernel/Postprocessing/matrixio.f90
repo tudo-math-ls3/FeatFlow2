@@ -115,14 +115,14 @@ MODULE matrixio
   !</description>
     
   !<input>
-    ! matrix: array [1..nrow,1..ncol] of double
-    REAL(DP), DIMENSION(nrow,ncol), INTENT(IN) :: Da
-    
     ! number of rows
     INTEGER(I32), INTENT(IN) :: nrow
     
     ! number of columns
     INTEGER(I32), INTENT(IN) :: ncol
+    
+    ! matrix: array [1..nrow,1..ncol] of double
+    REAL(DP), DIMENSION(nrow,ncol), INTENT(IN) :: Da
     
     ! name of the matrix
     CHARACTER(len=*), INTENT(IN) :: sarray
@@ -216,6 +216,12 @@ MODULE matrixio
   !</description>
     
   !<input>
+    ! number of rows
+    INTEGER(I32), INTENT(IN) :: nrow
+    
+    ! number of columns; must be =nrow for structure-7 matrices
+    INTEGER(I32), INTENT(IN) :: ncol
+    
     ! matrix: array [1..na] of double
     REAL(DP), DIMENSION(:), INTENT(IN) :: Da
     
@@ -224,12 +230,6 @@ MODULE matrixio
     
     ! Row structure of the matrix
     INTEGER(I32), DIMENSION(nrow+1), INTENT(IN) :: Irow
-    
-    ! number of rows
-    INTEGER(I32), INTENT(IN) :: nrow
-    
-    ! number of columns; must be =nrow for structure-7 matrices
-    INTEGER(I32), INTENT(IN) :: ncol
     
     ! name of the matrix
     CHARACTER(len=*), INTENT(IN) :: sarray
