@@ -10,7 +10,7 @@
                   IdofsTrial,IdofsTest,rdomainIntSubset, p_rcollection,&
                   Dcoefficients)
     
-    USE BasicGeometry
+    USE basicgeometry
     USE triangulation
     USE collection
     USE scalarpde

@@ -32,7 +32,7 @@
   !<inputoutput>
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
-    TYPE(t_collection), INTENT(INOUT), POINTER    :: p_rcollection
+    TYPE(t_collection), POINTER                   :: p_rcollection
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
@@ -66,7 +66,7 @@
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
-    TYPE(t_collection), INTENT(INOUT), POINTER    :: p_rcollection
+    TYPE(t_collection), POINTER                   :: p_rcollection
     
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on call to the callback routine.

@@ -2056,8 +2056,8 @@ CONTAINS
     ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    ALLOCATE(KENTRY(indofTest,indofTrial,nelementsPerBlock))
-    ALLOCATE(Dentry(indofTest,indofTrial))
+    ALLOCATE(KENTRY(indofTrial,indofTest,nelementsPerBlock))
+    ALLOCATE(Dentry(indofTrial,indofTest))
     
     ! In case of nonconstant coefficients in that part of the matrix, we
     ! need an additional array to save all the coefficients:
@@ -2166,7 +2166,7 @@ CONTAINS
       ! giving an additive contribution to the system matrix.
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! KENTRY(1..indofTest,1..indofTrial) receives the position 
+      ! KENTRY(1..indofTrail,1..indofTest) receives the position 
       !   in the global system matrix, where the corresponding value 
       !   has to be added to.
       ! (The corresponding contrbutions can be saved separately, 
@@ -2222,8 +2222,12 @@ CONTAINS
             
             ! Save the position of the matrix entry into the local
             ! matrix.
+            ! Note that a column in KENTRY corresponds to a row in
+            ! the real matrix. We aligned KENTRY/DENTRY this way to get
+            ! higher speed of the assembly routine, since this leads
+            ! to better data locality.
             
-            KENTRY(IDOFE,JDOFE,IEL)=JCOL
+            KENTRY(JDOFE,IDOFE,IEL)=JCOL
             
           END DO ! IDOFE
           
@@ -2344,7 +2348,7 @@ CONTAINS
             
               ! Get from Idescriptors the type of the derivatives for the 
               ! test and trial functions. The summand we calculate
-              ! here will be:
+              ! here will be added to the matrix entry:
               !
               ! a_ij  =  int_... ( psi_j )_IB  *  ( phi_i )_IA
               !
@@ -2362,22 +2366,22 @@ CONTAINS
             
               ! Now loop through all possible combinations of DOF's
               ! in the current cubature point. The outer loop
-              ! loops through the "X" in the above picture,
-              ! the trial functions:
+              ! loops through the "O"'s in the above picture,
+              ! the test functions:
 
-              DO JDOFE=1,indofTrial
+              DO IDOFE=1,indofTest
               
-                ! Get the value of the (trial) basis function 
-                ! phi_i (our "X") in the cubature point:
-                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
+                ! Get the value of the (test) basis function 
+                ! phi_i (our "O") in the cubature point:
+                DB = DbasTest(IDOFE,IB,ICUBP,IEL)
                 
-                !Perform an inner loop through the other DOF's
-                ! (the "O"'s). 
+                ! Perform an inner loop through the other DOF's
+                ! (the "X"). 
 
-                DO IDOFE=1,indofTest
+                DO JDOFE=1,indofTrial
                 
                   ! Get the value of the basis function 
-                  ! psi_j (our "O") in the cubature point. 
+                  ! psi_j (our "X") in the cubature point. 
                   ! Them multiply:
                   !    DB * DBAS(..) * AUX
                   ! ~= phi_i * psi_j * coefficient * cub.weight
@@ -2386,15 +2390,15 @@ CONTAINS
                   !
                   ! Simply summing up DB * DBAS(..) * AUX would give
                   ! the coefficient of the local matrix. We save this
-                  ! contriobution in the local matrix.
+                  ! contribution in the local matrix.
 
-                  !JCOLB = KENTRY(IDOFE,JDOFE,IEL)
-                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
-                  Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
+                  !JCOLB = KENTRY(JDOFE,IDOFE,IEL)
+                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
+                  Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
                 
-                END DO
+                END DO ! JDOFE
               
-              END DO ! JDOFE
+              END DO ! IDOFE
               
             END DO ! IALBET
 
@@ -2402,9 +2406,9 @@ CONTAINS
           
           ! Incorporate the local matrices into the global one.
           ! KENTRY gives the position of the additive contributions in Dentry.
-          DO JDOFE=1,indofTrial
-            DO IDOFE=1,indofTest
-              p_DA(KENTRY(IDOFE,JDOFE,IEL)) = p_DA(KENTRY(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
+          DO IDOFE=1,indofTest
+            DO JDOFE=1,indofTrial
+              p_DA(KENTRY(JDOFE,IDOFE,IEL)) = p_DA(KENTRY(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
             END DO
           END DO
 
@@ -2435,7 +2439,7 @@ CONTAINS
             
               ! Get from Idescriptors the type of the derivatives for the 
               ! test and trial functions. The summand we calculate
-              ! here will be:
+              ! here will be added to the matrix entry:
               !
               ! a_ij  =  int_... ( psi_j )_IA  *  ( phi_i )_IB
               !
@@ -2454,23 +2458,22 @@ CONTAINS
             
               ! Now loop through all possible combinations of DOF's
               ! in the current cubature point. The outer loop
-              ! loops through the "X" in the above picture,
-              ! the trial functions:
+              ! loops through the "O" in the above picture,
+              ! the test functions:
 
-              DO JDOFE=1,indofTrial
+              DO IDOFE=1,indofTest
+                
+                ! Get the value of the (test) basis function 
+                ! phi_i (our "O") in the cubature point:
+                DB = DbasTest(IDOFE,IB,ICUBP,IEL)
+                
+                ! Perform an inner loop through the other DOF's
+                ! (the "X"). 
+
+                DO JDOFE=1,indofTrial
               
-                ! Get the value of the (trial) basis function 
-                ! phi_i (our "X") in the cubature point:
-                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
-                
-                !Perform an inner loop through the other DOF's
-                ! (the "O"'s). 
-
-                DO IDOFE=1,indofTest
-                
                   ! Get the value of the basis function 
-                  ! psi_j (our "O") in the cubature point. This is
-                  ! DBAS(KDFL(IDOFE),IB).
+                  ! psi_j (our "X") in the cubature point. 
                   ! Them multiply:
                   !    DB * DBAS(..) * AUX
                   ! ~= phi_i * psi_j * coefficient * cub.weight
@@ -2479,11 +2482,11 @@ CONTAINS
                   !
                   ! Simply summing up DB * DBAS(..) * AUX would give
                   ! the coefficient of the local matrix. We save this
-                  ! contriobution in the local matrix of element IEL.
+                  ! contribution in the local matrix of element IEL.
 
-                  !JCOLB = KENTRY(IDOFE,JDOFE,IEL)
-                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
-                  Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
+                  !JCOLB = KENTRY(JDOFE,IDOFE,IEL)
+                  !p_DA(JCOLB) = p_DA(JCOLB) + DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
+                  Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
                 
                 END DO
               
@@ -2495,9 +2498,9 @@ CONTAINS
           
           ! Incorporate the local matrices into the global one.
           ! KENTRY gives the position of the additive contributions in Dentry.
-          DO JDOFE=1,indofTrial
-            DO IDOFE=1,indofTest
-              p_DA(KENTRY(IDOFE,JDOFE,IEL)) = p_DA(KENTRY(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
+          DO IDOFE=1,indofTest
+            DO JDOFE=1,indofTrial
+              p_DA(KENTRY(JDOFE,IDOFE,IEL)) = p_DA(KENTRY(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
             END DO
           END DO
 

@@ -18,7 +18,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 afc_util.f90  \
 	vectorfilters.f90 filtersupport.f90 linearsolver.f90 \
 	linearsolverautoinitialise.f90 collection.f90 \
 	bilinearformevaluation.f90 linearformevaluation.f90 \
-	bcassembly.f90 matrixio.f90
+	bcassembly.f90 matrixio.f90 nonlinearsolver.f90
 
 # path for the make where to look for which files
 
@@ -28,6 +28,7 @@ vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
+	$(KERNEL)/NonlinearSolver \
 	$(KERNEL) $(INCOMING)
 
 vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
@@ -36,6 +37,7 @@ vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
+	$(KERNEL)/NonlinearSolver \
 	$(KERNEL) $(INCOMING)
 
 vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
@@ -44,5 +46,6 @@ vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
+	$(KERNEL)/NonlinearSolver \
 	$(KERNEL) $(INCOMING)
 

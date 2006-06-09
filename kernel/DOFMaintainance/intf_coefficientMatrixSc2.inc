@@ -12,7 +12,7 @@
                   DcubPtsRef,DcubPtsReal,IdofsTrial,IdofsTest,Djac,Ddetj,p_rcollection, &
                   Dcoefficients)
     
-    USE BasicGeometry
+    USE basicgeometry
     USE triangulation
     USE collection
     USE scalarpde

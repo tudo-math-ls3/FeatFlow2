@@ -2761,7 +2761,7 @@ CONTAINS
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_PARAMETERS) THEN
+    IF (p_rvalue%itype .NE. COLLCT_LINSOL) THEN
       PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
