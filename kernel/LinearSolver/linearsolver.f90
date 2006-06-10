@@ -3641,10 +3641,28 @@ CONTAINS
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld, p_Kcol
   REAL(DP), DIMENSION(:), POINTER :: p_DA
   INTEGER(PREC_MATIDX) :: lu,jlu,ilup
-  INTEGER, DIMENSION(:), POINTER :: p_Iwork
-  INTEGER :: h_Iwork
+  INTEGER, DIMENSION(:), POINTER :: p_Iwork,p_Iwork2
+  INTEGER :: h_Iwork,h_Iwork2
+  INTEGER, DIMENSION(1) :: IworkTemp
   INTEGER :: ifill
   REAL(DP) :: drelax
+  
+  ! Declare our ILUS-routine from SPLIB as interface to be sure, parameter
+  ! interfaces are checked by the compiler.
+  INTERFACE
+    SUBROUTINE ilus(n,a,colind,rwptr,&
+                  s,relax,&
+                  lu,jlu,ilup,&
+                  iwork,maxstr,&
+                  ierr,mneed)
+      INTEGER   n, iwork(*), s,  ierr, rwptr(*), colind(*)
+      DOUBLE PRECISION a(*), relax
+      INTEGER  mneed, maxstr, nzlu, remain
+      LOGICAL milu
+      INTEGER lu, jlu, ilup
+    END SUBROUTINE
+  END INTERFACE
+  
   
   ! A-priori we have no error...
   ierror = LINSOL_ERR_NOERROR
@@ -3703,14 +3721,16 @@ CONTAINS
   ifill = rsolverNode%p_rsubnodeMILUs1x1%ifill
   drelax = rsolverNode%p_rsubnodeMILUs1x1%drelax
   
+  ! Pass IworkTemp in the first call, not p_Iwork - as p_Iwork points
+  ! to NULL. This would be a pill that makes some compilers die ^^.
   CALL ilus(p_rmatrixSc%NEQ,p_DA,p_Kcol,p_Kld,&
             ifill,drelax,&
             lu,jlu,ilup,&
-            p_Iwork,maxstr,&
+            IworkTemp,maxstr,&
             ierr,mneed)
             
   !maxstr = MAX(mneed,3*p_rmatrixSc%NA+(3+4*ifill)*p_rmatrixSc%NEQ)
-  maxstr = MAX(mneed,3*p_rmatrixSc%NA+3*p_rmatrixSc%NEQ)+10000
+  maxstr = MAX(mneed,3*p_rmatrixSc%NA+3*p_rmatrixSc%NEQ)
   DO
     ! Allocate the memory
     CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', maxstr, &
@@ -3748,14 +3768,14 @@ CONTAINS
     ! If less than the half of the memory ILU wanted to have is used,
     ! we reallocate the memory. It does not make sense to have that much
     ! waste!
-!    IF (mneed .LT. MAXSTR/2) THEN
-!      CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', mneed, &
-!                          ST_INT, h_Iwork2, ST_NEWBLOCK_NOINIT)
-!      CALL storage_getbase_int(h_Iwork2,p_Iwork2)
-!      CALL lalg_vectorCopyInt (p_Iwork(1:SIZE(p_Iwork2)),p_Iwork2)
-!      CALL storage_free (h_Iwork)
-!      h_Iwork = h_Iwork2
-!    END IF
+    IF (mneed .LT. MAXSTR/2) THEN
+      CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', mneed, &
+                          ST_INT, h_Iwork2, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_int(h_Iwork2,p_Iwork2)
+      CALL lalg_vectorCopyInt (p_Iwork(1:SIZE(p_Iwork2)),p_Iwork2)
+      CALL storage_free (h_Iwork)
+      h_Iwork = h_Iwork2
+    END IF
     ! Save the handle and the matrix parameters to the MILU structure
     rsolverNode%p_rsubnodeMILUs1x1%h_Idata = h_Iwork
     rsolverNode%p_rsubnodeMILUs1x1%lu = lu
@@ -3888,6 +3908,20 @@ CONTAINS
   INTEGER(PREC_MATIDX) :: lu,jlu,ilup
   INTEGER, DIMENSION(:), POINTER :: p_Iwork
   INTEGER :: h_Iwork
+
+  ! Declare SPLIB-routine as interface to make sure, procedure interfaces
+  ! are checked by the compiler
+  INTERFACE  
+    SUBROUTINE lusolt (n, x, lu, jlu, uptr)
+      INTEGER jlu(*),uptr(*),n
+      DOUBLE PRECISION x(n)
+      ! Note that we changed the interface here in contrast to the original
+      ! LUSOLT routine - to make it possible to pass an integer array
+      ! as double precision array. Bad practise, but SPLIB is set up 
+      ! this way :(
+      INTEGER lu(*)
+    END SUBROUTINE
+  END INTERFACE
   
   IF (rd%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'(M)ILU(s) only supports double precision vectors!'
@@ -3906,7 +3940,7 @@ CONTAINS
 
   ! Solve the system. Call SPLIB, this overwrites the defect vector
   ! with the preconditioned one.
-  CALL lusolt (SIZE(p_Dd),p_Dd, p_Iwork(lu), p_Iwork(jlu), p_Iwork(ilup))
+  CALL lusolt (SIZE(p_Dd),p_Dd, p_Iwork(lu:), p_Iwork(jlu:), p_Iwork(ilup:))
   
   END SUBROUTINE
   
