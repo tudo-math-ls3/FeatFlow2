@@ -71,6 +71,9 @@
 !#
 !# 17.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
+!#
+!# 18.) lsyssc_convertMatrix
+!#      -> Allows to convert a matrix to another matrix structure.
 !# </purpose>
 !##############################################################################
 
@@ -1241,7 +1244,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_convertMatrix (rmatrix,cmatrixFormat)
+  SUBROUTINE lsyssc_convertMatrix (rmatrix,cmatrixFormat,bresortEntries)
   
 !<description>
   ! Tries to convert a matrix rmatrix into a different matrix format.
@@ -1252,6 +1255,11 @@ CONTAINS
 !<input>
   ! Destination format of the matrix. One of the LSYSSC_MATRIXx constants.
   INTEGER, INTENT(IN)                 :: cmatrixFormat
+  
+  ! OPTIONAL: Whether to resort the entries of the matrix. Standard = TRUE.
+  ! If set to FALSE, the entries are not resorted; helpful to set up
+  ! convert only the structure, not the entries of a matrix.
+  LOGICAL, INTENT(IN), OPTIONAL       :: bresortEntries
 !</input>
   
 !<inputoutput>
@@ -1266,12 +1274,16 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: p_Ddata
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
+  LOGICAL :: bentries
 
   ! Matrix is already in that format.
   IF (rmatrix%cmatrixFormat .EQ. cmatrixFormat) RETURN
   
   ! Empty matrix
   IF (rmatrix%NEQ .LE. 0) RETURN 
+  
+  bentries = .TRUE.
+  IF (PRESENT(bresortEntries)) bentries = bresortEntries
 
   ! Which matrix type do we have?
   SELECT CASE (rmatrix%cmatrixFormat)
@@ -1293,7 +1305,7 @@ CONTAINS
         END IF
       END DO
       
-      IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
+      IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       
         ! No matrix entries, only resort the structure
         CALL unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
@@ -1343,7 +1355,7 @@ CONTAINS
             rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
 
-      IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
+      IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       
         ! No matrix entries, only resort the structure
         CALL sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
