@@ -35,6 +35,7 @@ MODULE poisson_method5
   USE triangulation
   USE spatialdiscretisation
   USE sortstrategy
+  USE coarsegridcorrection
   
   USE collection
     
@@ -226,7 +227,7 @@ CONTAINS
       ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
       NULLIFY(rproblem%RlevelInfo(i)%p_rdiscretisation)
       CALL spdiscr_initDiscr_simple (rproblem%RlevelInfo(i)%p_rdiscretisation, &
-                                    EL_E011,CUB_TRZ,&
+                                    EL_E011,CUB_G2X2,&
                                     p_rtriangulation, p_rboundary)
     END DO
                                    
@@ -334,8 +335,8 @@ CONTAINS
       CALL collct_setvalue_int(rcollection,'LAPLACE-CM',h_Iresort(1),.TRUE.,i)
       
       ! Resort the matrix according to the resorting strategy.
-      CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
-                              SSTRAT_CM,h_Iresort(1))
+      !CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
+      !                        SSTRAT_CM,h_Iresort(1))
       
     END DO
 
@@ -654,7 +655,6 @@ CONTAINS
     
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock) :: rprojection
-    TYPE(t_spatialDiscretisation), DIMENSION(1) :: RspatialDiscretisation
 
     ! One level of multigrid
     TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
@@ -725,11 +725,11 @@ CONTAINS
 
       ELSE
         ! Set up Jacobi smoother for multigrid would be:
-        ! CALL linsol_initJacobi (p_rsmoother)
+         CALL linsol_initJacobi (p_rsmoother)
 
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-        CALL linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+        !CALL linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
         CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
       END IF
     

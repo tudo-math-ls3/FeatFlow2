@@ -132,7 +132,7 @@ CONTAINS
 
 !</subroutine>
 
-  IF (rcoarseGridCorrection%dalphaMax .LE. rcoarseGridCorrection%dalphaMax) THEN
+  IF (rcoarseGridCorrection%dalphaMax .LE. rcoarseGridCorrection%dalphaMin) THEN
     dalpha = 1.0_DP
   ELSE
     ! Which method to use?

@@ -10,25 +10,25 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) lalg_vectorCopy
+!# 1.) lalg_vectorCopyXXX
 !#     -> Copy a vector to another (former LCPx)
 !#
-!# 2.) lalg_vectorScale
+!# 2.) lalg_vectorScaleXXX
 !#     -> Scale a vector (former LSCx)
 !#
-!# 3.) lalg_vectorClear
+!# 3.) lalg_vectorClearXXX
 !#     -> Clear a vector (former LCLx)
 !#
-!# 4.) lalg_vectorLinearComb
+!# 4.) lalg_vectorLinearCombXXX
 !#     -> Linear combination of two vectors (former LLCx)
 !#
-!# 5.) lalg_scalarProduct
+!# 5.) lalg_scalarProductXXX
 !#     -> Calculate the scalar product of two vectors (former LSPx)
 !#
-!# 6.) lalg_norm
+!# 6.) lalg_normXXX
 !#     -> Calculate a specific norm of a vector
 !#
-!# 7.) lalg_vectorSort
+!# 7.) lalg_vectorSortXXX
 !#     -> Resort the entries of a vector according to a given permutation
 !#
 !# </purpose>

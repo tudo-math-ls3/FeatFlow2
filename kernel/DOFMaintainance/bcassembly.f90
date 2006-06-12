@@ -750,10 +750,10 @@ CONTAINS
               p_IelementsAtBoundary(Iminidx(1):Imaxidx(1)), .FALSE., Idofs)
   END IF
             
-  IF (icount2 .GE. 1) THEN
+  IF (icount .GE. 2) THEN
     CALL dof_locGlobMapping_mult(rspatialDiscretisation, &
               p_IelementsAtBoundary(Iminidx(2):Imaxidx(2)), .FALSE., &
-              Idofs( :, Imaxidx(1)-Iminidx(1)+1 : ))
+              Idofs( :, Imaxidx(1)-Iminidx(1)+1+1 : ))
   END IF
                                
   ! Loop through the index sets
@@ -842,7 +842,7 @@ CONTAINS
       CASE (EL_EM30)
 
         ! Edge inside? -> Calculate integral mean value over the edge
-        IF ( (I .GE. IminEdge(ipart)) .AND. (I .LT. ImaxEdge(ipart)) ) THEN
+        IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
           CALL fgetBoundaryValues (rspatialDiscretisation,rbcRegion,ielement, &
                                   DISCBC_NEEDINTMEAN,ipoint1,p_DvertexParameterValue(I), &
                                   p_rcollection, Dvalues)
