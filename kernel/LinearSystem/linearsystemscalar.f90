@@ -1241,6 +1241,330 @@ CONTAINS
   
 !<subroutine>
   
+  SUBROUTINE lsyssc_convertMatrix (rmatrix,cmatrixFormat)
+  
+!<description>
+  ! Tries to convert a matrix rmatrix into a different matrix format.
+  ! If the matrix cannot be converted (due to format incompatibility),
+  ! an error is thrown.
+!</description>
+  
+!<input>
+  ! Destination format of the matrix. One of the LSYSSC_MATRIXx constants.
+  INTEGER, INTENT(IN)                 :: cmatrixFormat
+!</input>
+  
+!<inputoutput>
+  ! Matrix to convert.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER(PREC_VECIDX) :: i
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
+
+  ! Matrix is already in that format.
+  IF (rmatrix%cmatrixFormat .EQ. cmatrixFormat) RETURN
+  
+  ! Empty matrix
+  IF (rmatrix%NEQ .LE. 0) RETURN 
+
+  ! Which matrix type do we have?
+  SELECT CASE (rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9)
+  
+    SELECT CASE (rmatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX7)
+    
+      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+
+      ! Check that the matrix can be converted. There's a format error
+      ! if there's no diagonal element.
+      DO i=1,rmatrix%NEQ
+        IF (p_Kdiagonal(i) .NE. i) THEN
+          PRINT *,'lsyssc_convertMatrix: incompatible Format-9 matrix!'
+          STOP
+        END IF
+      END DO
+      
+      IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
+      
+        ! No matrix entries, only resort the structure
+        CALL unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+        
+        ! Release diagonal
+        CALL storage_free (rmatrix%h_Kdiagonal)
+
+        rmatrix%cmatrixFormat = LSYSSC_MATRIX7
+      
+      ELSE
+    
+        ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
+        ! routine below.
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+        
+          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
+          ! Release diagonal
+          CALL storage_free (rmatrix%h_Kdiagonal)
+
+          rmatrix%cmatrixFormat = LSYSSC_MATRIX7
+          
+        CASE DEFAULT
+          PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
+          STOP
+        END SELECT
+
+      END IF
+
+    CASE DEFAULT
+      PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
+      STOP
+    END SELECT
+
+  CASE (LSYSSC_MATRIX7)
+    SELECT CASE (rmatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX9)
+
+      ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
+      ! routine below.
+      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+
+      ! Create a pointer to the diagonal
+      CALL storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
+            rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+
+      IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
+      
+        ! No matrix entries, only resort the structure
+        CALL sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+        
+        rmatrix%cmatrixFormat = LSYSSC_MATRIX9
+      
+      ELSE
+
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
+          
+          rmatrix%cmatrixFormat = LSYSSC_MATRIX9
+          
+        CASE DEFAULT
+          PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
+          STOP
+        END SELECT
+      
+      END IF
+      
+    CASE DEFAULT
+      PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
+      STOP
+    END SELECT
+
+  CASE DEFAULT
+    PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
+    STOP
+  END SELECT
+  
+  CONTAINS
+
+    !----------------------------------------------------------------  
+    ! Sorts the entries in each row of the matrix in ascending order.
+    ! The input matrix is assumed to be in storage technique 7 with the 
+    ! first element in each row to be the diagonal element!
+    !
+    ! Double precision version
+    SUBROUTINE sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
+
+  !<input>
+    ! Row pointer in the matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
+
+    ! Dimension of the matrix
+    INTEGER(I32), INTENT(IN) :: neq
+  !</input>
+
+  !<inputoutput>
+    ! OPTIONAL:
+    ! On input:  the matrix entries to be resorted
+    ! On output: the resorted matrix entries
+    REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
+    
+    ! On input:  the column numbers to be resorted
+    ! On output: the resorted column numbers
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
+  !</inputoutput>
+  
+  !<output>
+    ! Pointers to the diagonal entries of the matrix.
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(OUT) :: Kdiagonal
+  !</output>
+
+  !</subroutine>
+
+    ! local variables
+    REAL(DP) :: aux
+    INTEGER(I32) :: i, j
+
+    IF (PRESENT(Da)) THEN
+
+      ! loop through each row
+      DO i = 1, neq
+
+        ! Take the diagonal element
+        aux = Da(Kld(i))
+
+        ! Loop through each column in this row.
+        ! Shift every entry until the diagonal is reached.
+        DO j = Kld(i)+1, Kld(i+1)-1
+
+          ! Check if we reached the position of the diagonal entry...
+          IF (Kcol(J)>i) EXIT
+
+          Kcol(j-1) = KCOL(j)
+          Da(j-1) = Da(j)
+
+        END DO
+
+        ! If we have reached the diagonal, we can stop and save our
+        ! diagonal entry from the first position there. The rest of the
+        ! line is in ascending order according to the specifications of
+        ! storage technique 7.
+
+        Kcol(j-1) = i
+        Da(j-1) = aux
+        
+        ! Save the position of the diagonal entry
+        Kdiagonal(i) = j
+
+      END DO
+            
+    ELSE
+
+      ! loop through each row
+      DO i = 1, neq
+
+        ! Loop through each column in this row.
+        ! Shift every entry until the diagonal is reached.
+        DO j = Kld(i)+1, Kld(i+1)-1
+
+          ! Check if we reached the position of the diagonal entry...
+          IF (Kcol(J)>i) EXIT
+
+          Kcol(j-1) = KCOL(j)
+
+        END DO
+
+        ! If we have reached the diagonal, we can stop and save our
+        ! diagonal entry from the first position there. The rest of the
+        ! line is in ascending order according to the specifications of
+        ! storage technique 7.
+
+        Kcol(j-1) = i
+        
+        ! Save the position of the diagonal entry
+        Kdiagonal(i) = j
+
+      END DO
+            
+    END IF
+            
+    END SUBROUTINE
+  
+    !----------------------------------------------------------------  
+    ! Unorts the entries in each row of the matrix in ascending order.
+    ! This searches in each row of a matrix for the diagonal element
+    ! and shifts it to the front.
+    !
+    ! Double precision version
+    SUBROUTINE unsortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
+
+  !<input>
+    ! Row pointer in the matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
+
+    ! Dimension of the matrix
+    INTEGER(I32), INTENT(IN) :: neq
+
+    ! Pointers to the diagonal entries of the matrix.
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kdiagonal
+  !</input>
+
+  !<inputoutput>
+    ! OPTIONAL:
+    ! On input:  the matrix entries to be resorted
+    ! On output: the resorted matrix entries
+    REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
+    
+    ! On input:  the column numbers to be resorted
+    ! On output: the resorted column numbers
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
+  !</inputoutput>
+
+  !</subroutine>
+
+    ! local variables
+    REAL(DP) :: aux
+    INTEGER(I32) :: i, j
+  
+    IF (PRESENT(Da)) THEN
+
+      ! loop through each row
+      DO i = 1, neq
+
+        ! Take the diagonal element
+        aux = Da(Kdiagonal(i))
+
+        ! Loop through each column in this row.
+        ! Shift every entry one element to the right.
+        DO j = Kdiagonal(i)-1,Kld(i)+1,-1
+
+          Kcol(j) = Kcol(j-1)
+          Da(j) = Da(j-1)
+
+        END DO
+        
+        ! Put the diagonal to the front.
+        Kcol(Kdiagonal(i)) = i
+        Da(Kdiagonal(i)) = aux
+        
+      END DO
+      
+    ELSE
+      ! loop through each row
+      DO i = 1, neq
+
+        ! Loop through each column in this row.
+        ! Shift every entry one element to the right.
+        DO j = Kdiagonal(i)-1,Kld(i)+1,-1
+          Kcol(j) = Kcol(j-1)
+        END DO
+        
+        ! Put the diagonal to the front.
+        Kcol(Kdiagonal(i)) = i
+        
+      END DO
+
+    END IF
+            
+    END SUBROUTINE
+  
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+  
   SUBROUTINE lsyssc_sortVectorInSitu (rvector,rtemp,isortStrategy,h_IsortPermutation)
   
 !<description>

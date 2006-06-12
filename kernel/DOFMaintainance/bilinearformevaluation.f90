@@ -124,7 +124,8 @@ CONTAINS
       ! Call the creation routine for structure 9:
       CALL bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imem)
       ! Translate to matrix structure 7:
-      PRINT *,'structure 9->7 not implemented yet!'
+      CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
+      
     CASE DEFAULT
       PRINT *,'bilf_createMatrixStructure: Not supported matrix structure!'
       STOP
@@ -222,6 +223,16 @@ CONTAINS
         !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
         !END IF
       CASE (LSYSSC_MATRIX7)
+        ! Convert structure 7 to structure 9.
+        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
+        
+        ! Create the matrix in structure 9
+        CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&  
+                                       fcoeff_buildMatrixSc_sim,rcollection)
+                                       
+        ! Convert back to structure 7
+        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
+                                       
       CASE DEFAULT
         PRINT *,'bilf_buildMatrix: Not supported matrix structure!'
         STOP
@@ -245,7 +256,18 @@ CONTAINS
         !ELSE
         !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
         !END IF
+        
       CASE (LSYSSC_MATRIX7)
+        ! Convert structure 7 to structure 9
+        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX9)
+        
+        ! Create the matrix in structure 9
+        CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar,&  
+                                       fcoeff_buildMatrixSc_sim,rcollection)
+                                       
+        ! Convert back to structure 7
+        CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
+
       CASE DEFAULT
         PRINT *,'bilf_buildMatrix: Not supported matrix structure!'
         STOP

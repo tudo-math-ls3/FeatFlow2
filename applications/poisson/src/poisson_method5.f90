@@ -704,8 +704,7 @@ CONTAINS
     !
     ! At first, initialise a standard interlevel projection structure. We
     ! can use the same structure for all levels.
-    RspatialDiscretisation(1) = p_rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation
-    CALL mlprj_initProjection (rprojection,RspatialDiscretisation)
+    CALL mlprj_initProjectionMat (rprojection,p_rmatrix)
     
     ! Then set up smoothers / coarse grid solver:
     DO i=ilvmin,ilvmax
