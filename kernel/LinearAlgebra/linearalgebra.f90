@@ -85,7 +85,7 @@ CONTAINS
 !<output>
   
   ! Destination vector
-  REAL(DP), DIMENSION(:), INTENT(IN) :: Dy
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dy
   
 !</output>
   
@@ -115,7 +115,7 @@ CONTAINS
 !<output>
   
   ! Destination vector
-  REAL(SP), DIMENSION(:), INTENT(IN) :: Fy
+  REAL(SP), DIMENSION(:), INTENT(OUT) :: Fy
   
 !</output>
   
@@ -332,10 +332,8 @@ CONTAINS
 !</description>
 
 !<output>
-  
   ! Destination vector to be cleared
   REAL(DP), DIMENSION(:), INTENT(OUT) :: Dx
-  
 !</output>
   
 !</subroutine>

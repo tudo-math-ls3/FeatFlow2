@@ -694,13 +694,10 @@ CONTAINS
     ! which implements Dirichlet-conditions into a defect vector.
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
-    ! Create a BiCGStab-solver. Attach the above filter chain
+    ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    NULLIFY(p_rpreconditioner)
-    
-    ! Then initialise the solver and use the above preconditioner.
     CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
     
     ! Now we have to build up the level information for multigrid.

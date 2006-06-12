@@ -222,6 +222,7 @@ MODULE collection
   USE spatialdiscretisation
   USE linearsolver
   USE boundary
+  USE multilevelprojection
   
   IMPLICIT NONE
 
@@ -307,8 +308,14 @@ MODULE collection
   ! Scalar analytic boundary conditions
   INTEGER, PARAMETER :: COLLCT_BOUNDARYCOND = 15
 
+  ! Scalar interlevel projection structure
+  INTEGER, PARAMETER :: COLLCT_INTERLVPRJSC = 16
+  
+  ! Block interlevel projection structure
+  INTEGER, PARAMETER :: COLLCT_INTERLVPRJ   = 17
+
   ! The collection structure itself
-  INTEGER, PARAMETER :: COLLCT_COLLECTION = 16
+  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 18
 
 !</constantblock>
 
@@ -375,6 +382,12 @@ MODULE collection
 
     ! Pointer to scalar boundary conditions
     TYPE(t_boundaryConditions), POINTER      :: p_rboundaryConditions => NULL()
+
+    ! Pointer to a scalar interlevel projection structure
+    TYPE(t_interlevelProjectionScalar), POINTER :: p_rilvprojectionSc => NULL()
+
+    ! Pointer to a scalar interlevel projection structure
+    TYPE(t_interlevelProjectionBlock), POINTER  :: p_rilvprojection => NULL()
 
     ! Pointer to a collection structure
     TYPE(t_collection), POINTER              :: p_rcollection => NULL()
@@ -2938,6 +2951,168 @@ CONTAINS
   
 !<function>
 
+  FUNCTION collct_getvalue_ilvpsc (rcollection, sparameter, &
+                                   ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a scalar interlevel
+  ! projection structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_interlevelProjectionScalar), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(IN) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Return whether or not that thing exists
+  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
+  
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    ! Throw an error if the type is wrong. Otherwise, get the value.
+    IF (p_rvalue%itype .NE. COLLCT_INTERLVPRJSC) THEN
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
+      STOP
+    END IF
+    
+    value => p_rvalue%p_rilvProjectionSc
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  FUNCTION collct_getvalue_ilvp (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a (block) interlevel
+  ! projection structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_interlevelProjectionBlock), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(IN) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Return whether or not that thing exists
+  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
+  
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    ! Throw an error if the type is wrong. Otherwise, get the value.
+    IF (p_rvalue%itype .NE. COLLCT_INTERLVPRJ) THEN
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
+      STOP
+    END IF
+    
+    value => p_rvalue%p_rilvProjection
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
   FUNCTION collct_getvalue_coll (rcollection, sparameter, &
                                  ilevel, ssectionName, bexists) RESULT(value)
 !<description>
@@ -4289,6 +4464,176 @@ CONTAINS
   
   ! Set the value
   p_rvalue%p_rdiscreteBC => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_ilvpsc (rcollection, sparameter, value, badd, &
+                                     ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_interlevelProjectionScalar), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Add the value if necessary
+  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
+    IF (badd) THEN
+      IF (PRESENT(ssectionName)) THEN
+        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
+                              COLLCT_INTERLVPRJSC, ilv, p_rvalue)
+      ELSE
+        CALL collct_addvalue (rcollection, '', sparameter, &
+                              COLLCT_INTERLVPRJSC, ilv, p_rvalue)
+      END IF
+    ELSE
+      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
+      STOP
+    END IF
+  END IF
+  
+  ! Set the value
+  p_rvalue%p_rilvProjectionSc => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_ilvp (rcollection, sparameter, value, badd, &
+                                   ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_interlevelProjectionBlock), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Add the value if necessary
+  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
+    IF (badd) THEN
+      IF (PRESENT(ssectionName)) THEN
+        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
+                              COLLCT_INTERLVPRJ, ilv, p_rvalue)
+      ELSE
+        CALL collct_addvalue (rcollection, '', sparameter, &
+                              COLLCT_INTERLVPRJ, ilv, p_rvalue)
+      END IF
+    ELSE
+      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
+      STOP
+    END IF
+  END IF
+  
+  ! Set the value
+  p_rvalue%p_rilvProjection => value
 
   END SUBROUTINE
 

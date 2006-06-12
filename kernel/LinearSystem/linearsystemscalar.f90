@@ -1623,7 +1623,7 @@ CONTAINS
         
           ! Sort only the structure of the matrix, keep the entries
           ! unchanged.
-          CALL lsyssc_sortMat9Struc (p_Kcol, p_KcolTmp, p_KldTmp, p_KldTmp, &
+          CALL lsyssc_sortMat9Struc (p_Kcol, p_KcolTmp, p_Kld, p_KldTmp, &
                                      p_Kdiag, Itr1, Itr2, NEQ)        
         
         ELSE

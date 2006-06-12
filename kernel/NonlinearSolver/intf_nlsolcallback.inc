@@ -47,7 +47,7 @@
 
   INTERFACE 
   
-    SUBROUTINE fcb_precondDefect (rd,domega,p_rcollection)
+    SUBROUTINE fcb_precondDefect (rd,rx,domega,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -77,6 +77,11 @@
     REAL(DP), INTENT(INOUT)                       :: domega
   !</inputoutput>
   
+  !<input>
+    ! Current iteration vector
+    TYPE(t_vectorBlock), INTENT(IN)               :: rx
+  !</input>
+
     END SUBROUTINE
 
   END INTERFACE

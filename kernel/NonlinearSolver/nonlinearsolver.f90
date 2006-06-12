@@ -828,7 +828,7 @@ CONTAINS
           ! Is a callback function available?
           IF (PRESENT(fcb_precondDefect)) THEN
             ! The callback routine is allowed to change domega if necessary.
-            CALL fcb_precondDefect (rd,domega,p_rcollection)
+            CALL fcb_precondDefect (rd,rx,domega,p_rcollection)
           END IF
           
         END SELECT

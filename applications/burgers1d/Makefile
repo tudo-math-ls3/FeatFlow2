@@ -18,7 +18,8 @@ SRC = qtrafo.f \
       gmv2doutput.f initria.f inmtri.f quad2tri.f structria.f triutil2d.f
 
 # The f90 source files 
-SRC +=  burgers1d_callback.f90 burgers1d_method5.f90 burgers1d.f90
+SRC +=  burgers1d_callback.f90 burgers1d_method5.f90 \
+        burgers1d_method6.f90 burgers1d.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
@@ -33,7 +34,7 @@ vpath %.inc include \
       src/geometry src/misc src/parametrization src/triangulation src
 
 # The name of the final executable
-EXEC=poisson-$(ID)
+EXEC=burgers1d-$(ID)
 
 # used libraries
 FEATLIB= minisplib feat2d sysutils umfpack4 amd

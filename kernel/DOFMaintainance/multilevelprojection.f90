@@ -10,16 +10,24 @@
 !#
 !# The module contains the following routines:
 !#
-!# 1.) mlprj_initProjection
+!# 1.) mlprj_initProjectionDirect /
+!#     mlprj_initProjectionVec /
+!#     mlprj_initProjectionMat
 !#     -> Initialises a projection structure with values according to a
-!#        spatial discretisation
+!#        spatial discretisation.
+!#        Uses a discretisation structure, a (block) vector or a (block)
+!#        matrix on the fine/coarse grid as template.
 !#
 !# 2.) mlprj_doneProjection
 !#     -> Cleans up a projection structure.
 !#
-!# 3.) mlprj_getTempMemory
+!# 3.) mlprj_getTempMemoryDirect /
+!#     mlprj_getTempMemoryVec /
+!#     mlprj_getTempMemoryMat
 !#     -> Determine the amount of temporary storage that is necessary
 !#        to transport a vector from one level to another
+!#        Uses a discretisation structure, a (block) vector or a (block)
+!#        matrix on the fine/coarse grid as template.
 !#
 !# 4.) mlprj_performProlongation
 !#     -> Interpolates a solution vector from a coarse grid to a fine grid
@@ -166,9 +174,11 @@ MODULE multilevelprojection
 
 CONTAINS
 
+  ! ***************************************************************************
+
 !<subroutine>
 
-  SUBROUTINE mlprj_initProjection (rprojection,RspatialDiscretisation)
+  SUBROUTINE mlprj_initProjectionDirect (rprojection,RspatialDiscretisation)
   
 !<description>
   ! This subroutine initialises an t_interlevelProjectionBlock with default
@@ -204,6 +214,114 @@ CONTAINS
     
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_initProjectionVec (rprojection,rvector)
+  
+!<description>
+  ! This subroutine initialises an t_interlevelProjectionBlock with default
+  ! values for a given PDE system. This allows the interlevel-projection
+  ! routines to calculate constants that are necessary during a level
+  ! change. (This is used e.g. in the general prolongation/restriction
+  ! where the prolongation/restriction matrix must be calculated).
+  !
+  ! The calculated information is saved to rprojection and released
+  ! with mlprj_doneProjection.
+  !
+  ! The PDE system is specified by the p_rspatialDiscretisation structures
+  ! saved in the given vector.
+!</description>
+
+!<input>
+  ! A vector containing information about the spatial discretisation of
+  ! the given PDE.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+  
+!<output>
+  ! A t_interlevelProjectionBlock structure that will be filled with data
+  ! about the projection of all the equations described by RspatialDiscretisation.
+  TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
+    INTEGER :: i
+
+    IF (rvector%nblocks .EQ. 0) THEN
+      PRINT *,'mlprj_initProjectionVec: No discretisation!'
+      STOP
+    END IF
+
+    ! Set up an array of discretisation structures for all the equations
+    DO i=1,rvector%nblocks
+      Rdiscr(i) = &
+        rvector%RvectorBlock(i)%p_rspatialDiscretisation
+    END DO
+
+    ! Call the standard initialisation routine
+    CALL mlprj_initProjectionDirect (rprojection,Rdiscr)
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_initProjectionMat (rprojection,rmatrix)
+  
+!<description>
+  ! This subroutine initialises an t_interlevelProjectionBlock with default
+  ! values for a given PDE system. This allows the interlevel-projection
+  ! routines to calculate constants that are necessary during a level
+  ! change. (This is used e.g. in the general prolongation/restriction
+  ! where the prolongation/restriction matrix must be calculated).
+  !
+  ! The calculated information is saved to rprojection and released
+  ! with mlprj_doneProjection.
+  !
+  ! The PDE system is specified by the p_rspatialDiscretisation structures
+  ! saved in the given matrix.
+!</description>
+
+!<input>
+  ! A matrix containing information about the spatial discretisation of
+  ! the given PDE.
+  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+!</input>
+  
+!<output>
+  ! A t_interlevelProjectionBlock structure that will be filled with data
+  ! about the projection of all the equations described by RspatialDiscretisation.
+  TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
+    INTEGER :: i
+
+    IF (rmatrix%ndiagBlocks .EQ. 0) THEN
+      PRINT *,'mlprj_initProjectionMat: No discretisation!'
+      STOP
+    END IF
+
+    ! Set up an array of discretisation structures for all the equations
+    DO i=1,rmatrix%ndiagBlocks
+      Rdiscr(i) = &
+        rmatrix%RmatrixBlock(i,i)%p_rspatialDiscretisation
+    END DO
+
+    ! Call the standard initialisation routine
+    CALL mlprj_initProjectionDirect (rprojection,Rdiscr)
+
+  END SUBROUTINE
+
   ! ***************************************************************************
   
 !<subroutine>
@@ -368,13 +486,13 @@ CONTAINS
   
 !<function>
 
-  INTEGER(PREC_VECIDX) FUNCTION mlprj_getTempMemory (rprojection, &
+  INTEGER(PREC_VECIDX) FUNCTION mlprj_getTempMemoryDirect (rprojection, &
                                                      RdiscrCoarse,RdiscrFine)
   
 !<description>
   ! Returns the amount of temporary memory that is needed by the
   ! interlevel-routines to transfer vectors between two grids.
-  ! RdiscrCoarse and RdiscrFine are are arrays of discretisation structures.
+  ! RdiscrCoarse and RdiscrFine are arrays of discretisation structures.
   ! Each discretisation structure corresponds to one scalar equation.
 !</description>
   
@@ -383,10 +501,10 @@ CONTAINS
   ! and all element distributions in each equation.
   TYPE(t_interlevelProjectionBlock), INTENT(IN) :: rprojection 
   
-  ! List of disretisation structures fo the equations on the Coarse grid 
+  ! List of disretisation structures for the equations on the Coarse grid 
   TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN) :: RdiscrCoarse
 
-  ! List of disretisation structures fo the equations on the Fine grid 
+  ! List of disretisation structures for the equations on the Fine grid 
   TYPE(t_spatialDiscretisation), DIMENSION(:), INTENT(IN) :: RdiscrFine
 !</input>
 
@@ -422,10 +540,134 @@ CONTAINS
   END DO
   
   ! Now we know how mich we need:
-  mlprj_getTempMemory = imemmax
+  mlprj_getTempMemoryDirect = imemmax
   
   END FUNCTION
   
+  ! ***************************************************************************
+  
+!<function>
+
+  INTEGER(PREC_VECIDX) FUNCTION mlprj_getTempMemoryVec (rprojection, &
+                                                        rvectorCoarse,rvectorFine)
+  
+!<description>
+  ! Returns the amount of temporary memory that is needed by the
+  ! interlevel-routines to transfer vectors between two grids.
+  ! rvectorCoarse and rvectorFine define template vectors on the coarse
+  ! and fine grid, respectively; the memory is calculated using
+  ! the discretisation structures associated to these.
+!</description>
+  
+!<input>
+  ! Projection structure that configures the grid transfer for all equations
+  ! and all element distributions in each equation.
+  TYPE(t_interlevelProjectionBlock), INTENT(IN) :: rprojection 
+  
+  ! Coarse grid vector. Must have the discretisation structure of the
+  ! coarse grid attached.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvectorCoarse
+
+  ! Fine grid vector. Must have the discretisation structure of the
+  ! Fine grid attached.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvectorFine
+!</input>
+
+!<result>
+  ! Length of a temporary vector that is necessary for transferring vectors
+  ! on the coarse grid to the fine grid and vice versa.
+  ! =0 if no memory is necessary.
+!</result>
+
+    ! local variables
+    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrCoarse
+    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrFine
+    INTEGER :: i
+
+    IF ((rvectorCoarse%nblocks .EQ. 0) .OR. (rvectorFine%nblocks .EQ. 0)) THEN
+      PRINT *,'mlprj_getTempMemoryVec: No discretisation!'
+      STOP
+    END IF
+
+    ! Set up an array of discretisation structures for all the equations
+    DO i=1,rvectorCoarse%nblocks
+      RdiscrCoarse(i) = &
+        rvectorCoarse%RvectorBlock(i)%p_rspatialDiscretisation
+    END DO
+
+    DO i=1,rvectorFine%nblocks
+      RdiscrFine(i) = &
+        rvectorFine%RvectorBlock(i)%p_rspatialDiscretisation
+    END DO
+      
+    ! Call the standard getTempMemory routine
+    mlprj_getTempMemoryVec = &
+      mlprj_getTempMemoryDirect (rprojection, RdiscrCoarse,RdiscrFine)
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  INTEGER(PREC_VECIDX) FUNCTION mlprj_getTempMemoryMat (rprojection, &
+                                                        rmatrixCoarse,rmatrixFine)
+  
+!<description>
+  ! Returns the amount of temporary memory that is needed by the
+  ! interlevel-routines to transfer vectors between two grids.
+  ! rmatrixCoarse and rmatrixFine define template matrices on the coarse
+  ! and fine grid, respectively; the memory is calculated using
+  ! the discretisation structures associated to these.
+!</description>
+  
+!<input>
+  ! Projection structure that configures the grid transfer for all equations
+  ! and all element distributions in each equation.
+  TYPE(t_interlevelProjectionBlock), INTENT(IN) :: rprojection 
+  
+  ! Coarse grid matrix. Must have the discretisation structure of the
+  ! coarse grid attached.
+  TYPE(t_matrixBlock), INTENT(IN) :: rmatrixCoarse
+
+  ! Fine grid matrix. Must have the discretisation structure of the
+  ! Fine grid attached.
+  TYPE(t_matrixBlock), INTENT(IN) :: rmatrixFine
+!</input>
+
+!<result>
+  ! Length of a temporary vector that is necessary for transferring vectors
+  ! on the coarse grid to the fine grid and vice versa.
+  ! =0 if no memory is necessary.
+!</result>
+
+    ! local variables
+    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrCoarse
+    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrFine
+    INTEGER :: i
+
+    IF ((rmatrixCoarse%ndiagBlocks .EQ. 0) .OR. (rmatrixFine%ndiagBlocks .EQ. 0)) THEN
+      PRINT *,'mlprj_getTempMemoryVec: No discretisation!'
+      STOP
+    END IF
+
+    ! Set up an array of discretisation structures for all the equations
+    DO i=1,rmatrixCoarse%ndiagBlocks
+      RdiscrCoarse(i) = &
+        rmatrixCoarse%RmatrixBlock(i,i)%p_rspatialDiscretisation
+    END DO
+
+    DO i=1,rmatrixFine%ndiagBlocks
+      RdiscrFine(i) = &
+        rmatrixFine%RmatrixBlock(i,i)%p_rspatialDiscretisation
+    END DO
+      
+    ! Call the standard getTempMemory routine
+    mlprj_getTempMemoryMat = &
+      mlprj_getTempMemoryDirect (rprojection, RdiscrCoarse,RdiscrFine)
+
+  END FUNCTION
+
   ! ***************************************************************************
   
 !<subroutine>
@@ -471,7 +713,6 @@ CONTAINS
 
   ! local variables
   INTEGER :: i
-  LOGICAL :: bsort1,bsort2
   TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrCoarse,p_rdiscrFine
   TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtriaFine
   TYPE(t_interlevelProjectionScalar) :: ractProjection
@@ -514,6 +755,7 @@ CONTAINS
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
             (.NOT. ASSOCIATED(p_rdiscrFine))) THEN
           PRINT *,'Intergrid transfer: No discretisation!'
+          STOP
         END IF
 
         ! Currently, we support only uniform triangulations.
@@ -524,15 +766,8 @@ CONTAINS
         END IF
         
         ! Get the pointers to the vectors
-        CALL storage_getbase_double (rcoarseVector%RvectorBlock(1)%h_Ddata,p_DuCoarse)
-        p_DuCoarse => p_DuCoarse( &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry: &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ-1)
-
-        CALL storage_getbase_double (rfineVector%RvectorBlock(1)%h_Ddata,p_DuFine)
-        p_DuFine => p_DuFine( &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry: &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ-1)
+        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(1),p_DuCoarse)
+        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(1),p_DuFine)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -677,6 +912,7 @@ CONTAINS
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
             (.NOT. ASSOCIATED(p_rdiscrFine))) THEN
           PRINT *,'Intergrid transfer: No discretisation!'
+          STOP
         END IF
 
         ! Currently, we support only uniform triangulations.
@@ -687,15 +923,8 @@ CONTAINS
         END IF
         
         ! Get the pointers to the vectors
-        CALL storage_getbase_double (rcoarseVector%RvectorBlock(1)%h_Ddata,p_DuCoarse)
-        p_DuCoarse => p_DuCoarse( &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry: &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ-1)
-
-        CALL storage_getbase_double (rfineVector%RvectorBlock(1)%h_Ddata,p_DuFine)
-        p_DuFine => p_DuFine( &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry: &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ-1)
+        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(1),p_DuCoarse)
+        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(1),p_DuFine)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -786,7 +1015,7 @@ CONTAINS
   ! The vector does not have to be connected to a discretisation structure
   ! or something similar; the content is undefined at entry and will be
   ! undefined when leaving this routine.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rtempVector
 
   ! Coarse grid vector
   TYPE(t_vectorBlock), INTENT(INOUT) :: rcoarseVector
@@ -838,6 +1067,7 @@ CONTAINS
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
             (.NOT. ASSOCIATED(p_rdiscrFine))) THEN
           PRINT *,'Intergrid transfer: No discretisation!'
+          STOP
         END IF
 
         ! Currently, we support only uniform triangulations.
@@ -848,15 +1078,8 @@ CONTAINS
         END IF
         
         ! Get the pointers to the vectors
-        CALL storage_getbase_double (rcoarseVector%RvectorBlock(1)%h_Ddata,p_DuCoarse)
-        p_DuCoarse => p_DuCoarse( &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry: &
-          rcoarseVector%RvectorBlock(1)%iidxFirstEntry+rcoarseVector%RvectorBlock(1)%NEQ-1)
-
-        CALL storage_getbase_double (rfineVector%RvectorBlock(1)%h_Ddata,p_DuFine)
-        p_DuFine => p_DuFine( &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry: &
-          rfineVector%RvectorBlock(1)%iidxFirstEntry+rfineVector%RvectorBlock(1)%NEQ-1)
+        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(1),p_DuCoarse)
+        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(1),p_DuFine)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -882,8 +1105,9 @@ CONTAINS
                p_IneighboursAtElementFine, &
                p_rtriaCoarse%NEL,p_rtriaFine%NEL)
                
-        !CASE (EL_Q1)
+        CASE (EL_Q1)
           ! Q1 interpolation
+          CALL mlprj_interpUniformQ1_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NVT)
         CASE DEFAULT
           PRINT *,'Unsupported interpolation!'
           STOP
@@ -1396,6 +1620,41 @@ CONTAINS
     
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_interpUniformQ1_double (DuCoarse,DuFine, NVTcoarse)
+  
+!<description>
+  ! Interpolates a solution vector from a fine grid to a coarse grid.
+  ! Q1, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVTcoarse
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: Q4 = .25_DP
+  
+    ! The first coase.NVT entries of the fine grid vector define the values
+    ! on the coarse grid - because of the two-level ordering!
+    CALL lalg_vectorCopyDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    
+  END SUBROUTINE
+  
   ! ***************************************************************************
   ! Support for Q2 element
   ! ***************************************************************************

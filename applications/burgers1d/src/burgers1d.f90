@@ -6,15 +6,16 @@
 !# <purpose>
 !# This program is a simple test program for discretising the equation
 !#
-!#              - Laplace(u) = f
+!#    $$  u_t  +  u*u_x  -  \nu u_xx  =  0,   u(x,0) = sin(Pi*x)  $$
 !#
-!# on a 2D domain for a scalar function u.
+!# on a 2D domain $\Omega=[0,1] \times [0,1]$ for a scalar function $u(x,t)$.
 !# </purpose>
 !##############################################################################
 
 PROGRAM burgers1d
 
   USE burgers1d_method5
+  USE burgers1d_method6
   
   IMPLICIT NONE
   
@@ -48,6 +49,12 @@ PROGRAM burgers1d
   PRINT *,'Calculating Burgers1D-Problem with method 5'
   PRINT *,'-------------------------------------------'
   CALL burgers1d5
+
+  ! Call the problem to solve. 
+  PRINT *
+  PRINT *,'Calculating Burgers1D-Problem with method 6'
+  PRINT *,'-------------------------------------------'
+  CALL burgers1d6
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

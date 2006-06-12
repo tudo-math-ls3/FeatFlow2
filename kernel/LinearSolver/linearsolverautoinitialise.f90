@@ -141,7 +141,7 @@ CONTAINS
   p_rsolverNode%depsAbs = daccuracyAbs
   
   ! Initialise a standard interlevel projection structure for all levels.
-  CALL mlprj_initProjection (rprojection,RspatialDiscretisation)
+  CALL mlprj_initProjectionDirect (rprojection,RspatialDiscretisation)
   
   ! Continue to configure MG by accessing p_rmgSolver.
   ! Loop through the levels.
