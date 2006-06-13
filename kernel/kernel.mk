@@ -6,7 +6,7 @@
 KERNEL=$(FEATFLOW)/kernel
 INCOMING=$(FEATFLOW)/incoming
 
-KERNELSRC:=fsystem.f90 basicgeometry.f90 afc_util.f90  \
+KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afc_util.f90  \
 	genoutput.f90 linearalgebra.f90 storage.f90 derivatives.f90 \
 	cubature.f90 transformation.f90 triangulation.f90 scalarpde.f90\
 	error.f90 element.f90 io.f90 boundary.f90 scalarbc.f90 \

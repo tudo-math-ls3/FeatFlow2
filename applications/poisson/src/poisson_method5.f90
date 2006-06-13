@@ -335,8 +335,8 @@ CONTAINS
       CALL collct_setvalue_int(rcollection,'LAPLACE-CM',h_Iresort(1),.TRUE.,i)
       
       ! Resort the matrix according to the resorting strategy.
-      !CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
-      !                        SSTRAT_CM,h_Iresort(1))
+      CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
+                              SSTRAT_CM,h_Iresort(1))
       
     END DO
 
@@ -996,7 +996,7 @@ CONTAINS
   ! subroutines. The problem uses a problem-specific structure for the 
   ! communication: All subroutines add their generated information to the
   ! structure, so that the other subroutines can work with them.
-  ! (THis is somehow a cleaner implementation than using a collection!).
+  ! (This is somehow a cleaner implementation than using a collection!).
   ! For the communication to callback routines of black-box subroutines
   ! (matrix-assembly), a collection is used.
   !
@@ -1036,7 +1036,7 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm5_initParamTriang (6,LV,rproblem)
+    CALL pm5_initParamTriang (1,LV,rproblem)
     CALL pm5_initDiscretisation (rproblem)    
     CALL pm5_initMatVec (rproblem,rcollection)    
     CALL pm5_initAnalyticBC (rproblem)   

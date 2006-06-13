@@ -51,6 +51,7 @@ MODULE multilevelprojection
   USE linearsystemscalar
   USE linearsystemblock
   USE triangulation
+  USE geometryaux
   USE element
   
   IMPLICIT NONE
@@ -96,6 +97,35 @@ MODULE multilevelprojection
     ! 1=linear prolongation of a once refined mesh
     ! 2=quadratic interpolation
     INTEGER                     :: iprolongationOrder = -1
+    
+    ! Prolongation variant for nonconforming elements.
+    ! Allows for the elements E030/EM30/E031/EM31 to switch to a special-type 
+    ! prolongation.
+    ! = 0: Use default prolongation,
+    ! = 1: Use standard prolongation, equally weighted (1/2 from left, 1/2 from right),
+    ! = 2: Use extended prolongation, equally weighted (1/2 from left, 1/2 from right),
+    ! = 3: Use extended prolongation, weighted by element size (L2 projection),
+    ! = 4: Use extended prolongation, weighted by element size of neighbour element
+    ! To activate extended prolongation, set this to >= 2 after initialising the
+    ! interlevel projection structure!
+    INTEGER                     :: iprolEX3Yvariant = 0
+    
+    ! Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! Aspect-ratio indicator; controls switching to constant prolongation.
+    ! <=1: switch depending on aspect ratio of current element (standard),
+    !  =2: switch depending on aspect ratio of current element and
+    !      neighbour element
+    INTEGER                     :: iprolARIndicatorEX3Y = 1
+    
+    ! Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! Upper bound aspect ratio; for all elements with higher AR
+    ! the prolongation is switched to constant prolongation .
+    ! This is set to 20.0 by default according to the analysis in
+    ! [Michael Köster, Robuste Mehrgitter-Krylowraum-Techniken für FEM-Verfahren,
+    !  2004, Diploma-Theses, Chair of Mathematics, University of Dortmund]
+    REAL(DP)                    :: dprolARboundEX3Y = 20.0_DP
 
     ! Element type that should be assumed for the restriction. Must fit
     ! to the element type of the discretisation concerning the DOF's:
@@ -118,6 +148,35 @@ MODULE multilevelprojection
     ! 1=linear restriction of a once refined mesh
     ! 2=quadratic restriction
     INTEGER                     :: irestrictionOrder = -1
+
+    ! Restriction variant for nonconforming elements.
+    ! Allows for the elements E030/EM30/E031/EM31 to switch to a special-type 
+    ! prolongation.
+    ! = 0: Use default restriction,
+    ! = 1: Use standard restriction, equally weighted (1/2 from left, 1/2 from right),
+    ! = 2: Use extended restriction, equally weighted (1/2 from left, 1/2 from right),
+    ! = 3: Use extended restriction, weighted by element size (L2 projection),
+    ! = 4: Use extended restriction, weighted by element size of neighbour element
+    ! To activate extended prolongation, set this to >= 2 after initialising the
+    ! interlevel projection structure!
+    INTEGER                     :: irestEX3Yvariant = 0
+    
+    ! Configuration parameter for extended restriction of E030/EM30/E031/EM31
+    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! Aspect-ratio indicator; controls switching to constant prolongation.
+    ! <=1: switch depending on aspect ratio of current element (standard),
+    !  =2: switch depending on aspect ratio of current element and
+    !      neighbour element
+    INTEGER                     :: irestARIndicatorEX3Y = 1
+    
+    ! Configuration parameter for extended restriction of E030/EM30/E031/EM31
+    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! Upper bound aspect ratio; for all elements with higher AR
+    ! the prolongation is switched to constant prolongation .
+    ! This is set to 20.0 by default according to the analysis in
+    ! [Michael Köster, Robuste Mehrgitter-Krylowraum-Techniken für FEM-Verfahren,
+    !  2004, Diploma-Theses, Chair of Mathematics, University of Dortmund]
+    REAL(DP)                    :: drestARboundEX3Y = 20.0_DP
 
     ! Element type that should be assumed for the interpolation of a
     ! solution to a lower level. Must fit to the element type of the 
@@ -406,6 +465,16 @@ CONTAINS
 
   IF (ractProjection%ielementTypeInterpolation .EQ. EL_UNDEFINED) THEN
     ractProjection%ielementTypeInterpolation = releDistrCoarse%itrialElement
+  END IF
+
+  ! Set default prolongation/restriction for Ex3y-type elements 
+  ! if not specified
+  IF (ractProjection%iprolEX3Yvariant .EQ. 0) THEN
+    ractProjection%iprolEX3Yvariant = 1
+  END IF
+
+  IF (ractProjection%irestEX3Yvariant .EQ. 0) THEN
+    ractProjection%irestEX3Yvariant = 1
   END IF
 
   ! Check to see if the discretisation structures fit to the projection structure
@@ -724,6 +793,8 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementFine
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinatesCoarse
+  REAL(DP), DIMENSION(:), POINTER   :: p_DelementAreaCoarse
   
   ! Data arrays
   REAL(DP), DIMENSION(:), POINTER :: p_DuCoarse, p_DuFine
@@ -829,10 +900,34 @@ CONTAINS
                                p_IneighboursAtElementFine)
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          CALL mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
-               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-               p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)
+          
+          ! Type of prolongation? Extended or not?
+          SELECT CASE (ractProjection%iprolEX3Yvariant)
+          CASE (:1) ! Standard prolongation
+            CALL mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
+                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)
+                
+          CASE (2:) ! Extended prolongation; modified weights, local switch
+                    ! to constant prolongation
+            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                                       p_IverticesAtElementCoarse)
+            CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
+                                          p_DcornerCoordinatesCoarse)
+            CALL storage_getbase_double(p_rtriaCoarse%h_DelementArea, &
+                                        p_DelementAreaCoarse)
+            ! (what a nasty call...)                                       
+            CALL mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
+                    p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
+                    p_DelementAreaCoarse,&
+                    p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                    p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                    p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
+                    MIN(4,ractProjection%iprolEX3Yvariant)-2, &
+                    ractProjection%dprolARboundEX3Y, &
+                    ractProjection%iprolARIndicatorEX3Y)
+          END SELECT
                
         CASE DEFAULT
           PRINT *,'Unsupported prolongation!'
@@ -899,6 +994,8 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementFine
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinatesCoarse
+  REAL(DP), DIMENSION(:), POINTER   :: p_DelementAreaCoarse
   
   ! Data arrays
   REAL(DP), DIMENSION(:), POINTER :: p_DuCoarse, p_DuFine
@@ -1000,10 +1097,34 @@ CONTAINS
                                p_IneighboursAtElementFine)
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
-          CALL mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
-               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
-               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
-               p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
+                               
+          ! Type of restriction? Extended or not?
+          SELECT CASE (ractProjection%iprolEX3Yvariant)
+          CASE (:1) ! Standard prolongation
+            CALL mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
+                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
+                
+          CASE (2:) ! Extended prolongation; modified weights, local switch
+                    ! to constant prolongation
+            CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                                       p_IverticesAtElementCoarse)
+            CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
+                                          p_DcornerCoordinatesCoarse)
+            CALL storage_getbase_double(p_rtriaCoarse%h_DelementArea, &
+                                        p_DelementAreaCoarse)
+            ! (what a nasty call...=)                                       
+            CALL mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
+                    p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
+                    p_DelementAreaCoarse,&
+                    p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+                    p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+                    p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
+                    MIN(4,ractProjection%iprolEX3Yvariant)-2, &
+                    ractProjection%dprolARboundEX3Y, &
+                    ractProjection%iprolARIndicatorEX3Y)
+          END SELECT
                
         CASE DEFAULT
           PRINT *,'Unsupported restriction!'
@@ -2178,6 +2299,345 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_prolUniformEx30ext_double (DuCoarse,DuFine, &
+               DcornerCoordinatesCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
+               IedgesAtElementCoarse,IedgesAtElementFine,&
+               IneighboursAtElementCoarse,IneighboursAtElementFine,&
+               NVTcoarse,NVTfine,NELcoarse, &
+               iweightingType, daspectRatioBound, iarIndicator)
+  
+!<description>
+  ! Prolongate a solution vector from a coarse grid to a fine grid.
+  ! E030/EM30, uniform triangulation, double precision vector.
+  !
+  ! Extended version. Switch to constant prolongation if aspect ratio
+  ! of an element is too large.
+!</description>
+  
+!<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
+
+  ! DcornerCoordinates array on the coarse grid
+  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DcornerCoordinatesCoarse
+
+  ! IverticesAtElement array on the coarse grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  
+  ! DelementArea array on the coarse grid
+  REAL(DP), DIMENSION(:), INTENT(IN)                  :: DelementAreaCoarse
+
+  ! IedgesAtElement array on the coarse grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
+  
+  ! IedgesAtElement array on the fine grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
+
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+  
+  ! IneighboursAtElement array on the fine grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of vertices in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTfine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+  
+  ! Type of the averaging on the element edges
+  ! <=0: standard averaging of both contributions by 1/2,        
+  !  =1: weighted averaging of the interpolated function values:
+  !      The area of the current coarse grid element determines 
+  !      the weight. (L2-projection, standard),
+  !  =2: weighted averaging of the interpolated function values:
+  !      The area of the neightbour element of the coarse grid 
+  !      the weight. 
+  INTEGER, INTENT(IN)  :: iweightingType
+  
+  ! Upper bound aspect ratio; for all elements with higher AR
+  ! the prolongation is switched to constant prolongation 
+  REAL(DP), INTENT(IN) :: daspectRatioBound
+  
+  ! Aspect-ratio indicator.
+  ! Controls switching to constant prolongation.
+  ! <=1: switch depending on aspect ratio of current element,
+  !  =2: switch depending on aspect ratio of current element and
+  !      neighbour element
+  INTEGER, INTENT(IN)  :: iarIndicator
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP) :: DUH1,DUH2,DUH3,DUH4
+  REAL(DP), DIMENSION(0:TRIA_MAXNME2D) :: daspectRatio,darea
+  REAL(DP), DIMENSION(TRIA_MAXNME2D) :: dweight
+  INTEGER(PREC_EDGEIDX) :: IM1,IM2, IM3,IM4, IA, IB, IC
+  INTEGER(PREC_ELEMENTIDX) :: iel, IELH1, IELH2, IELH3, IELH4
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(0:TRIA_MAXNME2D) :: IELA
+  INTEGER :: i
+  INTEGER, DIMENSION(TRIA_MAXNME2D) :: idoConstant
+  REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D) :: dcoords
+  
+  ! Weights for the prolongation.
+  ! PRWEIG (.,1) gives the constants for the standard prolongation,
+  ! PRWEIG (.,2) gives the constants for the constant prolongation.
+  REAL(DP), DIMENSION(8,2), PARAMETER :: prweight = &
+      RESHAPE((/1.0_DP, -0.25_DP, 0.0_DP, 0.25_DP, &
+                0.625_DP, 0.125_DP, 0.125_DP, 0.125_DP, &
+                1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
+              
+    ! Clear the output vector
+    CALL lalg_vectorClearDble(DuFine)
+  
+    ! Loop over the coarse grid elements
+    DO iel=1,NELcoarse
+
+      ! Get the numbers of the elements that are neighbours to our current coarse
+      ! grid element:
+      !             +--------+
+      !             |        |
+      !             | IELA3  |
+      !             |        |
+      !    +--------4--------3--------+
+      !    |        |        |        |
+      !    | IELA4  |  IEL   | IELA2  |
+      !    |        |        |        |
+      !    +--------1--------2--------+
+      !             |        |
+      !             | IELA1  |
+      !             |        |
+      !             +--------+
+      IELA(0) = iel
+      IELA(1) = IneighboursAtElementCoarse(1,iel)
+      IELA(2) = IneighboursAtElementCoarse(2,iel)
+      IELA(3) = IneighboursAtElementCoarse(3,iel)
+      IELA(4) = IneighboursAtElementCoarse(4,iel)
+      
+      ! For these five elements, determine the aspect ratio and their area.
+      !
+      ! At first the element in the center, which always exists.
+      !
+      ! Get the aspect ratio of the current coarse grid element;
+      ! if necessary, calculate the reciprocal.
+      dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
+      daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
+      IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
+      
+      ! and the area of that element.
+      darea(0) = DelementAreaCoarse(iel)
+      
+      ! Then the remaining neighbours.
+      DO i=1,TRIA_MAXNME2D
+        IF (IELA(i) .NE. 0) THEN
+          ! Get the aspect ratio of the current coarse grid element;
+          ! if necessary, calculate the reciprocal.
+          dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
+          daspectRatio(i) = gaux_getAspectRatio_quad2D (dcoords)
+          IF (daspectRatio(i) .LT. 1.0_DP) daspectRatio(i) = 1.0_DP/daspectRatio(i)
+          
+          ! and the area of that element.
+          darea(i) = DelementAreaCoarse(IELA(i))
+        ELSE
+          daspectRatio(i) = 0.0_DP
+          darea(i) = 0.0_DP
+        END IF
+      END DO
+      
+      ! Calculate weighting factors for the interpolation.
+      ! The iweightingType parameter describes:
+      ! <= 0: simple interpolation, weight both contribtutions by 1/2
+      !  = 1: take the weighted mean of the interpolated function values
+      !       by weighting with the area of the current coarse grid element
+      ! >= 2: take the weighted mean of the interpolated function values
+      !       by weighting with the area of the neighboured coarse grid element
+
+      SELECT CASE (iweightingType)
+      CASE (:0) 
+        dweight = 0.5_DP
+      CASE (1)
+        dweight = darea(0) / (darea(0)+darea(1:TRIA_MAXNME2D))
+      CASE (2:)
+        dweight = darea(1:TRIA_MAXNME2D) / (darea(0)+darea(1:TRIA_MAXNME2D))
+      END SELECT
+      
+      ! Where there is no neighbour, set the weighting factor to 1.0
+!      DO i=1,TRIA_MAXNMT
+!        IF (IELA(i) .EQ. 0) dweight(i) = 1.0_DP
+!      END DO
+      WHERE(IELA(1:TRIA_MAXNME2D) .EQ. 0) dweight(1:TRIA_MAXNME2D) = 1.0_DP
+
+      ! Now determine on which edge to switch to constant prolongation
+      ! By default, we don't use constant prolongation
+      idoConstant = 1
+      
+      ! ... but if the caller wants us to switch in a special situation...
+      IF ((iarIndicator .GE. 1) .AND. (daspectRatioBound .GE. 0.0_DP)) THEN
+        
+        ! ... switch to constant of our element is too large...
+        IF (darea(0) .GT. daspectRatioBound) idoConstant = 2
+        
+        ! and if iarIndicator>2, also check the neighbour element
+        IF (iarIndicator .GE. 2) THEN
+!          DO i=1,TRIA_MAXNME2D
+!            IF (darea(i) .GT. daspectRatioBound) idoConstant(i) = 2
+!          END DO
+          WHERE (darea(1:4) .GT. daspectRatioBound) idoConstant = 2
+        END IF
+      
+      END IF
+      
+      ! Get the DOF's of the coarse grid element
+      IM1 = IedgesAtElementCoarse(1,iel)-NVTcoarse
+      IM2 = IedgesAtElementCoarse(2,iel)-NVTcoarse
+      IM3 = IedgesAtElementCoarse(3,iel)-NVTcoarse
+      IM4 = IedgesAtElementCoarse(4,iel)-NVTcoarse
+
+      ! Get the values of the corresponding DOF's
+      DUH1 = DuCoarse(IM1)
+      DUH2 = DuCoarse(IM2)
+      DUH3 = DuCoarse(IM3)
+      DUH4 = DuCoarse(IM4)
+
+      ! Get the element numbers of the fine-grid elements in the coarse grid;
+      ! the numbers are defined by the two-level ordering.
+      IELH1 = iel
+      IELH2 = IneighboursAtElementFine(2,IELH1)
+      IELH3 = IneighboursAtElementFine(2,IELH2)
+      IELH4 = IneighboursAtElementFine(2,IELH3)
+
+      ! Now let's start with the actual prolongation
+      ! ---------------------------------------------
+      
+      ! Get the DOF's on the fine grid
+      IA=IedgesAtElementFine(1,IELH1)-NVTfine
+      IB=IedgesAtElementFine(4,IELH2)-NVTfine
+      IC=IedgesAtElementFine(2,IELH1)-NVTfine
+
+      ! Now we have the following situation:
+      
+      !   4               IM3                3
+      !     ===============X================
+      !     |              |               |
+      !     |              |               |
+      !     |    IELH4     |     IELH3     |
+      !     |              |               |
+      !     |                              |
+      ! IM4 X----------- IEL1 -------------X IM2
+      !     |                              |
+      !     |              |               |
+      !     |    IELH1     o IC  IELH2     |
+      !     |              |               |
+      !     |              |               |
+      !   1 =======o=======X=======o======== 2
+      !     |     IA      IM1      IB      |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |            IELA1             |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     ================================
+
+      ! Distribute the value at the edge IM1 to the 
+      ! corresponding fine inner nodes
+
+      DuFine(IA) = DuFine(IA) &
+                  + dweight(1)*(prweight(1,idoConstant(1))*DUH1 &
+                              +prweight(2,idoConstant(1))*DUH2 &
+                              +prweight(3,idoConstant(1))*DUH3 &
+                              +prweight(4,idoConstant(1))*DUH4)
+      DuFine(IB) = DuFine(IB) &
+                  + dweight(1)*(prweight(1,idoConstant(1))*DUH1 &
+                              +prweight(4,idoConstant(1))*DUH2 &
+                              +prweight(3,idoConstant(1))*DUH3 &
+                              +prweight(2,idoConstant(1))*DUH4)
+      DuFine(IC) = prweight(5,idoConstant(1))*DUH1 &
+                 + prweight(6,idoConstant(1))*(DUH2+DUH4) &
+                 + prweight(7,idoConstant(1))*DUH3
+
+      ! Distribute the value at the edge IM2 to the 
+      ! corresponding fine inner nodes
+      IA=IedgesAtElementFine(1,IELH2)-NVTfine
+      IB=IedgesAtElementFine(4,IELH3)-NVTfine
+      IC=IedgesAtElementFine(2,IELH2)-NVTfine
+
+      DuFine(IA) = DuFine(IA) &
+                 + dweight(2)*(prweight(1,idoConstant(2))*DUH2 &
+                              +prweight(2,idoConstant(2))*DUH3 &
+                              +prweight(3,idoConstant(2))*DUH4 &
+                              +prweight(4,idoConstant(2))*DUH1)
+      DuFine(IB) = DuFine(IB) &
+                 + dweight(2)*(prweight(1,idoConstant(2))*DUH2 &
+                              +prweight(4,idoConstant(2))*DUH3 &
+                              +prweight(3,idoConstant(2))*DUH4 &
+                              +prweight(2,idoConstant(2))*DUH1)
+      DuFine(IC) = prweight(5,idoConstant(2))*DUH2 &
+                 + prweight(6,idoConstant(2))*(DUH3+DUH1) &
+                 + prweight(7,idoConstant(2))*DUH4
+
+      ! Distribute the value at the edge IM3 to the 
+      ! corresponding fine inner nodes
+      IA=IedgesAtElementFine(1,IELH3)-NVTfine
+      IB=IedgesAtElementFine(4,IELH4)-NVTfine
+      IC=IedgesAtElementFine(2,IELH3)-NVTfine
+
+      DuFine(IA) = DuFine(IA) &
+                 + dweight(3)*(prweight(1,idoConstant(3))*DUH3 &
+                              +prweight(2,idoConstant(3))*DUH4 &
+                              +prweight(3,idoConstant(3))*DUH1 &
+                              +prweight(4,idoConstant(3))*DUH2)
+      DuFine(IB) = DuFine(IB) &
+                 + dweight(3)*(prweight(1,idoConstant(3))*DUH3 &
+                              +prweight(4,idoConstant(3))*DUH4 &
+                              +prweight(3,idoConstant(3))*DUH1 &
+                              +prweight(2,idoConstant(3))*DUH2)
+      DuFine(IC) = prweight(5,idoConstant(3))*DUH3 &
+                 + prweight(6,idoConstant(3))*(DUH4+DUH2) &
+                 + prweight(7,idoConstant(3))*DUH1
+
+      ! Distribute the value at the edge IM4 to the 
+      ! corresponding fine inner nodes
+      IA=IedgesAtElementFine(1,IELH4)-NVTfine
+      IB=IedgesAtElementFine(4,IELH1)-NVTfine
+      IC=IedgesAtElementFine(2,IELH4)-NVTfine
+
+      DuFine(IA) = DuFine(IA) &
+                 + dweight(4)*(prweight(1,idoConstant(4))*DUH4 &
+                              +prweight(2,idoConstant(4))*DUH1 &
+                              +prweight(3,idoConstant(4))*DUH2 &
+                              +prweight(4,idoConstant(4))*DUH3)
+      DuFine(IB) = DuFine(IB) &
+                 + dweight(4)*(prweight(1,idoConstant(4))*DUH4 &
+                              +prweight(4,idoConstant(4))*DUH1 &
+                              +prweight(3,idoConstant(4))*DUH2 &
+                              +prweight(2,idoConstant(4))*DUH3)
+      DuFine(IC) = prweight(5,idoConstant(4))*DUH4 &
+                 + prweight(6,idoConstant(4))*(DUH1+DUH3) &
+                 + prweight(7,idoConstant(4))*DUH2
+
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
   
 !<subroutine>
 
@@ -2361,6 +2821,334 @@ CONTAINS
                 +2D0*A3*(DUH3+DUH4)+2D0*A4*(DUH1+DUH6) &
                 +    A5*DUH12+A6*(DUH9+DUH11)+A7*DUH10
       ENDIF
+
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformEx30ext_double (DuCoarse,DuFine, &
+               DcornerCoordinatesCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
+               IedgesAtElementCoarse,IedgesAtElementFine,&
+               IneighboursAtElementCoarse,IneighboursAtElementFine,&
+               NVTcoarse,NVTfine,NELcoarse, &
+               iweightingType, daspectRatioBound, iarIndicator)
+  
+!<description>
+  ! Restricts a RHS vector from a fine grid to a coarse grid.
+  ! E030/EM30 element, uniform triangulation, double precision vector.
+  !
+  ! Extended version. Switch to constant restriction if aspect ratio
+  ! of an element is too large.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! DcornerCoordinates array on the coarse grid
+  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DcornerCoordinatesCoarse
+
+  ! IverticesAtElement array on the coarse grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  
+  ! DelementArea array on the coarse grid
+  REAL(DP), DIMENSION(:), INTENT(IN)                  :: DelementAreaCoarse
+
+  ! IedgesAtElement array on the coarse grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
+
+  ! IedgesAtElement array on the fine grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
+
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+  
+  ! IneighboursAtElement array on the fine grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of vertices in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTfine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+
+  ! Type of the averaging on the element edges
+  ! <=0: standard averaging of both contributions by 1/2,        
+  !  =1: weighted averaging of the interpolated function values:
+  !      The area of the current coarse grid element determines 
+  !      the weight. (L2-projection, standard),
+  !  =2: weighted averaging of the interpolated function values:
+  !      The area of the neightbour element of the coarse grid 
+  !      the weight. 
+  INTEGER, INTENT(IN)  :: iweightingType
+  
+  ! Upper bound aspect ratio; for all elements with higher AR
+  ! the prolongation is switched to constant prolongation 
+  REAL(DP), INTENT(IN) :: daspectRatioBound
+  
+  ! Aspect-ratio indicator.
+  ! Controls switching to constant prolongation.
+  ! <=1: switch depending on aspect ratio of current element,
+  !  =2: switch depending on aspect ratio of current element and
+  !      neighbour element
+  INTEGER, INTENT(IN)  :: iarIndicator
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: DUH1,DUH2,DUH3,DUH4,DUH5,DUH6,DUH7,DUH8,DUH9,DUH10,DUH11,DUH12
+    INTEGER(PREC_EDGEIDX) :: IM1,IM2, IM3,IM4
+    INTEGER(PREC_EDGEIDX) :: I1,I2,I3,I4,I5,I6,I7,I8,I9,I10,I11,I12
+    INTEGER(PREC_ELEMENTIDX) :: iel, IELH1, IELH2, IELH3, IELH4
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(0:TRIA_MAXNME2D) :: IELA
+    INTEGER :: i
+    INTEGER, DIMENSION(TRIA_MAXNME2D) :: idoConstant
+    REAL(DP), DIMENSION(0:TRIA_MAXNME2D) :: daspectRatio, darea
+    REAL(DP), DIMENSION(TRIA_MAXNME2D) :: dweight
+    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D) :: dcoords
+    
+    ! Weights for the restriction.
+    ! PRWEIG (.,1) gives the constants for the standard restriction,
+    ! PRWEIG (.,2) gives the constants for the constant restriction.
+    REAL(DP), DIMENSION(8,2), PARAMETER :: prweight = &
+        RESHAPE((/1.0_DP, -0.25_DP, 0.0_DP, 0.25_DP, &
+                  0.625_DP, 0.125_DP, 0.125_DP, 0.125_DP, &
+                  1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP, &
+                  1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
+
+    ! Clear the output vector
+    CALL lalg_vectorClearDble(DuCoarse)
+              
+    ! Loop over the coarse grid elements
+    DO iel=1,NELcoarse
+
+      ! Get the numbers of the elements that are neighbours to our current coarse
+      ! grid element:
+      !             +--------+
+      !             |        |
+      !             | IELA3  |
+      !             |        |
+      !    +--------4--------3--------+
+      !    |        |        |        |
+      !    | IELA4  |  IEL   | IELA2  |
+      !    |        |        |        |
+      !    +--------1--------2--------+
+      !             |        |
+      !             | IELA1  |
+      !             |        |
+      !             +--------+
+      IELA(0) = iel
+      IELA(1) = IneighboursAtElementCoarse(1,iel)
+      IELA(2) = IneighboursAtElementCoarse(2,iel)
+      IELA(3) = IneighboursAtElementCoarse(3,iel)
+      IELA(4) = IneighboursAtElementCoarse(4,iel)
+      
+      ! For these five elements, determine the aspect ratio and their area.
+      !
+      ! At first the element in the center, which always exists.
+      !
+      ! Get the aspect ratio of the current coarse grid element;
+      ! if necessary, calculate the reciprocal.
+      dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
+      daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
+      IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
+      
+      ! and the area of that element.
+      darea(0) = DelementAreaCoarse(iel)
+      
+      ! Then the remaining neighbours.
+      DO i=1,TRIA_MAXNME2D
+        IF (IELA(i) .NE. 0) THEN
+          ! Get the aspect ratio of the current coarse grid element;
+          ! if necessary, calculate the reciprocal.
+          dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
+          daspectRatio(i) = gaux_getAspectRatio_quad2D (dcoords)
+          IF (daspectRatio(i) .LT. 1.0_DP) daspectRatio(i) = 1.0_DP/daspectRatio(i)
+          
+          ! and the area of that element.
+          darea(i) = DelementAreaCoarse(IELA(i))
+        ELSE
+          daspectRatio(i) = 0.0_DP
+          darea(i) = 0.0_DP
+        END IF
+      END DO
+      
+      ! Calculate weighting factors for the interpolation.
+      ! The iweightingType parameter describes:
+      ! <= 0: simple interpolation, weight both contribtutions by 1/2
+      !  = 1: take the weighted mean of the interpolated function values
+      !       by weighting with the area of the current coarse grid element
+      ! >= 2: take the weighted mean of the interpolated function values
+      !       by weighting with the area of the neighboured coarse grid element
+
+      SELECT CASE (iweightingType)
+      CASE (:0) 
+        dweight = 0.5_DP
+      CASE (1)
+        dweight = darea(0) / (darea(0)+darea(1:TRIA_MAXNME2D))
+      CASE (2:)
+        dweight = darea(1:TRIA_MAXNME2D) / (darea(0)+darea(1:TRIA_MAXNME2D))
+      END SELECT
+      
+      ! Where there is no neighbour, set the weighting factor to 1.0
+!      DO i=1,TRIA_MAXNMT
+!        IF (IELA(i) .EQ. 0) dweight(i) = 1.0_DP
+!      END DO
+      WHERE(IELA(1:TRIA_MAXNME2D) .EQ. 0) dweight(1:TRIA_MAXNME2D) = 1.0_DP
+
+      ! Now determine on which edge to switch to constant prolongation
+      ! By default, we don't use constant prolongation
+      idoConstant = 1
+      
+      ! ... but if the caller wants us to switch in a special situation...
+      IF ((iarIndicator .GE. 1) .AND. (daspectRatioBound .GE. 0.0_DP)) THEN
+        
+        ! ... switch to constant of our element is too large...
+        IF (darea(0) .GT. daspectRatioBound) idoConstant = 2
+        
+        ! and if iarIndicator>2, also check the neighbour element
+        IF (iarIndicator .GE. 2) THEN
+!          DO i=1,TRIA_MAXNME2D
+!            IF (darea(i) .GT. daspectRatioBound) idoConstant(i) = 2
+!          END DO
+          WHERE (darea(1:4) .GT. daspectRatioBound) idoConstant = 2
+        END IF
+      
+      END IF
+
+      ! Now let's strt with the actual restriction
+      ! ------------------------------------------      
+
+      ! Get the DOF's of the coarse grid element
+      IM1 = IedgesAtElementCoarse(1,iel)-NVTcoarse
+      IM2 = IedgesAtElementCoarse(2,iel)-NVTcoarse
+      IM3 = IedgesAtElementCoarse(3,iel)-NVTcoarse
+      IM4 = IedgesAtElementCoarse(4,iel)-NVTcoarse
+
+      ! Get the element numbers of the fine-grid elements in the coarse grid;
+      ! the numbers are defined by the two-level ordering.
+      IELH1 = iel
+      IELH2 = IneighboursAtElementFine(2,IELH1)
+      IELH3 = IneighboursAtElementFine(2,IELH2)
+      IELH4 = IneighboursAtElementFine(2,IELH3)
+
+      ! Get the DOF's on the fine grid
+      I1=IedgesAtElementFine(1,IELH1)-NVTfine
+      I2=IedgesAtElementFine(4,IELH2)-NVTfine
+      I3=IedgesAtElementFine(1,IELH2)-NVTfine
+      I4=IedgesAtElementFine(4,IELH3)-NVTfine
+      I5=IedgesAtElementFine(1,IELH3)-NVTfine
+      I6=IedgesAtElementFine(4,IELH4)-NVTfine
+      I7=IedgesAtElementFine(1,IELH4)-NVTfine
+      I8=IedgesAtElementFine(4,IELH1)-NVTfine
+      I9=IedgesAtElementFine(2,IELH1)-NVTfine
+      I10=IedgesAtElementFine(2,IELH2)-NVTfine
+      I11=IedgesAtElementFine(2,IELH3)-NVTfine
+      I12=IedgesAtElementFine(2,IELH4)-NVTfine
+
+      ! Get the values of the DOF's on the fine grid
+      DUH1= DuFine(I1)
+      DUH2= DuFine(I2)
+      DUH3= DuFine(I3)
+      DUH4= DuFine(I4)
+      DUH5= DuFine(I5)
+      DUH6= DuFine(I6)
+      DUH7= DuFine(I7)
+      DUH8= DuFine(I8)
+      DUH9= DuFine(I9)
+      DUH10=DuFine(I10)
+      DUH11=DuFine(I11)
+      DUH12=DuFine(I12)
+      
+      ! Now we have the following situation:
+      !   4       I6      IM3      I5      3
+      !     =======o=======X=======o========
+      !     |              |               |
+      !     |              |               |
+      !  I7 o    IELH4     o I11 IELH3     o I4
+      !     |              |               |
+      !     |                              |
+      ! IM4 X------o---- IEL1 -----o-------X IM2
+      !     |    I12               I10     |
+      !     |              |               |
+      !  I8 o    IELH1     o I9  IELH2     o I3
+      !     |              |               |
+      !     |              |               |
+      !   1 =======o=======X=======o======== 2
+      !     |     I1      IM1      I2      |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |            IELA1             |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     |                              |
+      !     ================================
+      
+      
+      ! Collect the information in the same way as it was
+      ! 'distributed' by the prolongation routine.
+      ! This realises the adjoint operator of the prolongation.
+      !
+      ! Calculate the value of the edge IM1
+
+      DuCoarse(IM1)= DuCoarse(IM1) &
+                    +dweight(1)*(prweight(1,idoConstant(1))*(DUH1+DUH2) &
+                                +prweight(2,idoConstant(1))*(DUH4+DUH7) &
+                                +prweight(3,idoConstant(1))*(DUH5+DUH6) &
+                                +prweight(4,idoConstant(1))*(DUH3+DUH8)) &
+                    +prweight(5,idoConstant(1))*DUH9 &
+                    +prweight(6,idoConstant(1))*(DUH10+DUH12) &
+                    +prweight(7,idoConstant(1))*DUH11
+ 
+      ! Calculate the value of the edge IM2
+      
+      DuCoarse(IM2)= DuCoarse(IM2) &
+                    +dweight(2)*(prweight(1,idoConstant(2))*(DUH3+DUH4) &
+                                +prweight(2,idoConstant(2))*(DUH6+DUH1) &
+                                +prweight(3,idoConstant(2))*(DUH7+DUH8) &
+                                +prweight(4,idoConstant(2))*(DUH5+DUH2)) &
+                    +prweight(5,idoConstant(2))*DUH10 &
+                    +prweight(6,idoConstant(2))*(DUH11+DUH9) &
+                    +prweight(7,idoConstant(2))*DUH12
+      
+      ! Calculate the value of the edge IM3
+      
+      DuCoarse(IM3)= DuCoarse(IM3) &
+                    +dweight(3)*(prweight(1,idoConstant(3))*(DUH5+DUH6) &
+                                +prweight(2,idoConstant(3))*(DUH8+DUH3) &
+                                +prweight(3,idoConstant(3))*(DUH1+DUH2) &
+                                +prweight(4,idoConstant(3))*(DUH7+DUH4)) &
+                    +prweight(5,idoConstant(3))*DUH11 &
+                    +prweight(6,idoConstant(3))*(DUH12+DUH10) &
+                    +prweight(7,idoConstant(3))*DUH9
+
+      ! Calculate the value of the edge IM4
+      
+      DuCoarse(IM4)= DuCoarse(IM4) &
+                    +dweight(4)*(prweight(1,idoConstant(4))*(DUH7+DUH8) &
+                                +prweight(2,idoConstant(4))*(DUH2+DUH5) &
+                                +prweight(3,idoConstant(4))*(DUH3+DUH4) &
+                                +prweight(4,idoConstant(4))*(DUH1+DUH6)) &
+                    +prweight(5,idoConstant(4))*DUH12 &
+                    +prweight(6,idoConstant(4))*(DUH9+DUH11) &
+                    +prweight(7,idoConstant(4))*DUH10
 
     END DO
 
