@@ -1114,7 +1114,7 @@ CONTAINS
                                           p_DcornerCoordinatesCoarse)
             CALL storage_getbase_double(p_rtriaCoarse%h_DelementArea, &
                                         p_DelementAreaCoarse)
-            ! (what a nasty call...=)                                       
+            ! (what a nasty call...)                                       
             CALL mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
                     p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
                     p_DelementAreaCoarse,&
