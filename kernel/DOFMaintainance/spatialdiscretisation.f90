@@ -17,6 +17,10 @@
 !# 2.) spdiscr_releaseDiscr
 !#     -> Release a discretisation structure.
 !#
+!# 3.) spdiscr_checkCubature
+!#     -> Checks if a cubature formula is compatible top an element
+!#        distribution.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -243,6 +247,67 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE spdiscr_checkCubature (ccubType,ielementType)
+  
+!<description>
+  
+  ! This routine checks if the cubature formula of type icubType can be applied
+  ! to the elements of the type ielementType.
+  ! If this is not possible, an error is thrown.
+  
+!</description>
+
+!<input>
+  ! The cubature formula to be tested
+  INTEGER, INTENT(IN)                       :: ccubType
+  
+  ! The element type the cubature formula should be checked against
+  INTEGER, INTENT(IN)                       :: ielementType
+!</input>
+  
+!</subroutine>
+
+  INTEGER :: NVE
+  LOGICAL :: bcompatible
+
+  ! Get from the element distribution the trial space and from that
+  ! the number of vertices, the element expects.
+  NVE = elem_igetNVE(ielementType)
+  
+  bcompatible = .TRUE.
+  
+  ! Now we directly access the cubature constants in cubature.f90!
+  ! This is the only point in the kernel where this is necessary.
+  
+  ! 1D?
+  IF (ccubType .LE. 99) bcompatible = .FALSE.
+
+  ! 3D?
+  IF (ccubType .GE. 300) bcompatible = .FALSE.
+  
+  ! Quad?
+  IF ((ccubType .GE. 200) .AND. (ccubType .LE. 249)) THEN
+    ! Tri?
+    IF (NVE .EQ. 3) bcompatible = .FALSE.
+  END IF
+  
+  ! Tri?
+  IF ((ccubType .GE. 250) .AND. (ccubType .LE. 299)) THEN
+    ! Quad?
+    IF (NVE .EQ. 4) bcompatible = .FALSE.
+  END IF
+  
+  IF (.NOT. bcompatible) THEN
+    PRINT *,'Element and cubature formula not compatible!'
+    STOP
+  END IF
+  
+  END SUBROUTINE  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE spdiscr_initDiscr_simple (p_rspatialDiscr,ieltyp, ccubType,&
                                        rtriangulation, rdomain, rboundaryConditions)
   
@@ -336,8 +401,12 @@ CONTAINS
   p_relementDistr%ccubTypeLin = ccubType
   
   ! Get the typical transformation used with the element
-  p_relementDistr%ctrafoType = elem_getTrafoType(ieltyp)
+  p_relementDistr%ctrafoType = elem_igetTrafoType(ieltyp)
   
+  ! Check the cubature formula against the element distribution.
+  ! This stops the program if this is not fulfilled.
+  CALL spdiscr_checkCubature(ccubType,ieltyp)
+
   ! Initialise an 'identity' array containing the numbers of all elements.
   CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
         rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &

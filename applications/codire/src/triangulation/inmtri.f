@@ -1,5 +1,6 @@
 ***********************************************************************
-* Initialize triangulations 
+* Initialize triangulations for stationary and/or nonstationary
+* solver.
 *
 * This routine initializes a TRIAS structure with information about
 * all levels where the computation should be performed. The coarse
@@ -22,6 +23,11 @@
 *   IMETH   - Method how to generate the grids.
 *             =0: Read the coarse mesh from a file and refine; standard
 *             =1: Read all meshes from a file
+*   INVE    - Type of triangulation expected for the discretisation.
+*             =0: Use mesh as provided in the .TRI file (standard)
+*             =3: Triangular mesh required; convert to triangular mesh
+*                 if necessary
+*             =4: Quadrilateral mesh required
 *   CFILE   - Name of the file
 *
 * Out:
@@ -34,7 +40,7 @@
 *             with data.
 ***********************************************************************
 
-      SUBROUTINE INMTRI (MSHOW,TRIAS,NLMIN,NLMAX,IMETH,CFILE)
+      SUBROUTINE INMTRI (MSHOW,TRIAS,NLMIN,NLMAX,IMETH,INVE,CFILE)
       
       IMPLICIT NONE
       
@@ -46,7 +52,7 @@
       
 C     parameters
       
-      INTEGER MSHOW,TRIAS(SZTRIA,*),NLMIN,NLMAX,IMETH
+      INTEGER MSHOW,TRIAS(SZTRIA,*),NLMIN,NLMAX,IMETH,INVE
       CHARACTER CFILE*(*)
       
 C     local variables
@@ -84,23 +90,30 @@ C       Clear the TRIA-structure
 
         CALL LCL3(TRIAS(1,NLMIN),SZTRIA)
         
-C       Put the TRIA structure to the COMMON block - so the FEAT library
-C       assumes that there is no triangulation (because everything is 0)!
+C       Set up the coarse grid, read it from the file, pre-refine it.
+C       Convert quad mesh to tri mesh if required.
         CALL TRIA2C(TRIAS(1,NLMIN))
         
 C       Set up the coarse grid, read it from the file, pre-refine it
 
         MF = 0
-        CALL GENTRI (TRIAS(1,NLMIN), 2, 0, IREF+NLMIN-1, 1,
+        
+        CALL GENTRI (TRIAS(1,NLMIN), 2, INVE, IREF+NLMIN-1, 0,
      *               0, TRIAS(1,NLMIN), 
      *               MF, 1, CFILE)
+     
+        IF ((INVE .NE. 0) .AND. (TRIAS(ONVE,NLMIN).NE.INVE)) THEN
+          WRITE (MTERM,'(A)') 
+     *      'Triangulation does not fit to used discretisation!'
+          STOP
+        END IF
      
 C       Create the other grids by refinement.
 C       Share the DCORVG-information between all levels.
 
         DO I=NLMIN+1,NLMAX
           CALL LCL3(TRIAS(1,I),SZTRIA)
-          CALL GENTRI (TRIAS(1,I), 1, 0, 1, 1,
+          CALL GENTRI (TRIAS(1,I), 1, INVE, 1, 0,
      *                 1, TRIAS(1,I-1), 
      *                 MFILE, 1, CFILE)
        
@@ -128,7 +141,7 @@ C       Read all grids. The first call will open the file.
         
         DO I=NLMIN,NLMAX
           CALL LCL3(TRIAS(1,I),SZTRIA)
-          CALL GENTRI (TRIAS(1,I), 3, 0, 1, 1,
+          CALL GENTRI (TRIAS(1,I), 3, INVE, 1, 1,
      *                 0, TRIAS(1,I), 
      *                 MF, 1, CFILE)
         END DO

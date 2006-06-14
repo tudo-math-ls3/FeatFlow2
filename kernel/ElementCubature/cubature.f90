@@ -166,14 +166,14 @@ CONTAINS
 !<function>  
   INTEGER FUNCTION cub_igetID(scubName)
   
-  !<description>
+!<description>
   ! This routine returns the cubature id to a given cubature formula name. It is 
   ! case-insensitive. 
-  !</description>
+!</description>
 
-  !<result>
+!<result>
   ! id of the cubature formula
-  !</result>
+!</result>
 
   !<input>
 
@@ -273,36 +273,42 @@ CONTAINS
 
   SUBROUTINE cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
 
-  !<description>
+!<description>
   ! This routine initializes the coordinates and weight fields according 
   ! to the selected cubature formula. The integration domain is $[-1,1]^n$.
   ! In the case of one-dimensional integration, only cub_dxi(i,1) is used. 
   ! The coordinates of the cubature points on triangles are given in 
   ! barycentric coordinates.
-  !</description>
+!</description>
 
-  !<input>
-  
+!<input>
   ! id of the cubature formula to be set
   INTEGER, INTENT(IN) :: ccubType
+!</input>
   
-  !</input>
-  
-  !<output>
-  
+!<output>
   ! number of cubature points; =0: error, unknown cubature formula
   INTEGER , INTENT(OUT) :: ncubp
   
   ! Coordinates of the cubature points.
   ! 1D: Dxi(1..ncubp,1)=coordinates,
-  ! 2D: Dxi(1..ncubp,1)=x-coord, Dxi(1..ncubp,2)=y-coord
-  ! 3D: Dxi(1..ncubp,1)=x-coord, Dxi(1..ncubp,2)=y-coord, Dxi(1..ncubp,3)=z-coord
+  ! 2D: Quadrilaterals:
+  !        Dxi(1..ncubp,1)=x-coord, 
+  !        Dxi(1..ncubp,2)=y-coord
+  !     Triangles:
+  !        Dxi(1..ncubp,1)=1st barycentric coordinate, 
+  !        Dxi(1..ncubp,2)=2nd barycentric coordinate, 
+  !        Dxi(1..ncubp,3)=3rd barycentric coordinate, 
+  ! 3D: Hexahedraly:
+  !       Dxi(1..ncubp,1)=x-coord, 
+  !       Dxi(1..ncubp,2)=y-coord, 
+  !       Dxi(1..ncubp,3)=z-coord
   REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D), INTENT(OUT) :: Dxi
   
   ! For every cubature point the corresponding cubature weight
   REAL(DP), DIMENSION(CUB_MAXCUBP), INTENT(OUT) :: Domega
   
-  !</output>
+!</output>
 
 !</subroutine>    
 

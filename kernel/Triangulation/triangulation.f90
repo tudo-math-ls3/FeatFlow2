@@ -22,6 +22,9 @@
 !# 2.) tria_done
 !#     -> Cleans up a triangulation structure, releases memory from the heap.
 !#
+!# 3.) tria_quadToTri
+!#     -> Converts an arbitrary mesh into a triangular mesh.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -527,9 +530,9 @@ CONTAINS
                                 TRIA(OLAREA),p_rtriangulation%h_DelementArea)
                              
   ! *******************************************************
-  ! Initialise the new KADJ, create p_IelementsAtVertexIdx/p_IelementsAtVertex.
+  ! Initialise the new KVEL, create p_IelementsAtVertexIdx/p_IelementsAtVertex.
                              
-  CALL translate_KADJ (TRIA(ONVEL),INT(p_rtriangulation%NVT),TRIA(OLADJ), &
+  CALL translate_KVEL (TRIA(ONVEL),INT(p_rtriangulation%NVT),TRIA(OLVEL), &
                        p_rtriangulation%h_IelementsAtVertex,p_rtriangulation%h_IelementsAtVertexIdx)
 
   ! *******************************************************
@@ -824,11 +827,11 @@ CONTAINS
     END SUBROUTINE
 
     ! *************************************************************************
-    ! Builds a new KADJ structure, translates the old KADJ.
+    ! Builds a new KADJ structure, translates the old KVEL.
     ! ihandle represents the translated array, ihandleidx corresponds
-    ! to the index array inside the new KADJ.
+    ! to the index array inside the new KVEL.
     
-    SUBROUTINE translate_KADJ (NVEL,NVT,ifeathandle,ihandle,ihandleidx)
+    SUBROUTINE translate_KVEL (NVEL,NVT,ifeathandle,ihandle,ihandleidx)
     
     INTEGER, INTENT(IN) :: NVEL,NVT, ifeathandle
     INTEGER, INTENT(INOUT) :: ihandle,ihandleidx
@@ -1069,6 +1072,138 @@ CONTAINS
       
     END SUBROUTINE
 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>    
+
+  SUBROUTINE tria_quadToTri (rtriangulation)
+  
+!<description>
+  ! This routine converts a 2D mesh into a triangular 2D mesh. All quads are 
+  ! converted to triangles.
+  ! Warning: This should be applied only to the coarse grid; any information
+  !  about possible two-level ordering is lost!
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be converted. Is replaced by a triangular
+  ! mesh.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER(PREC_ELEMENTIDX) :: i,icount
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER :: h_IverticesAtElementTri
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementTri
+    INTEGER, DIMENSION(2) :: Isize
+   
+    ! There are some things missing... i.e. the calculation of adjacencies
+    PRINT *,'Conversion to triangular mesh not yet fully implemented!'
+    STOP
+   
+    ! For this routine we currently assume that there are only triangles
+    ! and quads in the triangulation. Might be a matter of change in 
+    ! the future...
+   
+    ! Get the points-at-element array
+    CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    
+    ! Count the quads; they are recogniseable by having the 4th corner vertex
+    ! number nonzero.
+    icount = 0
+    DO i=1,rtriangulation%NEL
+      IF (p_IverticesAtElement(4,i) .NE. 0) icount = icount+1
+    END DO
+    
+    ! Create a new p_IverticesAtElement array for the triangular mesh.
+    Isize = (/TRIA_MAXNVE2D,icount+rtriangulation%NEL/)
+    CALL storage_new2D ('tria_quadToTri', 'KVERTTRI', Isize, ST_INT, &
+                        h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
+    
+    ! Convert the array
+    CALL quadToTriang_aux1 (rtriangulation%NEL, icount,&
+                            p_IverticesAtElement, p_IverticesAtElementTri)
+    
+    ! Replace the old array by the new, release the old one.
+    CALL storage_free (rtriangulation%h_IverticesAtElement)
+    rtriangulation%h_IverticesAtElement = h_IverticesAtElementTri
+    
+    ! That's it.
+
+  CONTAINS
+
+    SUBROUTINE quadToTriang_aux1 (nel, nelquad, IverticesAtElement, Kvert_triang)
+
+  !<description>
+    ! Purpose: Convert quad mesh to triangular mesh
+    !
+    ! This routine creates a triangular KVERT structure from a 
+    ! quadrilateral KVERT structure.
+  !</description>
+
+  !<input>
+    ! Number of elements in the old grid
+    INTEGER,INTENT(IN) :: nel
+
+    ! Number of quads in the old grid
+    INTEGER,INTENT(IN) :: nelquad
+
+    ! KVERT structure of the old mesh
+    ! array [1..4,1..nel] of integer
+    INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  !</input>
+
+  !<output>
+    ! KVERT structure of the tri mesh
+    ! array [1..4,1..nel+nelquad] of integer
+    INTEGER(I32), DIMENSION(:,:), INTENT(OUT)  :: Kvert_triang
+  !</output>
+  
+!</subroutine>
+  
+      ! local variables
+      INTEGER(PREC_ELEMENTIDX) :: i,j
+        
+      ! Copy the old IverticesAtElement two times, once to the first half and
+      ! once the quads in it to the second half of Kvert_triang:
+      DO i=1,nel
+        Kvert_triang(:,i) = IverticesAtElement(:,i)
+      END DO
+      
+      j = 0
+      DO i=1,nel
+        IF (IverticesAtElement(4,i) .NE. 0) THEN
+          j=j+1
+          Kvert_triang(:,nel+j) = IverticesAtElement(:,i)
+        END IF
+      END DO
+
+      ! Correct Kvert_triang:
+      DO i=1,nel
+        ! Set the 4th entry in the first half of Kvert_triang to 0.
+        ! So the first triangle in each QUAD element consists of the
+        ! first three vertices 1..3.
+        Kvert_triang(4,i) = 0
+      END DO
+
+      DO i=1,nelquad
+        ! The second triangle in each quad consists of vertices 1,3,4.
+        ! So in the 2nd half, shift entry 3->2 and 4->3 and set the 4th
+        ! entry to 0.
+        Kvert_triang(2,nel+i) = Kvert_triang(3,nel+i)
+        Kvert_triang(3,nel+i) = Kvert_triang(4,nel+i)
+        Kvert_triang(4,nel+i) = 0
+      END DO
+
+      ! That's it.
+      
+    END SUBROUTINE  
+    
   END SUBROUTINE
 
 END MODULE

@@ -81,7 +81,8 @@
     
     ! The Jacobian matrix of the mapping between the reference and each
     ! real element, for all points on all elements.
-    REAL(DP), DIMENSION(TRAFO_NJACENTRIES,npointsPerElement,nelements), INTENT(IN) :: Djac
+    ! DIMENSION(#entries in the matrix,npointsPerEl,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Djac
     
     ! The Jacobian determinant of the mapping of each point from the
     ! reference element to each real element

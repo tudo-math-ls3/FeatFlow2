@@ -192,7 +192,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,i1,j,icurrentElementDistr, ICUBP, IALBET, IA
+  INTEGER :: i,i1,j,icurrentElementDistr, ICUBP, IALBET, IA, NVE
   LOGICAL :: bnonparTest
   INTEGER(I32) :: IEL, IELmax, IELset, IDOFE
   REAL(DP) :: OM,AUX
@@ -377,6 +377,13 @@ CONTAINS
     ! Activate the current element distribution
     p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
   
+    ! Get the number of corner vertices of the element
+    NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+    IF (NVE .NE. p_elementDistribution%itestElement) THEN
+      PRINT *,'bilf_buildMatrix9d_conf2: element spaces incompatible!'
+      STOP
+    END IF
+    
     ! Get the number of local DOF's for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
     
@@ -402,7 +409,7 @@ CONTAINS
     END DO
     
     ! Allocate an array saving the coordinates of corner vertices of elements
-    ALLOCATE(Djac(TRAFO_NJACENTRIES,ncubp,nelementsPerBlock))
+    ALLOCATE(Djac(4,ncubp,nelementsPerBlock))
     ALLOCATE(Ddetj(ncubp,nelementsPerBlock))
     
     ! Allocate arrays for the values of the test- and trial functions.
@@ -473,7 +480,7 @@ CONTAINS
 !                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !      END DO
       DO IEL=1,IELmax-IELset+1
-        DO J = 1,TRIA_MAXNVE2D
+        DO J = 1,NVE
           DO I = 1,NDIM2D
             DCoords(I,J,IEL) = p_DcornerCoordinates(I, &
                                p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
@@ -672,7 +679,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,i1,j,icurrentElementDistr, ICUBP, IALBET, IA
+  INTEGER :: i,i1,j,k,icurrentElementDistr, ICUBP, IALBET, IA, NVE
   LOGICAL :: bnonparTest
   INTEGER(I32) :: IEL, IELmax, IELset, IDOFE
   REAL(DP) :: OM,AUX
@@ -861,12 +868,23 @@ CONTAINS
     ! Get the number of local DOF's for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
     
+    ! Get the number of corner vertices of the element
+    NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+    IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
+      PRINT *,'linf_buildVectord_conf2: element spaces incompatible!'
+      STOP
+    END IF
+    
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
     CALL cub_getCubPoints(p_elementDistribution%ccubType, ncubp, Dxi, Domega)
     
+    ! Get from the trial element space the type of coordinate system
+    ! that is used there:
+    j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
+    
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp)
+    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,NDIM2D)
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -879,8 +897,11 @@ CONTAINS
     ! as the cubature point coordinates are identical on all elements
     DO j=1,SIZE(p_DcubPtsRef,3)
       DO i=1,ncubp
-        p_DcubPtsRef(1,i,j) = Dxi(i,1)
-        p_DcubPtsRef(2,i,j) = Dxi(i,2)
+        DO k=1,SIZE(p_DcubPtsRef,1)
+          ! Could be solved using the TRANSPOSE operator - but often is's 
+          ! faster this way...
+          p_DcubPtsRef(k,i,j) = Dxi(i,k)
+        END DO
       END DO
     END DO
     
@@ -951,7 +972,7 @@ CONTAINS
 !                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !      END DO
       DO IEL=1,IELmax-IELset+1
-        DO J = 1,TRIA_MAXNVE2D
+        DO J = 1,NVE
           DO I = 1,NDIM2D
             p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
                                p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))

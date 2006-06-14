@@ -798,7 +798,8 @@ CONTAINS
       ! Element type?
       ieltype = p_ItrialElements(p_IelementsAtBoundary(I))
       SELECT CASE (ieltype)
-      CASE (EL_Q0)
+      
+      CASE (EL_P0,EL_Q0)
         ! Nice element, only one DOF :-)
         ! Either the edge or an adjacent vertex is on the boundary.
         ! Get the value at the corner point and accept it as
@@ -813,7 +814,7 @@ CONTAINS
         ! Set the DOF number < 0 to indicate that it is Dirichlet
         Idofs(1,I-Iminidx(ipart)+1) = -ABS(Idofs(1,I-Iminidx(ipart)+1))
         
-      CASE (EL_Q1)
+      CASE (EL_P1,EL_Q1)
 
         ! Left point inside? -> Corresponding DOF must be computed
         IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
@@ -839,7 +840,7 @@ CONTAINS
         ! will produce two index sets: One index set for [0.0, 0.0]
         ! and one for [3.0, TMAX).
         
-      CASE (EL_EM30)
+      CASE (EL_EM30,EL_EM31,EL_E030,EL_E031)
 
         ! Edge inside? -> Calculate integral mean value over the edge
         IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
@@ -853,6 +854,11 @@ CONTAINS
           ! Set the DOF number < 0 to indicate that it is Dirichlet
           Idofs(ilocalEdge,I-Iminidx(ipart)+1) = -ABS(Idofs(ilocalEdge,I-Iminidx(ipart)+1))
         END IF
+        
+      CASE DEFAULT
+      
+        PRINT *,'bcasm_discrBCDirichlet: Unsupported element!'
+        STOP
       
       END SELECT
     

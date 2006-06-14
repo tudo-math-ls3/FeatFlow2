@@ -190,7 +190,7 @@ CONTAINS
     ! After this routine, we have to rely on ilvmin/ilvmax in the
     ! problem structure ratzher than those in the parameters.
     CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,CFILE)
+    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
@@ -672,7 +672,7 @@ CONTAINS
       rform%BconstantCoeff = .FALSE.
 
       ! Now we can build the matrix entries.
-      ! We specify the callback function coeff_Laplace for the coefficients.
+      ! We specify the callback function coeff_burgers for the coefficients.
       ! As long as we use constant coefficients, this routine is not used.
       ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
       ! the framework will call the callback routine to get analytical data.

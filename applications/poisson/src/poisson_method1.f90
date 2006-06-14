@@ -140,7 +140,7 @@ CONTAINS
     ! Now read in the triangulation - in FEAT 1.x syntax.
     ! Refine it to level LV...
     CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,lv,lv,0,CFILE)
+    CALL INMTRI (2,TRIAS,lv,lv,0,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used

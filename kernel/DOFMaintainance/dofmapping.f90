@@ -356,7 +356,12 @@ CONTAINS
 !</subroutine>
 
   ! local variables 
-  INTEGER(I32) :: i
+  INTEGER(I32) :: i,j
+  
+  ! Get the number of local DOF's - usually either 3 or 4, depending on
+  ! the element. The first dimension of IdofGlob indicates the number of 
+  ! DOF's.
+  j = MIN(TRIA_MAXNVE2D,SIZE(IdofGlob,1))
   
   ! Loop through the elements to handle
   DO i=1,SIZE(IelIdx)
@@ -365,7 +370,7 @@ CONTAINS
     ! We always copy all elements of IverticesAtElement (:,.).
     ! There's no harm and the compiler can optimise better.
     
-    IdofGlob(1:TRIA_MAXNVE2D,i) = IverticesAtElement(1:TRIA_MAXNVE2D,IelIdx(i))
+    IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
   END DO
 
   END SUBROUTINE

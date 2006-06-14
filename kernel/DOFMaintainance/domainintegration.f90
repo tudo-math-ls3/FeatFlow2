@@ -58,18 +58,18 @@ MODULE domainintegration
     ! coordinates of the cubature points on the reference element.
     ! Remark: As long as the same cubature formula is used on all
     !  elements, the coordinates here are the same for each element.
-    ! array [1..NDIM2D,1..npointsPerElement,1..Number of elements] of double
+    ! array [1..dimension,1..npointsPerElement,1..Number of elements] of double
     REAL(DP), DIMENSION(:,:,:), POINTER           :: p_DcubPtsRef
 
     ! A list of points, corresponding to DcubPtsRef, in real coordinates.
     ! On each element in the current set of elements, this gives the
     ! coordinates of the cubature points on the real element.
-    ! array [1..NDIM2D,1..npointsPerElement,1..Number of elements] of double
+    ! array [1..dimension,1..npointsPerElement,1..Number of elements] of double
     REAL(DP), DIMENSION(:,:,:), POINTER           :: p_DcubPtsReal
 
     ! The Jacobian matrix of the mapping between the reference and each
     ! real element, for all points on all elements in progress.
-    ! array [1..TRAFO_NJACENTRIES,1..npointsPerElement,1..Number of elements)
+    ! array [1..dimension*dimension,1..npointsPerElement,1..Number of elements)
     REAL(DP), DIMENSION(:,:,:),POINTER            :: p_Djac
     
     ! The Jacobian determinant of the mapping of each point from the
@@ -89,7 +89,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE domint_initIntegration (rintSubset,nelements,npointsPerElement)
+  SUBROUTINE domint_initIntegration (rintSubset,nelements,npointsPerElement,&
+                                     icoordSystem,ndimSpace)
   
 !<description>
   ! This routine initialises a t_domainIntSubset structure. Memory is allocated
@@ -104,6 +105,15 @@ CONTAINS
   
   ! Number of points per element
   INTEGER, INTENT(IN) :: npointsPerElement
+
+  ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
+  ! the type of the coordinate system that is used for specifying the coordinates
+  ! on the reference element.
+  INTEGER, INTENT(IN) :: icoordSystem
+  
+  ! Number of space dimensions. Either NDIM2D or NDIM3D for 2D or 3D, 
+  ! respectively.
+  INTEGER, INTENT(IN) :: ndimSpace
 !</input>
 
 !<output>
@@ -119,17 +129,36 @@ CONTAINS
     
     ! Allocate memory for the structures:
     !
-    ! Allocate memory for corner coordinates
-    ALLOCATE(rintSubset%p_DCoords(NDIM2D,TRIA_MAXNVE2D,nelements))
+    ! Allocate memory for corner coordinates.
+    ALLOCATE(rintSubset%p_DCoords(ndimSpace,TRIA_MAXNVE2D,nelements))
 
     ! Allocate arrays accepting cubature point coordinates.
     ! It's at most as large as number of elements or length
     ! of the element set.
-    ALLOCATE(rintSubset%p_DcubPtsRef(NDIM2D,npointsPerElement,nelements))
-    ALLOCATE(rintSubset%p_DcubPtsReal(NDIM2D,npointsPerElement,nelements))
+    ! Check the coordinate system to find out what coordinate
+    ! dimension to use
+    SELECT CASE (icoordSystem)
+    CASE (TRAFO_CS_BARY2DTRI)
+      ALLOCATE(rintSubset%p_DcubPtsRef(3,npointsPerElement,nelements))
+      
+    CASE (TRAFO_CS_REF2DTRI,TRAFO_CS_REF2DQUAD,&
+          TRAFO_CS_REAL2DTRI,TRAFO_CS_REAL2DQUAD)
+      ALLOCATE(rintSubset%p_DcubPtsRef(ndimSpace,npointsPerElement,nelements))
+      
+    CASE DEFAULT
+      NULLIFY(rintSubset%p_DcubPtsRef)
+      
+    END SELECT
 
+    ! The Jacobian matrix for the mapping from the reference to the real element
+    ! has always length dimension^2
+    ALLOCATE(rintSubset%p_Djac(ndimSpace*ndimSpace,npointsPerElement,nelements))
+    
+    ! The coordinate system on the real element has always the same dimension
+    ! as the space.
+    ALLOCATE(rintSubset%p_DcubPtsReal(ndimSpace,npointsPerElement,nelements))
+    
     ! Allocate an array saving the coordinates of corner vertices of elements
-    ALLOCATE(rintSubset%p_Djac(TRAFO_NJACENTRIES,npointsPerElement,nelements))
     ALLOCATE(rintSubset%p_Ddetj(npointsPerElement,nelements))
 
   END SUBROUTINE
@@ -151,11 +180,11 @@ CONTAINS
 
     ! Deallocate an array saving the coordinates of corner vertices of elements
     DEALLOCATE(rintSubset%p_Ddetj)
-    DEALLOCATE(rintSubset%p_Djac)
+    IF (ASSOCIATED(rintSubset%p_Djac)) DEALLOCATE(rintSubset%p_Djac)
 
     ! Deallocate arrays accepting cubature point coordinates.
     DEALLOCATE(rintSubset%p_DcubPtsReal)
-    DEALLOCATE(rintSubset%p_DcubPtsRef)
+    IF (ASSOCIATED(rintSubset%p_DcubPtsRef)) DEALLOCATE(rintSubset%p_DcubPtsRef)
 
     ! Deallocate memory for corner coordinates
     DEALLOCATE(rintSubset%p_DCoords)

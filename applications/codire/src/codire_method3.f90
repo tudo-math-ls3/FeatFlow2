@@ -155,7 +155,7 @@ CONTAINS
     ! Now read in the triangulation - in FEAT 1.x syntax.
     ! Refine it to level LV...
     CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,ilv,ilv,0,CFILE)
+    CALL INMTRI (2,TRIAS,ilv,ilv,0,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
@@ -335,7 +335,7 @@ CONTAINS
     rform%Dcoefficients(7)  = gamma
     
     ! Now we can build the matrix entries.
-    ! We specify the callback function coeff_Laplace for the coefficients.
+    ! We specify the callback function coeff_CoDiRe for the coefficients.
     ! As long as we use constant coefficients, this routine is not used.
     ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
     ! the framework will call the callback routine to get analytical data.
@@ -344,7 +344,7 @@ CONTAINS
     ! so the callback routine has access to everything what is
     ! in the collection.
     CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                 p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
+                                 p_rmatrix%RmatrixBlock(1,1),coeff_CoDiRe,&
                                  rproblem%rcollection)
     
     ! Now we want to build up the right hand side. At first we need a block

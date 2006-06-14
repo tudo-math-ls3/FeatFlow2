@@ -6,6 +6,12 @@
 !# <purpose>
 !# This module contains low level auxiliary functions for geometric
 !# objects like triangles, quads or similar.
+!#
+!# The following routines can be found here:
+!#
+!# 1.) gaux_getAspectRatio_quad2D
+!#     -> Calculate the aspect ratio of a 2D quadrilateral
+!#
 !# </purpose>
 !##############################################################################
 

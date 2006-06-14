@@ -167,9 +167,9 @@ CONTAINS
     ! This will probably modify ilvmin/ilvmax in case of a level
     ! shift, i.e. if ilvmax > ilvmin+9 !
     ! After this routine, we have to rely on ilvmin/ilvmax in the
-    ! problem structure ratzher than those in the parameters.
+    ! problem structure rather than those in the parameters.
     CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,CFILE)
+    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
@@ -227,7 +227,7 @@ CONTAINS
       ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
       NULLIFY(rproblem%RlevelInfo(i)%p_rdiscretisation)
       CALL spdiscr_initDiscr_simple (rproblem%RlevelInfo(i)%p_rdiscretisation, &
-                                    EL_E011,CUB_G2X2,&
+                                    EL_E011,CUB_TRZ,&
                                     p_rtriangulation, p_rboundary)
     END DO
                                    
