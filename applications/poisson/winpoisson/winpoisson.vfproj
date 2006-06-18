@@ -185,6 +185,9 @@
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration>
 			<FileConfiguration Name="Release|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\LinearSolver\vanca.f90">
+			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
 		<Filter Name="LinearSystem">
 		<File RelativePath="..\..\..\kernel\LinearSystem\linearsystemblock.f90">

@@ -122,7 +122,11 @@ MODULE linearsystemscalar
   INTEGER, PARAMETER :: LSYSSC_MSPEC_ISCOPY = LSYSSC_MSPEC_STRUCTUREISCOPY +&
                                               LSYSSC_MSPEC_CONTENTISCOPY
 
-  ! Matrix is saved transposed
+  ! Matrix is saved transposed.
+  ! To use a matrix in a transposed way, the application has to
+  ! 1.) set this flag in the imatrixSpec bitfield
+  ! 2.) exchange the values in t_matrixScalar%NEQ and t_matrixScalar%NCOLS 
+  !     of the matrix structure.
   INTEGER, PARAMETER :: LSYSSC_MSPEC_TRANSPOSED =      2**2
 
   ! Matrix not present in memory
@@ -258,12 +262,23 @@ MODULE linearsystemscalar
     ! Number of elements in the matrix
     INTEGER(PREC_MATIDX) :: NA  = 0
     
-    ! Number of equations in the matrix
+    ! Number of equations = rows in the matrix.
+    ! Remark: When the application sets the LSYSSC_MSPEC_TRANSPOSED flag
+    !  in imatrixSpec to indicate a transposed matrix, this has to be 
+    !  exchanged with NCOLS to indicate the number of equations in the
+    !  transposed matrix!
     INTEGER(PREC_VECIDX) :: NEQ = 0
+
+    ! Number of columns in the matrix.
+    ! Remark: When the application sets the LSYSSC_MSPEC_TRANSPOSED flag
+    !  in imatrixSpec to indicate a transposed matrix, this has to be 
+    !  exchanged with NROWS to indicate the number of columns in the
+    !  transposed matrix!
+    INTEGER(PREC_VECIDX) :: NCOLS = 0
     
     ! Multiplier for matrix entries. All entries in the matrix are
     ! scaled by this multiplier when doing Matrix-vector multiplication.
-    REAL(DP)         :: dScaleFactor = 1.0_DP
+    REAL(DP)         :: dscaleFactor = 1.0_DP
     
     ! Flag whether or not the matrix is resorted.
     !  <0: Matrix is unsorted, sorting strategy is prepared in 
@@ -749,59 +764,90 @@ CONTAINS
 
 !</subroutine>
   
-  ! Vectors must be compatible...
-  CALL lsyssc_isVectorCompatible (rx,ry)
+    ! Vectors must be compatible...
+    CALL lsyssc_isVectorCompatible (rx,ry)
 
-  ! and compatible to the matrix!
-  CALL lsyssc_isMatrixCompatible (rx,rmatrix)
-  
-  ! rx and ry must have at least the same data type!
-  IF (rx%cdataType .NE. ry%cdataType) THEN
-    PRINT *,'MV with different data types for rx and ry not supported!'
-    STOP
-  END IF
-  
-  ! rx, ry and the matrix must have proper dimensions
-  IF ((rx%NEQ .NE. ry%NEQ) .OR. (rx%NEQ .NE. rmatrix%NEQ)) THEN
-    PRINT *,'Error in MV: Vectors and matrix have different size!'
-    STOP
-  END IF
-  
-  IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
-    PRINT *,'Multiplication with transposed matrix not yet supported!'
-    STOP
-  END IF
-
-  ! Select the right MV multiplication routine from the matrix format
-  SELECT CASE (rmatrix%cmatrixFormat)
-  
-  CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
-  
-    ! Take care of the precision of the entries
-    SELECT CASE (rmatrix%cdataType)
-    CASE (ST_DOUBLE)
-      ! Format 7 and Format 9 multiplication
-      SELECT CASE (rx%cdataType)
+    ! and compatible to the matrix!
+    CALL lsyssc_isMatrixCompatible (rx,rmatrix)
+    
+    ! rx and ry must have at least the same data type!
+    IF (rx%cdataType .NE. ry%cdataType) THEN
+      PRINT *,'MV with different data types for rx and ry not supported!'
+      STOP
+    END IF
+    
+    ! rx, ry and the matrix must have proper dimensions
+    IF ((rx%NEQ .NE. ry%NEQ) .OR. (rx%NEQ .NE. rmatrix%NEQ)) THEN
+      PRINT *,'Error in MV: Vectors and matrix have different size!'
+      STOP
+    END IF
+    
+    IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
+      ! Select the right MV multiplication routine from the matrix format
+      SELECT CASE (rmatrix%cmatrixFormat)
       
-      CASE (ST_DOUBLE)
-        ! double precision matrix, double precision vectors
-        CALL lsyssc_LAX79doubledouble (rmatrix,rx,ry,cx,cy)
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
       
-      CASE DEFAULT
-        PRINT *,'Only double precision vectors supported for now in MV!'
-        STOP
+        ! Take care of the precision of the entries
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Format 7 and Format 9 multiplication
+          SELECT CASE (rx%cdataType)
+          
+          CASE (ST_DOUBLE)
+            ! double precision matrix, double precision vectors
+            CALL lsyssc_LAX79doubledouble (rmatrix,rx,ry,cx,cy)
+          
+          CASE DEFAULT
+            PRINT *,'Only double precision vectors supported for now in MV!'
+            STOP
+            
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'Only double precision matrices supported for now in MV!'
+          STOP
+        END SELECT
         
+      CASE DEFAULT
+        PRINT *,'Unknown matrix format in MV-multiplication!'
+        STOP
       END SELECT
       
-    CASE DEFAULT
-      PRINT *,'Only double precision matrices supported for now in MV!'
-      STOP
-    END SELECT
-    
-  CASE DEFAULT
-    PRINT *,'Unknown matrix format in MV-multiplication!'
-    STOP
-  END SELECT
+    ELSE
+      ! Transposed matrix
+      ! Select the right MV multiplication routine from the matrix format
+      SELECT CASE (rmatrix%cmatrixFormat)
+      
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
+      
+        ! Take care of the precision of the entries
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Format 7 and Format 9 multiplication
+          SELECT CASE (rx%cdataType)
+          
+          CASE (ST_DOUBLE)
+            ! double precision matrix, double precision vectors
+            CALL lsyssc_LTX79doubledouble (rmatrix,rx,ry,cx,cy)
+          
+          CASE DEFAULT
+            PRINT *,'Only double precision vectors supported for now in MV!'
+            STOP
+            
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'Only double precision matrices supported for now in MV!'
+          STOP
+        END SELECT
+        
+      CASE DEFAULT
+        PRINT *,'Unknown matrix format in MV-multiplication!'
+        STOP
+      END SELECT
+      
+    END IF
   
   CONTAINS
   
@@ -907,6 +953,105 @@ CONTAINS
       
     END SUBROUTINE
    
+    !**************************************************************
+    ! Format 7 and Format 9 multiplication, transposed matrix
+    ! double precision matrix,
+    ! double precision vectors
+    
+    SUBROUTINE lsyssc_LTX79doubledouble (rmatrix,rx,ry,cx,cy)
+
+    ! Save arguments as above - given as parameters as some compilers
+    ! might have problems with scoping units...
+    TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
+    TYPE(t_vectorScalar), INTENT(IN)                  :: rx
+    REAL(DP), INTENT(IN)                              :: cx
+    REAL(DP), INTENT(IN)                              :: cy
+    TYPE(t_vectorScalar), INTENT(INOUT)               :: ry
+
+    REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_MATIDX) :: irow,icol
+    REAL(DP) :: dtmp
+    INTEGER(PREC_VECIDX) :: NEQ
+
+      ! Get the matrix
+      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
+      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      
+      ! NCOLS(real matrix) = NEQ(saved matrix structure) !
+      NEQ = rmatrix%NCOLS
+
+      ! Get the vectors
+      CALL lsyssc_getbase_double (rx,p_Dx)
+      CALL lsyssc_getbase_double (ry,p_Dy)
+      
+      ! Perform the multiplication.
+      IF (cx .NE. 0.0_DP) THEN
+      
+        IF (cy .EQ. 0.0_DP) THEN
+        
+          ! cy = 0. We have simply to make matrix*vector without adding ry.
+          ! Multiply the first entry in each line of the matrix with the
+          ! corresponding entry in rx and add it to ry.
+          ! Don't multiply with cy, this comes later.
+          !
+          ! What is this complicated IF-THEN structure for?
+          ! Well, to prevent an initialisation of rx with zero in case cy=0!
+          
+          DO irow=1,NEQ
+            p_Dy(irow) = p_Dx(irow)*p_DA(p_Kld(irow)) 
+          END DO
+          
+          ! Now we have an initial ry where we can do a usual MV
+          ! with the rest of the matrix...
+          
+        ELSE 
+        
+          ! cy <> 0. We have to perform matrix*vector + vector.
+          ! What we actually calculate here is:
+          !    ry  =  cx * A^t * x  +  cy * y
+          !        =  cx * ( A^t * x  +  cy/cx * y).
+          !        =  cx * ( (x^t * A)  +  cy/cx * y^t)^t.
+          !
+          ! Scale down y:
+        
+          dtmp = cy/cx
+          IF (dtmp .NE. 1.0_DP) THEN
+            CALL lalg_vectorScaleDble(p_Dy,dtmp)
+          END IF
+          
+          ! Multiply the first entry in each line of the matrix with the
+          ! corresponding entry in rx and add it to the (scaled) ry.
+          
+          DO irow=1,NEQ
+            p_Dy(irow) = p_Dy(irow) + p_Dx(irow)*p_DA(p_Kld(irow)) 
+          END DO
+          
+        ENDIF
+        
+        ! Multiply the rest of rx with the matrix and add it to ry:
+        
+        DO irow=1,NEQ
+          DO icol = p_Kld(irow)+1,p_Kld(irow+1)-1
+            p_Dy(p_Kcol(icol)) = p_Dy(p_Kcol(icol)) + p_Dx(irow)*p_DA(icol)
+          END DO
+        END DO
+        
+        ! Scale by cx, finish.
+        
+        IF (cx .NE. 1.0_DP) THEN
+          CALL lalg_vectorScaleDble (p_Dy,cx)
+        END IF
+        
+      ELSE 
+        ! cx = 0. The formula is just a scaling of the vector ry!
+        CALL lalg_vectorScaleDble(p_Dy,cy)
+      ENDIF
+      
+    END SUBROUTINE
+
   END SUBROUTINE
   
   !****************************************************************************
@@ -1199,6 +1344,7 @@ CONTAINS
   rmatrix%cdataType   = ST_DOUBLE
   rmatrix%NA  = 0
   rmatrix%NEQ = 0
+  rmatrix%NCOLS = 0
   rmatrix%dScaleFactor = 1.0_DP
   rmatrix%isortStrategy = 0
   rmatrix%h_IsortPermutation = ST_NOHANDLE

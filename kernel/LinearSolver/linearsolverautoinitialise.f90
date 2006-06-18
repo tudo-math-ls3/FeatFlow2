@@ -150,7 +150,7 @@ CONTAINS
   
     ! On the lowest level create a coarse grid solver structure
     IF (ilevel .EQ. 1) THEN
-      CALL linsol_initVANCAQ1TP0NS2D (p_rcoarseGridSolver)
+      CALL linsol_initVANCA (p_rcoarseGridSolver)
       p_rcoarseGridSolver%depsRel = dcoarseGridAccuracyRel
       p_rcoarseGridSolver%depsAbs = dcoarseGridAccuracyAbs
       p_rcoarseGridSolver%nmaxIterations = nmaxCoarseGridSteps
@@ -159,8 +159,8 @@ CONTAINS
     END IF
     
     ! Create pre- and postsmoother structure on the current level
-    CALL linsol_initVANCAQ1TP0NS2D (p_rpreSmoother)
-    CALL linsol_initVANCAQ1TP0NS2D (p_rpostSmoother)
+    CALL linsol_initVANCA (p_rpreSmoother)
+    CALL linsol_initVANCA (p_rpostSmoother)
     
     ! Configure the structures to form a smoother. A smoother is a solver
     ! that iterates a finite number of times without respecting the

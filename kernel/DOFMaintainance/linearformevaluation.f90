@@ -28,7 +28,7 @@ MODULE linearformevaluation
   IMPLICIT NONE
 
 !<constants>
-!<constantblock description="Constants defining the complexity of the discretisation">
+!<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building vectors
   INTEGER :: LINF_NELEMSIM   = 1000
@@ -192,9 +192,9 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,i1,j,icurrentElementDistr, ICUBP, IALBET, IA, NVE
+  INTEGER :: i,i1,j,icurrentElementDistr, ICUBP, IALBET, IA, NVE, IDOFE
   LOGICAL :: bnonparTest
-  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE
+  INTEGER(PREC_ELEMENTIDX) :: IEL, IELmax, IELset
   REAL(DP) :: OM,AUX
   
   ! Array to tell the element which derivatives to calculate

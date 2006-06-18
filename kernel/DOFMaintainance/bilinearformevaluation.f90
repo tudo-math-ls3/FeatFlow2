@@ -57,7 +57,7 @@ MODULE bilinearformevaluation
 !</types>
   
 !<constants>
-!<constantblock description="Constants defining the complexity of the discretisation">
+!<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
   INTEGER, PARAMETER :: BILF_NELEMSIM   = 1000
@@ -316,8 +316,9 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, IHELP,NVE
-  INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE, i
+  INTEGER(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA
+  INTEGER :: IDOFE, JDOFE, i, IHELP,NVE
+  INTEGER(PREC_ELEMENTIDX) :: IEL, IELmax, IELset
   LOGICAL :: BSORT, bIdenticalTrialAndTest
   
   ! An allocateable list of handles for memory blocks. Size is dynamically 

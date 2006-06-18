@@ -724,12 +724,15 @@ CONTAINS
         CALL linsol_initUMFPACK4 (p_rcoarseGridSolver)
 
       ELSE
-        ! Set up Jacobi smoother for multigrid would be:
-         CALL linsol_initJacobi (p_rsmoother)
+        ! Setting up Jacobi smoother for multigrid would be:
+        ! CALL linsol_initJacobi (p_rsmoother)
+        
+        ! Setting up VANCA smoother for multigrid would be:
+        ! CALL linsol_initVANCA (p_rsmoother)
 
         ! Set up an ILU smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-        !CALL linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+        CALL linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
         CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
       END IF
     

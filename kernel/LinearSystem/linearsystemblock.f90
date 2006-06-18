@@ -83,10 +83,10 @@
 !# 22.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 23.) lsyssc_getbase_double
+!# 23.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 24.) lsyssc_getbase_single
+!# 24.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
 !# 25.) lsysbl_vectorNorm
@@ -190,8 +190,11 @@ MODULE linearsystemblock
   
   TYPE t_matrixBlock
     
-    ! Total number of equations in the vector
+    ! Total number of equations = rows in the matrix
     INTEGER                    :: NEQ         = 0
+
+    ! Total number of columns in the matrix
+    INTEGER                    :: NCOLS       = 0
     
     ! Number of diagonal blocks in the matrix
     INTEGER                    :: ndiagBlocks = 0
@@ -372,13 +375,13 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,j
   LOGICAL :: b1,b2,b3
 
   ! We assume that we are not compatible
   IF (PRESENT(bcompatible)) bcompatible = .FALSE.
   
-  ! Vector/Matrix must have the same size and number of blocks
+  ! Vector/Matrix must have the same size and number of blocks and equations
   IF (rvector%NEQ .NE. rmatrix%NEQ) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
@@ -400,87 +403,94 @@ CONTAINS
   END IF
   
   ! All the subblocks must be the same size and must be sorted the same way.
+  ! Each subvector corresponds to one 'column' in the block matrix.
   DO i=1,rvector%nblocks
+    DO j=1,rvector%nblocks
+      IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
 
-    b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC)
-    b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,i)%p_rdiscreteBC)
-    b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC, &
-                    rmatrix%RmatrixBlock(i,i)%p_rdiscreteBC)
-    IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-      IF (PRESENT(bcompatible)) THEN
-        bcompatible = .FALSE.
-        RETURN
-      ELSE
-        PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
-        STOP
-      END IF
-    END IF
-
-    b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict)
-    b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,i)%p_rdiscreteBCfict)
-    b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict, &
-                    rmatrix%RmatrixBlock(i,i)%p_rdiscreteBCfict)
-    IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-      IF (PRESENT(bcompatible)) THEN
-        bcompatible = .FALSE.
-        RETURN
-      ELSE
-        PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
-        STOP
-      END IF
-    END IF
-
-    b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation)
-    b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,i)%p_rspatialDiscretisation)
-    b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation, &
-                    rmatrix%RmatrixBlock(i,i)%p_rspatialDiscretisation)
-    IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-      IF (PRESENT(bcompatible)) THEN
-        bcompatible = .FALSE.
-        RETURN
-      ELSE
-        PRINT *,'Vector/Matrix not compatible, different discretisation!'
-        STOP
-      END IF
-    END IF
-
-    IF (rvector%RvectorBlock(i)%NEQ .NE. rmatrix%RmatrixBlock(i,i)%NEQ) THEN
-      IF (PRESENT(bcompatible)) THEN
-        bcompatible = .FALSE.
-        RETURN
-      ELSE
-        PRINT *,'Vector/Matrix not compatible, different block structure!'
-        STOP
-      END IF
-    END IF
-
-    ! isortStrategy < 0 means unsorted. Both unsorted is ok.
-
-    IF ((rvector%RvectorBlock(i)%isortStrategy .GT. 0) .OR. &
-        (rmatrix%RmatrixBlock(i,i)%isortStrategy .GT. 0)) THEN
-
-      IF (rvector%RvectorBlock(i)%isortStrategy .NE. &
-          rmatrix%RmatrixBlock(i,i)%isortStrategy) THEN
-        IF (PRESENT(bcompatible)) THEN
-          bcompatible = .FALSE.
-          RETURN
-        ELSE
-          PRINT *,'Vector/Matrix not compatible, differently sorted!'
-          STOP
+        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC)
+        b2 = ASSOCIATED(rmatrix%RmatrixBlock(j,i)%p_rdiscreteBC)
+        b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC, &
+                        rmatrix%RmatrixBlock(j,i)%p_rdiscreteBC)
+        IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+          IF (PRESENT(bcompatible)) THEN
+            bcompatible = .FALSE.
+            RETURN
+          ELSE
+            PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
+            STOP
+          END IF
         END IF
-      END IF
 
-      IF (rvector%RvectorBlock(i)%h_isortPermutation .NE. &
-          rmatrix%RmatrixBlock(i,i)%h_isortPermutation) THEN
-        IF (PRESENT(bcompatible)) THEN
-          bcompatible = .FALSE.
-          RETURN
-        ELSE
-          PRINT *,'Vector/Matrix not compatible, differently sorted!'
-          STOP
+        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict)
+        b2 = ASSOCIATED(rmatrix%RmatrixBlock(j,i)%p_rdiscreteBCfict)
+        b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict, &
+                        rmatrix%RmatrixBlock(j,i)%p_rdiscreteBCfict)
+        IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+          IF (PRESENT(bcompatible)) THEN
+            bcompatible = .FALSE.
+            RETURN
+          ELSE
+            PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
+            STOP
+          END IF
         END IF
+
+        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation)
+        b2 = ASSOCIATED(rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation)
+        b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation, &
+                        rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation)
+        IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+          IF (PRESENT(bcompatible)) THEN
+            bcompatible = .FALSE.
+            RETURN
+          ELSE
+            PRINT *,'Vector/Matrix not compatible, different discretisation!'
+            STOP
+          END IF
+        END IF
+
+        IF (rvector%RvectorBlock(i)%NEQ .NE. rmatrix%RmatrixBlock(j,i)%NEQ) THEN
+          IF (PRESENT(bcompatible)) THEN
+            bcompatible = .FALSE.
+            RETURN
+          ELSE
+            PRINT *,'Vector/Matrix not compatible, different block structure!'
+            STOP
+          END IF
+        END IF
+
+        ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+
+        IF ((rvector%RvectorBlock(i)%isortStrategy .GT. 0) .OR. &
+            (rmatrix%RmatrixBlock(j,i)%isortStrategy .GT. 0)) THEN
+
+          IF (rvector%RvectorBlock(i)%isortStrategy .NE. &
+              rmatrix%RmatrixBlock(j,i)%isortStrategy) THEN
+            IF (PRESENT(bcompatible)) THEN
+              bcompatible = .FALSE.
+              RETURN
+            ELSE
+              PRINT *,'Vector/Matrix not compatible, differently sorted!'
+              STOP
+            END IF
+          END IF
+
+          IF (rvector%RvectorBlock(i)%h_isortPermutation .NE. &
+              rmatrix%RmatrixBlock(j,i)%h_isortPermutation) THEN
+            IF (PRESENT(bcompatible)) THEN
+              bcompatible = .FALSE.
+              RETURN
+            ELSE
+              PRINT *,'Vector/Matrix not compatible, differently sorted!'
+              STOP
+            END IF
+          END IF
+        END IF
+      
       END IF
-    END IF
+      
+    END DO
   END DO
 
   ! Ok, they are compatible
@@ -763,10 +773,10 @@ CONTAINS
   ! according to the size of the blocks of the submatrices.
   !
   ! Memory is allocated on the heap for rx. The different components
-  ! of rx will have the same size as the corresponding diagonal
+  ! of rx will have the same size as the corresponding column
   ! blocks in rtemplateMat.
   ! The sorting strategies of the subvectors are initialised
-  ! with the sorting strategies of the diagonal blocks of rtemplateMat.
+  ! with the sorting strategies of the column blocks of rtemplateMat.
 !</description>
   
 !<input>
@@ -790,7 +800,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,n
+  INTEGER :: i,n,j
   INTEGER :: cdata
   
   cdata = ST_DOUBLE
@@ -805,46 +815,63 @@ CONTAINS
   
   n=1
   DO i = 1,rtemplateMat%ndiagBlocks
-    IF (rtemplateMat%RmatrixBlock(i,i)%NEQ .GT. 0) THEN
-      rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(i,i)%NEQ
-      
-      ! Take the handle of the complete-solution vector, but set the index of
-      ! the first entry to a value >= 1 - so that it points to the first
-      ! entry in the global solution vector!
-      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
-      rx%RvectorBlock(i)%iidxFirstEntry = n
-      
-      ! Give the vector the discretisation of the matrix
-      rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-        rtemplateMat%RmatrixBlock(i,i)%p_rspatialDiscretisation
+    ! Search for the first matrix in column i of the block matrix -
+    ! this will give us information about the vector. Note that the
+    ! diagonal blocks does not necessarily have to exist!
+    DO j=1,rtemplateMat%ndiagBlocks
+    
+      ! Check if the matrix is not empty
+      IF (rtemplateMat%RmatrixBlock(j,i)%NEQ .GT. 0) THEN
         
-      ! Give the vector the discrete boundary conditions
-      rx%RvectorBlock(i)%p_rdiscreteBC => rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBC
-      rx%RvectorBlock(i)%p_rdiscreteBCfict => &
-        rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBCfict
+        ! Found a template matrix we can use :-)
+        rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(j,i)%NEQ
         
-      ! Give the vector the same sorting strategy as the matrix, so that
-      ! the matrix and vector get compatible. Otherwise, things
-      ! like matrix vector multiplication won't work...
-      rx%RvectorBlock(i)%isortStrategy = &
-        rtemplateMat%RmatrixBlock(i,i)%isortStrategy
-      rx%RvectorBlock(i)%h_IsortPermutation = &
-        rtemplateMat%RmatrixBlock(i,i)%h_IsortPermutation
+        ! Take the handle of the complete-solution vector, but set the index of
+        ! the first entry to a value >= 1 - so that it points to the first
+        ! entry in the global solution vector!
+        rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
+        rx%RvectorBlock(i)%iidxFirstEntry = n
+        
+        ! Give the vector the discretisation of the matrix
+        rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+          rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation
+          
+        ! Give the vector the discrete boundary conditions
+        rx%RvectorBlock(i)%p_rdiscreteBC => rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBC
+        rx%RvectorBlock(i)%p_rdiscreteBCfict => &
+          rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBCfict
+          
+        ! Give the vector the same sorting strategy as the matrix, so that
+        ! the matrix and vector get compatible. Otherwise, things
+        ! like matrix vector multiplication won't work...
+        rx%RvectorBlock(i)%isortStrategy = &
+          rtemplateMat%RmatrixBlock(j,i)%isortStrategy
+        rx%RvectorBlock(i)%h_IsortPermutation = &
+          rtemplateMat%RmatrixBlock(j,i)%h_IsortPermutation
+        
+        ! Denote in the subvector that the handle belongs to us - not to
+        ! the subvector.
+        rx%RvectorBlock(i)%bisCopy = .TRUE.
+        
+        ! Set the data type
+        rx%RvectorBlock(i)%cdataType = cdata
+        
+        n = n+rtemplateMat%RmatrixBlock(j,i)%NEQ
+        
+        ! Finish this loop, continue with the next column
+        EXIT
+        
+      END IF
       
-      ! Denote in the subvector that the handle belongs to us - not to
-      ! the subvector.
-      rx%RvectorBlock(i)%bisCopy = .TRUE.
-      
-      ! Set the data type
-      rx%RvectorBlock(i)%cdataType = cdata
-      
-      n = n+rtemplateMat%RmatrixBlock(i,i)%NEQ
-    ELSE
+    END DO
+    
+    IF (j .GT. rtemplateMat%ndiagBlocks) THEN
       ! Let's hope this situation (an empty equation) never occurs - 
       ! might produce some errors elsewhere :)
       rx%RvectorBlock(i)%NEQ = 0
       rx%RvectorBlock(i)%iidxFirstEntry = 0
     END IF
+    
   END DO
   
   rx%NEQ = rtemplateMat%NEQ
@@ -939,7 +966,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,j
 
   ! There must be at least some compatibility between the matrix
   ! and the vector!
@@ -951,17 +978,25 @@ CONTAINS
 
   ! Simply modify all pointers of all subvectors, that's it.
   DO i=1,rx%nblocks
-    ! Spatial discretisation
-    rx%RvectorBlock(i)%p_rspatialDiscretisation => &
-      rtemplateMat%RmatrixBlock(i,i)%p_rspatialDiscretisation 
+    DO j=1,rx%nblocks
+      ! Search for the first matrix in the 'column' of the block matrix and use
+      ! its properties to initialise
+      IF (rtemplateMat%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+        ! Spatial discretisation
+        rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+          rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation 
 
-    ! Discrete boundary conditions
-    rx%RvectorBlock(i)%p_rdiscreteBC => &
-      rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBC
+        ! Discrete boundary conditions
+        rx%RvectorBlock(i)%p_rdiscreteBC => &
+          rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBC
 
-    ! Discrete fictitious boundary conditions
-    rx%RvectorBlock(i)%p_rdiscreteBCfict => &
-      rtemplateMat%RmatrixBlock(i,i)%p_rdiscreteBCfict
+        ! Discrete fictitious boundary conditions
+        rx%RvectorBlock(i)%p_rdiscreteBCfict => &
+          rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBCfict
+          
+        EXIT
+      END IF
+    END DO
   END DO
   
   END SUBROUTINE
@@ -1787,23 +1822,34 @@ CONTAINS
 
 !</subroutine>
 
-  INTEGER :: i,j,NEQ
+  INTEGER :: i,j,k,NEQ,NCOLS
   
   ! At first, recalculate the number of diagonal blocks in the
   ! block matrix
-  DO i=LSYSBL_MAXBLOCKS,1,-1
-    IF (rmatrix%RmatrixBlock(i,i)%NA .NE. 0) EXIT
-  END DO
+  outer: DO i=LSYSBL_MAXBLOCKS,1,-1
+    DO j=LSYSBL_MAXBLOCKS,1,-1
+      IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) EXIT outer
+    END DO
+  END DO outer
   
   ! i is the new number of diagonal blocks
   rmatrix%ndiagBlocks = i
   
-  ! Calculate the new NEQ
+  ! Calculate the new NEQ and NCOLS. Go through the 'columns' of the 
+  ! block matrix.
   NEQ = 0
+  NCOLS = 0
   DO j=1,i
-    NEQ = NEQ + rmatrix%RmatrixBlock(i,i)%NEQ
+    DO k=1,i
+      IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+        NEQ = NEQ + rmatrix%RmatrixBlock(j,i)%NEQ
+        NCOLS = NCOLS + rmatrix%RmatrixBlock(j,i)%NCOLS
+        EXIT
+      END IF
+    END DO
   END DO
   rmatrix%NEQ = NEQ
+  rmatrix%NCOLS = NCOLS
 
   END SUBROUTINE
 

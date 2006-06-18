@@ -363,17 +363,24 @@ CONTAINS
 
     ! local variables
     TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
-    INTEGER :: i
+    INTEGER :: i,j
 
     IF (rmatrix%ndiagBlocks .EQ. 0) THEN
       PRINT *,'mlprj_initProjectionMat: No discretisation!'
       STOP
     END IF
 
-    ! Set up an array of discretisation structures for all the equations
+    ! Set up an array of discretisation structures for all the equations.
+    ! In every 'column' of the block matrix, search for the first existing
+    ! matrix and use its properties for initialisation
     DO i=1,rmatrix%ndiagBlocks
-      Rdiscr(i) = &
-        rmatrix%RmatrixBlock(i,i)%p_rspatialDiscretisation
+      DO j=1,rmatrix%ndiagBlocks
+        IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+          Rdiscr(i) = &
+            rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation
+          EXIT
+        END IF
+      END DO
     END DO
 
     ! Call the standard initialisation routine
@@ -713,7 +720,7 @@ CONTAINS
     ! local variables
     TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrCoarse
     TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrFine
-    INTEGER :: i
+    INTEGER :: i,j
 
     IF ((rmatrixCoarse%ndiagBlocks .EQ. 0) .OR. (rmatrixFine%ndiagBlocks .EQ. 0)) THEN
       PRINT *,'mlprj_getTempMemoryVec: No discretisation!'
@@ -722,13 +729,22 @@ CONTAINS
 
     ! Set up an array of discretisation structures for all the equations
     DO i=1,rmatrixCoarse%ndiagBlocks
-      RdiscrCoarse(i) = &
-        rmatrixCoarse%RmatrixBlock(i,i)%p_rspatialDiscretisation
+      DO j=1,rmatrixCoarse%ndiagBlocks
+        IF (rmatrixCoarse%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+          RdiscrCoarse(i) = &
+            rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscretisation
+          EXIT
+        END IF
+      END DO
     END DO
 
     DO i=1,rmatrixFine%ndiagBlocks
-      RdiscrFine(i) = &
-        rmatrixFine%RmatrixBlock(i,i)%p_rspatialDiscretisation
+      DO j=1,rmatrixFine%ndiagBlocks
+        IF (rmatrixFine%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+          RdiscrFine(i) = &
+            rmatrixFine%RmatrixBlock(i,i)%p_rspatialDiscretisation
+        END IF
+      END DO
     END DO
       
     ! Call the standard getTempMemory routine

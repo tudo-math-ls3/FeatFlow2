@@ -13,6 +13,9 @@
 !# 1.) mmod_replaceLinesByUnit
 !#     -> Replaces some rows in a scalar matrix by unit vectors
 !#
+!# 2.) mmod_replaceLinesByZero
+!#     -> Replaces some rows in a scalar matrix by zero vectors
+!#
 !# </purpose>
 !##############################################################################
 
@@ -140,6 +143,75 @@ CONTAINS
 
     END SUBROUTINE
   
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mmod_replaceLinesByZero (rmatrix,Irows)
+  
+!<description>
+  ! This routine replaces some lines of a given scalar matrix by unit vectors.
+!</description>
+
+!<input>
+  ! A list of row numbers of all the rows which are to be replaced
+  ! by unit vectors.
+  INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: Irows
+!</input>
+
+!<inputoutput>
+  ! The matrix which is to be modified.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  ! At first we must take care of the matrix type.
+  SELECT CASE (rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+    CALL replaceLinesZero_format97 (rmatrix,Irows)
+  END SELECT
+  
+  CONTAINS
+   
+    ! ****************************************
+    ! The replacement routine for format 9 and 7
+    
+    SUBROUTINE replaceLinesZero_format97 (rmatrix,Irows)
+    
+    INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: Irows
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    
+    ! local variables
+    INTEGER(PREC_MATIDX) :: irow
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
+    
+    ! Get Kld and Kdiagonal
+    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
+    CALL storage_getbase_int(rmatrix%h_Kdiagonal,p_Kdiagonal)
+    
+    ! Take care of the format of the entries
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data array
+      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      
+      ! loop through the rows
+      DO irow = 1,SIZE(Irows)
+        ! Clear the row
+        p_DA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_DP
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'mmod_replaceLinesByZero: Only double prec. matices supported!'
+      STOP
+    END SELECT
+    
+    END SUBROUTINE
+
   END SUBROUTINE
 
 END MODULE

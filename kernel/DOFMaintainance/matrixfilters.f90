@@ -55,7 +55,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE matfil_discreteBCSca (rmatrix,RdiscreteBC)
+  SUBROUTINE matfil_discreteBCSca (rmatrix,boffDiag,RdiscreteBC)
 
 !<description>
   
@@ -75,6 +75,14 @@ CONTAINS
   ! The block vector where the boundary conditions should be imposed.
   TYPE(t_matrixScalar), INTENT(INOUT),TARGET :: rmatrix
   
+  ! OPTIONAL: off-diagonal matrix.
+  ! If this is present and set to TRUE, it's assumed that the matrix is not
+  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
+  ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
+  ! or somewhere else in a block system). This modifies the way,
+  ! boundary conditions are implemented into the matrix.
+  LOGICAL, OPTIONAL :: boffDiag
+  
   ! OPTIONAL: The boundary conditions that are to be imposed into the vector.
   ! If not given, the discrete boundary conditions associated to the vector
   ! rx (in rx%p_RdiscreteBC) are imposed to rx.
@@ -86,6 +94,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: ibc, ibctype
+  LOGICAL :: bisOffDiag
   TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
   
   ! Which BC to impose?
@@ -101,6 +110,12 @@ CONTAINS
   ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
   IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
   
+  IF (PRESENT(boffDiag)) THEN
+    bisOffDiag = boffDiag
+  ELSE
+    bisOffDiag = .TRUE.
+  END IF
+  
   ! Loop over the BC's that are to be imposed
   
   DO ibc = 1,SIZE(p_RdiscreteBC)
@@ -112,7 +127,8 @@ CONTAINS
 
     SELECT CASE(ibctype) 
     CASE(DISCBC_TPDIRICHLET)
-      CALL matfil_imposeDirichletBC (rmatrix, p_RdiscreteBC(ibc)%rdirichletBCs)
+      CALL matfil_imposeDirichletBC (rmatrix, bisOffDiag, &
+                                     p_RdiscreteBC(ibc)%rdirichletBCs)
     END SELECT 
     
   END DO
@@ -123,12 +139,14 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE matfil_imposeDirichletBC (rmatrix,rdbcStructure)
+  SUBROUTINE matfil_imposeDirichletBC (rmatrix,boffDiag,rdbcStructure)
   
 !<description>
   ! Implements discrete Dirichlet BC's into a scalar matrix.
   ! This is normally done by replacing some lines of the matrix rmatrix
-  ! (those belonging to Dirichlet nodes) by unit vectors.
+  ! (those belonging to Dirichlet nodes) by unit vectors or by zero-vectors
+  ! (depending on whether the matrix is a 'diagonal' matrix or an
+  ! 'off-diagonal' matrix in a larger block-system).
 !</description>
 
 !<input>
@@ -136,6 +154,14 @@ CONTAINS
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
   TYPE(t_discreteBCDirichlet), INTENT(IN), TARGET  :: rdbcStructure
   
+  ! Off-diagonal matrix.
+  ! If this is present and set to TRUE, it's assumed that the matrix is not
+  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
+  ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
+  ! or somewhere else in a block system). This modifies the way,
+  ! boundary conditions are implemented into the matrix.
+  LOGICAL :: boffDiag
+
 !</input>
 
 !<inputoutput>
@@ -173,11 +199,20 @@ CONTAINS
   !
   ! Is the matrix sorted?
   IF (rmatrix%isortStrategy .LE. 0) THEN
-    ! Use mmod_replaceLinesByUnit to replace the corresponding rows in the
-    ! matrix by unit vectors. For more complicated FE spaces, this might have
+    ! Use mmod_replaceLinesByUnit/mmod_replaceLinesByZero to replace the 
+    ! corresponding rows in the matrix by unit vectors. 
+    ! For more complicated FE spaces, this might have
     ! to be modified in the future...
+    !
+    ! We use mmod_replaceLinesByUnit for 'diagonal' matrix blocks (main
+    ! system matrices) and mmod_replaceLinesByZero for 'off-diagonal'
+    ! matrix blocks (in case of larger block systems)
     
-    CALL mmod_replaceLinesByUnit (rmatrix,p_idx(1:rdbcStructure%nDOF))
+    IF (boffDiag) THEN
+      CALL mmod_replaceLinesByZero (rmatrix,p_idx(1:rdbcStructure%nDOF))
+    ELSE
+      CALL mmod_replaceLinesByUnit (rmatrix,p_idx(1:rdbcStructure%nDOF))
+    END IF
   ELSE
     ! Ok, matrix is sorted, so we have to filter all the DOF's through the
     ! permutation before using them for implementing boundary conditions.
@@ -197,8 +232,15 @@ CONTAINS
       ! Filter the DOF's through the permutation
       Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
       
-      ! And implement the BC's with mmod_replaceLinesByUnit.
-      CALL mmod_replaceLinesByUnit (rmatrix,Idofs(1:ilenleft))
+      ! And implement the BC's with mmod_replaceLinesByUnit/
+      ! mmod_replaceLinesByZero, depending on whether the matrix is a
+      ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
+      ! block system.
+      IF (boffDiag) THEN
+        CALL mmod_replaceLinesByZero (rmatrix,Idofs(1:ilenleft))
+      ELSE
+        CALL mmod_replaceLinesByUnit (rmatrix,Idofs(1:ilenleft))
+      END IF
     END DO
   
   END IF
@@ -242,7 +284,8 @@ CONTAINS
 
       ! Impose the discrete BC into the scalar subvector.
       IF (rmatrix%RmatrixBlock(iblock,jblock)%NA .NE. 0) THEN
-        CALL matfil_discreteBCSca (rmatrix%RmatrixBlock(iblock,jblock))
+        CALL matfil_discreteBCSca (rmatrix%RmatrixBlock(iblock,jblock),&
+                                   iblock .NE. jblock)
       END IF
       
     END DO
