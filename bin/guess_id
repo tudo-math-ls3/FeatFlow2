@@ -57,6 +57,7 @@ case ${id} in
 			    2|3|4|5|6) cpu="pentium2";;
 			    7|8|9|10|11) cpu="pentium3";;
 			    13) cpu="pentiumm";;
+                            14) cpu="core";;
 			esac
 			;;
 		    7) cpu="itanium"

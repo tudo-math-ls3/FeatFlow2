@@ -295,6 +295,16 @@ BLASLIB   =
 LAPACKLIB = 
 endif
 
+ifeq ($(call match,$(ID),pc-core-(linux|cygwin_nt?.?)),yes)
+CC=gcc
+FC=g95
+OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
+FCFLAGS   = -march=pentium4 -pipe -fmod=$(MODDIR)
+CCFLAGS   = -march=pentium4 -pipe
+BLASLIB   = 
+LAPACKLIB = 
+endif
+
 ifeq ($(ID),ppc64-power5-linux)
 CC=gcc
 FC=gfortran
@@ -436,6 +446,21 @@ AR=xiar
 OPTFLAGS  = -O3 -xB -ipo -ipo_obj
 FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
+LDFLAGS   = 
+BLASLIB   = 
+LAPACKLIB = 
+endif
+
+ifeq ($(ID),pc-core-linux-ifc)
+# Intel Fortran Compiler 9.x, Intel Compiler 9.x, Core Solo/Duo
+# You need Version 9.1 to include optimization for the Core CPU family.
+CC=icc
+FC=ifort
+AR=xiar
+ARC=xiar
+OPTFLAGS  = -O3 -xP -ipo
+FCFLAGS   = -fpe0 -vec_report0 -module $(MODDIR)
+CCFLAGS   = -vec_report0
 LDFLAGS   = 
 BLASLIB   = 
 LAPACKLIB = 
