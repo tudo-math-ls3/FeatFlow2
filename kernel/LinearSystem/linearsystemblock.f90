@@ -1295,17 +1295,13 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  
   ! Source and destination vector
   TYPE(t_vectorBlock), INTENT(INOUT) :: rx
-  
 !</inputoutput>
 
 !<input>
-  
   ! Multiplication factor
   REAL(DP), INTENT(IN) :: c
-  
 !</input>
   
 !</subroutine>
@@ -1341,11 +1337,11 @@ CONTAINS
   
 !<description>
   ! Clears the block vector dx: Dx = 0
+!</description>
+
 !<inputoutput>
-  
   ! Destination vector to be cleared
   TYPE(t_vectorBlock), INTENT(INOUT) :: rx
-  
 !</inputoutput>
   
 !</subroutine>
@@ -1386,7 +1382,6 @@ CONTAINS
 !</description>  
   
 !<input>
-  
   ! First source vector
   TYPE(t_vectorBlock), INTENT(IN)    :: rx
   
@@ -1395,14 +1390,11 @@ CONTAINS
 
   ! Scaling factor for Dy
   REAL(DP), INTENT(IN)               :: cy
-  
 !</input>
 
 !<inputoutput>
-  
   ! Second source vector; also receives the result
   TYPE(t_vectorBlock), INTENT(INOUT) :: ry
-  
 !</inputoutput>
   
 !</subroutine>
@@ -1502,12 +1494,12 @@ CONTAINS
       END DO
       
     CASE DEFAULT
-      PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
+      PRINT *,'lsysbl_scalarProduct: Not supported precision combination'
       STOP
     END SELECT
     
   CASE DEFAULT
-    PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
+    PRINT *,'lsysbl_scalarProduct: Not supported precision combination'
     STOP
   END SELECT
   

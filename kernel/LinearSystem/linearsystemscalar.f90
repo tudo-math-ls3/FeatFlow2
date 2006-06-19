@@ -74,6 +74,25 @@
 !#
 !# 18.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
+!#
+!# 19.) lsyssc_vectorCopy
+!#       -> Copy a block vector over to another one
+!#
+!# 20.) lsyssc_vectorScale
+!#      -> Scale a block vector by a constant
+!#
+!# 21.) lsyssc_vectorClear
+!#      -> Clear a block vector
+!#
+!# 22.) lsyssc_vectorLinearComb
+!#      -> Linear combination of two block vectors
+!#
+!# 23.) lsyssc_matrixCopy
+!#      -> Copies a matrix to another one provided that they have the same 
+!#         structure.
+!#
+!# 24.) lsyssc_transposeMatrix
+!#      -> Transposes a scalar matrix.
 !# </purpose>
 !##############################################################################
 
@@ -153,23 +172,47 @@ MODULE linearsystemscalar
   ! what belongs to another matrix is left as-is.
   INTEGER, PARAMETER :: LSYSSC_DUP_ASIS      = 0
 
+  ! Duplicate nothing, simply copy the structure and mark the handles
+  ! as belonging to another matrix.
+  INTEGER, PARAMETER :: LSYSSC_DUP_NONE      = 1
+
   ! Duplicate the content, share the structure
-  INTEGER, PARAMETER :: LSYSSC_DUP_CONTENT   = 2**0
+  INTEGER, PARAMETER :: LSYSSC_DUP_CONTENT   = 2
 
   ! Duplicate the structure, share the content
-  INTEGER, PARAMETER :: LSYSSC_DUP_STRUCTURE = 2**1
+  INTEGER, PARAMETER :: LSYSSC_DUP_STRUCTURE = 3
 
   ! Duplicate both, structure and content
-  INTEGER, PARAMETER :: LSYSSC_DUP_ALL       = LSYSSC_DUP_STRUCTURE + &
-                                               LSYSSC_DUP_CONTENT
+  INTEGER, PARAMETER :: LSYSSC_DUP_ALL       = 4
+  
+  ! Allocate memory for the matrix structure in the same size as the original
+  ! matrix.
+  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYSTRUC = 5
+
+  ! Allocate memory for the matrix structure in the same size as the original
+  ! matrix.
+  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYALL   = 6
+                                               
+!</constantblock>
+
+!<constantblock description="Constants for transposing a matrix">
+  
+  ! Transpose the full matrix
+  INTEGER, PARAMETER :: LSYSSC_TR_ALL       = 0
+
+  ! Transpose only the matrix structure
+  INTEGER, PARAMETER :: LSYSSC_TR_STRUCTURE = 1   
+
+  ! Don't transpose the matrix, simply mark the matrix as transposed
+  ! by changing the flag in imatrixSpec
+  INTEGER, PARAMETER :: LSYSSC_TR_VIRTUAL    = 2**1
 
 !</constantblock>
-  
+
+
 !</constants>
 
-
 !<types>
-  
 !<typeblock>
   
   ! A scalar vector that can be used by scalar linear algebra routines.
@@ -1139,11 +1182,16 @@ CONTAINS
   ! Duplication flag. Decides on what is to copy and whether some information
   ! is to be shared with the old matrix by using the same handles.
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_ASIS      : Duplicate by ownership. What belongs to the 
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. What belongs to the 
   !   matrix is duplicated, what belongs to another matrix is left as-is.
-  ! LSYSSC_DUP_CONTENT   : Duplicate the content, share the structure
-  ! LSYSSC_DUP_STRUCTURE : Duplicate the structure, share the content
-  ! LSYSSC_DUP_ALL       : Duplicate both, structure and content
+  ! LSYSSC_DUP_NONE       : Share structure and content               
+  ! LSYSSC_DUP_CONTENT    : Duplicate the content, share the structure
+  ! LSYSSC_DUP_STRUCTURE  : Duplicate the structure, share the content
+  ! LSYSSC_DUP_ALL        : Duplicate both, structure and content
+  ! LSYSSC_DUP_EMPTYSTRUC : Allocate memory for the same structure as
+  !   the source matrix, but don't initialise the structure.
+  ! LSYSSC_DUP_EMPTYALL   : Allocate memory for the same structure and content
+  !   as the source matrix, but don't initialise the structure/content.
   INTEGER, INTENT(IN)                            :: idupflag
   
 !</input>
@@ -1156,7 +1204,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  LOGICAL :: bdupContent, bdupStructure
+  LOGICAL :: bdupContent, bdupStructure,bemptyContent,bemptyStruc
+  INTEGER(PREC_VECIDX) :: NEQ
 
   ! At first, copy all 'local' data.
   rdestMatrix = rsourceMatrix
@@ -1166,15 +1215,45 @@ CONTAINS
   CASE (LSYSSC_DUP_ASIS)
     bdupContent = IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0
     bdupStructure = IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0
+    bemptyContent = .FALSE.
+    bemptyStruc = .FALSE.
+    
+  CASE (LSYSSC_DUP_NONE)
+    bdupContent = .FALSE.
+    bdupStructure = .FALSE.
+    bemptyContent = .FALSE.
+    bemptyStruc = .FALSE.
+    
   CASE (LSYSSC_DUP_STRUCTURE)
     bdupContent = .FALSE.
     bdupStructure = .TRUE.
+    bemptyContent = .FALSE.
+    bemptyStruc = .FALSE.
+    
   CASE (LSYSSC_DUP_CONTENT)
     bdupContent = .TRUE.
     bdupStructure = .FALSE.
+    bemptyContent = .FALSE.
+    bemptyStruc = .FALSE.
+    
   CASE (LSYSSC_DUP_ALL)
     bdupContent = .TRUE.
     bdupStructure = .TRUE.
+    bemptyContent = .FALSE.
+    bemptyStruc = .FALSE.
+    
+  CASE (LSYSSC_DUP_EMPTYSTRUC)
+    bdupContent = .FALSE.
+    bdupStructure = .FALSE.
+    bemptyContent = .TRUE.
+    bemptyStruc = .FALSE.
+    
+  CASE (LSYSSC_DUP_EMPTYALL)
+    bdupContent = .FALSE.
+    bdupStructure = .FALSE.
+    bemptyContent = .TRUE.
+    bemptyStruc = .TRUE.
+    
   CASE DEFAULT
     PRINT *,'lsyssc_duplicateMatrix: invalid idubflag'
     STOP
@@ -1199,6 +1278,32 @@ CONTAINS
       CALL storage_copy(rsourceMatrix%h_Kld, rdestMatrix%h_Kld)
       CALL storage_copy(rsourceMatrix%h_Kdiagonal, rdestMatrix%h_Kdiagonal)
     END IF
+    
+    IF (bemptyContent) THEN
+      ! Create a new content array in the same data type as the original matrix
+      CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
+           rsourceMatrix%NA, rsourceMatrix%cdataType, &
+           rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+    END IF
+    
+    IF (bemptyStruc) THEN
+      ! Create new structure arrays in the same size as our 'template'.
+      NEQ = rsourceMatrix%NEQ
+      IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) &
+        NEQ = rsourceMatrix%NCOLS
+      
+      CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
+           rsourceMatrix%NA, ST_INT, &
+           rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
+
+      CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
+           NEQ+1, ST_INT, &
+           rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
+
+      CALL storage_new ('lsyssc_duplicateMatrix', 'Kdiagonal', &
+           NEQ, ST_INT, &
+           rdestMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+    END IF
 
   CASE (LSYSSC_MATRIX7)
     IF (bdupContent) THEN
@@ -1207,6 +1312,7 @@ CONTAINS
       rdestMatrix%h_DA = ST_NOHANDLE
       CALL storage_copy(rsourceMatrix%h_DA, rdestMatrix%h_DA)
     END IF
+    
     IF (bdupStructure) THEN
       ! Put the destination handles to ST_NOHANDLE, so storage_copy
       ! will create new ones.
@@ -1216,6 +1322,28 @@ CONTAINS
       CALL storage_copy(rsourceMatrix%h_Kld, rdestMatrix%h_Kld)
     END IF
     
+    IF (bemptyContent) THEN
+      ! Create a new content array in the same data type as the original matrix
+      CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
+           rsourceMatrix%NA, rsourceMatrix%cdataType, &
+           rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+    END IF
+    
+    IF (bemptyStruc) THEN
+      ! Create new structure arrays in the same size as our 'template'.
+      NEQ = rsourceMatrix%NEQ
+      IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) &
+        NEQ = rsourceMatrix%NCOLS
+      
+      CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
+           rsourceMatrix%NA, ST_INT, &
+           rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
+
+      CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
+           NEQ+1, ST_INT, &
+           rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
+    END IF
+
   CASE DEFAULT
     PRINT *,'lsyssc_duplicateMatrix: Unsupported Matrix format'
     STOP
@@ -1225,6 +1353,9 @@ CONTAINS
   SELECT CASE (idupflag)
   CASE (LSYSSC_DUP_ASIS)
     ! Nothing to do
+  CASE (LSYSSC_DUP_NONE)
+    ! We share both, structure and content, with the original matrix
+    rdestMatrix%imatrixSpec = IOR(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
   CASE (LSYSSC_DUP_CONTENT)
     rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_ISCOPY)),&
@@ -1233,7 +1364,7 @@ CONTAINS
     rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_ISCOPY)),&
                               LSYSSC_MSPEC_CONTENTISCOPY)
-  CASE (LSYSSC_DUP_ALL)
+  CASE (LSYSSC_DUP_ALL,LSYSSC_DUP_EMPTYSTRUC,LSYSSC_DUP_EMPTYALL)
     rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_ISCOPY))
   CASE DEFAULT
@@ -1454,7 +1585,7 @@ CONTAINS
       IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       
         ! No matrix entries, only resort the structure
-        CALL unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+        CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
         
         ! Release diagonal
         CALL storage_free (rmatrix%h_Kdiagonal)
@@ -1469,7 +1600,7 @@ CONTAINS
         CASE (ST_DOUBLE)
         
           CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
-          CALL unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
+          CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
           ! Release diagonal
           CALL storage_free (rmatrix%h_Kdiagonal)
 
@@ -1504,7 +1635,7 @@ CONTAINS
       IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       
         ! No matrix entries, only resort the structure
-        CALL sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+        CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
         
         rmatrix%cmatrixFormat = LSYSSC_MATRIX9
       
@@ -1513,7 +1644,7 @@ CONTAINS
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
           CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
-          CALL sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
+          CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
           
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9
           
@@ -1534,189 +1665,254 @@ CONTAINS
     STOP
   END SELECT
   
-  CONTAINS
+  END SUBROUTINE
 
-    !----------------------------------------------------------------  
-    ! Sorts the entries in each row of the matrix in ascending order.
-    ! The input matrix is assumed to be in storage technique 7 with the 
-    ! first element in each row to be the diagonal element!
-    !
-    ! Double precision version
-    SUBROUTINE sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
-
-  !<input>
-    ! Row pointer in the matrix
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
-
-    ! Dimension of the matrix
-    INTEGER(I32), INTENT(IN) :: neq
-  !</input>
-
-  !<inputoutput>
-    ! OPTIONAL:
-    ! On input:  the matrix entries to be resorted
-    ! On output: the resorted matrix entries
-    REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
-    
-    ! On input:  the column numbers to be resorted
-    ! On output: the resorted column numbers
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
-  !</inputoutput>
+  !****************************************************************************
   
-  !<output>
-    ! Pointers to the diagonal entries of the matrix.
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(OUT) :: Kdiagonal
-  !</output>
+!<subroutine>
 
-  !</subroutine>
+  SUBROUTINE lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
 
-    ! local variables
-    REAL(DP) :: aux
-    INTEGER(I32) :: i, j
+!<description>
+  ! Internal auxiliary routine.
+  ! Rebuilds the Kdiagonal-array of a structure-9 matrix.
+!</description>
 
-    IF (PRESENT(Da)) THEN
+!<input>
+  ! Row structure in the matrix
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
 
-      ! loop through each row
-      DO i = 1, neq
+  ! Column structure of the matrix
+  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
 
-        ! Take the diagonal element
-        aux = Da(Kld(i))
+  ! Dimension of the matrix
+  INTEGER(I32), INTENT(IN) :: neq
+!</input>
 
-        ! Loop through each column in this row.
-        ! Shift every entry until the diagonal is reached.
-        DO j = Kld(i)+1, Kld(i+1)-1
+!<output>
+  ! Pointers to the diagonal entries of the matrix.
+  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(OUT) :: Kdiagonal
+!</output>
 
-          ! Check if we reached the position of the diagonal entry...
-          IF (Kcol(J)>i) EXIT
+!</subroutine>
 
-          Kcol(j-1) = KCOL(j)
-          Da(j-1) = Da(j)
+  ! local variables
+  REAL(DP) :: aux
+  INTEGER(I32) :: i, j
 
-        END DO
+  ! loop through each row
+  DO i = 1, neq
 
-        ! If we have reached the diagonal, we can stop and save our
-        ! diagonal entry from the first position there. The rest of the
-        ! line is in ascending order according to the specifications of
-        ! storage technique 7.
+    ! Loop through each column in this row.
+    ! Shift every entry until the diagonal is reached.
+    DO j = Kld(i)+1, Kld(i+1)-1
 
-        Kcol(j-1) = i
-        Da(j-1) = aux
-        
-        ! Save the position of the diagonal entry
-        Kdiagonal(i) = j
+      ! Check if we reached the position of the diagonal entry...
+      IF (Kcol(j)>i) EXIT
+
+    END DO
+
+    ! Save the position of the diagonal entry
+    Kdiagonal(i) = j
+
+  END DO
+          
+  END SUBROUTINE
+  
+  !****************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
+
+!<description>
+  ! Internal auxiliary routine.
+  ! Sorts the entries in each row of the matrix in ascending order.
+  ! The input matrix is assumed to be in storage technique 7 with the 
+  ! first element in each row to be the diagonal element!
+  ! Creates the Kdiagonal array for a structure-9 matrix.
+  !
+  ! Double precision version
+!</description>
+
+!<input>
+  ! Row pointer in the matrix
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
+
+  ! Dimension of the matrix
+  INTEGER(I32), INTENT(IN) :: neq
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL:
+  ! On input:  the matrix entries to be resorted,
+  ! On output: the resorted matrix entries
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
+  
+  ! On input:  the column numbers to be resorted,
+  ! On output: the resorted column numbers
+  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
+!</inputoutput>
+
+!<output>
+  ! Pointers to the diagonal entries of the matrix.
+  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(OUT) :: Kdiagonal
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP) :: aux
+  INTEGER(I32) :: i, j
+
+  IF (PRESENT(Da)) THEN
+
+    ! loop through each row
+    DO i = 1, neq
+
+      ! Take the diagonal element
+      aux = Da(Kld(i))
+
+      ! Loop through each column in this row.
+      ! Shift every entry until the diagonal is reached.
+      DO j = Kld(i)+1, Kld(i+1)-1
+
+        ! Check if we reached the position of the diagonal entry...
+        IF (Kcol(J)>i) EXIT
+
+        Kcol(j-1) = KCOL(j)
+        Da(j-1) = Da(j)
 
       END DO
-            
-    ELSE
 
-      ! loop through each row
-      DO i = 1, neq
+      ! If we have reached the diagonal, we can stop and save our
+      ! diagonal entry from the first position there. The rest of the
+      ! line is in ascending order according to the specifications of
+      ! storage technique 7.
 
-        ! Loop through each column in this row.
-        ! Shift every entry until the diagonal is reached.
-        DO j = Kld(i)+1, Kld(i+1)-1
+      Kcol(j-1) = i
+      Da(j-1) = aux
+      
+      ! Save the position of the diagonal entry
+      Kdiagonal(i) = j
 
-          ! Check if we reached the position of the diagonal entry...
-          IF (Kcol(J)>i) EXIT
+    END DO
+          
+  ELSE
 
-          Kcol(j-1) = KCOL(j)
+    ! loop through each row
+    DO i = 1, neq
 
-        END DO
+      ! Loop through each column in this row.
+      ! Shift every entry until the diagonal is reached.
+      DO j = Kld(i)+1, Kld(i+1)-1
 
-        ! If we have reached the diagonal, we can stop and save our
-        ! diagonal entry from the first position there. The rest of the
-        ! line is in ascending order according to the specifications of
-        ! storage technique 7.
+        ! Check if we reached the position of the diagonal entry...
+        IF (Kcol(J)>i) EXIT
 
-        Kcol(j-1) = i
-        
-        ! Save the position of the diagonal entry
-        Kdiagonal(i) = j
+        Kcol(j-1) = KCOL(j)
 
       END DO
-            
-    END IF
-            
-    END SUBROUTINE
+
+      ! If we have reached the diagonal, we can stop and save our
+      ! diagonal entry from the first position there. The rest of the
+      ! line is in ascending order according to the specifications of
+      ! storage technique 7.
+
+      Kcol(j-1) = i
+      
+      ! Save the position of the diagonal entry
+      Kdiagonal(i) = j
+
+    END DO
+          
+  END IF
+          
+  END SUBROUTINE
   
-    !----------------------------------------------------------------  
-    ! Unorts the entries in each row of the matrix in ascending order.
-    ! This searches in each row of a matrix for the diagonal element
-    ! and shifts it to the front.
-    !
-    ! Double precision version
-    SUBROUTINE unsortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
+  !****************************************************************************
 
-  !<input>
-    ! Row pointer in the matrix
-    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
-
-    ! Dimension of the matrix
-    INTEGER(I32), INTENT(IN) :: neq
-
-    ! Pointers to the diagonal entries of the matrix.
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kdiagonal
-  !</input>
-
-  !<inputoutput>
-    ! OPTIONAL:
-    ! On input:  the matrix entries to be resorted
-    ! On output: the resorted matrix entries
-    REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
-    
-    ! On input:  the column numbers to be resorted
-    ! On output: the resorted column numbers
-    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
-  !</inputoutput>
-
-  !</subroutine>
-
-    ! local variables
-    REAL(DP) :: aux
-    INTEGER(I32) :: i, j
+!<subroutine>  
   
-    IF (PRESENT(Da)) THEN
+  SUBROUTINE lsyssc_unsortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
 
-      ! loop through each row
-      DO i = 1, neq
+!<description>
+  ! Internal auxiliary routine.
+  ! Unorts the entries in each row of the matrix in ascending order.
+  ! This searches in each row of a matrix for the diagonal element
+  ! and shifts it to the front.
+  !
+  ! Double precision version
+!</description>
 
-        ! Take the diagonal element
-        aux = Da(Kdiagonal(i))
+!<input>
+  ! Row pointer in the matrix
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
 
-        ! Loop through each column in this row.
-        ! Shift every entry one element to the right.
-        DO j = Kdiagonal(i)-1,Kld(i)+1,-1
+  ! Dimension of the matrix
+  INTEGER(I32), INTENT(IN) :: neq
 
-          Kcol(j) = Kcol(j-1)
-          Da(j) = Da(j-1)
+  ! Pointers to the diagonal entries of the matrix.
+  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kdiagonal
+!</input>
 
-        END DO
-        
-        ! Put the diagonal to the front.
-        Kcol(Kdiagonal(i)) = i
-        Da(Kdiagonal(i)) = aux
-        
+!<inputoutput>
+  ! OPTIONAL:
+  ! On input:  the matrix entries to be resorted,
+  ! On output: the resorted matrix entries
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
+  
+  ! On input:  the column numbers to be resorted,
+  ! On output: the resorted column numbers
+  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP) :: aux
+  INTEGER(I32) :: i, j
+
+  IF (PRESENT(Da)) THEN
+
+    ! loop through each row
+    DO i = 1, neq
+
+      ! Take the diagonal element
+      aux = Da(Kdiagonal(i))
+
+      ! Loop through each column in this row.
+      ! Shift every entry one element to the right.
+      DO j = Kdiagonal(i)-1,Kld(i)+1,-1
+
+        Kcol(j) = Kcol(j-1)
+        Da(j) = Da(j-1)
+
       END DO
       
-    ELSE
-      ! loop through each row
-      DO i = 1, neq
+      ! Put the diagonal to the front.
+      Kcol(Kdiagonal(i)) = i
+      Da(Kdiagonal(i)) = aux
+      
+    END DO
+    
+  ELSE
+    ! loop through each row
+    DO i = 1, neq
 
-        ! Loop through each column in this row.
-        ! Shift every entry one element to the right.
-        DO j = Kdiagonal(i)-1,Kld(i)+1,-1
-          Kcol(j) = Kcol(j-1)
-        END DO
-        
-        ! Put the diagonal to the front.
-        Kcol(Kdiagonal(i)) = i
-        
+      ! Loop through each column in this row.
+      ! Shift every entry one element to the right.
+      DO j = Kdiagonal(i)-1,Kld(i)+1,-1
+        Kcol(j) = Kcol(j-1)
       END DO
+      
+      ! Put the diagonal to the front.
+      Kcol(Kdiagonal(i)) = i
+      
+    END DO
 
-    END IF
-            
-    END SUBROUTINE
-  
+  END IF
+          
   END SUBROUTINE
 
   !****************************************************************************
@@ -3257,6 +3453,997 @@ CONTAINS
     STOP
   END SELECT
     
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_vectorCopy (rx,ry)
+  
+!<description>
+  ! Copies vector data: ry = rx.
+  ! Both vectors must have the same size. All structural data of rx is
+  ! transferred to ry, so rx and ry are compatible to each other afterwards.
+!</description>
+
+!<input>
+  ! Source vector
+  TYPE(t_vectorScalar),INTENT(IN) :: rx
+!</input>
+
+!<inputoutput>
+  ! Destination vector
+  TYPE(t_vectorScalar),INTENT(INOUT) :: ry
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: h_Ddata, cdataType
+  LOGICAL :: bisCopy
+  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
+  
+  ! First, make a backup of some crucial data so that it does not
+  ! get destroyed.
+  h_Ddata = ry%h_Ddata
+  cdataType = ry%cdataType
+  bisCopy = ry%bisCopy
+  
+  ! Then transfer all structural information of rx to ry.
+  ! This automatically makes both vectors compatible to each other.
+  ry = rx
+  
+  ! Restore crucial data
+  ry%h_Ddata = h_Ddata
+  ry%bisCopy = bisCopy
+  
+  IF (rx%cdataType .NE. ry%cdataType) THEN
+    PRINT *,'lsyssc_vectorCopy: different data types not supported!'
+    STOP
+  END IF
+  
+  ! And finally copy the data. 
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    CALL lsyssc_getbase_double (rx,p_Dsource)
+    CALL lsyssc_getbase_double (ry,p_Ddest)
+    CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+    
+  CASE (ST_SINGLE)
+    CALL lsyssc_getbase_single (rx,p_Fsource)
+    CALL lsyssc_getbase_single (ry,p_Fdest)
+    CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+
+  CASE DEFAULT
+    PRINT *,'lsyssc_vectorCopy: Unsupported data type!'
+    STOP
+  END SELECT
+   
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_vectorScale (rx,c)
+  
+!<description>
+  ! Scales a vector vector rx: rx = c * rx
+!</description>
+  
+!<inputoutput>
+  ! Source and destination vector
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rx
+!</inputoutput>
+
+!<input>
+  ! Multiplication factor
+  REAL(DP), INTENT(IN) :: c
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+  
+  ! Taje care of the data type!
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointer and scale the whole data array.
+    CALL lsyssc_getbase_double(rx,p_Ddata)
+    CALL lalg_vectorScaleDble (p_Ddata,c)  
+
+  CASE (ST_SINGLE)
+    ! Get the pointer and scale the whole data array.
+    CALL lsyssc_getbase_single(rx,p_Fdata)
+    CALL lalg_vectorScaleSngl (p_Fdata,REAL(c,SP))  
+
+  CASE DEFAULT
+    PRINT *,'lsyssc_vectorScale: Unsupported data type!'
+    STOP
+  END SELECT
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_vectorClear (rx)
+  
+!<description>
+  ! Clears the block vector dx: Dx = 0
+!</description>
+  
+!<inputoutput>
+  ! Destination vector to be cleared
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rx
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Dsource
+  REAL(SP), DIMENSION(:), POINTER :: p_Ssource
+  
+  ! Take care of the data type
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointer and scale the whole data array.
+    CALL lsyssc_getbase_double(rx,p_Dsource)
+    CALL lalg_vectorClearDble (p_Dsource)
+  
+  CASE (ST_SINGLE)
+    ! Get the pointer and scale the whole data array.
+    CALL lsyssc_getbase_single(rx,p_Ssource)
+    CALL lalg_vectorClearSngl (p_Ssource)
+
+  CASE DEFAULT
+    PRINT *,'lsyssc_vectorClear: Unsupported data type!'
+    STOP
+  END SELECT
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_vectorLinearComb (rx,ry,cx,cy)
+  
+!<description>
+  ! Performs a linear combination: ry = cx * rx  +  cy * ry
+  ! Both vectors must be compatible to each other (same size, sorting 
+  ! strategy,...).
+!</description>  
+  
+!<input>
+  ! First source vector
+  TYPE(t_vectorScalar), INTENT(IN)   :: rx
+  
+  ! Scaling factor for Dx
+  REAL(DP), INTENT(IN)               :: cx
+
+  ! Scaling factor for Dy
+  REAL(DP), INTENT(IN)               :: cy
+!</input>
+
+!<inputoutput>
+  ! Second source vector; also receives the result
+  TYPE(t_vectorScalar), INTENT(INOUT) :: ry
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest
+  REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
+  
+  ! The vectors must be compatible to each other.
+  CALL lsyssc_isVectorCompatible (rx,ry)
+
+  IF (rx%cdataType .NE. ry%cdataType) THEN
+    PRINT *,'lsyssc_vectorLinearComb: different data types not supported!'
+    STOP
+  END IF
+  
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointers and copy the whole data array.
+    CALL lsyssc_getbase_double(rx,p_Dsource)
+    CALL lsyssc_getbase_double(ry,p_Ddest)
+    
+    CALL lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
+
+  CASE (ST_SINGLE)
+    ! Get the pointers and copy the whole data array.
+    CALL lsyssc_getbase_single(rx,p_Ssource)
+    CALL lsyssc_getbase_single(ry,p_Sdest)
+    
+    CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,cx,cy)
+  
+  CASE DEFAULT
+    PRINT *,'lsyssc_vectorLinearComb: Unsupported data type!'
+    STOP
+  END SELECT
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_matrixCopy (rsourceMatrix,rdestMatrix)
+  
+!<description>
+  ! Copies a matrix data: rsourceMatrix = rdestMatrix.
+  ! Both matrices must have the same size and the same structure.
+  ! All structural (discretisation related) data of rsourceMatrix is
+  ! transferred to rrdestMatrix.
+!</description>
+  
+!<input>
+  ! Source vector
+  TYPE(t_matrixScalar),INTENT(IN) :: rsourceMatrix
+!</input>
+
+!<inputoutput>
+  ! Destination vector
+  TYPE(t_matrixScalar),INTENT(INOUT) :: rdestMatrix
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_matrixScalar) :: rtempMatrix
+  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolSource,p_KcolDest
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldSource,p_KldDest
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalSource,p_KdiagonalDest
+  
+  ! Is it possible at all to copy the matrix? Both matrices must have
+  ! the same size, otherwise the memory does not fit.
+  IF (rsourceMatrix%cmatrixFormat .NE. rdestMatrix%cmatrixFormat) THEN
+    PRINT *,'lsyssc_matrixCopy: Different matrix formats not allowed!'
+    STOP
+  END IF
+  
+  IF (rsourceMatrix%NA .NE. rdestMatrix%NA) THEN
+    PRINT *,'lsyssc_matrixCopy: Matrices have different size!'
+    STOP
+  END IF
+  
+  ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
+  ! and the same structure!
+  
+  IF (rsourceMatrix%cdataType .NE. rdestMatrix%cdataType) THEN
+    PRINT *,'lsyssc_matrixCopy: Matrices have different data types!'
+    STOP
+  END IF
+  
+  ! First, make a backup of the matrix for restoring some cricial data.
+  rtempMatrix = rdestMatrix
+  
+  ! Copy the matrix structure
+  rdestMatrix = rsourceMatrix
+  
+  ! Restore crucial data
+  rdestMatrix%imatrixSpec = rtempMatrix%imatrixSpec
+
+  ! Which structure do we actually have?
+  SELECT CASE (rsourceMatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9)
+  
+    ! Restore crucial format-specific data
+    rdestMatrix%h_DA        = rtempMatrix%h_DA
+    rdestMatrix%h_Kcol      = rtempMatrix%h_Kcol
+    rdestMatrix%h_Kld       = rtempMatrix%h_Kld
+    rdestMatrix%h_Kdiagonal = rtempMatrix%h_Kdiagonal
+    
+    ! And finally copy the data. 
+    SELECT CASE (rsourceMatrix%cdataType)
+    
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
+      CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
+      CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
+      CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
+      CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+
+    CASE DEFAULT
+      PRINT *,'lsyssc_matrixCopy: Unsupported data type!'
+      STOP
+    END SELECT
+    
+    CALL storage_getbase_int (rsourceMatrix%h_Kcol,p_KcolSource)
+    CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
+    CALL lalg_vectorCopyInt (p_KcolSource,p_KcolDest)
+
+    CALL storage_getbase_int (rsourceMatrix%h_Kld,p_KldSource)
+    CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+    CALL lalg_vectorCopyInt (p_KldSource,p_KldDest)
+    
+    CALL storage_getbase_int (rsourceMatrix%h_Kdiagonal,p_KdiagonalSource)
+    CALL storage_getbase_int (rdestMatrix%h_Kdiagonal,p_KdiagonalDest)
+    CALL lalg_vectorCopyInt (p_KdiagonalSource,p_KdiagonalDest)
+      
+  CASE (LSYSSC_MATRIX7)
+
+    ! Restore crucial format-specific data
+    rdestMatrix%h_DA        = rtempMatrix%h_DA
+    rdestMatrix%h_Kcol      = rtempMatrix%h_Kcol
+    rdestMatrix%h_Kld       = rtempMatrix%h_Kld
+    
+    ! And finally copy the data. 
+    SELECT CASE (rsourceMatrix%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
+      CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
+      CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
+      CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
+      CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+
+    CASE DEFAULT
+      PRINT *,'storage_matrixCopy: Unsupported data type!'
+      STOP
+    END SELECT
+
+    CALL storage_getbase_int (rsourceMatrix%h_Kcol,p_KcolSource)
+    CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
+    CALL lalg_vectorCopyInt (p_KcolSource,p_KcolDest)
+
+    CALL storage_getbase_int (rsourceMatrix%h_Kld,p_KldSource)
+    CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+    CALL lalg_vectorCopyInt (p_KldSource,p_KldDest)
+      
+  CASE DEFAULT
+    PRINT *,'lsyssc_matrixCopy: Unsupported matrix format!'
+    STOP
+  END SELECT
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE lsyssc_transpMatStruct79double (nrow, ncol, Icol, Irow, &
+                                             Itmp, IcolDest, IrowDest)
+  
+  !<description>
+    ! This routine accepts the structure of a structure-7 or structure-9
+    ! matrix and creates the structure of the transposed matrix from it.
+    !
+    ! The resulting structure is of structure 9, i.e. not pivoted anymore 
+    ! with the diagonal entry in front if a structure-7 matrix is to be 
+    ! transposed!
+  !</description>
+    
+  !<input>
+    ! Number of rows in the source matrix
+    INTEGER(PREC_VECIDX), INTENT(IN) :: nrow
+    
+    ! Number of columns in the source matrix
+    INTEGER(PREC_VECIDX), INTENT(IN) :: ncol
+    
+    ! Column structure of the source matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Icol
+    
+    ! Row structure of the source matrix
+    INTEGER(PREC_MATIDX), DIMENSION(nrow+1), INTENT(IN) :: Irow
+  !</input>
+    
+  !<output>
+    ! Column structure of the destination matrix
+    ! The array must be of the same size as Icol!
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: IcolDest
+
+    ! Row structure of the destination matrix
+    INTEGER(PREC_MATIDX), DIMENSION(ncol+1), INTENT(OUT) :: IrowDest
+  !</output>
+    
+  !<inputoutput>
+    ! Auxiliary array of size ncol
+    INTEGER(PREC_VECIDX), DIMENSION(ncol), INTENT(INOUT) :: Itmp
+  !</inputoutput>
+!</subroutine>
+    
+    !local variables
+    INTEGER(I32) :: i, j, isize, icolumn, ncolumn
+    
+    ! determin the number of matrix entries
+    isize = Irow(nrow+1)-1
+    
+    ! clear row struxture of the destination matrix
+    DO i=1, ncol+1
+      IrowDest(i) = 0
+    END DO
+    
+    ! Count how many entries <> 0 are in each column. Note this into
+    ! the IrowDest array shifted by 1.
+    DO i=1, isize
+      IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
+    END DO
+    
+    ! Now build the final IrowDest by adding up the IrowDest entries.
+    IrowDest(1) = 1
+    DO i=2, ncol+1
+      IrowDest(i) = IrowDest(i)+IrowDest(i-1)
+    END DO
+    
+    ! Now IcolDest must be created. This requires another loop trough
+    ! the matrix structure. Itmp receives the index of how many entries
+    ! have been written to each row.
+    
+    ! clear auxiliary vector
+    DO i=1, ncol
+      Itmp(i) = 0
+    END DO
+
+    DO i=1, nrow
+      ncolumn = Irow(i+1)-Irow(i)
+      DO j=1, ncolumn
+        ! Get the column of the item in question -> new row number.
+        icolumn = Icol(Irow(i)+j-1)
+        ! Rows get columns by transposing, therefore note i as column
+        ! number in IcolDest
+        IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
+        ! Increment running index of that row
+        Itmp(icolumn) = Itmp(icolumn)+1
+      END DO
+    END DO
+    
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE lsyssc_transpMat79double (nrow, ncol, Da, Icol, Irow, &
+                                       Itmp, DaDest, IcolDest, IrowDest)
+  
+  !<description>
+    ! Auxiliary routine.
+    ! This routine accepts a structure-7 or structure-9
+    ! matrix and creates the transposed matrix from it.
+    !
+    ! The resulting matrix is of format 9, i.e. not pivoted anymore with 
+    ! the diagonal entry in front if a structure-7 matrix is to be transposed!
+  !</description>
+    
+  !<input>
+    ! Number of rows in the source matrix
+    INTEGER(PREC_VECIDX), INTENT(IN) :: nrow
+    
+    ! Number of columns in the source matrix
+    INTEGER(PREC_VECIDX), INTENT(IN) :: ncol
+    
+    ! The entries of the source matrix
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Da
+    
+    ! Column structure of the source matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Icol
+    
+    ! Row structure of the source matrix
+    INTEGER(PREC_MATIDX), DIMENSION(nrow+1), INTENT(IN) :: Irow
+  !</input>
+    
+  !<output>
+    ! The entries of the destination matrix
+    ! The array must be of the same size as Da or Icol
+    REAL(DP), DIMENSION(:), INTENT(OUT) :: DaDest
+    
+    ! Column structure of the destination matrix
+    ! The array must be of the same size as Icol!
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: IcolDest
+
+    ! Row structure of the destination matrix
+    INTEGER(PREC_MATIDX), DIMENSION(ncol+1), INTENT(OUT) :: IrowDest
+  !</output>
+    
+  !<inputoutput>
+    ! Auxiliary array of size ncol
+    INTEGER(PREC_VECIDX), DIMENSION(ncol), INTENT(INOUT) :: Itmp
+  !</inputoutput>
+  
+!</subroutine>
+    
+    !local variables
+    INTEGER(I32) :: i, j, isize, icolumn, ncolumn
+    
+    ! determine the number of matrix entries
+    isize = Irow(nrow+1)-1
+    
+    ! clear row structure of the destination matrix
+    DO i=1, ncol+1
+      IrowDest(i) = 0
+    END DO
+    
+    ! Count how many entries <> 0 are in each column. Note this
+    ! into the IrowDest array.
+    ! This requires one loop through the matrix structure. The
+    ! corresponding number is written into KLDD, shifted by 1
+    ! (i.e. IrowDest(2) is the number of entries of the 1st column).
+    ! This helps to create the real IrowDest more easily later.
+    DO i=1, isize
+      IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
+    END DO
+    
+    ! Now build the real IrowDest. This consists of indices, where 
+    ! each row starts. Row 1 starts at position 1:
+    IrowDest(1) = 1
+    
+    ! Adding the number of entries IrowDest(i) in the row to
+    ! IrowDest(i-1) gives the new row pointer of row i of the transposed
+    ! matrix.
+    DO i=2, ncol+1
+      IrowDest(i) = IrowDest(i)+IrowDest(i-1)
+    END DO
+    
+    ! That's it for IrowDest. 
+    ! Now IcolDest must be created. This requires another loop trough
+    ! the matrix structure. Itmp receives the index of how many entries
+    ! have been written to each row.
+    
+    ! clear auxiliary vector
+    DO i=1, ncol
+      Itmp(i) = 0
+    END DO
+
+    DO i=1, nrow
+      ! Loop through the row
+      ncolumn = Irow(i+1)-Irow(i)
+      DO j=1, ncolumn
+        ! Get the column of the item in question -> new row number.
+        icolumn = Icol(Irow(i)+j-1)
+        ! Rows get columns by transposing, therefore note i as column
+        ! number in IcolDest
+        IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
+        ! Copy the matrix entry:
+        DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
+        ! Increment running index of that row
+        Itmp(icolumn) = Itmp(icolumn)+1
+      END DO
+    END DO
+    
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_pivotiseMatrix7double (neq, Icol, Irow, Da, berror)
+  
+  !<description>
+    ! Auxiliary routine.
+    ! This routine repivots a matrix in structure 7: The diagonal element
+    ! of each row is moved to the front.
+  !</description>
+    
+  !<input>
+    ! Number of rows/columns/equations
+    INTEGER(PREC_VECIDX), INTENT(IN) :: neq
+  !</input>
+  
+  !<output>
+    ! If .TRUE. a diagonal element was not found
+    LOGICAL, OPTIONAL, INTENT(OUT) :: berror
+  !</output>
+        
+  !<inputoutput>
+    ! OPTIONAL: Matrix entries.
+    ! If not specified, only the matrix structure is pivotised.
+    REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Da
+    
+    ! Matrix column structure
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Icol
+    
+    ! Matrix row structure
+    INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(INOUT) :: Irow
+  !</inputoutput>
+!</subroutine>
+    
+    !local variables
+    INTEGER(I32) :: i, j
+    LOGICAL :: bnodiag
+    
+    bnodiag = .FALSE.
+    
+    IF (PRESENT(Da)) THEN
+      ! Structure + entries
+      !
+      ! Loop through the rows
+      DO i=1, neq
+        ! Is the line already pivoted? Most unlikely, but we test for sure
+        IF (Icol(Irow(i)) .NE. i) THEN
+
+          ! Find the position of the diagonal element
+          bnodiag = .TRUE.
+          DO j=Irow(i), Irow(i+1)-1
+            IF (j .EQ. i) THEN
+              bnodiag = .FALSE.
+              EXIT
+            END IF
+          END DO
+          ! Oops, diagonal element not found - cancel
+          IF (bnodiag) EXIT
+          
+          ! Ringshift the slice Icol(Irow(i):j) by 1 to the right.
+          ! This puts the diagonal element to the front
+          ! The same operation is also done for Da(Irow(i):j)
+          Icol(Irow(i):j) = CSHIFT(Icol(Irow(i):j),-1)
+          Da  (Irow(i):j) = CSHIFT(Da  (Irow(i):j),-1)
+        END IF
+      END DO
+
+    ELSE
+      ! Only structure
+      !
+      ! Loop through the rows
+      DO i=1, neq
+        ! Is the line already pivoted? Most unlikely, but we test for sure
+        IF (Icol(Irow(i)) .NE. i) THEN
+
+          ! Find the position of the diagonal element
+          bnodiag = .TRUE.
+          DO j=Irow(i), Irow(i+1)-1
+            IF (j .EQ. i) THEN
+              bnodiag = .FALSE.
+              EXIT
+            END IF
+          END DO
+          ! Oops, diagonal element not found - cancel
+          IF (bnodiag) EXIT
+          
+          ! Ringshift the slice Icol(Irow(i):j) by 1 to the right.
+          ! This puts the diagonal element to the front
+          ! The same operation is also done for Da(Irow(i):j)
+          Icol(Irow(i):j) = CSHIFT(Icol(Irow(i):j),-1)
+          Da  (Irow(i):j) = CSHIFT(Da  (Irow(i):j),-1)
+        END IF
+      END DO
+      
+    END IF
+
+    ! Report error status
+    IF (PRESENT(berror)) berror = bnodiag    
+  
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_transposeMatrix (rmatrix,rtransposedMatrix,itransFlag)
+  
+!<description>
+  ! This routine transposes a maztrix rmatrix and creates the transposed
+  ! matrix in rtransposedMatrix.
+  ! itransFlag decides (if specified) how the creation of the
+  ! transposed matrix is to be performed.
+!</description>
+
+!<input>
+  ! OPTIONAL: transposed-flag; one of the LSYSSC_TR_xxxx constants:
+  ! =LSYSSC_TR_ALL or not specified: transpose the matrix completely.
+  !     If there is a matrix in rtransposedMatrix, it's overwritten 
+  !       or an error is thrown, depending on whether the
+  !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
+  !     If there's no matrix in rtransposedMatrix, a new matrix is
+  !       created.
+  ! =LSYSSC_TR_STRUCTURE           : Transpose only the matrix structure; 
+  !     the content of the transposed matrix is invalid afterwards.
+  !     If there is a matrix in rtransposedMatrix, the structure is 
+  !       overwritten or an error is thrown, depending on whether the
+  !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
+  !     If there's no matrix in rtransposedMatrix, a new matrix structure
+  !       without entries is created.
+  ! =LSYSSC_TR_VIRTUAL             : Actually don't touch the matrix 
+  !     structure, but invert the 'transposed' flag in imatrixSpec. 
+  !
+  !     rtransposedMatrix is created by copying the data handles from
+  !     rmatrix - any previous data in rtransposedMatrix is overwritten. 
+  !     Afterwards, rtransposedMatrix is marked as transposed 
+  !     without modifying the structures, and all matrix-vector operations
+  !     will be performed with the transposed matrix. 
+  !     But caution: there may be some algorithms that don't work with such 
+  !       'virtually' transposed matrices!
+  INTEGER, INTENT(IN), OPTIONAL :: itransFlag
+!</input>  
+  
+!<input>
+  ! The matrix to be transposed.
+  TYPE(t_matrixScalar),INTENT(INOUT) :: rmatrix
+!</input>
+
+!<inputoutput>
+  ! The transposed matrix. 
+  ! If the structure is empty, a new matrix is created.
+  ! If the structure exists and structural data matches rmatrix, 
+  !   it's overwritten.
+  ! If the structure exists and structural data does not match rmatrix, 
+  !   an error is thrown.
+  TYPE(t_matrixScalar),INTENT(INOUT) :: rtransposedMatrix
+!</inputoutput>
+
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: itrans, h_Itemp
+    INTEGER(PREC_VECIDX) :: ntemp
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolSource,p_KcolDest
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldSource,p_KldDest
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Itemp
+    REAL(DP), DIMENSION(:), POINTER :: p_DaSource,p_DaDest
+    
+    itrans = LSYSSC_TR_ALL
+    IF (PRESENT(itransFlag)) itrans = itransFlag
+    
+    ! How to perform the creation of the transposed matrix?
+    IF (itrans .EQ. LSYSSC_TR_VIRTUAL) THEN
+    
+      ! Duplicate the matrix structure, copy all handles.
+      ! Don't allocate any memory.
+      CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_NONE)
+    
+      ! Only change the 'transposed' flag in imatrixSpec
+      rtransposedMatrix%imatrixSpec = &
+        IXOR(rtransposedMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)
+      
+      ! Exchange NEQ and NCOLS as these always describe the actual matrix.
+      ntemp = rtransposedMatrix%NEQ
+      rtransposedMatrix%NEQ = rtransposedMatrix%NCOLS
+      rtransposedMatrix%NCOLS = ntemp
+   
+      ! That's it.
+      RETURN
+    END IF
+
+    ! Does the destination matrix exist?
+    IF (rtransposedMatrix%NEQ .NE. 0) THEN
+    
+      ! Make sure the destination matrix can accept all data of the source
+      ! matrix. Matrix format and size must match.
+      IF (rMatrix%cmatrixFormat .NE. rtransposedMatrix%cmatrixFormat) THEN
+        PRINT *,'lsyssc_transposeMatrix: Different matrix formats not allowed!'
+        STOP
+      END IF
+
+      IF (rmatrix%NA .NE. rtransposedMatrix%NA) THEN
+        PRINT *,'lsyssc_transposeMatrix: Matrices have different size!'
+        STOP
+      END IF
+
+      ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
+      ! and the same structure!
+
+      IF (itrans .EQ. LSYSSC_TR_ALL) THEN
+        IF (rmatrix%cdataType .NE. rtransposedMatrix%cdataType) THEN
+          PRINT *,'lsyssc_transposeMatrix: Matrices have different data types!'
+          STOP
+        END IF
+      END IF
+
+    ELSE
+      ! Otherwise, we must create a new matrix that accepts the transposed
+      ! data. Either we have to allocate memory for the structure or for both,
+      ! structure and data.
+      SELECT CASE (itrans)
+      CASE (LSYSSC_TR_STRUCTURE)
+        ! Create a new matrix structure based on our old. Don't initialise it.
+        CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_EMPTYSTRUC)
+      CASE (LSYSSC_TR_ALL)
+        ! Create a new matrix based on our old. DOn't initialise it.
+        CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_EMPTYALL)
+      END SELECT
+
+    END IF
+
+    ! Otherwise, check that we are able to create the transposed matrix at all.
+    IF (itrans .EQ. LSYSSC_TR_ALL) THEN
+      IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
+        PRINT *,'lsyssc_transposeMatrix: Unsupported data type!'
+        STOP
+      END IF
+    END IF
+    
+!    syssc_sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
+    
+    ! Now what should we do...
+    SELECT CASE (itrans)
+    CASE (LSYSSC_TR_STRUCTURE)
+      ! Only the structure is to be transposed. Which structure do we have?
+      SELECT CASE (rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+        ! Is the source matrix saved tranposed? In that case simply copy
+        ! the data arrays, this results in the transposed matrix :)
+        IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+        
+          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
+          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
+          CALL storage_copy (rmatrix%h_Kdiagonal,rtransposedMatrix%h_Kdiagonal)
+          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          
+        ELSE
+          ! We really have to do some work now :)
+          !
+          ! Get Kcol/Kld
+          CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
+          CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
+
+          CALL storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
+          CALL storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
+          
+          ! We need a temporary array
+          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NA,&
+                            ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
+          CALL storage_getbase_int (h_Itemp,p_Itemp)
+          
+          ! Calculate the transposed matrix structure:
+          CALL lsyssc_transpMatStruct79double (rmatrix%NEQ, rmatrix%NCOLS, &
+                     p_KcolSource, p_KldSource, &
+                     p_Itemp, p_KcolDest, p_KldDest)
+                     
+          ! Release the temp array
+          CALL storage_free (h_Itemp)
+
+          ! Recalculate Kdiagonal
+          CALL storage_getbase_int(rtransposedMatrix%h_Kdiagonal,p_Kdiagonal)
+          CALL lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, rmatrix%NEQ)
+
+        END IF
+
+      CASE (LSYSSC_MATRIX7)
+        ! Is the source matrix saved tranposed? In that case simply copy
+        ! the data arrays, this results in the transposed matrix :)
+        IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
+          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
+          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          
+        ELSE
+          ! We really have to do some work now :)
+          !
+          ! Get Kcol/Kld
+          CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
+          CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
+
+          CALL storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
+          CALL storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
+          
+          ! We need a temporary array
+          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NA,&
+                            ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
+          CALL storage_getbase_int (h_Itemp,p_Itemp)
+          
+          ! Calculate the transposed matrix structure:
+          CALL lsyssc_transpMatStruct79double (rmatrix%NEQ, rmatrix%NCOLS, &
+                     p_KcolSource, p_KldSource, &
+                     p_Itemp, p_KcolDest, p_KldDest)
+                     
+          ! Release the temp array
+          CALL storage_free (h_Itemp)
+
+          ! Pivotise the matrix to move the diagonal element to the front.
+          CALL lsyssc_pivotiseMatrix7double (rmatrix%NEQ, p_KcolDest, p_KldDest)
+        END IF
+        
+      CASE DEFAULT
+        PRINT *,'lsyssc_transposeMatrix: Unsupported matrix format.'
+        STOP
+      END SELECT
+      
+    CASE (LSYSSC_TR_ALL)
+      ! Transpose the full matrix - structure+content
+      SELECT CASE (rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+        ! Is the source matrix saved tranposed? In that case simply copy
+        ! the data arrays, this results in the transposed matrix :)
+        IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+        
+          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
+          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
+          CALL storage_copy (rmatrix%h_Kdiagonal,rtransposedMatrix%h_Kdiagonal)
+          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          
+        ELSE
+          ! We really have to do some work now :)
+          !
+          ! Get Kcol/Kld
+          CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
+          CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
+
+          CALL storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
+          CALL storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
+          
+          ! Get the data array(s)
+          CALL storage_getbase_double(rMatrix%h_Da,p_DaSource)
+          CALL storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
+          
+          ! We need a temporary array
+          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NA,&
+                            ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
+          CALL storage_getbase_int (h_Itemp,p_Itemp)
+          
+          ! Calculate the transposed matrix structure:
+          CALL lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
+                p_DaSource, p_KcolSource, p_KldSource, &
+                p_Itemp, p_DaDest, p_KcolDest, p_KldDest)
+                     
+          ! Release the temp array
+          CALL storage_free (h_Itemp)
+          
+          ! Recalculate Kdiagonal
+          CALL storage_getbase_int(rtransposedMatrix%h_Kdiagonal,p_Kdiagonal)
+          CALL lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, rmatrix%NEQ)
+          
+        END IF
+
+      CASE (LSYSSC_MATRIX7)
+        ! Is the source matrix saved tranposed? In that case simply copy
+        ! the data arrays, this results in the transposed matrix :)
+        IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+        
+          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
+          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
+          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          
+        ELSE
+          ! We really have to do some work now :)
+          !
+          ! Get Kcol/Kld
+          CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
+          CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
+
+          CALL storage_getbase_int(rtransposedMatrix%h_Kcol,p_KcolDest)
+          CALL storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
+          
+          ! Get the data array(s)
+          CALL storage_getbase_double(rMatrix%h_Da,p_DaSource)
+          CALL storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
+
+          ! We need a temporary array
+          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NA,&
+                            ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
+          CALL storage_getbase_int (h_Itemp,p_Itemp)
+          
+          ! Calculate the transposed matrix structure:
+          CALL lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
+                p_DaSource, p_KcolSource, p_KldSource, &
+                p_Itemp, p_DaDest, p_KcolDest, p_KldDest)
+                     
+          ! Release the temp array
+          CALL storage_free (h_Itemp)
+          
+          ! Pivotise the matrix to move the diagonal element to the front.
+          CALL lsyssc_pivotiseMatrix7double (rmatrix%NEQ, p_KcolDest, p_KldDest, p_DaDest)
+        END IF
+      
+      CASE DEFAULT
+        PRINT *,'lsyssc_transposeMatrix: Unsupported matrix format.'
+        STOP
+      END SELECT
+      
+    CASE DEFAULT ! = LSYSSC_TR_ALL 
+    END SELECT
+  
+    ! Exchange NEQ and NCOLS as these always describe the actual matrix.
+    ntemp = rtransposedMatrix%NEQ
+    rtransposedMatrix%NEQ = rtransposedMatrix%NCOLS
+    rtransposedMatrix%NCOLS = ntemp
+    
+    ! That's it.
+  
   END SUBROUTINE
 
 END MODULE
