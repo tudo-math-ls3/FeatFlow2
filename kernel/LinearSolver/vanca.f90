@@ -12,8 +12,14 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) vanca_general_XXX
+!# 1.) vanca_initGeneralVanca
+!#     -> Initialise the general Vanca solver
+!#
+!# 2.) vanca_general
 !#     -> Perform one step of the full VANCA solver for general block systems.
+!#
+!# 3.) vanca_dsoneGeneralVanca
+!#     -> Clean up the general Vanca solver
 !#
 !# </purpose>
 !##############################################################################
@@ -122,11 +128,22 @@ CONTAINS
   SUBROUTINE vanca_initGeneralVanca (rmatrix,rvancaGeneral)
 
 !<description>
+  ! This routine initialises the general VANCA solver and allocates
+  ! necessary memory for the iteration.
 !</description>
 
+!<input>
+  ! The system matrix that is used during the VANCA iteration.
+  ! Remark: VANCA saves a pointer to this matrix, so the structure must exist
+  !  until the system is solved! (Usually this points to the system matrix in
+  !  the corresponding solver structure of the underlying linear solver...)
   TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+!</input>
   
+!<output>
+  ! VANCA spiecific structure. Contains internal data and allocated memory.
   TYPE(t_vancaGeneral), INTENT(OUT)       :: rvancaGeneral
+!</output>
 
 !</subroutine>
 
@@ -241,9 +258,14 @@ CONTAINS
   SUBROUTINE vanca_doneGeneralVanca (rvancaGeneral)
 
 !<description>
+  ! This routine cleans up a general VANCA solver. All memory allocated in
+  ! rvancaGeneral is released.
 !</description>
   
+!<inputoutput>
+  ! The general-VANCA structure to be cleaned up.
   TYPE(t_vancaGeneral), INTENT(INOUT)       :: rvancaGeneral
+!</inputoutput>
 
 !</subroutine>
 
@@ -263,12 +285,28 @@ CONTAINS
   SUBROUTINE vanca_general (rvancaGeneral, rvector, rrhs, domega)
 
 !<description>
+  ! This routine applies the general-VANCA algorithm to the system $Ax=b$.
+  ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
+  ! vector. THe rvancaGeneral structure has to be initialised before calling
+  ! this routine, as this gets a reference to the system matrix A.
 !</description>
 
-  TYPE(t_vancaGeneral), INTENT(INOUT)     :: rvancaGeneral
+!<input>
+  ! The initial solution vector
   TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+  
+  ! The right-hand-side vector of the system
   TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  
+  ! Relaxation parameter. Standard=1.0_DP.
   REAL(DP), INTENT(IN)                    :: domega
+!</input>
+
+!<inputoutput>
+  ! The general-VANCA structure. Must have been initialised with 
+  ! vanca_initGeneralVanca before.
+  TYPE(t_vancaGeneral), INTENT(INOUT)     :: rvancaGeneral
+!</inputoutput>
 
 !</subroutine>
 
@@ -345,7 +383,7 @@ CONTAINS
          rvancaGeneral%IelementDOFs)
                  
   END DO
-
+  
   END SUBROUTINE
 
   ! ***************************************************************************

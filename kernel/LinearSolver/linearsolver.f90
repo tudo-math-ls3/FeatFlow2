@@ -2881,7 +2881,7 @@ CONTAINS
   
   ! Initialise the ability bitfield with the ability of this solver:
   p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
-                              LINSOL_ABIL_CHECKDEF + LINSOL_ABIL_DIRECT
+                              LINSOL_ABIL_DIRECT
   
   ! Allocate the subnode for VANCA.
   ! This initialises most of the variables with default values appropriate

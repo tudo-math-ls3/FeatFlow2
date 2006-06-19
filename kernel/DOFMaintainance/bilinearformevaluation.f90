@@ -316,7 +316,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA
+  INTEGER(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
   INTEGER :: IDOFE, JDOFE, i, IHELP,NVE
   INTEGER(PREC_ELEMENTIDX) :: IEL, IELmax, IELset
   LOGICAL :: BSORT, bIdenticalTrialAndTest
@@ -911,6 +911,7 @@ CONTAINS
   ! This is a small bubble-sort...
   !
   ! Loop through all rows:
+  nmaxCol = 0
 
   DO IEQ=1,NEQ
 
@@ -951,9 +952,16 @@ CONTAINS
         p_Kdiagonal(IEQ) = JCOL
         EXIT
       END IF
-    END DO      
+    END DO   
+    
+    ! Grab the largest column number. As the current line is sorted,
+    ! we can find this using the end of the line.
+    nmaxCol = MAX(nmaxCol,p_Kcol(p_Kld(IEQ+1)-1))
 
   END DO ! IEQ
+  
+  ! Write out nmaxCol as number of columns to the structure.
+  rmatrixScalar%NCOLS = nmaxCol
     
   ! HOORAY, THAT'S IT!
   ! Deallocate all temporary memory...
