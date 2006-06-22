@@ -742,7 +742,7 @@ CONTAINS
       DO j=1,rmatrixFine%ndiagBlocks
         IF (rmatrixFine%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
           RdiscrFine(i) = &
-            rmatrixFine%RmatrixBlock(i,i)%p_rspatialDiscretisation
+            rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscretisation
         END IF
       END DO
     END DO
@@ -855,8 +855,8 @@ CONTAINS
         END IF
         
         ! Get the pointers to the vectors
-        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(1),p_DuCoarse)
-        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(1),p_DuFine)
+        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
+        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -1056,8 +1056,8 @@ CONTAINS
         END IF
         
         ! Get the pointers to the vectors
-        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(1),p_DuCoarse)
-        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(1),p_DuFine)
+        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
+        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -1091,7 +1091,7 @@ CONTAINS
                                p_IneighboursAtElementFine)
           CALL mlprj_restUniformQ0_double (p_DuCoarse,p_DuFine, &
                p_IneighboursAtElementFine, &
-               p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+               p_rtriaCoarse%NEL)
                
         CASE (EL_Q1)
           ! Q1 restriction
@@ -1252,8 +1252,8 @@ CONTAINS
         END IF
         
         ! Get the pointers to the vectors
-        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(1),p_DuCoarse)
-        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(1),p_DuFine)
+        CALL lsyssc_getbase_double (rcoarseVector%RvectorBlock(i),p_DuCoarse)
+        CALL lsyssc_getbase_double (rfineVector%RvectorBlock(i),p_DuFine)
         
         ! Use the first projection structure as template and create
         ! the actual projection structure for our situation.
@@ -1468,7 +1468,7 @@ CONTAINS
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    CALL lalg_vectorCopyDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
 
     ! Loop over the elements
     DO iel=1,NELCoarse
@@ -1539,7 +1539,7 @@ CONTAINS
     ! be 'collected'.
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    CALL lalg_vectorCopyDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
     
     ! Loop over the elements to collect the missing additive contributions:
     DO iel=NELcoarse+1,NELfine
@@ -1587,7 +1587,7 @@ CONTAINS
   
     ! The first coase.NVT entries of the fine grid vector define 
     ! the values on the coarse grid - because of the two-level ordering!
-    CALL lalg_vectorCopyDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    CALL lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
     
   END SUBROUTINE
 
@@ -1681,7 +1681,7 @@ CONTAINS
   
     ! The first coase.NVT+NMT entries of the fine grid vector define 
     ! the values on the coarse grid - because of the two-level ordering!
-    CALL lalg_vectorCopyDble(DUfine(1:NVTcoarse+NMTcoarse),&
+    CALL lalg_copyVectorDble(DUfine(1:NVTcoarse+NMTcoarse),&
                              DUcoarse(1:NVTCoarse+NMTcoarse))
     
   END SUBROUTINE
@@ -1753,7 +1753,7 @@ CONTAINS
 
   SUBROUTINE mlprj_restUniformQ0_double (DuCoarse,DuFine, &
                IneighboursAtElementFine, &
-               NELcoarse, NELfine)
+               NELcoarse)
   
 !<description>
   ! Restricts a RHS vector from a fine grid to a coarse grid.
@@ -1769,9 +1769,6 @@ CONTAINS
   
   ! Number of elements in the coarse grid
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
-
-  ! Number of elements in the fine grid
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
 !</input>
   
 !<output>
@@ -1789,7 +1786,7 @@ CONTAINS
     ! be 'collected'.
     
     ! Loop over the elements to collect the missing additive contributions:
-    DO iel=NELcoarse+1,NELfine
+    DO iel=1,NELcoarse
     
       ! Get the elements on the fine grid that are children of the
       ! coarse grid element
@@ -1917,7 +1914,7 @@ CONTAINS
 
     ! Copy the first NVT entries - they belong to the coarse grid vertices
     ! that are fine grid vertices at the same time.
-    CALL lalg_vectorCopyDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
 
     ! Loop over the elements
     DO iel=1,NELCoarse
@@ -1999,7 +1996,7 @@ CONTAINS
     ! be 'collected'.
     !
     ! Copy the first NVT entries - this gives the first additive contribution.
-    CALL lalg_vectorCopyDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
     
     ! Loop over the elements to collect the missing additive contributions:
     DO iel=1,NELfine
@@ -2048,7 +2045,7 @@ CONTAINS
   
     ! The first coase.NVT entries of the fine grid vector define the values
     ! on the coarse grid - because of the two-level ordering!
-    CALL lalg_vectorCopyDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
+    CALL lalg_copyVectorDble(DUfine(1:NVTcoarse),DUcoarse(1:NVTCoarse))
     
   END SUBROUTINE
   
@@ -2145,7 +2142,7 @@ CONTAINS
   
     ! The first coase.NVT+NMT+NEL entries of the fine grid vector define 
     ! the values on the coarse grid - because of the two-level ordering!
-    CALL lalg_vectorCopyDble(DUfine(1:NVTcoarse+NMTcoarse+NELcoarse),&
+    CALL lalg_copyVectorDble(DUfine(1:NVTcoarse+NMTcoarse+NELcoarse),&
                              DUcoarse(1:NVTCoarse+NMTcoarse+NELcoarse))
     
   END SUBROUTINE
@@ -2210,7 +2207,7 @@ CONTAINS
   REAL(DP), PARAMETER :: A5=0.625_DP, A6=0.125_DP, A7=0.125_DP, A8=0.125_DP
   
     ! Clear the output vector
-    CALL lalg_vectorClearDble(DuFine)
+    CALL lalg_clearVectorDble(DuFine)
   
     ! Loop over the coarse grid elements
     DO iel=1,NELcoarse
@@ -2417,7 +2414,7 @@ CONTAINS
                 1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
               
     ! Clear the output vector
-    CALL lalg_vectorClearDble(DuFine)
+    CALL lalg_clearVectorDble(DuFine)
   
     ! Loop over the coarse grid elements
     DO iel=1,NELcoarse
@@ -2946,7 +2943,7 @@ CONTAINS
                   1.0_DP, 0.0_DP, 0.0_DP, 0.0_DP/),(/8,2/))
 
     ! Clear the output vector
-    CALL lalg_vectorClearDble(DuCoarse)
+    CALL lalg_clearVectorDble(DuCoarse)
               
     ! Loop over the coarse grid elements
     DO iel=1,NELcoarse

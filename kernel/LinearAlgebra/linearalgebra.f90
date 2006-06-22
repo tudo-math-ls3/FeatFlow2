@@ -10,13 +10,13 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) lalg_vectorCopyXXX
+!# 1.) lalg_copyVectorXXX
 !#     -> Copy a vector to another (former LCPx)
 !#
-!# 2.) lalg_vectorScaleXXX
+!# 2.) lalg_scaleVectorXXX
 !#     -> Scale a vector (former LSCx)
 !#
-!# 3.) lalg_vectorClearXXX
+!# 3.) lalg_clearVectorXXX
 !#     -> Clear a vector (former LCLx)
 !#
 !# 4.) lalg_vectorLinearCombXXX
@@ -69,7 +69,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorCopyDble (Dx,Dy)
+  SUBROUTINE lalg_copyVectorDble (Dx,Dy)
   
 !<description>
   ! Copies a double precision vector dx: Dy = Dx
@@ -99,7 +99,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorCopySngl (Fx,Fy)
+  SUBROUTINE lalg_copyVectorSngl (Fx,Fy)
   
 !<description>
   ! Copies a single precision vector: Fy = Fx
@@ -129,7 +129,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorCopySnglDbl (Fx,Dy)
+  SUBROUTINE lalg_copyVectorSnglDbl (Fx,Dy)
   
 !<description>
   ! Copies single precision vector to double precision vector: Dy = Fx
@@ -162,7 +162,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorCopyDblSngl (Dx,Fy)
+  SUBROUTINE lalg_copyVectorDblSngl (Dx,Fy)
   
 !<description>
   ! Copies double precision vector to single precision vector: Fy = Dx
@@ -195,7 +195,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorCopyInt (Ix,Iy)
+  SUBROUTINE lalg_copyVectorInt (Ix,Iy)
   
 !<description>
   ! Copies an integer vector Ix: Iy = Ix
@@ -230,7 +230,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lalg_vectorScaleDble (Dx,dc)
+  SUBROUTINE lalg_scaleVectorDble (Dx,dc)
   
 !<description>
   ! Scales a double precision vector: Dx = dc * Dx
@@ -260,7 +260,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lalg_vectorScaleSngl (Fx,sc)
+  SUBROUTINE lalg_scaleVectorSngl (Fx,sc)
   
 !<description>
   ! Scales a single precision vector: Dx = sc * Dx
@@ -290,7 +290,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lalg_vectorScaleInt (Ix,ic)
+  SUBROUTINE lalg_scaleVectorInt (Ix,ic)
   
 !<description>
   ! Scales a integer vector: Ix = c * Ix
@@ -325,7 +325,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorClearDble (Dx)
+  SUBROUTINE lalg_clearVectorDble (Dx)
   
 !<description>
   ! Clears a double precision vector: Dx = 0
@@ -359,7 +359,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorClearSngl (Fx)
+  SUBROUTINE lalg_clearVectorSngl (Fx)
   
 !<description>
   ! Clears a single precision vector: Fx = 0
@@ -395,7 +395,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lalg_vectorClearInt (Ix)
+  SUBROUTINE lalg_clearVectorInt (Ix)
   
 !<description>
   ! Clears an integer vector: Ix = 0

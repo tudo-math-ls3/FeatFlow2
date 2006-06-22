@@ -21,88 +21,88 @@
 !#  3.) lsysbl_createVecBlockByDiscr
 !#      -> Create a block vector using a block discretisation structure
 !#
-!#  3.) lsysbl_createVecBlockIndMat
+!#  4.) lsysbl_createVecBlockIndMat
 !#      -> Create a block vector according to a block matrix.
 !#
-!#  4.) lsysbl_createMatFromScalar
+!#  5.) lsysbl_createMatFromScalar
 !#      -> Create a 1x1 block matrix from a scalar matrix
 !#
-!#  5.) lsysbl_createVecFromScalar
+!#  6.) lsysbl_createVecFromScalar
 !#      -> Create a 1-block vector from a scalar vector
 !#
-!#  6.) lsysbl_createMatBlockByDiscr
+!#  7.) lsysbl_createMatBlockByDiscr
 !#      -> Create an empty block matrix using a block discretisation structure
 !#
-!#  6.) lsysbl_enforceStructure
+!#  8.) lsysbl_enforceStructure
 !#      -> Enforces the structure of a given block vector in another
 !#         block vector
 !#
-!#  7.) lsysbl_assignDiscretIndirect
+!#  9.) lsysbl_assignDiscretIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!#  8.) lsysbl_assignDiscretIndirectMat
+!# 10.) lsysbl_assignDiscretIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector tp make it compatible.
 !#
-!#  9.) lsysbl_updateMatStrucInfo
+!# 11.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!# 10.) lsysbl_releaseVector
+!# 12.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 11.) lsysbl_blockMatVec
+!# 13.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 12.) lsysbl_vectorCopy
+!# 14.) lsysbl_copyVector
 !#       -> Copy a block vector over to another one
 !#
-!# 13.) lsysbl_vectorScale
+!# 15.) lsysbl_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 14.) lsysbl_vectorClear
+!# 16.) lsysbl_clearVector
 !#      -> Clear a block vector
 !#
-!# 15.) lsysbl_vectorLinearComb
+!# 17.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 16.) lsysbl_scalarProduct
+!# 18.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 17.) lsysbl_setSortStrategy
+!# 19.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 18.) lsysbl_sortVectorInSitu
+!# 20.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 19.) lsysbl_isVectorCompatible
+!# 21.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 20.) lsysbl_isMatrixCompatible
+!# 22.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 21.) lsysbl_isMatrixSorted
+!# 23.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 22.) lsysbl_isVectorSorted
+!# 24.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 23.) lsysbl_getbase_double
+!# 25.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 24.) lsysbl_getbase_single
+!# 26.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 25.) lsysbl_vectorNorm
+!# 27.) lsysbl_vectorNorm
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 26.) lsysbl_vectorNormBlock
+!# 28.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 27.) lsysbl_invertedDiagMatVec
+!# 29.) lsysbl_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !# </purpose>
 !##############################################################################
@@ -394,6 +394,7 @@ CONTAINS
   ! - they have the same NEQ,
   ! - they have the same structure of subvectors and diagonal blocks,
   ! - they have the same sorting strategy OR they are both unsorted
+  ! Currently disabled checks:
   ! - they have the same spatial discretisation,
   ! - they have the same boundary conditions.
 !</description>
@@ -444,54 +445,59 @@ CONTAINS
     END IF
   END IF
   
-  ! Vector and matrix must share the same BC's.
-  b1 = ASSOCIATED(rvector%p_rdiscreteBC)
-  b2 = ASSOCIATED(rmatrix%p_rdiscreteBC)
-  b3 = ASSOCIATED(rvector%p_rdiscreteBC,rmatrix%p_rdiscreteBC)
-  IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-    IF (PRESENT(bcompatible)) THEN
-      bcompatible = .FALSE.
-      RETURN
-    ELSE
-      PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
-      STOP
-    END IF
-  END IF
-
-  b1 = ASSOCIATED(rvector%p_rdiscreteBCfict)
-  b2 = ASSOCIATED(rmatrix%p_rdiscreteBCfict)
-  b3 = ASSOCIATED(rvector%p_rdiscreteBCfict,rmatrix%p_rdiscreteBCfict)
-  IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-    IF (PRESENT(bcompatible)) THEN
-      bcompatible = .FALSE.
-      RETURN
-    ELSE
-      PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
-      STOP
-    END IF
-  END IF
+!  ! Vector and matrix must share the same BC's.
+!  b1 = ASSOCIATED(rvector%p_rdiscreteBC)
+!  b2 = ASSOCIATED(rmatrix%p_rdiscreteBC)
+!  b3 = ASSOCIATED(rvector%p_rdiscreteBC,rmatrix%p_rdiscreteBC)
+!  IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+!    IF (PRESENT(bcompatible)) THEN
+!      bcompatible = .FALSE.
+!      RETURN
+!    ELSE
+!      PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
+!      STOP
+!    END IF
+!  END IF
+!
+!  b1 = ASSOCIATED(rvector%p_rdiscreteBCfict)
+!  b2 = ASSOCIATED(rmatrix%p_rdiscreteBCfict)
+!  b3 = ASSOCIATED(rvector%p_rdiscreteBCfict,rmatrix%p_rdiscreteBCfict)
+!  IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+!    IF (PRESENT(bcompatible)) THEN
+!      bcompatible = .FALSE.
+!      RETURN
+!    ELSE
+!      PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
+!      STOP
+!    END IF
+!  END IF
   
   ! All the subblocks must be the same size and must be sorted the same way.
   ! Each subvector corresponds to one 'column' in the block matrix.
-  DO i=1,rvector%nblocks
-    DO j=1,rvector%nblocks
-      IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+  !
+  ! Loop through all columns (!) of the matrix
+  DO j=1,rvector%nblocks
+  
+    ! Loop through all rows of the matrix
+    DO i=1,rvector%nblocks
+    
+      IF (rmatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
 
-        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation)
-        b2 = ASSOCIATED(rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation)
-        b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation, &
-                        rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation)
-        IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-          IF (PRESENT(bcompatible)) THEN
-            bcompatible = .FALSE.
-            RETURN
-          ELSE
-            PRINT *,'Vector/Matrix not compatible, different discretisation!'
-            STOP
-          END IF
-        END IF
+!        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation)
+!        b2 = ASSOCIATED(rmatrix%RmatrixBlock(i,j)%p_rspatialDiscretisation)
+!        b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation, &
+!                        rmatrix%RmatrixBlock(i,j)%p_rspatialDiscretisation)
+!        IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+!          IF (PRESENT(bcompatible)) THEN
+!            bcompatible = .FALSE.
+!            RETURN
+!          ELSE
+!            PRINT *,'Vector/Matrix not compatible, different discretisation!'
+!            STOP
+!          END IF
+!        END IF
 
-        IF (rvector%RvectorBlock(i)%NEQ .NE. rmatrix%RmatrixBlock(j,i)%NEQ) THEN
+        IF (rvector%RvectorBlock(j)%NEQ .NE. rmatrix%RmatrixBlock(i,j)%NCOLS) THEN
           IF (PRESENT(bcompatible)) THEN
             bcompatible = .FALSE.
             RETURN
@@ -503,11 +509,11 @@ CONTAINS
 
         ! isortStrategy < 0 means unsorted. Both unsorted is ok.
 
-        IF ((rvector%RvectorBlock(i)%isortStrategy .GT. 0) .OR. &
-            (rmatrix%RmatrixBlock(j,i)%isortStrategy .GT. 0)) THEN
+        IF ((rvector%RvectorBlock(j)%isortStrategy .GT. 0) .OR. &
+            (rmatrix%RmatrixBlock(i,j)%isortStrategy .GT. 0)) THEN
 
-          IF (rvector%RvectorBlock(i)%isortStrategy .NE. &
-              rmatrix%RmatrixBlock(j,i)%isortStrategy) THEN
+          IF (rvector%RvectorBlock(j)%isortStrategy .NE. &
+              rmatrix%RmatrixBlock(i,j)%isortStrategy) THEN
             IF (PRESENT(bcompatible)) THEN
               bcompatible = .FALSE.
               RETURN
@@ -517,8 +523,8 @@ CONTAINS
             END IF
           END IF
 
-          IF (rvector%RvectorBlock(i)%h_isortPermutation .NE. &
-              rmatrix%RmatrixBlock(j,i)%h_isortPermutation) THEN
+          IF (rvector%RvectorBlock(j)%h_isortPermutation .NE. &
+              rmatrix%RmatrixBlock(i,j)%h_isortPermutation) THEN
             IF (PRESENT(bcompatible)) THEN
               bcompatible = .FALSE.
               RETURN
@@ -711,7 +717,7 @@ CONTAINS
   ! as this might give problems with some compilers!
   IF (PRESENT(bclear)) THEN
     IF (bclear) THEN
-      CALL lsysbl_vectorClear (rx)
+      CALL lsysbl_clearVector (rx)
     END IF
   END IF
   
@@ -798,7 +804,7 @@ CONTAINS
   ! as this might give problems with some compilers!
   IF (PRESENT(bclear)) THEN
     IF (bclear) THEN
-      CALL lsysbl_vectorClear (rx)
+      CALL lsysbl_clearVector (rx)
     END IF
   END IF
   
@@ -973,7 +979,7 @@ CONTAINS
   IF (PRESENT(cdataType)) cdata = cdataType
   
   ! Allocate one large vector holding all data.
-  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplateMat%NEQ, &
+  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplateMat%NCOLS, &
                       cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
@@ -987,10 +993,10 @@ CONTAINS
     DO j=1,rtemplateMat%ndiagBlocks
     
       ! Check if the matrix is not empty
-      IF (rtemplateMat%RmatrixBlock(j,i)%NEQ .GT. 0) THEN
+      IF (rtemplateMat%RmatrixBlock(j,i)%NCOLS .GT. 0) THEN
         
         ! Found a template matrix we can use :-)
-        rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(j,i)%NEQ
+        rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(j,i)%NCOLS
         
         ! Take the handle of the complete-solution vector, but set the index of
         ! the first entry to a value >= 1 - so that it points to the first
@@ -1017,7 +1023,7 @@ CONTAINS
         ! Set the data type
         rx%RvectorBlock(i)%cdataType = cdata
         
-        n = n+rtemplateMat%RmatrixBlock(j,i)%NEQ
+        n = n+rtemplateMat%RmatrixBlock(j,i)%NCOLS
         
         ! Finish this loop, continue with the next column
         EXIT
@@ -1035,7 +1041,7 @@ CONTAINS
     
   END DO
   
-  rx%NEQ = rtemplateMat%NEQ
+  rx%NEQ = rtemplateMat%NCOLS
   rx%nblocks = rtemplateMat%ndiagBlocks
   rx%cdataType = cdata
 
@@ -1049,7 +1055,7 @@ CONTAINS
   ! as this might give problems with some compilers!
   IF (PRESENT(bclear)) THEN
     IF (bclear) THEN
-      CALL lsysbl_vectorClear (rx)
+      CALL lsysbl_clearVector (rx)
     END IF
   END IF
 
@@ -1317,7 +1323,7 @@ CONTAINS
       ! Only call the MV when there is a scalar matrix that we can use!
       IF (rMatrix%RmatrixBlock(y,x)%NA .NE. 0) THEN
         CALL lsyssc_scalarMatVec (rMatrix%RmatrixBlock(y,x), rx%RvectorBlock(x), &
-                                  ry%RvectorBlock(x), cx, cyact)
+                                  ry%RvectorBlock(y), cx, cyact)
         cyact = 1.0_DP
         mvok = YES
       END IF
@@ -1329,7 +1335,7 @@ CONTAINS
     ! simply scale the vector ry by cyact!
     
     IF (mvok .EQ.NO) THEN
-      CALL lsysbl_vectorScale (ry,cy)
+      CALL lsysbl_scaleVector (ry,cy)
     END IF
     
   END DO
@@ -1389,7 +1395,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_vectorCopy (rx,ry)
+  SUBROUTINE lsysbl_copyVector (rx,ry)
   
 !<description>
   ! Copies vector data: ry = rx.
@@ -1440,15 +1446,15 @@ CONTAINS
   CASE (ST_DOUBLE)
     CALL lsysbl_getbase_double (rx,p_Dsource)
     CALL lsysbl_getbase_double (ry,p_Ddest)
-    CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
     
   CASE (ST_SINGLE)
     CALL lsysbl_getbase_single (rx,p_Fsource)
     CALL lsysbl_getbase_single (ry,p_Fdest)
-    CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+    CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
   CASE DEFAULT
-    PRINT *,'lsysbl_vectorCopy: Unsupported data type!'
+    PRINT *,'lsysbl_copyVector: Unsupported data type!'
     STOP
   END SELECT
    
@@ -1458,7 +1464,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_vectorScale (rx,c)
+  SUBROUTINE lsysbl_scaleVector (rx,c)
   
 !<description>
   ! Scales a vector vector rx: rx = c * rx
@@ -1485,15 +1491,15 @@ CONTAINS
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     CALL lsysbl_getbase_double(rx,p_Ddata)
-    CALL lalg_vectorScaleDble (p_Ddata,c)  
+    CALL lalg_scaleVectorDble (p_Ddata,c)  
 
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     CALL lsysbl_getbase_single(rx,p_Fdata)
-    CALL lalg_vectorScaleSngl (p_Fdata,REAL(c,SP))  
+    CALL lalg_scaleVectorSngl (p_Fdata,REAL(c,SP))  
 
   CASE DEFAULT
-    PRINT *,'lsysbl_vectorScale: Unsupported data type!'
+    PRINT *,'lsysbl_scaleVector: Unsupported data type!'
     STOP
   END SELECT
   
@@ -1503,7 +1509,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_vectorClear (rx)
+  SUBROUTINE lsysbl_clearVector (rx)
   
 !<description>
   ! Clears the block vector dx: Dx = 0
@@ -1525,15 +1531,15 @@ CONTAINS
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     CALL lsysbl_getbase_double(rx,p_Dsource)
-    CALL lalg_vectorClearDble (p_Dsource)
+    CALL lalg_clearVectorDble (p_Dsource)
   
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     CALL lsysbl_getbase_single(rx,p_Ssource)
-    CALL lalg_vectorClearSngl (p_Ssource)
+    CALL lalg_clearVectorSngl (p_Ssource)
 
   CASE DEFAULT
-    PRINT *,'lsysbl_vectorClear: Unsupported data type!'
+    PRINT *,'lsysbl_clearVector: Unsupported data type!'
     STOP
   END SELECT
   
@@ -2023,19 +2029,29 @@ CONTAINS
   ! The maximum of i and j is the new number of diagonal blocks
   rmatrix%ndiagBlocks = MAX(i,j)
   
-  ! Calculate the new NEQ and NCOLS. Go through the 'columns' of the 
-  ! block matrix.
-  NEQ = 0
+  ! Calculate the new NEQ and NCOLS. Go through all 'columns' and 'rows
+  ! of the block matrix and sum up their dimensions.
   NCOLS = 0
   DO j=1,i
     DO k=1,i
-      IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
-        NEQ = NEQ + rmatrix%RmatrixBlock(j,i)%NEQ
-        NCOLS = NCOLS + rmatrix%RmatrixBlock(j,i)%NCOLS
+      IF (rmatrix%RmatrixBlock(k,j)%NCOLS .NE. 0) THEN
+        NCOLS = NCOLS + rmatrix%RmatrixBlock(k,j)%NCOLS
         EXIT
       END IF
     END DO
   END DO
+
+  ! Loop in the transposed way to calculate NEQ.
+  NEQ = 0
+  DO j=1,i
+    DO k=1,i
+      IF (rmatrix%RmatrixBlock(j,k)%NCOLS .NE. 0) THEN
+        NEQ = NEQ + rmatrix%RmatrixBlock(j,k)%NEQ
+        EXIT
+      END IF
+    END DO
+  END DO
+  
   rmatrix%NEQ = NEQ
   rmatrix%NCOLS = NCOLS
 

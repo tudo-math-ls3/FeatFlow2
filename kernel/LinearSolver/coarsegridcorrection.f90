@@ -228,7 +228,7 @@ CONTAINS
     !
     ! Calculate nominator of the fraction
       
-    CALL lsysbl_vectorCopy(rrhs,rtempVecBlock)
+    CALL lsysbl_copyVector(rrhs,rtempVecBlock)
     CALL lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
     IF (ASSOCIATED(p_RfilterChain)) THEN
@@ -333,7 +333,7 @@ CONTAINS
     !
     ! Calculate nominator of the fraction
       
-    CALL lsysbl_vectorCopy(rrhs,rtempVecBlock)
+    CALL lsysbl_copyVector(rrhs,rtempVecBlock)
     CALL lsysbl_blockMatVec(rmatrix, rvector, rtempVecBlock, -1.0_DP,1.0_DP)
     ! This is a defect vector - apply the filter chain.
     IF (ASSOCIATED(p_RfilterChain)) THEN

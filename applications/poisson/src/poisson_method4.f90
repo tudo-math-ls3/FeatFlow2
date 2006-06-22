@@ -747,7 +747,7 @@ CONTAINS
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
-    CALL storage_getbase_double (p_rvector%RvectorBlock(1)%h_Ddata,p_Ddata)
+    CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     CALL GMVSCA (ihandle,p_rtriangulation%Itria,1,NVERTS,&
                  p_rvector%RvectorBlock(1)%NEQ,p_Ddata,'sol')
     

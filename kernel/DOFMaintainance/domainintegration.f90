@@ -146,7 +146,9 @@ CONTAINS
       ALLOCATE(rintSubset%p_DcubPtsRef(ndimSpace,npointsPerElement,nelements))
       
     CASE DEFAULT
-      NULLIFY(rintSubset%p_DcubPtsRef)
+      ! NULLIFY(rintSubset%p_DcubPtsRef)
+      PRINT *,'domint_initIntegration: Unknown coordinate system!'
+      STOP
       
     END SELECT
 

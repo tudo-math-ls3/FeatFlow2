@@ -381,7 +381,7 @@ CONTAINS
               rproblem%rcollection)
                                 
     ! Clear the solution vector on the finest level.
-    CALL lsysbl_vectorClear(rproblem%rvector)
+    CALL lsysbl_clearVector(rproblem%rvector)
     
   END SUBROUTINE
 
@@ -717,7 +717,7 @@ CONTAINS
       CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
       
       ! Build the defect: d=b-Ax
-      CALL lsysbl_vectorCopy (rb,rd)
+      CALL lsysbl_copyVector (rb,rd)
       CALL lsysbl_blockMatVec (p_rmatrix, rx, rd, -1.0_DP, 1.0_DP)
     
       ! Apply the filter chain to the defect vector.
@@ -937,7 +937,7 @@ CONTAINS
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
-    CALL storage_getbase_double (p_rvector%RvectorBlock(1)%h_Ddata,p_Ddata)
+    CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     CALL GMVSCA (ihandle,p_rtriangulation%Itria,1,NVERTS,&
                  p_rvector%RvectorBlock(1)%NEQ,p_Ddata,'sol')
     

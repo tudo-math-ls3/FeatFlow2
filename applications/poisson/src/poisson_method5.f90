@@ -216,7 +216,7 @@ CONTAINS
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
-    ! An object for the spatial discretisation on one level
+    ! An object for the block discretisation on one level
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
     DO i=rproblem%ilvmin,rproblem%ilvmax
@@ -225,7 +225,7 @@ CONTAINS
       p_rboundary => rproblem%p_rboundary
       p_rtriangulation => rproblem%RlevelInfo(i)%p_rtriangulation
       
-      ! Now we can startto initialise the discretisation. At first, set up
+      ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
       ! solution vector. In this simple problem, we only have one block.
       ALLOCATE(p_rdiscretisation)
@@ -397,7 +397,7 @@ CONTAINS
               rproblem%rcollection)
                                 
     ! Clear the solution vector on the finest level.
-    CALL lsysbl_vectorClear(rproblem%rvector)
+    CALL lsysbl_clearVector(rproblem%rvector)
     
   END SUBROUTINE
 
@@ -552,8 +552,7 @@ CONTAINS
       CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%p_rdiscreteBC, &
                               .FALSE.,getBoundaryValues,rproblem%rcollection)
                                
-      ! Hang the pointer into the vectors and the matrix - more precisely,
-      ! to the first block matrix and the first subvector. That way, these
+      ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
       ! vector.
       p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBC
@@ -846,7 +845,7 @@ CONTAINS
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
     
-    CALL storage_getbase_double (p_rvector%RvectorBlock(1)%h_Ddata,p_Ddata)
+    CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     CALL GMVSCA (ihandle,p_rtriangulation%Itria,1,NVERTS,&
                  p_rvector%RvectorBlock(1)%NEQ,p_Ddata,'sol')
     

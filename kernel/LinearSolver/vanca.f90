@@ -168,7 +168,11 @@ CONTAINS
     ! (nblock,nblock) array inside of a 1-dimensional array and cast a rank
     ! change of the array on call to the actual VANCA subroutine later.
     !
-    ! Loop through the columns of the block matrix:
+    ! Loop through the columns of the block matrix.
+    !
+    ! Offset position of the first block is = 0.
+    rvancaGeneral%IblockOffset(1) = 0
+    
     DO i=1,nblocks
     
       ! Note this block as 'not processed'
@@ -176,7 +180,7 @@ CONTAINS
       
       ! Loop through the rows of the current matrix column.
       DO j=1,nblocks
-        IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+        IF (rmatrix%RmatrixBlock(j,i)%NCOLS .NE. 0) THEN
           ! Get a/the discretisation structure of the current block/matrix column
           p_rdiscretisation => rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation
           
@@ -210,7 +214,8 @@ CONTAINS
             !
             ! Get the NEQ of the current block and save it as offset position
             ! in the global vector for the next block.
-            rvancaGeneral%IblockOffset(i+1) = rmatrix%RmatrixBlock(j,i)%NEQ
+            rvancaGeneral%IblockOffset(i+1) = &
+              rvancaGeneral%IblockOffset(i) + rmatrix%RmatrixBlock(j,i)%NCOLS
 
             ! We need some information for calculating DOF's later.
             ! Get the number of local DOF's in the current block.
@@ -235,9 +240,6 @@ CONTAINS
       END DO
     END DO
 
-    ! Offset position of the first block is = 0.
-    rvancaGeneral%IblockOffset(1) = 0
-    
     ! Save the max. and total number of local DOF's
     rvancaGeneral%nmaxLocalDOFs = nmaxLocalDOFs
     rvancaGeneral%ndofsPerElement = ndofsPerElement
@@ -350,9 +352,9 @@ CONTAINS
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our VANCA_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(rvector%RvectorBlock(1)%p_rspatialDiscretisation,&
+      CALL dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscretisation,&
                                    p_IelementList(IELset:IELmax), &
-                                   .TRUE.,rvancaGeneral%IelementDOFs(:,:,i))
+                                   .FALSE.,rvancaGeneral%IelementDOFs(:,:,i))
 
       ! If the vector is sorted, push the DOF's through the permutation to get
       ! the actual DOF's.
@@ -570,7 +572,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER, DIMENSION(nblocks+1) :: IlocalIndex
-    INTEGER(PREC_DOFIDX), DIMENSION(ndofsPerElement+1) :: IlocalDOF,IglobalDOF
+    INTEGER(PREC_DOFIDX), DIMENSION(ndofsPerElement) :: IlocalDOF,IglobalDOF
     INTEGER :: i,j,k,iidx,iminiDOF
     INTEGER(PREC_VECIDX) :: irow,idof
     INTEGER(PREC_MATIDX) :: icol
@@ -646,18 +648,41 @@ CONTAINS
 
             dscale = Rmatrices(i,j)%dscaleFactor
         
+            ! Block column j in the global matrix corresponds to
+            ! block column j in the small local matrix we have to fill with data.
+            !
+            !   ....      :           
+            !   ....      :           a11 a12         a15
+            !                         a21 a22         a25
+            !        .... :   ==>             a33 a34 a35
+            !        .... :                   a43 a44 a45
+            !   .... ....             a51 a52 a53 a54
+            !   ==== ==== =           ======= ======= ===
+            !    1    2   3 corr. to     1       2     3
+            !
+            !     n x n-mat.          5x5-mat or so
+            !
+            ! From IlocalIndex, get the starting address of the j'th block
+            ! in the local solution vector. In the above example, for j=2 e.g.
+            ! this gives the starting address of the two global DOF's
+            ! that correspond to the columns 3 and 4 in the local matrix.
+            iidx = IlocalIndex(j)
+
             ! Loop through the DOF's that correspond to this block:
-            iidx = IlocalIndex(i)
             DO irow = IlocalIndex(i)+1,IlocalIndex(i+1)
               
-              ! Get the actual DOF, relative to this block
+              ! Get the actual DOF, relative to this block.
+              ! This is the row of the matrix that must be multiplied by x
+              ! and be subtracted from the local RHS.
               idof = IlocalDOF(irow)
               
               ! Loop through the row of the matrix to its contribution to "b-Ax".
               DO k = Rmatrices(i,j)%p_Kld(idof) , Rmatrices(i,j)%p_Kld(idof+1)-1
 
-                ! Get the column number in the global matrix:              
-                icol = Rmatrices(i,j)%p_Kcol(k)+IblockOffset(i)
+                ! Get the column number in the global matrix. This gives
+                ! the global DOF = number of the element in x that must be multiplied
+                ! with that matrix entry.             
+                icol = Rmatrices(i,j)%p_Kcol(k)+IblockOffset(j)
 
                 ! Build the defect
                 Dff(irow) = Dff(irow) &
@@ -666,7 +691,9 @@ CONTAINS
                 ! icol is the number of a DOF.
                 ! Check if this DOF belongs to the DOF's we have to
                 ! extract to our local system.
-                ! Loop through the DOF's corresponding to column j of the block system
+                ! Loop through the DOF's corresponding to column j of the block system.
+                ! In the above example, this checks only the two DOF's corresponding
+                ! to a?3 and a?4.
                 DO iminiDOF = 1,InDOFsLocal(j)
                   IF (icol .EQ. IglobalDOF(iidx+iminiDOF)) THEN
                     ! Yes. Get the matrix entry, write it to the local matrix

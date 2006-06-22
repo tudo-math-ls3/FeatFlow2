@@ -337,7 +337,7 @@ CONTAINS
 
     ! If desired, clear the vector before assembling.
     IF (bclear) THEN
-      CALL lalg_vectorClearDble (p_Ddata)
+      CALL lalg_clearVectorDble (p_Ddata)
     END IF
     
   END IF
@@ -828,7 +828,7 @@ CONTAINS
 
     ! If desired, clear the vector before assembling.
     IF (bclear) THEN
-      CALL lalg_vectorClearDble (p_Ddata)
+      CALL lalg_clearVectorDble (p_Ddata)
     END IF
     
   END IF
@@ -905,6 +905,17 @@ CONTAINS
       END DO
     END DO
     
+    ! Quickly check if one of the specified derivatives is out of the allowed range:
+    DO IALBET = 1,rform%itermcount
+      IA = rform%Idescriptors(IALBET)
+      IF ((IA.LT.0) .OR. &
+          (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
+        PRINT *,'linf_buildVectord_conf2: Specified test-derivative',IA,&
+                ' not available'
+        STOP
+      END IF
+    END DO
+
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
     ! with something like

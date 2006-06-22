@@ -50,7 +50,7 @@ CONTAINS
 
 !<function>  
 
-  INTEGER(PREC_DOFIDX) FUNCTION dof_igetNDofGlob(rdiscretisation)
+  INTEGER(PREC_DOFIDX) FUNCTION dof_igetNDofGlob(rdiscretisation,btestSpace)
 
 !<description>
   ! This function returns for a given discretisation the number of global
@@ -58,10 +58,17 @@ CONTAINS
 !</description>
 
 !<input>    
-
   ! The discretisation structure that specifies the (scalar) discretisation.
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
 
+  ! OPTIONAL: Use test space.
+  ! Normally, dof_igetNDofGlob returns the number of DOF's in the trial
+  ! space of the discretisation. If btestSpace is present and set to TRUE,
+  ! dof_igetNDofGlob will determine the number of DOF's in the test space
+  ! of the discretisation instead of the trial space.
+  ! This is used e.g. to determine the number of rows in a system matrix,
+  ! while btestSpace=false returns the number of columns.
+  LOGICAL, OPTIONAL, INTENT(IN)             :: btestSpace
 !</input>
 
 !<result>
@@ -69,6 +76,8 @@ CONTAINS
 !</result>
 
 !</function>
+
+  INTEGER :: ieltyp
 
   dof_igetNDofGlob = 0
 
@@ -78,12 +87,15 @@ CONTAINS
     STOP
   END IF
 
-  IF ((rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-      rdiscretisation%bidenticalTrialAndTest) THEN
+  IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
   
+    ieltyp = rdiscretisation%RelementDistribution(1)%itrialElement
+    IF (PRESENT (btestSpace)) THEN
+      IF (btestSpace) ieltyp = rdiscretisation%RelementDistribution(1)%itestElement
+    END IF
+
     ! Uniform discretisation - fall back to the old FEAT mapping
-    dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, &
-                       rdiscretisation%RelementDistribution(1)%itrialElement)
+    dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, ieltyp)
   
   END IF
   

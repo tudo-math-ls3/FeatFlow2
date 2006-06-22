@@ -75,19 +75,19 @@
 !# 18.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 19.) lsyssc_vectorCopy
+!# 19.) lsyssc_copyVector
 !#       -> Copy a block vector over to another one
 !#
-!# 20.) lsyssc_vectorScale
+!# 20.) lsyssc_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 21.) lsyssc_vectorClear
+!# 21.) lsyssc_clearVector
 !#      -> Clear a block vector
 !#
 !# 22.) lsyssc_vectorLinearComb
-!#      -> Linear combination of two block vectors
+!#      -> Linear combination f two block vectors
 !#
-!# 23.) lsyssc_matrixCopy
+!# 23.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
@@ -176,22 +176,26 @@ MODULE linearsystemscalar
   ! as belonging to another matrix.
   INTEGER, PARAMETER :: LSYSSC_DUP_NONE      = 1
 
+  ! Copy the handles of the structure and mark them as belonging to
+  ! another matrix. No content is created.
+  INTEGER, PARAMETER :: LSYSSC_DUP_STRNOCONT = 2
+
   ! Duplicate the content, share the structure
-  INTEGER, PARAMETER :: LSYSSC_DUP_CONTENT   = 2
+  INTEGER, PARAMETER :: LSYSSC_DUP_CONTENT   = 3
 
   ! Duplicate the structure, share the content
-  INTEGER, PARAMETER :: LSYSSC_DUP_STRUCTURE = 3
+  INTEGER, PARAMETER :: LSYSSC_DUP_STRUCTURE = 4
 
   ! Duplicate both, structure and content
-  INTEGER, PARAMETER :: LSYSSC_DUP_ALL       = 4
+  INTEGER, PARAMETER :: LSYSSC_DUP_ALL       = 5
   
   ! Allocate memory for the matrix structure in the same size as the original
-  ! matrix.
-  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYSTRUC = 5
+  ! matrix. No content is created.
+  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYSTRUC = 6
 
-  ! Allocate memory for the matrix structure in the same size as the original
-  ! matrix.
-  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYALL   = 6
+  ! Allocate memory for the matrix structure and content in the same size 
+  ! as the original matrix.
+  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYALL   = 7
                                                
 !</constantblock>
 
@@ -457,7 +461,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_isMatrixCompatible (rvector,rmatrix,bcompatible)
+  SUBROUTINE lsyssc_isMatrixCompatible (rvector,rmatrix,btransposed,bcompatible)
   
 !<description>
   ! Checks whether a vector and a matrix are compatible to each other, i.e. 
@@ -470,6 +474,12 @@ CONTAINS
   
   ! The matrix
   TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+  
+  ! Check for rvector being compatible from the left or from the right
+  ! to the matrix rmatrix.
+  ! =FALSE: Check whether matrix-vector product A*x is possible
+  ! =TRUE : Check whether matrix-vector product x^T*A = A^T*x is possible
+  LOGICAL, INTENT(IN)              :: btransposed
 !</input>
 
 !<output>
@@ -482,11 +492,19 @@ CONTAINS
 
 !</subroutine>
 
+  INTEGER(PREC_VECIDX) :: NCOLS
+
   ! We assume that we are not compatible
   IF (PRESENT(bcompatible)) bcompatible = .FALSE.
   
+  IF (.NOT. btransposed) THEN
+    NCOLS = rmatrix%NCOLS
+  ELSE
+    NCOLS = rmatrix%NEQ
+  END IF
+  
   ! Vector/Matrix must have the same size 
-  IF (rvector%NEQ .NE. rmatrix%NEQ) THEN
+  IF (rvector%NEQ .NE. NCOLS) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
       RETURN
@@ -791,21 +809,13 @@ CONTAINS
 
 !</subroutine>
   
-    ! Vectors must be compatible...
-    CALL lsyssc_isVectorCompatible (rx,ry)
-
-    ! and compatible to the matrix!
-    CALL lsyssc_isMatrixCompatible (rx,rmatrix)
+    ! Vectors must be compatible to the matrix.
+    CALL lsyssc_isMatrixCompatible (rx,rmatrix,.FALSE.)
+    CALL lsyssc_isMatrixCompatible (ry,rmatrix,.TRUE.)
     
     ! rx and ry must have at least the same data type!
     IF (rx%cdataType .NE. ry%cdataType) THEN
       PRINT *,'MV with different data types for rx and ry not supported!'
-      STOP
-    END IF
-    
-    ! rx, ry and the matrix must have proper dimensions
-    IF ((rx%NEQ .NE. ry%NEQ) .OR. (rx%NEQ .NE. rmatrix%NEQ)) THEN
-      PRINT *,'Error in MV: Vectors and matrix have different size!'
       STOP
     END IF
     
@@ -908,7 +918,9 @@ CONTAINS
       CALL storage_getbase_double (rmatrix%h_DA,p_DA)
       CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
       CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-      NEQ = rx%NEQ
+      
+      ! Get NEQ - from the matrix, not from the vector!
+      NEQ = rmatrix%NEQ
 
       ! Get the vectors
       CALL lsyssc_getbase_double (rx,p_Dx)
@@ -946,7 +958,7 @@ CONTAINS
         
           dtmp = cy/cx
           IF (dtmp .NE. 1.0_DP) THEN
-            CALL lalg_vectorScaleDble(p_Dy,dtmp)
+            CALL lalg_scaleVectorDble(p_Dy,dtmp)
           END IF
           
           ! Multiply the first entry in each line of the matrix with the
@@ -970,12 +982,12 @@ CONTAINS
         ! Scale by cx, finish.
         
         IF (cx .NE. 1.0_DP) THEN
-          CALL lalg_vectorScaleDble (p_Dy,cx)
+          CALL lalg_scaleVectorDble (p_Dy,cx)
         END IF
         
       ELSE 
         ! cx = 0. The formula is just a scaling of the vector ry!
-        CALL lalg_vectorScaleDble(p_Dy,cy)
+        CALL lalg_scaleVectorDble(p_Dy,cy)
       ENDIF
       
     END SUBROUTINE
@@ -1046,7 +1058,7 @@ CONTAINS
         
           dtmp = cy/cx
           IF (dtmp .NE. 1.0_DP) THEN
-            CALL lalg_vectorScaleDble(p_Dy,dtmp)
+            CALL lalg_scaleVectorDble(p_Dy,dtmp)
           END IF
           
           ! Multiply the first entry in each line of the matrix with the
@@ -1069,12 +1081,12 @@ CONTAINS
         ! Scale by cx, finish.
         
         IF (cx .NE. 1.0_DP) THEN
-          CALL lalg_vectorScaleDble (p_Dy,cx)
+          CALL lalg_scaleVectorDble (p_Dy,cx)
         END IF
         
       ELSE 
         ! cx = 0. The formula is just a scaling of the vector ry!
-        CALL lalg_vectorScaleDble(p_Dy,cy)
+        CALL lalg_scaleVectorDble(p_Dy,cy)
       ENDIF
       
     END SUBROUTINE
@@ -1133,12 +1145,12 @@ CONTAINS
   CASE (ST_DOUBLE)
     CALL lsyssc_getbase_double (roldVector,p_Dsource)
     CALL lsyssc_getbase_double (rnewVector,p_Ddest)
-    CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
     
   CASE (ST_SINGLE)
     CALL lsyssc_getbase_single (roldVector,p_Fsource)
     CALL lsyssc_getbase_single (rnewVector,p_Fdest)
-    CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+    CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
   CASE DEFAULT
     PRINT *,'lsyssc_duplicateVector: Unsupported data type!'
@@ -1154,7 +1166,7 @@ CONTAINS
   SUBROUTINE lsyssc_duplicateMatrix (rsourceMatrix,rdestMatrix,idupFlag)
   
 !<description>
-  ! Duplicates an existing matrix. All structural data from roldVector
+  ! Duplicates an existing matrix. All structural data from rsourceMatrix
   ! is assigned to rnewMatrix. Whether the entries and/or structure
   ! is duplicated is decided on idupFlag.
 !</description>
@@ -1166,12 +1178,21 @@ CONTAINS
   ! Duplication flag. Decides on what is to copy and whether some information
   ! is to be shared with the old matrix by using the same handles.
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. What belongs to the 
-  !   matrix is duplicated, what belongs to another matrix is left as-is.
-  ! LSYSSC_DUP_NONE       : Share structure and content               
-  ! LSYSSC_DUP_CONTENT    : Duplicate the content, share the structure
-  ! LSYSSC_DUP_STRUCTURE  : Duplicate the structure, share the content
-  ! LSYSSC_DUP_ALL        : Duplicate both, structure and content
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. What belongs to the matrix
+  !   rsourceMatrix is duplicated, what belongs to another matrix is shared
+  !   betweed rsourceMatrix, rdestMatrix and the other matrix.
+  ! LSYSSC_DUP_NONE       : Share structure and content
+  ! LSYSSC_DUP_STRNOCONT  : Duplicate the structure. Content will be left empty.
+  !                         Can be used to set up an empty matrix with the
+  !                         structure of another one.
+  ! LSYSSC_DUP_STRUCTURE  : Create a new structure, share the content between
+  !                         rsourceMatrix and rdestMatrix (if there is any content
+  !                         in rsourceMatrix; otherwise this is the same as
+  !                         LSYSSC_DUP_STRNOCONT)
+  ! LSYSSC_DUP_CONTENT    : Create a new content, share the structure between
+  !                         rsourceMatrix and rdestMatrix.
+  ! LSYSSC_DUP_ALL        : Duplicate both, structure and content.
+  !                         This generates a completely independent matrix.
   ! LSYSSC_DUP_EMPTYSTRUC : Allocate memory for the same structure as
   !   the source matrix, but don't initialise the structure.
   ! LSYSSC_DUP_EMPTYALL   : Allocate memory for the same structure and content
@@ -1189,6 +1210,7 @@ CONTAINS
 
   ! local variables
   LOGICAL :: bdupContent, bdupStructure,bemptyContent,bemptyStruc
+  LOGICAL :: bhasContent, bhasStructure
   INTEGER(PREC_VECIDX) :: NEQ
 
   ! At first, copy all 'local' data.
@@ -1208,7 +1230,7 @@ CONTAINS
     bemptyContent = .FALSE.
     bemptyStruc = .FALSE.
     
-  CASE (LSYSSC_DUP_STRUCTURE)
+  CASE (LSYSSC_DUP_STRUCTURE,LSYSSC_DUP_STRNOCONT)
     bdupContent = .FALSE.
     bdupStructure = .TRUE.
     bemptyContent = .FALSE.
@@ -1246,6 +1268,9 @@ CONTAINS
   ! Depending on the matrix format choose how to duplicate
   SELECT CASE (rsourceMatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
+    bhasContent = rsourceMatrix%h_Da .NE. ST_NOHANDLE
+    bhasContent = rsourceMatrix%h_Kcol .NE. ST_NOHANDLE
+    
     IF (bdupContent) THEN
       ! Put the destination handle to ST_NOHANDLE, so storage_copy
       ! will create new ones.
@@ -1290,6 +1315,9 @@ CONTAINS
     END IF
 
   CASE (LSYSSC_MATRIX7)
+    bhasContent = rsourceMatrix%h_Da .NE. ST_NOHANDLE
+    bhasContent = rsourceMatrix%h_Kcol .NE. ST_NOHANDLE
+
     IF (bdupContent) THEN
       ! Put the destination handle to ST_NOHANDLE, so storage_copy
       ! will create new ones.
@@ -1341,13 +1369,24 @@ CONTAINS
     ! We share both, structure and content, with the original matrix
     rdestMatrix%imatrixSpec = IOR(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
   CASE (LSYSSC_DUP_CONTENT)
-    rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
-                                NOT(LSYSSC_MSPEC_ISCOPY)),&
-                              LSYSSC_MSPEC_STRUCTUREISCOPY)
+    IF (bhasContent) THEN
+      rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
+                                  NOT(LSYSSC_MSPEC_ISCOPY)),&
+                                LSYSSC_MSPEC_STRUCTUREISCOPY)
+    ELSE
+      ! Matrix has no content, so it's independent now.
+      rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
+                                  NOT(LSYSSC_MSPEC_ISCOPY))
+    END IF
   CASE (LSYSSC_DUP_STRUCTURE)
+    ! Don't touch the content - maybe there's older content which the application
+    ! wants to reuse...
     rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_ISCOPY)),&
                               LSYSSC_MSPEC_CONTENTISCOPY)
+  CASE (LSYSSC_DUP_STRNOCONT)
+    rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
+                                NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
   CASE (LSYSSC_DUP_ALL,LSYSSC_DUP_EMPTYSTRUC,LSYSSC_DUP_EMPTYALL)
     rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_ISCOPY))
@@ -2005,13 +2044,13 @@ CONTAINS
       SELECT CASE (rvector%cdataType)
       CASE (ST_DOUBLE)
         ! Copy the entries to the temp vector
-        CALL lalg_vectorCopyDble (p_Ddata,p_Ddata2)
+        CALL lalg_copyVectorDble (p_Ddata,p_Ddata2)
         ! Then sort back. Use the inverse permutation.
         CALL lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(NEQ+1:NEQ*2))
         
       CASE (ST_SINGLE)   
         ! Copy the entries to the temp vector
-        CALL lalg_vectorCopySngl (p_Fdata,p_Fdata2)
+        CALL lalg_copyVectorSngl (p_Fdata,p_Fdata2)
         ! Then sort back. Use the inverse permutation.
         CALL lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
         
@@ -2040,13 +2079,13 @@ CONTAINS
       SELECT CASE (rvector%cdataType)
       CASE (ST_DOUBLE)
         ! Copy the entries to the temp vector
-        CALL lalg_vectorCopyDble (p_Ddata,p_Ddata2)
+        CALL lalg_copyVectorDble (p_Ddata,p_Ddata2)
         ! Then sort back. Use the inverse permutation.
         CALL lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(NEQ+1:NEQ*2))
         
       CASE (ST_SINGLE)   
         ! Copy the entries to the temp vector
-        CALL lalg_vectorCopySngl (p_Fdata,p_Fdata2)
+        CALL lalg_copyVectorSngl (p_Fdata,p_Fdata2)
         ! Then sort back. Use the inverse permutation.
         CALL lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(NEQ+1:NEQ*2))
         
@@ -2068,13 +2107,13 @@ CONTAINS
     SELECT CASE (rvector%cdataType)
     CASE (ST_DOUBLE)
       ! Copy the entries to the temp vector
-      CALL lalg_vectorCopyDble (p_Ddata,p_Ddata2)
+      CALL lalg_copyVectorDble (p_Ddata,p_Ddata2)
       ! Then do the sorting with the given permutation.
       CALL lalg_vectorSortDble (p_Ddata2,p_Ddata,p_Iperm(1:NEQ))
       
     CASE (ST_SINGLE)   
       ! Copy the entries to the temp vector
-      CALL lalg_vectorCopySngl (p_Fdata,p_Fdata2)
+      CALL lalg_copyVectorSngl (p_Fdata,p_Fdata2)
       ! Then do the sorting with the given permutation.
       CALL lalg_vectorSortSngl (p_Fdata2,p_Fdata,p_Iperm(1:NEQ))
       
@@ -3348,9 +3387,11 @@ CONTAINS
   REAL(DP) :: dmyscale
   REAL(SP) :: fmyscale
 
-  ! Let's hope, the matrix and the vectors are compatible...
+  ! Let's hope, the matrix and the vectors are compatible.
+  ! As we multiply with D^{-1}, this forces the matrix to be quadratic 
+  ! and both vectors to be of the same length!
   CALL lsyssc_isVectorCompatible (rvectorSrc,rvectorDst)
-  CALL lsyssc_isMatrixCompatible (rvectorSrc,rmatrix)
+  CALL lsyssc_isMatrixCompatible (rvectorSrc,rmatrix,.FALSE.)
 
   IF (rvectorSrc%cdataType .NE. rvectorDst%cdataType) THEN
     PRINT *,'lsyssc_invertedDiagMatVec: Vectors have different precisions!'
@@ -3438,7 +3479,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_vectorCopy (rx,ry)
+  SUBROUTINE lsyssc_copyVector (rx,ry)
   
 !<description>
   ! Copies vector data: ry = rx.
@@ -3479,7 +3520,7 @@ CONTAINS
   ry%bisCopy = bisCopy
   
   IF (rx%cdataType .NE. ry%cdataType) THEN
-    PRINT *,'lsyssc_vectorCopy: different data types not supported!'
+    PRINT *,'lsyssc_copyVector: different data types not supported!'
     STOP
   END IF
   
@@ -3488,15 +3529,15 @@ CONTAINS
   CASE (ST_DOUBLE)
     CALL lsyssc_getbase_double (rx,p_Dsource)
     CALL lsyssc_getbase_double (ry,p_Ddest)
-    CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
     
   CASE (ST_SINGLE)
     CALL lsyssc_getbase_single (rx,p_Fsource)
     CALL lsyssc_getbase_single (ry,p_Fdest)
-    CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+    CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
   CASE DEFAULT
-    PRINT *,'lsyssc_vectorCopy: Unsupported data type!'
+    PRINT *,'lsyssc_copyVector: Unsupported data type!'
     STOP
   END SELECT
    
@@ -3506,7 +3547,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_vectorScale (rx,c)
+  SUBROUTINE lsyssc_scaleVector (rx,c)
   
 !<description>
   ! Scales a vector vector rx: rx = c * rx
@@ -3533,15 +3574,15 @@ CONTAINS
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     CALL lsyssc_getbase_double(rx,p_Ddata)
-    CALL lalg_vectorScaleDble (p_Ddata,c)  
+    CALL lalg_scaleVectorDble (p_Ddata,c)  
 
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     CALL lsyssc_getbase_single(rx,p_Fdata)
-    CALL lalg_vectorScaleSngl (p_Fdata,REAL(c,SP))  
+    CALL lalg_scaleVectorSngl (p_Fdata,REAL(c,SP))  
 
   CASE DEFAULT
-    PRINT *,'lsyssc_vectorScale: Unsupported data type!'
+    PRINT *,'lsyssc_scaleVector: Unsupported data type!'
     STOP
   END SELECT
   
@@ -3551,7 +3592,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_vectorClear (rx)
+  SUBROUTINE lsyssc_clearVector (rx)
   
 !<description>
   ! Clears the block vector dx: Dx = 0
@@ -3573,15 +3614,15 @@ CONTAINS
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     CALL lsyssc_getbase_double(rx,p_Dsource)
-    CALL lalg_vectorClearDble (p_Dsource)
+    CALL lalg_clearVectorDble (p_Dsource)
   
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     CALL lsyssc_getbase_single(rx,p_Ssource)
-    CALL lalg_vectorClearSngl (p_Ssource)
+    CALL lalg_clearVectorSngl (p_Ssource)
 
   CASE DEFAULT
-    PRINT *,'lsyssc_vectorClear: Unsupported data type!'
+    PRINT *,'lsyssc_clearVector: Unsupported data type!'
     STOP
   END SELECT
   
@@ -3655,7 +3696,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_matrixCopy (rsourceMatrix,rdestMatrix)
+  SUBROUTINE lsyssc_copyMatrix (rsourceMatrix,rdestMatrix)
   
 !<description>
   ! Copies a matrix data: rsourceMatrix = rdestMatrix.
@@ -3687,12 +3728,12 @@ CONTAINS
   ! Is it possible at all to copy the matrix? Both matrices must have
   ! the same size, otherwise the memory does not fit.
   IF (rsourceMatrix%cmatrixFormat .NE. rdestMatrix%cmatrixFormat) THEN
-    PRINT *,'lsyssc_matrixCopy: Different matrix formats not allowed!'
+    PRINT *,'lsyssc_copyMatrix: Different matrix formats not allowed!'
     STOP
   END IF
   
   IF (rsourceMatrix%NA .NE. rdestMatrix%NA) THEN
-    PRINT *,'lsyssc_matrixCopy: Matrices have different size!'
+    PRINT *,'lsyssc_copyMatrix: Matrices have different size!'
     STOP
   END IF
   
@@ -3700,7 +3741,7 @@ CONTAINS
   ! and the same structure!
   
   IF (rsourceMatrix%cdataType .NE. rdestMatrix%cdataType) THEN
-    PRINT *,'lsyssc_matrixCopy: Matrices have different data types!'
+    PRINT *,'lsyssc_copyMatrix: Matrices have different data types!'
     STOP
   END IF
   
@@ -3729,29 +3770,29 @@ CONTAINS
     CASE (ST_DOUBLE)
       CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
       CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
-      CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
 
     CASE (ST_SINGLE)
       CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
       CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
-      CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
     CASE DEFAULT
-      PRINT *,'lsyssc_matrixCopy: Unsupported data type!'
+      PRINT *,'lsyssc_copyMatrix: Unsupported data type!'
       STOP
     END SELECT
     
     CALL storage_getbase_int (rsourceMatrix%h_Kcol,p_KcolSource)
     CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
-    CALL lalg_vectorCopyInt (p_KcolSource,p_KcolDest)
+    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
 
     CALL storage_getbase_int (rsourceMatrix%h_Kld,p_KldSource)
     CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
-    CALL lalg_vectorCopyInt (p_KldSource,p_KldDest)
+    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
     
     CALL storage_getbase_int (rsourceMatrix%h_Kdiagonal,p_KdiagonalSource)
     CALL storage_getbase_int (rdestMatrix%h_Kdiagonal,p_KdiagonalDest)
-    CALL lalg_vectorCopyInt (p_KdiagonalSource,p_KdiagonalDest)
+    CALL lalg_copyVectorInt (p_KdiagonalSource,p_KdiagonalDest)
       
   CASE (LSYSSC_MATRIX7)
 
@@ -3765,28 +3806,28 @@ CONTAINS
     CASE (ST_DOUBLE)
       CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
       CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
-      CALL lalg_vectorCopyDble (p_Dsource,p_Ddest)
+      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
 
     CASE (ST_SINGLE)
       CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
       CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
-      CALL lalg_vectorCopySngl (p_Fsource,p_Fdest)
+      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
     CASE DEFAULT
-      PRINT *,'storage_matrixCopy: Unsupported data type!'
+      PRINT *,'storage_copyMatrix: Unsupported data type!'
       STOP
     END SELECT
 
     CALL storage_getbase_int (rsourceMatrix%h_Kcol,p_KcolSource)
     CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
-    CALL lalg_vectorCopyInt (p_KcolSource,p_KcolDest)
+    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
 
     CALL storage_getbase_int (rsourceMatrix%h_Kld,p_KldSource)
     CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
-    CALL lalg_vectorCopyInt (p_KldSource,p_KldDest)
+    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
       
   CASE DEFAULT
-    PRINT *,'lsyssc_matrixCopy: Unsupported matrix format!'
+    PRINT *,'lsyssc_copyMatrix: Unsupported matrix format!'
     STOP
   END SELECT
   

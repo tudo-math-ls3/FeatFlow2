@@ -375,6 +375,9 @@ CONTAINS
   ! A pointer to an element-number list
   INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
   
+  ! Current element distribution
+  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
+
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
   INTEGER :: nelementsPerBlock
@@ -386,8 +389,13 @@ CONTAINS
   ! At first, initialise the structure-9 matrix:
   
   rmatrixScalar%p_rspatialDiscretisation => rdiscretisation
-  rmatrixScalar%cmatrixFormat            = LSYSSC_MATRIX9
-  rmatrixScalar%NEQ                      = dof_igetNDofGlob(rdiscretisation)
+  rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
+  
+  ! Get the #DOF's of the test space - as #DOF's of the test space is
+  ! the number of equations in our matrix. The #DOF's in the trial space
+  ! gives the number of columns of our matrix.
+  rmatrixScalar%NCOLS         = dof_igetNDofGlob(rdiscretisation,.FALSE.)
+  rmatrixScalar%NEQ           = dof_igetNDofGlob(rdiscretisation,.TRUE.)
   
   ! and get a pointer to the triangulation.
   p_rtriangulation => rdiscretisation%p_rtriangulation
@@ -401,13 +409,13 @@ CONTAINS
   END IF
   
   ! Allocate KLD...
-  CALL storage_new1D ('bilf_createMatrixStructure9_uni', 'KLD', &
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
                       NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
   
   ! Allocate h_Kdiagonal
-  CALL storage_new1D ('bilf_createMatrixStructure9_uni', 'Kdiagonal', &
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'Kdiagonal', &
                       NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
   CALL storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
@@ -442,13 +450,13 @@ CONTAINS
   ! imemblkSize = iallocated is necessary at the moment to simplify
   ! whether we leave a block or not.
 
-  CALL storage_new1D ('bilf_createMatrixStructure9_uni', 'Ihicol', &
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
                       p_Isize(1), ST_INT, p_Ihcol(1), ST_NEWBLOCK_NOINIT)
   CALL storage_getbase_int (p_Ihcol(1),p_Icol)
 
   ! The new index array must be filled with 0 - otherwise
   ! the search routine below won't work!
-  CALL storage_new1D ('bilf_createMatrixStructure9_uni', 'p_Ihindx', &
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                       p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
   CALL storage_getbase_int (p_Ihindx(1),p_Iindx)
   
@@ -510,17 +518,16 @@ CONTAINS
   
   DO icurrentElementDistr = 1,rdiscretisation%inumFESpaces
   
+    ! Activate the current element distribution
+    p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
+
     ! Get the number of local DOF's for trial and test functions
-    indofTrial = elem_igetNDofLoc(rdiscretisation% &  
-                    RelementDistribution(icurrentElementDistr)%itrialElement)
-    indofTest = elem_igetNDofLoc(rdiscretisation% &
-                    RelementDistribution(icurrentElementDistr)%itestElement)
+    indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+    indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
     
     ! Get the number of corner vertices of the element
-    NVE = elem_igetNVE(rdiscretisation% &  
-                    RelementDistribution(icurrentElementDistr)%itrialElement)
-    IF (NVE .NE. elem_igetNVE(rdiscretisation% &
-                 RelementDistribution(icurrentElementDistr)%itestElement)) THEN
+    NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+    IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'bilf_createMatStructure9_conf: element spaces incompatible!'
       STOP
     END IF
@@ -534,8 +541,7 @@ CONTAINS
     ! indicate whether there are identical trial and test functions
     ! in one block!
     bIdenticalTrialAndTest = &
-      rdiscretisation%RelementDistribution(icurrentElementDistr)%itrialElement .EQ. &
-      rdiscretisation%RelementDistribution(icurrentElementDistr)%itestElement
+      p_elementDistribution%itrialElement .EQ. p_elementDistribution%itestElement
       
     ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
     ! space IdofTest (if both spaces are identical). 
@@ -549,8 +555,7 @@ CONTAINS
     
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
-    CALL storage_getbase_int (rdiscretisation% &
-                              RelementDistribution(icurrentElementDistr)%h_IelementList, &
+    CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
                               p_IelementList)
     
 
@@ -612,26 +617,29 @@ CONTAINS
       ! Loop through all the elements in the current set
       DO IEL=1,IELmax-IELset+1
         
-        ! Loop over the indofTrial DOF's on our current element IEL
-        ! for the trial functions
+        ! For building the local matrices, we have first to
+        ! loop through the test functions (the "O"'s), as these
+        ! define the rows in the matrix.
+        DO IDOFE=1,indofTest
 
-        DO IDOFE=1,indofTrial
-
-          ! The DOF IDOFE is now our "X".
+          ! The DOF IDOFE is now our "O".
           ! This global DOF gives us the row we have to build.
           
-          IROW = p_IdofsTrial(IDOFE,IEL)
+          IROW = IdofsTest(IDOFE,IEL)
           
-          ! We now loop through all the other 'trial' DOF's on
-          ! element IEL (the "O"'s). 
+          ! Now we loop through the other DOF's on the current element
+          ! (the "X"'s).
+          ! All these have common support with our current basis function
+          ! and will therefore give an additive value to the global
+          ! matrix.
 
-          DO JDOFE=1,indofTest
+          DO JDOFE=1,indofTrial
             
-            ! Get the global DOF - our "O". This gives the column number
+            ! Get the global DOF - our "X". This gives the column number
             ! in the matrix where an entry occurs in row IROW (the line of 
-            ! the current global DOF "X").
+            ! the current global DOF "O").
               
-            JCOL = IdofsTest(JDOFE,IEL)
+            JCOL = p_IdofsTrial(JDOFE,IEL)
 
             ! This JCOL has to be inserted into line IROW.
             ! But first check, whether the element is already in that line,
@@ -756,13 +764,15 @@ CONTAINS
                     ! list pointers.
 
                     CALL storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
-                                        p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), ST_NEWBLOCK_NOINIT)
+                                        p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), &
+                                        ST_NEWBLOCK_NOINIT)
                     CALL storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                     ! The new index array must be filled with 0 - otherwise
                     ! the search routine below won't work!
                     CALL storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
-                                        p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), ST_NEWBLOCK_ZERO)
+                                        p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
+                                        ST_NEWBLOCK_ZERO)
                     CALL storage_getbase_int (p_Ihindx(iblocks),p_Iindx)
                     
                     Rmemblock(iblocks)%p_Icol => p_Icol
@@ -960,9 +970,6 @@ CONTAINS
 
   END DO ! IEQ
   
-  ! Write out nmaxCol as number of columns to the structure.
-  rmatrixScalar%NCOLS = nmaxCol
-    
   ! HOORAY, THAT'S IT!
   ! Deallocate all temporary memory...
   
@@ -1187,7 +1194,7 @@ CONTAINS
 
     ! If desired, clear the matrix before assembling.
     IF (bclear) THEN
-      CALL lalg_vectorClearDble (p_DA)
+      CALL lalg_clearVectorDble (p_DA)
     END IF
     
   END IF
@@ -1615,7 +1622,7 @@ CONTAINS
                 DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
                 
                 !Perform an inner loop through the other DOF's
-                ! (the "O"'s). 
+                ! (the "X"'s). 
 
                 DO IDOFE=1,indofTest
                 
@@ -1999,7 +2006,7 @@ CONTAINS
 
     ! If desired, clear the matrix before assembling.
     IF (bclear) THEN
-      CALL lalg_vectorClearDble (p_DA)
+      CALL lalg_clearVectorDble (p_DA)
     END IF
     
   END IF
@@ -2081,6 +2088,25 @@ CONTAINS
           p_DcubPtsRef(k,i,j) = Dxi(i,k)
         END DO
       END DO
+    END DO
+    
+    ! Quickly check if one of the specified derivatives is out of the allowed range:
+    DO IALBET = 1,rform%itermcount
+      IA = rform%Idescriptors(1,IALBET)
+      IB = rform%Idescriptors(2,IALBET)      
+      IF ((IA.LT.0) .OR. &
+          (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
+        PRINT *,'bilf_buildMatrix9d_conf2: Specified trial-derivative',IA,&
+                ' not available'
+        STOP
+      END IF
+
+      IF ((IB.LT.0) .OR. &
+          (IB .GT. elem_getMaxDerivative(p_elementDistribution%itestElement))) THEN
+        PRINT *,'bilf_buildMatrix9d_conf2: Specified test-derivative',IA,&
+                ' not available'
+        STOP
+      END IF
     END DO
     
     ! Allocate an array saving the coordinates of corner vertices of elements

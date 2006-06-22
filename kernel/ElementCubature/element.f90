@@ -254,7 +254,7 @@ CONTAINS
   SELECT CASE (ieltype)
   CASE (EL_P0,EL_P1,EL_P2,EL_P3)
     elem_igetNVE = 3
-  CASE (EL_Q1,EL_Q2,EL_Q3,EL_E030, EL_E031, EL_EM30, EL_EM31)
+  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_E030, EL_E031, EL_EM30, EL_EM31)
     elem_igetNVE = 4
   CASE DEFAULT
     elem_igetNVE = 0
@@ -295,7 +295,7 @@ CONTAINS
   CASE (EL_P0,EL_P1,EL_P2,EL_P3)
     ! Triangular elements work in barycentric coordinates
     elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
-  CASE (EL_Q1,EL_Q2,EL_Q3,EL_E030, EL_E031)
+  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_E030, EL_E031)
     ! These work on the reference quadrilateral
     elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
   CASE (EL_EM30, EL_EM31)
@@ -333,10 +333,10 @@ CONTAINS
 !</function>
 
   SELECT CASE (ieltype)
-  CASE (EL_P0, EL_Q0, EL_P1, EL_P2, EL_P3)
+  CASE (EL_P0, EL_P1, EL_P2, EL_P3)
     ! Linear triangular transformation
     elem_igetTrafoType = TRAFO_IDLINTRI
-  CASE (EL_Q1,EL_Q2,EL_Q3,EL_E030, EL_E031, EL_EM30, EL_EM31)
+  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_E030, EL_E031, EL_EM30, EL_EM31)
     ! Bilinear quadrilateral transformation
     elem_igetTrafoType = TRAFO_IDBILINQUAD
   CASE DEFAULT

@@ -1823,7 +1823,7 @@ CONTAINS
     ! Calculate the defect:
     ! To build (b-Ax), copy the RHS to the temporary vector
     ! and make a matrix/vector multiplication.
-    CALL lsysbl_vectorCopy (rb,rtemp)
+    CALL lsysbl_copyVector (rb,rtemp)
     CALL lsysbl_blockMatVec (rsolverNode%rsystemMatrix, rx, rtemp, -1.0_DP, 1.0_DP)
     
     ! Call linsol_precondDefect to solve the subproblem $Ay = b-Ax$.
@@ -2420,12 +2420,12 @@ CONTAINS
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
     ! Clear our iteration vector p_rx.
-    CALL lsysbl_vectorClear (p_rx)
+    CALL lsysbl_clearVector (p_rx)
   
     ! Copy our RHS rd to p_rdef. As the iteration vector is 0, this
     ! is also our initial defect.
 
-    CALL lsysbl_vectorCopy(rd,p_rdef)
+    CALL lsysbl_copyVector(rd,p_rdef)
     IF (bfilter) THEN
       ! Apply the filter chain to the vector
       CALL filter_applyFilterChainVec (p_rdef, p_RfilterChain)
@@ -2457,7 +2457,7 @@ CONTAINS
      
       ! final defect is 0, as initialised in the output variable above
 
-      CALL lsysbl_vectorClear(p_rx)
+      CALL lsysbl_clearVector(p_rx)
       ite = 0
       rsolverNode%dfinalDefect = dres
           
@@ -2481,7 +2481,7 @@ CONTAINS
         CALL lsysbl_vectorLinearComb (p_rdef ,p_rx,domega,1.0_DP)
 
         ! Calculate the residuum for the next step : (b-Ax)
-        CALL lsysbl_vectorCopy (rd,p_rdef)
+        CALL lsysbl_copyVector (rd,p_rdef)
         CALL lsysbl_blockMatVec (p_rmatrix, p_rx,p_rdef, -1.0_DP,1.0_DP)
         IF (bfilter) THEN
           ! Apply the filter chain to the vector
@@ -2552,7 +2552,7 @@ CONTAINS
     
     ! Overwrite our previous RHS by the new correction vector p_rx.
     ! This completes the preconditioning.
-    CALL lsysbl_vectorCopy (p_rx,rd)
+    CALL lsysbl_copyVector (p_rx,rd)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -3113,7 +3113,7 @@ CONTAINS
     CALL lsysbl_assignDiscretIndirect (rd,p_rvector)
   
     ! Clear our solution vector
-    CALL lsysbl_vectorClear (p_rvector)
+    CALL lsysbl_clearVector (p_rvector)
 
     ! Choose the correct (sub-)type of VANCA to call.
     SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
@@ -3128,7 +3128,7 @@ CONTAINS
     END SELECT
     
     ! Copy the solution vector to rd - it's our preconditioned defect now.
-    CALL lsysbl_vectorCopy (p_rvector,rd)
+    CALL lsysbl_copyVector (p_rvector,rd)
   
   END SUBROUTINE
   
@@ -3645,7 +3645,7 @@ CONTAINS
     
     ! Copy the RHS rd to the temp vector; it will be overwritten
     ! by the solution vector
-    CALL lsysbl_vectorCopy (rd,p_rb)
+    CALL lsysbl_copyVector (rd,p_rb)
 
     ! Get the RHS and solution vector data
     CALL lsysbl_getbase_double(rd,p_Dx)
@@ -3912,7 +3912,7 @@ CONTAINS
         CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', mneed, &
                             ST_INT, h_Iwork2, ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_int(h_Iwork2,p_Iwork2)
-        CALL lalg_vectorCopyInt (p_Iwork(1:SIZE(p_Iwork2)),p_Iwork2)
+        CALL lalg_copyVectorInt (p_Iwork(1:SIZE(p_Iwork2)),p_Iwork2)
         CALL storage_free (h_Iwork)
         h_Iwork = h_Iwork2
       END IF
@@ -4583,12 +4583,12 @@ CONTAINS
     ! iteration vector. At the end of this routine, we replace
     ! rd by p_rx.
     ! Clear our iteration vector p_rx.
-    CALL lsysbl_vectorClear (p_rx)
+    CALL lsysbl_clearVector (p_rx)
       
     ! Initialize used vectors with zero
       
-    CALL lsysbl_vectorClear(p_DP)
-    CALL lsysbl_vectorClear(p_DPA)
+    CALL lsysbl_clearVector(p_DP)
+    CALL lsysbl_clearVector(p_DPA)
     
     ! Initialise the iteration vector with zero.
 
@@ -4601,7 +4601,7 @@ CONTAINS
     ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
     ! is also our initial defect.
 
-    CALL lsysbl_vectorCopy(rd,p_DR)
+    CALL lsysbl_copyVector(rd,p_DR)
     IF (bfilter) THEN
       ! Apply the filter chain to the vector
       CALL filter_applyFilterChainVec (p_DR, p_RfilterChain)
@@ -4633,7 +4633,7 @@ CONTAINS
      
       ! final defect is 0, as initialised in the output variable above
 
-      CALL lsysbl_vectorClear(p_rx)
+      CALL lsysbl_clearVector(p_rx)
       ite = 0
       rsolverNode%dfinalDefect = dres
           
@@ -4644,7 +4644,7 @@ CONTAINS
           'BiCGStab: Iteration ',0,',  !!RES!! = ',rsolverNode%dinitialDefect
       END IF
 
-      CALL lsysbl_vectorCopy(p_DR,p_DR0)
+      CALL lsysbl_copyVector(p_DR,p_DR0)
 
       ! Perform at most nmaxIterations loops to get a new vector
 
@@ -4796,7 +4796,7 @@ CONTAINS
     
     ! Overwrite our previous RHS by the new correction vector p_rx.
     ! This completes the preconditioning.
-    CALL lsysbl_vectorCopy (p_rx,rd)
+    CALL lsysbl_copyVector (p_rx,rd)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -6013,7 +6013,7 @@ CONTAINS
     !
     ! with $x_0 = 0$ and $P^{-1}$ performing nmaxIterations steps
     ! to approximate $A^{-1} b$.
-    CALL lsysbl_vectorCopy(rb,rx)
+    CALL lsysbl_copyVector(rb,rx)
     CALL linsol_precondDefect(rsolverNode,rx)
     
   ELSE
@@ -6026,7 +6026,7 @@ CONTAINS
     !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
     !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
     DO i=1,rsolverNode%nmaxIterations
-      CALL lsysbl_vectorCopy(rb,rtemp)
+      CALL lsysbl_copyVector(rb,rtemp)
       CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
       CALL linsol_precondDefect(rsolverNode,rtemp)
       CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
@@ -6184,7 +6184,7 @@ CONTAINS
 
       IF ( rsolverNode%dinitialDefect .LT. rsolverNode%drhsZero ) THEN
         ! final defect is 0, as initialised in the output variable above
-        CALL lsysbl_vectorClear(rd)
+        CALL lsysbl_clearVector(rd)
         rsolverNode%dfinalDefect = dres
         rsolverNode%dfinalDefect = dres
         rsolverNode%dconvergenceRate = 0.0_DP
@@ -6240,7 +6240,7 @@ CONTAINS
         END IF
         
         ! Copy the initial RHS to the RHS vector on the maximum level.
-        CALL lsysbl_vectorCopy(rd,p_rcurrentLevel%rrhsVector)
+        CALL lsysbl_copyVector(rd,p_rcurrentLevel%rrhsVector)
         
         ! Replace the solution vector on the finest level by rd.
         ! Afterwards, rd and the solution vector on the finest level
@@ -6254,7 +6254,7 @@ CONTAINS
         p_rcurrentLevel%rsolutionVector%bisCopy = .TRUE.
         
         ! Clear the initial solution vector.
-        CALL lsysbl_vectorClear (p_rcurrentLevel%rsolutionVector)
+        CALL lsysbl_clearVector (p_rcurrentLevel%rsolutionVector)
         
         ! Start multigrid iteration; perform at most nmaxiterations iterations.
         DO ite = 1, nmaxiterations
@@ -6275,7 +6275,7 @@ CONTAINS
           p_rlowerLevel => p_rcurrentLevel%p_rprevLevel
           
           ! Build the defect...
-          CALL lsysbl_vectorCopy (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
+          CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
           IF (ite .NE. 1) THEN   ! initial solution vector is zero!
             CALL lsysbl_blockMatVec (&
                  p_rcurrentLevel%rsystemMatrix, &
@@ -6307,7 +6307,7 @@ CONTAINS
               END IF
             
               ! Build the defect vector
-              CALL lsysbl_vectorCopy (p_rcurrentLevel%rrhsVector,&
+              CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
                                       p_rcurrentLevel%rtempVector)
               CALL lsysbl_blockMatVec (&
                   p_rcurrentLevel%rsystemMatrix, &
@@ -6375,7 +6375,7 @@ CONTAINS
                 END IF
 
                 ! Choose zero as initial vector on lower level. 
-                CALL lsysbl_vectorClear (p_rlowerLevel%rsolutionVector)
+                CALL lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
                 
               ELSE
               
@@ -6541,7 +6541,7 @@ CONTAINS
           ! residuum...
           !
           ! Calculate the residuum and its norm.
-          CALL lsysbl_vectorCopy (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
+          CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
           CALL lsysbl_blockMatVec (&
                 p_rcurrentLevel%rsystemMatrix, &
                 p_rcurrentLevel%rsolutionVector,&

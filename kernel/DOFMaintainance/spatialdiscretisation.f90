@@ -21,10 +21,15 @@
 !#     -> Initialise a scalar discretisation structure. One element type for
 !#        all geometric elements, for test and trial functions.
 !#
-!# 4.) spdiscr_releaseDiscr
+!# 4.) spdiscr_initDiscr_combined
+!#     -> Initialise a scalar discretisation structure. One element type for
+!#        all geometric elements in the trial space, another element type
+!#        for all geometric elements in the test space
+!#
+!# 5.) spdiscr_releaseDiscr
 !#     -> Release a scalar discretisation structure.
 !#
-!# 5.) spdiscr_checkCubature
+!# 6.) spdiscr_checkCubature
 !#     -> Checks if a cubature formula is compatible to an element
 !#        distribution.
 !#
@@ -492,6 +497,135 @@ CONTAINS
   
   END SUBROUTINE  
   
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_initDiscr_combined (rspatialDiscr, &
+                               ieltypTrial, ieltypTest, ccubType,&
+                               rtriangulation, rdomain, rboundaryConditions)
+  
+!<description>
+  ! This routine initialises a discretisation structure for a uniform
+  ! discretisation with one element in the trial space and a probably
+  ! different element in the test space.
+  !
+  ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
+  ! the existing structure is recreated/updated.
+!</description>
+
+!<input>
+  ! The element type identifier that is to be used for all elements
+  ! in the trial space.
+  INTEGER, INTENT(IN)                       :: ieltypTrial
+  
+  ! The element type identifier that is to be used for all elements
+  ! in the test space.
+  INTEGER, INTENT(IN)                       :: ieltypTest
+
+  ! Cubature formula to use for calculating integrals
+  INTEGER, INTENT(IN)                       :: ccubType
+  
+  ! The triangulation structure underlying to the discretisation.
+  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
+  
+  ! The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rdomain
+  
+  ! OPTIONAL: The analytical description of the boundary conditions.
+  ! Parameter can be ommitted if boundary conditions are not defined.
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rspatialDiscr
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i,ctrafoTest
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+  TYPE(t_elementDistribution), POINTER :: p_relementDistr
+  
+  ! Do we have a structure?
+  IF (rspatialDiscr%ndimension .NE. 0) THEN
+    ! Release the old structure.
+    CALL spdiscr_releaseDiscr(rspatialDiscr)
+  END IF
+
+  ! Initialise the variables of the structure for the simple discretisation
+  rspatialDiscr%ndimension             = NDIM2D
+  rspatialDiscr%p_rtriangulation       => rtriangulation
+  rspatialDiscr%p_rdomain              => rdomain
+  rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
+  
+  ! All trial elements are ieltypTrial:
+  CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItrialElements', &
+        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
+        ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+  DO i=1,rtriangulation%NEL
+    p_Iarray(i) = ieltypTrial
+  END DO
+
+  rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
+  
+  IF (rspatialDiscr%bidenticalTrialAndTest) THEN
+    ! Identical trial and test space.
+    ! Use the same handle for trial and test functions to save memory!
+    rspatialDiscr%bidenticalTrialAndTest = .TRUE.
+    rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements  
+  ELSE
+    ! All test elements are ieltypTest.
+    CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItestElements', &
+          rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItestElements,   &
+          ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int (rspatialDiscr%h_ItestElements,p_Iarray)
+    DO i=1,rtriangulation%NEL
+      p_Iarray(i) = ieltypTest
+    END DO
+  END IF
+
+  ! Initialise the first element distribution
+  rspatialDiscr%inumFESpaces           = 1
+  p_relementDistr => rspatialDiscr%RelementDistribution(1)
+  
+  ! Initialise test and trial space for that block
+  p_relementDistr%itrialElement = ieltypTrial
+  p_relementDistr%itestElement = ieltypTest
+  p_relementDistr%ccubType = ccubType
+  p_relementDistr%ccubTypeLin = ccubType
+  
+  ! Get the typical transformation used with the element
+  p_relementDistr%ctrafoType = elem_igetTrafoType(ieltypTrial)
+  ctrafoTest = elem_igetTrafoType(ieltypTrial)
+  
+  IF (p_relementDistr%ctrafoType .NE. ctrafoTest) THEN
+    PRINT *,'spdiscr_initDiscr_combined: Elements incompatible due to different'
+    PRINT *,'transformation between reference and real element!'
+    STOP
+  END IF
+  
+  ! Check the cubature formula against the element distribution.
+  ! This stops the program if this is not fulfilled.
+  CALL spdiscr_checkCubature(ccubType,ieltypTrial)
+  CALL spdiscr_checkCubature(ccubType,ieltypTest)
+
+  ! Initialise an 'identity' array containing the numbers of all elements.
+  ! This list defines the sequence how elements are processed, e.g. in the
+  ! assembly of matrices/vectors.
+  CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_IelementList', &
+        rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &
+        ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (p_relementDistr%h_IelementList,p_Iarray)
+  DO i=1,rtriangulation%NEL
+    p_Iarray(i) = i
+  END DO
+  
+  END SUBROUTINE  
+
   ! ***************************************************************************
   
 !<subroutine>

@@ -1322,9 +1322,9 @@ CONTAINS
       CASE (ST_DOUBLE)
         SELECT CASE (p_rdest%idataType)
         CASE (ST_DOUBLE)
-          CALL lalg_vectorCopyDble (p_rsource%p_Ddouble1D,p_rdest%p_Ddouble1D)
+          CALL lalg_copyVectorDble (p_rsource%p_Ddouble1D,p_rdest%p_Ddouble1D)
         CASE (ST_SINGLE)
-          CALL lalg_vectorCopyDblSngl (p_rsource%p_Ddouble1D,p_rdest%p_Fsingle1D)
+          CALL lalg_copyVectorDblSngl (p_rsource%p_Ddouble1D,p_rdest%p_Fsingle1D)
         CASE DEFAULT
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
@@ -1333,9 +1333,9 @@ CONTAINS
       CASE (ST_SINGLE)
         SELECT CASE (p_rdest%idataType)
         CASE (ST_DOUBLE)
-          CALL lalg_vectorCopyDblSngl (p_rsource%p_Fsingle1D,p_rdest%p_Ddouble1D)
+          CALL lalg_copyVectorDblSngl (p_rsource%p_Fsingle1D,p_rdest%p_Ddouble1D)
         CASE (ST_SINGLE)
-          CALL lalg_vectorCopySngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
+          CALL lalg_copyVectorSngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
         CASE DEFAULT
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
@@ -1343,7 +1343,7 @@ CONTAINS
         
       CASE (ST_INT)
         IF (p_rdest%idataType .EQ. ST_INT) THEN
-          CALL lalg_vectorCopyInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
+          CALL lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
         ELSE
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP

@@ -166,7 +166,7 @@ MODULE boundary
 
     ! Bitfield specifying properties of the region. A combination
     ! of BDR_PROP_xxxx constants.
-    INTEGER(I32) :: iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    INTEGER(I32) :: iproperties = BDR_PROP_WITHSTART
   
   END TYPE
   

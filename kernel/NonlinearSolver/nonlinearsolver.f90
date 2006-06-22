@@ -810,7 +810,7 @@ CONTAINS
         SELECT CASE (rsolverNode%cpreconditioner)
         CASE (NLSOL_PREC_MATRIX)
           ! Multiplication with a matrix.
-          CALL lsysbl_vectorCopy (rd,rtemp)
+          CALL lsysbl_copyVector (rd,rtemp)
           CALL lsysbl_blockMatVec (rsolverNode%rmatrixPreconditioner, &
                                    rtemp, rd, 1.0_DP, 0.0_DP)
                                    
