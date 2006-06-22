@@ -5,7 +5,7 @@
   
   !<subroutine>
 
-    SUBROUTINE fgetBoundaryValues (rdiscretisation,rbcRegion,ielement, &
+    SUBROUTINE fgetBoundaryValues (Icomponents,rdiscretisation,rbcRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
     
     USE collection
@@ -20,6 +20,13 @@
   !</description>
     
   !<input>
+    ! Component specifier.
+    ! For Dirichlet boundary: 
+    !   Icomponents(1) defines the number of the boundary component, the value
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   2=2nd solution component, e.g. Y-velocity,...)
+    INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+  
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
@@ -30,7 +37,6 @@
     !  currently being calculated, as well as information about the current
     !  boundary segment 'where we are at the moment'.)
     TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
-    
     
     ! The element number on the boundary which is currently being processed
     INTEGER(I32), INTENT(IN)                                    :: ielement

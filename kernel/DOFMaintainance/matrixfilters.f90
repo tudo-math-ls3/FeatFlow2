@@ -11,19 +11,13 @@
 !#
 !# Typical matrix filters are those working together with discrete
 !# boundary conditions. For Dirichlet boundary conditions e.g. some lines
-!# of the matrix are usually replaced by unit vectors. The corresponding
+!# of the global matrix are usually replaced by unit vectors. The corresponding
 !# matrix modification routine is a kind of 'filter' for a matrix and
 !# can be found in this module.
 !#
 !# The following routines can be found here:
 !#
-!# 1.) matfil_discreteBCSca
-!#     -> Apply the 'discrete boundary conditions for solution vectors' filter
-!#        onto a given (scalar) matrix.
-!#        This e.g. replaces lines of a matrix corresponding to Dirichlet DOF's
-!#        by unit vectors. 
-!#
-!# 2.) matfil_discreteBC
+!# 1.) matfil_discreteBC
 !#     -> Apply the 'discrete boundary conditions for solution vectors' filter
 !#        onto a given (block) matrix.
 !#        This e.g. replaces lines of a matrix corresponding to Dirichlet DOF's
@@ -48,92 +42,6 @@ CONTAINS
 ! *****************************************************************************
 ! Scalar matrix filters
 ! *****************************************************************************
-
-  ! ***************************************************************************
-  ! Implementation of discrete boundary conditions into scalar matrix
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE matfil_discreteBCSca (rmatrix,boffDiag,RdiscreteBC)
-
-!<description>
-  
-  ! This routine serves as a wrapper for implementing discrete boundary
-  ! conditions into a (scalar) matrix. Depending on the type of 
-  ! boundary  conditions, the correct 'imposing' routine will be called that 
-  ! imposes the actual boundary conditions.
-  !
-  ! RdiscreteBC is an optional argument describing the discrete boundary
-  ! conditions. If not given, the boudnary conditions that are associated
-  ! to the vector rx are imposed into rx.
-  
-!</description>
-  
-!<inputoutput>
-
-  ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_matrixScalar), INTENT(INOUT),TARGET :: rmatrix
-  
-  ! OPTIONAL: off-diagonal matrix.
-  ! If this is present and set to TRUE, it's assumed that the matrix is not
-  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
-  ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
-  ! or somewhere else in a block system). This modifies the way,
-  ! boundary conditions are implemented into the matrix.
-  LOGICAL, OPTIONAL :: boffDiag
-  
-  ! OPTIONAL: The boundary conditions that are to be imposed into the vector.
-  ! If not given, the discrete boundary conditions associated to the vector
-  ! rx (in rx%p_RdiscreteBC) are imposed to rx.
-  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
-  
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER :: ibc, ibctype
-  LOGICAL :: bisOffDiag
-  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
-  
-  ! Which BC to impose?
-  IF (PRESENT(RdiscreteBC)) THEN
-    p_RdiscreteBC => RdiscreteBC%p_RdiscBCList
-  ELSE
-    ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
-    IF (.NOT. ASSOCIATED(rmatrix%p_rdiscreteBC)) RETURN
-    
-    p_RdiscreteBC => rmatrix%p_RdiscreteBC%p_RdiscBCList
-  END IF
-  
-  ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
-  
-  IF (PRESENT(boffDiag)) THEN
-    bisOffDiag = boffDiag
-  ELSE
-    bisOffDiag = .TRUE.
-  END IF
-  
-  ! Loop over the BC's that are to be imposed
-  
-  DO ibc = 1,SIZE(p_RdiscreteBC)
-    
-    ! Choose the right boundary condition implementation routine
-    ! and call it for the matrix.
-  
-    ibctype = p_RdiscreteBC(ibc)%itype
-
-    SELECT CASE(ibctype) 
-    CASE(DISCBC_TPDIRICHLET)
-      CALL matfil_imposeDirichletBC (rmatrix, bisOffDiag, &
-                                     p_RdiscreteBC(ibc)%rdirichletBCs)
-    END SELECT 
-    
-  END DO
-      
-  END SUBROUTINE
 
   ! ***************************************************************************
 
@@ -257,40 +165,72 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE matfil_discreteBC (rmatrix)
+  SUBROUTINE matfil_discreteBC (rmatrix,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to 
-  ! block matrix' filter. This imposes the discrete boundary conditions 
-  ! associated to each submatrix of the block matrix rmatrix to this
-  ! submatrix.
+  ! block matrix' filter.
+  ! The matrix is modified either to rdiscreteBC (if specified) or
+  ! to the default boundary conditions associated to the matrix 
+  ! (if rdiscreteBC is not specified).
 !</description>
+
+!<input>
+  ! OPTIONAL: boundary conditions to impose into the matrix.
+  ! If not specified, the default boundary conditions associated to the
+  ! matrix rmatrix are imposed to the matrix.
+  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+!</input>
   
 !<inputoutput>
-
   ! The block matrix where the boundary conditions should be imposed.
   TYPE(t_matrixBlock), INTENT(INOUT),TARGET :: rmatrix
-  
 !</inputoutput>
 
 !</subroutine>
 
-  INTEGER :: iblock,jblock
+  INTEGER :: iblock,jblock,i
+  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
   
-  ! Loop over the blocks - at least over all allocated ones...
+  ! Imposing boundary conditions normally changes the whole matrix!
+  ! Grab the boundary condition entry list from the matrix. This
+  ! is a list of all discretised boundary conditions in the system.
+  p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
   
-  DO jblock = 1,rmatrix%ndiagBlocks
-    DO iblock = 1,rmatrix%ndiagBlocks
-
-      ! Impose the discrete BC into the scalar subvector.
-      IF (rmatrix%RmatrixBlock(iblock,jblock)%NA .NE. 0) THEN
-        CALL matfil_discreteBCSca (rmatrix%RmatrixBlock(iblock,jblock),&
-                                   iblock .NE. jblock)
-      END IF
+  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+  
+  ! Now loop through all entries in this list:
+  DO i=1,SIZE(p_RdiscreteBC)
+  
+    ! What for BC's do we have here?
+    SELECT CASE (p_RdiscreteBC(i)%itype)
+    CASE (DISCBC_TPUNDEFINED)
+      ! Do-nothing
       
-    END DO
+    CASE (DISCBC_TPDIRICHLET)
+      ! Dirichlet boundary conditions.
+      ! On which component are they defined? The component specifies
+      ! the row of the block matrix that is to be altered.
+      iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+      
+      ! Loop through this matrix row and implement the boundary conditions
+      ! into the scalar submatrices.
+      ! For now, this implements unit vectors into the diagonal matrices
+      ! and zero-vectors into the offdiagonal matrices.
+      DO jblock = 1,rmatrix%ndiagBlocks
+        CALL matfil_imposeDirichletBC (&
+                    rmatrix%RmatrixBlock(iblock,jblock), &
+                    iblock .NE. jblock,p_RdiscreteBC(i)%rdirichletBCs)
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'matfil_discreteBC: unknown boundary condition: ',&
+              p_RdiscreteBC(i)%itype
+      STOP
+      
+    END SELECT
   END DO
-    
+  
   END SUBROUTINE
 
 END MODULE

@@ -1,12 +1,11 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> scalarbc </name>
+!# <name> boundarycondition </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module defines the analytical representation of boundary conditions
-!# for 1D scalar equations. In detain, the following types of boundary
-!# conditions are supported:
+!# This module defines the analytical representation of boundary conditions.
+!# In detain, the following types of boundary conditions are supported:
 !# - Neumann boundary conditions
 !# - Dirichlet boundary conditions
 !# The structure here only describe the boundary conditions. There are no
@@ -28,29 +27,36 @@
 !# - boundary conditions bound to segments on the real boundary
 !# - boundary conditions anywhere on the real boundary
 !# - boundary conditions, imposed by fictitious boundary objects.
+!#
 !# A 'boundary condition region' object t_bcRegion realises a boundary
 !# condition. It contains information about the type of the boundary conditions
 !# and where they are, on the real boundary as well as on fictitious boundary
-!# objects.
+!# objects. Furthermode it contains information about the solution component
+!# the boundary condition refers to (e.g. X-velocity, Y-velocity,...)
+!#
 !# A boundary condition can be deactivated by setting the cbcRegionType flag
 !# in the boundary region to BC_DONOTHING.
 !#
 !# The following routines can be found here:
 !#
-!# 1.) scbc_initScalarBC
+!# 1.) bcond_initBC
 !#     -> Initialises a boundary condition structure
 !#
-!# 2.) scbc_doneScalarBC
+!# 2.) bcond_doneBC
 !#     -> Cleans up a boundary condition structure, releases memory
 !#
-!# 3.) scbc_newBConRealBD
-!#     -> Adds a boundary condition for the real boundary to a 
+!# 3.) bcond_newBConRealBD
+!#     -> Adds a general boundary condition for the real boundary to a 
+!#        boundary-condition object; normally used only internally.
+!#
+!# 4.) bcond_newDirichletBConRealBD
+!#     -> Adds a Dirichlet boundary condition the real boundary to a 
 !#        boundary-condition object
 !#
 !# </purpose>
 !##############################################################################
 
-MODULE scalarbc
+MODULE boundarycondition
 
   USE fsystem
   USE boundary
@@ -64,7 +70,10 @@ MODULE scalarbc
   ! Do-nothing boundary conditions (Neumann)
   INTEGER, PARAMETER :: BC_DONOTHING      = 0
 
-  ! Dirichlet boundary conditions
+  ! Dirichlet boundary conditions.
+  ! Dirichlet boundary conditions are always specified for exactly one
+  ! equation. t_bcRegion%nequations is set =1 and t_bcRegion%Iequations(1)
+  ! identifies the number of the equation, the boundary conditions refer to.
   INTEGER, PARAMETER :: BC_DIRICHLET      = 1
   
   ! Robin boundary conditions
@@ -89,7 +98,7 @@ MODULE scalarbc
   ! boundar condition).
   INTEGER, PARAMETER :: BC_RTYPE_FREE      = 2
   
-  ! The boundary condition region corresponds to a fictitious boundar
+  ! The boundary condition region corresponds to a fictitious boundary
   ! object.
   INTEGER, PARAMETER :: BC_RTYPE_FBCOBJECT = 3
   
@@ -101,14 +110,16 @@ MODULE scalarbc
   ! p_RregionsSpecific / p_RregionsFree list - if the list is full.
   INTEGER, PARAMETER :: BC_LISTBLOCKSIZE = 10
   
+  ! Maximum number of equations that are supported simultaneously by
+  ! boundary conditions.
+  INTEGER, PARAMETER :: BC_MAXEQUATIONS = 16
+  
 !</constantblock>
-
 
 !</constants>
 
 !<types>
-  
-  !<typeblock>
+!<typeblock>
   
   ! The following structure realises a 'region' on the boundary where
   ! boundary conditions are defined. This is realised using the
@@ -126,6 +137,27 @@ MODULE scalarbc
     ! Type of boundary conditions, this structure describes.
     ! One of the BC_xxxx constants.
     INTEGER :: ctype = BC_DONOTHING
+    
+    ! Number of equations, this BC refers to. This is usually =1 but can be
+    ! higher if the BC couples multiple equations (like $u_x + u_y = c$ or so).
+    ! Normally, this is the length of the Iequations list below, but the 
+    ! meaning might be different for special type BC's.
+    INTEGER :: nequations = 0
+    
+    ! A list of up to BC_MAXEQUATIONS numbers identifying the equations,
+    ! a boundary condition refers to.
+    ! Example: A Dirichlet-boundary condition for the X-velocity
+    !   is identified by "nequations=1" + "Iequations=[1]".
+    ! A Dirichlet-boundary condition for the Y-velocity
+    !   is identified by "nequations=1" + "Iequations=[2]".
+    ! A boundary condition like "u_x + u_y = const"
+    !   is identified by "nequations=2" + "Iequations=[1 2]".
+    ! Basically, this is a list of the blocks in a block solution vector
+    ! that are affected by a boundary condition. The list here is actually
+    ! bounadry-condition specific, i.e. another BC than Dirichlet can use
+    ! the list in a different way to remember which equations take part
+    ! on a special BC.
+    INTEGER, DIMENSION(BC_MAXEQUATIONS) :: Iequations = 0
     
     ! Whether or not this boundary region is a 'static' region.
     ! If TRUE, the discretisation routine will discretise this boundary
@@ -157,9 +189,9 @@ MODULE scalarbc
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
-  !<typeblock>
+!<typeblock>
   
   ! Definition of a boundary condition. The structure basically contains
   ! a type-identifier specifying the type of boundary conditions
@@ -211,7 +243,7 @@ MODULE scalarbc
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
 
 !</types>
 
@@ -221,7 +253,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE scbc_initScalarBC (p_rboundaryConditions,rdomain,ibcRegionsCount)
+  SUBROUTINE bcond_initBC (p_rboundaryConditions,rdomain,ibcRegionsCount)
   
 !<description>
   ! This routine initialises a boundary condition structure.
@@ -255,7 +287,7 @@ CONTAINS
     ALLOCATE(p_rboundaryConditions)
   ELSE
     ! Release the old structure without removing it from the heap.
-    CALL scbc_doneScalarBC(p_rboundaryConditions,.TRUE.)
+    CALL bcond_doneBC(p_rboundaryConditions,.TRUE.)
   END IF
 
   ! The 'default constructor' does most of the necessary work, as
@@ -278,7 +310,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE scbc_doneScalarBC (p_rboundaryConditions,bkeepStructure)
+  SUBROUTINE bcond_doneBC (p_rboundaryConditions,bkeepStructure)
   
 !<description>
   ! This routine cleans up a boundary condition structure. All reserved
@@ -324,12 +356,13 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE scbc_newBConRealBD (ctype,cbdtype,rboundaryConditions,rboundaryRegion,p_rbcRegion)
+  SUBROUTINE bcond_newBConRealBD (ctype,cbdtype,rboundaryConditions,&
+                                  rboundaryRegion,p_rbcRegion)
   
 !<description>
-  ! Adds a boundary condition region to the boundary condition structure,
-  ! configured for Dirichlet boundary. A pointer to the region is returned
-  ! in p_rbcRegion, the caller cann add some user-defined information there
+  ! Adds a general boundary condition region to the boundary condition structure.. 
+  ! A pointer to the region is returned
+  ! in p_rbcRegion, the caller can add some user-defined information there
   ! if necessary (e.g. the name, a tag or something else).
   ! The boundary conditions are assumed to be on the 'real' boundary -
   ! fictitious-boundary boundary conditions are supported by another routine.
@@ -377,7 +410,7 @@ CONTAINS
   !  p_Rregion => rboundaryConditions%p_RregionsFree
   !  ifull => rboundaryConditions%iregionCountFree
   CASE (BC_RTYPE_FBCOBJECT)
-    PRINT *,'Fictitious boundary conditions not supported by scbc_newBCrealBD!'
+    PRINT *,'Fictitious boundary conditions not supported by bcond_newBCrealBD!'
     STOP
   CASE DEFAULT
     PRINT *,'Not implemented boundary condition.'
@@ -415,6 +448,65 @@ CONTAINS
     p_rbcRegion => p_rbcRegionLocal
   END IF
   
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE bcond_newDirichletBConRealBD (rboundaryConditions,iequation,&
+                                           rboundaryRegion,p_rbcRegion)
+  
+!<description>
+  ! Adds a Dirichlet boundary condition region to the boundary condition 
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
+  ! can add some user-defined information there if necessary 
+  ! (e.g. the name, a tag or something else).
+  ! The boundary conditions are assumed to be on the 'real' boundary -
+  ! fictitious-boundary boundary conditions are supported by another routine.
+!</description>
+
+!<input>
+  ! An identifier for the equation, this boundary condition refers to.
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! Y-velocity), etc.
+  INTEGER, INTENT(IN) :: iequation
+
+  ! A boundary-condition-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  ! A copy of this is added to the rboundaryConditions structure.
+  TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
+!</input>
+
+!<inputoutput>
+  ! The structure where the boundary condition region is to be added.
+  TYPE(t_boundaryConditions), INTENT(INOUT), TARGET :: rboundaryConditions
+!</inputoutput>
+
+!<output>
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make more specific
+  ! modifications to this.
+  TYPE(t_bcRegion), OPTIONAL, POINTER :: p_rbcRegion
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_bcRegion), POINTER :: p_rbcReg
+
+  ! Add a general boundary condition region.
+  CALL bcond_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rboundaryConditions,&
+                            rboundaryRegion,p_rbcReg)
+
+  ! Modify the structure, impose additionally needed information
+  ! for Dirichlet boundary - in detail, set the equation where the BC
+  ! applies to.
+  p_rbcReg%nequations = 1
+  p_rbcReg%Iequations(1) = iequation
+
+  ! Eventually, return the pointer
+  IF (PRESENT(p_rbcRegion)) p_rbcRegion => p_rbcReg
+
   END SUBROUTINE
       
 END MODULE

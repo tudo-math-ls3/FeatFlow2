@@ -52,8 +52,9 @@ MODULE poisson_method4
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
-    ! An object specifying the discretisation (trial/test functions,...)
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    ! An object specifying the discretisation (structure of the
+    ! solution, trial/test functions,...)
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
     ! A matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form. The matrix will receive the discrete Laplace operator.
@@ -88,6 +89,11 @@ MODULE poisson_method4
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by LV!
     TYPE(t_problem_lvl), DIMENSION(1) :: RlevelInfo
+    
+    ! A collection object that saves structural data and some 
+    ! problem-dependent information which is e.g. passed to 
+    ! callback routines.
+    TYPE(t_collection) :: rcollection
     
   END TYPE
 
@@ -189,24 +195,33 @@ CONTAINS
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation), POINTER :: p_rtriangulation
     
+    ! An object for the spatial discretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
     p_rboundary => rproblem%p_rboundary
     p_rtriangulation => rproblem%RlevelInfo(1)%p_rtriangulation
     
-    ! Now we can start to initialise the discretisation. Set up
-    ! a simple discretisation structure suing the boundary and
-    ! triangulation information. Specify the element and cubature rule
-    ! to use during the assembly of matrices.
-    !
-    ! Note that we initialise only one discretisation structure here,
-    ! as our solution is scalar. Normally, we have to initialise one
-    ! discretisation structure for every component of the solution!
-    ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
-    NULLIFY(rproblem%RlevelInfo(1)%p_rdiscretisation)
-    CALL spdiscr_initDiscr_simple (rproblem%RlevelInfo(1)%p_rdiscretisation, &
-                                   EL_E011,CUB_TRZ,&
+    ! Now we can start to initialise the discretisation. At first, set up
+    ! a block discretisation structure that specifies the blocks in the
+    ! solution vector. In this simple problem, we only have one block.
+    ALLOCATE(p_rdiscretisation)
+    CALL spdiscr_initBlockDiscr2D (p_rdiscretisation,1,&
                                    p_rtriangulation, p_rboundary)
+                                   
+    ! Save the discretisation structure to our local LevelInfo structure
+    ! for later use.
+    rproblem%RlevelInfo(1)%p_rdiscretisation => p_rdiscretisation
+
+    ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+    ! discretisation structures for every component of the solution vector.
+    ! Initialise the first element of the list to specify the element
+    ! and cubature rule for this solution component:
+    CALL spdiscr_initDiscr_simple ( &
+                 p_rdiscretisation%RspatialDiscretisation(1), &
+                 EL_E011,CUB_G2X2, &
+                 p_rtriangulation, p_rboundary)
                                    
   END SUBROUTINE
 
@@ -214,7 +229,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm4_initMatVec (rproblem,rcollection)
+  SUBROUTINE pm4_initMatVec (rproblem)
   
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
@@ -226,10 +241,6 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A collection object for saving structural data and some problem-dependent 
-  ! information.
-  TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
   ! local variables
@@ -243,7 +254,7 @@ CONTAINS
     TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
 
     ! A pointer to the discretisation structure with the data.
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
   
     ! Arrays for the Cuthill McKee renumbering strategy
     INTEGER, DIMENSION(1) :: H_Iresort,IsortStrategy
@@ -256,17 +267,23 @@ CONTAINS
     p_rrhs    => rproblem%RlevelInfo(1)%rrhs   
     p_rvector => rproblem%RlevelInfo(1)%rvector
     
+    ! Initialise the block matrix with default values based on
+    ! the discretisation.
+    CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
+    
     ! Save matrix and vectors to the collection.
     ! They maybe used later, expecially in nonlinear problems.
-    CALL collct_setvalue_vec(rcollection,'RHS',p_rrhs,.TRUE.)
-    CALL collct_setvalue_vec(rcollection,'SOLUTION',p_rvector,.TRUE.)
-    CALL collct_setvalue_mat(rcollection,'LAPLACE',p_rmatrix,.TRUE.)
+    CALL collct_setvalue_vec(rproblem%rcollection,'RHS',p_rrhs,.TRUE.)
+    CALL collct_setvalue_vec(rproblem%rcollection,'SOLUTION',p_rvector,.TRUE.)
+    CALL collct_setvalue_mat(rproblem%rcollection,'LAPLACE',p_rmatrix,.TRUE.)
 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
-    ! We create that directly in the block (1,1) of the block matrix.
-    CALL bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,&
-                                     p_rmatrix%RmatrixBlock(1,1))
+    ! We create that directly in the block (1,1) of the block matrix
+    ! using the discretisation structure of the first block.
+    CALL bilf_createMatrixStructure (&
+              p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
+              p_rmatrix%RmatrixBlock(1,1))
     
     ! Update the structural information of the block matrix, as we manually
     ! changed one of the submatrices:
@@ -300,7 +317,7 @@ CONTAINS
     ! in the collection.
     CALL bilf_buildMatrixScalar (rform,.TRUE.,&
                                  p_rmatrix%RmatrixBlock(1,1),coeff_Laplace,&
-                                 rcollection)
+                                 rproblem%rcollection)
                                  
     ! Allocate an array for holding the resorting strategy.
     CALL storage_new ('pm4_initMatVec', 'Iresort', &
@@ -311,7 +328,7 @@ CONTAINS
     CALL sstrat_calcCuthillMcKee (p_rmatrix%RmatrixBlock(1,1),p_Iresort)
     
     ! Save the handle of the resorting strategy to the collection.
-    CALL collct_setvalue_int(rcollection,'LAPLACE-CM',h_Iresort(1),.TRUE.)
+    CALL collct_setvalue_int(rproblem%rcollection,'LAPLACE-CM',h_Iresort(1),.TRUE.)
     
     ! Resort the matrix according to the resorting strategy.
     CALL lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.TRUE.,&
@@ -331,16 +348,18 @@ CONTAINS
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to the first subvector of
-    ! the block vector.
+    ! the block vector using the discretisation structure of the 
+    ! first block.
     !
     ! We pass our collection structure as well to this routine, 
     ! so the callback routine has access to everything what is
     ! in the collection.
     !
-    ! Note that the vector is unsorted after calling this routine!
-    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,&
-                                 p_rrhs%RvectorBlock(1),coeff_RHS,&
-                                 rcollection)
+    ! Note that the vector is unsorted when this call finishes!
+    CALL linf_buildVectorScalar (&
+              p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
+              p_rrhs%RvectorBlock(1),coeff_RHS,&
+              rproblem%rcollection)
                                  
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution. 
@@ -373,14 +392,12 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
-  ! local variables
-
     ! A set of variables describing the analytic boundary conditions.    
     TYPE(t_boundaryRegion) :: rboundaryRegion
     TYPE(t_bcRegion), POINTER :: p_rbcRegion
     
     ! A pointer to the discretisation structure with the data.
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
     ! A pointer to the domain
     TYPE(t_boundary), POINTER :: p_rboundary
@@ -402,8 +419,8 @@ CONTAINS
     !
     ! Set p_rboundaryConditions to NULL() to create a new structure on the heap.
     NULLIFY (rproblem%p_rboundaryConditions)
-    CALL scbc_initScalarBC (rproblem%p_rboundaryConditions,&
-                            p_rdiscretisation%p_rdomain)
+    CALL bcond_initBC (rproblem%p_rboundaryConditions,&
+                       p_rdiscretisation%p_rdomain)
     
     ! We 'know' already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for inforcing
@@ -417,29 +434,31 @@ CONTAINS
     
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following routine adds a new 'boundary condition region'
-    ! for the first segment to the boundary condition structure. 
-    ! The region will be set up as 'Dirichlet boundary' with parameter values
-    ! from the previous boundary region.
+    ! for the first segment to the boundary condition structure.
+    ! The region will be set up as 'Dirichlet boundary'.
+    ! We specify icomponent='1' to indicate that we set up the
+    ! Dirichlet BC's for the first (here: one and only) component in the solution
+    ! vector.
     ! The routine also returns the created object in p_rbcRegion so that we can
     ! modify it - but accept it as it is, so we can ignore that.
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
                              
     ! Now to the edge 2 of boundary component 1 the domain. We use the
     ! same two routines to add the boundary condition to p_rboundaryConditions.
     CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
                              
     ! Edge 3 of boundary component 1.
     CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
     
     ! Edge 4 of boundary component 1. That's it.
     CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rproblem%p_rboundaryConditions,&
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
                              
     ! The boundary conditions are set up, but still the discretisation
     ! does not know about it. So inform the discretisation which
@@ -452,7 +471,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm4_initDiscreteBC (rproblem,rcollection)
+  SUBROUTINE pm4_initDiscreteBC (rproblem)
   
 !<description>
   ! This calculates the discrete version of the boundary conditions and
@@ -462,10 +481,6 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A collection object for saving structural data and some problem-dependent 
-  ! information.
-  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
 !</inputoutput>
 
   ! local variables
@@ -474,7 +489,7 @@ CONTAINS
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
     ! Pointer to structure for saving discrete BC's:
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
@@ -486,7 +501,7 @@ CONTAINS
     
     ! From the matrix or the RHS we have access to the discretisation and the
     ! analytic boundary conditions.
-    p_rdiscretisation => p_rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation
+    p_rdiscretisation => p_rmatrix%p_rblockDiscretisation
     
     ! For the discrete problem, we need a discrete version of the above
     ! boundary conditions. So we have to discretise them.
@@ -501,17 +516,16 @@ CONTAINS
     ! in the collection.
     NULLIFY(rproblem%RlevelInfo(1)%p_rdiscreteBC)
     CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(1)%p_rdiscreteBC, &
-                             .FALSE.,getBoundaryValues,rcollection)
+                             .FALSE.,getBoundaryValues,rproblem%rcollection)
                              
-    ! Hang the pointer into the vectors and the matrix - more precisely,
-    ! to the first block matrix and the first subvector. That way, these
+    ! Hang the pointer into the vectors and the matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
     p_rdiscreteBC => rproblem%RlevelInfo(1)%p_rdiscreteBC
     
-    p_rmatrix%RmatrixBlock(1,1)%p_rdiscreteBC => p_rdiscreteBC
-    p_rrhs%RvectorBlock(1)%p_rdiscreteBC => p_rdiscreteBC
-    p_rvector%RvectorBlock(1)%p_rdiscreteBC => p_rdiscreteBC
+    p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
+    p_rrhs%p_rdiscreteBC => p_rdiscreteBC
+    p_rvector%p_rdiscreteBC => p_rdiscreteBC
                 
   END SUBROUTINE
 
@@ -746,7 +760,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm4_doneMatVec (rproblem,rcollection)
+  SUBROUTINE pm4_doneMatVec (rproblem)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -755,10 +769,6 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A collection object for saving structural data and some problem-dependent 
-  ! information.
-  TYPE(t_collection), INTENT(INOUT), TARGET :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -771,14 +781,14 @@ CONTAINS
     CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(1)%rmatrix)
 
     ! Delete the variables from the collection.
-    CALL collct_deletevalue (rcollection,'RHS')
-    CALL collct_deletevalue (rcollection,'SOLUTION')
-    CALL collct_deletevalue (rcollection,'LAPLACE')
+    CALL collct_deletevalue (rproblem%rcollection,'RHS')
+    CALL collct_deletevalue (rproblem%rcollection,'SOLUTION')
+    CALL collct_deletevalue (rproblem%rcollection,'LAPLACE')
     
     ! Release the permutation for sorting matrix/vectors
-    ihandle = collct_getvalue_int (rcollection,'LAPLACE-CM')
+    ihandle = collct_getvalue_int (rproblem%rcollection,'LAPLACE-CM')
     CALL storage_free (ihandle)
-    CALL collct_deletevalue (rcollection,'LAPLACE-CM')
+    CALL collct_deletevalue (rproblem%rcollection,'LAPLACE-CM')
 
   END SUBROUTINE
 
@@ -803,7 +813,7 @@ CONTAINS
     CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(1)%p_rdiscreteBC)
 
     ! ...and also the corresponding analytic description.
-    CALL scbc_doneScalarBC (rproblem%p_rboundaryConditions)
+    CALL bcond_doneBC (rproblem%p_rboundaryConditions)
     
   END SUBROUTINE
 
@@ -825,8 +835,13 @@ CONTAINS
 
 !</subroutine>
 
-    ! Delete the discretisation.
-    CALL spdiscr_releaseDiscr(rproblem%RlevelInfo(1)%p_rdiscretisation)
+    ! Delete the block discretisation together with the associated
+    ! scalar spatial discretisations....
+    CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(1)%p_rdiscretisation,&
+                                   .TRUE.)
+    
+    ! and remove the allocated block discretisation structure from the heap.
+    DEALLOCATE(rproblem%RlevelInfo(1)%p_rdiscretisation)
     
   END SUBROUTINE
     
@@ -902,25 +917,22 @@ CONTAINS
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
     
-    ! A collection structure for our problem
-    TYPE(t_collection) :: rcollection
-    
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
 
     LV = 7
     
     ! Initialise the collection.
-    CALL collct_init (rcollection)
+    CALL collct_init (rproblem%rcollection)
 
     ! So now the different steps - one after the other.
     !
     ! Initialisation
     CALL pm4_initParamTriang (LV,rproblem)
     CALL pm4_initDiscretisation (rproblem)    
-    CALL pm4_initMatVec (rproblem,rcollection)    
+    CALL pm4_initMatVec (rproblem)    
     CALL pm4_initAnalyticBC (rproblem)   
-    CALL pm4_initDiscreteBC (rproblem,rcollection)
+    CALL pm4_initDiscreteBC (rproblem)
     
     ! Implementation of boundary conditions
     CALL pm4_implementBC (rproblem)
@@ -932,7 +944,7 @@ CONTAINS
     CALL pm4_postprocessing (rproblem)
     
     ! Cleanup
-    CALL pm4_doneMatVec (rproblem,rcollection)
+    CALL pm4_doneMatVec (rproblem)
     CALL pm4_doneBC (rproblem)
     CALL pm4_doneDiscretisation (rproblem)
     CALL pm4_doneParamTriang (rproblem)
@@ -942,10 +954,10 @@ CONTAINS
     PRINT *,'Remaining collection statistics:'
     PRINT *,'--------------------------------'
     PRINT *
-    CALL collct_printStatistics (rcollection)
+    CALL collct_printStatistics (rproblem%rcollection)
     
     ! Finally release the collection.
-    CALL collct_done (rcollection)
+    CALL collct_done (rproblem%rcollection)
     
   END SUBROUTINE
 

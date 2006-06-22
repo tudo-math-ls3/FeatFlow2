@@ -30,7 +30,7 @@
 !# BiCGStab-solver with ILU(0) preconditioner.
 !#
 !# The fith example (module poisson_method5) demonstrates the use of a
-!# Multigrid solver with with ILU(0) smoother and BiCGStab-coarse grid solver.
+!# Multigrid solver with with ILU(0) smoother and UMFPACK-coarse grid solver.
 !# </purpose>
 !##############################################################################
 

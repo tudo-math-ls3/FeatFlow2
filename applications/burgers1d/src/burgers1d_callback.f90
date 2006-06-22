@@ -247,7 +247,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getBoundaryValues (rdiscretisation,rbcRegion,ielement, &
+  SUBROUTINE getBoundaryValues (Icomponents,rdiscretisation,rbcRegion,ielement, &
                                 cinfoNeeded,iwhere,dwhere, p_rcollection, Dvalues)
   
   USE collection
@@ -262,6 +262,13 @@ CONTAINS
 !</description>
   
 !<input>
+  ! Component specifier.
+  ! For Dirichlet boundary: 
+  !   Icomponents(1) defines the number of the boundary component, the value
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   2=2nd solution component, e.g. Y-velocity,...)
+  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.

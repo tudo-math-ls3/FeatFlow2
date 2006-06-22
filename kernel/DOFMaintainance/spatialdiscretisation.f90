@@ -10,15 +10,22 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) spdiscr_initDiscr_simple
-!#     -> Initialise a discretisation structure. One element type for all
-!#        geometric elements, for test and trial functions.
+!# 1.) spdiscr_initBlockDiscr2D
+!#     -> Initialises a 2D block discretisation structure for the
+!#        discretisation of multiple equations
 !#
-!# 2.) spdiscr_releaseDiscr
-!#     -> Release a discretisation structure.
+!# 2.) spdiscr_releaseBlockDiscr
+!#     -> Releases a block discretisation structure from memory
 !#
-!# 3.) spdiscr_checkCubature
-!#     -> Checks if a cubature formula is compatible top an element
+!# 3.) spdiscr_initDiscr_simple
+!#     -> Initialise a scalar discretisation structure. One element type for
+!#        all geometric elements, for test and trial functions.
+!#
+!# 4.) spdiscr_releaseDiscr
+!#     -> Release a scalar discretisation structure.
+!#
+!# 5.) spdiscr_checkCubature
+!#     -> Checks if a cubature formula is compatible to an element
 !#        distribution.
 !#
 !# </purpose>
@@ -30,7 +37,7 @@ MODULE spatialdiscretisation
   USE storage
   USE triangulation
   USE boundary
-  USE scalarbc
+  USE boundarycondition
   USE transformation
   USE element
   
@@ -58,6 +65,10 @@ MODULE spatialdiscretisation
   ! Maximum number of different FE spaces mixed in one discretisation.
   INTEGER, PARAMETER :: SPDISC_MAXFESPACES = 8
 
+  ! Maximum number of solution components (i.e. scalar equation in the 
+  ! PDE) that are supported simultaneously.
+  INTEGER, PARAMETER :: SPDISC_MAXEQUATIONS = 16
+  
 !</constantblock>
 
 !</constants>
@@ -118,8 +129,9 @@ MODULE spatialdiscretisation
   !
   ! Remark: The structure realises only the discretisation of 'a scalar
   !  equation'. For multidimensional problems, there are multiple of
-  !  these structures, each one for one PDE. The structure is 'hung into'
-  !  the scalar matrix that discretises that equation.
+  !  these structures, each one for one PDE.  I this case, the structure
+  !  is part of the block discretisation structure below and
+  !  'hung into' each scalar matrix that discretises that equation.
   
   TYPE t_spatialDiscretisation
   
@@ -131,11 +143,8 @@ MODULE spatialdiscretisation
     TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
     
     ! Pointer to the underlying triangulation of the mesh (2D)
-    TYPE(t_triangulation), POINTER :: p_rtriangulation     => NULL()
+    TYPE(t_triangulation), POINTER   :: p_rtriangulation     => NULL()
 
-    ! Pointer to the analytical description of the boundary conditions
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions => NULL()
-    
     ! Complexity of the discretisation. One of the SPDISC_xxxx constants
     INTEGER                          :: ccomplexity            = SPDISC_UNIFORM
     
@@ -156,7 +165,7 @@ MODULE spatialdiscretisation
     ! Number of different FE spaces mixed in this discretisation.
     ! This is the number of elements occupied in RelementDisttribution.
     ! Must be <= SPDISC_MAXFESPACES!
-    INTEGER                     :: inumFESpaces           = 0
+    INTEGER                          :: inumFESpaces           = 0
     
     ! List of element distribution structures for every element type
     ! that is used in the discretisation.
@@ -164,84 +173,52 @@ MODULE spatialdiscretisation
     
   END TYPE
   
-  !</typeblock>
+!</typeblock>
+
+!<typeblock>
+  
+  ! The block discretisation realises the discretsation of the actual PDE,
+  ! where one large soution vector consists of one or multiple solution
+  ! components (e.g. $(u_x,u_y,p)^T$) on one mesh level. There is a
+  ! pointer to the underlying domain, the underlying triangulation
+  ! and a list of spatial discretisation structures, each responsible
+  ! for one solution component.
+  !
+  ! Additionally, the block discretisation structure contains information
+  ! about the boundary conditions, as boundary conditions affect always
+  ! the full PDE system.
+  
+  TYPE t_blockDiscretisation
+  
+    ! Dimension of the discretisation. 0=not initialised, 
+    ! 2=2D discretisation, 3=3D discretisation
+    INTEGER                          :: ndimension             = 0
+  
+    ! Pointer to the domain that is discretised
+    TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
+    
+    ! Pointer to the underlying triangulation of the mesh (2D)
+    TYPE(t_triangulation), POINTER   :: p_rtriangulation     => NULL()
+
+    ! Pointer to the analytical description of the boundary conditions
+    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions => NULL()
+
+    ! Number of solution components maintained by this structure.
+    INTEGER                             :: ncomponents
+    
+    ! A list of up to ncomponents scalar spatial discretisation structures.
+    ! Each structure corresponds to one solution component and defines
+    ! trial-/test-functions, complexity of the discretisation etc.
+    TYPE(t_spatialDiscretisation), &
+      DIMENSION(SPDISC_MAXEQUATIONS)    :: RspatialDiscretisation
+    
+  END TYPE
+  
+!</typeblock>
 
 !</types>
 
 CONTAINS
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE spdiscr_releaseDiscr (p_rspatialDiscr,bkeepStructure)
-  
-!<description>
-  ! This routine releases a discretisation structure from memory.
-!</description>
-
-!<input>
-  ! OPTIONAL: If set to TRUE, the structure p_rspatialDiscr is not released
-  ! from memory. If set to FALSE or not existent (the usual setting), the 
-  ! structure p_rspatialDiscr will also be removed from the heap after 
-  ! cleaning up.
-  LOGICAL, INTENT(IN), OPTIONAL :: bkeepStructure
-!</input>
-
-!<inputoutput>
-  ! The discretisation structure to be released.
-  TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscr
-!</inputoutput>
-  
-!</subroutine>
-
-  ! local variables
-  INTEGER :: i
-  TYPE(t_elementDistribution), POINTER :: p_relementDistr
-
-  IF (.NOT. ASSOCIATED(p_rspatialDiscr)) RETURN
-
-  ! Cut the connection to the other structures
-  NULLIFY(p_rspatialDiscr%p_rtriangulation)
-  NULLIFY(p_rspatialDiscr%p_rdomain)
-  NULLIFY(p_rspatialDiscr%p_rboundaryConditions)
-  
-  ! Release element identifier lists.
-  ! The handles may coincide, so release them only once!
-  IF (p_rspatialDiscr%h_ItestElements .NE. p_rspatialDiscr%h_ItrialElements) THEN
-    CALL storage_free (p_rspatialDiscr%h_ItestElements)
-  ELSE
-    p_rspatialDiscr%h_ItestElements = ST_NOHANDLE
-  END IF
-  CALL storage_free (p_rspatialDiscr%h_ItrialElements)
-  
-  ! Loop through all element distributions
-  DO i=1,p_rspatialDiscr%inumFESpaces
-  
-    p_relementDistr => p_rspatialDiscr%RelementDistribution(i)
-    
-    ! Release the element list there
-    CALL storage_free (p_relementDistr%h_IelementList)
-    
-    p_relementDistr%itrialElement = 0
-    p_relementDistr%itestElement  = 0
-    
-  END DO
-  
-  ! No FE-spaces in here anymore...
-  p_rspatialDiscr%inumFESpaces = 0
-  
-  ! Structure not initialised anymore
-  p_rspatialDiscr%ndimension = 0
-  
-  ! Deallocate the structure (if we are allowed to), finish.
-  IF (.NOT. PRESENT(bkeepStructure)) THEN
-    DEALLOCATE(p_rspatialDiscr)
-  ELSE
-    IF (.NOT. bkeepStructure) DEALLOCATE(p_rspatialDiscr)
-  END IF
-
-  END SUBROUTINE  
 
   ! ***************************************************************************
   
@@ -308,22 +285,127 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE spdiscr_initDiscr_simple (p_rspatialDiscr,ieltyp, ccubType,&
+  SUBROUTINE spdiscr_initBlockDiscr2D (rblockDiscr,ncomponents,&
                                        rtriangulation, rdomain, rboundaryConditions)
   
 !<description>
   
-  ! This routine initialises a discretisation structure for a uniform
-  ! discretisation with one element for all geometric element primitives, 
-  ! for trial as well as for test functions.
+  ! This routine initialises a block discretisation structure accept ncomponents
+  ! solution components. Pointers to the triangulation, domain and boundary
+  ! conditions are saved in the structure.
   !
-  ! If p_rspatialDiscr is NULL(), a new structure will be created. Otherwise,
-  ! the existing structure is recreated/updated.
+  ! The routine performs only basic initialisation. The caller must
+  ! separately initialise the the specific scalar discretisation structures 
+  ! of each solution component (as collected in the RspatialDiscretisation
+  ! array of the rblockDiscr structure).
   
 !</description>
 
 !<input>
   
+  ! The triangulation structure underlying to the discretisation.
+  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
+  
+  ! The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rdomain
+  
+  ! Number of solution components maintained by the block structure
+  INTEGER, INTENT(IN)                          :: ncomponents
+  
+  ! OPTIONAL: The analytical description of the boundary conditions.
+  ! Parameter can be ommitted if boundary conditions are not defined.
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
+  
+!</input>
+  
+!<output>
+  
+  ! The block discretisation structure to be initialised.
+  TYPE(t_blockDiscretisation), INTENT(OUT) :: rblockDiscr
+  
+!</output>
+  
+!</subroutine>
+
+  ! Initialise the variables of the structure for the simple discretisation
+  rblockDiscr%ndimension             = NDIM2D
+  rblockDiscr%p_rtriangulation       => rtriangulation
+  rblockDiscr%p_rdomain              => rdomain
+  IF (PRESENT(rboundaryConditions)) THEN
+    rblockDiscr%p_rboundaryConditions  => rboundaryConditions
+  ELSE
+    NULLIFY(rblockDiscr%p_rboundaryConditions)
+  END IF
+  rblockDiscr%ncomponents            = ncomponents
+
+  ! That's it.  
+  
+  END SUBROUTINE  
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_releaseBlockDiscr (rblockDiscr, breleaseSubstruc)
+  
+!<description>
+  ! This routine releases a block discretisation structure from memory.
+!</description>
+
+!<input>
+  ! Release substructures.
+  ! If set to TRUE, the memory of all scalar spatial discretisation structures
+  !   in rblockDiscr is also released from memory.
+  ! Is set to FALSE, only rblockDiscr is cleaned up, the substructures
+  !   are ignored.
+  LOGICAL, INTENT(IN) :: breleaseSubstruc
+!</input>
+
+!<inputoutput>
+  ! The block discretisation structures to be released.
+  TYPE(t_blockDiscretisation), INTENT(INOUT), TARGET :: rblockDiscr
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+
+  ! Cut the connection to the other structures
+  NULLIFY(rblockDiscr%p_rtriangulation)
+  NULLIFY(rblockDiscr%p_rdomain)
+  NULLIFY(rblockDiscr%p_rboundaryConditions)
+  
+  ! Release substructures?
+  IF (breleaseSubstruc) THEN
+    DO i=1,rblockDiscr%ncomponents
+      CALL spdiscr_releaseDiscr (rblockDiscr%RspatialDiscretisation(i))
+    END DO
+  END IF
+  rblockDiscr%ncomponents = 0
+
+  ! Structure not initialised anymore
+  rblockDiscr%ndimension = 0
+  
+  END SUBROUTINE  
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_initDiscr_simple (rspatialDiscr,ieltyp, ccubType,&
+                                       rtriangulation, rdomain, rboundaryConditions)
+  
+!<description>
+  ! This routine initialises a discretisation structure for a uniform
+  ! discretisation with one element for all geometric element primitives, 
+  ! for trial as well as for test functions.
+  !
+  ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
+  ! the existing structure is recreated/updated.
+!</description>
+
+!<input>
   ! The element type identifier that is to be used for all elements.
   INTEGER, INTENT(IN)                       :: ieltyp
   
@@ -339,14 +421,11 @@ CONTAINS
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
   TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
-  
 !</input>
   
 !<output>
-  
   ! The discretisation structure to be initialised.
-  TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscr
-  
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rspatialDiscr
 !</output>
   
 !</subroutine>
@@ -357,42 +436,35 @@ CONTAINS
   TYPE(t_elementDistribution), POINTER :: p_relementDistr
   
   ! Do we have a structure?
-  IF (.NOT. ASSOCIATED(p_rspatialDiscr)) THEN
-    ALLOCATE(p_rspatialDiscr)
-  ELSE
-    ! Release the old structure without removing it from the heap.
-    CALL spdiscr_releaseDiscr(p_rspatialDiscr,.TRUE.)
+  IF (rspatialDiscr%ndimension .NE. 0) THEN
+    ! Release the old structure.
+    CALL spdiscr_releaseDiscr(rspatialDiscr)
   END IF
 
   ! Initialise the variables of the structure for the simple discretisation
-  p_rspatialDiscr%ndimension             = NDIM2D
-  p_rspatialDiscr%p_rtriangulation       => rtriangulation
-  p_rspatialDiscr%p_rdomain              => rdomain
-  IF (PRESENT(rboundaryConditions)) THEN
-    p_rspatialDiscr%p_rboundaryConditions  => rboundaryConditions
-  ELSE
-    NULLIFY(p_rspatialDiscr%p_rboundaryConditions)
-  END IF
-  p_rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
+  rspatialDiscr%ndimension             = NDIM2D
+  rspatialDiscr%p_rtriangulation       => rtriangulation
+  rspatialDiscr%p_rdomain              => rdomain
+  rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   ! All trial elements are ieltyp:
   
   CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
-        rtriangulation%NEL, ST_INT, p_rspatialDiscr%h_ItrialElements,   &
+        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
         ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (p_rspatialDiscr%h_ItrialElements,p_Iarray)
+  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
   DO i=1,rtriangulation%NEL
     p_Iarray(i) = ieltyp
   END DO
   
   ! All test elements are ieltyp.
   ! Use the same handle for trial and test functions to save memory!
-  p_rspatialDiscr%bidenticalTrialAndTest = .TRUE.
-  p_rspatialDiscr%h_ItestElements = p_rspatialDiscr%h_ItrialElements  
+  rspatialDiscr%bidenticalTrialAndTest = .TRUE.
+  rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements  
   
   ! Initialise the first element distribution
-  p_rspatialDiscr%inumFESpaces           = 1
-  p_relementDistr => p_rspatialDiscr%RelementDistribution(1)
+  rspatialDiscr%inumFESpaces           = 1
+  p_relementDistr => rspatialDiscr%RelementDistribution(1)
   
   ! Initialise test and trial space for that block
   p_relementDistr%itrialElement = ieltyp
@@ -408,6 +480,8 @@ CONTAINS
   CALL spdiscr_checkCubature(ccubType,ieltyp)
 
   ! Initialise an 'identity' array containing the numbers of all elements.
+  ! This list defines the sequence how elements are processed, e.g. in the
+  ! assembly of matrices/vectors.
   CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
         rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &
         ST_NEWBLOCK_NOINIT)
@@ -418,4 +492,59 @@ CONTAINS
   
   END SUBROUTINE  
   
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_releaseDiscr (rspatialDiscr)
+  
+!<description>
+  ! This routine releases a discretisation structure from memory.
+!</description>
+
+!<inputoutput>
+  ! The discretisation structure to be released.
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rspatialDiscr
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  TYPE(t_elementDistribution), POINTER :: p_relementDistr
+
+  ! Cut the connection to the other structures
+  NULLIFY(rspatialDiscr%p_rtriangulation)
+  NULLIFY(rspatialDiscr%p_rdomain)
+  
+  ! Release element identifier lists.
+  ! The handles may coincide, so release them only once!
+  IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
+    CALL storage_free (rspatialDiscr%h_ItestElements)
+  ELSE
+    rspatialDiscr%h_ItestElements = ST_NOHANDLE
+  END IF
+  CALL storage_free (rspatialDiscr%h_ItrialElements)
+  
+  ! Loop through all element distributions
+  DO i=1,rspatialDiscr%inumFESpaces
+  
+    p_relementDistr => rspatialDiscr%RelementDistribution(i)
+    
+    ! Release the element list there
+    CALL storage_free (p_relementDistr%h_IelementList)
+    
+    p_relementDistr%itrialElement = 0
+    p_relementDistr%itestElement  = 0
+    
+  END DO
+  
+  ! No FE-spaces in here anymore...
+  rspatialDiscr%inumFESpaces = 0
+  
+  ! Structure not initialised anymore
+  rspatialDiscr%ndimension = 0
+  
+  END SUBROUTINE  
+
 END MODULE

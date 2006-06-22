@@ -18,14 +18,20 @@
 !#      -> Create a block vector by copying the structure of another block
 !#         vector
 !#
+!#  3.) lsysbl_createVecBlockByDiscr
+!#      -> Create a block vector using a block discretisation structure
+!#
 !#  3.) lsysbl_createVecBlockIndMat
 !#      -> Create a block vector according to a block matrix.
 !#
 !#  4.) lsysbl_createMatFromScalar
-!#      -> Creates a 1x1 block matrix from a scalar matrix
+!#      -> Create a 1x1 block matrix from a scalar matrix
 !#
 !#  5.) lsysbl_createVecFromScalar
-!#      -> Creates a 1-block vector from a scalar vector
+!#      -> Create a 1-block vector from a scalar vector
+!#
+!#  6.) lsysbl_createMatBlockByDiscr
+!#      -> Create an empty block matrix using a block discretisation structure
 !#
 !#  6.) lsysbl_enforceStructure
 !#      -> Enforces the structure of a given block vector in another
@@ -105,8 +111,10 @@ MODULE linearsystemblock
 
   USE fsystem
   USE storage
+  USE spatialdiscretisation
   USE linearsystemscalar
   USE linearalgebra
+  USE dofmapping
   
   IMPLICIT NONE
 
@@ -116,7 +124,7 @@ MODULE linearsystemblock
 
   ! Maximum number of blocks that is allowed in 'usual' block matrices,
   ! supported by the routines in this file.
-  INTEGER, PARAMETER :: LSYSBL_MAXBLOCKS = 16
+  INTEGER, PARAMETER :: LSYSBL_MAXBLOCKS = SPDISC_MAXEQUATIONS
   
 !</constantblock>
 
@@ -174,6 +182,29 @@ MODULE linearsystemblock
     ! Number of blocks allocated in RvectorBlock
     INTEGER                    :: nblocks = 0
     
+    ! Pointer to a block discretisation structure that specifies
+    ! the discretisation of all the subblocks in the vector.
+    ! Points to NULL(), if there is no underlying block discretisation
+    ! structure.
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation
+
+    ! A pointer to discretised boundary conditions for real boundary components.
+    ! These boundary conditions allow to couple multiple equations in the 
+    ! system and don't belong only to one single scalar component of the
+    ! solution.
+    ! If no system-wide boundary conditions are specified, p_rdiscreteBC
+    ! can be set to NULL().
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC => NULL()
+    
+    ! A pointer to discretised boundary conditions for fictitious boundary
+    ! components.
+    ! These boundary conditions allow to couple multiple equations in the 
+    ! system and don't belong only to one single scalar component of the
+    ! solution.
+    ! If no system-wide boundary conditions are specified, p_rdiscreteBCfict
+    ! can be set to NULL().
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
+    
     ! A 1D array with scalar vectors for all the blocks.
     ! The handle identifier inside of these blocks are set to h_Ddata.
     ! The iidxFirstEntry index pointer in each subblock is set according
@@ -204,23 +235,33 @@ MODULE linearsystemblock
     ! various details of the matrix. If it is =LSYSBS_MSPEC_GENERAL,
     ! the matrix is a usual matrix that needs no special handling.
     INTEGER(I32) :: imatrixSpec = LSYSBS_MSPEC_GENERAL
+    
+    ! Pointer to a block discretisation structure that specifies
+    ! the discretisation of all the subblocks in the vector.
+    ! Points to NULL(), if there is no underlying block discretisation
+    ! structure.
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation
 
+    ! A pointer to discretised boundary conditions for real boundary components.
+    ! These boundary conditions allow to couple multiple equations in the 
+    ! system and don't belong only to one single scalar component of the
+    ! solution.
+    ! If no system-wide boundary conditions are specified, p_rdiscreteBC
+    ! can be set to NULL().
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC => NULL()
+    
+    ! A pointer to discretised boundary conditions for fictitious boundary
+    ! components.
+    ! These boundary conditions allow to couple multiple equations in the 
+    ! system and don't belong only to one single scalar component of the
+    ! solution.
+    ! If no system-wide boundary conditions are specified, p_rdiscreteBCfict
+    ! can be set to NULL().
+    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
+    
     ! A 2D array with scalar matrices for all the blocks
     TYPE(t_matrixScalar), &
       DIMENSION(LSYSBL_MAXBLOCKS,LSYSBL_MAXBLOCKS) :: RmatrixBlock
-    
-  END TYPE
-  
-!</typeblock>
-
-!<typeblock>
-  
-  ! This structure encapsules a pointer to a block matrix.
-  
-  TYPE t_matrixBlockPointer
-    
-    ! A pointer to a block matrix
-    TYPE(t_matrixBlock), POINTER        :: ptr
     
   END TYPE
   
@@ -231,6 +272,7 @@ MODULE linearsystemblock
   INTERFACE lsysbl_createVectorBlock
     MODULE PROCEDURE lsysbl_createVecBlockDirect 
     MODULE PROCEDURE lsysbl_createVecBlockIndirect 
+    MODULE PROCEDURE lsysbl_createVecBlockByDiscr
   END INTERFACE
 
 CONTAINS
@@ -402,39 +444,38 @@ CONTAINS
     END IF
   END IF
   
+  ! Vector and matrix must share the same BC's.
+  b1 = ASSOCIATED(rvector%p_rdiscreteBC)
+  b2 = ASSOCIATED(rmatrix%p_rdiscreteBC)
+  b3 = ASSOCIATED(rvector%p_rdiscreteBC,rmatrix%p_rdiscreteBC)
+  IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
+      STOP
+    END IF
+  END IF
+
+  b1 = ASSOCIATED(rvector%p_rdiscreteBCfict)
+  b2 = ASSOCIATED(rmatrix%p_rdiscreteBCfict)
+  b3 = ASSOCIATED(rvector%p_rdiscreteBCfict,rmatrix%p_rdiscreteBCfict)
+  IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
+      STOP
+    END IF
+  END IF
+  
   ! All the subblocks must be the same size and must be sorted the same way.
   ! Each subvector corresponds to one 'column' in the block matrix.
   DO i=1,rvector%nblocks
     DO j=1,rvector%nblocks
       IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
-
-        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC)
-        b2 = ASSOCIATED(rmatrix%RmatrixBlock(j,i)%p_rdiscreteBC)
-        b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBC, &
-                        rmatrix%RmatrixBlock(j,i)%p_rdiscreteBC)
-        IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-          IF (PRESENT(bcompatible)) THEN
-            bcompatible = .FALSE.
-            RETURN
-          ELSE
-            PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
-            STOP
-          END IF
-        END IF
-
-        b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict)
-        b2 = ASSOCIATED(rmatrix%RmatrixBlock(j,i)%p_rdiscreteBCfict)
-        b3 = ASSOCIATED(rvector%RvectorBlock(i)%p_rdiscreteBCfict, &
-                        rmatrix%RmatrixBlock(j,i)%p_rdiscreteBCfict)
-        IF ((b1 .OR. b2) .AND. .NOT. (b1 .AND. b2 .AND. b3)) THEN
-          IF (PRESENT(bcompatible)) THEN
-            bcompatible = .FALSE.
-            RETURN
-          ELSE
-            PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
-            STOP
-          END IF
-        END IF
 
         b1 = ASSOCIATED(rvector%RvectorBlock(i)%p_rspatialDiscretisation)
         b2 = ASSOCIATED(rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation)
@@ -597,6 +638,8 @@ CONTAINS
   ! of integers containing the length of the individual blocks.
   ! Memory is allocated on the heap to hold vectors of the size
   ! according to Isize.
+  !
+  ! Remark: There is no block discretisation structure attached to the vector!
 !</description>
 
 !<input>
@@ -765,6 +808,129 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE lsysbl_createVecBlockByDiscr (rblockDiscretisation,rx,bclear,&
+                                           cdataType)
+  
+!<description>
+  ! Initialises the vector block structure rx based on a block discretisation
+  ! structure rblockDiscretisation. 
+  !
+  ! Memory is allocated on the heap for rx. The size of the subvectors in rx
+  ! is calculated according to the number of DOF's indicated by the
+  ! spatial discretisation structures in rblockDiscretisation.
+!</description>
+  
+!<input>
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for all the subblocks in rx.
+  TYPE(t_blockDiscretisation),INTENT(IN), TARGET :: rblockDiscretisation
+  
+  ! Optional: If set to YES, the vector will be filled with zero initially.
+  ! Otherwise the content of rx is undefined.
+  LOGICAL, INTENT(IN), OPTIONAL             :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
+  INTEGER, INTENT(IN),OPTIONAL              :: cdataType
+!</input>
+
+!<output>
+  ! Destination structure. Memory is allocated for each of the blocks.
+  ! A pointer to rblockDiscretisation is saved to rx.
+  TYPE(t_vectorBlock),INTENT(OUT) :: rx
+!</output>
+  
+!</subroutine>
+
+  INTEGER :: cdata,i,inum
+  INTEGER(PREC_VECIDX), DIMENSION(SPDISC_MAXEQUATIONS) :: Isize
+  
+  cdata = ST_DOUBLE
+  IF (PRESENT(cdataType)) cdata = cdataType
+  
+  ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
+  ! of all the subblocks.
+  DO i=1,rblockDiscretisation%ncomponents
+    Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
+  END DO
+  inum = MIN(SPDISC_MAXEQUATIONS,i)
+  
+  ! Create a new vector with that block structure
+  CALL lsysbl_createVecBlockDirect (rx, Isize(1:inum), bclear, cdataType)
+  
+  ! Initialise further data of the block vector
+  rx%p_rblockDiscretisation => rblockDiscretisation
+  
+  ! Initialise further data in the subblocks
+  DO i=1,inum
+    rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+      rblockDiscretisation%RspatialDiscretisation(i)
+  END DO
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_createMatBlockByDiscr (rblockDiscretisation,rmatrix)
+  
+!<description>
+  ! Initialises the matrix block structure rmatrix based on a block 
+  ! discretisation structure rblockDiscretisation. 
+  !
+  ! The basic variables of the structure are initialised (number of blocks,
+  ! pointer to the block discretisation). The submatrices of the matrix
+  ! are not initialised; this must be done by the application afterwards.
+!</description>
+  
+!<input>
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for all the subblocks in rx.
+  TYPE(t_blockDiscretisation),INTENT(IN), TARGET :: rblockDiscretisation
+!</input>
+
+!<output>
+  ! Destination structure. Memory is allocated for each of the blocks.
+  ! A pointer to rblockDiscretisation is saved to rx.
+  TYPE(t_matrixBlock),INTENT(OUT) :: rmatrix
+!</output>
+  
+!</subroutine>
+
+  INTEGER :: i,inum
+  INTEGER(PREC_VECIDX) :: NEQ
+  INTEGER(PREC_VECIDX), DIMENSION(SPDISC_MAXEQUATIONS) :: Isize
+  
+  ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
+  ! of all the subblocks.
+  DO i=1,rblockDiscretisation%ncomponents
+    Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
+  END DO
+  inum = MIN(SPDISC_MAXEQUATIONS,i)
+  NEQ = SUM(Isize(1:inum))
+  
+  ! The 'INTENT(OUT)' already initialised the structure with the most common
+  ! values. What is still missing, we now initialise:
+  
+  ! Initialise a pointer to the block discretisation
+  rmatrix%p_rblockDiscretisation => rblockDiscretisation
+  
+  ! Initialise NEQ/NCOLS by default for a quadrativ matrix
+  rmatrix%NEQ = NEQ
+  rmatrix%NCOLS = NEQ
+  rmatrix%ndiagBlocks = rblockDiscretisation%ncomponents
+  
+  IF (rmatrix%ndiagBlocks .EQ. 1) THEN
+    rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
+  END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE lsysbl_createVecBlockIndMat (rtemplateMat,rx, bclear, cdataType)
   
 !<description>
@@ -836,11 +1002,6 @@ CONTAINS
         rx%RvectorBlock(i)%p_rspatialDiscretisation => &
           rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation
           
-        ! Give the vector the discrete boundary conditions
-        rx%RvectorBlock(i)%p_rdiscreteBC => rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBC
-        rx%RvectorBlock(i)%p_rdiscreteBCfict => &
-          rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBCfict
-          
         ! Give the vector the same sorting strategy as the matrix, so that
         ! the matrix and vector get compatible. Otherwise, things
         ! like matrix vector multiplication won't work...
@@ -877,6 +1038,12 @@ CONTAINS
   rx%NEQ = rtemplateMat%NEQ
   rx%nblocks = rtemplateMat%ndiagBlocks
   rx%cdataType = cdata
+
+  ! Transfer the boundary conditions and block discretisation pointers
+  ! from the matrix to the vector.
+  rx%p_rblockDiscretisation => rtemplateMat%p_rblockDiscretisation
+  rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
+  rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
   
   ! Warning: don't reformulate the following check into one IF command
   ! as this might give problems with some compilers!
@@ -922,15 +1089,13 @@ CONTAINS
     ! Spatial discretisation
     rx%RvectorBlock(i)%p_rspatialDiscretisation => &
       rtemplate%RvectorBlock(i)%p_rspatialDiscretisation 
-
-    ! Discrete boundary conditions
-    rx%RvectorBlock(i)%p_rdiscreteBC => &
-      rtemplate%RvectorBlock(i)%p_rdiscreteBC
-
-    ! Discrete fictitious boundary conditions
-    rx%RvectorBlock(i)%p_rdiscreteBCfict => &
-      rtemplate%RvectorBlock(i)%p_rdiscreteBCfict
   END DO
+  
+  ! Transfer the boundary conditions and block discretisation pointers
+  ! from the template to the vector.
+  rx%p_rblockDiscretisation => rtemplate%p_rblockDiscretisation
+  rx%p_rdiscreteBC     => rtemplate%p_rdiscreteBC
+  rx%p_rdiscreteBCfict => rtemplate%p_rdiscreteBCfict
   
   END SUBROUTINE
   
@@ -985,20 +1150,17 @@ CONTAINS
         ! Spatial discretisation
         rx%RvectorBlock(i)%p_rspatialDiscretisation => &
           rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation 
-
-        ! Discrete boundary conditions
-        rx%RvectorBlock(i)%p_rdiscreteBC => &
-          rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBC
-
-        ! Discrete fictitious boundary conditions
-        rx%RvectorBlock(i)%p_rdiscreteBCfict => &
-          rtemplateMat%RmatrixBlock(j,i)%p_rdiscreteBCfict
-          
         EXIT
       END IF
     END DO
   END DO
   
+  ! Transfer the boundary conditions and block discretisation pointers
+  ! from the matrix to the vector.
+  rx%p_rblockDiscretisation => rtemplateMat%p_rblockDiscretisation
+  rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
+  rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
+
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1044,6 +1206,10 @@ CONTAINS
   rx%nblocks = 0
   rx%iidxFirstEntry = 1
   
+  NULLIFY(rx%p_rblockDiscretisation)
+  NULLIFY(rx%p_rdiscreteBC)
+  NULLIFY(rx%p_rdiscreteBCfict)
+  
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -1081,6 +1247,10 @@ CONTAINS
   ! Clean up the other variables, finish
   rmatrix%NEQ = 0
   rmatrix%ndiagBlocks = 0
+  
+  NULLIFY(rmatrix%p_rblockDiscretisation)
+  NULLIFY(rmatrix%p_rdiscreteBC)
+  NULLIFY(rmatrix%p_rdiscreteBCfict)
   
   END SUBROUTINE
 
@@ -1623,7 +1793,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_createMatFromScalar (rscalarMat,rmatrix)
+  SUBROUTINE lsysbl_createMatFromScalar (rscalarMat,rmatrix,&
+                                         rblockDiscretisation)
   
 !<description>
   ! This routine creates a 1x1 block matrix rmatrix from a scalar matrix
@@ -1637,6 +1808,10 @@ CONTAINS
 !<input>
   ! The scalar matrix which should provide the data
   TYPE(t_matrixScalar), INTENT(IN) :: rscalarMat
+  
+  ! OPTIONAL: A block discretisation structure.
+  ! A pointer to this will be saved to the matrix.
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
 !</input>
 
 !<output>
@@ -1658,6 +1833,14 @@ CONTAINS
     ! The matrix is a copy of another one. Note this!
     rmatrix%RmatrixBlock(1,1)%imatrixSpec = &
       IOR(rmatrix%RmatrixBlock(1,1)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+      
+    ! Save a pointer to the discretisation structure if that one
+    ! is specified.
+    IF (PRESENT(rblockDiscretisation)) THEN
+      rmatrix%p_rblockDiscretisation => rblockDiscretisation
+    ELSE
+      NULLIFY(rmatrix%p_rblockDiscretisation)
+    END IF
     
   END SUBROUTINE
 
@@ -1665,7 +1848,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_createVecFromScalar (rscalarVec,rvector)
+  SUBROUTINE lsysbl_createVecFromScalar (rscalarVec,rvector,&
+                                         rblockDiscretisation)
   
 !<description>
   ! This routine creates a 1-block vector rvector from a scalar vector
@@ -1678,6 +1862,10 @@ CONTAINS
 !<input>
   ! The scalar vector which should provide the data
   TYPE(t_vectorScalar), INTENT(IN) :: rscalarVec
+
+  ! OPTIONAL: A block discretisation structure.
+  ! A pointer to this will be saved to the matrix.
+  TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
 !</input>
 
 !<output>
@@ -1706,6 +1894,14 @@ CONTAINS
     ! The data of the vector actually belongs to another one - to the
     ! scalar one. Note this in the structure.
     rvector%bisCopy = .TRUE.
+
+    ! Save a pointer to the discretisation structure if that one
+    ! is specified.
+    IF (PRESENT(rblockDiscretisation)) THEN
+      rvector%p_rblockDiscretisation => rblockDiscretisation
+    ELSE
+      NULLIFY(rvector%p_rblockDiscretisation)
+    END IF
     
   END SUBROUTINE
 
@@ -1824,8 +2020,8 @@ CONTAINS
     END DO
   END DO outer
   
-  ! i is the new number of diagonal blocks
-  rmatrix%ndiagBlocks = i
+  ! The maximum of i and j is the new number of diagonal blocks
+  rmatrix%ndiagBlocks = MAX(i,j)
   
   ! Calculate the new NEQ and NCOLS. Go through the 'columns' of the 
   ! block matrix.

@@ -23,7 +23,7 @@
 MODULE discretebc
 
   USE fsystem
-  USE scalarbc
+  USE boundarycondition
   USE dofmapping
   
   IMPLICIT NONE
@@ -74,6 +74,10 @@ MODULE discretebc
   ! in the PDE that must be treated that way.
   
   TYPE t_discreteBCDirichlet
+    
+    ! The component of the equation, this discrete BC is specified for
+    ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
+    INTEGER                            :: icomponent        = 0
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
     INTEGER(PREC_DOFIDX)               :: nDOF              = 0

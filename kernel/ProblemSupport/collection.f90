@@ -18,6 +18,8 @@
 !# - geometry information structures
 !# - linear solver configurations
 !# - a parameter list
+!# - a scalar discretisation structure
+!# - a block discretisation structure
 !# - another collection
 !#
 !# The list supports 'level tags' and 'section tags" to group values:
@@ -275,47 +277,50 @@ MODULE collection
   ! Double precision REAL value 
   INTEGER, PARAMETER :: COLLCT_REAL      = 4
 
-  ! Discretisation structure
+  ! Scalar discretisation structure
   INTEGER, PARAMETER :: COLLCT_DISCR     = 5
 
+  ! Block discretisation structure
+  INTEGER, PARAMETER :: COLLCT_BLDISCR   = 5
+
   ! Triangulation structure
-  INTEGER, PARAMETER :: COLLCT_TRIA      = 6
+  INTEGER, PARAMETER :: COLLCT_TRIA      = 7
 
   ! A scalar vector
-  INTEGER, PARAMETER :: COLLCT_SCAVECTOR = 7
+  INTEGER, PARAMETER :: COLLCT_SCAVECTOR = 8
 
   ! A scalar matrix
-  INTEGER, PARAMETER :: COLLCT_SCAMATRIX = 8
+  INTEGER, PARAMETER :: COLLCT_SCAMATRIX = 9
 
   ! A block vector
-  INTEGER, PARAMETER :: COLLCT_BLKVECTOR = 9
+  INTEGER, PARAMETER :: COLLCT_BLKVECTOR = 10
 
   ! A block matrix
-  INTEGER, PARAMETER :: COLLCT_BLKMATRIX = 10
+  INTEGER, PARAMETER :: COLLCT_BLKMATRIX = 11
   
   ! A parameter structure
-  INTEGER, PARAMETER :: COLLCT_PARAMETERS = 11
+  INTEGER, PARAMETER :: COLLCT_PARAMETERS = 12
 
   ! A linear solver structure
-  INTEGER, PARAMETER :: COLLCT_LINSOL     = 12
+  INTEGER, PARAMETER :: COLLCT_LINSOL     = 13
 
   ! Discretised-boundary-conditions structure
-  INTEGER, PARAMETER :: COLLCT_DISCRBC    = 13
+  INTEGER, PARAMETER :: COLLCT_DISCRBC    = 14
 
   ! A domain
-  INTEGER, PARAMETER :: COLLCT_BOUNDARY   = 14
+  INTEGER, PARAMETER :: COLLCT_BOUNDARY   = 15
 
   ! Scalar analytic boundary conditions
-  INTEGER, PARAMETER :: COLLCT_BOUNDARYCOND = 15
+  INTEGER, PARAMETER :: COLLCT_BOUNDARYCOND = 16
 
   ! Scalar interlevel projection structure
-  INTEGER, PARAMETER :: COLLCT_INTERLVPRJSC = 16
+  INTEGER, PARAMETER :: COLLCT_INTERLVPRJSC = 17
   
   ! Block interlevel projection structure
-  INTEGER, PARAMETER :: COLLCT_INTERLVPRJ   = 17
+  INTEGER, PARAMETER :: COLLCT_INTERLVPRJ   = 18
 
   ! The collection structure itself
-  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 18
+  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 19
 
 !</constantblock>
 
@@ -352,6 +357,9 @@ MODULE collection
 
     ! Pointer to a spatial discretisation structure
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation => NULL()
+
+    ! Pointer to a block discretisation structure
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation => NULL()
 
     ! Pointer to a triangulation structure, 2D
     TYPE(t_triangulation), POINTER :: p_rtriangulation => NULL()
@@ -2146,6 +2154,87 @@ CONTAINS
   
 !<function>
 
+  FUNCTION collct_getvalue_bldiscr (rcollection, sparameter, &
+                                    ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a block discretisation 
+  ! structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_blockDiscretisation), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(IN) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Return whether or not that thing exists
+  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
+  
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    ! Throw an error if the type is wrong. Otherwise, get the value.
+    IF (p_rvalue%itype .NE. COLLCT_BLDISCR) THEN
+      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
+      STOP
+    END IF
+    
+    value => p_rvalue%p_rblockDiscretisation
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
   FUNCTION collct_getvalue_tria (rcollection, sparameter, &
                                   ilevel, ssectionName, bexists) RESULT(value)
 !<description>
@@ -2935,7 +3024,7 @@ CONTAINS
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
     ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_DISCRBC) THEN
+    IF (p_rvalue%itype .NE. COLLCT_PARAMETERS) THEN
       PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
       STOP
     END IF
@@ -3614,6 +3703,91 @@ CONTAINS
   
   ! Set the value
   p_rvalue%p_rdiscretisation => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_bldiscr (rcollection, sparameter, value, badd, &
+                                      ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Add the value if necessary
+  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
+    IF (badd) THEN
+      IF (PRESENT(ssectionName)) THEN
+        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
+                              COLLCT_BLDISCR, ilv, p_rvalue)
+      ELSE
+        CALL collct_addvalue (rcollection, '', sparameter, &
+                              COLLCT_BLDISCR, ilv, p_rvalue)
+      END IF
+    ELSE
+      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
+      STOP
+    END IF
+  END IF
+  
+  ! Set the value
+  p_rvalue%p_rblockDiscretisation => value
 
   END SUBROUTINE
 

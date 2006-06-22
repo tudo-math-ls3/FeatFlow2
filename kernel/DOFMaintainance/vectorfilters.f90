@@ -10,7 +10,7 @@
 !#
 !# The discrete boundary conditions realised in the module 'bcassembly' are
 !# one type of filter. While being created in the module 'bcassembly', 
-!# this module now provides the functionalitý to impose discrete boundary 
+!# this module now provides the functionality to impose discrete boundary 
 !# conditions into a vector.
 !# Also other filters can be found here, e.g. normalisation ov vectors, etc.
 !#
@@ -19,14 +19,6 @@
 !# module 'filtersupport', which realises such a filter chain.
 !#
 !# The following routines can be found here:
-!#
-!# 1.) vecfil_discreteBCSca
-!#     -> Apply the 'discrete boundary conditions for solution vectors' filter
-!#        onto a given (scalar) vector. 
-!#
-!# 2.) vecfil_discreteBCDefSca
-!#     -> Apply the 'discrete boundary conditions for defect vectors' filter 
-!#        onto a given (scalar) vector. 
 !#
 !# 3.) vecfil_normaliseToL20Sca
 !#     -> Normalise a scalar vector to be in the space $L^2_0$.
@@ -61,150 +53,6 @@ CONTAINS
 ! Scalar vector filters
 ! *****************************************************************************
 
-  ! ***************************************************************************
-  ! Implementation of discrete boundary conditions into scalar vectors,
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE vecfil_discreteBCSca (rx,RdiscreteBC)
-
-!<description>
-  
-  ! This routine serves as a wrapper for implementing discrete boundary
-  ! conditions into a (scalar) 'solution' vector. Depending on the type of 
-  ! boundary  conditions, the correct 'imposing' routine will be called that 
-  ! imposes the actual boundary conditions.
-  !
-  ! RdiscreteBC is an optional argument describing the discrete boundary
-  ! conditions. If not given, the boudnary conditions that are associated
-  ! to the vector rx are imposed into rx.
-  
-!</description>
-  
-!<inputoutput>
-
-  ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorScalar), INTENT(INOUT),TARGET :: rx
-  
-  ! OPTIONAL: The boundary conditions that are to be imposed into the vector.
-  ! If not given, the discrete boundary conditions associated to the vector
-  ! rx (in rx%p_RdiscreteBC) are imposed to rx.
-  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
-  
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER :: ibc, ibctype
-  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
-  
-  ! Which BC to impose?
-  IF (PRESENT(RdiscreteBC)) THEN
-    p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-  ELSE
-    ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
-    IF (.NOT. ASSOCIATED(rx%p_rdiscreteBC)) RETURN
-
-    p_RdiscreteBC => rx%p_RdiscreteBC%p_RdiscBCList
-  END IF
-  
-  ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
-  
-  ! Is there data in rx?
-  IF (rx%h_Ddata .EQ. ST_NOHANDLE) RETURN
-  
-  ! Loop over the BC's that are to be imposed
-  
-  DO ibc = 1,SIZE(p_RdiscreteBC)
-    
-    ! Choose the right boundary condition implementation routine
-    ! and call it for the vector.
-  
-    ibctype = p_RdiscreteBC(ibc)%itype
-
-    SELECT CASE(ibctype) 
-    CASE(DISCBC_TPDIRICHLET)
-      CALL vecfil_imposeDirichletBC (rx, p_RdiscreteBC(ibc)%rdirichletBCs)
-    END SELECT 
-    
-  END DO
-      
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE vecfil_discreteBCDefSca (rx,RdiscreteBC)
-
-!<description>
-  ! This routine implements discrete boundary conditions into a scalar
-  ! defect vector. Depending on the type of boundary 
-  ! conditions, the correct 'imposing' routine will be called that imposes 
-  ! the actual boundary conditions into each block.
-  !
-  ! RdiscreteBC is an optional argument describing the discrete boundary
-  ! conditions. If not given, the boudnary conditions that are associated
-  ! to the vector rx are imposed into rx.
-!</description>
-  
-!<inputoutput>
-
-  ! The block vector where the boundary conditions should be imposed.
-  TYPE(t_vectorScalar), INTENT(INOUT),TARGET :: rx
-  
-  ! OPTIONAL: The boundary conditions that are to be imposed into the vector.
-  ! If not given, the discrete boundary conditions associated to the vector
-  ! rx (in rx%p_RdiscreteBC) are imposed to rx.
-  TYPE(t_discreteBCEntry), DIMENSION(:), OPTIONAL, INTENT(IN), TARGET :: RdiscreteBC
-  
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER :: ibc, ibctype
-  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
-  
-  ! Which BC to impose?
-  IF (PRESENT(RdiscreteBC)) THEN
-    p_RdiscreteBC => RdiscreteBC
-  ELSE
-    ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
-    IF (.NOT. ASSOCIATED(rx%p_rdiscreteBC)) RETURN
-
-    p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList
-  END IF
-  
-  ! Maybe that there are no BC to be imposed - e.g. in pure Neumann problems!
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
-  
-  ! Is there data in rx?
-  IF (rx%h_Ddata .EQ. ST_NOHANDLE) RETURN
-  
-  ! Loop over the BC's that are to be imposed
-  
-  DO ibc = 1,SIZE(p_RdiscreteBC)
-    
-    ! Choose the right boundary condition implementation routine
-    ! and call it for the vector.
-  
-    ibctype = p_RdiscreteBC(ibc)%itype
-
-    SELECT CASE(ibctype) 
-    CASE(DISCBC_TPDIRICHLET)
-      CALL vecfil_imposeDirichletDefectBC (rx, p_RdiscreteBC(ibc)%rdirichletBCs)
-    END SELECT 
-    
-  END DO
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
 !<subroutine>
 
   SUBROUTINE vecfil_imposeDirichletBC (rx,rdbcStructure)
@@ -214,10 +62,8 @@ CONTAINS
 !</description>
 
 !<input>
-  
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
   TYPE(t_discreteBCDirichlet), INTENT(IN), TARGET  :: rdbcStructure
-  
 !</input>
 
 !<inputoutput>
@@ -295,19 +141,15 @@ CONTAINS
   
   ! Implements discrete Dirichlet BC's into a scalar defect vector.
 
-  !<input>
-  
+!<input>
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
   TYPE(t_discreteBCDirichlet), INTENT(IN),TARGET  :: rdbcStructure
-  
-  !</input>
+!</input>
 
-  !<inputoutput>
-
+!<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
   TYPE(t_vectorScalar), INTENT(INOUT), TARGET :: rx
-  
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -378,10 +220,8 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-
   ! The vector which is to be normalised.
   TYPE(t_vectorScalar), INTENT(INOUT),TARGET :: rx
-  
 !</inputoutput>
 
 !</subroutine>
@@ -458,79 +298,132 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteBC (rx)
+  SUBROUTINE vecfil_discreteBC (rx,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to solution'
-  ! filter. This filter imposes the discrete boundary conditions which are
-  ! associated to the vector rx (with rx%p_discreteBC) to this (block) vector.
+  ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
+  ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
+  ! which are  associated to the vector rx (with rx%p_discreteBC) to this 
+  ! (block) vector.
 !</description>
   
-!<inputoutput>
+!<input>
+  ! OPTIONAL: boundary conditions to impose into the vector.
+  ! If not specified, the default boundary conditions associated to the
+  ! vector rx are imposed to the matrix.
+  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+!</input>
 
+!<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
   TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
-  
 !</inputoutput>
 
 !</subroutine>
 
-  INTEGER :: iblock
-  
-  ! Loop over the blocks
-  
-  DO iblock = 1,rx%nblocks
+  INTEGER :: iblock,i
+  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
 
-    ! Is there a vector in block iblock of rx?
-    
-    IF (rx%RvectorBlock(iblock)%h_Ddata .NE. ST_NOHANDLE) THEN
-    
-      ! Impose the discrete BC into the scalar subvector.
-      CALL vecfil_discreteBCSca (rx%RvectorBlock(iblock))
-    
-    END IF
-    
+  ! Grab the boundary condition entry list from the matrix. This
+  ! is a list of all discretised boundary conditions in the system.
+  p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+  
+  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+  
+  ! Now loop through all entries in this list:
+  DO i=1,SIZE(p_RdiscreteBC)
+  
+    ! What for BC's do we have here?
+    SELECT CASE (p_RdiscreteBC(i)%itype)
+    CASE (DISCBC_TPUNDEFINED)
+      ! Do-nothing
+      
+    CASE (DISCBC_TPDIRICHLET)
+      ! Dirichlet boundary conditions.
+      ! On which component are they defined? The component specifies
+      ! the row of the block matrix that is to be altered.
+      iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+      
+      ! Implement the Dirichlet boundary conditions into that component
+      ! of the vector.
+      CALL vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
+                                     p_RdiscreteBC(i)%rdirichletBCs)
+      
+    CASE DEFAULT
+      PRINT *,'vecfil_discreteBCDefect: unknown boundary condition: ',&
+              p_RdiscreteBC(i)%itype
+      STOP
+      
+    END SELECT
   END DO
-    
+  
   END SUBROUTINE
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE vecfil_discreteBCDefect (rx)
+  SUBROUTINE vecfil_discreteBCDefect (rx,rdiscreteBC)
 
 !<description>
   ! This routine realises the 'impose discrete boundary conditions to defect'
-  ! filter. This filter imposes the discrete boundary conditions which are
-  ! associated to the vector rx (with rx%p_discreteBC) to this (block) vector.
+  ! filter. This filter imposes the discrete boundary conditions rdiscreteBC
+  ! (if specified) or (if rdiscreteBC is not specified) the boundary conditions
+  ! which are  associated to the defect vector rx (with rx%p_discreteBC) to 
+  ! this (block) vector.
 !</description>
   
-!<inputoutput>
+!<input>
+  ! OPTIONAL: boundary conditions to impose into the vector.
+  ! If not specified, the default boundary conditions associated to the
+  ! vector rx are imposed to the matrix.
+  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+!</input>
 
+!<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
   TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
-  
 !</inputoutput>
 
 !</subroutine>
 
-  INTEGER :: iblock
-  
-  ! Loop over the blocks
-  
-  DO iblock = 1,rx%nblocks
+  INTEGER :: iblock,i
+  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
 
-    ! Is there a vector in block iblock of rx?
-    IF (rx%RvectorBlock(iblock)%h_Ddata .NE. ST_NOHANDLE) THEN
-    
-      ! Impose the discrete BC into the scalar subvector.
-      CALL vecfil_discreteBCDefSca (rx%RvectorBlock(iblock))
-
-    END IF
-    
+  ! Grab the boundary condition entry list from the matrix. This
+  ! is a list of all discretised boundary conditions in the system.
+  p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+  
+  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+  
+  ! Now loop through all entries in this list:
+  DO i=1,SIZE(p_RdiscreteBC)
+  
+    ! What for BC's do we have here?
+    SELECT CASE (p_RdiscreteBC(i)%itype)
+    CASE (DISCBC_TPUNDEFINED)
+      ! Do-nothing
+      
+    CASE (DISCBC_TPDIRICHLET)
+      ! Dirichlet boundary conditions.
+      ! On which component are they defined? The component specifies
+      ! the row of the block matrix that is to be altered.
+      iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+      
+      ! Implement the Dirichlet boundary conditions into that component
+      ! of the vector.
+      CALL vecfil_imposeDirichletDefectBC (rx%RvectorBlock(iblock),&
+                                           p_RdiscreteBC(i)%rdirichletBCs)
+      
+    CASE DEFAULT
+      PRINT *,'vecfil_discreteBCDefect: unknown boundary condition: ',&
+              p_RdiscreteBC(i)%itype
+      STOP
+      
+    END SELECT
   END DO
-    
+  
   END SUBROUTINE
   
   ! ***************************************************************************

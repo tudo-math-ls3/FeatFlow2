@@ -33,6 +33,7 @@
 MODULE bcassembly
 
   USE fsystem
+  USE boundarycondition
   USE discretebc
   USE collection
   USE triangulation
@@ -46,7 +47,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bcasm_discretiseBC (rspatialDiscretisation,p_rdiscreteBC,bforceRebuild, &
+  SUBROUTINE bcasm_discretiseBC (rblockDiscretisation,p_rdiscreteBC,bforceRebuild, &
                                  fgetBoundaryValues,rcollection)
   
 !<description>
@@ -60,9 +61,9 @@ CONTAINS
 
 !<input>
   
-  ! The discretisation structure of the underlying discretisation. The boundary
+  ! The block discretisation structure of the underlying PDE. The boundary
   ! conditions inside of this structure are discretised.
-  TYPE(t_spatialDiscretisation), INTENT(IN) :: rspatialDiscretisation
+  TYPE(t_blockDiscretisation), INTENT(IN) :: rblockDiscretisation
   
   ! Can be set to TRUE to force a complete rebuild of the rdiscreteBC structure.
   ! Normally, the structure is completely set up only in the first call
@@ -89,10 +90,8 @@ CONTAINS
 !<inputoutput>
   ! A discretised version of the analytic boundary conditions.
   ! This is a pointer to a t_discreteBC structures, 
-  ! representing the boundary discretised in a discretisation-
-  ! dependent way.
-  ! If this pointer points to NULL(), a complete new structure is
-  ! set up.
+  ! representing the boundary discretised in a discretisation- dependent way.
+  ! If this pointer points to NULL(), a complete new structure is set up.
   TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
 !</inputoutput>
 
@@ -109,7 +108,7 @@ CONTAINS
   TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
   
   ! For quicker access:
-  p_rboundaryConditions => rspatialDiscretisation%p_rboundaryConditions
+  p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
   
   ! We replace the optional parameter by NULL() if it does not exist
   IF (PRESENT(rcollection)) THEN
@@ -202,7 +201,7 @@ CONTAINS
       SELECT CASE (p_rbcRegion%ctype)
       
       CASE (BC_DIRICHLET)
-        CALL bcasm_discrBCDirichlet (rspatialDiscretisation, &
+        CALL bcasm_discrBCDirichlet (rblockDiscretisation, &
                    p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
                    fgetBoundaryValues,p_rcoll)
       END SELECT
@@ -628,8 +627,9 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bcasm_discrBCDirichlet (rspatialDiscretisation, &
-                                     rbcRegion, rdiscreteBC,fgetBoundaryValues,p_rcollection)
+  SUBROUTINE bcasm_discrBCDirichlet (rblockDiscretisation, &
+                                     rbcRegion, rdiscreteBC,&
+                                     fgetBoundaryValues,p_rcollection)
   
 !<description>
   ! Creates a discrete version of Dirichlet boundary conditions.
@@ -641,7 +641,7 @@ CONTAINS
 !<input>
   ! The discretisation structure of the underlying discretisation. The boundary
   ! conditions inside of this structure are discretised.
-  TYPE(t_spatialDiscretisation), INTENT(IN) :: rspatialDiscretisation
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscretisation
 
   ! The BC region which is to be discrised
   TYPE(t_bcRegion), INTENT(IN) :: rbcRegion
@@ -665,10 +665,12 @@ CONTAINS
 
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
-  INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j
+  INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j,icomponent
   INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
+  INTEGER, DIMENSION(1) :: Icomponents
   TYPE(t_discreteBCDirichlet),POINTER         :: p_rdirichletBCs
-  TYPE(t_triangulation), POINTER            :: p_rtriangulation
+  TYPE(t_triangulation), POINTER              :: p_rtriangulation
+  TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary,p_IverticesAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IedgesAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_ItrialElements
@@ -681,27 +683,35 @@ CONTAINS
   
   REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
   
+  ! Which component is to be discretised?
+  icomponent = rbcRegion%Iequations(1)
+  p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(icomponent)
+
   ! For easier access:
-  p_rtriangulation => rspatialDiscretisation%p_rtriangulation
+  p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
   CALL storage_getbase_int(p_rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
-  CALL storage_getbase_int(rspatialDiscretisation%h_ItrialElements,p_ItrialElements)
   CALL storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,p_DedgeParameterValue)
   CALL storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
   CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
   CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
   NVT = p_rtriangulation%NVT
+
+  CALL storage_getbase_int(p_rspatialDiscretisation%h_ItrialElements,p_ItrialElements)
   
   ! We have Dirichlet boundary conditions
   rdiscreteBC%itype = DISCBC_TPDIRICHLET
   
   ! Connect to the boundary condition structure
-  rdiscreteBC%p_rboundaryConditions => rspatialDiscretisation%p_rboundaryConditions
+  rdiscreteBC%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
   
   ! Fill the structure for discrete Dirichlet BC's in the
   ! t_discreteBCEntry structure
   p_rdirichletBCs => rdiscreteBC%rdirichletBCs
+  
+  p_rdirichletBCs%icomponent = icomponent
+  Icomponents(1) = icomponent
   
   ! We have to deal with all DOF's on the boundary. This is highly element
   ! dependent and therefore a little bit tricky :(
@@ -712,10 +722,10 @@ CONTAINS
   ! to give us the minimum and maximum index of the vertices and edges on the
   ! bondary that belong to this boundary segment.
   
-  CALL bcasm_getVertInBCregion (p_rtriangulation,rspatialDiscretisation%p_rdomain, &
+  CALL bcasm_getVertInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rdomain, &
                                 rbcRegion%rboundaryRegion, &
                                 IminVertex,ImaxVertex,icount)
-  CALL bcasm_getEdgesInBCregion (p_rtriangulation,rspatialDiscretisation%p_rdomain, &
+  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rdomain, &
                                  rbcRegion%rboundaryRegion, &
                                  IminEdge,ImaxEdge,icount2)
                                  
@@ -746,12 +756,12 @@ CONTAINS
   ! Ask the DOF-mapping routine to get us those DOF's belonging to elements
   ! on the boundary.
   IF (icount .GE. 1) THEN
-    CALL dof_locGlobMapping_mult(rspatialDiscretisation, &
+    CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
               p_IelementsAtBoundary(Iminidx(1):Imaxidx(1)), .FALSE., Idofs)
   END IF
             
   IF (icount .GE. 2) THEN
-    CALL dof_locGlobMapping_mult(rspatialDiscretisation, &
+    CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
               p_IelementsAtBoundary(Iminidx(2):Imaxidx(2)), .FALSE., &
               Idofs( :, Imaxidx(1)-Iminidx(1)+1+1 : ))
   END IF
@@ -804,9 +814,10 @@ CONTAINS
         ! Either the edge or an adjacent vertex is on the boundary.
         ! Get the value at the corner point and accept it as
         ! Dirichlet value.
-        CALL fgetBoundaryValues (rspatialDiscretisation,rbcRegion,ielement, &
-                                DISCBC_NEEDFUNC,ipoint1,p_DvertexParameterValue(I), &
-                                p_rcollection, Dvalues)
+        CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                 rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                 ipoint1,p_DvertexParameterValue(I), &
+                                 p_rcollection, Dvalues)
                                  
         ! Dvalues(1) gives us the function value in the point. Save it
         DdofValue(1,I-Iminidx(ipart)+1) = Dvalues(1)
@@ -818,9 +829,10 @@ CONTAINS
 
         ! Left point inside? -> Corresponding DOF must be computed
         IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
-          CALL fgetBoundaryValues (rspatialDiscretisation,rbcRegion,ielement, &
-                                  DISCBC_NEEDFUNC,ipoint1,p_DvertexParameterValue(I), &
-                                  p_rcollection, Dvalues)
+          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                   rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                   ipoint1,p_DvertexParameterValue(I), &
+                                   p_rcollection, Dvalues)
                                   
           ! Save the computed function value
           DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 
@@ -844,9 +856,10 @@ CONTAINS
 
         ! Edge inside? -> Calculate integral mean value over the edge
         IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
-          CALL fgetBoundaryValues (rspatialDiscretisation,rbcRegion,ielement, &
-                                  DISCBC_NEEDINTMEAN,ipoint1,p_DvertexParameterValue(I), &
-                                  p_rcollection, Dvalues)
+          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                   rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                   ipoint1,p_DvertexParameterValue(I), &
+                                   p_rcollection, Dvalues)
                                   
           ! Save the computed function value
           DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 

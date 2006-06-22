@@ -275,13 +275,6 @@ MODULE linearsystemscalar
     ! just an array, not belonging to any discretisation.
     TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscretisation => NULL()
     
-    ! A pointer to discretised boundary conditions for real boundary components.
-    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC => NULL()
-    
-    ! A pointer to discretised boundary conditions for fictitious boundary
-    ! components
-    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
-    
   END TYPE
   
 !</typeblock>
@@ -375,15 +368,6 @@ MODULE linearsystemscalar
     
     ! A pointer to the spatial discretisation
     TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscretisation => NULL()
-    
-    ! A pointer to discretised boundary conditions for real boundary components.
-    ! For every discrete BC that is valid for this scalar vector, there
-    ! is an entry in the following list.
-    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC     => NULL()
-    
-    ! A pointer to discretised boundary conditions for fictitious boundary
-    ! components
-    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
     
   END TYPE
   
@@ -1414,8 +1398,6 @@ CONTAINS
   rvector%isortStrategy = 0
   rvector%h_IsortPermutation = ST_NOHANDLE
   rvector%p_rspatialDiscretisation => NULL()
-  rvector%p_rdiscreteBC => NULL()
-  rvector%p_rdiscreteBCfict => NULL()
    
   END SUBROUTINE
   
@@ -1480,8 +1462,6 @@ CONTAINS
   rmatrix%isortStrategy = 0
   rmatrix%h_IsortPermutation = ST_NOHANDLE
   rmatrix%p_rspatialDiscretisation => NULL()
-  rmatrix%p_rdiscreteBC     => NULL()
-  rmatrix%p_rdiscreteBCfict => NULL()
 
   END SUBROUTINE
 
@@ -1697,7 +1677,6 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  REAL(DP) :: aux
   INTEGER(I32) :: i, j
 
   ! loop through each row
@@ -4129,6 +4108,13 @@ CONTAINS
   ! matrix in rtransposedMatrix.
   ! itransFlag decides (if specified) how the creation of the
   ! transposed matrix is to be performed.
+  !
+  ! Remark: Building a transposed matrix involves switching the trial- and
+  !  test-functions of the underlying discretisation. This routine does
+  !  *not* perform this switching! If the matrices base on a 
+  !  discretisation, the application has to set up the corresponding
+  !  discretisation structure manually and to attach it to the transposed
+  !  matrix!
 !</description>
 
 !<input>
@@ -4198,7 +4184,7 @@ CONTAINS
     
       ! Only change the 'transposed' flag in imatrixSpec
       rtransposedMatrix%imatrixSpec = &
-        IXOR(rtransposedMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)
+        IEOR(rtransposedMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)
       
       ! Exchange NEQ and NCOLS as these always describe the actual matrix.
       ntemp = rtransposedMatrix%NEQ
@@ -4256,8 +4242,6 @@ CONTAINS
         STOP
       END IF
     END IF
-    
-!    syssc_sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
     
     ! Now what should we do...
     SELECT CASE (itrans)

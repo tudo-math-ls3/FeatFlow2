@@ -68,8 +68,9 @@ CONTAINS
     ! For compatibility to old F77: an array accepting a set of triangulations
     INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
     
-    ! An object specifying the discretisation (trial/test functions,...)
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    ! An object specifying the discretisation.
+    ! This contains also information about trial/test functions,...
+    TYPE(t_blockDiscretisation) :: rdiscretisation
     
     ! A bilinear and linear form describing the analytic problem to solve
     TYPE(t_bilinearForm) :: rform
@@ -150,19 +151,25 @@ CONTAINS
     NULLIFY(p_rtriangulation)
     CALL tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
     
-    ! Now we can start to turn to our real problem. At first, set up
-    ! a simple discretisation structure suing the boundary and
-    ! triangulation information. Specify the element and cubature rule
-    ! to use during the assembly of matrices.
-    !
-    ! Set p_rdiscretisation to NULL() to create a new structure on the heap.
-    NULLIFY(p_rdiscretisation)
-    CALL spdiscr_initDiscr_simple (p_rdiscretisation, &
-                                   EL_E011,CUB_TRZ,p_rtriangulation, p_rboundary)
+    ! Now we can start to initialise the discretisation. At first, set up
+    ! a block discretisation structure that specifies the blocks in the
+    ! solution vector. In this simple problem, we only have one block.
+    CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
+                                   p_rtriangulation, p_rboundary)
+    
+    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+    ! structures for every component of the solution vector.
+    ! Initialise the first element of the list to specify the element
+    ! and cubature rule for this solution component:
+    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+                                   EL_E011,CUB_G2X2,p_rtriangulation, p_rboundary)
                                    
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
-    CALL bilf_createMatrixStructure (p_rdiscretisation,LSYSSC_MATRIX9,rmatrix)
+    ! We create a scalar matrix, based on the discretisation structure
+    ! for our one and only solution component.
+    CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscretisation(1),&
+                                     LSYSSC_MATRIX9,rmatrix)
     
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
@@ -195,7 +202,19 @@ CONTAINS
     rlinform%Idescriptors(1) = DER_FUNC
     
     ! ... and then discretise the RHS to get a discrete version of it.
-    CALL linf_buildVectorScalar (p_rdiscretisation,rlinform,.TRUE.,rrhs,coeff_RHS)
+    ! Again we simply create a scalar vector based on the one and only
+    ! discretisation structure.
+    ! This scalar vector will later be used as the one and only first
+    ! component in a block vector.
+    CALL linf_buildVectorScalar (rdiscretisation%RspatialDiscretisation(1),&
+                                 rlinform,.TRUE.,rrhs,coeff_RHS)
+    
+    ! The linear solver only works for block matrices/vectors - but above,
+    ! we created scalar ones. So the next step is to make a 1x1 block
+    ! system from the matrices/vectors above which the linear solver
+    ! understands.
+    CALL lsysbl_createMatFromScalar (rmatrix,rmatrixBlock,rdiscretisation)
+    CALL lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
     
     ! Now we have the raw problem. What is missing is the definition of the boudary
     ! conditions.
@@ -209,7 +228,7 @@ CONTAINS
     !
     ! Set p_rboundaryConditions to create a new structure on the heap.
     NULLIFY (p_rboundaryConditions)
-    CALL scbc_initScalarBC (p_rboundaryConditions,p_rboundary)
+    CALL bcond_initBC (p_rboundaryConditions,p_rboundary)
     
     ! We 'know' already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for inforcing
@@ -223,34 +242,36 @@ CONTAINS
     
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following routine adds a new 'boundary condition region'
-    ! for the first segment to the boundary condition structure. 
-    ! The region will be set up as 'Dirichlet boundary' with parameter values
-    ! from the previous boundary region.
+    ! for the first segment to the boundary condition structure.
+    ! The region will be set up as 'Dirichlet boundary'.
+    ! We specify icomponent='1' to indicate that we set up the
+    ! Dirichlet BC's for the first (here: one and only) component in the solution
+    ! vector.
     ! The routine also returns the created object in p_rbcRegion so that we can
     ! modify it - but accept it as it is, so we can ignore that.
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
                              
     ! Now to the edge 2 of boundary component 1 the domain. We use the
     ! same two routines to add the boundary condition to p_rboundaryConditions.
     CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
                              
     ! Edge 3 of boundary component 1.
     CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
     
     ! Edge 4 of boundary component 1. That's it.
     CALL boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
-    CALL scbc_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,p_rboundaryConditions, &
-                             rboundaryRegion,p_rbcRegion)
+    CALL bcond_newDirichletBConRealBD (p_rboundaryConditions,1,&
+                                       rboundaryRegion,p_rbcRegion)
                              
-    ! The boundary conditions are set up, but still the discretisation
+    ! The boundary conditions are set up, but still the block discretisation
     ! does not know about it. So inform the discretisation which
     ! analytic boundary conditions to use:
-    p_rdiscretisation%p_rboundaryConditions => p_rboundaryConditions
+    rdiscretisation%p_rboundaryConditions => p_rboundaryConditions
 
     ! For the discrete problem, we need a discrete version of the above
     ! boundary conditions. So we have to discretise them.
@@ -260,22 +281,15 @@ CONTAINS
     ! otherwise, the routine tries to update the boundary conditions
     ! in p_rdiscreteBC!
     NULLIFY(p_rdiscreteBC)
-    CALL bcasm_discretiseBC (p_rdiscretisation,p_rdiscreteBC,.FALSE., &
+    CALL bcasm_discretiseBC (rdiscretisation,p_rdiscreteBC,.FALSE., &
                              getBoundaryValues)
                              
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
-    rmatrix%p_rdiscreteBC => p_rdiscreteBC
-    rrhs%p_rdiscreteBC => p_rdiscreteBC
+    rmatrixBlock%p_rdiscreteBC => p_rdiscreteBC
+    rrhsBlock%p_rdiscreteBC => p_rdiscreteBC
                              
-    ! The linear solver only works for block matrices/vectors - but above,
-    ! we created scalar ones. So the next step is to make a 1x1 block
-    ! system from the matrices/vectors above which the linear solver
-    ! understands.
-    CALL lsysbl_createMatFromScalar (rmatrix,rmatrixBlock)
-    CALL lsysbl_createVecFromScalar (rrhs,rrhsBlock)
-    
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
     ! temporary data. Create them using the RHS as template.
@@ -309,6 +323,7 @@ CONTAINS
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
+    NULLIFY(p_RfilterChain)
     NULLIFY(p_rpreconditioner)
     CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     
@@ -383,10 +398,11 @@ CONTAINS
     CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
 
     ! ...and also the corresponding analytic description.
-    CALL scbc_doneScalarBC (p_rboundaryConditions)
+    CALL bcond_doneBC (p_rboundaryConditions)
     
-    ! Release the discretisation structure
-    CALL spdiscr_releaseDiscr(p_rdiscretisation)
+    ! Release the discretisation structure and all spatial discretisation
+    ! structures in it.
+    CALL spdiscr_releaseBlockDiscr(rdiscretisation, .TRUE.)
     
     ! Release the triangulation. First the FEAT 2.0 stuff...
     CALL tria_done (p_rtriangulation)
