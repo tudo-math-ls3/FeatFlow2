@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectType="typeStaticLibrary" ProjectCreator="Intel Fortran" Keyword="Static Library" Version="8.10" ProjectIdGuid="{62BE3315-8E77-43C6-A799-E97FC8109EC5}">
+	<Platforms>
+		<Platform Name="Win32"/></Platforms>
+	<Configurations>
+		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
+		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" AdditionalIncludeDirectories="../include" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true" CompileOnly="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<Filter Name="BasicGeometry">
+		<File RelativePath="..\..\..\kernel\BasicGeometry\basicgeometry.f90"/>
+		<File RelativePath="..\..\..\kernel\BasicGeometry\geometryaux.f90"/></Filter>
+		<Filter Name="Boundary">
+		<File RelativePath="..\..\..\kernel\Boundary\boundary.f90"/></Filter>
+		<Filter Name="ContinuousFormulation">
+		<File RelativePath="..\..\..\kernel\ContinuousFormulation\boundarycondition.f90"/>
+		<File RelativePath="..\..\..\kernel\ContinuousFormulation\scalarpde.f90"/></Filter>
+		<Filter Name="DOFMaintainance">
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\bcassembly.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\bilinearformevaluation.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\discretebc.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\dofmapping.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\domainintegration.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\feevaluation.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\intf_coefficientMatrixSc.inc"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\intf_coefficientVectorSc.inc"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\linearformevaluation.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\matrixfilters.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\multilevelprojection.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\sortstrategy.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\spatialdiscretisation.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\vectorfilters.f90"/></Filter>
+		<Filter Name="ElementCubature">
+		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\derivatives.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\element.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\ElementCubature\transformation.f90"/></Filter>
+		<Filter Name="LinearAlgebra">
+		<File RelativePath="..\..\..\kernel\LinearAlgebra\linearalgebra.f90"/></Filter>
+		<Filter Name="LinearSolver">
+		<File RelativePath="..\..\..\kernel\LinearSolver\coarsegridcorrection.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSolver\filtersupport.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolver.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolverautoinitialise.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSolver\vanca.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
+		<Filter Name="LinearSystem">
+		<File RelativePath="..\..\..\kernel\LinearSystem\linearsystemblock.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\LinearSystem\linearsystemscalar.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\LinearSystem\matrixmodification.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSystem\matrixtranspose.f90"/></Filter>
+		<Filter Name="NonlinearSolver">
+		<File RelativePath="..\..\..\kernel\NonlinearSolver\intf_nlsolcallback.inc"/>
+		<File RelativePath="..\..\..\kernel\NonlinearSolver\nonlinearsolver.f90"/></Filter>
+		<Filter Name="Postprocessing">
+		<File RelativePath="..\..\..\kernel\Postprocessing\matrixio.f90"/></Filter>
+		<Filter Name="ProblemSupport">
+		<File RelativePath="..\..\..\kernel\ProblemSupport\collection.f90"/></Filter>
+		<Filter Name="Projection">
+		<File RelativePath="..\..\..\kernel\Projection\spdiscprojection.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
+		<Filter Name="System">
+		<File RelativePath="..\..\..\kernel\System\afc_util.f90"/>
+		<File RelativePath="..\..\..\kernel\System\error.f90"/>
+		<File RelativePath="..\..\..\kernel\System\fsystem.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\System\genoutput.f90"/>
+		<File RelativePath="..\..\..\kernel\System\io.f90"/>
+		<File RelativePath="..\..\..\kernel\System\paramlist.f90"/>
+		<File RelativePath="..\..\..\kernel\System\storage.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
+		<Filter Name="Triangulation">
+		<File RelativePath="..\..\..\kernel\Triangulation\triangulation.f90"/></Filter></Filter>
+		<Filter Name="Header Files" Filter="fi;fd">
+		<File RelativePath="..\cmem.inc"/>
+		<File RelativePath="..\include\stria.inc"/></Filter>
+		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/></Files>
+	<Globals/></VisualStudioProject>
