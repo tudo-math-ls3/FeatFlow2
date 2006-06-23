@@ -160,11 +160,15 @@ MODULE spatialdiscretisation
     
     ! Handle to trial function identifier list: For every geometric element, 
     ! an element identifier about which element to use.
+    ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
+    ! handle is ST_NOHANDLE as all elements are of the same type.
     INTEGER                          :: h_ItrialElements       = ST_NOHANDLE
 
     ! Handle to test function identifier list: For every geometric element, 
     ! an element identifier about which element to use.
     ! Coincides with p_DtrialElements if bidenticalTrialAndTest=true!
+    ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
+    ! handle is ST_NOHANDLE as all elements are of the same type.
     INTEGER                          :: h_ItestElements        = ST_NOHANDLE
     
     ! Number of different FE spaces mixed in this discretisation.
@@ -454,13 +458,14 @@ CONTAINS
   
   ! All trial elements are ieltyp:
   
-  CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
-        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
-        ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
-  DO i=1,rtriangulation%NEL
-    p_Iarray(i) = ieltyp
-  END DO
+!  CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
+!        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
+!        ST_NEWBLOCK_NOINIT)
+!  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+!  DO i=1,rtriangulation%NEL
+!    p_Iarray(i) = ieltyp
+!  END DO
+  rspatialDiscr%h_ItrialElements = ST_NOHANDLE
   
   ! All test elements are ieltyp.
   ! Use the same handle for trial and test functions to save memory!
@@ -562,13 +567,14 @@ CONTAINS
   rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   ! All trial elements are ieltypTrial:
-  CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItrialElements', &
-        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
-        ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
-  DO i=1,rtriangulation%NEL
-    p_Iarray(i) = ieltypTrial
-  END DO
+!  CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItrialElements', &
+!        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
+!        ST_NEWBLOCK_NOINIT)
+!  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+!  DO i=1,rtriangulation%NEL
+!    p_Iarray(i) = ieltypTrial
+!  END DO
+  rspatialDiscr%h_ItrialElements = ST_NOHANDLE
 
   rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
   
@@ -652,13 +658,15 @@ CONTAINS
   NULLIFY(rspatialDiscr%p_rdomain)
   
   ! Release element identifier lists.
-  ! The handles may coincide, so release them only once!
-  IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
-    CALL storage_free (rspatialDiscr%h_ItestElements)
-  ELSE
-    rspatialDiscr%h_ItestElements = ST_NOHANDLE
+  IF (rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    ! The handles may coincide, so release them only once!
+    IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
+      CALL storage_free (rspatialDiscr%h_ItestElements)
+    ELSE
+      rspatialDiscr%h_ItestElements = ST_NOHANDLE
+    END IF
+    CALL storage_free (rspatialDiscr%h_ItrialElements)
   END IF
-  CALL storage_free (rspatialDiscr%h_ItrialElements)
   
   ! Loop through all element distributions
   DO i=1,rspatialDiscr%inumFESpaces

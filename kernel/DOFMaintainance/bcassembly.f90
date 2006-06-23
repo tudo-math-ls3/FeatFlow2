@@ -698,7 +698,13 @@ CONTAINS
   CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
   NVT = p_rtriangulation%NVT
 
-  CALL storage_getbase_int(p_rspatialDiscretisation%h_ItrialElements,p_ItrialElements)
+  IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    ! Every elemen can be of different type.
+    CALL storage_getbase_int(p_rspatialDiscretisation%h_ItrialElements,p_ItrialElements)
+  ELSE
+    ! All elements are of the samne type. Get it in advance.
+    ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+  END IF
   
   ! We have Dirichlet boundary conditions
   rdiscreteBC%itype = DISCBC_TPDIRICHLET
@@ -804,9 +810,13 @@ CONTAINS
       
       ! Now, ilocalEdge is the 'local' number of the edge
       ! corresponding to the 'global' edge number iedge
+      !
+      ! Get the element type in case we don't have a uniform triangulation.
+      ! Otherwise, ieltype was set to the trial element type above.
+      IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+        ieltype = p_ItrialElements(p_IelementsAtBoundary(I))
+      END IF
       
-      ! Element type?
-      ieltype = p_ItrialElements(p_IelementsAtBoundary(I))
       SELECT CASE (ieltype)
       
       CASE (EL_P0,EL_Q0)
@@ -955,4 +965,3 @@ CONTAINS
   
 
 END MODULE
-  

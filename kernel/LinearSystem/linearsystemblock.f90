@@ -1829,6 +1829,7 @@ CONTAINS
 
     ! Fill the rmatrix structure with data.
     rmatrix%NEQ         = rscalarMat%NEQ
+    rmatrix%NCOLS       = rscalarMat%NCOLS
     rmatrix%ndiagBlocks = 1
     rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
     

@@ -542,7 +542,7 @@ CONTAINS
   
   IF (isize .EQ. 0) THEN
     PRINT *,'storage_new1D Warning: isize=0'
-    ihandle = 0
+    ihandle = ST_NOHANDLE
     RETURN
   END IF
   
