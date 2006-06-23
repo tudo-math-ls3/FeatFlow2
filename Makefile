@@ -109,26 +109,26 @@ report:
 
 clean: clean_libs clean_apps
 clean_apps:
-	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) clean ); )
+	@$(foreach i, $(APPS), (echo "Cleaning up "$(i) ; cd applications/$i && $(MAKE) clean ); )
 clean_libs: 
-	@$(foreach i, $(BUILDLIB), (cd libraries/$i && $(MAKE) clean ); )
+	@$(foreach i, $(BUILDLIB), (echo "Cleaning up "$(i) ; cd libraries/$i && $(MAKE) clean ); )
 
 purge: purge_libs purge_apps
 purge_apps:
-	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) purge ); )
+	@$(foreach i, $(APPS), (echo "Cleaning up "$(i) ; cd applications/$i && $(MAKE) purge ); )
 purge_libs:
-	@$(foreach i, $(LIBS), (cd libraries/$i && $(MAKE) purge ); )
+	@$(foreach i, $(LIBS), (echo "Cleaning up "$(i) ; cd libraries/$i && $(MAKE) purge ); )
 
 purge_all:
-	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) purge_all ); )
-	@$(foreach i, $(LIBS), (cd libraries/$i && $(MAKE) purge_all ); )
+	@$(foreach i, $(APPS), (echo "Cleaning up "$(i) ; cd applications/$i && $(MAKE) purge_all ); )
+	@$(foreach i, $(LIBS), (echo "Cleaning up "$(i) ; cd libraries/$i && $(MAKE) purge_all ); )
 	-rm -f -r object/libraries/lib-*
 
 debug: debug_libs debug_apps
 debug_apps:
-	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) debug ); )
+	@$(foreach i, $(APPS), (echo "Cleaning up "$(i) ; cd applications/$i && $(MAKE) debug ); )
 debug_libs:
-	@$(foreach i, $(BUILDLIB), (cd libraries/$i && $(MAKE) debug ); )
+	@$(foreach i, $(BUILDLIB), (echo "Cleaning up "$(i) ; cd libraries/$i && $(MAKE) debug ); )
 
 loc: all
 	(bin/loc)

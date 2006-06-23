@@ -398,10 +398,10 @@ LAPACKLIB =
 endif
 
 ifeq ($(ID),pc-pentium4-linux-ifc)
-CC=/usr/local/icc/bin/icc
-FC=/usr/local/ifc/bin/ifort
-AR=/usr/local/ifc/bin/xiar
-ARC=/usr/local/icc/bin/xiar
+CC=icc
+FC=ifort
+AR=xiar
+ARC=xiar
 OPTFLAGS  = -O3 -xN -ipo
 FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIR)
 CCFLAGS   = -cm -fpe0 -vec_report0
