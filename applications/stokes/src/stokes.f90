@@ -4,33 +4,16 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This program is a simple test program for discretising the equation
+!# This program is a simple test program for discretising the Stokes equation
 !#
-!#              - Laplace(u) = f
+!#              $$- \nu Laplace(u) + \Nabla p = f $$
+!#              $$ \Nable \cdot p = 0$$
 !#
-!# on a 2D domain for a scalar function u.
+!# on a 2D domain for a 2D function $u=(u_1,u_2)$.
 !#
-!# There are five examples provided how to solve this problem:
+!# A linear block system with 3 solution components is set up,
+!# discretised and solved with multigrid.
 !#
-!# The first example (module stokes_method1) discretises and solves this 
-!# equation in a direct way, just listing all commands necessary for 
-!# initialisation, discretisation, solving and cleanup.
-!#
-!# The second example (module stokes_method2) separates the different stages
-!# of the solution process into different subroutines, which communicate
-!# via a collection-structure.
-!#
-!# The third example (module stokes_method3) separates the different stages
-!# of the solution process into different subroutines like example 2.
-!# The communication is done using a problem-related structure. For the
-!# communication with callback routines during the assembly, a
-!# collection structure is set up.
-!#
-!# The fourth example (module stokes_method4) demonstrates the use of a
-!# BiCGStab-solver with ILU(0) preconditioner.
-!#
-!# The fith example (module stokes_method5) demonstrates the use of a
-!# Multigrid solver with with ILU(0) smoother and BiCGStab-coarse grid solver.
 !# </purpose>
 !##############################################################################
 

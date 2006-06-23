@@ -4,8 +4,8 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstation program how to solve a simple Laplace
-!# problem with constant coefficients on a simple domain.
+!# This module is a demonstation program how to solve a Stokes
+!# problem on a simple domain.
 !#
 !# The routine splits up the tasks of reading the domain, creating 
 !# triangulations, discretisation, solving, postprocessing and creanup into

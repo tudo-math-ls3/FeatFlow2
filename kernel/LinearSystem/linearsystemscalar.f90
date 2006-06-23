@@ -199,6 +199,11 @@ MODULE linearsystemscalar
   ! Allocate memory for the matrix structure and content in the same size 
   ! as the original matrix.
   INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYALL   = 7
+  
+  ! Copy the basic matrix information but don't copy handles.
+  ! Set all handles of dynamic information to ST_NOHANDLE, so the matrix
+  ! 'looks like' the old but has no dynamic data associated.
+  INTEGER, PARAMETER :: LSYSSC_DUP_TEMPLATE   = 8
                                                
 !</constantblock>
 
@@ -1254,6 +1259,8 @@ CONTAINS
   !   the source matrix, but don't initialise the structure.
   ! LSYSSC_DUP_EMPTYALL   : Allocate memory for the same structure and content
   !   as the source matrix, but don't initialise the structure/content.
+  ! LSYSSC_DUP_TEMPLATE   : Copy the whole matrix structure but reset all handles
+  !   of dynamic information to ST_NOHANDLE, so to create an empty matrix.
   INTEGER, INTENT(IN)                            :: idupflag
   
 !</input>
@@ -1316,6 +1323,12 @@ CONTAINS
     bdupStructure = .FALSE.
     bemptyContent = .TRUE.
     bemptyStruc = .TRUE.
+
+  CASE (LSYSSC_DUP_TEMPLATE)
+    bdupContent = .FALSE.
+    bdupStructure = .FALSE.
+    bemptyContent = .FALSE.
+    bemptyStruc = .FALSE.
     
   CASE DEFAULT
     PRINT *,'lsyssc_duplicateMatrix: invalid idubflag'
@@ -1370,6 +1383,14 @@ CONTAINS
            NEQ, ST_INT, &
            rdestMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
     END IF
+    
+    IF (idupflag .EQ. LSYSSC_DUP_TEMPLATE) THEN
+      ! Clear all handles
+      rdestMatrix%h_Da = ST_NOHANDLE
+      rdestMatrix%h_Kcol = ST_NOHANDLE
+      rdestMatrix%h_Kld = ST_NOHANDLE
+      rdestMatrix%h_Kdiagonal = ST_NOHANDLE
+    END IF
 
   CASE (LSYSSC_MATRIX7)
     bhasContent = rsourceMatrix%h_Da .NE. ST_NOHANDLE
@@ -1413,6 +1434,14 @@ CONTAINS
            rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
     END IF
 
+    IF (idupflag .EQ. LSYSSC_DUP_TEMPLATE) THEN
+      ! Clear all handles
+      rdestMatrix%h_Da = ST_NOHANDLE
+      rdestMatrix%h_Kcol = ST_NOHANDLE
+      rdestMatrix%h_Kld = ST_NOHANDLE
+      rdestMatrix%h_Kdiagonal = ST_NOHANDLE
+    END IF
+
   CASE DEFAULT
     PRINT *,'lsyssc_duplicateMatrix: Unsupported Matrix format'
     STOP
@@ -1422,9 +1451,11 @@ CONTAINS
   SELECT CASE (idupflag)
   CASE (LSYSSC_DUP_ASIS)
     ! Nothing to do
+    
   CASE (LSYSSC_DUP_NONE)
     ! We share both, structure and content, with the original matrix
     rdestMatrix%imatrixSpec = IOR(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+    
   CASE (LSYSSC_DUP_CONTENT)
     IF (bhasContent) THEN
       rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
@@ -1435,18 +1466,23 @@ CONTAINS
       rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
                                   NOT(LSYSSC_MSPEC_ISCOPY))
     END IF
+    
   CASE (LSYSSC_DUP_STRUCTURE)
     ! Don't touch the content - maybe there's older content which the application
     ! wants to reuse...
     rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_ISCOPY)),&
                               LSYSSC_MSPEC_CONTENTISCOPY)
+                              
   CASE (LSYSSC_DUP_STRNOCONT)
     rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
-  CASE (LSYSSC_DUP_ALL,LSYSSC_DUP_EMPTYSTRUC,LSYSSC_DUP_EMPTYALL)
+                                
+  CASE (LSYSSC_DUP_ALL,LSYSSC_DUP_EMPTYSTRUC,LSYSSC_DUP_EMPTYALL,&
+        LSYSSC_DUP_TEMPLATE)
     rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
                                 NOT(LSYSSC_MSPEC_ISCOPY))
+                                
   CASE DEFAULT
     PRINT *,'lsyssc_duplicateMatrix: invalid idubflag'
     STOP
@@ -4027,8 +4063,9 @@ CONTAINS
     ! Column structure of the source matrix
     INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Icol
     
-    ! Row structure of the source matrix
-    INTEGER(PREC_MATIDX), DIMENSION(nrow+1), INTENT(IN) :: Irow
+    ! Row structure of the source matrix.
+    ! DIMENSION(nrow+1)
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Irow
   !</input>
     
   !<output>
@@ -4040,19 +4077,27 @@ CONTAINS
     ! The array must be of the same size as Icol!
     INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: IcolDest
 
-    ! Row structure of the destination matrix
-    INTEGER(PREC_MATIDX), DIMENSION(ncol+1), INTENT(OUT) :: IrowDest
+    ! Row structure of the destination matrix.
+    ! DIMENSION(ncol+1)
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(OUT) :: IrowDest
   !</output>
     
   !<inputoutput>
-    ! Auxiliary array of size ncol
-    INTEGER(PREC_VECIDX), DIMENSION(ncol), INTENT(INOUT) :: Itmp
+    ! Auxiliary array.
+    ! DIMENSION(ncol)
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Itmp
   !</inputoutput>
   
 !</subroutine>
     
     !local variables
     INTEGER(I32) :: i, j, isize, icolumn, ncolumn
+    
+    IF ((SIZE(Itmp) .NE. ncol) .OR. (SIZE(IrowDest) .NE. ncol+1) .OR. &
+        (SIZE(Irow) .NE. nrow+1)) THEN
+      PRINT *,'lsyssc_transpMat79double: array parameters have wrong size!'
+      STOP
+    END IF
     
     ! determine the number of matrix entries
     isize = Irow(nrow+1)-1
@@ -4338,17 +4383,11 @@ CONTAINS
 
     ELSE
       ! Otherwise, we must create a new matrix that accepts the transposed
-      ! data. Either we have to allocate memory for the structure or for both,
-      ! structure and data.
-      SELECT CASE (itrans)
-      CASE (LSYSSC_TR_STRUCTURE)
-        ! Create a new matrix structure based on our old. Don't initialise it.
-        CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_EMPTYSTRUC)
-      CASE (LSYSSC_TR_ALL)
-        ! Create a new matrix based on our old. DOn't initialise it.
-        CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_EMPTYALL)
-      END SELECT
-
+      ! data. 
+      ! Copy the matrix structure, reset all handles, so we have a 'template'
+      ! matrix with the same data as the original one but without dynamic
+      ! information attached.
+      CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_TEMPLATE)
     END IF
 
     ! Otherwise, check that we are able to create the transposed matrix at all.
@@ -4376,7 +4415,14 @@ CONTAINS
           
         ELSE
           ! We really have to do some work now :)
-          !
+          ! Allocate a new KCol and a new Kld.
+          ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
+          ! matrix!
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          
           ! Get Kcol/Kld
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -4385,7 +4431,7 @@ CONTAINS
           CALL storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
           
           ! We need a temporary array
-          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NA,&
+          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           CALL storage_getbase_int (h_Itemp,p_Itemp)
           
@@ -4397,9 +4443,12 @@ CONTAINS
           ! Release the temp array
           CALL storage_free (h_Itemp)
 
-          ! Recalculate Kdiagonal
+          ! (Re-)calculate Kdiagonal
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kdiagonal', rmatrix%NCOLS, &
+                            ST_INT, rtransposedMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
           CALL storage_getbase_int(rtransposedMatrix%h_Kdiagonal,p_Kdiagonal)
-          CALL lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, rmatrix%NEQ)
+          CALL lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, &
+                                        rmatrix%NCOLS)
 
         END IF
 
@@ -4413,7 +4462,14 @@ CONTAINS
           
         ELSE
           ! We really have to do some work now :)
-          !
+          ! Allocate a new KCol and a new Kld.
+          ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
+          ! matrix!
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+
           ! Get Kcol/Kld
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -4458,7 +4514,17 @@ CONTAINS
           
         ELSE
           ! We really have to do some work now :)
-          !
+          ! Allocate a new KCol and a new Kld.
+          ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
+          ! matrix!
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          CALL storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
+                            rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
+                            ST_NEWBLOCK_NOINIT)
+
           ! Get Kcol/Kld
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -4471,7 +4537,7 @@ CONTAINS
           CALL storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
           
           ! We need a temporary array
-          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NA,&
+          CALL storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
                             ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
           CALL storage_getbase_int (h_Itemp,p_Itemp)
           
@@ -4483,9 +4549,12 @@ CONTAINS
           ! Release the temp array
           CALL storage_free (h_Itemp)
           
-          ! Recalculate Kdiagonal
+          ! (Re-)calculate Kdiagonal
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kdiagonal', rmatrix%NCOLS, &
+                            ST_INT, rtransposedMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
           CALL storage_getbase_int(rtransposedMatrix%h_Kdiagonal,p_Kdiagonal)
-          CALL lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, rmatrix%NEQ)
+          CALL lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, &
+                                        rmatrix%NCOLS)
           
         END IF
 
@@ -4500,7 +4569,17 @@ CONTAINS
           
         ELSE
           ! We really have to do some work now :)
-          !
+          ! Allocate a new KCol and a new Kld.
+          ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
+          ! matrix!
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          CALL storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
+                            rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
+                            ST_NEWBLOCK_NOINIT)
+
           ! Get Kcol/Kld
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
