@@ -67,7 +67,7 @@ PROGRAM stokes
   
   ! Call the problem to solve. stokes 1:
   PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 1'
+  PRINT *,'Calculating Stokes-Problem with method 1'
   PRINT *,'-----------------------------------------'
   CALL stokes1
 
