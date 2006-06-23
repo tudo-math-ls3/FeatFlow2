@@ -31,6 +31,7 @@ MODULE stokes_method1
   USE triangulation
   USE spatialdiscretisation
   USE coarsegridcorrection
+  USE spdiscprojection
   
   USE collection
     
@@ -224,11 +225,11 @@ CONTAINS
       p_rtriangulation => rproblem%RlevelInfo(i)%p_rtriangulation
       
       ! Now we can start to initialise the discretisation. At first, set up
-      ! a block discretisation structure that specifies the blocks in the
+      ! a block discretisation structure that specifies 3 blocks in the
       ! solution vector. In this simple problem, we only have one block.
       ALLOCATE(p_rdiscretisation)
-      CALL spdiscr_initBlockDiscr2D (p_rdiscretisation,1,&
-                                    p_rtriangulation, p_rboundary)
+      CALL spdiscr_initBlockDiscr2D (p_rdiscretisation,3,&
+                                     p_rtriangulation, p_rboundary)
 
       ! Save the discretisation structure to our local LevelInfo structure
       ! for later use.
@@ -244,7 +245,7 @@ CONTAINS
       ! velocity...
       CALL spdiscr_initDiscr_simple ( &
                   p_rdiscretisation%RspatialDiscretisation(1), &
-                  EL_Q1,CUB_G2X2, &
+                  EL_EM30,CUB_G2X2, &
                   p_rtriangulation, p_rboundary)
                   
       ! ...and copy this structure also to the discretisation structure
@@ -260,7 +261,7 @@ CONTAINS
       ! functions.
       CALL spdiscr_initDiscr_combined ( &
                   p_rdiscretisation%RspatialDiscretisation(3), &
-                  EL_Q0,EL_Q1,CUB_G2X2, &
+                  EL_Q0,EL_EM30,CUB_G2X2, &
                   p_rtriangulation, p_rboundary)
     END DO
                                    
@@ -925,10 +926,73 @@ CONTAINS
     ! A pointer to the solution vector and to the triangulation.
     TYPE(t_vectorBlock), POINTER :: p_rvector
     TYPE(t_triangulation), POINTER :: p_rtriangulation
+    
+    ! A vector accepting Q1 data
+    TYPE(t_vectorBlock) :: rprjVector
+    
+    ! A discretisation structure for Q1
+    TYPE(t_blockDiscretisation) :: rprjDiscretisation
+    
+    ! Discrete boundary conditions for the output vector
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+
+    ! A filter chain to pre-filter the vectors and the matrix.
+    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
 
     ! Get the solution vector from the problem structure.
     p_rvector => rproblem%rvector
     
+    ! The solution vector is probably not in the way, GMV likes it!
+    ! GMV for example does not understand Q1~ vectors!
+    ! Therefore, we first have to convert the vector to a form that
+    ! GMV understands.
+    ! GMV understands only Q1 solutions! So the task is now to create
+    ! a Q1 solution from p_rvector and write that out.
+    !
+    ! For this purpose, first create a 'derived' simple discretisation
+    ! structure based on Q1 by copying the main guiding block discretisation
+    ! structure and modifying the discretisation structures of the
+    ! two velocity subvectors:
+    
+    rprjDiscretisation = p_rvector%p_rblockDiscretisation
+    
+    CALL spdiscr_deriveSimpleDiscrSc (&
+                 p_rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
+                 EL_Q1, CUB_G2X2, &
+                 rprjDiscretisation%RspatialDiscretisation(1))
+
+    CALL spdiscr_deriveSimpleDiscrSc (&
+                 p_rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
+                 EL_Q1, CUB_G2X2, &
+                 rprjDiscretisation%RspatialDiscretisation(2))
+                 
+    ! The pressure discretisation substructure stays the old.
+    !
+    ! Now set up a new solution vector based on this discretisation,
+    ! allocate memory.
+    CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
+    
+    ! Then take our original solution vector and convert it according to the
+    ! new discretisation:
+    CALL spdp_projectSolution (p_rvector,rprjVector)
+    
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! discretisation:
+    NULLIFY(p_rdiscreteBC)
+    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
+                            .FALSE.,getBoundaryValues,rproblem%rcollection)
+                            
+    ! Connect the vector to the BC's
+    rprjVector%p_rdiscreteBC => p_rdiscreteBC
+    
+    ! Set up a boundary condition filter for Dirichlet boundary conditions
+    ! and pass the vector through it. This finally implements the Dirichlet
+    ! boundary conditions into the output vector.
+    RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
+    CALL filter_applyFilterChainVec (rprjVector, RfilterChain)
+    
+    ! Now we have a Q1/Q1/Q0 solution in rprjVector.
+    !
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
       p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
@@ -941,16 +1005,29 @@ CONTAINS
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,1,NCELLS,NVERTS)
     
-    CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
-    CALL lsyssc_getbase_double (p_rvector%RvectorBlock(2),p_Ddata2)
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
     CALL GMVVEL (ihandle,p_rtriangulation%Itria,1,NVERTS,&
-                 p_rvector%RvectorBlock(1)%NEQ,p_Ddata,p_Ddata2)
-    CALL lsyssc_getbase_double (p_rvector%RvectorBlock(3),p_Ddata)
+                 rprjVector%RvectorBlock(1)%NEQ,p_Ddata,p_Ddata2)
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     CALL GMVSCA (ihandle,p_rtriangulation%Itria,0,NCELLS,&
-                 p_rvector%RvectorBlock(3)%NEQ,p_Ddata,'pressure')
+                 rprjVector%RvectorBlock(3)%NEQ,p_Ddata,'pressure')
     
     CALL GMVFOT (ihandle)
     CLOSE(ihandle)
+    
+    ! Release the auxiliary vector
+    CALL lsysbl_releaseVector (rprjVector)
+    
+    ! Throw away the discrete BC's - not used anymore.
+    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    
+    ! Release the auxiliary discretisation structure.
+    ! We only release the two substructures we manually created before.
+    ! The large structure must not be released - it's a copy of 
+    ! another one.
+    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(1))
+    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(2))
     
   END SUBROUTINE
 
@@ -1155,7 +1232,7 @@ CONTAINS
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
 
-    LV = 7
+    LV = 5
     
     ! Viscosity parameter:
     dnu = 1E0_DP

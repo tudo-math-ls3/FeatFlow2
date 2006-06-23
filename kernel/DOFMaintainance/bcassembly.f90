@@ -868,7 +868,7 @@ CONTAINS
         IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
           CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                    rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
-                                   ipoint1,p_DvertexParameterValue(I), &
+                                   ipoint1,p_DedgeParameterValue(I), &
                                    p_rcollection, Dvalues)
                                   
           ! Save the computed function value

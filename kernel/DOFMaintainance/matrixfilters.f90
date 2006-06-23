@@ -218,9 +218,11 @@ CONTAINS
       ! For now, this implements unit vectors into the diagonal matrices
       ! and zero-vectors into the offdiagonal matrices.
       DO jblock = 1,rmatrix%ndiagBlocks
-        CALL matfil_imposeDirichletBC (&
-                    rmatrix%RmatrixBlock(iblock,jblock), &
-                    iblock .NE. jblock,p_RdiscreteBC(i)%rdirichletBCs)
+        IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
+          CALL matfil_imposeDirichletBC (&
+                      rmatrix%RmatrixBlock(iblock,jblock), &
+                      iblock .NE. jblock,p_RdiscreteBC(i)%rdirichletBCs)
+        END IF
       END DO
       
     CASE DEFAULT

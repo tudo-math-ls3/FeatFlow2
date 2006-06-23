@@ -22,76 +22,79 @@
 !#  1.) lsyssc_createVector
 !#      -> Create a simple scalar vector of length NEQ
 !#
-!#  2.) lsyssc_scalarProduct
+!#  2.) lsyssc_createVecByDiscr
+!#      -> Create a vector based on a scalar discretisation structure
+!#
+!#  3.) lsyssc_scalarProduct
 !#      -> Calculate the scalar product of two vectors
 !#
-!#  3.) lsyssc_scalarMatVec
+!#  4.) lsyssc_scalarMatVec
 !#      -> Multiply a scalar matrix with a scalar vector
 !#
-!#  4.) lsyssc_releaseMatrix
+!#  5.) lsyssc_releaseMatrix
 !#      -> Release a scalar matrix from memory.
 !#
-!#  5.) lsyssc_releaseVector
+!#  6.) lsyssc_releaseVector
 !#      -> Release a scalar vector from memory.
 !#
-!#  6.) lsyssc_duplicateMatrix
+!#  7.) lsyssc_duplicateMatrix
 !#      -> Create a duplicate of a given matrix or matrix-structure
 !#
-!#  7.) lsyssc_duplicateVector
+!#  8.) lsyssc_duplicateVector
 !#      -> Create a duplicate of a given vector
 !#
-!#  8.) lsyssc_sortVectorInSitu
+!#  9.) lsyssc_sortVectorInSitu
 !#      -> Resort the entries of a vector or unsort them
 !#
-!#  9.) lsyssc_sortMatrix
+!# 10.) lsyssc_sortMatrix
 !#      -> Resort the entries of a matrix or unsort them
 !#
-!# 10.) lsyssc_isVectorCompatible
+!# 11.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 11.) lsyssc_isMatrixCompatible
+!# 12.) lsyssc_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 12.) lsyssc_getbase_double
+!# 13.) lsyssc_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 13.) lsyssc_getbase_single
+!# 14.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 14.) lsyssc_addIndex
+!# 15.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
 !#         array.
 !#
-!# 15.) lsyssc_vectorNorm
+!# 16.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 16.) lsyssc_invertedDiagMatVec
+!# 17.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 17.) lsyssc_clearMatrix
+!# 18.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !#
-!# 18.) lsyssc_convertMatrix
+!# 19.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 19.) lsyssc_copyVector
+!# 20.) lsyssc_copyVector
 !#       -> Copy a block vector over to another one
 !#
-!# 20.) lsyssc_scaleVector
+!# 21.) lsyssc_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 21.) lsyssc_clearVector
+!# 22.) lsyssc_clearVector
 !#      -> Clear a block vector
 !#
-!# 22.) lsyssc_vectorLinearComb
+!# 23.) lsyssc_vectorLinearComb
 !#      -> Linear combination f two block vectors
 !#
-!# 23.) lsyssc_copyMatrix
+!# 24.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 24.) lsyssc_transposeMatrix
+!# 25.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !# </purpose>
 !##############################################################################
@@ -691,6 +694,60 @@ CONTAINS
   
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_createVecByDiscr (rdiscretisation,rx,bclear,cdataType)
+  
+!<description>
+  ! Initialises the vector structure rx based on a discretisation
+  ! structure rDiscretisation. 
+  !
+  ! Memory is allocated on the heap for rx accordint to the number of 
+  ! DOF's indicated by the spatial discretisation structures in 
+  ! rdiscretisation. 
+!</description>
+  
+!<input>
+  ! A block discretisation structure specifying the spatial discretisations
+  ! for all the subblocks in rx.
+  TYPE(t_spatialDiscretisation),INTENT(IN), TARGET :: rdiscretisation
+  
+  ! Optional: If set to YES, the vector will be filled with zero initially.
+  ! Otherwise the content of rx is undefined.
+  LOGICAL, INTENT(IN), OPTIONAL             :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
+  INTEGER, INTENT(IN),OPTIONAL              :: cdataType
+!</input>
+
+!<output>
+  ! Destination structure. Memory is allocated appropriately.
+  ! A pointer to rdiscretisation is saved to r.
+  TYPE(t_vectorScalar),INTENT(OUT) :: rx
+!</output>
+  
+!</subroutine>
+
+  INTEGER :: cdata
+  INTEGER(PREC_VECIDX) :: NEQ
+  
+  cdata = ST_DOUBLE
+  IF (PRESENT(cdataType)) cdata = cdataType
+  
+  ! Get NEQ:
+  NEQ = dof_igetNDofGlob(rdiscretisation)
+  
+  ! Create a new vector with that block structure
+  CALL lsyssc_createVector (rx, NEQ, bclear, cdataType)
+  
+  ! Initialise further data of the block vector
+  rx%p_rspatialDiscretisation => rdiscretisation
+  
+  END SUBROUTINE
+  
   !****************************************************************************
 !<subroutine>
   
@@ -1269,7 +1326,7 @@ CONTAINS
   SELECT CASE (rsourceMatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
     bhasContent = rsourceMatrix%h_Da .NE. ST_NOHANDLE
-    bhasContent = rsourceMatrix%h_Kcol .NE. ST_NOHANDLE
+    bhasStructure = rsourceMatrix%h_Kcol .NE. ST_NOHANDLE
     
     IF (bdupContent) THEN
       ! Put the destination handle to ST_NOHANDLE, so storage_copy
@@ -3479,7 +3536,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_copyVector (rx,ry)
+  SUBROUTINE lsyssc_copyVector (rx,ry,bforceOnlyData)
   
 !<description>
   ! Copies vector data: ry = rx.
@@ -3490,6 +3547,11 @@ CONTAINS
 !<input>
   ! Source vector
   TYPE(t_vectorScalar),INTENT(IN) :: rx
+  
+  ! OPTIONAL: Copy only data.
+  ! If set to TRUE, this forces the routine to copy only the vector data of rx to ry.
+  ! Structural data is not copied.
+  LOGICAL, INTENT(IN), OPTIONAL :: bforceOnlyData
 !</input>
 
 !<inputoutput>
@@ -3501,23 +3563,36 @@ CONTAINS
 
   ! local variables
   INTEGER :: h_Ddata, cdataType
-  LOGICAL :: bisCopy
+  LOGICAL :: bisCopy,bonlyData
+  INTEGER(PREC_VECIDX) :: ioffset
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
   REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
   
-  ! First, make a backup of some crucial data so that it does not
-  ! get destroyed.
-  h_Ddata = ry%h_Ddata
-  cdataType = ry%cdataType
-  bisCopy = ry%bisCopy
+  IF (PRESENT(bforceOnlyData)) THEN 
+    bonlyData = bforceOnlyData
+  ELSE
+    bonlyData = .FALSE.
+  END IF
   
-  ! Then transfer all structural information of rx to ry.
-  ! This automatically makes both vectors compatible to each other.
-  ry = rx
-  
-  ! Restore crucial data
-  ry%h_Ddata = h_Ddata
-  ry%bisCopy = bisCopy
+  IF (.NOT. bonlyData) THEN
+    ! Standard case: Copy the whole vector information
+    !
+    ! First, make a backup of some crucial data so that it does not
+    ! get destroyed.
+    h_Ddata = ry%h_Ddata
+    cdataType = ry%cdataType
+    bisCopy = ry%bisCopy
+    ioffset = rx%iidxFirstEntry
+    
+    ! Then transfer all structural information of rx to ry.
+    ! This automatically makes both vectors compatible to each other.
+    ry = rx
+    
+    ! Restore crucial data
+    ry%h_Ddata = h_Ddata
+    ry%bisCopy = bisCopy
+    ry%iidxFirstEntry = ioffset 
+  END IF
   
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsyssc_copyVector: different data types not supported!'

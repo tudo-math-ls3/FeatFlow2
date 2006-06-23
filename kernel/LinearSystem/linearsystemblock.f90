@@ -419,7 +419,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: i,j
-  LOGICAL :: b1,b2,b3
+  !LOGICAL :: b1,b2,b3
 
   ! We assume that we are not compatible
   IF (PRESENT(bcompatible)) bcompatible = .FALSE.
@@ -859,7 +859,7 @@ CONTAINS
   DO i=1,rblockDiscretisation%ncomponents
     Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
   END DO
-  inum = MIN(SPDISC_MAXEQUATIONS,i)
+  inum = MIN(SPDISC_MAXEQUATIONS,rblockDiscretisation%ncomponents)
   
   ! Create a new vector with that block structure
   CALL lsysbl_createVecBlockDirect (rx, Isize(1:inum), bclear, cdataType)
@@ -913,7 +913,7 @@ CONTAINS
   DO i=1,rblockDiscretisation%ncomponents
     Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
   END DO
-  inum = MIN(SPDISC_MAXEQUATIONS,i)
+  inum = MIN(SPDISC_MAXEQUATIONS,rblockDiscretisation%ncomponents)
   NEQ = SUM(Isize(1:inum))
   
   ! The 'INTENT(OUT)' already initialised the structure with the most common

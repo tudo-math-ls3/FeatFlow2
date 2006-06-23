@@ -14,20 +14,24 @@
 !#     -> Initialises a 2D block discretisation structure for the
 !#        discretisation of multiple equations
 !#
-!# 2.) spdiscr_releaseBlockDiscr
-!#     -> Releases a block discretisation structure from memory
-!#
-!# 3.) spdiscr_initDiscr_simple
+!# 2.) spdiscr_initDiscr_simple
 !#     -> Initialise a scalar discretisation structure. One element type for
 !#        all geometric elements, for test and trial functions.
 !#
-!# 4.) spdiscr_initDiscr_combined
+!# 3.) spdiscr_initDiscr_combined
 !#     -> Initialise a scalar discretisation structure. One element type for
 !#        all geometric elements in the trial space, another element type
 !#        for all geometric elements in the test space
 !#
+!# 4.) spdiscr_deriveSimpleDiscrSc
+!#     -> Based on an existing discretisation structure, derive a new
+!#        discretisation structure with different trial elements
+!#
 !# 5.) spdiscr_releaseDiscr
 !#     -> Release a scalar discretisation structure.
+!#
+!# 6.) spdiscr_releaseBlockDiscr
+!#     -> Releases a block discretisation structure from memory
 !#
 !# 6.) spdiscr_checkCubature
 !#     -> Checks if a cubature formula is compatible to an element
@@ -134,7 +138,7 @@ MODULE spatialdiscretisation
   !
   ! Remark: The structure realises only the discretisation of 'a scalar
   !  equation'. For multidimensional problems, there are multiple of
-  !  these structures, each one for one PDE.  I this case, the structure
+  !  these structures, each one for one PDE. I this case, the structure
   !  is part of the block discretisation structure below and
   !  'hung into' each scalar matrix that discretises that equation.
   
@@ -143,12 +147,19 @@ MODULE spatialdiscretisation
     ! Dimension of the discretisation. 0=not initialised, 
     ! 2=2D discretisation, 3=3D discretisation
     INTEGER                          :: ndimension             = 0
+    
+    ! Whether the discretisation structure is a copy of another discretisation
+    ! structure. If set to TRUE, the structure was derived from another one
+    ! and shares the same dynamic information (element lists,...).
+    ! (This prevents the release-routine from releasing memory when
+    ! cleaning up the structure.)
+    LOGICAL                          :: bisCopy                = .FALSE.
   
     ! Pointer to the domain that is discretised
     TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
     
     ! Pointer to the underlying triangulation of the mesh (2D)
-    TYPE(t_triangulation), POINTER   :: p_rtriangulation     => NULL()
+    TYPE(t_triangulation), POINTER   :: p_rtriangulation       => NULL()
 
     ! Complexity of the discretisation. One of the SPDISC_xxxx constants
     INTEGER                          :: ccomplexity            = SPDISC_UNIFORM
@@ -500,6 +511,93 @@ CONTAINS
     p_Iarray(i) = i
   END DO
   
+  ! This is a complete new structure, everything 'belongs' to this.
+  rspatialDiscr%bisCopy = .FALSE.
+  
+  END SUBROUTINE  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_deriveSimpleDiscrSc (rsourceDiscr, ieltyp, ccubType, &
+                                          rdestDiscr)
+  
+!<description>
+  ! This routine derives a discretisation structure from another one.
+  !
+  ! rsourceDiscr is a given uniform discretisation structure. The structure
+  ! will be copied to rdestDiscr and changed in such a way, that the element
+  ! type and cubature formula are changed according to the parameters.
+  !
+  ! The new discretisation will also be a uniform discretisation based
+  ! on the element ieltyp. It's not a complete new structure, but a
+  ! 'derived' structure, i.e. it uses the same dynamic information
+  ! (element lists) as rsourceDiscr.
+!</description>
+
+!<input>
+  ! A source discretisation structure that should be used as template
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rsourceDiscr
+
+  ! The element type identifier that is to be used for all elements
+  ! in the new discretisation structure
+  INTEGER, INTENT(IN)                       :: ieltyp
+  
+  ! Cubature formula to use for calculating integrals
+  ! in the new discretisation structure
+  INTEGER, INTENT(IN)                       :: ccubType
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+  TYPE(t_elementDistribution), POINTER :: p_relementDistr
+  
+  ! Check that the discretisation structure is really uniform.
+  ! More complex situations are not supported by this routine.
+  IF (rsourceDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    PRINT *,'spdiscr_deriveSimpleDiscr only supports uniform discretisations!'
+    STOP
+  END IF
+  
+  ! Check the cubature formula against the element distribution.
+  ! This stops the program if this is not fulfilled.
+  CALL spdiscr_checkCubature(ccubType,ieltyp)
+  
+  ! Copy the source structure to the destination.
+  ! This copies all handles and hence all dynamic information
+  rdestDiscr = rsourceDiscr
+  
+  ! Change the element type of all trial functions to ieltyp
+  rdestDiscr%RelementDistribution(1)%itrialElement = ieltyp
+  
+  IF (rdestDiscr%bidenticalTrialAndTest) THEN
+    rdestDiscr%RelementDistribution(1)%itestElement = ieltyp
+  END IF
+  rdestDiscr%bidenticalTrialAndTest = &
+    rdestDiscr%RelementDistribution(1)%itrialElement .EQ. &
+    rdestDiscr%RelementDistribution(1)%itestElement
+  
+  ! Init the cubature rule
+  rdestDiscr%RelementDistribution(1)%ccubType = ccubType
+  rdestDiscr%RelementDistribution(1)%ccubTypeLin = ccubType
+  
+  ! Get the typical transformation used with the element
+  rdestDiscr%RelementDistribution(1)%ctrafoType = elem_igetTrafoType(ieltyp)
+  
+  ! Mark the new discretisation structure as 'copy', to prevent
+  ! the dynamic information to be released.
+  ! The dynamic information 'belongs' to rdiscrSource and not to the
+  ! newly created rdiscrDest!
+  rdestDiscr%bisCopy = .TRUE.
+  
   END SUBROUTINE  
   
   ! ***************************************************************************
@@ -566,7 +664,9 @@ CONTAINS
   rspatialDiscr%p_rdomain              => rdomain
   rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
-  ! All trial elements are ieltypTrial:
+  rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
+  
+!  ! All trial elements are ieltypTrial:
 !  CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItrialElements', &
 !        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
 !        ST_NEWBLOCK_NOINIT)
@@ -574,28 +674,25 @@ CONTAINS
 !  DO i=1,rtriangulation%NEL
 !    p_Iarray(i) = ieltypTrial
 !  END DO
+!
+!  ! All test elements are ieltypTest:
+!  IF (.NOT. rspatialDiscr%bidenticalTrialAndTest)
+!    ! All test elements are ieltypTest.
+!    CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItestElements', &
+!          rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItestElements,   &
+!          ST_NEWBLOCK_NOINIT)
+!    CALL storage_getbase_int (rspatialDiscr%h_ItestElements,p_Iarray)
+!    DO i=1,rtriangulation%NEL
+!      p_Iarray(i) = ieltypTest
+!    END DO
+!  ELSE
+!    rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements
+!  END IF
   rspatialDiscr%h_ItrialElements = ST_NOHANDLE
-
-  rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
-  
-  IF (rspatialDiscr%bidenticalTrialAndTest) THEN
-    ! Identical trial and test space.
-    ! Use the same handle for trial and test functions to save memory!
-    rspatialDiscr%bidenticalTrialAndTest = .TRUE.
-    rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements  
-  ELSE
-    ! All test elements are ieltypTest.
-    CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItestElements', &
-          rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItestElements,   &
-          ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int (rspatialDiscr%h_ItestElements,p_Iarray)
-    DO i=1,rtriangulation%NEL
-      p_Iarray(i) = ieltypTest
-    END DO
-  END IF
+  rspatialDiscr%h_ItestElements = ST_NOHANDLE
 
   ! Initialise the first element distribution
-  rspatialDiscr%inumFESpaces           = 1
+  rspatialDiscr%inumFESpaces = 1
   p_relementDistr => rspatialDiscr%RelementDistribution(1)
   
   ! Initialise test and trial space for that block
@@ -630,6 +727,9 @@ CONTAINS
     p_Iarray(i) = i
   END DO
   
+  ! This is a complete new structure, everything 'belongs' to this.
+  rspatialDiscr%bisCopy = .FALSE.
+
   END SUBROUTINE  
 
   ! ***************************************************************************
@@ -658,6 +758,7 @@ CONTAINS
   NULLIFY(rspatialDiscr%p_rdomain)
   
   ! Release element identifier lists.
+  ! The element identifier list is never a copy of another structure!
   IF (rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
     ! The handles may coincide, so release them only once!
     IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
@@ -673,11 +774,18 @@ CONTAINS
   
     p_relementDistr => rspatialDiscr%RelementDistribution(i)
     
-    ! Release the element list there
-    CALL storage_free (p_relementDistr%h_IelementList)
+    ! Release the element list there.
+    ! Take care: If the current structure is a copy of another one, the
+    ! element list 'belongs' to another structure, and so we mustn't
+    ! delete it from memory!
+    IF (.NOT. rspatialDiscr%bisCopy) THEN
+      CALL storage_free (p_relementDistr%h_IelementList)
+    ELSE
+      p_relementDistr%h_IelementList = ST_NOHANDLE
+    END IF
     
-    p_relementDistr%itrialElement = 0
-    p_relementDistr%itestElement  = 0
+    p_relementDistr%itrialElement = EL_UNDEFINED
+    p_relementDistr%itestElement  = EL_UNDEFINED
     
   END DO
   

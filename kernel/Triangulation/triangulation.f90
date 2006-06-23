@@ -533,7 +533,8 @@ CONTAINS
   ! Initialise the new KVEL, create p_IelementsAtVertexIdx/p_IelementsAtVertex.
                              
   CALL translate_KVEL (TRIA(ONVEL),INT(p_rtriangulation%NVT),TRIA(OLVEL), &
-                       p_rtriangulation%h_IelementsAtVertex,p_rtriangulation%h_IelementsAtVertexIdx)
+                       p_rtriangulation%h_IelementsAtVertex,&
+                       p_rtriangulation%h_IelementsAtVertexIdx)
 
   ! *******************************************************
   ! Copy KBCT, create p_IboundaryCpIdx.
@@ -915,11 +916,11 @@ CONTAINS
       p_arrayidx(i+1) = nentries+1
       
       ! Copy the entries
-      DO j=1,NVEL
+      DO j=0,NVEL-1
         !IF (p_kadj(i*NVEL+j) .NE. 0) THEN
-        IF (KWORK(kpos+(i-1)*NVEL+j-1) .NE. 0) THEN
+        IF (KWORK(kpos+i*NVEL+j) .NE. 0) THEN
           nentries = nentries+1
-          p_array(nentries) = KWORK(kpos+(i-1)*NVEL+j-1) ! p_kadj(i*NVEL+j)
+          p_array(nentries) = KWORK(kpos+i*NVEL+j) ! p_kadj(i*NVEL+j)
         ELSE
           EXIT
         END IF

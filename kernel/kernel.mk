@@ -13,8 +13,8 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afc_util.f90  \
 	paramlist.f90 spatialdiscretisation.f90 dofmapping.f90 \
 	discretebc.f90 linearsystemscalar.f90 linearsystemblock.f90 \
 	matrixmodification.f90 matrixfilters.f90 sortstrategy.f90 \
-	multilevelprojection.f90 domainintegration.f90 \
-	coarsegridcorrection.f90 feevaluation.f90\
+	spdiscprojection.f90 multilevelprojection.f90 \
+	domainintegration.f90 coarsegridcorrection.f90 feevaluation.f90\
 	vectorfilters.f90 filtersupport.f90 vanca.f90 linearsolver.f90 \
 	linearsolverautoinitialise.f90 collection.f90 \
 	bilinearformevaluation.f90 linearformevaluation.f90 \
@@ -37,7 +37,7 @@ vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
-	$(KERNEL)/NonlinearSolver \
+	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
 	$(KERNEL) $(INCOMING)
 
 vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
