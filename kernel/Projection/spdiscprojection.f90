@@ -41,6 +41,8 @@ CONTAINS
   ! another solution vector rdestVector. The scalar discretisation structure
   ! in rdestVector specifies the new FE spaces, rsourceVector should be
   ! converted to. The new 'projected' solution is build in rdestVector.
+  !
+  ! Source and destination vector must be unsorted.
 !</description>
 
 !<input>
@@ -73,6 +75,7 @@ CONTAINS
     ! - conversion to Q1 only (for GMV output e.g.), except both (source and
     !   destination space) are identical)
     ! - double precision vectors only
+    ! - all vectors must be unsorted
     
     p_rsourceDiscr => rsourceVector%p_rspatialDiscretisation
     p_rdestDiscr => rdestVector%p_rspatialDiscretisation
@@ -101,6 +104,12 @@ CONTAINS
     IF ((p_rsourceDiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
         (p_rdestDiscr%ccomplexity .NE. SPDISC_UNIFORM)) THEN
       PRINT *,'spdp_projectSolutionScalar: Only uniform discretisations supported!'
+      STOP
+    END IF
+    
+    IF ((rsourceVector%isortStrategy .GT. 0) .OR. &
+        (rdestVector%isortStrategy .GT. 0)) THEN
+      PRINT *,'spdp_projectSolutionScalar: Vectors must be unsorted for projection!'
       STOP
     END IF
     

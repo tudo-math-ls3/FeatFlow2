@@ -46,55 +46,59 @@
 !#  9.) lsyssc_sortVectorInSitu
 !#      -> Resort the entries of a vector or unsort them
 !#
-!# 10.) lsyssc_sortMatrix
+!# 10.) lsyssc_vectorActivateSorting
+!#      -> Resort the entries of a vector or unsort them according to
+!#         a previously attached sorting strategy
+!#
+!# 11.) lsyssc_sortMatrix
 !#      -> Resort the entries of a matrix or unsort them
 !#
-!# 11.) lsyssc_isVectorCompatible
+!# 12.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 12.) lsyssc_isMatrixCompatible
+!# 13.) lsyssc_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 13.) lsyssc_getbase_double
+!# 14.) lsyssc_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 14.) lsyssc_getbase_single
+!# 15.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 15.) lsyssc_addIndex
+!# 16.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
 !#         array.
 !#
-!# 16.) lsyssc_vectorNorm
+!# 17.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 17.) lsyssc_invertedDiagMatVec
+!# 18.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 18.) lsyssc_clearMatrix
+!# 19.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !#
-!# 19.) lsyssc_convertMatrix
+!# 20.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 20.) lsyssc_copyVector
-!#       -> Copy a block vector over to another one
+!# 21.) lsyssc_copyVector
+!#       -> Copy a vector over to another one
 !#
-!# 21.) lsyssc_scaleVector
-!#      -> Scale a block vector by a constant
+!# 22.) lsyssc_scaleVector
+!#      -> Scale a vector by a constant
 !#
-!# 22.) lsyssc_clearVector
-!#      -> Clear a block vector
+!# 23.) lsyssc_clearVector
+!#      -> Clear a vector
 !#
-!# 23.) lsyssc_vectorLinearComb
-!#      -> Linear combination f two block vectors
+!# 24.) lsyssc_vectorLinearComb
+!#      -> Linear combination of two vectors
 !#
-!# 24.) lsyssc_copyMatrix
+!# 25.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 25.) lsyssc_transposeMatrix
+!# 26.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !# </purpose>
 !##############################################################################
@@ -2221,6 +2225,69 @@ CONTAINS
 
     ! If h_IsortPermutation was given, change the permutation
     IF (PRESENT(h_IsortPermutation)) rvector%h_IsortPermutation = h_IsortPermutation
+  
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsyssc_vectorActivateSorting (rvector,bsort,rtemp)
+  
+!<description>
+  ! Resorts the entries of the given vector rvector or unsorts it
+  ! according to the resorting strategy associated to rvector.
+!</description>
+  
+!<inputoutput>
+  ! Vector to resort. The sorting strategy must have been attached to
+  ! rvector before with lsyssc_sortVectorInSitu, otherwise nothing happens.
+  TYPE(t_vectorScalar), INTENT(INOUT)               :: rvector
+
+  ! OPTIONAL: A temporary vector. 
+  ! Must be of the same data type as rvector. Must be at least as 
+  ! large as rvector. If not specified, a temporary vector is created
+  ! and released automatically on the heap.
+  TYPE(t_vectorScalar), INTENT(INOUT), TARGET, OPTIONAL :: rtemp
+!</inputoutput>
+
+!<input>
+  ! Whether to sort or unsort.
+  ! =TRUE : Activate sorting (if not activated)
+  ! =FALSE: Unsort vector (if sorted)
+ LOGICAL, INTENT(IN) :: bsort
+!</input> 
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_vectorScalar), POINTER :: p_rtemp
+  TYPE(t_vectorScalar), TARGET :: rtempLocal
+  
+  ! Cancel if there's nothing to do.
+  IF (rvector%isortStrategy .EQ. 0) RETURN
+  IF ((.NOT. bsort) .AND. (rvector%isortStrategy .LE. 0)) RETURN
+  IF (bsort .AND. (rvector%isortStrategy .GT. 0)) RETURN
+  
+  ! Temporary vector available? If not, create a new one based on rvector.
+  IF (PRESENT(rtemp)) THEN
+    p_rtemp => rtemp
+  ELSE
+    p_rtemp => rtempLocal
+    CALL lsyssc_duplicateVector (rvector,rtempLocal)
+  END IF
+
+  ! Perform the sorting or unsorting
+  IF (bsort) THEN
+    CALL lsyssc_sortVectorInSitu (rvector,p_rtemp,ABS(rvector%isortStrategy))
+  ELSE
+    CALL lsyssc_sortVectorInSitu (rvector,p_rtemp,-ABS(rvector%isortStrategy))
+  END IF
+  
+  ! Remove the temp vector if it's ours.
+  IF (.NOT. PRESENT(rtemp)) THEN
+    CALL lsyssc_releaseVector (rtempLocal)
+  END IF
   
   END SUBROUTINE
 
