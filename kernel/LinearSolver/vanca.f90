@@ -23,7 +23,7 @@
 !#     -> Initialise specialised VANCA solver for 2D saddle point problems
 !#        with $\tilde Q_1/Q_0$ discretisation
 !#
-!# 5.) vanca_init2DSPQ1TQ0simple
+!# 5.) vanca_2DSPQ1TQ0simple
 !#     -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#        problems with $\tilde Q_1/Q_0$ discretisation
 !#

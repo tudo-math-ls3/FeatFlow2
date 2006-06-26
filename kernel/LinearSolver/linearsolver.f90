@@ -5940,15 +5940,19 @@ CONTAINS
       IF (p_rcurrentLevel%rtempVector%NEQ .NE. 0) THEN
         CALL lsysbl_releaseVector (p_rcurrentLevel%rtempVector)
       END IF
+      
       IF (p_rcurrentLevel%rrhsVector%NEQ .NE. 0) THEN
         CALL lsysbl_releaseVector (p_rcurrentLevel%rrhsVector)
       END IF
+
     END IF
+
     IF (ASSOCIATED(p_rcurrentLevel%p_rnextLevel)) THEN
       IF (p_rcurrentLevel%rsolutionVector%NEQ .NE. 0) THEN
         CALL lsysbl_releaseVector (p_rcurrentLevel%rsolutionVector)
       END IF
     END IF
+
     p_rcurrentLevel => p_rcurrentLevel%p_rprevLevel
   END DO
 
@@ -6032,7 +6036,7 @@ CONTAINS
 !<subroutine>
   
   RECURSIVE SUBROUTINE linsol_smoothCorrection (rsolverNode,&
-                       rmatrix,rx,rb,rtemp)
+                       rmatrix,rx,rb,rtemp,p_RfilterChain)
   
 !<description>
   ! This routine performs a smoothing process on the vector rx
@@ -6065,6 +6069,10 @@ CONTAINS
 
   ! The system matrix on the current level.
   TYPE(t_matrixBlock), INTENT(IN)                    :: rmatrix
+  
+  ! Pointer to the filter chain to use if rsolverNode is a direct
+  ! solver. NULL() if no filtering is active.
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 !</input>
   
 !<inputoutput>
@@ -6081,6 +6089,7 @@ CONTAINS
 !</subroutine>
 
   INTEGER :: i
+  LOGICAL :: bfilter
   !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
   
   ! Cancel if nmaxIterations = number of smoothing steps is =0.
@@ -6106,13 +6115,25 @@ CONTAINS
     ! form
     !     $$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$
     ! with $x_0 = 0$.
+    
+    bfilter = ASSOCIATED(p_RfilterChain)
+    
     !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
     !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
+    
     DO i=1,rsolverNode%nmaxIterations
+    
       CALL lsysbl_copyVector(rb,rtemp)
       CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+      
+      ! Apply the filter to this defect before preconditioning
+      IF (bfilter) THEN
+        CALL filter_applyFilterChainVec (rtemp, p_RfilterChain)
+      END IF
+      
       CALL linsol_precondDefect(rsolverNode,rtemp)
       CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
+      
     END DO
     
   END IF
@@ -6386,7 +6407,7 @@ CONTAINS
                           p_rcurrentLevel%rsystemMatrix,&
                           p_rcurrentLevel%rsolutionVector,&
                           p_rcurrentLevel%rrhsVector,&
-                          p_rcurrentLevel%rtempVector)
+                          p_rcurrentLevel%rtempVector,p_RfilterChain)
               END IF
             
               ! Build the defect vector
@@ -6587,7 +6608,7 @@ CONTAINS
                           p_rcurrentLevel%rsystemMatrix,&
                           p_rcurrentLevel%rsolutionVector,&
                           p_rcurrentLevel%rrhsVector,&
-                          p_rcurrentLevel%rtempVector)
+                          p_rcurrentLevel%rtempVector,p_RfilterChain)
               END IF
 
               ! Update the iteration counter(s) for realising the MG-cycle(s).
