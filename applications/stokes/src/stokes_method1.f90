@@ -415,7 +415,7 @@ CONTAINS
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .TRUE.
       rform%BconstantCoeff = .TRUE.
-      rform%Dcoefficients(1)  = 1.0_DP
+      rform%Dcoefficients(1)  = -1.0_DP
       
       CALL bilf_buildMatrixScalar (rform,.TRUE.,&
                                   rproblem%RlevelInfo(i)%rmatrixB1,coeff_Pressure,&
@@ -430,7 +430,7 @@ CONTAINS
       ! In the standard case, we have constant coefficients:
       rform%ballCoeffConstant = .TRUE.
       rform%BconstantCoeff = .TRUE.
-      rform%Dcoefficients(1)  = 1.0_DP
+      rform%Dcoefficients(1)  = -1.0_DP
       
       CALL bilf_buildMatrixScalar (rform,.TRUE.,&
                                   rproblem%RlevelInfo(i)%rmatrixB2,coeff_Pressure,&
