@@ -4974,7 +4974,7 @@ CONTAINS
   SUBROUTINE lsyssc_transposeMatrix (rmatrix,rtransposedMatrix,itransFlag)
   
 !<description>
-  ! This routine transposes a maztrix rmatrix and creates the transposed
+  ! This routine transposes a matrix rmatrix and creates the transposed
   ! matrix in rtransposedMatrix.
   ! itransFlag decides (if specified) how the creation of the
   ! transposed matrix is to be performed.
@@ -5020,7 +5020,7 @@ CONTAINS
   
 !<input>
   ! The matrix to be transposed.
-  TYPE(t_matrixScalar),INTENT(INOUT) :: rmatrix
+  TYPE(t_matrixScalar),INTENT(IN) :: rmatrix
 !</input>
 
 !<inputoutput>
@@ -5144,7 +5144,8 @@ CONTAINS
           CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
           CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
           CALL storage_copy (rmatrix%h_Kdiagonal,rtransposedMatrix%h_Kdiagonal)
-          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          rtransposedMatrix%imatrixSpec = &
+            IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
         ELSE
           ! We really have to do some work now :)
@@ -5191,7 +5192,8 @@ CONTAINS
         IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
           CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
           CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
-          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          rtransposedMatrix%imatrixSpec = &
+            IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
         ELSE
           ! We really have to do some work now :)
@@ -5243,7 +5245,8 @@ CONTAINS
           CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
           CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
           CALL storage_copy (rmatrix%h_Kdiagonal,rtransposedMatrix%h_Kdiagonal)
-          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          rtransposedMatrix%imatrixSpec = &
+            IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
         ELSE
           ! We really have to do some work now :)
@@ -5298,7 +5301,8 @@ CONTAINS
         
           CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
           CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
-          rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
+          rtransposedMatrix%imatrixSpec = &
+            IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
         ELSE
           ! We really have to do some work now :)
