@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> stokes_method1 </name>
+!# <name> stokes_method2 </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -14,12 +14,12 @@
 !# as well as a collection structure for the communication with callback
 !# routines.
 !#
-!# The routine uses the simple-VANCA smoother/preconditioner for
-!# 2D saddle point problems, Jacobi-Type.
+!# In contrast to stokes_method1, this routine uses the general VANCA
+!# for smoothing/preconditioning.
 !# </purpose>
 !##############################################################################
 
-MODULE stokes_method1
+MODULE stokes_method2
 
   USE fsystem
   USE storage
@@ -123,7 +123,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_initParamTriang (ilvmin,ilvmax,rproblem)
+  SUBROUTINE st2_initParamTriang (ilvmin,ilvmax,rproblem)
   
     INCLUDE 'cout.inc'
     INCLUDE 'cerr.inc'
@@ -202,7 +202,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_initDiscretisation (rproblem)
+  SUBROUTINE st2_initDiscretisation (rproblem)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
@@ -279,7 +279,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_initMatVec (rproblem)
+  SUBROUTINE st2_initMatVec (rproblem)
   
 !<description>
   ! Calculates the system matrix and RHS vector of the linear system
@@ -450,14 +450,16 @@ CONTAINS
                                    p_rmatrix%RmatrixBlock(2,3),&
                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
       
-      ! Furthermore, put B1^T and B2^T to the block matrix.
+      ! Furthermore, put B1^T and B2^T to the block matrix.!
+      ! Note that we really create copies of our matrices, as the
+      ! general VANCA cannot handle virtually transposed matrices!
       CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
                                    p_rmatrix%RmatrixBlock(3,1),&
-                                   LSYSSC_TR_VIRTUAL)
+                                   LSYSSC_TR_ALL)
 
       CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
                                    p_rmatrix%RmatrixBlock(3,2),&
-                                   LSYSSC_TR_VIRTUAL)
+                                   LSYSSC_TR_ALL)
 
       ! Update the structural information of the block matrix, as we manually
       ! changed the submatrices:
@@ -516,7 +518,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_initAnalyticBC (rproblem)
+  SUBROUTINE st2_initAnalyticBC (rproblem)
   
 !<description>
   ! This initialises the analytic bonudary conditions of the problem
@@ -650,7 +652,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_initDiscreteBC (rproblem)
+  SUBROUTINE st2_initDiscreteBC (rproblem)
   
 !<description>
   ! This calculates the discrete version of the boundary conditions and
@@ -724,7 +726,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_implementBC (rproblem)
+  SUBROUTINE st2_implementBC (rproblem)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -779,7 +781,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_solve (rproblem)
+  SUBROUTINE st2_solve (rproblem)
   
 !<description>
   ! Solves the given problem by applying a linear solver.
@@ -866,7 +868,7 @@ CONTAINS
       NULLIFY(p_rcoarseGridSolver)
       IF (i .EQ. ilvmin) THEN
         ! Set up a BiCGStab solver with VANCA preconditioning as coarse grid solver:
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DSPQ1TQ0)
+        CALL linsol_initVANCA (p_rpreconditioner)
         CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
         !p_rcoarseGridSolver%ioutputLevel = 2
         
@@ -876,7 +878,7 @@ CONTAINS
       ELSE
         ! Set up the VANCA smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-        CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DSPQ1TQ0)
+        CALL linsol_initVANCA (p_rsmoother)
         CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
       END IF
     
@@ -927,7 +929,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_postprocessing (rproblem)
+  SUBROUTINE st2_postprocessing (rproblem)
   
 !<description>
   ! Writes the solution into a GMV file.
@@ -1024,7 +1026,7 @@ CONTAINS
     ! start the postprocessing. Call the GMV library to write out
     ! a GMV file for our solution.
     ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u1.gmv')
+    CALL GMVOF0 (ihandle,-2,'gmv/u2.gmv')
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,1,NCELLS,NVERTS)
     
@@ -1058,7 +1060,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_doneMatVec (rproblem)
+  SUBROUTINE st2_doneMatVec (rproblem)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -1101,7 +1103,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_doneBC (rproblem)
+  SUBROUTINE st2_doneBC (rproblem)
   
 !<description>
   ! Releases discrete and analytic boundary conditions from the heap.
@@ -1132,7 +1134,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_doneDiscretisation (rproblem)
+  SUBROUTINE st2_doneDiscretisation (rproblem)
   
 !<description>
   ! Releases the discretisation from the heap.
@@ -1179,7 +1181,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE st1_doneParamTriang (rproblem)
+  SUBROUTINE st2_doneParamTriang (rproblem)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
@@ -1222,7 +1224,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE stokes1
+  SUBROUTINE stokes2
   
   include 'cmem.inc'
   
@@ -1275,26 +1277,26 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL st1_initParamTriang (2,LV,rproblem)
-    CALL st1_initDiscretisation (rproblem)    
-    CALL st1_initMatVec (rproblem)    
-    CALL st1_initAnalyticBC (rproblem)   
-    CALL st1_initDiscreteBC (rproblem)
+    CALL st2_initParamTriang (2,LV,rproblem)
+    CALL st2_initDiscretisation (rproblem)    
+    CALL st2_initMatVec (rproblem)    
+    CALL st2_initAnalyticBC (rproblem)   
+    CALL st2_initDiscreteBC (rproblem)
     
     ! Implementation of boundary conditions
-    CALL st1_implementBC (rproblem)
+    CALL st2_implementBC (rproblem)
     
     ! Solve the problem
-    CALL st1_solve (rproblem)
+    CALL st2_solve (rproblem)
     
     ! Postprocessing
-    CALL st1_postprocessing (rproblem)
+    CALL st2_postprocessing (rproblem)
     
     ! Cleanup
-    CALL st1_doneMatVec (rproblem)
-    CALL st1_doneBC (rproblem)
-    CALL st1_doneDiscretisation (rproblem)
-    CALL st1_doneParamTriang (rproblem)
+    CALL st2_doneMatVec (rproblem)
+    CALL st2_doneBC (rproblem)
+    CALL st2_doneDiscretisation (rproblem)
+    CALL st2_doneParamTriang (rproblem)
 
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *

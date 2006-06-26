@@ -388,9 +388,6 @@ MODULE linearsolver
   ! VANCA iteration
   INTEGER, PARAMETER :: LINSOL_ALG_VANCA         = 54
   
-  ! VANCA iteration (2D Nav.St., pure $\tilde Q_1/P_0$ discretisation)
-  !INTEGER, PARAMETER :: LINSOL_ALG_VANCAQ1TP02DNS = 55
-  
 !</constantblock>
 
 !<constantblock description="Identifiers for stopping criteria">
@@ -458,6 +455,10 @@ MODULE linearsolver
 
   ! General VANCA solver
   INTEGER, PARAMETER :: LINSOL_VANCA_GENERAL     = 0   
+  
+  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
+  ! discretisation
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0   = 1
 
 !</constantblock>
 
@@ -761,6 +762,9 @@ MODULE linearsolver
     ! For general VANCA (csubtypeVANCA=LINSOL_VANCA_GENERAL):
     ! Algorithm-specific structure.
     TYPE(t_vancaGeneral) :: rvancaGeneral
+    
+    ! For simple 2D-Saddle-Point Q1~/Q0 VANCA
+    TYPE(t_vancaPointer2DSPQ1TQ0) :: rvanca2DSPQ1TQ0
   
     ! Temporary vector to use during the solution process
     TYPE(t_vectorBlock) :: rtempVector
@@ -1067,10 +1071,11 @@ CONTAINS
   
   ! Note in the system matrix structure that this matrix actually belongs to
   ! the application and not to the solver.
-  ! (DonÄt care about empty sub-matrices here...)
+  ! (Don't care about empty sub-matrices here...)
   nblocks = rsolverNode%rsystemMatrix%ndiagBlocks
   rsolverNode%rsystemMatrix%RmatrixBlock(1:nblocks,1:nblocks)%imatrixSpec = &
-    LSYSSC_MSPEC_ISCOPY
+    IOR(rsolverNode%rsystemMatrix%RmatrixBlock(1:nblocks,1:nblocks)%imatrixSpec,&
+        LSYSSC_MSPEC_ISCOPY)
   
   ! Depending on the solver type, call the corresponding initialisation
   ! routine. For all single-grid solvers, pass the matrix on the highest
@@ -1270,7 +1275,7 @@ CONTAINS
     
     SELECT CASE(rsolverNode%calgorithm)
     CASE (LINSOL_ALG_VANCA)
-      ! VANCA: no init-data-routine.
+      CALL linsol_initDataVANCA (rsolverNode,ierror,isubgroup)
     CASE (LINSOL_ALG_DEFCORR)
       CALL linsol_initDataDefCorr (rsolverNode,ierror,isubgroup)
     CASE (LINSOL_ALG_UMFPACK4)
@@ -2972,6 +2977,69 @@ CONTAINS
 
 !<subroutine>
   
+  RECURSIVE SUBROUTINE linsol_initDataVANCA (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Performs final preparation of the VANCA solver subtype.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the VANCA solver
+  TYPE(t_linsolNode), INTENT(INOUT), TARGET :: rsolverNode
+!</inputoutput>
+
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+  
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: isubgroup
+
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! Stop if there's no matrix assigned
+  
+  IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
+    PRINT *,'Error: No matrix associated!'
+    STOP
+  END IF
+  
+  ! Which VANCA subtype do we have? Only in some variants there's
+  ! something to do...
+  SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
+  CASE (LINSOL_VANCA_2DSPQ1TQ0)
+    ! Special initialisation of a VANCA structure.
+    CALL vanca_init2DSPQ1TQ0simple(rsolverNode%rsystemMatrix,&
+                                   rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0)
+  END SELECT
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
   RECURSIVE SUBROUTINE linsol_doneStructureVANCA (rsolverNode, isolverSubgroup)
   
 !<description>
@@ -3121,6 +3189,10 @@ CONTAINS
     CASE (LINSOL_VANCA_GENERAL)
       CALL vanca_general (rsolverNode%p_rsubnodeVANCA%rvancaGeneral, &
                           p_rvector, rd, domega)
+
+    CASE (LINSOL_VANCA_2DSPQ1TQ0)
+      CALL vanca_2DSPQ1TQ0simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0, &
+                                  p_rvector, rd, domega)
       
     CASE DEFAULT
       PRINT *,'Unknown VANCA variant!'
@@ -3266,11 +3338,13 @@ CONTAINS
   CASE (LSYSSC_MATRIX9)
     ! Format 9 is exactly the UMFPACK matrix.
     ! Make a copy of the matrix structure, but use the same matrix entries.
-    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_STRUCTURE)
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
+                                  LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
   CASE (LSYSSC_MATRIX7)
     ! For format 7, we have to modify the matrix slightly.
     ! Make a copy of the whole matrix:
-    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_ALL)
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
+                                  LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
     ! Resort the entries to put the diagonal entry to the correct position.
     ! This means: Convert the structure-7 matrix to a structure-9 matrix:
     PRINT *,'UMFPACK: Convert 7->9 matrix not implemented!'
@@ -3404,11 +3478,13 @@ CONTAINS
   CASE (LSYSSC_MATRIX9)
     ! Format 9 is exactly the UMFPACK matrix.
     ! Make a copy of the matrix structure, but use the same matrix entries.
-    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_STRUCTURE)
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
+                                  LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
   CASE (LSYSSC_MATRIX7)
     ! For format 7, we have to modify the matrix slightly.
     ! Make a copy of the whole matrix:
-    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,LSYSSC_DUP_ALL)
+    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
+                                  LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
     ! Resort the entries to put the diagonal entry to the correct position.
     ! This means: Convert the structure-7 matrix to a structure-9 matrix:
     PRINT *,'UMFPACK: Convert 7->9 matrix not implemented!'

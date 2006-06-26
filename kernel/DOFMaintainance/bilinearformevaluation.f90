@@ -207,6 +207,11 @@ CONTAINS
     STOP
   END IF
 
+  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+    PRINT *,'bilf_buildMatrixScalar: No discretisation associated!'
+    STOP
+  END IF
+
   ! Do we have a uniform triangulation? Would simplify a lot...
   SELECT CASE (rmatrixScalar%p_rspatialDiscretisation%ccomplexity)
   CASE (SPDISC_UNIFORM) 
@@ -1133,6 +1138,11 @@ CONTAINS
   
   !CHARACTER(LEN=20) :: CFILE
   
+  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+    PRINT *,'bilf_buildMatrix9d_conf: No discretisation associated!'
+    STOP
+  END IF
+
   ! Which derivatives of basis functions are needed?
   ! Check the descriptors of the bilinear form and set BDERxxxx
   ! according to these.
@@ -1945,6 +1955,11 @@ CONTAINS
   
   !CHARACTER(LEN=20) :: CFILE
   
+  IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
+    PRINT *,'bilf_buildMatrix9d_conf2: No discretisation associated!'
+    STOP
+  END IF
+
   ! Which derivatives of basis functions are needed?
   ! Check the descriptors of the bilinear form and set BDERxxxx
   ! according to these.

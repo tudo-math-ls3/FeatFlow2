@@ -242,24 +242,19 @@ MODULE linearsystemblock
     ! structure.
     TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscretisation
 
-    ! A pointer to discretised boundary conditions for real boundary components.
-    ! These boundary conditions allow to couple multiple equations in the 
-    ! system and don't belong only to one single scalar component of the
-    ! solution.
-    ! If no system-wide boundary conditions are specified, p_rdiscreteBC
+    ! A pointer to discretised boundary conditions for real boundary 
+    ! components. If no boundary conditions are specified, p_rdiscreteBC
     ! can be set to NULL().
     TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC => NULL()
     
     ! A pointer to discretised boundary conditions for fictitious boundary
-    ! components.
-    ! These boundary conditions allow to couple multiple equations in the 
-    ! system and don't belong only to one single scalar component of the
-    ! solution.
-    ! If no system-wide boundary conditions are specified, p_rdiscreteBCfict
-    ! can be set to NULL().
+    ! components. If no fictitious boundary conditions are specified, 
+    ! p_rdiscreteBCfict can be set to NULL().
     TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
     
-    ! A 2D array with scalar matrices for all the blocks
+    ! A 2D array with scalar matrices for all the blocks.
+    ! A submatrix is assumed to be empty (zero-block) if the corresponding
+    ! NEQ=NCOLS=0.
     TYPE(t_matrixScalar), &
       DIMENSION(LSYSBL_MAXBLOCKS,LSYSBL_MAXBLOCKS) :: RmatrixBlock
     

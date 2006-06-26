@@ -18,7 +18,7 @@ SRC = qtrafo.f \
       gmv2doutput.f initria.f inmtri.f quad2tri.f structria.f triutil2d.f
 
 # The f90 source files 
-SRC +=  stokes_callback.f90 stokes_method1.f90 \
+SRC +=  stokes_callback.f90 stokes_method1.f90 stokes_method2.f90 \
         stokes.f90
 
 # include the standart kernel sources

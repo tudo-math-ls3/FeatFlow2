@@ -20,6 +20,7 @@
 PROGRAM stokes
 
   USE stokes_method1
+  USE stokes_method2
   
   IMPLICIT NONE
   
@@ -53,6 +54,12 @@ PROGRAM stokes
   PRINT *,'Calculating Stokes-Problem with method 1'
   PRINT *,'-----------------------------------------'
   CALL stokes1
+
+  ! Call the problem to solve. stokes 1:
+  PRINT *
+  PRINT *,'Calculating Stokes-Problem with method 2'
+  PRINT *,'-----------------------------------------'
+  CALL stokes2
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

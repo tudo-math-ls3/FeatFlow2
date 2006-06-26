@@ -26,38 +26,42 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) storage_init
-!#     -> Initialises the storage management
+!#  1.) storage_init
+!#      -> Initialises the storage management
 !#
-!# 2.) storage_done
-!#     -> Cleans up the storage management
+!#  2.) storage_done
+!#      -> Cleans up the storage management
 !#
-!# 3.) storage_info
-!#     -> Prints statistics about the heap to the terminal
+!#  3.) storage_info
+!#      -> Prints statistics about the heap to the terminal
 !#
-!# 4.) storage_new  =  storage_new1D / storage_new2D
-!#     -> Allocates a new 1D or 2D array
+!#  4.) storage_new  =  storage_new1D / storage_new2D
+!#      -> Allocates a new 1D or 2D array
 !#
-!# 5.) storage_free
-!#     -> Releases a handle and the associated memory
+!#  5.) storage_free
+!#      -> Releases a handle and the associated memory
 !#
-!# 6.) storage_getbase_single,
-!#     storage_getbase_double,
-!#     storage_getbase_int,
-!#     -> Determine pointer associated to a handle for singles, doubles
-!#        or 32-Bit integers
+!#  6.) storage_getbase_single,
+!#      storage_getbase_double,
+!#      storage_getbase_int,
+!#      -> Determine pointer associated to a handle for singles, doubles
+!#         or 32-Bit integers
 !#
-!# 7.) storage_getbase_single2D,
-!#     storage_getbase_double2D,
-!#     storage_getbase_int2D,
-!#     -> Determine pointer associated to a handle for singles, doubles
-!#        or 32-Bit integers, 2D array
+!#  7.) storage_getbase_single2D,
+!#      storage_getbase_double2D,
+!#      storage_getbase_int2D,
+!#      -> Determine pointer associated to a handle for singles, doubles
+!#         or 32-Bit integers, 2D array
 !#
-!# 8.) storage_copy
-!#     -> Copies the content of one array to another.
+!#  8.) storage_copy
+!#      -> Copies the content of one array to another.
 !#
-!# 9.) storage_clear
-!#     -> Clears an array by overwriting the entries with 0.
+!#  9.) storage_clear
+!#      -> Clears an array by overwriting the entries with 0.
+!#
+!# 10.) storage_size = storage_size1d / storage_size2d
+!#      -> Get the length of an array on the heap.
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -219,6 +223,11 @@ MODULE storage
   INTERFACE storage_new
     MODULE PROCEDURE storage_new1D
     MODULE PROCEDURE storage_new2D
+  END INTERFACE
+
+  INTERFACE storage_size
+    MODULE PROCEDURE storage_size1D
+    MODULE PROCEDURE storage_size2D
   END INTERFACE
   
 CONTAINS
@@ -865,6 +874,160 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE storage_size1D (ihandle, isize, rheap)
+
+!<description>
+  ! Returns the length of an array identified by ihandle.
+!</description>
+
+!<input>
+  ! Handle of the memory block to be releases
+  INTEGER, INTENT(IN) :: ihandle
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</inputouotput>
+
+!<output>
+  ! Length of the array identified by ihandle.
+  INTEGER(I32), INTENT(OUT) :: isize
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  IF (ihandle .LE. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_size1D: Handle invalid!'
+    STOP
+  END IF
+  
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+  
+  ! Is the node associated at all?
+  IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_size1D: Handle invalid!'
+    PRINT *,'Handle number: ',ihandle
+    STOP
+  END IF
+
+  ! What are we?
+  IF (p_rnode%idimension .NE. 1) THEN
+    PRINT *,'Error in storage_size1D: Handle ',ihandle,' is not 1-dimensional!'
+    STOP
+  END IF
+  
+  SELECT CASE (p_rnode%idataType)
+  CASE (ST_SINGLE)
+    isize = SIZE(p_rnode%p_Fsingle1D)
+  CASE (ST_DOUBLE)
+    isize = SIZE(p_rnode%p_Ddouble1D)
+  CASE (ST_INT)
+    isize = SIZE(p_rnode%p_Iinteger1D)
+  CASE DEFAULT
+    PRINT *,'Error in storage_size1D: Invalid data type!' 
+    STOP
+  END SELECT
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_size2D (ihandle, isize, rheap)
+
+!<description>
+  ! Returns the length of an array identified by ihandle.
+!</description>
+
+!<input>
+  ! Handle of the memory block to be releases
+  INTEGER, INTENT(IN) :: ihandle
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</inputouotput>
+
+!<output>
+  ! Length of each dimension of the array identified by ihandle.
+  INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Isize
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  IF (ihandle .LE. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_size2D: Handle invalid!'
+    STOP
+  END IF
+  
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+  
+  ! Is the node associated at all?
+  IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_size2D: Handle invalid!'
+    PRINT *,'Handle number: ',ihandle
+    STOP
+  END IF
+
+  ! What are we?
+  IF (p_rnode%idimension .NE. 2) THEN
+    PRINT *,'Error in storage_size1D: Handle ',ihandle,' is not 2-dimensional!'
+    STOP
+  END IF
+  
+  SELECT CASE (p_rnode%idataType)
+  CASE (ST_SINGLE)
+    Isize = SIZE(p_rnode%p_Fsingle2D)
+  CASE (ST_DOUBLE)
+    Isize = SIZE(p_rnode%p_Ddouble2D)
+  CASE (ST_INT)
+    Isize = SIZE(p_rnode%p_Iinteger2D)
+  CASE DEFAULT
+    PRINT *,'Error in storage_size2D: Invalid data type!' 
+    STOP
+  END SELECT
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE storage_getbase_int (ihandle, p_Iarray, rheap)
   
 !<description>
@@ -970,7 +1133,7 @@ CONTAINS
   END IF
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
-    PRINT *,'Wrong handle'
+    PRINT *,'storage_getbase_single: Wrong handle'
     STOP
   END IF
   
@@ -1032,7 +1195,7 @@ CONTAINS
   END IF
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
-    PRINT *,'Wrong handle'
+    PRINT *,'storage_getbase_double: Wrong handle'
     STOP
   END IF
   
@@ -1094,7 +1257,7 @@ CONTAINS
   END IF
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
-    PRINT *,'Wrong handle'
+    PRINT *,'storage_getbase_int2D: Wrong handle'
     STOP
   END IF
   
@@ -1151,7 +1314,7 @@ CONTAINS
   END IF
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
-    PRINT *,'Wrong handle'
+    PRINT *,'storage_getbase_single2D: Wrong handle'
     STOP
   END IF
   
@@ -1204,7 +1367,7 @@ CONTAINS
   END IF
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
-    PRINT *,'Wrong handle'
+    PRINT *,'storage_getbase_double2D: Wrong handle'
     STOP
   END IF
   
@@ -1261,11 +1424,11 @@ CONTAINS
     END IF
 
     IF (h_source .EQ. ST_NOHANDLE) THEN
-      PRINT *,'Wrong handle'
+      PRINT *,'storage_copy: Wrong handle'
       STOP
     END IF
     IF (.NOT. ASSOCIATED(p_rheap%p_Rdescriptors)) THEN
-      PRINT *,'Heap not initialised!'
+      PRINT *,'storage_copy: Heap not initialised!'
       STOP
     END IF
 

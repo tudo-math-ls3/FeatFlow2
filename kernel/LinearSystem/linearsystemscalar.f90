@@ -128,9 +128,9 @@ MODULE linearsystemscalar
   ! Identifier for matrix format 7 - CSR with diagonal element in front
   INTEGER, PARAMETER :: LSYSSC_MATRIX7 = 7
 
-  !</constantblock>
+!</constantblock>
 
-  !<constantblock description="Flags for the matrix specification bitfield">
+!<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
   INTEGER, PARAMETER :: LSYSSC_MSPEC_STANDARD =        0
@@ -177,7 +177,7 @@ MODULE linearsystemscalar
   
   ! Duplicate by ownership. What belongs to the matrix is duplicated,
   ! what belongs to another matrix is left as-is.
-  INTEGER, PARAMETER :: LSYSSC_DUP_ASIS      = 0
+  !INTEGER, PARAMETER :: LSYSSC_DUP_ASIS      = 0
 
   ! Duplicate nothing, simply copy the structure and mark the handles
   ! as belonging to another matrix.
@@ -194,7 +194,7 @@ MODULE linearsystemscalar
   INTEGER, PARAMETER :: LSYSSC_DUP_STRUCTURE = 4
 
   ! Duplicate both, structure and content
-  INTEGER, PARAMETER :: LSYSSC_DUP_ALL       = 5
+  INTEGER, PARAMETER :: LSYSSC_DUP_ALL       = 10
   
   ! Allocate memory for the matrix structure in the same size as the original
   ! matrix. No content is created.
@@ -202,13 +202,46 @@ MODULE linearsystemscalar
 
   ! Allocate memory for the matrix structure and content in the same size 
   ! as the original matrix.
-  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYALL   = 7
+  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYALL   = 9
   
+  ! ------------
+  
+  ! Don't set up the content/structure of the destination matrix, ignore
+  ! any previous structure/content
+  INTEGER, PARAMETER :: LSYSSC_DUP_IGNORE = 0
+  
+  ! Removes any existing matrix content/structure from the destination matrix.
+  ! Releases memory if necessary.
+  INTEGER, PARAMETER :: LSYSSC_DUP_REMOVE = 1
+  
+  ! Removes any existing matrix content from the destination matrix.
+  ! No memory is released, handles are simply dismissed.
+  INTEGER, PARAMETER :: LSYSSC_DUP_DISMISS = 2
+  
+  ! The destination matrix recveives the same handles for matrix content/structure
+  ! as the source matrix  and therefore shares the same content/structure.
+  INTEGER, PARAMETER :: LSYSSC_DUP_SHARE = 3
+  
+  ! The destination matrix gets a copy of the content of rsourceMatrix.
+  ! If necessary, new memory is allocated.
+  ! If the destination matrix  already contains allocated memory, content/structure
+  ! data is simply copied from rsourceMatrix into that.
+  INTEGER, PARAMETER :: LSYSSC_DUP_COPY = 4
+  
+  ! Duplicate by ownership. What belongs to the source matrix is copied 
+  ! (the same as LSYSSC_DUP_COPY). What belongs even to another matrix than
+  ! the source matrix is shared (the same as LSYSSC_DUP_SHARE, .
+  INTEGER, PARAMETER :: LSYSSC_DUP_ASIS = 5
+  
+  ! New memory is allocated for the structure/content in the same size as 
+  ! in tzhe source matrix but no data is copied; the arrays are left uninitialised.
+  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTY = 6 
+                                               
   ! Copy the basic matrix information but don't copy handles.
   ! Set all handles of dynamic information to ST_NOHANDLE, so the matrix
   ! 'looks like' the old but has no dynamic data associated.
-  INTEGER, PARAMETER :: LSYSSC_DUP_TEMPLATE   = 8
-                                               
+  INTEGER, PARAMETER :: LSYSSC_DUP_TEMPLATE   = 7
+                 
 !</constantblock>
 
 !<constantblock description="Constants for transposing a matrix">
@@ -221,7 +254,11 @@ MODULE linearsystemscalar
 
   ! Don't transpose the matrix, simply mark the matrix as transposed
   ! by changing the flag in imatrixSpec
-  INTEGER, PARAMETER :: LSYSSC_TR_VIRTUAL    = 2**1
+  INTEGER, PARAMETER :: LSYSSC_TR_VIRTUAL    = 2
+
+  ! Don't transpose the matrix. Copy the matrix in memory and mark the 
+  ! matrix as transposed by changing the flag in imatrixSpec
+  INTEGER, PARAMETER :: LSYSSC_TR_VIRTUALCOPY = 3
 
 !</constantblock>
 
@@ -922,17 +959,40 @@ CONTAINS
       ! Select the right MV multiplication routine from the matrix format
       SELECT CASE (rmatrix%cmatrixFormat)
       
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
+      CASE (LSYSSC_MATRIX9)
       
         ! Take care of the precision of the entries
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
-          ! Format 7 and Format 9 multiplication
+          ! Format 9 multiplication
           SELECT CASE (rx%cdataType)
           
           CASE (ST_DOUBLE)
             ! double precision matrix, double precision vectors
-            CALL lsyssc_LTX79doubledouble (rmatrix,rx,ry,cx,cy)
+            CALL lsyssc_LTX9doubledouble (rmatrix,rx,ry,cx,cy)
+          
+          CASE DEFAULT
+            PRINT *,'Only double precision vectors supported for now in MV!'
+            STOP
+            
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'Only double precision matrices supported for now in MV!'
+          STOP
+        END SELECT
+        
+      CASE (LSYSSC_MATRIX7)
+      
+        ! Take care of the precision of the entries
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Format 7 multiplication
+          SELECT CASE (rx%cdataType)
+          
+          CASE (ST_DOUBLE)
+            ! double precision matrix, double precision vectors
+            CALL lsyssc_LTX7doubledouble (rmatrix,rx,ry,cx,cy)
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
@@ -975,8 +1035,8 @@ CONTAINS
 
     REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
-    INTEGER(PREC_MATIDX) :: irow,icol
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX) :: irow,icol
     REAL(DP) :: dtmp
     INTEGER(PREC_VECIDX) :: NEQ
 
@@ -1059,11 +1119,11 @@ CONTAINS
     END SUBROUTINE
    
     !**************************************************************
-    ! Format 7 and Format 9 multiplication, transposed matrix
+    ! Format 7 multiplication, transposed matrix
     ! double precision matrix,
     ! double precision vectors
     
-    SUBROUTINE lsyssc_LTX79doubledouble (rmatrix,rx,ry,cx,cy)
+    SUBROUTINE lsyssc_LTX7doubledouble (rmatrix,rx,ry,cx,cy)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
@@ -1075,8 +1135,8 @@ CONTAINS
 
     REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol
-    INTEGER(PREC_MATIDX) :: irow,icol
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX) :: irow,icol
     REAL(DP) :: dtmp
     INTEGER(PREC_VECIDX) :: NEQ
 
@@ -1140,6 +1200,89 @@ CONTAINS
         
         DO irow=1,NEQ
           DO icol = p_Kld(irow)+1,p_Kld(irow+1)-1
+            p_Dy(p_Kcol(icol)) = p_Dy(p_Kcol(icol)) + p_Dx(irow)*p_DA(icol)
+          END DO
+        END DO
+        
+        ! Scale by cx, finish.
+        
+        IF (cx .NE. 1.0_DP) THEN
+          CALL lalg_scaleVectorDble (p_Dy,cx)
+        END IF
+        
+      ELSE 
+        ! cx = 0. The formula is just a scaling of the vector ry!
+        CALL lalg_scaleVectorDble(p_Dy,cy)
+      ENDIF
+      
+    END SUBROUTINE
+
+    !**************************************************************
+    ! Format 9 multiplication, transposed matrix
+    ! double precision matrix,
+    ! double precision vectors
+    
+    SUBROUTINE lsyssc_LTX9doubledouble (rmatrix,rx,ry,cx,cy)
+
+    ! Save arguments as above - given as parameters as some compilers
+    ! might have problems with scoping units...
+    TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
+    TYPE(t_vectorScalar), INTENT(IN)                  :: rx
+    REAL(DP), INTENT(IN)                              :: cx
+    REAL(DP), INTENT(IN)                              :: cy
+    TYPE(t_vectorScalar), INTENT(INOUT)               :: ry
+
+    REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX) :: irow,icol
+    REAL(DP) :: dtmp
+    INTEGER(PREC_VECIDX) :: NEQ
+
+      ! Get the matrix
+      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
+      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      
+      ! NCOLS(real matrix) = NEQ(saved matrix structure) !
+      NEQ = rmatrix%NCOLS
+
+      ! Get the vectors
+      CALL lsyssc_getbase_double (rx,p_Dx)
+      CALL lsyssc_getbase_double (ry,p_Dy)
+      
+      ! Perform the multiplication.
+      IF (cx .NE. 0.0_DP) THEN
+      
+        IF (cy .EQ. 0.0_DP) THEN
+        
+          ! cy = 0. Clear the output vector at first
+          CALL lalg_clearVectorDble (p_Dy)
+          
+          ! Now we have an empty ry where we can do a usual MV
+          ! with the rest of the matrix...
+          
+        ELSE 
+        
+          ! cy <> 0. We have to perform matrix*vector + vector.
+          ! What we actually calculate here is:
+          !    ry  =  cx * A^t * x  +  cy * y
+          !        =  cx * ( A^t * x  +  cy/cx * y).
+          !        =  cx * ( (x^t * A)  +  cy/cx * y^t)^t.
+          !
+          ! Scale down y:
+        
+          dtmp = cy/cx
+          IF (dtmp .NE. 1.0_DP) THEN
+            CALL lalg_scaleVectorDble(p_Dy,dtmp)
+          END IF
+          
+        ENDIF
+        
+        ! Multiply rx with the matrix and add it to ry:
+        
+        DO irow=1,NEQ
+          DO icol = p_Kld(irow),p_Kld(irow+1)-1
             p_Dy(p_Kcol(icol)) = p_Dy(p_Kcol(icol)) + p_Dx(irow)*p_DA(icol)
           END DO
         END DO
@@ -1229,268 +1372,763 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_duplicateMatrix (rsourceMatrix,rdestMatrix,idupFlag)
+  SUBROUTINE lsyssc_duplicateMatrix (rsourceMatrix,rdestMatrix,&
+                                                idupStructure, idupContent)
   
 !<description>
-  ! Duplicates an existing matrix. All structural data from rsourceMatrix
-  ! is assigned to rnewMatrix. Whether the entries and/or structure
-  ! is duplicated is decided on idupFlag.
+  ! Duplicates an existing matrix, creates a new matrix rdestMatrix based
+  ! on a template matrix rsourceMatrix.
+  ! Duplicating a matrix does not necessarily mean that new memory is
+  ! allocated and the matrix entries are copied to that. The two flags
+  ! iduipStructure and idupContent decide on how to set up rdestMatrix.
+  ! Depending on their setting, it's possible to copy only the handles
+  ! of such dynamic information, so that both matrices share the same
+  ! information.
+  !
+  ! We follow the following convention:
+  !  Structure = Column structure, Row structure, Sorting permutation,
+  !              Discretisation-related information
+  !  Content   = Enties in a matrix.
+  !
+  ! Remark: There is never memory allocated on the heap for the sorting
+  !  permutation. A matrix is never the 'owner' of a permutation, i.e.
+  !  does not maintain it. Therefore, copying a permutation means
+  !  copying the corresponding handle. The application must keep track
+  !  of the permutations.
 !</description>
   
 !<input>
   ! Source matrix.
   TYPE(t_matrixScalar), INTENT(IN)               :: rsourceMatrix
   
-  ! Duplication flag. Decides on what is to copy and whether some information
-  ! is to be shared with the old matrix by using the same handles.
-  ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. What belongs to the matrix
-  !   rsourceMatrix is duplicated, what belongs to another matrix is shared
-  !   betweed rsourceMatrix, rdestMatrix and the other matrix.
-  ! LSYSSC_DUP_NONE       : Share structure and content
-  ! LSYSSC_DUP_STRNOCONT  : Duplicate the structure. Content will be left empty.
-  !                         Can be used to set up an empty matrix with the
-  !                         structure of another one.
-  ! LSYSSC_DUP_STRUCTURE  : Create a new structure, share the content between
-  !                         rsourceMatrix and rdestMatrix (if there is any content
-  !                         in rsourceMatrix; otherwise this is the same as
-  !                         LSYSSC_DUP_STRNOCONT)
-  ! LSYSSC_DUP_CONTENT    : Create a new content, share the structure between
-  !                         rsourceMatrix and rdestMatrix.
-  ! LSYSSC_DUP_ALL        : Duplicate both, structure and content.
-  !                         This generates a completely independent matrix.
-  ! LSYSSC_DUP_EMPTYSTRUC : Allocate memory for the same structure as
-  !   the source matrix, but don't initialise the structure.
-  ! LSYSSC_DUP_EMPTYALL   : Allocate memory for the same structure and content
-  !   as the source matrix, but don't initialise the structure/content.
-  ! LSYSSC_DUP_TEMPLATE   : Copy the whole matrix structure but reset all handles
-  !   of dynamic information to ST_NOHANDLE, so to create an empty matrix.
-  INTEGER, INTENT(IN)                            :: idupflag
+  ! Duplication flag that decides on how to set up the structure
+  ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Don't set up the structure of rdestMatrix. Any
+  !   matrix structure is ignored and therefore preserved.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
+  !   rdestMatrix if there is any. Releases memory if necessary.
+  !   Does not delete 'static' information like NEQ,NCOLS,NA,...
+  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix structure from 
+  !   rdestMatrix if there is any. No memory is released, handles are simply
+  !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
+  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  !   structural data as rsourceMatrix and therefore shares the same structure.
+  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the structure of 
+  !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
+  !   If rdestMatrix already contains allocated memory, structural data
+  !   is simply copied from rsourceMatrix into that.
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the structure of 
+  !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
+  !   of the structure; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
+  !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
+  !   rsourceMatrix and is therefore a third matrix sharing the same structure
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   other matrix have the same structure).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the structure in the
+  !   same size as the structure in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
+  !   is removed from the destination matrix, all handles are reset.
+  INTEGER, INTENT(IN)                            :: idupStructure
   
+  ! Duplication flag that decides on how to set up the content
+  ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Don't set up the content of rdestMatrix. Any
+  !   matrix content is ignored and therefore preserved.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
+  !   rdestMatrix if there is any. Releases memory if necessary.
+  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix content from 
+  !   rdestMatrix if there is any. No memory is released, handles are simply
+  !   dismissed.
+  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  !   matrix content data as rsourceMatrix and therefore shares the same content.
+  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the content of rsourceMatrix.
+  !   If necessary, new memory is allocated for the content.
+  !   If rdestMatrix already contains allocated memory, content data
+  !   is simply copied from rsourceMatrix into that.
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
+  !   of the content; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
+  !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
+  !   rsourceMatrix and is therefore a third matrix sharing the same content
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   other matrix have the same content).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  !   same size as the structure in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
+  !   is removed from the destination matrix, all handles are reset.
+  INTEGER, INTENT(IN)                            :: idupContent
 !</input>
 
 !<output>
   ! Destination matrix.
-  TYPE(t_matrixScalar), INTENT(OUT)               :: rdestMatrix
+  TYPE(t_matrixScalar), INTENT(INOUT)            :: rdestMatrix
 !</output>  
 
 !</subroutine>
 
-  ! local variables
-  LOGICAL :: bdupContent, bdupStructure,bemptyContent,bemptyStruc
-  LOGICAL :: bhasContent, bhasStructure
-  INTEGER(PREC_VECIDX) :: NEQ
-
-  ! At first, copy all 'local' data.
-  rdestMatrix = rsourceMatrix
+    ! local variables
+    INTEGER(PREC_MATIDX) :: isize
   
-  ! Now decide what to replace by a copy.
-  SELECT CASE (idupflag)
-  CASE (LSYSSC_DUP_ASIS)
-    bdupContent = IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0
-    bdupStructure = IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0
-    bemptyContent = .FALSE.
-    bemptyStruc = .FALSE.
-    
-  CASE (LSYSSC_DUP_NONE)
-    bdupContent = .FALSE.
-    bdupStructure = .FALSE.
-    bemptyContent = .FALSE.
-    bemptyStruc = .FALSE.
-    
-  CASE (LSYSSC_DUP_STRUCTURE,LSYSSC_DUP_STRNOCONT)
-    bdupContent = .FALSE.
-    bdupStructure = .TRUE.
-    bemptyContent = .FALSE.
-    bemptyStruc = .FALSE.
-    
-  CASE (LSYSSC_DUP_CONTENT)
-    bdupContent = .TRUE.
-    bdupStructure = .FALSE.
-    bemptyContent = .FALSE.
-    bemptyStruc = .FALSE.
-    
-  CASE (LSYSSC_DUP_ALL)
-    bdupContent = .TRUE.
-    bdupStructure = .TRUE.
-    bemptyContent = .FALSE.
-    bemptyStruc = .FALSE.
-    
-  CASE (LSYSSC_DUP_EMPTYSTRUC)
-    bdupContent = .FALSE.
-    bdupStructure = .FALSE.
-    bemptyContent = .TRUE.
-    bemptyStruc = .FALSE.
-    
-  CASE (LSYSSC_DUP_EMPTYALL)
-    bdupContent = .FALSE.
-    bdupStructure = .FALSE.
-    bemptyContent = .TRUE.
-    bemptyStruc = .TRUE.
-
-  CASE (LSYSSC_DUP_TEMPLATE)
-    bdupContent = .FALSE.
-    bdupStructure = .FALSE.
-    bemptyContent = .FALSE.
-    bemptyStruc = .FALSE.
-    
-  CASE DEFAULT
-    PRINT *,'lsyssc_duplicateMatrix: invalid idubflag'
-    STOP
-  END SELECT
-  
-  ! Depending on the matrix format choose how to duplicate
-  SELECT CASE (rsourceMatrix%cmatrixFormat)
-  CASE (LSYSSC_MATRIX9)
-    bhasContent = rsourceMatrix%h_Da .NE. ST_NOHANDLE
-    bhasStructure = rsourceMatrix%h_Kcol .NE. ST_NOHANDLE
-    
-    IF (bdupContent) THEN
-      ! Put the destination handle to ST_NOHANDLE, so storage_copy
-      ! will create new ones.
-      rdestMatrix%h_DA = ST_NOHANDLE
-      CALL storage_copy(rsourceMatrix%h_DA, rdestMatrix%h_DA)
-    END IF
-    IF (bdupStructure) THEN
-      ! Put the destination handles to ST_NOHANDLE, so storage_copy
-      ! will create new ones.
-      rdestMatrix%h_Kcol = ST_NOHANDLE
-      rdestMatrix%h_Kld = ST_NOHANDLE
-      rdestMatrix%h_Kdiagonal = ST_NOHANDLE
-      CALL storage_copy(rsourceMatrix%h_Kcol, rdestMatrix%h_Kcol)
-      CALL storage_copy(rsourceMatrix%h_Kld, rdestMatrix%h_Kld)
-      CALL storage_copy(rsourceMatrix%h_Kdiagonal, rdestMatrix%h_Kdiagonal)
-    END IF
-    
-    IF (bemptyContent) THEN
-      ! Create a new content array in the same data type as the original matrix
-      CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
-           rsourceMatrix%NA, rsourceMatrix%cdataType, &
-           rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
-    END IF
-    
-    IF (bemptyStruc) THEN
-      ! Create new structure arrays in the same size as our 'template'.
-      NEQ = rsourceMatrix%NEQ
-      IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) &
-        NEQ = rsourceMatrix%NCOLS
+    ! What do we have to do for the structure?
+    SELECT CASE (idupStructure)
+    CASE (LSYSSC_DUP_IGNORE)
+      ! Nothing
+    CASE (LSYSSC_DUP_REMOVE)
+      ! Remove the structure - if there is any.
+      CALL removeStructure(rdestMatrix, .TRUE.)
       
-      CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
-           rsourceMatrix%NA, ST_INT, &
-           rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
-
-      CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
-           NEQ+1, ST_INT, &
-           rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
-
-      CALL storage_new ('lsyssc_duplicateMatrix', 'Kdiagonal', &
-           NEQ, ST_INT, &
-           rdestMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
-    END IF
-    
-    IF (idupflag .EQ. LSYSSC_DUP_TEMPLATE) THEN
-      ! Clear all handles
-      rdestMatrix%h_Da = ST_NOHANDLE
-      rdestMatrix%h_Kcol = ST_NOHANDLE
-      rdestMatrix%h_Kld = ST_NOHANDLE
-      rdestMatrix%h_Kdiagonal = ST_NOHANDLE
-    END IF
-
-  CASE (LSYSSC_MATRIX7)
-    bhasContent = rsourceMatrix%h_Da .NE. ST_NOHANDLE
-    bhasContent = rsourceMatrix%h_Kcol .NE. ST_NOHANDLE
-
-    IF (bdupContent) THEN
-      ! Put the destination handle to ST_NOHANDLE, so storage_copy
-      ! will create new ones.
-      rdestMatrix%h_DA = ST_NOHANDLE
-      CALL storage_copy(rsourceMatrix%h_DA, rdestMatrix%h_DA)
-    END IF
-    
-    IF (bdupStructure) THEN
-      ! Put the destination handles to ST_NOHANDLE, so storage_copy
-      ! will create new ones.
-      rdestMatrix%h_Kcol = ST_NOHANDLE
-      rdestMatrix%h_Kld = ST_NOHANDLE
-      CALL storage_copy(rsourceMatrix%h_Kcol, rdestMatrix%h_Kcol)
-      CALL storage_copy(rsourceMatrix%h_Kld, rdestMatrix%h_Kld)
-    END IF
-    
-    IF (bemptyContent) THEN
-      ! Create a new content array in the same data type as the original matrix
-      CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
-           rsourceMatrix%NA, rsourceMatrix%cdataType, &
-           rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
-    END IF
-    
-    IF (bemptyStruc) THEN
-      ! Create new structure arrays in the same size as our 'template'.
-      NEQ = rsourceMatrix%NEQ
-      IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) &
-        NEQ = rsourceMatrix%NCOLS
+    CASE (LSYSSC_DUP_DISMISS)
+      ! Dismiss the structure - if there is any.
+      CALL removeStructure(rdestMatrix, .FALSE.)
       
-      CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
-           rsourceMatrix%NA, ST_INT, &
-           rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
+    CASE (LSYSSC_DUP_TEMPLATE)
+      ! Remove the structure - if there is any.
+      CALL removeStructure(rdestMatrix, .TRUE.)
+      
+      ! Copy static structural information
+      CALL copyStaticStructure(rsourceMatrix,rdestMatrix)
 
-      CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
-           NEQ+1, ST_INT, &
-           rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
-    END IF
+    CASE (LSYSSC_DUP_SHARE)
+      ! Share the structure between rsourceMatrix and rdestMatrix
+      CALL shareStructure(rsourceMatrix, rdestMatrix)   
+      
+    CASE (LSYSSC_DUP_COPY)
+      ! Copy the structure of rsourceMatrix to rdestMatrix
+      CALL copyStructure(rsourceMatrix, rdestMatrix)  
+      
+    CASE (LSYSSC_DUP_ASIS)
+      ! What's with the source matrix. Does the structure belong to it?
+      IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0) THEN
+        ! Copy the structure
+        CALL copyStructure(rsourceMatrix, rdestMatrix)
+      ELSE
+        ! Share the structure
+        CALL shareStructure(rsourceMatrix, rdestMatrix)  
+      END IF
+      
+    CASE (LSYSSC_DUP_EMPTY)
+      ! Start with sharing the structure
+      CALL shareStructure(rsourceMatrix, rdestMatrix)
+      ! Reset ownership
+      rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
+                                     NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
 
-    IF (idupflag .EQ. LSYSSC_DUP_TEMPLATE) THEN
-      ! Clear all handles
-      rdestMatrix%h_Da = ST_NOHANDLE
-      rdestMatrix%h_Kcol = ST_NOHANDLE
-      rdestMatrix%h_Kld = ST_NOHANDLE
-      rdestMatrix%h_Kdiagonal = ST_NOHANDLE
-    END IF
+      ! And at last recreate the arrays.
+      ! Which source matrix do we have?  
+      SELECT CASE (rsourceMatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+        CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
+            rsourceMatrix%NA, ST_INT, &
+            rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
 
-  CASE DEFAULT
-    PRINT *,'lsyssc_duplicateMatrix: Unsupported Matrix format'
-    STOP
-  END SELECT
+        CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
+            rdestMatrix%NEQ+1, ST_INT, &
+            rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
+
+        CALL storage_new ('lsyssc_duplicateMatrix', 'Kdiagonal', &
+            rdestMatrix%NEQ, ST_INT, &
+            rdestMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+        
+      CASE (LSYSSC_MATRIX7)
+        CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
+            rdestMatrix%NA, ST_INT, &
+            rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
+
+        CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
+            rdestMatrix%NEQ+1, ST_INT, &
+            rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
+
+      END SELECT
+    END SELECT
+    
+    ! -----
+    ! Ok, handling of the structure is finished. The data is handled similar.
+    ! -----
+    
+    ! What do we have to do for the content?
+    SELECT CASE (idupContent)
+    CASE (LSYSSC_DUP_IGNORE)
+      ! Nothing
+    CASE (LSYSSC_DUP_REMOVE)
+      ! Remove the structure - if there is any.
+      CALL removeContent(rdestMatrix, .TRUE.)
+      
+    CASE (LSYSSC_DUP_DISMISS)
+      ! Dismiss the structure - if there is any.
+      CALL removeContent(rdestMatrix, .FALSE.)
+      
+    CASE (LSYSSC_DUP_SHARE)
+      ! Share the structure between rsourceMatrix and rdestMatrix
+      CALL shareContent(rsourceMatrix, rdestMatrix)   
+      
+    CASE (LSYSSC_DUP_COPY)
+      ! Copy the structure of rsourceMatrix to rdestMatrix
+      CALL copyContent(rsourceMatrix, rdestMatrix)  
+      
+    CASE (LSYSSC_DUP_TEMPLATE)
+      ! Remove the structure - if there is any.
+      CALL removeContent(rdestMatrix, .TRUE.)
+      
+      ! Copy static content information
+      CALL copyStaticContent(rsourceMatrix,rdestMatrix)
+
+    CASE (LSYSSC_DUP_ASIS)
+      ! What's with the source matrix. Does the structure belong to it?
+      IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .NE. 0) THEN
+        ! Copy the structure
+        CALL copyContent(rsourceMatrix, rdestMatrix)
+      ELSE
+        ! Share the structure
+        CALL shareContent(rsourceMatrix, rdestMatrix)  
+      END IF
+      
+    CASE (LSYSSC_DUP_EMPTY)
+      ! Start with sharing the structure
+      CALL shareContent(rsourceMatrix, rdestMatrix)
+      ! Reset ownership
+      rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
+                                     NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+
+      ! And at last recreate the arrays.
+      ! Which source matrix do we have?  
+      SELECT CASE (rsourceMatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+        ! Create a new content array in the same data type as the original matrix
+        CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
+            rdestMatrix%NA, rsourceMatrix%cdataType, &
+            rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+      END SELECT
+    END SELECT
+    
+    ! -----
+    ! Final check. Check if we destroyed the matrix. May only happen if the
+    ! user on-purpose calls this routine two times with different source
+    ! but the same destination matrix.
+    ! -----
+    
+    SELECT CASE (rdestMatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX9)
+    
+      ! Check length of DA
+      IF (rdestMatrix%h_DA .NE. ST_NOHANDLE) THEN
+        CALL storage_size (rdestMatrix%h_DA,isize)
+        IF (isize .NE. rdestMatrix%NA) THEN
+          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          STOP
+        END IF
+      END IF
+      
+      ! Check length of KCOL
+      IF (rdestMatrix%h_Kcol .NE. ST_NOHANDLE) THEN
+        CALL storage_size (rdestMatrix%h_Kcol,isize)
+        IF (isize .NE. rdestMatrix%NA) THEN
+          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(KCOL)!'
+          STOP
+        END IF
+      END IF
+
+      ! Check length of KLD
+      IF (rdestMatrix%h_Kld .NE. ST_NOHANDLE) THEN
+        CALL storage_size (rdestMatrix%h_Kld,isize)
+        
+        ! Be careful, matrix may be transposed.
+        IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
+          IF (isize .NE. rdestMatrix%NEQ+1) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+            STOP
+          END IF
+        ELSE
+          IF (isize .NE. rdestMatrix%NCOLS+1) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+            STOP
+          END IF
+        END IF
+      END IF
+      
+      ! Check length of Kdiagonal
+      IF (rdestMatrix%h_Kdiagonal .NE. ST_NOHANDLE) THEN
+        CALL storage_size (rdestMatrix%h_Kdiagonal,isize)
+        
+        ! Be careful, matrix may be transposed.
+        IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
+          IF (isize .NE. rdestMatrix%NEQ) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(Kdiag)!'
+            STOP
+          END IF
+        ELSE
+          IF (isize .NE. rdestMatrix%NCOLS) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(Kdiag)!'
+            STOP
+          END IF
+        END IF
+      END IF
+      
+    CASE (LSYSSC_MATRIX7)
+    
+      ! Check length of DA
+      IF (rdestMatrix%h_DA .NE. ST_NOHANDLE) THEN
+        CALL storage_size (rdestMatrix%h_DA,isize)
+        IF (isize .NE. rdestMatrix%NA) THEN
+          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          STOP
+        END IF
+      END IF
+      
+      ! Check length of KCOL
+      IF (rdestMatrix%h_Kcol .NE. ST_NOHANDLE) THEN
+        CALL storage_size (rdestMatrix%h_Kcol,isize)
+        IF (isize .NE. rdestMatrix%NA) THEN
+          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(KCOL)!'
+          STOP
+        END IF
+      END IF
+
+      ! Check length of KLD
+      IF (rdestMatrix%h_Kld .NE. ST_NOHANDLE) THEN
+        CALL storage_size (rdestMatrix%h_Kld,isize)
+        
+        ! Be careful, matrix may be transposed.
+        IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
+          IF (isize .NE. rdestMatrix%NEQ) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+            STOP
+          END IF
+        ELSE
+          IF (isize .NE. rdestMatrix%NCOLS) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+            STOP
+          END IF
+        END IF
+      END IF
+      
+    END SELECT
+
+  CONTAINS
+    
+    !--------------------------------------------------------
+    ! Auxiliary routine: Remove the structure from a matrix.
+    
+    SUBROUTINE removeStructure(rmatrix, brelease)
+    
+    ! The matrix to to be processed.
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    
+    ! Whether to release data from the heap (if it belongs to the matrix)
+    ! or simply to overwrite the handles with ST_NOHANDLE
+    LOGICAL, INTENT(IN) :: brelease
+    
+      ! This is a matrix-dependent task
+      SELECT CASE (rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+        ! Release the handles from the heap?
+        ! Only release it if the data belongs to this matrix.
+        IF (brelease .AND. &
+            (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0)) THEN
+          IF (rmatrix%h_Kcol .NE. ST_NOHANDLE) CALL storage_free (rmatrix%h_Kcol)
+          IF (rmatrix%h_Kld .NE. ST_NOHANDLE) CALL storage_free (rmatrix%h_Kld)
+          IF (rmatrix%h_Kdiagonal .NE. ST_NOHANDLE) CALL storage_free (rmatrix%h_Kdiagonal)
+        END IF
+        
+        ! Reset the handles
+        rmatrix%h_Kld = ST_NOHANDLE
+        rmatrix%h_Kcol = ST_NOHANDLE
+        rmatrix%h_Kdiagonal = ST_NOHANDLE
+        
+        ! Reset the ownership-status
+        rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,&
+                                   NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
+      CASE (LSYSSC_MATRIX7)
+        ! Release the handles from the heap?
+        ! Only release it if the data belongs to this matrix.
+        IF (brelease .AND. &
+            (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0)) THEN
+          IF (rmatrix%h_Kcol .NE. ST_NOHANDLE) CALL storage_free (rmatrix%h_Kcol)
+          IF (rmatrix%h_Kld .NE. ST_NOHANDLE) CALL storage_free (rmatrix%h_Kld)
+        END IF
+        
+        ! Reset the handles
+        rmatrix%h_Kld = ST_NOHANDLE
+        rmatrix%h_Kcol = ST_NOHANDLE
+        
+      END SELECT
+
+      ! Reset the ownership-status
+      rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,&
+                                  NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
+    
+    END SUBROUTINE
+
+    !--------------------------------------------------------
+    ! Auxiliary routine: Shares the structure between rsourceMatrix
+    ! and rdestMatrix
+    
+    SUBROUTINE shareStructure(rsourceMatrix, rdestMatrix)
+    
+    ! The source matrix 
+    TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+
+    ! The destination matrix 
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+    
+      ! local variables
+      INTEGER(I32) :: iflag,iflag2
+    
+      ! Overwrite structural data
+      rdestMatrix%NA     = rsourceMatrix%NA
+      rdestMatrix%NEQ    = rsourceMatrix%NEQ
+      rdestMatrix%NCOLS  = rsourceMatrix%NCOLS
+      rdestMatrix%cmatrixFormat       = rsourceMatrix%cmatrixFormat
+      rdestMatrix%isortStrategy       = rsourceMatrix%isortStrategy
+      rdestMatrix%h_IsortPermutation  = rsourceMatrix%h_IsortPermutation
+      
+      ! Transfer all flags except the 'dup' flags
+      iflag = IAND(rsourceMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_ISCOPY))
+      iflag2 = IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+      rdestMatrix%imatrixSpec = IOR(iflag,iflag2)
+
+      ! Transfer discretisation-related information,
+      rdestMatrix%p_rspatialDiscretisation => rsourceMatrix%p_rspatialDiscretisation
+
+      ! Which source matrix do we have?  
+      SELECT CASE (rsourceMatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+        rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
+        rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
+        rdestMatrix%h_Kdiagonal = rsourceMatrix%h_Kdiagonal
+        
+      CASE (LSYSSC_MATRIX7)
+        ! Overwrite structural data
+        rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
+        rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
+      
+      END SELECT
+      
+      ! Indicate via the matrixSpec-flag that we are not
+      ! the owner of the structure.
+      rdestMatrix%imatrixSpec = IOR(rdestMatrix%imatrixSpec,&
+                                    LSYSSC_MSPEC_STRUCTUREISCOPY)
+    
+    END SUBROUTINE
+
+    !--------------------------------------------------------
+    ! Auxiliary routine: Copy static structural information
+    ! (NEQ, NCOLS, NA,...) from rsourceMatrix to rdestMatrix
+    
+    SUBROUTINE copyStaticStructure(rsourceMatrix, rdestMatrix)
+    
+    ! The source matrix 
+    TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+
+    ! The destination matrix 
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+    
+      ! local variables
+      INTEGER(I32) :: iflag,iflag2
+    
+      ! Overwrite structural data
+      rdestMatrix%NA     = rsourceMatrix%NA
+      rdestMatrix%NEQ    = rsourceMatrix%NEQ
+      rdestMatrix%NCOLS  = rsourceMatrix%NCOLS
+      rdestMatrix%cmatrixFormat       = rsourceMatrix%cmatrixFormat
+      rdestMatrix%isortStrategy       = rsourceMatrix%isortStrategy
+      rdestMatrix%h_IsortPermutation  = rsourceMatrix%h_IsortPermutation
+
+      ! Transfer all flags except the 'dup' flags
+      iflag = IAND(rsourceMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_ISCOPY))
+      iflag2 = IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+      rdestMatrix%imatrixSpec = IOR(iflag,iflag2)
+      
+      ! Transfer discretisation-related information,
+      rdestMatrix%p_rspatialDiscretisation => rsourceMatrix%p_rspatialDiscretisation
+
+    END SUBROUTINE
+
+    !--------------------------------------------------------
+    ! Auxiliary routine: Copy the structure of rsourceMatrix
+    ! to rdestMatrix
+    
+    SUBROUTINE copyStructure(rsourceMatrix, rdestMatrix)
+    
+    ! The source matrix 
+    TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+
+    ! The destination matrix 
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+    
+      ! local variables
+      INTEGER(I32) :: iflag,iflag2
+      INTEGER(PREC_MATIDX) :: isize
+      INTEGER(PREC_VECIDX) :: NEQ
+      LOGICAL :: bremove
+    
+      ! Overwrite structural data
+      CALL copyStaticStructure(rsourceMatrix, rdestMatrix)
+
+      ! Check the structure if it exists and if it has the right
+      ! size - then we can overwrite!
+      bRemove = .FALSE.
+      
+      ! But at first, check if rdestMatrix is the owner of the matrix
+      ! structure:
+      IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0) THEN
+        ! No, the structure belongs to someone else, but we want to have
+        ! our own. Detach the foreign matrix structure.
+        bremove = .TRUE.
+        
+      ELSE
+        
+        ! Ok, rdestMatrix owns its own matrix structure or does not have any.
+        ! Check the structure if it's large enough so we can overwrite
+        ! it. If the size of the arrays is not equal to those
+        ! in the source matrix, release the structure and allocate a new one.
+        
+        IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+          NEQ = rdestMatrix%NCOLS
+        ELSE
+          NEQ = rdestMatrix%NEQ
+        END IF
+        
+        ! Which source matrix do we have?  
+        SELECT CASE (rsourceMatrix%cmatrixFormat)
+        CASE (LSYSSC_MATRIX9)
+          IF ((rdestMatrix%h_Kcol .NE. ST_NOHANDLE) .AND. &
+              (rdestMatrix%h_Kld .NE. ST_NOHANDLE) .AND. &
+              (rdestMatrix%h_Kdiagonal .NE. ST_NOHANDLE)) THEN
+        
+            CALL storage_size (rdestMatrix%h_Kcol,isize)
+            bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
+            
+            CALL storage_size (rsourceMatrix%h_Kld,isize)
+            bremove = bremove .OR. (isize .NE. NEQ+1)
+            
+            CALL storage_size (rsourceMatrix%h_Kdiagonal,isize)
+            bremove = bremove .OR. (isize .NE. NEQ)
+          
+          ELSE
+
+            ! Remove any partial information if there is any.
+            bremove = .TRUE.
+            
+          END IF
+          
+        CASE (LSYSSC_MATRIX7)
+        
+          IF ((rdestMatrix%h_Kcol .NE. ST_NOHANDLE) .AND. &
+              (rdestMatrix%h_Kld .NE. ST_NOHANDLE)) THEN
+ 
+            CALL storage_size (rdestMatrix%h_Kcol,isize)
+            bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
+            
+            CALL storage_size (rsourceMatrix%h_Kld,isize)
+            bremove = bremove .OR. (isize .NE. NEQ+1)
+
+          ELSE
+
+            ! Remove any partial information if there is any.
+            bremove = .TRUE.
+            
+          END IF
+        
+        END SELECT
+      
+      END IF
+    
+      ! Remove the old matrix structure if we should do so.
+      IF (bremove) CALL removeStructure(rdestMatrix, .TRUE.)
+
+      ! Duplicate structural data from the source matrix.
+      ! Storage_copy allocates new memory if necessary, as the handles are all
+      ! set to ST_NOHANDLE with the above removeStructure!
+      ! If the handles exist, they have the correct size, so we can overwrite
+      ! the entries.
+      !
+      ! Which source matrix do we have?  
+      SELECT CASE (rsourceMatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+        CALL storage_copy (rsourceMatrix%h_Kcol,rdestMatrix%h_Kcol)
+        CALL storage_copy (rsourceMatrix%h_Kld,rdestMatrix%h_Kld)
+        CALL storage_copy (rsourceMatrix%h_Kdiagonal,rdestMatrix%h_Kdiagonal)
+        
+      CASE (LSYSSC_MATRIX7)
+        CALL storage_copy (rsourceMatrix%h_Kcol,rdestMatrix%h_Kcol)
+        CALL storage_copy (rsourceMatrix%h_Kld,rdestMatrix%h_Kld)
+      
+      END SELECT
+      
+      ! Indicate via the matrixSpec-flag that we are the owner of the structure.
+      rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
+                                    NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
+    
+    END SUBROUTINE
   
-  ! Set the duplication flag correctly
-  SELECT CASE (idupflag)
-  CASE (LSYSSC_DUP_ASIS)
-    ! Nothing to do
+    !--------------------------------------------------------
+    ! Auxiliary routine: Remove the content from a matrix.
     
-  CASE (LSYSSC_DUP_NONE)
-    ! We share both, structure and content, with the original matrix
-    rdestMatrix%imatrixSpec = IOR(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+    SUBROUTINE removeContent(rmatrix, brelease)
     
-  CASE (LSYSSC_DUP_CONTENT)
-    IF (bhasContent) THEN
-      rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
-                                  NOT(LSYSSC_MSPEC_ISCOPY)),&
-                                LSYSSC_MSPEC_STRUCTUREISCOPY)
-    ELSE
-      ! Matrix has no content, so it's independent now.
-      rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
-                                  NOT(LSYSSC_MSPEC_ISCOPY))
-    END IF
+    ! The matrix to to be processed.
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
     
-  CASE (LSYSSC_DUP_STRUCTURE)
-    ! Don't touch the content - maybe there's older content which the application
-    ! wants to reuse...
-    rdestMatrix%imatrixSpec = IOR(IAND(rsourceMatrix%imatrixSpec,&
-                                NOT(LSYSSC_MSPEC_ISCOPY)),&
-                              LSYSSC_MSPEC_CONTENTISCOPY)
-                              
-  CASE (LSYSSC_DUP_STRNOCONT)
-    rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
-                                NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
-                                
-  CASE (LSYSSC_DUP_ALL,LSYSSC_DUP_EMPTYSTRUC,LSYSSC_DUP_EMPTYALL,&
-        LSYSSC_DUP_TEMPLATE)
-    rdestMatrix%imatrixSpec = IAND(rsourceMatrix%imatrixSpec,&
-                                NOT(LSYSSC_MSPEC_ISCOPY))
-                                
-  CASE DEFAULT
-    PRINT *,'lsyssc_duplicateMatrix: invalid idubflag'
-    STOP
-  END SELECT
+    ! Whether to release data from the heap (if it belongs to the matrix)
+    ! or simply to overwrite the handles with ST_NOHANDLE
+    LOGICAL, INTENT(IN) :: brelease
+    
+      ! This is a matrix-dependent task
+      SELECT CASE (rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+        ! Release the handles from the heap?
+        ! Only release it if the data belongs to this matrix.
+        IF (brelease .AND. &
+            (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0)) THEN
+          IF (rmatrix%h_Da .NE. ST_NOHANDLE) CALL storage_free (rmatrix%h_Da)
+        END IF
+        
+        ! Reset the handles
+        rmatrix%h_Da = ST_NOHANDLE
+        
+      END SELECT
+
+      ! Reset the ownership-status
+      rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,&
+                                  NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+    
+    END SUBROUTINE
+
+    !--------------------------------------------------------
+    ! Auxiliary routine: Shares the content between rsourceMatrix
+    ! and rdestMatrix
+    
+    SUBROUTINE shareContent(rsourceMatrix, rdestMatrix)
+    
+    ! The source matrix 
+    TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+
+    ! The destination matrix 
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+    
+      ! Remove the old content - if there is any.
+      CALL removeContent(rdestMatrix, .TRUE.)
+
+      ! Overwrite structural data
+      rdestMatrix%dscaleFactor = rsourceMatrix%dscaleFactor
+      rdestMatrix%cdataType    = rsourceMatrix%cdataType
+
+      ! Which source matrix do we have?  
+      SELECT CASE (rsourceMatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+        rdestMatrix%h_Da = rsourceMatrix%h_Da
+      END SELECT
+      
+      ! Indicate via the matrixSpec-flag that we are not
+      ! the owner of the structure.
+      rdestMatrix%imatrixSpec = IOR(rdestMatrix%imatrixSpec,&
+                                    LSYSSC_MSPEC_CONTENTISCOPY)
+    
+    END SUBROUTINE
+
+    !--------------------------------------------------------
+    ! Auxiliary routine: Copy static content-related
+    ! information (scale factor,...) rsourceMatrix
+    ! to rdestMatrix
+    
+    SUBROUTINE copyStaticContent(rsourceMatrix, rdestMatrix)
+    
+    ! The source matrix 
+    TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+
+    ! The destination matrix 
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+    
+      ! Overwrite structural data
+      rdestMatrix%dscaleFactor = rsourceMatrix%dscaleFactor
+
+    END SUBROUTINE
+
+    !--------------------------------------------------------
+    ! Auxiliary routine: Copy the content of rsourceMatrix
+    ! to rdestMatrix
+    
+    SUBROUTINE copyContent(rsourceMatrix, rdestMatrix)
+    
+    ! The source matrix 
+    TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+
+    ! The destination matrix 
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+    
+      ! local variables
+      LOGICAL :: bremove
+    
+      ! Overwrite structural data
+      CALL copyStaticContent(rsourceMatrix, rdestMatrix)
+      
+      ! Check the content if it exists and if it has the right
+      ! size - then we can overwrite!
+      bRemove = .FALSE.
+      
+      ! But at first, check if rdestMatrix is the owner of the matrix
+      ! structure:
+      IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .NE. 0) THEN
+        ! No, the content belongs to someone else, but we want to have
+        ! our own. Detach the foreign matrix content.
+        bremove = .TRUE.
+        
+      ELSE
+        
+        ! Ok, rdestMatrix owns some matrix content.
+        ! Check the structure if it's large enough so we can overwrite
+        ! it. If the size of the arrays is not equal to those
+        ! in the source matrix, release the content and allocate a new one.
+        
+        ! Which source matrix do we have?  
+        SELECT CASE (rsourceMatrix%cmatrixFormat)
+        CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+        
+          IF (rdestMatrix%h_Da .NE. ST_NOHANDLE) THEN
+        
+            CALL storage_size (rdestMatrix%h_Da,isize)
+            bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
+          
+            ! Check the data type
+            bremove = bremove .OR. (rdestMatrix%cdataType .NE. rsourceMatrix%cdataType)
+          
+          ELSE
+          
+            ! Remove any partial information if there is any
+            bremove = .TRUE.
+            
+          END IF
+          
+        END SELECT
+      
+      END IF
+    
+      ! Remove the old content - if we should do so
+      IF (bremove) CALL removeContent(rdestMatrix, .TRUE.)
+
+      rdestMatrix%cdataType = rsourceMatrix%cdataType
+
+      ! Duplicate content data from the source matrix.
+      ! Storage_copy allocates new memory as the handles are all
+      ! set to ST_NOHANDLE with the above removeStructure!
+      !
+      ! Which source matrix do we have?  
+      SELECT CASE (rsourceMatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+        CALL storage_copy (rsourceMatrix%h_Da,rdestMatrix%h_Da)
+      END SELECT
+      
+      ! Indicate via the matrixSpec-flag that we are the owner of the structure.
+      rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
+                                    NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+    
+    END SUBROUTINE
   
   END SUBROUTINE
 
@@ -2463,9 +3101,11 @@ CONTAINS
         ! Duplicate the matrix before resorting.
         ! We need either a copy only of the structure or of the full matrix.
         IF (.NOT. bsortEntries) THEN
-          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,LSYSSC_DUP_STRUCTURE)
+          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
+                                       LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
         ELSE
-          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,LSYSSC_DUP_ALL)
+          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
+                                       LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
         END IF
         
         ! Get the structure of the original and the temporary matrix
@@ -2513,9 +3153,11 @@ CONTAINS
         ! Duplicate the matrix before resorting.
         ! We need either a copy only of the structure or of the full matrix.
         IF (.NOT. bsortEntries) THEN
-          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,LSYSSC_DUP_STRUCTURE)
+          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
+                                       LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
         ELSE
-          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,LSYSSC_DUP_ALL)
+          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
+                                       LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
         END IF
         
         ! Get the structure of the original and the temporary matrix
@@ -4370,6 +5012,9 @@ CONTAINS
   !     will be performed with the transposed matrix. 
   !     But caution: there may be some algorithms that don't work with such 
   !       'virtually' transposed matrices!
+  ! =LSYSSC_TR_VIRTUALCOPY         : The same as LSYSSC_TR_VIRTUAL, but
+  !     creates a duplicate of the source matrix in memory, thus resulting
+  !     in rtransposedMatrix being a totally independent matrix.
   INTEGER, INTENT(IN), OPTIONAL :: itransFlag
 !</input>  
   
@@ -4408,7 +5053,27 @@ CONTAINS
     
       ! Duplicate the matrix structure, copy all handles.
       ! Don't allocate any memory.
-      CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_NONE)
+      CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,&
+                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+      ! Only change the 'transposed' flag in imatrixSpec
+      rtransposedMatrix%imatrixSpec = &
+        IEOR(rtransposedMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)
+      
+      ! Exchange NEQ and NCOLS as these always describe the actual matrix.
+      ntemp = rtransposedMatrix%NEQ
+      rtransposedMatrix%NEQ = rtransposedMatrix%NCOLS
+      rtransposedMatrix%NCOLS = ntemp
+   
+      ! That's it.
+      RETURN
+    END IF
+
+    IF (itrans .EQ. LSYSSC_TR_VIRTUALCOPY) THEN
+    
+      ! Duplicate the complete matrix structure in memory
+      CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,&
+                                    LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
     
       ! Only change the 'transposed' flag in imatrixSpec
       rtransposedMatrix%imatrixSpec = &
@@ -4454,7 +5119,8 @@ CONTAINS
       ! Copy the matrix structure, reset all handles, so we have a 'template'
       ! matrix with the same data as the original one but without dynamic
       ! information attached.
-      CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,LSYSSC_DUP_TEMPLATE)
+      CALL lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,&
+                                    LSYSSC_DUP_TEMPLATE,LSYSSC_DUP_TEMPLATE)
     END IF
 
     ! Otherwise, check that we are able to create the transposed matrix at all.
