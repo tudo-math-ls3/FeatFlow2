@@ -100,6 +100,11 @@
 !#
 !# 26.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
+!#
+!# Sometimes useful auxiliary routines:
+!#
+!# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
+!#     -> Rebuild the Kdiagonal array in a matrix of format 9
 !# </purpose>
 !##############################################################################
 
@@ -1617,7 +1622,7 @@ CONTAINS
     
       ! Check length of DA
       IF (rdestMatrix%h_DA .NE. ST_NOHANDLE) THEN
-        CALL storage_size (rdestMatrix%h_DA,isize)
+        CALL storage_getsize (rdestMatrix%h_DA,isize)
         IF (isize .NE. rdestMatrix%NA) THEN
           PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
           STOP
@@ -1626,7 +1631,7 @@ CONTAINS
       
       ! Check length of KCOL
       IF (rdestMatrix%h_Kcol .NE. ST_NOHANDLE) THEN
-        CALL storage_size (rdestMatrix%h_Kcol,isize)
+        CALL storage_getsize (rdestMatrix%h_Kcol,isize)
         IF (isize .NE. rdestMatrix%NA) THEN
           PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(KCOL)!'
           STOP
@@ -1635,7 +1640,7 @@ CONTAINS
 
       ! Check length of KLD
       IF (rdestMatrix%h_Kld .NE. ST_NOHANDLE) THEN
-        CALL storage_size (rdestMatrix%h_Kld,isize)
+        CALL storage_getsize (rdestMatrix%h_Kld,isize)
         
         ! Be careful, matrix may be transposed.
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
@@ -1653,7 +1658,7 @@ CONTAINS
       
       ! Check length of Kdiagonal
       IF (rdestMatrix%h_Kdiagonal .NE. ST_NOHANDLE) THEN
-        CALL storage_size (rdestMatrix%h_Kdiagonal,isize)
+        CALL storage_getsize (rdestMatrix%h_Kdiagonal,isize)
         
         ! Be careful, matrix may be transposed.
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
@@ -1673,7 +1678,7 @@ CONTAINS
     
       ! Check length of DA
       IF (rdestMatrix%h_DA .NE. ST_NOHANDLE) THEN
-        CALL storage_size (rdestMatrix%h_DA,isize)
+        CALL storage_getsize (rdestMatrix%h_DA,isize)
         IF (isize .NE. rdestMatrix%NA) THEN
           PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
           STOP
@@ -1682,7 +1687,7 @@ CONTAINS
       
       ! Check length of KCOL
       IF (rdestMatrix%h_Kcol .NE. ST_NOHANDLE) THEN
-        CALL storage_size (rdestMatrix%h_Kcol,isize)
+        CALL storage_getsize (rdestMatrix%h_Kcol,isize)
         IF (isize .NE. rdestMatrix%NA) THEN
           PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(KCOL)!'
           STOP
@@ -1691,7 +1696,7 @@ CONTAINS
 
       ! Check length of KLD
       IF (rdestMatrix%h_Kld .NE. ST_NOHANDLE) THEN
-        CALL storage_size (rdestMatrix%h_Kld,isize)
+        CALL storage_getsize (rdestMatrix%h_Kld,isize)
         
         ! Be careful, matrix may be transposed.
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
@@ -1901,13 +1906,13 @@ CONTAINS
               (rdestMatrix%h_Kld .NE. ST_NOHANDLE) .AND. &
               (rdestMatrix%h_Kdiagonal .NE. ST_NOHANDLE)) THEN
         
-            CALL storage_size (rdestMatrix%h_Kcol,isize)
+            CALL storage_getsize (rdestMatrix%h_Kcol,isize)
             bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
             
-            CALL storage_size (rsourceMatrix%h_Kld,isize)
+            CALL storage_getsize (rsourceMatrix%h_Kld,isize)
             bremove = bremove .OR. (isize .NE. NEQ+1)
             
-            CALL storage_size (rsourceMatrix%h_Kdiagonal,isize)
+            CALL storage_getsize (rsourceMatrix%h_Kdiagonal,isize)
             bremove = bremove .OR. (isize .NE. NEQ)
           
           ELSE
@@ -1922,10 +1927,10 @@ CONTAINS
           IF ((rdestMatrix%h_Kcol .NE. ST_NOHANDLE) .AND. &
               (rdestMatrix%h_Kld .NE. ST_NOHANDLE)) THEN
  
-            CALL storage_size (rdestMatrix%h_Kcol,isize)
+            CALL storage_getsize (rdestMatrix%h_Kcol,isize)
             bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
             
-            CALL storage_size (rsourceMatrix%h_Kld,isize)
+            CALL storage_getsize (rsourceMatrix%h_Kld,isize)
             bremove = bremove .OR. (isize .NE. NEQ+1)
 
           ELSE
@@ -2092,7 +2097,7 @@ CONTAINS
         
           IF (rdestMatrix%h_Da .NE. ST_NOHANDLE) THEN
         
-            CALL storage_size (rdestMatrix%h_Da,isize)
+            CALL storage_getsize (rdestMatrix%h_Da,isize)
             bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
           
             ! Check the data type

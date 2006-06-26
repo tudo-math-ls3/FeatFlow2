@@ -328,6 +328,7 @@ MODULE linearsolver
   USE filtersupport
   USE coarsegridcorrection
   USE vanca
+  USE globalsystem
   
   IMPLICIT NONE
 
@@ -3293,6 +3294,7 @@ CONTAINS
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
   REAL(DP), DIMENSION(:), POINTER :: p_DA
+  TYPE(t_matrixBlock), TARGET :: rmatrixLocal
 
   ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
   ! of a call to the solver routines.
@@ -3317,12 +3319,15 @@ CONTAINS
   IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
 
   ! Check out that we can handle the matrix.
+  ! Check out that we can handle the matrix.
   IF (rsolverNode%rsystemMatrix%ndiagBlocks .NE. 1) THEN
-    PRINT *,'UMFPACK can only handle scalar matrices!'
-    STOP
+    ! We have to create a global matrix first!
+    CALL glsys_assembleGlobal (rsolverNode%rsystemMatrix,rmatrixLocal, &
+                               .TRUE.,.TRUE.)
+    p_rmatrix => rmatrixLocal%RmatrixBlock(1,1)
+  ELSE
+    p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock (1,1)
   END IF
-  
-  p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock (1,1)
 
   IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'UMFPACK can only handle double precision matrices!'
@@ -3381,8 +3386,11 @@ CONTAINS
     ierror = LINSOL_ERR_INITERROR
   END SELECT
 
-  ! Throw away the temporary matrix
-  CALL lsyssc_releaseMatrix (rtempmatrix)
+  ! Throw away the temporary matrix/matrices
+  CALL lsyssc_releaseMatrix (rtempMatrix)
+  IF (rsolverNode%rsystemMatrix%ndiagBlocks .NE. 1) THEN
+    CALL lsysbl_releaseMatrix (rmatrixLocal)
+  END IF
   
   ! Allocate a temporary vector
   CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
@@ -3429,6 +3437,7 @@ CONTAINS
   ! local variables
   INTEGER :: isubgroup
   TYPE(t_matrixScalar), POINTER :: p_rmatrix
+  TYPE(t_matrixBlock), TARGET :: rmatrixLocal
   TYPE(t_matrixScalar) :: rtempMatrix
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
@@ -3458,12 +3467,14 @@ CONTAINS
   
   ! Check out that we can handle the matrix.
   IF (rsolverNode%rsystemMatrix%ndiagBlocks .NE. 1) THEN
-    PRINT *,'UMFPACK can only handle scalar matrices!'
-    STOP
+    ! We have to create a global matrix first!
+    CALL glsys_assembleGlobal (rsolverNode%rsystemMatrix,rmatrixLocal, &
+                               .TRUE.,.TRUE.)
+    p_rmatrix => rmatrixLocal%RmatrixBlock(1,1)
+  ELSE
+    p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock (1,1)
   END IF
 
-  p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock (1,1)
-  
   IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'UMFPACK can only handle double precision matrices!'
     STOP
@@ -3484,11 +3495,10 @@ CONTAINS
     ! For format 7, we have to modify the matrix slightly.
     ! Make a copy of the whole matrix:
     CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
-                                  LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+                                 LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
     ! Resort the entries to put the diagonal entry to the correct position.
     ! This means: Convert the structure-7 matrix to a structure-9 matrix:
-    PRINT *,'UMFPACK: Convert 7->9 matrix not implemented!'
-    STOP
+    CALL lsyssc_convertMatrix (p_rmatrix,LSYSSC_MATRIX9)
   END SELECT
 
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
@@ -3522,8 +3532,11 @@ CONTAINS
     ierror = LINSOL_ERR_INITERROR
   END SELECT
 
-  ! Throw away the temporary matrix
+  ! Throw away the temporary matrix/matrices
   CALL lsyssc_releaseMatrix (rtempMatrix)
+  IF (rsolverNode%rsystemMatrix%ndiagBlocks .NE. 1) THEN
+    CALL lsysbl_releaseMatrix (rmatrixLocal)
+  END IF
     
   END SUBROUTINE
   
@@ -3701,12 +3714,6 @@ CONTAINS
       STOP
     END IF
 
-    ! The vector must be scalar
-    IF (rd%nblocks .NE. 1) THEN
-      PRINT *,'UMFPACK supports only scalar vectors.'
-      STOP
-    END IF
-    
     ! Status reset
     rsolverNode%iresult = 0
     

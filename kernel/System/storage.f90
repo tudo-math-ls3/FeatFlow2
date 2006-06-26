@@ -59,7 +59,7 @@
 !#  9.) storage_clear
 !#      -> Clears an array by overwriting the entries with 0.
 !#
-!# 10.) storage_size = storage_size1d / storage_size2d
+!# 10.) storage_getsize = storage_getsize1d / storage_getsize2d
 !#      -> Get the length of an array on the heap.
 !# 
 !# </purpose>
@@ -225,9 +225,9 @@ MODULE storage
     MODULE PROCEDURE storage_new2D
   END INTERFACE
 
-  INTERFACE storage_size
-    MODULE PROCEDURE storage_size1D
-    MODULE PROCEDURE storage_size2D
+  INTERFACE storage_getsize
+    MODULE PROCEDURE storage_getsize1D
+    MODULE PROCEDURE storage_getsize2D
   END INTERFACE
   
 CONTAINS
@@ -874,7 +874,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_size1D (ihandle, isize, rheap)
+  SUBROUTINE storage_getsize1D (ihandle, isize, rheap)
 
 !<description>
   ! Returns the length of an array identified by ihandle.
@@ -913,7 +913,7 @@ CONTAINS
   END IF
   
   IF (ihandle .LE. ST_NOHANDLE) THEN
-    PRINT *,'Error in storage_size1D: Handle invalid!'
+    PRINT *,'Error in storage_getsize1D: Handle invalid!'
     STOP
   END IF
   
@@ -922,14 +922,14 @@ CONTAINS
   
   ! Is the node associated at all?
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
-    PRINT *,'Error in storage_size1D: Handle invalid!'
+    PRINT *,'Error in storage_getsize1D: Handle invalid!'
     PRINT *,'Handle number: ',ihandle
     STOP
   END IF
 
   ! What are we?
   IF (p_rnode%idimension .NE. 1) THEN
-    PRINT *,'Error in storage_size1D: Handle ',ihandle,' is not 1-dimensional!'
+    PRINT *,'Error in storage_getsize1D: Handle ',ihandle,' is not 1-dimensional!'
     STOP
   END IF
   
@@ -941,7 +941,7 @@ CONTAINS
   CASE (ST_INT)
     isize = SIZE(p_rnode%p_Iinteger1D)
   CASE DEFAULT
-    PRINT *,'Error in storage_size1D: Invalid data type!' 
+    PRINT *,'Error in storage_getsize1D: Invalid data type!' 
     STOP
   END SELECT
 
@@ -951,7 +951,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_size2D (ihandle, isize, rheap)
+  SUBROUTINE storage_getsize2D (ihandle, isize, rheap)
 
 !<description>
   ! Returns the length of an array identified by ihandle.
@@ -990,7 +990,7 @@ CONTAINS
   END IF
   
   IF (ihandle .LE. ST_NOHANDLE) THEN
-    PRINT *,'Error in storage_size2D: Handle invalid!'
+    PRINT *,'Error in storage_getsize2D: Handle invalid!'
     STOP
   END IF
   
@@ -999,14 +999,14 @@ CONTAINS
   
   ! Is the node associated at all?
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
-    PRINT *,'Error in storage_size2D: Handle invalid!'
+    PRINT *,'Error in storage_getsize2D: Handle invalid!'
     PRINT *,'Handle number: ',ihandle
     STOP
   END IF
 
   ! What are we?
   IF (p_rnode%idimension .NE. 2) THEN
-    PRINT *,'Error in storage_size1D: Handle ',ihandle,' is not 2-dimensional!'
+    PRINT *,'Error in storage_getsize1D: Handle ',ihandle,' is not 2-dimensional!'
     STOP
   END IF
   
@@ -1018,7 +1018,7 @@ CONTAINS
   CASE (ST_INT)
     Isize = SIZE(p_rnode%p_Iinteger2D)
   CASE DEFAULT
-    PRINT *,'Error in storage_size2D: Invalid data type!' 
+    PRINT *,'Error in storage_getsize2D: Invalid data type!' 
     STOP
   END SELECT
 
