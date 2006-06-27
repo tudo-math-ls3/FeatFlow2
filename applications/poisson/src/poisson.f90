@@ -47,11 +47,14 @@ PROGRAM poisson
   INCLUDE 'cmem.inc'
   INCLUDE 'cout.inc'
   INCLUDE 'cerr.inc'
+  INCLUDE 'cfileout.inc'
 
   ! As we still use some FEAT 1.x routines, we have to initialise some
   ! output variables.
 
   M = 0
+  MTERM = 6
+  MFILE = 0
   ICHECK = 0
 
   ! The very first thing in every application: 
