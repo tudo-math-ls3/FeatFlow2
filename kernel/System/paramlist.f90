@@ -66,7 +66,9 @@
 !#     -> Determines whether or not a parameter exists
 !#
 !# 7.) parlst_getvalue_string
-!#     -> Get the string value of a parameter from the parameter list
+!#     parlst_getvalue_int
+!#     parlst_getvalue_double
+!#     -> Get the string/int/real value of a parameter from the parameter list
 !#
 !# 8.) parlst_addvalue
 !#     -> Adds a new parameter to the parameter list
@@ -197,6 +199,18 @@ MODULE paramlist
     MODULE PROCEDURE parlst_getvalue_string_fetch
     MODULE PROCEDURE parlst_getvalue_string_indir
     MODULE PROCEDURE parlst_getvalue_string_direct
+  END INTERFACE
+
+  INTERFACE parlst_getvalue_int
+    MODULE PROCEDURE parlst_getvalue_int_fetch
+    MODULE PROCEDURE parlst_getvalue_int_indir
+    MODULE PROCEDURE parlst_getvalue_int_direct
+  END INTERFACE
+
+  INTERFACE parlst_getvalue_double
+    MODULE PROCEDURE parlst_getvalue_double_fetch
+    MODULE PROCEDURE parlst_getvalue_double_indir
+    MODULE PROCEDURE parlst_getvalue_double_direct
   END INTERFACE
 
 CONTAINS
@@ -372,19 +386,19 @@ CONTAINS
   
   SUBROUTINE parlst_init (rparlist)
   
-  !<description>
+!<description>
   
   ! This routine initialises a parameter list. It must be applied to a
   ! parameter list structure before doing anything to it, just to initialise.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list to initialise.
   TYPE(t_parlist), INTENT(INOUT) :: rparlist
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -405,19 +419,19 @@ CONTAINS
   
   SUBROUTINE parlst_done (rparlist)
   
-  !<description>
+!<description>
   
   ! This routine releases a parameter list. All memory allocated by the
   ! parameter list is released.
   
-  !</description>
+!</description>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list to release.
   TYPE(t_parlist), INTENT(INOUT) :: rparlist
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -449,14 +463,14 @@ CONTAINS
 
   SUBROUTINE parlst_querysection(rparlist, sname, p_rsection) 
 
-  !<description>
+!<description>
 
   ! Searches for a section and return a pointer to it -
   ! or NULL() of the section does not exist.
   
-  !</description>
+!</description>
 
-  !<input>
+!<input>
 
   ! The parameter list to scan for the section.
   TYPE(t_parlist), INTENT(IN) :: rparlist
@@ -464,14 +478,14 @@ CONTAINS
   ! The section name to look for. 
   CHARACTER(LEN=*), INTENT(IN) :: sname
   
-  !</input>
+!</input>
   
-  !<output>
+!<output>
   
   ! A pointer to the section.
   TYPE(t_parlstSection), POINTER :: p_rsection
   
-  !</output>
+!</output>
   
 !</subroutine>
   
@@ -510,27 +524,27 @@ CONTAINS
 
   SUBROUTINE parlst_addsection (rparlist, sname)
   
-  !<description>
+!<description>
   
   ! Adds a section with the name sname to the list of sections in the
   ! parameter list rparlist. The name must NOT contain brackets ('[',']')
   ! in front and at the end!
   
-  !</description>
+!</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The parameter list where to add the section.
   TYPE(t_parlist), INTENT(INOUT) :: rparlist
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
   
   ! The section name to add - without brackets in front and at the end!
   CHARACTER(LEN=*), INTENT(IN) :: sname
   
-  !</input>
+!</input>
   
 !</subroutine>
 
@@ -565,16 +579,16 @@ CONTAINS
   INTEGER FUNCTION parlst_queryvalue_indir (rsection, sparameter) &
                RESULT (exists)
           
-  !<description>
-  
+!<description>
   ! Checks whether a parameter sparameter exists in the section rsection.
+!</description>
   
-  !<result>
+!<result>
   ! The index of the parameter in the section ssection or =0, if the
   ! parameter does not exist within the section.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The section where to search for the parameter
   TYPE(t_parlstSection), INTENT(IN) :: rsection
@@ -582,9 +596,9 @@ CONTAINS
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
   
-  !</input>
+!</input>
   
-  !</description>
+!</description>
   
 !</function>
 
@@ -614,17 +628,17 @@ CONTAINS
   INTEGER FUNCTION parlst_queryvalue_direct (rparlist, ssectionName, sparameter) &
                RESULT (exists)
           
-  !<description>
-  
+!<description>
   ! Checks whether a parameter sparameter exists in the section ssectionname
   ! in the parameter list rparlist.
+!</description>
   
-  !<result>
+!<result>
   ! The index of the parameter in the section ssectionName or =0, if the
   ! parameter does not exist within the section.
-  !</result>
+!</result>
 
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_parlist), INTENT(IN) :: rparlist
@@ -635,9 +649,9 @@ CONTAINS
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
   
-  !</input>
+!</input>
   
-  !</description>
+!</description>
   
 !</function>
 
@@ -668,16 +682,16 @@ CONTAINS
   
 !<subroutine>
   SUBROUTINE parlst_getvalue_string_indir (rsection, &
-                            sparameter, svalue, sdefault)
-  !<description>
+                                           sparameter, svalue, sdefault)
+!<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, sdefault is returned.
   ! If sdefault is not given, an error will be thrown.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
     
   ! The section where to search for the parameter
   TYPE(t_parlstSection), INTENT(IN) :: rsection
@@ -688,14 +702,14 @@ CONTAINS
   ! Optional: A default value
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdefault
   
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! The value of the parametzer
   CHARACTER(LEN=*), INTENT(OUT) :: svalue
   
-  !</output>
+!</output>
 
 !</subroutine>
 
@@ -732,20 +746,19 @@ CONTAINS
   
 !<subroutine>
   SUBROUTINE parlst_getvalue_string_fetch (rsection, &
-                            iparameter, svalue, iexists)
-  !<description>
+                                           iparameter, svalue, bexists)
+!<description>
   
   ! Returns the value of a parameter in the section rsection.
   ! iparameter specifies the number of the parameter in section rsection.
-  ! If the value does not exist, sdefault is returned.
-  ! If iexists does not appear, an error is thrown if a nonexisting
+  ! If bexists does not appear, an error is thrown if a nonexisting
   ! parameter is accessed.
-  ! If iexists is given, it will be set to YES if the parameter number
-  ! iparameter exists, otherwise it will be set to NO and svalue=''.
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and svalue=''.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
     
   ! The section where to search for the parameter
   TYPE(t_parlstSection), INTENT(IN) :: rsection
@@ -753,18 +766,18 @@ CONTAINS
   ! The number of the parameter.
   INTEGER, INTENT(IN) :: iparameter
 
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! The value of the parameter
   CHARACTER(LEN=*), INTENT(OUT) :: svalue
   
   ! Optional: Parameter existance check
-  ! Is set to YES/NO, depending on whether the parameter exists.
-  INTEGER, INTENT(OUT), OPTIONAL :: iexists
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
   
-  !</output>
+!</output>
 
 !</subroutine>
 
@@ -773,12 +786,12 @@ CONTAINS
   
   IF ((iparameter .LT. 0) .OR. (iparameter .GT. rsection%iparamCount)) THEN
   
-    IF (.NOT. PRESENT(iexists)) THEN 
+    IF (.NOT. PRESENT(bexists)) THEN 
       PRINT *,'Error. Parameter ',iparameter,' does not exist!'
       STOP
     ELSE
       svalue = ''
-      iexists = NO
+      bexists = .FALSE.
       RETURN
     END IF
   
@@ -786,7 +799,7 @@ CONTAINS
   
   ! Get the parameter value.
   svalue = rsection%p_Svalues (iparameter)
-  IF (PRESENT(iexists)) iexists = YES
+  IF (PRESENT(bexists)) bexists = .TRUE.
 
   END SUBROUTINE
   
@@ -794,16 +807,16 @@ CONTAINS
   
 !<subroutine>
   SUBROUTINE parlst_getvalue_string_direct (rparlist, ssectionName, &
-                            sparameter, svalue, sdefault)
-  !<description>
+                                            sparameter, svalue, sdefault)
+!<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, sdefault is returned.
   ! If sdefault is not given, an error will be thrown.
   
-  !</description>
+!</description>
   
-  !<input>
+!<input>
     
   ! The parameter list.
   TYPE(t_parlist), INTENT(IN) :: rparlist
@@ -817,14 +830,14 @@ CONTAINS
   ! Optional: A default value
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdefault
   
-  !</input>
+!</input>
   
-  !<output>
+!<output>
 
   ! The value of the parametzer
   CHARACTER(LEN=*), INTENT(OUT) :: svalue
   
-  !</output>
+!</output>
 
 !</subroutine>
 
@@ -856,23 +869,329 @@ CONTAINS
   ! ***************************************************************************
   
 !<subroutine>
+  SUBROUTINE parlst_getvalue_double_indir (rsection, sparameter, dvalue, ddefault)
+!<description>
+  
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, idefault is returned.
+  ! If idefault is not given, an error will be thrown.
+  
+!</description>
+  
+!<input>
+    
+  ! The section where to search for the parameter
+  TYPE(t_parlstSection), INTENT(IN) :: rsection
+
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+
+  ! Optional: A default value
+  REAL(DP), INTENT(IN), OPTIONAL :: ddefault
+  
+!</input>
+  
+!<output>
+
+  ! The value of the parametzer
+  REAL(DP), INTENT(OUT) :: dvalue
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  
+  ! Call the string routine, perform a conversion afterwards.
+  IF (PRESENT(ddefault)) THEN
+    WRITE (sdefault,*) ddefault
+    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+  ELSE
+    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
+  END IF
+  
+  READ(svalue,*) dvalue
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE parlst_getvalue_double_fetch (rsection, iparameter, dvalue, bexists)
+
+!<description>
+  
+  ! Returns the value of a parameter in the section rsection.
+  ! iparameter specifies the number of the parameter in section rsection.
+  ! If bexists does not appear, an error is thrown if a nonexisting
+  ! parameter is accessed.
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  
+!</description>
+  
+!<input>
+    
+  ! The section where to search for the parameter
+  TYPE(t_parlstSection), INTENT(IN) :: rsection
+
+  ! The number of the parameter.
+  INTEGER, INTENT(IN) :: iparameter
+
+!</input>
+  
+!<output>
+
+  ! The value of the parameter
+  INTEGER, INTENT(OUT) :: dvalue
+  
+  ! Optional: Parameter existance check
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: svalue
+  
+  svalue = '0.0E0'
+  CALL parlst_getvalue_string_fetch (rsection, &
+                                     iparameter, svalue, bexists)
+  READ(svalue,*) dvalue
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE parlst_getvalue_double_direct (rparlist, ssectionName, &
+                                            sparameter, dvalue, ddefault)
+!<description>
+  
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, ddefault is returned.
+  ! If ddefault is not given, an error will be thrown.
+  
+!</description>
+  
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_parlist), INTENT(IN) :: rparlist
+  
+  ! The section name - '' identifies the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+
+  ! Optional: A default value
+  REAL(DP), INTENT(IN), OPTIONAL :: ddefault
+  
+!</input>
+  
+!<output>
+
+  ! The value of the parametzer
+  REAL(DP), INTENT(OUT) :: dvalue
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  
+  ! Call the string routine, perform a conversion afterwards.
+  IF (PRESENT(ddefault)) THEN
+    WRITE (sdefault,*) ddefault
+    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, sdefault)
+  ELSE
+    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue)
+  END IF
+  
+  READ(svalue,*) dvalue
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE parlst_getvalue_int_indir (rsection, sparameter, ivalue, idefault)
+!<description>
+  
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, idefault is returned.
+  ! If idefault is not given, an error will be thrown.
+  
+!</description>
+  
+!<input>
+    
+  ! The section where to search for the parameter
+  TYPE(t_parlstSection), INTENT(IN) :: rsection
+
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+
+  ! Optional: A default value
+ INTEGER, INTENT(IN), OPTIONAL :: idefault
+  
+!</input>
+  
+!<output>
+
+  ! The value of the parametzer
+  INTEGER, INTENT(OUT) :: ivalue
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  
+  ! Call the string routine, perform a conversion afterwards.
+  IF (PRESENT(idefault)) THEN
+    WRITE (sdefault,*) idefault
+    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue, sdefault)
+  ELSE
+    CALL parlst_getvalue_string_indir (rsection, sparameter, svalue)
+  END IF
+  
+  READ(svalue,*) ivalue
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE parlst_getvalue_int_fetch (rsection, iparameter, ivalue, bexists)
+!<description>
+  
+  ! Returns the value of a parameter in the section rsection.
+  ! iparameter specifies the number of the parameter in section rsection.
+  ! If bexists does not appear, an error is thrown if a nonexisting
+  ! parameter is accessed.
+  ! If bexists is given, it will be set to TRUE if the parameter number
+  ! iparameter exists, otherwise it will be set to FALSE and ivalue=0.
+  
+!</description>
+  
+!<input>
+    
+  ! The section where to search for the parameter
+  TYPE(t_parlstSection), INTENT(IN) :: rsection
+
+  ! The number of the parameter.
+  INTEGER, INTENT(IN) :: iparameter
+
+!</input>
+  
+!<output>
+
+  ! The value of the parameter
+  INTEGER, INTENT(OUT) :: ivalue
+  
+  ! Optional: Parameter existance check
+  ! Is set to TRUE/FALSE, depending on whether the parameter exists.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: svalue
+  
+  svalue = '0'
+  CALL parlst_getvalue_string_fetch (rsection, &
+                                     iparameter, svalue, bexists)
+  READ(svalue,*) ivalue
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE parlst_getvalue_int_direct (rparlist, ssectionName, &
+                                         sparameter, ivalue, idefault)
+!<description>
+  
+  ! Returns the value of a parameter in the section ssection.
+  ! If the value does not exist, idefault is returned.
+  ! If idefault is not given, an error will be thrown.
+  
+!</description>
+  
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_parlist), INTENT(IN) :: rparlist
+  
+  ! The section name - '' identifies the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+
+  ! Optional: A default value
+  INTEGER, INTENT(IN), OPTIONAL :: idefault
+  
+!</input>
+  
+!<output>
+
+  ! The value of the parametzer
+  INTEGER, INTENT(OUT) :: ivalue
+  
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  CHARACTER (LEN=PARLST_MLDATA) :: sdefault,svalue
+  
+  ! Call the string routine, perform a conversion afterwards.
+  IF (PRESENT(idefault)) THEN
+    WRITE (sdefault,*) idefault
+    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue, sdefault)
+  ELSE
+    CALL parlst_getvalue_string_direct (rparlist, ssectionName, &
+                                        sparameter, svalue)
+  END IF
+  
+  READ(svalue,*) ivalue
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
   
   SUBROUTINE parlst_addvalue_indir (rsection, sparameter, svalue)
   
-  !<description>
+!<description>
   
   ! Adds a parameter to a section rsection.
   
-  !</description>
+!</description>
   
-  !<inputoutput> 
+!<inputoutput> 
     
   ! The section where to arr the parameter
   TYPE(t_parlstSection), INTENT(INOUT) :: rsection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
 
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -880,7 +1199,7 @@ CONTAINS
   ! The value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -908,22 +1227,22 @@ CONTAINS
   
 !<subroutine>
   SUBROUTINE parlst_addvalue_direct (rparlist, ssectionName, sparameter, svalue)
-  !<description>
+!<description>
   
   ! Adds a parameter to a section with name ssectionName in the parameter list
   ! rparlist. If ssectionName='', the parameter is added to the unnamed
   ! section.
   
-  !</description>
+!</description>
   
-  !<inputoutput> 
+!<inputoutput> 
     
   ! The parameter list.
   TYPE(t_parlist), INTENT(INOUT) :: rparlist
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
 
   ! The section name - '' identifies the unnamed section.
   CHARACTER(LEN=*), INTENT(IN) :: ssectionName
@@ -934,7 +1253,7 @@ CONTAINS
   ! The value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -966,7 +1285,7 @@ CONTAINS
   
   SUBROUTINE parlst_setvalue_fetch (rsection, iparameter, svalue, iexists)
   
-  !<description>
+!<description>
   
   ! Modifies the value of a parameter in the section rsection.
   ! The value of parameter iparameter in the section rsection is modified.
@@ -975,16 +1294,16 @@ CONTAINS
   ! If iexists is given, it will be set to YES if the parameter number
   ! iparameter exists and was modified, otherwise it will be set to NO.
   
-  !</description>
+!</description>
   
-  !<inputoutput> 
+!<inputoutput> 
     
   ! The section where to arr the parameter
   TYPE(t_parlstSection), INTENT(INOUT) :: rsection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
 
   ! The parameter name.
   INTEGER, INTENT(IN) :: iparameter
@@ -992,15 +1311,15 @@ CONTAINS
   ! The new value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
-  !</input>
+!</input>
 
-  !<output>
+!<output>
 
   ! Optional parameter. Is set to YES/NO, depending on whether
   ! the parameter exists.
   INTEGER, INTENT(OUT), OPTIONAL :: iexists
 
-  !</output>
+!</output>
 
 !</subroutine>
 
@@ -1030,21 +1349,21 @@ CONTAINS
   
   SUBROUTINE parlst_setvalue_indir (rsection, sparameter, svalue)
   
-  !<description>
+!<description>
   
   ! Modifies the value of a parameter in the section rsection.
   ! If the parameter does not exist, an error is thrown.
   
-  !</description>
+!</description>
   
-  !<inputoutput> 
+!<inputoutput> 
     
   ! The section where to arr the parameter
   TYPE(t_parlstSection), INTENT(INOUT) :: rsection
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
 
   ! The parameter name.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -1052,7 +1371,7 @@ CONTAINS
   ! The new value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -1080,22 +1399,22 @@ CONTAINS
   
 !<subroutine>
   SUBROUTINE parlst_setvalue_direct (rparlist, ssectionName, sparameter, svalue)
-  !<description>
+!<description>
   
   ! Modifies the value of a parameter in the section with name ssectionName
   ! in the parameter list rparlist.
   ! If the parameter does not exist, it's created.
   
-  !</description>
+!</description>
   
-  !<inputoutput> 
+!<inputoutput> 
     
   ! The parameter list.
   TYPE(t_parlist), INTENT(INOUT) :: rparlist
   
-  !</inputoutput>
+!</inputoutput>
 
-  !<input>
+!<input>
 
   ! The section name - '' identifies the unnamed section.
   CHARACTER(LEN=*), INTENT(IN) :: ssectionName
@@ -1106,7 +1425,7 @@ CONTAINS
   ! The new value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
-  !</input>
+!</input>
 
 !</subroutine>
 
@@ -1343,7 +1662,7 @@ CONTAINS
   
   SUBROUTINE parlst_readfromfile (rparlist, sfilename)
   
-  !<description>
+!<description>
   
   ! This routine parses a text file for data of the INI-file form.
   ! sfilename must be the name of a file on the hard disc.
@@ -1357,21 +1676,21 @@ CONTAINS
   !   inaccessible, since the GET-routines always return the first
   !   instance!
   
-  !</description>
+!</description>
 
-  !<inputoutput> 
+!<inputoutput> 
     
   ! The parameter list which is filled with data from the file
   TYPE(t_parlist), INTENT(INOUT) :: rparlist
   
-  !</inputoutput>
+!</inputoutput>
   
-  !<input>
+!<input>
   
   ! The filename of the file to read.
   CHARACTER(LEN=*), INTENT(IN) :: sfilename
   
-  !</input>
+!</input>
   
 !</subroutine>
 
