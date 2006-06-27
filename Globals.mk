@@ -657,15 +657,17 @@ debug: OPTFLAGS= -g
 
 FCC:=$(shell (which $(CC) 2>/dev/null || echo "$(CC) not found !!"))
 FFC:=$(shell (which $(FC) 2>/dev/null || echo "$(FC) not found !!"))
-ARC:=$(shell (which $(AR) 2>/dev/null || echo "$(AR) not found !!"))
+ARF:=$(shell (which $(AR) 2>/dev/null || echo "$(AR) not found !!"))
+ARC:=$(shell (which $(ARC) 2>/dev/null || echo "$(ARC) not found !!"))
 .id:
 	@echo
 	@echo 'Machine-ID' "($(shell uname -n))" ':' $(ID) 
 	@echo 
 	@echo 'Compilers to be used:'
-	@echo '  C compiler:      ' $(FCC)
-	@echo '  Fortran compiler:' $(FFC)
-	@echo '  Library archiver:' $(ARC)
+	@echo '  C compiler:        ' $(FCC)
+	@echo '  Fortran compiler:  ' $(FFC)
+	@echo '  F-Library archiver:' $(ARF)
+	@echo '  C-Library archiver:' $(ARC)
 	@echo
 	@echo 'Flags to be used:'
 	@echo '  OPTFLAGS =' $(OPTFLAGS)
