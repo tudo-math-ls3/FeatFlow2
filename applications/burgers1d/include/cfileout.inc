@@ -1,15 +1,15 @@
-************************************************************************
-* This file contains the /FILOUT/ COMMON block. This COMMON block
-* saves general information about output to files.
-************************************************************************
+!************************************************************************
+!* This file contains the /FILOUT/ COMMON block. This COMMON block
+!* saves general information about output to files.
+!************************************************************************
 
-C     The variable MFILE describes a handle to a textfile where to
-C     write standard output to.
-C     Is opened at program startup and available to all routines!
+!     The variable MFILE describes a handle to a textfile where to
+!     write standard output to.
+!     Is opened at program startup and available to all routines!
 
-      INTEGER MFILE
+      INTEGER :: MFILE
       
-C     Name of the protocol file
+!     Name of the protocol file
 
       CHARACTER CFLPRT*60
       
