@@ -663,6 +663,8 @@ CONTAINS
   TYPE(t_discreteBCEntry), INTENT(OUT), TARGET :: rdiscreteBC
 !</output>
 
+!</subroutine>
+
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
   INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j,icomponent
@@ -952,6 +954,8 @@ CONTAINS
   ! The discrete-BC structure which is to be cleaned up
   TYPE(t_discreteBCDirichlet), INTENT(INOUT) :: rdiscreteBCDirichlet
 !</inputoutput>
+
+!</subroutine>
 
   ! Release what is associated
   

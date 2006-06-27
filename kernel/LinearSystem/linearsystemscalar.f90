@@ -818,7 +818,7 @@ CONTAINS
 !</input>
 
 !<result>
-  ! The scalar product <rx,ry> of the two vectors.
+  ! The scalar product (rx,ry) of the two vectors.
 !</result>
 
 !</subroutine>
@@ -4060,6 +4060,8 @@ CONTAINS
   INTEGER(I32), OPTIONAL :: ilength
 
 !</input>
+
+!</subroutine>
     
     ! Actual length
     INTEGER(I32) :: iactlength,istart,i
@@ -4119,7 +4121,7 @@ CONTAINS
 !</result>
 
 !<result>
-  ! The scalar product <rx,ry> of the two block vectors.
+  ! The scalar product (rx,ry) of the two block vectors.
 !</result>
 
 !</subroutine>
@@ -5021,9 +5023,7 @@ CONTAINS
   !     creates a duplicate of the source matrix in memory, thus resulting
   !     in rtransposedMatrix being a totally independent matrix.
   INTEGER, INTENT(IN), OPTIONAL :: itransFlag
-!</input>  
   
-!<input>
   ! The matrix to be transposed.
   TYPE(t_matrixScalar),INTENT(IN) :: rmatrix
 !</input>
@@ -5037,7 +5037,6 @@ CONTAINS
   !   an error is thrown.
   TYPE(t_matrixScalar),INTENT(INOUT) :: rtransposedMatrix
 !</inputoutput>
-
   
 !</subroutine>
 

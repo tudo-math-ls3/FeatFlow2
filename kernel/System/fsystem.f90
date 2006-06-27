@@ -97,6 +97,8 @@ MODULE fsystem
 
   ! flag for replacing a file
   INTEGER, PARAMETER :: SYS_REPLACE = 1
+
+!</constantblock>
   
 !<constantblock description="system signals">
 

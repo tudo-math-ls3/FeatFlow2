@@ -47,13 +47,13 @@ MODULE linearalgebra
   ! Sum of the absolute values of entries
   INTEGER, PARAMETER :: LINALG_NORMSUM    = -1
 
-  ! Euclidian vector norm: <vector,vector>
+  ! Euclidian vector norm: (vector,vector)
   INTEGER, PARAMETER :: LINALG_NORMEUCLID = 0
 
   ! $l_1$-norm: 1/NEQ * sum(abs(entries))
   INTEGER, PARAMETER :: LINALG_NORML1     = 1
   
-  ! $l_2$-norm: 1/sqrt(SEQ) * <vector,vector>
+  ! $l_2$-norm: 1/sqrt(SEQ) * (vector,vector)
   INTEGER, PARAMETER :: LINALG_NORML2     = 2
   
   ! max-norm
@@ -531,7 +531,7 @@ CONTAINS
   
 !<description>
   ! Calculates the scalar product of two double precision vectors: 
-  ! res = <vector,vector>
+  ! res = (vector,vector)
 !</description>
 
 !<input>
@@ -568,7 +568,7 @@ CONTAINS
   
 !<description>
   ! Calculates the scalar product of two single precision vectors: 
-  ! res = <vector,vector>
+  ! res = (vector,vector)
 !</description>
 
 !<input>
@@ -605,7 +605,7 @@ CONTAINS
   
 !<description>
   ! Calculates the scalar product of two single precision vectors: 
-  ! res = <vector,vector>
+  ! res = (vector,vector)
 !</description>
 
 !<input>
@@ -679,7 +679,7 @@ CONTAINS
     END DO
 
   CASE (LINALG_NORMEUCLID)
-    ! Euclidian norm = scalar product <vector,vector>
+    ! Euclidian norm = scalar product (vector,vector)
     resnorm = Dx(1)*Dx(1)
     DO i=2,SIZE(Dx)
       resnorm = resnorm + Dx(i)*Dx(i)
@@ -766,7 +766,7 @@ CONTAINS
     END DO
 
   CASE (LINALG_NORMEUCLID)
-    ! Euclidian norm = scalar product <vector,vector>
+    ! Euclidian norm = scalar product (vector,vector)
     resnorm = Fx(1)*Fx(1)
     DO i=2,SIZE(Fx)
       resnorm = resnorm + Fx(i)*Fx(i)

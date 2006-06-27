@@ -1078,7 +1078,7 @@ CONTAINS
   ! Destination structure. Discretisation-related information of rtemplate
   ! is assigned to rx.
   TYPE(t_vectorBlock),INTENT(INOUT) :: rx
-!</output>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1127,7 +1127,7 @@ CONTAINS
   ! Destination structure. Discretisation-related information of rtemplate
   ! is assigned to rx.
   TYPE(t_vectorBlock),INTENT(INOUT) :: rx
-!</output>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1396,6 +1396,8 @@ CONTAINS
   ! Copies vector data: ry = rx.
   ! Both vectors must have the same size. All structural data of rx is
   ! transferred to ry, so rx and ry are compatible to each other afterwards.
+!</description>
+
 !<input>
   
   ! Source vector
@@ -1408,7 +1410,7 @@ CONTAINS
   ! Destination vector
   TYPE(t_vectorBlock),INTENT(INOUT) :: ry
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -1625,7 +1627,7 @@ CONTAINS
 !</input>
 
 !<result>
-  ! The scalar product <rx,ry> of the two block vectors.
+  ! The scalar product (rx,ry) of the two block vectors.
 !</result>
 
 !</function>
@@ -1933,7 +1935,7 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(IN) :: rtemplateVec
 !</input>
 
-!input<output>
+!<inputoutput>
   ! The vector which structural data should be overwritten
   TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
 !</inputoutput>

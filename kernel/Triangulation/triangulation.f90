@@ -414,7 +414,7 @@ MODULE triangulation
     
   END TYPE
 
-!<typeblock>
+!</typeblock>
   
 !</types>
 
@@ -1164,8 +1164,6 @@ CONTAINS
     ! array [1..4,1..nel+nelquad] of integer
     INTEGER(I32), DIMENSION(:,:), INTENT(OUT)  :: Kvert_triang
   !</output>
-  
-!</subroutine>
   
       ! local variables
       INTEGER(PREC_ELEMENTIDX) :: i,j

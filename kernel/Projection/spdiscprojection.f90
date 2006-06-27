@@ -215,6 +215,8 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddest
 !</output>
 
+!</subroutine>
+
     ! local variables
     INTEGER(PREC_POINTIDX) :: iv
     INTEGER(PREC_ELEMENTIDX) :: iel

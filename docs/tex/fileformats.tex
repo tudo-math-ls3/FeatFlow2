@@ -1,0 +1,550 @@
+
+\section{FEAST file format}
+
+Extension: {\bf .feast}  
+
+   
+\subsubsection*{Preliminaries}
+FEAST files are plain ASCII files in a line-based format, using shared-vertex data representations. Empty lines are not allowed. 
+Comment lines can be arbitrarily placed, the special character~\# marks any such line. If the comment 
+character~\# occurs in a line, the rest of this line will be ignored by FEAST.\\
+
+Each FEAST \emph{project} consists of six separate files:
+\begin{enumerate}
+\item header file (filename.feast)
+\item static geometry file (filename.fgeo)
+\item fictitious boundary file (filename.ffgeo)
+\item mesh file (filename.fmesh)
+\item partitioning file (filename.fpart)
+\item boundary condition file (filename.fbc)
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection*{Header file}
+
+The header file lists those files that are included in the current project.
+
+\begin{code}{FEAST 2D -- Header}{Spezifikation_feast_2d_header}
+\begin{verbatim}       
+FEAST              # ID-tag
+2D                 # mode
+3                  # version major
+0                  # version minor
+description        # single line description of the project
+# file locations
+filename.fgeo      # relative path to static geometry file
+filename.ffgeo     # relative path to fictitious geometry
+filename.fmesh     # relative path to mesh file
+filename.fpart     # relative path to partitioning file
+filename.fbc       # relative path to boundary condition file
+\end{verbatim}
+\end{code}
+
+The keyword \texttt{NONE} instead of a path indicates that no such file is used. Note that FEAST and the DeViSoR might crash if you exclude 
+vital files.
+
+Paths are relative to the location of the header file. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection*{Geometry files}
+
+Both static and fictitious geometry files have the same format.
+
+Each geometry file starts with the following header:
+
+\begin{code}{FEAST 2D -- geometry}{Spezifikation_feast_2d_numbers1}
+\begin{verbatim}
+FEAST_GEOM         # ID-tag
+2D                 # mode
+3                  # version major
+0                  # version minor
+6  # number of boundary components
+\end{verbatim}
+\end{code}
+
+Supported boundary types are: 
+\begin{itemize}
+\item segment lists containing segments (single type or mixed) of the following types
+\begin{itemize}
+\item line segments defined by cartesian start coordinates and vector from start to end point
+\item circle segments defined by midpoint cartesian coordinates, radius plus dummy, start and end angle in radians 
+(angles are measured counterclockwise starting from the 3 o'clock position)
+\item NURBS segments are defined by the degree $n$, a flag to distinguish between open and closed curves, $m+1$ control 
+points, $m+1$ weights and a node vector of length $m+1$.
+\end{itemize}
+For each segment, the parameter interval is stored additionally, including the starting point, excluding the endpoint.
+\item analytic (via reference to some object file which returns cartesian coordinates for each parameter value and maximum parameter value)
+\end{itemize}
+
+All boundary types are editable in the \devisor, for analytic boundaries, this
+means editing and recompiling some Fortran or C or whatever code. These
+functions have to provide three calls: \texttt{PARXC(t)}, \texttt{PARYC(t)},
+\texttt{TMAXC} returning $x$ and $y$ coordinates for a given parameter value
+and the length of the parameter interval (implicitly starting at parameter
+value $0$).
+
+
+Note that closed circles and closed NURBS curves must be the only boundary
+type in each segment list!
+
+\begin{code}{FEAST 2D -- Boundary components}{Spezifikation_feast_2d_rand}
+\begin{verbatim}       
+4         # number of segments on first boundary
+0         # type of first segment: line
+-1.0 1.0  # cartesian coordinates of start point
+0.0 -2.0  # vector from start to end point
+0.0 0.25  # parameter interval
+0         # type of second segment: line
+-1.0 -1.0 # cartesian coordinates of start point
+2.0 0.0   # vector from start to end point
+0.25 0.5  # parameter interval
+0         # type of third segment: line
+1.0 -1.0  # cartesian coordinates of start point
+0.0 2.0   # vector from start to end point
+0.5 0.75  # parameter interval
+0         # type of 4th segment: line
+1.0 1.0   # cartesian coordinates of start point
+-2.0 0.0  # vector from start to end point
+0.75 1.0  # parameter interval
+
+1         # number of segments on second boundary
+1         # type of first (only) segment: circle
+1.0 1.0   # cartesian coordinates of center
+1.0 0.0   # radius and some dummy variable
+0.0 6.28... # start and end angles 
+0.0 1.0   # parameter interval
+
+1         # number of segments on third boundary
+2         # type of third boundary: open nurbs curve
+3         # degree n
+6         # number of control points m+1
+0.0 1.0 0.25 # X,Y,weight of first control point
+...
+1.0 1.0 0.25 # X,Y,weight of last control point
+0.0       # node vector entry 0 to n
+0.1       # node vector entry n+1
+...       
+0.9       # node vector entry m
+1.0       # node vector entry m+1 to n+m+1
+0.0 1.0   # parameter interval
+
+1         # number of segments on fourth boundary
+3         # type of third boundary: closed nurbs curve
+3         # degree n
+6         # number of control points m+1
+0.0 1.0 0.25 # X,Y,weight of first control point
+...
+1.0 1.0 0.25 # X,Y,weight of last control point
+0.0       # node vector entry 0
+...
+0.1       # node vector entry m+1
+0.0 1.0   # parameter interval
+
+1           # number of segments on this boundary
+4           # type: analytic
+source file # path to source file
+\end{verbatim}
+\end{code}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\subsection*{Mesh file}
+
+Each mesh file starts with the following header:
+
+\begin{code}{FEAST 2D -- mesh}{Spezifikation_feast_2d_numbers2}
+\begin{verbatim}
+FEAST_MESH         # ID-tag
+2D                 # mode
+3                  # version major
+0                  # version minor
+0                  # type of mesh (0=quad,1=tri,2=hybrid)
+25                 # number of macro nodes
+16                 # number of macro elements
+40                 # number of macro edges
+\end{verbatim}
+\end{code}
+
+\paragraph{Nodes} FEAST2D supports three kind of nodes: inner nodes (cartesian nodes), 
+parameterized nodes and fictious boundary nodes. Parameterisation is equal to FEAT2D, fictitious 
+boundary nodes are used in moving boundary scenarios.
+
+\begin{code}{FEAST 2D -- Nodes}{Spezifikation_feast_2d_nodes}
+\begin{verbatim}
+# Nodes
+0.0  0.0 0  # X,Y,0 for inner node
+0.0 0.0 -5  # X,Y,nodal property for inner nodes carrying an 
+            # additional nodal property
+0.25 0.0 1  # parameter value 0.25, dummy, boundary number 1
+# ...
+\end{verbatim}
+\end{code}
+As the boundary list is indexed from 1 upwards, inner nodes can be distinguished from boundary 
+nodes unambiguously by testing the third value of each line against zero. 
+\paragraph{Edges}
+
+Edges are defined by giving the numbers of start and end nodes.
+
+\begin{code}{FEAST 2D -- Edges}{Spezifikation_feast_2d_edges}
+\begin{verbatim}
+# Edges
+1 2  # index of start and end node
+# ...
+\end{verbatim}
+\end{code}
+
+\paragraph{Elements}
+Elements are defined using tons of information: First up the numbers of the nodes that make up the macro, 
+listed counterclockwisely for both quads and triangles. Next the numbers of the edges, from first node to 
+second node, from second to third and so on. The next couple of lines contain neighbourhood information: 
+First up the numbers of those elements sharing a common edge, then the numbers of those elements sharing a 
+common node but not an edge. Number 0 is used to mark that there is no neighbour. There can be at most one 
+edge neighbour per edge, but an arbitrary number of node neighbours. The following trick is used: 
+instead of printing out the number of the neighbour element, the count of neighbours is printed out as 
+a negative integer. For all such negative tags an additional line is inserted directly after the node 
+neighbour line containing the corresponding element neighbours. The third part of the macro definition 
+lists anisotropic refinement data. This is coded into five numerical values:
+\begin{enumerate}
+\item Initial refinement level both in $x$ and in $y$ direction
+\item Refinement control is coded into four bits. The LSB controls refinement in $x$ direction, the LSB+1 
+controls direction (left or right). The MSB and MSB-1 contain this information for the $y$ direction. 
+The integer representing this information is stored.
+\item The last three double values give the refinement factors the underlying algorithm uses.
+\end{enumerate}
+\begin{code}{FEAST 2D -- Elements}{Spezifikation_feast_2d_elements}
+\begin{verbatim}
+# Macro number 1
+0        # type (0=quad, 1=tri)
+1 2 7 6  # indices of nodes
+1 2 3 4  # indices of edges
+0 2 5 0  # Indices of edge neighbours
+0 6 0 0  # Indices of node neighbours
+1 0 0.5 0.5 0.5   # refinement level, refinement mode
+                  # three factors
+# cell number 2
+1        # type (0=quad, 1=tri)
+1 2 7    # indices of nodes
+1 2 3    # indices of edges
+0 2 5    # Indices of edge neighbours
+0 6 0    # Indices of node neighbours
+1 2      # refinement level and subdivision mode
+# ...
+\end{verbatim}
+\end{code}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\subsection*{Partition file}
+For each element, the partition file contains one single line containing the
+indices of the matrix and parallel blocks for each element. Element numbering
+is based on the \texttt{fmesh} file.
+\begin{code}{FEAST 2D -- partition}{Spezifikation_feast_2d_numbers3}
+\begin{verbatim}
+FEAST_PART         # ID-tag
+2D                 # mode
+3                  # version major
+0                  # version minor
+47                 # number of elements
+4                  # number of parallel blocks
+1 4                # parallel and matrix block for element 1
+...
+\end{verbatim}
+\end{code}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\subsection*{Boundary condition file}
+
+This file defines the boundary conditions. The user can extend the default boundary conditions
+dirichlet and neumann with self defined condition tags (user defined boundary status). 
+Also he can add additional information to each boundary specification (user defined boundary information).
+Several boundary condition building blocks can be defined. Each block has as default zero dirichlet condition.
+Each line in such a block defines a certain condition on a given interval or point. The interval can be
+defined via parameter value (\verb+PDEFINT+ with \verb+PAR1 PAR2+) or via node
+indices (\verb+NDEFINT+ with \verb+NODE1 NODE2+) (note that parameter
+intervals are only unique for a single boundary, thus, boundary references are
+given if parameters are used), 
+a point can also be defined via parameter value (\verb+PDEFNODE+ with \verb+PAR1+) or via node index (\verb+NDEFNODE+ with \verb+NODE1+).
+The boundary value can be a float constant or a tag, telling the library to call a user defined function.
+
+\begin{code}{FEAST 2D -- boundary conditions}{Spezifikation_feast_2d_bc}
+\begin{verbatim}
+# FEAST2D boundary condition file
+#
+FEAST_BC           # ID-tag
+2D                 # mode
+3                  # version major
+0                  # version minor
+#
+2 # number of user defined boundary status (UDBS)
+SUPERSONICIN
+SUPERSONICOUT
+#
+2     # number of user defined boundary information
+# name INT|FLOAT
+USERVALUE1 INT
+USERVALUE2 FLOAT
+#
+3     # number of bcbb (boundary condition building blocks)
+#
+# bcbb 1
+U1    # name (string constant)
+3     # number of bcbbd (bcbb definitions)
+PDEFINT DIR 0.0 0.0 1.0 1 2.0   
+# bcbbd :  PDEFINT|PDEFNODE|NDEFINT|NDEFNODE 
+#          DIR|NEU|UDBS1|..|UDBSn 
+#          BVALUE|FUNC 
+#          BDIX PAR1 [PAR2] | NODE1 [NODE2]
+#          USERVALUE1|FUNC..USERVALUEn|FUNC
+#
+#    if FUNC is given, for parameter evaluation a user 
+#    given routine 
+#    pboundaryvalue(bs,bcbb,bcbbd,par1,par2,par,valueindex) 
+#    is called
+#
+PDEFNODE NEU FUNC 2.0 1 2.0 
+NDEFINT SUPERSONICIN 0.0 1 2 1 2.0
+#
+# bcbb 2
+U2
+1
+PDEFINT DIR 0.0 0.0 1.0
+#
+# bcbb 3
+P
+2
+NDEFINT NEU 0.0 2 4
+NDEFNODE DIR 10.0 3
+\end{verbatim}
+\end{code}
+
+
+%#######################################################################################
+
+\section{Data file}
+
+Extension: {\bf .dat}
+
+At the moment the entries in this file must have the same sequence and
+arrangement. The entries are the following
+
+\verb+PROJECTID:+ deprecated
+
+\verb+PROJECTDIR:+ This defines the complete absolute path without \verb+~+
+ to the feast subfolder
+
+\verb+LOGDIR:+ This defines the complete absolute path without \verb+~+ to the folder, where
+the log files should be saved. This could be a tmp file area.
+
+\verb+MSG_LEVEL:+     level of verbosity  ( 0 = none, 9 = all messages )
+
+\verb+GRIDFILE:+ This is a path relatively to PROJECTDIR to the grid file describing
+the domain
+
+\verb+LOADBALANCE:+ deprecated, should be 0
+
+\verb+LOADBALFILE:+ deprecated
+
+\verb+AUTOPARTITION:+  YES/NO This switch defines, if the auto partition is used.
+If it is activated, then the number of started processes is used to get the number
+of partitions, otherwise the information in the FEAST file is used.
+
+\verb+WEIGHTEDPART:+  YES/NO This switch defines if in case of auto partititon 
+load balancing is used.
+
+\verb+CONSTMALMUL:+  YES/NO This switch determines if the faster constant matrix
+multiplication is used, if possible.
+
+\verb+FASTMATASS:+ deprecated
+
+\verb+CALCSMOOTHNORM:+  YES/NO This switch defines if after a smoothing operation
+in the multigrid driver the norm of the defect is calculated. This is not
+necessary for the algorithm, only for debugging purposes. For production runs
+you should set this to NO.
+
+\verb+LONGFORM:+ This defines if the output of the master program is in long or
+short format.
+
+The next area describes the discretisation of the problem. A discretisation
+consists of a finite element and a cubature formula. For efficency reasons
+you have the possibilty to define more than one bilinear forms ('matrix')
+over one discretisation. 
+
+The entry NDISCR defines the number of discretisation. For each
+discretisation, the entries \verb+ELE+, \verb+NBF+ and \verb+BF+ have to be defined. 
+The \verb+ELE+
+identifier defines the type of the element used for test and ansatz functions,
+and the used quadrature formulas for building the matrix, the right hand side and for 
+incorporating Neuann boundary conditions. Therefore, the last cubature formula maut be a
+1D cubature formula.
+Currently only the quadraliteral bilinear Finite Element with the id \verb+Q1+ is fully
+supported. For the quadrature formulas have a look to the description of the
+cubature module. The entry \verb+NBF+ determines the number of bilinear forms defined
+in this discretisation. The last entry \verb+BF+ describes the bilinear form
+itself. As example let us have a look to the discretisation of the 
+Poisson equation
+
+$$
+        -\Delta u = f 
+$$
+with the weak formulation
+$$
+c_1 (a_x,b_x) + c_2 ( a_y, b_y ) = (f,b). 
+$$
+
+The first integer of the \verb+BLF+ entry describes the number of terms in the bilinear form,
+here two.
+
+Every following line in the BLF entry describes one term as follows: coefficient,
+ansatz function, test function. If the coefficent is set to \verb+VAR+, then the
+function \verb+pcoeff+ from the \verb+userdef+ module is used to calculat the
+value of the coefficient. For the ansatz and test functions $\varphi$ the following values
+can be used:
+
+\verb+FUNC+  -- $\varphi$\\
+\verb+DERX+  -- $\varphi_x$\\
+\verb+DERY+  -- $\varphi_y$\\
+\verb+DERXX+ -- $\varphi_{xx}$\\
+\verb+DERXY+ -- $\varphi_{xy}$\\
+\verb+DERYY+ -- $\varphi_{yy}$\\
+
+The next parameter defines the number of terms of the right hand side, in
+this case one term, the function itself. 
+
+The last parameter is an string identifier for the matrix in short and long
+form.
+
+The next section describes the assignment of the \scarc{} algorithms to the
+matrices. The entry  NSCARC defines the number of \scarc{} files to be
+included. The next entries consists of two parameters each line, first
+parameter the relative path to the \scarc{} algorithm file (format described
+later) and the identifier of the matrix, the algorithm should solve. This
+assignment can be changed later in the code by API routines. See the
+description of the sample program.
+
+\verb+OUTPUTFILE:+    name of the gmv/avs file without suffix\\
+\verb+OUTPUTLEVEL:+   the multigrid level, on which the solution shall be
+                      written in the output file\\
+\verb+LASTSOLUTION:+  deprecated\\
+\verb+LASTMATRIX:+    deprecated\\
+\verb+STORAGE_DES:+   number of storage descriptors, problem size dependent
+\verb+STORAGE_SIZE:+  heap size\\
+\verb+MAXMGLEVEL:+    maximum multigrid level\\
+\verb+ANISOREFMODE:+  deprecated, should be MODE2
+
+The following entries allows the setting of a certain SBBLAS implementation.
+
+\verb+SBBLASMV:+  implementation of the MV algorithm\\
+\verb+SBBLASPRSLOWL:+  implementation of the TriGS algorithm\\
+\verb+SBBLASPRSLINE:+  implementation of the MVline algorithm\\
+\verb+SBBLASPRSLINE:+  implementation of the Tri algorithm\\
+\verb+SBBLASOVERRIDE:+  is it is set to YES, the above defined values are used\\
+\verb+SBBLASCONF:+  path to the sbblas.conf file
+
+
+
+The further entries in this file are application dependent.
+
+%#######################################################################################
+
+\section{\scarc{} application file}
+
+extension {\bf .scarc}
+
+This file describes the structure of a \scarc{} algorithm over the
+various hierachical layers.
+
+The definition starts with the keyword SOLVER.
+
+At the moment, two main solvers are supported, multigrid (MG) and 
+conjugate gradient (CG/BICG) schemes. When the latter are intendend to work as
+smoothers in an outer multigrid scheme (e.g. when solving multidimensional problems)
+then this can be indicated by CG\_SMOOTH and BICG\_SMOOTH, respectively. (The effect is
+that the necessary structures are allocated on all multgrid levels). The direct solvers are intented for solving the coarse grid problem in the multigrid scheme.
+
+\begin{verbatim}
+SOLVER=[CG|CG_SMOOTH],[iter],[exit-crit],[Hlayer]
+  PREC=ALL,0,[omega],[scarcflag],[Hlayerflag]
+  [SOLVER|LSMOOTHER]
+
+SOLVER=[BICG|BICG_SMOOTH],[iter],[exit-crit],[Hlayer]
+  PREC=ALL,0,[omega],[scarcflag],[Hlayerflag]
+  [SOLVER|LSMOOTHER]  
+
+SOLVER=MG,[iter],[exit-crit],[cycle],[npresmooth],[npostsmooth],[Hlayer]
+  SMOOTH=ALL,0,[omega],[scarcflag],[Hlayerflag]
+  [SOLVER|LSMOOTHER]
+  COARSE=[SOLVER]
+
+SOLVER=GLOBAL
+
+SOLVER=PGLOBAL
+
+SOLVER=MGLOBAL
+ 
+LSMOOTHER =  JACOBI|TRIGS|ADITRIGS|ILU
+\end{verbatim}
+
+\begin{itemize}
+\item \verb+[iter]+  : iteration count
+\item \verb+[exit-crit]+ : exit criterion absolute (\verb+ABS+) or relative (\verb+REL+). \verb+ABS:1E-6+
+	    e.g. indicates, that the iteration process shall end, if the absolute residual is smaller than 
+	    $10^{-6}$.  
+\item \verb+[omega]+ : damping parameter for this level
+\item \verb+[Hlayer]+ : hierachical layer this scheme works on
+\item \verb+[scarcflag]+ : If this parameter is 0, the next scheme is a simple local
+              smoother LSMOOTHER, otherwise a further \scarc{} solver.
+\item \verb+[Hlayerflag]+ : if this parameter is 0, the next scheme works on a different
+               hierachical layer, otherwise on the same.
+\item \verb+[cycle]+ : multigrid cycle type V,W or F
+\item \verb+[npresmooth],[npostsmooth]+ : number of pre- and postsmoothing steps
+\end{itemize}
+
+Lets have a look to the following example:
+
+\begin{tabbing}
+\verb+SOLVER=CG,32,REL:1.0E-6,HL_SD+ \phantom{xxxxxxx} \=   The global scheme is a CG scheme which stops after \\
+				      \> 32 iterations or if a relative accuracy of $10^{-6}$ is reached. \\
+\\
+\verb+  PREC=ALL,1,1.0,HL_SD,1,1+   \>   The preconditioning is done with damping factor 1.0.  \\
+                                    \>   The precondiotioner is of \scarc{} type and acts on \\
+				    \>   the same hierachical level.  \\
+\\    
+\verb+SOLVER=MG,1,REL:1.0E-6,V,1,1,HL_SD+  \>  As preconditioner acts a global multigrid scheme  \\
+\verb+SMOOTHER=ALL,0,0.8,HL_SD,1,0+  \>   which performs one global step. The exit criterion  \\
+                                     \>    has in this case no meaning. The global multigrid  \\
+				     \>   performs 1 pre- and 1 postsmoothing step. The  \\
+				     \>   preconditioner is of \scarc{} type and works not on \\
+				     \>   the same hierachical level.  \\
+\\				   
+\verb+  SOLVER=MG,1,REL:1.0E-6,F,4,4,HL_PB+   \> As smoother works a local multigrid scheme,   \\
+\verb+    SMOOTHER=ALL,0,1.0,HL_PB,0,0+   \>   which works seperatly on the parallel subdomains  \\
+                                           \> It performs one step and 4 pre- and 4 postsmoothing \\
+					\>  steps. The smoother for this scheme is a local smoother. \\
+					\> In this case the last parameter has no meaning.  \\
+\\      
+\verb+      LSMOOTHER=TRIGS+      \>            Local smoother triGaussSeidel  \\
+\\	
+\verb+    COARSE=CG,512,REL:1.0E-6,HL_PB+  \>   The coarse grid solver for the local multigrid scheme \\
+\verb+      PREC=ALL,1,1.0,HL_PB,0,0+   \>     It performs up to 512 steps till an accuracy of relatively  \\
+\verb+        LSMOOTHER=JACOBI+      \>        $10^{-6}$ is reached. It is preconditioned with the Jacobi method.\\
+\\	  
+\verb+  COARSE=CG,512,REL:1.0E-6,HL_SD+    \>        The coarse grid solver for the global multigrid scheme.\\
+\verb+    PREC=ALL,1,1.0,HL_SD,0,0+     \>       It has the same parameters as the local scheme.\\
+\verb+      LSMOOTHER=JACOBI+
+\end{tabbing}
+

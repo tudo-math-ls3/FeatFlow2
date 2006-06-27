@@ -115,6 +115,8 @@ MODULE nonlinearsolver
 ! *****************************************************************************
 ! *****************************************************************************
 
+!<types>
+
 !<typeblock>
   
   ! This is the central structure which repesents the nonlinear solver.

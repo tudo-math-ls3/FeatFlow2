@@ -137,9 +137,9 @@ CONTAINS
 
   SUBROUTINE vecfil_imposeDirichletDefectBC (rx,rdbcStructure)
   
-  !<description>
-  
+!<description>
   ! Implements discrete Dirichlet BC's into a scalar defect vector.
+!</description>
 
 !<input>
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's

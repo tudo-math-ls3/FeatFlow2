@@ -30,7 +30,7 @@ MODULE basicgeometry
   INTEGER, PARAMETER :: NDIM3D = 3
 
 !</constantblock>
-!<!constants>
+!</constants>
   
   !<types>
 

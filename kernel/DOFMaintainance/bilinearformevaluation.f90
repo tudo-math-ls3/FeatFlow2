@@ -301,6 +301,8 @@ CONTAINS
   ! fit together. The function space for trial and test functions 
   ! may be different.
 !</description>
+
+!<input>
   
   ! The underlying discretisation structure which is to be used to
   ! create the matrix.

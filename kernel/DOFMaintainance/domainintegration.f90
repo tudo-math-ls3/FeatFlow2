@@ -121,6 +121,8 @@ CONTAINS
   TYPE(t_domainIntSubset), INTENT(OUT) :: rintSubset
 !</output>
 
+!</subroutine>
+
     ! Initialise constants in the structure
     rintSubset%nelements            = nelements
     rintSubset%npointsPerElement    = npointsPerElement
@@ -179,6 +181,8 @@ CONTAINS
   ! The integation structure to be cleaned up.
   TYPE(t_domainIntSubset), INTENT(INOUT) :: rintSubset
 !</inputoutput>
+
+!</subroutine>
 
     ! Deallocate an array saving the coordinates of corner vertices of elements
     DEALLOCATE(rintSubset%p_Ddetj)

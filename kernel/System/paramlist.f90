@@ -598,8 +598,6 @@ CONTAINS
   
 !</input>
   
-!</description>
-  
 !</function>
 
   ! local variables
@@ -650,8 +648,6 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
   
 !</input>
-  
-!</description>
   
 !</function>
 

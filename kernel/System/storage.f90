@@ -261,13 +261,13 @@ CONTAINS
   
 !</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is initialised.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</inputouotput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -329,7 +329,7 @@ CONTAINS
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is cleaned up.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
-!</inputouotput>
+!</inputoutput>
   
 !</subroutine>
 
@@ -381,12 +381,12 @@ CONTAINS
   ! The new handle number.
   !</result>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The heap structure where to create a new handle
   TYPE(t_storageBlock), INTENT(INOUT) :: rheap
   
-  !</inputoutput>
+!</inputoutput>
   
 !</function>
 
@@ -528,13 +528,13 @@ CONTAINS
 
 !</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</inputouotput>
+!</inputoutput>
 
 !<output>
 
@@ -641,13 +641,13 @@ CONTAINS
 
 !</input>
   
-  !<inputoutput>
+!<inputoutput>
   
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</inputouotput>
+!</inputoutput>
 
 !<output>
 
@@ -732,7 +732,7 @@ CONTAINS
   ! associated memory. ihandle is set to ST_NOHANDLE upon return.
 !</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! Handle of the memory block to be releases
   INTEGER :: ihandle
@@ -741,7 +741,7 @@ CONTAINS
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</inputouotput>
+!</inputoutput>
 
 !</subroutine>
 
@@ -801,7 +801,7 @@ CONTAINS
   ! overwritten by 0.
 !</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! Handle of the memory block to be releases
   INTEGER :: ihandle
@@ -810,7 +810,7 @@ CONTAINS
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
-  !</inputouotput>
+!</inputoutput>
 
 !</subroutine>
 
@@ -889,7 +889,7 @@ CONTAINS
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
-!</inputouotput>
+!</inputoutput>
 
 !<output>
   ! Length of the array identified by ihandle.
@@ -966,7 +966,7 @@ CONTAINS
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
-!</inputouotput>
+!</inputoutput>
 
 !<output>
   ! Length of each dimension of the array identified by ihandle.

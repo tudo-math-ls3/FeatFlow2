@@ -138,7 +138,7 @@ CONTAINS
   !  DpointsRef(2,i,.) = Second barycentric coordinate of point i on an element
   !  DpointsRef(3,i,.) = Third barycentric coordinate of point i on an element
   REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: DpointsRef
-!</inbut>
+!</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
@@ -340,7 +340,7 @@ CONTAINS
   !  DpointsRef(1,i) = x-coordinates of point i on an element, 
   !  DpointsRef(2,i) = y-coordinates of point i on an element.
   REAL(DP), DIMENSION(NDIM2D,npointsPerEl), INTENT(IN) :: DpointsRef
-!</inbut>
+!</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
@@ -523,6 +523,8 @@ CONTAINS
 
   !************************************************************************
 
+!<subroutine>
+
   PURE SUBROUTINE trafo_calcTrafo2 (Dcoord,DjacPrep,Djac,ddetj, &
                                    dparx,dpary,dxreal,dyreal)
 
@@ -556,7 +558,7 @@ CONTAINS
   ! Coordinates of a point on the reference element
   REAL(DP), INTENT(IN) :: dparx,dpary
   
-  !</input>
+!</input>
   
 !<output>
   ! The Jacobian matrix of the mapping from the reference to the 
@@ -604,6 +606,8 @@ CONTAINS
   END SUBROUTINE
 
   !************************************************************************
+
+!<subroutine>
 
   PURE SUBROUTINE trafo_calcJac2 (Dcoord,DjacPrep,Djac,ddetj,dparx,dpary)
 
@@ -667,6 +671,8 @@ CONTAINS
   END SUBROUTINE
 
   !************************************************************************
+
+!<subroutine>
 
   PURE SUBROUTINE trafo_calcRealCoords2 (Dcoord,DjacPrep,dparx,dpary,dxreal,dyreal)
 

@@ -28,7 +28,7 @@ MODULE coarsegridcorrection
 
 !<constants>
 
-!<constantblocks description="Method identifier for coarse grid correction">
+!<constantblock description="Method identifier for coarse grid correction">
 
   ! Standard constant damping. A correction factor of 1.0 is used for 
   ! the coarse grid correction if dalphaMin < 1.0 < dalphaMax.

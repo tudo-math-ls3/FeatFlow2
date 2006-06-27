@@ -1,0 +1,726 @@
+\section{FEAST Benchmark v2}
+
+Since FEAST is a library that is developed and enhanced by several users, a
+Version Management system called CVS \cite{Cederquist2003} has been used right
+from the start. Such a system, however, does not suffice to detect regressions.
+Changes made to the FEAST library to support a requested feature for
+application~A may lead to the situation that another FEAST function gets broken
+unperceivedly. Such an unintentionally introduced error may even remain
+undetected for quite some time only to affect, finally, the application~B of a
+person completely uninvolved in the changes having been made to that particular
+part of FEAST.
+
+\textsc{FBenchmark2} is a FEAST application designed to detect such
+regressions. Furthermore, it validates the correctness of the FEAST library.
+Everyone who has wet his feet in computational mathematics and/or computer
+science will probably agree that faultless compilers are not a matter of
+course. Switching to a new parallel platform, upgrading to a new compiler
+version or simply experimenting with other optimisation flags can result in
+erroneous binaries.
+
+\textsc{FBenchmark2} tries to abridge the tedious and time-consuming task
+of tracing such errors by testing every relevant feature provided by the
+library, among them:
+\begin{itemize}
+  \item Sparse Banded BLAS operations for different number of macros and
+degree of parallelism, for various grid refinement levels, for the
+case of variable and constant matrix entries, for different boundary
+conditions etc.;
+%
+  \item Tests for different kind of \textsc{ScaRC} solvers (i.e.
+  1-level-\textsc{ScaRC}, 2-level-\textsc{ScaRC}, 3-level-\textsc{ScaRC}, each
+  with different smoothing algorithms and coarse grid solvers);
+%
+  \item Test cases where several macros are clustered to a single matrix block;
+%
+  \item Tests for different kind of multidimensional solvers
+  (\textsc{ScRich1}, \textsc{Rich-ScRich1}, \textsc{BiCG-ScRich1},
+  \textsc{BiCG-ScBiCG} etc.;
+%
+  \item Test cases that incorporate dynamic grid refining strategies;
+%
+  \item Poisson problems with different kind of boundary conditions;
+%
+  \item Parameter studies for stationary and generalised Stokes
+  problems.
+  \end{itemize}
+This test suite is continually extended to keep up with new features
+in the FEAST library or FEAST applications. Currently, the
+complete test suite features 161 independent test cases.
+
+Additionally, \textsc{FBenchmark2} ships with a complete set of scripts that
+take care of retrieving the most recent version of FEAST from CVS, configure
+the benchmark for a given platform, compile and run the benchmark and finally
+compare the results with some reference solution. So, you can set up a cron job
+in order to have an automatic test to keep things safe. At the Chair of
+Mathematics III, changes to the FEAST library trigger these scripts at night.
+A meaningful subset of all tests is run weekdays while once every week
+all tests are performed. This is done for all platforms available at
+at chair: Linux 32bit and 64bit architectures, Sun Solaris and DEC/HP Alpha.
+The results from such a benchmark are sent to the FEAST
+development team via e-mail.
+
+
+\subsection{Directory structure}
+\label{sec:fbenchmark2:directory_structure}
+
+The \textsc{FBenchmark2} directory contains the following files and subdirectories:
+
+\begin{description}
+\item[\texttt{bin}] \
+
+  A directory containing several scripts. Among them are the cron job scripts
+  that perform daily and weekly regression tests. Furthermore, this directory
+  contains scripts to start benchmark tests on systems using the LoadLeveler
+  queuing system (like IBM p690 (JUMP) at NIC J\"ulich).
+
+\item[\texttt{grids}] \
+
+  A directory containing all grids used for the tests
+
+\item[\texttt{include}] \
+
+  A directory containing sub-scripts used by the benchmark control script
+  (intuitively called \texttt{runtests}).
+
+  All scripts within the \textsc{FBenchmark2} directory are written in TCSH
+  syntax. In TCSH, however, one cannot define functions. As a workaround, these
+  sub-scripts are included in another script whereever this script would
+  normally call a function.
+
+\item[\texttt{refsol}] \
+
+  A directory containing reference solutions.
+
+  The directory contains subfolders for several build target ID. Due to
+  different SBBLAS routines being used on different architectures as well as due
+  to different BLAS implementations reference solutions for different build
+  target IDs may differ slightly. So, a single reference solution for every test
+  ID can simply not be provided.
+
+  If a reference solution for the particular build target ID you want to test is
+  missing, use those from a different build target ID as initial setting. This
+  is feasible as aberrations are usually small. Erroneous code will be
+  definitely not go undetected this way.
+
+  In each of the subfolders the reference solution for a single test ID is stored in a
+  separate file.
+
+\item[\texttt{results}] \
+
+  A directory containing the solutions obtained from a run of the benchmark
+  control script.
+
+  Initially, this directory is missing. It is created by the benchmark
+  control script as soon as the first benchmark test has completed.
+
+  It has the same substructure as the directory \texttt{refsol}. This
+  facilitates comparison of current results with their corresponding reference solutions.
+  (see also script \texttt{bin/manuallycheck\_feastresults.sh}).
+
+\item[\texttt{scarc}] \
+
+  A directory containing all solver algorithms used for the tests
+
+\item[\texttt{src\_*}] \
+
+  Directories containing the source code of the different benchmark applications
+
+\item[\texttt{tests}] \
+
+  A directory containing files (with extension \texttt{fbdef}) that code
+  the different FEAST benchmarks.
+
+\item[\texttt{*.fbconf}] \
+
+  Files that contain a list of IDs of benchmark tests. Every ID should match
+  a benchmark coded in one of \texttt{fbdef} files in directory \texttt{tests}.
+
+  Calling \texttt{make} with the name of one of the \texttt{fbconf} files
+  (omitting the extension, i.e. \texttt{make alltests}) will
+  create a benchmark control script that, when invoked, will run exactly those
+  tests coded with their IDs in this very same file.
+
+  \textsc{FBenchmark2} currently provides the following \texttt{fbconf} files:
+  \begin{description}
+  \item[\texttt{alltests.fbconf}] \
+
+    A list of all test IDs. The control script generated from it
+    will test every relevant FEAST feature incorporated into the benchmark
+    application so far. Such a ``all'' benchmark will
+    run for at least six hours.
+
+  \item[\texttt{dailytests.fbconf}] \
+
+    A meaningful subset of all test IDs. The control script generated from it
+    will test the most relevant FEAST features; such a ``daily'' benchmark will
+    run for one to two hours.
+
+  \item[\texttt{serialtests.fbconf}] \
+
+    A list of all test IDs that code tests that can be run serially. As the
+    automatic partition feature is usually turned off in \textsc{FBenchmark2}'s
+    configuration file (\texttt{master.dat*}), this typically means that these
+    list consists of all tests that use a grid with a single parallel block.
+
+  \item[\texttt{singletests.fbconf}] \
+
+    A small set of test IDs, typically used to debug a particular problem.
+
+  \end{description}
+
+\item[\texttt{Makefile}] \
+
+  Makefile to compile the benchmark application and create a benchmark
+  control script from one of the files with extension \texttt{fbconf}.
+
+  For any \texttt{fbconf} file there is automatically a corresponding make target.
+  Bearing in mind the four \texttt{fbconf} files listed above, it is hence valid
+  to invoke any of
+  \begin{verbatim}
+  % make alltests
+  % make dailytests
+  % make serialtests
+  % make singletests
+  \end{verbatim}
+  If you add a new \texttt{fbconf} file to the repository, e.g. \texttt{griddeform.fbconf}
+  (containing IDs of tests that deal with grid deformation), then there
+  will be immediately the corresponding make target:
+  \begin{verbatim}
+  % make griddeform
+  \end{verbatim}
+  which will create a script that will only perform those grid deformation
+  tests.
+
+\end{description}
+
+
+
+\subsection{Sample run}
+\label{sec:fbenchmark2:sample_run}
+
+A typical run consists of the following commands:
+
+\begin{verbatim}
+% make clean
+% make configure
+% make compile
+% make [dailytests|alltests|singletests]
+% make run
+\end{verbatim}
+Agglomeration of the different \texttt{make} targets into a single
+command is possible:
+\begin{verbatim}
+% make clean
+% make configure compile dailytests run
+\end{verbatim}
+
+Figure~\ref{fb2run} shows how a (non)typical output looks like. ``Nontypical"
+because deviations in the results are detected. This means that either the
+underlaying code has changed or compiler or compiler settings.
+
+The first part of the result output shows the result of the actual
+computation, the second part shows the reference result.
+
+\begin{code}{Fbenchmark2 sample run}{fb2run}
+\begin{verbatim}
+ ID     = SCARC0001
+ CLASS  = SCARC
+ GRID   = grids/cyl/cyl_24m_24mb_4p_aniso.feast
+ SCARC  = scarc/CG.scarc
+ MGLVLS = 3,4,5
+
+ START:Thu Jun 2 17:31:28 CEST 2005
+
+ Running 3....Done
+ Running 4....Done
+ Running 5....Done
+
+ Storing results.
+ Comparing current with reference solution...
+ TEST FAILED
+
+ LEVEL   #NEQ        ||L2err||      c    #NIT         ||RES||        hmin         AR
+ 1,2c1,2
+ < 3      1536    8.29885308E-03  0.830   75      1.90171268E-04  3.74643252E-05  174
+ < 4      6144    2.34384979E-03  0.905   141     8.72524109E-04  3.74643252E-06  869
+ ---
+ > 3      1536    8.29885302E-03  0.830   75      1.90054245E-04  3.74643252E-05  174
+ > 4      6144    2.34384978E-03  0.905   141     8.72461370E-04  3.74643252E-06  869
+
+ Difference:
+ LEVEL   #NEQ        ||L2err||      c    #NIT         ||RES||        hmin         AR
+   -        -         7.2299e-09      -    -        6.1573e-04                 -    -
+   -        -         4.2665e-09      -    -        7.1910e-05                 -    -
+   -        -                  -      -    -                 -                 -    -
+ Note: Values for ||L2err|| and ||RES|| are relative, not absolute!
+
+ FBMARK l2error matmod solution =   0.63992618D-03
+ FBMARK sol/sol2 (min=1/max=1):  min= 1.000000 max= 1.000000
+
+ FINISH:Thu Jun 2 17:37:57 CEST 2005
+
+ ---------------------------------------
+
+
+ SUMMARY:
+
+ tests           : 1
+ tests failed    : 1
+ tests unverified: 0
+ tests passed    : 0
+
+
+ The tests that failed are coded in the following files:
+ SCARC0001
+\end{verbatim}
+\end{code}
+
+
+\subsection{Available scripts}
+\label{sec:fbenchmark2:scripts}
+
+The \texttt{bin} subdirectory contains several scripts to facilitate the use of
+\textsc{FBenchmark2}. Their use and purpose is explained in the following:
+
+\begin{description}
+\item[\texttt{create\_script.pl}] \
+
+A Perl script used by the Makefile when it creates the benchmark control script
+(intuitively called \texttt{runtests}). It parses a given ASCII file containing
+a list of test IDs, looks up the settings associated with these test IDs (stored
+in one of the \texttt{fbdef} files in subdirectory \texttt{tests}) and
+creates instruction blocks (TCSH syntax) for all the tests requested. These
+instructions are integrated into \texttt{runtests}.
+
+If a test ID is found for which there is no definition in any of the
+\texttt{fbdef} files, it will report a warning and ignore the test ID.
+
+\item[\texttt{ll\_*}] \
+  A set of scripts written for IBM p690 (JUMP) at NIC Juelich, Germany.
+  There, a queuing system is used; jobs have to be submitted via
+  IBM LoadLeveler (a tool for managing serial and
+  parallel jobs over a cluster of servers).
+
+  \begin{description}
+  \item[\texttt{ll\_results}] \
+
+    A TCSH script that creates a brief report on successful and failed benchmark
+    tests.
+
+  \item[\texttt{ll\_runtime}] \
+
+    A TCSH script that parses the output of a benchmark run and
+    calculates the aggregated runtime of all tests performed.
+
+  \item[\texttt{llschedule\_alltests}] \
+
+    A TCSH script that creates a sequence of benchmark control scripts 
+    to be submitted to the IBM LoadLeveler one by one. \\
+    Version to perform all tests coded in \texttt{alltests.fbconf}.
+
+  \item[\texttt{llschedule\_dailytests}]
+
+    A TCSH script that creates a sequence of benchmark control scripts 
+    to be submitted to the IBM LoadLeveler one by one. \\
+    Version to perform all tests coded in \texttt{dailytests.fbconf}.
+
+  \item[\texttt{llschedule\_singletests}] \
+
+    A TCSH script that creates a sequence of benchmark control scripts 
+    to be submitted to the IBM LoadLeveler one by one. \\
+    Version to perform all tests given as test IDs in argument list.
+
+    Example usage:
+\begin{verbatim}
+% bin/llschedule_singletests BC0001 SCARC0012 STOKES0004
+\end{verbatim}
+
+  \end{description}
+
+\item[\texttt{manuallycheck\_feastresults.sh}] \
+
+A TCSH script that compares FEAST benchmark result files in two directories with
+each other. It takes two directory paths as input and will generate a report
+like \texttt{runregressiontest} and \\
+\texttt{runregressiontest\_child}.
+
+Remember that the results of every benchmark test is stored in a single
+file. The script will compare the contents of files with matching names and
+list any difference for every test found in the first directory.
+
+Example usage:
+\begin{verbatim}
+% bin/manuallycheck_feastresults.sh results/pc-opteron-linux64-lammpi-ifort-goto \
+                                    refsol/pc-opteron-linux64-lammpi-ifort-goto
+\end{verbatim}
+
+The script is particularly useful
+\begin{itemize}
+\item if you lost the screen output of a benchmark run. For instance, when the
+  terminal history does not provide enough lines.
+\item if you want to \emph{manually} compare results. For instance, when
+  checking the results of a benchmark run that is still running or when
+  comparing results from a benchmark run with reference solutions for a
+  different build target ID:
+\begin{verbatim}
+bin/manuallycheck_feastresults.sh results/some-obscure-target \
+                                  refsol/pc-opteron-linux64-lammpi-ifort-goto
+\end{verbatim}
+
+
+\end{itemize}
+
+\item[\texttt{runregressiontest}] \
+
+A TCSH script that anonymously checks out the HEAD revision of FEAST from CVS
+to directory \texttt{\$HOME/nobackup/feast/feast}. Any existing (previous checkout)
+directory of that name is renamed to \texttt{\$HOME/nobackup/feast/feast.old}. 
+If differences between these two checkouts are found, \textsc{FBenchmark2} is
+initiated: The FEAST benchmark application is cloned to
+\texttt{\$HOME/nobackup/feast/feast/} \texttt{fbenchmark2\_\$HOSTNAME}, 
+configured for the current build target ID, compiled and run. A report is sent
+upon completion of the test to the FEAST development team.
+
+The script takes two arguments: The first describes the test set to run. It
+simply is the name of one of the \texttt{fbconf} files (omitting the
+extension). The second argument is a description of this test set to be used  be
+used in the e-mail subject.
+
+Example usage:
+\begin{verbatim}
+% bin/runregressiontest 'dailytests' 'daily run'
+\end{verbatim}
+
+The script is the ``master'' instance of two fraternal twin scripts to detect
+regressions in the FEAST library:
+\texttt{runregressiontest} and \texttt{runregressiontest\_child}.
+
+\item[\texttt{runregressiontest\_child}] \
+
+A TCSH script that is the ``slave'' instance of the two fraternal twin scripts
+to detect regressions in the FEAST library. It does not retrieve a recent copy
+of FEAST from CVS, but waits if the ``master'' instance decides to initiate a
+FEAST benchmark. If so, the ``slave'' instance also clones the FEAST benchmark
+application to \texttt{\$HOME/nobackup/feast/feast/fbenchmark2\_\$HOSTNAME},
+configures it for the current build target ID, compiles and runs it. A report is
+sent upon completion of the test to the FEAST development team.
+
+Invocation of the script is identical to that of \texttt{runregressiontest}.
+\end{description}
+
+
+
+\subsection{Test classes}
+\label{sec:fbenchmark2:test_classes}
+
+The benchmark consists of the following test classes:
+
+\begin{tabbing}
+xxxxxxxxxxxxxx \=  xxxxxxxxxxxxxxx \kill \\
+bc.fbdef: \>      tests for checking the handling of boundary conditions \\
+dynref.fbdef: \>  tests for checking the dynamic refinement \\
+fb.fbdef: \>      tests for checking the handling of fictitious boundaries \\
+sbblas.fbdef: \>  tests for checking the SBBLAS library \\
+scarc.fbdef: \>   tests for checking several scarc solvers \\
+stokes.fbdef: \>  tests for solving stationary and instationary Stokes problems, \\
+               \> these tests check in particular the solution of multidimensional problems \\
+\end{tabbing}
+
+
+Every \texttt{fbdef} file contains definitions blocks of the following structure:
+
+\begin{verbatim}
+id        = SBBLAS0002
+class     = SBBLAS
+descr     = sbblas tests
+grid      = macrotest/mt_a_0.01_2x2
+appl      = sbblas,MATCONST:NO,AUX1:MV
+bc        = DIR
+scarc     = CG_MG_Z,LSMOOTHER:TRIGS,MAXITER:3
+mglevel   = 5
+rhs       = ZERO_ON_EHQ
+masterdat = master.dat
+\end{verbatim}
+
+Explanation of the keywords:
+
+\begin{description}
+\item[\texttt{id}] \
+
+  Unique identifier of the test.
+
+\item[\texttt{class}] \
+
+  Class identifier of the test. The value should identical for all tests in
+  a single \texttt{fbdef} file. Typically, this file bears the class name.
+
+\item[\texttt{descr}]  \
+
+  Short description of the test. This text is printed to screen when the test is
+  started and serves as a hint what this test is about.
+
+\item[\texttt{grid}]  \
+
+  Subpath of the grid file to use for this test.
+
+  As we learnt in
+  section~\ref{sec:fbenchmark2:directory_structure}, all grids are stored in
+  subdirectory \texttt{grids}. This directory name is automatically added as
+  prefix to the value given here.
+
+\item[\texttt{appl}]  \
+
+  Name of the test application to use for this test.
+
+  Additional parameters can be defined as comma separated key:value lists.
+
+  To add a benchmark application, create a subdirectory with prefix
+  \texttt{src\_<appl>}. For more details, see section~\ref{sec:fbenchmark2:extending_benchmark}.
+
+  Currently, the following test applications are integrated into the benchmark:
+  \begin{description}
+  \item[disk] \
+
+    [Description still missing...]
+
+  \item[dynref] \
+
+    [Description still missing...]
+
+  \item[fibound] \
+
+    [Description still missing...]
+
+  \item[matmod] \
+
+    [Description still missing...]
+
+  \item[poisson] \
+
+    [Description still missing...]
+
+  \item[sbblas] \
+
+    [Description still missing...]
+
+  \item[stokes] \
+
+    The application solves the generalised Stokes equation
+\begin{equation}
+  \label{eq:stokes}
+  \begin{array}{rll}
+          \gamma \mathbf{u} - \nu k \Delta \mathbf{u} + \nabla p
+         \!\!\!\!&= \mathbf{f} \qquad
+         &\text{in } \Omega, \\
+%
+          \nabla\cdot \mathbf{u}
+         \!\!\!\!&= 0
+         &\text{in } \Omega, \\
+%
+        \nu \frac{\partial \mathbf{u}}{\partial n} + p \cdot n
+        \!\!\!\!&= 0
+        &\text{on } \Gamma_{\text{N}}, \\
+%
+        \mathbf{u}
+        \!\!\!\!&= \mathbf{\tilde{g}}
+        & \text{on } \Gamma_{\text{D}}, \\
+%
+          \mathbf{u}
+         \!\!\!\!&=\mathbf{u}_0
+         &\text{in } \Omega,
+       \end{array}
+\end{equation}
+where $\mathbf{u}$ and $p$ denote velocity and pressure, respectively.
+$n$ is the outer normal vector and $\Gamma_{\text{D}}$ and $\Gamma_{\text{N}}$ the
+boundary parts with, respectively, Dirichlet and Neumann boundary
+conditions (i.e. inflow, outflow and adhesion conditions). The kinematic 
+kinematic viscosity $\nu$, finally, is assumed constant and positive: $\nu > 0$,
+$\nu \ne \nu(p, c_p)$.
+
+    Test cases include 
+    \begin{itemize}
+    \item stationary Stokes problems;
+    \item generalised Stokes problems, with time steps in the range $[10^{-3}, 10^3]$;
+    \item grids with a single and multiple macros;
+    \item grids with a single and multiple parallel blocks,;
+    \item isotropic and anisotropic grids.
+    \end{itemize}
+
+  \end{description}
+
+\item[\texttt{bc}]  \
+
+  Definition of the boundary conditions used, given as comma separated list.
+
+  Valid values are \texttt{DIR}, \texttt{MIXED} and \texttt{DIRZERO}.
+
+\item[\texttt{scarc}]  \
+
+  Definition of the  ScaRC solver used. Additional parameters can be defined as
+  comma separated key:value lists.
+
+\item[\texttt{mglevel}] \
+
+  Definition of the multi grid levels on which the test should be performed. The levels are
+  given as comma separated list.
+
+  Example: Execution on multi grid level 3 and 4 is given via
+  \begin{verbatim}
+     mglevel = 3,4
+  \end{verbatim}
+
+\item[\texttt{rhs}]  \
+
+  Definition of the right hand side for the test problem. Valid values are
+  \texttt{ZERO\_ON\_EHQ}, \texttt{ZERO}, \texttt{MINUS8DX} and \texttt{n.a.}.
+
+\item[\texttt{masterdat}]  \
+
+  Name of the configuration file to use.
+
+  Simple matrix-vector multiplication tests take a simpler configuration file
+  than adaptive refinement tests with Poisson problem or Stokes problem tests.
+
+\end{description}
+
+Every keyword found in an \texttt{fbdef} file is exported as environment
+variable. By this mechanism, it is usually sufficient to provide a single
+configuration file (the value of \texttt{masterdat}) for one class of tests.
+Instead of using fixed values for certain keywords, environment variables are
+used within the configuration file. The benchmark application will automatically
+replace them with the appropriate value at runtime.
+
+The list of variables presented above can be extended. This is, for instance,
+done for the \texttt{stokes} application. Tests defined in \texttt{tests/stokes.fbdef}
+additionally define the keywords \texttt{mdsfile}, \texttt{gamma}, \texttt{k}
+and \texttt{nu}. The corresponding configuration file \texttt{master.dat.stokes},
+hence, contains the following lines
+\begin{code}{Excerpt from \texttt{master.dat.stokes}}{fig:excerpt_masterdatstokes}
+\begin{verbatim}
+gamma           $GAMMA    # parameter for switching on and off the reactive part
+k               $K        # parameter indicating the time step size
+nu              $NU       # kinematic viscosity
+mdsFile         $MDSFILE  # name of file coding the solver for multidimensional problems
+\end{verbatim}
+\end{code}
+
+
+
+\subsection{Extending the benchmark application}
+\label{sec:fbenchmark2:extending_benchmark}
+
+As mentioned in section~\ref{sec:fbenchmark2:test_classes}, the
+\textsc{FBenchmark2} application features seven different test classes so far:
+SBBLAS tests, tests for matrix operations, tests for dynamic refinement and
+fictitious boundary conditions and tests involving the solution of Poisson, 
+Stokes and elasticity problems.
+
+Every class is coded as a separate application in subdirectories with prefix
+\texttt{src\_}. The variable part of an application subdirectory must coincide with
+the value given as \texttt{appl} in the related \texttt{fbdef} file.
+
+Inside, an application is set up like every other in \texttt{feast/feast/applications}: 
+There have to be at least two modules called \texttt{userdef.f90} and 
+\texttt{slavemod.f90}. The first provides routines that influence assemblation
+of matrices and right hand sides, namely coefficient functions and a function
+returning information on boundary values. Furtheron, it may provide exact
+solutions for test problems and, finally, it provides facilities to postprocess
+data when exporting visualisation data to file as well as an interface to export
+user-defined visualisation output (other than AVS or GMV format).
+
+The latter implements program control: reading of configuration files,
+assembling of matrices, the solving process and possibly the evaluation of results
+as well as visualisation output.
+
+You can add additionally applications-specific modules if you like. Do not
+forget to include them into your personal \texttt{configure} script, then. If
+your application can get along with the two standard modules
+\texttt{userdef.f90} and \texttt{slavemod.f90} you might opt to choose the
+master copy of \texttt{configure}. Create a symbolic link to
+\texttt{../master.configure}.\footnote{Do not forget to extend
+  \texttt{feast/feast/Makefile.symlinks} accordingly afterwards. The most easy
+  way to do this is invoking \texttt{bin/symlinks2Makefile} in directory
+  \texttt{feast/feast}. This script will create a Makefile to restore every
+  symbolic link found underneath \texttt{feast/feast}.}
+
+So, if you plan to extend the benchmark application, you will have to do the
+following:
+\begin{enumerate}
+\item Add a subdirectory \texttt{src\_<appl>} where \texttt{<appl>} coincides
+  with the value given for the keyword \texttt{appl} in \texttt{fbdef} file (see
+  next item).
+
+  Add at least two modules called \texttt{userdef.f90} and
+  \texttt{slavemod.f90} which code your application.
+
+\item Create a new \texttt{fbdef} file in directory \texttt{tests}.
+
+\item Add the test IDs you defined in the newly created \texttt{fbdef} file to
+  \texttt{alltests.fbconf} (at least) and any other appropriate \texttt{fbconf}
+  file (e.g. the \texttt{dailytests.fbconf}). Otherwise your test will not be
+  executed by the nightly \textsc{FBenchmark2} regression tests.
+\end{enumerate}
+
+
+
+\subsection{Solver algorithms}
+\label{sec:fbenchmark2:solver_algorithms}
+
+\begin{tabbing}
+xxxx\=  xxxxxxxxxxxxxxx \kill \\
+BICG\_MG\_MG\_ZZ.scarc:\\
+\> BICG with 2-Level-SCARC-MG as preconditioner and direct coarse grid solvers,\\
+\>  supported options are: MAXITER, STEPS, OMEGA, LOCALITER, LSMOOTHER\\
+\\
+
+CG\_MG\_MG\_ZZ.scarc:\\
+\> CG with 2-Level-SCARC-MG as preconditioner and direct coarse grid solvers,\\
+\> supported options are: MAXITER, STEPS, OMEGA, LOCALITER, LSMOOTHER\\
+\\
+
+CG\_MG\_Z.scarc:\\
+\> CG with MG as preconditioner and direct coarse grid solver,\\
+\> supported options are: MAXITER, STEPS, OMEGA, LOCALITER, LSMOOTHER\\
+\\
+
+CG.scarc:\\
+\> plain CG with local preconditioner,\\
+\> supported options are: MAXITER, LSMOOTHER\\
+\\
+
+BICG.scarc:\\
+\> plain BICG with local preconditioner,\\
+\> supported options are: MAXITER, LSMOOTHER\\
+\\
+
+MG\_MG\_MG.scarc:\\
+\> 3-Level-SCARC-MG with BICG schemes as coarse grid solvers,\\
+\> supported options are: MAXITER, OMEGA, LSMOOTHER\\
+\\
+
+MG\_MG\_MG\_ZZZ.scarc:\\
+\> 3-Level-SCARC-MG with direct coarse grid solvers,\\
+\> supported options are: MAXITER, OMEGA, LSMOOTHER\\
+\\
+
+MG\_MG.scarc:\\
+\> 2-Level-SCARC-MG with BICG schemes as coarse grid solvers,\\
+\> supported options are: MAXITER, OMEGA, LSMOOTHER\\
+\\
+
+MG\_MG\_ZZ.scarc:\\
+\> 2-Level-SCARC-MG with direct coarse grid solvers,\\
+\> supported options are: MAXITER, OMEGA, LSMOOTHER\\
+\\
+
+MG.scarc:\\
+\> MG with BICG scheme as coarse grid solver,\\
+\> supported options are: MAXITER, OMEGA, LSMOOTHER\\
+\\
+
+MG\_Z.scarc:\\
+\> MG with direct coarse grid solver,\\
+\> supported options are: MAXITER, OMEGA, LSMOOTHER\\
+\\
+\end{tabbing}

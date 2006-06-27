@@ -469,6 +469,8 @@ MODULE linearsolver
 ! *****************************************************************************
 ! *****************************************************************************
 
+!<types>
+
 !<typeblock>
   
   ! This is the central structure which repesents a solver.
@@ -1255,7 +1257,7 @@ CONTAINS
   INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
 !</input>
 
-!<inputpoutput>
+!<inputoutput>
   ! The solver node which should be initialised
   TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
 !</inputoutput>

@@ -1351,6 +1351,8 @@ CONTAINS
   REAL(DP), DIMENSION(9), INTENT(OUT) :: UU
 !</output>
 
+!</subroutine>
+
     ! local variables
 
     INTEGER :: inode

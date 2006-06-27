@@ -1575,8 +1575,6 @@ CONTAINS
   
 !</input>
   
-!</description>
-  
 !</function>
 
   ! local variables
@@ -1645,8 +1643,6 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
 
 !</input>
-  
-!</description>
   
 !</function>
 

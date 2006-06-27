@@ -590,6 +590,8 @@ CONTAINS
   ! =0 if no memory is necessary.
 !</result>
 
+!</function>
+
   ! local variables
   INTEGER i
   INTEGER(PREC_VECIDX) :: imemmax,imemact
@@ -655,6 +657,8 @@ CONTAINS
   ! =0 if no memory is necessary.
 !</result>
 
+!</function>
+
     ! local variables
     TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrCoarse
     TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrFine
@@ -716,6 +720,8 @@ CONTAINS
   ! on the coarse grid to the fine grid and vice versa.
   ! =0 if no memory is necessary.
 !</result>
+
+!</function>
 
     ! local variables
     TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrCoarse

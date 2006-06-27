@@ -1,0 +1,248 @@
+\section{Documentation}
+
+To keep the documentation up-to-date, the documentation for the
+library functions and data structures is direct included in the source
+code. This information is structered by special tags which are comments
+for the fortran compiler. The documentation can be produced in two
+formats, HTML and TeX. To the TeX output there are some chapters added
+which contains basic information concerning theoretical background, data
+formats, tutorials, benchmark etc. To generate the HTML-documentation,
+run the script
+
+\verb+~/feast/feast/docs/html/generate_html+
+
+to generate the TeX-documentation run the script
+
+\verb+~/feast/feast/docs/tex/generate_tex+
+
+
+\subsection{Header}
+
+The header information is tagged by the \verb+<name>+ tag, which defines
+the name of the module, and the \verb+<purpose>+ tag, which describes the
+global purpose of the module.
+
+\begin{code}{Header documentation}{header_doc}
+\begin{verbatim}
+!########################################################################
+!# FINITE ELEMENT ANALYSIS & SOLUTION TOOLS  F E A S T  (Release 1.0)   #
+!#                                                                      #
+!# Authors: Ch.Becker,S.Kilian,S.Turek                                  #
+!#          Institute of Applied Mathematics & Simulation               #
+!#          University of Dortmund                                      #
+!#          D-44227 DORTMUND                                            #
+!#                                                                      #
+!########################################################################
+!#                                                                      #
+!# <name> fsystem </name>                                               #
+!#                                                                      #
+!#                                                                      #
+!# <purpose>                                                            #
+!# System routines like time, string/value conversions etc.             #
+!# </purpose>                                                           #
+!#                                                                      #
+!########################################################################
+\end{verbatim}
+\end{code}
+
+\subsection{Global constants}
+
+
+Global constants are documented by the tags \verb+<constants>+ and 
+\verb+<constantblock>+, this tag supports the \verb+description+ attribut
+for further explanation. The comments for every constant definition must
+be placed above the corresponding declaration.
+
+\begin{code}{Global constants documentation}{gconst_doc}
+\begin{verbatim}
+!<constants>
+
+!<constantblock description="constants for logical values">
+
+  ! logical value 'true'
+  integer, parameter :: YES = 0
+
+  ! logical value 'false'
+  integer, parameter :: NO = 1
+
+!</constantblock>
+
+
+!<constantblock description="kind values">
+
+  ! kind value for double precision
+  integer, parameter :: DP = selected_real_kind(13,307)
+
+  ! kind value for single precision
+  integer, parameter :: SP = selected_real_kind(6,63)
+
+  ! kind value for 32Bit integer
+  integer, parameter :: I32 = selected_int_kind(8)
+
+  ! kind value for 64Bit integer
+  integer, parameter :: I64 = selected_int_kind(10)
+
+!</constantblock>
+!</constants>
+\end{verbatim}
+\end{code}
+
+\subsection{Global types}
+
+Global types are documented by the tags \verb+<types>+ and 
+\verb+<typeblock>+, this tag supports the \verb+description+ attribut
+for further explanation. The comments for every definition must
+be placed above the corresponding declaration.
+
+\begin{code}{Global types documentation}{gtype_doc}
+\begin{verbatim}
+!<types>
+
+!<typeblock>
+
+  ! iteration descriptor
+  type t_iterator
+
+    ! start value
+    integer :: istart
+
+    ! stop value
+    integer :: istop
+
+    ! step value
+    integer :: istep
+
+  end type
+!</typeblock>
+
+
+!<typeblock>
+
+  ! simulation of an array of double pointers
+  type t_realPointer
+    real(DP), dimension(:), pointer :: ptr
+  end type t_realPointer
+
+!</typeblock>
+
+!</types>
+\end{verbatim}
+\end{code}
+
+\subsection{Global variables}
+
+Global variables are documented by the tag \verb+<globals>+.
+The comments for every definition must
+be placed above the corresponding declaration.
+
+\begin{code}{Global variables documentation}{gvar_doc}
+\begin{verbatim}
+!<globals>
+
+  ! global system configuration
+  type (t_sysconfig) :: sys_sysconfig
+
+  ! parallel mode 0 = single, 1=double binary (deprecated)
+  integer :: sys_parmode
+
+  ! output format
+  integer :: coutputFormat
+
+  ! output format
+  character(len=256) :: soutputFileName
+
+!</globals>
+
+\end{verbatim}
+\end{code}
+
+\subsection{Functions}
+
+The documentation for a function is tagged by the \verb+<function>+ tags, which
+must include the function definition. The \verb+<function>+ tag can contain the following
+tags for additional documentation:
+
+\begin{itemize}
+\item \verb+<description>+: contains description of the function
+\item \verb+<result>+: contains description of the result of the function
+\item \verb+<input>+: contains description of the input parameters of the function
+\end{itemize}
+
+\begin{code}{Function documentation}{func_doc}
+\begin{verbatim}
+!<function>
+  character (len=32) function sys_sd(dvalue, idigits) result(soutput)
+
+    !<description>
+    ! This routine converts a double value to a string with idigits
+    ! decimal places.
+    !</description>
+
+    !<result>
+    ! String representation of the value, filled with white spaces.
+    ! At most 32 characters supported.
+    !</result>
+
+    !<input>
+
+      ! value to be converted
+      real(DP), intent(in) :: dvalue
+    
+      ! cont of digits
+      integer
+                    :: idigits
+    !</input>
+!</function>
+\end{verbatim}
+\end{code}
+
+
+\subsection{Subroutines}
+
+The documentation for a subroutine is tagged by the \verb+<subroutine>+ tags, which
+must include the subroutine definition. The \verb+<subroutine>+ tag 
+can contain the following tags for additional documentation:
+
+\begin{itemize}
+\item \verb+<description>+: contains description of the function
+\item \verb+<result>+: contains description of the result of the function
+\item \verb+<input>+: contains description of the input parameters of the function
+\item \verb+<output>+: contains description of the output parameters of the function
+\item \verb+<inputoutput>+: contains description of the input/output parameters of the function
+\end{itemize}
+
+\begin{code}{Subroutine documentation}{sr_doc}
+\begin{verbatim}
+!<subroutine>
+    subroutine sys_parInElement(Dcoord, dxpar, dypar, dxreal, dyreal)
+
+    !<description>
+    !This subroutine is to find the parameter values for a given point (x,y) in real
+    !coordinates.
+    !
+    !Remark: This is a difficult task, as usually in FEM codes the parameter 
+    !values are known and one wants to obtain the real coordinates.
+    !</description>
+
+    !<input>
+
+      !coordinates of the evaluation point
+      real(DP),intent(in) :: dxreal,dyreal
+
+      !coordinates of the element vertices
+      real(DP), dimension(2,4),intent(in) :: Dcoord
+
+    !</input>
+
+    !<output>
+
+      !parameter values of (x,y)
+      real(DP), intent(out) :: dxpar,dypar
+
+    !</output>
+
+!</subroutine>
+
+\end{verbatim}
+\end{code}
+

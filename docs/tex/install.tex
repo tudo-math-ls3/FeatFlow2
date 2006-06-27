@@ -1,0 +1,90 @@
+
+Please perform the following prelimarary installation steps:
+
+get \verb+feast_xx.xx.xx.tar.gz+ from \verb+www.featflow.de+
+
+Untar the file with the command
+
+\begin{verbatim}
+gzip -d feast_xx.xx.xx.tar.gz
+tar xvf feast_xx.xx.xx.tar
+\end{verbatim}
+
+This creates the following directory structure
+
+\begin{tabbing}
+feast \phantom{xxxxxxxx} \= feast \phantom{xxxxxxxxxxxxxxx} \=  -FEAST program- \\
+      \> doc.pdf  \> -This document-\\
+      \> README  \> -latest information-\\
+      \> CHANGES \> -changes from previous versions-\\
+      \> OPENBUGS \> -known and open bugs-\\
+\end{tabbing}
+
+The feast folder itself consists of the following subfolders
+
+\begin{tabbing}
+\verb+applications+ \phantom{xxxxxxxx} \= application programs \\
+\verb+arch+ \> architecture dependent stuff\\
+\verb+bin+ \> shell scripts and binaries\\
+\verb+docs+ \> Documentation\\
+\verb+fbenchmark2+  \> benchmark program \\
+\verb+grids+ \> domain descriptions \\
+\verb+kernel+ \> FEAST kernel sources\\
+\verb+libraries+ \> external libraries \\
+\verb+object+ \> folder for object files \\
+\verb+outofdata+ \> stuff out of date\\
+\verb+sbblas+ \> SBBLAS folder \\
+\verb+sbblasbench+ \> SBBLAS benchmark folder \\
+\verb+scarc+   \> folder containing the scarc algorithm descriptions\\
+\verb+solver+   \> folder containing the solver algorithm descriptions
+\end{tabbing}
+
+      
+Get LAM-MPI, a message passing library, from
+
+\verb+http://www.lam-mpi.org/download+
+
+and install it in accordance with the instructions found
+in the \verb+LAM+ folder (for lsiii users: already installed) \cite{BurnsDaoudVaigl1994,SquyresLumsdaine2003}
+
+Make sure that the environment variables \verb+MPI_INC+ and 
+\verb+MPI_LIB+ point to the directories for include files and the LAM/MPI libraries, e.g.
+
+\begin{verbatim}
+setenv MPI_INC /usr/local/lam/include
+setenv MPI_LIB /usr/local/lam/lib
+\end{verbatim}
+
+Make sure, that the path \verb+/usr/local/lam/bin+ is in your 
+\verb+PATH+ variable.
+
+
+FEAST has a global configure script located in the \verb+bin+ folder. Every
+application subfolder contains a local configure script which calls the
+global script with application specific options. 
+
+\verb+configure+ tries to detect the system architecture. The architecture is
+coded as following:
+
+\verb+arch-cpu-os-mpi-compiler-blas+
+
+The sub specifications means as follows:
+\begin{itemize}
+\item \verb+arch+: architecture, currently \verb+alpha,ibm,pc,sun4u,sx6+
+\item \verb+cpu+: processor type, currently \verb+athlon,athlon64,athlonxp,ev6,opteron,pentium3,pentium4,+\\
+\verb+pentium4m,powerpc_power4,sparcv8,sparcv9+
+\item \verb+os+: operating system, currently \verb+aix,linux32,linux64,osf1,sunos,superux+
+\item \verb+mpi+: MPI environment, currently \verb+dmpi,lammpi,mpich,optmpich,tsmpi+
+\item \verb+compiler+: compiler, currently \verb+cf90,ifort,g95,gfortran,pgi,sunf90,xlf+
+\item \verb+blas+: used BLAS library, currently \verb+atlas,blas,dxml,essl,goto,perf+
+\end{itemize}
+
+
+Currently, the following IDs are supported:
+\verbatiminput{valid_ids}
+
+The configure script supports the following options:
+\verbatiminput{configure_help}
+
+After configure is successfully run a makefile is created. Type \verb+make+
+to compile the package and the application.

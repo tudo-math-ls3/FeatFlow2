@@ -1,0 +1,176 @@
+\documentclass[10pt,a4paper]{report}
+
+% Page layout
+%\usepackage{a4wide}
+\usepackage[top={25mm}, right={25mm}, bottom={25mm}, left={25mm}]{geometry}
+
+% For math typesetting it's standard to use the following
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{supertabular}
+
+% For \includegraphics
+\usepackage{graphicx}
+
+\usepackage{verbatim}
+
+\usepackage{rotating}
+
+% Have clickable items in table of contents, index, etc.
+% (Only in pdf version)
+\usepackage{url}
+%\usepackage{hyperref}
+
+%\hypersetup{
+%  pdftitle={FEAST - Finite Element Analysis & Solution Tools. Technical Documentation},
+%  pdfauthor={Ch. Becker, S. Buijssen, M. Grajewski, S. Kilian, S. Turek, H. Wobker},
+%  pdfsubject={Technical Documentation},
+%  pdfkeywords={FEAST, finite elements}
+%}
+
+\newcommand{\scarc}{\textsc{ScaRC} }
+\newcommand{\devisor}{\textsc{DeViSoR} }
+
+\bibliographystyle{abbrv}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Weil ich zu faul war, immer das (s. ...) zu tippen   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\reff}[1]{(s. Kap. \ref{#1})}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%     Definition einer eigenen Abbildungsumgebung       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newenvironment{abb}{\begin{figure}[h!]\centering }{\end{figure}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%         Definition einer leckeren Code-Umgebung       %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% counter for code environment
+\newcounter{codecount}
+%\setcounter{codecount}{0}
+
+% the environment itself
+\newsavebox{\codecaption}
+\newlength{\codewidth}
+\newenvironment{code}[2]{%
+  \begin{center}%
+    \vrule%
+    \refstepcounter{codecount}%
+%\sbox{\codecaption}{\textit{Sample \arabic{codecount}: #1}}%
+    \sbox{\codecaption}{Sample \arabic{codecount}: #1}%
+    \label{#2}%
+    \begin{small}%
+      \begin{minipage}{0.9\textwidth}%
+        \hrule\vspace*{5pt}%
+        \setlength{\codewidth}{0.98\textwidth}
+        \begin{minipage}{\codewidth}%
+          \begin{center}
+            \vspace*{5pt}
+            \addtolength{\codewidth}{-10pt} % 2x 5pt to have equal top, left, bottom and right margin
+            \begin{minipage}{\codewidth}%
+            }{%
+            \end{minipage}
+          \end{center}
+          \vspace*{5pt}%
+        \end{minipage}%
+        \hspace*{5pt}\hrule%
+      \end{minipage}%
+    \end{small}%
+    \vrule%
+ \\[0.5ex] \usebox{\codecaption}%
+ \end{center}%
+}
+
+\parindent0cm
+\parskip1em
+\renewcommand{\arraystretch}{1.5}
+
+\begin{document}
+
+\begin{titlepage}
+
+\vspace*{4cm}
+
+\begin{center}
+
+{\Huge FEAST}\\[2cm] 
+{\huge Finite Element Analysis \& Solution Tools}\\[0.5cm] 
+
+{\LARGE Technical Documentation}\\[3cm]
+
+\vspace*{0.5cm}
+
+{\large
+ Ch.~Becker, S.~Buijssen, M.~Grajewski,\\[1em]
+ S.~Kilian, S.~Turek, H.~Wobker}
+
+\vspace*{2cm}
+
+\today
+
+\vspace*{2cm}
+
+Institut f{\"u}r Angewandte Mathematik \& Simulation, Universit{\"a}t Dortmund, Germany \\[0.5em]
+telephone: +49 231 755 5934\qquad fax: +49 231 755 5933 \\[0.5em]
+WWW: http://www.featflow.de/feast, Email:feast@mathematik.uni-dortmund.de
+
+\end{center}
+
+\end{titlepage}
+
+
+\tableofcontents
+
+%######################################################################
+
+\chapter{Introduction}
+
+\include{overview}
+
+
+%######################################################################
+
+\chapter{Installation}
+
+\include{install}
+
+\include{tutorial}
+
+%######################################################################
+
+\chapter{File formats used by FEAST}
+
+\include{fileformats}
+
+%######################################################################
+
+\chapter{Maintainance}
+
+\include{styleguide}
+
+\include{tagdoc}
+
+\include{fbenchmark}
+
+\include{modules_overview}
+
+\include{modules_overview_dynamic}
+
+\include{modules_overview_application}
+
+\include{modules_description_dynamic}
+
+
+% ---- Bibliography ----
+%
+
+\bibliography{fbmathlit}
+
+\end{document}

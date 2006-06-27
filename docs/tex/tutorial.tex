@@ -1,0 +1,131 @@
+\chapter{Tutorial}
+
+\section{A first step to FEAST Finite Element \& Solution Tools}
+
+In the first step we want to create our grid. For this task we use
+the \devisor program, which you have to load and install separately
+from \url{http://www.featflow.de}.
+
+Start \devisor with the command
+
+\begin{verbatim}
+grid3
+\end{verbatim}
+
+First we build a new domain. Go to
+
+\verb+Domain->New Domain+ 
+
+type \verb+1,0+ for every size in the dialog.
+
+
+then we want to build the boundary description. Press the
+space bar and select 
+
+\verb+Mouse mode->Create SegmentList+, 
+
+then
+go to position (0,0) and klick the
+left button, go to (1,0),(1,1),(0,1) and
+klick again. To finish the boundary description press the
+space bar and select 
+
+\verb+Done!+. 
+
+Then go to 
+
+\verb+Domain->Save Domain As->FEAST V3+
+
+and save the 
+file under
+the name \verb+~/feast/feast/grids/firstgrid.feast+.
+
+In the next step we will create the nodes. First, we define the nodes
+on the boundary. This will be done automatically by the the function
+
+\verb+Coarse Mesh->Add multiple parameter nodes(2D)+. 
+
+Select this function and a dialog will appear, where you can input some parameters. Change the value
+of the \verb+Number of Nodes+ from 4 to 8 and click OK. This will create boundary nodes
+on the edge and midpoints. One interior point has to be defined, to do this, press
+space bar and select 
+
+\verb+Mouse mode->Create Points+
+
+and klick with the left button to
+the position (0.5,0.5).
+
+In the next step you have to define the edges. Press space bar and select 
+
+\verb+Select+.
+
+
+Klick with the left button and draw
+the rubberband with pressed button so, that the nodes 1 and 2 are gathered. Then
+press the E key. A new edge is created. Repeat this for the node groups
+(2,9), (9,8), (8,1), (9,6), (6,7), (7,8), (5,6), (4,2), (9,4), (3,4) and (2,3)).
+Then gather the complete domain, press space bar and select 
+
+\verb+Add Quads+.
+
+Now the grid is ready and you can finally save it.
+
+Now we can try to start a calculation run. Go to the folder 
+
+\verb+~/feast/feast/applications/poisson+ 
+
+and type: \verb+./configure+
+
+This creates the makefile.
+
+Type \verb+make+ to build the executable.
+
+After editing and building we have to modify the central data file
+called \verb+master.dat+. In this file there are several parameters concerning
+the environment and simulation defined. The detailed format of this file
+is described later. Make sure that the lines with PROJECTDIR and LOGDIR
+contains the correct path to your FEAST folder.
+ 
+Before you start the executable make sure that the LAM daemon is
+running. To achieve this type the following commands
+
+\begin{verbatim}
+wipe
+lamboot
+\end{verbatim}
+
+to start the program type
+
+\begin{verbatim}
+mpirun -c 4 doenerkebap
+\end{verbatim}
+
+
+The program run should start with 
+
+\begin{verbatim}
+* master: This is FEAST!  Version 0.9.0 (22.11.2005 RC1)
+\end{verbatim}
+
+and end with 
+
+\begin{verbatim}
+* master: Get finish message from    1 with                0
+* master: Get finish message from    2 with                0
+* master: Get finish message from    3 with                0
+\end{verbatim}
+
+
+Now have a look to the solution files \verb+sol_simple.gmv+. To
+view this file you will need the program {\em GMV}.
+
+
+\section{Sample program}
+
+The following sample program demonstrates the solving of the poisson problem
+with the FEAST library. This sample program is the slavemod\_complex.f90 file
+in the \verb+~/feast/feast/applications/poisson+ folder.
+
+\verbatiminput{../../applications/poisson/slavemod_complex.f90}
+
+
