@@ -1,0 +1,3 @@
+encoding.lo encoding.o: encoding.c SZconfig.h
+
+SZconfig.h:

@@ -1,0 +1,3 @@
+mcgill.lo mcgill.o: mcgill.c mcgill.h
+
+mcgill.h:
