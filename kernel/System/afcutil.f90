@@ -1,7 +1,7 @@
 
 ! Utility routines for the FEM-FCT solver
 
-MODULE afc_util
+MODULE afcutil
 
   USE fsystem
 
@@ -84,4 +84,4 @@ CONTAINS
 
   END FUNCTION feat_mi
 
-END MODULE afc_util
+END MODULE 

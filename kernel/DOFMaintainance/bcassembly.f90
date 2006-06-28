@@ -70,7 +70,7 @@ CONTAINS
   ! or is there is a massive change in the boundary conditions (e.g. the
   ! number change)
   ! In later calls, the structure is recomputed only in those parts of the boundary,
-  ! which have the t_bcReigion%bisstatic flag set FALSE (the standard value) -
+  ! which have the t_bcReigion\%bisstatic flag set FALSE (the standard value) -
   ! except there , in which case the whole structure is rebuild.
   ! By setting bforceRebuild to TRUE, one can enforce a complete
   ! rebuild of the structure, independent of which regions are marked

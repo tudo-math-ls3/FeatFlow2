@@ -56,17 +56,17 @@ CONTAINS
   
   ! The Jacobian matrix of the mapping between the reference and each
   ! real element, for all points on all elements in progress.
-  ! array [1..TRAFO_NJACENTRIES,1..npointsPerElement,1..Number of elements)
+  ! array [1..TRAFO_NJACENTRIES,1..npointsPerElement,1..Number of elements]
   REAL(DP), DIMENSION(:,:,:),INTENT(IN)         :: Djac
   
   ! The Jacobian determinant of the mapping of each point from the
   ! reference element to each real element in progress.
-  ! array {1..npointsPerElement,1..Number of elements)
+  ! array [1..npointsPerElement,1..Number of elements]
   REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Ddetj
   
   ! An array accepting the DOF's on all elements in the trial space
   ! of the FE function.
-  ! DIMENSION(#local DOF's in trial space,nelements)
+  ! DIMENSION(\#local DOF's in trial space,nelements)
   INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
   
   ! Number of points on every element where to evalate the function

@@ -626,7 +626,7 @@ CONTAINS
   
 !<description>
   ! This routine installs a linear solver node as preconditioner to the
-  ! nonlinear solver. The linear solver J^{-1} is called after each
+  ! nonlinear solver. The linear solver $J^{-1}$ is called after each
   ! defect calculation to precondition the defect:
   !    $$  x_{n+1}  =  x_n  +  J^{-1} (b-A(x)x)  $$
 !</description>
@@ -726,13 +726,13 @@ CONTAINS
   INCLUDE 'intf_nlsolcallback.inc'
   
   ! OPTIONAL: Preconditioning routine. This routine accepts a defect vector rd
-  ! and replaces it by a preconditioned defect vector J^{-1} rd. 
+  ! and replaces it by a preconditioned defect vector $J^{-1} rd$. 
   ! If this parameter is not present, the preconditioner is either a matrix
   ! or there is no preconditioner (depending on the variable
-  ! rsolverNode%cpreconditioner).
+  ! rsolverNode\%cpreconditioner).
   OPTIONAL :: fcb_precondDefect
   
-  ! OPTIONAL: Residual norm calculation & printing routine.
+  ! OPTIONAL: Residual norm calculation and printing routine.
   ! If not present, the standard absolute/relative stopping criteria of the
   !  solver node with the configuration of the nonlinear solver are used.
   ! If present, this routine is called each time the norm of the residuum was 
@@ -945,13 +945,13 @@ CONTAINS
   INCLUDE 'intf_nlsolcallback.inc'
   
   ! OPTIONAL: Preconditioning routine. This routine accepts a defect vector rd
-  ! and replaces it by a preconditioned defect vector J^{-1} rd. 
+  ! and replaces it by a preconditioned defect vector $J^{-1} rd$. 
   ! If this parameter is not present, the preconditioner is either a matrix
   ! or there is no preconditioner (depending on the variable
-  ! rsolverNode%cpreconditioner).
+  ! rsolverNode\%cpreconditioner).
   OPTIONAL :: fcb_precondDefect
   
-  ! OPTIONAL: Residual norm calculation & printing routine.
+  ! OPTIONAL: Residual norm calculation and printing routine.
   ! If not present, the standard absolute/relative stopping criteria of the
   !  solver node with the configuration of the nonlinear solver are used.
   ! If present, this routine is called each time the norm of the residuum was 

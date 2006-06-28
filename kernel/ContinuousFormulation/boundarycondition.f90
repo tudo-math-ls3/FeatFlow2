@@ -72,7 +72,7 @@ MODULE boundarycondition
 
   ! Dirichlet boundary conditions.
   ! Dirichlet boundary conditions are always specified for exactly one
-  ! equation. t_bcRegion%nequations is set =1 and t_bcRegion%Iequations(1)
+  ! equation. t_bcRegion\%nequations is set =1 and t_bcRegion\%Iequations(1)
   ! identifies the number of the equation, the boundary conditions refer to.
   INTEGER, PARAMETER :: BC_DIRICHLET      = 1
   

@@ -142,7 +142,7 @@ CONTAINS
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
-  ! DIMENSION(#entries in the matrix,npointsPerEl,nelements)
+  ! DIMENSION(number of entries in the matrix,npointsPerEl,nelements)
   REAL(DP), DIMENSION(:,:,:), INTENT(OUT) :: Djac
   
   ! Jacobian determinants of the mapping for all the points from the
@@ -344,7 +344,7 @@ CONTAINS
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
-  ! DIMENSION(#entries in the matrix,npointsPerEl)
+  ! DIMENSION(number of entries in the matrix,npointsPerEl)
   REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Djac
   
   ! Jacobian determinants of the mapping for all the points from the

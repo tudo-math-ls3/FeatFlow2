@@ -104,7 +104,7 @@ MODULE boundary
 
 !</constantblock>
 
-!<constantblock description="Bitfield constants for t_boundaryRegion%iproperties">
+!<constantblock description="Bitfield constants for t\_boundaryRegion%iproperties">
 
   ! The startpoint (point with min. parameter value) belongs
   ! to the boundary segment. If not set, the point with the

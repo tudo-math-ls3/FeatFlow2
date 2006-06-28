@@ -435,7 +435,7 @@ CONTAINS
   SUBROUTINE vecfil_subvectorToL20 (rx,isubvector)
 
 !<description>
-  ! This routine realises the 'subvector to $L^2_0' filter.
+  ! This routine realises the 'subvector to $L^2_0$ filter.
   ! The subvector isubvector of the block vector rx is normalised
   ! with vecfil_normaliseScalarToL20 to bring it to the space $L^2_0$.
 !</description>

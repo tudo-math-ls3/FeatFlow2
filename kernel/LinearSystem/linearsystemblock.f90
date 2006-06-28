@@ -1344,10 +1344,10 @@ CONTAINS
   SUBROUTINE lsysbl_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
   
 !<description>
-  ! This routine multiplies the weighted inverted diagonal domega*D^{-1}
+  ! This routine multiplies the weighted inverted diagonal $domega*D^{-1}$
   ! of the diagonal blocks in the matrix rmatrix with the vector rvectorSrc and 
   ! stores the result into the vector rvectorDst:
-  !   rvectorDst_i = dscale * D_i^{-1} * rvectorSrc_i  , i=1..nblocks
+  !   $$rvectorDst_i = dscale * D_i^{-1} * rvectorSrc_i  , i=1..nblocks$$
   ! Both, rvectorSrc and rvectorDst may coincide.
 !</description>
   

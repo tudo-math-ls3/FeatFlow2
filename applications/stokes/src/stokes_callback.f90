@@ -102,11 +102,11 @@ CONTAINS
     REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
+    ! DIMENSION(\#local DOF's in trial space,nelements)
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! DIMENSION(\#local DOF's in test space,nelements)
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
@@ -181,11 +181,11 @@ CONTAINS
     REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
+    ! DIMENSION(\#local DOF's in trial space,nelements)
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! DIMENSION(\#local DOF's in test space,nelements)
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
@@ -261,7 +261,7 @@ CONTAINS
     REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! DIMENSION(\#local DOF's in test space,nelements)
     INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information

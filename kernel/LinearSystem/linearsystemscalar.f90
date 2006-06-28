@@ -156,7 +156,7 @@ MODULE linearsystemscalar
   ! Matrix is saved transposed.
   ! To use a matrix in a transposed way, the application has to
   ! 1.) set this flag in the imatrixSpec bitfield
-  ! 2.) exchange the values in t_matrixScalar%NEQ and t_matrixScalar%NCOLS 
+  ! 2.) exchange the values in t_matrixScalar\%NEQ and t_matrixScalar\%NCOLS 
   !     of the matrix structure.
   INTEGER, PARAMETER :: LSYSSC_MSPEC_TRANSPOSED =      2**2
 
@@ -531,8 +531,8 @@ CONTAINS
   
   ! Check for rvector being compatible from the left or from the right
   ! to the matrix rmatrix.
-  ! =FALSE: Check whether matrix-vector product A*x is possible
-  ! =TRUE : Check whether matrix-vector product x^T*A = A^T*x is possible
+  ! =FALSE: Check whether matrix-vector product $A*x$ is possible
+  ! =TRUE : Check whether matrix-vector product $x^T*A = A^T*x$ is possible
   LOGICAL, INTENT(IN)              :: btransposed
 !</input>
 
@@ -4162,10 +4162,10 @@ CONTAINS
   SUBROUTINE lsyssc_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
   
 !<description>
-  ! This routine multiplies the weighted inverted diagonal domega*D^{-1}
+  ! This routine multiplies the weighted inverted diagonal $domega*D^{-1}$
   ! of the matrix rmatrix with the vector rvectorSrc and stores the result 
   ! into the vector rvectorDst:
-  !   rvectorDst = dscale * D^{-1} * rvectorSrc
+  !   $$rvectorDst = dscale * D^{-1} * rvectorSrc$$
   ! Both, rvectorSrc and rvectorDst may coincide.
 !</description>
   

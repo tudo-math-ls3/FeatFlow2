@@ -8,7 +8,7 @@
 #          University of Dortmund                                      #
 #          D-44227 DORTMUND                                            #
 #                                                                      #
-# Makefile to create FEAST Documentation from FEAST and LaTeX sources  #
+# Makefile to create FEAT2 Documentation from FEAT2 and LaTeX sources  #
 #                                                                      #
 # Author: Sven H.M. Buijssen (sven.buijssen@math.uni-dortmund.de)      #
 ########################################################################
@@ -88,7 +88,7 @@ ECHO   = echo
 ##############################################################################
 
 # Name of master file for documentation
-TEX_MASTER_FILE = feast
+TEX_MASTER_FILE = feat2
 
 # Main dependencies of the LaTeX file
 INCLUDES = $(shell $(EGREP) "\include{" $(TEX_MASTER_FILE).tex)
@@ -185,7 +185,7 @@ purge:	$(TEX_MASTER_FILE).clean clean $(TEX_MASTER_FILE).purge
 	@echo; echo "Wrapping $< in XML format...";
 	@(echo '<?xml version="1.0" encoding="iso-8859-1" ?>'; \
 	  echo '<db>'; \
-	  cat $< | sed -e 's/&//g' -e 's/<=/\&lt;=/g' -e 's/<-/\&lt;-/g' -e 's/<[^a-zA-Z?!\/]/\&lt; /g' ; \
+	  cat $< | sed -e 's/&//g' -e 's/<=/\&lt;=/g' -e 's/<-/\&lt;-/g' -e 's/<[^a-zA-Z?!\/]/\&lt; /g'; \
 	  echo '</db>') > $@;
 # Extend search path for Fortran 90 source files to include
 # FEAST kernel paths

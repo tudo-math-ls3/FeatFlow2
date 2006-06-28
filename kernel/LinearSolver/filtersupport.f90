@@ -51,7 +51,7 @@ MODULE filtersupport
 
 !</constantblock>
 
-!<constantblock description="Filter type flags for t_filterChain%ifilterType">
+!<constantblock description="Filter type flags for t\_filterChain%ifilterType">
 
   ! Undefined filter
   INTEGER, PARAMETER :: FILTER_NOFILTER          =  0

@@ -1926,18 +1926,18 @@ CONTAINS
   ! deleted by linsol_releaseSolver.
   !
   ! The defect correction performs nmaxIterations iterations of the type
-  !    $$ x_{n+1}  =  x_n  +  (b-Ax_n} $$
+  !    $$ x_{n+1}  =  x_n  +  (b-Ax_n) $$
   ! with $x_0:=0$. 
   ! It's possible to include a damping parameter to this operation by 
   ! changing rsolverNode%domega to a value $\not =1$. In this case, the
   ! defect correction iteration changes to the Richardson iteration
   !
-  !    $$ x_{n+1}  =  x_n  +  \omega(b-Ax_n} $$
+  !    $$ x_{n+1}  =  x_n  +  \omega(b-Ax_n) $$
   !
   ! By specifying an additional preconditioner, it's possible to perform
   ! the preconditioned defect correction iteration
   !
-  !    $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax_n} $$
+  !    $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax_n) $$
   !
   ! By specifying an additional filter, the defect vector is filtered before
   ! each preconditioner step.
@@ -2862,7 +2862,7 @@ CONTAINS
 !</description>
   
 !<input>
-  ! OPTIONAL: Damping parameter. Is saved to rsolverNode%domega if specified.
+  ! OPTIONAL: Damping parameter. Is saved to rsolverNode\%domega if specified.
   REAL(DP), OPTIONAL :: domega
   
   ! OPTIONAL: VANCA subtype.
