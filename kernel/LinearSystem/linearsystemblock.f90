@@ -2171,7 +2171,8 @@ CONTAINS
   ! subvector of the global vector. 
   ! The negative value of this identifier is saved to the corresponding
   ! subvector.
-  INTEGER, DIMENSION(rvector%nblocks), INTENT(IN) :: IsortStrategy
+  ! DIMENSION(rvector\%nblocks)
+  INTEGER, DIMENSION(:), INTENT(IN) :: IsortStrategy
   
   ! An array of handles. Each handle corresponds to a subvector and
   ! defines a permutation how to resort the subvector.
@@ -2179,15 +2180,18 @@ CONTAINS
   !    array [1..2*NEQ] of integer  (NEQ=NEQ(subvector))
   ! with entries (1..NEQ)       = permutation
   ! and  entries (NEQ+1..2*NEQ) = inverse permutation.
-  INTEGER, DIMENSION(rvector%nblocks), INTENT(IN) :: Hpermutations
+  ! DIMENSION(rvector\%nblocks)
+  INTEGER, DIMENSION(:), INTENT(IN) :: Hpermutations
 
 !</input>
   
 !</subroutine>
 
   ! Install the sorting strategy in every block. 
-  rvector%RvectorBlock%isortStrategy = -ABS(IsortStrategy)
-  rvector%RvectorBlock%h_IsortPermutation = Hpermutations
+  rvector%RvectorBlock(1:rvector%nblocks)%isortStrategy = &
+    -ABS(IsortStrategy(1:rvector%nblocks))
+  rvector%RvectorBlock(1:rvector%nblocks)%h_IsortPermutation = &
+    Hpermutations(1:rvector%nblocks)
 
   END SUBROUTINE
 

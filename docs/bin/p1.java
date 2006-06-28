@@ -73,9 +73,11 @@ class p1
         }
         else
         {
-          if ( (tmodus==0) && (lines[l].indexOf("type")>0) && ( (lines[l].indexOf("type (")==-1) && (lines[l].indexOf("type(")==-1)))
+          if ( (tmodus==0) && (lines[l].toLowerCase().indexOf("type")>0) && 
+             ( (lines[l].toLowerCase().indexOf("type (")==-1) && 
+             (lines[l].toLowerCase().indexOf("type(")==-1)))
           {
-            int cpol1=lines[l].indexOf("type");
+            int cpol1=lines[l].toLowerCase().indexOf("type");
 
             String ident = lines[l].substring(cpol1+4);
 
@@ -87,14 +89,15 @@ class p1
                 out.writeBytes("<tr><td><a name="+ident+"><em>"+ident+"</em></a></td><td colspan=4>"+collect+"</td></tr>\n");
                 break;
               case FORMAT_TEX:
-                out.writeBytes("{\\tt "+ident.replaceAll("character","char").replaceAll("_","\\\\_")+"} & {"+collect.replaceAll("_","\\\\_")+"}\\\\\n");
+                out.writeBytes("{\\tt "+ident.replaceAll("character","char").replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")
+                              +"} & {"+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\\\\\n");
                 break;
             }
 
             collect="";
           }
 
-          if ( (tmodus==1) && (lines[l].indexOf("end type")>0))
+          if ( (tmodus==1) && (lines[l].toLowerCase().indexOf("end type")>0))
           {
             tmodus=0;
 
@@ -123,12 +126,12 @@ class p1
 
               if (attr.length>1)
               {
-                if (attr[1].indexOf("dimension")>0)
+                if (attr[1].toLowerCase().indexOf("dimension")>0)
                 {
                   rank = attr[1];
                   for (int ia=2;ia<attr.length;ia++)
                   {
-                    if ((attr[ia].indexOf(")")>0) && (attr[ia].indexOf("intent")==-1))
+                    if ((attr[ia].indexOf(")")>0) && (attr[ia].toLowerCase().indexOf("intent")==-1))
                       rank = rank.concat(", "+attr[ia]);
                     else if (attr[ia].matches("0-9"))
                       rank = rank.concat(", "+attr[ia]);
@@ -168,14 +171,15 @@ class p1
                     collect="";
                     break;
                   case FORMAT_TEX:
-                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_")+"} & "+vtype.replaceAll("_","\\\\_").replaceAll("character","char")+
-                      " & "+rank.replaceAll("_","\\\\_").replaceAll("dimension","dim")
-                      +" & "+collect.replaceAll("_","\\\\_")+"\\\\ \\hline \n");
+                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")
+                    +"} & "+vtype.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("character","char")+
+                      " & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("dimension","dim")
+                      +" & "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\\\\ \\hline \n");
                     collect="";
                     break;
                 }
               }
-              else if (typefull.indexOf("type (")>-1)
+              else if (typefull.toLowerCase().indexOf("type (")>-1)
               {
                 String kname=typefull.substring(typefull.indexOf("(")+1,typefull.indexOf(")")).trim();
                 switch(modus)
@@ -185,9 +189,10 @@ class p1
                     collect="";
                     break;
                   case FORMAT_TEX:
-                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_")+"} & {\\tt "+kname.replaceAll("_","\\\\_").replaceAll("character","char")
-                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll("dimension","dim")
-                      +" &  "+collect.replaceAll("_","\\\\_")+"\\\\ \\hline \n");
+                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"} & {\\tt "+
+                    kname.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("character","char")
+                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("dimension","dim")
+                      +" &  "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\\\\ \\hline \n");
                     collect="";
                     break;
                 }
@@ -204,10 +209,10 @@ class p1
                     collect="";
                     break;
                   case FORMAT_TEX:
-                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_")+"} & {\\tt "
-                      +vtype.replaceAll("_","\\\\_").replaceAll("character","c").replaceAll("len=","")
-                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll("dimension","").replaceAll("(\\(|\\))","")
-                      +" & "+collect.replaceAll("_","\\\\_")+"\\\\ \\hline\n");
+                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"} & {\\tt "
+                      +vtype.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("character","c").replaceAll("len=","")
+                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("dimension","").replaceAll("(\\(|\\))","")
+                      +" & "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\\\\ \\hline\n");
                     collect="";
                     break;
                 }
@@ -505,10 +510,10 @@ class p1
               out.writeBytes("\n<div class=\"purpose\">\n    <h4>Purpose:</h4>\n   " + value1 + "</div>\n\n");
               break;
             case FORMAT_TEXMOD:
-              out.writeBytes(value1.replaceAll("_","\\\\_") + "\n");
+              out.writeBytes(value1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$") + "\n");
               break;
             case FORMAT_TEX:
-              out.writeBytes("{\\bf Purpose:} " + value1.replaceAll("_","\\\\_") + "\\\\[0.5cm]\n");
+              out.writeBytes("{\\bf Purpose:} " + value1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$") + "\\\\[0.5cm]\n");
               break;
           }
         }
@@ -538,9 +543,9 @@ class p1
             if (type1.equals("#text"))
             {
               String value1=element1.getNodeValue();
-              if (value1.indexOf("subroutine")>-1)
+              if (value1.toLowerCase().indexOf("subroutine")>-1)
               {
-                String mame = value1.substring(value1.indexOf("subroutine")+10,value1.indexOf("(")).trim();
+                String mame = value1.substring(value1.toLowerCase().indexOf("subroutine")+10,value1.indexOf("(")).trim();
 
                 switch(modus)
                 {
@@ -577,9 +582,9 @@ class p1
             if (type1.equals("#text"))
             {
               String value1=element1.getNodeValue();
-              if (value1.indexOf("function")>-1)
+              if (value1.toLowerCase().indexOf("function")>-1)
               {
-                String mame = value1.substring(value1.indexOf("function")+9,value1.lastIndexOf("(")).trim();
+                String mame = value1.substring(value1.toLowerCase().indexOf("function")+9,value1.lastIndexOf("(")).trim();
 
                 switch(modus)
                 {
@@ -830,7 +835,7 @@ class p1
                 case FORMAT_TEX:
                   out.writeBytes("\\begin{sloppypar}\n{\\bf Global variables: }\\\\[0.1cm]\n");
 
-                  String[] ents = varname.replaceAll("_","\\\\_").split(",");
+                  String[] ents = varname.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").split(",");
 
                   for (int i2=0; i2<ents.length; i2++)
                     if (i2<ents.length-1)
@@ -933,7 +938,7 @@ class p1
                 if (type2.equals("#text"))
                 {
                   if (modus==FORMAT_TEX)
-                    textlines=lists2.item(i11).getNodeValue().replaceAll("_","\\\\_");
+                    textlines=lists2.item(i11).getNodeValue().replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$");
                   else
                     textlines=lists2.item(i11).getNodeValue();
                 }
@@ -1015,7 +1020,9 @@ class p1
                   out.writeBytes("<b>Result:</b><br> &nbsp;<em>"+result+"</em> &nbsp;"+collect.trim()+"<br><br>\n");
                   break;
                 case FORMAT_TEX:
-                    out.writeBytes("\n{\\bf Result:}\\\\[0.1cm] {\\it "+result.replaceAll("_","\\\\_").replaceAll("recursive","")+"}: "+collect.trim().replaceAll("_","\\\\_")+"\n");
+                    out.writeBytes("\n{\\bf Result:}\\\\[0.1cm] {\\it "
+                    +result.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("recursive","")+"}: "
+                    +collect.trim().replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\n");
                   break;
               }
             }
@@ -1023,22 +1030,23 @@ class p1
             if (type1.equals("#text"))
             {
               String value1=element1.getNodeValue();
-              if (value1.indexOf("subroutine")>-1)
+              if (value1.toLowerCase().indexOf("subroutine")>-1)
               {
-                String mame=value1.substring(value1.indexOf("subroutine")+10,value1.indexOf("(")).trim();
+                String mame=value1.substring(value1.toLowerCase().indexOf("subroutine")+10,value1.indexOf("(")).trim();
 
                 switch(modus)
                 {
                   case FORMAT_HTML:
-                    out.writeBytes("<h3><a name="+mame+">Subroutine "+value1.substring(value1.indexOf("subroutine")+10).replaceAll("!","").trim()+"</a></h3>\n");
+                    out.writeBytes("<h3><a name="+mame+">Subroutine "
+                     +value1.substring(value1.toLowerCase().indexOf("subroutine")+10).replaceAll("!","").trim()+"</a></h3>\n");
                     break;
                   case FORMAT_TEX:
-                    String mame1=value1.substring(value1.indexOf("subroutine")+10,value1.indexOf("("));
-                    out.writeBytes("\\subsection{Subroutine "+mame1.replaceAll("_","\\\\_")+"}\n");
+                    String mame1=value1.substring(value1.toLowerCase().indexOf("subroutine")+10,value1.indexOf("("));
+                    out.writeBytes("\\subsection{Subroutine "+mame1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\n");
 
                     out.writeBytes("\\begin{sloppypar}\n{\\bf Interface: }\\\\[0.1cm]");
 
-                    String iface = value1.substring(value1.indexOf("subroutine")+10).replaceAll("!","").replaceAll("\n"," ").replaceAll("_","\\\\_").trim();
+                    String iface = value1.substring(value1.toLowerCase().indexOf("subroutine")+10).replaceAll("!","").replaceAll("\n"," ").replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").trim();
 
                    // System.out.println("TSCAK |"+iface+"|\n");
 
@@ -1056,22 +1064,23 @@ class p1
                 }
               }
 
-              if (value1.indexOf("function")>-1)
+              if (value1.toLowerCase().indexOf("function")>-1)
               {
-                String mame=value1.substring(value1.indexOf("function")+9,value1.lastIndexOf("(")).trim();
+                String mame=value1.substring(value1.toLowerCase().indexOf("function")+9,value1.lastIndexOf("(")).trim();
 
-                result=value1.substring(0,value1.indexOf("function"));
+                result=value1.substring(0,value1.toLowerCase().indexOf("function"));
 
                 switch(modus)
                 {
                   case FORMAT_HTML:
-                    out.writeBytes("<h3><a name="+mame+">Function "+value1.substring(value1.indexOf("function")+9).replaceAll("!","").trim()+"</a></h3>\n");
+                    out.writeBytes("<h3><a name="+mame+">Function "
+                      +value1.substring(value1.toLowerCase().indexOf("function")+9).replaceAll("!","").trim()+"</a></h3>\n");
                     break;
                   case FORMAT_TEX:
-                    String mame2=value1.substring(value1.indexOf("function")+9);
+                    String mame2=value1.substring(value1.toLowerCase().indexOf("function")+9);
                     String mame1=mame2.substring(0,mame2.indexOf("("));
-                    out.writeBytes("\\subsection{Function "+mame1.replaceAll("_","\\\\_")+"}\n");
-                    out.writeBytes("{\\bf Interface: }\\\\[0.1cm]{\\tt "+mame2.substring(0,mame2.indexOf(")")+1).replaceAll("!","").replaceAll("_","\\\\_")+"}\n");
+                    out.writeBytes("\\subsection{Function "+mame1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\n");
+                    out.writeBytes("{\\bf Interface: }\\\\[0.1cm]{\\tt "+mame2.substring(0,mame2.indexOf(")")+1).replaceAll("!","").replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\n");
                     break;
                 }
               }

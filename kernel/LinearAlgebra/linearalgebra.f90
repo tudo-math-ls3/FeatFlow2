@@ -662,7 +662,7 @@ CONTAINS
 
 !<result>
   ! The norm of the given array.
-  ! < 0, if an error occurred (unknown norm).
+  ! < 0 >1, if an error occurred (unknown norm).
 !</result>
   
 !</subroutine>

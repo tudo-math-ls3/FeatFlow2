@@ -7,16 +7,16 @@
 !# This module contains routines to evaluate a finite element on an
 !# element primitive.
 !#
-!# Each element is characterised by four things:
-!# - an element type identifier (EL_xxxx constant)
+!# Each element is characterised by four things:\\
+!# - an element type identifier (EL_xxxx constant)\\
 !# - elem_XXXX
-!#    -> an evaluation function for that element in one point
+!#    -> an evaluation function for that element in one point\\
 !# - elem_XXXX_mult
 !#    -> an evaluation function for that element in multiple points
-!#       (e.g. a set of cubature points).
+!#       (e.g. a set of cubature points).\\
 !# - elem_XXXX_sim
 !#    -> an evaluation function for that element in multiple points
-!#       (e.g. a set of cubature points) on multiple elements simultaneously.
+!#       (e.g. a set of cubature points) on multiple elements simultaneously.\\
 !#
 !# The evaluation function for multiple points accepts a set of point 
 !# coordinates where to evaluate and evaluates the finite element in 
@@ -26,37 +26,38 @@
 !# evaluate.
 !# Depending on the type of the element, the coordinates must be given 
 !# to the evaluation functions either on the reference element (for 
-!# parametric elements) or on the real element (for nonparametric elements).
+!# parametric elements) or on the real element (for nonparametric elements).\\
 !#
 !# There is also a couple of auxiliary routines which help to deal with
-!# a finite element:
+!# a finite element:\\
 !#
 !# 1.) elem_igetNDofLoc
 !#     -> determines the number of local degrees of freedom for a finite 
-!#        element
+!#        element\\
 !#
 !# 2.) elem_igetNVE
 !#     -> get the number of vertices in the element primitive/element shape
-!#        of the Finite Element (3=triangular, 4=quad)
+!#        of the Finite Element (3=triangular, 4=quad)\\
 !#
 !# 3.) elem_igetCoordSystem
-!#     -> get the type of coordinate system, a Finite Element uses
+!#     -> get the type of coordinate system, a Finite Element uses\\
 !#
 !# 4.) elem_igetTrafoType
 !#     -> Determine the type of transformation from the reference element
-!#        to the real element.
+!#        to the real element.\\
 !#
 !# 5.) elem_generic 
 !#     -> Realises a generic element which can be used to evaluate a finite 
 !#        element depending on its element identifier - in contrast to the 
 !#        standard evaluation routines, which ignore the element quantifier 
-!#        as they 'know' what they are...
+!#        as they 'know' what they are...\\
 !#
 !# 6.) elem_generic_mult
-!#     -> The multiple-point-evaluation routine for a generic element.
+!#     -> The multiple-point-evaluation routine for a generic element.\\
 !#
 !# 7.) elem_generic_sim
 !#     -> The multiple-point/element-evaluation routine for a generic element.
+!#
 !# </purpose>
 !##############################################################################
 

@@ -37,21 +37,21 @@ MODULE scalarpde
   !
   ! Example: Let's take a look at the 2D equation
   !
-  !    $$   \int_{\Omega}  ( \nabla u , \nabla v )  dx $$
-  !    $$ = \int_{\Omega}  1*u_x*v_x  +  1*u_y*v_y  dx $$
+  !    $   \int_{\Omega}  ( \nabla u , \nabla v )  dx $
+  !    $ = \int_{\Omega}  1*u_x*v_x  +  1*u_y*v_y  dx $
   !
   ! This bilinear form consists of two additive terms. Both terms have
   ! a constant coefficient '1' in front of them and consist of a combination
   ! of derivatives in different directions. The form itself is encoded
   ! with the structure t_bilinearForm as follows:
   !
-  ! 1.) itermCount = 2                     -> 2 additive terms       \\
-  ! 2.) BconstantCoeff = true              -> constant coefficients  \\
-  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient        \\
-  ! 4.) Idescriptors(1,1) = DER_DERIV_X    -> u_x in the 1st term    \\
-  ! 5.) Idescriptors(2,1) = DER_DERIV_X    -> v_x in the 1st term    \\
-  ! 6.) Dcoefficients(2)  = 1.0            -> 2nd coefficient        \\
-  ! 7.) Idescriptors(1,2) = DER_DERIV_Y    -> u_y in the 2nd term    \\
+  ! 1.) itermCount = 2                     -> 2 additive terms     
+  ! 2.) BconstantCoeff = true              -> constant coefficients
+  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient      
+  ! 4.) Idescriptors(1,1) = DER_DERIV_X    -> u_x in the 1st term  
+  ! 5.) Idescriptors(2,1) = DER_DERIV_X    -> v_x in the 1st term  
+  ! 6.) Dcoefficients(2)  = 1.0            -> 2nd coefficient      
+  ! 7.) Idescriptors(1,2) = DER_DERIV_Y    -> u_y in the 2nd term  
   ! 8.) Idescriptors(2,2) = DER_DERIV_Y    -> v_y in the 2nd term
   
   TYPE t_bilinearForm
@@ -89,19 +89,19 @@ MODULE scalarpde
   !
   ! Example: Let's take a look at the 2D equation
   !
-  !    $$   \int_{\Omega}  ( f, v )   dx $$
-  !    $$ = \int_{\Omega}  1*f*v      dx $$
+  !    $   \int_{\Omega}  ( f, v )   dx $
+  !    $ = \int_{\Omega}  1*f*v      dx $
   !
   ! This bilinear form consists of one additive term. The term has
   ! a constant coefficient '1' in front and consist of a combination
   ! of derivatives. The form itself is encoded with the structure 
   ! t_linearForm as follows:
   !
-  ! 1.) itermCount = 1                     -> 2 additive terms       \\
-  ! 2.) BconstantCoeff = true              -> constant coefficients  \\
-  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient        \\
-  ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term      \\
-  ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term      
+  ! 1.) itermCount = 1                     -> 2 additive terms     
+  ! 2.) BconstantCoeff = true              -> constant coefficients
+  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient      
+  ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term    
+  ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term    
   
   TYPE t_linearForm
   

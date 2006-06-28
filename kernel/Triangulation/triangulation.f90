@@ -226,8 +226,8 @@ MODULE triangulation
     !       p_RneighboursAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
     ! For each element, the numbers of adjacent elements
     ! in mathematically positive sense, meeting the element in an edge.
-    ! p_RneighbourElement(IEL)%Ineighbours(.) describes the elements adjacent 
-    ! to IEL along the edges (p_RedgesOnElement(IEL)%Iedges(.)-NVT).
+    ! p_RneighbourElement(IEL)\%Ineighbours(.) describes the elements adjacent 
+    ! to IEL along the edges (p_RedgesOnElement(IEL)\%Iedges(.)-NVT).
     ! This is the old KADJ array.
     INTEGER        :: h_IneighboursAtElement = ST_NOHANDLE
     

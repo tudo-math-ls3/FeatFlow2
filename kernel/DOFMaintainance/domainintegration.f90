@@ -74,7 +74,7 @@ MODULE domainintegration
     
     ! The Jacobian determinant of the mapping of each point from the
     ! reference element to each real element in progress.
-    ! array {1..npointsPerElement,1..Number of elements)
+    ! array [1..npointsPerElement,1..Number of elements]
     REAL(DP), DIMENSION(:,:), POINTER             :: p_Ddetj
 
   END TYPE

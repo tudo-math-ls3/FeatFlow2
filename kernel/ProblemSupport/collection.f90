@@ -260,7 +260,7 @@ MODULE collection
   INTEGER, PARAMETER :: COLLCT_QALENGTH = 128
 !</constantblock>
 
-!<constantblock description='Type identifier for values'>
+!<constantblock description="Type identifier for values">
   
   ! Undefined value
   INTEGER, PARAMETER :: COLLCT_UNDEFINED = 0
