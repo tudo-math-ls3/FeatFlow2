@@ -4,7 +4,7 @@ FEATFLOW=../..
 
 include $(FEATFLOW)/Globals.mk
 
-LIBNAME=szip
+LIBNAME=sz
 
 INCDIR= -I./include -I./src
 
