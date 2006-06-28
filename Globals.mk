@@ -74,7 +74,8 @@ LIBDIR=$(FEATFLOW)/object/libraries/lib-$(ID)
 APPS:= $(shell ls $(FEATFLOW)/applications)
 
 # list of all library modules available at the top level
-LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas
+LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas \
+      zlib szip
 
 ########################################################################
 # General name and location of compilers.
