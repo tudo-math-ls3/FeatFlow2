@@ -24,20 +24,30 @@ greet:
 	@echo "replaced. In contrast, a pseudo installation is performed and the"
 	@echo "required libraries are copied to their Feat-style directories."
 
-lib: | $(LIB) clean
+lib: | prepare configure build $(LIB)
 
 prepare:
+ifeq ($(shell test ! -d ./$(ID) && echo 1),1)
 	@mkdir -p ./$(ID)
 	@gunzip < $(LIBNAME)-$(LIBVERSION).tar.gz | tar -C ./$(ID) -xf -
+endif
 
 configure: prepare
+ifeq ($(shell test ! -f ./$(ID)/$(LIBNAME)-$(LIBVERSION)/config.status && echo 1),1)
 	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) &&\
-	env CC=$(CC) env F9X=$(FC) ./configure --enable-fortran --disable-cxx --disable-shared \
-	--disable-fast-install --disable-debug --disable-parallel --with-zlib=$(PWD)/../zlib/include,$(PWD)/$(LIBDIR) \
-	--with-szlib=$(PWD)/../sz/include,$(PWD)/$(LIBDIR) --prefix=$(PWD)/$(ID)/tmpinstall )
+	env CC=$(CC) env F9X=$(FC) ./configure --enable-fortran --disable-cxx \
+	--disable-shared --disable-fast-install --disable-debug --disable-parallel \
+	--with-zlib=$(PWD)/../zlib/include,$(PWD)/$(LIBDIR) \
+	--with-szlib=$(PWD)/../sz/include,$(PWD)/$(LIBDIR)  \
+	--prefix=$(PWD)/$(ID)/tmpinstall )
+endif
 
 build: configure
-	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) && $(MAKE) && $(MAKE) install )
+ifeq ($(shell test ! -d ./$(ID)/tmpinstall && echo 1),1)
+	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) && $(MAKE) lib && \
+	cd ./src && $(MAKE) install && \
+	cd ../fortran && $(MAKE) install )
+endif
 
 $(LIB): build
 	@mkdir -p $(LIBDIR)
