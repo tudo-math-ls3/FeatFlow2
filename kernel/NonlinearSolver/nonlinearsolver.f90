@@ -840,9 +840,12 @@ CONTAINS
         CALL lsysbl_vectorLinearComb (rd,rx,domega,1.0_DP)
         
         ! Autosave: Save the current iteration vector to disc if desired.
-        IF ((rsolverNode%iautosave .NE. 0) .AND. &
-            (MOD(ite,rsolverNode%iautosave) .EQ. 0)) THEN
-          PRINT *,'Iteration: ',ITE,': Autosave not yet implemented.'
+        IF (rsolverNode%iautosave .NE. 0) THEN
+          ! Don't change the order of these if's - produces DIVISION BY ZERO on
+          ! some compilers with optimisation!
+          IF (MOD(ite,rsolverNode%iautosave) .EQ. 0) THEN
+            PRINT *,'Iteration: ',ITE,': Autosave not yet implemented.'
+          END IF
         END IF
 
         ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
