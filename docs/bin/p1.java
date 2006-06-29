@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
@@ -89,8 +90,8 @@ class p1
                 out.writeBytes("<tr><td><a name="+ident+"><em>"+ident+"</em></a></td><td colspan=4>"+collect+"</td></tr>\n");
                 break;
               case FORMAT_TEX:
-                out.writeBytes("{\\tt "+ident.replaceAll("character","char").replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")
-                              +"} & {"+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\\\\\n");
+                out.writeBytes("{\\tt "+ident.replaceAll("character","char").replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")
+                              +"} & {"+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"}\\\\\n");
                 break;
             }
 
@@ -171,10 +172,10 @@ class p1
                     collect="";
                     break;
                   case FORMAT_TEX:
-                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")
-                    +"} & "+vtype.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("character","char")+
-                      " & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("dimension","dim")
-                      +" & "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\\\\ \\hline \n");
+                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")
+                    +"} & "+vtype.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").replaceAll("character","char")+
+                      " & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").replaceAll("dimension","dim")
+                      +" & "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"\\\\ \\hline \n");
                     collect="";
                     break;
                 }
@@ -189,10 +190,10 @@ class p1
                     collect="";
                     break;
                   case FORMAT_TEX:
-                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"} & {\\tt "+
-                    kname.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("character","char")
-                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("dimension","dim")
-                      +" &  "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\\\\ \\hline \n");
+                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"} & {\\tt "+
+                    kname.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").replaceAll("character","char")
+                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").replaceAll("dimension","dim")
+                      +" &  "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"\\\\ \\hline \n");
                     collect="";
                     break;
                 }
@@ -209,10 +210,10 @@ class p1
                     collect="";
                     break;
                   case FORMAT_TEX:
-                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"} & {\\tt "
-                      +vtype.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("character","c").replaceAll("len=","")
-                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("dimension","").replaceAll("(\\(|\\))","")
-                      +" & "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\\\\ \\hline\n");
+                    out.writeBytes(filler+" {\\tt "+name.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"} & {\\tt "
+                      +vtype.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").replaceAll("character","c").replaceAll("len=","")
+                      +"} & "+rank.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").replaceAll("dimension","").replaceAll("(\\(|\\))","")
+                      +" & "+collect.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"\\\\ \\hline\n");
                     collect="";
                     break;
                 }
@@ -233,6 +234,8 @@ class p1
 
   public static void main(String args[])
   {
+    Pattern patternFunction   = Pattern.compile(".*\\bfunction\\b.*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    Pattern patternSubroutine = Pattern.compile(".*\\bsubroutine\\b.*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     // Determine parsing mode and name of file to parse
     switch (args.length)
@@ -510,10 +513,10 @@ class p1
               out.writeBytes("\n<div class=\"purpose\">\n    <h4>Purpose:</h4>\n   " + value1 + "</div>\n\n");
               break;
             case FORMAT_TEXMOD:
-              out.writeBytes(value1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$") + "\n");
+              out.writeBytes(value1.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}") + "\n");
               break;
             case FORMAT_TEX:
-              out.writeBytes("{\\bf Purpose:} " + value1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$") + "\\\\[0.5cm]\n");
+              out.writeBytes("{\\bf Purpose:} " + value1.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}") + "\\\\[0.5cm]\n");
               break;
           }
         }
@@ -543,7 +546,8 @@ class p1
             if (type1.equals("#text"))
             {
               String value1=element1.getNodeValue();
-              if (value1.toLowerCase().indexOf("subroutine")>-1)
+
+	      if (patternSubroutine.matcher(value1).matches())
               {
                 String mame = value1.substring(value1.toLowerCase().indexOf("subroutine")+10,value1.indexOf("(")).trim();
 
@@ -582,7 +586,7 @@ class p1
             if (type1.equals("#text"))
             {
               String value1=element1.getNodeValue();
-              if (value1.toLowerCase().indexOf("function")>-1)
+	      if (patternFunction.matcher(value1).matches())
               {
                 String mame = value1.substring(value1.toLowerCase().indexOf("function")+9,value1.lastIndexOf("(")).trim();
 
@@ -835,7 +839,7 @@ class p1
                 case FORMAT_TEX:
                   out.writeBytes("\\begin{sloppypar}\n{\\bf Global variables: }\\\\[0.1cm]\n");
 
-                  String[] ents = varname.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").split(",");
+                  String[] ents = varname.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").split(",");
 
                   for (int i2=0; i2<ents.length; i2++)
                     if (i2<ents.length-1)
@@ -938,7 +942,7 @@ class p1
                 if (type2.equals("#text"))
                 {
                   if (modus==FORMAT_TEX)
-                    textlines=lists2.item(i11).getNodeValue().replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$");
+                    textlines=lists2.item(i11).getNodeValue().replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}");
                   else
                     textlines=lists2.item(i11).getNodeValue();
                 }
@@ -1021,8 +1025,8 @@ class p1
                   break;
                 case FORMAT_TEX:
                     out.writeBytes("\n{\\bf Result:}\\\\[0.1cm] {\\it "
-                    +result.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").replaceAll("recursive","")+"}: "
-                    +collect.trim().replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"\n");
+                    +result.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").replaceAll("recursive","")+"}: "
+                    +collect.trim().replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"\n");
                   break;
               }
             }
@@ -1030,7 +1034,7 @@ class p1
             if (type1.equals("#text"))
             {
               String value1=element1.getNodeValue();
-              if (value1.toLowerCase().indexOf("subroutine")>-1)
+	      if (patternSubroutine.matcher(value1).matches())
               {
                 String mame=value1.substring(value1.toLowerCase().indexOf("subroutine")+10,value1.indexOf("(")).trim();
 
@@ -1042,11 +1046,11 @@ class p1
                     break;
                   case FORMAT_TEX:
                     String mame1=value1.substring(value1.toLowerCase().indexOf("subroutine")+10,value1.indexOf("("));
-                    out.writeBytes("\\subsection{Subroutine "+mame1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\n");
+                    out.writeBytes("\\subsection{Subroutine "+mame1.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"}\n");
 
                     out.writeBytes("\\begin{sloppypar}\n{\\bf Interface: }\\\\[0.1cm]");
 
-                    String iface = value1.substring(value1.toLowerCase().indexOf("subroutine")+10).replaceAll("!","").replaceAll("\n"," ").replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$").trim();
+                    String iface = value1.substring(value1.toLowerCase().indexOf("subroutine")+10).replaceAll("!","").replaceAll("\n"," ").replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}").trim();
 
                    // System.out.println("TSCAK |"+iface+"|\n");
 
@@ -1064,9 +1068,9 @@ class p1
                 }
               }
 
-              if (value1.toLowerCase().indexOf("function")>-1)
-              {
-                String mame=value1.substring(value1.toLowerCase().indexOf("function")+9,value1.lastIndexOf("(")).trim();
+	      if (patternFunction.matcher(value1).matches())
+	      {
+		String mame = value1.substring(value1.toLowerCase().indexOf("function") + 9, value1.lastIndexOf("(")).trim();
 
                 result=value1.substring(0,value1.toLowerCase().indexOf("function"));
 
@@ -1079,8 +1083,8 @@ class p1
                   case FORMAT_TEX:
                     String mame2=value1.substring(value1.toLowerCase().indexOf("function")+9);
                     String mame1=mame2.substring(0,mame2.indexOf("("));
-                    out.writeBytes("\\subsection{Function "+mame1.replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\n");
-                    out.writeBytes("{\\bf Interface: }\\\\[0.1cm]{\\tt "+mame2.substring(0,mame2.indexOf(")")+1).replaceAll("!","").replaceAll("_","\\\\_").replaceAll(" ->"," \\$\\\\rightarrow\\$")+"}\n");
+                    out.writeBytes("\\subsection{Function "+mame1.replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"}\n");
+                    out.writeBytes("{\\bf Interface: }\\\\[0.1cm]{\\tt "+mame2.substring(0,mame2.indexOf(")")+1).replaceAll("!","").replaceAll("_","\\\\_").replaceAll(" ->"," \\\\ensuremath{\\\\rightarrow}")+"}\n");
                     break;
                 }
               }

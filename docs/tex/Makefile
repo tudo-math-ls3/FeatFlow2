@@ -185,7 +185,7 @@ purge:	$(TEX_MASTER_FILE).clean clean $(TEX_MASTER_FILE).purge
 	@echo; echo "Wrapping $< in XML format...";
 	@(echo '<?xml version="1.0" encoding="iso-8859-1" ?>'; \
 	  echo '<db>'; \
-	  cat $< | sed -e 's/&//g' -e 's/<\([^a-zA-Z?!\/]\)/\&lt;\1/g' -e 's/\([^-]\)\([^"a-zA-Z?!\/]\)>/\1\2\&gt;/g'; \
+	  cat $< | sed -e 's/&//g; s/<\([^a-zA-Z?!\/]\)/\\ensuremath{\&lt;}\1/g; s/\([ \t]\{1,\}\)>\([=]*\)\([ \t]\{1,\}\)/\1\\ensuremath{\&gt;\2}\3/; s/\([^-][^"a-zA-Z?!\/]\)>/\1\&gt;/g'; \
 	  echo '</db>') > $@;
 # Extend search path for Fortran 90 source files to include
 # FEAST kernel paths
