@@ -6,10 +6,9 @@ include $(FEATFLOW)/Globals.mk
 
 LIBNAME=hdf5
 LIB=$(LIBNAME:%=$(LIBDIR)/lib%*.a)
-
 PREFIX=$(shell pwd)/tmpinstall
 
-all: greet lib clean
+all: greet lib
 	@echo "Done," $(LIBNAME) "is ready."
 	@echo
 
@@ -23,7 +22,9 @@ greet:
 	@echo "replaced. In contrast, a pseudo installation is performed and the"
 	@echo "required libraries are copied to their Feat-style directories."
 
-lib:
+lib: build link clean
+
+build:
 	@PWD=$(shell pwd)
 	@( cd orig && env CC=$(CC) env F9X=$(FC) \
 	  configure --enable-fortran --disable-cxx --disable-shared \
@@ -33,10 +34,11 @@ lib:
 	  --prefix=$(PREFIX) && \
 	  make && \
 	  make install )
+
+link:
 	mkdir -p $(LIBDIR)
-	cp $(PREFIX)/lib/libhdf5.a $(LIBDIR)/libhdf5.a
-	cp $(PREFIX)/lib/libhdf5_fortran.a $(LIBDIR)/libhdf5_fortran.a
-	cp $(PREFIX)/lib/libhdf5_hl.a $(LIBDIR)/libhdf5_hl.a
+	cp $(PREFIX)/lib/$(LIBNAME:%=lib%*.a) $(LIBDIR)
+	cp $(PREFIX)/lib/*.mod $(LIBDIR)
 
 clean:
 	( cd orig && make clean )
