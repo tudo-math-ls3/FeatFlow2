@@ -19,16 +19,19 @@
 !# 3.) lalg_clearVectorXXX
 !#     -> Clear a vector (former LCLx)
 !#
-!# 4.) lalg_vectorLinearCombXXX
+!# 4.) lalg_setVectorXXX
+!#     -> Set a vector to a defined value
+!#
+!# 5.) lalg_vectorLinearCombXXX
 !#     -> Linear combination of two vectors (former LLCx)
 !#
-!# 5.) lalg_scalarProductXXX
+!# 6.) lalg_scalarProductXXX
 !#     -> Calculate the scalar product of two vectors (former LSPx)
 !#
-!# 6.) lalg_normXXX
+!# 7.) lalg_normXXX
 !#     -> Calculate a specific norm of a vector
 !#
-!# 7.) lalg_vectorSortXXX
+!# 8.) lalg_vectorSortXXX
 !#     -> Resort the entries of a vector according to a given permutation
 !#
 !# </purpose>
@@ -423,6 +426,123 @@ CONTAINS
 
   DO i = 1,SIZE(Ix)
     Ix(i) = 0
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_setVectorDble (Dx,dvalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Dx = dvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  REAL(DP), INTENT(IN) :: dvalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dx
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  
+  ! We trust the internal loop unrolling functions of the compiler...
+  ! normally we can use:
+  
+  !Dx = dvalue
+  
+  ! But if the compiler does not support that, maybe we have to go back
+  ! to the standard DO loop...
+
+  DO i = 1,SIZE(Dx)
+    Dx(i) = dvalue
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_setVectorSngl (Fx,fvalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Fx = fvalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  REAL(SP), INTENT(IN) :: fvalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  REAL(SP), DIMENSION(:), INTENT(OUT) :: Fx
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  
+  ! We trust the internal loop unrolling functions of the compiler...
+  ! normally we can use:
+  
+  !Fx = fvalue
+  
+  ! But if the compiler does not support that, maybe we have to go back
+  ! to the standard DO loop...
+
+  DO i = 1,SIZE(Fx)
+    Fx(i) = fvalue
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_setVectorInt (Ix,ivalue)
+  
+!<description>
+  ! Sets the vector data to a defined value: Ix = ivalue
+!</description>
+
+!<input>
+  ! The value, the vector should be set to.
+  INTEGER(I32), INTENT(IN) :: ivalue
+!</input>
+
+!<output>
+  ! Destination vector to be set
+  INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Ix
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  
+  ! We trust the internal loop unrolling functions of the compiler...
+  ! normally we can use:
+  
+  !Dx = ivalue
+  
+  ! But if the compiler does not support that, maybe we have to go back
+  ! to the standard DO loop...
+
+  DO i = 1,SIZE(Ix)
+    Ix(i) = ivalue
   END DO
   
   END SUBROUTINE

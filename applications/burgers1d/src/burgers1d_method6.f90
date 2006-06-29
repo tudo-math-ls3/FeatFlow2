@@ -337,7 +337,9 @@ CONTAINS
       ! Allocate memory for the matrix, don't calculate the entries.
       ! Remember hat we have a nonlinear matrix, which entries must be build
       ! in evey step of the nonlinear iteration!
-      CALL bilf_createEmptyMatrixScalar(p_rmatrix%RmatrixBlock(1,1),.FALSE.)
+      ! We fill the matrix with 1. This is necessary, as the UMFPACK solver
+      ! needs nonzero matrix entries for the symbolic factorisation!
+      CALL lsyssc_createEmptyMatrixScalar(p_rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_ONE)
       
       ! Allocate an array for holding the resorting strategy.
       CALL storage_new ('b1d6_initMatVec', 'Iresort', &

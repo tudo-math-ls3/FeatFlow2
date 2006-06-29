@@ -101,6 +101,9 @@
 !# 26.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
+!# 27.) bilf_createEmptyMatrixScalar
+!#      -> Allocates memory for en empty matrix
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -264,6 +267,19 @@ MODULE linearsystemscalar
   ! Don't transpose the matrix. Copy the matrix in memory and mark the 
   ! matrix as transposed by changing the flag in imatrixSpec
   INTEGER, PARAMETER :: LSYSSC_TR_VIRTUALCOPY = 3
+
+!</constantblock>
+
+!<constantblock description="Constants for initialising matrix entries when allocating">
+  
+  ! Let the entries of a matrix undefined
+  INTEGER, PARAMETER :: LSYSSC_SETM_UNDEFINED = -1
+
+  ! Clear the entries of a matrix when allocating
+  INTEGER, PARAMETER :: LSYSSC_SETM_ZERO      = 0
+
+  ! Set the entries of a matrix to 1 when allocating
+  INTEGER, PARAMETER :: LSYSSC_SETM_ONE       = 1
 
 !</constantblock>
 
@@ -5364,6 +5380,103 @@ CONTAINS
     
     ! That's it.
   
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_createEmptyMatrixScalar (rmatrixScalar,iclear,cdataType)
+  
+!<description>
+  ! This routine allocates memory for the matrix entries without computing
+  ! the entries. This can be used to attach an 'empty' matrix to a matrix
+  ! structure. The number of entries NA as well as the type of the matrix
+  ! cmatrixType must be initialised in rmatrixScalar.
+!</description>
+
+!<input>
+  ! Whether and how to fill the matrix with initial values.
+  ! One of the LSYSSC_SETM_xxxx constants:
+  ! LSYSSC_SETM_UNDEFINED : Don't initialise the matrix,
+  ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0,
+  ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
+  !                         for UMFPACK who needs a non-zero
+  !                         matrix for symbolic factorisation.)
+  INTEGER, INTENT(IN) :: iclear
+  
+  ! OPTIONAL: Data type of the matrix (ST_SINGLE, ST_DOUBLE)
+  ! If not present, the standard data type cdataType-variable in the matrix
+  ! is used (usually ST_DOUBLE).
+  INTEGER, INTENT(IN), OPTIONAL :: cdataType
+!</input>
+
+!<inputoutput>
+  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER(PREC_MATIDX) :: NA
+  INTEGER :: cdType
+  REAL(SP), DIMENSION(:), POINTER :: p_Fa
+  REAL(DP), DIMENSION(:), POINTER :: p_Da
+  
+  IF (rmatrixScalar%h_DA .NE. ST_NOHANDLE) THEN
+    PRINT *,'lsyssc_createEmptyMatrixScalar: Cannot create empty matrix; exists already!'
+    STOP
+  END IF
+  
+  NA = rmatrixScalar%NA
+
+  IF (PRESENT(cdataType)) THEN
+    cdType = cdataType
+    ! Change the data type in the matrix according to the new we will use.
+    rmatrixScalar%cdataType = cdType
+  ELSE
+    cdType = rmatrixScalar%cdataType
+  END IF
+
+  ! Which matrix structure do we have?
+  SELECT CASE (rmatrixScalar%cmatrixFormat) 
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+    
+    ! Check if the matrix entries exist. If not, allocate the matrix.
+    IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
+    
+      IF (iclear .GE. LSYSSC_SETM_ZERO) THEN
+        CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+                            NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+                            ST_NEWBLOCK_ZERO)
+      ELSE
+        CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+                            NA, ST_DOUBLE, rmatrixScalar%h_DA, &
+                            ST_NEWBLOCK_NOINIT)
+      END IF
+      
+      IF (iclear .GE. LSYSSC_SETM_ONE) THEN
+        SELECT CASE (cdType)
+        CASE (ST_DOUBLE)
+          CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+          CALL lalg_setVectorDble (p_Da,1.0_DP)
+        CASE (ST_SINGLE)
+          CALL storage_getbase_double (rmatrixScalar%h_DA,p_Fa)
+          CALL lalg_setVectorSngl (p_Da,1.0_SP)
+        CASE DEFAULT
+          PRINT *,'lsyssc_createEmptyMatrixScalar: Unknown data type!'
+          STOP
+        END SELECT
+      END IF
+      
+    END IF
+    
+  CASE DEFAULT
+    PRINT *,'lsyssc_createEmptyMatrixScalar: Not supported matrix structure!'
+    STOP
+  END SELECT
+    
   END SUBROUTINE
 
 END MODULE

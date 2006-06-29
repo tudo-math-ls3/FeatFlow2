@@ -16,9 +16,6 @@
 !#     -> Assembles the entries of a matrix, which structure was build
 !#        with bilf_createMatrixStructure before.
 !#
-!# 3.) bilf_createEmptyMatrixScalar
-!#     -> Allocates memory for en empty matrix whose structure was
-!#        created by bilf_createMatrixStructure.
 !# </purpose>
 !##############################################################################
 
@@ -2651,59 +2648,4 @@ CONTAINS
 
   END SUBROUTINE
   
-  !****************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE bilf_createEmptyMatrixScalar (rmatrixScalar,bclear)
-  
-!<description>
-  ! This routine allocates memory for the matrix itself without computing
-  ! the entries. This can be used to attach an 'empty' matrix to a matrix
-  ! structure.
-!</description>
-
-!<input>
-  ! Whether to clear the matrix / fill it with 0.0.
-  LOGICAL, INTENT(IN) :: bclear
-!</input>
-
-!<inputoutput>
-  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER(PREC_MATIDX) :: NA
-  
-  NA = rmatrixScalar%NA
-
-  ! Which matrix structure do we have?
-  SELECT CASE (rmatrixScalar%cmatrixFormat) 
-  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
-    
-    ! Check if the matrix entries exist. If not, allocate the matrix.
-    IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
-    
-      IF (bclear) THEN
-        CALL storage_new1D ('bilf_createEmptyMatrixScalar', 'DA', &
-                            NA, ST_DOUBLE, rmatrixScalar%h_DA, &
-                            ST_NEWBLOCK_ZERO)
-      ELSE
-        CALL storage_new1D ('bilf_createEmptyMatrixScalar', 'DA', &
-                            NA, ST_DOUBLE, rmatrixScalar%h_DA, &
-                            ST_NEWBLOCK_NOINIT)
-      END IF
-      
-    END IF
-    
-  CASE DEFAULT
-    PRINT *,'bilf_createEmptyMatrixScalar: Not supported matrix structure!'
-    STOP
-  END SELECT
-    
-  END SUBROUTINE
-
 END MODULE
