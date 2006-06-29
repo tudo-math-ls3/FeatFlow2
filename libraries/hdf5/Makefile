@@ -5,8 +5,10 @@ FEATFLOW=../..
 include $(FEATFLOW)/Globals.mk
 
 LIBNAME=hdf5
+LIBVERSION=1.6.5
+
 LIB=$(LIBNAME:%=$(LIBDIR)/lib%*.a)
-PREFIX=$(shell pwd)/tmpinstall
+PWD=$(shell pwd)
 
 all: greet lib
 	@echo "Done," $(LIBNAME) "is ready."
@@ -22,27 +24,28 @@ greet:
 	@echo "replaced. In contrast, a pseudo installation is performed and the"
 	@echo "required libraries are copied to their Feat-style directories."
 
-lib: build link clean
+lib: | $(LIB) clean
 
-build:
-	@PWD=$(shell pwd)
-	@( cd orig && env CC=$(CC) env F9X=$(FC) \
-	  configure --enable-fortran --disable-cxx --disable-shared \
-	  --disable-fast-install --disable-debug --disable-parallel \
-	  --with-zlib=$(PWD)/../zlib/include,$(PWD)/$(LIBDIR) \
-	  --with-szlib=$(PWD)/../sz/include,$(PWD)/$(LIBDIR) \
-	  --prefix=$(PREFIX) && \
-	  make && \
-	  make install )
+prepare:
+	@mkdir -p ./$(ID)
+	@gunzip < $(LIBNAME)-$(LIBVERSION).tar.gz | tar -C ./$(ID) -xf -
 
-link:
-	mkdir -p $(LIBDIR)
-	cp $(PREFIX)/lib/$(LIBNAME:%=lib%*.a) $(LIBDIR)
-	cp $(PREFIX)/lib/*.mod $(LIBDIR)
+configure: prepare
+	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) &&\
+	env CC=$(CC) env F9X=$(FC) ./configure --enable-fortran --disable-cxx --disable-shared \
+	--disable-fast-install --disable-debug --disable-parallel --with-zlib=$(PWD)/../zlib/include,$(PWD)/$(LIBDIR) \
+	--with-szlib=$(PWD)/../sz/include,$(PWD)/$(LIBDIR) --prefix=$(PWD)/$(ID)/tmpinstall )
+
+build: configure
+	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) && $(MAKE) && $(MAKE) install )
+
+$(LIB): build
+	@mkdir -p $(LIBDIR)
+	@cp $(PWD)/$(ID)/tmpinstall/lib/$(LIBNAME:%=lib%*.a) $(LIBDIR)
+	@cp $(PWD)/$(ID)/tmpinstall/lib/*.mod $(LIBDIR)
 
 clean:
-	( cd orig && make clean )
-	-rm -r -f $(PREFIX)
+	-rm -r -f ./$(ID)
 
 purge: clean
 	-rm -f $(LIB)
@@ -53,3 +56,5 @@ purge_all: clean
 id: .id
 help: .help
 debug: all
+.PHONY : prepare configure build
+
