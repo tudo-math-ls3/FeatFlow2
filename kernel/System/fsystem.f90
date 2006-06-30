@@ -5,8 +5,7 @@
 !#
 !# <purpose>
 !# This module contains system routines like time measurement,          
-!# string/value conversions, auxiliary routines and several sorting     
-!# routines.
+!# string/value conversions and auxiliary routines.
 !#
 !# On start of the main program, the routine system_init() must be called
 !# once to initialise internal values!
