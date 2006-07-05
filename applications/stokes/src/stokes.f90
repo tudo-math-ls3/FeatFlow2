@@ -6,8 +6,8 @@
 !# <purpose>
 !# This program is a simple test program for discretising the Stokes equation
 !#
-!#              $$- \nu Laplace(u) + \Nabla p = f $$
-!#              $$ \Nable \cdot p = 0$$
+!#              $$- \nu Laplace(u) + \nabla p = f $$
+!#              $$ \nabla \cdot u = 0$$
 !#
 !# on a 2D domain for a 2D function $u=(u_1,u_2)$.
 !#
