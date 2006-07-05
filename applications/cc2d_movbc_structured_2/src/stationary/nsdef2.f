@@ -320,7 +320,6 @@ C     preconditioner in the Oseen equation. The nonlinear part
 C     is subtracted later...
 
       CALL GTMAUX (DTIMIN,DPARAM,OTNLTIM-1+OTTADF,0)
-      CALL LCL1(DWORK(KA1+2750),250)
       CALL XMADF4(TRIAS(1,NLMAX),MATDAT(1,NLMAX),DUP,DWORK(KD),
      *            IPARAM(ONITMAX)-1,IASMBL(OIPRECA),
      *            IASMBL(OINEUM),THWEIG,IASMBL(OIALPHA),NLMAX)

@@ -44,7 +44,7 @@ MODULE stokes_method1
   
   ! Maximum allowed level in this application; must be =9 for 
   ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NLMAX = 9
+  INTEGER, PARAMETER :: NNLEV = 9
   
 !<types>
 
@@ -104,7 +104,7 @@ MODULE stokes_method1
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by LV!
-    TYPE(t_problem_lvl), DIMENSION(NLMAX) :: RlevelInfo
+    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
@@ -153,7 +153,7 @@ CONTAINS
   INTEGER :: i
   
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
     ! Variable for a filename:  
     CHARACTER(LEN=60) :: CFILE
@@ -503,9 +503,9 @@ CONTAINS
               p_rrhs%RvectorBlock(1),coeff_RHS,&
               rproblem%rcollection)
                                 
-    ! The second subvector must be zero - as it represents the RHS of
+    ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
-    CALL lsyssc_clearVector(p_rrhs%RvectorBlock(2))
+    CALL lsyssc_clearVector(p_rrhs%RvectorBlock(3))
                                 
     ! Clear the solution vector on the finest level.
     CALL lsysbl_clearVector(rproblem%rvector)
@@ -814,7 +814,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NLMAX) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
     
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock) :: rprojection
@@ -1196,7 +1196,7 @@ CONTAINS
   INTEGER :: i
 
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
 
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
@@ -1246,9 +1246,14 @@ CONTAINS
   ! 6.) Solve the problem
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
+!</description>
 
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+!</subroutine>
+
+    ! NLMIN receives the minimal level where to discretise for supporting
+    ! the solution process.
+    ! NLMAX receives the level where we want to solve.
+    INTEGER :: NLMIN,NLMAX
     REAL(DP) :: dnu
     
     ! A problem structure for our problem
@@ -1259,7 +1264,8 @@ CONTAINS
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
 
-    LV = 7
+    NLMIN = 2
+    NLMAX = 7
     
     ! Viscosity parameter:
     dnu = 1E0_DP
@@ -1275,7 +1281,7 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL st1_initParamTriang (2,LV,rproblem)
+    CALL st1_initParamTriang (NLMIN,NLMAX,rproblem)
     CALL st1_initDiscretisation (rproblem)    
     CALL st1_initMatVec (rproblem)    
     CALL st1_initAnalyticBC (rproblem)   

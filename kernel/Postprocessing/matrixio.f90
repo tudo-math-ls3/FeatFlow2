@@ -39,7 +39,7 @@ MODULE matrixio
 
 !<subroutine>
   SUBROUTINE matio_writeMatrixHR (rmatrix, sarray,&
-                                  bnoZero, cfile, sfile, sformat)
+                                  bnoZero, ifile, sfile, sformat)
   
   !<description>
     ! This routine writes a scalar matrix into a text file.
@@ -58,11 +58,11 @@ MODULE matrixio
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel cfile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: cfile
+    INTEGER(I32), INTENT(IN) :: ifile
     
-    ! Name of the file where to write to. Only relevant for cfile=0!
+    ! Name of the file where to write to. Only relevant for ifile=0!
     CHARACTER(len=*), INTENT(IN) :: sfile
     
     ! Format string to use for the output; e.g. '(E20.10)'
@@ -89,7 +89,7 @@ MODULE matrixio
       CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
       CALL matio_writeMatrix79_Dble (p_Da, p_Kcol, p_Kld, &
                                       rmatrix%NEQ, rmatrix%NEQ, sarray, &
-                                      bnoZero, cfile, sfile, sformat)
+                                      bnoZero, ifile, sfile, sformat)
     CASE DEFAULT
       PRINT *,'matio_writeFullMatrix: Unsupported matrix precision.'
       STOP
@@ -105,7 +105,7 @@ MODULE matrixio
 
 !<subroutine>
   SUBROUTINE matio_writeMatrix1_Dble (Da, nrow, ncol, sarray, &
-                                       bnoZero, cfile, sfile, sformat)
+                                       bnoZero, ifile, sfile, sformat)
   
   !<description>
     ! Write full double precision matrix into a text file.
@@ -132,11 +132,11 @@ MODULE matrixio
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel cfile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: cfile
+    INTEGER(I32), INTENT(IN) :: ifile
     
-    ! name of the file where to write to. Only relevant for cfile=0!
+    ! name of the file where to write to. Only relevant for ifile=0!
     CHARACTER(len=*), INTENT(IN) :: sfile
     
     ! format string to use for the output; e.g. '(D20.10)'
@@ -152,7 +152,7 @@ MODULE matrixio
     CHARACTER(len=128) :: S
     CHARACTER(len=6) :: sformatChar
     
-    IF (cfile .EQ. 0) THEN
+    IF (ifile .EQ. 0) THEN
       CALL io_openFileForWriting(sfile, cf, SYS_REPLACE)
       IF (cf .EQ. -1) THEN
         PRINT *, 'matio_writeFullMatrix: Could not open file '// &
@@ -160,7 +160,7 @@ MODULE matrixio
         STOP
       END IF
     ELSE
-      cf = cfile
+      cf = ifile
     END IF
     
     ! Get length of output strings
@@ -197,7 +197,7 @@ MODULE matrixio
     END DO
     
     ! Close the file if necessary
-    IF (cfile .EQ. 0) CLOSE(cf)
+    IF (ifile .EQ. 0) CLOSE(cf)
   
   END SUBROUTINE
 
@@ -206,7 +206,7 @@ MODULE matrixio
 !<subroutine>
   SUBROUTINE matio_writeMatrix79_Dble (Da, Icol, Irow, &
                                         nrow, ncol, sarray, &
-                                        bnoZero, cfile, sfile, sformat)
+                                        bnoZero, ifile, sfile, sformat)
   
   !<description>
     ! Write sparse double precision matrix in matrix format 9 or
@@ -239,11 +239,11 @@ MODULE matrixio
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel cfile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    INTEGER(I32), INTENT(IN) :: cfile
+    INTEGER(I32), INTENT(IN) :: ifile
     
-    ! name of the file where to write to. Only relevant for cfile=0!
+    ! name of the file where to write to. Only relevant for ifile=0!
     CHARACTER(len=*), INTENT(IN) :: sfile
     
     ! format string to use for the output; e.g. '(D20.10)'
@@ -261,7 +261,7 @@ MODULE matrixio
     INTEGER :: h_DrowVec
     REAL(DP), DIMENSION(:), POINTER :: p_DrowVec
     
-    IF (cfile .EQ. 0) THEN
+    IF (ifile .EQ. 0) THEN
       CALL io_openFileForWriting(sfile, cf, SYS_REPLACE)
       IF (cf .EQ. -1) THEN
         PRINT *, 'matio_writeFullMatrix: Could not open file '// &
@@ -269,7 +269,7 @@ MODULE matrixio
         STOP
       END IF
     ELSE
-      cf = cfile
+      cf = ifile
     END IF
     
     ! Get length of output strings
@@ -328,7 +328,7 @@ MODULE matrixio
     CALL storage_free(h_DrowVec)
     
     ! Close the file if necessary
-    IF (cfile .EQ. 0) CLOSE(cf)
+    IF (ifile .EQ. 0) CLOSE(cf)
   
   END SUBROUTINE
 

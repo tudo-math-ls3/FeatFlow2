@@ -45,7 +45,7 @@ MODULE poisson_method5
   
   ! Maximum allowed level in this application; must be =9 for 
   ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NLMAX = 9
+  INTEGER, PARAMETER :: NNLEV = 9
   
 !<types>
 
@@ -96,8 +96,8 @@ MODULE poisson_method5
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
-    ! only one level supported, identified by LV!
-    TYPE(t_problem_lvl), DIMENSION(NLMAX) :: RlevelInfo
+    ! only one level supported, identified by NLMAX!
+    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
@@ -146,7 +146,7 @@ CONTAINS
   INTEGER :: i
   
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
     ! Variable for a filename:  
     CHARACTER(LEN=60) :: CFILE
@@ -668,7 +668,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NLMAX) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
     
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock) :: rprojection
@@ -981,7 +981,7 @@ CONTAINS
   INTEGER :: i
 
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
 
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
@@ -1031,9 +1031,14 @@ CONTAINS
   ! 6.) Solve the problem
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
+!</description>
 
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+!</subroutine>
+
+    ! NLMIN receives the minimal level where to discretise for supporting
+    ! the solution process.
+    ! NLMAX receives the level where we want to solve.
+    INTEGER :: NLMIN,NLMAX
     
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
@@ -1043,7 +1048,8 @@ CONTAINS
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
 
-    LV = 7
+    NLMIN = 1
+    NLMAX = 7
     
     ! Initialise the collection
     CALL collct_init (rproblem%rcollection)
@@ -1054,7 +1060,7 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm5_initParamTriang (1,LV,rproblem)
+    CALL pm5_initParamTriang (NLMIN,NLMAX,rproblem)
     CALL pm5_initDiscretisation (rproblem)    
     CALL pm5_initMatVec (rproblem)    
     CALL pm5_initAnalyticBC (rproblem)   

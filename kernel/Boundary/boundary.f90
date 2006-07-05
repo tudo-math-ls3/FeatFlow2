@@ -22,11 +22,14 @@
 !# 4.) boundary_dgetNsegments
 !#     -> Get the number of boundary segments in a boundary component
 !#
-!# 5.) boundary_createRegion
+!# 5.) boundary_getCoords
+!#     -> Calculate the coordinatex of a point given by its parameter value
+!#
+!# 6.) boundary_createRegion
 !#     -> Get the characteristics of a boundary segment and create
 !#        a boundary region structure from it.
 !#
-!# 6.) boundary_isInRegion
+!# 7.) boundary_isInRegion
 !#     -> Tests whether a node with a specific parameter value
 !#        is inside of a given boundary region or not.
 !# </purpose>
@@ -283,8 +286,8 @@ MODULE boundary
 
     if (ip2.lt.ip1) then
 
-      call boundary_getcoords(rboundary,iboundCompIdx,dt1,dx1,dy1)
-      call boundary_getcoords(rboundary,iboundCompIdx,dt2,dx2,dy2)
+      call boundary_getCoords(rboundary,iboundCompIdx,dt1,dx1,dy1)
+      call boundary_getCoords(rboundary,iboundCompIdx,dt2,dx2,dy2)
 
       dbl=sqrt((dx2-dx1)*(dx2-dx1)+(dy2-dy1)*(dy2-dy1))
 
@@ -303,11 +306,11 @@ MODULE boundary
       else
 
         if (real(ip1,DP).eq.dt1) then
-          call boundary_getcoords(rboundary,iboundCompIdx,dt1,dx2,dy2)
+          call boundary_getCoords(rboundary,iboundCompIdx,dt1,dx2,dy2)
           dbl=0.0_DP
         else
-          call boundary_getcoords(rboundary,iboundCompIdx,dt1,dx1,dy1)
-          call boundary_getcoords(rboundary,iboundCompIdx,real(ip1,DP),dx2,dy2)
+          call boundary_getCoords(rboundary,iboundCompIdx,dt1,dx1,dy1)
+          call boundary_getCoords(rboundary,iboundCompIdx,real(ip1,DP),dx2,dy2)
           dbl=sqrt((dx2-dx1)*(dx2-dx1)+(dy2-dy1)*(dy2-dy1))
         endif
 
@@ -316,13 +319,13 @@ MODULE boundary
           dx1=dx2
           dy1=dy2
 
-          call boundary_getcoords(rboundary,iboundCompIdx,real(i,DP),dx2,dy2)
+          call boundary_getCoords(rboundary,iboundCompIdx,real(i,DP),dx2,dy2)
           dbl=dbl+sqrt((dx2-dx1)*(dx2-dx1)+(dy2-dy1)*(dy2-dy1))
 
         enddo
 
         if (real(ip2,DP).ne.dt2) then
-          call boundary_getcoords(rboundary,iboundCompIdx,dt2,dx1,dy1)
+          call boundary_getCoords(rboundary,iboundCompIdx,dt2,dx1,dy1)
           dbl=dbl+sqrt((dx1-dx2)*(dx1-dx2)+(dy1-dy2)*(dy1-dy2))
         endif
 
@@ -809,7 +812,7 @@ MODULE boundary
 
 !<subroutine>
 
-  SUBROUTINE boundary_getcoords(rboundary, iboundCompIdx, dt, dx, dy, cparType)
+  SUBROUTINE boundary_getCoords(rboundary, iboundCompIdx, dt, dx, dy, cparType)
 
 !<description>
   ! This routine returns for a given parameter value dt the
@@ -861,7 +864,7 @@ MODULE boundary
   IF (PRESENT(cparType)) cpar = cparType
 
   if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
-    PRINT *,'Error in boundary_getcoords'
+    PRINT *,'Error in boundary_getCoords'
     STOP
   ENDIF
 
@@ -907,6 +910,10 @@ MODULE boundary
   
     ! Easy case: 0-1 parametrisation
     iseg = AINT(dpar)
+
+    ! Determine Start index of the segment in the double-prec. block
+    istartidx = p_IsegInfo(1+2*iseg+1) 
+
     dcurrentpar = iseg
     dendpar     = iseg + 1.0_DP
     dseglength  = p_DsegInfo(2+istartidx)
@@ -980,7 +987,7 @@ MODULE boundary
     dy = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
 
   CASE DEFAULT
-    PRINT *,'boundary_getcoords: Wrong segment type'
+    PRINT *,'boundary_getCoords: Wrong segment type'
     STOP
   END SELECT
 
@@ -1008,10 +1015,11 @@ MODULE boundary
   ! boundary structure
   TYPE(t_boundary), INTENT(IN) :: rboundary
 
-  ! index of boundary component
+  ! Index of boundary component.
   INTEGER, INTENT(IN) :: iboundCompIdx
 
-  ! index of the boundary segment
+  ! Index of the boundary segment.
+  ! =0: Create a boundary region that covers the whole boundary component.
   INTEGER, INTENT(IN) :: iboundSegIdx
   
 !</input>
@@ -1042,8 +1050,8 @@ MODULE boundary
   cpar = BDR_PAR_01
   IF (PRESENT(cparType)) cpar = cparType
 
-  IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) THEN
-    PRINT *,'Error in boundary_createregion'
+  IF ((iboundCompIdx .GT. rboundary%iboundarycount) .OR. (iboundCompIdx.lt.0)) THEN
+    PRINT *,'boundary_createregion: iboundCompIdx out of bounds'
     STOP
   ENDIF
 
@@ -1059,40 +1067,64 @@ MODULE boundary
   CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
   CALL storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
 
-  IF ((iboundCompIdx.gt.p_IsegCount(iboundCompIdx)).or.(iboundSegIdx.lt.0)) THEN
-    PRINT *,'Error in boundary_createregion: iboundSegIdx out of bounds.'
-    STOP
-  ENDIF
+  IF (iboundSegIdx .NE. 0) THEN
 
-  ! Find segment iseg the parameter value belongs to.
-  ! Remember that in the first element in the double precision block of
-  ! each segment, the length of the segment is noted!
+    IF ((iboundSegIdx .GT. p_IsegCount(iboundCompIdx)) .OR. (iboundSegIdx.lt.0)) THEN
+      PRINT *,'Error in boundary_createregion: iboundSegIdx out of bounds.'
+      STOP
+    ENDIF
+
+    ! Find segment iseg the parameter value belongs to.
+    ! Remember that in the first element in the double precision block of
+    ! each segment, the length of the segment is noted!
+    
+    istartidx = p_IsegInfo(1+2*0+1) 
+    dcurrentpar = 0.0_DP
+    
+    ! Determine Start index of the segment in the double-prec. block
+    istartidx = p_IsegInfo(1+2*(iboundSegIdx-1)+1) 
+    
+    ! Get the start and end parameter value - depending on the parametrisation
+    SELECT CASE (cpar)
+    CASE (BDR_PAR_01)
+      dcurrentpar = REAL(iboundSegIdx-1,DP)
+      dendpar     = REAL(iboundSegIdx-1+1,DP)
+      dmaxpar     = REAL(p_IsegCount(iboundCompIdx),DP)
+    CASE (BDR_PAR_LENGTH)
+      dcurrentpar = p_DsegInfo(1+istartidx)
+      dendpar     = dcurrentpar + p_DsegInfo(2+istartidx)
+      dmaxpar     = p_DmaxPar(iboundCompIdx)
+    END SELECT
   
-  istartidx = p_IsegInfo(1+2*0+1) 
-  dcurrentpar = 0.0_DP
+    ! Set the segment type in the boundary region structure
+    rregion%isegmentType = p_IsegInfo(1+2*(iboundSegIdx-1))
+
+  ELSE
   
-  ! Determine Start index of the segment in the double-prec. block
-  istartidx = p_IsegInfo(1+2*(iboundSegIdx-1)+1) 
+    ! Create a boundary region that covers the whole boundary component.
+    SELECT CASE (cpar)
+    CASE (BDR_PAR_01)
+      dcurrentpar = REAL(iboundSegIdx-1,DP)
+      dmaxpar     = REAL(p_IsegCount(iboundCompIdx),DP)
+    CASE (BDR_PAR_LENGTH)
+      dcurrentpar = p_DsegInfo(1+istartidx)
+      dmaxpar     = p_DmaxPar(iboundCompIdx)
+    END SELECT
+    
+    dcurrentpar = 0.0_DP
+    dendpar     = dmaxpar
   
-  ! Get the start and end parameter value - depending on the parametrisation
-  SELECT CASE (cpar)
-  CASE (BDR_PAR_01)
-    dcurrentpar = REAL(iboundSegIdx-1,DP)
-    dendpar     = REAL(iboundSegIdx-1+1,DP)
-    dmaxpar     = REAL(p_IsegCount(iboundCompIdx),DP)
-  CASE (BDR_PAR_LENGTH)
-    dcurrentpar = p_DsegInfo(1+istartidx)
-    dendpar     = dcurrentpar + p_DsegInfo(2+istartidx)
-    dmaxpar     = p_DmaxPar(iboundCompIdx)
-  END SELECT
+    ! We have an unspecified boundary segment
+    rregion%isegmentType = BOUNDARY_TYPE_ANALYTIC
   
+  END IF
+
   ! Create the boundary region structure
   rregion%cparType = cpar
   rregion%dminParam = dcurrentpar
   rregion%dmaxParam = dendpar
   rregion%ctype = BDR_TP_CURVE
   rregion%iproperties = BDR_PROP_WITHSTART
-  rregion%isegmentType = p_IsegInfo(1+2*(iboundSegIdx-1))
   rregion%iboundCompIdx = iboundCompIdx
   rregion%iboundSegIdx = iboundSegIdx
   rregion%dmaxParamBC = dmaxpar

@@ -1750,6 +1750,126 @@ CONTAINS
   
 !<function>
 
+  SUBROUTINE collct_getvalue_struc (rcollection, sparameter, itype, &
+                                    badd, p_rvalue, ilevel, bexists, ssectionName)
+!<description>
+  ! INTERNAL SUBROUTINE!
+  ! Searches in the collection rcollection on the level ilevel for the
+  ! parameter sparameter. Returns a pointer to the value structure in
+  ! p_rvalue.
+  !
+  ! If the value does not exists and badd=false, an error is thrown.
+  ! If the value does not exists and badd=true, a new value is created.
+  !
+  ! If bexists is present, it's set to TRUE/FALSE to indicate whether
+  ! the value exists at all. If bexists does not exist, an error is thrown.
+  ! ssectionName allows to specify the name of a section where to search
+  ! for the value structure.
+  !
+  ! itype specifies the desired type of the value. 
+  ! If itype <> COLLCT_UNDEFINED is specified, there is a type check:
+  ! If the value exists but is not of type itype, an error is thrown.
+!</description>  
+  
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! Expected type for that parameter.
+  ! =COLLCT_UNDEFINED: suppress type check.
+  INTEGER, INTENT(IN) :: itype
+  
+  ! Whether to add the parameter if it does not exists.
+  ! =TRUE: add the parameter if necessary.
+  ! =FALSE: throw an error that the parameter does not exist.
+  LOGICAL, INTENT(IN) :: badd
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+  
+  ! A pointer to the structure with name sparameter.
+  ! Points to NULL() if the value does not exist.
+  TYPE(t_collctValue), POINTER :: p_rvalue
+
+!</output>
+
+!</function>
+
+  ! local variables
+  INTEGER :: ilv
+  
+  ilv = 0
+  IF (PRESENT(ilevel)) ilv = ilevel
+  
+  ! Get the parameter
+  IF (PRESENT(ssectionName)) THEN
+    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
+                                       sparameter, p_rvalue) 
+  ELSE
+    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
+                                       sparameter, p_rvalue) 
+  END IF
+  
+  ! Return whether or not that thing exists.
+  ! If it does not exist, create it or throw an error.
+  IF (PRESENT(bexists)) THEN
+    bexists = ASSOCIATED(p_rvalue)
+  ELSE
+    IF ((.NOT. badd) .AND. (.NOT. ASSOCIATED(p_rvalue))) THEN
+      PRINT *,'collct_getvalue: Parameter '//TRIM(sparameter)//' not found!'
+      STOP
+    END IF
+  END IF
+
+  IF (ASSOCIATED(p_rvalue)) THEN
+
+    ! Type check
+    IF (itype .NE. COLLCT_UNDEFINED) THEN
+      ! Throw an error if the type is wrong. Otherwise, get the value.
+      IF (p_rvalue%itype .NE. itype) THEN
+        PRINT *,'collct_getvalue: Wrong type!'
+        PRINT *,'Parameter: '//TRIM(sparameter)// ' is of type ',p_rvalue%itype,&
+                ' but expected as ',itype,'!'
+        STOP
+      END IF
+    END IF
+
+  ELSE
+    IF (badd) THEN
+      IF (PRESENT(ssectionName)) THEN
+        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
+                              itype, ilv, p_rvalue)
+      ELSE
+        CALL collct_addvalue (rcollection, '', sparameter, &
+                              itype, ilv, p_rvalue)
+      END IF
+      IF (PRESENT(bexists)) bexists = .TRUE.
+    END IF    
+  END IF
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<function>
+
   CHARACTER FUNCTION collct_getvalue_char (rcollection, sparameter, &
                                    ilevel, ssectionName, bexists) RESULT (value)
 !<description>
@@ -1765,7 +1885,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -1792,31 +1912,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_CHARACTER,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_CHARACTER) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value = p_rvalue%csvalue
   ELSE
     value = " "
@@ -1843,7 +1945,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -1873,31 +1975,14 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv,i,j
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+  INTEGER :: i,j
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_STRING,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_STRING) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     i = MIN(SIZE(p_rvalue%p_svalue),LEN(value))
     value = ''
     DO j=1,i
@@ -1928,7 +2013,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -1955,31 +2040,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGER,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_INTEGER) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value = p_rvalue%ivalue
   ELSE
     value = 0
@@ -2006,7 +2073,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2033,31 +2100,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_REAL,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_REAL) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value = p_rvalue%dvalue
   ELSE
     value = 0
@@ -2087,7 +2136,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2114,31 +2163,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCR,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_DISCR) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rdiscretisation
   ELSE
     NULLIFY(value)
@@ -2168,7 +2199,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2195,31 +2226,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BLDISCR,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_BLDISCR) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rblockDiscretisation
   ELSE
     NULLIFY(value)
@@ -2249,7 +2262,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2276,31 +2289,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_TRIA,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_TRIA) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rtriangulation
   ELSE
     NULLIFY(value)
@@ -2330,7 +2325,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2357,31 +2352,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARY,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_BOUNDARY) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rdomain
   ELSE
     NULLIFY(value)
@@ -2411,7 +2388,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2438,31 +2415,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARYCOND,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_BOUNDARYCOND) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rboundaryConditions
   ELSE
     NULLIFY(value)
@@ -2491,7 +2450,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2518,31 +2477,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAVECTOR,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_SCAVECTOR) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rvectorScalar
   ELSE
     NULLIFY(value)
@@ -2571,7 +2512,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2598,31 +2539,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAMATRIX,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_SCAMATRIX) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rmatrixScalar
   ELSE
     NULLIFY(value)
@@ -2651,7 +2574,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2678,31 +2601,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKVECTOR,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_BLKVECTOR) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rvector
   ELSE
     NULLIFY(value)
@@ -2731,7 +2636,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2758,31 +2663,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKMATRIX,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_BLKMATRIX) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rmatrix
   ELSE
     NULLIFY(value)
@@ -2812,7 +2699,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2839,31 +2726,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_LINSOL,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_LINSOL) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rlinearSolver
   ELSE
     NULLIFY(value)
@@ -2893,7 +2762,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -2920,31 +2789,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCRBC,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_DISCRBC) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rdiscreteBC
   ELSE
     NULLIFY(value)
@@ -2973,7 +2824,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3000,31 +2851,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_PARAMETERS,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_PARAMETERS) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rparlist
   ELSE
     NULLIFY(value)
@@ -3054,7 +2887,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3081,31 +2914,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJSC,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_INTERLVPRJSC) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rilvProjectionSc
   ELSE
     NULLIFY(value)
@@ -3135,7 +2950,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3162,31 +2977,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJ,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_INTERLVPRJ) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rilvProjection
   ELSE
     NULLIFY(value)
@@ -3215,7 +3012,7 @@ CONTAINS
 !<input>
     
   ! The parameter list.
-  TYPE(t_collection), INTENT(IN) :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
   
   ! The parameter name to search for.
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
@@ -3242,31 +3039,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Return whether or not that thing exists
-  IF (PRESENT(bexists)) bexists = ASSOCIATED(p_rvalue)
-  
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_COLLECTION,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    ! Throw an error if the type is wrong. Otherwise, get the value.
-    IF (p_rvalue%itype .NE. COLLCT_COLLECTION) THEN
-      PRINT *,'Wrong type! Parameter: ',sparameter, ' is of type ',p_rvalue%itype
-      STOP
-    END IF
-    
     value => p_rvalue%p_rcollection
   ELSE
     NULLIFY(value)
@@ -3324,36 +3103,12 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_CHARACTER, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_CHARACTER, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
-  
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_CHARACTER,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Set the value
   p_rvalue%csvalue = value
 
@@ -3409,36 +3164,13 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv,i
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_STRING, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_STRING, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
-  
+  LOGICAL :: bexists
+  INTEGER :: i
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_STRING,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Set the value; slightly more complicated for strings
   ALLOCATE(p_rvalue%p_svalue(LEN(value)))
   DO i=1,LEN(value)
@@ -3497,36 +3229,12 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_INTEGER, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_INTEGER, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
-  
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGER,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Set the value
   p_rvalue%ivalue = value
 
@@ -3582,36 +3290,12 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_REAL, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_REAL, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
-  
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_REAL,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Set the value
   p_rvalue%dvalue = value
 
@@ -3667,36 +3351,12 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_DISCR, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_DISCR, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
-  
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCR,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Set the value
   p_rvalue%p_rdiscretisation => value
 
@@ -3752,36 +3412,12 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_BLDISCR, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_BLDISCR, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
-  
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BLDISCR,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Set the value
   p_rvalue%p_rblockDiscretisation => value
 
@@ -3837,36 +3473,12 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_TRIA, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_TRIA, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
-  
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_TRIA,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
   ! Set the value
   p_rvalue%p_rtriangulation => value
 
@@ -3922,35 +3534,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_BOUNDARY, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_BOUNDARY, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARY,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rdomain => value
@@ -4007,35 +3595,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_BOUNDARYCOND, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_BOUNDARYCOND, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BOUNDARYCOND,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rboundaryConditions => value
@@ -4092,35 +3656,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_SCAVECTOR, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_SCAVECTOR, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAVECTOR,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rvectorScalar => value
@@ -4177,35 +3717,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_SCAMATRIX, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_SCAMATRIX, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_SCAMATRIX,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rmatrixScalar => value
@@ -4262,35 +3778,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_BLKVECTOR, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_BLKVECTOR, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKVECTOR,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rvector => value
@@ -4347,35 +3839,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_BLKMATRIX, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_BLKMATRIX, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_BLKMATRIX,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rmatrix => value
@@ -4432,35 +3900,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_PARAMETERS, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_PARAMETERS, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_PARAMETERS,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rparlist => value
@@ -4517,35 +3961,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_LINSOL, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_LINSOL, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_LINSOL,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rlinearSolver => value
@@ -4602,35 +4022,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_DISCRBC, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_DISCRBC, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_DISCRBC,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rdiscreteBC => value
@@ -4687,35 +4083,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_INTERLVPRJSC, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_INTERLVPRJSC, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJSC,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rilvProjectionSc => value
@@ -4772,35 +4144,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_INTERLVPRJ, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_INTERLVPRJ, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTERLVPRJ,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rilvProjection => value
@@ -4857,35 +4205,11 @@ CONTAINS
 
   ! local variables
   TYPE(t_collctValue), POINTER :: p_rvalue
-  INTEGER :: ilv
-  
-  ilv = 0
-  IF (PRESENT(ilevel)) ilv = ilevel
-  
-  ! Get the parameter
-  IF (PRESENT(ssectionName)) THEN
-    CALL collct_fetchparameter_direct (rcollection, ssectionName, ilv, &
-                                       sparameter, p_rvalue) 
-  ELSE
-    CALL collct_fetchparameter_direct (rcollection, '', ilv, &
-                                       sparameter, p_rvalue) 
-  END IF
-  
-  ! Add the value if necessary
-  IF (.NOT. ASSOCIATED(p_rvalue)) THEN
-    IF (badd) THEN
-      IF (PRESENT(ssectionName)) THEN
-        CALL collct_addvalue (rcollection, ssectionName, sparameter, &
-                              COLLCT_COLLECTION, ilv, p_rvalue)
-      ELSE
-        CALL collct_addvalue (rcollection, '', sparameter, &
-                              COLLCT_COLLECTION, ilv, p_rvalue)
-      END IF
-    ELSE
-      PRINT *,'Error: Parameter ',sparameter,' does not exist!'
-      STOP
-    END IF
-  END IF
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_COLLECTION,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
   p_rvalue%p_rcollection => value

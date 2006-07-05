@@ -330,6 +330,8 @@ MODULE linearsolver
   USE vanca
   USE globalsystem
   
+  !USE matrixio
+  
   IMPLICIT NONE
 
 ! *****************************************************************************
@@ -578,7 +580,7 @@ MODULE linearsolver
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! RHS-vector is treated as zero if max(defect) < drhsZero
-    REAL(DP)                        :: drhsZero = 1E-12_DP
+    REAL(DP)                        :: drhsZero = 1E-90_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Type of stopping criterion to use. One of the
@@ -3502,6 +3504,12 @@ CONTAINS
     ! This means: Convert the structure-7 matrix to a structure-9 matrix:
     CALL lsyssc_convertMatrix (p_rmatrix,LSYSSC_MATRIX9)
   END SELECT
+
+  !!! DEBUG
+  !CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
+  !WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
+  !CALL matio_writeMatrixHR (p_rmatrix, 'matrix',&
+  !                          .TRUE., 0, 'matrix.txt', '(D10.3)')
 
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
   CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1)

@@ -1285,7 +1285,7 @@ CONTAINS
                                p_IneighboursAtElementFine)
           CALL mlprj_interpUniformQ0_double (p_DuCoarse,p_DuFine, &
                p_IneighboursAtElementFine, &
-               p_rtriaCoarse%NEL,p_rtriaFine%NEL)
+               p_rtriaCoarse%NEL)
                
         CASE (EL_Q1)
           ! Q1 interpolation
@@ -1814,7 +1814,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_interpUniformQ0_double (DuCoarse,DuFine, &
-               IneighboursAtElementFine, NELcoarse, NELfine)
+               IneighboursAtElementFine, NELcoarse)
   
 !<description>
   ! Interpolates a solution vector from a fine grid to a coarse grid.
@@ -1830,9 +1830,6 @@ CONTAINS
   
   ! Number of elements in the coarse grid
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
-
-  ! Number of elements in the fine grid
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
 !</input>
   
 !<output>
@@ -1852,7 +1849,7 @@ CONTAINS
     ! be 'collected'.
     
     ! Loop over the elements to collect the missing additive contributions:
-    DO iel=NELcoarse+1,NELfine
+    DO iel=1,NELcoarse
     
       ! Get the elements on the fine grid that are children of the
       ! coarse grid element

@@ -366,7 +366,12 @@ CONTAINS
     
     ! Relative convergence criterion? Multiply with initial residuum
     ! and check the norm. 
-    IF (rsolverNode%DepsRel(i) .NE. 0.0_DP) THEN
+    ! If the initial defect is 0, this rule is not to be applied!
+    ! (May happen in the first step of 'flow around cylinder'
+    !  where we have only convection in the X-direction, not in the Y-direction
+    !  and a still fluid.)
+    IF ((rsolverNode%DepsRel(i) .NE. 0.0_DP) .AND. &
+        (rsolverNode%dinitialDefect(i) .NE. 0.0_DP)) THEN
       IF (DvecNorm(i) .GT. &
           rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i)) THEN
         loutput = .FALSE.
@@ -462,7 +467,12 @@ CONTAINS
     
     ! Relative divergence criterion? Multiply with initial residuum
     ! and check the norm. 
-    IF (rsolverNode%DepsRel(i) .NE. SYS_INFINITY) THEN
+    ! If the initial defect is 0, this rule is not to be applied!
+    ! (May happen in the first step of 'flow around cylinder'
+    !  where we have only convection in the X-direction, not in the Y-direction
+    !  and a still fluid.)
+    IF ((rsolverNode%DinitialDefect(i) .NE. 0.0_DP) .AND. &
+        (rsolverNode%DepsRel(i) .NE. SYS_INFINITY)) THEN
       IF ( .NOT. (DvecNorm(i) .LE. &
           rsolverNode%DinitialDefect(i) * rsolverNode%DdivRel(i)) ) THEN
         loutput = .TRUE.
@@ -803,12 +813,16 @@ CONTAINS
     
       ! Let's do the nonlinear loop...
       !
+      ! Initialise the domega-value for the damping of the correction
+      ! as prescribed by the parameters of the solver.
+      ! The callback routines might change it...
+      domega = rsolverNode%domega
+      
       ! Perform at most nmaxIterations iterations
       DO ite = 1,rsolverNode%nmaxIterations
         rsolverNode%icurrentIteration = ite
       
         ! Perform preconditioning on the defect vector:  u = J^{-1} d
-        domega = rsolverNode%domega
         SELECT CASE (rsolverNode%cpreconditioner)
         CASE (NLSOL_PREC_MATRIX)
           ! Multiplication with a matrix.
@@ -829,8 +843,10 @@ CONTAINS
           ! User defined or no preconditioning.
           ! Is a callback function available?
           IF (PRESENT(fcb_precondDefect)) THEN
-            ! The callback routine is allowed to change domega if necessary.
-            CALL fcb_precondDefect (rd,rx,domega,p_rcollection)
+            ! The callback routine is allowed to change domega during the
+            ! iteration if necessary. The nonlinear solver here does not touch
+            ! domega anymore, so the callback routine is the only one changing it.
+            CALL fcb_precondDefect (rd,rx,rb,domega,p_rcollection)
           END IF
           
         END SELECT

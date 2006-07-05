@@ -43,6 +43,10 @@ MODULE poisson_method4
   
   IMPLICIT NONE
   
+  ! Maximum allowed level in this application; must be =9 for 
+  ! FEAT 1.x compatibility (still)!
+  INTEGER, PARAMETER :: NNLEV = 9
+
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
@@ -73,8 +77,8 @@ MODULE poisson_method4
 
   TYPE t_problem
   
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+    ! NLMAX receives the level where we want to solve
+    INTEGER :: NLMAX
 
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
@@ -87,7 +91,7 @@ MODULE poisson_method4
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
-    ! only one level supported, identified by LV!
+    ! only one level supported, identified by NLMAX!
     TYPE(t_problem_lvl), DIMENSION(1) :: RlevelInfo
     
     ! A collection object that saves structural data and some 
@@ -139,7 +143,7 @@ CONTAINS
     CHARACTER(LEN=60) :: CFILE
 
     ! Initialise the level in the problem structure
-    rproblem%LV = ilv
+    rproblem%NLMAX = ilv
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -155,7 +159,7 @@ CONTAINS
     CALL GENPAR (.TRUE.,IMESH,CFILE)
 
     ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level LV...
+    ! Refine it to level NLMAX...
     CFILE = './pre/QUAD.tri'
     CALL INMTRI (2,TRIAS,ilv,ilv,0,0,CFILE)
     
@@ -868,8 +872,8 @@ CONTAINS
     ! Release the old FEAT 1.x handles.
     ! Get the old triangulation structure of level ilv from the
     ! FEAT2.0 triangulation:
-    TRIAS(:,rproblem%LV) = rproblem%RlevelInfo(1)%p_rtriangulation%Itria
-    CALL DNMTRI (rproblem%LV,rproblem%LV,TRIAS)
+    TRIAS(:,rproblem%NLMAX) = rproblem%RlevelInfo(1)%p_rtriangulation%Itria
+    CALL DNMTRI (rproblem%NLMAX,rproblem%NLMAX,TRIAS)
     
     ! then the FEAT 2.0 stuff...
     CALL tria_done (rproblem%RlevelInfo(1)%p_rtriangulation)
@@ -910,17 +914,19 @@ CONTAINS
   ! 6.) Solve the problem
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
+!</description>
 
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+!</subroutine>
+
+    ! NLMAX receives the level where we want to solve
+    INTEGER :: NLMAX
     
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
     
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
-
-    LV = 7
+    NLMAX = 7
     
     ! Initialise the collection.
     CALL collct_init (rproblem%rcollection)
@@ -928,7 +934,7 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm4_initParamTriang (LV,rproblem)
+    CALL pm4_initParamTriang (NLMAX,rproblem)
     CALL pm4_initDiscretisation (rproblem)    
     CALL pm4_initMatVec (rproblem)    
     CALL pm4_initAnalyticBC (rproblem)   

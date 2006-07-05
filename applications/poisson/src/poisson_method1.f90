@@ -28,6 +28,10 @@ MODULE poisson_method1
   
   IMPLICIT NONE
 
+  ! Maximum allowed level in this application; must be =9 for 
+  ! FEAT 1.x compatibility (still)!
+  INTEGER, PARAMETER :: NNLEV = 9
+
 CONTAINS
 
   ! ***************************************************************************
@@ -54,6 +58,9 @@ CONTAINS
   ! 6.) Solve the problem
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
+!</description>
+
+!</subroutine>
 
     ! Definitions of variables.
     !
@@ -66,7 +73,7 @@ CONTAINS
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
     
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
@@ -106,8 +113,8 @@ CONTAINS
     TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+    ! NLMAX receives the level where we want to solve.
+    INTEGER :: NLMAX
     
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
@@ -122,8 +129,7 @@ CONTAINS
     ! Ok, let's start. 
     !
     ! We want to solve our Laplace problem on level...
-
-    LV = 7
+    NLMAX = 7
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -139,9 +145,9 @@ CONTAINS
     CALL GENPAR (.TRUE.,IMESH,CFILE)
 
     ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level LV...
+    ! Refine it to level NLMAX...
     CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,lv,lv,0,0,CFILE)
+    CALL INMTRI (2,TRIAS,NLMAX,NLMAX,0,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
@@ -149,7 +155,7 @@ CONTAINS
     !
     ! Set p_rtriangulation to NULL() to create a new structure on the heap.
     NULLIFY(p_rtriangulation)
-    CALL tria_wrp_tria2Structure(TRIAS(:,lv),p_rtriangulation)
+    CALL tria_wrp_tria2Structure(TRIAS(:,NLMAX),p_rtriangulation)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -408,7 +414,7 @@ CONTAINS
     CALL tria_done (p_rtriangulation)
     
     ! and then the old FEAT 1.x handles.
-    CALL DNMTRI (LV,LV,TRIAS)
+    CALL DNMTRI (NLMAX,NLMAX,TRIAS)
     
     ! Finally release the domain, that's it.
     CALL boundary_release (p_rboundary)

@@ -183,37 +183,6 @@ MODULE linearsystemscalar
 
 !<constantblock description="Constants for duplicating a matrix">
   
-  ! Duplicate by ownership. What belongs to the matrix is duplicated,
-  ! what belongs to another matrix is left as-is.
-  !INTEGER, PARAMETER :: LSYSSC_DUP_ASIS      = 0
-
-  ! Duplicate nothing, simply copy the structure and mark the handles
-  ! as belonging to another matrix.
-  INTEGER, PARAMETER :: LSYSSC_DUP_NONE      = 1
-
-  ! Copy the handles of the structure and mark them as belonging to
-  ! another matrix. No content is created.
-  INTEGER, PARAMETER :: LSYSSC_DUP_STRNOCONT = 2
-
-  ! Duplicate the content, share the structure
-  INTEGER, PARAMETER :: LSYSSC_DUP_CONTENT   = 3
-
-  ! Duplicate the structure, share the content
-  INTEGER, PARAMETER :: LSYSSC_DUP_STRUCTURE = 4
-
-  ! Duplicate both, structure and content
-  INTEGER, PARAMETER :: LSYSSC_DUP_ALL       = 10
-  
-  ! Allocate memory for the matrix structure in the same size as the original
-  ! matrix. No content is created.
-  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYSTRUC = 6
-
-  ! Allocate memory for the matrix structure and content in the same size 
-  ! as the original matrix.
-  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTYALL   = 9
-  
-  ! ------------
-  
   ! Don't set up the content/structure of the destination matrix, ignore
   ! any previous structure/content
   INTEGER, PARAMETER :: LSYSSC_DUP_IGNORE = 0

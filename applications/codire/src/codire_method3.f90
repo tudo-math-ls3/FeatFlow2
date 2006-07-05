@@ -71,8 +71,8 @@ MODULE codire_method3
 
   TYPE t_problem
   
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+    ! NLMAX receives the level where we want to solve
+    INTEGER :: NLMAX
 
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
@@ -137,7 +137,7 @@ CONTAINS
     CHARACTER(LEN=60) :: CFILE
 
     ! Initialise the level in the problem structure
-    rproblem%LV = ilv
+    rproblem%NLMAX = ilv
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -856,8 +856,8 @@ CONTAINS
     ! Release the old FEAT 1.x handles.
     ! Get the old triangulation structure of level ilv from the
     ! FEAT2.0 triangulation:
-    TRIAS(:,rproblem%LV) = rproblem%RlevelInfo(1)%p_rtriangulation%Itria
-    CALL DNMTRI (rproblem%LV,rproblem%LV,TRIAS)
+    TRIAS(:,rproblem%NLMAX) = rproblem%RlevelInfo(1)%p_rtriangulation%Itria
+    CALL DNMTRI (rproblem%NLMAX,rproblem%NLMAX,TRIAS)
     
     ! then the FEAT 2.0 stuff...
     CALL tria_done (rproblem%RlevelInfo(1)%p_rtriangulation)
@@ -898,18 +898,18 @@ CONTAINS
   ! 6.) Solve the problem
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
+!</description>
+
+!</subroutine>
 
     ! A paramlist structure with parameters from the dat file
     TYPE(t_parlist) :: rparams
 
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+    ! NLMAX receives the level where we want to solve
+    INTEGER :: NLMAX
     
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
-    
-    ! A temporary string
-    CHARACTER(LEN=10) :: Sstr
     
     ! Ok, let's start. 
     ! Initialise the collection.
@@ -924,14 +924,12 @@ CONTAINS
     CALL collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .TRUE.)
 
     ! We want to solve our Laplace problem on level...
-
-    CALL parlst_getvalue_string (rparams, 'GENERAL', 'NLMAX', Sstr, '7')
-    READ(Sstr,*) LV
+    CALL parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
     
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm2_initParamTriang (LV,rproblem)
+    CALL pm2_initParamTriang (NLMAX,rproblem)
     CALL pm2_initDiscretisation (rproblem)    
     CALL pm2_initMatVec (rproblem,rparams)    
     CALL pm2_initAnalyticBC (rproblem)   

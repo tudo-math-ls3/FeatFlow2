@@ -35,6 +35,10 @@ MODULE poisson_method2
   
   IMPLICIT NONE
 
+  ! Maximum allowed level in this application; must be =9 for 
+  ! FEAT 1.x compatibility (still)!
+  INTEGER, PARAMETER :: NNLEV = 9
+
 CONTAINS
 
   ! ***************************************************************************
@@ -74,7 +78,7 @@ CONTAINS
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
     ! Variable for a filename:  
     CHARACTER(LEN=60) :: CFILE
@@ -93,7 +97,7 @@ CONTAINS
     CALL GENPAR (.TRUE.,IMESH,CFILE)
 
     ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level LV...
+    ! Refine it to level NLMAX...
     CFILE = './pre/QUAD.tri'
     CALL INMTRI (2,TRIAS,ilv,ilv,0,0,CFILE)
     
@@ -796,7 +800,7 @@ CONTAINS
 !</subroutine>
 
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,20) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
@@ -855,9 +859,12 @@ CONTAINS
   ! 6.) Solve the problem
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
+!</description>
 
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+!</subroutine>
+
+    ! NLMAX receives the level where we want to solve.
+    INTEGER :: NLMAX
     
     ! A collection structure for our problem
     TYPE(t_collection) :: rcollection
@@ -865,7 +872,7 @@ CONTAINS
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
 
-    LV = 7
+    NLMAX = 7
     
     ! Initialise the collection.
     CALL collct_init (rcollection)
@@ -873,7 +880,7 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm2_initParamTriang (LV,rcollection)
+    CALL pm2_initParamTriang (NLMAX,rcollection)
     CALL pm2_initDiscretisation (rcollection)    
     CALL pm2_initMatVec (rcollection)    
     CALL pm2_initAnalyticBC (rcollection)   
@@ -892,7 +899,7 @@ CONTAINS
     CALL pm2_doneMatVec (rcollection)
     CALL pm2_doneBC (rcollection)
     CALL pm2_doneDiscretisation (rcollection)
-    CALL pm2_doneParamTriang (LV,rcollection)
+    CALL pm2_doneParamTriang (NLMAX,rcollection)
     
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *

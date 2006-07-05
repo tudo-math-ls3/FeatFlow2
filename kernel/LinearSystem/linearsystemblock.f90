@@ -1868,7 +1868,7 @@ CONTAINS
   TYPE(t_vectorScalar), INTENT(IN) :: rscalarVec
 
   ! OPTIONAL: A block discretisation structure.
-  ! A pointer to this will be saved to the matrix.
+  ! A pointer to this will be saved to the vector.
   TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
 !</input>
 
@@ -1944,6 +1944,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: cdata,h_Ddata,i
+  LOGICAL :: biscopy
   INTEGER(PREC_VECIDX) :: istart,n !,length
 
 !  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
@@ -1973,6 +1974,7 @@ CONTAINS
     cdata = rvector%cdataType
     h_Ddata = rvector%h_Ddata
     istart = rvector%iidxFirstEntry
+    biscopy = rvector%bisCopy
     
     ! Overwrite rvector
     rvector = rtemplateVec
@@ -1981,6 +1983,7 @@ CONTAINS
     rvector%cdataType = cdata
     rvector%h_Ddata = h_Ddata
     rvector%iidxFirstEntry = istart
+    rvector%bisCopy = biscopy
     
     ! Relocate the starting indices of the subvectors.
     n = istart

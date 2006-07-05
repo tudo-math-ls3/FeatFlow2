@@ -23,10 +23,10 @@
     INTEGER, INTENT(IN)                           :: ite
   
     ! Current iteration vector
-    TYPE(t_vectorBlock), INTENT(IN)               :: rx
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx
 
     ! Right hand side vector of the equation.
-    TYPE(t_vectorBlock), INTENT(IN)               :: rb
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rb
   !</input>
                
   !<inputoutput>
@@ -36,7 +36,7 @@
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
-    TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
+    TYPE(t_vectorBlock), INTENT(INOUT), TARGET    :: rd
   !</inputoutput>
   
     END SUBROUTINE
@@ -47,7 +47,7 @@
 
   INTERFACE 
   
-    SUBROUTINE fcb_precondDefect (rd,rx,domega,p_rcollection)
+    SUBROUTINE fcb_precondDefect (rd,rx,rb,domega,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -62,24 +62,28 @@
 
   !<inputoutput>
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
+    TYPE(t_vectorBlock), INTENT(INOUT), TARGET    :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
     TYPE(t_collection), POINTER                   :: p_rcollection
     
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
-    ! on call to the callback routine.
+    ! on the first call to the callback routine.
     ! The callback routine can modify this parameter according to any suitable
     ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
+    ! domega will stay at this value until it's changed again.
     REAL(DP), INTENT(INOUT)                       :: domega
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
-    TYPE(t_vectorBlock), INTENT(IN)               :: rx
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx
+
+    ! Current right hand side of the nonlinear system
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rb
   !</input>
 
     END SUBROUTINE
@@ -109,13 +113,13 @@
     INTEGER, INTENT(IN)                           :: ite
   
     ! Current iteration vector
-    TYPE(t_vectorBlock), INTENT(IN)               :: rx
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx
 
     ! Right hand side vector of the equation.
-    TYPE(t_vectorBlock), INTENT(IN)               :: rb
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rb
 
     ! Defect vector b-A(x)x.
-    TYPE(t_vectorBlock), INTENT(IN)               :: rd
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.

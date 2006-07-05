@@ -63,7 +63,7 @@ MODULE burgers1d_method5
   
   ! Maximum allowed level in this application; must be =9 for 
   ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NLMAX = 9
+  INTEGER, PARAMETER :: NNLEV = 9
   
 !<types>
 
@@ -114,7 +114,7 @@ MODULE burgers1d_method5
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by LV!
-    TYPE(t_problem_lvl), DIMENSION(NLMAX) :: RlevelInfo
+    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
     
     ! A collection structure with problem-dependent data
     TYPE(t_collection) :: rcollection
@@ -158,7 +158,7 @@ CONTAINS
   INTEGER :: i
   
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
     ! Variable for a filename:  
     CHARACTER(LEN=60) :: CFILE
@@ -734,7 +734,7 @@ CONTAINS
     
   ! ***************************************************************************
 
-    SUBROUTINE b1d5_precondDefect (rd,rx,domega,p_rcollection)
+    SUBROUTINE b1d5_precondDefect (rd,rx,rb,domega,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -757,32 +757,29 @@ CONTAINS
     TYPE(t_collection), POINTER                   :: p_rcollection
     
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
-    ! on call to the callback routine.
+    ! on the first call to the callback routine.
     ! The callback routine can modify this parameter according to any suitable
     ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
+    ! domega will stay at this value until it's changed again.
     REAL(DP), INTENT(INOUT)                       :: domega
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
     TYPE(t_vectorBlock), INTENT(IN)               :: rx
+
+    ! Current right hand side of the nonlinear system
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rb
   !</input>
   
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    INTEGER :: ierror,ilvmax
+    INTEGER :: ierror
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
   
-      ! Get maximum level from the collection
-      ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
-
-      ! Get the system matrix on the maximum level
-      p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
-
       ! Our 'parent' (the caller of the nonlinear solver) has prepared
       ! a preconditioner node for us (a linear solver with symbolically
       ! factorised matrices). Get this from the collection.
@@ -1075,7 +1072,7 @@ CONTAINS
   INTEGER :: ilvmax
 
     ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NLMAX) :: TRIAS
+    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
     ilvmax=rproblem%ilvmax
       
@@ -1126,9 +1123,12 @@ CONTAINS
   ! 6.) Solve the problem
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
+!</description>
 
-    ! LV receives the level where we want to solve
-    INTEGER :: LV
+!</subroutine>
+
+    ! NLMAX receives the level where we want to solve
+    INTEGER :: NLMAX
     
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
@@ -1138,7 +1138,7 @@ CONTAINS
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
 
-    LV = 7
+    NLMAX = 7
     
     ! Initialise the collection
     CALL collct_init (rproblem%rcollection)
@@ -1148,9 +1148,8 @@ CONTAINS
 
     ! So now the different steps - one after the other.
     !
-    ! Initialisation. Pass LV as minimum and maximum level, so
-    ! we calculate only on the finest mesh.
-    CALL b1d5_initParamTriang (LV,rproblem)
+    ! Initialisation.
+    CALL b1d5_initParamTriang (NLMAX,rproblem)
     CALL b1d5_initDiscretisation (rproblem)    
     CALL b1d5_initMatVec (rproblem)    
     CALL b1d5_initAnalyticBC (rproblem)   
