@@ -18,7 +18,7 @@
 for i in $@ 
   do 
   j=`basename $i .f90`
-  iuse=`awk '/^[ ]*(U|u)(S|s)(E|e)/ {printf("$(MODDIR)/%s.mod\n",$2);}' $i | sort -u | tr -s "\'\n" " " `
+  iuse=`awk '/^[ ]*(U|u)(S|s)(E|e)/ {printf("$(MODDIR)/%s.mod\n",$2);}' $i | sort -u | tr -d "," | tr -s "\'\n" " " `
   iinc=`awk '/^[ ]*(I|i)(N|n)(C|c)(L|l)(U|u)(D|d)(E|e)/ {print($2);}' $i | sort -u | tr -s "\'\n" " " `
   printf "\$(OBJDIR)/${j}.o \$(MODDIR)/${j}.mod: ${i} ${iuse} ${iinc}\n"
 done
