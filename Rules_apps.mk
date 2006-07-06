@@ -71,6 +71,7 @@ Deps.mk: $(SRC) $(INC)
 	@echo "Recomputing the include dependency file Deps.mk"
 	@($(FEATFLOW)/bin/f77mkdep.sh $(filter %.f,$^) >$@)
 	@($(FEATFLOW)/bin/f90mkdep.sh $(filter %.f90,$^) >>$@)
+	@($(FEATFLOW)/bin/libmkdep.sh $@ $(INCDIR))
 
 clean:
 	-rm -f Deps.mk
