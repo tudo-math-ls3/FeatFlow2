@@ -17,14 +17,8 @@ all: greet lib
 greet:
 	@echo "Compiling library" $(LIBNAME) "in"
 	@pwd
-	@echo "Please note that this library may cause some problems on different"
-	@echo "architectures and therefore is not included in the list of standard"
-	@echo "libraries. Due to the fact that this library strongly depends on the."
-	@echo "underlying hardware, the original configure procedure has not been"
-	@echo "replaced. In contrast, a pseudo installation is performed and the"
-	@echo "required libraries are copied to their Feat-style directories."
 
-lib: | prepare configure build $(LIB)
+lib: prepare configure $(LIB) 
 
 prepare:
 ifeq ($(shell test ! -d ./$(ID) && echo 1),1)
@@ -35,30 +29,43 @@ endif
 configure: prepare
 ifeq ($(shell test ! -f ./$(ID)/$(LIBNAME)-$(LIBVERSION)/config.status && echo 1),1)
 	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) &&\
-	env CC=$(CC) env F9X=$(FC) ./configure --enable-fortran --disable-cxx \
+        env CC=$(CC) env F9X=$(FC) ./configure --enable-fortran --disable-cxx \
 	--disable-shared --disable-fast-install --disable-debug --disable-parallel \
 	--with-zlib=$(PWD)/../zlib/include,$(PWD)/$(LIBDIR) \
-	--with-szlib=$(PWD)/../sz/include,$(PWD)/$(LIBDIR)  \
-	--prefix=$(PWD)/$(ID)/tmpinstall )
+	--with-szlib=$(PWD)/../sz/include,$(PWD)/$(LIBDIR) )
 endif
 
-build: configure
-ifeq ($(shell test ! -d ./$(ID)/tmpinstall && echo 1),1)
-	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) && $(MAKE) lib && \
-	cd ./src && $(MAKE) install && \
-	cd ../fortran && $(MAKE) install )
+libhdf5: configure
+ifeq ($(shell test ! -f ./$(ID)/$(LIBNAME)-$(LIBVERSION)/src/.libs/libhdf5.a && echo 1),1)
+	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION)/src &&\
+	make lib )
 endif
 
-$(LIB): build
+libhdf5_hl: configure
+ifeq ($(shell test ! -f ./$(ID)/$(LIBNAME)-$(LIBVERSION)/hl/src/.libs/libhdf5_hl.a && echo 1),1)
+	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION)/hl/src &&\
+	make lib )
+endif
+
+libhdf5_fortran: configure
+ifeq ($(shell test ! -f ./$(ID)/$(LIBNAME)-$(LIBVERSION)/fortran/src/.libs/libhdf5_fortran.a && echo 1),1)
+	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION)/fortran/src &&\
+	make lib )
+endif
+
+$(LIB): libhdf5 libhdf5_hl libhdf5_fortran
 	@mkdir -p $(LIBDIR)
-	@cp $(PWD)/$(ID)/tmpinstall/lib/$(LIBNAME:%=lib%*.a) $(LIBDIR)
-	@cp $(PWD)/$(ID)/tmpinstall/lib/*.mod $(LIBDIR)
+	@cp $(PWD)/$(ID)/$(LIBNAME)-$(LIBVERSION)/src/.libs/$(LIBNAME:%=lib%*.a) $(LIBDIR)
+	@cp $(PWD)/$(ID)/$(LIBNAME)-$(LIBVERSION)/hl/src/.libs/$(LIBNAME:%=lib%*.a) $(LIBDIR)
+	@cp $(PWD)/$(ID)/$(LIBNAME)-$(LIBVERSION)/fortran/src/.libs/$(LIBNAME:%=lib%*.a) $(LIBDIR)
+	@cp $(PWD)/$(ID)/$(LIBNAME)-$(LIBVERSION)/fortran/src/*.mod $(LIBDIR)
 
 clean:
 	-rm -r -f ./$(ID)
 
 purge: clean
 	-rm -f $(LIB)
+	-rm -f $(LIBDIR)/h5*.mod
 
 purge_all: clean
 	-rm -f $(FEATFLOW)/object/libraries/lib-*/$(LIBNAME:%=lib%*.a)
