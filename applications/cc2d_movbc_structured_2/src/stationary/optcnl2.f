@@ -270,7 +270,7 @@ C            ~= -------------------------------------------------
 C                  < T(u^l-omegaold*Y)Y , T(u^l-omegaold*Y)Y >
 C
 C     when choosing omegaold=previous omega, which is a good choice
-C     as one can see by linearization (see p. 170, Turek's book).
+C     as one can see by linearization (see p. 187 (170), Turek's book).
 C
 C     Here, ||.||_E denotes the the Euclidian norm to the Euclidian 
 C     scalar product <.,.>.

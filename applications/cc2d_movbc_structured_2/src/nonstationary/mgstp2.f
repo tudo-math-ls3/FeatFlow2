@@ -464,7 +464,7 @@ C       a lot of stuff: New system matrices have to be generated,
 C       new RHS have to be generated,...
 
 C***********************************************************************
-C       The Nav.St.-Equation (cf. p. 43, Turek's book)
+C       The Nav.St.-Equation (cf. p. 38 (43), Turek's book)
 C
 C           u_t + N(u)u + grad(p) = f,   div(u)=0
 C
@@ -512,7 +512,7 @@ C       which notation we use. The assembling of the right-hand-side
 C       vector for the nonlinear iteration is based on the vector f^n
 C       (currently in DRHS), f^n+1 (which has to be created)
 C       and the nonlinear term depending on the current solution 
-C       (see page 151/152 in Turek's CFD-book):  
+C       (see page 165/166 (151/152) in Turek's CFD-book):  
 C
 C       [I - theta_1 k N(u^n)]u^n + Theta_2 k f^(n+1) + Theta_3 k f^n
 C
@@ -567,8 +567,8 @@ C               beta  = FBETA  = Theta/(1-Theta)
 C               Theta = 1-2/sqrt(2)
 C               Theta'= (1-2Theta)
 C
-C         WARNING: The documentation on page 151 in Turek's book on the
-C          Theta Scheme is different as implemented here!!!
+C         WARNING: The documentation on page 165 (151) in Turek's book 
+C          on the Theta Scheme is different as implemented here!!!
 C          This version of the Theta Scheme has never been published,
 C          but was derived independently of Glowinski by Rannacher/
 C          Turek! It makes more sense than the Glowinski-scheme
@@ -631,8 +631,8 @@ C       f^n in the current time step:
 C         We use the DAUX vector for assembling the RHS. 
 C
 C         We go "from back to front" when adding the terms
-C         to the RHS in the Theta scheme (cf. p. 150, Turek's book).
-C         Take the current RHS f^n, weight it according 
+C         to the RHS in the Theta scheme (cf. p. 164 (150), Turek's 
+C         book). Take the current RHS f^n, weight it according 
 C         to the Theta-scheme with (1-Theta)*k and write it into DAUX
 C         as start point of the assembling.
 
@@ -1181,7 +1181,7 @@ C       nonlinear solver to TMWGH from our time stepping scheme.
 C       This is the weight for the N(.) matrix on the left hand side
 C       of the equation! As example to identify it, we consider the
 C       equation in the first step of the Fractional-Step Theta-
-C       scheme (cf. p. 153, Turek's book):
+C       scheme (cf. p. 167 (153), Turek's book):
 C
 C          [ I + alpha k Theta A_(n+theta) ] u_(n+Theta)  =  RHS
 C                ^^^^^^^^^^^^^ ^^^^^^^^^^^

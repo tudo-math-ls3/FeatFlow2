@@ -315,7 +315,7 @@ C       current element IEL:
         IF (IER.LT.0) GOTO 99999
 
 C       Determine local DELTA for streamline-diffusion
-C       (cf. p. 121 in Turek's CFD book).
+C       (cf. p. 131/132 (121) in Turek's CFD book).
 C
 C       For Stokes flow, we have the equation
 C
@@ -996,7 +996,7 @@ C       current element IEL:
         IF (IER.LT.0) GOTO 99999
 
 C       Determine local DELTA for streamline-diffusion
-C       (cf. p. 121 in Turek's CFD book).
+C       (cf. p. 131/132 (121) in Turek's CFD book).
 C
 C       For Stokes flow, we have the equation
 C
@@ -1503,7 +1503,7 @@ C       HLOCAL = h = h_T on our element T=IEL:
 
         CALL HLOCLX (HLOCAL,UNORM, DU1, DU2, IEL, KVERT,KMID,DCORVG)
 
-C       Calculate DELTA... (cf. p. 121 in Turek's CFD book)
+C       Calculate DELTA... (cf. p. 131/132 (121) in Turek's CFD book)
 
         IF (UPSAM.LT.0D0) THEN
 
@@ -2052,7 +2052,7 @@ C       of the current element IEL with respect to E011:
         END IF
 
 C       Determine local DELTA for streamline-diffusion
-C       (cf. p. 121 in Turek's CFD book).
+C       (cf. p. 131/132 (121) in Turek's CFD book).
 C
 C       For Stokes flow, we have the equation
 C
@@ -2816,7 +2816,7 @@ C       of the current element IEL with respect to E011:
         END IF
 
 C       Determine local DELTA for streamline-diffusion
-C       (cf. p. 121 in Turek's CFD book).
+C       (cf. p. 131/132 (121) in Turek's CFD book).
 C
 C       For Stokes flow, we have the equation
 C

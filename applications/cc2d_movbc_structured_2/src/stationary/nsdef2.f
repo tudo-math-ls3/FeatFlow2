@@ -371,7 +371,7 @@ C
 C       This overall procedure then results in a matrix for the
 C       "linearizes Navier Stokes" equation, i.e. the Oseen equation.
 C       This matrix is later used as a preconditioner for the defect
-C       vector (cf. p. 168, Turek's book).
+C       vector (cf. p. 184 (168), Turek's book).
 C
 C       Additionally to setting up the nonlinear part, also update
 C       the defect vector; subtract (Nonliner Part)*(Solution) to
@@ -555,7 +555,7 @@ C=======================================================================
 
 C     Now we start with the actual nonlinear iteration to solve the
 C     problem. Out problem is to find a solution u that fulfills
-C     (cf p. 163 in Turek's book):
+C     (cf p. 178 (163) in Turek's book):
 C
 C         T(u)u = f
 C
@@ -873,7 +873,7 @@ C         by unit vectors.
 
 C=======================================================================
 C     Ok, small summary - what have we calculated up to now and where?
-C     (cf. p. 164 in Turek's book)
+C     (cf. p. 179 (164) in Turek's book)
 C
 C     DWORK(KD)    ->  currently contains d^l = T(u^l)-f,
 C                      was calculated with XMADF4 at the beginning.

@@ -574,7 +574,7 @@ C           mean pressure value:
             PMEAN = FDATIN(7,INPR,DPAR,DPAR,TIMENS,RE,
      *              IMT,TRIA,IPARAM,DPARAM,IGEOM,DGEOM)
      
-C           Include that into the RHS vectors - cf. p. 235 in 
+C           Include that into the RHS vectors - cf. p. 257 (235) in 
 C           Turek's book.
 C           The pressure drop condition is a time independent
 C           right hand side condition! Therefore it's not dependent
