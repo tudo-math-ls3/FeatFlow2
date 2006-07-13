@@ -1,0 +1,122 @@
+# ------------------------------------------------------------------------
+# Linear solver
+#
+# This file contains parameters that configure the behavious of
+# the linear sub-solver for CCxD.
+# ------------------------------------------------------------------------
+
+# ========================================================================
+# The following section describes the parameters of the multigrid solver.
+# When a parameter is deleted or commented out, the standard value is used.
+#
+# The first couple of parameters are valid for all types of linear solvers:
+
+##############
+[CC-MULTIGRID]
+##############
+
+# Type identifier of the solver.
+# 9=Multigrid
+
+isolverType = 9
+
+# Minimum number of steps
+
+iminIterations     = 2
+
+# Maximum number of steps
+
+imaxIterations     = 10
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 0.1
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 0.1
+
+# General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
+# not used if MG is the linear solver.
+
+domega             = 1.0
+
+# Output level of the solver
+
+ioutputLevel       = 1
+
+# ------General multigrid parameters, coarse grid correction--------------
+#
+# The following parameters are multigrid specific
+#
+# Cycle identifier. 0=F-cycle, 1=V-cycle, 2=W-cycle
+
+icycle             = 0
+
+# lower limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=-10.0
+
+dalphaMin          = -10.0
+
+# upper limit for optimal MG-ALPHA; 
+# controls damping of coarse grid correction; Standard=10.0
+
+dalphaMax          = 10.0
+
+# Name of the pre- and post-smoother. This is the name of another 
+# subsection in this file which describes the actual smoother.
+# Both names can be identical, then the same configuration is used
+# as pre- and postsmoother.
+
+spreSmootherName   = 'CC-VANCA2DQ1TP0'
+spostSmootherName  = 'CC-VANCA2DQ1TP0'
+
+# Name of the coarse grid solver. This is the name of another 
+# subsection in this file which describes the actual smoother.
+
+scoarseGridSolver  = 'CC-UMFPACK'
+
+# ========================================================================
+# The following section describes the parameters of the VANCA smoother.
+# When a parameter is deleted or commented out, the standard value is used.
+
+#################
+[CC-VANCA2DQ1TP0]
+#################
+
+# Type identifier of the solver that should be used as smoother.
+# 54=Vanca
+
+isolverType        = 54
+
+# Subtype identifier of the smoother.
+# 0=general VANCA, 
+# 1=Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
+# discretisation
+
+isolverSubtype     = 1
+
+# Number of smoothing steps
+
+nsmoothingSteps    = 4
+
+# Relaxation parameter
+
+domega             = 0.7
+
+
+# ========================================================================
+# The following section describes the parameters of the UMFPACK solver.
+# When a parameter is deleted or commented out, the standard value is used.
+
+############
+[CC-UMFPACK]
+############
+
+# Type identifier of the smoother.
+# 11=UMFPACK
+
+isolverType        = 11

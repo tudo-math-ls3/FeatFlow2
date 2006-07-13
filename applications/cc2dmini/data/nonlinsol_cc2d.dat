@@ -1,0 +1,81 @@
+# ------------------------------------------------------------------------
+# Stationary nonlinear solver
+#
+# This file contains parameters configuring the (stationary)
+# nonlinear solver of CCxD type solver.
+# ------------------------------------------------------------------------
+
+################
+[CC2D-NONLINEAR]
+################
+
+# minimum number of nonlinear iterations; 
+# in nonstationary simulations: per time step; 
+# 1=standard
+# Former NLMIN.
+
+nminIterations     = 1
+
+# max number of nonlinear iterations; 
+# in nonstationary simulations: per time step.
+# Former NLMAX
+
+nmaxIterations     = 10
+
+# (absolute) limit for U-defects, standard = 1.0E-5
+
+depsD              = 1.0E-5
+
+# (absolute) limit for DIV-defects, standard = 1.0E-5
+
+depsDiv            = 1.0E-5
+
+# limit for U-changes, standard = 1.0E-5
+
+depsUR             = 1.0E-5
+
+# limit for P-changes, standard = 1.0E-5
+
+depsPR             = 1.0E-5
+
+# (relative) limit for defect improvement
+
+dDampingD          = 1.0E-1
+
+# Output level of the nonlinear solver
+
+ioutputLevel       = 2
+
+# ------------------------------------------------------------------------
+# Preconditioner in nonlinear defect correction
+
+# Type of preconditioner to use in nonlinear defect correction.
+# =0: Preconditioning with inverse mass matrix (not yet implemented),
+# =1: Preconditioning by linear solver, solving the linearised system,
+# =2: Preconditioning by Newton-Iteration (not yet implemented),
+
+itypePreconditioning = 1
+
+# If itypePreconditioning = 1: Name of the section in the file 
+# "linsol_cc2d.ini" that configures the linear solver to use for
+# preconditioning.
+
+slinearSolver        = 'CC-MULTIGRID'
+
+# ------------------------------------------------------------------------
+# Upper and lower bound for optimal damping parameter in nonlinear
+# defect correction. Set domegaMin=domegaMax=1.0 for no damping.
+
+# lower limit for opt. OMEGA in nonlinear defect correction, 
+# <0: no rel. changes
+
+domegaMin          = 0.0
+
+# upper limit for opt. OMEGA in nonlinear defect correction,
+# <0: no rel. changes
+
+domegaMax          = 2.0
+
+# initial value limit for opt. OMEGA in nonlinear defect correction
+
+domegaIni          = 1.0

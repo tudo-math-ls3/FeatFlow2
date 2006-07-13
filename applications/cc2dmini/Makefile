@@ -18,7 +18,10 @@ SRC = qtrafo.f \
       gmv2doutput.f initria.f inmtri.f quad2tri.f structria.f triutil2d.f
 
 # The f90 source files 
-SRC +=  cc2dmini_callback.f90 cc2dmini_method1.f90\
+SRC +=  cc2dmini_callback.f90 cc2dmini_method1.f90 \
+	cc2dminim2basic.f90 cc2dminim2init.f90 cc2dminim2boundary.f90 \
+	cc2dminim2discretisation.f90 cc2dminim2postprocessing.f90 \
+	cc2dminim2stationary.f90 cc2dmini_method2.f90\
         cc2dmini.f90
 
 # include the standart kernel sources

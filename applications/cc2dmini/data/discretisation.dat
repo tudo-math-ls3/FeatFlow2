@@ -1,0 +1,182 @@
+# ------------------------------------------------------------------------
+# Spatial discretization
+#
+# This file contains parameters about the spatial discretization
+# of the problem.
+# ------------------------------------------------------------------------
+
+###################
+[CC-DISCRETISATION]
+###################
+
+# Start vector of the iteration. 
+# =0: ZERO, <>0: read from CSTART; 
+# =1: sStart is start vector on level NLMAX,
+# =2: sStart is start vector on level NLMAX-1.
+# <0: sStart is formatted file
+# iStart             = 0
+
+# Name of file with the initial solution
+# sStart             = 'ns/DX4'
+
+# write file CSOL with solution on maximum level. 
+# 0=don't write, 1=unformatted, 2=formatted
+# iSolutionWrite     = 0
+
+# name of file for writing the final solution
+# sSolutionWrite     = 'ns/DX4'
+
+# ------------------------------------------------------------------------
+
+# minimum mg-level; <=0: Use level (NLMAX-NLMIN) as coarse grid
+
+NLMIN              = 2
+
+# maximum mg-level = level of computation of nonlinear iteration
+
+NLMAX              = 4
+
+
+# ------------------------------------------------------------------------
+
+# Type of equation; 0=Navier Stokes, 1=Stokes calculation
+
+iStokesEquation    = 0
+
+# Viscosity parmeter 1/NU
+
+RE                 = 1000.0
+
+# Type of right hand side. 
+# 0=zero, 1=steady inhomog., 2=nonsteady force
+
+iRHS               = 0
+
+# Type of bdry. conditions.
+# 0=DIRICHLET, 1=Pressure drop, 2=NEUMANN part.
+# Must be >= 1 for moving fictitious boundary components!
+
+iBoundary          = 2
+
+# ------------------------------------------------------------------------
+
+# Type of element pair to use for the dioscretisation.
+# 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+# (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+
+iElementType       = 3
+
+# ------------------------------------------------------------------------
+
+# Type of stabilization of the convective term. 
+# 0=Streamline Diffusion, 1=upwind
+
+iUpwind            = 1
+
+# Relaxation parameter for upwind/Streamline Diffusion.
+
+dUpsam             = 0.1
+
+# ------------------------------------------------------------------------
+
+# inflow configuration; 
+# <0=user defined; 
+# 0=benchmark; 
+# 1=vertical column; must fit to comp. domain!
+# iinflowConfiguration = 0
+
+# Inflow velocity; 
+# If RE=1000.0: benchmark=0.3=RE20, 1.5=RE100, 3=RE200, 3.75=RE250.
+#               vert. channel=10.0; 
+# dUmax              = 1.5
+
+# ------------------------------------------------------------------------
+
+# Generation of mass matrix. 0=lumped mass,1=real mass matrix
+# iMass              = 0
+
+# Type of lumping of the mass matrix. 0=usual lumping,1=diagonal lumping
+# iMassLumpType      = 0
+
+# cubature formula for Mass matrix
+# icubMass           = 204
+
+# cubature formula for Stokes/Laplacian matrix
+
+icubLaplace        = 204
+
+# cubature formula for Pressure matrices B
+
+icubB              = 204
+
+# cubature formula for RHS F
+
+icubF              = 204
+
+# ------------------------------------------------------------------------
+# Parameters to configure matrix generation on multiple levels.
+
+# Configure adaptive matrix generation.
+# 0=no adaptive matrix gen.=standard; 
+# 1=switch to constant mat. gen., depending on dAdMatThreshold; 
+# 2=switch mat. gen. depenting on size of ncurrent and neighbour element
+
+iAdaptiveMatrix    = 1
+
+# Treshold parameter: 
+# switch construction of coarse grid matrices from standard finite element 
+# approach to locally constant interpolation for all rows belonging to elements 
+# with aspect ratio >= dAdMatThreshold; 
+# 0D0=all elements; 20D0=standard; -1D0=infinity=no matrix modifications
+
+dAdMatThreshold    = -1.0
+
+
+# ========================================================================
+# The following section describes the interlevel projection (prolongation/
+# restriction) that should be used when a solution must be projected
+# to a higher or lower level in the discretisation
+# (e.g. when solving with a multigrid solver).
+
+#############
+[CC-PROLREST]
+#############
+
+# Order of the prolongation/restriction to use for velocity components.
+# -1=default, 0=constant, 1=linear, 2=quadratic,...
+
+iinterpolationOrderVel   = -1
+
+# Order of the prolongation/restriction to use for pressurte components.
+# -1=default, 0=constant, 1=linear, 2=quadratic,...
+
+iinterpolationOrderPress = -1
+
+# Prolongation/restriction variant for nonconforming elements 
+# E030/EM30/E031/EM31 for the velocity.
+# = 0: Use default prol/rest,
+# = 1: Use standard prol/rest, equally weighted (1/2 from left, 1/2 from right),
+# = 2: Use extended prol/rest, equally weighted (1/2 from left, 1/2 from right),
+# = 3: Use extended prol/rest, weighted by element size (L2 projection),
+# = 4: Use extended prol/rest, weighted by element size of neighbour element
+# To activate extended prol/rest, set this to >= 2 after initialising the
+# interlevel projection structure!
+
+iinterpolationVariantVel = 0
+
+# Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+# element for the velocity. Only valid if iinterpolationVariant >= 2.
+# Aspect-ratio indicator; controls switching to constant prolongation.
+# <=1: switch depending on aspect ratio of current element (standard),
+#  =2: switch depending on aspect ratio of current element and
+#      neighbour element
+
+iintARIndicatorEX3YVel   = 1
+
+# Configuration parameter for extended prolongation of E030/EM30/E031/EM31
+# element for the velocity. Only valid if iprolEX3Yvariant >= 2.
+# Upper bound aspect ratio; for all elements with higher AR
+# the prolongation is switched to constant prol/rest.
+# standard = 20.0
+
+dintARboundEX3YVel       = 20.0

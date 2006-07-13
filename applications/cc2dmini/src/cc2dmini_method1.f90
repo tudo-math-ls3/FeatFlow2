@@ -1029,14 +1029,15 @@ CONTAINS
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
 
-    real(dp), dimension(:), pointer :: p_vec,p_def,p_temp1,p_temp2,p_da
-    call lsysbl_getbase_double (rd,p_def)
-    call lsysbl_getbase_double (rx,p_vec)
-    call lsysbl_getbase_double (rtemp1,p_temp1)
-    call lsysbl_getbase_double (rtemp2,p_temp2)
-    ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
-    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
-    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
+!    DEBUG!!!:
+!    real(dp), dimension(:), pointer :: p_vec,p_def,p_temp1,p_temp2,p_da
+!    call lsysbl_getbase_double (rd,p_def)
+!    call lsysbl_getbase_double (rx,p_vec)
+!    call lsysbl_getbase_double (rtemp1,p_temp1)
+!    call lsysbl_getbase_double (rtemp2,p_temp2)
+!    ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
+!    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
+!    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
 
       ! Get minimum/maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -1266,12 +1267,13 @@ CONTAINS
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
 
-    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
-    call lsysbl_getbase_double (rd,p_def)
-    call lsysbl_getbase_double (rx,p_vec)
-    ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
-    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
-    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
+!    DEBUG!!!:
+!    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
+!    call lsysbl_getbase_double (rd,p_def)
+!    call lsysbl_getbase_double (rx,p_vec)
+!    ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
+!    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
+!    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
 
       ! Get minimum and maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -1421,7 +1423,8 @@ CONTAINS
   SUBROUTINE c2d1_solve (rproblem)
   
 !<description>
-  ! Solves the given problem by applying a linear solver.
+  ! Solves the given problem by applying a nonlinear solver with linear solver
+  ! as preconditioner.
 !</description>
 
 !<inputoutput>
@@ -1578,7 +1581,7 @@ CONTAINS
     ! to the setMatrices routines. This intitialises then the matrices
     ! on all levels according to that array.
     Rmatrices(ilvmin:ilvmax) = rproblem%RlevelInfo(ilvmin:ilvmax)%rmatrix
-    CALL linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
+    CALL linsol_setMatrices(p_rsolverNode,Rmatrices(ilvmin:ilvmax))
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation

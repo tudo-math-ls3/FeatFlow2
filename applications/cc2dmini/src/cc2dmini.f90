@@ -21,7 +21,7 @@
 PROGRAM stokes
 
   USE cc2dmini_method1
-  !USE cc2dmini_method2
+  USE cc2dmini_method2
   
   IMPLICIT NONE
   
@@ -54,11 +54,17 @@ PROGRAM stokes
   CALL ZINIT(NNWORK,'feat.msg','log/feat1.err','log/feat1.prt',&
              'log/feat1.sys','log/feat1.trc') 
   
-  ! Call the problem to solve. stokes 1:
+  ! Call the problem to solve. cc2d method 1:
   PRINT *
   PRINT *,'Calculating cc2dmini-Problem with method 1'
   PRINT *,'------------------------------------------'
   CALL cc2dmini1
+
+  ! Call the problem to solve. cc2d method 2:
+  PRINT *
+  PRINT *,'Calculating cc2dmini-Problem with method 2'
+  PRINT *,'------------------------------------------'
+  CALL cc2dmini2
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
