@@ -107,18 +107,24 @@
 !# The following routines serve as auxiliary routines for the application to
 !# maintain a Multigrid solver node:
 !# 
-!# 1.) linsol_removeMultigridLevel
+!# 1.) linsol_addMultigridLevel
+!#     -> Adds a new level to the Multigrid structure
+!#
+!# 2.) linsol_removeMultigridLevel
 !#     -> Deletes a level and attached solver structures of that level from 
 !#        Multigrid
 !#
-!# 2.) linsol_cleanMultigridLevels
+!# 3.) linsol_cleanMultigridLevels
 !#     -> Deletes all levels and attached solver structures
 !#
-!# 3.) linsol_getMultigridLevel
+!# 4.) linsol_getMultigridLevel
 !#     -> Returns the level structure of a specific level
 !#
-!# 4.) linsol_getMultigridLevelCount
+!# 5.) linsol_getMultigridLevelCount
 !#     -> Returns number of currently attached levels
+!#
+!# 6.) linsol_convertToSmoother
+!#     -> Converts a solver node into a smoother for multigrid smoothing.
 !#
 !#
 !# Implementational details / structure of the solver library
@@ -316,6 +322,21 @@
 !#      Only some algorithms (like Multigrid) work internally on some places
 !#      with unsorted vectors and therefore unsort them before using them.
 !#      
+!#
+!#  8.) Which solvers are available at all at the moment?
+!#
+!#      Well, search for the linsol_initXXXX routines :-)
+!#      Currently, we have:
+!#
+!#      - linsol_initDefCorr
+!#      - linsol_initJacobi
+!#      - linsol_initSSOR
+!#      - linsol_initVANCA
+!#      - linsol_initUMFPACK4
+!#      - linsol_initMILU1x1
+!#      - linsol_initBiCGStab
+!#      - linsol_initMultigrid
+!#
 !# </purpose>
 !##############################################################################
 
@@ -701,6 +722,9 @@ MODULE linearsolver
     ! Pointer to a structure for (M)ILUs 1x1 solver; NULL() if not set
     TYPE (t_linsolSubnodeMILUs1x1), POINTER       :: p_rsubnodeMILUs1x1    => NULL()
 
+    ! Pointer to a structure for SSOR; NULL() if not set
+    TYPE (t_linsolSubnodeSSOR), POINTER           :: p_rsubnodeSSOR        => NULL()
+
   END TYPE
   
 !</typeblock>
@@ -717,6 +741,23 @@ MODULE linearsolver
     ! A pointer to the ILU0-decomposition of the main matrix.
     ! Shares the structure with the system matrix.
     TYPE(t_matrixScalar)              :: p_DiluDecomposition      
+    
+  END TYPE
+  
+!</typeblock>
+  
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the SSOR solver.
+  
+  TYPE t_linsolSubnodeSSOR
+  
+    ! Scaling of the preconditioned solution.
+    ! =FALSE is the old FEAT style.
+    ! =TRUE gives the implementation as suggested in the literature.
+    LOGICAL :: bscale
     
   END TYPE
   
@@ -1556,6 +1597,8 @@ CONTAINS
     SELECT CASE(p_rsolverNode%calgorithm)
     CASE (LINSOL_ALG_VANCA)
       CALL linsol_doneVANCA (p_rsolverNode)
+    CASE (LINSOL_ALG_SSOR)
+      CALL linsol_doneSSOR (p_rsolverNode)
     CASE (LINSOL_ALG_DEFCORR)
       CALL linsol_doneDefCorr (p_rsolverNode)
     CASE (LINSOL_ALG_UMFPACK4)
@@ -1767,6 +1810,8 @@ CONTAINS
       CALL linsol_precDefCorr (rsolverNode,rd)
     CASE (LINSOL_ALG_JACOBI)
       CALL linsol_precJacobi (rsolverNode,rd)
+    CASE (LINSOL_ALG_SSOR)
+      CALL linsol_precSSOR (rsolverNode,rd)
     CASE (LINSOL_ALG_UMFPACK4)
       CALL linsol_precUMFPACK4 (rsolverNode,rd)
     CASE (LINSOL_ALG_MILUS1x1)
@@ -2834,6 +2879,331 @@ CONTAINS
       END SELECT
       
     END DO
+  
+  END SUBROUTINE
+  
+! *****************************************************************************
+! Routines for the SSOR solver
+! *****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_initSSOR (p_rsolverNode, domega, bscale)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the SSOR solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  !
+  ! This SSOR solver has no done-routine as there is no dynamic information
+  ! allocated. The given damping parameter domega is saved to the solver
+  ! structure rsolverNode%domega.
+!</description>
+  
+!<input>
+  ! OPTIONAL: Damping parameter. Is saved to rsolverNode%domega if specified.
+  REAL(DP), INTENT(IN), OPTIONAL :: domega
+
+  ! OPTIONAL: If set to TRUE, the solution is scaled by 1/(domega*(2-omega))
+  ! which gives the SSOR preconditioner in the literature. If not existent
+  ! or set to FALSE, no scaling is performed; this is the original 
+  ! implementation of SSOR in FEAT.
+  LOGICAL, INTENT(IN), OPTIONAL :: bscale
+!</input>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER         :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+  
+    ! Create a default solver structure
+    
+    CALL linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_SSOR
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
+                                LINSOL_ABIL_DIRECT
+    
+    ! Save domega to the structure.
+    IF (PRESENT(domega)) THEN
+      p_rsolverNode%domega = domega
+    END IF
+  
+    ! Allocate the subnode for SSOR.
+    ALLOCATE(p_rsolverNode%p_rsubnodeSSOR)
+
+    ! Save whether the solution should be scaled or not.
+    p_rsolverNode%p_rsubnodeSSOR%bscale = .FALSE.
+    IF (PRESENT(bscale)) p_rsolverNode%p_rsubnodeSSOR%bscale = bscale
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneSSOR (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the SSOR solver from
+  ! the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of SSOR which is to be cleaned up.
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+  DEALLOCATE(rsolverNode%p_rsubnodeSSOR)
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_precSSOR (rsolverNode,rd)
+  
+!<description>
+  ! Applies the SSOR preconditioner $D \in A$ to the defect 
+  ! vector rd and solves 
+  !  $$ \frac{1}{\omega(2-\omega)} (D+\omega L)D^{-1}(D+\omega R) d_{new} = d.$$
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the SSOR solver
+  TYPE(t_linsolNode), INTENT(INOUT),TARGET  :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: iblock
+    LOGICAL :: bscale
+    
+    TYPE (t_matrixScalar), POINTER :: p_rmatrix
+    REAL(DP), DIMENSION(:), POINTER :: p_Dvector, p_Dmatrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal
+    
+    ! Get bscale from the solver structure
+    bscale = rsolverNode%p_rsubnodeSSOR%bscale
+    
+    ! Loop through all diagonal blocks. Each block corresponds to one
+    ! diagonal block in the matrix.
+    DO iblock = 1,rd%nblocks
+      ! Get the matrix
+      p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
+      
+      ! Some small checks...
+      IF (p_rmatrix%NEQ .EQ. 0) THEN
+        PRINT *,'SSOR: No diagonal submatrix for component ',iblock
+        STOP
+      END IF
+      
+      IF (p_rmatrix%dscaleFactor .NE. 1.0_DP) THEN
+        PRINT *,'SSOR: No support for scaled matrices up to now!'
+        STOP
+      END IF
+      
+      IF (IAND(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+          .NE. 0) THEN
+        PRINT *,'SSOR: Transposed submatrices not supported.'
+        STOP
+      END IF
+
+      ! Now we have to make some decisions. At first, which matrix
+      ! structure do we have?
+      SELECT CASE (p_rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+
+        CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiagonal)
+        CALL storage_getbase_int(p_rmatrix%h_Kcol,p_Kcol)
+        CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kld)
+      
+        ! Now, which data format do we have? Single or double?
+        SELECT CASE (p_rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Get the matrix data arrays
+          CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+          
+          ! Take care of the accuracy of the vector
+          SELECT CASE (rd%cdataType)
+          CASE (ST_DOUBLE)
+            ! Get the data array
+            CALL lsysbl_getbase_double (rd,p_Dvector)
+            
+            ! Call the SSOR subroutine (see below), do the work.
+            CALL performSSOR9dbledble_ID119 (p_Dmatrix,p_Kcol,p_Kld,&
+                                             p_Kdiagonal,rsolverNode%domega,&
+                                             bscale,p_Dvector)
+            
+          CASE DEFAULT
+            PRINT *,'SSOR: Unsupported vector format.'
+            STOP
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'SSOR: Unsupported matrix format.'
+          STOP
+        END SELECT
+      
+      CASE DEFAULT
+        PRINT *,'SSOR: Unsupported matrix format.'
+        STOP
+      END SELECT
+      
+    END DO
+    
+  CONTAINS
+  
+    !--------------------------------------------------------------------------
+    ! Auxiliary routine: SSOR
+    ! Matrix format 9, double precision matrix, double precision vector
+    
+    SUBROUTINE performSSOR9dbledble_ID119 (DA,Kcol,Kld,Kdiagonal,domega,bscale,&
+                                           Dx)
+    
+    ! input: Matrix array
+    REAL(DP), DIMENSION(:), INTENT(IN) :: DA
+    
+    ! input: column structure
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol
+    
+    ! input: row structure
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld
+    
+    ! input: position of diagonal entries in the matrix
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kdiagonal
+    
+    ! input: Relaxation parameter; standard value is 1.2.
+    REAL(DP), INTENT(IN) :: domega
+    
+    ! input: Whether the solution should be scaled as suggested in 
+    ! the literature
+    LOGICAL, INTENT(IN) :: bscale
+    
+    ! input: vector to be preconditioned.
+    ! output: preconditioned vector
+    REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dx
+    
+      ! local variables
+      INTEGER(PREC_VECIDX) :: NEQ,ieq
+      INTEGER(PREC_MATIDX) :: Idiag,ICOL
+      REAL(DP) :: daux
+      
+      NEQ = SIZE(Dx)
+
+      ! We perform the following preconditioning step:
+      !
+      !    (D+\omega L) D^{-1} (D+\omega R) d_{new} = d
+      !
+      ! and replace the vector Dx in-situ.
+      !
+      ! At first we solve:
+      !
+      !          (D+\omega L) d = d
+      !
+      !                          i-1
+      ! <=> a_ii d_i  +  \omega \sum a_ij d_j  =  d_i          (i=1,...,n)
+      !                          j=1
+      !
+      !                                       i-1
+      ! <=> d_i :=  1/aii * ( d_i  -  \omega \sum a_ij d_j )   (i=1,...,n)
+      !                                       j=1
+      !  
+      
+      DO ieq=1,NEQ
+        daux = 0.0_DP
+        ! Loop through the L; this is given by all
+        ! entries below Kdiagonal.
+        Idiag = Kdiagonal(ieq)
+        DO ICOL=Kld(ieq),Kdiagonal(ieq)-1
+          daux=daux+DA(ICOL)*Dx(Kcol(ICOL))
+        END DO
+        Dx(ieq) = (Dx(ieq) - daux*domega) / DA(Idiag)
+      END DO
+      
+      ! Next step is to solve
+      !
+      !          D^{-1} (D+\omega R) d  =  d
+      !
+      ! <=>             (D+\omega R) d  =  D d
+      !
+      !                           n
+      ! <=> a_ii d_i  +  \omega \sum a_ij d_j  =  a_ii d_i          (i=n,...,1)
+      !                         j=i+1
+      !
+      !                                n
+      ! <=> d_i  +  (\omega / a_ii)  \sum a_ij d_j  =  d_i          (i=n,...,1)
+      !                              j=i+1
+      !
+      !                                        n
+      ! <=> d_i :=  d_i  -  (\omega / a_ii)  \sum a_ij d_j          (i=n,...,1)
+      !                                      j=i+1
+      !
+      ! Note that the case i=n is trivial, the sum is empty; so we can
+      ! start the loop with i=n-1.
+
+      DO ieq = NEQ-1,1,-1
+        daux=0.0_DP
+        ! Loop through the L; this is given by all
+        ! entries above Kdiagonal.
+        Idiag = Kdiagonal(ieq)
+        DO ICOL=Idiag+1,Kld(ieq+1)-1
+          daux=daux+DA(ICOL)*Dx(Kcol(ICOL))
+        END DO
+        Dx(ieq) = Dx(ieq)-daux*domega / DA(Idiag)
+      END DO
+      
+      ! The literature suggests the formula
+      !
+      !   1/(omega (2-omega))  (D+\omega L) D^{-1} (D+\omega R) d_{new} = d
+      !
+      ! See e.g.: 
+      !  [Barrett et al., "Templates for the Solution of Linear systems:
+      !   Building Blocks for Iterative Methods", p. 42,
+      !   http://www.netlib.org/linalg/html_templates/Templates.html]        
+      !
+      ! We have calculated only
+      !                        (D+\omega L) D^{-1} (D+\omega R) d_{new} = d
+      !
+      ! This gives interestingly better results when using SSOR as 
+      ! preconditioner in CG or BiCGStab and corresponds to the old FEAT
+      ! implementation.
+      !
+      ! By setting bscale=TRUE, we activate the formula suggested in the
+      ! literature, which yields another scaling of our vector d by
+      ! the scalar omega*(2-omega):
+      
+      IF (bscale) THEN
+        daux = domega * (2.0_DP-domega)
+        IF (daux .NE. 1.0_DP) THEN
+          CALL lalg_scaleVectorDble (Dx,daux)
+        END IF
+      END IF
+ 
+    END SUBROUTINE
   
   END SUBROUTINE
   
@@ -5049,7 +5419,9 @@ CONTAINS
   
 !<output>  
   ! The t_levelInfo structure for the new level that was added to the
-  ! multigrid solver.
+  ! multigrid solver. The application may modify the structure or throw the
+  ! pointer away, it doesn't matter. Multigrid will maintain the
+  ! structure internally.
   TYPE(t_linsolMGLevelInfo), POINTER     :: p_rlevelInfo
 !</output>
   

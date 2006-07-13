@@ -10,7 +10,12 @@
 !# read user-defined text files from hard disc that configure the setting of
 !# a solver.
 !#
-!# Hint: Reading from a file is not yet implemented.
+!# The following routines can be found here:
+!#
+!# 1.) linsolinit_initFromFile
+!#     -> Initialise a linear solver node by reading parameters from a
+!#        INI/DAT file
+!#
 !# </purpose>
 !##############################################################################
 
@@ -18,6 +23,7 @@ MODULE linearsolverautoinitialise
 
   USE fsystem
   USE linearsolver
+  USE paramlist
 
   IMPLICIT NONE
 
@@ -176,6 +182,328 @@ CONTAINS
     
   END DO
     
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  RECURSIVE SUBROUTINE linsolinit_initFromFile (p_rsolverNode,&
+                                                rparamList,ssolverName,&
+                                                nlevels, &
+                                                RfilterChain,rinterlevelProjection)
+  
+!<description>
+  ! This routine creates a new linear solver node p_rsolverNode of the
+  ! heap. The configuration on this solver is set up according to the
+  ! parameters in the parameter list rparamList (which can be read e.g.
+  ! from an INI/DAT file). The string ssolverName specifies the name of a
+  ! section in the parameter list rparamList that serves as 'head' of the
+  ! solver, i.e. that defines the 'main' linear solver.
+  ! The routine automatically creates all sub-solvers (preconditioners,
+  ! smoothers,...) by evaluating the parameters in rparamList,
+!</description>
+
+!<input>
+  ! The parameter list that contains the whole solver configuration.
+  TYPE(t_parlist), INTENT(IN) :: rparamList
+  
+  ! The name of a section in rparamList that contains the configuration of
+  ! the main linear solver.
+  CHARACTER(LEN=*), INTENT(IN) :: ssolverName
+  
+  ! Number of levels in the discretisation.
+  INTEGER, INTENT(IN) :: nlevels
+
+  ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
+  ! structures) if filtering should be applied to the vector during the 
+  ! iteration. If not, no filtering will be used.
+  ! The filter chain (i.e. the array) must exist until the system is solved!
+  ! The filter chain must be configured for being applied to defect vectors.
+  TYPE(t_filterChain), DIMENSION(:), INTENT(IN), TARGET, OPTIONAL :: RfilterChain
+
+  ! OPTIONAL: An interlevel projection structure that configures the projection
+  ! between the solutions on a finer and a coarser grid. The structure
+  ! must have been initialised with mlprj_initProjection.
+  !
+  ! Note that this structure is level-independent (as long as the
+  ! spatial discretisation structures on different levels are 'compatible'
+  ! what they have to be anyway), so the same structure can be used
+  ! to initialise all levels!
+  !
+  ! The structure must be present if any kind of Multigrid solver is used.
+  ! If the application knowns that there is no MG solver, the parameter
+  ! can be ommitted.
+  TYPE(t_interlevelProjectionBlock), OPTIONAL :: rinterlevelProjection
+!</input>
+
+!<output>
+  ! A pointer to a new linear solver node on the heap, initialised
+  ! by the configuration in the parameter list.
+  TYPE(t_linsolNode), POINTER :: p_rsolverNode
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    TYPE(t_parlstSection), POINTER :: p_rsection
+    CHARACTER(LEN=PARLST_MLDATA) :: spreconditioner,spresmoother, spostsmoother
+    CHARACTER(LEN=PARLST_MLDATA) :: scoarsegridsolver,sString
+    INTEGER :: isolverType,isolverSubtype
+    TYPE(t_linsolNode), POINTER :: p_rpreconditioner,p_rpresmoother,p_rpostsmoother
+    TYPE(t_linsolNode), POINTER :: p_rcoarsegridsolver
+    INTEGER :: i1,ilev
+    REAL(DP) :: d1
+    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_Rfilter
+    TYPE(t_linsolMGLevelInfo), POINTER     :: p_rlevelInfo
+
+    NULLIFY(p_Rfilter)
+    IF (PRESENT(RfilterChain)) THEN
+      p_Rfilter => RfilterChain
+    END IF
+
+    ! Check that there is a section called ssolverName - otherwise we
+    ! cannot create anything!
+    
+    CALL parlst_querysection(rparamList, ssolverName, p_rsection) 
+    
+    IF (.NOT. ASSOCIATED(p_rsection)) THEN
+      PRINT *,'Cannot create linear solver; no section '''&
+              //TRIM(ssolverName)//'''!'
+      STOP
+    END IF
+    
+    ! Ok, we have the section where we can get parameters from.
+    ! Get the solver type we should set up.
+    ! Let's hope the parameter 'isolverType' exists! That one is
+    ! mandatory; if not, the get-routine will stop.
+    CALL parlst_getvalue_int (p_rsection, 'iSolverType', isolverType)
+
+    ! Try to et the solver subtype from the parameter list.
+    ! This allows switching between different variants of the same
+    ! basic algorithm (e.g. VANCA)
+    CALL parlst_getvalue_int (p_rsection, 'iSolverSubtype', isolverSubtype,0)
+
+    ! Many solvers support preconditioners - we try to fetch the
+    ! name of the preconditioner in-advance to prevent code
+    ! duplication
+    CALL parlst_getvalue_string (p_rsection, 'ipreconditioner', sString,'')
+    spreconditioner = ''
+    IF (sString .NE. '') READ (sString,*) spreconditioner
+    
+    ! Now comes a biiig select for all the different types of solvers
+    ! that are supported by this routine.
+    SELECT CASE (isolverType)
+    
+    CASE (LINSOL_ALG_DEFCORR)
+      ! Defect correction
+      !
+      ! Initialise a solver node for the preconditioner - if there is one.
+      NULLIFY(p_rpreconditioner)
+      IF (spreconditioner .NE. '') THEN
+        CALL linsolinit_initFromFile (p_rpreconditioner,rparamList,&
+                                      spreconditioner,nlevels,RfilterChain)
+      END IF
+      ! Init the solver node
+      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
+      
+    CASE (LINSOL_ALG_JACOBI)
+      ! Jacobi solver
+      !
+      ! Init the solver node
+      CALL linsol_initJacobi (p_rsolverNode)
+      
+    CASE (LINSOL_ALG_SSOR)
+      ! SSOR solver
+      !
+      ! Init the solver node
+      CALL linsol_initSSOR (p_rsolverNode)
+      
+    CASE (LINSOL_ALG_BICGSTAB)
+      ! BiCGStab solver
+      !
+      ! Initialise a solver node for the preconditioner - if there is one.
+      NULLIFY(p_rpreconditioner)
+      IF (spreconditioner .NE. '') THEN
+        CALL linsolinit_initFromFile (p_rpreconditioner,rparamList,&
+                                      spreconditioner,nlevels,RfilterChain)
+      END IF
+      ! Init the solver node
+      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)
+      
+    CASE (LINSOL_ALG_UMFPACK4)
+      ! UMFPACK4 solver
+      !
+      ! Init the solver node
+      CALL linsol_initUMFPACK4 (p_rsolverNode)
+      
+    CASE (LINSOL_ALG_MILUS1x1)
+      ! (M)ILU solver
+      !
+      ! Get fill-in level
+      CALL parlst_getvalue_int (p_rsection, 'ifillinLevel', i1, 0)
+      
+      ! Get MILU relaxsation parameter
+      CALL parlst_getvalue_double (p_rsection, 'drelax', d1, 0.0_DP)
+      
+      ! Init the solver node
+      CALL linsol_initMILUs1x1 (p_rsolverNode,i1,d1)
+      
+    CASE (LINSOL_ALG_VANCA)
+      ! VANCA solver
+      !
+      ! Init the solver node
+      CALL linsol_initVANCA (p_rsolverNode,1.0_DP,isolverSubtype)
+    
+    CASE (LINSOL_ALG_MULTIGRID)
+      ! Multigrid solver
+      !
+      ! Ok, that's the most complicated one :-)
+      ! At first, initialise the solver:
+      CALL linsol_initMultigrid (p_rsolverNode,p_Rfilter)
+      
+      ! THen, get solver specific:
+      CALL parlst_getvalue_int (p_rsection, 'icycle', &
+                                p_rsolverNode%p_rsubnodeMultigrid%icycle,&
+                                p_rsolverNode%p_rsubnodeMultigrid%icycle)
+
+      CALL parlst_getvalue_double (p_rsection, 'dalphaMin', &
+           p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin,&
+           p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin)
+      
+      CALL parlst_getvalue_double (p_rsection, 'dalphaMax', &
+           p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax,&
+           p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMax)
+    
+      ! Do we have a presmoother?
+      CALL parlst_getvalue_string (p_rsection, 'spreSmootherName', sString,'')
+      spresmoother = ''
+      IF (sString .NE. '') READ (sString,*) spresmoother
+      
+      ! A postsmoother?
+      CALL parlst_getvalue_string (p_rsection, 'spostSmootherName', sString,'')
+      spostsmoother = ''
+      IF (sString .NE. '') READ (sString,*) spostsmoother
+      
+      ! A coarse grid solver?
+      CALL parlst_getvalue_string (p_rsection, 'scoarseGridSolver', sString,'')
+      scoarsegridsolver = ''
+      IF (sString .NE. '') READ (sString,*) scoarsegridsolver
+      
+      ! We need an interlevel projection structure!
+      IF (.NOT. PRESENT(rinterlevelProjection)) THEN
+        PRINT *,'Cannot create linear solver; no interlevel projection structure!'
+        STOP
+      END IF
+      
+      ! Initialise the coarse grid solver - if there is one. There must be one!
+      IF (scoarsegridsolver .EQ. '') THEN
+        PRINT *,'Cannot create linear solver; no coarse grid solver for MG!'
+        STOP
+      END IF
+      CALL linsolinit_initFromFile (p_rcoarsegridsolver,rparamList,&
+                                    scoarsegridsolver,nlevels,RfilterChain)
+      
+      ! Build all levels. Level 1 receives the coarse grid solver.
+      DO ilev = 1,nlevels
+        
+        ! Is there a presmoother?
+        IF (spresmoother .NE. '') THEN
+          CALL linsolinit_initFromFile (p_rpresmoother,rparamList,&
+                                        spresmoother,nlevels,RfilterChain)
+        ELSE
+          NULLIFY(p_rpresmoother)
+        END IF
+        
+        ! Is there a postsmoother?
+        IF (spostsmoother .NE. '') THEN
+          ! Check if pre- and postsmoother are identical.
+          CALL sys_toupper (spresmoother) 
+          CALL sys_toupper (spostsmoother) 
+          IF (spresmoother .NE. spostsmoother) THEN
+            CALL linsolinit_initFromFile (p_rpostsmoother,rparamList,&
+                                          spostsmoother,nlevels,RfilterChain)
+          ELSE 
+            ! Let the pointer point to the presmoother
+            p_rpostsmoother => p_rpresmoother
+          END IF
+        
+        ELSE
+          NULLIFY(p_rpostsmoother)
+        END IF
+        
+        ! Add the level to Multigrid
+        CALL linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, &
+                    rinterlevelProjection, &
+                    p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver)
+                    
+        ! Reset the coarse grid solver pointer to NULL.
+        ! That way, the coarse grid solver is only attached to level 1.
+        NULLIFY(p_rcoarsegridsolver)
+        
+      END DO
+    
+    CASE DEFAULT
+      PRINT *,'Cannot create linear solver; unsupported solver type isolverType=',&
+              isolverType
+      STOP
+    
+    END SELECT ! isolverType
+
+    ! Ok, we should have a solver node p_rsolverNode now, initialised with
+    ! standard parameters. The next task is to change all parameters
+    ! in the solver node to those which appeat in the given configuration.
+    ! If a parameter does not exist in the given configuration, the default
+    ! value (that which is already stored in the solver configuration)
+    ! must be used.
+    !
+    ! So parse the given parameters now to initialise the solver node:
+    
+    CALL parlst_getvalue_double (p_rsection, 'domega', &
+                                 p_rsolverNode%domega, p_rsolverNode%domega)
+
+    CALL parlst_getvalue_int (p_rsection, 'nminIterations', &
+                              p_rsolverNode%nminIterations, p_rsolverNode%nminIterations)
+
+    CALL parlst_getvalue_int (p_rsection, 'nmaxIterations', &
+                              p_rsolverNode%nmaxIterations, p_rsolverNode%nmaxIterations)
+
+    CALL parlst_getvalue_double (p_rsection, 'depsRel', &
+                                 p_rsolverNode%depsRel, p_rsolverNode%depsRel)
+
+    CALL parlst_getvalue_double (p_rsection, 'depsAbs', &
+                                 p_rsolverNode%depsAbs, p_rsolverNode%depsAbs)
+
+    CALL parlst_getvalue_int (p_rsection, 'iresNorm', &
+                              p_rsolverNode%iresNorm, p_rsolverNode%iresNorm)
+
+    CALL parlst_getvalue_int (p_rsection, 'ioutputLevel', &
+                              p_rsolverNode%ioutputLevel, p_rsolverNode%ioutputLevel)
+
+    CALL parlst_getvalue_int (p_rsection, 'niteResOutput', &
+                              p_rsolverNode%niteResOutput, p_rsolverNode%niteResOutput)
+                              
+    CALL parlst_getvalue_int (p_rsection, 'isolverSubgroup', &
+                              p_rsolverNode%isolverSubgroup, &
+                              p_rsolverNode%isolverSubgroup)
+                              
+    ! Up to now, we initialised for a linear solver. In case this solver is
+    ! used as smoother in a Multigrid algorithm, this initialisation
+    ! is not comppletely correct - we have to transform the solver into
+    ! one that performs a fixed number of iterations.
+    !
+    ! We identify a smoother by the existence of the parameter nsmoothingSteps:
+    
+    IF (parlst_queryvalue (p_rsection, 'nsmoothingSteps') .NE. 0) THEN
+    
+      CALL parlst_getvalue_int (p_rsection, 'nsmoothingSteps', &
+                                i1, p_rsolverNode%nminIterations)
+                                
+      ! Convert the solver node into a smoother:
+      CALL linsol_convertToSmoother (p_rsolverNode,i1)
+    
+    END IF
+
   END SUBROUTINE
   
 END MODULE
