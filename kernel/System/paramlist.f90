@@ -46,35 +46,38 @@
 !#
 !# The following routines can be used to maintain a parameter
 !# list:
-!# 1.) parlst_init 
-!#      -> Initialises an empty parameter list
+!#  1.) parlst_init 
+!#       -> Initialises an empty parameter list
 !#
-!# 2.) parlst_readfromfile
-!#     -> Reads the content of a .INI file into a parameter list.
+!#  2.) parlst_readfromfile
+!#      -> Reads the content of a .INI file into a parameter list.
 !#
-!# 3.) parlst_done
-!#     -> Cleans up a parameter list, releases all allocated memory
-!#        from the heap
+!#  3.) parlst_clear
+!#      -> Cleans up a parameter list, removes all parameters.
 !#
-!# 4.) parlst_querysection
-!#     -> Determines whether or not a section exists
+!#  4.) parlst_done
+!#      -> Cleans up a parameter list, releases all allocated memory
+!#         from the heap
 !#
-!# 5.) parlst_addsection
-!#     -> Adds a new section
+!#  5.) parlst_querysection
+!#      -> Determines whether or not a section exists
 !#
-!# 6.) parlst_queryvalue
-!#     -> Determines whether or not a parameter exists
+!#  6.) parlst_addsection
+!#      -> Adds a new section
 !#
-!# 7.) parlst_getvalue_string
-!#     parlst_getvalue_int
-!#     parlst_getvalue_double
-!#     -> Get the string/int/real value of a parameter from the parameter list
+!#  7.) parlst_queryvalue
+!#      -> Determines whether or not a parameter exists
 !#
-!# 8.) parlst_addvalue
+!#  8.) parlst_getvalue_string
+!#      parlst_getvalue_int
+!#      parlst_getvalue_double
+!#      -> Get the string/int/real value of a parameter from the parameter list
+!#
+!#  9.) parlst_addvalue
 !#     -> Adds a new parameter to the parameter list
 !#
-!# 9.) parlst_setvalue
-!#     -> Modifies the value of a parameter in the list
+!# 10.) parlst_setvalue
+!#      -> Modifies the value of a parameter in the list
 !# 
 !# </purpose>
 !##############################################################################
@@ -417,6 +420,30 @@ CONTAINS
 
 !<subroutine>
   
+  SUBROUTINE parlst_clear (rparlist)
+  
+!<description>
+  ! This routine cleans up a parameter list. All parameters in rparlist are
+  ! removed.
+!</description>
+  
+!<inputoutput>
+  ! The parameter list to clean up.
+  TYPE(t_parlist), INTENT(INOUT) :: rparlist
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Clean up = done+reinit. We make that simple here...
+    CALL parlst_done (rparlist)
+    CALL parlst_init (rparlist)
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
   SUBROUTINE parlst_done (rparlist)
   
 !<description>
@@ -454,7 +481,7 @@ CONTAINS
   
   ! Mark the structure as 'empty', finish
   rparlist%isectionCount = 0
-  
+
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -729,7 +756,7 @@ CONTAINS
     IF (PRESENT(sdefault)) THEN
       svalue = sdefault
     ELSE
-      PRINT *,'Parameter ',TRIM(paramname),'does not exist!'
+      PRINT *,'Parameter ',TRIM(paramname),' does not exist!'
       STOP
     END IF
   ELSE

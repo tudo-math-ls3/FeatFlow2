@@ -223,7 +223,7 @@ MODULE multilevelprojection
     ! A list of t_interlevelProjectionScalar structures for every
     ! equation and every element distribution in the discretisation.
     TYPE(t_interlevelProjectionScalar), &
-      DIMENSION(SPDISC_MAXFESPACES,LSYSBL_MAXBLOCKS) :: rscalarProjection
+      DIMENSION(SPDISC_MAXFESPACES,LSYSBL_MAXBLOCKS) :: RscalarProjection
   
   END TYPE
   
@@ -2504,14 +2504,14 @@ CONTAINS
       IF ((iarIndicator .GE. 1) .AND. (daspectRatioBound .GE. 0.0_DP)) THEN
         
         ! ... switch to constant of our element is too large...
-        IF (darea(0) .GT. daspectRatioBound) idoConstant = 2
+        IF (daspectRatio(0) .GT. daspectRatioBound) idoConstant = 2
         
         ! and if iarIndicator>2, also check the neighbour element
         IF (iarIndicator .GE. 2) THEN
 !          DO i=1,TRIA_MAXNME2D
-!            IF (darea(i) .GT. daspectRatioBound) idoConstant(i) = 2
+!            IF (daspectRatio(i) .GT. daspectRatioBound) idoConstant(i) = 2
 !          END DO
-          WHERE (darea(1:4) .GT. daspectRatioBound) idoConstant = 2
+          WHERE (daspectRatio(1:4) .GT. daspectRatioBound) idoConstant = 2
         END IF
       
       END IF
@@ -3033,14 +3033,14 @@ CONTAINS
       IF ((iarIndicator .GE. 1) .AND. (daspectRatioBound .GE. 0.0_DP)) THEN
         
         ! ... switch to constant of our element is too large...
-        IF (darea(0) .GT. daspectRatioBound) idoConstant = 2
+        IF (daspectRatio(0) .GT. daspectRatioBound) idoConstant = 2
         
         ! and if iarIndicator>2, also check the neighbour element
         IF (iarIndicator .GE. 2) THEN
 !          DO i=1,TRIA_MAXNME2D
-!            IF (darea(i) .GT. daspectRatioBound) idoConstant(i) = 2
+!            IF (daspectRatio(i) .GT. daspectRatioBound) idoConstant(i) = 2
 !          END DO
-          WHERE (darea(1:4) .GT. daspectRatioBound) idoConstant = 2
+          WHERE (daspectRatio(1:4) .GT. daspectRatioBound) idoConstant = 2
         END IF
       
       END IF
