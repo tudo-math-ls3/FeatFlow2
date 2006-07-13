@@ -713,6 +713,12 @@ CONTAINS
 
         END IF
 
+        ! For the construction of matrices on lower levels, call the matrix
+        ! restriction. In case we have a uniform discretisation with Q1~,
+        ! iadaptivematrix is <> 0 and so this will rebuild some matrix entries
+        ! by a Galerkin approach using constant prolongation/restriction.
+        ! This helps to stabilise the solver if there are elements in the
+        ! mesh with high aspect ratio.
         IF (ilev .LT. NLMAX) THEN
           CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(1,1),&
                                             p_rmatrix%RmatrixBlock(1,1),&
@@ -737,6 +743,7 @@ CONTAINS
       ! factorisation of the matrices in UMFPACK-like solvers.
       CALL linsol_initData (p_rsolverNode, ierror)
       IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      
       
       ! Finally solve the system. As we want to solve Ax=b with
       ! b being the real RHS and x being the real solution vector,

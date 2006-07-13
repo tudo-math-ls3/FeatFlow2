@@ -115,6 +115,9 @@ icubF              = 204
 
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.
+# This stabilises the preconditioner of the nonlinear iteration
+# in case of high aspect ratios in the cells of the mesh.
+# Works only with Q1~ discretisation.
 
 # Configure adaptive matrix generation.
 # 0=no adaptive matrix gen.=standard; 
