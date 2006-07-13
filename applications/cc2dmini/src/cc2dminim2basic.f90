@@ -205,5 +205,8 @@ MODULE cc2dminim2basic
 !                       | solver
 ! OMEGAMAX              | Maximum damping parameter for correction in nonlinear
 !                       | solver
+! IADAPTIVEMATRIX       | Whether to activate adaptive matrix construction
+!                       | for coarse grid matrices
+! DADMATTHRESHOLD       | Threshold parameter dor adaptive matrix construction
   
 END MODULE

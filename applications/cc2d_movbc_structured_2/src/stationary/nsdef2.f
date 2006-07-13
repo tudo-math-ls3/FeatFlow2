@@ -835,7 +835,7 @@ C           applied to all matrices except for the finest level
               CALL GTMAUX (DTIMIN,DPARAM,OTNLTIM-1+OTTUPW,0)
               
               CALL IMPMRX (TRIAS(1,ILEV),MATDAT(1,ILEV),
-     *                     TRIAS(1,ILEV+1),MATDAT(1,ILEV),
+     *                     TRIAS(1,ILEV+1),MATDAT(1,ILEV+1),
      *                     IASMBL(OIAPRM),DASMBL(ODMTEP))
 
               CALL GTMAUX (DTIMIN,DPARAM,OTNLTIM-1+OTTUPW,1)

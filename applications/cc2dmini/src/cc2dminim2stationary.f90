@@ -56,6 +56,7 @@ MODULE cc2dminim2stationary
   USE nonlinearsolver
   USE paramlist
   USE linearsolverautoinitialise
+  USE matrixrestriction
   
   USE collection
   USE convection
@@ -549,15 +550,16 @@ CONTAINS
   !</subroutine>
   
     ! local variables
-    INTEGER :: istokes, iupwind
+    INTEGER :: istokes, iupwind,iadaptivematrix
+    REAL(DP) :: dadmatthreshold
   
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
+    TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
     TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
     TYPE(t_vectorScalar), POINTER :: p_rvectorTemp,p_rvectorTemp2
     TYPE(t_vectorBlock) :: rtemp1,rtemp2
-    INTEGER :: ierror,ilvmax,ilvmin, ilev
+    INTEGER :: ierror,NLMAX,NLMIN, ilev
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
@@ -571,13 +573,17 @@ CONTAINS
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
 !    call lsysbl_getbase_double (rd,p_def)
 !    call lsysbl_getbase_double (rx,p_vec)
-!    ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
-!    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
+!    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
+!    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',NLMAX)
 !    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
 
       ! Get minimum and maximum level from the collection
-      ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
-      ilvmin = collct_getvalue_int (p_rcollection,'NLMIN')
+      NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
+      NLMIN = collct_getvalue_int (p_rcollection,'NLMIN')
+      
+      ! Get parameters about adaptive matrix generation from collection
+      iadaptivematrix = collct_getvalue_int (p_rcollection,'IADAPTIVEMATRIX')
+      dadmatthreshold = collct_getvalue_real (p_rcollection,'dAdMatThreshold')
       
       ! Set up a filter that modifies the block vectors/matrix
       ! according to boundary conditions.
@@ -620,9 +626,11 @@ CONTAINS
       ! On all levels, we have to set up the nonlinear system matrix,
       ! so that the linear solver can be applied to it.
 
-      DO ilev=ilvmax,ilvmin,-1
+      NULLIFY(p_rmatrix)
+      DO ilev=NLMAX,NLMIN,-1
       
         ! Get the system matrix and the Laplace matrix
+        p_rmatrixFine => p_rmatrix
         p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilev)
         p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,'LAPLACE',ilev)
         
@@ -630,7 +638,7 @@ CONTAINS
         ! matrix. On lower levels, we have to create a solution
         ! on that level from a fine-grid solution before we can use
         ! it to build the matrix!
-        IF (ilev .EQ. ilvmax) THEN
+        IF (ilev .EQ. NLMAX) THEN
           p_rvectorCoarse => rx
         ELSE
           ! Get the temporary vector on level i. Will receive the solution
@@ -639,7 +647,7 @@ CONTAINS
           
           ! Get the solution vector on level i+1. This is either the temporary
           ! vector on that level, or the solution vector on the maximum level.
-          IF (ilev .LT. ilvmax-1) THEN
+          IF (ilev .LT. NLMAX-1) THEN
             p_rvectorFine => collct_getvalue_vec (p_rcollection,'RTEMPVEC',ilev+1)
           ELSE
             p_rvectorFine => rx
@@ -690,12 +698,6 @@ CONTAINS
             
           END SELECT
         
-          ! Apply the filter chain to the matrix.
-          ! As the filter consists only of an implementation filter for
-          ! boundary conditions, this implements the boundary conditions
-          ! into the system matrix.
-          CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
-          
         ELSE
           ! The system matrix looks like:
           !   (  A    0   B1 )
@@ -709,8 +711,19 @@ CONTAINS
           CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
-          CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
         END IF
+
+        IF (ilev .LT. NLMAX) THEN
+          CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(1,1),&
+                                            p_rmatrix%RmatrixBlock(1,1),&
+                                            iadaptivematrix, dadmatthreshold)
+        END IF
+      
+        ! Apply the filter chain to the matrix.
+        ! As the filter consists only of an implementation filter for
+        ! boundary conditions, this implements the boundary conditions
+        ! into the system matrix.
+        CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
         
       END DO
       
@@ -886,10 +899,12 @@ CONTAINS
 !</output>
 
     ! local variables
-    INTEGER :: ilvmin,ilvmax
+    INTEGER :: NLMIN,NLMAX
     INTEGER :: i
+    REAL(DP) :: d
     INTEGER(PREC_VECIDX) :: imaxmem
     CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
 
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
@@ -916,14 +931,14 @@ CONTAINS
       ! problem.
       
       ! Which levels have we to take care of during the solution process?
-      ilvmin = rproblem%NLMIN
-      ilvmax = rproblem%NLMAX
+      NLMIN = rproblem%NLMIN
+      NLMAX = rproblem%NLMAX
     
       ! Get our right hand side / solution / matrix on the finest
       ! level from the problem structure.
       p_rrhs    => rproblem%rrhs   
       p_rvector => rproblem%rvector
-      p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
+      p_rmatrix => rproblem%RlevelInfo(NLMAX)%rmatrix
       
       ! During the linear solver, the boundary conditions must
       ! frequently be imposed to the vectors. This is done using
@@ -969,7 +984,7 @@ CONTAINS
       ! which identifies the linear solver.
       CALL linsolinit_initFromFile (rpreconditioner%p_rsolverNode,&
                                     rproblem%rparamList,ssolverName,&
-                                    ilvmax-ilvmin+1,rpreconditioner%RfilterChain,&
+                                    NLMAX-NLMIN+1,rpreconditioner%RfilterChain,&
                                     rpreconditioner%rprojection)
       
       ! How much memory is necessary for performing the level change?
@@ -978,7 +993,7 @@ CONTAINS
       ! We need temporary memory for this purpose...
 
       imaxmem = 0
-      DO i=ilvmin+1,ilvmax
+      DO i=NLMIN+1,NLMAX
         ! Pass the system metrices on the coarse/fine grid to 
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
@@ -1007,8 +1022,8 @@ CONTAINS
       ! We copy our matrices to a big matrix array and transfer that
       ! to the setMatrices routines. This intitialises then the matrices
       ! on all levels according to that array.
-      Rmatrices(ilvmin:ilvmax) = rproblem%RlevelInfo(ilvmin:ilvmax)%rmatrix
-      CALL linsol_setMatrices(rpreconditioner%p_rsolverNode,Rmatrices(ilvmin:ilvmax))
+      Rmatrices(NLMIN:NLMAX) = rproblem%RlevelInfo(NLMIN:NLMAX)%rmatrix
+      CALL linsol_setMatrices(rpreconditioner%p_rsolverNode,Rmatrices(NLMIN:NLMAX))
       
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
@@ -1021,6 +1036,29 @@ CONTAINS
       ! iteration!
       CALL collct_setvalue_linsol(rproblem%rcollection,'LINSOLVER',&
                                   rpreconditioner%p_rsolverNode,.TRUE.)
+      
+      ! Add information about adaptive matrix generation from INI/DAT files
+      ! to the collection.
+      CALL parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                'iAdaptiveMatrix', i, 0)
+                                
+      ! Switch off adaptive matrix generation if our discretisation is not a 
+      ! uniform Q1~ discretisation - the matrix restriction does not support
+      ! other cases.
+      p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscretisation(1)
+      IF ((p_rdiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
+          ((p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_E030) .AND. &
+           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_E031) .AND. &
+           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_EM30) .AND. &
+           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_EM31))) THEN
+        i = 0
+      END IF
+      
+      CALL collct_setvalue_int(rproblem%rcollection,'IADAPTIVEMATRIX',i,.TRUE.)
+                                
+      CALL parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
+                                 'dAdMatThreshold', d, 20.0_DP)
+      CALL collct_setvalue_real(rproblem%rcollection,'DADMATTHRESHOLD',d,.TRUE.)
       
     CASE DEFAULT
       
@@ -1058,7 +1096,7 @@ CONTAINS
     SELECT CASE (rpreconditioner%itypePreconditioning)
     CASE (1)
       ! Preconditioner was a linear solver structure.
-
+      !
       ! Release the temporary vector(s)
       CALL lsyssc_releaseVector (rpreconditioner%rtempVectorSc)
       CALL lsyssc_releaseVector (rpreconditioner%rtempVectorSc2)
@@ -1073,6 +1111,10 @@ CONTAINS
       ! Remove the interlevel projection structure
       CALL collct_deletevalue(rproblem%rcollection,'ILVPROJECTION')
       
+      ! Remove parameters for adaptive matrix generation
+      CALL collct_deletevalue(rproblem%rcollection,'DADMATTHRESHOLD')
+      CALL collct_deletevalue(rproblem%rcollection,'IADAPTIVEMATRIX')
+
       ! Clean up the linear solver, release all memory, remove the solver node
       ! from memory.
       CALL linsol_releaseSolver (rpreconditioner%p_rsolverNode)

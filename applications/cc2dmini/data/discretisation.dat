@@ -129,7 +129,7 @@ iAdaptiveMatrix    = 1
 # with aspect ratio >= dAdMatThreshold; 
 # 0D0=all elements; 20D0=standard; -1D0=infinity=no matrix modifications
 
-dAdMatThreshold    = -1.0
+dAdMatThreshold    = 20.0
 
 
 # ========================================================================
