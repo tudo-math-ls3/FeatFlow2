@@ -499,6 +499,18 @@ BLASLIB   =
 LAPACKLIB = 
 endif
 
+ifeq ($(ID),pc64-athlon64-linux-ifc)
+CC=icc
+FC=ifort
+AR=xiar
+ARC=xiar
+OPTFLAGS  = -tpp7 -xW -O3 -us -pad -funroll-loops -ip -ipo
+FCFLAGS   = -module $(MODDIR)
+CCFLAGS   = 
+BLASLIB   = 
+LAPACKLIB = 
+endif
+
 ifeq ($(call match,$(ID),pc-opteron-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
