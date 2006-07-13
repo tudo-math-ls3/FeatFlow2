@@ -329,7 +329,6 @@ CONTAINS
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
-    NULLIFY(p_RfilterChain)
     NULLIFY(p_rpreconditioner)
     CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     
