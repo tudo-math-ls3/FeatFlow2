@@ -199,14 +199,15 @@ MODULE ArraySort
     SUBROUTINE insertSort(ilower, iupper)
       INTEGER(I32), INTENT(IN) :: ilower, iupper
       
-      INTEGER(I32) :: i, j, k, idx, t
+      INTEGER(I32) :: i, j, k, idx, t, istop
       
+      istop = ilower-1
       DO i=ilower+1, iupper
         t = Ielem(iindex,i)
         j = i-1
         DO WHILE (Ielem(iindex,j) .GT. t)
           j = j-1
-          IF (j .EQ. 0) EXIT
+          IF (j .EQ. istop) EXIT
         END DO
         j = j+1
         ! Ringshift of Ielem(:,j:i) to the right

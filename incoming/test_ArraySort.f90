@@ -4,7 +4,7 @@ PROGRAM test_ArraySort
   USE ArraySort
   
   INTEGER(I32), PARAMETER :: nindex = 3
-  INTEGER(I32), PARAMETER :: nnode = 50
+  INTEGER(I32), PARAMETER :: nnode = 100
   
   INTEGER(I32), DIMENSION(nindex, nnode) :: Ielem
   INTEGER(I32) :: iindex, inode
