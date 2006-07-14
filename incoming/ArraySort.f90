@@ -24,8 +24,8 @@ MODULE ArraySort
   !<constants>
   !<constantblock description="">
   
-  ! Cutoff value for Quicksort
-  INTEGER, PARAMETER :: SORT_QUICKSORT_CUTOFF = 20
+  ! Cutoff value for Quicksort and Mergesort
+  INTEGER, PARAMETER :: SORT_CUTOFF = 20
   
   ! Heapsort (bottom up). Dependable allrounder (default)
   INTEGER, PARAMETER :: SORT_HEAP = 0
@@ -42,7 +42,7 @@ MODULE ArraySort
   ! Stable sorting algorithm
   ! Defaults to mergesort, but this can change in the future
   INTEGER, PARAMETER :: SORT_STABLE = 10
-  
+    
   !</constantblock>
   !</constants>
   
@@ -85,9 +85,9 @@ MODULE ArraySort
         CASE (SORT_QUICK)
           CALL RANDOM_SEED
           CALL quickSort(1,nnode)
-          CALL insertSort
+          CALL insertSort(1,nnode)
         CASE (SORT_INSERT)
-          CALL insertSort
+          CALL insertSort(1,nnode)
         CASE (SORT_MERGE,SORT_STABLE)
           CALL mergeSort(1,nnode)
         CASE DEFAULT
@@ -162,7 +162,7 @@ MODULE ArraySort
       l = ilower
       u = iupper
       
-      DO WHILE ((u-l)>=SORT_QUICKSORT_CUTOFF)
+      DO WHILE ((u-l) .GE. SORT_CUTOFF)
         ! 1.) Choose pivot
         CALL RANDOM_NUMBER(r)
         i = l+FLOOR(r*(u-l+1))
@@ -196,14 +196,15 @@ MODULE ArraySort
       
     END SUBROUTINE quicksort
     
-    SUBROUTINE insertSort()
+    SUBROUTINE insertSort(ilower, iupper)
+      INTEGER(I32), INTENT(IN) :: ilower, iupper
       
       INTEGER(I32) :: i, j, k, idx, t
       
-      DO i=2, nnode
+      DO i=ilower+1, iupper
         t = Ielem(iindex,i)
         j = i-1
-        DO WHILE (Ielem(iindex,j)>t)
+        DO WHILE (Ielem(iindex,j) .GT. t)
           j = j-1
           IF (j .EQ. 0) EXIT
         END DO
@@ -229,6 +230,11 @@ MODULE ArraySort
       
       ! Nothing to sort
       IF (ilow .GE. ihigh) RETURN
+      
+      IF ((ihigh-ilow) .LT. SORT_CUTOFF) THEN
+        call insertsort(ilow, ihigh)
+	RETURN
+      ENDIF
       
       ilo = ilow
       ihi = ihigh
