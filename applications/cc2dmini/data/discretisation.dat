@@ -79,19 +79,6 @@ dUpsam             = 0.1
 
 # ------------------------------------------------------------------------
 
-# inflow configuration; 
-# <0=user defined; 
-# 0=benchmark; 
-# 1=vertical column; must fit to comp. domain!
-# iinflowConfiguration = 0
-
-# Inflow velocity; 
-# If RE=1000.0: benchmark=0.3=RE20, 1.5=RE100, 3=RE200, 3.75=RE250.
-#               vert. channel=10.0; 
-# dUmax              = 1.5
-
-# ------------------------------------------------------------------------
-
 # Generation of mass matrix. 0=lumped mass,1=real mass matrix
 # iMass              = 0
 

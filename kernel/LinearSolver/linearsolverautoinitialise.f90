@@ -316,8 +316,13 @@ CONTAINS
     CASE (LINSOL_ALG_SSOR)
       ! SSOR solver
       !
-      ! Init the solver node
-      CALL linsol_initSSOR (p_rsolverNode)
+      ! Init the solver node.
+      ! Parameters:
+      !  iscale = 1   -> Scale preconditioned vector according to actual formula
+      !                  in the literature
+      !         = 0   -> no scaling, original FEAT implementation
+      CALL parlst_getvalue_int (p_rsection, 'iscale', i1, 0)
+      CALL linsol_initSSOR (p_rsolverNode,bscale = i1 .EQ. 1)
       
     CASE (LINSOL_ALG_BICGSTAB)
       ! BiCGStab solver
@@ -340,6 +345,11 @@ CONTAINS
     CASE (LINSOL_ALG_MILUS1x1)
       ! (M)ILU solver
       !
+      ! Parameters:
+      !  ifillinLevel = 0 / 1 / 2 / ...   -> Fill-in level for factorisation
+      !  drelax       = 0.0               -> Build ILU(s)
+      !               > 0.0               -> Build MILU(s)
+      !
       ! Get fill-in level
       CALL parlst_getvalue_int (p_rsection, 'ifillinLevel', i1, 0)
       
@@ -357,6 +367,16 @@ CONTAINS
     
     CASE (LINSOL_ALG_MULTIGRID)
       ! Multigrid solver
+      !
+      ! Parameters:
+      !  icycle         = 0               -> F-cycle
+      !                 = 1               -> V-cycle
+      !                 = 2               -> W-cycle
+      !  dalphaMin      >= 0.0            -> minimum damping parameter; standard = 1.0
+      !  dalphaMin      >= 0.0            -> maximum damping parameter; standard = 1.0
+      !  spreSmootherName                 -> Name of the presmoother section
+      !  spostSmootherName                -> Name of the postsmoother section
+      !  scoarseGridSolver                -> Name of the coarse grid solver section
       !
       ! Ok, that's the most complicated one :-)
       ! At first, initialise the solver:
