@@ -497,9 +497,9 @@ C local variables
 
       INTEGER KEBD,KVERT,KMID,KXNPR
 
-      INTEGER IMID, IV1, IV2, INPR, INPART, INPRN, NPART
+      INTEGER IMID, IV1, IV2, INPART, INPRN, NPART
       INTEGER KCORVG,KMBDP,IMBD,IMT,KMBD,INPRM,KEAN,NVT
-      DOUBLE PRECISION DPAR, DPARN1, DPARN2, PX1, PY1, PX2, PY2
+      DOUBLE PRECISION DPARN1, DPARN2, PX1, PY1, PX2, PY2
       DOUBLE PRECISION DN1, DN2, PMEAN, DPARM,FDATIN
       EXTERNAL FDATIN
       
@@ -535,9 +535,12 @@ C       (i.e. the midpoint of the edge)?
         DPARM = DWORK(KMBDP+IMBD)
         IMT   = KWORK(KMBD+IMBD)
         
+C       Get the DOF corresponding to that edge:
+        IMID  = IMT - NVT
+        
 C       And what is the boundary component?
 
-        INPRM = KWORK(KXNPR+2*(IMT-1)+1)
+        INPRN = KWORK(KXNPR+2*(IMT-1)+1)
           
 C       Loop through the NPARTS boundary parts and check, if the
 C       edge belongs to a Neumann segment:
@@ -547,17 +550,17 @@ C       edge belongs to a Neumann segment:
 C         Get the parameter values DPARN1,DPARN2 of the boundary segment
 C         from the user-defined routines
 
-          CALL NEUDAT(INPART,INPRN,DPARN1,DPARN2,TIMENS,IPARAM,DPARAM)
+          CALL NEUDAT(INPART,INPRM,DPARN1,DPARN2,TIMENS,IPARAM,DPARAM)
 
 C         Check if DPARV is inside of that segment. 
           
-          IF ((DPAR.GT.DPARN1).AND.(DPAR.LT.DPARN2)
-     *                        .AND.(INPR.EQ.INPRN)) THEN
+          IF ((DPARM.GT.DPARN1).AND.(DPARM.LT.DPARN2)
+     *                          .AND.(INPRM.EQ.INPRN)) THEN
      
 C           Get the vertices adjacent to the edge:
 
-            IV1  = DWORK(KEAN+2*(IMT-NVT-1))
-            IV2  = DWORK(KEAN+2*(IMT-NVT-1)+1)
+            IV1  = KWORK(KEAN+2*(IMT-NVT-1))-1
+            IV2  = KWORK(KEAN+2*(IMT-NVT-1)+1)-1
      
 C           Calculate the outer normal vector to the edge (IV1,IV2):
      
@@ -571,10 +574,10 @@ C           Calculate the outer normal vector to the edge (IV1,IV2):
 C           Call the user defined callback routine to get the
 C           mean pressure value:
             
-            PMEAN = FDATIN(7,INPR,DPAR,DPAR,TIMENS,RE,
+            PMEAN = FDATIN(7,INPRM,DPARM,DPARM,TIMENS,RE,
      *              IMT,TRIA,IPARAM,DPARAM,IGEOM,DGEOM)
      
-C           Include that into the RHS vectors - cf. p. 257 (235) in 
+C           Include that into the RHS vectors - cf. p. 235 in 
 C           Turek's book.
 C           The pressure drop condition is a time independent
 C           right hand side condition! Therefore it's not dependent
