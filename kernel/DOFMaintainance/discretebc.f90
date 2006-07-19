@@ -30,33 +30,40 @@ MODULE discretebc
 
 !<constants>
 
-  !<constantblock description="General constants concerning filters">
+!<constantblock description="General constants concerning filters">
 
   ! A standard length for arrays holding a set of discretised BC's
   INTEGER, PARAMETER :: DISCBC_MAXDISCBC         =  32
 
 !</constantblock>
 
-  !<constantblock description="The type identifier for discrete boundary conditions">
+!<constantblock description="The type identifier for discrete boundary conditions">
 
   ! undefined discrete BC's
   INTEGER, PARAMETER :: DISCBC_TPUNDEFINED    = 0
 
   ! Discrete Dirichlet boundary conditions
   INTEGER, PARAMETER :: DISCBC_TPDIRICHLET    = 1
+  
+  ! Discrete pressure drop boundary conditions
+  INTEGER, PARAMETER :: DISCBC_TPPRESSUREDROP = 2
 
 !</constantblock>
 
 !<constantblock description="Type identifiers for the callback routine during discretisation of BC's">
   
   ! Calculate the function value in a point on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDFUNC       = 0
+  INTEGER, PARAMETER :: DISCBC_NEEDFUNC         = 0
   
   ! Calculate the x- and y-derivative in a point on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDDERIV      = 1
+  INTEGER, PARAMETER :: DISCBC_NEEDDERIV        = 1
 
   ! Calculate the integral mean value over an edge on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDINTMEAN    = 2
+  INTEGER, PARAMETER :: DISCBC_NEEDINTMEAN      = 2
+
+  ! Calculate the normal stress in a point. For flow-like problems,
+  ! this corresponds to a prescribed pressure in pressure-drop problems.
+  INTEGER, PARAMETER :: DISCBC_NEEDNORMALSTRESS = 3
 
 !</constantblock>
   
@@ -88,7 +95,47 @@ MODULE discretebc
     
     ! Handle to array with the Dirichlet value that should be imposed in these nodes
     !   array [1..*] of double
-    INTEGER :: h_IdirichletValues = ST_NOHANDLE
+    INTEGER :: h_DdirichletValues = ST_NOHANDLE
+    
+  END TYPE
+  
+!</typeblock>
+  
+!<typeblock>
+  
+  ! This structure describes the way, pressure drop boundary conditions
+  ! can be discretised. This is done by two arrays: one array is a list of all
+  ! (velocity) DOF's. The second array specifies for each of these DOF's
+  ! the (non-zero) value, the pressure is multiplied with.
+  ! The variable icomponent describes the number of the component/equation
+  ! in the PDE that must be treated that way.
+  
+  TYPE t_discreteBCpressureDrop
+    
+    ! Number of "velocity" components that must be modified when implementing
+    ! pressure drop boundary conditions.
+    INTEGER :: ncomponents = 0
+    
+    ! The components of the solutions/RHS vectors that should be modified
+    ! by pressure drop boundary conditions.
+    ! Each of the 1..ncomponents entries in the vector specifies a component
+    ! in the solution vector that is modified (e.g. 1=X-velocity, 2=Y-velocity 
+    ! or similar)
+    INTEGER, DIMENSION(SPDISC_MAXEQUATIONS) :: Icomponents        = 0
+    
+    ! Number of DOF's in the arrays below; may be different from the length of 
+    ! the array!
+    INTEGER(PREC_DOFIDX)               :: nDOF              = 0
+    
+    ! Handle to array with all velocity DOF's on the boundary that must be 
+    ! modified.
+    !   array [1..*] of integer
+    INTEGER :: h_IpressureDropDOFs   = ST_NOHANDLE
+    
+    ! Handle to array with additive content that must be added to the DOF's
+    ! in the h_IpressureDropDOFs array.
+    !   array [1..NDIM2D,1..*] of double
+    INTEGER :: h_Dmodifier = ST_NOHANDLE
     
   END TYPE
   
@@ -115,6 +162,10 @@ MODULE discretebc
     ! Structure for discrete Dirichlet BC's.
     ! Only valid if itype=DISCBC_TPDIRICHLET.
     TYPE(t_discreteBCDirichlet)         :: rdirichletBCs
+    
+    ! Structure for discrete pressure drop BC's.
+    ! Only valid if itype=DISCBC_TPPRESSUREDROP.
+    TYPE(t_discreteBCpressureDrop)      :: rpressuredropBCs
     
   END TYPE
   

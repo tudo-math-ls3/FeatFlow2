@@ -613,17 +613,8 @@ CONTAINS
   ! local variables
   INTEGER :: ilvmax
   
-    ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-
     ! A pointer to the RHS/solution vector
     TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
-    
-    ! Set up a filter that modifies the block vectors/matrix
-    ! according to boundary conditions.
-    ! Initialise the first filter of the filter chain as boundary
-    ! implementation filter:
-    RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
     
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
@@ -631,12 +622,14 @@ CONTAINS
     p_rrhs    => rproblem%rrhs   
     p_rvector => rproblem%rvector
     
-    ! Apply the filter chain to the vectors.
-    ! As the filter consists only of an implementation filter for
-    ! boundary conditions, this implements the boundary conditions
-    ! into the vectors and matrices.
-    CALL filter_applyFilterChainVec (p_rrhs, RfilterChain)
-    CALL filter_applyFilterChainVec (p_rvector, RfilterChain)
+    ! Next step is to implement boundary conditions into the RHS and
+    ! solution. This is done using a vector filter for discrete boundary 
+    ! conditions.
+    ! The discrete boundary conditions are already attached to the
+    ! vectors. Call the appropriate vector filter that modifies the vectors
+    ! according to the boundary conditions.
+    CALL vecfil_discreteBCrhs (p_rrhs)
+    CALL vecfil_discreteBCsol (p_rvector)
 
   END SUBROUTINE
 
@@ -676,13 +669,10 @@ CONTAINS
     TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
   !</inputoutput>
 
-    ! local variables
-    TYPE(t_bilinearForm) :: rform
-    INTEGER :: ilvmax
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-
-    ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+      ! local variables
+      TYPE(t_bilinearForm) :: rform
+      INTEGER :: ilvmax
+      TYPE(t_matrixBlock), POINTER :: p_rmatrix
 
       ! Get maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -744,26 +734,19 @@ CONTAINS
       ! Remove the vector from the collection - not necessary anymore.
       CALL collct_deletevalue (p_rcollection,'RX')
       
-      ! Set up a filter that modifies the block vectors/matrix
-      ! according to boundary conditions.
-      ! Initialise the first filter of the filter chain as boundary
-      ! implementation filter for defect vectors:
-      RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-      
-      ! Apply the filter chain to the matrix, too.
-      ! This modifies all matrices according to the discrete boundary 
-      ! conditions.
-      CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+      ! Implement discrete boundary conditions into the matrix. 
+      ! Call the appropriate matrix filter to modify the system matrix 
+      ! according to the attached discrete boundary conditions.
+      CALL matfil_discreteBC (p_rmatrix)
       
       ! Build the defect: d=b-Ax
       CALL lsysbl_copyVector (rb,rd)
       CALL lsysbl_blockMatVec (p_rmatrix, rx, rd, -1.0_DP, 1.0_DP)
     
-      ! Apply the filter chain to the defect vector.
-      ! As the filter consists only of an implementation filter for
-      ! boundary conditions, this implements the boundary conditions
-      ! into the defect vector.
-      CALL filter_applyFilterChainVec (rd, RfilterChain)
+      ! Apply the defect-vector filter for discrete boundary conditions
+      ! to modify the defect vector according to the (discrete) boundary
+      ! conditions.
+      CALL vecfil_discreteBCdef (rd)
 
       ! That's it
   
@@ -821,9 +804,6 @@ CONTAINS
     TYPE(t_vectorScalar), POINTER :: p_rvectorTemp
     TYPE(t_bilinearForm) :: rform
 
-    ! A filter chain to pre-filter the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-  
       ! Our 'parent' (the caller of the nonlinear solver) has prepared
       ! a preconditioner node for us (a linear solver with symbolically
       ! factorised matrices). Get this from the collection.
@@ -940,16 +920,10 @@ CONTAINS
         ! Remove RX from the collection, not needed there anymore.
         CALL collct_deletevalue(p_rcollection,'RX')
         
-        ! Set up a filter that modifies the block vectors/matrix
-        ! according to boundary conditions.
-        ! Initialise the first filter of the filter chain as boundary
-        ! implementation filter for defect vectors:
-        RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-        
-        ! Apply the filter chain to the matrix, too.
-        ! This modifies all matrices according to the discrete boundary 
-        ! conditions.
-        CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+        ! Implement discrete boundary conditions into the matrix. 
+        ! Call the appropriate matrix filter to modify the system matrix
+        ! according to the attached discrete boundary conditions.
+        CALL matfil_discreteBC (p_rmatrix)
         
         ! Sort the matrix according to the attached sorting strategy -
         ! if there's a sorting strategy attached at all

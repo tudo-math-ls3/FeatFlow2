@@ -380,29 +380,38 @@ CONTAINS
     
     REAL(DP), PARAMETER :: dinflowSpeed = 0.3_DP
     
-    ! Get from the current component of the PDE we are discretising:
-    icomponent = Icomponents(1)
-    
-    ! -> 1=X-velocity, 2=Y-velocity.
-    
-    ! Return zero Dirichlet boundary values for all situations by default.
-    Dvalues(1) = 0.0_DP
+    SELECT CASE (cinfoNeeded)
+    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDDERIV,DISCBC_NEEDINTMEAN)
+      ! Get from the current component of the PDE we are discretising:
+      icomponent = Icomponents(1)
+      
+      ! -> 1=X-velocity, 2=Y-velocity.
+      
+      ! Return zero Dirichlet boundary values for all situations by default.
+      Dvalues(1) = 0.0_DP
 
-    ! Now, depending on the problem, calculate the actual velocity value.
-    IF (rbcRegion%rboundaryRegion%iboundCompIdx .EQ. 1) THEN
-      SELECT CASE (icomponent)
-      CASE (1) ! X-velocity
-        IF ((dwhere .GE. 3.0_DP) .AND. (dwhere .LE. 4.0_DP)) THEN
-          CALL boundary_getCoords(rdiscretisation%p_rdomain, &
-                        rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, &
-                        x, y)
-          Dvalues(1) = mprim_getParabolicProfile (y,0.41_DP,dinflowSpeed)
-        END IF
+      ! Now, depending on the problem, calculate the actual velocity value.
+      IF (rbcRegion%rboundaryRegion%iboundCompIdx .EQ. 1) THEN
+        SELECT CASE (icomponent)
+        CASE (1) ! X-velocity
+          IF ((dwhere .GE. 3.0_DP) .AND. (dwhere .LE. 4.0_DP)) THEN
+            CALL boundary_getCoords(rdiscretisation%p_rdomain, &
+                          rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, &
+                          x, y)
+            Dvalues(1) = mprim_getParabolicProfile (y,0.41_DP,dinflowSpeed)
+          END IF
 
-      CASE (2) ! Y-velocity
-        ! Nothing to do here.
-      END SELECT
-    END IF
+        CASE (2) ! Y-velocity
+          ! Nothing to do here.
+        END SELECT
+      END IF
+    
+    CASE (DISCBC_NEEDNORMALSTRESS)
+      
+      ! Normal stress on inflow is 1.0, let's say.
+      Dvalues(1) = -0.025_DP
+    
+    END SELECT
     
   END SUBROUTINE
 

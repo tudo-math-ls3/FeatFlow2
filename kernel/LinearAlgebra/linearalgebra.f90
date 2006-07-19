@@ -890,7 +890,7 @@ CONTAINS
     resnorm = Fx(1)*Fx(1)
     DO i=2,SIZE(Fx)
       resnorm = resnorm + Fx(i)*Fx(i)
-    END DO
+      END DO
     resnorm = SQRT(resnorm)
 
   CASE (LINALG_NORML1)

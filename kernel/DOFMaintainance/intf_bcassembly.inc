@@ -22,9 +22,14 @@
   !<input>
     ! Component specifier.
     ! For Dirichlet boundary: 
-    !   Icomponents(1) defines the number of the boundary component, the value
+    !   Icomponents(1) defines the number of the solution component, the value
     !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
-    !   2=2nd solution component, e.g. Y-velocity,...)
+    !   2=2nd solution component, e.g. Y-velocity,...,
+    !   3=3rd solution component, e.g. pressure)
+    ! For pressure drop boundary / normal stress:
+    !   Velocity components that are affected by the normal stress
+    !   (usually "1 2" for x- and y-velocity while returned value musr specify
+    !   the pressure at the boundary)
     INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
   
     ! The discretisation structure that defines the basic shape of the
@@ -58,6 +63,8 @@
     ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    !   iwhere = Number of the edge where the normal stress should be computed.
     INTEGER, INTENT(IN)                                         :: iwhere
 
     ! A reference to a geometric object where information should be computed.
@@ -67,6 +74,9 @@
     !   dwhere = parameter value of the point where the value should be computed,
     ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
     !   dwhere = 0 (not used)
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    !   dwhere = parameter value of the point on edge iwhere where the normal
+    !            stress should be computed.
     REAL(DP), INTENT(IN)                                        :: dwhere
      
     ! A pointer to a collection structure to provide additional 

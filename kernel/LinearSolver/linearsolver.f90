@@ -6669,6 +6669,7 @@ CONTAINS
       ! In that case we can directly stop our computation.
 
       IF ( rsolverNode%dinitialDefect .LT. rsolverNode%drhsZero ) THEN
+      
         ! final defect is 0, as initialised in the output variable above
         CALL lsysbl_clearVector(rd)
         rsolverNode%dfinalDefect = dres
@@ -7091,10 +7092,11 @@ CONTAINS
           PRINT *,'Multigrid: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
         END IF
         
+        ! Final number of iterations
+        rsolverNode%iiterations = ite
+      
       END IF
 
-      rsolverNode%iiterations = ite
-      
       ! Finally, we look at some statistics:
       !
       ! Don't calculate anything if the final residuum is out of bounds -

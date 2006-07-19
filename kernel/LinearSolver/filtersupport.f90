@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> FilterSupport </name>
+!# <name> filtersupport </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -64,19 +64,27 @@ MODULE filtersupport
   INTEGER, PARAMETER :: FILTER_DISCBCSOLREAL     =  1
 
   ! Vector filter for imposing discrete boundary conditions of the 
+  ! real boundary into a right-hand-side vector.
+  INTEGER, PARAMETER :: FILTER_DISCBCRHSREAL     =  2
+
+  ! Vector filter for imposing discrete boundary conditions of the 
   ! real boundary into a defect vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCDEFREAL     =  2
+  INTEGER, PARAMETER :: FILTER_DISCBCDEFREAL     =  3
 
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a solution vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCSOLFICT     =  3
+  INTEGER, PARAMETER :: FILTER_DISCBCSOLFICT     =  4
+
+  ! Vector filter for imposing discrete boundary conditions of 
+  ! the fictitious boundary into a right-hand-side vector.
+  INTEGER, PARAMETER :: FILTER_DISCBCRHSFICT     =  5
 
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a defect vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCDEFFICT     =  4
+  INTEGER, PARAMETER :: FILTER_DISCBCDEFFICT     =  6
 
   ! Vector filter for bringing a subvector of a vector to the space $L^2_0$.
-  INTEGER, PARAMETER :: FILTER_TOL20             =  5
+  INTEGER, PARAMETER :: FILTER_TOL20             =  7
 
 !</constantblock>
   
@@ -154,12 +162,16 @@ CONTAINS
       EXIT
       
     CASE (FILTER_DISCBCSOLREAL)
-      ! Impose Dirichlet boundary contitions into the defect vector rx
-      CALL vecfil_discreteBC (rx)
+      ! Impose Dirichlet boundary contitions into the solution vector rx
+      CALL vecfil_discreteBCsol (rx)
+    
+    CASE (FILTER_DISCBCRHSREAL)
+      ! Impose Dirichlet boundary contitions into the RHS vector rx
+      CALL vecfil_discreteBCrhs (rx)
     
     CASE (FILTER_DISCBCDEFREAL)
       ! Impose Dirichlet boundary contitions into the defect vector rx
-      CALL vecfil_discreteBCDefect (rx)
+      CALL vecfil_discreteBCdef (rx)
 
     CASE (FILTER_TOL20)
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
@@ -220,7 +232,7 @@ CONTAINS
       ! array
       EXIT
       
-    CASE (FILTER_DISCBCSOLREAL,FILTER_DISCBCDEFREAL)
+    CASE (FILTER_DISCBCSOLREAL,FILTER_DISCBCRHSREAL,FILTER_DISCBCDEFREAL)
       ! Impose Dirichlet boundary contitions into the matrix rmatrix.
       ! The filter is the same for both, solution and defect filter,
       ! as the matrix modification is teh same (for now).

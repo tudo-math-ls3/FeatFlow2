@@ -53,6 +53,10 @@
 !#     -> Adds a Dirichlet boundary condition the real boundary to a 
 !#        boundary-condition object
 !#
+!# 5.) bcond_newPressureDropBConRealBD
+!#     -> Adds a pressure-drop boundary condition the real boundary to a 
+!#        boundary-condition object
+!#
 !# </purpose>
 !##############################################################################
 
@@ -79,8 +83,11 @@ MODULE boundarycondition
   ! Robin boundary conditions
   INTEGER, PARAMETER :: BC_ROBIN          = 2
   
+  ! Pressure-drop boundary conditions
+  INTEGER, PARAMETER :: BC_PRESSUREDROP   = 3
+  
   ! Flux boundary conditions
-  INTEGER, PARAMETER :: BC_FLUX           = 3
+  INTEGER, PARAMETER :: BC_FLUX           = 4
 
 !</constantblock>
 
@@ -152,6 +159,9 @@ MODULE boundarycondition
     !   is identified by "nequations=1" + "Iequations=[2]".
     ! A boundary condition like "u_x + u_y = const"
     !   is identified by "nequations=2" + "Iequations=[1 2]".
+    ! "Pressure drop" boundary conditions that must modify two "velocity"
+    !   components 1(=x), 2(=y) are identified by
+    !   "nequations=2" + "Iequations=[1 2]".
     ! Basically, this is a list of the blocks in a block solution vector
     ! that are affected by a boundary condition. The list here is actually
     ! bounadry-condition specific, i.e. another BC than Dirichlet can use
@@ -509,4 +519,60 @@ CONTAINS
 
   END SUBROUTINE
       
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE bcond_newPressureDropBConRealBD (rboundaryConditions,IvelEqns,&
+                                              rboundaryRegion,p_rbcRegion)
+  
+!<description>
+  ! Adds a Pressure-Drop boundary condition region to the boundary condition 
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
+  ! can add some user-defined information there if necessary 
+  ! (e.g. the name, a tag or something else).
+!</description>
+
+!<input>
+  ! A list of identifiers for the velocity equations, this boundary condition
+  ! modifies. Usually (1,2) for X- and Y-velocity.
+  INTEGER, DIMENSION(:), INTENT(IN) :: IvelEqns
+
+  ! A boundary-condition-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  ! A copy of this is added to the rboundaryConditions structure.
+  TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
+!</input>
+
+!<inputoutput>
+  ! The structure where the boundary condition region is to be added.
+  TYPE(t_boundaryConditions), INTENT(INOUT), TARGET :: rboundaryConditions
+!</inputoutput>
+
+!<output>
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make more specific
+  ! modifications to this.
+  TYPE(t_bcRegion), OPTIONAL, POINTER :: p_rbcRegion
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_bcRegion), POINTER :: p_rbcReg
+
+  ! Add a general boundary condition region.
+  CALL bcond_newBConRealBD (BC_PRESSUREDROP,BC_RTYPE_REAL,rboundaryConditions,&
+                            rboundaryRegion,p_rbcReg)
+
+  ! Modify the structure, impose additionally needed information
+  ! for Dirichlet boundary - in detail, set the equation where the BC
+  ! applies to.
+  p_rbcReg%nequations = SIZE(IvelEqns)
+  p_rbcReg%Iequations(1:SIZE(IvelEqns)) = IvelEqns
+
+  ! Eventually, return the pointer
+  IF (PRESENT(p_rbcRegion)) p_rbcRegion => p_rbcReg
+
+  END SUBROUTINE
+
 END MODULE

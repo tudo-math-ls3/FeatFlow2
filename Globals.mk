@@ -527,7 +527,7 @@ FC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gfortran
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -march=opteron -pipe -J$(MODDIR) -I$(MODDIR)
 CCFLAGS   = -march=opteron -pipe
-LDFLAGS   = -Wl,-rpath,/home/user/hron/nobackup/apps/gfortran/irun/lib64
+LDFLAGS   = -Wl
 BLASLIB   = 
 LAPACKLIB = 
 endif
@@ -560,9 +560,22 @@ LAPACKLIB =
 endif
 
 # IFORT compiler, standard BLAS, large arrays > 2GB
-# High precision: 128 bit double, 64 bit integer
 
 ifeq ($(ID),pc64-opteron-linux-ifclarge)
+CC=/usr/local/icce/bin/icc
+FC=/usr/local/ifce/bin/ifort
+OPTFLAGS  = 
+FCFLAGS   = -mcmodel=medium  -module $(MODDIR)
+CCFLAGS   = -mcmodel=medium 
+LDFLAGS   = -i-dynamic
+BLASLIB   = 
+LAPACKLIB = 
+endif
+
+# IFORT compiler, standard BLAS, large arrays > 2GB
+# High precision: 128 bit double, 64 bit integer
+
+ifeq ($(ID),pc64-opteron-linux-ifclargeprec)
 CC=/usr/local/icce/bin/icc
 FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = 

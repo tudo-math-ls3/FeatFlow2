@@ -303,26 +303,22 @@ CONTAINS
     CALL lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .TRUE.)
     CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .FALSE.)
     
-    ! The next step is to set up a filter that modifies the block
-    ! vectors according to boundary conditions.
-    ! Initialise the first filter of the filter chain as boundary
-    ! implementation filter:
-    RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
-    
-    ! Apply the filter chain to the matrix and the vectors.
-    ! As the filter consists only of an implementation filter for
-    ! boundary conditions, this implements the boundary conditions
-    ! into the vectors and matrices
-    CALL filter_applyFilterChainVec (rrhsBlock, RfilterChain)
-    CALL filter_applyFilterChainVec (rvectorBlock, RfilterChain)
-    CALL filter_applyFilterChainMat (rmatrixBlock, RfilterChain)
+    ! Next step is to implement boundary conditions into the RHS,
+    ! solution and matrix. This is done using a vector/matrix filter
+    ! for discrete boundary conditions.
+    ! The discrete boundary conditions are already attached to the
+    ! vectors/matrix. Call the appropriate vector/matrix filter that
+    ! modifies the vectors/matrix according to the boundary conditions.
+    CALL vecfil_discreteBCrhs (rrhsBlock)
+    CALL vecfil_discreteBCsol (rvectorBlock)
+    CALL matfil_discreteBC (rmatrixBlock)
     
     ! During the linear solver, the boundary conditions are also
     ! frequently imposed to the vectors. But as the linear solver
     ! does not work with the actual solution vectors but with
-    ! defect vectors instead, a filter for implementing the real
-    ! boundary conditions would be wrong.
-    ! Therefore, change the filter to work with defect vectors:
+    ! defect vectors instead.
+    ! So, set up a filter chain that filters the defect vector
+    ! during the solution process to implement discrete boundary conditions.
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
     ! Create a BiCGStab-solver. Attach the above filter chain

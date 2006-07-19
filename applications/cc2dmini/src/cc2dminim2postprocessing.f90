@@ -79,9 +79,6 @@ CONTAINS
     ! Discrete boundary conditions for the output vector
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
 
-    ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-
     ! Get the solution vector from the problem structure.
     p_rvector => rproblem%rvector
     
@@ -120,19 +117,17 @@ CONTAINS
     CALL spdp_projectSolution (p_rvector,rprjVector)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
-    ! discretisation:
+    ! discretisation for implementing them into a solution vector.
     NULLIFY(p_rdiscreteBC)
     CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
-                            .FALSE.,getBoundaryValues,rproblem%rcollection)
+                            .FALSE.,getBoundaryValues,rproblem%rcollection,&
+                            BCASM_DISCFORSOL)
                             
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => p_rdiscreteBC
     
-    ! Set up a boundary condition filter for Dirichlet boundary conditions
-    ! and pass the vector through it. This finally implements the Dirichlet
-    ! boundary conditions into the output vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
-    CALL filter_applyFilterChainVec (rprjVector, RfilterChain)
+    ! Filter the solution vector to implement discrete BC's.
+    CALL vecfil_discreteBCsol (rprjVector)
     
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     !

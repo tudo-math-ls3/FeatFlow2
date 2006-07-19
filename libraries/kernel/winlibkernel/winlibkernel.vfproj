@@ -6,21 +6,21 @@
 		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" AdditionalIncludeDirectories="../include" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" AdditionalIncludeDirectories="../include" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
+				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration></Configurations>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="BasicGeometry">
@@ -56,6 +56,7 @@
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\DOFMaintainance\feevaluation.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintainance\intf_bcassembly.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintainance\intf_coefficientMatrixSc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintainance\intf_coefficientVectorSc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintainance\linearformevaluation.f90">
@@ -97,7 +98,9 @@
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolver.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolverautoinitialise.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolverautoinitialise.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\LinearSolver\vanca.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>

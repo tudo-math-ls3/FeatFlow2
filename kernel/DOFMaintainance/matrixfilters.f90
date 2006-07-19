@@ -225,6 +225,9 @@ CONTAINS
         END IF
       END DO
       
+    CASE (DISCBC_TPPRESSUREDROP)  
+      ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+      
     CASE DEFAULT
       PRINT *,'matfil_discreteBC: unknown boundary condition: ',&
               p_RdiscreteBC(i)%itype

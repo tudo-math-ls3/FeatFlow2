@@ -466,9 +466,6 @@ CONTAINS
 
   ! local variables
   
-    ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
@@ -479,19 +476,15 @@ CONTAINS
     p_rvector => collct_getvalue_vec(rcollection,'SOLUTION')
     p_rmatrix => collct_getvalue_mat(rcollection,'LAPLACE')
     
-    ! The next step is to set up a filter that modifies the block
-    ! vectors according to boundary conditions.
-    ! Initialise the first filter of the filter chain as boundary
-    ! implementation filter:
-    RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
-    
-    ! Apply the filter chain to the matrix and the vectors.
-    ! As the filter consists only of an implementation filter for
-    ! boundary conditions, this implements the boundary conditions
-    ! into the vectors and matrices
-    CALL filter_applyFilterChainVec (p_rrhs, RfilterChain)
-    CALL filter_applyFilterChainVec (p_rvector, RfilterChain)
-    CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+    ! Next step is to implement boundary conditions into the RHS,
+    ! solution and matrix. This is done using a vector/matrix filter
+    ! for discrete boundary conditions.
+    ! The discrete boundary conditions are already attached to the
+    ! vectors/matrix. Call the appropriate vector/matrix filter that
+    ! modifies the vectors/matrix according to the boundary conditions.
+    CALL vecfil_discreteBCrhs (p_rrhs)
+    CALL vecfil_discreteBCsol (p_rvector)
+    CALL matfil_discreteBC (p_rmatrix)
 
   END SUBROUTINE
 

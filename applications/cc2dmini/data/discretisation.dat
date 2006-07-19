@@ -90,15 +90,15 @@ dUpsam             = 0.1
 
 # cubature formula for Stokes/Laplacian matrix
 
-icubLaplace        = 204
+icubLaplace          = 204
 
 # cubature formula for Pressure matrices B
 
-icubB              = 204
+icubB                = 204
 
 # cubature formula for RHS F
 
-icubF              = 204
+icubF                = 204
 
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.
@@ -111,7 +111,7 @@ icubF              = 204
 # 1=switch to constant mat. gen., depending on dAdMatThreshold; 
 # 2=switch mat. gen. depenting on size of ncurrent and neighbour element
 
-iAdaptiveMatrix    = 1
+iAdaptiveMatrix    = 0
 
 # Treshold parameter: 
 # switch construction of coarse grid matrices from standard finite element 

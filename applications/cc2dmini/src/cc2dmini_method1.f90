@@ -761,9 +761,24 @@ CONTAINS
       ! values on the boundary. We pass our collection structure as well
       ! to this routine, so the callback routine has access to everything what is
       ! in the collection.
+      !
+      ! On maximum level, discretrise everything. On lower level, discretise
+      ! only for the implementation into the matrices and defect vector. 
+      ! That's enough, as the lower levels are only used for preconditioning 
+      ! of defect vectors.
+      
       NULLIFY(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      CALL bcasm_discretiseBC (p_rdiscretisation,rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                              .FALSE.,getBoundaryValues,rproblem%rcollection)
+      IF (i .EQ. rproblem%NLMAX) THEN
+        CALL bcasm_discretiseBC (p_rdiscretisation, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBC, &
+                                .FALSE.,getBoundaryValues, &
+                                rproblem%rcollection)
+      ELSE
+        CALL bcasm_discretiseBC (p_rdiscretisation, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBC, &
+                                .FALSE.,getBoundaryValues, &
+                                rproblem%rcollection,BCASM_DISCFORDEFMAT)
+      END IF
                                
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
@@ -810,19 +825,10 @@ CONTAINS
   ! local variables
   INTEGER :: i,ilvmax
   
-    ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
-
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
-    
-    ! Set up a filter that modifies the block vectors/matrix
-    ! according to boundary conditions.
-    ! Initialise the first filter of the filter chain as boundary
-    ! implementation filter:
-    RfilterChain(1)%ifilterType = FILTER_DISCBCSOLREAL
     
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
@@ -830,21 +836,21 @@ CONTAINS
     p_rrhs    => rproblem%rrhs   
     p_rvector => rproblem%rvector
     
-    ! Apply the filter chain to the vectors.
-    ! As the filter consists only of an implementation filter for
-    ! boundary conditions, this implements the boundary conditions
-    ! into the vectors and matrices.
-    CALL filter_applyFilterChainVec (p_rrhs, RfilterChain)
-    CALL filter_applyFilterChainVec (p_rvector, RfilterChain)
-
-    ! Apply the filter chain to the matrices on all levels, too.
-    ! This modifies all matrices according to the discrete boundary 
+    ! Filter the solution and RHS vectors through the boundary-condition-
+    ! implementation filter. This implements all discrete boundary
     ! conditions.
+    ! Use the RHS-filter for the RHS and the solution-filter for the
+    ! solution vector.
+    CALL vecfil_discreteBCrhs (p_rrhs)
+    CALL vecfil_discreteBCsol (p_rvector)
+
+    ! Implement discrete boundary conditions into the matrices on all 
+    ! levels, too.
     ! In fact, this modifies the B-matrices. The A-matrices are overwritten
     ! later and must then be modified again!
     DO i=rproblem%NLMIN ,rproblem%NLMAX
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+      CALL matfil_discreteBC (p_rmatrix)
     END DO
 
   END SUBROUTINE
