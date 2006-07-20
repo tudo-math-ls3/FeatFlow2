@@ -76,6 +76,12 @@ MODULE fsystem
   ! standard length for name strings in FEAT
   INTEGER, PARAMETER :: SYS_NAMELEN = 32
 
+  ! minimal difference to unity for real values
+  REAL(DP)           :: SYS_EPSREAL = EPSILON(1.0_DP)
+
+  ! minimal positive values for real variables
+  REAL(DP)           :: SYS_MINREAL = TINY(1.0_DP)
+
   ! maximal values for real variables
   REAL(DP)           :: SYS_MAXREAL = HUGE(1.0_DP)
 
