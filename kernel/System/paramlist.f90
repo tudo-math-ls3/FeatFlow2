@@ -23,6 +23,13 @@
 !# 
 !# [section2]
 !# parameter5 = data4    # This is a comment
+!#
+!# [section3]
+!# parameterlist(4)=     # An array consisting of 4 strings
+!#   data-line1
+!#   data-line2
+!#   data-line3
+!#   data-line4
 !# -------------------------snip------------------------------
 !# the .INI file is build up by different sections.
 !# Each section starts with the section name enclosed by
@@ -39,6 +46,9 @@
 !# - multiple words, enclosed by apostrophes.
 !# Spaces in the parameter data are ignored except when they
 !# are enclosed by apostrophes. 
+!# A parameter name followed by "(n)" is assumed to be an array.
+!# The following n nonempty lines define string values for all
+!# n entries in the array.
 !# 
 !# Empty lines are ignored. When there is a '#' character in
 !# a line not enclosed by apostrophes, the rest of the line is
@@ -68,17 +78,20 @@
 !#  7.) parlst_queryvalue
 !#      -> Determines whether or not a parameter exists
 !#
-!#  8.) parlst_getvalue_string
+!#  8.) parlst_querysubstrings
+!#      -> Returns the number of substrings in a parameter
+!#
+!#  9.) parlst_getvalue_string
 !#      parlst_getvalue_int
 !#      parlst_getvalue_double
 !#      -> Get the string/int/real value of a parameter from the parameter list
 !#
-!#  9.) parlst_addvalue
+!# 10.) parlst_addvalue
 !#     -> Adds a new parameter to the parameter list
 !#
-!# 10.) parlst_setvalue
+!# 11.) parlst_setvalue
 !#      -> Modifies the value of a parameter in the list
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -129,6 +142,30 @@ MODULE paramlist
   
   !<typeblock>
   
+  ! This structure realises a value associated to a parameter name.
+  ! A value consists of one string or an array of strings.
+  
+  TYPE t_parlstValue
+  
+    PRIVATE
+    
+    ! Number of strings. If set to 0, the value consists of one
+    ! string, to be found in svalue. If > 0, there are nsize
+    ! strings to be found in p_Sentry.
+    INTEGER :: nsize = 0
+    
+    ! Single string; contains the value in case nsize=0
+    CHARACTER(LEN=PARLST_MLDATA) :: sentry = ''
+    
+    ! Array of strings in case nsize>0
+    CHARACTER(LEN=PARLST_MLDATA), DIMENSION(:), POINTER :: p_Sentry => NULL()
+  
+  END TYPE
+  
+  !</typeblock>
+  
+  !<typeblock>
+  
   ! This structure realises a parameter section. It contains an
   ! array with parameter names and an array with parameter values
   ! to these names. The arrays are dynamically allocated. 
@@ -147,9 +184,9 @@ MODULE paramlist
     ! characters.
     CHARACTER(LEN=PARLST_MLNAME), DIMENSION(:), POINTER :: p_Sparameters => NULL()
     
-    ! A list of parameter valses. Each name contains PARLST_MLDATA
-    ! characters. The length is identical to p_sparameters.
-    CHARACTER(LEN=PARLST_MLDATA), DIMENSION(:), POINTER :: p_Svalues => NULL()
+    ! A list of t_parlstValue structures corresponding to the parameters
+    ! in p_Sparameters.
+    TYPE(t_parlstValue), DIMENSION(:), POINTER :: p_Rvalues
     
   END TYPE
   
@@ -185,6 +222,11 @@ MODULE paramlist
   INTERFACE parlst_queryvalue
     MODULE PROCEDURE parlst_queryvalue_direct
     MODULE PROCEDURE parlst_queryvalue_indir
+  END INTERFACE
+
+  INTERFACE parlst_querysubstrings
+    MODULE PROCEDURE parlst_querysubstrings_direct
+    MODULE PROCEDURE parlst_querysubstrings_indir
   END INTERFACE
 
   INTERFACE parlst_addvalue
@@ -229,7 +271,7 @@ CONTAINS
   
   ! Simply allocate the pointers with an empty list
   ALLOCATE(rparlstSection%p_Sparameters(PARLST_NPARSPERBLOCK))
-  ALLOCATE(rparlstSection%p_Svalues(PARLST_NPARSPERBLOCK))
+  ALLOCATE(rparlstSection%p_Rvalues(PARLST_NPARSPERBLOCK))
   
   ! and set the section name
   rparlstSection%ssectionName = sname
@@ -253,30 +295,59 @@ CONTAINS
   
   ! local variables
   
-  INTEGER :: sz
+  INTEGER :: sz,oldsize
 
   ! Pointers to new lists for replacing the old.
   CHARACTER(LEN=PARLST_MLNAME), DIMENSION(:), POINTER :: p_Sparameters 
-  CHARACTER(LEN=PARLST_MLDATA), DIMENSION(:), POINTER :: p_Svalues 
+  TYPE(t_parlstValue), DIMENSION(:), POINTER :: p_Rvalues
   
-  sz = MAX(SIZE(rparlstSection%p_Sparameters),inewsize)
+  oldsize = SIZE(rparlstSection%p_Sparameters)
+  sz = MAX(oldsize,inewsize)
   
   IF (SIZE(rparlstSection%p_Sparameters) .EQ. sz) RETURN ! nothing to do
   
   ! Allocate the pointers for the new lists
   ALLOCATE(p_Sparameters(sz))
-  ALLOCATE(p_Svalues(sz))
+  ALLOCATE(p_Rvalues(sz))
   
   ! Copy the content of the old ones
-  p_Sparameters(1:sz) = rparlstSection%p_Sparameters (1:sz)
-  p_Svalues(1:sz) = rparlstSection%p_Svalues (1:sz)
+  p_Sparameters(1:oldsize) = rparlstSection%p_Sparameters (1:oldsize)
+  p_Rvalues(1:oldsize) = rparlstSection%p_Rvalues (1:oldsize)
   
   ! Throw away the old arrays, replace by the new ones
-  DEALLOCATE(rparlstSection%p_Svalues)
+  DEALLOCATE(rparlstSection%p_Rvalues)
   DEALLOCATE(rparlstSection%p_Sparameters)
   
   rparlstSection%p_Sparameters => p_Sparameters
-  rparlstSection%p_Svalues => p_Svalues
+  rparlstSection%p_Rvalues => p_Rvalues
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+  ! Internal subroutine: Release a section.
+  ! Removes all temporary memory that is allocated by a section.
+  
+  SUBROUTINE parlst_releasesection (rparlstSection)
+  
+  ! The section to release.
+  TYPE(t_parlstSection), INTENT(INOUT) :: rparlstSection
+  
+  ! local variables
+  INTEGER :: i
+  
+  ! Loop through all values in the current section if there is
+  ! an array-value. Release them.
+  DO i=SIZE(rparlstSection%p_Rvalues),1,-1
+    IF (rparlstSection%p_Rvalues(i)%nsize .GT. 0) THEN
+      DEALLOCATE(rparlstSection%p_Rvalues(i)%p_Sentry)
+    END IF
+  END DO
+  
+  ! Remove the content of the section.
+  DEALLOCATE(rparlstSection%p_Rvalues)
+  DEALLOCATE(rparlstSection%p_Sparameters)
+  rparlstSection%iparamCount = 0
   
   END SUBROUTINE
 
@@ -470,10 +541,7 @@ CONTAINS
 
   ! Loop through the parameter lists and release the content
   DO i=rparlist%isectionCount,1,-1
-    
-    DEALLOCATE(rparlist%p_Rsections(i)%p_Svalues)
-    DEALLOCATE(rparlist%p_Rsections(i)%p_Sparameters)
-    
+    CALL parlst_releasesection (rparlist%p_Rsections(i))
   END DO
 
   ! Release all sections
@@ -703,14 +771,129 @@ CONTAINS
 
   ! ***************************************************************************
   
+!<function>
+
+  INTEGER FUNCTION parlst_querysubstrings_indir (rsection, sparameter) &
+               RESULT (iresult)
+          
+!<description>
+  ! Returns the number of substrings of a parameter.
+!</description>
+  
+!<result>
+  ! The number of substrings of parameter sparameter in section rsection.
+!</result>
+
+!<input>
+    
+  ! The section where to search for the parameter
+  TYPE(t_parlstSection), INTENT(IN) :: rsection
+
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+!</input>
+  
+!</function>
+
+  ! local variables
+  INTEGER :: idx
+  CHARACTER(LEN=PARLST_MLNAME) :: paramname
+  
+  IF (sparameter .EQ. '') THEN
+    PRINT *,'Empty parameter name!'
+    STOP
+  END IF
+  
+  ! Create the upper-case parameter name
+  paramname = ADJUSTL(sparameter)
+  CALL parlst_toupper (paramname)
+  
+  ! Get the parameter index into 'idx', finish.
+  CALL parlst_fetchparameter(rsection, paramname, idx)
+  
+  ! Return number of substrings
+  iresult = rsection%p_Rvalues(idx)%nsize
+  
+  END FUNCTION
+  
+  ! ***************************************************************************
+  
+!<function>
+
+  INTEGER FUNCTION parlst_querysubstrings_direct (rparlist, ssectionName, sparameter) &
+               RESULT (iresult)
+          
+!<description>
+  ! Checks whether a parameter sparameter exists in the section ssectionname
+  ! in the parameter list rparlist.
+!</description>
+  
+!<result>
+  ! The index of the parameter in the section ssectionName or =0, if the
+  ! parameter does not exist within the section.
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_parlist), INTENT(IN) :: rparlist
+  
+  ! The section name - '' identifies the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+!</input>
+  
+!</function>
+
+  ! local variables
+  INTEGER :: idx
+  TYPE(t_parlstSection), POINTER :: p_rsection
+  
+  ! Cancel if the list is not initialised.
+  IF (rparlist%isectionCount .EQ. 0) THEN
+    PRINT *,'Parameter list not initialised!'
+    STOP
+  END IF
+  
+  ! Get the section
+  CALL parlst_querysection(rparlist, ssectionName, p_rsection) 
+  IF (.NOT. ASSOCIATED(p_rsection)) THEN
+    PRINT *,'Section not found'
+    RETURN
+  END IF
+  
+  ! Get the parameter index
+  idx = parlst_queryvalue_indir (p_rsection, sparameter)
+
+  ! Return number of substrings
+  iresult = p_rsection%p_Rvalues(idx)%nsize
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
 !<subroutine>
   SUBROUTINE parlst_getvalue_string_indir (rsection, &
-                                           sparameter, svalue, sdefault)
+                                           sparameter, svalue, sdefault, &
+                                           isubstring)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, sdefault is returned.
   ! If sdefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of strings, the optional parameter isubstring>=0
+  ! allows to specify the number of the substring to be returned; 
+  ! isubstring=0 returns the value directly
+  ! behind the '=' sign in the line of the parameter, isubstring>0 returns
+  ! the array-entry in the lines below the parameter.
+  !
+  ! When ommitting isubstring, the value directly behind the '=' sign
+  ! is returned.
   
 !</description>
   
@@ -725,6 +908,12 @@ CONTAINS
   ! Optional: A default value
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdefault
   
+  ! Optional: The number of the substring to be returned.
+  ! =0: returns the string directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns substring isubstring.
+  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+  
 !</input>
   
 !<output>
@@ -737,7 +926,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,isub
   CHARACTER(LEN=PARLST_MLNAME) :: paramname
   
   IF (sparameter .EQ. '') THEN
@@ -760,7 +949,16 @@ CONTAINS
       STOP
     END IF
   ELSE
-    svalue = rsection%p_Svalues (i)
+    ! Depending on isubstring, return either the 'headline' or one
+    ! of the substrings.
+    isub = 0
+    IF (PRESENT(isubstring)) isub = isubstring
+  
+    IF ((isub .LE. 0) .OR. (isub .GT. rsection%p_Rvalues(i)%nsize)) THEN
+      svalue = rsection%p_Rvalues(i)%sentry
+    ELSE
+      svalue = rsection%p_Rvalues(i)%p_Sentry(isub)
+    END IF
   END IF
 
   END SUBROUTINE
@@ -769,7 +967,8 @@ CONTAINS
   
 !<subroutine>
   SUBROUTINE parlst_getvalue_string_fetch (rsection, &
-                                           iparameter, svalue, bexists)
+                                           iparameter, svalue, bexists,&
+                                           isubstring)
 !<description>
   
   ! Returns the value of a parameter in the section rsection.
@@ -778,6 +977,15 @@ CONTAINS
   ! parameter is accessed.
   ! If bexists is given, it will be set to TRUE if the parameter number
   ! iparameter exists, otherwise it will be set to FALSE and svalue=''.
+  !  
+  ! If the value is an array of strings, the optional parameter isubstring>=0
+  ! allows to specify the number of the substring to be returned; 
+  ! isubstring=0 returns the value directly
+  ! behind the '=' sign in the line of the parameter, isubstring>0 returns
+  ! the array-entry in the lines below the parameter.
+  !
+  ! When ommitting isubstring, the value directly behind the '=' sign
+  ! is returned.
   
 !</description>
   
@@ -788,6 +996,12 @@ CONTAINS
 
   ! The number of the parameter.
   INTEGER, INTENT(IN) :: iparameter
+
+  ! Optional: The number of the substring to be returned.
+  ! =0: returns the string directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns substring isubstring.
+  INTEGER, INTENT(IN), OPTIONAL :: isubstring
 
 !</input>
   
@@ -803,6 +1017,8 @@ CONTAINS
 !</output>
 
 !</subroutine>
+
+  INTEGER :: isub
 
   ! Check if iparameter is out of bounds. If yes, probably
   ! throw an error.
@@ -821,7 +1037,18 @@ CONTAINS
   END IF
   
   ! Get the parameter value.
-  svalue = rsection%p_Svalues (iparameter)
+  ! Depending on isubstring, return either the 'headline' or one
+  ! of the substrings.
+  isub = 0
+  IF (PRESENT(isubstring)) isub = isubstring
+
+  IF ((isub .LE. 0) .OR. &
+      (isub .GT. rsection%p_Rvalues(iparameter)%nsize)) THEN
+    svalue = rsection%p_Rvalues(iparameter)%sentry
+  ELSE
+    svalue = rsection%p_Rvalues(iparameter)%p_Sentry(isub)
+  END IF
+  
   IF (PRESENT(bexists)) bexists = .TRUE.
 
   END SUBROUTINE
@@ -830,12 +1057,22 @@ CONTAINS
   
 !<subroutine>
   SUBROUTINE parlst_getvalue_string_direct (rparlist, ssectionName, &
-                                            sparameter, svalue, sdefault)
+                                            sparameter, svalue, sdefault,&
+                                            isubstring)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
   ! If the value does not exist, sdefault is returned.
   ! If sdefault is not given, an error will be thrown.
+  !
+  ! If the value is an array of strings, the optional parameter isubstring>=0
+  ! allows to specify the number of the substring to be returned; 
+  ! isubstring=0 returns the value directly
+  ! behind the '=' sign in the line of the parameter, isubstring>0 returns
+  ! the array-entry in the lines below the parameter.
+  !
+  ! When ommitting isubstring, the value directly behind the '=' sign
+  ! is returned.
   
 !</description>
   
@@ -853,6 +1090,12 @@ CONTAINS
   ! Optional: A default value
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdefault
   
+  ! Optional: The number of the substring to be returned.
+  ! =0: returns the string directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: returns substring isubstring.
+  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+
 !</input>
   
 !<output>
@@ -881,11 +1124,8 @@ CONTAINS
   END IF
 
   ! Get the value
-  IF (PRESENT(sdefault)) THEN
-    CALL parlst_getvalue_string_indir (p_rsection, sparameter, svalue, sdefault)
-  ELSE
-    CALL parlst_getvalue_string_indir (p_rsection, sparameter, svalue)
-  END IF  
+  CALL parlst_getvalue_string_indir (p_rsection, sparameter, svalue, sdefault,&
+                                     isubstring)
 
   END SUBROUTINE
   
@@ -1199,12 +1439,10 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE parlst_addvalue_indir (rsection, sparameter, svalue)
+  SUBROUTINE parlst_addvalue_indir (rsection, sparameter, svalue, nsubstrings)
   
 !<description>
-  
   ! Adds a parameter to a section rsection.
-  
 !</description>
   
 !<inputoutput> 
@@ -1221,6 +1459,11 @@ CONTAINS
 
   ! The value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
+  
+  ! Optional: Number of substrings. This allows a parameter to have
+  ! multiple substrings, which can be accessed via the 'isubstring'
+  ! parameter in the GET-routines.
+  INTEGER, INTENT(IN), OPTIONAL :: nsubstrings
   
 !</input>
 
@@ -1242,14 +1485,23 @@ CONTAINS
   rsection%iparamCount = rsection%iparamCount + 1  
   
   rsection%p_Sparameters(rsection%iparamCount) = paramname
-  rsection%p_Svalues(rsection%iparamCount) = svalue
+  rsection%p_Rvalues(rsection%iparamCount)%sentry = svalue
+  
+  ! Add a list for the substrings if the parameter should have substrings.
+  IF (PRESENT(nsubstrings)) THEN
+    IF (nsubstrings .GT. 0) THEN
+      ALLOCATE(rsection%p_Rvalues(rsection%iparamCount)%p_Sentry(nsubstrings))
+      rsection%p_Rvalues(rsection%iparamCount)%nsize = nsubstrings
+    END IF
+  END IF
 
   END SUBROUTINE
   
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_addvalue_direct (rparlist, ssectionName, sparameter, svalue)
+  SUBROUTINE parlst_addvalue_direct (rparlist, ssectionName, sparameter, svalue,&
+                                     nsubstrings)
 !<description>
   
   ! Adds a parameter to a section with name ssectionName in the parameter list
@@ -1276,6 +1528,11 @@ CONTAINS
   ! The value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
+  ! Optional: Number of substrings. This allows a parameter to have
+  ! multiple substrings, which can be accessed via the 'isubstring'
+  ! parameter in the GET-routines.
+  INTEGER, INTENT(IN), OPTIONAL :: nsubstrings
+
 !</input>
 
 !</subroutine>
@@ -1298,7 +1555,7 @@ CONTAINS
 
   ! Add the parameter 
   
-  CALL parlst_addvalue_indir (p_rsection, sparameter, svalue)
+  CALL parlst_addvalue_indir (p_rsection, sparameter, svalue, nsubstrings)
 
   END SUBROUTINE
 
@@ -1306,7 +1563,8 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE parlst_setvalue_fetch (rsection, iparameter, svalue, iexists)
+  SUBROUTINE parlst_setvalue_fetch (rsection, iparameter, svalue, iexists,&
+                                    isubstring)
   
 !<description>
   
@@ -1316,6 +1574,11 @@ CONTAINS
   ! parameter is accessed.
   ! If iexists is given, it will be set to YES if the parameter number
   ! iparameter exists and was modified, otherwise it will be set to NO.
+  !
+  ! isubstring allows to specify the numer of a substring of the parameter to
+  ! change. If ommitted or = 0, the 'headline' directly behind the '='
+  ! sign of the line 'name=value' is modified. Otherwise, the corresponding
+  ! substring is changed.
   
 !</description>
   
@@ -1334,6 +1597,12 @@ CONTAINS
   ! The new value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
+  ! Optional: The number of the substring to be changed.
+  ! =0: changes the string directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: changes substring isubstring.
+  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+
 !</input>
 
 !<output>
@@ -1345,6 +1614,8 @@ CONTAINS
 !</output>
 
 !</subroutine>
+
+  INTEGER :: isub
 
   ! Check if iparameter is out of bounds. If yes, probably
   ! throw an error.
@@ -1361,7 +1632,18 @@ CONTAINS
   
   END IF
 
-  rsection%p_Svalues (iparameter) = svalue
+  ! Depending on isubstring, change either the 'headline' or one
+  ! of the substrings.
+  isub = 0
+  IF (PRESENT(isubstring)) isub = isubstring
+
+  IF ((isub .LE. 0) .OR. &
+      (isub .GT. rsection%p_Rvalues(iparameter)%nsize)) THEN
+    rsection%p_Rvalues(iparameter)%sentry = svalue
+  ELSE
+    rsection%p_Rvalues(iparameter)%p_Sentry(isub) = svalue
+  END IF
+
   IF (PRESENT(iexists)) iexists = YES
 
   END SUBROUTINE
@@ -1370,12 +1652,17 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE parlst_setvalue_indir (rsection, sparameter, svalue)
+  SUBROUTINE parlst_setvalue_indir (rsection, sparameter, svalue, isubstring)
   
 !<description>
   
   ! Modifies the value of a parameter in the section rsection.
   ! If the parameter does not exist, an error is thrown.
+  !
+  ! isubstring allows to specify the numer of a substring of the parameter to
+  ! change. If ommitted or = 0, the 'headline' directly behind the '='
+  ! sign of the line 'name=value' is modified. Otherwise, the corresponding
+  ! substring is changed.
   
 !</description>
   
@@ -1394,12 +1681,18 @@ CONTAINS
   ! The new value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
+  ! Optional: The number of the substring to be changed.
+  ! =0: changes the string directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: changes substring isubstring.
+  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+
 !</input>
 
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,isub
   CHARACTER(LEN=PARLST_MLNAME) :: paramname
   
   ! Create the upper-case parameter name
@@ -1413,7 +1706,18 @@ CONTAINS
     PRINT *,'Parameter ',paramname,' does not exist, cannot be modified!'
     STOP
   ELSE 
-    rsection%p_Svalues (i) = svalue
+  
+    ! Depending on isubstring, change either the 'headline' or one
+    ! of the substrings.
+    isub = 0
+    IF (PRESENT(isubstring)) isub = isubstring
+
+    IF ((isub .LE. 0) .OR. (isub .GT. rsection%p_Rvalues(i)%nsize)) THEN
+      rsection%p_Rvalues(i)%sentry = svalue
+    ELSE
+      rsection%p_Rvalues(i)%p_Sentry(isub) = svalue
+    END IF
+  
   END IF
 
   END SUBROUTINE
@@ -1421,12 +1725,18 @@ CONTAINS
   ! ***************************************************************************
   
 !<subroutine>
-  SUBROUTINE parlst_setvalue_direct (rparlist, ssectionName, sparameter, svalue)
+  SUBROUTINE parlst_setvalue_direct (rparlist, ssectionName, sparameter, svalue,&
+                                     isubstring)
 !<description>
   
   ! Modifies the value of a parameter in the section with name ssectionName
   ! in the parameter list rparlist.
-  ! If the parameter does not exist, it's created.
+  ! If the parameter does not exist, an error is thrown.
+  !
+  ! isubstring allows to specify the numer of a substring of the parameter to
+  ! change. If ommitted or = 0, the 'headline' directly behind the '='
+  ! sign of the line 'name=value' is modified. Otherwise, the corresponding
+  ! substring is changed.
   
 !</description>
   
@@ -1448,6 +1758,12 @@ CONTAINS
   ! The new value of the parameter
   CHARACTER(LEN=*), INTENT(IN) :: svalue
   
+  ! Optional: The number of the substring to be changed.
+  ! =0: changes the string directly behind the '=' sign in the line
+  !     'name=value'.
+  ! >0: changes substring isubstring.
+  INTEGER, INTENT(IN), OPTIONAL :: isubstring
+
 !</input>
 
 !</subroutine>
@@ -1470,7 +1786,7 @@ CONTAINS
 
   ! Set the parameter 
   
-  CALL parlst_setvalue_indir (p_rsection, sparameter, svalue)
+  CALL parlst_setvalue_indir (p_rsection, sparameter, svalue, isubstring)
 
   END SUBROUTINE
 
@@ -1548,14 +1864,27 @@ CONTAINS
   !  ityp = 2 -> The line is a parameter. sparamname is the uppercase
   !              parameter name. svalue is the value of the parameter,
   !              trimmed and left adjusted.
+  !  ityp = 3 -> Line is the beginning of a multi-valued parameter.
+  !              The next isubstring lines contain additional substrings.
+  !  ityp = 4 -> Line is a substring of a multi-valued parameter.
   
-  SUBROUTINE parlst_parseline (sdata, ityp, ilinenum, ssecname, sparamname, svalue)
+  SUBROUTINE parlst_parseline (sdata, ityp, isubstring, ilinenum, &
+                               ssecname, sparamname, svalue)
   
   ! The line to be parsed
   CHARACTER(LEN=*), INTENT(IN) :: sdata
   
   ! The typ of the line
   INTEGER, INTENT(OUT) :: ityp
+
+  ! input: =0: parse line as parameter. isubstring is changed to a value > 0
+  !            is the parameter has multiple values attached.
+  !        >0: parse line as substring of a multi-valued parameter, not 
+  !            containing a leading 'name='.
+  ! output: If the 'headline' of a multi-valued parameter is read, isubstring is
+  !         changed to the number of substrings (the k in 'name(k)=...').
+  !         Otherwise unchanged.
+  INTEGER, INTENT(INOUT) :: isubstring
 
   ! Line number
   INTEGER, INTENT(IN) :: ilinenum
@@ -1570,8 +1899,8 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(INOUT) :: svalue
   
   ! local variables
-  INTEGER :: i,ltr
-  CHARACTER(LEN=PARLST_LENLINEBUF) :: sbuf
+  INTEGER :: i,j1,j2,ltr
+  CHARACTER(LEN=PARLST_LENLINEBUF) :: sbuf,slen
   
     ityp = 0
     
@@ -1581,53 +1910,121 @@ CONTAINS
     ! Copy the input string - left adjusted - and get the string length
     sbuf = ADJUSTL(sdata)
     
-    ! Do we start with '[' and end with ']'?
-    IF (sbuf(1:1) .EQ. "[") THEN
+    ! Should we parse the line as first line of a parameter or as substring
+    ! of a multi-valued parameter?
+    IF (isubstring .EQ. 0) THEN
     
-      ! Find the final ']'.
-      DO ltr = 1,LEN(sbuf)
-        IF (sbuf(ltr:ltr) .EQ. "]") EXIT
-      END DO
+      ! Standard parameter or section header.
+      !    
+      ! Do we start with '[' and end with ']'?
+      IF (sbuf(1:1) .EQ. "[") THEN
       
-      IF (sbuf(ltr:ltr) .NE. ']') THEN
-        PRINT *,'Wrong syntax of section name. Line ',ilinenum,':'
-        PRINT *,sbuf
-        STOP
+        ! Find the final ']'.
+        DO ltr = 1,LEN(sbuf)
+          IF (sbuf(ltr:ltr) .EQ. "]") EXIT
+        END DO
+        
+        IF (sbuf(ltr:ltr) .NE. ']') THEN
+          PRINT *,'Wrong syntax of section name. Line ',ilinenum,':'
+          PRINT *,sbuf
+          STOP
+        END IF
+        
+        ! Get the section name
+        ssecname = sbuf(2:ltr-1)
+        ityp = 1
+        RETURN
+        
+      ELSE IF (sbuf(1:1) .EQ. PARLST_COMMENT) THEN
+      
+        ! Comment sign
+        RETURN
+        
+      ELSE
+      
+        ! Must be a parameter. Get the length of the string without comment
+        ! at the end.
+        CALL linelength(sbuf, ltr)
+        
+        ! ltr=0 means: empty line. Ignore that.
+        IF (ltr .EQ. 0) RETURN
+        
+        ! Is there a '(..)' that is indicating a multi-valued parameter?
+        j1 = INDEX(sbuf(1:ltr),'(')
+        j2 = INDEX(sbuf(1:ltr),')')
+
+        ! Is there a '=' sign?
+        i = INDEX(sbuf(1:ltr),'=')
+
+        IF (i .EQ. 0) THEN
+          PRINT *,'Invalid parameter syntax. Line ',ilinenum,':'
+          STOP
+        END IF
+      
+        IF ((j1 .EQ. 0) .OR. (j2 .LE. j1)) THEN
+        
+          ityp = 2
+          
+          ! Get the name of the parameter
+          sparamname = ADJUSTL(sbuf(1:i-1))
+          
+          ! Get the parameter value
+          svalue = ADJUSTL(sbuf(i+1:ltr))
+          
+        ELSE
+        
+          ! Probably multi-valued parameter with substrings in the 
+          ! following lines.
+
+          ! Get the name of the parameter
+          sparamname = ADJUSTL(sbuf(1:j1-1))
+
+          ! Get the parameter value
+          svalue = ADJUSTL(sbuf(i+1:ltr))
+
+          ! Get the length of the parameter list.
+          slen = sbuf (j1+1:MIN(j2-1,LEN(slen)))
+
+          isubstring = 0
+          READ(slen,*) isubstring
+          
+          IF (isubstring .LE. 0) THEN
+            ! Oh, only one line. User want's to cheat :-)
+            isubstring = 0
+            
+            ityp = 2
+          ELSE
+            ! Real multi-valued parameter.
+            ityp = 3
+          END IF
+        
+        END IF
+      
       END IF
-      
-      ! Get the section name
-      ssecname = sbuf(2:ltr-1)
-      ityp = 1
-      RETURN
-      
-    ELSE IF (sbuf(1:1) .EQ. PARLST_COMMENT) THEN
-    
-      ! Comment sign
-      RETURN
       
     ELSE
-    
-      ! Must be a parameter. Get the length of the string without comment
-      ! at the end.
-      CALL linelength(sbuf, ltr)
       
-      ! ltr=0 means: empty line. Ignore that.
-      IF (ltr .EQ. 0) RETURN
+      ! Substring of a multi-valued parameter.
+      IF (sbuf(1:1) .EQ. PARLST_COMMENT) THEN
       
-      ! Is there a '=' sign?
-      i = INDEX(sbuf(1:ltr),'=')
-      IF (i .EQ. 0) THEN
-        PRINT *,'Invalid parameter syntax. Line ',ilinenum,':'
-        STOP
+        ! Comment sign
+        RETURN
+        
+      ELSE
+       
+        ! Must be a parameter. Get the length of the string without comment
+        ! at the end.
+        CALL linelength(sbuf, ltr)
+        
+        ! ltr=0 means: empty line. Ignore that.
+        IF (ltr .EQ. 0) RETURN
+        
+        ityp = 4
+        
+        ! Get the parameter value. Don't get a parameter name; there is none.
+        svalue = ADJUSTL(sbuf(1:ltr))
+       
       END IF
-    
-      ityp = 2
-      
-      ! Get the name of the parameter
-      sparamname = ADJUSTL(sbuf(1:i-1))
-      
-      ! Get the parameter value
-      svalue = ADJUSTL(sbuf(i+1:ltr))
     
     END IF
   
@@ -1718,7 +2115,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: iunit,ios,isbuflen,ityp,ilinenum
+  INTEGER :: iunit,ios,isbuflen,ityp,ilinenum,isubstring,iparpos
   TYPE(t_parlstSection), POINTER :: p_currentsection
   CHARACTER(LEN=PARLST_LENLINEBUF) :: sdata
   CHARACTER(LEN=PARLST_MLSECTION) :: ssectionname
@@ -1740,6 +2137,7 @@ CONTAINS
   ! Read all lines from the file
   ios = 0
   ilinenum = 0
+  isubstring = 0
   DO WHILE (ios .EQ. 0) 
     
     ! Read a line from the file into sbuf
@@ -1749,7 +2147,8 @@ CONTAINS
     IF (isbuflen .NE. 0) THEN
     
       ! Parse the line
-      CALL parlst_parseline (sdata, ityp, ilinenum, ssectionname, sparname, svalue)  
+      CALL parlst_parseline (sdata, ityp, isubstring, ilinenum, ssectionname, &
+                             sparname, svalue)  
       
       SELECT CASE (ityp)
       CASE (1)
@@ -1761,6 +2160,24 @@ CONTAINS
       CASE (2)
         ! A new parameter. Add it to the current section.
         CALL parlst_addvalue (p_currentsection, sparname, svalue)
+        
+      CASE (3)
+        ! 'Headline' of a multi-valued parameter. Add the parameter with
+        ! isubstring subvalues
+        CALL parlst_addvalue (p_currentsection, sparname, svalue, isubstring)
+        
+        ! Fetch the parameter for later adding of subvalues.
+        iparpos = parlst_queryvalue(p_currentsection, sparname) 
+        
+      CASE (4)
+        ! Sub-parameter of a multi-valued parameter. Add the value to
+        ! the last parameter that was added in case 3.
+        CALL parlst_setvalue_fetch (p_currentsection, iparpos, svalue, &
+                                    isubstring=isubstring)
+                                    
+        ! Decrement the substring counter. If we reach 0, parlst_parseline
+        ! continues to parse standard parameters.
+        isubstring = isubstring-1
         
       ! Other cases: comment.
       END SELECT
