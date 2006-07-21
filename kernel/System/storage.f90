@@ -97,6 +97,9 @@ MODULE storage
 
   ! no init new storage block
   INTEGER, PARAMETER :: ST_NEWBLOCK_NOINIT = 1
+
+  ! init new storage block with 1,2,3,...,n
+  INTEGER, PARAMETER :: ST_NEWBLOCK_ORDERED = 2
   
   !</constantblock>
   
@@ -526,7 +529,7 @@ CONTAINS
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
   INTEGER, INTENT(IN) :: ctype
 
-  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
   INTEGER, INTENT(IN) :: cinitNewBlock
 
 !</input>
@@ -551,6 +554,9 @@ CONTAINS
   ! Pointer to the heap 
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
+
+  ! variable for ordering 1,2,3,...,N
+  INTEGER :: iorder
   
   IF (isize .EQ. 0) THEN
     PRINT *,'storage_new1D Warning: isize=0'
@@ -608,6 +614,24 @@ CONTAINS
       p_rnode%p_Ddouble1D = 0.0_DP
     CASE (ST_INT)
       p_rnode%p_Iinteger1D = 0_I32
+    END SELECT
+  END IF
+
+  ! Impose ordering 1,2,3,...,N if necessary
+  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ORDERED) THEN
+    SELECT CASE (ctype)
+    CASE (ST_SINGLE)
+      DO iorder=1,isize
+        p_rnode%p_Fsingle1D(iorder) = REAL(iorder,SP)
+      END DO
+    CASE (ST_DOUBLE)
+      DO iorder=1,isize
+        p_rnode%p_Ddouble1D(iorder) = REAL(iorder,DP)
+      END DO
+    CASE (ST_INT)
+      DO iorder=1,isize
+        p_rnode%p_Iinteger1D(iorder) = INT(iorder,I32)
+      END DO
     END SELECT
   END IF
 
@@ -727,6 +751,10 @@ CONTAINS
     END SELECT
   END IF
 
+  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ORDERED) THEN
+    PRINT *, "Error: ordering not available for multidimensional array"
+    STOP
+  END IF
   END SUBROUTINE
 
 !************************************************************************
