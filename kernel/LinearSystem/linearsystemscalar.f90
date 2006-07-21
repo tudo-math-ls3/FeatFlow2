@@ -3313,7 +3313,7 @@ CONTAINS
         Da(ildIdx) = DaH(Ih2(j))
 
         ! Get the column number and write it to Icol
-        Icol(ildIdx) = Ih1(j) !Achtung: Ist dies so richtig ? Ih1(j)->Ih2(j) ?
+        Icol(ildIdx) = Ih1(j) 
 
         ! Increase the destination pointer in the matrix structure
         ildIdx = ildIdx + 1

@@ -182,10 +182,11 @@ MODULE boundarycondition
     ! user defined integer tag
     INTEGER(I32) :: itag = 0
     
-    ! uesr defined double precision tag
+    ! User defined double precision tag
     REAL(DP) :: dtag = 0.0_DP
     
-    ! user defined string tag
+    ! User defined string tag; usually set to the name of an expression to
+    ! evaluate in this boundary condition region.
     CHARACTER(LEN=SYS_STRLEN) :: stag = ''
      
     ! Definition of a region on the boundary where the boundary conditions

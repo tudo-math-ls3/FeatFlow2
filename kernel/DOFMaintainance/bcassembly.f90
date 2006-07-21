@@ -35,6 +35,17 @@
 !# 2.) bcasm_releaseDirichlet
 !#     -> Release discrete Dirichlet boundary conditions
 !#
+!# There are some routines that might be useful for finding out whether
+!# edges/vertices exist in a boundary condition segment or not.
+!#
+!# 1.) bcasm_getVertInBCregion
+!#     -> Returns indices in the boundary vertex array which vertices
+!#        lie in a boundary region
+!#
+!# 1.) bcasm_getEdgesInBCregion
+!#     -> Returns indices in the boundary vertex array which edges
+!#        lie in a boundary region
+!#
 !# </purpose>
 !##############################################################################
 

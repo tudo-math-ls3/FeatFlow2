@@ -338,7 +338,7 @@ CONTAINS
   ! Pointer to the heap to initialise
   TYPE(t_storageBlock), POINTER :: p_rheap
   
-  INTEGER :: i
+  INTEGER :: i,ihandle
   
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
@@ -348,8 +348,11 @@ CONTAINS
   
   ! Delete all data from the heap
   DO i = 1,SIZE(p_rheap%p_Rdescriptors)
+    ! Don't pass i as handle as storage_free will set the handle 
+    ! passed to it to 0!
+    ihandle = i
     IF (p_rheap%p_Rdescriptors(i)%idataType .NE. ST_NOHANDLE) &
-      CALL storage_free(i)
+      CALL storage_free(ihandle,rheap)
   END DO
   
   ! Clean up the memory management block
@@ -414,8 +417,8 @@ CONTAINS
     
     ! Copy the content, release the old arrays and replace them by the new
     ! ones.
-    p_Rdescriptors = rheap%p_Rdescriptors
-    p_IfreeHandles = rheap%p_IfreeHandles
+    p_Rdescriptors(1:rheap%nhandlesTotal) = rheap%p_Rdescriptors(1:rheap%nhandlesTotal)
+    p_IfreeHandles(1:rheap%nhandlesTotal) = rheap%p_IfreeHandles(1:rheap%nhandlesTotal)
     
     DEALLOCATE(rheap%p_Rdescriptors)
     DEALLOCATE(rheap%p_IfreeHandles)
@@ -662,8 +665,8 @@ CONTAINS
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
   
-  IF ((isize(1) .EQ. 0) .OR. (isize(2) .EQ. 0)) THEN
-    PRINT *,'storage_new2D Warning: isize=0'
+  IF ((Isize(1) .EQ. 0) .OR. (Isize(2) .EQ. 0)) THEN
+    PRINT *,'storage_new2D Warning: Isize=0'
     ihandle = 0
     RETURN
   END IF
@@ -688,24 +691,29 @@ CONTAINS
   p_rnode%idimension = 2
   p_rnode%sname = sname
   
-  ! Allocate memory according to isize:
+  ! Allocate memory according to Isize:
   
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
-    ALLOCATE(p_rnode%p_Fsingle2D(isize(1),isize(2)))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize(1),DP)*REAL(isize(1),DP)*REAL(ST_SINGLE2BYTES)
+    ALLOCATE(p_rnode%p_Fsingle2D(Isize(1),Isize(2)))
+    p_rnode%dmemBytes = p_rnode%dmemBytes + &
+                        REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_SINGLE2BYTES)
   CASE (ST_DOUBLE)
-    ALLOCATE(p_rnode%p_Ddouble2D(isize(1),isize(2)))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize(1),DP)*REAL(isize(1),DP)*REAL(ST_DOUBLE2BYTES)
+    ALLOCATE(p_rnode%p_Ddouble2D(Isize(1),Isize(2)))
+    p_rnode%dmemBytes = p_rnode%dmemBytes + &
+                        REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_DOUBLE2BYTES)
   CASE (ST_INT)
-    ALLOCATE(p_rnode%p_Iinteger2D(isize(1),isize(2)))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize(1),DP)*REAL(isize(1),DP)*REAL(ST_INT2BYTES)
+    ALLOCATE(p_rnode%p_Iinteger2D(Isize(1),Isize(2)))
+    p_rnode%dmemBytes = p_rnode%dmemBytes + &
+                        REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_INT2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
     STOP
   END SELECT
   
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
+  IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
+    p_rheap%dtotalMemMax = p_rheap%dtotalMem
   
   ! Clear the vector if necessary
   IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN

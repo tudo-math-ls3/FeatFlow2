@@ -22,14 +22,17 @@
 !# 4.) boundary_dgetNsegments
 !#     -> Get the number of boundary segments in a boundary component
 !#
-!# 5.) boundary_getCoords
+!# 5.) boundary_dgetMaxParVal
+!#     -> Return the maximum parameter value of a boundary component
+!#
+!# 6.) boundary_getCoords
 !#     -> Calculate the coordinatex of a point given by its parameter value
 !#
-!# 6.) boundary_createRegion
+!# 7.) boundary_createRegion
 !#     -> Get the characteristics of a boundary segment and create
 !#        a boundary region structure from it.
 !#
-!# 7.) boundary_isInRegion
+!# 8.) boundary_isInRegion
 !#     -> Tests whether a node with a specific parameter value
 !#        is inside of a given boundary region or not.
 !# </purpose>

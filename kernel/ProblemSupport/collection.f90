@@ -143,6 +143,8 @@
 !# 11.) collct_printStatistics 
 !#      -> Prints out the current content of the structure to the terminal
 !#
+!# 12.) collct_addsection
+!#      -> Adds a section to the collection
 !#
 !# GUILDLINE
 !# ---------
