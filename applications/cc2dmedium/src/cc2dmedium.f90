@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmini </name>
+!# <name> cc2dmedium </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -18,10 +18,9 @@
 !# </purpose>
 !##############################################################################
 
-PROGRAM stokes
+PROGRAM cc2dmedium
 
-  USE cc2dmini_method1
-  USE cc2dmini_method2
+  USE cc2dmedium_method2
   
   IMPLICIT NONE
   
@@ -49,22 +48,16 @@ PROGRAM stokes
   !
   ! 2.) Initialise FEAT 2.0 storage management:
   CALL storage_init(999, 100)
-
+  
   ! 3.) Initialise old FEAT 1.x storage management for compatibility.
   CALL ZINIT(NNWORK,'feat.msg','log/feat1.err','log/feat1.prt',&
              'log/feat1.sys','log/feat1.trc') 
   
-  ! Call the problem to solve. cc2d method 1:
+  ! Call the problem to solve. 
   PRINT *
-  PRINT *,'Calculating cc2dmini-Problem with method 1'
-  PRINT *,'------------------------------------------'
-  CALL cc2dmini1
-
-  ! Call the problem to solve. cc2d method 2:
-  PRINT *
-  PRINT *,'Calculating cc2dmini-Problem with method 2'
-  PRINT *,'------------------------------------------'
-  CALL cc2dmini2
+  PRINT *,'Calculating cc2dmini-Problem'
+  PRINT *,'----------------------------'
+  CALL cc2dmedium2
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
