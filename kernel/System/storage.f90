@@ -1054,11 +1054,11 @@ CONTAINS
   
   SELECT CASE (p_rnode%idataType)
   CASE (ST_SINGLE)
-    Isize = SIZE(p_rnode%p_Fsingle2D)
+    Isize = SHAPE(p_rnode%p_Fsingle2D)
   CASE (ST_DOUBLE)
-    Isize = SIZE(p_rnode%p_Ddouble2D)
+    Isize = SHAPE(p_rnode%p_Ddouble2D)
   CASE (ST_INT)
-    Isize = SIZE(p_rnode%p_Iinteger2D)
+    Isize = SHAPE(p_rnode%p_Iinteger2D)
   CASE DEFAULT
     PRINT *,'Error in storage_getsize2D: Invalid data type!' 
     STOP

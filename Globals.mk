@@ -300,8 +300,8 @@ ifeq ($(call match,$(ID),pc-core-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
-FCFLAGS   = -march=prescott -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=prescott -pipe
+FCFLAGS   = -march=pentium-m -pipe -fmod=$(MODDIR)
+CCFLAGS   = -march=pentium-m -pipe
 BLASLIB   = 
 LAPACKLIB = 
 endif
