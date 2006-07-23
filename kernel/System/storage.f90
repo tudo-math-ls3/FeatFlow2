@@ -61,6 +61,12 @@
 !#
 !# 10.) storage_getsize = storage_getsize1d / storage_getsize2d
 !#      -> Get the length of an array on the heap.
+!#
+!# 11.) storage_getdatatype
+!#      -> Get the datatype of an array on the heap.
+!#
+!# 12.) storage_getdimension
+!#      -> Get the dimension of an array on the heap.
 !# 
 !# </purpose>
 !##############################################################################
@@ -1716,5 +1722,132 @@ CONTAINS
     PRINT *,'Maximum used memory:             ',INT(p_rheap%dtotalMemMax)
 
   END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getdatatype (ihandle, idatatype, rheap)
+
+!<description>
+  ! Returns the datatype of an array identified by ihandle.
+!</description>
+
+!<input>
+  ! Handle of the memory block to be releases
+  INTEGER, INTENT(IN) :: ihandle
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</inputoutput>
+
+!<output>
+  ! Datatype of the array identified by ihandle.
+  INTEGER(I32), INTENT(OUT) :: idatatype
+!</output>
+
+!</subroutine>
+
+  ! local variables
   
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  IF (ihandle .LE. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_getdatatype: Handle invalid!'
+    STOP
+  END IF
+  
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+  
+  SELECT CASE (p_rnode%idataType)
+  CASE (ST_SINGLE)
+    idatatype = ST_SINGLE
+  CASE (ST_DOUBLE)
+    idatatype = ST_DOUBLE
+  CASE (ST_INT)
+    idatatype = ST_INT
+  CASE (ST_NOHANDLE)
+    PRINT *,'Error in storage_getdatatype: Handle invalid!'
+    PRINT *,'Handle number: ',ihandle
+    STOP
+  CASE DEFAULT
+    PRINT *,'Error in storage_getdatatype: Invalid data type!' 
+    STOP
+  END SELECT
+  
+  END SUBROUTINE
+  
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getdimension (ihandle, idimension, rheap)
+
+!<description>
+  ! Returns the dimension of an array identified by ihandle.
+!</description>
+
+!<input>
+  ! Handle of the memory block to be releases
+  INTEGER, INTENT(IN) :: ihandle
+!</input>
+
+!<inputoutput>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</inputoutput>
+
+!<output>
+  ! Dimension of the array identified by ihandle.
+  INTEGER(I32), INTENT(OUT) :: idimension
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  IF (ihandle .LE. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_getdatatype: Handle invalid!'
+    STOP
+  END IF
+  
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+  
+  IF (ihandle .LE. ST_NOHANDLE) THEN
+    PRINT *,'Error in storage_getsize1D: Handle invalid!'
+    STOP
+  END IF
+
+  idimension = p_rnode%idimension
+  
+  END SUBROUTINE
+
 END MODULE
