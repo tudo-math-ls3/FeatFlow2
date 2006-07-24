@@ -79,56 +79,61 @@ CONTAINS
   
 !</subroutine>
     
-  ! local variables
-  INTEGER(PREC_DOFIDX) :: i
-  REAL(DP), DIMENSION(:), POINTER    :: p_vec
-  INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-  REAL(DP), DIMENSION(:), POINTER    :: p_val
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+    ! local variables
+    INTEGER(PREC_DOFIDX) :: i
+    REAL(DP), DIMENSION(:), POINTER    :: p_vec
+    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
+    REAL(DP), DIMENSION(:), POINTER    :: p_val
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
 
-  ! Get pointers to the structures. For the vector, get the pointer from
-  ! the storage management.
-  
-  CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
-  CALL storage_getbase_double(rdbcStructure%h_DdirichletValues,p_val)
+    ! If nDOF=0, there are no DOF's the current boundary condition segment,
+    ! so we don't have to do anything. Maybe the case if the user selected
+    ! a boundary region that is just too small.
+    IF (rdbcStructure%nDOF .EQ. 0) RETURN
 
-  ! Impose the DOF value directly into the vector - more precisely, into the
-  ! components of the subvector that is indexed by icomponent.
-  
-  IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
-    PRINT *,'Error: DBC not configured'
-    STOP
-  END IF
-  
-  CALL lsyssc_getbase_double (rx, p_vec)  
-  
-  IF (.NOT.ASSOCIATED(p_vec)) THEN
-    PRINT *,'Error: No vector'
-    STOP
-  END IF
-
-  ! Only handle nDOF DOF's, not the complete array!
-  ! Probably, the array is longer (e.g. has the length of the vector), but
-  ! contains only some entries...
-
-  ! Is the vector sorted?
-  IF (rx%isortStrategy .LE. 0) THEN
-    ! No. Implement directly.
-    DO i=1,rdbcStructure%nDOF
-      p_vec(p_idx(i)) = p_val(i)
-    END DO
-  ELSE
-    ! Ups, vector sorted. At first get the permutation how its sorted
-    ! - or more precisely, the back-permutation, as we need this one for 
-    ! the loop below.
-    CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
-    p_Iperm => p_Iperm(rx%NEQ+1:)
+    ! Get pointers to the structures. For the vector, get the pointer from
+    ! the storage management.
     
-    ! And 'filter' each DOF during the boundary value implementation!
-    DO i=1,rdbcStructure%nDOF
-      p_vec(p_Iperm(p_idx(i))) = p_val(i)
-    END DO
-  END IF
+    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
+    CALL storage_getbase_double(rdbcStructure%h_DdirichletValues,p_val)
+
+    ! Impose the DOF value directly into the vector - more precisely, into the
+    ! components of the subvector that is indexed by icomponent.
+    
+    IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
+      PRINT *,'Error: DBC not configured'
+      STOP
+    END IF
+    
+    CALL lsyssc_getbase_double (rx, p_vec)  
+    
+    IF (.NOT.ASSOCIATED(p_vec)) THEN
+      PRINT *,'Error: No vector'
+      STOP
+    END IF
+
+    ! Only handle nDOF DOF's, not the complete array!
+    ! Probably, the array is longer (e.g. has the length of the vector), but
+    ! contains only some entries...
+
+    ! Is the vector sorted?
+    IF (rx%isortStrategy .LE. 0) THEN
+      ! No. Implement directly.
+      DO i=1,rdbcStructure%nDOF
+        p_vec(p_idx(i)) = p_val(i)
+      END DO
+    ELSE
+      ! Ups, vector sorted. At first get the permutation how its sorted
+      ! - or more precisely, the back-permutation, as we need this one for 
+      ! the loop below.
+      CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+      p_Iperm => p_Iperm(rx%NEQ+1:)
+      
+      ! And 'filter' each DOF during the boundary value implementation!
+      DO i=1,rdbcStructure%nDOF
+        p_vec(p_Iperm(p_idx(i))) = p_val(i)
+      END DO
+    END IF
   
   END SUBROUTINE
   
@@ -154,54 +159,59 @@ CONTAINS
   
 !</subroutine>
 
-  ! local variables
-  INTEGER(PREC_DOFIDX) :: i
-  REAL(DP), DIMENSION(:), POINTER :: p_vec
-  INTEGER(I32), DIMENSION(:), POINTER :: p_idx
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
-  
-  ! Get pointers to the structures. For the vector, get the pointer from
-  ! the storage management.
-  
-  CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
-  
-  IF (.NOT.ASSOCIATED(p_idx)) THEN
-    PRINT *,'Error: DBC not configured'
-    STOP
-  END IF
-  
-  CALL lsyssc_getbase_double (rx, p_vec)  
-  
-  IF (.NOT.ASSOCIATED(p_vec)) THEN
-    PRINT *,'Error: No vector'
-    STOP
-  END IF
-
-  ! Impose the BC-DOF's directly - more precisely, into the
-  ! components of the subvector that is indexed by icomponent.
-  !
-  ! Only handle nDOF DOF's, not the complete array!
-  ! Probably, the array is longer (e.g. has the length of the vector), but
-  ! contains only some entries...
-
-  ! Is the vector sorted?
-  IF (rx%isortStrategy .LE. 0) THEN
-    ! No. Implement directly.
-    DO i=1,rdbcStructure%nDOF
-      p_vec(p_idx(i)) = 0.0_DP
-    END DO
-  ELSE
-    ! Ups, vector sorted. At first get the permutation how its sorted -
-    ! or more precisely, the back-permutation, as we need this one for 
-    ! the loop below.
-    CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
-    p_Iperm => p_Iperm(rx%NEQ+1:)
+    ! local variables
+    INTEGER(PREC_DOFIDX) :: i
+    REAL(DP), DIMENSION(:), POINTER :: p_vec
+    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
     
-    ! And 'filter' each DOF during the boundary value implementation!
-    DO i=1,rdbcStructure%nDOF
-      p_vec(p_Iperm(p_idx(i))) = 0.0_DP
-    END DO
-  END IF
+    ! If nDOF=0, there are no DOF's the current boundary condition segment,
+    ! so we don't have to do anything. Maybe the case if the user selected
+    ! a boundary region that is just too small.
+    IF (rdbcStructure%nDOF .EQ. 0) RETURN
+
+    ! Get pointers to the structures. For the vector, get the pointer from
+    ! the storage management.
+    
+    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
+    
+    IF (.NOT.ASSOCIATED(p_idx)) THEN
+      PRINT *,'Error: DBC not configured'
+      STOP
+    END IF
+    
+    CALL lsyssc_getbase_double (rx, p_vec)  
+    
+    IF (.NOT.ASSOCIATED(p_vec)) THEN
+      PRINT *,'Error: No vector'
+      STOP
+    END IF
+
+    ! Impose the BC-DOF's directly - more precisely, into the
+    ! components of the subvector that is indexed by icomponent.
+    !
+    ! Only handle nDOF DOF's, not the complete array!
+    ! Probably, the array is longer (e.g. has the length of the vector), but
+    ! contains only some entries...
+
+    ! Is the vector sorted?
+    IF (rx%isortStrategy .LE. 0) THEN
+      ! No. Implement directly.
+      DO i=1,rdbcStructure%nDOF
+        p_vec(p_idx(i)) = 0.0_DP
+      END DO
+    ELSE
+      ! Ups, vector sorted. At first get the permutation how its sorted -
+      ! or more precisely, the back-permutation, as we need this one for 
+      ! the loop below.
+      CALL storage_getbase_int (rx%h_IsortPermutation,p_Iperm)
+      p_Iperm => p_Iperm(rx%NEQ+1:)
+      
+      ! And 'filter' each DOF during the boundary value implementation!
+      DO i=1,rdbcStructure%nDOF
+        p_vec(p_Iperm(p_idx(i))) = 0.0_DP
+      END DO
+    END IF
   
   END SUBROUTINE
 
@@ -224,63 +234,63 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
-  REAL(DP), DIMENSION(:), POINTER        :: p_DelementArea,p_Ddata
-  REAL(DP) :: dpintegral,c
-  INTEGER(PREC_ELEMENTIDX) :: iel,nel
-  
-  ! Get the discretisation...
-  IF (.NOT. ASSOCIATED(rx%p_rspatialDiscretisation)) RETURN
+    ! local variables
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
+    REAL(DP), DIMENSION(:), POINTER        :: p_DelementArea,p_Ddata
+    REAL(DP) :: dpintegral,c
+    INTEGER(PREC_ELEMENTIDX) :: iel,nel
+    
+    ! Get the discretisation...
+    IF (.NOT. ASSOCIATED(rx%p_rspatialDiscretisation)) RETURN
 
-  p_rdiscretisation => rx%p_rspatialDiscretisation
-  
-  ! ... and check it. If we have a uniform discretisation with P_0/Q_0,
-  ! we have the easy case, that the integral of the function rx is
-  ! representing is area*rx. Otherwise we have to calculate the integral
-  ! which is somehow more costly...
-  
-  IF ((p_rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-      ((p_rdiscretisation%RelementDistribution(1)%itrialElement .EQ. EL_P0) .OR. &
-       (p_rdiscretisation%RelementDistribution(1)%itrialElement .EQ. EL_Q0))) THEN
+    p_rdiscretisation => rx%p_rspatialDiscretisation
     
-    ! Ok, easy case. Get from the triangulation the AREA-array for calculating
-    ! a simple integral of rx:
+    ! ... and check it. If we have a uniform discretisation with P_0/Q_0,
+    ! we have the easy case, that the integral of the function rx is
+    ! representing is area*rx. Otherwise we have to calculate the integral
+    ! which is somehow more costly...
     
-    CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementArea, &
-                                 p_DelementArea)
-                                 
-    ! Get the vector data of rx
-    CALL lsyssc_getbase_double (rx,p_Ddata)
-    
-    nel = SIZE(p_DelementArea)-1
-                                 
-    ! Build the integral
-    !   int_Omega p dx
-    ! This is approximated by
-    !   dpintegral = SUM_Elements P(Element)*Volume(Element)
-    
-    dpintegral=0D0
-    DO iel=1,nel 
-      dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
-    END DO
-    
-    ! Divide dpintegral by the volume of the domain; this gives the integral
-    ! mean value of the pressure:
+    IF ((p_rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
+        ((p_rdiscretisation%RelementDistribution(1)%itrialElement .EQ. EL_P0) .OR. &
+        (p_rdiscretisation%RelementDistribution(1)%itrialElement .EQ. EL_Q0))) THEN
       
-    C = dpintegral / p_DelementArea(nel+1)
-    
-    ! Subtract the integral mean value C of the pressure from all
-    ! pressure components. Afterwards, P has integral mean value = 0.
+      ! Ok, easy case. Get from the triangulation the AREA-array for calculating
+      ! a simple integral of rx:
+      
+      CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementArea, &
+                                  p_DelementArea)
+                                   
+      ! Get the vector data of rx
+      CALL lsyssc_getbase_double (rx,p_Ddata)
+      
+      nel = SIZE(p_DelementArea)-1
+                                   
+      ! Build the integral
+      !   int_Omega p dx
+      ! This is approximated by
+      !   dpintegral = SUM_Elements P(Element)*Volume(Element)
+      
+      dpintegral=0D0
+      DO iel=1,nel 
+        dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
+      END DO
+      
+      ! Divide dpintegral by the volume of the domain; this gives the integral
+      ! mean value of the pressure:
+        
+      C = dpintegral / p_DelementArea(nel+1)
+      
+      ! Subtract the integral mean value C of the pressure from all
+      ! pressure components. Afterwards, P has integral mean value = 0.
 
-    DO iel=1,nel
-      p_Ddata(iel) = p_Ddata(iel) - C
-    END DO
-       
-  ELSE
-    PRINT *,'Normalisation of non-P0 vectors not implemented!'
-    STOP
-  END IF
+      DO iel=1,nel
+        p_Ddata(iel) = p_Ddata(iel) - C
+      END DO
+         
+    ELSE
+      PRINT *,'Normalisation of non-P0 vectors not implemented!'
+      STOP
+    END IF
 
   END SUBROUTINE
 
@@ -318,6 +328,11 @@ CONTAINS
     INTEGER(I32), DIMENSION(:), POINTER :: p_idx
     REAL(DP), DIMENSION(:,:), POINTER    :: p_val
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+
+    ! If nDOF=0, there are no DOF's the current boundary condition segment,
+    ! so we don't have to do anything. Maybe the case if the user selected
+    ! a boundary region that is just too small.
+    IF (rpdbcStructure%nDOF .EQ. 0) RETURN
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
@@ -409,58 +424,58 @@ CONTAINS
 
 !</subroutine>
 
-  INTEGER :: iblock,i
-  REAL(DP) :: dtweight
-  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    INTEGER :: iblock,i
+    REAL(DP) :: dtweight
+    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
 
-  IF (.NOT. PRESENT(rdiscreteBC)) THEN
-    ! Grab the boundary condition entry list from the vector. This
-    ! is a list of all discretised boundary conditions in the system.
-    p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-  ELSE
-    p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-  END IF
-  
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
-  
-  ! If the time-weight is not specified, 1.0 is assumed.
-  IF (PRESENT(dtimeWeight)) THEN
-    dtweight = dtimeWeight
-  ELSE
-    dtweight = 1.0_DP
-  END IF
-  ! Note: Time-step weight not used by any filter up to now!
-  ! Perhaps in a later implementation it's needed anywhere...
-  
-  ! Now loop through all entries in this list:
-  DO i=1,SIZE(p_RdiscreteBC)
-  
-    ! What for BC's do we have here?
-    SELECT CASE (p_RdiscreteBC(i)%itype)
-    CASE (DISCBC_TPUNDEFINED)
-      ! Do-nothing
-      
-    CASE (DISCBC_TPDIRICHLET)
-      ! Dirichlet boundary conditions. Not time-dependent.
-      ! On which component are they defined? The component specifies
-      ! the row of the block matrix that is to be altered.
-      iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
-      
-      ! Implement the Dirichlet boundary conditions into that component
-      ! of the vector.
-      CALL vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
-                                     p_RdiscreteBC(i)%rdirichletBCs)
-      
-    CASE (DISCBC_TPPRESSUREDROP)  
-      ! Nothing to do; pressure drop BC's are implemented only into the RHS.
-      
-    CASE DEFAULT
-      PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
-              p_RdiscreteBC(i)%itype
-      STOP
-      
-    END SELECT
-  END DO
+    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+      ! Grab the boundary condition entry list from the vector. This
+      ! is a list of all discretised boundary conditions in the system.
+      p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+    ELSE
+      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+    END IF
+    
+    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    
+    ! If the time-weight is not specified, 1.0 is assumed.
+    IF (PRESENT(dtimeWeight)) THEN
+      dtweight = dtimeWeight
+    ELSE
+      dtweight = 1.0_DP
+    END IF
+    ! Note: Time-step weight not used by any filter up to now!
+    ! Perhaps in a later implementation it's needed anywhere...
+    
+    ! Now loop through all entries in this list:
+    DO i=1,SIZE(p_RdiscreteBC)
+    
+      ! What for BC's do we have here?
+      SELECT CASE (p_RdiscreteBC(i)%itype)
+      CASE (DISCBC_TPUNDEFINED)
+        ! Do-nothing
+        
+      CASE (DISCBC_TPDIRICHLET)
+        ! Dirichlet boundary conditions. Not time-dependent.
+        ! On which component are they defined? The component specifies
+        ! the row of the block matrix that is to be altered.
+        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        
+        ! Implement the Dirichlet boundary conditions into that component
+        ! of the vector.
+        CALL vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
+                                      p_RdiscreteBC(i)%rdirichletBCs)
+        
+      CASE (DISCBC_TPPRESSUREDROP)  
+        ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+        
+      CASE DEFAULT
+        PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
+                p_RdiscreteBC(i)%itype
+        STOP
+        
+      END SELECT
+    END DO
   
   END SUBROUTINE
 
@@ -499,56 +514,56 @@ CONTAINS
 
 !</subroutine>
 
-  INTEGER :: iblock,i
-  REAL(DP) :: dtweight
-  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    INTEGER :: iblock,i
+    REAL(DP) :: dtweight
+    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
 
-  IF (.NOT. PRESENT(rdiscreteBC)) THEN
-    ! Grab the boundary condition entry list from the vector. This
-    ! is a list of all discretised boundary conditions in the system.
-    p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-  ELSE
-    p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-  END IF
-  
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
-  
-  ! If the time-weight is not specified, 1.0 is assumed.
-  IF (PRESENT(dtimeWeight)) THEN
-    dtweight = dtimeWeight
-  ELSE
-    dtweight = 1.0_DP
-  END IF
-  
-  ! Now loop through all entries in this list:
-  DO i=1,SIZE(p_RdiscreteBC)
-  
-    ! What for BC's do we have here?
-    SELECT CASE (p_RdiscreteBC(i)%itype)
-    CASE (DISCBC_TPUNDEFINED)
-      ! Do-nothing
-      
-    CASE (DISCBC_TPDIRICHLET)
-      ! Dirichlet boundary conditions. Not time-dependent.
-      ! On which component are they defined? The component specifies
-      ! the row of the block matrix that is to be altered.
-      iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
-      
-      ! Implement the Dirichlet boundary conditions into that component
-      ! of the vector.
-      CALL vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
-                                     p_RdiscreteBC(i)%rdirichletBCs)
+    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+      ! Grab the boundary condition entry list from the vector. This
+      ! is a list of all discretised boundary conditions in the system.
+      p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+    ELSE
+      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+    END IF
     
-    CASE (DISCBC_TPPRESSUREDROP)  
-      CALL vecfil_imposePressureDropBC (rx,p_RdiscreteBC(i)%rpressureDropBCs)
+    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    
+    ! If the time-weight is not specified, 1.0 is assumed.
+    IF (PRESENT(dtimeWeight)) THEN
+      dtweight = dtimeWeight
+    ELSE
+      dtweight = 1.0_DP
+    END IF
+    
+    ! Now loop through all entries in this list:
+    DO i=1,SIZE(p_RdiscreteBC)
+    
+      ! What for BC's do we have here?
+      SELECT CASE (p_RdiscreteBC(i)%itype)
+      CASE (DISCBC_TPUNDEFINED)
+        ! Do-nothing
+        
+      CASE (DISCBC_TPDIRICHLET)
+        ! Dirichlet boundary conditions. Not time-dependent.
+        ! On which component are they defined? The component specifies
+        ! the row of the block matrix that is to be altered.
+        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        
+        ! Implement the Dirichlet boundary conditions into that component
+        ! of the vector.
+        CALL vecfil_imposeDirichletBC (rx%RvectorBlock(iblock),&
+                                      p_RdiscreteBC(i)%rdirichletBCs)
       
-    CASE DEFAULT
-      PRINT *,'vecfil_discreteBCrhs: unknown boundary condition: ',&
-              p_RdiscreteBC(i)%itype
-      STOP
-      
-    END SELECT
-  END DO
+      CASE (DISCBC_TPPRESSUREDROP)  
+        CALL vecfil_imposePressureDropBC (rx,p_RdiscreteBC(i)%rpressureDropBCs)
+        
+      CASE DEFAULT
+        PRINT *,'vecfil_discreteBCrhs: unknown boundary condition: ',&
+                p_RdiscreteBC(i)%itype
+        STOP
+        
+      END SELECT
+    END DO
   
   END SUBROUTINE
 
@@ -586,58 +601,58 @@ CONTAINS
 
 !</subroutine>
 
-  INTEGER :: iblock,i
-  REAL(DP) :: dtweight
-  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    INTEGER :: iblock,i
+    REAL(DP) :: dtweight
+    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
 
-  IF (.NOT. PRESENT(rdiscreteBC)) THEN
-    ! Grab the boundary condition entry list from the vector. This
-    ! is a list of all discretised boundary conditions in the system.
-    p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
-  ELSE
-    p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
-  END IF
-  
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
-  
-  ! If the time-weight is not specified, 1.0 is assumed.
-  IF (PRESENT(dtimeWeight)) THEN
-    dtweight = dtimeWeight
-  ELSE
-    dtweight = 1.0_DP
-  END IF
-  ! Note: Time-step weight not used by any filter up to now!
-  ! Perhaps in a later implementation it's needed anywhere...
-  
-  ! Now loop through all entries in this list:
-  DO i=1,SIZE(p_RdiscreteBC)
-  
-    ! What for BC's do we have here?
-    SELECT CASE (p_RdiscreteBC(i)%itype)
-    CASE (DISCBC_TPUNDEFINED)
-      ! Do-nothing
-      
-    CASE (DISCBC_TPDIRICHLET)
-      ! Dirichlet boundary conditions. Not time-dependent.
-      ! On which component are they defined? The component specifies
-      ! the row of the block matrix that is to be altered.
-      iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
-      
-      ! Implement the Dirichlet boundary conditions into that component
-      ! of the vector.
-      CALL vecfil_imposeDirichletDefectBC (rx%RvectorBlock(iblock),&
-                                           p_RdiscreteBC(i)%rdirichletBCs)
-      
-    CASE (DISCBC_TPPRESSUREDROP)  
-      ! Nothing to do; pressure drop BC's are implemented only into the RHS.
-      
-    CASE DEFAULT
-      PRINT *,'vecfil_discreteBCdef: unknown boundary condition: ',&
-              p_RdiscreteBC(i)%itype
-      STOP
-      
-    END SELECT
-  END DO
+    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+      ! Grab the boundary condition entry list from the vector. This
+      ! is a list of all discretised boundary conditions in the system.
+      p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+    ELSE
+      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+    END IF
+    
+    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    
+    ! If the time-weight is not specified, 1.0 is assumed.
+    IF (PRESENT(dtimeWeight)) THEN
+      dtweight = dtimeWeight
+    ELSE
+      dtweight = 1.0_DP
+    END IF
+    ! Note: Time-step weight not used by any filter up to now!
+    ! Perhaps in a later implementation it's needed anywhere...
+    
+    ! Now loop through all entries in this list:
+    DO i=1,SIZE(p_RdiscreteBC)
+    
+      ! What for BC's do we have here?
+      SELECT CASE (p_RdiscreteBC(i)%itype)
+      CASE (DISCBC_TPUNDEFINED)
+        ! Do-nothing
+        
+      CASE (DISCBC_TPDIRICHLET)
+        ! Dirichlet boundary conditions. Not time-dependent.
+        ! On which component are they defined? The component specifies
+        ! the row of the block matrix that is to be altered.
+        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        
+        ! Implement the Dirichlet boundary conditions into that component
+        ! of the vector.
+        CALL vecfil_imposeDirichletDefectBC (rx%RvectorBlock(iblock),&
+                                            p_RdiscreteBC(i)%rdirichletBCs)
+        
+      CASE (DISCBC_TPPRESSUREDROP)  
+        ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+        
+      CASE DEFAULT
+        PRINT *,'vecfil_discreteBCdef: unknown boundary condition: ',&
+                p_RdiscreteBC(i)%itype
+        STOP
+        
+      END SELECT
+    END DO
   
   END SUBROUTINE
   
@@ -667,12 +682,12 @@ CONTAINS
 
 !</subroutine>
 
-  IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock)) .OR. &
-      (rx%RvectorBlock(isubvector)%h_Ddata .EQ. ST_NOHANDLE) .OR. &
-      (rx%RvectorBlock(isubvector)%NEQ .LE. 0)) RETURN
-      
-  ! Normalise the subvector isubvector
-  CALL vecfil_normaliseToL20Sca (rx%RvectorBlock(isubvector))
+    IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock)) .OR. &
+        (rx%RvectorBlock(isubvector)%h_Ddata .EQ. ST_NOHANDLE) .OR. &
+        (rx%RvectorBlock(isubvector)%NEQ .LE. 0)) RETURN
+        
+    ! Normalise the subvector isubvector
+    CALL vecfil_normaliseToL20Sca (rx%RvectorBlock(isubvector))
 
   END SUBROUTINE
 

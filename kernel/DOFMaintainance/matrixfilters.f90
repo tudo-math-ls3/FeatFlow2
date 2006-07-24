@@ -88,6 +88,11 @@ CONTAINS
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
   INTEGER i,ilenleft
 
+  ! If nDOF=0, there are no DOF's the current boundary condition segment,
+  ! so we don't have to do anything. Maybe the case if the user selected
+  ! a boundary region that is just too small.
+  IF (rdbcStructure%nDOF .EQ. 0) RETURN
+
   ! Get pointers to the structures. For the vector, get the pointer from
   ! the storage management.
   
@@ -189,52 +194,52 @@ CONTAINS
 
 !</subroutine>
 
-  INTEGER :: iblock,jblock,i
-  TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
-  
-  ! Imposing boundary conditions normally changes the whole matrix!
-  ! Grab the boundary condition entry list from the matrix. This
-  ! is a list of all discretised boundary conditions in the system.
-  p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
-  
-  IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
-  
-  ! Now loop through all entries in this list:
-  DO i=1,SIZE(p_RdiscreteBC)
-  
-    ! What for BC's do we have here?
-    SELECT CASE (p_RdiscreteBC(i)%itype)
-    CASE (DISCBC_TPUNDEFINED)
-      ! Do-nothing
-      
-    CASE (DISCBC_TPDIRICHLET)
-      ! Dirichlet boundary conditions.
-      ! On which component are they defined? The component specifies
-      ! the row of the block matrix that is to be altered.
-      iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
-      
-      ! Loop through this matrix row and implement the boundary conditions
-      ! into the scalar submatrices.
-      ! For now, this implements unit vectors into the diagonal matrices
-      ! and zero-vectors into the offdiagonal matrices.
-      DO jblock = 1,rmatrix%ndiagBlocks
-        IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
-          CALL matfil_imposeDirichletBC (&
-                      rmatrix%RmatrixBlock(iblock,jblock), &
-                      iblock .NE. jblock,p_RdiscreteBC(i)%rdirichletBCs)
-        END IF
-      END DO
-      
-    CASE (DISCBC_TPPRESSUREDROP)  
-      ! Nothing to do; pressure drop BC's are implemented only into the RHS.
-      
-    CASE DEFAULT
-      PRINT *,'matfil_discreteBC: unknown boundary condition: ',&
-              p_RdiscreteBC(i)%itype
-      STOP
-      
-    END SELECT
-  END DO
+    INTEGER :: iblock,jblock,i
+    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+    
+    ! Imposing boundary conditions normally changes the whole matrix!
+    ! Grab the boundary condition entry list from the matrix. This
+    ! is a list of all discretised boundary conditions in the system.
+    p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
+    
+    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    
+    ! Now loop through all entries in this list:
+    DO i=1,SIZE(p_RdiscreteBC)
+    
+      ! What for BC's do we have here?
+      SELECT CASE (p_RdiscreteBC(i)%itype)
+      CASE (DISCBC_TPUNDEFINED)
+        ! Do-nothing
+        
+      CASE (DISCBC_TPDIRICHLET)
+        ! Dirichlet boundary conditions.
+        ! On which component are they defined? The component specifies
+        ! the row of the block matrix that is to be altered.
+        iblock = p_RdiscreteBC(i)%rdirichletBCs%icomponent
+        
+        ! Loop through this matrix row and implement the boundary conditions
+        ! into the scalar submatrices.
+        ! For now, this implements unit vectors into the diagonal matrices
+        ! and zero-vectors into the offdiagonal matrices.
+        DO jblock = 1,rmatrix%ndiagBlocks
+          IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
+            CALL matfil_imposeDirichletBC (&
+                        rmatrix%RmatrixBlock(iblock,jblock), &
+                        iblock .NE. jblock,p_RdiscreteBC(i)%rdirichletBCs)
+          END IF
+        END DO
+        
+      CASE (DISCBC_TPPRESSUREDROP)  
+        ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+        
+      CASE DEFAULT
+        PRINT *,'matfil_discreteBC: unknown boundary condition: ',&
+                p_RdiscreteBC(i)%itype
+        STOP
+        
+      END SELECT
+    END DO
   
   END SUBROUTINE
 
