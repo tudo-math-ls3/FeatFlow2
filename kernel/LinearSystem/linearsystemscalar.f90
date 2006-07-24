@@ -4495,7 +4495,7 @@ CONTAINS
     CALL lsyssc_getbase_single(rx,p_Ssource)
     CALL lsyssc_getbase_single(ry,p_Sdest)
     
-    CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,cx,cy)
+    CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,REAL(cx,SP),REAL(cy,SP))
   
   CASE DEFAULT
     PRINT *,'lsyssc_vectorLinearComb: Unsupported data type!'
@@ -5431,8 +5431,8 @@ CONTAINS
           CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
           CALL lalg_setVectorDble (p_Da,1.0_DP)
         CASE (ST_SINGLE)
-          CALL storage_getbase_double (rmatrixScalar%h_DA,p_Fa)
-          CALL lalg_setVectorSngl (p_Da,1.0_SP)
+          CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+          CALL lalg_setVectorSngl (p_Fa,1.0_SP)
         CASE DEFAULT
           PRINT *,'lsyssc_createEmptyMatrixScalar: Unknown data type!'
           STOP

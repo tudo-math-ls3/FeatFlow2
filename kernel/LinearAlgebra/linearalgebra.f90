@@ -279,7 +279,7 @@ CONTAINS
 !<input>
 
   ! Multiplication factor
-  REAL(DP), INTENT(IN) :: sc
+  REAL(SP), INTENT(IN) :: sc
 
 !</input>
   

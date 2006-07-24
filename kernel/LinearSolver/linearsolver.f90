@@ -2835,7 +2835,7 @@ CONTAINS
         CASE (ST_SINGLE)
 
           ! Get the matrix data arrays
-          CALL storage_getbase_double (p_rmatrix%h_Da,p_Fmatrix)
+          CALL storage_getbase_single (p_rmatrix%h_Da,p_Fmatrix)
           
           ! Take care of the accuracy of the vector
           SELECT CASE (rd%cdataType)

@@ -1597,7 +1597,7 @@ CONTAINS
     CALL lsysbl_getbase_single(rx,p_Ssource)
     CALL lsysbl_getbase_single(ry,p_Sdest)
     
-    CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,cx,cy)
+    CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,REAL(cx,SP),REAL(cy,SP))
   
   CASE DEFAULT
     PRINT *,'lsysbl_vectorLinearComb: Unsupported data type!'
