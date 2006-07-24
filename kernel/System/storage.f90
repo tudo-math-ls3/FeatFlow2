@@ -2359,7 +2359,6 @@ CONTAINS
   ! Adjust total amount of memory
   p_rheap%dtotalMem = p_rheap%dtotalMem - p_rnode%dmemBytes
 
-  
   ! Are we 1D or 2D?
   SELECT CASE(p_rnode%idimension)
 
@@ -2479,7 +2478,6 @@ CONTAINS
            END DO
         END SELECT
      END IF
-
      
   CASE (2)
 
