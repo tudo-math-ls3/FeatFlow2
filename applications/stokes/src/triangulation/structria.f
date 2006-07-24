@@ -811,34 +811,67 @@ C Transfer some variables for easier access
       KCORVG = L(TRIA(OLCORVG))
 
       SUM = 0D0
+      
+      IF (TRIA(ONVE) .EQ. 4) THEN
 
-      DO  IEL=0,TRIA(ONEL)-1
+        DO  IEL=0,TRIA(ONEL)-1
 
-        I1 = KWORK(KVERT+IEL*NNVE)-1
-        I2 = KWORK(KVERT+IEL*NNVE+1)-1
-        I3 = KWORK(KVERT+IEL*NNVE+2)-1
-        I4 = KWORK(KVERT+IEL*NNVE+3)-1
+          I1 = KWORK(KVERT+IEL*NNVE)-1
+          I2 = KWORK(KVERT+IEL*NNVE+1)-1
+          I3 = KWORK(KVERT+IEL*NNVE+2)-1
+          I4 = KWORK(KVERT+IEL*NNVE+3)-1
 
-        X1 = DWORK(KCORVG+2*I1)
-        X2 = DWORK(KCORVG+2*I2)
-        X3 = DWORK(KCORVG+2*I3)
-        X4 = DWORK(KCORVG+2*I4)
+          X1 = DWORK(KCORVG+2*I1)
+          X2 = DWORK(KCORVG+2*I2)
+          X3 = DWORK(KCORVG+2*I3)
+          X4 = DWORK(KCORVG+2*I4)
 
-        Y1 = DWORK(KCORVG+2*I1+1)
-        Y2 = DWORK(KCORVG+2*I2+1)
-        Y3 = DWORK(KCORVG+2*I3+1)
-        Y4 = DWORK(KCORVG+2*I4+1)
+          Y1 = DWORK(KCORVG+2*I1+1)
+          Y2 = DWORK(KCORVG+2*I2+1)
+          Y3 = DWORK(KCORVG+2*I3+1)
+          Y4 = DWORK(KCORVG+2*I4+1)
 
-C       Calculate the area with the formula for general polygons;
-C       compare e.g. "http://mathworld.wolfram.com/PolygonArea.html"
+C         Calculate the area with the formula for general polygons;
+C         compare e.g. "http://mathworld.wolfram.com/PolygonArea.html"
 
-        AAA = 0.5D0*(  DABS((X1-X2)*(Y3-Y2)-(Y1-Y2)*(X3-X2))
-     *                +DABS((X1-X4)*(Y3-Y4)-(Y1-Y4)*(X3-X4)) )
+          AAA = 0.5D0*(  DABS((X1-X2)*(Y3-Y2)-(Y1-Y2)*(X3-X2))
+     *                  +DABS((X1-X4)*(Y3-Y4)-(Y1-Y4)*(X3-X4)) )
+          
+          DWORK(KAREA+IEL)=AAA
+          
+          SUM = SUM+AAA
+        END DO
         
-        DWORK(KAREA+IEL)=AAA
-        
-        SUM = SUM+AAA
-      END DO
+      ELSE IF (TRIA(ONVE) .EQ. 3) THEN
+
+        DO  IEL=0,TRIA(ONEL)-1
+
+          I1 = KWORK(KVERT+IEL*NNVE)-1
+          I2 = KWORK(KVERT+IEL*NNVE+1)-1
+          I3 = KWORK(KVERT+IEL*NNVE+2)-1
+
+          X1 = DWORK(KCORVG+2*I1)
+          X2 = DWORK(KCORVG+2*I2)
+          X3 = DWORK(KCORVG+2*I3)
+
+          Y1 = DWORK(KCORVG+2*I1+1)
+          Y2 = DWORK(KCORVG+2*I2+1)
+          Y3 = DWORK(KCORVG+2*I3+1)
+
+C         Calculate the area with the formula for general polygons;
+C         compare e.g. "http://mathworld.wolfram.com/PolygonArea.html"
+
+          AAA = 0.5D0*(  DABS((X1-X2)*(Y3-Y2)-(Y1-Y2)*(X3-X2))  )
+          
+          DWORK(KAREA+IEL)=AAA
+          
+          SUM = SUM+AAA
+        END DO
+      
+      ELSE
+        PRINT *,'Unsupported NVE!!!'
+        STOP
+      END IF
  
       DWORK(KAREA+TRIA(ONEL)) = SUM
  
