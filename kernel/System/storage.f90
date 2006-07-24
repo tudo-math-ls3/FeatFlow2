@@ -67,6 +67,9 @@
 !#
 !# 12.) storage_getdimension
 !#      -> Get the dimension of an array on the heap.
+!#
+!# 13.) storage_realloc = storage_realloc1D / storage_realloc2D
+!#      -> Reallocate a 1D or 2D array 
 !# 
 !# </purpose>
 !##############################################################################
@@ -106,6 +109,9 @@ MODULE storage
 
   ! init new storage block with 1,2,3,...,n
   INTEGER, PARAMETER :: ST_NEWBLOCK_ORDERED = 2
+
+  ! no init reallocated storage block
+  INTEGER, PARAMETER :: ST_NEWBLOCK_COPY = 3
   
   !</constantblock>
   
@@ -232,6 +238,10 @@ MODULE storage
   INTERFACE storage_new
     MODULE PROCEDURE storage_new1D
     MODULE PROCEDURE storage_new2D
+  END INTERFACE
+
+  INTERFACE storage_realloc
+   MODULE PROCEDURE storage_realloc1D
   END INTERFACE
 
   INTERFACE storage_getsize
@@ -1544,7 +1554,7 @@ CONTAINS
       CASE (ST_SINGLE)
         SELECT CASE (p_rdest%idataType)
         CASE (ST_DOUBLE)
-          CALL lalg_copyVectorDblSngl (p_rsource%p_Fsingle1D,p_rdest%p_Ddouble1D)
+          CALL lalg_copyVectorSnglDbl (p_rsource%p_Fsingle1D,p_rdest%p_Ddouble1D)
         CASE (ST_SINGLE)
           CALL lalg_copyVectorSngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
         CASE DEFAULT
@@ -2280,6 +2290,173 @@ CONTAINS
 
   idimension = p_rnode%idimension
   
+  END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_realloc1D (scall, isize, ihandle, cinitNewBlock, rheap)
+
+!<description>
+  !This routine reallocates an existing 1D memory block wih a new desired size.
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  CHARACTER(LEN=*), INTENT(IN) :: scall
+
+  !requested storage size
+  INTEGER, INTENT(IN) :: isize
+
+  ! Handle of the memory block.
+  INTEGER, INTENT(IN) :: ihandle
+
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED,ST_NEWBLOCK_COPY)
+  INTEGER, INTENT(IN) :: cinitNewBlock
+
+!</input>
+  
+!<inputoutput>
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  
+  ! Pointer to 1D real array or NULL() if not assigned
+  REAL(SP), DIMENSION(:), POINTER       :: p_Fsingle1D   => NULL()
+
+  ! Pointer to 1D double precision array or NULL() if not assigned
+  REAL(DP), DIMENSION(:), POINTER       :: p_Ddouble1D   => NULL()
+
+  ! Pointer to 1D integer array or NULL() if not assigned
+  INTEGER(I32), DIMENSION(:), POINTER   :: p_Iinteger1D   => NULL()
+
+  ! variable for ordering 1,2,3,...,N
+  INTEGER :: iorder
+
+  IF (isize .EQ. 0) THEN
+    PRINT *,'Error in storage_realloc1D Warning: isize=0'
+    STOP
+  END IF
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+  ! Adjust total amount of memory
+  p_rheap%dtotalMem = p_rheap%dtotalMem - p_rnode%dmemBytes
+  
+  ! Allocate memory according to isize
+  IF (cinitNewBlock .EQ. ST_NEWBLOCK_COPY) THEN
+     
+    SELECT CASE (p_rnode%idataType)
+    CASE (ST_SINGLE)
+      p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Fsingle1D),DP)*REAL(ST_SINGLE2BYTES)
+      ALLOCATE(p_Fsingle1D(isize)); p_Fsingle1D = 0.0_SP
+      CALL SCOPY(SIZE(p_rnode%p_Fsingle1D),p_rnode%p_Fsingle1D,1,p_Fsingle1D,1)
+      DEALLOCATE(p_rnode%p_Fsingle1D)
+      p_rnode%p_Fsingle1D => p_Fsingle1D
+      p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
+
+    CASE (ST_DOUBLE)
+      p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Ddouble1D),DP)*REAL(ST_DOUBLE2BYTES)
+      ALLOCATE(p_Ddouble1D(isize)); p_Ddouble1D = 0.0_DP
+      CALL DCOPY(SIZE(p_rnode%p_Ddouble1D),p_rnode%p_Ddouble1D,1,p_Ddouble1D,1)
+      DEALLOCATE(p_rnode%p_Ddouble1D)
+      p_rnode%p_Ddouble1D => p_Ddouble1D
+      p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
+
+    CASE (ST_INT)
+      p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Iinteger1D),DP)*REAL(ST_INT2BYTES)
+      ALLOCATE(p_Iinteger1D(isize)); p_Iinteger1D = 0_I32
+      CALL ICOPY(SIZE(p_rnode%p_Iinteger1D),p_rnode%p_Iinteger1D,1,p_Iinteger1D,1)
+      DEALLOCATE(p_rnode%p_Iinteger1D)
+      p_rnode%p_Iinteger1D => p_Iinteger1D
+      p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_INT2BYTES)
+
+    CASE DEFAULT
+      PRINT *,'Error: unknown mem type'
+      STOP
+    END SELECT
+
+  ELSE
+
+    SELECT CASE (p_rnode%idataType)
+      CASE (ST_SINGLE)
+        p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Fsingle1D),DP)*REAL(ST_SINGLE2BYTES)
+        DEALLOCATE(p_rnode%p_Fsingle1D)
+        ALLOCATE(p_rnode%p_Fsingle1D(isize))
+        p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
+
+      CASE (ST_DOUBLE)
+        p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Ddouble1D),DP)*REAL(ST_DOUBLE2BYTES)
+        DEALLOCATE(p_rnode%p_Ddouble1D)
+        ALLOCATE(p_rnode%p_Ddouble1D(isize))
+        p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
+
+      CASE (ST_INT)
+        p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Iinteger1D),DP)*REAL(ST_INT2BYTES)
+        DEALLOCATE(p_rnode%p_Iinteger1D)
+        ALLOCATE(p_rnode%p_Iinteger1D(isize))
+        p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_INT2BYTES)
+
+      CASE DEFAULT
+        PRINT *,'Error: unknown mem type'
+        STOP
+    END SELECT
+  END IF
+
+  p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
+  IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
+    p_rheap%dtotalMemMax = p_rheap%dtotalMem
+  
+  ! Clear the vector if necessary
+  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
+    SELECT CASE (p_rnode%idataType)
+    CASE (ST_SINGLE)
+      p_rnode%p_Fsingle1D = 0.0_SP
+    CASE (ST_DOUBLE)
+      p_rnode%p_Ddouble1D = 0.0_DP
+    CASE (ST_INT)
+      p_rnode%p_Iinteger1D = 0_I32
+    END SELECT
+  END IF
+
+  ! Impose ordering 1,2,3,...,N if necessary
+  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ORDERED) THEN
+    SELECT CASE (p_rnode%idataType)
+    CASE (ST_SINGLE)
+      DO iorder=1,isize
+        p_rnode%p_Fsingle1D(iorder) = REAL(iorder,SP)
+      END DO
+    CASE (ST_DOUBLE)
+      DO iorder=1,isize
+        p_rnode%p_Ddouble1D(iorder) = REAL(iorder,DP)
+      END DO
+    CASE (ST_INT)
+      DO iorder=1,isize
+        p_rnode%p_Iinteger1D(iorder) = INT(iorder,I32)
+      END DO
+    END SELECT
+  END IF
+
   END SUBROUTINE
 
 END MODULE

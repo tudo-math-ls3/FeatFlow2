@@ -49,8 +49,8 @@ MODULE fsystem
 
   !</constantblock>
   
-  INTEGER, PARAMETER :: DP = SELECTED_REAL_KIND(13,307)
-  INTEGER, PARAMETER :: SP = SELECTED_REAL_KIND(6,63)
+  INTEGER, PARAMETER :: DP = SELECTED_REAL_KIND(15,307)
+  INTEGER, PARAMETER :: SP = SELECTED_REAL_KIND(6,37)
 
   !<constantblock description="Kind values for integers">
 
