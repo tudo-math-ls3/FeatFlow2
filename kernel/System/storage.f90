@@ -53,7 +53,7 @@
 !#      -> Determine pointer associated to a handle for singles, doubles
 !#         or 32-Bit integers, 2D array
 !#
-!#  8.) storage_copy
+!#  8.) storage_copy = storage_copy / storage_copy_explicit / storage_copy_explicit2D
 !#      -> Copies the content of one array to another.
 !#
 !#  9.) storage_clear
@@ -237,6 +237,12 @@ MODULE storage
   INTERFACE storage_getsize
     MODULE PROCEDURE storage_getsize1D
     MODULE PROCEDURE storage_getsize2D
+  END INTERFACE
+
+  INTERFACE storage_copy
+    MODULE PROCEDURE storage_copy
+    MODULE PROCEDURE storage_copy_explicit
+    MODULE PROCEDURE storage_copy_explicit2D
   END INTERFACE
   
 CONTAINS
@@ -1419,7 +1425,7 @@ CONTAINS
   
   END SUBROUTINE
 
-  !************************************************************************
+!************************************************************************
 
 !<subroutine>
   
@@ -1653,7 +1659,433 @@ CONTAINS
 
   END SUBROUTINE
 
-  !************************************************************************
+!************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE storage_copy_explicit(h_source, h_dest, istart_source, istart_dest, ilength, rheap)
+  
+!<description>
+  ! This routine copies the information of one array to another.
+  ! The structure of the arrays behind h_source and h_dest must be 
+  ! "similar" in the following sense: Both datatypes and dimensions
+  ! must be the same. The routine allows for copying only parts of
+  ! of the arrays. Therefor the relevant parts of the arrays must
+  ! be the same!
+!</description>
+
+!<input>
+  ! Handle of the source array to copy
+  INTEGER, INTENT(IN) :: h_source
+  
+  ! First entry of the source array to copy
+  INTEGER, INTENT(IN) :: istart_source
+
+  ! First entry of the destination array where to copy
+  INTEGER, INTENT(IN) :: istart_dest
+
+  ! Length of the array to copy
+  INTEGER, INTENT(IN) :: ilength
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(IN), TARGET, OPTIONAL :: rheap
+!</input>
+
+!<inputoutput>
+  ! Handle of the destination array.
+  ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
+  ! and structure as h_source and data is copied to it.
+  INTEGER, INTENT(INOUT) :: h_dest
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
+  INTEGER(I32) :: i,j
+  INTEGER(I32), DIMENSION(2) :: Isize
+  
+    ! Check if the start address is positive
+    IF (istart_source <= 0 .OR. istart_dest <= 0) THEN
+      PRINT *, 'storage_copy_explicit: start address must be positive'
+      STOP
+    END IF
+
+    ! Get the heap to use - local or global one.
+    
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbase
+    END IF
+
+    IF (h_source .EQ. ST_NOHANDLE) THEN
+      PRINT *,'storage_copy_explicit: Wrong handle'
+      STOP
+    END IF
+    IF (.NOT. ASSOCIATED(p_rheap%p_Rdescriptors)) THEN
+      PRINT *,'storage_copy_explicit: Heap not initialised!'
+      STOP
+    END IF
+
+    p_rsource => p_rheap%p_Rdescriptors(h_source)
+    
+    ! Create a new array?
+    IF (h_dest .EQ. ST_NOHANDLE) THEN
+      ! Create a new array in the same size and structure
+      ! as h_source.
+      IF (p_rsource%idimension /= 1) THEN
+        PRINT *, 'storage_copy_explicit: only 1D arrays are allowed'
+        STOP
+      END IF
+
+      SELECT CASE (p_rsource%idataType)
+      CASE (ST_DOUBLE)
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,SIZE(p_rsource%p_Ddouble1D),&
+              ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_SINGLE)
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,SIZE(p_rsource%p_Fsingle1D),&
+              ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_INT)
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,SIZE(p_rsource%p_Iinteger1D),&
+              ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      END SELECT
+      
+   END IF
+    
+    p_rdest => p_rheap%p_Rdescriptors(h_dest)
+
+    ! 1D/2D the same?
+    IF (p_rsource%idimension .NE. p_rdest%idimension) THEN
+      PRINT *,'storage_copy_explicit: Structure different!'
+      STOP
+    END IF
+
+    ! What is to copy
+    SELECT CASE (p_rsource%idataType)
+    CASE (ST_DOUBLE)
+       SELECT CASE (p_rdest%idataType)
+       CASE (ST_DOUBLE)
+          IF (istart_source+ilength-1 > SIZE(p_rsource%p_Ddouble1D) .OR. &
+               istart_dest+ilength-1 > SIZE(p_rdest%p_Ddouble1D)) THEN
+            PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
+            STOP
+          END IF  
+          ! Copy by hand
+          DO i=1,ilength
+            p_rdest%p_Ddouble1D(istart_dest+i-1) = p_rsource%p_Ddouble1D(istart_source+i-1)
+          END DO
+       CASE (ST_SINGLE)
+          IF (istart_source+ilength-1 > SIZE(p_rsource%p_Ddouble1D) .OR. &
+               istart_dest+ilength-1 > SIZE(p_rdest%p_Fsingle1D)) THEN
+            PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
+            STOP
+          END IF  
+          ! Copy by hand
+          DO i=1,ilength
+            p_rdest%p_Fsingle1D(istart_dest+i-1) = p_rsource%p_Ddouble1D(istart_source+i-1)
+          END DO
+       CASE DEFAULT
+          PRINT *,'storage_copy_explicit: Unsupported data type combination'
+          STOP
+       END SELECT
+       
+    CASE (ST_SINGLE)
+       SELECT CASE (p_rdest%idataType)
+       CASE (ST_DOUBLE)
+          IF (istart_source+ilength-1 > SIZE(p_rsource%p_Fsingle1D) .OR. &
+               istart_dest+ilength-1 > SIZE(p_rdest%p_Ddouble1D)) THEN
+             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO i=1,ilength
+             p_rdest%p_Ddouble1D(istart_dest+i-1) = p_rsource%p_Fsingle1D(istart_source+i-1)
+          END DO
+       CASE (ST_SINGLE)
+          IF (istart_source+ilength-1 > SIZE(p_rsource%p_Fsingle1D) .OR. &
+               istart_dest+ilength-1 > SIZE(p_rdest%p_Fsingle1D)) THEN
+             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO i=1,ilength
+             p_rdest%p_Fsingle1D(istart_dest+i-1) = p_rsource%p_Fsingle1D(istart_source+i-1)
+          END DO
+       CASE DEFAULT
+          PRINT *,'storage_copy_explicit: Unsupported data type combination'
+          STOP
+       END SELECT
+       
+    CASE (ST_INT)
+       IF (p_rdest%idataType .EQ. ST_INT) THEN
+          IF (istart_source+ilength-1 > SIZE(p_rsource%p_Iinteger1D) .OR. &
+               istart_dest+ilength-1 > SIZE(p_rdest%p_Iinteger1D)) THEN
+             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO i=1,ilength
+             p_rdest%p_Iinteger1D(istart_dest+i-1) = p_rsource%p_Iinteger1D(istart_source+i-1)
+          END DO
+       ELSE
+          PRINT *,'storage_copy_explicit: Unsupported data type combination'
+          STOP
+       END IF
+    CASE DEFAULT
+       PRINT *,'storage_copy_explicit: Unknown data type'
+       STOP
+    END SELECT
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE storage_copy_explicit2D(h_source, h_dest, Istart_source, Istart_dest, Ilength, rheap)
+  
+!<description>
+  ! This routine copies the information of one array to another.
+  ! The structure of the arrays behind h_source and h_dest must be 
+  ! "similar" in the following sense: Both datatypes and dimensions
+  ! must be the same. The routine allows for copying only parts of
+  ! of the arrays. Therefor the relevant parts of the arrays must
+  ! be the same!
+!</description>
+
+!<input>
+  ! Handle of the source array to copy
+  INTEGER, INTENT(IN) :: h_source
+  
+  ! First entry of the source array to copy
+  INTEGER, DIMENSION(2), INTENT(IN) :: Istart_source
+
+  ! First entry of the destination array where to copy
+  INTEGER, DIMENSION(2), INTENT(IN) :: Istart_dest
+
+  ! Length of the array to copy
+  INTEGER, DIMENSION(2), INTENT(IN) :: Ilength
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(IN), TARGET, OPTIONAL :: rheap
+!</input>
+
+!<inputoutput>
+  ! Handle of the destination array.
+  ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
+  ! and structure as h_source and data is copied to it.
+  INTEGER, INTENT(INOUT) :: h_dest
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
+  INTEGER(I32) :: i,j
+  INTEGER(I32), DIMENSION(2) :: Isize
+  
+    ! Check if the start address is positive
+    IF (ANY(istart_source <= 0) .OR. ANY(istart_dest <= 0)) THEN
+      PRINT *, 'storage_copy_explicit: start address must be positive'
+      STOP
+    END IF
+
+    ! Get the heap to use - local or global one.
+    
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbase
+    END IF
+
+    IF (h_source .EQ. ST_NOHANDLE) THEN
+      PRINT *,'storage_copy_explicit: Wrong handle'
+      STOP
+    END IF
+    IF (.NOT. ASSOCIATED(p_rheap%p_Rdescriptors)) THEN
+      PRINT *,'storage_copy_explicit: Heap not initialised!'
+      STOP
+    END IF
+
+    p_rsource => p_rheap%p_Rdescriptors(h_source)
+    
+    ! Create a new array?
+    IF (h_dest .EQ. ST_NOHANDLE) THEN
+      ! Create a new array in the same size and structure
+      ! as h_source.
+      IF (p_rsource%idimension /= 2) THEN
+        PRINT *, 'storage_copy_explicit: only 1D arrays are allowed'
+        STOP
+      END IF
+
+      SELECT CASE (p_rsource%IdataType)
+      CASE (ST_DOUBLE)
+         Isize = UBOUND(p_rsource%p_Ddouble2D)   ! =SIZE(...) here
+         CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+              ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_SINGLE)
+         Isize = UBOUND(p_rsource%p_Fsingle2D)   ! =SIZE(...) here
+         CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+              ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_INT)
+         Isize = UBOUND(p_rsource%p_Iinteger2D)      ! =SIZE(...) here
+         CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+              ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      END SELECT
+      
+   END IF
+    
+    p_rdest => p_rheap%p_Rdescriptors(h_dest)
+
+    ! 1D/2D the same?
+    IF (p_rsource%idimension .NE. p_rdest%idimension) THEN
+      PRINT *,'storage_copy_explicit: Structure different!'
+      STOP
+    END IF
+
+    ! What is to copy
+    SELECT CASE (p_rsource%idataType)
+    CASE (ST_DOUBLE)      
+       SELECT CASE (p_rdest%idataType)
+       CASE (ST_DOUBLE)
+          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Ddouble2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Ddouble2D,2)) THEN
+             PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO j=1,Ilength(2)
+             DO i=1,Ilength(1)
+                p_rdest%p_Ddouble2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                     p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+             END DO
+          END DO
+          
+       CASE (ST_SINGLE)
+          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Fsingle2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Fsingle2D,2)) THEN
+             PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO j=1,Ilength(2)
+             DO i=1,Ilength(1)
+                p_rdest%p_Fsingle2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                     p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+             END DO
+          END DO
+          
+       CASE (ST_INT)
+          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Iinteger2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Iinteger2D,2)) THEN
+             PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO j=1,Ilength(2)
+             DO i=1,Ilength(1)
+                p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                     p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+             END DO
+          END DO
+          
+       END SELECT
+       
+    CASE (ST_SINGLE)     
+       SELECT CASE (p_rdest%idataType)
+       CASE (ST_DOUBLE)
+          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Ddouble2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Ddouble2D,2)) THEN
+             PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO j=1,Ilength(2)
+             DO i=1,Ilength(1)
+                p_rdest%p_Ddouble2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                     p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+             END DO
+          END DO
+                    
+       CASE (ST_SINGLE)
+          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Fsingle2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Fsingle2D,2)) THEN
+             PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO j=1,Ilength(2)
+             DO i=1,Ilength(1)
+                p_rdest%p_Fsingle2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                     p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+             END DO
+          END DO
+          
+       CASE (ST_INT)
+          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Iinteger2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Iinteger2D,2)) THEN
+             PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO j=1,Ilength(2)
+             DO i=1,Ilength(1)
+                p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                     p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+             END DO
+          END DO
+       END SELECT
+       
+    CASE (ST_INT)
+       IF (p_rdest%idataType .NE. ST_INT) THEN
+          PRINT *,'storage_copy: unsupported data type combination'
+          STOP
+       END IF
+       IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Iinteger2D,1) .OR. &
+            Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Iinteger2D,2) .OR. &
+            Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Iinteger2D,1) .OR. &
+            Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Iinteger2D,2)) THEN
+          PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+          STOP
+       END IF
+
+       ! Copy by hand
+       DO j=1,Ilength(2)
+          DO i=1,Ilength(1)
+             p_rdest%p_Iinteger2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                  p_rsource%p_Iinteger2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          END DO
+       END DO
+       
+    CASE DEFAULT
+       PRINT *,'storage_copy: Unknown data type'
+       STOP
+    END SELECT
+
+  END SUBROUTINE
+
+!************************************************************************
 
 !<subroutine>
   
