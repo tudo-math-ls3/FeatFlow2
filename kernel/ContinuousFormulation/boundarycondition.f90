@@ -506,8 +506,17 @@ CONTAINS
   TYPE(t_bcRegion), POINTER :: p_rbcReg
 
   ! Add a general boundary condition region.
-  CALL bcond_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rboundaryConditions,&
-                            rboundaryRegion,p_rbcReg)
+  ! Add a 'real' boundary condition region if rboundaryRegion%iboundSegIdx
+  ! identifies that the boundary region belongs to a real boundary segment.
+  ! Add a 'free' boundary condition region if the rboundaryRegion does not belong
+  ! to any real segment (rboundaryRegion%iboundSegIdx=0).
+  IF (rboundaryRegion%iboundSegIdx .NE. 0) THEN
+    CALL bcond_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rboundaryConditions,&
+                              rboundaryRegion,p_rbcReg)
+  ELSE
+    CALL bcond_newBConRealBD (BC_DIRICHLET,BC_RTYPE_FREE,rboundaryConditions,&
+                              rboundaryRegion,p_rbcReg)
+  END IF
 
   ! Modify the structure, impose additionally needed information
   ! for Dirichlet boundary - in detail, set the equation where the BC
@@ -562,8 +571,17 @@ CONTAINS
   TYPE(t_bcRegion), POINTER :: p_rbcReg
 
   ! Add a general boundary condition region.
-  CALL bcond_newBConRealBD (BC_PRESSUREDROP,BC_RTYPE_REAL,rboundaryConditions,&
-                            rboundaryRegion,p_rbcReg)
+  ! Add a 'real' boundary condition region if rboundaryRegion%iboundSegIdx
+  ! identifies that the boundary region belongs to a real boundary segment.
+  ! Add a 'free' boundary condition region if the rboundaryRegion does not belong
+  ! to any real segment (rboundaryRegion%iboundSegIdx=0).
+  IF (rboundaryRegion%iboundSegIdx .NE. 0) THEN
+    CALL bcond_newBConRealBD (BC_PRESSUREDROP,BC_RTYPE_REAL,rboundaryConditions,&
+                              rboundaryRegion,p_rbcReg)
+  ELSE
+    CALL bcond_newBConRealBD (BC_PRESSUREDROP,BC_RTYPE_FREE,rboundaryConditions,&
+                              rboundaryRegion,p_rbcReg)
+  END IF
 
   ! Modify the structure, impose additionally needed information
   ! for Dirichlet boundary - in detail, set the equation where the BC

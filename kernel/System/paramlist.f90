@@ -2115,7 +2115,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: iunit,ios,isbuflen,ityp,ilinenum,isubstring,iparpos
+  INTEGER :: iunit,ios,isbuflen,ityp,ilinenum,isubstring,nsubstrings,iparpos
   TYPE(t_parlstSection), POINTER :: p_currentsection
   CHARACTER(LEN=PARLST_LENLINEBUF) :: sdata
   CHARACTER(LEN=PARLST_MLSECTION) :: ssectionname
@@ -2138,6 +2138,7 @@ CONTAINS
   ios = 0
   ilinenum = 0
   isubstring = 0
+  nsubstrings = 0
   DO WHILE (ios .EQ. 0) 
     
     ! Read a line from the file into sbuf
@@ -2147,7 +2148,7 @@ CONTAINS
     IF (isbuflen .NE. 0) THEN
     
       ! Parse the line
-      CALL parlst_parseline (sdata, ityp, isubstring, ilinenum, ssectionname, &
+      CALL parlst_parseline (sdata, ityp, nsubstrings, ilinenum, ssectionname, &
                              sparname, svalue)  
       
       SELECT CASE (ityp)
@@ -2164,12 +2165,19 @@ CONTAINS
       CASE (3)
         ! 'Headline' of a multi-valued parameter. Add the parameter with
         ! isubstring subvalues
-        CALL parlst_addvalue (p_currentsection, sparname, svalue, isubstring)
+        CALL parlst_addvalue (p_currentsection, sparname, svalue, nsubstrings)
         
         ! Fetch the parameter for later adding of subvalues.
-        iparpos = parlst_queryvalue(p_currentsection, sparname) 
+        iparpos = parlst_queryvalue(p_currentsection, sparname)
+        
+        ! isubstring counts the current readed substring.
+        ! Set it to 0, it will be increased up to nsubstrings in 'case 4'.
+        isubstring = 0
         
       CASE (4)
+        ! Increase number of current substring
+        isubstring = isubstring + 1
+        
         ! Sub-parameter of a multi-valued parameter. Add the value to
         ! the last parameter that was added in case 3.
         CALL parlst_setvalue_fetch (p_currentsection, iparpos, svalue, &
@@ -2177,7 +2185,7 @@ CONTAINS
                                     
         ! Decrement the substring counter. If we reach 0, parlst_parseline
         ! continues to parse standard parameters.
-        isubstring = isubstring-1
+        nsubstrings = nsubstrings - 1
         
       ! Other cases: comment.
       END SELECT

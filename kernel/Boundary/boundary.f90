@@ -35,6 +35,14 @@
 !# 8.) boundary_isInRegion
 !#     -> Tests whether a node with a specific parameter value
 !#        is inside of a given boundary region or not.
+!#
+!# 9.) boundary_convertParameter
+!#     -> Allows to convert a parameter value from 0-1 parametrisation to
+!#        length parametrisatiopn and back
+!#
+!# 10.) boundary_getRegionLength
+!#     -> Calculates the length of a boundary region.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -823,7 +831,7 @@ MODULE boundary
   ! iboundCompIdx.\\
   ! dt is bounded by the maximum parameter value, i.e. when dt is
   ! larger than the maximum parameter value, dt=0 is taken.
-  !</description>
+!</description>
 
 !<input>
 
@@ -883,9 +891,8 @@ MODULE boundary
   CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
   CALL storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
 
-  !if the parameter value exceeds the parameter interval on the boundary component
-  
-  ! Truncate the parameter value!
+  ! If the parameter value exceeds the parameter interval on the boundary 
+  ! component, truncate the parameter value!
   SELECT CASE (cpar)
   CASE (BDR_PAR_01)
     IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
@@ -995,6 +1002,174 @@ MODULE boundary
   END SELECT
 
   END SUBROUTINE 
+
+!************************************************************************
+
+!<function>
+
+  REAL(DP) FUNCTION boundary_convertParameter(rboundary, iboundCompIdx, dt, &
+                                              cparTypeSource, cparTypeDest) &
+           RESULT(dresult)
+
+!<description>
+  ! This function allows to convert a parameter value dt from 0-1 
+  ! parametrisation to length parametrisation and back.
+  ! cparTypeSource specifies the type of parametrisation of dt.
+  ! cparTypeDest specifies the destination type, dt should be converted 
+  ! to. The return value is the converted parameter value.
+!</description>
+
+!<input>
+
+  ! boundary structure
+  TYPE(t_boundary), INTENT(IN) :: rboundary
+
+  ! index of boundary component
+  INTEGER, INTENT(IN) :: iboundCompIdx
+
+  ! parameter value of boundary point
+  REAL(DP), INTENT(IN) :: dt
+  
+  ! Type of parametrisation of DT.
+  ! One of the BDR_PAR_xxxx constants. 
+  INTEGER, INTENT(IN) :: cparTypeSource
+
+  ! Type of parametrisation, DT should be converted to.
+  ! One of the BDR_PAR_xxxx constants. 
+  INTEGER, INTENT(IN) :: cparTypeDest
+  
+!</input>
+
+!<result>
+  ! The converted parameter value.
+!</result>
+
+!</function>
+
+    ! local variables
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IsegInfo, p_IsegCount
+    REAL(DP), DIMENSION(:), POINTER     :: p_DsegInfo, p_DmaxPar
+    
+    REAL(DP) :: dpar, dcurrentpar, dendpar, dparloc, dseglength
+    INTEGER :: iseg,istartidx
+
+    ! Small check
+    IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
+      PRINT *,'Error in boundary_convertParameter'
+      STOP
+    ENDIF
+
+    ! In case, source and destination type is the same, it's easy.
+    IF (cparTypeSource .EQ. cparTypeDest) THEN
+      dresult = dt
+      RETURN
+    END IF
+
+    ! Get the pointers to the segment information arrays for the current
+    ! boundary component:
+    CALL storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
+    CALL storage_getbase_int(p_IintSegInfo_handles(iboundCompIdx),p_IsegInfo)
+    
+    CALL storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
+    CALL storage_getbase_double(p_IdbleSegInfo_handles(iboundCompIdx),p_DsegInfo)
+    
+    ! Get the segment-count array and the maximum-parameter array
+    CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
+    CALL storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
+
+    ! If the parameter value exceeds the parameter interval on the boundary 
+    ! component, truncate the parameter value!
+    SELECT CASE (cparTypeSource)
+    CASE (BDR_PAR_01)
+      IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
+        dpar = 0.0_DP
+      ELSE
+        dpar = dt
+      ENDIF
+    CASE (BDR_PAR_LENGTH)
+      IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
+        dpar = 0.0_DP
+      ELSE
+        dpar = dt
+      ENDIF
+    END SELECT
+
+    ! Find segment iseg the parameter value belongs to.
+    ! Remember that in the first element in the double precision block of
+    ! each segment, the length of the segment is noted!
+    
+    dcurrentpar = 0.0_DP
+    
+    ! Determine the segment 
+    SELECT CASE (cparTypeSource)
+    CASE (BDR_PAR_01)
+    
+      ! Easy case: 0-1 parametrisation
+      iseg = AINT(dpar)
+
+      ! Determine Start index of the segment in the double-prec. block
+      istartidx = p_IsegInfo(1+2*iseg+1) 
+
+      ! Get the segment length for later use
+      dseglength  = p_DsegInfo(2+istartidx)
+      
+      ! Subtract the start position of the current boundary component
+      ! from the parameter value to get the 'local' parameter value
+      ! (0 .le. dparloc .le. 1.0)
+      dparloc = dpar - REAL(iseg,DP)
+
+    CASE (BDR_PAR_LENGTH)
+    
+      ! In the length-parametrisation, we have to search.
+      DO iseg = 0,p_IsegCount(iboundCompIdx)-1
+        
+        ! Determine Start index of the segment in the double-prec. block
+        istartidx = p_IsegInfo(1+2*iseg+1) 
+        
+        ! Get the start and end parameter value
+        dcurrentpar = p_DsegInfo(1+istartidx)
+        dseglength = p_DsegInfo(2+istartidx)
+        dendpar = dcurrentpar + dseglength
+        
+        ! At least one of the IF-commands in the loop will activate
+        ! the exit - because of the 'dt' check above!
+        IF (dpar .LT. dendpar) EXIT
+        
+      END DO
+
+      ! Subtract the start position of the current boundary component
+      ! from the parameter value to get the 'local' parameter value
+      ! (0 .le. dparloc .le. length(segment))
+      dparloc = dpar - dcurrentpar
+
+      IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
+      
+      ! Divide by the segment length to get the local parameter value
+      ! in 0-1 parametrisation.
+      dparloc = dparloc / dseglength
+
+    END SELECT
+    
+    ! The local parameter value dparloc is now always in the range 0..1.
+    !    
+    ! How shoule we convert?
+    SELECT CASE (cparTypeDest)
+    CASE (BDR_PAR_01)
+      ! Convert to 0-1. 
+      ! Take the number of teh segment as basis and add
+      ! the local parameter value to get the 0-1 parameter value.
+      dresult = REAL(iseg,DP) + dparloc
+      
+    CASE (BDR_PAR_LENGTH)
+      ! Convert to length parametrisation. dparloc gives us the local
+      ! parameter value in 0-1 parametrisation. Interpolate
+      ! linearly.
+      dresult = dcurrentpar + dparloc*dseglength
+    
+    END SELECT
+    
+  END FUNCTION
 
 !************************************************************************
 
@@ -1230,5 +1405,53 @@ MODULE boundary
 
   END FUNCTION
  
+  ! ***************************************************************************
+  
+!<function>
+
+  REAL(DP) FUNCTION boundary_getRegionLength (rboundary,rregion) RESULT (dlength)
+  
+!<description>
+  ! Calculates the length of a part of the boundary identified by rregion
+  ! on boundary rboundary.
+!</description>
+
+!<input>
+  ! Boundary structure, the boundary region should refer to
+  TYPE(t_boundary), INTENT(IN) :: rboundary
+  
+  ! The boundary reg8ion structure which length is to be computed
+  TYPE(t_boundaryRegion), INTENT(IN) :: rregion
+!</input>
+
+!<result>
+  ! The length of the boundary region rregion on the boundary rboundary.
+!</result>
+
+!</function>
+
+    ! local variables
+    REAL(DP) :: dlen1,dlen2
+
+    ! Is the boundary region parametrised for the length? Then it's easy...
+    IF (rregion%cparType .EQ. BDR_PAR_LENGTH) THEN
+      dlength = rregion%dmaxParam - rregion%dminParam
+      RETURN
+    END IF
+    
+    ! Otherwise, compute the parameter values in length-parametrisation
+    ! and subtract them to get the length.
+    dlen1 = boundary_convertParameter(rboundary, rregion%iboundCompIdx, &
+                                      rregion%dminParam, &
+                                      rregion%cparType, BDR_PAR_LENGTH)
+
+    dlen2 = boundary_convertParameter(rboundary, rregion%iboundCompIdx, &
+                                      rregion%dmaxParam, &
+                                      rregion%cparType, BDR_PAR_LENGTH)
+                                      
+    dlength = dlen2-dlen1
+    
+  END FUNCTION
+
   END MODULE 
 

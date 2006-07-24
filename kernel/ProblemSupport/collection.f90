@@ -146,6 +146,9 @@
 !# 12.) collct_addsection
 !#      -> Adds a section to the collection
 !#
+!# 13.) collct_deletesection
+!#      -> Removes a section from the collection, deletes all its content
+!#
 !# GUILDLINE
 !# ---------
 !# Here a small guidline how and when to use a collection:
@@ -709,8 +712,10 @@ CONTAINS
 
   ! Fill the value with initial data and increase the counter.
   p_rLevel%ivalueCount = p_rLevel%ivalueCount + 1
-  p_rvalue%sname = sparamName
   p_rvalue%itype = itype
+
+  ! Store the name in upper case
+  p_rvalue%sname = sys_upcase(sparamName)
   
   END SUBROUTINE
 
@@ -958,10 +963,10 @@ CONTAINS
   ! ***************************************************************************
   
   ! Internal subroutine: Search in a collection for a section
-  ! and return a pointer to the section - or NULL)( if the section does 
+  ! and return a pointer to the section - or NULL() if the section does 
   ! not exist.
 
-  SUBROUTINE collct_fetchsection(rcollection, sname, p_rsection) 
+  SUBROUTINE collct_fetchsection(rcollection, sname, p_rsection, isectionIndex) 
 
   ! The section.
   TYPE(t_collection), INTENT(IN) :: rcollection
@@ -971,6 +976,9 @@ CONTAINS
   
   ! A pointer to the section or NULL() if it does not exist.
   TYPE(t_collctSection), POINTER :: p_rsection
+  
+  ! Optional output: Index of the section in the section array.
+  INTEGER, INTENT(OUT), OPTIONAL :: isectionIndex
   
   ! local variables
   INTEGER :: i
@@ -989,6 +997,9 @@ CONTAINS
   DO i=1,rcollection%isectionCount
     IF (rcollection%p_Rsections(i)%ssectionName .EQ. sname2) THEN
       p_rsection => rcollection%p_Rsections(i)
+      
+      IF (PRESENT(isectionIndex)) isectionIndex = i
+      
       RETURN
     END IF
   END DO
@@ -1368,6 +1379,68 @@ CONTAINS
   ! Initialise the new section.
   CALL collct_initsection(rcollection%p_Rsections(rcollection%isectionCount),ssectionName)
 
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_deletesection (rcollection, ssectionName)
+  
+!<description>
+  ! Removes the section ssectionName with all its content from the collection.
+  !
+  ! Warning: Removing a section from the collection makes all pointers to
+  ! sections invalid!
+!</description>
+
+!<inputoutput>
+  
+  ! The parameter list where to add the section.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+  
+  ! The name of the section. Must not be ''!
+  CHARACTER(LEN=*), INTENT(IN) :: ssectionName
+  
+!</input>
+  
+!</subroutine>
+
+  TYPE(t_collctSection), POINTER :: p_rsection
+  INTEGER :: isectionIndex,i
+
+  ! Some basic checks
+  IF (rcollection%isectionCount .EQ. 0) THEN
+    PRINT *,'Error: Collection not initalised!'
+    STOP
+  END IF
+
+  CALL collct_fetchsection(rcollection, ssectionName, p_rsection, isectionIndex) 
+  
+  IF (.NOT. ASSOCIATED(p_rsection)) THEN
+    PRINT *,'collct_clearsection: Section does not exist: ',ssectionName
+    RETURN
+  END IF
+  
+  ! Remove the section data
+  CALL collct_donesection (p_rsection)
+  
+  ! Now 'relocate' all sections. This makes all pointers to sections
+  ! in the main application invalid, but it's rather unlikely that the
+  ! application maintains a section pointer in a stage where sections are
+  ! modified - hopefully :-)
+  
+  DO i=isectionIndex+1,rcollection%isectionCount
+    rcollection%p_Rsections(i-1) = rcollection%p_Rsections(i)
+  END DO
+  
+  ! Reduce the number of sections in the collection, finish.
+  rcollection%isectionCount = rcollection%isectionCount - 1
+  
   END SUBROUTINE
   
   ! ***************************************************************************

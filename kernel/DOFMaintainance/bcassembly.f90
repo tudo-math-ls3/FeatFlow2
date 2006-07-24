@@ -372,7 +372,7 @@ CONTAINS
   ! This routine receives a boundary region rregion describing a part on the
   ! boundary. According to the triangulation, this boundary region contains
   ! some vertices and edges on the boundary. The routine now figures out,
-  ! which  index in the IverticesAtBoundary in the triangulation structure 
+  ! which index in the IverticesAtBoundary in the triangulation structure 
   ! of the vertices that are inside of this boundary region.
   !
   ! Each boundary region is simply connected, but they may cross the
@@ -384,8 +384,9 @@ CONTAINS
   !     first/last index in IverticesAtBoundary
   ! 2.) Two sets crossing the maximum parameter value:
   !     Vertex Vertex Vertex ........... Vertex Vertex Vertex
-  !     Here is icount=2, IminIndex(1) / ImaxIndex(1) gives the
-  !     first/last vertex of the first set and IminIndex(2) / ImaxIndex(2)
+  !     Here is icount=2, IminIndex(2) / ImaxIndex(2) gives the
+  !     first/last vertex of the first set (which was found at first when
+  !     starting to search in the given interval) and IminIndex(1) / ImaxIndex(1)
   !     the first/last vertex if the 2nd set.
 !</description>
 
@@ -424,6 +425,7 @@ CONTAINS
   REAL(DP) :: dmaxpar
   INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
   INTEGER :: i, ifoundRegions
+  INTEGER, DIMENSION(2) :: Iindex
   
   ! Get the parameter value array from the triangulation
   CALL storage_getbase_double (rtriangulation%h_DvertexParameterValue, &
@@ -528,6 +530,21 @@ CONTAINS
     icount = ifoundRegions
   END IF
   
+  IF (icount .EQ. 2) THEN
+    ! We found the intervals in the 'wrong order'. When going through the boundary
+    ! starting at a parameter value x, we would first find the 2nd segment
+    ! x <= y..TMAX, then the first one 0..z. on the other hand set up IminIndex/
+    ! ImaxIndex in the other order. So exchange IxxxIndex(1) with IxxxIndex(2)
+    ! to get the right order again.
+    Iindex(1) = IminIndex(2)
+    IminIndex(2) = IminIndex(1)
+    IminIndex(1) = Iindex(1)
+
+    Iindex(2) = ImaxIndex(2)
+    ImaxIndex(2) = ImaxIndex(1)
+    ImaxIndex(1) = Iindex(2)
+  END IF
+  
   END SUBROUTINE
     
   ! ***************************************************************************
@@ -553,9 +570,10 @@ CONTAINS
   !     first/last index in IverticesAtBoundary
   ! 2.) Two sets crossing the maximum parameter value:
   !     Edge Edge Edge ........... Edge Edge Edge
-  !     Here is icount=2, IminIndex(1) / ImaxIndex(1) gives the
-  !     first/last edge of the first set and IminIndex(2) / ImaxIndex(2)
-  !     the first/last edge if the 2nd set.
+  !     Here is icount=2, IminIndex(2) / ImaxIndex(2) gives the
+  !     first/last vertex of the first set (which was found at first when
+  !     starting to search in the given interval) and IminIndex(1) / ImaxIndex(1)
+  !     the first/last vertex if the 2nd set.
 !</description>
 
 !<input>
@@ -593,6 +611,7 @@ CONTAINS
   REAL(DP) :: dmaxpar
   INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
   INTEGER :: i, ifoundRegions
+  INTEGER, DIMENSION(2) :: Iindex
   
   ! Get the parameter value array from the triangulation
   CALL storage_getbase_double (rtriangulation%h_DedgeParameterValue, &
@@ -697,6 +716,21 @@ CONTAINS
     icount = ifoundRegions
   END IF
 
+  IF (icount .EQ. 2) THEN
+    ! We found the intervals in the 'wrong order'. When going through the boundary
+    ! starting at a parameter value x, we would first find the 2nd segment
+    ! x <= y..TMAX, then the first one 0..z. on the other hand set up IminIndex/
+    ! ImaxIndex in the other order. So exchange IxxxIndex(1) with IxxxIndex(2)
+    ! to get the right order again.
+    Iindex(1) = IminIndex(2)
+    IminIndex(2) = IminIndex(1)
+    IminIndex(1) = Iindex(1)
+
+    Iindex(2) = ImaxIndex(2)
+    ImaxIndex(2) = ImaxIndex(1)
+    ImaxIndex(1) = Iindex(2)
+  END IF
+
   END SUBROUTINE
     
   ! ***************************************************************************
@@ -751,7 +785,9 @@ CONTAINS
 
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
+  INTEGER, DIMENSION(2) :: IelemCount
   INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j,icomponent
+  INTEGER :: icountmin,icountmax
   INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
   INTEGER, DIMENSION(1) :: Icomponents
   TYPE(t_discreteBCDirichlet),POINTER         :: p_rdirichletBCs
@@ -822,7 +858,8 @@ CONTAINS
                                  IminEdge,ImaxEdge,icount2)
                                  
   ! Cancel if the set is empty!
-  icount = MAX(icount,icount2)
+  icountmin = MIN(icount,icount2)
+  icountmax = MAX(icount,icount2)
   
   IF (icount .EQ. 0) THEN
     RETURN
@@ -832,8 +869,26 @@ CONTAINS
   ! boundary that share our BC region - because it may be that an edge belongs
   ! to the BC region while the endpoints do not and vice versa, so we
   ! have to make sure to get an index which covers everything.
-  Iminidx = MIN(IminVertex,IminEdge)
-  Imaxidx = MAX(ImaxVertex,ImaxEdge)
+  
+  IF (icount .EQ. icount2) THEN
+    Iminidx = MIN(IminVertex,IminEdge)
+    Imaxidx = MAX(ImaxVertex,ImaxEdge)
+  ELSE
+    IF (icount .GT. icount2) THEN
+      ! More vertex sets than edge sets. Transfer the vetex set and take the
+      ! min only with the first edge set
+      Iminidx = IminVertex
+      Imaxidx = ImaxVertex
+    ELSE
+      ! More edge sets than vertex sets. Transfer the vetex set and take the
+      ! min only with the first vertex set
+      Iminidx = IminVertex
+      Imaxidx = ImaxVertex
+    END IF
+    ! Note: icountmin is usually =1 in this situation
+    Iminidx(1:icountmin) = MIN(IminVertex(1:icountmin),IminEdge(1:icountmin))
+    Imaxidx(1:icountmin) = MAX(ImaxVertex(1:icountmin),ImaxEdge(1:icountmin))
+  END IF
   
   ! Reserve some memory to save temporarily all DOF's of all boundary
   ! elements.
@@ -854,19 +909,19 @@ CONTAINS
   !
   ! Ask the DOF-mapping routine to get us those DOF's belonging to elements
   ! on the boundary.
-  IF (icount .GE. 1) THEN
+  IF (icountmax .GE. 1) THEN
     CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
               p_IelementsAtBoundary(Iminidx(1):Imaxidx(1)), .FALSE., Idofs)
   END IF
             
-  IF (icount .GE. 2) THEN
+  IF (icountmax .GE. 2) THEN
     CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
               p_IelementsAtBoundary(Iminidx(2):Imaxidx(2)), .FALSE., &
               Idofs( :, Imaxidx(1)-Iminidx(1)+1+1 : ))
   END IF
                                
   ! Loop through the index sets
-  DO ipart = 1,icount
+  DO ipart = 1,icountmax
   
     ! Now the element-dependent part. For each element type, we have to
     ! figure out which DOF's are on the boundary!
