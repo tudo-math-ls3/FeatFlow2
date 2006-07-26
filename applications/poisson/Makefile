@@ -20,7 +20,8 @@ SRC = qtrafo.f \
 # The f90 source files 
 SRC +=  poisson_callback.f90 poisson_method1.f90 \
         poisson_method2.f90 poisson_method3.f90 \
-        poisson_method4.f90 poisson_method5.f90 poisson.f90
+        poisson_method4.f90 poisson_method5.f90 poisson_method6.f90 \
+        poisson.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk

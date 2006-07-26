@@ -5,9 +5,10 @@
 !#
 !# <purpose>
 !# This module defines the analytical representation of boundary conditions.
-!# In detain, the following types of boundary conditions are supported:
+!# In detainl, the following types of boundary conditions are supported:
 !# - Neumann boundary conditions
 !# - Dirichlet boundary conditions
+!# - Pressure drop boundary conditions
 !# The structure here only describe the boundary conditions. There are no
 !# routines in this module to impose them into a solution/defect vector.
 !# For imposing boundary conditions into vectors, the boundary conditions
@@ -19,8 +20,8 @@
 !# not being Neumann. Neumann is standard, and all other types of BC's
 !# must be imposed.
 !#
-!# Method description
-!# ------------------
+!# Method description \\
+!# ------------------ \\
 !# The t_boundaryConditions structure collects all boundary conditions to a
 !# domain. It contains three lists of 'boundary condition regions'
 !# (structure t_bcRegion), for
@@ -31,13 +32,49 @@
 !# A 'boundary condition region' object t_bcRegion realises a boundary
 !# condition. It contains information about the type of the boundary conditions
 !# and where they are, on the real boundary as well as on fictitious boundary
-!# objects. Furthermode it contains information about the solution component
+!# objects. Furthermore, it contains information about the solution component
 !# the boundary condition refers to (e.g. X-velocity, Y-velocity,...)
 !#
 !# A boundary condition can be deactivated by setting the cbcRegionType flag
 !# in the boundary region to BC_DONOTHING.
 !#
-!# The following routines can be found here:
+!# BC's on real boundary components in 2D \\
+!# -------------------------------------- \\
+!# Boundary conditions on real boundary components are described via a boundary
+!# region struture as defined in boundary.f90. This contains basically a minimum
+!# and maximum parameter value on the boundary as well as s number of a
+!# boundary component. Optionally, the boundary region may be specified to
+!# be attached to a real boundary segment, e.g. a full circle or a line on
+!# the boundary.
+!#
+!# BC's on fictitious boundary components \\
+!# -------------------------------------- \\
+!# The concept of (analytic) fictitious boundary components is somehow
+!# different to the concept of standard bondary conditions.
+!# An analytic fictitious boundary component is a 'virtual object' in the
+!# domain that is associated to a special boundary condition. Each FB-object
+!# therefore covers a 'group of cells' inside the domain.
+!# Two basic principles drive this idea:\\
+!#
+!# a) The fictitious boundary object' is not necessary one single object like
+!#    a circle or a square. It's can even be a group of objects, all sharing
+!#    the same boundary condition (e.g. 10000 flying balls, all described
+!#    by a Dirichlet-type fictitious boundary object).\\
+!#
+!# b) All objects are described in 'analytical fashion' without any grid in the
+!#    background. During the discretisation, the 'boundary conditions' that are
+!#    associated to a fictitious boundary object (group) are 'discretised'
+!#    to get a discrete, mesh- and solution dependent representation.
+!#    By using filter techniques, this data can be imposed to the PDE, e.g.
+!#    into the right hand side, the solution or into the matrix.\\
+!#
+!# Fictitious boundary objects are identified to the application by 
+!# t_fictBoundaryRegion structures. The content of the structure is more or less
+!# application specific; it simply contains a couple of information that allow
+!# the evaluation routines to identify a fictitious boundary object.
+!#
+!#
+!# The following routines can be found here:\\
 !#
 !# 1.) bcond_initBC
 !#     -> Initialises a boundary condition structure
@@ -45,7 +82,7 @@
 !# 2.) bcond_doneBC
 !#     -> Cleans up a boundary condition structure, releases memory
 !#
-!# 3.) bcond_newBConRealBD
+!# 3.) bcond_newBC
 !#     -> Adds a general boundary condition for the real boundary to a 
 !#        boundary-condition object; normally used only internally.
 !#
@@ -64,6 +101,7 @@ MODULE boundarycondition
 
   USE fsystem
   USE boundary
+  USE fictitiousboundary
   
   IMPLICIT NONE
 
@@ -152,16 +190,27 @@ MODULE boundarycondition
     INTEGER :: nequations = 0
     
     ! A list of up to BC_MAXEQUATIONS numbers identifying the equations,
-    ! a boundary condition refers to.
-    ! Example: A Dirichlet-boundary condition for the X-velocity
-    !   is identified by "nequations=1" + "Iequations=[1]".
-    ! A Dirichlet-boundary condition for the Y-velocity
-    !   is identified by "nequations=1" + "Iequations=[2]".
-    ! A boundary condition like "u_x + u_y = const"
-    !   is identified by "nequations=2" + "Iequations=[1 2]".
-    ! "Pressure drop" boundary conditions that must modify two "velocity"
-    !   components 1(=x), 2(=y) are identified by
+    ! a boundary condition refers to. The use of this is defined
+    ! as follows:
+    !
+    ! a) A simple Dirichlet-boundary condition for the X-velocity on real
+    !   boundary is identified by "nequations=1" + "Iequations=[1]".
+    !
+    ! b) A simple Dirichlet-boundary condition for the Y-velocity on real
+    !   boundary is identified by "nequations=1" + "Iequations=[2]".
+    !
+    ! c) "Pressure drop" boundary conditions on real boundary that must 
+    !   modify two "velocity" components 1(=x), 2(=y) are identified by
     !   "nequations=2" + "Iequations=[1 2]".
+    !
+    ! d) A simple Dirichlet boundary conditions for X- and Y-velocity
+    !   for a fictitious boundary region is identified by "nequations=2"
+    !   + "Iequations=[1 2]" (1=x, 2=y component)
+    !
+    ! e) A boundary condition like "u_x + u_y = const" on real boundary
+    !   may be identified by "nequations=2" + "Iequations=[1 2]"
+    !   (let's see if that's really the case if such a thing is implemented...)
+    !
     ! Basically, this is a list of the blocks in a block solution vector
     ! that are affected by a boundary condition. The list here is actually
     ! bounadry-condition specific, i.e. another BC than Dirichlet can use
@@ -195,8 +244,15 @@ MODULE boundarycondition
     ! corresponds to a boundary segment, or it can be a 'free' boundary
     ! region not corresponding to any special segment on the boundary.
     ! For boundary conditions of fictitious boundary objects,
-    ! the structure is undefined!
+    ! this structure is undefined!
     TYPE (t_boundaryRegion) :: rboundaryRegion
+    
+    ! Definition of a fictitious boundary region. If boundary conditions
+    ! in a fictitious boundary region are discretised, this structure
+    ! allows the application to identify the boundary region.
+    ! For boundary conditions on the real boundary, this structure
+    ! is undefined.
+    TYPE (t_fictBoundaryRegion) :: rfictBoundaryRegion
     
   END TYPE
   
@@ -367,8 +423,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE bcond_newBConRealBD (ctype,cbdtype,rboundaryConditions,&
-                                  rboundaryRegion,p_rbcRegion)
+  SUBROUTINE bcond_newBC (ctype,cbdtype,rboundaryConditions,&
+                          p_rbcRegion, rboundaryRegion, rfictBoundaryRegion)
   
 !<description>
   ! Adds a general boundary condition region to the boundary condition structure.. 
@@ -388,10 +444,20 @@ CONTAINS
   ! This is a BC_RTYPE_xxxx flag.
   INTEGER, INTENT(IN) :: cbdtype
 
-  ! A boundary-condition-region object, describing the position on the
-  ! boundary where boundary conditions should be imposed.
+  ! OPTIONAL: A boundary-region object, describing the position 
+  ! on the boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
-  TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
+  ! This parameter must be present for boundary conditions on the real
+  ! boundary but can be omitted when adding a fictitious boundary condition.
+  TYPE(t_boundaryRegion), INTENT(IN), OPTIONAL :: rboundaryRegion
+
+  ! OPTIONAL: A fictitious-boundary-region object, describing the
+  ! fictitious boundary region.
+  ! A copy of this is added to the rboundaryConditions structure.
+  ! This parameter must be present for boundary conditions on the fictitious
+  ! boundary but can be omitted when adding boundary condition on the real 
+  ! boundary.
+  TYPE(t_fictBoundaryRegion), INTENT(IN), OPTIONAL :: rfictBoundaryRegion
 !</input>
 
 !<inputoutput>
@@ -421,8 +487,8 @@ CONTAINS
   !  p_Rregion => rboundaryConditions%p_RregionsFree
   !  ifull => rboundaryConditions%iregionCountFree
   CASE (BC_RTYPE_FBCOBJECT)
-    PRINT *,'Fictitious boundary conditions not supported by bcond_newBCrealBD!'
-    STOP
+    p_Rregion => rboundaryConditions%p_RregionsFBC
+    ifull => rboundaryConditions%iregionCountFBC
   CASE DEFAULT
     PRINT *,'Not implemented boundary condition.'
     STOP
@@ -452,7 +518,22 @@ CONTAINS
   ! Initialise the structure
   p_rbcRegionLocal%cbcRegionType = cbdtype
   p_rbcRegionLocal%ctype = ctype
-  p_rbcRegionLocal%rboundaryRegion = rboundaryRegion
+  
+  IF (PRESENT(rboundaryRegion)) THEN
+    p_rbcRegionLocal%rboundaryRegion = rboundaryRegion
+  ELSE
+    IF (cbdtype .NE. BC_RTYPE_FBCOBJECT) THEN
+      PRINT *,'bcond_newBC: Boundary not specified'
+    END IF
+  END IF
+
+  IF (PRESENT(rfictBoundaryRegion)) THEN
+    p_rbcRegionLocal%rfictBoundaryRegion = rfictBoundaryRegion
+  ELSE
+    IF (cbdtype .EQ. BC_RTYPE_FBCOBJECT) THEN
+      PRINT *,'bcond_newBC: Fictitious Boundary not specified'
+    END IF
+  END IF
   
   ! If p_rbcRegion is given, return the pointer
   IF (PRESENT(p_rbcRegion)) THEN
@@ -495,8 +576,8 @@ CONTAINS
 !</inputoutput>
 
 !<output>
-  ! OPTIONAL: A pointer to the added boundary region. The caller can make more specific
-  ! modifications to this.
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make 
+  ! more specific modifications to this if necessary.
   TYPE(t_bcRegion), OPTIONAL, POINTER :: p_rbcRegion
 !</output>
 
@@ -511,11 +592,11 @@ CONTAINS
   ! Add a 'free' boundary condition region if the rboundaryRegion does not belong
   ! to any real segment (rboundaryRegion%iboundSegIdx=0).
   IF (rboundaryRegion%iboundSegIdx .NE. 0) THEN
-    CALL bcond_newBConRealBD (BC_DIRICHLET,BC_RTYPE_REAL,rboundaryConditions,&
-                              rboundaryRegion,p_rbcReg)
+    CALL bcond_newBC (BC_DIRICHLET,BC_RTYPE_REAL,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
   ELSE
-    CALL bcond_newBConRealBD (BC_DIRICHLET,BC_RTYPE_FREE,rboundaryConditions,&
-                              rboundaryRegion,p_rbcReg)
+    CALL bcond_newBC (BC_DIRICHLET,BC_RTYPE_FREE,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
   END IF
 
   ! Modify the structure, impose additionally needed information
@@ -548,7 +629,7 @@ CONTAINS
   ! modifies. Usually (1,2) for X- and Y-velocity.
   INTEGER, DIMENSION(:), INTENT(IN) :: IvelEqns
 
-  ! A boundary-condition-region object, describing the position on the
+  ! A boundary-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
   TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
@@ -576,11 +657,11 @@ CONTAINS
   ! Add a 'free' boundary condition region if the rboundaryRegion does not belong
   ! to any real segment (rboundaryRegion%iboundSegIdx=0).
   IF (rboundaryRegion%iboundSegIdx .NE. 0) THEN
-    CALL bcond_newBConRealBD (BC_PRESSUREDROP,BC_RTYPE_REAL,rboundaryConditions,&
-                              rboundaryRegion,p_rbcReg)
+    CALL bcond_newBC (BC_PRESSUREDROP,BC_RTYPE_REAL,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
   ELSE
-    CALL bcond_newBConRealBD (BC_PRESSUREDROP,BC_RTYPE_FREE,rboundaryConditions,&
-                              rboundaryRegion,p_rbcReg)
+    CALL bcond_newBC (BC_PRESSUREDROP,BC_RTYPE_FREE,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
   END IF
 
   ! Modify the structure, impose additionally needed information
@@ -594,4 +675,62 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE bcond_newDirichletBConFictBD (rboundaryConditions,Iequations,&
+                                           rboundaryRegion,p_rbcRegion)
+  
+!<description>
+  ! Adds a Dirichlet boundary condition region for a fictitious boundary 
+  ! component to the boundary condition structure. 
+  ! A pointer to the region is returned in p_rfbcRegion, the caller 
+  ! can add some user-defined information there if necessary 
+  ! (e.g. the name, a tag or something else).
+!</description>
+
+!<input>
+  ! An array of identifiers for the equations, this boundary condition 
+  ! refers to. Example: Iequations = [1 2] for X-velocity-component (1) and
+  ! Y-velocity component (2).
+  INTEGER, DIMENSION(:), INTENT(IN) :: Iequations
+
+  ! A fictitious-boundary-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  ! A copy of this is added to the rboundaryConditions structure.
+  TYPE(t_fictBoundaryRegion), INTENT(IN) :: rboundaryRegion
+!</input>
+
+!<inputoutput>
+  ! The structure where the boundary condition region is to be added.
+  TYPE(t_boundaryConditions), INTENT(INOUT), TARGET :: rboundaryConditions
+!</inputoutput>
+
+!<output>
+  ! OPTIONAL: A pointer to the added boundary condition region. The caller can 
+  ! make more specific modifications to this if necessary.
+  TYPE(t_bcRegion), OPTIONAL, POINTER :: p_rbcRegion
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_bcRegion), POINTER :: p_rbcReg
+
+  ! Add a general boundary condition region for a fictitiouos boundary object.
+  CALL bcond_newBC (BC_DIRICHLET,BC_RTYPE_FBCOBJECT,rboundaryConditions,&
+                    p_rbcReg,rfictBoundaryRegion=rboundaryRegion)
+
+  ! Modify the structure, impose additionally needed information
+  ! for Dirichlet boundary - in detail, set the equation where the BC
+  ! applies to.
+  p_rbcReg%nequations = SIZE(Iequations)
+  p_rbcReg%Iequations(1:SIZE(Iequations)) = Iequations
+
+  ! Eventually, return the pointer
+  IF (PRESENT(p_rbcRegion)) p_rbcRegion => p_rbcReg
+
+  END SUBROUTINE
+      
 END MODULE

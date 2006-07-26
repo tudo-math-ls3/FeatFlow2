@@ -56,6 +56,9 @@
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
+    ! cinfoNeeded=DISCBC_NEEDFUNCMID : 
+    !   iwhere = number of the edge in which midpoint the value
+    !            should be computed
     ! cinfoNeeded=DISCBC_NEEDDERIV : 
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this

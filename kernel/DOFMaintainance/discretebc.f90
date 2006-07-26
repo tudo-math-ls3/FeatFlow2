@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> DiscreteBC </name>
+!# <name> discretebc </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -13,9 +13,13 @@
 !# discrete BC to a vector. 
 !#
 !# The following types of discrete boundary conditions are available:
+!#
 !# - Dirichlet boundary conditions are typically represented as a
 !#   list of DOF's where a value must be prescribed, plus the value that
 !#   must be described in that special DOF.
+!#
+!# - Pressure drop conditions consist of a list of DOF's and a modifier
+!#   how to modify the actual DOF's.
 !#   
 !# </purpose>
 !##############################################################################
@@ -54,16 +58,19 @@ MODULE discretebc
   
   ! Calculate the function value in a point on the boundary
   INTEGER, PARAMETER :: DISCBC_NEEDFUNC         = 0
+
+  ! Calculate the function value in a point on an edge on the boundary
+  INTEGER, PARAMETER :: DISCBC_NEEDFUNCMID      = 1
   
   ! Calculate the x- and y-derivative in a point on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDDERIV        = 1
+  INTEGER, PARAMETER :: DISCBC_NEEDDERIV        = 2
 
   ! Calculate the integral mean value over an edge on the boundary
-  INTEGER, PARAMETER :: DISCBC_NEEDINTMEAN      = 2
+  INTEGER, PARAMETER :: DISCBC_NEEDINTMEAN      = 3
 
   ! Calculate the normal stress in a point. For flow-like problems,
   ! this corresponds to a prescribed pressure in pressure-drop problems.
-  INTEGER, PARAMETER :: DISCBC_NEEDNORMALSTRESS = 3
+  INTEGER, PARAMETER :: DISCBC_NEEDNORMALSTRESS = 4
 
 !</constantblock>
   

@@ -71,20 +71,28 @@ MODULE filtersupport
   ! real boundary into a defect vector.
   INTEGER, PARAMETER :: FILTER_DISCBCDEFREAL     =  3
 
+  ! Matrix filter for imposing discrete boundary conditions of the 
+  ! real boundary into a matrix.
+  INTEGER, PARAMETER :: FILTER_DISCBCMATREAL     =  4
+
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a solution vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCSOLFICT     =  4
+  INTEGER, PARAMETER :: FILTER_DISCBCSOLFICT     =  5
 
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a right-hand-side vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCRHSFICT     =  5
+  INTEGER, PARAMETER :: FILTER_DISCBCRHSFICT     =  6
 
   ! Vector filter for imposing discrete boundary conditions of 
   ! the fictitious boundary into a defect vector.
-  INTEGER, PARAMETER :: FILTER_DISCBCDEFFICT     =  6
+  INTEGER, PARAMETER :: FILTER_DISCBCDEFFICT     =  7
+
+  ! Matrix filter for imposing discrete boundary conditions of the 
+  ! fictitious boundary into a matrix.
+  INTEGER, PARAMETER :: FILTER_DISCBCMATFICT     =  8
 
   ! Vector filter for bringing a subvector of a vector to the space $L^2_0$.
-  INTEGER, PARAMETER :: FILTER_TOL20             =  7
+  INTEGER, PARAMETER :: FILTER_TOL20             =  9
 
 !</constantblock>
   
@@ -173,6 +181,18 @@ CONTAINS
       ! Impose Dirichlet boundary contitions into the defect vector rx
       CALL vecfil_discreteBCdef (rx)
 
+    CASE (FILTER_DISCBCSOLFICT)
+      ! Impose Dirichlet fictitious boundary contitions into the solution vector rx
+      CALL vecfil_discreteFBCsol (rx)
+    
+    CASE (FILTER_DISCBCRHSFICT)
+      ! Impose Dirichlet fictitious boundary contitions into the RHS vector rx
+      CALL vecfil_discreteFBCrhs (rx)
+    
+    CASE (FILTER_DISCBCDEFFICT)
+      ! Impose Dirichlet fictitious boundary contitions into the defect vector rx
+      CALL vecfil_discreteFBCdef (rx)
+
     CASE (FILTER_TOL20)
       ! Bring the subvector itoL20component of rx to the space $L^2_0$:
       CALL vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
@@ -232,11 +252,19 @@ CONTAINS
       ! array
       EXIT
       
-    CASE (FILTER_DISCBCSOLREAL,FILTER_DISCBCRHSREAL,FILTER_DISCBCDEFREAL)
+    CASE (FILTER_DISCBCSOLREAL,FILTER_DISCBCRHSREAL, &
+          FILTER_DISCBCDEFREAL,FILTER_DISCBCMATREAL)
       ! Impose Dirichlet boundary contitions into the matrix rmatrix.
       ! The filter is the same for both, solution and defect filter,
       ! as the matrix modification is teh same (for now).
       CALL matfil_discreteBC (rmatrix)
+    
+    CASE (FILTER_DISCBCSOLFICT,FILTER_DISCBCRHSFICT, &
+          FILTER_DISCBCDEFFICT,FILTER_DISCBCMATFICT)
+      ! Impose Dirichlet fictitious boundary contitions into the matrix rmatrix.
+      ! The filter is the same for both, solution and defect filter,
+      ! as the matrix modification is teh same (for now).
+      CALL matfil_discreteFBC (rmatrix)
     
     CASE DEFAULT
       PRINT *,'filter_applyFilterChainMat: Unknown filter.'

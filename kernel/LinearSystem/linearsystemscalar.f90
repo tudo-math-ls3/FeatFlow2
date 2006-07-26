@@ -116,7 +116,7 @@ MODULE linearsystemscalar
   USE fsystem
   USE storage
   USE spatialdiscretisation
-  USE discretebc
+  USE dofmapping
   
   IMPLICIT NONE
 

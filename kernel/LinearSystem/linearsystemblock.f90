@@ -115,6 +115,8 @@ MODULE linearsystemblock
   USE linearsystemscalar
   USE linearalgebra
   USE dofmapping
+  USE discretebc
+  USE discretefbc
   
   IMPLICIT NONE
 
@@ -203,7 +205,7 @@ MODULE linearsystemblock
     ! solution.
     ! If no system-wide boundary conditions are specified, p_rdiscreteBCfict
     ! can be set to NULL().
-    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
+    TYPE(t_discreteFBC), POINTER  :: p_rdiscreteBCfict => NULL()
     
     ! A 1D array with scalar vectors for all the blocks.
     ! The handle identifier inside of these blocks are set to h_Ddata.
@@ -250,7 +252,7 @@ MODULE linearsystemblock
     ! A pointer to discretised boundary conditions for fictitious boundary
     ! components. If no fictitious boundary conditions are specified, 
     ! p_rdiscreteBCfict can be set to NULL().
-    TYPE(t_discreteBC), POINTER  :: p_rdiscreteBCfict => NULL()
+    TYPE(t_discreteFBC), POINTER  :: p_rdiscreteBCfict => NULL()
     
     ! A 2D array with scalar matrices for all the blocks.
     ! A submatrix is assumed to be empty (zero-block) if the corresponding

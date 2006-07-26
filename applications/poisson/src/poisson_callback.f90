@@ -292,4 +292,168 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+  ! Only for POISSON_METHOD6: Values in a fictitious boundary component:
+
+!<subroutine>
+
+  SUBROUTINE getBoundaryValuesFBC (Icomponents,rdiscretisation,rbcRegion, &
+                                   Revaluation, p_rcollection)
+  
+  USE collection
+  USE spatialdiscretisation
+  USE discretefbc
+  
+!<description>
+  ! This subroutine is called during the discretisation of boundary
+  ! conditions on fictitious boundary components. It calculates a special quantity 
+  ! on the boundary, which is then used by the discretisation routines to 
+  ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
+  !
+  ! The routine must calculate the values on all elements of the element
+  ! list Ielements simultaneously. Iwhere is a list with vertex or edge numbers
+  ! where information is to be retrieved. Dvalues is filled with function values
+  ! while Binside is set to TRUE for every vertex/edge that is inside of the
+  ! corresponding fictitious boundary region (identified by rbcRegion).
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary: 
+  !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
+  !   the value should be calculated for 
+  !   (e.g. 1=1st solution component, e.g. X-velocity, 
+  !         2=2nd solution component, e.g. Y-velocity,...,
+  !         3=3rd solution component, e.g. pressure)
+  !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
+  !     (1=x, 2=y component)
+  INTEGER, DIMENSION(:), INTENT(IN)                           :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  TYPE(t_blockDiscretisation), INTENT(IN)                     :: rdiscretisation
+  
+  ! Boundary condition region that is currently being processed.
+  ! (This e.g. defines the type of boundary conditions that are 
+  !  currently being calculated (Dirichlet, Robin,...), as well as information
+  !  about the current boundary region 'what is discretised at the moment'.)
+  TYPE(t_bcRegion), INTENT(IN)                                :: rbcRegion
+  
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. May point to NULL() if not defined.
+  TYPE(t_collection), POINTER                                 :: p_rcollection
+
+!</input>
+
+!<inputoutput>
+  ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
+  ! where to evaluate and which accepts the return values.
+  ! This callback routine must check out the cinfoNeeded-entry in this structure
+  ! to find out what to evaluate.
+  ! The other entries in this structure describe where to evaluate.
+  ! The result of the evaluation must be written into the p_Dvalues array entry
+  ! in this structure.
+  !
+  ! The number of structures in this array depend on what to evaluate:
+  !
+  ! For Dirichlet boudary:
+  !   revaluation contains as many entries as Icomponents; every entry in
+  !   Icomponent corresponds to one entry in revaluation
+  !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
+  !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
+  !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
+  !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
+  !
+  TYPE(t_discreteFBCevaluation), DIMENSION(:), INTENT(INOUT) :: Revaluation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordinates
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    INTEGER :: ipoint,idx
+
+    ! Are we evaluating our fictitious boundary component?
+    IF (rbcRegion%rfictBoundaryRegion%sname .EQ. 'CIRCLE') THEN
+    
+      ! Just make sure we are evaluating in the corners.
+      IF (Revaluation(1)%cinfoNeeded .NE. DISCFBC_NEEDFUNC) THEN
+        PRINT *,'FBC: only corner evaluation supported at the moment!'
+        STOP
+      END IF
+      
+      ! Get the triangulation array for the point coordinates
+      p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
+      CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
+                                     p_DvertexCoordinates)
+
+      ! Definition of the circle
+      dxcenter = 0.4
+      dycenter = 0.4
+      dradius  = 0.25
+      
+      ! Loop through the points where to evaluate:
+      DO idx = 1,Revaluation(1)%nvalues
+      
+        ! Get the number of the point to process
+        ipoint = Revaluation(1)%p_Iwhere(idx)
+        
+        ! Get x- and y-coordinate
+        dx = p_DvertexCoordinates(1,ipoint)
+        dy = p_DvertexCoordinates(2,ipoint)
+        
+        ! Get the distance to the center
+        ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
+        
+        ! Point inside?
+        IF (ddistance .LE. dradius) THEN
+        
+          ! Denote in the p_Iinside array that we prescribe a value here:
+          Revaluation(1)%p_Iinside (idx) = 1
+          
+          ! We prescribe 0.0 as Dirichlet value here.
+          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
+        
+        END IF
+        
+      END DO
+
+      ! Definition of a 2nd circle
+      dxcenter = 0.75
+      dycenter = 0.75
+      dradius  = 0.1
+      
+      ! Loop through the points where to evaluate:
+      DO idx = 1,Revaluation(1)%nvalues
+      
+        ! Get the number of the point to process
+        ipoint = Revaluation(1)%p_Iwhere(idx)
+        
+        ! Get x- and y-coordinate
+        dx = p_DvertexCoordinates(1,ipoint)
+        dy = p_DvertexCoordinates(2,ipoint)
+        
+        ! Get the distance to the center
+        ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
+        
+        ! Point inside?
+        IF (ddistance .LE. dradius) THEN
+        
+          ! Denote in the p_Iinside array that we prescribe a value here:
+          Revaluation(1)%p_Iinside (idx) = 1
+          
+          ! We prescribe 0.0 as Dirichlet value here.
+          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
+        
+        END IF
+        
+      END DO
+    
+    END IF
+
+  END SUBROUTINE
+
 END MODULE

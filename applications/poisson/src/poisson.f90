@@ -10,7 +10,7 @@
 !#
 !# on a 2D domain for a scalar function u.
 !#
-!# There are five examples provided how to solve this problem:
+!# There are a couple of examples provided how to solve this problem:
 !#
 !# The first example (module poisson_method1) discretises and solves this 
 !# equation in a direct way, just listing all commands necessary for 
@@ -29,8 +29,12 @@
 !# The fourth example (module poisson_method4) demonstrates the use of a
 !# BiCGStab-solver with ILU(0) preconditioner.
 !#
-!# The fith example (module poisson_method5) demonstrates the use of a
+!# The fifth example (module poisson_method5) demonstrates the use of a
 !# Multigrid solver with with ILU(0) smoother and UMFPACK-coarse grid solver.
+!#
+!# The 6th example (module poisson_method6) demonstrates like poisson_method1
+!# a simple way of solving the Laplace-equation, but this time introduces
+!# an additional fictitious boundary object inside of the domain.
 !# </purpose>
 !##############################################################################
 
@@ -41,6 +45,7 @@ PROGRAM poisson
   USE poisson_method3
   USE poisson_method4
   USE poisson_method5
+  USE poisson_method6
   
   IMPLICIT NONE
   
@@ -102,6 +107,12 @@ PROGRAM poisson
   PRINT *,'Calculating Laplace-Problem with method 5'
   PRINT *,'-----------------------------------------'
   CALL poisson5
+
+  ! Call the problem to solve. Poisson 6:
+  PRINT *
+  PRINT *,'Calculating Laplace-Problem with method 6'
+  PRINT *,'-----------------------------------------'
+  CALL poisson6
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

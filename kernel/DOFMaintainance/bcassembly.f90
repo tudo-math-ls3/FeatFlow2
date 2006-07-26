@@ -6,7 +6,9 @@
 !# <purpose>
 !# This module contains routines to discretise analytically given boundary
 !# conditions. Analytically given boundary conditions are 'discretised', i.e.
-!# a discrete version (realised by the structure t_discreteBCEntry) is calculated.
+!# a discrete version (realised by the structure t_discreteBCEntry in the case
+!# of BC's on the real boundary and by the structure t_discreteFBCEntry in 
+!# the case of fictitious boundary) is calculated.
 !# This structure is used during the solution process to impose the boundary
 !# conditions into the solution vector. Therefore, this module contains
 !# the bridge how to put analytic boundary conditions into a discrete vector.
@@ -21,19 +23,27 @@
 !#
 !# 1.) bcasm_discretiseBC
 !#     -> Discretises the analytic boundary definitions in a discretisation
-!#        structure
+!#        structure on the real bondary
 !#
 !# 2.) bcasm_releaseDiscreteBC
 !#     -> Cleans up a structure with discrete boundary conditions and
 !#        releases all memory allocated by it.
 !#
+!# 1.) bcasm_discretiseFBC
+!#     -> Discretises the analytic boundary definitions of fictitious boundary
+!#        objects in a discretisation structure
+!#
+!# 2.) bcasm_releaseDiscreteFBC
+!#     -> Cleans up a structure with discrete boundary conditions of fictitious
+!#        boundary objects and releases all memory allocated by it.
+!#
 !# The actual worker routines called by the above general ones are:
 !#
 !# 1.) bcasm_discrBCDirichlet
-!#     -> Discretise Dirichlet boundary conditions
+!#     -> Discretise Dirichlet boundary conditions on the real bondary
 !#
 !# 2.) bcasm_releaseDirichlet
-!#     -> Release discrete Dirichlet boundary conditions
+!#     -> Release discrete Dirichlet boundary conditions  on the real bondary
 !#
 !# There are some routines that might be useful for finding out whether
 !# edges/vertices exist in a boundary condition segment or not.
@@ -54,6 +64,7 @@ MODULE bcassembly
   USE fsystem
   USE boundarycondition
   USE discretebc
+  USE discretefbc
   USE collection
   USE triangulation
   USE dofmapping
@@ -85,11 +96,21 @@ MODULE bcassembly
 
 !</constantblock>
 
+!<constantblock description="Constants defining the blocking of the assembly">
+
+  ! Number of entries to handle simultaneously (-> number of points or edges,
+  ! depending on the situation what to discretise)
+  INTEGER, PARAMETER :: FBCASM_MAXSIM   = 1000
+  
+!</constantblock>
+
 !</constants>
 
 CONTAINS
 
-  ! ***************************************************************************
+! *****************************************************************************
+! Support for boundary conditions on real boundary
+! *****************************************************************************
 
 !<subroutine>
 
@@ -101,7 +122,7 @@ CONTAINS
   ! The definition of the boundary conditions is taken from the discretisation
   ! structure rspatialDiscretisation. The discrete version is build up in
   ! p_rdiscreteBC. If p_rdiscreteBC is NULL(), a new structure is created,
-  ! otherwise the old structure is updated (or even destroyed and recreaded if
+  ! otherwise the old structure is updated (or even destroyed and recreated if
   ! necessary).
 !</description>
 
@@ -116,7 +137,7 @@ CONTAINS
   ! or is there is a massive change in the boundary conditions (e.g. the
   ! number change)
   ! In later calls, the structure is recomputed only in those parts of the boundary,
-  ! which have the t_bcReigion\%bisstatic flag set FALSE (the standard value) -
+  ! which have the t_bcRegion\%bisstatic flag set FALSE (the standard value) -
   ! except there , in which case the whole structure is rebuild.
   ! By setting bforceRebuild to TRUE, one can enforce a complete
   ! rebuild of the structure, independent of which regions are marked
@@ -785,7 +806,6 @@ CONTAINS
 
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
-  INTEGER, DIMENSION(2) :: IelemCount
   INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j,icomponent
   INTEGER :: icountmin,icountmax
   INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
@@ -1017,13 +1037,31 @@ CONTAINS
         ! will produce two index sets: One index set for [0.0, 0.0]
         ! and one for [3.0, TMAX).
         
-      CASE (EL_EM30,EL_EM31,EL_E030,EL_E031)
+      CASE (EL_EM30,EL_E030)
 
         ! Edge inside? -> Calculate integral mean value over the edge
         IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
           IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
             CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                     rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                    iedge,p_DedgeParameterValue(I), &
+                                    p_rcollection, Dvalues)
+                                    
+            ! Save the computed function value
+            DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 
+          END IF
+          
+          ! Set the DOF number < 0 to indicate that it is Dirichlet
+          Idofs(ilocalEdge,I-Iminidx(ipart)+1) = -ABS(Idofs(ilocalEdge,I-Iminidx(ipart)+1))
+        END IF
+        
+      CASE (EL_EM31,EL_E031)
+
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
                                     iedge,p_DedgeParameterValue(I), &
                                     p_rcollection, Dvalues)
                                     
@@ -1402,4 +1440,593 @@ CONTAINS
 
   END SUBROUTINE
 
+! *****************************************************************************
+! Support for boundary conditions on fictitious boundary components
+! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_discretiseFBC (rblockDiscretisation,p_rdiscreteFBC,bforceRebuild, &
+                                  fgetBoundaryValuesFBC,rcollection,casmComplexity)
+  
+!<description>
+  ! This routine discretises an analytic definition of boundary conditions
+  ! on fictitious boundary components.
+  ! The definition of the boundary conditions is taken from the discretisation
+  ! structure rspatialDiscretisation. The discrete version is build up in
+  ! p_rdiscreteFBC. If p_rdiscreteFBC is NULL(), a new structure is created,
+  ! otherwise the old structure is updated (or even destroyed and recreated if
+  ! necessary).
+!</description>
+
+!<input>
+  
+  ! The block discretisation structure of the underlying PDE. The boundary
+  ! conditions inside of this structure are discretised.
+  TYPE(t_blockDiscretisation), INTENT(IN) :: rblockDiscretisation
+  
+  ! Can be set to TRUE to force a complete rebuild of the rdiscreteFBC structure.
+  ! Normally, the structure is completely set up only in the first call
+  ! or is there is a massive change in the boundary conditions (e.g. the
+  ! number change)
+  ! In later calls, the structure is recomputed only in those parts of the boundary,
+  ! which have the t_bcRegion\%bisstatic flag set FALSE (the standard value) -
+  ! except there , in which case the whole structure is rebuild.
+  ! By setting bforceRebuild to TRUE, one can enforce a complete
+  ! rebuild of the structure, independent of which regions are marked
+  ! as static.
+  LOGICAL                                   :: bforceRebuild
+  
+  ! A callback function that calculates values on the boundary.
+  ! Is declared in the interface include file 'intf_bcassembly.inc'.
+  INCLUDE 'intf_fbcassembly.inc'
+  
+  ! OPTIONAL: A collection structure to inform the callback function with
+  ! additional information. Can undefined if there is no
+  ! information to pass.
+  TYPE(t_collection), TARGET, OPTIONAL :: rcollection
+  
+  ! OPTIONAL: A combination of BCASM_DISCFORxxx constants that specify
+  ! the complexity of the discretisation that is to perform. This allows to
+  ! discretise only parts of the BC's, e.g. only setting up those
+  ! information that are necessary for filtering defect vectors.
+  ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
+  ! boundary conditions can be used for everything.
+  INTEGER(I32), INTENT(IN), OPTIONAL :: casmComplexity
+!</input>
+
+!<inputoutput>
+  ! A discretised version of the analytic boundary conditions.
+  ! This is a pointer to a t_discreteBC structures, 
+  ! representing the boundary discretised in a discretisation- dependent way.
+  ! If this pointer points to NULL(), a complete new structure is set up.
+  TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: icurrentRegion, ccompl
+  TYPE(t_bcRegion), POINTER :: p_rbcRegion
+  LOGICAL :: bbuildAll
+  TYPE(t_collection), POINTER :: p_rcoll
+  
+  ! Pointer to the boundary condition object
+  TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
+  
+  ! For quicker access:
+  p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
+  
+  ! We replace the optional parameter by NULL() if it does not exist
+  IF (PRESENT(rcollection)) THEN
+    p_rcoll => rcollection
+  ELSE
+    p_rcoll => NULL()
+  END IF
+  
+  IF (.NOT. ASSOCIATED(p_rboundaryConditions)) THEN
+    PRINT *,'Warning in bcasm_discretiseBFC: Boundary conditions not associated!'
+    RETURN
+  END IF
+  
+  ! Default target for the discretisation if everything.
+  IF (PRESENT(casmComplexity)) THEN
+    ccompl = casmComplexity
+  ELSE
+    ccompl = BCASM_DISCFORALL
+  END IF
+  
+  bbuildAll = bforceRebuild
+  
+  ! Is there a structure we can work with?
+  IF (.NOT. ASSOCIATED(p_rdiscreteFBC)) THEN
+    ! Create a new structure on the heap.
+    ALLOCATE(p_rdiscreteFBC)
+  END IF
+  
+  ! Now we work with the array in the structure. Does it exist?
+  
+  IF (ASSOCIATED(p_rdiscreteFBC%p_RdiscFBCList)) THEN
+  
+    ! Is there a massive change or do we have o rebuild everything?
+    IF ((p_rboundaryConditions%iregionCountFBC .NE. &
+         SIZE(p_rdiscreteFBC%p_RdiscFBCList)) &
+        .OR. bforceRebuild) THEN
+        
+      ! Oh, we have to destroy the structure completely.
+      ! Don't remove the structure itself from the heap - we want to
+      ! fill it with data immediately afterwards!
+      CALL bcasm_releaseDiscreteFBC (p_rdiscreteFBC,.TRUE.)
+
+      ! Allocate a new structure array with iregionCount 
+      ! entries for all the boundary conditions.
+      ALLOCATE(p_rdiscreteFBC%p_RdiscFBCList(p_rboundaryConditions%iregionCountFBC))
+      
+      bbuildAll = .TRUE.
+    ELSE
+      ! Otherwise, release only those information belonging to 
+      ! non-static boundary regions
+      DO icurrentRegion = 1,p_rboundaryConditions%iregionCountFBC
+        
+        ! Get a pointer to it so we can deal with it more easily
+        p_rbcRegion => p_rboundaryConditions%p_RregionsFBC(icurrentRegion)
+      
+        IF (.NOT. p_rbcRegion%bisStatic) THEN
+        
+          ! Release all allocated information to this boundary region
+          SELECT CASE (p_rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype)
+
+          CASE (DISCBC_TPDIRICHLET)
+
+            ! Discrete Dirichlet boundary conditions. Release the old structure.
+            CALL bcasm_releaseFBCDirichlet( &
+                 p_rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%rdirichletFBCs)
+
+          END SELECT
+
+          ! BC released, indicate this
+          p_rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
+          
+        END IF
+      
+      END DO  
+    END IF
+    
+  ELSE
+  
+    ! Allocate a structure array with iregionCount entries
+    ! for all the boundary conditions.
+    ALLOCATE(p_rdiscreteFBC%p_RdiscFBCList(p_rboundaryConditions%iregionCountFBC))
+    bbuildAll = .TRUE.
+  
+  END IF
+  
+  ! Loop through the regions on the boundary
+  DO icurrentRegion = 1,p_rboundaryConditions%iregionCountFBC
+    
+    ! Get a pointer to it so we can deal with it more easily
+    p_rbcRegion => p_rboundaryConditions%p_RregionsFBC(icurrentRegion)
+  
+    ! Do we have to process this region?
+    IF (bforceRebuild .OR. .NOT. p_rbcRegion%bisStatic) THEN
+    
+      ! Ok, let's go...
+      ! What for BC do we have here?
+      SELECT CASE (p_rbcRegion%ctype)
+      
+      CASE (BC_DIRICHLET)
+        CALL bcasm_discrFBCDirichlet (rblockDiscretisation, &
+                  p_rbcRegion, p_rdiscreteFBC%p_RdiscFBCList(icurrentRegion), &
+                  ccompl,fgetBoundaryValuesFBC,p_rcoll)
+                    
+      END SELECT
+        
+    END IF
+  
+  END DO  
+
+  END SUBROUTINE
+      
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_releaseDiscreteFBC (p_rdiscreteFBC,bkeepBCStructure)
+  
+!<description>
+  ! This routine cleans up an array of t_discreteFBCEntry describing discrete
+  ! boundary conditions for fictitious boundary components. 
+  ! All allocated memory is released. The structure
+  ! p_rdiscreteFBC is released from the heap as well.
+!</description>
+
+!<input>
+  ! OPTIONAL: If set to TRUE, the structure p_rdiscreteFBC is not released
+  ! from memory. If set to FALSE or not existent (the usual setting), the 
+  ! structure p_rdiscreteFBC will also be removed from the heap after 
+  ! cleaning up.
+  LOGICAL, INTENT(IN), OPTIONAL :: bkeepBCStructure
+!</input>
+
+!<inputoutput>
+  ! A pointer to discretised boundary conditions for fictitious boundary
+  ! components. All memory allocated in and by this array is 
+  ! released from the heap. 
+  TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: icurrentRegion
+  
+  IF (.NOT. ASSOCIATED(p_rdiscreteFBC)) THEN
+    PRINT *,'Warning in bcasm_releaseDiscreteFBC: Nothing to cleanup!'
+    RETURN
+  END IF
+  
+  ! Destroy the content of the structure completely!
+  IF (ASSOCIATED(p_rdiscreteFBC%p_RdiscFBCList)) THEN
+  
+    ! Destroy all the substructures in the array.
+    DO icurrentRegion = 1,SIZE(p_rdiscreteFBC%p_RdiscFBCList)  
+      
+      ! Release all allocated information to this boundary region
+      SELECT CASE (p_rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype)
+      CASE (DISCBC_TPDIRICHLET)
+        ! Discrete Dirichlet boundary conditions. Release the old structure.
+        CALL bcasm_releaseFBCDirichlet(&
+          p_rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%rdirichletFBCs)
+
+      END SELECT
+
+      ! BC released, indicate this
+      p_rdiscreteFBC%p_RdiscFBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
+      
+    END DO  
+    
+    ! Release the array itself.
+    DEALLOCATE(p_rdiscreteFBC%p_RdiscFBCList)
+    
+  END IF
+  
+  ! Deallocate the structure (if we are allowed to), finish.
+  IF (.NOT. PRESENT(bkeepBCStructure)) THEN
+    DEALLOCATE(p_rdiscreteFBC)
+  ELSE
+    IF (.NOT. bkeepBCStructure) THEN
+      DEALLOCATE(p_rdiscreteFBC)
+    END IF
+  END IF
+
+  END SUBROUTINE
+      
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_discrFBCDirichlet (rblockDiscretisation, &
+                                      rbcRegion, rdiscreteFBC, casmComplexity, &
+                                      fgetBoundaryValuesFBC,p_rcollection)
+  
+!<description>
+  ! Creates a discrete version of Dirichlet boundary conditions for a fictitious
+  ! boundary component.
+  ! rbcRegion describes the region which is to be discretised. The discretised
+  ! boundary conditions are created in rdiscreteFBC, which is assumed
+  ! to be undefined when entering this routine.
+!</description>
+
+!<input>
+  ! The discretisation structure of the underlying discretisation. The boundary
+  ! conditions inside of this structure are discretised.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscretisation
+
+  ! The boundary condition region which is to be discrised. Must be configured
+  ! as boundary condition region of a fictitious boundary object.
+  TYPE(t_bcRegion), INTENT(IN) :: rbcRegion
+
+  ! A callback function that calculates values in the domain.
+  ! Is declared in the interface include file 'intf_fbcassembly.inc'.
+  INCLUDE 'intf_fbcassembly.inc'
+  
+  ! A collection structure to inform the callback function with
+  ! additional information. Can be NULL() if there is no information to pass.
+  TYPE(t_collection), POINTER :: p_rcollection
+
+  ! A combination of BCASM_DISCFORxxx constants that specify
+  ! the complexity of the discretisation that is to perform. This allows to
+  ! discretise only parts of the BC's, e.g. only setting up those
+  ! information that are necessary for filtering defect vectors.
+  ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
+  ! boundary conditions can be used for everything.
+  INTEGER(I32), INTENT(IN) :: casmComplexity
+!</input>  
+
+!<output>
+  ! This structure receives the result of the discretisation of rbcRegion.
+  ! When entering the routine, the content of this structure is undefined,
+  ! all pointers are invalid. The routine fills everything with appropriate
+  ! data.
+  TYPE(t_discreteFBCEntry), INTENT(OUT), TARGET :: rdiscreteFBC
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    TYPE(t_triangulation), POINTER              :: p_rtriangulation
+    TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
+    
+    INTEGER(PREC_DOFIDX) :: nDOFs
+    INTEGER :: nequations, h_Ddofs, h_Idofs, i, j, icomponent, ieltype
+    INTEGER(PREC_DOFIDX), DIMENSION(2) :: IdofCount
+    
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idofs
+    REAL(DP), DIMENSION(:,:), POINTER   :: p_Ddofs
+
+    TYPE(t_discreteFBCDirichlet),POINTER        :: p_rdirichletFBCs
+    
+    INTEGER(I32), DIMENSION(FBCASM_MAXSIM), TARGET      :: Isubset
+    INTEGER, DIMENSION(FBCASM_MAXSIM), TARGET           :: Iinside
+    REAL(DP), DIMENSION(FBCASM_MAXSIM,1), TARGET        :: Dsubset
+    INTEGER(I32) :: isubsetStart, isubsetLength, icurrentDof
+    
+    TYPE(t_discreteFBCevaluation), DIMENSION(DISCFBC_MAXDISCBC) :: Revaluation
+    
+    ! Get the discretisation structure of the first component.
+    ! In this first rough implementation, we only support uniform a uniform 
+    ! discretisation, so check that we are able to handle the current situation.
+    icomponent = rbcRegion%Iequations(1)
+    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(icomponent)
+    
+    IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+      PRINT *,'bcasm_discrFBCDirichlet: Can only handle uniform discretisation!'
+      STOP
+    END IF
+
+    IF (p_rspatialDiscretisation%ndimension .NE. NDIM2D) THEN
+      PRINT *,'bcasm_discrFBCDirichlet: Only 2D supported for now!'
+      STOP
+    END IF
+
+    ! For easier access:
+    p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+
+    ! All elements are of the samne type. Get it in advance.
+    ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    
+    ! We have Dirichlet boundary conditions
+    rdiscreteFBC%itype = DISCFBC_TPDIRICHLET
+    
+    ! Connect to the boundary condition structure
+    rdiscreteFBC%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
+    
+    ! Fill the structure for discrete Dirichlet BC's in the
+    ! t_discreteBCEntry structure
+    p_rdirichletFBCs => rdiscreteFBC%rdirichletFBCs
+    
+    nequations = rbcRegion%nequations
+    p_rdirichletFBCs%ncomponents = nequations
+    p_rdirichletFBCs%Icomponents(1:nequations) = rbcRegion%Iequations(1:nequations)
+    
+    ! We have to collect all DOF's and their values that belong to our current
+    ! fictitious boundary object. Depending on the element type we will loop
+    ! through all vertices, edges and elements in the triangulation
+    ! to collect all the important values.
+    !
+    ! Allocate an array as large as a solution vector would be to store the DOF
+    ! values. Allocate an integer array of the same size that receives a flag
+    ! whether the DOF is actually used by our current FB object.
+    ! More specifically, we remember the DOF value for each of the components!
+    
+    nDOFs = dof_igetNDofGlob(p_rspatialDiscretisation)
+    
+    IdofCount = (/nequations,nDOFs/)
+    IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+      CALL storage_new2d ('bcasm_discrFBCDirichlet', 'DofValues', &
+                        IdofCount, ST_DOUBLE, h_Ddofs, &
+                        ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_double2d (h_Ddofs,p_Ddofs)
+    END IF
+    CALL storage_new ('bcasm_discrFBCDirichlet', 'DofUsed', nDOFs, &
+                      ST_INT, h_Idofs, ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_int (h_Idofs,p_Idofs)
+    
+    ! Depending on the element type, prepare the evaluation structure and call
+    ! the callback routine to calculate what we need.
+    
+    icurrentDof = 0
+    
+    ! Calculate values in the vertices for Q1,Q2,P1,P2
+    IF ((ieltype .EQ. EL_P1) .OR. &
+        (ieltype .EQ. EL_Q1) .OR. &
+        (ieltype .EQ. EL_P2) .OR. &
+        (ieltype .EQ. EL_Q2)) THEN
+    
+      ! Let's start to collect values. This is a rather element-dependent
+      ! part. At first, loop through the vertices in case we have a
+      ! P1/Q1/Q2 discretisation
+      DO isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
+      
+        isubsetLength = MIN(p_rtriangulation%NVT-isubsetStart+1,FBCASM_MAXSIM)
+      
+        ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+        ! subset we evaluate.
+        CALL fillsubset (isubsetStart,isubsetLength,Isubset)
+        
+        ! Fill the evaluation structure with data for the callback routine
+        DO i=1,nequations
+          Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
+          Revaluation(i)%nvalues     = isubsetLength
+          Revaluation(i)%p_Iwhere    => Isubset
+          Revaluation(i)%p_Dvalues   => Dsubset
+          Revaluation(i)%p_Iinside   => Iinside
+        END DO
+
+        ! Clear the Iinside array
+        Iinside = 0
+        
+        ! Call the callback routine to calculate the values.
+        CALL fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                    rblockDiscretisation,rbcRegion, &
+                                    Revaluation, p_rcollection)
+                                    
+        ! Transfer the DOF's that are affected
+
+        IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+          
+          DO i=1,isubsetLength
+            IF (Iinside(i) .NE. 0) THEN
+              icurrentDof = icurrentDof + 1
+              DO j=1,nequations
+                p_Ddofs(j,icurrentDof) = Dsubset(i,j)
+              END DO
+              p_Idofs(icurrentDof) = isubsetStart+i-1
+            END IF
+          END DO
+          
+        ELSE
+        
+          DO i=1,isubsetLength
+            IF (Iinside(i) .NE. 0) THEN
+              icurrentDof = icurrentDof + 1
+              p_Idofs(icurrentDof) = isubsetStart+i-1
+            END IF
+          END DO
+          
+        END IF
+      
+      END DO
+    
+    END IF
+    
+    ! Calculate values in the edge midpoints / / integral mean values for Q1~
+    IF ((ieltype .EQ. EL_E031) .OR. &
+        (ieltype .EQ. EL_EM31) .OR. &
+        (ieltype .EQ. EL_E030) .OR. &
+        (ieltype .EQ. EL_EM30)) THEN
+    
+      ! Let's start to collect values. This is a rather element-dependent
+      ! part. At first, loop through the vertices in case we have a
+      ! P1/Q1/Q2 discretisation
+      DO isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
+      
+        isubsetLength = p_rtriangulation%NVT-isubsetStart+1
+      
+        ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+        ! subset we evaluate.
+        CALL fillsubset (isubsetStart,isubsetLength,Isubset)
+        
+        ! Fill the evaluation structure with data for the callback routine
+        DO i=1,nequations
+          IF ((ieltype .EQ. EL_E031) .OR. &
+              (ieltype .EQ. EL_EM31)) THEN
+            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCMID
+          ELSE
+            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDINTMEAN
+          END IF
+          Revaluation(i)%nvalues     = isubsetLength
+          Revaluation(i)%p_Iwhere    => Isubset
+          Revaluation(i)%p_Dvalues   => Dsubset
+          Revaluation(i)%p_Iinside   => Iinside
+        END DO
+        
+        ! Clear the Iinside array
+        Iinside = 0
+        
+        ! Call the callback routine to calculate the values.
+        CALL fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                    rblockDiscretisation,rbcRegion, &
+                                    Revaluation, p_rcollection)
+                                    
+        ! Transfer the DOF's that are affected
+
+        IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+          
+          DO i=1,isubsetLength
+            IF (Iinside(i) .NE. 0) THEN
+              icurrentDof = icurrentDof + 1
+              DO j=1,nequations
+                p_Ddofs(j,icurrentDof) = Dsubset(i,j)
+              END DO
+              p_Idofs(icurrentDof) = isubsetStart+i-1
+            END IF
+          END DO
+          
+        ELSE
+        
+          DO i=1,isubsetLength
+            IF (Iinside(i) .NE. 0) THEN
+              icurrentDof = icurrentDof + 1
+              p_Idofs(icurrentDof) = isubsetStart+i-1
+            END IF
+          END DO
+          
+        END IF
+      
+      END DO
+    
+    END IF
+    
+    ! Cancel if we did not find any DOF.
+    IF (icurrentDof .GT. 0) THEN
+      
+      ! Reallocate to save memory. Store the final handles in the structure.
+      IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+        IdofCount = (/nequations,icurrentDof/)
+        !CALL storage_realloc2D ('bcasm_discrFBCDirichlet', icurrentDof, &
+        !                        h_Ddofs, ST_NEWBLOCK_NOINIT)
+        p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
+      END IF
+      
+      !CALL storage_realloc1D ('bcasm_discrFBCDirichlet', icurrentDof, &
+      !                        h_Idofs, ST_NEWBLOCK_NOINIT)
+      p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
+    END IF
+
+    p_rdirichletFBCs%nDOF = icurrentDof
+    
+  CONTAINS
+  
+    PURE SUBROUTINE fillsubset (istart, ilength, Isubset)
+    INTEGER(I32), INTENT(IN) :: istart, ilength
+    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Isubset
+    INTEGER(I32) :: i
+      DO i=1,ilength
+        Isubset(i) = istart-1+i
+      END DO
+    END SUBROUTINE
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_releaseFBCDirichlet (rdiscreteFBCDirichlet)
+  
+!<description>
+  ! This routine cleans up the discrete Dirichlet conditions for fictitious 
+  ! boundary objects in rdiscreteFBCDirichlet.
+!</description>
+
+!<inputoutput>
+  ! The discrete-FBC structure which is to be cleaned up
+  TYPE(t_discreteFBCDirichlet), INTENT(INOUT) :: rdiscreteFBCDirichlet
+!</inputoutput>
+
+!</subroutine>
+
+  ! Release what is associated
+  
+  rdiscreteFBCDirichlet%nDOF = 0
+  rdiscreteFBCDirichlet%Icomponents = 0
+  rdiscreteFBCDirichlet%ncomponents = 0
+  IF (rdiscreteFBCDirichlet%h_DdirichletValues .NE. ST_NOHANDLE) &
+    CALL storage_free(rdiscreteFBCDirichlet%h_DdirichletValues)
+  IF (rdiscreteFBCDirichlet%h_IdirichletDOFs .NE. ST_NOHANDLE) &
+    CALL storage_free(rdiscreteFBCDirichlet%h_IdirichletDOFs)
+
+  END SUBROUTINE
+  
 END MODULE
