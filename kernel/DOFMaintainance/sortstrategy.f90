@@ -42,6 +42,9 @@ MODULE sortstrategy
 
   ! Cuthill-McKee sort strategy
   INTEGER, PARAMETER :: SSTRAT_CM           = 1
+
+  ! Reverse Cuthill-McKee sort strategy
+  INTEGER, PARAMETER :: SSTRAT_RCM          = 2
   
 !</constantblock>
 
@@ -201,9 +204,10 @@ CONTAINS
     INTEGER(I32) :: idegMin, iidxMin
   
     ! Clear auxiliary vector
-    DO idegIdx=1, ndeg
-      Ideg(idegIdx) = 0
-    END DO
+    Ideg(1:ndeg) = 0
+    !DO idegIdx=1, ndeg
+    !  Ideg(idegIdx) = 0
+    !END DO
     
     ! Later in the algorithm the column numbers of the non-diagonal
     ! entries are changed. The numbers of the diagonal entries are not

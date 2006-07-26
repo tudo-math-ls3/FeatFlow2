@@ -514,9 +514,9 @@ endif
 ifeq ($(call match,$(ID),pc-opteron-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
-OPTFLAGS  = -O3 -m32 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -fmove-all-movables -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
+OPTFLAGS  = -O3 -m32 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
 FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=opteron -pipe
+CCFLAGS   = -march=opteron -pipe -fmove-all-movables 
 BLASLIB   = 
 LAPACKLIB = 
 endif

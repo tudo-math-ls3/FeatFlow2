@@ -3459,6 +3459,133 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE lsyssc_sortMat7_int (Ia, IaH, Icol, IcolH, &
+                                     Ild, IldH, Itr1, Itr2, neq)
+  
+  !<description>
+    ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
+    ! Single precision version.
+    !
+    ! Storage technique 7 version.
+  !</description>
+    
+  !<input>
+    
+    ! Number of equations
+    INTEGER(PREC_VECIDX), INTENT(IN) :: neq
+    
+    ! Source matrix
+    INTEGER, DIMENSION(:), INTENT(IN) :: IaH
+    
+    ! Column structure of source matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: IcolH
+    
+    ! Row positions of source matrix
+    INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(IN) :: IldH
+    
+    ! Permutation of 1..neq describing the sorting
+    INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr1
+    
+    ! Permutation of 1..neq describing the sorting back
+    INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
+
+  !</input>
+    
+  !<output>
+
+    ! Destination matrix
+    INTEGER, DIMENSION(:), INTENT(OUT) :: Ia
+
+    ! Column structure of destination matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Icol
+    
+    ! Row positions of destination matrix
+    INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Ild
+    
+  !</output>
+    
+!</subroutine>
+    
+    !local variables
+    INTEGER(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx
+    
+    ! Temporary variables for saving data of each line
+    INTEGER(I32), DIMENSION(:), ALLOCATABLE :: Ih1, Ih2
+  
+    ! Get memory for Ih1 and Ih2:
+    ALLOCATE(Ih1(neq),Ih2(neq))
+  
+    ! We build the sorted matrix from the scratch. ildIdx points
+    ! to the current 'output' position in the data array of
+    ! the matrix.
+    ildIdx = 1
+
+    ! Loop through all lines. i is the 'destination' row, i.e.
+    ! we fetch the row Itr1(i) and write it to row i.
+    DO i=1, neq
+      ! Which row should be moved to here?
+      iidx = Itr1(i)
+
+      ! Copy the diagonal element.
+      ! The new row starts at position ildIdx. Save this to Ild.
+      Ia(ildIdx) = IaH(IldH(iidx))
+      Ild(i) = ildIdx
+      Icol(ildIdx) = i
+      ildIdx = ildIdx + 1
+      
+      ! Get the start- and end-index of the row that should be moved
+      ! to here.
+      ih1Idx = IldH(iidx)+1
+      ih2Idx = IldH(iidx+1)-1
+
+      ! The row has length...
+      isize = ih2Idx - ih1Idx + 1
+
+      ! Loop through the source row.
+      ! IcolH defines the column numbers in the source row.
+      ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
+      ! column numbers in the source matrix to the column numbers in the
+      ! destination matrix.
+      ! Keeping that in mind, we set up:
+      !  Ih1 := column numbers in the destination matrix.
+      !  Ih2 := positions of the entries in the current row in the source matrix
+      DO j=ih1Idx, ih2Idx
+        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+        Ih2(j-ih1Idx+1) = j
+      END DO
+
+      ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
+      ! Afterwards:
+      !  Ih1 = column numbers in the destination matrix, sorted
+      !  Ih2 = positions of the entries in Ih1 in the source matrix
+      CALL lsyssc_sortCR(Ih1(1:isize),Ih2(1:isize))
+
+      ! Now copy the source row to the current row.
+      ! Loop through the columns of the current row:
+      DO j=1, isize
+        ! Get the matrix entry of the current column and write it to DA
+        Ia(ildIdx) = IaH(Ih2(j))
+
+        ! Get the column number and write it to Icol
+        Icol(ildIdx) = Ih1(j) 
+
+        ! Increase the destination pointer in the matrix structure
+        ildIdx = ildIdx + 1
+      END DO
+    END DO
+
+    ! Close the matrix structure by writing out the last element of Kld.
+    Ild(neq+1) = IldH(neq+1)
+    
+    ! Release temp variables
+    DEALLOCATE(Ih1,Ih2)
+
+  END SUBROUTINE 
+
+  !****************************************************************************
+
+!<subroutine>
+
   SUBROUTINE lsyssc_sortMat7Struc (Icol, IcolH, Ild, IldH, Itr1, Itr2, neq)
   
   !<description>
@@ -3840,6 +3967,143 @@ CONTAINS
     DEALLOCATE(Ih1,Ih2)
 
   END SUBROUTINE 
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_sortMat9_int (Ia, IaH, Icol, IcolH, &
+                                     Ild, IldH, Idiag, Itr1, Itr2, neq)
+  
+  !<description>
+    ! Resorts the entries of the given matrix, corresponding to Itr1/Itr2.
+    ! Double precision version.
+    !
+    ! Storage technique 9 version.
+  !</description>
+    
+  !<input>
+    
+    ! Number of equations
+    INTEGER(PREC_VECIDX), INTENT(IN) :: neq
+    
+    ! Source matrix
+    INTEGER, DIMENSION(:), INTENT(IN) :: IaH
+    
+    ! Column structure of source matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: IcolH
+    
+    ! Row positions of source matrix
+    INTEGER(PREC_VECIDX), DIMENSION(neq+1), INTENT(IN) :: IldH
+
+    ! Permutation of 1..neq describing the sorting
+    INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr1
+    
+    ! Permutation of 1..neq describing the inverse permutation
+    INTEGER(PREC_VECIDX), DIMENSION(neq), INTENT(IN) :: Itr2
+
+  !</input>
+    
+  !<output>
+
+    ! Destination matrix
+    INTEGER, DIMENSION(:), INTENT(OUT) :: Ia
+
+    ! Column structure of destination matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Icol
+    
+    ! Row positions of destination matrix
+    INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Ild
+    
+    ! Positions of diagonal elements in the destination matrix
+    INTEGER(PREC_MATIDX), DIMENSION(neq+1), INTENT(OUT) :: Idiag
+    
+  !</output>
+    
+!</subroutine>
+    
+    !local variables
+    INTEGER(I32) :: i, j, iidx, ildIdx, isize, ih1Idx, ih2Idx, idiagidx
+
+    ! Temporary variables for saving data of each line
+    INTEGER(I32), DIMENSION(:), ALLOCATABLE :: Ih1, Ih2
+  
+    ! Get memory for Ih1 and Ih2:
+    ALLOCATE(Ih1(neq),Ih2(neq))
+  
+    ! We build the sorted matrix from the scratch. ildIdx points
+    ! to the current 'output' position in the data array of
+    ! the matrix.
+    ildIdx = 1
+    
+    ! Loop through all lines. i is the 'destination' row, i.e.
+    ! we fetch the row Itr1(i) and write it to row i.
+    DO i=1, neq
+    
+      ! Which row should be moved to here?
+      iidx = Itr1(i)
+      
+      ! The new row starts at position ildIdx. Save this to Ild.
+      Ild(i) = ildIdx
+      
+      ! Get the start- and end-index of the row that should be moved
+      ! to here.
+      ih1Idx = IldH(iidx)
+      ih2Idx = IldH(iidx+1)-1
+      
+      ! The row has length...
+      isize = ih2Idx - ih1Idx + 1
+      
+      ! Loop through the source row.
+      ! IcolH defines the column numbers in the source row.
+      ! Itr2 is the inverse permutation. Therefore, IcolH(Itr2) maps the
+      ! column numbers in the source matrix to the column numbers in the
+      ! destination matrix.
+      ! Keeping that in mind, we set up:
+      !  Ih1 := column numbers in the destination matrix.
+      !  Ih2 := positions of the entries in the current row in the source matrix
+      DO j=ih1Idx, ih2Idx
+        Ih1(j-ih1Idx+1) = Itr2(IcolH(j))
+        Ih2(j-ih1Idx+1) = j
+      END DO
+      
+      ! Call a small sorting algorithm to sort both, Ih1 and Ih2, for Ih1.
+      ! Afterwards:
+      !  Ih1 = column numbers in the destination matrix, sorted
+      !  Ih2 = positions of the entries in Ih1 in the source matrix
+      CALL lsyssc_sortCR(Ih1(1:isize),Ih2(1:isize))
+
+      ! Again loop through the row - this time to find the index of
+      ! the first element in the upper triangular part of the matrix.
+      DO idiagidx=1,isize
+        IF (Ih1(idiagidx) .GE. i) EXIT
+      END DO
+      
+      ! Write the position of the diagonal element to Idiag
+      Idiag(i) = ildIdx + idiagidx-1
+      
+      ! Now copy the source row to the current row.
+      ! Loop through the columns of the current row:
+      DO j = 1,isize
+        
+        ! Get the matrix entry of the current column and write it to DA
+        Ia(ildIdx) = IaH(Ih2(j))
+        
+        ! Get the column number and write it to Icol
+        Icol(ildIdx) = Ih1(j) 
+        
+        ! Increase the destination pointer in the matrix structure
+        ildIdx = ildIdx + 1
+      END DO
+    END DO
+    
+    ! Close the matrix structure by writing out the last element of Kld.
+    Ild(neq+1) = IldH(neq+1)
+
+    ! Release temp variables
+    DEALLOCATE(Ih1,Ih2)
+
+  END SUBROUTINE
 
   !****************************************************************************
 
