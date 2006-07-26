@@ -1973,14 +1973,15 @@ CONTAINS
       
       ! Reallocate to save memory. Store the final handles in the structure.
       IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
-        IdofCount = (/nequations,icurrentDof/)
-        !CALL storage_realloc2D ('bcasm_discrFBCDirichlet', icurrentDof, &
-        !                        h_Ddofs, ST_NEWBLOCK_NOINIT)
+        ! In the 2D-array, the size of the 2nd dimension is changed to the
+        ! number of DOF's.
+        CALL storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+                              h_Ddofs, ST_NEWBLOCK_NOINIT)
         p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
       END IF
       
-      !CALL storage_realloc1D ('bcasm_discrFBCDirichlet', icurrentDof, &
-      !                        h_Idofs, ST_NEWBLOCK_NOINIT)
+      CALL storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+                            h_Idofs, ST_NEWBLOCK_NOINIT)
       p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
     END IF
 

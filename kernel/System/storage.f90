@@ -70,6 +70,10 @@
 !#
 !# 13.) storage_realloc
 !#      -> Reallocate a 1D or 2D array (only 2nd dimension)
+!#
+!# 14.) storage_initialiseBlock
+!#      -> Initialise a storage block with zero (like storage_clear)
+!#         or increasing number.
 !# 
 !# </purpose>
 !##############################################################################
@@ -110,9 +114,6 @@ MODULE storage
   ! init new storage block with 1,2,3,...,n
   INTEGER, PARAMETER :: ST_NEWBLOCK_ORDERED = 2
 
-  ! no init reallocated storage block
-  INTEGER, PARAMETER :: ST_NEWBLOCK_COPY = 3
-  
   !</constantblock>
   
   !<constantblock description="Constants for calculating memory">
@@ -526,6 +527,150 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE storage_initialiseNode (rstorageNode,cinitNewBlock,istartIndex)
+
+!<description>
+  ! Internal subroutine: Initialise the memory identified by storage 
+  ! node rstorageNode according to the constant cinitNewBlock.
+!</description>
+
+!<input>
+  ! The storage node whose associated storage should be initialised.
+  TYPE(t_storageNode), INTENT(IN) :: rstorageNode
+
+  ! Init new storage block identifier (ST_NEWBLOCK_ZERO, ST_NEWBLOCK_NOINIT,
+  ! ST_NEWBLOCK_ORDERED). Specifies how to initialise the data block associated
+  ! to ihandle.
+  INTEGER, INTENT(IN) :: cinitNewBlock
+  
+  ! Start index from where to initialise; should usually be =1.
+  ! For multidimensional arrays, this specifies the start index of the 
+  ! last dimension.
+  INTEGER(I32), INTENT(IN) :: istartIndex
+!</input>
+  
+!</subroutine>
+  
+    ! variable for ordering 1,2,3,...,N
+    INTEGER :: iorder
+    
+    SELECT CASE (rstorageNode%idimension)
+    CASE (1) 
+
+      SELECT CASE (cinitNewBlock)
+      CASE (ST_NEWBLOCK_ZERO) 
+        ! Clear the vector if necessary
+        SELECT CASE (rstorageNode%idataType)
+        CASE (ST_SINGLE)
+          rstorageNode%p_Fsingle1D(istartIndex:) = 0.0_SP
+        CASE (ST_DOUBLE)
+          rstorageNode%p_Ddouble1D(istartIndex:) = 0.0_DP
+        CASE (ST_INT)
+          rstorageNode%p_Iinteger1D(istartIndex:) = 0_I32
+        END SELECT
+        
+      CASE (ST_NEWBLOCK_ORDERED)
+        ! Impose ordering 1,2,3,...,N if necessary
+        SELECT CASE (rstorageNode%idataType)
+        CASE (ST_SINGLE)
+          DO iorder=istartIndex,SIZE(rstorageNode%p_Fsingle1D)
+            rstorageNode%p_Fsingle1D(iorder) = REAL(iorder,SP)
+          END DO
+        CASE (ST_DOUBLE)
+          DO iorder=istartIndex,SIZE(rstorageNode%p_Ddouble1D)
+            rstorageNode%p_Ddouble1D(iorder) = REAL(iorder,DP)
+          END DO
+        CASE (ST_INT)
+          DO iorder=istartIndex,SIZE(rstorageNode%p_Iinteger1D)
+            rstorageNode%p_Iinteger1D(iorder) = INT(iorder,I32)
+          END DO
+        END SELECT
+        
+      END SELECT
+        
+    CASE (2)
+
+      SELECT CASE (cinitNewBlock)
+      CASE (ST_NEWBLOCK_ZERO) 
+        ! Clear the vector
+        IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
+          SELECT CASE (rstorageNode%idataType)
+          CASE (ST_SINGLE)
+            rstorageNode%p_Fsingle2D(:,istartIndex:) = 0.0_SP
+          CASE (ST_DOUBLE)
+            rstorageNode%p_Ddouble2D(:,istartIndex:) = 0.0_DP
+          CASE (ST_INT)
+            rstorageNode%p_Iinteger2D(:,istartIndex:) = 0_I32
+          END SELECT
+        END IF
+
+      CASE (ST_NEWBLOCK_ORDERED)
+        PRINT *, 'Error: ordering not available for multidimensional array'
+        STOP
+        
+      END SELECT
+
+    CASE DEFAULT
+      PRINT *,'storage_initialiseNode: Unsupported dimension'
+      STOP
+    
+    END SELECT
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
+
+!<description>
+  ! This routine initialises the memory associated to ihandle according
+  ! to the constant cinitNewBlock.
+!</description>
+
+!<input>
+  ! Handle of the memory block to initialise
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! Init new storage block identifier (ST_NEWBLOCK_ZERO, ST_NEWBLOCK_NOINIT,
+  ! ST_NEWBLOCK_ORDERED). Specifies how to initialise the data block associated
+  ! to ihandle.
+  INTEGER, INTENT(IN) :: cinitNewBlock
+!</input>
+  
+!<inputoutput>
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</inputoutput>
+
+!</subroutine>
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+  
+  ! Initialise
+  CALL storage_initialiseNode (p_rnode,cinitNewBlock,1)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE storage_new1D (scall, sname, isize, ctype, ihandle, &
                             cinitNewBlock, rheap)
 
@@ -563,7 +708,7 @@ CONTAINS
 !<output>
 
   ! Handle of the memory block.
-  INTEGER :: ihandle
+  INTEGER, INTENT(OUT) :: ihandle
 
 !</output>
   
@@ -573,9 +718,6 @@ CONTAINS
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
 
-  ! variable for ordering 1,2,3,...,N
-  INTEGER :: iorder
-  
   IF (isize .EQ. 0) THEN
     PRINT *,'storage_new1D Warning: isize=0'
     ihandle = ST_NOHANDLE
@@ -607,13 +749,13 @@ CONTAINS
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
     ALLOCATE(p_rnode%p_Fsingle1D(isize))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
   CASE (ST_DOUBLE)
     ALLOCATE(p_rnode%p_Ddouble1D(isize))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
   CASE (ST_INT)
     ALLOCATE(p_rnode%p_Iinteger1D(isize))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_INT2BYTES)
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
     STOP
@@ -623,35 +765,8 @@ CONTAINS
   IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
     p_rheap%dtotalMemMax = p_rheap%dtotalMem
   
-  ! Clear the vector if necessary
-  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
-    SELECT CASE (ctype)
-    CASE (ST_SINGLE)
-      p_rnode%p_Fsingle1D = 0.0_SP
-    CASE (ST_DOUBLE)
-      p_rnode%p_Ddouble1D = 0.0_DP
-    CASE (ST_INT)
-      p_rnode%p_Iinteger1D = 0_I32
-    END SELECT
-  END IF
-
-  ! Impose ordering 1,2,3,...,N if necessary
-  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ORDERED) THEN
-    SELECT CASE (ctype)
-    CASE (ST_SINGLE)
-      DO iorder=1,isize
-        p_rnode%p_Fsingle1D(iorder) = REAL(iorder,SP)
-      END DO
-    CASE (ST_DOUBLE)
-      DO iorder=1,isize
-        p_rnode%p_Ddouble1D(iorder) = REAL(iorder,DP)
-      END DO
-    CASE (ST_INT)
-      DO iorder=1,isize
-        p_rnode%p_Iinteger1D(iorder) = INT(iorder,I32)
-      END DO
-    END SELECT
-  END IF
+  ! Initialise the memory block
+  CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
 
   END SUBROUTINE
 
@@ -738,16 +853,13 @@ CONTAINS
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
     ALLOCATE(p_rnode%p_Fsingle2D(Isize(1),Isize(2)))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + &
-                        REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_SINGLE2BYTES)
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_SINGLE2BYTES)
   CASE (ST_DOUBLE)
     ALLOCATE(p_rnode%p_Ddouble2D(Isize(1),Isize(2)))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + &
-                        REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_DOUBLE2BYTES)
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_DOUBLE2BYTES)
   CASE (ST_INT)
     ALLOCATE(p_rnode%p_Iinteger2D(Isize(1),Isize(2)))
-    p_rnode%dmemBytes = p_rnode%dmemBytes + &
-                        REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_INT2BYTES)
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_INT2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
     STOP
@@ -757,22 +869,9 @@ CONTAINS
   IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
     p_rheap%dtotalMemMax = p_rheap%dtotalMem
   
-  ! Clear the vector if necessary
-  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
-    SELECT CASE (ctype)
-    CASE (ST_SINGLE)
-      p_rnode%p_Fsingle2D = 0.0_SP
-    CASE (ST_DOUBLE)
-      p_rnode%p_Ddouble2D = 0.0_DP
-    CASE (ST_INT)
-      p_rnode%p_Iinteger2D = 0_I32
-    END SELECT
-  END IF
+  ! Initialise the storage block
+  CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
 
-  IF (cinitNewBlock .EQ. ST_NEWBLOCK_ORDERED) THEN
-    PRINT *, "Error: ordering not available for multidimensional array"
-    STOP
-  END IF
   END SUBROUTINE
 
 !************************************************************************
@@ -1707,13 +1806,12 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
+    ! local variables
   
-  ! Pointer to the heap 
-  TYPE(t_storageBlock), POINTER :: p_rheap
-  TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
-  INTEGER(I32) :: i,j
-  INTEGER(I32), DIMENSION(2) :: Isize
+    ! Pointer to the heap 
+    TYPE(t_storageBlock), POINTER :: p_rheap
+    TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
+    INTEGER(I32) :: i
   
     ! Check if the start address is positive
     IF (istart_source <= 0 .OR. istart_dest <= 0) THEN
@@ -2292,22 +2390,37 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_realloc (scall, isize, ihandle, cinitNewBlock, rheap)
+  SUBROUTINE storage_realloc (scall, isize, ihandle, cinitNewBlock, bcopy, rheap)
 
 !<description>
-  !This routine reallocates an existing 1D memory block wih a new desired size.
+  ! This routine reallocates an existing memory block wih a new desired
+  ! size. In case of a multiple-dimension block, the last dimension
+  ! is changed. isize is the size of the new memory block / the new size
+  ! of the last dimension.
+  !
+  ! Warning: Reallocation of an array destroys all pointers associated with
+  ! the corresponding handle!
 !</description>
 
 !<input>
 
-  !name of the calling routine
+  ! Name of the calling routine
   CHARACTER(LEN=*), INTENT(IN) :: scall
 
-  !requested storage size
+  ! Requested storage size for the memory block / the new size of the last
+  ! dimension in the memory block identified by ihandle
   INTEGER, INTENT(IN) :: isize
 
-  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED,ST_NEWBLOCK_COPY)
+  ! Init new storage block identifier (ST_NEWBLOCK_ZERO, 
+  ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
+  ! Specifies how to initialise memory if isize > original array size.
   INTEGER, INTENT(IN) :: cinitNewBlock
+  
+  ! OPTIONAL: Copy old data.
+  ! =TRUE: Copy data of old array to the new one.
+  ! =FALSE: Reallocate memory, don't copy old data.
+  ! If not specified, TRUE is assumed.
+  LOGICAL, INTENT(IN), OPTIONAL :: bcopy
 
 !</input>
   
@@ -2324,285 +2437,203 @@ CONTAINS
   
 !</subroutine>
   
-  ! Pointer to the heap 
-  TYPE(t_storageBlock), POINTER :: p_rheap
-  TYPE(t_storageNode), POINTER :: p_rnode
+    ! local variables
   
-  ! temporal handle
-  INTEGER :: ihandle_temp = ST_NOHANDLE
+    ! Pointer to the heap 
+    TYPE(t_storageBlock), POINTER :: p_rheap
+    TYPE(t_storageNode), POINTER :: p_rnode
+    
+    ! New storage node
+    TYPE(t_storageNode) :: rstorageNode
+    
+    ! size of the old 1-dimensional array
+    INTEGER :: isize_old
 
-  ! size of the old 1-dimensional array
-  INTEGER :: isize_old
+    ! size of the old 2-dimensional array
+    INTEGER, DIMENSION(2) :: Isize2D_old
 
-  ! size of the old 2-dimensional array
-  INTEGER, DIMENSION(2) :: Isize2D_old
+    INTEGER(I32) :: i,j
+    
+    LOGICAL :: bcopyData
 
-  ! variable for ordering 1,2,3,...,N
-  INTEGER :: iorder
+    IF (isize .EQ. 0) THEN
+      ! Ok, not much to do...
+      CALL storage_free(ihandle,rheap)
+      RETURN
+    END IF
+    
+    ! Get the heap to use - local or global one.
+    
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbase
+    END IF
+    
+    ! Copy old data?
+    
+    IF (PRESENT(bcopy)) THEN
+      bcopyData = bcopy
+    ELSE
+      bcopyData = .TRUE.
+    END IF
+    
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
-  IF (isize .EQ. 0) THEN
-    CALL storage_free(ihandle)
-    RETURN
-  END IF
-  
-  ! Get the heap to use - local or global one.
-  
-  IF(PRESENT(rheap)) THEN
-    p_rheap => rheap
-  ELSE
-    p_rheap => rbase
-  END IF
-  
-  ! Where is the descriptor of the handle?
-  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+    ! Copy the data of the old storage node to rstorageNode. That way
+    ! we prepare a new storage node and will replace the old.
+    rstorageNode = p_rnode
+    
+    ! Are we 1D or 2D?
+    SELECT CASE(p_rnode%idimension)
 
-  ! Adjust total amount of memory
-  p_rheap%dtotalMem = p_rheap%dtotalMem - p_rnode%dmemBytes
-
-  ! Are we 1D or 2D?
-  SELECT CASE(p_rnode%idimension)
-
-  CASE (1)
-  
-     ! Allocate memory according to isize
-     IF (cinitNewBlock .EQ. ST_NEWBLOCK_COPY) THEN
-        
-        SELECT CASE (p_rnode%idataType)
-        CASE (ST_SINGLE)
-           isize_old = SIZE(p_rnode%p_Fsingle1D)
-           
-           ! Do we need to reallocate?
-           IF (isize == isize_old) RETURN
-           
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(isize_old,DP)*REAL(ST_SINGLE2BYTES)
-           CALL storage_copy(ihandle,ihandle_temp)
-           DEALLOCATE(p_rnode%p_Fsingle1D)
-           ALLOCATE(p_rnode%p_Fsingle1D(isize))
-           p_rnode%p_Fsingle1D(MIN(isize,isize_old):) = 0.0_SP
-           CALL storage_copy(ihandle_temp,ihandle,1,1,MIN(isize,isize_old))
-           CALL storage_free(ihandle_temp)
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
-           
-        CASE (ST_DOUBLE)
-           isize_old = SIZE(p_rnode%p_Ddouble1D)
-           
-           ! Do we need to reallocate?
-           IF (isize == isize_old) RETURN
-           
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Ddouble1D),DP)*REAL(ST_DOUBLE2BYTES)
-           CALL storage_copy(ihandle,ihandle_temp)
-           DEALLOCATE(p_rnode%p_Ddouble1D)
-           ALLOCATE(p_rnode%p_Ddouble1D(isize))
-           p_rnode%p_Ddouble1D(MIN(isize,isize_old):) = 0.0_SP
-           CALL storage_copy(ihandle_temp,ihandle,1,1,MIN(isize,isize_old))
-           CALL storage_free(ihandle_temp)
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
-           
-        CASE (ST_INT)
-           isize_old = SIZE(p_rnode%p_Iinteger1D)
-           
-           ! Do we need to reallocate?
-           IF (isize == isize_old) RETURN
-           
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Iinteger1D),DP)*REAL(ST_INT2BYTES)
-           CALL storage_copy(ihandle,ihandle_temp)
-           DEALLOCATE(p_rnode%p_Iinteger1D)
-           ALLOCATE(p_rnode%p_Iinteger1D(isize))
-           p_rnode%p_Iinteger1D(MIN(isize,isize_old):) = 0.0_SP
-           CALL storage_copy(ihandle_temp,ihandle,1,1,MIN(isize,isize_old))
-           CALL storage_free(ihandle_temp)
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_INT2BYTES)
-           
-        CASE DEFAULT
-           PRINT *,'Error: unknown mem type'
-           STOP
-        END SELECT
-        
-     ELSE
-        
-        SELECT CASE (p_rnode%idataType)
-        CASE (ST_SINGLE)
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Fsingle1D),DP)*REAL(ST_SINGLE2BYTES)
-           DEALLOCATE(p_rnode%p_Fsingle1D)
-           ALLOCATE(p_rnode%p_Fsingle1D(isize))
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
-           
-        CASE (ST_DOUBLE)
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Ddouble1D),DP)*REAL(ST_DOUBLE2BYTES)
-           DEALLOCATE(p_rnode%p_Ddouble1D)
-           ALLOCATE(p_rnode%p_Ddouble1D(isize))
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
-           
-        CASE (ST_INT)
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(SIZE(p_rnode%p_Iinteger1D),DP)*REAL(ST_INT2BYTES)
-           DEALLOCATE(p_rnode%p_Iinteger1D)
-           ALLOCATE(p_rnode%p_Iinteger1D(isize))
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(isize,DP)*REAL(ST_INT2BYTES)
-           
-        CASE DEFAULT
-           PRINT *,'Error: unknown mem type'
-           STOP
-        END SELECT
-     END IF
-     
-     p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
-     IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
-          p_rheap%dtotalMemMax = p_rheap%dtotalMem
-     
-     ! Clear the vector if necessary
-     IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
-        SELECT CASE (p_rnode%idataType)
-        CASE (ST_SINGLE)
-           p_rnode%p_Fsingle1D = 0.0_SP
-        CASE (ST_DOUBLE)
-           p_rnode%p_Ddouble1D = 0.0_DP
-        CASE (ST_INT)
-           p_rnode%p_Iinteger1D = 0_I32
-        END SELECT
-     END IF
-     
-     ! Impose ordering 1,2,3,...,N if necessary
-     IF (cinitNewBlock .EQ. ST_NEWBLOCK_ORDERED) THEN
-        SELECT CASE (p_rnode%idataType)
-        CASE (ST_SINGLE)
-           DO iorder=1,isize
-              p_rnode%p_Fsingle1D(iorder) = REAL(iorder,SP)
-           END DO
-        CASE (ST_DOUBLE)
-           DO iorder=1,isize
-              p_rnode%p_Ddouble1D(iorder) = REAL(iorder,DP)
-           END DO
-        CASE (ST_INT)
-           DO iorder=1,isize
-              p_rnode%p_Iinteger1D(iorder) = INT(iorder,I32)
-           END DO
-        END SELECT
-     END IF
-     
-  CASE (2)
-
-     ! Allocate memory according to isize
-     IF (cinitNewBlock .EQ. ST_NEWBLOCK_COPY) THEN
-        
-        SELECT CASE (p_rnode%idataType)
-        CASE (ST_SINGLE)
-           Isize2D_old = SHAPE(p_rnode%p_Fsingle2D)
-           
-           ! Do we need to reallocate
-           IF (isize == Isize2D_old(2)) RETURN
-
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(Isize2D_old(1),DP)*REAL(Isize2D_old(2),DP)*REAL(ST_SINGLE2BYTES)
-           CALL storage_copy(ihandle,ihandle_temp)
-           DEALLOCATE(p_rnode%p_Fsingle2D)
-           ALLOCATE(p_rnode%p_Fsingle2D(Isize2D_old(1),isize))
-           p_rnode%p_Fsingle2D(:,MIN(isize,Isize2D_old(2)):) = 0.0_SP
-           CALL storage_copy(ihandle_temp,ihandle,(/1,1/),(/1,1/),(/Isize2D_old(1),MIN(isize,Isize2D_old(2))/))
-           CALL storage_free(ihandle_temp)
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
-
-        CASE (ST_DOUBLE)
-           Isize2D_old = SHAPE(p_rnode%p_Ddouble2D)
-           
-           ! Do we need to reallocate
-           IF (isize == Isize2D_old(2)) RETURN
-
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(Isize2D_old(1),DP)*REAL(Isize2D_old(2),DP)*REAL(ST_DOUBLE2BYTES)
-           CALL storage_copy(ihandle,ihandle_temp)
-           DEALLOCATE(p_rnode%p_Ddouble2D)
-           ALLOCATE(p_rnode%p_Ddouble2D(Isize2D_old(1),isize))
-           p_rnode%p_Ddouble2D(:,MIN(isize,Isize2D_old(2)):) = 0.0_DP
-           CALL storage_copy(ihandle_temp,ihandle,(/1,1/),(/1,1/),(/Isize2D_old(1),MIN(isize,Isize2D_old(2))/))
-           CALL storage_free(ihandle_temp)
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
-
-        CASE (ST_INT)
-           Isize2D_old = SHAPE(p_rnode%p_Iinteger2D)
-           
-           ! Do we need to reallocate
-           IF (isize == Isize2D_old(2)) RETURN
-
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(Isize2D_old(1),DP)*REAL(Isize2D_old(2),DP)*REAL(ST_INT2BYTES)
-           CALL storage_copy(ihandle,ihandle_temp)
-           DEALLOCATE(p_rnode%p_Iinteger2D)
-           ALLOCATE(p_rnode%p_Iinteger2D(Isize2D_old(1),isize))
-           p_rnode%p_Iinteger2D(:,MIN(isize,Isize2D_old(2)):) = 0.0_DP
-           CALL storage_copy(ihandle_temp,ihandle,(/1,1/),(/1,1/),(/Isize2D_old(1),MIN(isize,Isize2D_old(2))/))
-           CALL storage_free(ihandle_temp)
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES)
-
-        CASE DEFAULT
-           PRINT *,'Error: unknown mem type'
-           STOP
-        END SELECT
-
-     ELSE
-        
-        SELECT CASE (p_rnode%idataType)
-        CASE (ST_SINGLE)
-           Isize2D_old = SHAPE(p_rnode%p_Fsingle2D)
-           
-           ! Do we need to reallocate
-           IF (isize == Isize2D_old(2)) RETURN
-           
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(Isize2D_old(1),DP)*REAL(Isize2D_old(2),DP)*REAL(ST_SINGLE2BYTES)
-           DEALLOCATE(p_rnode%p_Fsingle2D)
-           ALLOCATE(p_rnode%p_Fsingle2D(Isize2D_old(1),isize))
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
-           
-        CASE (ST_DOUBLE)
-           Isize2D_old = SHAPE(p_rnode%p_Ddouble2D) 
-           
-           ! Do we need to reallocate
-           IF (isize == Isize2D_old(2)) RETURN
-           
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(Isize2D_old(1),DP)*REAL(Isize2D_old(2),DP)*REAL(ST_DOUBLE2BYTES)
-           DEALLOCATE(p_rnode%p_Ddouble2D)
-           ALLOCATE(p_rnode%p_Ddouble2D(Isize2D_old(1),isize))
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
-           
-        CASE (ST_INT)
-           Isize2D_old = SHAPE(p_rnode%p_Iinteger2D)
-           
-           ! Do we need to reallocate
-           IF (isize == Isize2D_old(2)) RETURN
-           
-           p_rnode%dmemBytes = p_rnode%dmemBytes - REAL(Isize2D_old(1),DP)*REAL(Isize2D_old(2),DP)*REAL(ST_INT2BYTES)
-           DEALLOCATE(p_rnode%p_Iinteger2D)
-           ALLOCATE(p_rnode%p_Iinteger2D(Isize2D_old(1),isize))
-           p_rnode%dmemBytes = p_rnode%dmemBytes + REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES)
-           
-        CASE DEFAULT
-           PRINT *,'Error: unknown mem type'
-           STOP
-        END SELECT
-     END IF
-     
-     p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
-     IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
-          p_rheap%dtotalMemMax = p_rheap%dtotalMem
-     
-     ! Clear the vector if necessary
-     IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
-        SELECT CASE (p_rnode%idataType)
-        CASE (ST_SINGLE)
-           p_rnode%p_Fsingle2D = 0.0_SP
-        CASE (ST_DOUBLE)
-           p_rnode%p_Ddouble2D = 0.0_DP
-        CASE (ST_INT)
-           p_rnode%p_Iinteger2D = 0_I32
-        END SELECT
-     END IF
-     
-     ! Impose ordering 1,2,3,...,N if necessary
-     IF (cinitNewBlock .EQ. ST_NEWBLOCK_ORDERED) THEN
-        PRINT *, "Error: ordering not available for multidimensional array"
+    CASE (1)
+    
+      ! Get the size of the old storage node.
+      SELECT CASE (p_rnode%idataType)
+      CASE (ST_SINGLE)
+        isize_old = SIZE(p_rnode%p_Fsingle1D)
+      CASE (ST_DOUBLE)
+        isize_old = SIZE(p_rnode%p_Ddouble1D)
+      CASE (ST_INT)
+        isize_old = SIZE(p_rnode%p_Iinteger1D)
+      END SELECT
+      
+      ! Do we really have to change anything?
+      IF (isize == isize_old) RETURN
+      
+      ! Allocate new memory and initialise it - if it's larger than the old
+      ! memory block.
+      
+      SELECT CASE (rstorageNode%idataType)
+      CASE (ST_SINGLE)
+        ALLOCATE(rstorageNode%p_Fsingle1D(isize))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_SINGLE2BYTES,DP)
+      CASE (ST_DOUBLE)
+        ALLOCATE(rstorageNode%p_Ddouble1D(isize))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_DOUBLE2BYTES,DP)
+      CASE (ST_INT)
+        ALLOCATE(rstorageNode%p_Iinteger1D(isize))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE DEFAULT
+        PRINT *,'Error: unknown mem type'
         STOP
-     END IF
+      END SELECT
+      
+      IF (isize > isize_old) &
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,isize_old+1)
+      
+      ! Copy old data?
+      IF (bcopyData) THEN
+        SELECT CASE (rstorageNode%idataType)
+        CASE (ST_SINGLE)
+          CALL lalg_copyVectorSngl (p_rnode%p_Fsingle1D(1:isize),&
+                                    rstorageNode%p_Fsingle1D(1:isize))
+        CASE (ST_DOUBLE)
+          CALL lalg_copyVectorDble (p_rnode%p_Ddouble1D(1:isize),&
+                                    rstorageNode%p_Ddouble1D(1:isize))
+        CASE (ST_INT)
+          CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(1:isize),&
+                                  rstorageNode%p_Iinteger1D(1:isize))
+        END SELECT
+      END IF
 
-  CASE DEFAULT
-     PRINT *, 'Error in storage_realloc: Handle ',ihandle,' is neither 1- nor 2- dimensional!'
-     STOP
-  END SELECT
+    CASE (2)
+
+      ! Get the size of the old storage node.
+      SELECT CASE (p_rnode%idataType)
+      CASE (ST_SINGLE)
+        Isize2D_old = SHAPE(p_rnode%p_Fsingle2D)
+      CASE (ST_DOUBLE)
+        Isize2D_old = SHAPE(p_rnode%p_Ddouble2D)
+      CASE (ST_INT)
+        Isize2D_old = SHAPE(p_rnode%p_Iinteger2D)
+      END SELECT
+      
+      ! Do we really have to change anything?
+      IF (isize == Isize2D_old(2)) RETURN
+      
+      ! Allocate new memory and initialise it - if it's larger than the old
+      ! memory block.
+      
+      SELECT CASE (rstorageNode%idataType)
+      CASE (ST_SINGLE)
+        ALLOCATE(rstorageNode%p_Fsingle2D(Isize2D_old(1),isize))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_SINGLE2BYTES,DP)
+      CASE (ST_DOUBLE)
+        ALLOCATE(rstorageNode%p_Ddouble2D(Isize2D_old(1),isize))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_DOUBLE2BYTES,DP)
+      CASE (ST_INT)
+        ALLOCATE(rstorageNode%p_Iinteger2D(Isize2D_old(1),isize))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE DEFAULT
+        PRINT *,'Error: unknown mem type'
+        STOP
+      END SELECT
+      
+      IF (isize > Isize2D_old(2)) &
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,Isize2D_old(2)+1)
+      
+      ! Copy old data?
+      IF (bcopyData) THEN
+      
+        ! Here it's easier than in storage_copy as we can be sure, source and
+        ! destination array have the same type!
+        SELECT CASE (rstorageNode%idataType)
+        CASE (ST_DOUBLE)
+          ! Copy by hand
+          DO j=1,isize
+            DO i=1,SIZE(p_rnode%p_Ddouble2D,1)
+              rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
+            END DO
+          END DO
+            
+        CASE (ST_SINGLE)
+          ! Copy by hand
+          DO j=1,isize
+            DO i=1,SIZE(p_rnode%p_Fsingle2D,1)
+              rstorageNode%p_Fsingle2D(i,j) = p_rnode%p_Fsingle2D(i,j)
+            END DO
+          END DO
+
+        CASE (ST_INT)
+          ! Copy by hand
+          DO j=1,isize
+            DO i=1,SIZE(p_rnode%p_Iinteger2D,1)
+              rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
+            END DO
+          END DO
+        
+        END SELECT
+        
+      END IF
+      
+    CASE DEFAULT
+      PRINT *, 'Error in storage_realloc: Handle ',ihandle,' is neither 1- nor 2- dimensional!'
+      STOP
+
+    END SELECT
+
+    ! Release old data
+    IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
+    IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
+    IF (ASSOCIATED(p_rnode%p_Iinteger1D)) DEALLOCATE(p_rnode%p_Iinteger1D)
+    IF (ASSOCIATED(p_rnode%p_Fsingle2D))  DEALLOCATE(p_rnode%p_Fsingle2D)
+    IF (ASSOCIATED(p_rnode%p_Ddouble2D))  DEALLOCATE(p_rnode%p_Ddouble2D)
+    IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
+    
+    ! Correct the memory size
+    p_rheap%dtotalMem = p_rheap%dtotalMem &
+                      - p_rnode%dmemBytes + rstorageNode%dmemBytes
+    IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
+      p_rheap%dtotalMemMax = p_rheap%dtotalMem
+    
+    ! Replace the old node by the new one, finish
+    p_rnode = rstorageNode
 
   END SUBROUTINE
 
