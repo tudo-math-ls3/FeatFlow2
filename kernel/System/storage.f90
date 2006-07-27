@@ -2449,6 +2449,9 @@ CONTAINS
     ! size of the old 1-dimensional array
     INTEGER :: isizeOld
 
+    ! size of the 1-dimensional array to be copied
+    INTEGER :: isizeCopy
+
     ! size of the old 2-dimensional array
     INTEGER, DIMENSION(2) :: Isize2Dold
 
@@ -2526,16 +2529,17 @@ CONTAINS
       
       ! Copy old data?
       IF (bcopyData) THEN
+        isizeCopy=MIN(isize,isizeOld)
         SELECT CASE (rstorageNode%idataType)
         CASE (ST_SINGLE)
-          CALL lalg_copyVectorSngl (p_rnode%p_Fsingle1D(1:isizeOld),&
-                                    rstorageNode%p_Fsingle1D(1:isizeOld))
+          CALL lalg_copyVectorSngl (p_rnode%p_Fsingle1D(1:isizeCopy),&
+                                    rstorageNode%p_Fsingle1D(1:isizeCopy))
         CASE (ST_DOUBLE)
-          CALL lalg_copyVectorDble (p_rnode%p_Ddouble1D(1:isizeOld),&
-                                    rstorageNode%p_Ddouble1D(1:isizeOld))
+          CALL lalg_copyVectorDble (p_rnode%p_Ddouble1D(1:isizeCopy),&
+                                    rstorageNode%p_Ddouble1D(1:isizeCopy))
         CASE (ST_INT)
-          CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(1:isizeOld),&
-                                  rstorageNode%p_Iinteger1D(1:isizeOld))
+          CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(1:isizeCopy),&
+                                  rstorageNode%p_Iinteger1D(1:isizeCopy))
         END SELECT
       END IF
 
@@ -2556,7 +2560,6 @@ CONTAINS
       
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
-      
       SELECT CASE (rstorageNode%idataType)
       CASE (ST_SINGLE)
         ALLOCATE(rstorageNode%p_Fsingle2D(Isize2Dold(1),isize))
@@ -2580,13 +2583,13 @@ CONTAINS
 
       ! Copy old data?
       IF (bcopyData) THEN
-      
+
         ! Here it's easier than in storage_copy as we can be sure, source and
         ! destination array have the same type!
         SELECT CASE (rstorageNode%idataType)
         CASE (ST_DOUBLE)
           ! Copy by hand
-          DO j=1,SIZE(p_rnode%p_Ddouble2D,2)
+          DO j=1,MIN(SIZE(p_rnode%p_Ddouble2D,2),Isize2DOld(2))
             DO i=1,SIZE(p_rnode%p_Ddouble2D,1)
               rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
             END DO
@@ -2594,7 +2597,7 @@ CONTAINS
             
         CASE (ST_SINGLE)
           ! Copy by hand
-          DO j=1,SIZE(p_rnode%p_Fsingle2D,2)
+          DO j=1,MIN(SIZE(p_rnode%p_Fsingle2D,2),Isize2DOld(2))
             DO i=1,SIZE(p_rnode%p_Fsingle2D,1)
               rstorageNode%p_Fsingle2D(i,j) = p_rnode%p_Fsingle2D(i,j)
             END DO
@@ -2602,7 +2605,7 @@ CONTAINS
 
         CASE (ST_INT)
           ! Copy by hand
-          DO j=1,SIZE(p_rnode%p_Iinteger2D,2)
+          DO j=1,MIN(SIZE(p_rnode%p_Iinteger2D,2),Isize2DOld(2))
             DO i=1,SIZE(p_rnode%p_Iinteger2D,1)
               rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
             END DO
