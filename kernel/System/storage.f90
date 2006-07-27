@@ -2447,10 +2447,10 @@ CONTAINS
     TYPE(t_storageNode) :: rstorageNode
     
     ! size of the old 1-dimensional array
-    INTEGER :: isize_old
+    INTEGER :: isizeOld
 
     ! size of the old 2-dimensional array
-    INTEGER, DIMENSION(2) :: Isize2D_old
+    INTEGER, DIMENSION(2) :: Isize2Dold
 
     INTEGER(I32) :: i,j
     
@@ -2493,15 +2493,15 @@ CONTAINS
       ! Get the size of the old storage node.
       SELECT CASE (p_rnode%idataType)
       CASE (ST_SINGLE)
-        isize_old = SIZE(p_rnode%p_Fsingle1D)
+        isizeOld = SIZE(p_rnode%p_Fsingle1D)
       CASE (ST_DOUBLE)
-        isize_old = SIZE(p_rnode%p_Ddouble1D)
+        isizeOld = SIZE(p_rnode%p_Ddouble1D)
       CASE (ST_INT)
-        isize_old = SIZE(p_rnode%p_Iinteger1D)
+        isizeOld = SIZE(p_rnode%p_Iinteger1D)
       END SELECT
       
       ! Do we really have to change anything?
-      IF (isize == isize_old) RETURN
+      IF (isize == isizeOld) RETURN
       
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
@@ -2521,21 +2521,21 @@ CONTAINS
         STOP
       END SELECT
       
-      IF (isize > isize_old) &
-        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,isize_old+1)
+      IF (isize > isizeOld) &
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,isizeOld+1)
       
       ! Copy old data?
       IF (bcopyData) THEN
         SELECT CASE (rstorageNode%idataType)
         CASE (ST_SINGLE)
-          CALL lalg_copyVectorSngl (p_rnode%p_Fsingle1D(1:isize),&
-                                    rstorageNode%p_Fsingle1D(1:isize))
+          CALL lalg_copyVectorSngl (p_rnode%p_Fsingle1D(1:isizeOld),&
+                                    rstorageNode%p_Fsingle1D(1:isizeOld))
         CASE (ST_DOUBLE)
-          CALL lalg_copyVectorDble (p_rnode%p_Ddouble1D(1:isize),&
-                                    rstorageNode%p_Ddouble1D(1:isize))
+          CALL lalg_copyVectorDble (p_rnode%p_Ddouble1D(1:isizeOld),&
+                                    rstorageNode%p_Ddouble1D(1:isizeOld))
         CASE (ST_INT)
-          CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(1:isize),&
-                                  rstorageNode%p_Iinteger1D(1:isize))
+          CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(1:isizeOld),&
+                                  rstorageNode%p_Iinteger1D(1:isizeOld))
         END SELECT
       END IF
 
@@ -2544,39 +2544,39 @@ CONTAINS
       ! Get the size of the old storage node.
       SELECT CASE (p_rnode%idataType)
       CASE (ST_SINGLE)
-        Isize2D_old = SHAPE(p_rnode%p_Fsingle2D)
+        Isize2Dold = SHAPE(p_rnode%p_Fsingle2D)
       CASE (ST_DOUBLE)
-        Isize2D_old = SHAPE(p_rnode%p_Ddouble2D)
+        Isize2Dold = SHAPE(p_rnode%p_Ddouble2D)
       CASE (ST_INT)
-        Isize2D_old = SHAPE(p_rnode%p_Iinteger2D)
+        Isize2Dold = SHAPE(p_rnode%p_Iinteger2D)
       END SELECT
       
       ! Do we really have to change anything?
-      IF (isize == Isize2D_old(2)) RETURN
+      IF (isize == Isize2Dold(2)) RETURN
       
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
       
       SELECT CASE (rstorageNode%idataType)
       CASE (ST_SINGLE)
-        ALLOCATE(rstorageNode%p_Fsingle2D(Isize2D_old(1),isize))
+        ALLOCATE(rstorageNode%p_Fsingle2D(Isize2Dold(1),isize))
         rstorageNode%dmemBytes = &
-             REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_SINGLE2BYTES,DP)
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_SINGLE2BYTES,DP)
       CASE (ST_DOUBLE)
-        ALLOCATE(rstorageNode%p_Ddouble2D(Isize2D_old(1),isize))
+        ALLOCATE(rstorageNode%p_Ddouble2D(Isize2Dold(1),isize))
         rstorageNode%dmemBytes = &
-             REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_DOUBLE2BYTES,DP)
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_DOUBLE2BYTES,DP)
       CASE (ST_INT)
-        ALLOCATE(rstorageNode%p_Iinteger2D(Isize2D_old(1),isize))
+        ALLOCATE(rstorageNode%p_Iinteger2D(Isize2Dold(1),isize))
         rstorageNode%dmemBytes = &
-             REAL(Isize2D_old(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
         STOP
       END SELECT
       
-      IF (isize > Isize2D_old(2)) &
-        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,Isize2D_old(2)+1)
+      IF (isize > Isize2Dold(2)) &
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,Isize2Dold(2)+1)
 
       ! Copy old data?
       IF (bcopyData) THEN
@@ -2586,7 +2586,7 @@ CONTAINS
         SELECT CASE (rstorageNode%idataType)
         CASE (ST_DOUBLE)
           ! Copy by hand
-          DO j=1,isize
+          DO j=1,SIZE(p_rnode%p_Ddouble2D,2)
             DO i=1,SIZE(p_rnode%p_Ddouble2D,1)
               rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
             END DO
@@ -2594,7 +2594,7 @@ CONTAINS
             
         CASE (ST_SINGLE)
           ! Copy by hand
-          DO j=1,isize
+          DO j=1,SIZE(p_rnode%p_Fsingle2D,2)
             DO i=1,SIZE(p_rnode%p_Fsingle2D,1)
               rstorageNode%p_Fsingle2D(i,j) = p_rnode%p_Fsingle2D(i,j)
             END DO
@@ -2602,7 +2602,7 @@ CONTAINS
 
         CASE (ST_INT)
           ! Copy by hand
-          DO j=1,isize
+          DO j=1,SIZE(p_rnode%p_Iinteger2D,2)
             DO i=1,SIZE(p_rnode%p_Iinteger2D,1)
               rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
             END DO
