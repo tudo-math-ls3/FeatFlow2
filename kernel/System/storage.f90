@@ -2577,7 +2577,7 @@ CONTAINS
       
       IF (isize > Isize2D_old(2)) &
         CALL storage_initialiseNode (rstorageNode,cinitNewBlock,Isize2D_old(2)+1)
-      
+
       ! Copy old data?
       IF (bcopyData) THEN
       
@@ -2618,6 +2618,10 @@ CONTAINS
 
     END SELECT
 
+    ! Respect also the temporary memory in the total amount of memory used.
+    IF ((p_rheap%dtotalMem + rstorageNode%dmemBytes) .GT. p_rheap%dtotalMemMax) &
+      p_rheap%dtotalMemMax = p_rheap%dtotalMem + rstorageNode%dmemBytes
+    
     ! Release old data
     IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
     IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
@@ -2626,7 +2630,7 @@ CONTAINS
     IF (ASSOCIATED(p_rnode%p_Ddouble2D))  DEALLOCATE(p_rnode%p_Ddouble2D)
     IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
     
-    ! Correct the memory size
+    ! Correct the memory statistics
     p_rheap%dtotalMem = p_rheap%dtotalMem &
                       - p_rnode%dmemBytes + rstorageNode%dmemBytes
     IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
