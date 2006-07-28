@@ -536,7 +536,7 @@ CONTAINS
 
 !<input>
   ! The storage node whose associated storage should be initialised.
-  TYPE(t_storageNode), INTENT(IN) :: rstorageNode
+  TYPE(t_storageNode), INTENT(INOUT) :: rstorageNode
 
   ! Init new storage block identifier (ST_NEWBLOCK_ZERO, ST_NEWBLOCK_NOINIT,
   ! ST_NEWBLOCK_ORDERED). Specifies how to initialise the data block associated
