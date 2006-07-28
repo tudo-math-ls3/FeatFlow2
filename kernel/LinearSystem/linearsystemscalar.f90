@@ -127,14 +127,35 @@ MODULE linearsystemscalar
   ! Unidentified matrix format
   INTEGER, PARAMETER :: LSYSSC_MATRIXUNDEFINED = 0
   
-  ! Identifier for matrix format 1 - full matrix
+  ! Identifier for matrix format 1 - full matrix.
+  ! Important matrix properties defining the matrix:
+  ! NEQ = Number of rows, NCOLS = Number of columns, NA = Number of entries,
+  ! h_Da = handle to matrix entries
   INTEGER, PARAMETER :: LSYSSC_MATRIX1 = 1
   
   ! Identifier for matrix format 9 - CSR
+  ! Important matrix properties defining the matrix:
+  ! NEQ = Number of rows, NCOLS = Number of columns, NA = Number of entries,
+  ! h_Da        = handle to matrix entries,
+  ! h_Kcol      = handle to column structure,
+  ! h_Kld       = handle to row structure
+  ! h_Kdiagonal = handle to diagonal pointer
   INTEGER, PARAMETER :: LSYSSC_MATRIX9 = 9
 
   ! Identifier for matrix format 7 - CSR with diagonal element in front
+  ! Important matrix properties defining the matrix:
+  ! NEQ = Number of rows, NCOLS = Number of columns, NA = Number of entries,
+  ! h_Da        = handle to matrix entries,
+  ! h_Kcol      = handle to column structure,
+  ! h_Kld       = handle to row structure
   INTEGER, PARAMETER :: LSYSSC_MATRIX7 = 7
+
+  ! Identifier for matrix format D - Diagonal matrix, only entries on the
+  ! main diagonal.
+  ! Important matrix properties defining the matrix:
+  ! NEQ = NCOLS = NA = Number of rows = Number of columns = Number of entries,
+  ! h_Da        = handle to matrix entries
+  INTEGER, PARAMETER :: LSYSSC_MATRIXD = 20
 
 !</constantblock>
 
@@ -939,6 +960,29 @@ CONTAINS
           STOP
         END SELECT
         
+      CASE (LSYSSC_MATRIXD)
+      
+        ! Take care of the precision of the entries
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Format D multiplication
+          SELECT CASE (rx%cdataType)
+          
+          CASE (ST_DOUBLE)
+            ! double precision matrix, double precision vectors
+            CALL lsyssc_LATXDdoubledouble (rmatrix,rx,ry,cx,cy)
+          
+          CASE DEFAULT
+            PRINT *,'Only double precision vectors supported for now in MV!'
+            STOP
+            
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'Only double precision matrices supported for now in MV!'
+          STOP
+        END SELECT
+
       CASE DEFAULT
         PRINT *,'Unknown matrix format in MV-multiplication!'
         STOP
@@ -995,6 +1039,29 @@ CONTAINS
           STOP
         END SELECT
         
+      CASE (LSYSSC_MATRIXD)
+      
+        ! Take care of the precision of the entries
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Format D multiplication
+          SELECT CASE (rx%cdataType)
+          
+          CASE (ST_DOUBLE)
+            ! double precision matrix, double precision vectors
+            CALL lsyssc_LATXDdoubledouble (rmatrix,rx,ry,cx,cy)
+          
+          CASE DEFAULT
+            PRINT *,'Only double precision vectors supported for now in MV!'
+            STOP
+            
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'Only double precision matrices supported for now in MV!'
+          STOP
+        END SELECT
+
       CASE DEFAULT
         PRINT *,'Unknown matrix format in MV-multiplication!'
         STOP
@@ -1104,6 +1171,65 @@ CONTAINS
       ELSE 
         ! cx = 0. The formula is just a scaling of the vector ry!
         CALL lalg_scaleVectorDble(p_Dy,cy)
+      ENDIF
+      
+    END SUBROUTINE
+   
+    !**************************************************************
+    ! Format D (diagonal matrix) multiplication
+    ! double precision matrix,
+    ! double precision vectors
+    ! As we have  diagonal matrix, this is used for both, MV and
+    ! tranposed MV.
+    
+    SUBROUTINE lsyssc_LATXDdoubledouble (rmatrix,rx,ry,cx,cy)
+
+    ! Save arguments as above - given as parameters as some compilers
+    ! might have problems with scoping units...
+    TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
+    TYPE(t_vectorScalar), INTENT(IN)                  :: rx
+    REAL(DP), INTENT(IN)                              :: cx
+    REAL(DP), INTENT(IN)                              :: cy
+    TYPE(t_vectorScalar), INTENT(INOUT)               :: ry
+
+    REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
+    REAL(DP) :: dtmp
+    INTEGER(PREC_VECIDX) :: irow,NEQ
+
+      ! Get the matrix - it's an 1D array
+      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
+      
+      ! Get NEQ - from the matrix, not from the vector!
+      NEQ = rmatrix%NEQ
+
+      ! Get the vectors
+      CALL lsyssc_getbase_double (rx,p_Dx)
+      CALL lsyssc_getbase_double (ry,p_Dy)
+      
+      ! Perform the multiplication
+      IF (cx .NE. 0.0_DP) THEN
+      
+        IF (cy .EQ. 0.0_DP) THEN
+        
+          ! cy = 0. Multiply A with X and write to Y.
+          DO irow = 1,NEQ
+            p_Dy(irow) = p_Da(irow)*p_Dx(irow)
+          END DO
+          
+        ELSE
+        
+          ! Full multiplication
+          DO irow = 1,NEQ
+            p_Dy(irow) = p_Dy(irow) + p_Da(irow)*p_Dx(irow) 
+          END DO
+        
+        END IF
+        
+      ELSE 
+      
+        ! cx = 0. The formula is just a scaling of the vector ry!
+        CALL lalg_scaleVectorDble(p_Dy,cy)
+        
       ENDIF
       
     END SUBROUTINE
@@ -1534,6 +1660,8 @@ CONTAINS
             rdestMatrix%NEQ+1, ST_INT, &
             rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
 
+      CASE (LSYSSC_MATRIXD)
+        ! Nothing to do
       END SELECT
     END SELECT
     
@@ -1588,7 +1716,7 @@ CONTAINS
       ! And at last recreate the arrays.
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
         ! Create a new content array in the same data type as the original matrix
         CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
             rdestMatrix%NA, rsourceMatrix%cdataType, &
@@ -1697,6 +1825,17 @@ CONTAINS
         END IF
       END IF
       
+    CASE (LSYSSC_MATRIXD)
+    
+      ! Check length of DA
+      IF (rdestMatrix%h_DA .NE. ST_NOHANDLE) THEN
+        CALL storage_getsize (rdestMatrix%h_DA,isize)
+        IF (isize .NE. rdestMatrix%NA) THEN
+          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          STOP
+        END IF
+      END IF
+
     END SELECT
 
   CONTAINS
@@ -1746,6 +1885,9 @@ CONTAINS
         rmatrix%h_Kld = ST_NOHANDLE
         rmatrix%h_Kcol = ST_NOHANDLE
         
+      CASE (LSYSSC_MATRIXD)
+        ! Nothing to do
+
       END SELECT
 
       ! Reset the ownership-status
@@ -1797,6 +1939,9 @@ CONTAINS
         rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
       
+      CASE (LSYSSC_MATRIXD)
+        ! Nothing to do
+
       END SELECT
       
       ! Indicate via the matrixSpec-flag that we are not
@@ -1925,6 +2070,9 @@ CONTAINS
             
           END IF
         
+        CASE (LSYSSC_MATRIXD)
+          ! Nothing to do
+
         END SELECT
       
       END IF
@@ -1949,6 +2097,9 @@ CONTAINS
         CALL storage_copy (rsourceMatrix%h_Kcol,rdestMatrix%h_Kcol)
         CALL storage_copy (rsourceMatrix%h_Kld,rdestMatrix%h_Kld)
       
+      CASE (LSYSSC_MATRIXD)
+        ! Nothing to do
+
       END SELECT
       
       ! Indicate via the matrixSpec-flag that we are the owner of the structure.
@@ -1971,7 +2122,7 @@ CONTAINS
     
       ! This is a matrix-dependent task
       SELECT CASE (rmatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
         ! Release the handles from the heap?
         ! Only release it if the data belongs to this matrix.
         IF (brelease .AND. &
@@ -2011,7 +2162,7 @@ CONTAINS
 
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
         rdestMatrix%h_Da = rsourceMatrix%h_Da
       END SELECT
       
@@ -2078,7 +2229,7 @@ CONTAINS
         
         ! Which source matrix do we have?  
         SELECT CASE (rsourceMatrix%cmatrixFormat)
-        CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+        CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
         
           IF (rdestMatrix%h_Da .NE. ST_NOHANDLE) THEN
         
@@ -2110,7 +2261,7 @@ CONTAINS
       !
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
         CALL storage_copy (rsourceMatrix%h_Da,rdestMatrix%h_Da)
       END SELECT
       
@@ -2191,7 +2342,7 @@ CONTAINS
   ! Release the matrix data if the handle is not a copy of another matrix
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0) THEN
     SELECT CASE (rmatrix%cmatrixFormat)
-    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
       ! Release matrix data, structure 9,7
       IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
         CALL storage_free(rmatrix%h_DA)
@@ -2207,9 +2358,13 @@ CONTAINS
       IF (rmatrix%h_Kcol .NE. ST_NOHANDLE)      CALL storage_free(rmatrix%h_Kcol)
       IF (rmatrix%h_Kld .NE. ST_NOHANDLE)       CALL storage_free(rmatrix%h_Kld)
       IF (rmatrix%h_Kdiagonal .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_Kdiagonal)
+      
     CASE (LSYSSC_MATRIX7)
       IF (rmatrix%h_Kcol .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_Kcol)
       IF (rmatrix%h_Kld .NE. ST_NOHANDLE)  CALL storage_free(rmatrix%h_Kld)
+      
+    CASE (LSYSSC_MATRIXD)
+      ! Nothing to do
     END SELECT
   END IF
   
@@ -2252,7 +2407,7 @@ CONTAINS
 
   ! Which matrix type do we have?
   SELECT CASE (rmatrix%cmatrixFormat)
-  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
     ! Get the handle, the associated memory and clear that.
     IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
       CALL storage_clear(rmatrix%h_DA)
@@ -2265,10 +2420,10 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_convertMatrix (rmatrix,cmatrixFormat,bresortEntries)
+  SUBROUTINE lsyssc_convertMatrix (rmatrix,cmatrixFormat,bconvertEntries)
   
 !<description>
-  ! Tries to convert a matrix rmatrix into a different matrix format.
+  ! Tries to convert a matrix rmatrix in-situ into a different matrix format.
   ! If the matrix cannot be converted (due to format incompatibility),
   ! an error is thrown.
 !</description>
@@ -2277,10 +2432,10 @@ CONTAINS
   ! Destination format of the matrix. One of the LSYSSC_MATRIXx constants.
   INTEGER, INTENT(IN)                 :: cmatrixFormat
   
-  ! OPTIONAL: Whether to resort the entries of the matrix. Standard = TRUE.
-  ! If set to FALSE, the entries are not resorted; helpful to set up
-  ! convert only the structure, not the entries of a matrix.
-  LOGICAL, INTENT(IN), OPTIONAL       :: bresortEntries
+  ! OPTIONAL: Whether to convert the entries of the matrix. Standard = TRUE.
+  ! If set to FALSE, the entries are not converted, only the structure
+  ! is converted (thus leaving the entries to an undefined state).
+  LOGICAL, INTENT(IN), OPTIONAL       :: bconvertEntries
 !</input>
   
 !<inputoutput>
@@ -2304,7 +2459,7 @@ CONTAINS
   IF (rmatrix%NEQ .LE. 0) RETURN 
   
   bentries = .TRUE.
-  IF (PRESENT(bresortEntries)) bentries = bresortEntries
+  IF (PRESENT(bconvertEntries)) bentries = bconvertEntries
 
   ! Which matrix type do we have?
   SELECT CASE (rmatrix%cmatrixFormat)
@@ -2338,7 +2493,7 @@ CONTAINS
       
       ELSE
     
-        ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
+        ! Convert from structure 9 to structure 7. Use the sortCSRxxxx 
         ! routine below.
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
@@ -2357,12 +2512,48 @@ CONTAINS
 
       END IF
 
+    CASE (LSYSSC_MATRIXD)
+
+      IF (bentries .AND. (rmatrix%h_DA .NE. ST_NOHANDLE)) THEN
+      
+        ! Convert from structure 9 to structure D by copying the
+        ! diagonal to the front and reallocation of the memory
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+        
+          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+          DO i=1,rmatrix%NEQ
+            p_Ddata(i) = p_Ddata(p_Kld(i))
+          END DO
+
+          rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+          
+        CASE DEFAULT
+          PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
+          STOP
+        END SELECT
+
+      END IF
+    
+      ! Release unused information
+      CALL storage_free (rmatrix%h_Kdiagonal)
+      CALL storage_free (rmatrix%h_Kcol)
+      CALL storage_free (rmatrix%h_Kld)
+      
+      ! Reallocate entry-array to have only the diagonal entries.
+      CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
+                            rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
+    
+      rmatrix%NA = rmatrix%NEQ
+
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
       STOP
     END SELECT
 
   CASE (LSYSSC_MATRIX7)
+  
     SELECT CASE (rmatrix%cmatrixFormat)
     CASE (LSYSSC_MATRIX9)
 
@@ -2399,6 +2590,40 @@ CONTAINS
       
       END IF
       
+    CASE (LSYSSC_MATRIXD)
+
+      IF (bentries .AND. (rmatrix%h_DA .NE. ST_NOHANDLE)) THEN
+      
+        ! Convert from structure 7 to structure D by copying the
+        ! diagonal to the front and reallocation of the memory
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+        
+          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+          DO i=1,rmatrix%NEQ
+            p_Ddata(i) = p_Ddata(p_Kld(i))
+          END DO
+
+          rmatrix%cmatrixFormat = LSYSSC_MATRIXD
+          
+        CASE DEFAULT
+          PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
+          STOP
+        END SELECT
+
+      END IF
+    
+      ! Release unused information
+      CALL storage_free (rmatrix%h_Kcol)
+      CALL storage_free (rmatrix%h_Kld)
+      
+      ! Reallocate entry-array to have only the diagonal entries.
+      CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
+                            rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
+                            
+      rmatrix%NA = rmatrix%NEQ
+    
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
       STOP
@@ -3190,6 +3415,42 @@ CONTAINS
         ! Remove temp matrix
         CALL lsyssc_releaseMatrix(rtempMatrix)
     
+      CASE (LSYSSC_MATRIXD)
+        ! Duplicate the matrix before resorting.
+        ! We need either a copy only of the structure or of the full matrix.
+        IF (.NOT. bsortEntries) THEN
+          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
+                                       LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
+        ELSE
+          CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
+                                       LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+        END IF
+        
+        ! Get the structure of the original and the temporary matrix
+        
+        IF (bsortEntries) THEN
+        
+          ! Sort entries; there is no structure.
+          SELECT CASE (rmatrix%cdataType)
+          CASE (ST_DOUBLE)
+            ! Double precision version
+            CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+            CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
+            CALL lalg_vectorSortDble (p_DdataTmp, p_Ddata, Itr1)
+          CASE (ST_SINGLE)
+            ! Single precision version
+            CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+            CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+            CALL lalg_vectorSortSngl (p_FdataTmp, p_Fdata, Itr1)
+          CASE DEFAULT
+            PRINT *,'lsyssc_sortMatrix: Unsupported data type.'
+            STOP
+          END SELECT
+        END IF
+
+        ! Remove temp matrix
+        CALL lsyssc_releaseMatrix(rtempMatrix)
+
       CASE DEFAULT
         PRINT *,'lsyssc_sortMatrix: Unsupported matrix format!'
         STOP
@@ -4495,6 +4756,7 @@ CONTAINS
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
         STOP
       END SELECT
+      
     CASE (ST_SINGLE)
       CALL storage_getbase_single (rmatrix%h_Da,p_Fa)
       fmyscale = REAL(dscale * rmatrix%dscaleFactor,SP)
@@ -4521,11 +4783,75 @@ CONTAINS
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
         STOP
       END SELECT
+
     CASE DEFAULT
       PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
       STOP
     END SELECT
     
+  CASE (LSYSSC_MATRIXD)
+    
+    ! Data type?
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
+      dmyscale = dscale * rmatrix%dscaleFactor
+
+      ! And the vector(s)?
+      SELECT CASE (rvectorSrc%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
+        CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(i)
+        END DO
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
+        CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(i)
+        END DO
+        
+      CASE DEFAULT
+        PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        STOP
+      END SELECT
+      
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (rmatrix%h_Da,p_Fa)
+      fmyscale = REAL(dscale * rmatrix%dscaleFactor,SP)
+
+      ! And the vector(s)?
+      SELECT CASE (rvectorSrc%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
+        CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(i)
+        END DO
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
+        CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
+        ! Let's go...
+        DO i=1,rvectorSrc%NEQ
+          p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(i)
+        END DO
+        
+      CASE DEFAULT
+        PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        STOP
+      END SELECT
+
+    CASE DEFAULT
+      PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
+      STOP
+    END SELECT
+
   CASE DEFAULT
     PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix format!'
     STOP
@@ -4901,7 +5227,29 @@ CONTAINS
     CALL storage_getbase_int (rsourceMatrix%h_Kld,p_KldSource)
     CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
     CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
-      
+
+  CASE (LSYSSC_MATRIXD)
+
+    ! Restore crucial format-specific data
+    rdestMatrix%h_DA        = rtempMatrix%h_DA
+    
+    ! And finally copy the data. 
+    SELECT CASE (rsourceMatrix%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
+      CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
+      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
+      CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
+      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+
+    CASE DEFAULT
+      PRINT *,'storage_copyMatrix: Unsupported data type!'
+      STOP
+    END SELECT
+
   CASE DEFAULT
     PRINT *,'lsyssc_copyMatrix: Unsupported matrix format!'
     STOP
@@ -5482,6 +5830,9 @@ CONTAINS
           CALL lsyssc_pivotiseMatrix7double (rmatrix%NEQ, p_KcolDest, p_KldDest)
         END IF
         
+      CASE (LSYSSC_MATRIXD)
+        ! Nothing to do
+
       CASE DEFAULT
         PRINT *,'lsyssc_transposeMatrix: Unsupported matrix format.'
         STOP
@@ -5598,12 +5949,16 @@ CONTAINS
           CALL lsyssc_pivotiseMatrix7double (rmatrix%NEQ, p_KcolDest, p_KldDest, p_DaDest)
         END IF
       
+      CASE (LSYSSC_MATRIXD)
+        ! Nothing to do
+
       CASE DEFAULT
         PRINT *,'lsyssc_transposeMatrix: Unsupported matrix format.'
         STOP
       END SELECT
       
     CASE DEFAULT ! = LSYSSC_TR_ALL 
+    
     END SELECT
   
     ! Exchange NEQ and NCOLS as these always describe the actual matrix.
@@ -5674,7 +6029,7 @@ CONTAINS
 
   ! Which matrix structure do we have?
   SELECT CASE (rmatrixScalar%cmatrixFormat) 
-  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
     
     ! Check if the matrix entries exist. If not, allocate the matrix.
     IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
