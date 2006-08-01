@@ -580,10 +580,10 @@ CONTAINS
 
   ! Get the data array
   CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
-  
+
   ! Modify the starting address/length to get the real array.
   p_Ddata => p_Ddata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
-  
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -703,7 +703,7 @@ CONTAINS
     END IF
   END DO
   
-  rx%NEQ = n
+  rx%NEQ = n-1
   rx%nblocks = SIZE(Isize)
   
   ! The data of the vector belongs to us (we created the handle), 
