@@ -2589,24 +2589,24 @@ CONTAINS
         SELECT CASE (rstorageNode%idataType)
         CASE (ST_DOUBLE)
           ! Copy by hand
-          DO j=1,MIN(SIZE(p_rnode%p_Ddouble2D,2),Isize2DOld(2))
-            DO i=1,SIZE(p_rnode%p_Ddouble2D,1)
+          DO j=1,MIN(SIZE(rstorageNode%p_Ddouble2D,2),Isize2DOld(2))
+            DO i=1,SIZE(rstorageNode%p_Ddouble2D,1)
               rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
             END DO
           END DO
             
         CASE (ST_SINGLE)
           ! Copy by hand
-          DO j=1,MIN(SIZE(p_rnode%p_Fsingle2D,2),Isize2DOld(2))
-            DO i=1,SIZE(p_rnode%p_Fsingle2D,1)
+          DO j=1,MIN(SIZE(rstorageNode%p_Fsingle2D,2),Isize2DOld(2))
+            DO i=1,SIZE(rstorageNode%p_Fsingle2D,1)
               rstorageNode%p_Fsingle2D(i,j) = p_rnode%p_Fsingle2D(i,j)
             END DO
           END DO
 
         CASE (ST_INT)
           ! Copy by hand
-          DO j=1,MIN(SIZE(p_rnode%p_Iinteger2D,2),Isize2DOld(2))
-            DO i=1,SIZE(p_rnode%p_Iinteger2D,1)
+          DO j=1,MIN(SIZE(rstorageNode%p_Iinteger2D,2),Isize2DOld(2))
+            DO i=1,SIZE(rstorageNode%p_Iinteger2D,1)
               rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
             END DO
           END DO
@@ -2616,7 +2616,8 @@ CONTAINS
       END IF
       
     CASE DEFAULT
-      PRINT *, 'Error in storage_realloc: Handle ',ihandle,' is neither 1- nor 2- dimensional!'
+      PRINT *, 'Error in storage_realloc: Handle ',ihandle, &
+               ' is neither 1- nor 2- dimensional!'
       STOP
 
     END SELECT
