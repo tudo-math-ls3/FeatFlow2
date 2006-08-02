@@ -1813,12 +1813,12 @@ CONTAINS
         
         ! Be careful, matrix may be transposed.
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
-          IF (isize .NE. rdestMatrix%NEQ) THEN
+          IF (isize .NE. rdestMatrix%NEQ+1) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
             STOP
           END IF
         ELSE
-          IF (isize .NE. rdestMatrix%NCOLS) THEN
+          IF (isize .NE. rdestMatrix%NCOLS+1) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
             STOP
           END IF
