@@ -271,6 +271,16 @@ CONTAINS
                  END IF
 
                END IF
+               
+               ! If we have no-slip boundary conditions, the X- and Y-velocity
+               ! matrices are 'decoupled' as they are modified differently
+               ! by the boundary-conditions implementation filter!
+               ! In this case, change rproblem%bdecoupledXY from FALSE to TRUE
+               ! to indicate that.
+               IF ( ((sbdex1 .EQ. '') .AND. (sbdex2 .NE. '')) .OR.&
+                    ((sbdex1 .NE. '') .AND. (sbdex2 .EQ. '')) ) THEN
+                 rproblem%bdecoupledXY = .TRUE.
+               END IF
              
              CASE DEFAULT
                PRINT *,'Unknown boundary condition'
@@ -306,6 +316,43 @@ CONTAINS
   
   ! ***************************************************************************
 
+  SUBROUTINE c2d2_parseFBDconditions (rproblem)
+
+!<description>
+  ! This initialises the analytic boundary conditions for fictitious boundary
+  ! components in the problem and saves them to the problem structure.
+!</description>
+  
+!<inputoutput>
+  ! A problem astructure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    ! An identifier array for the equations to be tackled when discretising
+    ! boundary conditions on fictitious boundary components
+    INTEGER, DIMENSION(2) :: Iequations
+    
+    ! A structure identifying the fictitious boundary component
+    TYPE(t_fictBoundaryRegion) :: rfictBoundaryRegion
+
+    ! A set of variables describing the analytic boundary conditions.    
+    TYPE(t_bcRegion), POINTER :: p_rbcRegion
+    
+    ! Add a new fictitious boundary object It should impose Dirichlet
+    ! boundary conditions in the domain in the one and only solution component.
+    ! We use the default initialisation of rfictBoundaryRegion and only
+    ! change the name of the component.
+    rfictBoundaryRegion%sname = 'CIRCLE'
+    Iequations = (/1,2/)    ! 1=x, 2=y-velocity
+    CALL bcond_newDirichletBConFictBD (rproblem%p_rboundaryConditions,Iequations,&
+                                       rfictBoundaryRegion,p_rbcRegion)    
+
+  END SUBROUTINE  
+  
+  ! ***************************************************************************
+
 !<subroutine>
 
   SUBROUTINE c2d2_initAnalyticBC (rproblem)
@@ -333,10 +380,12 @@ CONTAINS
     ! This initialises rproblem%p_rboundaryConditions by parsing DAT-file 
     ! parameters in the parameter list rproblem%rparamList
     CALL c2d2_parseBDconditions (rproblem)
-    
+
+    ! Initialise the boundary conditions of fictitious boundary components
+    CALL c2d2_parseFBDconditions (rproblem)    
+
     ! Install the analytic boundary conditions into all discretisation
     ! structures on all levels.
-                               
     DO i=rproblem%NLMIN,rproblem%NLMAX
       
       ! Ask the problem structure to give us the discretisation structure...
@@ -376,6 +425,7 @@ CONTAINS
 
   ! Pointer to structure for saving discrete BC's:
   TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+  TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
     
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
@@ -415,7 +465,21 @@ CONTAINS
                                 .FALSE.,getBoundaryValues, &
                                 rproblem%rcollection,BCASM_DISCFORDEFMAT)
       END IF
-                                       
+                
+      ! The same way, discretise the fictitious boundary conditions and hang
+      ! them in into the matrix/vectors.
+      NULLIFY(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      IF (i .EQ. rproblem%NLMAX) THEN
+        CALL bcasm_discretiseFBC (p_rdiscretisation,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
+                                  getBoundaryValuesFBC,rproblem%rcollection)
+      ELSE
+        CALL bcasm_discretiseFBC (p_rdiscretisation,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
+                                  getBoundaryValuesFBC,rproblem%rcollection,&
+                                  BCASM_DISCFORDEFMAT)
+      END IF
+
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
       ! vector.
@@ -427,6 +491,11 @@ CONTAINS
       ! used for the creation of solutions on lower levels.
       ! This allows us to filter this vector when we create it.
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBC => p_rdiscreteBC
+      
+      ! The same for the fictitious boudary boundary conditions.
+      p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
+      p_rmatrix%p_rdiscreteBCfict => p_rdiscreteFBC
+      rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
       
     END DO
 
@@ -440,6 +509,11 @@ CONTAINS
     
     p_rrhs%p_rdiscreteBC => p_rdiscreteBC
     p_rvector%p_rdiscreteBC => p_rdiscreteBC
+
+    ! The same with the fictitious boundary BC's
+    p_rdiscreteFBC => rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscreteFBC
+    p_rrhs%p_rdiscreteBCfict => p_rdiscreteFBC
+    p_rvector%p_rdiscreteBCfict => p_rdiscreteFBC
                 
   END SUBROUTINE
 
@@ -480,13 +554,22 @@ CONTAINS
     ! filtering the vector.
     CALL vecfil_discreteBCsol (p_rvector)
     
+    ! Implement discrete boundary conditions of fictitious boundary components
+    ! into RHS vector by filtering the vector.
+    CALL vecfil_discreteFBCrhs (p_rrhs)
+
+    ! Implement discrete boundary conditions of fictitioous boundary comnponents
+    ! into solution vector by filtering the vector.
+    CALL vecfil_discreteFBCsol (p_rvector)
+    
     ! Implement discrete boundary conditions into the matrices on all 
     ! levels, too.
     ! In fact, this modifies the B-matrices. The A-matrices are overwritten
     ! later and must then be modified again!
     DO i=rproblem%NLMIN ,rproblem%NLMAX
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      CALL matfil_discreteBC (p_rmatrix)
+      CALL matfil_discreteBC (p_rmatrix)  ! standard boundary conditions
+      CALL matfil_discreteFBC (p_rmatrix)  ! fictitious boundary boundary conditions
     END DO
 
   END SUBROUTINE
@@ -514,6 +597,9 @@ CONTAINS
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
       ! Release our discrete version of the boundary conditions
       CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      
+      ! as well as the discrete version of the BC's for fictitious boundaries
+      CALL bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
 
       ! ...and also the corresponding analytic description.
       CALL bcond_doneBC (rproblem%p_rboundaryConditions)

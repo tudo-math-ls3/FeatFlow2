@@ -69,6 +69,9 @@ MODULE cc2dmediumm2basic
     ! A variable describing the discrete boundary conditions fo the velocity
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
   
+    ! A structure for discrete fictitious boundary conditions
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+
   END TYPE
   
 !</typeblock>
@@ -92,6 +95,14 @@ MODULE cc2dmediumm2basic
 
     ! A solution vector and a RHS vector on the finest level. 
     TYPE(t_vectorBlock) :: rvector,rrhs
+    
+    ! Fla if the X- and Y-velocity is decoupled (i.e. yield different 
+    ! matrices). This is the case e.g. for no-slip boundary conditions
+    ! where then implementation of the BC's into the first velocity
+    ! matrix must not affect the 2nd velocity matrix!
+    ! This value must be initialised before the matrices are set
+    ! up and must not be changed afterwards.
+    LOGICAL :: bdecoupledXY
 
     ! A variable describing the analytic boundary conditions.    
     TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
@@ -170,6 +181,9 @@ MODULE cc2dmediumm2basic
 ! UPSAM                 | Stabilisation parameter
 ! INEUMANN              | =YES, if there is Neumann boundary in the problem.
 !                       | =NO, otherwise
+! DECOUPLEDXY           | =YES, if X- and Y-velocity matrix is different
+!                       |       (e.g. due to no-slip boundary conditions)
+!                       | =NO, if they are identical
 !
 ! On every level between NLMIN and NLMAX:
 !

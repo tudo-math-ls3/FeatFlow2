@@ -84,6 +84,9 @@ CONTAINS
     dnu = 1E0_DP/dnu
     rproblem%dnu = dnu
     
+    ! By default, X- and Y-velocity matrix are coupled.
+    rproblem%bdecoupledXY = .FALSE.
+    
     ! Add the (global) viscosity parameter
     CALL collct_setvalue_real(rproblem%rcollection,'NU',dnu,.TRUE.)
 

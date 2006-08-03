@@ -1768,7 +1768,7 @@ CONTAINS
     
     INTEGER(I32), DIMENSION(FBCASM_MAXSIM), TARGET      :: Isubset
     INTEGER, DIMENSION(FBCASM_MAXSIM), TARGET           :: Iinside
-    REAL(DP), DIMENSION(FBCASM_MAXSIM,1), TARGET        :: Dsubset
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET     :: p_Dsubset
     INTEGER(I32) :: isubsetStart, isubsetLength, icurrentDof
     
     TYPE(t_discreteFBCevaluation), DIMENSION(DISCFBC_MAXDISCBC) :: Revaluation
@@ -1808,6 +1808,9 @@ CONTAINS
     nequations = rbcRegion%nequations
     p_rdirichletFBCs%ncomponents = nequations
     p_rdirichletFBCs%Icomponents(1:nequations) = rbcRegion%Iequations(1:nequations)
+    
+    ! Allocate memory for intermediate values
+    ALLOCATE(p_Dsubset(FBCASM_MAXSIM,1,nequations))
     
     ! We have to collect all DOF's and their values that belong to our current
     ! fictitious boundary object. Depending on the element type we will loop
@@ -1859,7 +1862,7 @@ CONTAINS
           Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
           Revaluation(i)%nvalues     = isubsetLength
           Revaluation(i)%p_Iwhere    => Isubset
-          Revaluation(i)%p_Dvalues   => Dsubset
+          Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
           Revaluation(i)%p_Iinside   => Iinside
         END DO
 
@@ -1879,7 +1882,7 @@ CONTAINS
             IF (Iinside(i) .NE. 0) THEN
               icurrentDof = icurrentDof + 1
               DO j=1,nequations
-                p_Ddofs(j,icurrentDof) = Dsubset(i,j)
+                p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
               END DO
               p_Idofs(icurrentDof) = isubsetStart+i-1
             END IF
@@ -1911,7 +1914,7 @@ CONTAINS
       ! P1/Q1/Q2 discretisation
       DO isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
       
-        isubsetLength = p_rtriangulation%NVT-isubsetStart+1
+        isubsetLength = MIN(p_rtriangulation%NMT-isubsetStart+1,FBCASM_MAXSIM)
       
         ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
         ! subset we evaluate.
@@ -1927,7 +1930,7 @@ CONTAINS
           END IF
           Revaluation(i)%nvalues     = isubsetLength
           Revaluation(i)%p_Iwhere    => Isubset
-          Revaluation(i)%p_Dvalues   => Dsubset
+          Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
           Revaluation(i)%p_Iinside   => Iinside
         END DO
         
@@ -1947,7 +1950,7 @@ CONTAINS
             IF (Iinside(i) .NE. 0) THEN
               icurrentDof = icurrentDof + 1
               DO j=1,nequations
-                p_Ddofs(j,icurrentDof) = Dsubset(i,j)
+                p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
               END DO
               p_Idofs(icurrentDof) = isubsetStart+i-1
             END IF
@@ -1983,9 +1986,18 @@ CONTAINS
       CALL storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
                             h_Idofs, ST_NEWBLOCK_NOINIT)
       p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
+    ELSE
+      ! Nothging inside; release arrays
+      IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+        CALL storage_free (h_Ddofs)
+      END IF
+      CALL storage_free (h_Idofs)
     END IF
 
     p_rdirichletFBCs%nDOF = icurrentDof
+    
+    ! Release temporary data
+    DEALLOCATE(p_Dsubset)
     
   CONTAINS
   

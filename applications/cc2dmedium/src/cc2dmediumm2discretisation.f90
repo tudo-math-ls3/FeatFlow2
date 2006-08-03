@@ -376,11 +376,22 @@ CONTAINS
       ! the entries.
       CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
                   p_rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-                  
-      ! The matrix A22 is identical to A11! So mirror A11 to A22 sharing the
-      ! structure and the content.
-      CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
-                  p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        
+      IF (.NOT. rproblem%bdecoupledXY) THEN          
+        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
+        ! A22 is identical to A11! So mirror A11 to A22 sharing the
+        ! structure and the content.
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                    p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        ! Save the value of bdecoupledXY to the collection.
+        CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',NO,.TRUE.)
+      ELSE
+        ! Otherwise, create another copy of the Laplace matrix.
+        CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+                    p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        ! Save the value of bdecoupledXY to the collection.
+        CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',YES,.TRUE.)
+      END IF
 
       ! Manually change the discretisation structure of the Y-velocity 
       ! matrix to the Y-discretisation structure.
@@ -527,6 +538,8 @@ CONTAINS
     ! Delete the variables from the collection.
     CALL collct_deletevalue (rproblem%rcollection,'RHS')
     CALL collct_deletevalue (rproblem%rcollection,'SOLUTION')
+    
+    CALL collct_deletevalue (rproblem%rcollection,'DECOUPLEDXY')
 
   END SUBROUTINE
 

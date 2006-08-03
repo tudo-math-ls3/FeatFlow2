@@ -8,7 +8,9 @@
 [PARAMTRIANG]
 
 # Filename of the parametrisation of the domain
+#sParametrisation = './pre/dedeobstacle.prm'
 sParametrisation = './pre/bench1.prm'
 
 # Filename of the coarse grid mesh
+#sMesh = './pre/dedeobstacle.tri'
 sMesh = './pre/bench1.tri'

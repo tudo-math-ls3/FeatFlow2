@@ -78,6 +78,7 @@ CONTAINS
     
     ! Discrete boundary conditions for the output vector
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
 
     ! Get the solution vector from the problem structure.
     p_rvector => rproblem%rvector
@@ -126,8 +127,19 @@ CONTAINS
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => p_rdiscreteBC
     
+    ! The same way, discretise boundary conditions of fictitious boundary components.
+    NULLIFY(p_rdiscreteFBC)
+    CALL bcasm_discretiseFBC (rprjDiscretisation,p_rdiscreteFBC, &
+                              .FALSE.,getBoundaryValuesFBC,rproblem%rcollection,&
+                              BCASM_DISCFORSOL)
+    rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
+    
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
+
+    ! Filter the solution vector to implement discrete BC's for fictitious 
+    ! boundary components.
+    CALL vecfil_discreteFBCsol (rprjVector)
     
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     !
@@ -139,7 +151,7 @@ CONTAINS
     ! start the postprocessing. Call the GMV library to write out
     ! a GMV file for our solution.
     ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u2.gmv')
+    CALL GMVOF0 (ihandle,-2,'gmv/u.gmv')
     CALL GMVHEA (ihandle)
     CALL GMVTRI (ihandle,p_rtriangulation%Itria,1,NCELLS,NVERTS)
     
@@ -159,6 +171,7 @@ CONTAINS
     
     ! Throw away the discrete BC's - not used anymore.
     CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteFBC (p_rdiscreteFBC)
     
     ! Release the auxiliary discretisation structure.
     ! We only release the two substructures we manually created before.

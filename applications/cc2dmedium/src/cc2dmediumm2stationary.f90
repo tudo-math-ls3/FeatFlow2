@@ -86,7 +86,7 @@ MODULE cc2dmediumm2stationary
     
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
-    TYPE(t_filterChain), DIMENSION(1) :: RfilterChain
+    TYPE(t_filterChain), DIMENSION(2) :: RfilterChain
     
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock) :: rprojection
@@ -155,7 +155,7 @@ CONTAINS
     TYPE(t_convUpwind) :: rupwind
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+    TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
 
       ! Get minimum/maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -196,10 +196,19 @@ CONTAINS
       ! implementation filter for defect vectors:
       RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
+      ! The second filter filters for boundary conditions of fictitious boundary
+      ! components
+      RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
+      
       ! Apply the filter chain to the defect vector.
       ! As the filter consists only of an implementation filter for
       ! boundary conditions, this implements the boundary conditions
       ! into the defect vector.
+      !
+      ! Note that the above matrix did not contain any rows replaced by
+      ! unit vectorsd according to boundary conditions! This is even
+      ! not necessary, as the boundary conditions only need to be imposed
+      ! to the defect vectp
       CALL filter_applyFilterChainVec (rd, RfilterChain)
       
       ! Should we discretise the Navier-Stokes nonlinearity?
@@ -303,7 +312,7 @@ CONTAINS
     TYPE(t_convUpwind) :: rupwind
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+    TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
 
 !    DEBUG!!!:
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_temp1,p_temp2,p_da
@@ -340,6 +349,10 @@ CONTAINS
       ! Initialise the first filter of the filter chain as boundary
       ! implementation filter for defect vectors:
       RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+      
+      ! The second filter filters for boundary conditions of fictitious boundary
+      ! components
+      RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
       
       ! We now want to calculate a new OMEGA parameter
       ! with OMGMIN < OMEGA < OMGMAX.
@@ -552,6 +565,7 @@ CONTAINS
     ! local variables
     INTEGER :: istokes, iupwind,iadaptivematrix
     REAL(DP) :: dadmatthreshold
+    LOGICAL :: bdecoupledXY
   
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -568,14 +582,14 @@ CONTAINS
     TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+    TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
 
-!    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
-!    call lsysbl_getbase_double (rd,p_def)
-!    call lsysbl_getbase_double (rx,p_vec)
-!    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
-!    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',NLMAX)
-!    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
+    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
+    call lsysbl_getbase_double (rd,p_def)
+    call lsysbl_getbase_double (rx,p_vec)
+    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
+    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',NLMAX)
+    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
 
       ! Get minimum and maximum level from the collection
       NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -585,11 +599,17 @@ CONTAINS
       iadaptivematrix = collct_getvalue_int (p_rcollection,'IADAPTIVEMATRIX')
       dadmatthreshold = collct_getvalue_real (p_rcollection,'dAdMatThreshold')
       
+      bdecoupledXY = collct_getvalue_int (p_rcollection,'DECOUPLEDXY') == YES
+      
       ! Set up a filter that modifies the block vectors/matrix
       ! according to boundary conditions.
       ! Initialise the first filter of the filter chain as boundary
       ! implementation filter for defect vectors:
       RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+      
+      ! The second filter filters for boundary conditions of fictitious boundary
+      ! components
+      RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
       
       ! Get the interlevel projection structure and the temporary vector
       ! from the collection.
@@ -724,6 +744,18 @@ CONTAINS
                                             p_rmatrix%RmatrixBlock(1,1),&
                                             iadaptivematrix, dadmatthreshold)
         END IF
+        
+        ! In case the X- and Y-velocity is 'coupled' in the sense that the
+        ! matrices are the same, that's all we have to do. If the X- and
+        ! Y-velocity is 'decoupled' however (because of no-slip boundary
+        ! conditions which impose different BC's in the first than in the
+        ! 2nd matrix), we have to copy the entries of submatrix (1,1)
+        ! to submatrix (2,2) before imposing boundary conditions.
+        IF (bdecoupledXY) THEN
+          CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                                       p_rmatrix%RmatrixBlock(2,2),&
+                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+        END IF
       
         ! Apply the filter chain to the matrix.
         ! As the filter consists only of an implementation filter for
@@ -743,7 +775,6 @@ CONTAINS
       ! factorisation of the matrices in UMFPACK-like solvers.
       CALL linsol_initData (p_rsolverNode, ierror)
       IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-      
       
       ! Finally solve the system. As we want to solve Ax=b with
       ! b being the real RHS and x being the real solution vector,
@@ -956,6 +987,9 @@ CONTAINS
       ! Therefore, create a filter chain with one filter only,
       ! which implements Dirichlet-conditions into a defect vector.
       rpreconditioner%RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+      
+      ! The second filter implements the fictitious boundary BC's
+      rpreconditioner%RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
 
       ! Figure out the name of the section that contains the information
       ! about the linear subsolver. Ask the parameter list from the INI/DAT file

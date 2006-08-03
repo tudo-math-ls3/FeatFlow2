@@ -287,7 +287,7 @@ CONTAINS
     ! Many solvers support preconditioners - we try to fetch the
     ! name of the preconditioner in-advance to prevent code
     ! duplication
-    CALL parlst_getvalue_string (p_rsection, 'ipreconditioner', sString,'')
+    CALL parlst_getvalue_string (p_rsection, 'spreconditioner', sString,'')
     spreconditioner = ''
     IF (sString .NE. '') READ (sString,*) spreconditioner
     
@@ -305,7 +305,7 @@ CONTAINS
                                       spreconditioner,nlevels,RfilterChain)
       END IF
       ! Init the solver node
-      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
+      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_Rfilter)
       
     CASE (LINSOL_ALG_JACOBI)
       ! Jacobi solver
@@ -334,7 +334,7 @@ CONTAINS
                                       spreconditioner,nlevels,RfilterChain)
       END IF
       ! Init the solver node
-      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner)
+      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter)
       
     CASE (LINSOL_ALG_UMFPACK4)
       ! UMFPACK4 solver

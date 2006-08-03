@@ -22,11 +22,11 @@ isolverType = 9
 
 # Minimum number of steps
 
-iminIterations     = 2
+nminIterations     = 2
 
 # Maximum number of steps
 
-imaxIterations     = 10
+nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations

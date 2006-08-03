@@ -22,11 +22,11 @@ isolverType = 9
 
 # Minimum number of steps
 
-iminIterations     = 2
+nminIterations     = 2
 
 # Maximum number of steps
 
-imaxIterations     = 10
+nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -46,7 +46,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 1
+ioutputLevel       = 2
 
 # ------General multigrid parameters, coarse grid correction--------------
 #
@@ -77,7 +77,8 @@ spostSmootherName  = 'CC-VANCA2DQ1TP0'
 # Name of the coarse grid solver. This is the name of another 
 # subsection in this file which describes the actual smoother.
 
-scoarseGridSolver  = 'CC-UMFPACK'
+#scoarseGridSolver  = 'CC-UMFPACK'
+scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
 
 # ========================================================================
 # The following section describes the parameters of the VANCA smoother.
@@ -106,6 +107,67 @@ nsmoothingSteps    = 4
 # Relaxation parameter
 
 domega             = 0.7
+
+# ========================================================================
+# The following section describes the parameters of the VANCA coarse grid
+# solver.
+# When a parameter is deleted or commented out, the standard value is used.
+
+########################
+[CC-VANCA2DQ1TP0-COARSE]
+########################
+
+# Type identifier of the solver that should be used.
+# 7=BiCGStab, 1=Defect correction
+
+isolverType        = 1
+
+# Minimum number of steps
+
+nminIterations     = 1
+
+# Maximum number of steps
+
+nmaxIterations     = 100
+
+# Damping of residuals, i.e. reduction of relative error 
+# on finest grid; smaller -> more iterations
+
+depsRel            = 0.01
+
+# Limit for residuals, i.e. absolute error on finest grid; 
+# The linear solver stops if both, absolute error < depsAbs and 
+# rel. error < depsRel
+
+depsAbs            = 0.01
+
+# Output level of the solver
+
+ioutputLevel       = 0
+
+# VANCA preconditioner
+
+spreconditioner = 'CC-VANCA2DQ1TP0-COARSEPRECOND'
+
+###############################
+[CC-VANCA2DQ1TP0-COARSEPRECOND]
+###############################
+
+# Preconditioner for the coarse grid solver: VANCA
+# 54=Vanca
+
+isolverType        = 54
+
+# Subtype identifier of the VANCA-type.
+# 0=general VANCA, 
+# 1=Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
+# discretisation
+
+isolverSubtype     = 1
+
+# Relaxation parameter
+
+domega             = 0.9
 
 
 # ========================================================================

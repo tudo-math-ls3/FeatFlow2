@@ -2050,8 +2050,8 @@ CONTAINS
   RECURSIVE SUBROUTINE linsol_doneDefCorr (rsolverNode)
   
 !<description>
-  ! This routine releases all temporary memory for the UMFPACK4 solver from
-  ! the heap.
+  ! This routine releases all temporary memory for the efect correction solver 
+  ! from the heap.
 !</description>
   
 !<inputoutput>
@@ -2065,6 +2065,10 @@ CONTAINS
     IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
       CALL linsol_releaseSolver(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
     END IF
+
+    ! Release memory if still associated
+    CALL linsol_doneDataDefCorr (rsolverNode, rsolverNode%isolverSubgroup)
+    CALL linsol_doneStructureDefCorr (rsolverNode, rsolverNode%isolverSubgroup)
     
     ! Release the subnode structure
     DEALLOCATE(rsolverNode%p_rsubnodeDefCorr)
@@ -2248,7 +2252,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_doneDataDefCorr (rsolverNode, isolverSUbgroup)
+  RECURSIVE SUBROUTINE linsol_doneDataDefCorr (rsolverNode, isolverSubgroup)
   
 !<description>
   ! Calls the doneData subroutine of the subsolver.
