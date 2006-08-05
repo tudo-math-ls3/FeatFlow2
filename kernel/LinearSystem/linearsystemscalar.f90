@@ -2465,7 +2465,7 @@ CONTAINS
   SELECT CASE (rmatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
   
-    SELECT CASE (rmatrix%cmatrixFormat)
+    SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX7)
     
       CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
@@ -2554,7 +2554,7 @@ CONTAINS
 
   CASE (LSYSSC_MATRIX7)
   
-    SELECT CASE (rmatrix%cmatrixFormat)
+    SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX9)
 
       ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
@@ -4552,7 +4552,7 @@ CONTAINS
   ! This is an auxiliary routine. It accepts a handle to an integer array
   ! and adds the value ivalue to each entry of this vector.
   ! This can be used e.g. to convert the index vector of a matrix
-  ! von 1-based to 0-based for an external library (UMFPACK).
+  ! from 1-based to 0-based for an external library (UMFPACK).
 
 !</description>
   
