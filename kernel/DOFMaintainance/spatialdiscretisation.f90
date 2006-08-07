@@ -49,6 +49,7 @@ MODULE spatialdiscretisation
   USE boundarycondition
   USE transformation
   USE element
+  USE cubature
   
   IMPLICIT NONE
   
@@ -300,6 +301,68 @@ CONTAINS
   END IF
   
   END SUBROUTINE  
+  
+  ! ***************************************************************************
+  
+!<function>
+
+  INTEGER FUNCTION spdiscr_getLumpCubature (ielementType,ndim) RESULT (ccubType)
+  
+!<description>
+  ! this routine tries to determine a cubature formula identifier according
+  ! to a given element type, such that the corresponding mass matrix will
+  ! get diagonal (mass lumping). If this is not possible, 0 is returned.
+!</description>
+
+!<input>
+  ! An element type identifier
+  INTEGER, INTENT(IN)                       :: ielementType
+  
+  ! OPTIONAL: Dimension identifier. NDIM2D=2D, NDIM3D=3D. If not specified,
+  ! 2D is assumed.
+  INTEGER, INTENT(IN), OPTIONAL             :: ndim
+!</input>
+
+!<result>
+  ! A cubature formula identifier that will diagonalise the mass matrix,
+  ! or 0 if such an identifier is unknown / not possible.
+!</result>
+  
+!</function>
+
+    IF (PRESENT(ndim)) THEN
+      IF (ndim .NE. NDIM2D) THEN
+        PRINT *,'spdiscr_getLumpCubature: Only 2D supported.'
+        STOP
+      END IF
+    END IF
+
+    SELECT CASE (ielementType)
+    CASE (EL_P0)
+      ! Use Gauss 1X1
+      ccubType = CUB_G1_T
+
+    CASE (EL_P1)
+      ! Use trapezoidal rule
+      ccubType = CUB_TRZ_T
+
+    CASE (EL_Q0)
+      ! Use Gauss 1X1
+      ccubType = CUB_G1X1
+
+    CASE (EL_Q1)
+      ! Use trapezoidal rule
+      ccubType = CUB_TRZ
+
+    CASE (EL_E030,EL_EM30,EL_E031,EL_EM31)
+      ! Use midpoint rule
+      ccubType = CUB_MID
+      
+    CASE DEFAULT
+      ccubType = 0
+    END SELECT
+
+  END FUNCTION
   
   ! ***************************************************************************
   

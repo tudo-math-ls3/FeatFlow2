@@ -101,13 +101,17 @@
 !# 26.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
-!# 27.) bilf_createEmptyMatrixScalar
+!# 27.) lsyssc_createEmptyMatrixScalar
 !#      -> Allocates memory for en empty matrix
+!#
+!# 28.) lsyssc_lumpMatrixScalar
+!#      -> Performs lumping of a given matrix
 !#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
 !#     -> Rebuild the Kdiagonal array in a matrix of format 9
+!#
 !# </purpose>
 !##############################################################################
 
@@ -273,6 +277,15 @@ MODULE linearsystemscalar
 
 !</constantblock>
 
+!<constantblock description="Constants for lumping of matrices">
+  
+  ! Standard lumping; extract diagonal from a given matrix.
+  INTEGER, PARAMETER :: LSYSSC_LUMP_STD       = 0
+
+  ! Diagonal lumping; add all offdiagonal entries to the diagonal and take the diagonial
+  INTEGER, PARAMETER :: LSYSSC_LUMP_DIAG      = 1
+
+!</constantblock>
 
 !</constants>
 
@@ -2450,7 +2463,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: p_Ddata
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
-  LOGICAL :: bentries
+  LOGICAL :: bentries,brelStruc
 
   ! Matrix is already in that format.
   IF (rmatrix%cmatrixFormat .EQ. cmatrixFormat) RETURN
@@ -2460,6 +2473,10 @@ CONTAINS
   
   bentries = .TRUE.
   IF (PRESENT(bconvertEntries)) bentries = bconvertEntries
+  
+  ! Be careful with the structure during conversion: If the structure belongs
+  ! to another matrix, we must not deallocate it!
+  brelStruc = IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0
 
   ! Which matrix type do we have?
   SELECT CASE (rmatrix%cmatrixFormat)
@@ -2486,8 +2503,8 @@ CONTAINS
         ! No matrix entries, only resort the structure
         CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
         
-        ! Release diagonal
-        CALL storage_free (rmatrix%h_Kdiagonal)
+        ! Release diagonal pointer
+        IF (brelStruc) CALL storage_free (rmatrix%h_Kdiagonal)
 
         rmatrix%cmatrixFormat = LSYSSC_MATRIX7
       
@@ -2501,7 +2518,7 @@ CONTAINS
           CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
           CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
           ! Release diagonal
-          CALL storage_free (rmatrix%h_Kdiagonal)
+          IF (brelStruc) CALL storage_free (rmatrix%h_Kdiagonal)
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIX7
           
@@ -2522,9 +2539,9 @@ CONTAINS
         CASE (ST_DOUBLE)
         
           CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
-          CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+          CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
           DO i=1,rmatrix%NEQ
-            p_Ddata(i) = p_Ddata(p_Kld(i))
+            p_Ddata(i) = p_Ddata(p_Kdiagonal(i))
           END DO
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
@@ -2537,9 +2554,9 @@ CONTAINS
       END IF
     
       ! Release unused information
-      CALL storage_free (rmatrix%h_Kdiagonal)
-      CALL storage_free (rmatrix%h_Kcol)
-      CALL storage_free (rmatrix%h_Kld)
+      IF (brelStruc) CALL storage_free (rmatrix%h_Kdiagonal)
+      IF (brelStruc) CALL storage_free (rmatrix%h_Kcol)
+      IF (brelStruc) CALL storage_free (rmatrix%h_Kld)
       
       ! Reallocate entry-array to have only the diagonal entries.
       CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
@@ -2615,8 +2632,8 @@ CONTAINS
       END IF
     
       ! Release unused information
-      CALL storage_free (rmatrix%h_Kcol)
-      CALL storage_free (rmatrix%h_Kld)
+      IF (brelStruc) CALL storage_free (rmatrix%h_Kcol)
+      IF (brelStruc) CALL storage_free (rmatrix%h_Kld)
       
       ! Reallocate entry-array to have only the diagonal entries.
       CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
@@ -6065,6 +6082,150 @@ CONTAINS
     STOP
   END SELECT
     
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_lumpMatrixScalar (rmatrixScalar,clumpType)
+  
+!<description>
+  ! This routine performs (mass) lumping with a scalar matrix. Lumping
+  ! is in this sense a (more or less) algebraic operation to convert a given
+  ! matrix into a diagonal matrix. There are different types of lumping
+  ! supported:\\
+  ! 'Simple lumping' simply takes the diagonal from a given matrix, assuming
+  !   all off-diagonal entries to be zero.\\
+  ! 'Diagonal lumping' adds all off-diagonal entries to the main diagonal and
+  !   extracts the diagonal entries of the resulting matrix to form a
+  !   diagonal matrix.
+!</description>
+
+!<input>
+  ! Type of lumping to perform. One of the LSYSSC_LUMP_xxxx constants.
+  ! LSYSSC_LUMP_STD:  Perform standard lumping.
+  ! LSYSSC_LUMP_DIAG: Perform diagonal lumping.
+  INTEGER, INTENT(IN) :: clumpType
+!</input>
+
+!<inputoutput>
+  ! The matrix to be lumped. Will be overwritten by a diagonal matrix.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
+!</inputoutput>
+
+!</subroutine>
+ 
+  ! local variables
+  INTEGER(PREC_MATIDX) :: irow,icol,j
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal, p_Kld
+  REAL(DP), DIMENSION(:), POINTER :: p_Da
+  REAL(SP), DIMENSION(:), POINTER :: p_Fa
+
+  IF (rmatrixScalar%NEQ .EQ. 0) RETURN
+
+  ! Which type of lumping do we have to do?
+  
+  SELECT CASE (clumpType)
+  CASE (LSYSSC_LUMP_STD)
+    ! Standard lumping. Nothing to do here.
+  
+  CASE (LSYSSC_LUMP_DIAG)
+    ! Diagonal lumping. We have to add all off-diagonal entries to the main
+    ! diagonal.
+    !
+    ! What's the matrix format?
+    SELECT CASE (rmatrixScalar%cmatrixFormat)
+    
+    CASE (LSYSSC_MATRIX7)
+      ! Get the structure
+      CALL storage_getbase_int (rmatrixScalar%h_Kld,p_Kld)
+      CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_Kcol)
+      
+      ! Get the data and perform the lumping
+      SELECT CASE (rmatrixScalar%cdataType)
+      
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+        
+        ! Add all off-diagonals to the diagonal
+        DO irow=1,rmatrixScalar%NEQ
+          j = p_Kld(irow)
+          DO icol = p_Kld(irow)+1,p_Kld(irow+1)-1
+            p_Da(j) = p_Da(j) + p_Da(icol)
+          END DO
+        END DO
+      
+      CASE (ST_SINGLE)
+        CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+
+        ! Add all off-diagonals to the diagonal
+        DO irow=1,rmatrixScalar%NEQ
+          j = p_Kld(irow)
+          DO icol = p_Kld(irow)+1,p_Kld(irow+1)-1
+            p_Fa(j) = p_Fa(j) + p_Fa(icol)
+          END DO
+        END DO
+      
+      CASE DEFAULT
+        PRINT *,'lsyssc_lumpMatrixScalar: Unsupported matrix precision'
+        STOP
+      END SELECT
+      
+    CASE (LSYSSC_MATRIX9)
+      ! Get the structure
+      CALL storage_getbase_int (rmatrixScalar%h_Kld,p_Kld)
+      CALL storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
+      CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_Kcol)
+      
+      ! Get the data and perform the lumping
+      SELECT CASE (rmatrixScalar%cdataType)
+      
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+        
+        ! Add all off-diagonals to the diagonal
+        DO irow=1,rmatrixScalar%NEQ
+          j = p_Kdiagonal(irow)
+          DO icol = p_Kld(irow),j-1
+            p_Da(j) = p_Da(j) + p_Da(icol)
+          END DO
+          DO icol = j+1,p_Kld(irow+1)-1
+            p_Da(j) = p_Da(j) + p_Da(icol)
+          END DO
+        END DO
+      
+      CASE (ST_SINGLE)
+        CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+
+        ! Add all off-diagonals to the diagonal
+        DO irow=1,rmatrixScalar%NEQ
+          j = p_Kdiagonal(irow)
+          DO icol = p_Kld(irow),j-1
+            p_Fa(j) = p_Fa(j) + p_Fa(icol)
+          END DO
+          DO icol = j+1,p_Kld(irow+1)-1
+            p_Fa(j) = p_Fa(j) + p_Fa(icol)
+          END DO
+        END DO
+      
+      CASE DEFAULT
+        PRINT *,'lsyssc_lumpMatrixScalar: Unsupported matrix precision'
+        STOP
+      END SELECT
+      
+    CASE DEFAULT
+      PRINT *,'lsyssc_lumpMatrixScalar: Unsupported matrix format'
+      STOP
+    END SELECT
+  
+  END SELECT
+
+  ! Convert the given matrix into a diagonal matrix by extracting 
+  ! the diagonal entries.
+  CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIXD)
+
   END SUBROUTINE
 
 END MODULE
