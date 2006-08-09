@@ -56,7 +56,8 @@
 !# 12.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 13.) lsyssc_isMatrixCompatible
+!# 13.) lsyssc_isMatrixCompatible = lsyssc_isMatrixVectorCompatible /
+!#                                  lsyssc_isMatrixMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
 !# 14.) lsyssc_getbase_double
@@ -106,6 +107,9 @@
 !#
 !# 28.) lsyssc_lumpMatrixScalar
 !#      -> Performs lumping of a given matrix
+!#
+!# 29.) lsyssc_scaleMatrix
+!#      -> Scale a matrix by a constant
 !#
 !# Sometimes useful auxiliary routines:
 !#
@@ -236,7 +240,7 @@ MODULE linearsystemscalar
   INTEGER, PARAMETER :: LSYSSC_DUP_ASIS = 5
   
   ! New memory is allocated for the structure/content in the same size as 
-  ! in tzhe source matrix but no data is copied; the arrays are left uninitialised.
+  ! in the source matrix but no data is copied; the arrays are left uninitialised.
   INTEGER, PARAMETER :: LSYSSC_DUP_EMPTY = 6 
                                                
   ! Copy the basic matrix information but don't copy handles.
@@ -452,6 +456,11 @@ MODULE linearsystemscalar
 
 !</types>
 
+  INTERFACE lsyssc_isMatrixCompatible
+    MODULE PROCEDURE lsyssc_isMatrixVectorCompatible
+    MODULE PROCEDURE lsyssc_isMatrixMatrixCompatible
+  END INTERFACE
+
 CONTAINS
 
   ! ***************************************************************************
@@ -534,7 +543,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_isMatrixCompatible (rvector,rmatrix,btransposed,bcompatible)
+  SUBROUTINE lsyssc_isMatrixVectorCompatible (rvector,rmatrix,btransposed,bcompatible)
   
 !<description>
   ! Checks whether a vector and a matrix are compatible to each other, i.e. 
@@ -610,6 +619,94 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Vector/Matrix not compatible, differently sorted!'
+        STOP
+      END IF
+    END IF
+  END IF
+
+  ! Ok, they are compatible
+  IF (PRESENT(bcompatible)) bcompatible = .TRUE.
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_isMatrixMatrixCompatible (rmatrix1,rmatrix2,bcompatible)
+  
+!<description>
+  ! Checks whether two matrices are compatible to each other, i.e. 
+  ! share the same structure, size and sorting strategy.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_matrixScalar), INTENT(IN) :: rmatrix1
+  
+  ! The matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: rmatrix2
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether vector and matrix are compatible or not.
+  ! If not given, an error will inform the user if the vector/matrix are
+  ! not compatible and the program will halt.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+!</output>
+
+!</subroutine>
+
+  ! We assume that we are not compatible
+  IF (PRESENT(bcompatible)) bcompatible = .FALSE.
+  
+  ! Matrices must have the same size 
+  IF ((rmatrix1%NEQ .NE. rmatrix2%NEQ) .OR. (rmatrix1%NCOLS .NE.&
+      & rmatrix2%NCOLS) .OR. (rmatrix1%NA .NE. rmatrix2%NA)) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Matrices not compatible, different block structure!'
+      STOP
+    END IF
+  END IF
+
+  ! Matrices must have the same sparsity pattern
+  IF (rmatrix1%cmatrixFormat .NE. rmatrix2%cmatrixFormat) THEN
+    IF (PRESENT(bcompatible)) THEN
+      bcompatible = .FALSE.
+      RETURN
+    ELSE
+      PRINT *,'Matrices not compatible, different sparsity pattern!'
+      STOP
+    END IF
+  END IF
+
+  ! isortStrategy < 0 means unsorted. Both unsorted is ok.
+
+  IF ((rmatrix1%isortStrategy .GT. 0) .OR. &
+      (rmatrix2%isortStrategy .GT. 0)) THEN
+
+    IF (rmatrix1%isortStrategy .NE. &
+        rmatrix2%isortStrategy) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Matrices not compatible, differently sorted!'
+        STOP
+      END IF
+    END IF
+
+    IF (rmatrix1%h_isortPermutation .NE. &
+        rmatrix2%h_isortPermutation) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Matrices not compatible, differently sorted!'
         STOP
       END IF
     END IF
@@ -1224,16 +1321,16 @@ CONTAINS
       
         IF (cy .EQ. 0.0_DP) THEN
         
-          ! cy = 0. Multiply A with X and write to Y.
+          ! cy = 0. Multiply cx*A with X and write to Y.
           DO irow = 1,NEQ
-            p_Dy(irow) = p_Da(irow)*p_Dx(irow)
+            p_Dy(irow) = cx*p_Da(irow)*p_Dx(irow)
           END DO
           
         ELSE
         
-          ! Full multiplication
+          ! Full multiplication: cx*A*X + cy*Y
           DO irow = 1,NEQ
-            p_Dy(irow) = p_Dy(irow) + p_Da(irow)*p_Dx(irow) 
+            p_Dy(irow) = cy*p_Dy(irow) + cx*p_Da(irow)*p_Dx(irow) 
           END DO
         
         END IF
@@ -5164,7 +5261,7 @@ CONTAINS
     STOP
   END IF
   
-  ! First, make a backup of the matrix for restoring some cricial data.
+  ! First, make a backup of the matrix for restoring some critical data.
   rtempMatrix = rdestMatrix
   
   ! Copy the matrix structure
@@ -6228,4 +6325,206 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_scaleMatrix (rmatrix,c)
+  
+!<description>
+  ! Scales a matrix rmatrix: rmatrix = c * rmatrix
+!</description>
+  
+!<inputoutput>
+  ! Source and destination matrix
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+!<input>
+  ! Multiplication factor
+  REAL(DP), INTENT(IN) :: c
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+  
+  ! Taje care of the data type!
+  SELECT CASE (rmatrix%cdataType)
+  CASE (ST_DOUBLE)
+    ! Get the pointer and scale the whole data array.
+    CALL storage_getbase_double(rmatrix%h_Da,p_Ddata)
+    CALL lalg_scaleVectorDble (p_Ddata,c)  
+
+  CASE (ST_SINGLE)
+    ! Get the pointer and scale the whole data array.
+    CALL storage_getbase_single(rmatrix%h_Da,p_Fdata)
+    CALL lalg_scaleVectorSngl (p_Fdata,REAL(c,SP))  
+
+  CASE DEFAULT
+    PRINT *,'lsyssc_scaleMatrix: Unsupported data type!'
+    STOP
+  END SELECT
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_spyMatrix(sfilename,smatrixName,rmatrix,bdata)
+
+!<description>
+    ! Writes a scalar matrix to file so that its sparsity structure
+    ! can be visualized in MATLAB by means of the spy command
+!</description>
+
+!<input>
+    ! file name of the MATLAB file without fileextension
+    CHARACTER(LEN=*), INTENT(IN) :: sfileName
+    
+    ! name of the matrix in MATLAB file
+    CHARACTER(LEN=*), INTENT(IN) :: smatrixName
+
+    ! Source matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+    
+    ! Whether to spy the real data of the matrix or only its sparsity
+    ! pattern
+    LOGICAL, INTENT(IN) :: bdata
+!</input>
+!</subroutine>
+    
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: Da
+    REAL(SP), DIMENSION(:), POINTER :: Fa
+    INTEGER, DIMENSION(:), POINTER :: Kld,Kcol
+    INTEGER :: iunit,ieq,ia
+
+    ! Open output file
+    iunit=sys_getFreeUnit()
+    OPEN (UNIT=iunit,FILE=TRIM(ADJUSTL(sfilename))//'.m')
+    
+    ! Which matrix format are we?
+    SELECT CASE(rmatrix%cmatrixFormat)
+    CASE(LSYSSC_MATRIX1,LSYSSC_MATRIX7,LSYSSC_MATRIX9)
+
+      ! Which matrix type are we?
+      SELECT CASE(rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_int(rmatrix%h_Kld,Kld)
+        CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
+
+        IF (bdata) THEN
+          
+          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,Da(ia),';'
+            END DO
+          END DO
+
+        ELSE
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,1,';'
+            END DO
+          END DO
+
+        END IF
+
+      CASE (ST_SINGLE)
+        CALL storage_getbase_int(rmatrix%h_Kld,Kld)
+        CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
+
+        IF (bdata) THEN
+          
+          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,Fa(ia),';'
+            END DO
+          END DO
+
+        ELSE
+          
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,1,';'
+            END DO
+          END DO
+
+        END IF
+
+      CASE DEFAULT
+        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+        STOP
+
+      END SELECT
+
+
+    CASE(LSYSSC_MATRIXD)
+      
+      ! Which matrix type are we?
+      SELECT CASE(rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+
+        IF (bdata) THEN
+          
+          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,Da(ieq),';'
+          END DO
+
+        ELSE
+          
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,1,';'
+          END DO
+
+        END IF
+
+      CASE (ST_SINGLE)
+
+        IF (bdata) THEN
+
+          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,Fa(ieq),';'
+          END DO
+
+        ELSE
+
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,1,';'
+          END DO
+
+        END IF
+
+      CASE DEFAULT
+        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+        STOP
+
+      END SELECT
+      
+
+    CASE DEFAULT
+      PRINT *, 'lsyssc_spyMatrix: Unsoppurted matrix format!'
+      STOP
+
+    END SELECT
+    
+    ! Close file
+    CLOSE(UNIT=iunit)
+  END SUBROUTINE lsyssc_spyMatrix
 END MODULE
