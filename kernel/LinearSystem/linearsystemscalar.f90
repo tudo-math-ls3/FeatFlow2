@@ -972,10 +972,11 @@ CONTAINS
     CALL lsyssc_getbase_double (ry,p_Ddata2dp)
     
     ! Perform the scalar product
-    res = p_Ddata1dp(1)*p_Ddata2dp(1)
-    DO i=2,rx%NEQ
-      res = res + p_Ddata1dp(i)*p_Ddata2dp(i)
-    END DO
+    res=lalg_scalarProductDble(p_Ddata1dp,p_Ddata2dp)
+!!$    res = p_Ddata1dp(1)*p_Ddata2dp(1)
+!!$    DO i=2,rx%NEQ
+!!$      res = res + p_Ddata1dp(i)*p_Ddata2dp(i)
+!!$    END DO
     
   CASE (ST_SINGLE)
 
@@ -984,10 +985,11 @@ CONTAINS
     CALL lsyssc_getbase_single (ry,p_Fdata2dp)
     
     ! Perform the scalar product
-    res = p_Fdata1dp(1)*p_Fdata2dp(1)
-    DO i=2,rx%NEQ
-      res = res + p_Fdata1dp(i)*p_Fdata2dp(i)
-    END DO
+    res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
+!!$    res = p_Fdata1dp(1)*p_Fdata2dp(1)
+!!$    DO i=2,rx%NEQ
+!!$      res = res + p_Fdata1dp(i)*p_Fdata2dp(i)
+!!$    END DO
     
   CASE DEFAULT
     PRINT *,'lsyssc_scalarProduct: Not supported precision combination'

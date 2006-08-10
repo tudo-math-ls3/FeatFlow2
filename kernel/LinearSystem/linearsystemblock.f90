@@ -1637,9 +1637,11 @@ CONTAINS
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: h_Ddata1dp
   REAL(DP), DIMENSION(:), POINTER :: h_Ddata2dp
+  REAL(SP), DIMENSION(:), POINTER :: h_Fdata1dp
+  REAL(SP), DIMENSION(:), POINTER :: h_Fdata2dp
   INTEGER(PREC_VECIDX) :: i
   REAL(DP) :: res
-  
+
   ! The vectors must be compatible to each other.
   CALL lsysbl_isVectorCompatible (rx,ry)
 
@@ -1647,32 +1649,39 @@ CONTAINS
   res = 0.0_DP
   
   IF ( (rx%NEQ .EQ. 0) .OR. (ry%NEQ .EQ. 0) .OR. (rx%NEQ .NE. rx%NEQ)) THEN
-    PRINT *,'Error in lsyssc_scalarProduct: Vector dimensions wrong!'
+    PRINT *,'Error in lsysbl_scalarProduct: Vector dimensions wrong!'
     STOP
   END IF
-  
+
+  IF (rx%cdataType .NE. ry%cdataType) THEN
+    PRINT *,'lsysbl_scalarProduct: Data types different!'
+    STOP
+  END IF
+
   ! Take care of the data type before doing a scalar product!
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
-    
+
+    ! Get the data arrays
     CALL lsysbl_getbase_double (rx,h_Ddata1dp)
+    CALL lsysbl_getbase_double (ry,h_Ddata2dp)
     
-    SELECT CASE (ry%cdataType)
-    CASE (ST_DOUBLE)
-      ! Get the data arrays
-      CALL lsysbl_getbase_double (ry,h_Ddata2dp)
-      
-      ! Perform the scalar product
-      res = 0.0_DP
-      DO i=1,rx%NEQ
-        res = res + h_Ddata1dp(i)*h_Ddata2dp(i)
-      END DO
-      
-    CASE DEFAULT
-      PRINT *,'lsysbl_scalarProduct: Not supported precision combination'
-      STOP
-    END SELECT
+    ! Perform the scalar product
+    res=lalg_scalarProductDble(h_Ddata1dp,h_Ddata2dp)
+!!$      res = 0.0_DP
+!!$      DO i=1,rx%NEQ
+!!$        res = res + h_Ddata1dp(i)*h_Ddata2dp(i)
+!!$      END DO
     
+  CASE (ST_SINGLE)
+
+    ! Get the data arrays
+    CALL lsysbl_getbase_single (rx,h_Fdata1dp)
+    CALL lsysbl_getbase_single (ry,h_Fdata2dp)
+
+    ! Perform the scalar product
+    res=lalg_scalarProductSngl(h_Fdata1dp,h_Fdata2dp)
+
   CASE DEFAULT
     PRINT *,'lsysbl_scalarProduct: Not supported precision combination'
     STOP

@@ -672,11 +672,13 @@ CONTAINS
 
   ! local variables
   INTEGER(I32) :: i
-  
-  res = Dx(1)*Dy(1)
-  DO i=2,SIZE(Dx)
-    res = res + Dx(i)*Dy(i)
-  END DO
+  REAL(DP) :: DDOT
+
+  res=DDOT(SIZE(Dx),Dx,1,Dy,1)
+!!$  res = Dx(1)*Dy(1)
+!!$  DO i=2,SIZE(Dx)
+!!$    res = res + Dx(i)*Dy(i)
+!!$  END DO
   
   END FUNCTION
 
@@ -709,11 +711,13 @@ CONTAINS
 
   ! local variables
   INTEGER(I32) :: i
-  
-  res = Fx(1)*Fy(1)
-  DO i=2,SIZE(Fx)
-    res = res + Fx(i)*Fy(i)
-  END DO
+  REAL(SP) :: SDOT
+
+  res=SDOT(SIZE(Fx),Fx,1,Fy,1)
+!!$  res = Fx(1)*Fy(1)
+!!$  DO i=2,SIZE(Fx)
+!!$    res = res + Fx(i)*Fy(i)
+!!$  END DO
   
   END FUNCTION
 
