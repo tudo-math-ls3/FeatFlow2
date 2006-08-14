@@ -309,4 +309,251 @@ CONTAINS
       END SELECT
     END SELECT
   END SUBROUTINE mprim_invertMatrixDble
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mprim_invertMatrixSngl(Fa,Ff,Fx,ndim,ipar)
+
+!<description>
+    ! This subroutine performs the direct inversion of a NxN system.
+    ! 
+    ! If the parameter ipar=0, then only factorization of matrix A is performed. 
+    ! For ipar=1, the vector x is calculated using the factorized matrix A. 
+    ! For ipar=2, LAPACK routine DGESV is used to solve the dense linear system Ax=f. 
+    ! In addition, for NDIM=2,3,4 explicit formulas are employed to replace the
+    ! more expensive LAPACK routine.
+!</description>
+
+!<input>
+    ! source right-hand side vector
+    REAL(SP), DIMENSION(ndim), INTENT(IN) :: Ff
+
+    ! dimension of the matrix
+    INTEGER, INTENT(IN) :: ndim
+
+    ! What to do?
+    ! IPAR = 0 : invert matrix by means of Gaussian elimination with
+    !            full pivoting and return the inverted matrix inv(A)
+    ! IPAR = 1 : apply inverted matrix to the right-hand side vector
+    !            and return x = inv(A)*f
+    ! IPAR = 2 : invert matrix and apply it to the right-hand side
+    !            vector. Return x = inv(A)*f
+    INTEGER, INTENT(IN) :: ipar
+!</input>
+
+!<inputoutput> 
+    ! source square matrix to be inverted
+    REAL(SP), DIMENSION(ndim,ndim), INTENT(INOUT) :: Fa
+!</inputoutput>
+
+!<output>
+    ! destination vector containing inverted matrix times right-hand
+    ! side vector
+    REAL(SP), DIMENSION(ndim), INTENT(OUT) :: Fx
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    REAL(SP), DIMENSION(ndim,ndim) :: Fb
+    REAL(SP), DIMENSION(ndim) :: Fpiv
+    INTEGER, DIMENSION(ndim) :: Kindx,Kindy
+
+    REAL(SP) :: fpivot,faux
+    INTEGER :: idim1,idim2,idim3,ix,iy,indx,indy,info
+
+    SELECT CASE (ipar)
+    CASE (0)
+      ! Perform factorization of matrix Da
+
+      ! Initialization
+      Kindx=0;  Kindy=0
+
+      DO idim1=1,ndim
+
+        ! Determine pivotal element
+        fpivot=0
+
+        DO iy=1,ndim
+          IF (Kindy(iy) /= 0) CYCLE
+
+          DO ix=1,ndim
+            IF (Kindx(ix) /= 0) CYCLE
+
+            IF (ABS(Fa(ix,iy)) .LE. ABS(fpivot)) CYCLE
+            fpivot=Fa(ix,iy);  indx=ix;  indy=iy
+          END DO
+        END DO
+
+        ! Return if pivotal element is zero
+        IF (ABS(fpivot) .LE. 0._DP) RETURN
+
+        Kindx(indx)=indy;  Kindy(indy)=indx;  Fa(indx,indy)=1._SP&
+            &/fpivot
+
+        DO idim2=1,ndim
+          IF (idim2 == indy) CYCLE 
+          Fa(1:indx-1,idim2)=Fa(1:indx-1,idim2)-Fa(1:indx-1,  &
+              & indy)*Fa(indx,idim2)/fpivot
+          Fa(indx+1:ndim,idim2)=Fa(indx+1:ndim,idim2)-Fa(indx+1:ndim&
+              &,indy)*Fa(indx,idim2)/fpivot
+        END DO
+
+        DO ix=1,ndim
+          IF (ix /= indx) Fa(ix,indy)=Fa(ix,indy)/fpivot
+        END DO
+
+        DO iy=1,ndim
+          IF (iy /= indy) Fa(indx,iy)=-Fa(indx,iy)/fpivot
+        END DO
+      END DO
+
+      DO ix=1,ndim
+        IF (Kindx(ix) == ix) CYCLE
+
+        DO iy=1,ndim
+          IF (Kindx(iy) == ix) EXIT
+        END DO
+
+        DO idim1=1,ndim
+          faux=Fa(ix,idim1)
+          Fa(ix,idim1)=Fa(iy,idim1)
+          Fa(iy,idim1)=faux
+        END DO
+
+        Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
+      END DO
+
+      DO ix=1,ndim
+        IF (Kindy(ix) == ix) CYCLE
+
+        DO iy=1,ndim
+          IF (Kindy(iy) == ix) EXIT
+        END DO
+
+        DO idim1=1,ndim
+          faux=Fa(idim1,ix)
+          Fa(idim1,ix)=Fa(idim1,iy)
+          Fa(idim1,iy)=faux
+        END DO
+        
+        Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
+      END DO
+
+
+    CASE (1)    
+      ! Perform inversion of Da to solve the system Da * Dx = Df
+      DO idim1=1,ndim
+        Fx(idim1)=0
+        DO idim2=1,ndim
+          Fx(idim1)=Fx(idim1)+Fa(idim1,idim2)*Ff(idim2)
+        END DO
+      END DO
+
+    CASE (2)
+      ! Solve the dense linear system Ax=f calling LAPACK routine
+
+      SELECT CASE(ndim)
+      CASE (2)
+        ! Explicit formula for 2x2 system
+        Fb(1,1)= Fa(2,2)
+        Fb(2,1)=-Fa(2,1)
+        Fb(1,2)=-Fa(1,2)
+        Fb(2,2)= Fa(1,1)
+        faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+        Fx=MATMUL(Fb,Ff)/faux
+
+      CASE (3)
+        ! Explicit formula for 3x3 system
+        Fb(1,1)=Fa(2,2)*Fa(3,3)-Fa(2,3)*Fa(3,2)
+        Fb(2,1)=Fa(2,3)*Fa(3,1)-Fa(2,1)*Fa(3,3)
+        Fb(3,1)=Fa(2,1)*Fa(3,2)-Fa(2,2)*Fa(3,1)
+        Fb(1,2)=Fa(1,3)*Fa(3,2)-Fa(1,2)*Fa(3,3)
+        Fb(2,2)=Fa(1,1)*Fa(3,3)-Fa(1,3)*Fa(3,1)
+        Fb(3,2)=Fa(1,2)*Fa(3,1)-Fa(1,1)*Fa(3,2)
+        Fb(1,3)=Fa(1,2)*Fa(2,3)-Fa(1,3)*Fa(2,2)
+        Fb(2,3)=Fa(1,3)*Fa(2,1)-Fa(1,1)*Fa(2,3)
+        Fb(3,3)=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+        faux=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(2,1)*Fa(3,2)*Fa(1,3)+ Fa(3,1)&
+            &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
+            &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
+        Fx=MATMUL(Fb,Ff)/faux
+
+      CASE (4)
+        ! Explicit formula for 4x4 system
+        Fb(1,1)=Fa(2,2)*Fa(3,3)*Fa(4,4)+Fa(2,3)*Fa(3,4)*Fa(4,2)+Fa(2&
+            &,4)*Fa(3,2)*Fa(4,3)- Fa(2,2)*Fa(3,4)*Fa(4,3)-Fa(2,3)&
+            &*Fa(3,2)*Fa(4,4)-Fa(2,4)*Fa(3,3)*Fa(4,2)
+        Fb(2,1)=Fa(2,1)*Fa(3,4)*Fa(4,3)+Fa(2,3)*Fa(3,1)*Fa(4,4)+Fa(2&
+            &,4)*Fa(3,3)*Fa(4,1)- Fa(2,1)*Fa(3,3)*Fa(4,4)-Fa(2,3)&
+            &*Fa(3,4)*Fa(4,1)-Fa(2,4)*Fa(3,1)*Fa(4,3)
+        Fb(3,1)=Fa(2,1)*Fa(3,2)*Fa(4,4)+Fa(2,2)*Fa(3,4)*Fa(4,1)+Fa(2&
+            &,4)*Fa(3,1)*Fa(4,2)- Fa(2,1)*Fa(3,4)*Fa(4,2)-Fa(2,2)&
+            &*Fa(3,1)*Fa(4,4)-Fa(2,4)*Fa(3,2)*Fa(4,1)
+        Fb(4,1)=Fa(2,1)*Fa(3,3)*Fa(4,2)+Fa(2,2)*Fa(3,1)*Fa(4,3)+Fa(2&
+            &,3)*Fa(3,2)*Fa(4,1)- Fa(2,1)*Fa(3,2)*Fa(4,3)-Fa(2,2)&
+            &*Fa(3,3)*Fa(4,1)-Fa(2,3)*Fa(3,1)*Fa(4,2)
+        Fb(1,2)=Fa(1,2)*Fa(3,4)*Fa(4,3)+Fa(1,3)*Fa(3,2)*Fa(4,4)+Fa(1&
+            &,4)*Fa(3,3)*Fa(4,2)- Fa(1,2)*Fa(3,3)*Fa(4,4)-Fa(1,3)&
+            &*Fa(3,4)*Fa(4,2)-Fa(1,4)*Fa(3,2)*Fa(4,3)
+        Fb(2,2)=Fa(1,1)*Fa(3,3)*Fa(4,4)+Fa(1,3)*Fa(3,4)*Fa(4,1)+Fa(1&
+            &,4)*Fa(3,1)*Fa(4,3)- Fa(1,1)*Fa(3,4)*Fa(4,3)-Fa(1,3)&
+            &*Fa(3,1)*Fa(4,4)-Fa(1,4)*Fa(3,3)*Fa(4,1)
+        Fb(3,2)=Fa(1,1)*Fa(3,4)*Fa(4,2)+Fa(1,2)*Fa(3,1)*Fa(4,4)+Fa(1&
+            &,4)*Fa(3,2)*Fa(4,1)- Fa(1,1)*Fa(3,2)*Fa(4,4)-Fa(1,2)&
+            &*Fa(3,4)*Fa(4,1)-Fa(1,4)*Fa(3,1)*Fa(4,2)
+        Fb(4,2)=Fa(1,1)*Fa(3,2)*Fa(4,3)+Fa(1,2)*Fa(3,3)*Fa(4,1)+Fa(1&
+            &,3)*Fa(3,1)*Fa(4,2)- Fa(1,1)*Fa(3,3)*Fa(4,2)-Fa(1,2)&
+            &*Fa(3,1)*Fa(4,3)-Fa(1,3)*Fa(3,2)*Fa(4,1)
+        Fb(1,3)=Fa(1,2)*Fa(2,3)*Fa(4,4)+Fa(1,3)*Fa(2,4)*Fa(4,2)+Fa(1&
+            &,4)*Fa(2,2)*Fa(4,3)- Fa(1,2)*Fa(2,4)*Fa(4,3)-Fa(1,3)&
+            &*Fa(2,2)*Fa(4,4)-Fa(1,4)*Fa(2,3)*Fa(4,2)
+        Fb(2,3)=Fa(1,1)*Fa(2,4)*Fa(4,3)+Fa(1,3)*Fa(2,1)*Fa(4,4)+Fa(1&
+            &,4)*Fa(2,3)*Fa(4,1)- Fa(1,1)*Fa(2,3)*Fa(4,4)-Fa(1,3)&
+            &*Fa(2,4)*Fa(4,1)-Fa(1,4)*Fa(2,1)*Fa(4,3)
+        Fb(3,3)=Fa(1,1)*Fa(2,2)*Fa(4,4)+Fa(1,2)*Fa(2,4)*Fa(4,1)+Fa(1&
+            &,4)*Fa(2,1)*Fa(4,2)- Fa(1,1)*Fa(2,4)*Fa(4,2)-Fa(1,2)&
+            &*Fa(2,1)*Fa(4,4)-Fa(1,4)*Fa(2,2)*Fa(4,1)
+        Fb(4,3)=Fa(1,1)*Fa(2,3)*Fa(4,2)+Fa(1,2)*Fa(2,1)*Fa(4,3)+Fa(1&
+            &,3)*Fa(2,2)*Fa(4,1)- Fa(1,1)*Fa(2,2)*Fa(4,3)-Fa(1,2)&
+            &*Fa(2,3)*Fa(4,1)-Fa(1,3)*Fa(2,1)*Fa(4,2)
+        Fb(1,4)=Fa(1,2)*Fa(2,4)*Fa(3,3)+Fa(1,3)*Fa(2,2)*Fa(3,4)+Fa(1&
+            &,4)*Fa(2,3)*Fa(3,2)- Fa(1,2)*Fa(2,3)*Fa(3,4)-Fa(1,3)&
+            &*Fa(2,4)*Fa(3,2)-Fa(1,4)*Fa(2,2)*Fa(3,3)
+        Fb(2,4)=Fa(1,1)*Fa(2,3)*Fa(3,4)+Fa(1,3)*Fa(2,4)*Fa(3,1)+Fa(1&
+            &,4)*Fa(2,1)*Fa(3,3)- Fa(1,1)*Fa(2,4)*Fa(3,3)-Fa(1,3)&
+            &*Fa(2,1)*Fa(3,4)-Fa(1,4)*Fa(2,3)*Fa(3,1)
+        Fb(3,4)=Fa(1,1)*Fa(2,4)*Fa(3,2)+Fa(1,2)*Fa(2,1)*Fa(3,4)+Fa(1&
+            &,4)*Fa(2,2)*Fa(3,1)- Fa(1,1)*Fa(2,2)*Fa(3,4)-Fa(1,2)&
+            &*Fa(2,4)*Fa(3,1)-Fa(1,4)*Fa(2,1)*Fa(3,2)
+        Fb(4,4)=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(1,2)*Fa(2,3)*Fa(3,1)+Fa(1&
+            &,3)*Fa(2,1)*Fa(3,2)- Fa(1,1)*Fa(2,3)*Fa(3,2)-Fa(1,2)&
+            &*Fa(2,1)*Fa(3,3)-Fa(1,3)*Fa(2,2)*Fa(3,1)
+        faux=Fa(1,1)*Fa(2,2)*Fa(3,3)*Fa(4,4)+Fa(1,1)*Fa(2,3)*Fa(3,4)&
+            &*Fa(4,2)+Fa(1,1)*Fa(2,4)*Fa(3,2)*Fa(4,3)+ Fa(1,2)*Fa(2&
+            &,1)*Fa(3,4)*Fa(4,3)+Fa(1,2)*Fa(2,3)*Fa(3,1)*Fa(4,4)+Fa(1&
+            &,2)*Fa(2,4)*Fa(3,3)*Fa(4,1)+ Fa(1,3)*Fa(2,1)*Fa(3,2)&
+            &*Fa(4,4)+Fa(1,3)*Fa(2,2)*Fa(3,4)*Fa(4,1)+Fa(1,3)*Fa(2,4)&
+            &*Fa(3,1)*Fa(4,2)+ Fa(1,4)*Fa(2,1)*Fa(3,3)*Fa(4,2)+Fa(1&
+            &,4)*Fa(2,2)*Fa(3,1)*Fa(4,3)+Fa(1,4)*Fa(2,3)*Fa(3,2)*Fa(4&
+            &,1)- Fa(1,1)*Fa(2,2)*Fa(3,4)*Fa(4,3)-Fa(1,1)*Fa(2,3)&
+            &*Fa(3,2)*Fa(4,4)-Fa(1,1)*Fa(2,4)*Fa(3,3)*Fa(4,2)- Fa(1&
+            &,2)*Fa(2,1)*Fa(3,3)*Fa(4,4)-Fa(1,2)*Fa(2,3)*Fa(3,4)*Fa(4&
+            &,1)-Fa(1,2)*Fa(2,4)*Fa(3,1)*Fa(4,3)- Fa(1,3)*Fa(2,1)&
+            &*Fa(3,4)*Fa(4,2)-Fa(1,3)*Fa(2,2)*Fa(3,1)*Fa(4,4)-Fa(1,3)&
+            &*Fa(2,4)*Fa(3,2)*Fa(4,1)- Fa(1,4)*Fa(2,1)*Fa(3,2)*Fa(4&
+            &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
+            &,1)*Fa(4,2)
+        Fx=MATMUL(Fb,Ff)/faux
+
+      CASE DEFAULT
+        ! Use LAPACK routine for general NxN system, where N>4
+        Fpiv=0; Fx=Ff
+        CALL SGESV(ndim,1,Fa,ndim,Fpiv,Fx,ndim,info)
+        
+      END SELECT
+    END SELECT
+  END SUBROUTINE mprim_invertMatrixSngl
 END MODULE mprimitives
