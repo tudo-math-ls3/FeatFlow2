@@ -2210,6 +2210,7 @@ CONTAINS
   END SUBROUTINE
 
   !****************************************************************************
+
 !<function>
   
   LOGICAL FUNCTION lsysbl_isMatrixSorted (rmatrix)
@@ -2249,6 +2250,7 @@ CONTAINS
   END FUNCTION
 
   !****************************************************************************
+
 !<function>
   
   LOGICAL FUNCTION lsysbl_isVectorSorted (rvector)
@@ -2284,5 +2286,4 @@ CONTAINS
   lsysbl_isVectorSorted = k .GT. 0
 
   END FUNCTION
-
 END MODULE
