@@ -24,8 +24,12 @@ MODULE stack
   PUBLIC :: stack_isempty
   PUBLIC :: stack_size
   PUBLIC :: stack_pushback
+  PUBLIC :: stack_backInt
+  PUBLIC :: stack_backSngl
+  PUBLIC :: stack_backDble
   PUBLIC :: stack_popbackInt
   PUBLIC :: stack_popbackSngl
+  PUBLIC :: stack_popbackDble
 
   INTERFACE stack_pushback
     MODULE PROCEDURE stack_pushbackInt
@@ -175,7 +179,7 @@ CONTAINS
 !</result>
 !</function>
 
-    isize=rstack%istackSize
+    isize=rstack%istackPosition
   END FUNCTION stack_size
 
   !************************************************************************
@@ -306,6 +310,99 @@ CONTAINS
     StackData(rstack%istackPosition)=TRANSFER(ddata,StackData(rstack&
         &%istackPosition))
   END SUBROUTINE stack_pushbackDble
+
+  !************************************************************************
+
+!<function>
+
+  FUNCTION stack_backInt(rstack) RESULT(idata)
+
+!<description>
+    ! Return integer value from top of the stack
+!</description>
+
+!<input>
+    TYPE(t_stack), INTENT(IN) :: rstack
+!</input>
+
+!<result>
+    INTEGER :: idata
+!</result>
+!</function>
+
+    REAL(DP), DIMENSION(:), POINTER :: StackData
+    
+    IF (.NOT.stack_isempty(rstack)) THEN
+      CALL storage_getbase_double(rstack%h_StackData,StackData)
+      idata=TRANSFER(StackData(rstack%istackPosition),idata)
+    ELSE
+      PRINT *, "stack_backInt: Stack empty!"
+      STOP
+    END IF
+    
+  END FUNCTION stack_backInt
+
+  !************************************************************************
+
+!<function>
+
+  FUNCTION stack_backSngl(rstack) RESULT(sdata)
+
+!<description>
+    ! Return single value from top of the stack
+!</description>
+
+!<input>
+    TYPE(t_stack), INTENT(IN) :: rstack
+!</input>
+
+!<result>
+    REAL(SP) :: sdata
+!</result>
+!</function>
+
+    REAL(DP), DIMENSION(:), POINTER :: StackData
+    
+    IF (.NOT.stack_isempty(rstack)) THEN
+      CALL storage_getbase_double(rstack%h_StackData,StackData)
+      sdata=TRANSFER(StackData(rstack%istackPosition),sdata)
+    ELSE
+      PRINT *, "stack_backSngl: Stack empty!"
+      STOP
+    END IF
+    
+  END FUNCTION stack_backSngl
+
+  !************************************************************************
+
+!<function>
+
+  FUNCTION stack_backDble(rstack) RESULT(ddata)
+
+!<description>
+    ! Return a single value from top of the stack
+!</description>
+
+!<input>
+    TYPE(t_stack), INTENT(IN) :: rstack
+!</input>
+
+!<result>
+    REAL(SP) :: ddata
+!</result>
+!</function>
+
+    REAL(DP), DIMENSION(:), POINTER :: StackData
+    
+    IF (.NOT.stack_isempty(rstack)) THEN
+      CALL storage_getbase_double(rstack%h_StackData,StackData)
+      ddata=TRANSFER(StackData(rstack%istackPosition),ddata)
+    ELSE
+      PRINT *, "stack_backDble: Stack empty!"
+      STOP
+    END IF
+    
+  END FUNCTION stack_backDble
 
   !************************************************************************
 
