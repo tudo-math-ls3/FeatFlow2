@@ -31,7 +31,8 @@
 !# (b) This FParser module is an extension of the "Fortran 90 function parser
 !#     V1.1" which implements most of the features available in the "function
 !#     parser library for C++ V2.8" written by Warp. The optimizer included
-!#     in the C++ library is not implemented in this version.
+!#     in the C++ library and the recursive evaluation of functions by means
+!#     of eval(...) is not implemented in this version.
 !#
 !# ------------------------------------------------------------------------
 !# Basic usage
@@ -140,6 +141,8 @@
 !# acos(A)   : Arc-cosine of A. Returns the angle, measured in radians,
 !#             whose cosine is A.
 !# acosh(A)  : Same as acos() but for hyperbolic cosine.
+!# aint(A)   : Truncate A to a whole number
+!# anint(A)  : Rounds A to the closest integer. 0.5 is rounded to 1.
 !# asin(A)   : Arc-sine of A. Returns the angle, measured in radians, whose
 !#             sine is A.
 !# asinh(A)  : Same as asin() but for hyperbolic sine.
@@ -162,7 +165,9 @@
 !#             non-repeating value approximately equal to 2.71828182846.
 !# floor(A)  : Floor of A. Returns the largest integer less than A. Rounds
 !#             down to the next lower integer.
-!# int(A)    : Rounds A to the closest integer. 0.5 is rounded to 1.
+!# if(A,B,C) : If int(A) differs from 0, the return value of this function is B,
+!#             else C. Only the parameter which needs to be evaluated is
+!#             evaluated, the other parameter is skipped.
 !# log(A)    : Natural (base e) logarithm of A.
 !# log10(A)  : Base 10 logarithm of A.
 !# max(A,B)  : If A>B, the result is A, else B.
@@ -193,27 +198,33 @@
 !# 5.) fparser_ErrorMsg
 !#     -> Get error message from function parser
 !#
+!# 6.) fparser_PrintByteCode
+!#     -> Print the bytecode stack (very technical!)
+!#
 !# The following internal routines can be found in this module:
 !#
 !# 1.) CheckSyntax
-!#     -> Check syntax of function string
+!#     -> Check syntax of function string before compiling bytecode
 !#
 !# 2.) ParseErrMsg
-!#     -> Print error message ind terminate
+!#     -> Print detailed error message and terminate
 !#
 !# 3.) isOperator
-!#     -> Return size of operator and return 0 otherwise
+!#     -> Return size of operator and 0 otherwise
 !#
-!# 4.) OperatorIndex
-!#     -> Return index of operator
+!# 4.) MathFunctionIndex
+!#     -> Return index of mathematical function and 0 otherwise
 !#
-!# 5.) MathFunctionIndex
-!#     -> Return index of mathematical function
+!# 5.) MathFunctionParameters
+!#     -> Return number of required function parameters
 !#
-!# 6.) VariableIndex
+!# 6.) ConstantIndex
+!#     -> Return index of predefined constant and 0 otherwise
+!#
+!# 7.) VariableIndex
 !#     -> Return index of variable
 !#
-!# 7.) RemoveSpaces
+!# 8.) RemoveSpaces
 !#     -> Remove spaces from string
 !#
 !# 8.) Replace
@@ -223,14 +234,59 @@
 !# 9.) Compile
 !#     -> Compile function string into bytecode
 !#
-!# 10.) AddCompiledByte
-!#     -> Add compiled byte to bytecode
+!# 10.) incStackPtr
+!#     -> Increase stack pointer
+!#
+!# 11.) AddCompiledByte
+!#     -> Add compiled byte to bytecode stack
 !#
 !# 11.) RemoveCompiledByte
-!#     -> Remove compiled byte from bytecode
+!#     -> Remove last compiled byte from bytecode stack
 !#
 !# 12.) AddImmediate
-!#     -> Add immediate
+!#     -> Add immediate to immediate stack
+!#
+!# 13.) AddFunctionOpcode
+!#     -> Add function opcode to bytecode stack
+!#
+!# 14.) RealNum
+!#     -> Get real number from string
+!#
+!# 15.) LowCase
+!#     -> Transform upper case letters to lower case letters
+!#
+!# 16.) CompileExpression
+!#      -> Compile ','
+!#
+!# 17.) CompileOr
+!#      -> Compile '|'
+!#
+!# 18.) CompileAnd
+!#      -> Compile '&'
+!#
+!# 19.) CompileComparison
+!#      -> Compile '=', '<', and '>'
+!#
+!# 20.) CompileAddition
+!#      -> Compile '+' and '-'
+!#
+!# 21.) CompileMult
+!#      -> Compile '*', '/', and '%'
+!#
+!# 22.) CompileUnaryMinus
+!#      -> Compile unary '-'
+!#
+!# 23.) CompilePow
+!#      -> Compile '^'
+!#
+!# 24.) CompileElement
+!#      -> Compile mathematical function, variable, constant and number
+!#
+!# 25.) CompileFunctionParameters
+!#      -> Compile function parameters
+!#
+!# 26.) CompileIf
+!#      -> Compile if-then-else
 !#
 !# </purpose>
 !##############################################################################
@@ -284,29 +340,30 @@ MODULE fparser
                             cMax         = 23, &
                             cAtan2       = 24, & ! --> last dyadic operator: .OP.(A,B)
                             cAbs         = 25, & ! <-- monadic operator: .OP.(A)
-                            cInt         = 26, &
-                            cExp         = 27, &
-                            cLog10       = 28, &
-                            cLog         = 29, &
-                            cSqrt        = 30, &
-                            cSinh        = 31, &
-                            cCosh        = 32, &
-                            cTanh        = 33, &
-                            cSin         = 34, &
-                            cCos         = 35, &
-                            cTan         = 36, & 
-                            cCot         = 37, &
-                            cAsin        = 38, &
-                            cAcos        = 39, &
-                            cAtan        = 40, &
-                            cAcosh       = 41, &
-                            cAsinh       = 42, &
-                            cAtanh       = 43, &
-                            cCeil        = 44, &
-                            cFloor       = 45, &
-                            cCsc         = 46, &
-                            cSec         = 47, & ! --> last monadic operator: .OP.(A)
-                            VarBegin     = 48
+                            cAnint       = 26, &
+                            cAint        = 27, &
+                            cExp         = 28, &
+                            cLog10       = 29, &
+                            cLog         = 30, &
+                            cSqrt        = 31, &
+                            cSinh        = 32, &
+                            cCosh        = 33, &
+                            cTanh        = 34, &
+                            cSin         = 35, &
+                            cCos         = 36, &
+                            cTan         = 37, & 
+                            cCot         = 38, &
+                            cAsin        = 39, &
+                            cAcos        = 40, &
+                            cAtan        = 41, &
+                            cAcosh       = 42, &
+                            cAsinh       = 43, &
+                            cAtanh       = 44, &
+                            cCeil        = 45, &
+                            cFloor       = 46, &
+                            cCsc         = 47, &
+                            cSec         = 48, & ! --> last monadic operator: .OP.(A)
+                            VarBegin     = 49
 !</constantblock>
 
 !<constantblock description="symbols for parser operands">
@@ -333,7 +390,8 @@ MODULE fparser
                                                                   'max  ', &
                                                                   'atan2', &
                                                                   'abs  ', &
-                                                                  'int  ', &
+                                                                  'anint', &
+                                                                  'aint ', &
                                                                   'exp  ', &
                                                                   'log10', &
                                                                   'log  ', &
@@ -469,10 +527,6 @@ CONTAINS
 
     ALLOCATE (rparser%Comp(n))
     rparser%nComp=n
-    DO i=1,n
-      NULLIFY (rparser%Comp(i)%ByteCode,rparser%Comp(i)%Immed,rparser&
-          &%Comp(i)%Stack)
-    END DO
   END SUBROUTINE fparser_create
 
   ! *****************************************************************************
@@ -652,6 +706,12 @@ CONTAINS
           rparser%EvalErrType=5; res=zero; RETURN
         END IF
         Comp%Stack(StackPtr)=LOG(daux)
+        
+      CASE (cAnint)
+        Comp%Stack(StackPtr)=ANINT(Comp%Stack(StackPtr))
+
+      CASE (cAint)
+        Comp%Stack(StackPtr)=AINT(Comp%Stack(StackPtr))
 
       CASE (cAsinh)
         daux=Comp%Stack(StackPtr)+SQRT(Comp%Stack(StackPtr)+1)
@@ -707,9 +767,6 @@ CONTAINS
           DataPtr = immedAddr
         END IF
         StackPtr=StackPtr-1
-
-      CASE (cInt)
-        Comp%Stack(StackPtr)=FLOOR(Comp%Stack(StackPtr)+0.5_DP)
         
       CASE (cLog)
         IF (Comp%Stack(StackPtr) <= 0._DP) THEN
@@ -1335,6 +1392,7 @@ CONTAINS
     CASE(cAbs:cSec)
       nparameters = 1
     CASE DEFAULT
+      nparameters=0
       PRINT *, "*** MathFunctionParamters: Not a function"
     END SELECT
   END FUNCTION MathFunctionParameters
@@ -1530,40 +1588,34 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(is), DIMENSION(:), POINTER :: ByteCode
+    INTEGER, DIMENSION(:), POINTER :: Immed
     INTEGER :: ind,istat
     
-    IF (ASSOCIATED(Comp%ByteCode)) DEALLOCATE ( Comp%ByteCode, &
-                                                   Comp%Immed,    &
-                                                   Comp%Stack     )
+    IF (ASSOCIATED(Comp%ByteCode)) DEALLOCATE (Comp%ByteCode)
+    IF (ASSOCIATED(Comp%Immed))    DEALLOCATE (Comp%Immed)
+    IF (ASSOCIATED(Comp%Stack))    DEALLOCATE (Comp%Stack)
     Comp%ByteCodeSize = 0
     Comp%ImmedSize    = 0
     Comp%StackSize    = 0
     Comp%StackPtr     = 0
 
-    ! Compile string to determine size
+    ! Allocate initial stacks
+    ALLOCATE(Comp%ByteCode(1024),Comp%Immed(1024))
+
+    ! Compile string into bytecode
     ind = CompileExpression(Comp,F,1,Var)
 
-    ALLOCATE ( Comp%ByteCode(Comp%ByteCodeSize), & 
-               Comp%Immed(Comp%ImmedSize),       &
-               Comp%Stack(Comp%StackSize),       &
-               STAT = istat                            )
+    ! Adjust stack sizes
+    ALLOCATE(ByteCode(Comp%ByteCodeSize)); ByteCode=Comp%ByteCode
+    DEALLOCATE(Comp%ByteCode); ALLOCATE(Comp%ByteCode(Comp%ByteCodeSize))
+    Comp%ByteCode=ByteCode; DEALLOCATE(ByteCode)
     
-    IF (istat /= 0) THEN
-      
-      WRITE(*,*) '*** Parser error: Memmory allocation for byte code failed'
-      STOP
-      
-    ELSE
-      
-      Comp%ByteCodeSize = 0
-      Comp%ImmedSize    = 0
-      Comp%StackSize    = 0
-      Comp%StackPtr     = 0
+    ALLOCATE(Immed(Comp%ImmedSize)); Immed=Comp%Immed
+    DEALLOCATE(Comp%Immed); ALLOCATE(Comp%Immed(Comp%ImmedSize))
+    Comp%Immed=Immed; DEALLOCATE(Immed)
 
-      ! Compile string into bytecode
-      ind = CompileExpression(Comp,F,1,Var)
-      
-    END IF
+    ALLOCATE(Comp%Stack(Comp%StackSize))
   END SUBROUTINE Compile
 
   ! *****************************************************************************
@@ -1605,9 +1657,22 @@ CONTAINS
     TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
-   
+
+    ! local variables
+    INTEGER(is), DIMENSION(:), POINTER :: ByteCode
+
     Comp%ByteCodeSize = Comp%ByteCodeSize + 1
-    IF (ASSOCIATED(Comp%ByteCode)) Comp%ByteCode(Comp%ByteCodeSize) = byte
+    IF (ASSOCIATED(Comp%ByteCode)) THEN
+      IF (Comp%ByteCodeSize > SIZE(Comp%ByteCode)) THEN
+        ALLOCATE(ByteCode(Comp%ByteCodeSize-1))
+        ByteCode=Comp%ByteCode
+        DEALLOCATE(Comp%ByteCode)
+        ALLOCATE(Comp%ByteCode(2*Comp%ByteCodeSize))
+        Comp%ByteCode(1:Comp%ByteCodeSize-1)=ByteCode
+        DEALLOCATE(ByteCode)
+      END IF
+      Comp%ByteCode(Comp%ByteCodeSize) = byte
+    END IF
   END SUBROUTINE AddCompiledByte
 
   ! *****************************************************************************
@@ -1633,7 +1698,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE AddImmediate (Comp, immed)
+  SUBROUTINE AddImmediate (Comp, immediate)
 
 !<description>
     ! Add immediate
@@ -1641,7 +1706,7 @@ CONTAINS
 
 !<input>
     ! Value of byte to be added
-    REAL(DP), INTENT(in) :: immed
+    REAL(DP), INTENT(in) :: immediate
 !</input>
 
 !<inputoutput>
@@ -1649,8 +1714,21 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
    
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: Immed
+    
     Comp%ImmedSize = Comp%ImmedSize + 1
-    IF (ASSOCIATED(Comp%Immed)) Comp%Immed(Comp%ImmedSize) = immed
+    IF (ASSOCIATED(Comp%Immed)) THEN
+      IF (Comp%ImmedSize > SIZE(Comp%Immed)) THEN
+        ALLOCATE(Immed(Comp%ImmedSize-1))
+        Immed=Comp%Immed
+        DEALLOCATE(Comp%Immed)
+        ALLOCATE(Comp%Immed(2*Comp%ImmedSize))
+        Comp%Immed(1:Comp%ImmedSize-1)=Immed
+        DEALLOCATE(Immed)
+      END IF
+      Comp%Immed(Comp%ImmedSize) = immediate
+    END IF
   END SUBROUTINE AddImmediate
 
   ! *****************************************************************************
@@ -1672,7 +1750,10 @@ CONTAINS
     TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
-   
+    
+    ! local variables
+    INTEGER(is), DIMENSION(:), POINTER :: ByteCode
+
     IF (Comp%useDegreeConversion) THEN
       SELECT CASE(opCode)
       CASE(cCos,Ccosh,cCot,cCsc,cSec,cSin,cSinh,cTan,cTanh)
@@ -1681,8 +1762,17 @@ CONTAINS
     END IF
 
     Comp%ByteCodeSize = Comp%ByteCodeSize + 1
-    IF (ASSOCIATED(Comp%ByteCode)) Comp%ByteCode(Comp%ByteCodeSize) =&
-        & opcode
+    IF (ASSOCIATED(Comp%ByteCode)) THEN
+      IF (Comp%ByteCodeSize > SIZE(Comp%ByteCode)) THEN
+        ALLOCATE(ByteCode(Comp%ByteCodeSize-1))
+        ByteCode=Comp%ByteCode
+        DEALLOCATE(Comp%ByteCode)
+        ALLOCATE(Comp%ByteCode(2*Comp%ByteCodeSize))
+        Comp%ByteCode(1:Comp%ByteCodeSize-1)=ByteCode
+        DEALLOCATE(ByteCode)
+      END IF
+      Comp%ByteCode(Comp%ByteCodeSize) = opcode
+    END IF
 
     IF (Comp%useDegreeConversion) THEN
       SELECT CASE(opCode)
@@ -1699,7 +1789,8 @@ CONTAINS
   FUNCTION RealNum (str, ibegin, inext, error) RESULT (res)
 
 !<description>
-    ! Get real number from string - Format: [blanks][+|-][nnn][.nnn][e|E|d|D[+|-]nnn]
+    ! Get real number from string
+    ! Format: [blanks][+|-][nnn][.nnn][e|E|d|D[+|-]nnn]
 !</description>
 
 !<input>
@@ -1801,7 +1892,8 @@ CONTAINS
   SUBROUTINE LowCase (str1, str2)
 
 !<description>
-    ! Transform upper case letters in str1 into lower case letters, result is str2
+    ! Transform upper case letters in str1 into lower case 
+    ! letters, result is str2
 !</description>
     
 !<input>
