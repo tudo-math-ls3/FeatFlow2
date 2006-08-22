@@ -306,6 +306,7 @@ MODULE fparser
   PUBLIC :: fparser_evalFunction
   PUBLIC :: fparser_ErrorMsg
   PUBLIC :: fparser_PrintByteCode
+  public :: lowcase
 
 !<constants>
 
@@ -326,12 +327,12 @@ MODULE fparser
                             cDiv         =  9, &
                             cMod         = 10, &
                             cPow         = 11, &
-                            cEqual       = 12, &
-                            cNEqual      = 13, &
-                            cLess        = 14, &
-                            cLessOrEq    = 15, &
-                            cGreater     = 16, &
-                            cGreaterOrEq = 17, &
+                            cNEqual      = 12, & ! NOTE: != must be prior to =
+                            cEqual       = 13, &
+                            cLessOrEq    = 14, & ! NOTE: <= must be prior to <
+                            cLess        = 15, &
+                            cGreaterOrEq = 16, & ! NOTE: >= must be prior to >
+                            cGreater     = 17, &
                             cNot         = 18, &
                             cAnd         = 19, &
                             cOr          = 20, & ! --> last dyadic operator: A.OP. B
@@ -373,12 +374,12 @@ MODULE fparser
                                                                 '/ ', &
                                                                 '% ', &
                                                                 '^ ', &
-                                                                '= ', &
                                                                 '!=', &
-                                                                '< ', &
+                                                                '= ', &
                                                                 '<=', &
-                                                                '> ', &
+                                                                '< ', &
                                                                 '>=', &
+                                                                '> ', &
                                                                 '! ', &
                                                                 '& ', &
                                                                 '| ' /)
@@ -426,8 +427,9 @@ MODULE fparser
 !</constantblock>
 
 !<constantblock description="constant values for parser">
-  REAL(DP), DIMENSION(C_PI:c_EXP), PARAMETER :: Constvals = (/ DASIN(1D0)*2D0, &
-                                                               DEXP(1D0) /)
+  REAL(DP), DIMENSION(C_PI:c_EXP), PARAMETER :: Constvals = (/&
+      & 3.141592653589793115997963468544185161590576171875_DP, &
+      & 2.718281828459045090795598298427648842334747314453125_DP /)
 !</constantblock>
 
 !</constants>
@@ -903,11 +905,13 @@ CONTAINS
         Comp%Stack(StackPtr-1)=LogcToDble( &
             &DbleToLogc(Comp%Stack(StackPtr-1)) .AND. &
             &DbleToLogc(Comp%Stack(StackPtr)) )
+        StackPtr=StackPtr-1
 
       CASE (cOr)
         Comp%Stack(StackPtr-1)=LogcToDble( &
             &DbleToLogc(Comp%Stack(StackPtr-1)) .OR. &
             &DbleToLogc(Comp%Stack(StackPtr)) )
+        StackPtr=StackPtr-1
 
       CASE (cNot)
         Comp%Stack(StackPtr)=LogcToDble( .NOT.&
@@ -928,7 +932,7 @@ CONTAINS
       END SELECT
     END DO
     rparser%EvalErrType = 0
-    res = Comp%Stack(1)
+    res = Comp%Stack(StackPtr)
 
     IF (PRESENT(EvalErrType)) EvalErrType = rparser%EvalErrType
 
@@ -1137,8 +1141,6 @@ CONTAINS
         IF (Ind > lFunc) CALL ParseErrMsg (Ind-1, FuncStr, 'Premature &
             &end of string')
         c = Func(Ind:Ind)
-        IF (isOperator(Func(Ind:)) > 0) CALL ParseErrMsg (Ind,&
-            & FuncStr, 'Multiple operators')
       END IF
             
       ! Check for math function
@@ -1244,6 +1246,7 @@ CONTAINS
       Ind = Ind+opSize
     END DO
     IF (ParCnt > 0) CALL ParseErrMsg (Ind, FuncStr, 'Missing )')
+    CALL stack_release(functionParenthDepth)
   END SUBROUTINE CheckSyntax
 
   ! *****************************************************************************
@@ -1483,7 +1486,7 @@ CONTAINS
       
       ! Search for name terminators
       DO in=ib,lstr
-        IF (SCAN(str(in:in),'+-*/%^),&|<>= ') > 0) EXIT
+        IF (SCAN(str(in:in),'+-*/%^),&|<>=! ') > 0) EXIT
       END DO
       DO j=1,SIZE(Var)
         IF (str(ib:in-1) == Var(j)) THEN
@@ -1589,7 +1592,7 @@ CONTAINS
 
     ! local variables
     INTEGER(is), DIMENSION(:), POINTER :: ByteCode
-    INTEGER, DIMENSION(:), POINTER :: Immed
+    REAL(DP), DIMENSION(:), POINTER :: Immed
     INTEGER :: ind,istat
     
     IF (ASSOCIATED(Comp%ByteCode)) DEALLOCATE (Comp%ByteCode)
@@ -1615,7 +1618,7 @@ CONTAINS
     DEALLOCATE(Comp%Immed); ALLOCATE(Comp%Immed(Comp%ImmedSize))
     Comp%Immed=Immed; DEALLOCATE(Immed)
 
-    ALLOCATE(Comp%Stack(Comp%StackSize))
+    ALLOCATE(Comp%Stack(Comp%StackSize+1))
   END SUBROUTINE Compile
 
   ! *****************************************************************************
@@ -1728,6 +1731,7 @@ CONTAINS
         DEALLOCATE(Immed)
       END IF
       Comp%Immed(Comp%ImmedSize) = immediate
+
     END IF
   END SUBROUTINE AddImmediate
 
@@ -2294,7 +2298,7 @@ CONTAINS
       ! If we are negating a constant, negate the constant itself
       IF (c == '-' .AND. &
           & Comp%ByteCode(Comp%ByteCodeSize) == cImmed) THEN
-        Comp%ByteCode(Comp%ByteCodeSize) = -Comp%ByteCode(Comp%ByteCodeSize)
+        Comp%Immed(Comp%ImmedSize) = -Comp%Immed(Comp%ImmedSize)
         
         ! If we are negating a negation, we can remove both
       ELSEIF (c == '-' .AND. &
