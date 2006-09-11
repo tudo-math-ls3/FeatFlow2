@@ -551,11 +551,19 @@ CONTAINS
     ! in the collection.
     !
     ! Note that the vector is unsorted after calling this routine!
+    !
+    ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
-              p_rrhs%RvectorBlock(1),coeff_RHS,&
+              p_rrhs%RvectorBlock(1),coeff_RHS_x,&
               rproblem%rcollection)
-                                
+
+    ! And the Y-velocity part:
+    CALL linf_buildVectorScalar (&
+              p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
+              p_rrhs%RvectorBlock(2),coeff_RHS_y,&
+              rproblem%rcollection)
+
     ! The third subvector must be zero - as it represents the RHS of
     ! the equation "div(u) = 0".
     CALL lsyssc_clearVector(p_rrhs%RvectorBlock(3))
