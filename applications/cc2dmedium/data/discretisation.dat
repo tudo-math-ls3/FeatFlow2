@@ -80,13 +80,13 @@ dUpsam             = 0.1
 # ------------------------------------------------------------------------
 
 # Generation of mass matrix. 0=lumped mass,1=real mass matrix
-# iMass              = 0
+iMass              = 0
 
 # Type of lumping of the mass matrix. 0=usual lumping,1=diagonal lumping
-# iMassLumpType      = 0
+iMassLumpType      = 0
 
 # cubature formula for Mass matrix
-# icubMass           = 204
+icubMass           = 204
 
 # cubature formula for Stokes/Laplacian matrix
 

@@ -71,6 +71,14 @@ MODULE cc2dmediumm2basic
   
     ! A structure for discrete fictitious boundary conditions
     TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    
+    ! Nonstationary simulation: Mass matrix
+    TYPE(t_matrixScalar) :: rmatrixMass
+
+    ! Nonstationary simulation: A scalar discretisation structure that 
+    ! specifies for to generate the mass matrix.
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
+    
 
   END TYPE
   
@@ -128,6 +136,29 @@ MODULE cc2dmediumm2basic
 !</typeblock>
 
 !</types>
+
+!<constants>
+
+  !<constantblock description="Names of entities in the problem-specific collection structure"
+  
+  ! Name of the RHS vector in the collection
+  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_RHS          = 'RHS'
+
+  ! Name of the solution vector in the collection
+  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_SOLUTION     = 'SOLUTION'
+  
+  ! Name of a temporary vector in the collection
+  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_TEMPVEC      = 'RTEMPVEC'
+  
+  ! Name of the Laplace matrix in the collection
+  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_LAPLACE      = 'LAPLACE'
+  
+  ! Name of the global system matrix in the collection
+  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_SYSTEMMAT    = 'SYSTEMMAT'
+  
+  !</constantblock>
+
+!</constants>
 
 !******************************************************************************
 ! Documentation

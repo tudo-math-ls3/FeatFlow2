@@ -123,6 +123,7 @@ CONTAINS
     CALL parlst_readfromfile (rproblem%rparamList, './data/output.dat')
     CALL parlst_readfromfile (rproblem%rparamList, './data/paramtriang.dat')
     CALL parlst_readfromfile (rproblem%rparamList, './data/bdconditions.dat')
+    CALL parlst_readfromfile (rproblem%rparamList, './data/timediscr.dat')
     
     ! Ok, parameters are read in.
     ! Evaluate these parameters and initialise global data in the problem
@@ -134,7 +135,10 @@ CONTAINS
     ! Initialisation
     CALL c2d2_initParamTriang (rproblem)
     CALL c2d2_initDiscretisation (rproblem)    
-    CALL c2d2_initMatVec (rproblem)    
+    CALL c2d2_allocMatVec (rproblem)    
+    CALL c2d2_generateStaticMatrices (rproblem)
+    CALL c2d2_generateStaticSystemParts (rproblem)
+    CALL c2d2_generateBasicRHS (rproblem,rproblem%rrhs)
     CALL c2d2_initAnalyticBC (rproblem)   
     CALL c2d2_initDiscreteBC (rproblem)
     

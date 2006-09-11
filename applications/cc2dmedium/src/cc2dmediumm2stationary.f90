@@ -161,8 +161,8 @@ CONTAINS
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
       
       ! Get the system and the Laplace matrix on the maximum level
-      p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
-      p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,'LAPLACE',ilvmax)
+      p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilvmax)
+      p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,PAR_LAPLACE,ilvmax)
       
       ! Build a temporary 3x3 block matrix rmatrixLaplace with Laplace 
       ! on the main diagonal:
@@ -206,7 +206,7 @@ CONTAINS
       ! into the defect vector.
       !
       ! Note that the above matrix did not contain any rows replaced by
-      ! unit vectorsd according to boundary conditions! This is even
+      ! unit vectors according to boundary conditions! This is even
       ! not necessary, as the boundary conditions only need to be imposed
       ! to the defect vectp
       CALL filter_applyFilterChainVec (rd, RfilterChain)
@@ -244,6 +244,11 @@ CONTAINS
         CALL filter_applyFilterChainVec (rd, RfilterChain)
         
       END IF
+
+      ! Filter the resulting defect vector through the slip-boundary-
+      ! condition vector filter for implementing nonlinear slip boundary
+      ! conditions into a defect vector.
+      CALL vecfil_discreteNLSlipBCdef (rd)
 
       ! That's it
       
@@ -314,14 +319,14 @@ CONTAINS
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
 
-!    DEBUG!!!:
+!    ! DEBUG!!!:
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_temp1,p_temp2,p_da
 !    call lsysbl_getbase_double (rd,p_def)
 !    call lsysbl_getbase_double (rx,p_vec)
 !    call lsysbl_getbase_double (rtemp1,p_temp1)
 !    call lsysbl_getbase_double (rtemp2,p_temp2)
 !    ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
-!    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
+!    p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilvmax)
 !    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
 
       ! Get minimum/maximum level from the collection
@@ -341,8 +346,8 @@ CONTAINS
       END IF
 
       ! Get the system and the Laplace matrix on the maximum level
-      p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
-      p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,'LAPLACE',ilvmax)
+      p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilvmax)
+      p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,PAR_LAPLACE,ilvmax)
 
       ! Set up a filter that modifies the block vectors/matrix
       ! according to boundary conditions.
@@ -461,6 +466,15 @@ CONTAINS
         ! boundary conditions, this implements the boundary conditions
         ! into the system matrix.
         CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+        
+        ! 'Nonlinear' boundary conditions like slip boundary conditions
+        ! are not implemented with a filter chain into a matrix.
+        ! Call the appropriate matrix filter of 'nonlinear' boundary
+        ! conditions manually:
+        !
+        ! Note: implementation commented out!
+        ! Seems to work better without!
+        ! CALL matfil_discreteNLSlipBC (p_rmatrix,.FALSE.)
           
       END IF
         
@@ -476,6 +490,14 @@ CONTAINS
       ! conditions.
       CALL filter_applyFilterChainVec (rtemp2, RfilterChain)
       
+      ! Filter the resulting defect vector through the slip-boundary-
+      ! condition vector filter for implementing nonlinear slip boundary
+      ! conditions into a defect vector.
+      !
+      ! Note: implementation commented out!
+      ! Seems to work better without!
+      ! CALL vecfil_discreteNLSlipBCdef (rtemp2)
+      
       ! ==================================================================
       ! For all terms in the fraction:
       ! Calculate the value  rtemp1 = T*Y
@@ -487,6 +509,14 @@ CONTAINS
       ! implements boundary conditions.
       CALL filter_applyFilterChainVec (rtemp1, RfilterChain)
       
+      ! Filter the resulting defect vector through the slip-boundary-
+      ! condition vector filter for implementing nonlinear slip boundary
+      ! conditions into a defect vector.
+      !
+      ! Note: implementation commented out!
+      ! Seems to work better without!
+      ! CALL vecfil_discreteNLSlipBCdef (rtemp1)
+
       ! ==================================================================
       ! Calculation of the fraction terms.
       ! Calculate nominator:    dskv1:= (T*Y,D)   = (rtemp1,rtemp2)
@@ -584,12 +614,13 @@ CONTAINS
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
 
-    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
-    call lsysbl_getbase_double (rd,p_def)
-    call lsysbl_getbase_double (rx,p_vec)
-    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
-    p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',NLMAX)
-    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
+    ! DEBUG!!!
+!    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
+!    call lsysbl_getbase_double (rd,p_def)
+!    call lsysbl_getbase_double (rx,p_vec)
+!    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
+!    p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,NLMAX)
+!    call storage_getbase_double (p_rmatrix%RmatrixBlock(1,1)%h_da,p_da)
 
       ! Get minimum and maximum level from the collection
       NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -651,8 +682,8 @@ CONTAINS
       
         ! Get the system matrix and the Laplace matrix
         p_rmatrixFine => p_rmatrix
-        p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilev)
-        p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,'LAPLACE',ilev)
+        p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilev)
+        p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,PAR_LAPLACE,ilev)
         
         ! On the highest level, we use rx as solution to build the nonlinear
         ! matrix. On lower levels, we have to create a solution
@@ -663,12 +694,12 @@ CONTAINS
         ELSE
           ! Get the temporary vector on level i. Will receive the solution
           ! vector on that level. 
-          p_rvectorCoarse => collct_getvalue_vec (p_rcollection,'RTEMPVEC',ilev)
+          p_rvectorCoarse => collct_getvalue_vec (p_rcollection,PAR_TEMPVEC,ilev)
           
           ! Get the solution vector on level i+1. This is either the temporary
           ! vector on that level, or the solution vector on the maximum level.
           IF (ilev .LT. NLMAX-1) THEN
-            p_rvectorFine => collct_getvalue_vec (p_rcollection,'RTEMPVEC',ilev+1)
+            p_rvectorFine => collct_getvalue_vec (p_rcollection,PAR_TEMPVEC,ilev+1)
           ELSE
             p_rvectorFine => rx
           END IF
@@ -763,6 +794,12 @@ CONTAINS
         ! into the system matrix.
         CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
         
+        ! 'Nonlinear' boundary conditions like slip boundary conditions
+        ! are not implemented with a filter chain into a matrix.
+        ! Call the appropriate matrix filter of 'nonlinear' boundary
+        ! conditions manually:
+        CALL matfil_discreteNLSlipBC (p_rmatrix,.TRUE.)
+        
       END DO
       
       ! Our 'parent' (the caller of the nonlinear solver) has prepared
@@ -787,7 +824,7 @@ CONTAINS
       ! We don't release the symbolic factorisation, as we can use them
       ! for the next iteration.
       CALL linsol_doneData (p_rsolverNode)
-
+      
       ! Finally calculate a new damping parameter domega.
       !
       ! For this purpose, we need two temporary vectors.

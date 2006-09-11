@@ -24,19 +24,25 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
 !#
-!# 2.) coeff_RHS
-!#     -> Returns analytical values for the right hand side of the Laplace
+!# 2.) coeff_RHS_x
+!#     -> Returns analytical values for the right hand side of the X-velocity
 !#        equation.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) getBoundaryValues
+!# 3.) coeff_RHS_y
+!#     -> Returns analytical values for the right hand side of the Y-velocity
+!#        equation.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 4.) getBoundaryValues
 !#     -> Returns analitical values on the boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
-!# 4.) getBoundaryValuesFBC
+!# 5.) getBoundaryValuesFBC
 !#     -> Returns analytical values on the fictitious boundary components
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
@@ -57,6 +63,8 @@ MODULE cc2dmedium_callback
   USE vectorfilters
   USE bcassembly
   USE mprimitives
+  
+  USE cc2dmediumm2boundarydef
   
   IMPLICIT NONE
 
@@ -224,7 +232,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE coeff_RHS (rdiscretisation,rform, &
+  SUBROUTINE coeff_RHS_x (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,p_rcollection, &
                   Dcoefficients)
@@ -237,7 +245,8 @@ CONTAINS
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form.
+    ! the coefficients in front of the terms of the linear form of the
+    ! X-velocity part of the right hand side vector.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
@@ -291,7 +300,83 @@ CONTAINS
     
   !</subroutine>
 
-    Dcoefficients = 0.0_DP
+    Dcoefficients(:,:,:) = 0.0_DP
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE coeff_RHS_y (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,p_rcollection, &
+                  Dcoefficients)
+    
+    USE basicgeometry
+    USE triangulation
+    USE collection
+    USE scalarpde
+    USE domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form of the
+    ! Y-velocity part of the right hand side vector.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    TYPE(t_linearForm), INTENT(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    INTEGER, INTENT(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    INTEGER, INTENT(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+    ! A pointer to a collection structure to provide additional 
+    ! information to the coefficient routine. May point to NULL() if not defined.
+    TYPE(t_collection), POINTER                      :: p_rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    REAL(DP), DIMENSION(:,:,:), INTENT(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    Dcoefficients(:,:,:) = 0.0_DP
 
   END SUBROUTINE
 
@@ -382,8 +467,6 @@ CONTAINS
 
     INTEGER :: icomponent,iexprtyp
     
-    REAL(DP), PARAMETER :: dinflowSpeed = 0.3_DP
-    
     ! Use boundary conditions from DAT files.
     SELECT CASE (cinfoNeeded)
     CASE (DISCBC_NEEDFUNC,DISCBC_NEEDDERIV,DISCBC_NEEDINTMEAN)
@@ -401,20 +484,24 @@ CONTAINS
       ! Get the type of the expression to evaluate from the 
       ! integer tag of the BC-region - if there is an expression to evaluate
       ! at all.
-      iexprtyp = rbcRegion%itag
+      iexprtyp = rbcRegion%ibdrexprtype
             
       ! Now, which boundary condition do we have here?                       
       SELECT CASE (rbcRegion%ctype)
       CASE (BC_DIRICHLET)
         ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
-                                    iexprtyp, rbcRegion%dtag, dwhere)
+                                    iexprtyp, rbcRegion%itag, rbcRegion%dtag, &
+                                    dwhere, rbcRegion%stag,&
+                                    p_rcollection)
     
       CASE (DISCBC_NEEDNORMALSTRESS)
         ! Normal stress / pressure drop. Evaluate Evaluate the 
         ! expression iexprtyp.
         Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
-                                    iexprtyp, rbcRegion%dtag, dwhere)
+                                    iexprtyp, rbcRegion%itag, rbcRegion%dtag, &
+                                    dwhere, rbcRegion%stag,&
+                                    p_rcollection)
       END SELECT
     END SELECT
   
@@ -423,7 +510,7 @@ CONTAINS
     ! Auxiliary function: Evaluate a scalar expression on the boundary.
     
     REAL(DP) FUNCTION evalBoundary (rdiscretisation, rboundaryRegion, &
-                                    ityp, dvalue, dpar)
+                                    ityp, ivalue, dvalue, dpar, stag, p_rcollection)
     
     ! Discretisation structure of the underlying discretisation
     TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
@@ -431,24 +518,95 @@ CONTAINS
     ! Current boundary region
     TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
     
-    ! Type of expression to evaluate
+    ! Type of expression to evaluate.
+    ! One of the BDC_xxxx constants from cc2dmediumm2boundarydef.f90.
     INTEGER, INTENT(IN) :: ityp
+    
+    ! Integer tag. If ityp=BDC_EXPRESSION, this must specify the number of
+    ! the expression in the expression object to evaluate.
+    ! Otherwise unused.
+    INTEGER, INTENT(IN) :: ivalue
     
     ! Double precision parameter for simple expressions
     REAL(DP), INTENT(IN) :: dvalue
     
-    ! Current parameter value of the point on the boundary
+    ! Current parameter value of the point on the boundary.
+    ! 0-1-parametrisation.
     REAL(DP), INTENT(IN) :: dpar
+
+    ! String tag that defines more complicated BC's.
+    CHARACTER(LEN=*), INTENT(IN) :: stag
     
+    ! A compiled expression for evaluation at runtime
+    TYPE(t_fparser), POINTER :: p_rparser
+    
+    ! A pointer to a collection structure to provide additional 
+    ! information to the coefficient routine. May point to NULL() if not defined.
+    TYPE(t_collection), POINTER                  :: p_rcollection
+
       ! local variables
-      REAL(DP) :: d
+      REAL(DP) :: d,dx,dy
+      CHARACTER(LEN=PARLST_MLDATA) :: sexpr
+      REAL(DP), DIMENSION(SIZE(SEC_EXPRVARIABLES)) :: Rval
       
       SELECT CASE (ityp)
-      CASE (0)
-        ! A simple constant, given by dvaluze
+      CASE (BDC_USERDEF)
+        ! This is a hardcoded, user-defined identifier.
+        ! In stag, the name of the identifier is noted.
+        ! Get the identifier itself from the collection.
+        CALL collct_getvalue_string (p_rcollection, stag, sexpr, &
+                                     0, SEC_SBDEXPRESSIONS)
+                                     
+        ! Now we can decide on 'sexpr' how to evaluate.
+        ! By default, we return 0.0. A user defined calculation can be added here!
+        evalBoundary = 0.0_DP
+      
+      CASE (BDC_VALDOUBLE)
+        ! A simple constant, given by dvalue
         evalBoundary = dvalue
+
+      CASE (BDC_EXPRESSION)
+        ! A complex expression.
+        ! Get the expression object from the collection.
         
-      CASE (2)
+        p_rparser => collct_getvalue_pars (p_rcollection, BDC_BDPARSER, &
+                                   0, SEC_SBDEXPRESSIONS)
+                                   
+        ! Set up an array with variables for evaluating the expression.
+        ! Give the values in exactly the same order as specified
+        ! by SEC_EXPRVARIABLES!
+        Rval = 0.0_DP
+        
+        CALL boundary_getCoords(rdiscretisation%p_rdomain, &
+                                rboundaryRegion%iboundCompIdx, &
+                                dpar, dx, dy)
+        
+        ! Get the local parameter value 0 <= d <= 1.
+        ! Note that if dpar < rboundaryRegion%dminParam, we have to add the maximum
+        ! parameter value on the boundary to dpar as normally 0 <= dpar < max.par.
+        ! although 0 <= dminpar <= max.par 
+        !      and 0 <= dmaxpar <= max.par!
+        d = dpar 
+        IF (d .LT. rboundaryRegion%dminParam) &
+          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rdomain,&
+                                         rboundaryRegion%iboundCompIdx)
+        d = d - rboundaryRegion%dminParam
+        
+        Rval(1) = dx
+        Rval(2) = dy
+        ! Rval(3) = .
+        Rval(4) = d
+        Rval(5) = dpar
+        Rval(6) = boundary_convertParameter(rdiscretisation%p_rdomain, &
+                                            rboundaryRegion%iboundCompIdx, dpar, &
+                                            BDR_PAR_01, BDR_PAR_LENGTH) 
+        Rval(7) = 0.0_DP
+        
+        ! Evaluate the expression. ivalue is the number of
+        ! the expression to evaluate.
+        evalBoundary = fparser_evalFunction (p_rparser, ivalue, Rval)
+        
+      CASE (BDC_VALPARPROFILE)
         ! A parabolic profile. dvalue expresses the
         ! maximum value of the profile. 
         !
@@ -555,7 +713,10 @@ CONTAINS
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
     TYPE(t_triangulation), POINTER :: p_rtriangulation
     INTEGER :: ipoint,idx
-
+    
+    ! Note: the definition of (analytic) fictitious boundary components 
+    ! is performed in 'c2d2_parseFBDconditions'.
+    
     ! Are we evaluating our fictitious boundary component?
     IF (rbcRegion%rfictBoundaryRegion%sname .EQ. 'CIRCLE') THEN
     

@@ -18,7 +18,7 @@
 # Type identifier of the solver.
 # 9=Multigrid
 
-isolverType = 9
+isolverType = 11
 
 # Minimum number of steps
 

@@ -77,6 +77,9 @@
 		<File RelativePath="..\src\cc2dmediumm2boundary.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\src\cc2dmediumm2boundarydef.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\src\cc2dmediumm2discretisation.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
@@ -117,6 +120,7 @@
 		<File RelativePath="..\data\linsol_cc2d.dat"/>
 		<File RelativePath="..\data\nonlinsol_cc2d.dat"/>
 		<File RelativePath="..\data\output.dat"/>
-		<File RelativePath="..\data\paramtriang.dat"/></Filter>
+		<File RelativePath="..\data\paramtriang.dat"/>
+		<File RelativePath="..\data\timediscr.dat"/></Filter>
 		<File RelativePath="notes.txt"/></Files>
 	<Globals/></VisualStudioProject>

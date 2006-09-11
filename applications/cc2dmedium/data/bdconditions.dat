@@ -9,7 +9,9 @@
 #   'name' type value
 # with
 #   'name' : an arbitrary name; case insensitive
-#   type   : -1=expression
+#   type   : -2=name of a hardcoded expression realised by callback routines
+#               in the code
+#            -1=general text expression to be evaluated
 #             0=double precision constant, 
 #             1=integer constant
 #             2=parabolic profile with given maximum value
@@ -25,11 +27,12 @@
 #    x = x-coordinate of the point on the boundary
 #    y = y-coordinate of the point on the boundary
 
-bdExpressions(4) =
+bdExpressions(5) =
   'pi'             0    3.14159265358979
   'Umax'           0    0.3
   'Dirichlet0'     0    0.0
   'ParProfile'     2    0.3 # 'Umax * 4.0*r*(1-r)'
+  'ParProfExpr'   -1    '(1.0-L)*L*4.0*0.3'
   
 
 ##############
@@ -93,12 +96,20 @@ bdExpressions(4) =
 #                "..." specifies the name of the expression that is
 #                evaluated to give the normal stress.
 #                Example: 0  1.0  3  2  'PressValue1'
+#          = 3 : Slip boundary conditions. Like Neumann BC's this
+#                does not use an expression.
 
 bdComponent1(4)=
   0  1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
   0  2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
   0  3.0  3  1  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
   0  4.0  3  1  'ParProfile'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
+
+#bdComponent1(4)=
+#  0  1.0  3  3                               # [0.0,1.0] : Slip boundary
+#  0  2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
+#  0  3.0  3  3                               # [2.0,3.0] : Slip boundary
+#  0  4.0  3  1  'Umax'  'Dirichlet0'   # [3.0,4.0] : parabolic profile in X, 0.0 in Y
 
 bdComponent2(1)=
   0  4.0  3  1  'Dirichlet0'  'Dirichlet0'   # Complete boundary component Dirichlet-0 boudary
