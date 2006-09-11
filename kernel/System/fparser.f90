@@ -325,8 +325,8 @@ MODULE fparser
                             cSub         =  7, &
                             cMul         =  8, &
                             cDiv         =  9, &
-                            cMod         = 10, &
-                            cPow         = 11, &
+                            cMod         = 10
+  INTEGER(is), PARAMETER :: cPow         = 11, &
                             cNEqual      = 12, & ! NOTE: != must be prior to =
                             cEqual       = 13, &
                             cLessOrEq    = 14, & ! NOTE: <= must be prior to <
@@ -335,8 +335,8 @@ MODULE fparser
                             cGreater     = 17, &
                             cNot         = 18, &
                             cAnd         = 19, &
-                            cOr          = 20, & ! --> last dyadic operator: A.OP. B
-                            cIf          = 21, & ! <-- if-then-else
+                            cOr          = 20    ! --> last dyadic operator: A.OP. B
+  INTEGER(is), PARAMETER :: cIf          = 21, & ! <-- if-then-else
                             cMin         = 22, & ! <-- first dyadic operator: .OP.(A,B)
                             cMax         = 23, &
                             cAtan2       = 24, & ! --> last dyadic operator: .OP.(A,B)
@@ -345,8 +345,8 @@ MODULE fparser
                             cAint        = 27, &
                             cExp         = 28, &
                             cLog10       = 29, &
-                            cLog         = 30, &
-                            cSqrt        = 31, &
+                            cLog         = 30
+  INTEGER(is), PARAMETER :: cSqrt        = 31, &
                             cSinh        = 32, &
                             cCosh        = 33, &
                             cTanh        = 34, &
@@ -355,8 +355,8 @@ MODULE fparser
                             cTan         = 37, & 
                             cCot         = 38, &
                             cAsin        = 39, &
-                            cAcos        = 40, &
-                            cAtan        = 41, &
+                            cAcos        = 40
+  INTEGER(is), PARAMETER :: cAtan        = 41, &
                             cAcosh       = 42, &
                             cAsinh       = 43, &
                             cAtanh       = 44, &
@@ -524,9 +524,6 @@ CONTAINS
 !</output>
 !</subroutine>
     
-    ! local variables
-    INTEGER :: i
-
     ALLOCATE (rparser%Comp(n))
     rparser%nComp=n
   END SUBROUTINE fparser_create
@@ -1593,7 +1590,7 @@ CONTAINS
     ! local variables
     INTEGER(is), DIMENSION(:), POINTER :: ByteCode
     REAL(DP), DIMENSION(:), POINTER :: Immed
-    INTEGER :: ind,istat
+    INTEGER :: ind
     
     IF (ASSOCIATED(Comp%ByteCode)) DEALLOCATE (Comp%ByteCode)
     IF (ASSOCIATED(Comp%Immed))    DEALLOCATE (Comp%Immed)

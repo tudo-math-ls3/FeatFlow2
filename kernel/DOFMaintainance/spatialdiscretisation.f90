@@ -623,6 +623,12 @@ CONTAINS
   ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
   TYPE(t_elementDistribution), POINTER :: p_relementDistr
   
+  ! Check that the source discretisation structure is valid.
+  IF (rsourceDiscr%ndimension .LE. 0) THEN
+    PRINT *,'spdiscr_deriveSimpleDiscr: Source structure invalid!'
+    STOP
+  END IF
+  
   ! Check that the discretisation structure is really uniform.
   ! More complex situations are not supported by this routine.
   IF (rsourceDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN

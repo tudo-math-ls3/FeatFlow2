@@ -137,7 +137,7 @@ MODULE boundary
   ! Use 0-1 parametrisation
   INTEGER, PARAMETER :: BDR_PAR_01       = 0
 
-  ! Use parametrisation for the length
+  ! Use parametrisation for the arc length
   INTEGER, PARAMETER :: BDR_PAR_LENGTH   = 1
 
 !</constantblock>
@@ -690,7 +690,7 @@ MODULE boundary
         ! Relative endpoint
         READ(iunit,*) p_DsegInfo(isegrel+5),p_DsegInfo(isegrel+6)
         
-        ! Save the initial parameter value (in of the length-parametrisation)
+        ! Save the initial parameter value (in of the arc length-parametrisation)
         ! to the first entry
         p_DsegInfo(isegrel+1) = dmaxpar
         
@@ -1113,6 +1113,9 @@ MODULE boundary
 
       ! Get the segment length for later use
       dseglength  = p_DsegInfo(2+istartidx)
+      
+      ! Start parameter value in length parametrisation
+      dcurrentpar = p_DsegInfo(1+istartidx)
       
       ! Subtract the start position of the current boundary component
       ! from the parameter value to get the 'local' parameter value

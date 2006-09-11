@@ -250,9 +250,15 @@ CONTAINS
 
           CASE (DISCBC_TPPRESSUREDROP)
 
-            ! Discrete Dirichlet boundary conditions. Release the old structure.
+            ! Discrete Pressure drop boundary conditions. Release the old structure.
             CALL bcasm_releasePressureDrop( &
                  p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rpressureDropBCs)
+
+          CASE (DISCBC_TPSLIP)
+
+            ! Discrete Slip boundary conditions. Release the old structure.
+            CALL bcasm_releaseSlip( &
+                 p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rslipBCs)
 
           END SELECT
 
@@ -296,6 +302,12 @@ CONTAINS
         CALL bcasm_discrBCpressureDrop (rblockDiscretisation, &
                    p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
                    ccompl,fgetBoundaryValues,p_rcoll)
+
+      CASE (BC_SLIP)
+
+        CALL bcasm_discrBCSlip (rblockDiscretisation, &
+                   p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
+                   ccompl)
         
       END SELECT
         
@@ -358,6 +370,11 @@ CONTAINS
         ! Discrete pressure drop boundary conditions. Release the old structure.
         CALL bcasm_releasePressureDrop(&
              p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rpressureDropBCs)
+
+      CASE (DISCBC_TPSLIP)
+        ! Discrete Slip boundary conditions. Release the old structure.
+        CALL bcasm_releaseSlip( &
+              p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rslipBCs)
 
       END SELECT
 
@@ -1437,6 +1454,255 @@ CONTAINS
     CALL storage_free(rdiscreteBCPD%h_IpressureDropDOFs)
   IF (rdiscreteBCPD%h_Dmodifier .NE. ST_NOHANDLE) &
     CALL storage_free(rdiscreteBCPD%h_Dmodifier)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_discrBCSlip (rblockDiscretisation, &
+                                rbcRegion, rdiscreteBC, casmComplexity)
+  
+!<description>
+  ! Creates a discrete version of Slip boundary conditions.
+  ! rbcRegion describes the region which is to be discretised. The discretised
+  ! boundary conditions are created in rdiscreteBC, which is assumed
+  ! to be undefined when entering this routine.
+!</description>
+
+!<input>
+  ! The discretisation structure of the underlying discretisation. The boundary
+  ! conditions inside of this structure are discretised.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscretisation
+
+  ! The BC region which is to be discrised
+  TYPE(t_bcRegion), INTENT(IN) :: rbcRegion
+
+  ! A combination of BCASM_DISCFORxxx constants that specify
+  ! the complexity of the discretisation that is to perform. This allows to
+  ! discretise only parts of the BC's, e.g. only setting up those
+  ! information that are necessary for filtering defect vectors.
+  ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
+  ! boundary conditions can be used for everything.
+  INTEGER(I32), INTENT(IN) :: casmComplexity
+!</input>  
+
+!<output>
+  ! This structure receives the result of the discretisation of rbcRegion.
+  ! When entering the routine, the content of this structure is undefined,
+  ! all pointers are invalid. The routine fills everything with appropriate
+  ! data.
+  TYPE(t_discreteBCEntry), INTENT(OUT), TARGET :: rdiscreteBC
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i,icount,ipart,ieltype
+  INTEGER, DIMENSION(2) :: IminEdge,ImaxEdge,Iminidx,Imaxidx
+  REAL(DP),DIMENSION(NDIM2D)                  :: Dtangential,Dnormal
+  INTEGER(PREC_POINTIDX)                      :: NVT,ipoint1,ipoint2
+  INTEGER(PREC_ELEMENTIDX)                    :: ielement
+  INTEGER(PREC_EDGEIDX)                       :: ndofs,idof,iedge
+  INTEGER(I32), DIMENSION(2)                  :: InormalsSize
+  
+  TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
+  TYPE(t_triangulation), POINTER              :: p_rtriangulation
+  INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary
+  INTEGER(I32), DIMENSION(:), POINTER         :: p_IedgesAtBoundary,p_IverticesAtBoundary
+  REAL(DP), DIMENSION(:,:), POINTER           :: p_DcornerCoordinates
+  INTEGER(I32), DIMENSION(:,:), POINTER       :: p_IverticesAtEdge
+  
+  TYPE(t_discreteBCSlip), POINTER             :: p_rslipBCs
+  INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IslipDOFs
+  REAL(DP), DIMENSION(:,:), POINTER           :: p_Dnormals
+  REAL(DP) :: d
+
+  ! Pressure drop BC's only exist as modification of the defect vector
+  ! and matrix.
+  ! If we should not compute them for the matrix/defect, we don't 
+  ! have to do anything.
+  IF (IAND(casmComplexity,BCASM_DISCFORDEFMAT) .EQ. 0) RETURN
+
+  ! Fill the structure for discrete pressure drop BC's in the
+  ! t_discreteBCEntry structure
+  p_rslipBCs => rdiscreteBC%rslipBCs
+  
+  ! Get the discretisation structures from one of the components of the solution
+  ! vector that is to be modified.
+  p_rspatialDiscretisation => &
+    rblockDiscretisation%RspatialDiscretisation(rbcRegion%Iequations(1))  
+
+  IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    PRINT *,'Discrete Slip boundary conditions currently only supported'
+    PRINT *,'for uniform discretisations!'
+    STOP
+  END IF
+
+  ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+  IF ((ieltype .NE. EL_E030) .AND. (ieltype .NE. EL_E031) .AND. &
+      (ieltype .NE. EL_EM30) .AND. (ieltype .NE. EL_E031)) THEN
+    PRINT *,'Discrete Slip boundary conditions currently only supported'
+    PRINT *,'for Q1~ element!'
+    STOP
+  END IF
+  
+  IF (rbcRegion%nequations .NE. NDIM2D) THEN
+    PRINT *,'Pressure drop boundary conditions only support 2D!'
+    STOP
+  END IF
+  
+  ! For easier access:
+  p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+
+  ! Note: All elements are of the same type ieltyp.
+  !
+  ! We have pressure drop boundary conditions
+  rdiscreteBC%itype = DISCBC_TPSLIP
+  
+  ! Connect to the boundary condition structure
+  rdiscreteBC%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
+  
+  ! Which components of the solution vector are affected by this boundary
+  ! condition?
+  p_rslipBCs%ncomponents = rbcRegion%nequations
+  p_rslipBCs%Icomponents(1:NDIM2D) = rbcRegion%Iequations(1:NDIM2D)
+  
+  ! We have to deal with all DOF's on the boundary. This is highly element
+  ! dependent and therefore a little bit tricky :(
+  ! But here we restrict to Q1~ only, which makes life a little bit easier.
+  !
+  ! As we are in 2D, we can use parameter values at first to figure out,
+  ! which edges are on the boundary.
+  ! What we have is a boundary segment. Now ask the boundary-index routine
+  ! to give us the minimum and maximum index of the edges on the
+  ! bondary that belong to this boundary segment.
+  
+  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rdomain, &
+                                 rbcRegion%rboundaryRegion, &
+                                 IminEdge,ImaxEdge,icount)
+                                 
+  ! Cancel if the set is empty!
+  IF (icount .EQ. 0) THEN
+    RETURN
+  END IF
+                    
+  ! Put IminEdge/ImaxEdge to Iminidx/ImaxIdx and continue working with these.
+  ! in a later implementation, we probably have to include the indices of
+  ! points on the boundary here, too, like in the Dirichlet case.
+  Iminidx = IminEdge
+  Imaxidx = ImaxEdge
+  
+  ! Total number of edges?
+  ndofs = Imaxidx(1)-Iminidx(1)+1 + Imaxidx(2)-Iminidx(2)+1
+  
+  p_rslipBCs%nDOF = ndofs
+
+  ! Allocate memory to save the DOF's as well as all modifiers.
+  CALL storage_new('bcasm_discrBCSlip', 'h_IpressureDropDOFs', &
+                  ndofs, ST_INT, p_rslipBCs%h_IslipDOFs, &
+                  ST_NEWBLOCK_NOINIT)
+  InormalsSize = (/NDIM2D,ndofs/)
+  CALL storage_new2D('bcasm_discrBCSlip', 'h_Dnormals', & 
+                    InormalsSize, ST_DOUBLE, p_rslipBCs%h_DnormalVectors, &
+                    ST_NEWBLOCK_NOINIT)
+                    
+  CALL storage_getbase_int(p_rslipBCs%h_IslipDOFs,p_IslipDOFs)
+  CALL storage_getbase_double2d(p_rslipBCs%h_DnormalVectors,p_Dnormals)
+
+  ! For easier access:
+  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+  CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+  CALL storage_getbase_int(p_rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
+  CALL storage_getbase_double2D(p_rtriangulation%h_DcornerCoordinates,p_DcornerCoordinates)
+  CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+  NVT = p_rtriangulation%NVT
+
+  ! Now calculate the pressure drop integral; cf. p. 257 (235) in Turek's book:
+  !
+  ! The pressure drop boundary condition has to implement
+  !
+  !     - sum P_j  int_Sj  phi * n  ds
+  !
+  ! into the RHS vector. For each (velocity) DOF of the boundary,
+  ! we save "P_j  int_Sj  phi_k * n  ds" as modifier for the DOF of
+  ! the RHS!
+  
+  idof = 0
+  
+  ! Loop through the index sets. Normally we have only one, except when
+  ! a boundary segment crosses the maximum parameter value...
+  DO ipart = 1,icount
+  
+    ! Loop through all edges on the boundary belonging to our current 
+    ! boundary segment.
+    DO i=Iminidx(ipart),Imaxidx(ipart)
+    
+      ! Where are we at the boundary? Element? Edge? Adjacent vertices?  
+      ielement = p_IelementsAtBoundary(I)
+      iedge = p_IedgesAtBoundary(I)
+      ipoint1 = p_IverticesAtEdge(1,iedge-NVT)
+      ipoint2 = p_IverticesAtEdge(2,iedge-NVT)
+      
+      ! Maybe the points are in the wrong order...
+      IF (ipoint1 .NE. p_IverticesAtBoundary(I)) THEN
+        ipoint1 = p_IverticesAtEdge(2,I)
+        ipoint2 = p_IverticesAtEdge(1,I)
+        ! now they are not!
+      END IF
+      
+      ! Get the coordinates of the endpoints to build the tangential
+      ! vector of the edge:
+      Dtangential(1:NDIM2D) = p_DcornerCoordinates(1:NDIM2D,ipoint2) &
+                            - p_DcornerCoordinates(1:NDIM2D,ipoint1)
+                            
+      ! Get the outer normal vector.
+      Dnormal(1) =  Dtangential(2)
+      Dnormal(2) = -Dtangential(1)
+      
+      ! Scale the vector to be of length 1.
+      
+      d = 1.0_DP / DSQRT(Dnormal(1)**2+Dnormal(2)**2)
+      Dnormal(1:2) = Dnormal(1:2) * d
+      
+      ! Save the DOF and the normal of the edge.            
+      idof = idof + 1
+      
+      p_IslipDOFs(idof) = iedge-NVT
+      p_Dnormals(1:NDIM2D,idof) = Dnormal(1:NDIM2D)
+    
+    END DO ! i
+  
+  END DO ! ipart  
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_releaseSlip (rdiscreteBCSlip)
+  
+!<description>
+  ! This routine cleans up the discrete Pressure Drop boundary conditions
+  ! rdiscreteBCPD.
+!</description>
+
+!<inputoutput>
+  ! The discrete-BC structure which is to be cleaned up
+  TYPE(t_discreteBCSlip), INTENT(INOUT) :: rdiscreteBCSlip
+!</inputoutput>
+
+!</subroutine>
+
+  ! Release what is associated
+  
+  rdiscreteBCSlip%nDOF = 0
+  IF (rdiscreteBCSlip%h_IslipDOFs .NE. ST_NOHANDLE) &
+    CALL storage_free(rdiscreteBCSlip%h_IslipDOFs)
+  IF (rdiscreteBCSlip%h_DnormalVectors .NE. ST_NOHANDLE) &
+    CALL storage_free(rdiscreteBCSlip%h_DnormalVectors)
 
   END SUBROUTINE
 

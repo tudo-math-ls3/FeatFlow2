@@ -8,7 +8,7 @@
 !# conditions are an element-dependent way to represent analytical boundary
 !# conditions. After "discretising", the boundary condition can quickly
 !# be implemented into a vector. Therefore, one can see discrete boundary
-!# conditionsalso as a kind of 'precalculated' boundary conditions. This is 
+!# conditions also as a kind of 'precalculated' boundary conditions. This is 
 !# exploited e.g. in the filter approach, where a filter routine 'applies' a 
 !# discrete BC to a vector. 
 !#
@@ -20,6 +20,13 @@
 !#
 !# - Pressure drop conditions consist of a list of DOF's and a modifier
 !#   how to modify the actual DOF's.
+!#
+!# - Slip boundary conditions consists like Dirichlet boundary conditions
+!#   of a list of DOF's, wher zero must be implemented into the defect
+!#   vector. Slip boundary conditions are nonlinear boundary conditions:
+!#   In case of a linear system, the corresponding DOF's are treated
+!#   as Dirichlet. The actual BC is implemented during a nonlinear
+!#   loop by modifying the appearing defect vector.
 !#   
 !# </purpose>
 !##############################################################################
@@ -41,7 +48,7 @@ MODULE discretebc
 
 !</constantblock>
 
-!<constantblock description="The type identifier for discrete boundary conditions">
+!<constantblock description="The type identifier for discrete (linear) boundary conditions">
 
   ! undefined discrete BC's
   INTEGER, PARAMETER :: DISCBC_TPUNDEFINED    = 0
@@ -50,7 +57,14 @@ MODULE discretebc
   INTEGER, PARAMETER :: DISCBC_TPDIRICHLET    = 1
   
   ! Discrete pressure drop boundary conditions
-  INTEGER, PARAMETER :: DISCBC_TPPRESSUREDROP = 2
+  INTEGER, PARAMETER :: DISCBC_TPPRESSUREDROP = 3
+
+!</constantblock>
+
+!<constantblock description="The type identifier for discrete nonlinear boundary conditions">
+
+  ! Discrete slip boundary conditions
+  INTEGER, PARAMETER :: DISCBC_TPSLIP         = 100
 
 !</constantblock>
 
@@ -103,6 +117,50 @@ MODULE discretebc
     ! Handle to array with the Dirichlet value that should be imposed in these nodes
     !   array [1..*] of double
     INTEGER :: h_DdirichletValues = ST_NOHANDLE
+    
+  END TYPE
+  
+!</typeblock>
+
+!<typeblock>
+  
+  ! This structure contains the information to implement slip boundary
+  ! conditions in case of a Navier-Stokes solver.
+  ! Slip boundary conditions are handled the same way as Dirichlet-
+  ! zero boundary conditions, but have a different treatment due the nonlinear
+  ! loop. We have one array is a list of all DOF's that refer do slip boundary 
+  ! nodes. 
+  ! The variable ncomponent describes the number ov velocity components/
+  ! equations in the PDE. Icomponents(1..ncomponents) on the other hand
+  ! is a list of numbers of the velocity equations in the PDE.
+  ! Normally there is Icomponents(1)=1=X-velocity, Icomponents(1)=2=Y-velocity,
+  ! probably Icomponents(3)=3=Z-velocity, 
+  
+  TYPE t_discreteBCSlip
+    
+    ! Number of velocity components that take part on the slip
+    ! boundary conditions.
+    INTEGER                                 :: ncomponents        = 0
+    
+    ! List of all velocity components in the PDE that take part on
+    ! the slip boundary conditions.
+    ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
+    INTEGER, DIMENSION(SPDISC_MAXEQUATIONS) :: Icomponents        = 0
+    
+    ! Number of Dirichlet nodes; may be different from the length of the array!
+    INTEGER(PREC_DOFIDX)               :: nDOF              = 0
+    
+    ! Handle to array with all DOF's that refer to Dirichlet nodes
+    !   array [1..*] of integer
+    INTEGER :: h_IslipDOFs   = ST_NOHANDLE
+    
+    ! Handle to an array that contains the normal vectors of the
+    ! boundary edges.
+    !   DnormalVectors = array [1..ncomponents,1..*] of double with
+    !   DnormalVectors(1)=X-component,
+    !   DnormalVectors(2)=Y-component,...
+    ! of the normal vector.
+    INTEGER :: h_DnormalVectors = ST_NOHANDLE
     
   END TYPE
   
@@ -173,6 +231,10 @@ MODULE discretebc
     ! Structure for discrete pressure drop BC's.
     ! Only valid if itype=DISCBC_TPPRESSUREDROP.
     TYPE(t_discreteBCpressureDrop)      :: rpressuredropBCs
+    
+    ! Structure for discrete Slip BC's.
+    ! Only valid if itype=DISCBC_TPSLIP.
+    TYPE(t_discreteBCSlip)              :: rslipBCs
     
   END TYPE
   

@@ -16,6 +16,9 @@
 !# 2.) mmod_replaceLinesByZero
 !#     -> Replaces some rows in a scalar matrix by zero vectors
 !#
+!# 3.) mmod_clearOffdiags
+!#     -> Replace all off-diagonal entries in some rows of a matrix
+!#        by zero.
 !# </purpose>
 !##############################################################################
 
@@ -138,6 +141,125 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'mmod_replaceLinesByUnit: Only double prec. matices supported!'
+      STOP
+    END SELECT
+
+    END SUBROUTINE
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mmod_clearOffdiags (rmatrix,Irows)
+  
+!<description>
+  ! This routine replaces the offdiagonal entries in some lines of 
+  ! a given scalar matrix by zero. The diagonal elements are not
+  ! changed.
+!</description>
+
+!<input>
+  ! A list of row numbers of all the rows which are to be replaced
+  ! by unit vectors.
+  INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: Irows
+!</input>
+
+!<inputoutput>
+  ! The matrix which is to be modified.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  ! At first we must take care of the matrix type.
+  SELECT CASE (rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9)
+    CALL removeOffdiags_format9 (rmatrix,Irows)
+  CASE (LSYSSC_MATRIX7)
+    CALL removeOffdiags_format7 (rmatrix,Irows)
+  END SELECT
+  
+  CONTAINS
+   
+    ! ****************************************
+    ! The replacement routine for format 9
+    
+    SUBROUTINE removeOffdiags_format9 (rmatrix,Irows)
+    
+    INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: Irows
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    
+    ! local variables
+    INTEGER(PREC_MATIDX) :: irow
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
+    REAL(DP) :: ddiag
+    
+    ! Get Kld and Kdiagonal
+    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
+    CALL storage_getbase_int(rmatrix%h_Kdiagonal,p_Kdiagonal)
+    
+    ! Take care of the format of the entries
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data array
+      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      
+      ! loop through the rows
+      DO irow = 1,SIZE(Irows)
+      
+        ! Get the diagonal
+        ddiag = p_DA(p_Kdiagonal(Irows(irow)))
+      
+        ! Clear the row
+        p_DA(p_Kld(Irows(irow)):p_Kld(Irows(irow)+1)-1) = 0.0_DP
+        
+        ! restore the diagonal
+        p_DA(p_Kdiagonal(Irows(irow))) = ddiag
+      
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'mmod_clearOffdiags: Only double prec. matices supported!'
+      STOP
+    END SELECT
+    
+    END SUBROUTINE
+
+    ! ****************************************
+    ! The replacement routine for format 7
+    
+    SUBROUTINE removeOffdiags_format7 (rmatrix,Irows)
+    
+    INTEGER(PREC_MATIDX), INTENT(IN), DIMENSION(:) :: Irows
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    
+    ! local variables
+    INTEGER(PREC_MATIDX) :: irow
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+
+    ! Get Kld:
+    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
+
+    ! Take care of the format of the entries
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data array
+      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      
+      ! loop through the rows
+      DO irow = 1,SIZE(Irows)
+      
+        ! Clear the row except for the diagonal
+        p_DA(p_Kld(Irows(irow))+1:p_Kld(Irows(irow)+1)-1) = 0.0_DP
+      
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'mmod_clearOffdiags: Only double prec. matices supported!'
       STOP
     END SELECT
 

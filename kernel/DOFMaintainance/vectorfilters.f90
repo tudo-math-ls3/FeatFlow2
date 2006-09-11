@@ -14,41 +14,113 @@
 !# conditions into a vector.
 !# Also other filters can be found here, e.g. normalisation ov vectors, etc.
 !#
-!# Filters can even be collected to a complete 'filter chain' and applied
-!# 'en block' onto a vector. For this purpose, there exists a higher-level
-!# module 'filtersupport', which realises such a filter chain.
+!# 'Linear' and 'nonlinear' vector filters
+!# ---------------------------------------
+!# There are two elemental types of vector filters realised here:
+!# 'Linear' filters and 'nonlinear' filters:
 !#
+!# a) 'Linear' filters
+!#
+!#   These filters realise simple vector filters like 
+!#   - implementation of Dirichlet boundary conditions
+!#   - filter a vector to be in $L^2_0$
+!#   or similar.
+!#   The name comes from the ability to be able to be used as a filter
+!#   when solving a *linear system*. Some iterative solvers like BiCGStab
+!#   or Multigrid allow a vector to be filtered during the iteration. 
+!#   All filters marked as 'linear filters' can be collected to a
+!#   'filter chain' that is applied to a vector in such an iteration.
+!#   For this purpose, there exists a higher-level module 'filtersupport',
+!#   which realises such a filter chain.
+!#   Of course, they can be applied to a vector anytime manually, e.g. for
+!#   implementing Dirichlet boundary conditions 'by hand'.
+!#
+!# b) 'Nonlinear' filters
+!#
+!#   All filters that can not be collected in a filter chain to be
+!#   applied during the solution of a linear system are called
+!#   'nonlinear filters'. These filters are usually called inside of
+!#   a nonlinear iteration to perform a special filtering to a vector
+!#   which is probably not possible to formulate in the calling convention
+!#   of a linear filter - e.g. if additional auxiliary vectors are used
+!#   or if a filter consists of a predictor-corrector step or similar.
+!#   Example:
+!#   - implementation of Slip boundary conditions.
+!#
+!# Note that filters are allowed consist a linear and a nonlinear part!
+!# In such a case, the 'nonlinear' filter part is usually called during 
+!# the nonlinear iteration, while the 'linear' part is used during the
+!# solution of a linear system. An example for this may be the
+!# predictor-corrector implementation of Slip boundary conditions (not
+!# realised here), where the nonlinear iteration treats the BC while
+!# in the solution process of the linear system, all respective nodes
+!# are handled as Dirichlet.
+!# 
 !# The following routines can be found here:
 !#
 !#  1.) vecfil_normaliseToL20Sca
+!#      -> Linear filter
 !#      -> Normalise a scalar vector to be in the space $L^2_0$.
 !#
 !#  2.) vecfil_discreteBCsol
+!#      -> Linear filter
 !#      -> Apply the 'discrete boundary conditions for solution vectors' filter
-!#         onto a given (block) solution vector. 
+!#         onto a given (block) solution vector.
 !#
 !#  3.) vecfil_discreteBCrhs
+!#      -> Linear filter
 !#      -> Apply the 'discrete boundary conditions for RHS vectors' filter
 !#         onto a given (block) vector. 
 !#
 !#  4.) vecfil_discreteBCdef
+!#      -> Linear filter
 !#      -> Apply the 'discrete boundary conditions for defect vectors' filter 
 !#         onto a given (block) vector. 
 !#
 !#  5.) vecfil_discreteFBCsol
+!#      -> Linear filter
 !#      -> Apply the 'discrete fictitious boundary conditions for solution vectors'
 !#         filter onto a given (block) solution vector. 
 !#
 !#  6.) vecfil_discreteFBCrhs
+!#      -> Linear filter
 !#      -> Apply the 'discrete fictitious boundary conditions for RHS vectors' 
 !#         filter onto a given (block) vector. 
 !#
 !#  7.) vecfil_discretFBCdef
+!#      -> Linear filter
 !#      -> Apply the 'discrete fictitious boundary conditions for defect vectors' 
 !#         filter onto a given (block) vector. 
 !#
 !#  8.) vecfil_subvectorToL20
-!#     -> Normalise a subvector of a block vector to be in the space $L^2_0$.
+!#      -> Linear filter
+!#      -> Normalise a subvector of a block vector to be in the space $L^2_0$.
+!#
+!#  9.) vecfil_discreteNLSlipBCdef
+!#      -> Nonlinear filter
+!#      -> Implements discrete nonlinear slip BC's into a scalar defect vector.
+!#
+!# Auxiliary routines, usually not called by the main program:
+!#
+!#  1.) vecfil_imposeDirichletBC
+!#      -> Implements discrete Dirichlet BC's into a scalar vector.
+!#
+!#  2.) vecfil_imposeDirichletDefectBC
+!#      -> Implements discrete Dirichlet BC's into a scalar defect vector.
+!#
+!#  3.)  vecfil_imposeDirichletFBC (rx,icomponent,rdbcStructure)
+!#      -> Implements discrete Dirichlet fictitious boundary conditions into a 
+!#      -> scalar vector.
+!#
+!#  4.) vecfil_normaliseToL20Sca (rx)
+!#      -> Normalises a scalar vector to bring it into the space $L^2_0$.
+!#
+!#  5.) vecfil_imposePressureDropBC (rx,rpdbcStructure)
+!#      -> Implements discrete pressure drop BC's into a block vector.
+!#
+!#  6.) vecfil_imposeNLSlipDefectBC 
+!#      -> Implements discrete nonlinear slip BC's into a scalar defect vector
+!#         as configured in the slip BC structure.
 !#
 !# </purpose>
 !##############################################################################
@@ -566,6 +638,133 @@ CONTAINS
   
   END SUBROUTINE
   
+! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE vecfil_imposeNLSlipDefectBC (rx,rslipBCStructure)
+  
+!<description>
+  ! Implements discrete nonlinear slip BC's into a scalar defect vector
+  ! as configured in the slip BC structure.
+  ! This routine performs a special filtering to the defect vector
+  ! of the type $r_m := r_m - (n*r_m)*n$ as described in
+  ! [Kuzmin, Turek, Haario: Finite element simulation of turbulent
+  ! bubble flows in gas-liquid reactors. Technical Report 298,
+  ! September 2005, Chair of mathematics III, University of Dortmund]
+!</description>
+
+!<input>
+  ! The t_discreteBCSlip that describes the discrete Dirichlet BC's
+  TYPE(t_discreteBCSlip), INTENT(IN), TARGET  :: rslipBCStructure
+!</input>
+
+!<inputoutput>
+
+  ! The block vector where the boundary conditions should be imposed.
+  TYPE(t_vectorBlock), INTENT(INOUT), TARGET :: rx
+  
+!</inputoutput>
+  
+!</subroutine>
+    
+    ! local variables
+    INTEGER(PREC_DOFIDX) :: i,idof
+    REAL(DP), DIMENSION(:), POINTER :: p_vecX,p_vecY
+    INTEGER(I32), DIMENSION(:), POINTER :: p_idx
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dnormals
+    REAL(DP) :: d
+    
+    ! If nDOF=0, there are no DOF's the current boundary condition segment,
+    ! so we don't have to do anything. Maybe the case if the user selected
+    ! a boundary region that is just too small.
+    IF (rslipBCStructure%nDOF .EQ. 0) RETURN
+    
+    ! Only 2D supported at the moment
+    IF (rslipBCStructure%ncomponents .NE. NDIM2D) THEN
+      PRINT *,'vecfil_imposeNLSlipDefectBC: Only 2D supported.'
+      STOP
+    END IF
+    
+    ! Only double precision vectors supported.
+    IF (rx%cdataType .NE. ST_DOUBLE) THEN 
+      PRINT *,'vecfil_imposeNLSlipDefectBC: Only double precision supported.'
+      STOP
+    END IF
+
+    ! Get pointers to the structures. For the vector, get the pointer from
+    ! the storage management.
+    
+    CALL storage_getbase_int(rslipBCStructure%h_IslipDOFs,p_idx)
+    
+    IF (.NOT.ASSOCIATED(p_idx)) THEN
+      PRINT *,'Error: slip-BC not configured'
+      STOP
+    END IF
+    
+    IF (rx%RvectorBlock(rslipBCStructure%Icomponents(1))%isortStrategy .NE.&
+        rx%RvectorBlock(rslipBCStructure%Icomponents(2))%isortStrategy) THEN
+      PRINT *,'vecfil_imposeNLSlipDefectBC: Subectors differently sorted.'
+      STOP
+    END IF
+    
+    CALL lsyssc_getbase_double ( &
+           rx%RvectorBlock(rslipBCStructure%Icomponents(1)), p_vecX)
+    CALL lsyssc_getbase_double ( &
+           rx%RvectorBlock(rslipBCStructure%Icomponents(2)), p_vecY)
+    
+    IF ( (.NOT.ASSOCIATED(p_vecX)) .OR. (.NOT.ASSOCIATED(p_vecX)) )THEN
+      PRINT *,'Error: No vector'
+      STOP
+    END IF
+
+    CALL storage_getbase_double2d(rslipBCStructure%h_DnormalVectors,p_Dnormals)
+
+    ! Impose the BC-DOF's directly - more precisely, into the
+    ! components of all the subvectors.
+    !
+    ! Only handle nDOF DOF's, not the complete array!
+    ! Probably, the array is longer (e.g. has the length of the vector), but
+    ! contains only some entries...
+
+    ! Is the vector sorted? If yes, all vectors are sorted the same way!
+    IF (rx%RvectorBlock(1)%isortStrategy .LE. 0) THEN
+      ! No. Implement directly.
+      DO i=1,rslipBCStructure%nDOF
+        ! Get the DOF:
+        idof = p_idx(i)
+
+        ! Build n*r
+        d = p_Dnormals(1,i)*p_vecX(idof) + p_Dnormals(2,i)*p_vecY(idof)
+        
+        ! Compute: r := r - (n*r)*n
+        p_vecX(idof) = p_vecX(idof) - d*p_Dnormals(1,i)
+        p_vecY(idof) = p_vecY(idof) - d*p_Dnormals(2,i)
+      END DO
+    ELSE
+      ! Ups, vector sorted. At first get the permutation how its sorted -
+      ! or more precisely, the back-permutation, as we need this one for 
+      ! the loop below.
+      CALL storage_getbase_int (rx%RvectorBlock(1)%h_IsortPermutation,p_Iperm)
+      p_Iperm => p_Iperm(rx%NEQ+1:)
+      
+      ! And 'filter' each DOF during the boundary value implementation!
+      DO i=1,rslipBCStructure%nDOF
+        ! Get the DOF:
+        idof = p_Iperm(p_idx(i))
+
+        ! Build n*r
+        d = p_Dnormals(1,i)*p_vecX(idof) + p_Dnormals(2,i)*p_vecY(idof)
+        
+        ! Compute: r := r - (n*r)*n
+        p_vecX(idof) = p_vecX(idof) - d*p_Dnormals(1,idof)
+        p_vecY(idof) = p_vecY(idof) - d*p_Dnormals(2,idof)
+      END DO
+    END IF
+  
+  END SUBROUTINE
+
   ! ***************************************************************************
   ! Implementation of discrete boundary conditions into block solution vectors
   ! ***************************************************************************
@@ -646,6 +845,9 @@ CONTAINS
         
       CASE (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+
+      CASE (DISCBC_TPSLIP)  
+        ! Nothing to do
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
@@ -735,6 +937,9 @@ CONTAINS
       CASE (DISCBC_TPPRESSUREDROP)  
         CALL vecfil_imposePressureDropBC (rx,p_RdiscreteBC(i)%rpressureDropBCs)
         
+      CASE (DISCBC_TPSLIP)
+        ! Nothing to do.
+        
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCrhs: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
@@ -781,7 +986,7 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER :: iblock,i
+    INTEGER :: iblock,i,icp
     REAL(DP) :: dtweight
     TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
 
@@ -826,12 +1031,89 @@ CONTAINS
       CASE (DISCBC_TPPRESSUREDROP)  
         ! Nothing to do; pressure drop BC's are implemented only into the RHS.
         
+      CASE (DISCBC_TPSLIP)
+        ! Slip boundary conditions in the linear case are implemented
+        ! in a nonlinear loop - so there's nothing to do here.
+                
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCdef: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
         STOP
         
       END SELECT
+    END DO
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE vecfil_discreteNLSlipBCdef (rx,dtimeWeight,rdiscreteBC)
+
+!<description>
+  ! Implements discrete nonlinear slip BC's into a scalar defect vector.
+  ! Nonlinear filter, to be called inside of a nonlinear loop.
+  ! This routine performs a special filtering to the defect vector
+  ! of the type $r_m := r_m - (n*r_m)*n$ as described in
+  ! [Kuzmin, Turek, Haario: Finite element simulation of turbulent
+  ! bubble flows in gas-liquid reactors. Technical Report 298,
+  ! September 2005, Chair of mathematics III, University of Dortmund]
+  !
+  ! The filtering is applied to all boundary components configured
+  ! as slip in rx or rdiscreteBC (if given), respectively.
+!</description>
+  
+!<input>
+  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
+  ! boundary conditions before these are added to the vector rx.
+  ! The parameter can be omitted in stationary simulations.
+  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+
+  ! OPTIONAL: boundary conditions to impose into the vector.
+  ! If not specified, the default boundary conditions associated to the
+  ! vector rx are imposed to the vector.
+  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+!</input>
+
+!<inputoutput>
+  ! The block vector where the boundary conditions should be imposed.
+  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: i
+    REAL(DP) :: dtweight
+    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+
+    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+      ! Grab the boundary condition entry list from the vector. This
+      ! is a list of all discretised boundary conditions in the system.
+      p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+    ELSE
+      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+    END IF
+    
+    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    
+    ! If the time-weight is not specified, 1.0 is assumed.
+    IF (PRESENT(dtimeWeight)) THEN
+      dtweight = dtimeWeight
+    ELSE
+      dtweight = 1.0_DP
+    END IF
+    ! Note: Time-step weight not used by any filter up to now!
+    ! Perhaps in a later implementation it's needed anywhere...
+    
+    ! Now loop through all entries in this list:
+    DO i=1,SIZE(p_RdiscreteBC)
+    
+      ! Only implement discrete slip BC's.
+      IF (p_RdiscreteBC(i)%itype .EQ. DISCBC_TPSLIP) THEN
+        CALL vecfil_imposeNLSlipDefectBC (rx,p_RdiscreteBC(i)%rslipBCs)          
+      END IF
+      
     END DO
   
   END SUBROUTINE
@@ -916,6 +1198,9 @@ CONTAINS
           CALL vecfil_imposeDirichletFBC (rx%RvectorBlock(iblock),j,&
                                           p_RdiscreteFBC(i)%rdirichletFBCs)
         END DO
+
+      CASE (DISCBC_TPSLIP)
+        ! Nothing to do.
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
@@ -1005,6 +1290,9 @@ CONTAINS
                                           p_RdiscreteFBC(i)%rdirichletFBCs)
         END DO
       
+      CASE (DISCBC_TPSLIP)
+        ! Nothing to do.
+        
       CASE DEFAULT
         PRINT *,'vecfil_discreteFBCrhs: unknown boundary condition: ',&
                 p_RdiscreteFBC(i)%itype
@@ -1096,6 +1384,9 @@ CONTAINS
           CALL vecfil_imposeDirichletDefectFBC (rx%RvectorBlock(iblock),&
                                                 p_RdiscreteFBC(i)%rdirichletFBCs)
         END DO
+        
+      CASE (DISCBC_TPSLIP)
+        ! Nothing to do.
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteFBCdef: unknown boundary condition: ',&

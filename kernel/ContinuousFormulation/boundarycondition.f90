@@ -74,6 +74,17 @@
 !# the evaluation routines to identify a fictitious boundary object.
 !#
 !#
+!# Linear and nonlinear boundary conditions
+!# ----------------------------------------
+!# There are two types of boundary conditions: Linear (like Dirichlet) and
+!# nonlinear ones (like Slip boundary conditions). Linear boundary conditions
+!# are standard boundary conditions that are realised by discretising and
+!# implementing them into solution/rhs/defect vectors during the linear
+!# iteration. Nonlinear boundary conditions are implemented usually in a
+!# nonlinear loop and need a special implementation there, which might
+!# be different from when a linear system is solved.
+!# 
+!#
 !# The following routines can be found here:\\
 !#
 !# 1.) bcond_initBC
@@ -107,7 +118,7 @@ MODULE boundarycondition
 
 !<constants>
 
-!<constantblock description="The type identifier for boundary conditions">
+!<constantblock description="The type identifier for (linar) boundary conditions">
 
   ! Do-nothing boundary conditions (Neumann)
   INTEGER, PARAMETER :: BC_DONOTHING      = 0
@@ -126,6 +137,13 @@ MODULE boundarycondition
   
   ! Flux boundary conditions
   INTEGER, PARAMETER :: BC_FLUX           = 4
+
+!</constantblock>
+
+!<constantblock description="The type identifier for nonlinar boundary conditions">
+
+  ! Slip boundary condition
+  INTEGER, PARAMETER :: BC_SLIP           = 100
 
 !</constantblock>
 
@@ -227,6 +245,13 @@ MODULE boundarycondition
     !  and will therefore always rebuild the information for this boundary
     !  region when being called again.
     LOGICAL :: bisStatic = .FALSE.
+    
+    ! User defined tag to identify what to evaluate on the boundary.
+    ! =0: undefined.
+    ! This tag can be e.g. an identifier that tells the application whether
+    ! to evaluate a constant, a parabolic profile or an expression
+    ! on the boundary. Not used by the framework internally.
+    INTEGER      :: ibdrexprtype = 0
     
     ! user defined integer tag
     INTEGER(I32) :: itag = 0
@@ -661,6 +686,71 @@ CONTAINS
                       p_rbcReg,rboundaryRegion)
   ELSE
     CALL bcond_newBC (BC_PRESSUREDROP,BC_RTYPE_FREE,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
+  END IF
+
+  ! Modify the structure, impose additionally needed information
+  ! for Dirichlet boundary - in detail, set the equation where the BC
+  ! applies to.
+  p_rbcReg%nequations = SIZE(IvelEqns)
+  p_rbcReg%Iequations(1:SIZE(IvelEqns)) = IvelEqns
+
+  ! Eventually, return the pointer
+  IF (PRESENT(p_rbcRegion)) p_rbcRegion => p_rbcReg
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE bcond_newSlipBConRealBD (rboundaryConditions,IvelEqns,&
+                                      rboundaryRegion,p_rbcRegion)
+  
+!<description>
+  ! Adds a nonlinear Slip boundary condition region to the boundary condition 
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
+  ! can add some user-defined information there if necessary 
+  ! (e.g. the name, a tag or something else).
+!</description>
+
+!<input>
+  ! A list of identifiers for the velocity equations, this boundary condition
+  ! modifies. Usually (1,2) for X- and Y-velocity.
+  INTEGER, DIMENSION(:), INTENT(IN) :: IvelEqns
+
+  ! A boundary-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  ! A copy of this is added to the rboundaryConditions structure.
+  TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
+!</input>
+
+!<inputoutput>
+  ! The structure where the boundary condition region is to be added.
+  TYPE(t_boundaryConditions), INTENT(INOUT), TARGET :: rboundaryConditions
+!</inputoutput>
+
+!<output>
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make more specific
+  ! modifications to this.
+  TYPE(t_bcRegion), OPTIONAL, POINTER :: p_rbcRegion
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_bcRegion), POINTER :: p_rbcReg
+
+  ! Add a general boundary condition region.
+  ! Add a 'real' boundary condition region if rboundaryRegion%iboundSegIdx
+  ! identifies that the boundary region belongs to a real boundary segment.
+  ! Add a 'free' boundary condition region if the rboundaryRegion does not belong
+  ! to any real segment (rboundaryRegion%iboundSegIdx=0).
+  IF (rboundaryRegion%iboundSegIdx .NE. 0) THEN
+    CALL bcond_newBC (BC_SLIP,BC_RTYPE_REAL,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
+  ELSE
+    CALL bcond_newBC (BC_SLIP,BC_RTYPE_FREE,rboundaryConditions,&
                       p_rbcReg,rboundaryRegion)
   END IF
 
