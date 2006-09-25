@@ -393,7 +393,7 @@ CONTAINS
 
     ! Step 4: Discretise the boundary condition according to the Q1
     ! discretisation:
-	  NULLIFY(p_rdiscreteBC_Q1)
+    NULLIFY(p_rdiscreteBC_Q1)
     CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC_Q1, &
                             .FALSE.,getBoundaryValues)
                             
@@ -438,7 +438,7 @@ CONTAINS
     ! -------------------------------------------------------------------------
     ! Projection and GMV export finished.
     ! -------------------------------------------------------------------------
-	
+
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
     !
