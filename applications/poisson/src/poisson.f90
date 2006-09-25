@@ -80,51 +80,51 @@ PROGRAM poisson
              'log/feat1.sys','log/feat1.trc') 
   
   ! Call the problem to solve. Poisson 1:
-  PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 1'
-  PRINT *,'-----------------------------------------'
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 1')
+  CALL output_line ('-----------------------------------------')
   CALL poisson1
   
   ! Call the problem to solve. Poisson 2:
-  PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 2'
-  PRINT *,'-----------------------------------------'
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 2')
+  CALL output_line ('-----------------------------------------')
   CALL poisson2
   
   ! Call the problem to solve. Poisson 3:
-  PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 3'
-  PRINT *,'-----------------------------------------'
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 3')
+  CALL output_line ('-----------------------------------------')
   CALL poisson3
   
   ! Call the problem to solve. Poisson 4:
-  PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 4'
-  PRINT *,'-----------------------------------------'
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 4')
+  CALL output_line ('-----------------------------------------')
   CALL poisson4
   
   ! Call the problem to solve. Poisson 5:
-  PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 5'
-  PRINT *,'-----------------------------------------'
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 5')
+  CALL output_line ('-----------------------------------------')
   CALL poisson5
 
   ! Call the problem to solve. Poisson 6:
-  PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 6'
-  PRINT *,'-----------------------------------------'
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 6')
+  CALL output_line ('-----------------------------------------')
   CALL poisson6
 
   ! Call the problem to solve. Poisson 7:
-  PRINT *
-  PRINT *,'Calculating Laplace-Problem with method 7'
-  PRINT *,'-----------------------------------------'
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 7')
+  CALL output_line ('-----------------------------------------')
   CALL poisson7
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  PRINT *
+  CALL output_lbrk ()
   CALL storage_info(.TRUE.)
   
   ! Clean up the storage management, finish

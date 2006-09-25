@@ -945,7 +945,7 @@ CONTAINS
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata1dp
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata2dp
   REAL(DP) :: res
-  INTEGER(PREC_VECIDX) i
+  ! INTEGER(PREC_VECIDX) i
   
   ! Vectors must be compatible!
   CALL lsyssc_isVectorCompatible (rx,ry)

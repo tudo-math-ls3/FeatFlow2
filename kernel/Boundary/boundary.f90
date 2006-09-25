@@ -48,7 +48,6 @@
 
 MODULE boundary
 
-  USE genoutput
   USE storage
   USE fsystem
   USE error

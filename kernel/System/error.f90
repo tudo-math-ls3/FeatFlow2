@@ -158,30 +158,30 @@ contains
     
     ierror = icode
     
-    call output_line(OL_ERROR, "", "******************************************" // &
+    call output_line(OU_CLASS_ERROR, "", "******************************************" // &
          "********************************")
     if (bcritical) then
-      call output_line(OL_ERROR, "", &
+      call output_line(OU_CLASS_ERROR, "", &
                        "ERROR " // trim(sys_siL(icode, 5)) // " in '" // sroutine // "': ")
     else
-      call output_line(OL_ERROR, "", &
+      call output_line(OU_CLASS_ERROR, "", &
                        "WARNING " // trim(sys_siL(icode, 5)) // " in '" // sroutine // "': ")
     endif
 
     select case (icode)
     case (ERR_YNI)
       if (present(sarg1)) then
-        call output_line(OL_ERROR, "", trim(sarg1))
+        call output_line(OU_CLASS_ERROR, "", trim(sarg1))
       else
         write(OU_LOG, '(A)') "Yet not implemented."
       end if
 
     case (ERR_STRING_TO_INT)
-      call output_line(OL_ERROR, "", "Error while converting string '" // trim(sarg1) // &
+      call output_line(OU_CLASS_ERROR, "", "Error while converting string '" // trim(sarg1) // &
                                      "' to int.")
 
     case (ERR_STRING_TO_REAL)
-      call output_line(OL_ERROR, "", "Error while converting string '" // trim(sarg1) // &
+      call output_line(OU_CLASS_ERROR, "", "Error while converting string '" // trim(sarg1) // &
                                      "' to real.")
 
 ! Case never used in FEAST
@@ -194,27 +194,27 @@ contains
 
 !*********************************** 14 io *****************************************
     case(ERR_IO_NOFREEUNIT)
-      call output_line(OL_ERROR, "", "No free unit found, not able to open the file.")
+      call output_line(OU_CLASS_ERROR, "", "No free unit found, not able to open the file.")
 
     case (ERR_IO_FILEIO)
-      call output_line(OL_ERROR, "", "File input/output error.")
+      call output_line(OU_CLASS_ERROR, "", "File input/output error.")
       if (present(sarg1)) then
-        call output_line(OL_ERROR, "", sarg1)
+        call output_line(OU_CLASS_ERROR, "", sarg1)
       endif
 
     case (ERR_IO_EMPTYFILENAME)
       if (present(sarg1)) then
-        call output_line(OL_ERROR, "", "File name '" // trim(sarg1) // "' empty.")
+        call output_line(OU_CLASS_ERROR, "", "File name '" // trim(sarg1) // "' empty.")
       else
-        call output_line(OL_ERROR, "", "File name empty.")
+        call output_line(OU_CLASS_ERROR, "", "File name empty.")
       endif
 
     case (ERR_IO_WRONGSTRUCT)
       write(OU_LOG, '(A)') "error during read: wrong structure"
 
     case(ERR_IO_NOSUCHFILE)
-      call output_line(OL_ERROR, "", "File " // trim(sarg1) // " does not exist.")
-      call output_line(OL_ERROR, "", "Read from file failed.")
+      call output_line(OU_CLASS_ERROR, "", "File " // trim(sarg1) // " does not exist.")
+      call output_line(OU_CLASS_ERROR, "", "Read from file failed.")
 
     case(ERR_IO_MATRIX_UNASSEMBLED)
       if (present(iarg1)) then
@@ -234,52 +234,52 @@ contains
       else
         sstring2 = "[unknown]"
       end if
-      call output_line(OL_ERROR, "", "Block (" // trim(sstring) // "," // &
+      call output_line(OU_CLASS_ERROR, "", "Block (" // trim(sstring) // "," // &
                                      trim(sstring1) // ") of matrix '" // &
                                      trim(sstring2) // "' seems not properly assembled.")
-      call output_line(OL_ERROR, "", "Export skipped.")
+      call output_line(OU_CLASS_ERROR, "", "Export skipped.")
 
 
 !********************************* 31 storage **********************************
 
     case (ERR_ST_NODES)
-      call output_line(OL_ERROR, "", "No descriptor block free.")
+      call output_line(OU_CLASS_ERROR, "", "No descriptor block free.")
 
     case (ERR_ST_DESF)
-      call output_line(OL_ERROR, "", "Wrong descriptor block.")
+      call output_line(OU_CLASS_ERROR, "", "Wrong descriptor block.")
 
     case (ERR_ST_DESTF)
-      call output_line(OL_ERROR, "", "Wrong descriptor type.")
+      call output_line(OU_CLASS_ERROR, "", "Wrong descriptor type.")
 
     case (ERR_ST_NOMEM)
-      call output_line(OL_ERROR, "", "Not enough memory on heap " // &
+      call output_line(OU_CLASS_ERROR, "", "Not enough memory on heap " // &
                                      trim(adjustl(sys_i6(iarg1))) // &
                                      ". Needs additionally " // &
                                      trim(adjustl(sys_i12(iarg2))) // &
                                      " entries! Aborting program.")
 
     case (ERR_ST_ALLOCF)
-      call output_line(OL_ERROR, "", "Memory allocation error.")
+      call output_line(OU_CLASS_ERROR, "", "Memory allocation error.")
 
     case (ERR_ST_INVREQUEST)
-      call output_line(OL_ERROR, "", "Request for invalid amount of memory:")
-      call output_line(OL_ERROR, "", "For " // sarg1 // " the size " // &
+      call output_line(OU_CLASS_ERROR, "", "Request for invalid amount of memory:")
+      call output_line(OU_CLASS_ERROR, "", "For " // sarg1 // " the size " // &
                                      trim(adjustl(sys_i12(iarg1))) // &
                                      " was requested.")
     case (ERR_ST_FREE_BLOCK_ERROR)
-      call output_line(OL_ERROR, "", "There cannot be more FREE storage blocks " // &
+      call output_line(OU_CLASS_ERROR, "", "There cannot be more FREE storage blocks " // &
                                      "than the maximum number of blocks.")
 
 !********************************* default **********************************
 
     case default
-      call output_line(OL_ERROR, "", "Unknown error code raised! " // sys_i12(icode))
+      call output_line(OU_CLASS_ERROR, "", "Unknown error code raised! " // sys_i12(icode))
 
     end select
 
 
 
-    call output_line(OL_ERROR, "", "******************************************" // &
+    call output_line(OU_CLASS_ERROR, "", "******************************************" // &
                                    "********************************")
 
     !Force warnings/errors to appear on screen/in log file.

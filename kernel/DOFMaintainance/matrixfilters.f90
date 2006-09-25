@@ -465,7 +465,7 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER :: iblock,jblock,i,icp
+    INTEGER :: iblock,jblock,i !,icp
     TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
     
     ! Imposing boundary conditions normally changes the whole matrix!

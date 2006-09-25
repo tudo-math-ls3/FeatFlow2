@@ -986,7 +986,7 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER :: iblock,i,icp
+    INTEGER :: iblock,i !,icp
     REAL(DP) :: dtweight
     TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
 

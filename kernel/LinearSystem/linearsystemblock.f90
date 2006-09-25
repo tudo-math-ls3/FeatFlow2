@@ -1639,7 +1639,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: h_Ddata2dp
   REAL(SP), DIMENSION(:), POINTER :: h_Fdata1dp
   REAL(SP), DIMENSION(:), POINTER :: h_Fdata2dp
-  INTEGER(PREC_VECIDX) :: i
+  ! INTEGER(PREC_VECIDX) :: i
   REAL(DP) :: res
 
   ! The vectors must be compatible to each other.
