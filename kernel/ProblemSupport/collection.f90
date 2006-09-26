@@ -8,7 +8,7 @@
 !# Values can be added to the list and changed if necessary.
 !# This corresponds to the assignment "NAME = VALUE" with VALUE being
 !# - character
-!# - character string
+!# - Character string
 !# - double real
 !# - integer 
 !# - a vector - scalar and block type
@@ -678,7 +678,7 @@ CONTAINS
   ELSE IF (p_rLevel%ivalueCount .GE. SIZE(p_rLevel%p_Rvalues)) THEN
   
     ! Reallocate the entry array to get space for the new entry
-    ALLOCATE(p_Rvalues(SIZE(p_Rvalues)+COLLCT_NVALUES))
+    ALLOCATE(p_Rvalues(SIZE(p_rLevel%p_Rvalues)+COLLCT_NVALUES))
     p_Rvalues(1:p_rLevel%ivalueCount) = p_rLevel%p_Rvalues (1:p_rLevel%ivalueCount)
     DEALLOCATE(p_rLevel%p_Rvalues)
     p_rLevel%p_Rvalues => p_Rvalues
