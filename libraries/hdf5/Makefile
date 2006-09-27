@@ -3,6 +3,7 @@
 FEATFLOW=../..
 
 include $(FEATFLOW)/Globals.mk
+include ./Globals.mk
 
 LIBNAME=hdf5
 LIBVERSION=1.6.5
@@ -29,7 +30,8 @@ endif
 configure: prepare
 ifeq ($(shell test ! -f ./$(ID)/$(LIBNAME)-$(LIBVERSION)/config.status && echo 1),1)
 	@( cd ./$(ID)/$(LIBNAME)-$(LIBVERSION) &&\
-        env CC=$(CC) env F9X=$(FC) ./configure --enable-fortran --disable-cxx \
+        env FFLAGS="$(FFLAGS)" env CFLAGS="$(CFLAGS)" env CC=$(CC) \
+	env F9X=$(FC) ./configure --enable-fortran --disable-cxx \
 	--disable-shared --disable-fast-install --disable-debug --disable-parallel \
 	--with-zlib=$(PWD)/../zlib/include,$(PWD)/$(LIBDIR) \
 	--with-szlib=$(PWD)/../sz/include,$(PWD)/$(LIBDIR) )
