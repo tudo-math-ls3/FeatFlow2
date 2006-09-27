@@ -77,13 +77,13 @@
 !#        error log file and error output channel.
 !#
 !#     f) MT = 1
-!#        CALL output_line (MT,'A log file message.')
+!#        CALL output_simple (MT,'A log file message.')
 !#     
 !#     -> Writes a message to the log file, not to the terminal. FEAT1.0
 !#        compatibility routine for "MT=1"
 !#
 !#     g) MT = 2
-!#        CALL output_line (MT,'A log file message')
+!#        CALL output_simple (MT,'A log file message')
 !#     
 !#     -> Writes a message to the terminal and to the log file. FEAT1.0
 !#        compatibility routine for "MT=2".
@@ -166,7 +166,6 @@ MODULE genoutput
   INTERFACE output_line
     MODULE PROCEDURE output_line_std
     MODULE PROCEDURE output_line_feast
-    MODULE PROCEDURE output_line_simple
   END INTERFACE
 
 CONTAINS
@@ -591,7 +590,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE output_line_simple (ioutputLevel, smessage, coutputClass, ssubroutine)
+  SUBROUTINE output_simple (ioutputLevel, smessage, coutputClass, ssubroutine)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
