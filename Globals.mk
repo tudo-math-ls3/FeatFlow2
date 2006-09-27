@@ -404,9 +404,9 @@ FC=ifort
 AR=xiar
 ARC=xiar
 OPTFLAGS  = -O3 -xN -ipo
-FCFLAGS   = -cm -fpe0 -vec_report0 -module $(MODDIR)
-CCFLAGS   = -cm -fpe0 -vec_report0
-LDFLAGS   = 
+FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
+CCFLAGS   = -vec-report0
+LDFLAGS   = -lsvml
 BLASLIB   = 
 LAPACKLIB = 
 endif
