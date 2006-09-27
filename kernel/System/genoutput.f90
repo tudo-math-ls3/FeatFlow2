@@ -77,13 +77,13 @@
 !#        error log file and error output channel.
 !#
 !#     f) MT = 1
-!#        CALL output_simple (MT,'A log file message.')
+!#        CALL output_line (MT,'A log file message.')
 !#     
 !#     -> Writes a message to the log file, not to the terminal. FEAT1.0
 !#        compatibility routine for "MT=1"
 !#
 !#     g) MT = 2
-!#        CALL output_simple (MT,'A log file message')
+!#        CALL output_line (MT,'A log file message')
 !#     
 !#     -> Writes a message to the terminal and to the log file. FEAT1.0
 !#        compatibility routine for "MT=2".
@@ -166,6 +166,7 @@ MODULE genoutput
   INTERFACE output_line
     MODULE PROCEDURE output_line_std
     MODULE PROCEDURE output_line_feast
+    MODULE PROCEDURE output_line_simple
   END INTERFACE
 
 CONTAINS
@@ -553,12 +554,12 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE output_line_feast (coutputClass, ssubroutine, smessage)
+  SUBROUTINE output_line_feast (coutputClass, ssubroutine, smsg)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
   ! depending on the input parameters.
-  ! smessage is the message to be written out. 
+  ! smsg is the message to be written out. 
   ! coutputMode decides (if given) about whether the output if written to file,
   ! terminal or both.
   ! coutputClass classifies (if given) the message as standard message, trace
@@ -576,13 +577,19 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: ssubroutine
   
   ! The message to be written out.
-  CHARACTER(LEN=*), INTENT(IN) :: smessage
+  CHARACTER(LEN=*), INTENT(IN) :: smsg
   
 !</input>
 
 !</subroutine>
 
-    CALL output_line_std (smessage, coutputClass, OU_MODE_STANDARD, ssubroutine)
+    ! REMARK: Don't rename 'smsg' to 'smessage' -- this does not comply
+    ! with the Fortran standard and will give you an ambigious interface
+    ! in output_line as Fortran cannot distinguish between output_line_std
+    ! and output_line_feast anymore in that case! (as all parameter names
+    ! are the same).
+
+    CALL output_line_std (smsg, coutputClass, OU_MODE_STANDARD, ssubroutine)
 
   END SUBROUTINE
 
@@ -590,12 +597,12 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE output_simple (ioutputLevel, smessage, coutputClass, ssubroutine)
+  SUBROUTINE output_line_simple (ioutputLevel, smsg, coutputClass, ssubroutine)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
   ! depending on the input parameters.
-  ! smessage is the message to be written out. 
+  ! smsg is the message to be written out. 
   ! ioutputLevel decides on where the message is written to, to the terminal
   ! and/or the log file.
   ! coutputClass classifies (if given) the message as standard message, trace
@@ -610,7 +617,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ioutputLevel
 
   ! The message to be written out.
-  CHARACTER(LEN=*), INTENT(IN) :: smessage
+  CHARACTER(LEN=*), INTENT(IN) :: smsg
   
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
@@ -634,7 +641,7 @@ CONTAINS
       coMode = OU_MODE_LOG+OU_MODE_TERM
     END SELECT
 
-    CALL output_line_std (smessage, coMode, coutputClass, ssubroutine)
+    CALL output_line_std (smsg, coMode, coutputClass, ssubroutine)
 
   END SUBROUTINE
 
