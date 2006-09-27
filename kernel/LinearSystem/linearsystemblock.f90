@@ -1396,7 +1396,10 @@ CONTAINS
   
 !<description>
   ! Copies vector data: ry = rx.
-  ! Both vectors must have the same size. All structural data of rx is
+  ! If the destination vector is empty, a new vector is created and all
+  ! data of rx is copied into that.
+  ! If the destination vector ry exists in memory, it must be at least
+  ! as large as rx. All structural data as well as the content of rx is  
   ! transferred to ry, so rx and ry are compatible to each other afterwards.
 !</description>
 
@@ -1418,9 +1421,29 @@ CONTAINS
 
   ! local variables
   INTEGER :: h_Ddata, cdataType
+  INTEGER(I32) :: isize,NEQ
   LOGICAL :: bisCopy
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
   REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
+  
+  ! If the destination vector does not exist, create a new one
+  ! based on rx.
+  IF (ry%h_Ddata .EQ. ST_NOHANDLE) THEN
+    CALL lsysbl_createVecBlockIndirect (ry,ry,.FALSE.)
+  END IF
+  
+  CALL storage_getsize1D (ry%h_Ddata, isize)
+  NEQ = rx%NEQ
+  IF (isize .LT. NEQ) THEN
+    PRINT *,'lsysbl_copyVector: Destination vector too small!'
+    STOP
+  END IF
+  
+  IF (rx%cdataType .NE. ry%cdataType) THEN
+    PRINT *,'lsysbl_copyVector: Destination vector has different type &
+            &than source vector!'
+    STOP
+  END IF
   
   ! First, make a backup of some crucial data so that it does not
   ! get destroyed.
@@ -1445,12 +1468,12 @@ CONTAINS
   CASE (ST_DOUBLE)
     CALL lsysbl_getbase_double (rx,p_Dsource)
     CALL lsysbl_getbase_double (ry,p_Ddest)
-    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    CALL lalg_copyVectorDble (p_Dsource(1:NEQ),p_Ddest(1:NEQ))
     
   CASE (ST_SINGLE)
     CALL lsysbl_getbase_single (rx,p_Fsource)
     CALL lsysbl_getbase_single (ry,p_Fdest)
-    CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+    CALL lalg_copyVectorSngl (p_Fsource(1:NEQ),p_Fdest(1:NEQ))
 
   CASE DEFAULT
     PRINT *,'lsysbl_copyVector: Unsupported data type!'

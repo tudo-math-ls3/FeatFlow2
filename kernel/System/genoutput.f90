@@ -16,17 +16,26 @@
 !# 2.) output_line
 !#     -> Writes a message to the terminal and/or the log file.
 !#
-!# 3.) output_simple
-!#     -> Writes a message to the terminal and/or the log file.
-!#        For old FEAT compatibility. Uses a priority identifier to decide on
-!#        whether to write only to the log file or to both, log file
-!#        and terminal.
+!# 3.) output_separator
+!#     -> Writes a separator line to the terminal and/or the log file.
 !#
 !# 4.) output_lbrk
 !#     -> Writes an empty line / line break to the terminal and/or the log 
 !#        file.
 !#
-!# 5.) output_done
+!# 5.) output_simple
+!#     -> Writes a message to the terminal and/or the log file.
+!#        For old FEAT compatibility. Uses a priority identifier to decide on
+!#        whether to write only to the log file or to both, log file
+!#        and terminal.
+!#
+!# 6.) output_simple_sep
+!#     -> Writes a separator line to the terminal and/or the log file.
+!#        For old FEAT compatibility. Uses a priority identifier to decide on
+!#        whether to write only to the log file or to both, log file
+!#        and terminal.
+!#
+!# 7.) output_done
 !#     -> Closes the log file, releases all ressources in use.
 !#
 !# HOW TO USE:
@@ -82,17 +91,33 @@
 !#     -> Writes a debug message with 'Error (mysubroutine):' in front to the 
 !#        error log file and error output channel.
 !#
-!#     f) MT = 1
+!#     f) CALL output_line_sep (OU_SEP_MINUS)
+!#
+!#     -> Writes a separation line with '-' signs to the terminal / log file
+!#
+!#     g) MT = 1
 !#        CALL output_simple (MT,'A log file message.')
 !#     
 !#     -> Writes a message to the log file, not to the terminal. FEAT1.0
 !#        compatibility routine for "MT=1"
 !#
-!#     g) MT = 2
+!#     h) MT = 2
 !#        CALL output_simple (MT,'A log file message')
 !#     
 !#     -> Writes a message to the terminal and to the log file. FEAT1.0
 !#        compatibility routine for "MT=2".
+!#
+!#     i) MT = 2
+!#        CALL output_simple (MT)
+!#     
+!#     -> Writes an empty line to the terminal and to the log file. FEAT1.0
+!#        compatibility routine for "MT=2".
+!#
+!#     i) MT = 2
+!#        CALL output_simple_sep (MT,OU_SEP_MINUS)
+!#     
+!#     -> Writes a separation line with '-' signs to the terminal and 
+!#        to the log file. FEAT1.0 compatibility routine for "MT=2".
 !#
 !#     For futher possibilities, consider the documentation out output_line.
 !#
@@ -148,7 +173,24 @@ MODULE genoutput
 
 !</constantblock>
 
+!<constantblock description="Type of separator line">
+
+  ! Separator line: MINUS character
+  INTEGER, PARAMETER :: OU_SEP_MINUS = 0
+
+  ! Separator line: STAR character 
+  INTEGER, PARAMETER :: OU_SEP_STAR = 1
+
+  ! Separator line: EQUAL character
+  INTEGER, PARAMETER :: OU_SEP_EQUAL = 2
+
+!</constantblock>
+
 !<constantblock>
+
+  ! Length of a line on the terminal / in the log file.
+  ! Standard value = 80 characters
+  INTEGER :: OU_LINE_LENGTH         = 80
 
   ! Global device number for terminal
   INTEGER :: OU_TERMINAL            = 6
@@ -523,42 +565,6 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE output_lbrk (coutputMode, coutputClass, ssubroutine)
-
-!<description>
-  ! Writes a line break to the terminal, log file or error log file,
-  ! depending on the input parameters.
-  ! coutputMode decides (if given) about whether the output if written to file,
-  ! terminal or both.
-  ! coutputClass classifies (if given) the message as standard message, trace
-  ! or error message.
-!</description>
-
-!<input>
-  ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
-  ! OU_MODE_STANDARD is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputMode
-
-  ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
-  ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
-  
-  ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
-  
-  ! OPTIONAL: Name
-!</input>
-
-!</subroutine>
-
-    CALL output_line_std ('', coutputMode, coutputClass, ssubroutine)
-
-  END SUBROUTINE
-
-!************************************************************************************
-
-!<subroutine>
-
   SUBROUTINE output_line_feast (coutputClass, ssubroutine, smsg)
 
 !<description>
@@ -602,6 +608,102 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE output_lbrk (coutputMode, coutputClass, ssubroutine)
+
+!<description>
+  ! Writes a line break to the terminal, log file or error log file,
+  ! depending on the input parameters.
+  ! coutputMode decides (if given) about whether the output if written to file,
+  ! terminal or both.
+  ! coutputClass classifies (if given) the message as standard message, trace
+  ! or error message.
+!</description>
+
+!<input>
+  ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
+  ! OU_MODE_STANDARD is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: coutputMode
+
+  ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
+  ! If not specified, OU_CLASS_MSG is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  
+  ! OPTIONAL: Name of the subroutine that calls this function
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  
+  ! OPTIONAL: Name
+!</input>
+
+!</subroutine>
+
+    CALL output_line_std ('', coutputMode, coutputClass, ssubroutine)
+
+  END SUBROUTINE
+
+!************************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE output_separator (csepType, coutputMode, coutputClass, ssubroutine)
+
+!<description>
+  ! Writes a separator line to the terminal, log file or error log file,
+  ! depending on the input parameters. The parameter csepType decides
+  ! on the type of separator line.
+  ! coutputMode decides (if given) about whether the output if written to file,
+  ! terminal or both.
+  ! coutputClass classifies (if given) the message as standard message, trace
+  ! or error message.
+!</description>
+
+!<input>
+  ! Type of the separator line. One of the OU_SEP_xxxx constants
+  ! (OU_SEP_MINUS, OU_SEP_STAR or OU_SEP_EQUAL).
+  INTEGER, INTENT(IN) :: csepType
+
+  ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
+  ! OU_MODE_STANDARD is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: coutputMode
+
+  ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
+  ! If not specified, OU_CLASS_MSG is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  
+  ! OPTIONAL: Name of the subroutine that calls this function
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  
+  ! OPTIONAL: Name
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    CHARACTER(LEN=MAX(1,OU_LINE_LENGTH-1)) :: cstr
+    CHARACTER(LEN=20) :: saux
+
+    ! Create the separator line
+    SELECT CASE (csepType)
+    CASE (OU_SEP_MINUS)
+      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''-''))'
+    CASE (OU_SEP_STAR)
+      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''*''))'
+    CASE (OU_SEP_EQUAL)
+      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''=''))'
+    CASE DEFAULT
+      PRINT *,'output_separator: Unknown separator type: ',csepType
+      STOP
+    END SELECT
+    
+    WRITE (cstr,saux)
+
+    CALL output_line_std (cstr, coutputMode, coutputClass, ssubroutine)
+
+  END SUBROUTINE
+
+!************************************************************************************
+
+!<subroutine>
+
   SUBROUTINE output_simple (ioutputLevel, smsg, coutputClass, ssubroutine)
 
 !<description>
@@ -621,8 +723,8 @@ CONTAINS
   ! >=2: write to log file and terminal.
   INTEGER, INTENT(IN) :: ioutputLevel
 
-  ! The message to be written out.
-  CHARACTER(LEN=*), INTENT(IN) :: smsg
+  ! OPTIONAL: The message to be written out.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: smsg
   
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
@@ -646,8 +748,65 @@ CONTAINS
       coMode = OU_MODE_LOG+OU_MODE_TERM
     END SELECT
 
-    CALL output_line_std (smsg, coMode, coutputClass, ssubroutine)
+    IF (PRESENT(smsg)) THEN
+      CALL output_line_std (smsg, coMode, coutputClass, ssubroutine)
+    ELSE
+      CALL output_line_std ('', coMode, coutputClass, ssubroutine)
+    END IF
 
   END SUBROUTINE
 
+!************************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE output_simple_sep (ioutputLevel, csepType, coutputClass, ssubroutine)
+
+!<description>
+  ! Writes a separator line to the terminal, log file or error log file,
+  ! depending on the input parameters. The parameter csepType decides
+  ! on the type of separator line.
+  ! ioutputLevel decides on where the message is written to, to the terminal
+  ! and/or the log file.
+  ! coutputClass classifies (if given) the message as standard message, trace
+  ! or error message.
+!</description>
+
+!<input>
+  ! Output level. DEcides on where to write the message to.
+  ! <=0: No output,
+  !  =1: write to log file.
+  ! >=2: write to log file and terminal.
+  INTEGER, INTENT(IN) :: ioutputLevel
+
+  ! Type of the separator line. One of the OU_SEP_xxxx constants
+  ! (OU_SEP_MINUS, OU_SEP_STAR or OU_SEP_EQUAL).
+  INTEGER, INTENT(IN) :: csepType
+  
+  ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
+  ! If not specified, OU_CLASS_MSG is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  
+  ! OPTIONAL: Name of the subroutine that calls this function
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  
+!</input>
+
+!</subroutine>
+
+  INTEGER :: coMode
+  
+    SELECT CASE (ioutputLevel)
+    CASE (:0)
+      coMode = 0
+    CASE (1)
+      coMode = OU_MODE_LOG
+    CASE (2:)
+      coMode = OU_MODE_LOG+OU_MODE_TERM
+    END SELECT
+
+    CALL output_separator (csepType, coMode, coutputClass, ssubroutine)
+
+  END SUBROUTINE
+  
 END MODULE

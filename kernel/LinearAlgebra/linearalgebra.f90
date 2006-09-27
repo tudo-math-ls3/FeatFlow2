@@ -671,7 +671,7 @@ CONTAINS
 !</function>
 
   ! local variables
-  INTEGER(I32) :: i
+  !INTEGER(I32) :: i
   REAL(DP) :: DDOT
 
   res=DDOT(SIZE(Dx),Dx,1,Dy,1)
@@ -710,7 +710,7 @@ CONTAINS
 !</function>
 
   ! local variables
-  INTEGER(I32) :: i
+  !INTEGER(I32) :: i
   REAL(SP) :: SDOT
 
   res=SDOT(SIZE(Fx),Fx,1,Fy,1)

@@ -398,6 +398,61 @@ CONTAINS
     write (unit = soutput, fmt = trim(sformat)) dvalue
   end function sys_sd
 
+!************************************************************************
+
+!<function>
+  character (len=32) function sys_sdP(dvalue, ipositions, idigits) result(soutput)
+
+    !<description>
+    ! This routine converts a double value to a string with length
+    ! iposition and idigits decimal places.
+    !</description>
+
+    !<result>
+    ! String representation of the value, filled with white spaces.
+    ! At most 32 characters supported.
+    !</result>
+
+    !<input>
+
+    ! value to be converted
+    real(DP), intent(in) :: dvalue
+
+    ! number of positions in the string
+    integer              :: ipositions
+
+    ! number of decimals
+    integer              :: idigits
+    !</input>
+!</function>
+
+    character (len=16) :: sformat
+    character (len=2)  :: saux,saux2
+
+    ! idigits can not be simply adjusted to 16 because some compilers
+    ! do not accept that idigits is changed within this function if
+    ! the function is called with a hard-coded integer instead of a
+    ! variable, i.e.
+    !   sys_sli0(foo, 1)
+    ! would result in a crash
+    if (idigits .gt. 16) then
+      write(6, *) "*** WARNING! Too many decimal places requested in sys_sdP! ***"
+      write(saux, '(i2)') 16
+    else
+      write(saux, '(i2)') idigits
+    endif
+
+    if (idigits .gt. 32) then
+      write(6, *) "*** WARNING! Too many decimal places requested in sys_sdP! ***"
+      write(saux2, '(i2)') 32
+    else
+      write(saux2, '(i2)') ipositions
+    endif
+
+    sformat = "(f"//trim(saux2)//"." // trim(saux) // ")"
+    write (unit = soutput, fmt = trim(sformat)) dvalue
+  end function sys_sdP
+
 
 !************************************************************************
 
@@ -445,6 +500,62 @@ CONTAINS
     write (unit = soutput, fmt = trim(sformat)) dvalue
   end function sys_sdE
 
+
+!************************************************************************
+
+!<function>
+  character (len=32) function sys_sdEP(dvalue, ipositions, idigits) result(soutput)
+
+    !<description>
+    ! This routine converts a double value to a string with length
+    ! iposition and idigits decimal places in scientific notation.
+    !</description>
+
+    !<result>
+    ! String representation of the value, filled with white spaces.
+    ! At most 32 characters supported.
+    !</result>
+
+    !<input>
+
+    ! value to be converted
+    real(DP), intent(in) :: dvalue
+
+    ! number of positions in the string
+    integer              :: ipositions
+
+    ! number of decimals
+    integer              :: idigits
+    
+    !</input>
+!</function>
+
+    character (len=16) :: sformat
+    character (len=2)  :: saux,saux2
+
+    ! idigits can not be simply adjusted to 16 because some compilers
+    ! do not accept that idigits is changed within this function if
+    ! the function is called with a hard-coded integer instead of a
+    ! variable, i.e.
+    !   sys_sli0(foo, 1)
+    ! would result in a crash
+    if (idigits .gt. 16) then
+      write(6, *) "*** WARNING! Too many decimal places requested in sys_sdEP! ***"
+      write(saux, '(i2)') 16
+    else
+      write(saux, '(i2)') idigits
+    endif
+
+    if (idigits .gt. 24) then
+      write(6, *) "*** WARNING! Too many decimal places requested in sys_sdEP! ***"
+      write(saux2, '(i2)') 24
+    else
+      write(saux2, '(i2)') ipositions
+    endif
+
+    sformat = "(es"//trim(saux2)//"." // trim(saux) // ")"
+    write (unit = soutput, fmt = trim(sformat)) dvalue
+  end function sys_sdEP
 
 !************************************************************************
 
