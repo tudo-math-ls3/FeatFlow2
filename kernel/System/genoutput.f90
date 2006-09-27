@@ -16,11 +16,17 @@
 !# 2.) output_line
 !#     -> Writes a message to the terminal and/or the log file.
 !#
-!# 2.) output_lbrk
+!# 3.) output_simple
+!#     -> Writes a message to the terminal and/or the log file.
+!#        For old FEAT compatibility. Uses a priority identifier to decide on
+!#        whether to write only to the log file or to both, log file
+!#        and terminal.
+!#
+!# 4.) output_lbrk
 !#     -> Writes an empty line / line break to the terminal and/or the log 
 !#        file.
 !#
-!# 3.) output_done
+!# 5.) output_done
 !#     -> Closes the log file, releases all ressources in use.
 !#
 !# HOW TO USE:
