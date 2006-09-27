@@ -1924,7 +1924,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileExpression(Comp, Func, ind, Var,&
+  RECURSIVE FUNCTION CompileExpression(Comp, Func, ind, Var,&
       & stopAtComma) RESULT(ind2)
 
 !<description>
@@ -1977,7 +1977,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileOr(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileOr(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles '|'
@@ -2014,7 +2014,7 @@ CONTAINS
 
     DO WHILE(Func(ind2:ind2) == '|')
       ind2 = CompileAnd(Comp, Func, ind2+1, Var)
-      
+
       CALL AddCompiledByte(Comp, cOr)
       Comp%StackPtr = Comp%StackPtr-1
       IF (ind2 > lFunc) RETURN
@@ -2025,7 +2025,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileAnd(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileAnd(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles '&'
@@ -2062,7 +2062,7 @@ CONTAINS
     
     DO WHILE(Func(ind2:ind2) == '&')
       ind2 = CompileComparison(Comp, Func, ind2+1, Var)
-      
+
       CALL AddCompiledByte(Comp, cAnd)
       Comp%StackPtr = Comp%StackPtr-1
       IF (ind2 > lFunc) RETURN
@@ -2073,7 +2073,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileComparison(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileComparison(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles '=', '<' and '>'
@@ -2139,7 +2139,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileAddition(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileAddition(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles '+' and '-'
@@ -2178,7 +2178,7 @@ CONTAINS
     c=Func(ind2:ind2)
     DO WHILE(c == '+' .OR. c == '-')
       ind2 = CompileMult(Comp, Func, ind2+1, Var)
-      
+
       CALL AddCompiledByte(Comp, MERGE(cAdd,cSub,c == '+'))
       Comp%StackPtr = Comp%StackPtr-1
       
@@ -2191,7 +2191,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileMult(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileMult(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles '*', '/' and '%'
@@ -2230,7 +2230,7 @@ CONTAINS
     c=Func(ind2:ind2)
     DO WHILE(c == '*' .OR. c == '/' .OR. c == '%')
       ind2 = CompileUnaryMinus(Comp, Func, ind2+1, Var)
-      
+
       SELECT CASE(c)
       CASE('*')
         CALL AddCompiledByte(Comp, cMul)
@@ -2253,7 +2253,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileUnaryMinus(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileUnaryMinus(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles unary '-'
@@ -2304,6 +2304,7 @@ CONTAINS
         
       ELSE
         CALL AddCompiledByte(Comp, MERGE(cNeg,cNot,c == '-'))
+
       END IF
       RETURN
     END IF
@@ -2315,7 +2316,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompilePow(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompilePow(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles '^'
@@ -2364,7 +2365,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileElement(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileElement(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles element
@@ -2397,7 +2398,7 @@ CONTAINS
     INTEGER(is) :: n
     INTEGER :: ind1,ib,in,requiredParams
     LOGICAL :: err
-    
+
     ind1=ind; c=Func(ind1:ind1)
     IF (c == '(') THEN
       ind1 = CompileExpression(Comp, Func, ind1+1, Var, .FALSE.)
@@ -2464,7 +2465,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileFunctionParameters(Comp, Func, ind, Var,&
+  RECURSIVE FUNCTION CompileFunctionParameters(Comp, Func, ind, Var,&
       & requiredParams) RESULT(ind2)
 
 !<description>
@@ -2497,7 +2498,7 @@ CONTAINS
 
     ! local variables
     INTEGER :: curStackPtr
-    
+
     ind2 = ind
     IF (requiredParams > 0) THEN
       
@@ -2522,7 +2523,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION CompileIf(Comp, Func, ind, Var) RESULT(ind2)
+  RECURSIVE FUNCTION CompileIf(Comp, Func, ind, Var) RESULT(ind2)
 
 !<description>
     ! Compiles if()
