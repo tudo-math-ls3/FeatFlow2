@@ -85,10 +85,18 @@ CONTAINS
 !</subroutine>
     
     SELECT CASE (cdataType)
-    CASE (ST_INT,ST_SINGLE,ST_DOUBLE)
-      CALL storage_new("stack_create","h_StackData",isize,ST_DOUBLE&
+    CASE (ST_INT)
+      CALL storage_new("stack_create","h_StackData",isize,ST_INT&
+          &,rstack%h_StackData,ST_NEWBLOCK_NOINIT)
+      
+    CASE (ST_SINGLE)
+      CALL storage_new("stack_create","h_StackData",isize,ST_SINGLE&
           &,rstack%h_StackData,ST_NEWBLOCK_NOINIT)
 
+    CASE (ST_DOUBLE)
+      CALL storage_new("stack_create","h_StackData",isize,ST_DOUBLE&
+          &,rstack%h_StackData,ST_NEWBLOCK_NOINIT)
+      
     CASE DEFAULT
       PRINT *, "stack_create: Invalid data type!"
       STOP
@@ -202,27 +210,24 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: StackData
-
+    INTEGER, DIMENSION(:), POINTER :: StackData
+    
     IF (rstack%h_StackData == ST_NOHANDLE) THEN
       PRINT *, "stack_pushbackInt: Invalid data type"
       STOP
     END IF
-
+    
     ! Double storage for stack if required
     IF (rstack%istackSize == rstack%istackPosition) THEN
       CALL storage_realloc("stack_pushbackInt",2*rstack%istackSize&
           &,rstack%h_StackData,ST_NEWBLOCK_NOINIT,.TRUE.)
       rstack%istackSize=2*rstack%istackSize
     END IF
-
-    ! Increase stack pointer
-    rstack%istackPosition=rstack%istackPosition+1
     
-    ! Put data
-    CALL storage_getbase_double(rstack%h_StackData,StackData)
-    StackData(rstack%istackPosition)=TRANSFER(idata,StackData(rstack&
-        &%istackPosition))
+    ! Push to stack
+    rstack%istackPosition=rstack%istackPosition+1
+    CALL storage_getbase_int(rstack%h_StackData,StackData)
+    StackData(rstack%istackPosition)=idata
   END SUBROUTINE stack_pushbackInt
 
   !************************************************************************
@@ -245,27 +250,24 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    REAL(SP), DIMENSION(:), POINTER :: StackData
 
     IF (rstack%h_StackData == ST_NOHANDLE) THEN
-      PRINT *, "stack_pushbackInt: Invalid data type"
+      PRINT *, "stack_pushbackSngl: Invalid data type"
       STOP
     END IF
 
     ! Double storage for stack if required
     IF (rstack%istackSize == rstack%istackPosition) THEN
-      CALL storage_realloc("stack_pushbackInt",2*rstack%istackSize&
+      CALL storage_realloc("stack_pushbackSngl",2*rstack%istackSize&
           &,rstack%h_StackData,ST_NEWBLOCK_NOINIT,.TRUE.)
       rstack%istackSize=2*rstack%istackSize
     END IF
 
-    ! Increase stack pointer
+    ! Push to stack
     rstack%istackPosition=rstack%istackPosition+1
-    
-    ! Put data
-    CALL storage_getbase_double(rstack%h_StackData,StackData)
-    StackData(rstack%istackPosition)=TRANSFER(sdata,StackData(rstack&
-        &%istackPosition))
+    CALL storage_getbase_single(rstack%h_StackData,StackData)
+    StackData(rstack%istackPosition)=sdata
   END SUBROUTINE stack_pushbackSngl
 
   !************************************************************************
@@ -291,24 +293,21 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: StackData
 
     IF (rstack%h_StackData == ST_NOHANDLE) THEN
-      PRINT *, "stack_pushbackInt: Invalid data type"
+      PRINT *, "stack_pushbackDble: Invalid data type"
       STOP
     END IF
 
     ! Double storage for stack if required
     IF (rstack%istackSize == rstack%istackPosition) THEN
-      CALL storage_realloc("stack_pushbackInt",2*rstack%istackSize&
+      CALL storage_realloc("stack_pushbackDble",2*rstack%istackSize&
           &,rstack%h_StackData,ST_NEWBLOCK_NOINIT,.TRUE.)
       rstack%istackSize=2*rstack%istackSize
     END IF
-
-    ! Increase stack pointer
-    rstack%istackPosition=rstack%istackPosition+1
     
-    ! Put data
+    ! Push to stack
+    rstack%istackPosition=rstack%istackPosition+1
     CALL storage_getbase_double(rstack%h_StackData,StackData)
-    StackData(rstack%istackPosition)=TRANSFER(ddata,StackData(rstack&
-        &%istackPosition))
+    StackData(rstack%istackPosition)=ddata
   END SUBROUTINE stack_pushbackDble
 
   !************************************************************************
@@ -330,11 +329,11 @@ CONTAINS
 !</result>
 !</function>
 
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    INTEGER, DIMENSION(:), POINTER :: StackData
     
     IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_double(rstack%h_StackData,StackData)
-      idata=TRANSFER(StackData(rstack%istackPosition),idata)
+      CALL storage_getbase_int(rstack%h_StackData,StackData)
+      idata=StackData(rstack%istackPosition)
     ELSE
       PRINT *, "stack_backInt: Stack empty!"
       STOP
@@ -361,11 +360,11 @@ CONTAINS
 !</result>
 !</function>
 
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    REAL(SP), DIMENSION(:), POINTER :: StackData
     
     IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_double(rstack%h_StackData,StackData)
-      sdata=TRANSFER(StackData(rstack%istackPosition),sdata)
+      CALL storage_getbase_single(rstack%h_StackData,StackData)
+      sdata=StackData(rstack%istackPosition)
     ELSE
       PRINT *, "stack_backSngl: Stack empty!"
       STOP
@@ -396,7 +395,7 @@ CONTAINS
     
     IF (.NOT.stack_isempty(rstack)) THEN
       CALL storage_getbase_double(rstack%h_StackData,StackData)
-      ddata=TRANSFER(StackData(rstack%istackPosition),ddata)
+      ddata=StackData(rstack%istackPosition)
     ELSE
       PRINT *, "stack_backDble: Stack empty!"
       STOP
@@ -423,11 +422,11 @@ CONTAINS
 !</result>
 !</function>
 
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    INTEGER, DIMENSION(:), POINTER :: StackData
     
     IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_double(rstack%h_StackData,StackData)
-      idata=TRANSFER(StackData(rstack%istackPosition),idata)
+      CALL storage_getbase_int(rstack%h_StackData,StackData)
+      idata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
     ELSE
       PRINT *, "stack_popbackInt: Stack empty!"
@@ -455,11 +454,11 @@ CONTAINS
 !</result>
 !</function>
 
-    REAL(DP), DIMENSION(:), POINTER :: StackData
+    REAL(SP), DIMENSION(:), POINTER :: StackData
     
     IF (.NOT.stack_isempty(rstack)) THEN
-      CALL storage_getbase_double(rstack%h_StackData,StackData)
-      sdata=TRANSFER(StackData(rstack%istackPosition),sdata)
+      CALL storage_getbase_single(rstack%h_StackData,StackData)
+      sdata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
     ELSE
       PRINT *, "stack_popbackSngl: Stack empty!"
@@ -491,7 +490,7 @@ CONTAINS
     
     IF (.NOT.stack_isempty(rstack)) THEN
       CALL storage_getbase_double(rstack%h_StackData,StackData)
-      ddata=TRANSFER(StackData(rstack%istackPosition),ddata)
+      ddata=StackData(rstack%istackPosition)
       rstack%istackPosition=rstack%istackPosition-1
     ELSE
       PRINT *, "stack_popbackDble: Stack empty!"
