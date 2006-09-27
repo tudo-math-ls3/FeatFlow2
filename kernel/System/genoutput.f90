@@ -568,15 +568,15 @@ CONTAINS
 !</description>
 
 !<input>
-  ! The message to be written out.
-  CHARACTER(LEN=*), INTENT(IN) :: smessage
-  
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  INTEGER, INTENT(IN), OPTIONAL :: coutputClass
+  INTEGER, INTENT(IN) :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssubroutine
+  CHARACTER(LEN=*), INTENT(IN) :: ssubroutine
+  
+  ! The message to be written out.
+  CHARACTER(LEN=*), INTENT(IN) :: smessage
   
 !</input>
 
