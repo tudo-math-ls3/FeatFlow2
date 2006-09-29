@@ -70,26 +70,30 @@
 !#        as CALL output_line ('').
 !#
 !#     b) CALL output_line('A message only to the terminal.', &
-!#                         OU_MODE_TERM)
+!#                         OU_CLASS_MSG,OU_MODE_TERM)
 !#
 !#     -> Writes a message only to the terminal
 !#
 !#     c) CALL output_line ('A message only to the log file.', &
-!#                          OU_MODE_LOG)
+!#                          OU_CLASS_MSG,OU_MODE_LOG)
 !#
 !#     -> Writes a message only to the log file
 !#
 !#     d) CALL output_line ('A special debug message.', &
-!#                          OU_MODE_STD,OU_CLASS_TRACE1,'mysubroutine')
+!#                          OU_CLASS_TRACE1,'OU_MODE_STD,mysubroutine')
 !#
 !#     -> Writes a debug message with '*** (mysubroutine):' in front to the 
 !#        terminal and the log file. This is usually used for debug purposes.
 !#
 !#     e) CALL output_line ('This is an error message.', &
-!#                          OU_MODE_STD,OU_CLASS_ERROR,'mysubroutine')
+!#                          OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
 !#
 !#     -> Writes a debug message with 'Error (mysubroutine):' in front to the 
 !#        error log file and error output channel.
+!#
+!#       or even simpler:
+!#
+!#        CALL output_line ('This is an error message.',OU_CLASS_ERROR)
 !#
 !#     f) CALL output_line_sep (OU_SEP_MINUS)
 !#
