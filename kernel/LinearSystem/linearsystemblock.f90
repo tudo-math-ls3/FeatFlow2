@@ -1571,11 +1571,13 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsysbl_vectorLinearComb (rx,ry,cx,cy)
+  SUBROUTINE lsysbl_vectorLinearComb (rx,ry,cx,cy,rdest)
   
 !<description>
   ! Performs a linear combination: ry = cx * rx  +  cy * ry
-  ! Both vectors must be compatible to each other (same size, sorting 
+  ! If rdest is given, the routine calculates rdest = cx * rx  +  cy * ry
+  ! without overwriting ry.
+  ! All vectors must be compatible to each other (same size, sorting 
   ! strategy,...).
 !</description>  
   
@@ -1591,8 +1593,11 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-  ! Second source vector; also receives the result
+  ! Second source vector; also receives the result if rdest is not given.
   TYPE(t_vectorBlock), INTENT(INOUT) :: ry
+  
+  ! OPTIONAL: Destination vector. If not given, ry is overwritten.
+  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rdest
 !</inputoutput>
   
 !</subroutine>
@@ -1603,6 +1608,10 @@ CONTAINS
   
   ! The vectors must be compatible to each other.
   CALL lsysbl_isVectorCompatible (rx,ry)
+  
+  IF (PRESENT(rdest)) THEN
+    CALL lsysbl_isVectorCompatible (rx,rdest)
+  END IF
 
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsysbl_vectorLinearComb: different data types not supported!'
@@ -1613,14 +1622,22 @@ CONTAINS
   CASE (ST_DOUBLE)
     ! Get the pointers and copy the whole data array.
     CALL lsysbl_getbase_double(rx,p_Dsource)
-    CALL lsysbl_getbase_double(ry,p_Ddest)
+    IF (.NOT. PRESENT(rdest)) THEN
+      CALL lsysbl_getbase_double(ry,p_Ddest)
+    ELSE
+      CALL lsysbl_getbase_double(rdest,p_Ddest)
+    END IF
     
     CALL lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
 
   CASE (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     CALL lsysbl_getbase_single(rx,p_Ssource)
-    CALL lsysbl_getbase_single(ry,p_Sdest)
+    IF (.NOT. PRESENT(rdest)) THEN
+      CALL lsysbl_getbase_single(ry,p_Sdest)
+    ELSE
+      CALL lsysbl_getbase_single(rdest,p_Sdest)
+    END IF
     
     CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,REAL(cx,SP),REAL(cy,SP))
   

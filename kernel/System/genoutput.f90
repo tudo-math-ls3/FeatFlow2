@@ -176,13 +176,22 @@ MODULE genoutput
 !<constantblock description="Type of separator line">
 
   ! Separator line: MINUS character
-  INTEGER, PARAMETER :: OU_SEP_MINUS = 0
+  INTEGER, PARAMETER :: OU_SEP_MINUS  = 0
 
   ! Separator line: STAR character 
-  INTEGER, PARAMETER :: OU_SEP_STAR = 1
+  INTEGER, PARAMETER :: OU_SEP_STAR   = 1
 
   ! Separator line: EQUAL character
-  INTEGER, PARAMETER :: OU_SEP_EQUAL = 2
+  INTEGER, PARAMETER :: OU_SEP_EQUAL  = 2
+
+  ! Separator line: DOLLAR character
+  INTEGER, PARAMETER :: OU_SEP_DOLLAR = 3
+
+  ! Separator line: @ character
+  INTEGER, PARAMETER :: OU_SEP_AT     = 4
+
+  ! Separator line: + character
+  INTEGER, PARAMETER :: OU_SEP_PLUS   = 5
 
 !</constantblock>
 
@@ -448,7 +457,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE output_line_std (smessage, &
-                              coutputMode, coutputClass, ssubroutine, &
+                              coutputClass, coutputMode, ssubroutine, &
                               bnolinebreak,bnotrim)
 
 !<description>
@@ -608,7 +617,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE output_lbrk (coutputMode, coutputClass, ssubroutine)
+  SUBROUTINE output_lbrk (coutputClass, coutputMode, ssubroutine)
 
 !<description>
   ! Writes a line break to the terminal, log file or error log file,
@@ -636,7 +645,7 @@ CONTAINS
 
 !</subroutine>
 
-    CALL output_line_std ('', coutputMode, coutputClass, ssubroutine)
+    CALL output_line_std ('', coutputClass, coutputMode, ssubroutine)
 
   END SUBROUTINE
 
@@ -644,7 +653,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE output_separator (csepType, coutputMode, coutputClass, ssubroutine)
+  SUBROUTINE output_separator (csepType, coutputClass, coutputMode, ssubroutine)
 
 !<description>
   ! Writes a separator line to the terminal, log file or error log file,
@@ -658,7 +667,7 @@ CONTAINS
 
 !<input>
   ! Type of the separator line. One of the OU_SEP_xxxx constants
-  ! (OU_SEP_MINUS, OU_SEP_STAR or OU_SEP_EQUAL).
+  ! (OU_SEP_MINUS, OU_SEP_STAR, OU_SEP_EQUAL,...).
   INTEGER, INTENT(IN) :: csepType
 
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
@@ -685,10 +694,16 @@ CONTAINS
     SELECT CASE (csepType)
     CASE (OU_SEP_MINUS)
       WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''-''))'
+    CASE (OU_SEP_PLUS)
+      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''+''))'
     CASE (OU_SEP_STAR)
       WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''*''))'
     CASE (OU_SEP_EQUAL)
       WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''=''))'
+    CASE (OU_SEP_DOLLAR)
+      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''$''))'
+    CASE (OU_SEP_AT)
+      WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''@''))'
     CASE DEFAULT
       PRINT *,'output_separator: Unknown separator type: ',csepType
       STOP
@@ -696,7 +711,7 @@ CONTAINS
     
     WRITE (cstr,saux)
 
-    CALL output_line_std (cstr, coutputMode, coutputClass, ssubroutine)
+    CALL output_line_std (cstr, coutputClass, coutputMode, ssubroutine)
 
   END SUBROUTINE
 
