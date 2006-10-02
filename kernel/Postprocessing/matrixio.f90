@@ -12,6 +12,10 @@
 !# 1.) matio_writeMatrixHR
 !#     -> Writes a matrix in human readable form into a text file
 !#
+!# 2.) matio_spyMatrix
+!#     -> Writes a scalar matrix into a file which can be visualized
+!#        by means of the MATLAB command SPY
+!#
 !# The following auxiliary functions can be found here:
 !#
 !# 1.) matio_writeMatrix1_Dble
@@ -331,5 +335,218 @@ MODULE matrixio
     IF (ifile .EQ. 0) CLOSE(cf)
   
   END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE matio_spyMatrix(sfilename,smatrixName,rmatrix,bdata)
+
+!<description>
+    ! Writes a scalar matrix to file so that its sparsity structure
+    ! can be visualized in MATLAB by means of the spy command
+!</description>
+
+!<input>
+    ! file name of the MATLAB file without fileextension
+    CHARACTER(LEN=*), INTENT(IN) :: sfileName
+    
+    ! name of the matrix in MATLAB file
+    CHARACTER(LEN=*), INTENT(IN) :: smatrixName
+
+    ! Source matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+    
+    ! Whether to spy the real data of the matrix or only its sparsity
+    ! pattern
+    LOGICAL, INTENT(IN) :: bdata
+!</input>
+!</subroutine>
+    
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: Da
+    REAL(SP), DIMENSION(:), POINTER :: Fa
+    INTEGER, DIMENSION(:), POINTER :: Kld,Kcol
+    INTEGER :: iunit,ieq,ia
+
+    ! Open output file
+    iunit=sys_getFreeUnit()
+    OPEN (UNIT=iunit,FILE=TRIM(ADJUSTL(sfilename))//'.m')
+    
+    ! Which matrix format are we?
+    SELECT CASE(rmatrix%cmatrixFormat)
+    CASE(LSYSSC_MATRIX7,LSYSSC_MATRIX9)
+
+      ! Which matrix type are we?
+      SELECT CASE(rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_int(rmatrix%h_Kld,Kld)
+        CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
+
+        IF (bdata) THEN
+          
+          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,Da(ia),';'
+            END DO
+          END DO
+
+        ELSE
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,1,';'
+            END DO
+          END DO
+
+        END IF
+
+      CASE (ST_SINGLE)
+        CALL storage_getbase_int(rmatrix%h_Kld,Kld)
+        CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
+
+        IF (bdata) THEN
+          
+          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,Fa(ia),';'
+            END DO
+          END DO
+
+        ELSE
+          
+          DO ieq=1,rmatrix%NEQ
+            DO ia=Kld(ieq),Kld(ieq+1)-1
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                  &,1,';'
+            END DO
+          END DO
+
+        END IF
+
+      CASE DEFAULT
+        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+        STOP
+
+      END SELECT
+
+
+    CASE(LSYSSC_MATRIXD)
+      
+      ! Which matrix type are we?
+      SELECT CASE(rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+
+        IF (bdata) THEN
+          
+          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,Da(ieq),';'
+          END DO
+
+        ELSE
+          
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,1,';'
+          END DO
+
+        END IF
+
+      CASE (ST_SINGLE)
+
+        IF (bdata) THEN
+
+          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,Fa(ieq),';'
+          END DO
+
+        ELSE
+
+          DO ieq=1,rmatrix%NEQ
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+                &,1,';'
+          END DO
+
+        END IF
+
+      CASE DEFAULT
+        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+        STOP
+
+      END SELECT
+      
+    CASE(LSYSSC_MATRIX1)
+
+      ! Which matrix type are we?
+      SELECT CASE(rmatrix%cdataType)
+      CASE (ST_DOUBLE) 
+
+        IF (bdata) THEN
+          
+          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          DO ieq=1,rmatrix%NEQ
+            DO ia=1,rmatrix%NCOLS
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ia,')='&
+                  &,Da(rmatrix%NCOLS*(ieq-1)+ia),';'
+            END DO
+          END DO
+
+        ELSE
+          
+          DO ieq=1,rmatrix%NEQ
+            DO ia=1,rmatrix%NCOLS
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ia,')='&
+                  &,1,';'
+            END DO
+          END DO
+
+        END IF
+
+      CASE (ST_SINGLE)
+        
+        IF (bdata) THEN
+          
+          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          DO ieq=1,rmatrix%NEQ
+            DO ia=1,rmatrix%NCOLS
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ia,')='&
+                  &,Fa(rmatrix%NCOLS*(ieq-1)+ia),';'
+            END DO
+          END DO
+
+        ELSE
+          
+          DO ieq=1,rmatrix%NEQ
+            DO ia=1,rmatrix%NCOLS
+              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ia,')='&
+                  &,1,';'
+            END DO
+          END DO
+
+        END IF
+        
+      CASE DEFAULT
+        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+        STOP
+        
+      END SELECT
+
+    CASE DEFAULT
+      PRINT *, 'lsyssc_spyMatrix: Unsoppurted matrix format!'
+      STOP
+
+    END SELECT
+    
+    ! Close file
+    CLOSE(UNIT=iunit)
+  END SUBROUTINE matio_spyMatrix
 
 END MODULE
