@@ -6383,20 +6383,44 @@ CONTAINS
       &,bsymb,bnumb)
 
 !<description>
-    ! Computes the matrix-matrix-product rmatrixC := rmatrixA * rmatrixB
+    ! Computes the matrix-matrix-product 
+    !   rmatrixC := rmatrixA * rmatrixB
+    !
+    ! All matrix formats and most combinations of matrix formats are
+    ! supported for matrices A and B. The resulting matrix C=A*B is
+    ! generated in the "encompassing" format. That is, if A and B are
+    ! both diagonal matrices, then C is also a diagonal matrix. If
+    ! for example, A is a full matrix and B is a diagonal matrix (or
+    ! vice versa) then C is also a full matrix so that all matrix
+    ! entries can be stored. The only combination which is not
+    ! supported is full and sparse matrices A and B. In general,
+    ! sparse matrices are used for large data. Hence, it does not
+    ! make sense to multiply a sparse matrix and a full one and store
+    ! the result in a full matrix which is quite likely to run out of
+    ! memory. Both CRS formats 7 and 9 can be combined. Note that if
+    ! at least one matrix A and/or B is stored in format 9, then the
+    ! resulting matrix C will also be stored in format 9.
 !</description>
 
 !<input>
     ! source matrices
     TYPE(t_matrixScalar), INTENT(IN) :: rmatrixA,rmatrixB
 
-    ! Compute the required amount of memory
+    ! BMEMORY = FALSE: Do not allocate required memory for C=A*B.
+    ! BMEMORY = TRUE:  Generate all required structures for C=A*B 
     LOGICAL :: bmemory
 
     ! Compute symbolic matrix-matrix-product
+    ! BSYMB = FALSE: Do not generate the required matrix structures.
+    !                This may be useful, if the same matrices A and B
+    !                need to be multiplied several times, but the
+    !                sparsity patterns do not change
+    ! BSYMN = TRUE:  Generate all required matrix structures for C=A*B
     LOGICAL :: bsymb
 
     ! Compute numerical matrix-matrix-product
+    ! BNUMB = FALSE: Do not perform the numerical multiplication
+    ! BNUMB = TRUE:  Perform numerical multiplication
     LOGICAL bnumb
 !</input>
 
@@ -6405,13 +6429,15 @@ CONTAINS
 !</inputoutput>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: DaA,DaB,DaC
-    REAL(SP), DIMENSION(:), POINTER :: FaA,FaB,FaC
+    REAL(DP), DIMENSION(:), POINTER :: DaA,DaB,DaC,Daux
+    REAL(SP), DIMENSION(:), POINTER :: FaA,FaB,FaC,Faux
     INTEGER, DIMENSION(:), POINTER :: KldA,KldB,KldC,KcolA,KcolB&
-        &,KcolC,Kaux
-    INTEGER :: NA,h_Kaux
+        &,KcolC,KdiagonalC,Kaux
+    INTEGER :: NA,h_Kaux,h_Daux,h_Faux,ieq,ild
 
     h_Kaux=ST_NOHANDLE
+    h_Daux=ST_NOHANDLE
+    h_Faux=ST_NOHANDLE
 
     ! Check if both matrices are compatible
     IF (rmatrixA%NCOLS /= rmatrixB%NEQ) THEN
@@ -7061,31 +7087,180 @@ CONTAINS
         END IF
 
       CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CRS7 matrix - - - -
+
+        rmatrixC%cmatrixFormat=MAX(rmatrixA%cmatrixFormat,&
+            &rmatrixB%cmatrixFormat)
         
+        ! Set pointers
+        CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
+        CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+        CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
+        CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+
         ! memory allocation?
         IF (bmemory) THEN
 
-          ! Duplicate structure of matrix A
+          ! Duplicate structure of matrix A or B depending on which
+          ! matrix is given in the encompassing matrix format
           CALL lsyssc_releaseMatrix(rmatrixC)
-          CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC&
-              &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_EMPTY)
+          IF (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) THEN
+            CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC&
+                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_EMPTY)
+          ELSE
+            CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC&
+                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_EMPTY)
+          END IF
+          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
 
-          ! Compute number of nonzero matrix entries
+          ! Set auxiliary pointers
           CALL storage_new('lsyssc_MatMatMul','Kaux',rmatrixB%NCOLS,&
               &ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           CALL storage_getbase_int(h_Kaux,Kaux)
-
-          CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-          CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-          CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-          CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
-          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-
+          
+          ! Compute number of nonzero matrix entries: NA
           NA=do_computeNA(KldA,KcolA,rmatrixA%NEQ,KldB,KcolB,KldC&
               &,Kaux)
+          
+          IF (NA /= rmatrixC%NA) THEN
+            rmatrixC%NA = NA
+            
+            ! (Re-)allocate Da
+            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
+              
+              ! Check data type
+              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
+                  &%cdataType == ST_DOUBLE) THEN
+                CALL storage_new('lsyssc_MatMatMul','h_Da',rmatrixC&
+                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+              ELSE
+                CALL storage_new('lsyssc_MatMatMul','h_Da',rmatrixC&
+                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+              END IF
+              
+            ELSE
+              CALL storage_realloc('lsyssc_MatMatMul',rmatrixC%NA&
+                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
+            END IF
+            
+            ! Reallocate KCOL
+            CALL storage_realloc('lsyssc_MatMatMul',rmatrixC%NA&
+                &,rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.FALSE.)
+            
+          END IF
+        END IF
 
-          PRINT *, NA
-          STOP
+        ! symbolical multiplication?
+        IF (bsymb) THEN
+
+          ! Set pointers
+          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          IF (h_Kaux == ST_NOHANDLE) THEN
+            CALL storage_new('lsyssc_MatMatMul','Kaux',MAX(rmatrixA&
+                &%NEQ,MAX(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_INT&
+                &,h_Kaux,ST_NEWBLOCK_NOINIT)
+          ELSE
+            CALL storage_realloc('lsyssc_MatMatMul',MAX(rmatrixA%NEQ&
+                &,MAX(rmatrixA%NCOLS,rmatrixB%NCOLS)),h_Kaux&
+                &,ST_NEWBLOCK_NOINIT,.FALSE.)
+          END IF
+          CALL storage_getbase_int(h_Kaux,Kaux)
+
+          IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
+            CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+            CALL do_matmatmul_symb(rmatrixA%NEQ,rmatrixA%NCOLS&
+                &,rmatrixB%NCOLS,KldA,KcolA,KldB,KcolB,KldC,KcolC&
+                &,Kaux,KdiagonalC)
+          ELSE
+            CALL do_matmatmul_symb(rmatrixA%NEQ,rmatrixA%NCOLS&
+                &,rmatrixB%NCOLS,KldA,KcolA,KldB,KcolB,KldC,KcolC&
+                &,Kaux)
+          END IF
+        END IF
+
+        ! numerical multiplication?
+        IF (bnumb) THEN
+
+          ! Set pointers
+          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          IF (h_Daux == ST_NOHANDLE) THEN
+            CALL storage_new('lsyssc_MatMatMul','Daux',MAX(rmatrixA&
+                &%NEQ,MAX(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_DOUBLE&
+                &,h_Daux,ST_NEWBLOCK_NOINIT)
+          ELSE
+            CALL storage_realloc('lsyssc_MatMatMul',MAX(rmatrixA%NEQ&
+                &,MAX(rmatrixA%NCOLS,rmatrixB%NCOLS)),h_Daux&
+                &,ST_NEWBLOCK_NOINIT,.FALSE.)
+          END IF
+          CALL storage_getbase_double(h_Daux,Daux)
+
+          ! Find the correct internal subroutine for the specified
+          ! data types. Note that the resulting matrix C will be
+          ! double if at least one of the source matrices is of type
+          ! double   
+          SELECT CASE(rmatrixA%cdataType)
+            
+          CASE (ST_DOUBLE)
+
+            SELECT CASE(rmatrixB%cdataType)
+
+            CASE (ST_DOUBLE) 
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL do_matmatmul_numb_doubledouble(rmatrixA%NEQ&
+                  &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
+                  &,KcolB,DaB,KldC,KcolC,DaC,Daux)
+
+            CASE (ST_SINGLE)
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL do_matmatmul_numb_doublesingle(rmatrixA%NEQ&
+                  &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
+                  &,KcolB,FaB,KldC,KcolC,DaC,Daux)
+              
+            CASE DEFAULT
+              PRINT *, 'lsyssc_MatMatMul: Unsupported data type!'
+              STOP
+            END SELECT
+
+          CASE (ST_SINGLE)
+            
+            SELECT CASE(rmatrixB%cdataType)
+
+            CASE (ST_DOUBLE) 
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL do_matmatmul_numb_singledouble(rmatrixA%NEQ&
+                  &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
+                  &,KcolB,DaB,KldC,KcolC,DaC,Daux)
+
+            CASE (ST_SINGLE)
+              ! We need an additional vector FAUX
+              CALL storage_new('lsyssc_MatMatMul','Faux',MAX(rmatrixA&
+                  &%NEQ,MAX(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_SINGLE&
+                  &,h_Faux,ST_NEWBLOCK_NOINIT)
+              CALL storage_getbase_single(h_Faux,Faux)
+              
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL do_matmatmul_numb_singlesingle(rmatrixA%NEQ&
+                  &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
+                  &,KcolB,FaB,KldC,KcolC,FaC,Faux)
+
+            CASE DEFAULT
+              PRINT *, 'lsyssc_MatMatMul: Unsupported data type!'
+              STOP
+            END SELECT
+            
+          CASE DEFAULT
+            PRINT *, 'lsyssc_MatMatMul: Unsupported data type!'
+            STOP
+          END SELECT
         END IF
         
       CASE DEFAULT
@@ -7098,7 +7273,11 @@ CONTAINS
     CASE DEFAULT
       PRINT *, 'lsyssc_MatMatMul: Unsupported data type!'
       STOP
-    END SELECT 
+    END SELECT
+
+    ! Clear auxiliary vectors
+    IF (h_Kaux /= ST_NOHANDLE) CALL storage_free(h_Kaux)
+    IF (h_Daux /= ST_NOHANDLE) CALL storage_free(h_Daux)
 
   CONTAINS
 
@@ -7106,9 +7285,9 @@ CONTAINS
 
     !**************************************************************
     ! Format 1 multiplication
-    ! double precision matrix A
-    ! double precision matrix B
-    ! double precision matrix C
+    ! double precision matrix A (format 1)
+    ! double precision matrix B (format 1)
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_mat1mat1mul_doubledouble(n,m,k,Da1,Da2,Da3)
       
@@ -7126,9 +7305,9 @@ CONTAINS
 
     !**************************************************************
     ! Format 1 multiplication
-    ! double precision matrix A
-    ! single precision matrix B
-    ! double precision matrix C
+    ! double precision matrix A (format 1)
+    ! single precision matrix B (format 1)
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_mat1mat1mul_doublesingle(n,m,k,Da1,Fa2,Da3)
       
@@ -7146,9 +7325,9 @@ CONTAINS
 
     !**************************************************************
     ! Format 1 multiplication
-    ! single precision matrix A
-    ! double precision matrix B
-    ! double precision matrix C
+    ! single precision matrix A (format 1)
+    ! double precision matrix B (format 1)
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_mat1mat1mul_singledouble(n,m,k,Fa1,Da2,Da3)
       
@@ -7166,9 +7345,9 @@ CONTAINS
 
     !**************************************************************
     ! Format 1 multiplication
-    ! single precision matrix A
-    ! single precision matrix B
-    ! single precision matrix C
+    ! single precision matrix A (format 1)
+    ! single precision matrix B (format 1)
+    ! single precision matrix C (format 1)
 
     SUBROUTINE do_mat1mat1mul_singlesingle(n,m,k,Fa1,Fa2,Fa3)
       
@@ -7188,7 +7367,7 @@ CONTAINS
     ! Format D-1 multiplication
     ! double precision matrix A (format D)
     ! double precision matrix B (format 1)
-    ! double precision matrix C
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_matDmat1mul_doubledouble(n,m,Da1,Da2,Da3)
       
@@ -7208,7 +7387,7 @@ CONTAINS
     ! Format D-1 multiplication
     ! single precision matrix A (format D)
     ! double precision matrix B (format 1)
-    ! double precision matrix C
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_matDmat1mul_singledouble(n,m,Fa1,Da2,Da3)
       
@@ -7228,7 +7407,7 @@ CONTAINS
     ! Format D-1 multiplication
     ! double precision matrix A (format D)
     ! single precision matrix B (format 1)
-    ! double precision matrix C
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_matDmat1mul_doublesingle(n,m,Da1,Fa2,Da3)
       
@@ -7248,7 +7427,7 @@ CONTAINS
     ! Format D-1 multiplication
     ! single precision matrix A (format D)
     ! single precision matrix B (format 1)
-    ! single precision matrix C
+    ! single precision matrix C (format 1)
 
     SUBROUTINE do_matDmat1mul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
@@ -7268,7 +7447,7 @@ CONTAINS
     ! Format 1-D multiplication
     ! double precision matrix A (format 1)
     ! double precision matrix B (format D)
-    ! double precision matrix C
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_mat1matDmul_doubledouble(n,m,Da1,Da2,Da3)
       
@@ -7288,7 +7467,7 @@ CONTAINS
     ! Format 1-D multiplication
     ! single precision matrix A (format 1)
     ! double precision matrix B (format D)
-    ! double precision matrix C
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_mat1matDmul_singledouble(n,m,Fa1,Da2,Da3)
       
@@ -7308,7 +7487,7 @@ CONTAINS
     ! Format 1-D multiplication
     ! double precision matrix A (format 1)
     ! single precision matrix B (format D)
-    ! double precision matrix C
+    ! double precision matrix C (format 1)
 
     SUBROUTINE do_mat1matDmul_doublesingle(n,m,Da1,Fa2,Da3)
       
@@ -7328,7 +7507,7 @@ CONTAINS
     ! Format 1-D multiplication
     ! single precision matrix A (format 1)
     ! single precision matrix B (format D)
-    ! single precision matrix C
+    ! single precision matrix C (format 1)
 
     SUBROUTINE do_mat1matDmul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
@@ -7348,7 +7527,7 @@ CONTAINS
     ! Format D-7/9 multiplication
     ! double precision matrix A (format D)
     ! double precision matrix B (format 7 or format 9)
-    ! double precision matrix C
+    ! double precision matrix C (format 7 or format 9)
 
     SUBROUTINE do_matDmat79mul_doubledouble(Da1,Kld,neq,Da2,Da3)
 
@@ -7369,7 +7548,7 @@ CONTAINS
     ! Format D-7/9 multiplication
     ! single precision matrix A (format D)
     ! double precision matrix B (format 7 or format 9)
-    ! double precision matrix C
+    ! double precision matrix C (format 7 or format 9)
 
     SUBROUTINE do_matDmat79mul_singledouble(Fa1,Kld,neq,Da2,Da3)
 
@@ -7390,7 +7569,7 @@ CONTAINS
     ! Format D-7/9 multiplication
     ! double precision matrix A (format D)
     ! single precision matrix B (format 7 or format 9)
-    ! double precision matrix C
+    ! double precision matrix C (format 7 or format 9)
 
     SUBROUTINE do_matDmat79mul_doublesingle(Da1,Kld,neq,Fa2,Da3)
 
@@ -7411,7 +7590,7 @@ CONTAINS
     ! Format D-7/9 multiplication
     ! single precision matrix A (format D)
     ! single precision matrix B (format 7 or format 9)
-    ! single precision matrix C
+    ! single precision matrix C (format 7 or format 9)
 
     SUBROUTINE do_matDmat79mul_singlesingle(Fa1,Kld,neq,Fa2,Fa3)
 
@@ -7432,7 +7611,7 @@ CONTAINS
     ! Format 7/9-D multiplication
     ! double precision matrix A (format 7 or format 9)
     ! double precision matrix B (format D)
-    ! double precision matrix C
+    ! double precision matrix C (format 7 or format 9)
     
     SUBROUTINE do_mat79matDmul_doubledouble(Kld,Kcol,neq,Da1,Da2,Da3)
 
@@ -7455,7 +7634,7 @@ CONTAINS
     ! Format 7/9-D multiplication
     ! single precision matrix A (format 7 or format 9)
     ! double precision matrix B (format D)
-    ! double precision matrix C
+    ! double precision matrix C (format 7 or format 9)
     
     SUBROUTINE do_mat79matDmul_singledouble(Kld,Kcol,neq,Fa1,Da2,Da3)
 
@@ -7478,7 +7657,7 @@ CONTAINS
     ! Format 7/9-D multiplication
     ! double precision matrix A (format 7 or format 9)
     ! single precision matrix B (format D)
-    ! double precision matrix C
+    ! double precision matrix C (format 7 or format 9)
     
     SUBROUTINE do_mat79matDmul_doublesingle(Kld,Kcol,neq,Da1,Fa2,Da3)
 
@@ -7501,7 +7680,7 @@ CONTAINS
     ! Format 7/9-D multiplication
     ! single precision matrix A (format 7 or format 9)
     ! single precision matrix B (format D)
-    ! single precision matrix C
+    ! single precision matrix C (format 7 or format 9)
     
     SUBROUTINE do_mat79matDmul_singlesingle(Kld,Kcol,neq,Fa1,Fa2,Fa3)
 
@@ -7532,18 +7711,18 @@ CONTAINS
     !         subroutine taken from the SPARSEKIT library written
     !         by Youcef Saad.
 
-    FUNCTION do_computeNA(Kld1,Kcol1,neq,Kld2,Kcol2,Kld3,Kaux)&
+    FUNCTION do_computeNA(KldA,KcolA,neq,KldB,KcolB,KldC,Kaux)&
         & RESULT(NA)
 
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1,Kld2,Kcol2
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: Kld3,Kaux
+      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,Kaux
       INTEGER, INTENT(IN) :: neq
       INTEGER :: NA
 
       INTEGER :: ieq,jeq,ild,irow,icol,idg,ndg,last
 
       ! Initialization
-      Kld3=0; Kaux=0
+      KldC=0; Kaux=0
 
       DO ieq=1,neq
         
@@ -7586,6 +7765,340 @@ CONTAINS
       NA = SUM(KldC(1:neq))
 
     END FUNCTION do_computeNA
+
+    !**************************************************************
+    ! Format 7/9-7/9 multiplication
+    ! Perform symbolical matrix-matrix-multiplication C := A * B
+    ! 
+    ! This subroutine is based on the SYMBMM routine from the
+    ! Sparse Matrix Multiplication Package (SMMP) written by 
+    ! R.E. Bank and C.C. Douglas which is freely available at:
+    ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
+
+    SUBROUTINE do_matmatmul_symb(n,m,l,KldA,KcolA,KldB,KcolB,KldC&
+        &,KcolC,Kindex,KdiagonalC)
+
+      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC,Kindex
+      INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: KdiagonalC
+
+      INTEGER :: i,j,k,istart,ilength,jj,jk,kaux,ioff
+
+      ! KINDEX is used to store links. If an entry in KINDEX os
+      ! nonzero, it is a pointer to the next column with a nonzero.
+      ! The links are determined as they are found, and are unordered.
+      Kindex = 0
+      KldC(1)= 1
+
+      ! The main loop consists of three components: initialization, a
+      ! long loop that merges row lists, and code to copy the links
+      ! into the KCOLC vector.
+      DO i=1,n
+        
+        ! Initialization
+        istart = -1
+        ilength = 0
+
+        ! The start column ISTART is reset and the number of column
+        ! entries for the I-th row is assumed empty. Now, merge the
+        ! row lists as follows
+        DO jj=KldA(i),KldA(i+1)-1
+          j=KcolA(jj)
+          
+          ! Determine the intersection of the current row I in matrix
+          ! A with the nonzeros in column J of matrix B
+          DO k=KldB(j),KldB(j+1)-1
+            jk=KcolB(k)
+            IF (Kindex(jk) == 0) THEN
+              Kindex(jk) = istart
+              istart = jk
+              ilength = ilength+1
+            END IF
+          END DO
+        END DO
+
+        ! Copy the links into the KCOLC vector as column indices
+        ! Since the column vectors are given in unordered way, they
+        ! must be ordered before inserted inco KCOLC
+        KldC(i+1)=KldC(i)+ilength
+        
+        IF (PRESENT(KdiagonalC)) THEN
+          ! If KDIAGONALC is present, then the matrix C is stored in
+          ! CRS9 format, that is, all entries in KCOLC are numbered
+          ! contineously but the position of the diagonal entry is
+          ! kept in KDIAGONALC
+          DO j=KldC(i),KldC(i+1)-1
+            KcolC(j) = istart
+            istart = Kindex(istart)
+            Kindex(KcolC(j)) = 0
+            
+            ! Perform local insertionsort to find the correct
+            ! position of the provisional entry KCOLC(J)
+            kaux = KcolC(j)
+            DO jj=j-1,KldC(i),-1
+              IF (KcolC(jj) <= kaux) GOTO 10
+              KcolC(jj+1) = KcolC(jj)
+              IF (KcolC(jj) == i) KdiagonalC(i) = jj
+            END DO
+            jj=KldC(i)-1
+10          KcolC(jj+1) = kaux
+            IF (KcolC(jj+1) == i) KdiagonalC(i) = jj+1
+          END DO
+
+        ELSE
+          ! If KDIAGONALC is not present, then the matrix C is stored
+          ! in CRS7 format, that is, all entries in KCOLC are
+          ! numbered contineously except for the diagonal entry which
+          ! is stored in the first position KLDC(I) of row I.
+          
+          ! The variable IOFF is used to indicate, whether the
+          ! diagonal entry has already been inserted or not.
+          ioff=0
+          
+          DO j=KldC(i),KldC(i+1)-1
+            KcolC(j) = istart
+            istart = Kindex(istart)
+            Kindex(KcolC(j)) = 0
+            
+            IF (KcolC(j) == i) THEN
+              ! The current entry is the diagonal entry, hence, shift
+              ! all entries to the right by one and move the current
+              ! entry to the first position
+              KcolC(KldC(i):j)=CSHIFT(KcolC(KldC(i):j),-1)
+              
+              ! Set IOFF to one so that the first entry of the I-th
+              ! row is neglected in subsequent iterations
+              ioff=1
+            ELSE
+              ! Perform local insertsiosort to find the correct
+              ! position of the provisional entry KCOLC(J)
+              kaux = KcolC(j); jj=j
+              DO jj=j-1,KldC(i),-1
+                IF (KcolC(jj) <= kaux) GOTO 20
+                KcolC(jj+1) = KcolC(jj)
+              END DO
+              jj=KldC(i)-1
+20            KcolC(jj+1) = kaux
+            END IF
+          END DO
+        END IF
+
+        Kindex(i) = 0
+      END DO
+    END SUBROUTINE do_matmatmul_symb
+
+    !**************************************************************
+    ! Format 7/9-7/9 multiplication
+    ! Perform numerical matrix-matrix-multiplication C := A * B
+    !
+    ! double precision matrix A (format 7 or format 9)
+    ! double precision matrix B (format 7 or format 9)
+    ! double precision matrix C (format 7 or format 9)
+    !
+    ! This subroutine is based on the NUMBMM routine from the
+    ! Sparse Matrix Multiplication Package (SMMP) written by 
+    ! R.E. Bank and C.C. Douglas which is freely available at:
+    ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
+    
+    SUBROUTINE do_matmatmul_numb_doubledouble(n,m,l,KldA,KcolA,DaA,&
+        &KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
+
+      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      REAL(DP), DIMENSION(:), INTENT(IN)    :: DaA
+      REAL(DP), DIMENSION(:), INTENT(IN)    :: DaB
+      REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC,Dtemp
+
+      INTEGER :: i,j,k,jj,jk
+      REAL(DP) :: daux
+
+      ! DTEMP is used to store partial sums.
+      Dtemp = 0
+
+      ! The main loop forms the partial sums and then copies the
+      ! completed sums into the correct locations in the sparse matrix
+      DO i=1,n
+        
+        DO jj=KldA(i),KldA(i+1)-1
+          j = KcolA(jj)
+          daux = DaA(jj)
+          
+          ! Accumulate the product for row J
+          DO k=KldB(j),KldB(j+1)-1
+            jk=KcolB(k)
+            Dtemp(jk)=Dtemp(jk)+daux*DaB(k)
+          END DO
+        END DO
+        
+        ! Store product for row J
+        DO j=KldC(i),KldC(i+1)-1
+          jj=KcolC(j)
+          DaC(j) = Dtemp(jj)
+          Dtemp(jj) = 0
+        END DO
+      END DO
+    END SUBROUTINE do_matmatmul_numb_doubledouble
+
+    !**************************************************************
+    ! Format 7/9-7/9 multiplication
+    ! Perform numerical matrix-matrix-multiplication C := A * B
+    !
+    ! single precision matrix A (format 7 or format 9)
+    ! double precision matrix B (format 7 or format 9)
+    ! double precision matrix C (format 7 or format 9)
+    !
+    ! This subroutine is based on the NUMBMM routine from the
+    ! Sparse Matrix Multiplication Package (SMMP) written by 
+    ! R.E. Bank and C.C. Douglas which is freely available at:
+    ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
+    
+    SUBROUTINE do_matmatmul_numb_singledouble(n,m,l,KldA,KcolA,FaA,&
+        &KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
+
+      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      REAL(SP), DIMENSION(:), INTENT(IN)    :: FaA
+      REAL(DP), DIMENSION(:), INTENT(IN)    :: DaB
+      REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC,Dtemp
+
+      INTEGER :: i,j,k,jj,jk
+      REAL(DP) :: daux
+
+      ! DTEMP is used to store partial sums.
+      Dtemp = 0
+
+      ! The main loop forms the partial sums and then copies the
+      ! completed sums into the correct locations in the sparse matrix
+      DO i=1,n
+        
+        DO jj=KldA(i),KldA(i+1)-1
+          j = KcolA(jj)
+          daux = FaA(jj)
+          
+          ! Accumulate the product for row J
+          DO k=KldB(j),KldB(j+1)-1
+            jk=KcolB(k)
+            Dtemp(jk)=Dtemp(jk)+daux*DaB(k)
+          END DO
+        END DO
+        
+        ! Store product for row J
+        DO j=KldC(i),KldC(i+1)-1
+          jj=KcolC(j)
+          DaC(j) = Dtemp(jj)
+          Dtemp(jj) = 0
+        END DO
+      END DO
+    END SUBROUTINE do_matmatmul_numb_singledouble
+
+    !**************************************************************
+    ! Format 7/9-7/9 multiplication
+    ! Perform numerical matrix-matrix-multiplication C := A * B
+    !
+    ! double precision matrix A (format 7 or format 9)
+    ! single precision matrix B (format 7 or format 9)
+    ! double precision matrix C (format 7 or format 9)
+    !
+    ! This subroutine is based on the NUMBMM routine from the
+    ! Sparse Matrix Multiplication Package (SMMP) written by 
+    ! R.E. Bank and C.C. Douglas which is freely available at:
+    ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
+    
+    SUBROUTINE do_matmatmul_numb_doublesingle(n,m,l,KldA,KcolA,DaA,&
+        &KldB,KcolB,FaB,KldC,KcolC,DaC,Dtemp)
+
+      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      REAL(DP), DIMENSION(:), INTENT(IN)    :: DaA
+      REAL(SP), DIMENSION(:), INTENT(IN)    :: FaB
+      REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC,Dtemp
+
+      INTEGER :: i,j,k,jj,jk
+      REAL(DP) :: daux
+
+      ! DTEMP is used to store partial sums.
+      Dtemp = 0
+
+      ! The main loop forms the partial sums and then copies the
+      ! completed sums into the correct locations in the sparse matrix
+      DO i=1,n
+        
+        DO jj=KldA(i),KldA(i+1)-1
+          j = KcolA(jj)
+          daux = DaA(jj)
+          
+          ! Accumulate the product for row J
+          DO k=KldB(j),KldB(j+1)-1
+            jk=KcolB(k)
+            Dtemp(jk)=Dtemp(jk)+daux*FaB(k)
+          END DO
+        END DO
+        
+        ! Store product for row J
+        DO j=KldC(i),KldC(i+1)-1
+          jj=KcolC(j)
+          DaC(j) = Dtemp(jj)
+          Dtemp(jj) = 0
+        END DO
+      END DO
+    END SUBROUTINE do_matmatmul_numb_doublesingle
+
+    !**************************************************************
+    ! Format 7/9-7/9 multiplication
+    ! Perform numerical matrix-matrix-multiplication C := A * B
+    !
+    ! single precision matrix A (format 7 or format 9)
+    ! single precision matrix B (format 7 or format 9)
+    ! single precision matrix C (format 7 or format 9)
+    !
+    ! This subroutine is based on the NUMBMM routine from the
+    ! Sparse Matrix Multiplication Package (SMMP) written by 
+    ! R.E. Bank and C.C. Douglas which is freely available at:
+    ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
+    
+    SUBROUTINE do_matmatmul_numb_singlesingle(n,m,l,KldA,KcolA,FaA,&
+        &KldB,KcolB,FaB,KldC,KcolC,FaC,Ftemp)
+
+      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      REAL(SP), DIMENSION(:), INTENT(IN)    :: FaA
+      REAL(SP), DIMENSION(:), INTENT(IN)    :: FaB
+      REAL(SP), DIMENSION(:), INTENT(INOUT) :: FaC,Ftemp
+
+      INTEGER :: i,j,k,jj,jk
+      REAL(DP) :: faux
+
+      ! DTEMP is used to store partial sums.
+      Ftemp = 0
+
+      ! The main loop forms the partial sums and then copies the
+      ! completed sums into the correct locations in the sparse matrix
+      DO i=1,n
+        
+        DO jj=KldA(i),KldA(i+1)-1
+          j = KcolA(jj)
+          daux = FaA(jj)
+          
+          ! Accumulate the product for row J
+          DO k=KldB(j),KldB(j+1)-1
+            jk=KcolB(k)
+            Ftemp(jk)=Ftemp(jk)+faux*FaB(k)
+          END DO
+        END DO
+        
+        ! Store product for row J
+        DO j=KldC(i),KldC(i+1)-1
+          jj=KcolC(j)
+          FaC(j) = Ftemp(jj)
+          Ftemp(jj) = 0
+        END DO
+      END DO
+    END SUBROUTINE do_matmatmul_numb_singlesingle
 
   END SUBROUTINE lsyssc_MatMatMul
 END MODULE
