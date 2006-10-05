@@ -521,28 +521,28 @@ MODULE boundary
   ! Allocate an array containing handles. Each handle Each handle refers
   ! to integer data for a boundary component.
   CALL storage_new1D("boundary_read", "h_Idbldatavec_handles", &
-                  p_rboundary%iboundarycount, ST_INT, &
+                  INT(p_rboundary%iboundarycount,I32), ST_INT, &
                   p_rboundary%h_Idbldatavec_handles, ST_NEWBLOCK_ZERO)
   CALL storage_getbase_int(p_rboundary%h_Idbldatavec_handles, p_IdbleSegInfo_handles)
   
   ! Allocate an array containing of handles. Each handle refers
   ! to integer data for a boundary component.
   CALL storage_new("boundary_read", "h_Iintdatavec_handles", &
-                  p_rboundary%iboundarycount, ST_INT, &
+                  INT(p_rboundary%iboundarycount,I32), ST_INT, &
                   p_rboundary%h_Iintdatavec_handles, ST_NEWBLOCK_ZERO)
   CALL storage_getbase_int(p_rboundary%h_Iintdatavec_handles, p_IintSegInfo_handles)
 
   ! Allocate an array containing the maximum parameter values for each
   ! boundary component in length-parametrisation
   CALL storage_new("boundary_read", "h_DmaxPar", &
-                  p_rboundary%iboundarycount, ST_DOUBLE, &
+                  INT(p_rboundary%iboundarycount,I32), ST_DOUBLE, &
                   p_rboundary%h_DmaxPar, ST_NEWBLOCK_ZERO)
   CALL storage_getbase_double(p_rboundary%h_DmaxPar, p_DmaxPar)
 
   ! Allocate an array containing the number of boundary segments in each
   ! boundary component
   CALL storage_new("boundary_read", "h_IsegCount", &
-                  p_rboundary%iboundarycount, ST_INT, &
+                  INT(p_rboundary%iboundarycount,I32), ST_INT, &
                   p_rboundary%h_IsegCount, ST_NEWBLOCK_ZERO)
   CALL storage_getbase_int(p_rboundary%h_IsegCount, p_IsegCount)
 
@@ -571,7 +571,7 @@ MODULE boundary
     ! of segments indicates * 2.
     
     CALL storage_new("boundary_read", "h_Isegcount", &
-                    2*p_IsegCount(ibct), ST_INT, &
+                    INT(2*p_IsegCount(ibct),I32), ST_INT, &
                     p_IintSegInfo_handles(ibct), ST_NEWBLOCK_ZERO)
     CALL storage_getbase_int(p_IintSegInfo_handles(ibct), p_IsegInfo)
 
@@ -637,7 +637,7 @@ MODULE boundary
     ! boundary segments:
     
     CALL storage_new("boundary_read", "h_IdbleSegInfo_handles", &
-                    idblemem, ST_DOUBLE, &
+                    INT(idblemem,I32), ST_DOUBLE, &
                     p_IdbleSegInfo_handles(ibct), ST_NEWBLOCK_ZERO)
     
   END DO
