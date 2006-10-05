@@ -808,7 +808,7 @@ CONTAINS
     DO i=2,SIZE(Dx)
       resnorm = resnorm + Dx(i)*Dx(i)
     END DO
-    resnorm = DSQRT(resnorm)
+    resnorm = SQRT(resnorm)
 
   CASE (LINALG_NORML1)
     ! L1-norm: sum all entries, divide by sqrt(vector length).
@@ -826,7 +826,7 @@ CONTAINS
     DO i=2,SIZE(Dx)
       resnorm = resnorm + Dx(i)*Dx(i)
     END DO
-    resnorm = DSQRT(resnorm / REAL(SIZE(Dx),DP))
+    resnorm = SQRT(resnorm / REAL(SIZE(Dx),DP))
     
   CASE (LINALG_NORMMAX)
     ! MAX-norm. Find the absolute largest entry.
