@@ -484,7 +484,7 @@ MODULE boundary
   
   ! Input channel for reading
   INTEGER :: iunit
-  INTEGER :: ibcomponent, isegment, ibct
+  INTEGER :: ibcomponent, isegment, ibct,ihandle
   INTEGER(I32), DIMENSION(:), POINTER :: p_IsegInfo, p_IsegCount
   INTEGER(I32), DIMENSION(:), POINTER :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
   REAL(DP), DIMENSION(:), POINTER :: p_DsegInfo, p_DmaxPar
@@ -572,8 +572,9 @@ MODULE boundary
     
     CALL storage_new("boundary_read", "h_Isegcount", &
                     INT(2*p_IsegCount(ibct),I32), ST_INT, &
-                    p_IintSegInfo_handles(ibct), ST_NEWBLOCK_ZERO)
-    CALL storage_getbase_int(p_IintSegInfo_handles(ibct), p_IsegInfo)
+                    ihandle, ST_NEWBLOCK_ZERO)
+    p_IintSegInfo_handles(ibct) = ihandle
+    CALL storage_getbase_int(ihandle, p_IsegInfo)
 
     ! Evaluate the boundary segment definition to get the memory
     ! needed for it:
@@ -638,7 +639,8 @@ MODULE boundary
     
     CALL storage_new("boundary_read", "h_IdbleSegInfo_handles", &
                     INT(idblemem,I32), ST_DOUBLE, &
-                    p_IdbleSegInfo_handles(ibct), ST_NEWBLOCK_ZERO)
+                    ihandle, ST_NEWBLOCK_ZERO)
+    p_IdbleSegInfo_handles(ibct) = ihandle
     
   END DO
     
@@ -657,11 +659,13 @@ MODULE boundary
     ! Get a pointer to the boundary component info.
     ! Here, all double-precision information of the current boundary
     ! component is saved.
-    CALL storage_getbase_double(p_IdbleSegInfo_handles(ibcomponent), p_DsegInfo)
+    CALL storage_getbase_double(&
+         INT(p_IdbleSegInfo_handles(ibcomponent)), p_DsegInfo)
     
     ! Get a pointer to the start position of the segments in the
     ! current boundary component.
-    CALL storage_getbase_int(p_IintSegInfo_handles(ibcomponent), p_ISegInfo)
+    CALL storage_getbase_int(&
+         INT(p_IintSegInfo_handles(ibcomponent)), p_ISegInfo)
 
     ! Build up the segments in the block:
     DO isegment = 0,p_IsegCount(ibcomponent)-1
@@ -780,7 +784,7 @@ MODULE boundary
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,ihandle
   INTEGER(I32), DIMENSION(:), POINTER :: p_IdbleSegInfo_handles,p_IintSegInfo_handles
   
   IF (.NOT. ASSOCIATED(p_rboundary)) RETURN
@@ -793,8 +797,13 @@ MODULE boundary
   ! Release the handles of the integer- and double-precision
   ! data blocks:
   DO i=1,p_rboundary%iboundarycount
-    CALL storage_free (p_IintSegInfo_handles(i))
-    CALL storage_free (p_IdbleSegInfo_handles(i))
+    ihandle = p_IintSegInfo_handles(i)
+    CALL storage_free (ihandle)
+    p_IintSegInfo_handles(i) = ihandle
+    
+    ihandle = p_IdbleSegInfo_handles(i)
+    CALL storage_free (ihandle)
+    p_IdbleSegInfo_handles(i) = ihandle
   END DO
   
   ! Release all arrays in the structure
@@ -881,10 +890,10 @@ MODULE boundary
   ! Get the pointers to the segment information arrays for the current
   ! boundary component:
   CALL storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
-  CALL storage_getbase_int(p_IintSegInfo_handles(iboundCompIdx),p_IsegInfo)
+  CALL storage_getbase_int(INT(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
   
   CALL storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
-  CALL storage_getbase_double(p_IdbleSegInfo_handles(iboundCompIdx),p_DsegInfo)
+  CALL storage_getbase_double(INT(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
   
   ! Get the segment-count array and the maximum-parameter array
   CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
@@ -1068,10 +1077,10 @@ MODULE boundary
     ! Get the pointers to the segment information arrays for the current
     ! boundary component:
     CALL storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
-    CALL storage_getbase_int(p_IintSegInfo_handles(iboundCompIdx),p_IsegInfo)
+    CALL storage_getbase_int(INT(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
     
     CALL storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
-    CALL storage_getbase_double(p_IdbleSegInfo_handles(iboundCompIdx),p_DsegInfo)
+    CALL storage_getbase_double(INT(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
     
     ! Get the segment-count array and the maximum-parameter array
     CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
@@ -1238,10 +1247,10 @@ MODULE boundary
   ! Get the pointers to the segment information arrays for the current
   ! boundary component:
   CALL storage_getbase_int(rboundary%h_Iintdatavec_handles,p_IintSegInfo_handles)
-  CALL storage_getbase_int(p_IintSegInfo_handles(iboundCompIdx),p_IsegInfo)
+  CALL storage_getbase_int(INT(p_IintSegInfo_handles(iboundCompIdx)),p_IsegInfo)
   
   CALL storage_getbase_int(rboundary%h_Idbldatavec_handles,p_IdbleSegInfo_handles)
-  CALL storage_getbase_double(p_IdbleSegInfo_handles(iboundCompIdx),p_DsegInfo)
+  CALL storage_getbase_double(INT(p_IdbleSegInfo_handles(iboundCompIdx)),p_DsegInfo)
   
   ! Get the segment-count array and the maximum-parameter array
   CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)

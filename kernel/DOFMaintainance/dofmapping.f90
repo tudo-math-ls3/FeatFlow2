@@ -168,7 +168,7 @@ CONTAINS
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
 
   ! Element index, where the mapping should be computed.
-  INTEGER, INTENT(IN) :: ielIdx
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: ielIdx
 
   ! If =false, the DOF's of the trial functions are computed. If =true,
   ! the DOF's of the test functions are computed.
@@ -186,7 +186,7 @@ CONTAINS
 ! </subroutine>
 
   ! local variables
-  INTEGER, DIMENSION(1) :: ielIdx_array
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: ielIdx_array
   INTEGER(PREC_DOFIDX), DIMENSION(SIZE(IdofGlob),1) :: IdofGlob_array
 
   ! Wrapper to dof_locGlobMapping_mult - better use this directly!
@@ -204,7 +204,7 @@ CONTAINS
   
 !<description>
   ! This subroutine calculates the global indices in the array IdofGlob
-  ! of the degrees of freedom of the element ielIdx. It is a wrapper routine
+  ! of the degrees of freedom of the elements IelIdx. It is a wrapper routine
   ! for the corresponding routines for a specific element type.
   !
   ! On each element, there are a number of local DOF's 1..n (where n can
@@ -223,7 +223,7 @@ CONTAINS
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
 
   ! Element indices, where the mapping should be computed.
-  INTEGER(I32), DIMENSION(:), INTENT(IN) :: IelIdx
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
   
   ! If =false, the DOF's of the trial functions are computed. If =true,
   ! the DOF's of the test functions are computed.
@@ -235,7 +235,7 @@ CONTAINS
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  INTEGER, DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
 
 !</output>
 
@@ -307,7 +307,7 @@ CONTAINS
 !<input>
 
   ! Element indices, where the mapping should be computed.
-  INTEGER, DIMENSION(:), INTENT(IN) :: IelIdx
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
 
 !</input>
     
@@ -315,7 +315,7 @@ CONTAINS
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  INTEGER, DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
 
 !</output>
 
@@ -353,7 +353,7 @@ CONTAINS
   INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  INTEGER, DIMENSION(:), INTENT(IN) :: IelIdx
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
   
 !</input>
     
@@ -361,7 +361,7 @@ CONTAINS
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  INTEGER, DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
 
 !</output>
 
@@ -411,7 +411,7 @@ CONTAINS
   INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  INTEGER, DIMENSION(:), INTENT(IN) :: IelIdx
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
   
 !</input>
     
@@ -419,7 +419,7 @@ CONTAINS
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  INTEGER, DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
 
 !</output>
 

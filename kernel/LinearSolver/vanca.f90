@@ -429,7 +429,7 @@ CONTAINS
     !
     ! Call the actual VANCA to process the DOF's on each element.
     CALL vanca_general_double_mat79 (p_Dvector, p_Drhs, domega, &
-         rvancaGeneral%p_Rmatrices,IELmax-IELset+1,&
+         rvancaGeneral%p_Rmatrices,IELmax-IELset+1_PREC_ELEMENTIDX,&
          rvancaGeneral%IblockOffset,rvancaGeneral%nblocks,&
          rvancaGeneral%InDofsLocal,rvancaGeneral%ndofsPerElement,&
          rvancaGeneral%IelementDOFs)
@@ -477,7 +477,7 @@ CONTAINS
   INTEGER(PREC_DOFIDX), DIMENSION(nblocks+1), INTENT(IN) :: IblockOffset
   
   ! Number of local DOF's in each block.
-  INTEGER, DIMENSION(nblocks), INTENT(IN)                :: InDofsLocal
+  INTEGER(PREC_DOFIDX), DIMENSION(nblocks), INTENT(IN)   :: InDofsLocal
   
   ! Total number of local DOF's per element
   INTEGER, INTENT(IN)                                    :: ndofsPerElement

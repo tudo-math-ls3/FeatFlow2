@@ -414,7 +414,7 @@ CONTAINS
   
   ! Allocate KLD...
   CALL storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
-                      NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
+                      NEQ+1_I32, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
   
@@ -2401,7 +2401,7 @@ CONTAINS
         rintSubset%ielementStartIdx = IELset
         rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
         CALL fcoeff_buildMatrixSc_sim (p_rdiscretisation,rform, &
-                  IELmax-IELset+1,ncubp,&
+                  IELmax-IELset+1_I32,ncubp,&
                   p_DcubPtsReal,p_IdofsTrial,IdofsTest,rintSubset,p_rcollection, &
                   Dcoefficients)
       END IF

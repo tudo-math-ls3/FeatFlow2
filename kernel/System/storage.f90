@@ -2415,7 +2415,7 @@ CONTAINS
 
   ! Requested storage size for the memory block / the new size of the last
   ! dimension in the memory block identified by ihandle
-  INTEGER, INTENT(IN) :: isize
+  INTEGER(I32), INTENT(IN) :: isize
 
   ! Init new storage block identifier (ST_NEWBLOCK_ZERO, 
   ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).

@@ -3353,7 +3353,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sparameter
   
   ! The value of the parameter.
-  INTEGER(I32), INTENT(IN) :: value
+  INTEGER, INTENT(IN) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error

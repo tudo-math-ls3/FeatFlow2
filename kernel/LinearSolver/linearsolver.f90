@@ -3735,8 +3735,8 @@ CONTAINS
   END SELECT
   
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
-  CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
-  CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1)
+  CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
+  CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
   
   ! Get the data arrays.
   CALL storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
@@ -3886,8 +3886,8 @@ CONTAINS
   !                          .TRUE., 0, 'matrix.txt', '(D10.3)')
 
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
-  CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1)
-  CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1)
+  CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
+  CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
   
   ! Get the data arrays.
   CALL storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
@@ -4243,16 +4243,16 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: isubgroup,mneed,ierr,maxstr
+  INTEGER(I32) :: isubgroup,mneed,ierr,maxstr
   TYPE(t_matrixBlock), POINTER :: p_rmatrix
   TYPE(t_matrixScalar), POINTER :: p_rmatrixSc
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld, p_Kcol
   REAL(DP), DIMENSION(:), POINTER :: p_DA
   INTEGER(PREC_MATIDX) :: lu,jlu,ilup
-  INTEGER, DIMENSION(:), POINTER :: p_Iwork,p_Iwork2
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Iwork,p_Iwork2
   INTEGER :: h_Iwork,h_Iwork2
-  INTEGER, DIMENSION(1) :: IworkTemp
-  INTEGER :: ifill
+  INTEGER(I32), DIMENSION(1) :: IworkTemp
+  INTEGER(I32) :: ifill
   REAL(DP) :: drelax
   
   ! Declare our ILUS-routine from SPLIB as interface to be sure, parameter
@@ -4263,11 +4263,19 @@ CONTAINS
                   lu,jlu,ilup,&
                   iwork,maxstr,&
                   ierr,mneed)
-      INTEGER   n, iwork(*), s,  ierr, rwptr(*), colind(*)
-      DOUBLE PRECISION a(*), relax
-      INTEGER  mneed, maxstr, nzlu, remain
+      USE fsystem
+      
+      ! Integer precision for ILU solver
+      INTEGER, PARAMETER :: LINSOL_PREC_ILUINT       = I32
+
+      ! Double precision precision for ILU solver
+      INTEGER, PARAMETER :: LINSOL_PREC_ILUDP        = DP
+      
+      INTEGER(LINSOL_PREC_ILUINT)   n, iwork(*), s,  ierr, rwptr(*), colind(*)
+      REAL(LINSOL_PREC_ILUDP) a(*), relax
+      INTEGER(LINSOL_PREC_ILUINT)  mneed, maxstr, nzlu, remain
       LOGICAL milu
-      INTEGER lu, jlu, ilup
+      INTEGER(LINSOL_PREC_ILUINT) lu, jlu, ilup
     END SUBROUTINE
   END INTERFACE
   
@@ -4340,7 +4348,7 @@ CONTAINS
     !maxstr = MAX(mneed,3*p_rmatrixSc%NA+3*p_rmatrixSc%NEQ)+10000
     DO
       ! Allocate the memory
-      CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', maxstr, &
+      CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', INT(maxstr,I32), &
                           ST_INT, h_Iwork, ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_int(h_Iwork,p_Iwork)
     
@@ -4376,7 +4384,7 @@ CONTAINS
       ! we reallocate the memory. It does not make sense to have that much
       ! waste!
       IF (mneed .LT. MAXSTR/2) THEN
-        CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', mneed, &
+        CALL storage_new1D ('linsol_initDataMILUs1x1', 'Iwork', INT(mneed,I32), &
                             ST_INT, h_Iwork2, ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_int(h_Iwork2,p_Iwork2)
         CALL lalg_copyVectorInt (p_Iwork(1:SIZE(p_Iwork2)),p_Iwork2)
@@ -4499,20 +4507,28 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: p_Dd
     INTEGER(PREC_MATIDX) :: lu,jlu,ilup
-    INTEGER, DIMENSION(:), POINTER :: p_Iwork
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Iwork
     INTEGER :: h_Iwork
 
     ! Declare SPLIB-routine as interface to make sure, procedure interfaces
     ! are checked by the compiler
     INTERFACE  
       SUBROUTINE lusolt (n, x, lu, jlu, uptr)
-        INTEGER jlu(*),uptr(*),n
-        DOUBLE PRECISION x(n)
+        USE fsystem
+
+        ! Integer precision for ILU solver
+        INTEGER, PARAMETER :: LINSOL_PREC_ILUINT       = I32
+
+        ! Double precision precision for ILU solver
+        INTEGER, PARAMETER :: LINSOL_PREC_ILUDP        = DP
+
+        INTEGER(LINSOL_PREC_ILUINT) jlu(*),uptr(*),n
+        REAL(LINSOL_PREC_ILUDP) x(n)
         ! Note that we changed the interface here in contrast to the original
         ! LUSOLT routine - to make it possible to pass an integer array
         ! as double precision array. Bad practise, but SPLIB is set up 
         ! this way :(
-        INTEGER lu(*)
+        INTEGER(LINSOL_PREC_ILUINT) lu(*)
       END SUBROUTINE
     END INTERFACE
     
@@ -4533,7 +4549,8 @@ CONTAINS
 
     ! Solve the system. Call SPLIB, this overwrites the defect vector
     ! with the preconditioned one.
-    CALL lusolt (SIZE(p_Dd),p_Dd, p_Iwork(lu:), p_Iwork(jlu:), p_Iwork(ilup:))
+    CALL lusolt (INT(SIZE(p_Dd),I32),p_Dd, p_Iwork(lu:), &
+                 p_Iwork(jlu:), p_Iwork(ilup:))
   
   END SUBROUTINE
   

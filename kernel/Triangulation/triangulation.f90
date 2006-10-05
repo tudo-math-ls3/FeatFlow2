@@ -684,13 +684,13 @@ CONTAINS
         ! Size wrong. Deallocate the old array, create a new one.
         CALL storage_free (ihandle)
         CALL storage_new ('tria_wrp_tria2Structure', name, &
-                          idim1, ST_INT, ihandle, &
+                          INT(idim1,I32), ST_INT, ihandle, &
                           ST_NEWBLOCK_NOINIT)
       END IF
     ELSE
       ! Allocate the array
       CALL storage_new ('tria_wrp_tria2Structure', name, &
-                        idim1,ST_INT, ihandle, &
+                        INT(idim1,I32),ST_INT, ihandle, &
                         ST_NEWBLOCK_NOINIT)
     END IF
     CALL storage_getbase_int (ihandle,p_array)
@@ -806,13 +806,13 @@ CONTAINS
         ! Size wrong. Deallocate the old array, create a new one.
         CALL storage_free (ihandle)
         CALL storage_new ('tria_wrp_tria2Structure', name, &
-                          idim1, ST_DOUBLE, ihandle, &
+                          INT(idim1,I32), ST_DOUBLE, ihandle, &
                           ST_NEWBLOCK_NOINIT)
       END IF
     ELSE
       ! Allocate the array
       CALL storage_new ('tria_wrp_tria2Structure', name, &
-                        idim1,ST_DOUBLE, ihandle, &
+                        INT(idim1,I32),ST_DOUBLE, ihandle, &
                         ST_NEWBLOCK_NOINIT)
     END IF
     CALL storage_getbase_double (ihandle,p_array)
@@ -882,20 +882,20 @@ CONTAINS
         CALL storage_free (ihandle)
         IF (ihandleidx .NE. 0) CALL storage_free (ihandleidx)
         CALL storage_new ('tria_wrp_tria2Structure', 'KADJ', &
-                          nentries, ST_INT, ihandle, &
+                          INT(nentries,I32), ST_INT, ihandle, &
                           ST_NEWBLOCK_NOINIT)
         CALL storage_new ('tria_wrp_tria2Structure', 'KADJIDX', &
-                          NVT+1, ST_INT, ihandleidx, &
+                          INT(NVT+1,I32), ST_INT, ihandleidx, &
                           ST_NEWBLOCK_NOINIT)
       END IF
     ELSE
       ! Allocate the new array
       IF (ihandleidx .NE. 0) CALL storage_free (ihandleidx)
       CALL storage_new ('tria_wrp_tria2Structure', 'KADJ', &
-                        nentries, ST_INT, ihandle, &
+                        INT(nentries,I32), ST_INT, ihandle, &
                         ST_NEWBLOCK_NOINIT)
       CALL storage_new ('tria_wrp_tria2Structure', 'KADJIDX', &
-                        NVT+1, ST_INT, ihandleidx, &
+                        INT(NVT+1,I32), ST_INT, ihandleidx, &
                         ST_NEWBLOCK_NOINIT)
     END IF
     CALL storage_getbase_int (ihandle,p_array)
@@ -962,7 +962,7 @@ CONTAINS
   
 !</subroutine>
 
-    INTEGER :: idupflag
+    INTEGER(I32) :: idupflag
     
     IF (.NOT. ASSOCIATED(p_rtriangulation)) RETURN
     
@@ -1096,11 +1096,12 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER(PREC_ELEMENTIDX) :: i,icount
+    INTEGER(PREC_ELEMENTIDX) :: i
+    INTEGER :: icount
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER :: h_IverticesAtElementTri
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementTri
-    INTEGER, DIMENSION(2) :: Isize
+    INTEGER(I32), DIMENSION(2) :: Isize
    
     ! There are some things missing... i.e. the calculation of adjacencies
     PRINT *,'Conversion to triangular mesh not yet fully implemented!'

@@ -151,7 +151,7 @@ MODULE matrixio
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j, cf, nchar
+    INTEGER :: i, j, cf, nchar
     REAL(DP) :: dval
     CHARACTER(len=128) :: S
     CHARACTER(len=6) :: sformatChar
@@ -258,7 +258,7 @@ MODULE matrixio
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, j, k, cf, nchar
+    INTEGER :: i, j, k, cf, nchar
     REAL(DP) :: dval
     CHARACTER(len=128) :: S
     CHARACTER(len=6) :: sformatChar
@@ -366,7 +366,7 @@ MODULE matrixio
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: Da
     REAL(SP), DIMENSION(:), POINTER :: Fa
-    INTEGER, DIMENSION(:), POINTER :: Kld,Kcol
+    INTEGER(I32), DIMENSION(:), POINTER :: Kld,Kcol
     INTEGER :: iunit,ieq,ia
 
     ! Open output file

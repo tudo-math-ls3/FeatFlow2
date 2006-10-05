@@ -162,7 +162,7 @@ MODULE linearsystemblock
   TYPE t_vectorBlock
     
     ! Total number of equations in the vector
-    INTEGER                    :: NEQ = 0
+    INTEGER(PREC_DOFIDX)       :: NEQ = 0
     
     ! Handle identifying the vector entries or = ST_NOHANDLE if not
     ! allocated.
@@ -224,7 +224,7 @@ MODULE linearsystemblock
   TYPE t_matrixBlock
     
     ! Total number of equations = rows in the matrix
-    INTEGER                    :: NEQ         = 0
+    INTEGER(PREC_DOFIDX)       :: NEQ         = 0
 
     ! Total number of columns in the matrix
     INTEGER                    :: NCOLS       = 0
@@ -976,7 +976,8 @@ CONTAINS
   IF (PRESENT(cdataType)) cdata = cdataType
   
   ! Allocate one large vector holding all data.
-  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplateMat%NCOLS, &
+  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
+                      INT(rtemplateMat%NCOLS,I32), &
                       cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of

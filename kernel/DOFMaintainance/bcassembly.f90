@@ -173,7 +173,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: icurrentRegion, ccompl
+  INTEGER :: icurrentRegion
+  INTEGER(I32) :: ccompl
   TYPE(t_bcRegion), POINTER :: p_rbcRegion
   LOGICAL :: bbuildAll
   TYPE(t_collection), POINTER :: p_rcoll
@@ -823,7 +824,8 @@ CONTAINS
 
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
-  INTEGER :: i,ilocalEdge,ieltype,ielement,icount,icount2,ipart,j,icomponent
+  INTEGER :: i,ilocalEdge,ieltype,icount,icount2,ipart,j,icomponent
+  INTEGER(PREC_ELEMENTIDX) :: ielement
   INTEGER :: icountmin,icountmax
   INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
   INTEGER, DIMENSION(1) :: Icomponents
@@ -833,7 +835,7 @@ CONTAINS
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary,p_IverticesAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IedgesAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_ItrialElements
-  INTEGER, DIMENSION(:,:), ALLOCATABLE        :: Idofs
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: Idofs
   REAL(DP), DIMENSION(:,:), ALLOCATABLE       :: DdofValue
   REAL(DP), DIMENSION(:), POINTER             :: p_DedgeParameterValue,p_DvertexParameterValue
   INTEGER(I32), DIMENSION(:,:), POINTER       :: p_IverticesAtEdge,p_IedgesAtElement
@@ -1116,13 +1118,13 @@ CONTAINS
     ! Allocate arrays for storing these DOF's and their values - if values are
     ! computed.
     CALL storage_new('bcasm_discrBCDirichlet', 'h_IdirichletDOFs', &
-                    icount, ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
+                    INT(icount,I32), ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
                     ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
     
     IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
       CALL storage_new('bcasm_discrBCDirichlet', 'h_DdirichletValues', & 
-                      icount, ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
+                      INT(icount,I32), ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
                       ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_IdirichletValues)
     END IF
@@ -1339,7 +1341,7 @@ CONTAINS
   CALL storage_new('bcasm_discrBCpressureDrop', 'h_IpressureDropDOFs', &
                   ndofs, ST_INT, p_rpressureDropBCs%h_IpressureDropDOFs, &
                   ST_NEWBLOCK_NOINIT)
-  ImodifierSize = (/NDIM2D,ndofs/)
+  ImodifierSize = (/INT(NDIM2D,I32),ndofs/)
   CALL storage_new2D('bcasm_discrBCDirichlet', 'h_Dmodifier', & 
                     ImodifierSize, ST_DOUBLE, p_rpressureDropBCs%h_Dmodifier, &
                     ST_NEWBLOCK_NOINIT)
@@ -1603,7 +1605,7 @@ CONTAINS
   CALL storage_new('bcasm_discrBCSlip', 'h_IpressureDropDOFs', &
                   ndofs, ST_INT, p_rslipBCs%h_IslipDOFs, &
                   ST_NEWBLOCK_NOINIT)
-  InormalsSize = (/NDIM2D,ndofs/)
+  InormalsSize = (/INT(NDIM2D,I32),ndofs/)
   CALL storage_new2D('bcasm_discrBCSlip', 'h_Dnormals', & 
                     InormalsSize, ST_DOUBLE, p_rslipBCs%h_DnormalVectors, &
                     ST_NEWBLOCK_NOINIT)
@@ -1663,7 +1665,7 @@ CONTAINS
       
       ! Scale the vector to be of length 1.
       
-      d = 1.0_DP / DSQRT(Dnormal(1)**2+Dnormal(2)**2)
+      d = 1.0_DP / SQRT(Dnormal(1)**2+Dnormal(2)**2)
       Dnormal(1:2) = Dnormal(1:2) * d
       
       ! Save the DOF and the normal of the edge.            
@@ -1772,7 +1774,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: icurrentRegion, ccompl
+  INTEGER :: icurrentRegion
+  INTEGER(I32) :: ccompl
   TYPE(t_bcRegion), POINTER :: p_rbcRegion
   LOGICAL :: bbuildAll
   TYPE(t_collection), POINTER :: p_rcoll
@@ -2024,7 +2027,8 @@ CONTAINS
     TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
     
     INTEGER(PREC_DOFIDX) :: nDOFs
-    INTEGER :: nequations, h_Ddofs, h_Idofs, i, j, icomponent, ieltype
+    INTEGER :: h_Ddofs, h_Idofs, i, j, icomponent, ieltype
+    INTEGER(I32) :: nequations
     INTEGER(PREC_DOFIDX), DIMENSION(2) :: IdofCount
     
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idofs

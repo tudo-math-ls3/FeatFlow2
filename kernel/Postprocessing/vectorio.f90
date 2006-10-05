@@ -132,7 +132,7 @@ MODULE vectorio
 !</subroutine>
     
     !local variables
-    INTEGER(I32) :: i, cf, nchar
+    INTEGER :: i, cf, nchar
     REAL(DP) :: dval
     CHARACTER(len=128) :: S
     CHARACTER(len=6) :: sformatChar

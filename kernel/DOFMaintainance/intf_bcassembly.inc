@@ -68,7 +68,7 @@
     !            should be computed
     ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
     !   iwhere = Number of the edge where the normal stress should be computed.
-    INTEGER, INTENT(IN)                                         :: iwhere
+    INTEGER(I32), INTENT(IN)                                    :: iwhere
 
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 

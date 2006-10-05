@@ -506,7 +506,7 @@ CONTAINS
       ! function values in the cubature points:
       
       CALL fcoeff_buildVectorSc_sim (rdiscretisation,icurrentElementDistr, rform, &
-                IELset,IELmax-IELset+1,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
+                IELset,IELmax-IELset+12,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
                 DcubPtsRef,DcubPtsReal,IdofsTest,Djac,Ddetj,p_rcollection, &
                 Dcoefficients)
       
@@ -1001,7 +1001,8 @@ CONTAINS
       CALL trafo_calctrafo_sim (&
             rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
-            p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),p_DcubPtsReal)
+            p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
+            p_DcubPtsReal)
     
       !CALL ZTIME(DT(7))
       
@@ -1012,7 +1013,7 @@ CONTAINS
       rintSubset%ielementStartIdx = IELset
       rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
       CALL fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
-                IELmax-IELset+1,ncubp,p_DcubPtsReal, &
+                IELmax-IELset+1_I32,ncubp,p_DcubPtsReal, &
                 IdofsTest,rintSubset,p_rcollection, &
                 Dcoefficients)
       
