@@ -663,7 +663,7 @@ CONTAINS
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
   
   ! Initialise
-  CALL storage_initialiseNode (p_rnode,cinitNewBlock,1)
+  CALL storage_initialiseNode (p_rnode,cinitNewBlock,1_I32)
 
   END SUBROUTINE
 
@@ -687,7 +687,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sname
 
   !requested storage size
-  INTEGER, INTENT(IN) :: isize
+  INTEGER(I32), INTENT(IN) :: isize
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
   INTEGER, INTENT(IN) :: ctype
@@ -791,7 +791,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sname
 
   !requested storage size for 1st and 2nd dimension
-  INTEGER, DIMENSION(2), INTENT(IN) :: Isize
+  INTEGER(I32), DIMENSION(2), INTENT(IN) :: Isize
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
   INTEGER, INTENT(IN) :: ctype
@@ -1595,13 +1595,16 @@ CONTAINS
       CASE (1)
         SELECT CASE (p_rsource%idataType)
         CASE (ST_DOUBLE)
-          CALL storage_new ('storage_copy',p_rsource%sname,SIZE(p_rsource%p_Ddouble1D),&
+          CALL storage_new ('storage_copy',p_rsource%sname,&
+                            INT(SIZE(p_rsource%p_Ddouble1D),I32),&
                             ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         CASE (ST_SINGLE)
-          CALL storage_new ('storage_copy',p_rsource%sname,SIZE(p_rsource%p_Fsingle1D),&
+          CALL storage_new ('storage_copy',p_rsource%sname,&
+                            INT(SIZE(p_rsource%p_Fsingle1D),I32),&
                             ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         CASE (ST_INT)
-          CALL storage_new ('storage_copy',p_rsource%sname,SIZE(p_rsource%p_Iinteger1D),&
+          CALL storage_new ('storage_copy',p_rsource%sname,&
+                            INT(SIZE(p_rsource%p_Iinteger1D),I32),&
                             ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         END SELECT
       CASE (2) 
@@ -1849,13 +1852,16 @@ CONTAINS
 
       SELECT CASE (p_rsource%idataType)
       CASE (ST_DOUBLE)
-         CALL storage_new ('storage_copy_explicit',p_rsource%sname,SIZE(p_rsource%p_Ddouble1D),&
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,&
+              INT(SIZE(p_rsource%p_Ddouble1D),I32),&
               ST_DOUBLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       CASE (ST_SINGLE)
-         CALL storage_new ('storage_copy_explicit',p_rsource%sname,SIZE(p_rsource%p_Fsingle1D),&
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,&
+              INT(SIZE(p_rsource%p_Fsingle1D),I32),&
               ST_SINGLE, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       CASE (ST_INT)
-         CALL storage_new ('storage_copy_explicit',p_rsource%sname,SIZE(p_rsource%p_Iinteger1D),&
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,&
+              INT(SIZE(p_rsource%p_Iinteger1D),I32),&
               ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       END SELECT
       
@@ -2447,13 +2453,13 @@ CONTAINS
     TYPE(t_storageNode) :: rstorageNode
     
     ! size of the old 1-dimensional array
-    INTEGER :: isizeOld
+    INTEGER(I32) :: isizeOld
 
     ! size of the 1-dimensional array to be copied
     INTEGER :: isizeCopy
 
     ! size of the old 2-dimensional array
-    INTEGER, DIMENSION(2) :: Isize2Dold
+    INTEGER(I32), DIMENSION(2) :: Isize2Dold
 
     INTEGER(I32) :: i,j
     
@@ -2525,7 +2531,7 @@ CONTAINS
       END SELECT
       
       IF (isize > isizeOld) &
-        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,isizeOld+1)
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,isizeOld+1_I32)
       
       ! Copy old data?
       IF (bcopyData) THEN
@@ -2579,7 +2585,8 @@ CONTAINS
       END SELECT
       
       IF (isize > Isize2Dold(2)) &
-        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,Isize2Dold(2)+1)
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                     Isize2Dold(2)+1_I32)
 
       ! Copy old data?
       IF (bcopyData) THEN
