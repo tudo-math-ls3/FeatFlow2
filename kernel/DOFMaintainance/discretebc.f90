@@ -56,15 +56,15 @@ MODULE discretebc
   ! Discrete Dirichlet boundary conditions
   INTEGER, PARAMETER :: DISCBC_TPDIRICHLET    = 1
   
-  ! Discrete pressure drop boundary conditions
-  INTEGER, PARAMETER :: DISCBC_TPPRESSUREDROP = 3
-
 !</constantblock>
 
 !<constantblock description="The type identifier for discrete nonlinear boundary conditions">
 
+  ! Discrete pressure drop boundary conditions
+  INTEGER, PARAMETER :: DISCBC_TPPRESSUREDROP = 100
+
   ! Discrete slip boundary conditions
-  INTEGER, PARAMETER :: DISCBC_TPSLIP         = 100
+  INTEGER, PARAMETER :: DISCBC_TPSLIP         = 101
 
 !</constantblock>
 

@@ -46,6 +46,7 @@
 !#   or if a filter consists of a predictor-corrector step or similar.
 !#   Example:
 !#   - implementation of Slip boundary conditions.
+!#   - implementation of Pressure Drop boundary conditions.
 !#
 !# Note that filters are allowed consist a linear and a nonlinear part!
 !# In such a case, the 'nonlinear' filter part is usually called during 
@@ -100,6 +101,10 @@
 !#      -> Nonlinear filter
 !#      -> Implements discrete nonlinear slip BC's into a scalar defect vector.
 !#
+!# 10.) vecfil_discreteNLPDropBCrhs
+!#      -> Nonlinear filter
+!#      -> Implements discrete pressure drop BC's into a RHS vector.
+!#
 !# Auxiliary routines, usually not called by the main program:
 !#
 !#  1.) vecfil_imposeDirichletBC
@@ -115,7 +120,7 @@
 !#  4.) vecfil_normaliseToL20Sca (rx)
 !#      -> Normalises a scalar vector to bring it into the space $L^2_0$.
 !#
-!#  5.) vecfil_imposePressureDropBC (rx,rpdbcStructure)
+!#  5.) vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
 !#      -> Implements discrete pressure drop BC's into a block vector.
 !#
 !#  6.) vecfil_imposeNLSlipDefectBC 
@@ -550,7 +555,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE vecfil_imposePressureDropBC (rx,rpdbcStructure)
+  SUBROUTINE vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
   
 !<description>
   ! Implements discrete pressure drop BC's into a block vector.
@@ -560,6 +565,10 @@ CONTAINS
   ! The t_discreteBCpressureDrop that describes the discrete pressure 
   ! drop BC's
   TYPE(t_discreteBCpressureDrop), INTENT(IN), TARGET  :: rpdbcStructure
+  
+  ! Weighting factor for time-dependent problems.
+  ! =1.0 for stationary simulation.
+  REAL(DP), INTENT(IN) :: dtimeweight
 !</input>
 
 !<inputoutput>
@@ -619,7 +628,7 @@ CONTAINS
       IF (rx%RvectorBlock(j)%isortStrategy .LE. 0) THEN
         ! No. Implement directly.
         DO i=1,rpdbcStructure%nDOF
-          p_vec(p_idx(i)) = p_vec(p_idx(i)) + p_val(j,i)
+          p_vec(p_idx(i)) = p_vec(p_idx(i)) + p_val(j,i)*dtimeweight
         END DO
       ELSE
         ! Oops, vector sorted. At first get the permutation how its sorted
@@ -630,7 +639,8 @@ CONTAINS
 
         ! And 'filter' each DOF during the boundary value implementation!
         DO i=1,rpdbcStructure%nDOF
-          p_vec(p_Iperm(p_idx(i))) = p_vec(p_Iperm(p_idx(i))) + p_val(j,i)
+          p_vec(p_Iperm(p_idx(i))) = p_vec(p_Iperm(p_idx(i))) + &
+                                     p_val(j,i) * dtimeweight
         END DO
       END IF
       
@@ -935,7 +945,7 @@ CONTAINS
                                       p_RdiscreteBC(i)%rdirichletBCs)
       
       CASE (DISCBC_TPPRESSUREDROP)  
-        CALL vecfil_imposePressureDropBC (rx,p_RdiscreteBC(i)%rpressureDropBCs)
+        ! Nothing to do.
         
       CASE (DISCBC_TPSLIP)
         ! Nothing to do.
@@ -946,6 +956,78 @@ CONTAINS
         STOP
         
       END SELECT
+    END DO
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE vecfil_discreteNLPDropBCrhs (rx,dtimeWeight,rdiscreteBC)
+
+!<description>
+  ! Implements discrete pressure drop BC's into a block RHS vector.
+  ! To be called inside of a nonlinear or time-stepping loop.
+  ! This routine performs a special filtering to the RHS vector
+  ! of the type $r_m := r_m - \sum_j P_j \int_{S_j} \phi n ds$ as described 
+  ! on page 257 (235) Turek's book.
+  !
+  ! The filtering is applied to the boundary components configured
+  ! for pressure drop when setting up the BC's.
+!</description>
+  
+!<input>
+  ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
+  ! boundary conditions before these are added to the vector rx.
+  ! The parameter can be omitted in stationary simulations.
+  REAL(DP), INTENT(IN), OPTIONAL :: dtimeWeight
+
+  ! OPTIONAL: boundary conditions to impose into the vector.
+  ! If not specified, the default boundary conditions associated to the
+  ! vector rx are imposed to the vector.
+  TYPE(t_discreteBC), OPTIONAL, INTENT(IN), TARGET :: rdiscreteBC
+!</input>
+
+!<inputoutput>
+  ! The block vector where the boundary conditions should be imposed.
+  TYPE(t_vectorBlock), INTENT(INOUT),TARGET :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: i
+    REAL(DP) :: dtweight
+    TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
+
+    IF (.NOT. PRESENT(rdiscreteBC)) THEN
+      ! Grab the boundary condition entry list from the vector. This
+      ! is a list of all discretised boundary conditions in the system.
+      p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+    ELSE
+      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+    END IF
+    
+    IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    
+    ! If the time-weight is not specified, 1.0 is assumed.
+    IF (PRESENT(dtimeWeight)) THEN
+      dtweight = dtimeWeight
+    ELSE
+      dtweight = 1.0_DP
+    END IF
+    ! Note: Time-step weight not used by any filter up to now!
+    ! Perhaps in a later implementation it's needed anywhere...
+    
+    ! Now loop through all entries in this list:
+    DO i=1,SIZE(p_RdiscreteBC)
+    
+      ! Only implement discrete pressure drop BC's.
+      IF (p_RdiscreteBC(i)%itype .EQ. DISCBC_TPPRESSUREDROP) THEN
+        CALL vecfil_imposePressureDropBC (rx,dtweight,&
+                                          p_RdiscreteBC(i)%rpressureDropBCs)        
+      END IF
+      
     END DO
   
   END SUBROUTINE
@@ -1052,7 +1134,7 @@ CONTAINS
   SUBROUTINE vecfil_discreteNLSlipBCdef (rx,dtimeWeight,rdiscreteBC)
 
 !<description>
-  ! Implements discrete nonlinear slip BC's into a scalar defect vector.
+  ! Implements discrete nonlinear slip BC's into a defect vector.
   ! Nonlinear filter, to be called inside of a nonlinear loop.
   ! This routine performs a special filtering to the defect vector
   ! of the type $r_m := r_m - (n*r_m)*n$ as described in
