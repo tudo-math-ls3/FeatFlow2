@@ -6457,10 +6457,22 @@ CONTAINS
       STOP
     END IF
 
+    ! Release matrix if required and set common variables
+    IF (bmemory) THEN
+      CALL lsyssc_releaseMatrix(rmatrixC)
+      IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
+          &%cdataType == ST_DOUBLE) THEN
+        rmatrixC%cdataType = ST_DOUBLE
+      ELSE
+        rmatrixC%cdataType = ST_SINGLE
+      END IF
+    END IF
+    
     ! Set sorting strategy for matrix C
-    rmatrixC%isortStrategy=rmatrixA%isortStrategy
-    rmatrixC%h_IsortPermutation=rmatrixA%h_IsortPermutation
-        
+    rmatrixC%isortStrategy = rmatrixA%isortStrategy
+    rmatrixC%h_IsortPermutation = rmatrixA%h_IsortPermutation
+    
+    ! Perform matrix-matrix multiplication
     SELECT CASE(rmatrixA%cmatrixFormat)
 
     CASE (LSYSSC_MATRIX1)   ! A is full matrix ----------------------
@@ -6471,32 +6483,10 @@ CONTAINS
 
         ! memory allocation?
         IF (bmemory) THEN
-
-          rmatrixC%cmatrixFormat=LSYSSC_MATRIX1
-
-          ! Check if matrix needs to be (re-)allocated
-          IF (rmatrixC%NA /= rmatrixA%NEQ*rmatrixB%NCOLS) THEN
-            rmatrixC%NA = rmatrixA%NEQ*rmatrixB%NCOLS
-            
-            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
-
-              ! Check data type
-              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-                  &%cdataType == ST_DOUBLE) THEN
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              ELSE
-                rmatrixC%cdataType=ST_SINGLE
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              END IF
-
-            ELSE
-              CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
-            END IF
-
-          END IF
+          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
+          rmatrixC%NA = rmatrixA%NEQ*rmatrixB%NCOLS
+          CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
@@ -6508,8 +6498,8 @@ CONTAINS
 
         ! symbolical multiplication?
         IF (bsymb) THEN
-          rmatrixC%NEQ=rmatrixA%NEQ
-          rmatrixC%NCOLS=rmatrixB%NCOLS
+          rmatrixC%NEQ = rmatrixA%NEQ
+          rmatrixC%NCOLS = rmatrixB%NCOLS
         END IF
         
         ! numerical multiplication?
@@ -6577,32 +6567,10 @@ CONTAINS
 
         ! memory allocation?
         IF (bmemory) THEN
-
-          rmatrixC%cmatrixFormat=LSYSSC_MATRIX1
-          
-          ! Check if matrix needs to be (re-)allocated
-          IF (rmatrixC%NA /= rmatrixA%NA) THEN
-            rmatrixC%NA=rmatrixA%NA
-
-            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
-
-              ! Check data type
-              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-                  &%cdataType == ST_DOUBLE) THEN
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              ELSE
-                rmatrixC%cdataType=ST_SINGLE
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              END IF
-
-            ELSE
-              CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
-            END IF
-
-          END IF
+          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
+          rmatrixC%NA = rmatrixA%NA
+          CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
@@ -6614,14 +6582,14 @@ CONTAINS
 
         ! symbolical multiplication?
         IF (bsymb) THEN
-          rmatrixC%NEQ=rmatrixA%NEQ
-          rmatrixC%NCOLS=rmatrixA%NCOLS
+          rmatrixC%NEQ = rmatrixA%NEQ
+          rmatrixC%NCOLS = rmatrixA%NCOLS
         END IF
 
         ! numerical multiplication?
         IF (bnumb) THEN
           
-           ! Find the correct internal subroutine for the specified
+          ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double          
@@ -6694,34 +6662,12 @@ CONTAINS
        
         ! memory allocation?
         IF (bmemory) THEN
-       
-          rmatrixC%cmatrixFormat=LSYSSC_MATRIXD
-   
-          ! Check if matrix needs to be (re-)allocated
-          IF (rmatrixC%NA /= rmatrixA%NA) THEN
-            rmatrixC%NA = rmatrixA%NA
-            
-            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
-
-              ! Check data type
-              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-                  &%cdataType == ST_DOUBLE) THEN
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              ELSE
-                rmatrixC%cdataType=ST_SINGLE
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              END IF
-              
-            ELSE
-              CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
-            END IF
-            
-          END IF
+          rmatrixC%cmatrixFormat = LSYSSC_MATRIXD
+          rmatrixC%NA = rmatrixA%NA
+          CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
-
+        
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
@@ -6731,8 +6677,8 @@ CONTAINS
 
         ! symbolic multiplication?
         IF (bsymb) THEN
-          rmatrixC%NEQ=rmatrixA%NEQ
-          rmatrixC%NCOLS=rmatrixA%NCOLS
+          rmatrixC%NEQ = rmatrixA%NEQ
+          rmatrixC%NCOLS = rmatrixA%NCOLS
         END IF
         
         ! numerical multiplication?
@@ -6796,36 +6742,14 @@ CONTAINS
 
         ! memory allocation?
         IF (bmemory) THEN
-
-          rmatrixC%cmatrixFormat=LSYSSC_MATRIX1
-
-          ! Check if matrix needs to be (re-)allocated
-          IF (rmatrixC%NA /= rmatrixB%NA) THEN
-            rmatrixC%NA=rmatrixB%NA
-
-            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
-
-              ! Check data type
-              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-                  &%cdataType == ST_DOUBLE) THEN
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              ELSE
-                rmatrixC%cdataType=ST_SINGLE
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              END IF
-
-            ELSE
-              CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
-            END IF
-
-          END IF
+          rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
+          rmatrixC%NA = rmatrixB%NA
+          CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
-        IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) THEN
+        IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
           STOP
@@ -6833,8 +6757,8 @@ CONTAINS
 
         ! symbolical multiplication?
         IF (bsymb) THEN
-          rmatrixC%NEQ=rmatrixB%NEQ
-          rmatrixC%NCOLS=rmatrixB%NCOLS
+          rmatrixC%NEQ = rmatrixB%NEQ
+          rmatrixC%NCOLS = rmatrixB%NCOLS
         END IF
 
         ! numerical multiplication?
@@ -6902,32 +6826,10 @@ CONTAINS
 
         ! memory allocation?
         IF (bmemory) THEN
-
-          rmatrixC%cmatrixFormat=rmatrixB%cmatrixFormat
-
-          ! Check if matrix needs to be (re-)allocated
-          IF (rmatrixC%NA /= rmatrixB%NA) THEN
-            rmatrixC%NA=rmatrixB%NA
-
-            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
-
-              ! Check data type
-              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-                  &%cdataType == ST_DOUBLE) THEN
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              ELSE
-                rmatrixC%cdataType=ST_SINGLE
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              END IF
-
-            ELSE
-              CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
-            END IF
-
-          END IF
+          rmatrixC%cmatrixFormat = rmatrixB%cmatrixFormat
+          rmatrixC%NA = rmatrixB%NA
+          CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
@@ -6939,13 +6841,13 @@ CONTAINS
 
         ! symbolical multiplication?
         IF (bsymb) THEN
-          rmatrixC%NEQ=rmatrixB%NEQ
-          rmatrixC%NCOLS=rmatrixB%NCOLS
-          rmatrixC%h_Kld=rmatrixB%h_Kld
-          rmatrixC%h_Kcol=rmatrixB%h_Kcol
-          rmatrixC%h_Kdiagonal=rmatrixB%h_Kdiagonal
-          rmatrixC%imatrixSpec=rmatrixC%imatrixSpec+&
-              &LSYSSC_MSPEC_STRUCTUREISCOPY
+          rmatrixC%NEQ = rmatrixB%NEQ
+          rmatrixC%NCOLS = rmatrixB%NCOLS
+          rmatrixC%h_Kld = rmatrixB%h_Kld
+          rmatrixC%h_Kcol = rmatrixB%h_Kcol
+          rmatrixC%h_Kdiagonal = rmatrixB%h_Kdiagonal
+          rmatrixC%imatrixSpec = IOR(rmatrixC%imatrixSpec,&
+              &LSYSSC_MSPEC_STRUCTUREISCOPY)
         END IF
 
         ! numerical multiplication?
@@ -6966,16 +6868,22 @@ CONTAINS
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL do_matDmat79mul_doubledouble(DaA,KldB,rmatrixB%NEQ&
-                  &,DaB,DaC)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+              CALL do_matDmat79mul_doubledouble(DaA,KldB,KcolB&
+                  &,rmatrixB%NEQ,DaB,KldC,KcolC,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL do_matDmat79mul_doublesingle(DaA,KldB,rmatrixB%NEQ&
-                  &,FaB,DaC)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+              CALL do_matDmat79mul_doublesingle(DaA,KldB,KcolB&
+                  &,rmatrixB%NEQ,FaB,KldC,KcolC,DaC)
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
@@ -6991,16 +6899,22 @@ CONTAINS
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL do_matDmat79mul_singledouble(FaA,KldB,rmatrixB%NEQ&
-                  &,DaB,DaC)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+              CALL do_matDmat79mul_singledouble(FaA,KldB,KcolB&
+                  &,rmatrixB%NEQ,DaB,KldC,KcolC,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL do_matDmat79mul_singlesingle(FaA,KldB,rmatrixB%NEQ&
-                  &,FaB,FaC)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+              CALL do_matDmat79mul_singlesingle(FaA,KldB,KcolB&
+                  &,rmatrixB%NEQ,FaB,KldC,KcolC,FaC)
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
@@ -7028,32 +6942,10 @@ CONTAINS
         
         ! memory allocation?
         IF (bmemory) THEN
-          
-          rmatrixC%cmatrixFormat=rmatrixA%cmatrixFormat
-  
-          ! Check if matrix needs to be (re-)allocated
-          IF (rmatrixC%NA /= rmatrixA%NA) THEN
-            rmatrixC%NA=rmatrixA%NA
-
-            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
-
-              ! Check data type
-              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-                  &%cdataType == ST_DOUBLE) THEN
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              ELSE
-                rmatrixC%cdataType=ST_SINGLE
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              END IF
-
-            ELSE
-              CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
-            END IF
-
-          END IF
+          rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
+          rmatrixC%NA = rmatrixA%NA
+          CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
@@ -7065,13 +6957,13 @@ CONTAINS
 
         ! symbolical multiplication?
         IF (bsymb) THEN
-          rmatrixC%NEQ=rmatrixA%NEQ
-          rmatrixC%NCOLS=rmatrixA%NCOLS
-          rmatrixC%h_Kld=rmatrixA%h_Kld
-          rmatrixC%h_Kcol=rmatrixA%h_Kcol
-          rmatrixC%h_Kdiagonal=rmatrixA%h_Kdiagonal
-          rmatrixC%imatrixSpec=rmatrixC%imatrixSpec+&
-              &LSYSSC_MSPEC_STRUCTUREISCOPY
+          rmatrixC%NEQ = rmatrixA%NEQ
+          rmatrixC%NCOLS = rmatrixA%NCOLS
+          rmatrixC%h_Kld = rmatrixA%h_Kld
+          rmatrixC%h_Kcol = rmatrixA%h_Kcol
+          rmatrixC%h_Kdiagonal = rmatrixA%h_Kdiagonal
+          rmatrixC%imatrixSpec = IOR(rmatrixC%imatrixSpec,&
+              &LSYSSC_MSPEC_STRUCTUREISCOPY)
         END IF
 
         ! numerical multiplication?
@@ -7093,8 +6985,10 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
               CALL do_mat79matDmul_doubledouble(KldA,KcolA,rmatrixA&
-                  &%NEQ,DaA,DaB,DaC)
+                  &%NEQ,DaA,DaB,KldC,KcolC,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
@@ -7102,8 +6996,10 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
               CALL do_mat79matDmul_doublesingle(KldA,KcolA,rmatrixA&
-                  &%NEQ,DaA,FaB,DaC)
+                  &%NEQ,DaA,FaB,KldC,KcolC,DaC)
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
@@ -7120,8 +7016,10 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
               CALL do_mat79matDmul_singledouble(KldA,KcolA,rmatrixA&
-                  &%NEQ,FaA,DaB,DaC)
+                  &%NEQ,FaA,DaB,KldC,KcolC,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
@@ -7129,8 +7027,10 @@ CONTAINS
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+              CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
               CALL do_mat79matDmul_singlesingle(KldA,KcolA,rmatrixA&
-                  &%NEQ,FaA,FaB,FaC)
+                  &%NEQ,FaA,FaB,KldC,KcolC,FaC)
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
@@ -7153,56 +7053,30 @@ CONTAINS
 
         ! memory allocation?
         IF (bmemory) THEN
-          
-          rmatrixC%cmatrixFormat=MAX(rmatrixA%cmatrixFormat,&
+          rmatrixC%cmatrixFormat = MAX(rmatrixA%cmatrixFormat,&
               &rmatrixB%cmatrixFormat)
-
+          
           ! Duplicate structure of matrix A or B depending on which
           ! matrix is given in the encompassing matrix format
-          CALL lsyssc_releaseMatrix(rmatrixC)
           IF (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) THEN
             CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC&
-                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_EMPTY)
+                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           ELSE
             CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC&
-                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_EMPTY)
+                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           END IF
-
+          
           ! Set auxiliary pointers
           CALL storage_new('lsyssc_multMatMat','Kaux',rmatrixB%NCOLS,&
               &ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           CALL storage_getbase_int(h_Kaux,Kaux)
           
           ! Compute number of nonzero matrix entries: NA
-          NA=do_computeNA(KldA,KcolA,rmatrixA%NEQ,KldB,KcolB,Kaux)
-          
-          IF (NA /= rmatrixC%NA) THEN
-            rmatrixC%NA = NA
-            
-            ! (Re-)allocate Da
-            IF (rmatrixC%h_Da == ST_NOHANDLE) THEN
-              
-              ! Check data type
-              IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-                  &%cdataType == ST_DOUBLE) THEN
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_DOUBLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              ELSE
-                rmatrixC%cdataType=ST_SINGLE
-                CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
-                    &%NA,ST_SINGLE,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-              END IF
-              
-            ELSE
-              CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                  &,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT,.FALSE.)
-            END IF
-            
-            ! Reallocate KCOL
-            CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
-                &,rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.FALSE.)
-            
-          END IF
+          rmatrixC%NA = do_computeNA(KldA,KcolA,rmatrixA%NEQ,KldB,KcolB,Kaux)
+          CALL storage_new('lsyssc_multMatMat','h_Da',rmatrixC&
+              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_realloc('lsyssc_multMatMat',rmatrixC%NA&
+              &,rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.FALSE.)
         END IF
         
         ! Check if matrix is given in the correct format
@@ -7594,18 +7468,27 @@ CONTAINS
     ! double precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 7 or format 9)
 
-    SUBROUTINE do_matDmat79mul_doubledouble(Da1,Kld,neq,Da2,Da3)
+    SUBROUTINE do_matDmat79mul_doubledouble(Da1,Kld2,Kcol2,neq,Da2&
+        &,Kld3,Kcol3,Da3)
 
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
 
-      INTEGER :: ieq
-
+      INTEGER :: ieq,ild2,ild3,ildend3
+      
       DO ieq=1,neq
-        Da3(Kld(ieq):Kld(ieq+1)-1)=Da1(ieq)*Da2(Kld(ieq):Kld(ieq+1)-1)
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild2=Kld2(ieq),Kld2(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol2(ild2)) EXIT
+            Da3(ild3)=0
+          END DO
+          Da3(ild3)=Da1(ieq)*Da2(ild2); ild3=ild3+1
+        END DO
+        Da3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_matDmat79mul_doubledouble
 
@@ -7615,18 +7498,27 @@ CONTAINS
     ! double precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 7 or format 9)
 
-    SUBROUTINE do_matDmat79mul_singledouble(Fa1,Kld,neq,Da2,Da3)
+    SUBROUTINE do_matDmat79mul_singledouble(Fa1,Kld2,Kcol2,neq,Da2&
+        &,Kld3,Kcol3,Da3)
 
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
 
-      INTEGER :: ieq
-
+      INTEGER :: ieq,ild2,ild3,ildend3
+      
       DO ieq=1,neq
-        Da3(Kld(ieq):Kld(ieq+1)-1)=Fa1(ieq)*Da2(Kld(ieq):Kld(ieq+1)-1)
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild2=Kld2(ieq),Kld2(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol2(ild2)) EXIT
+            Da3(ild3)=0
+          END DO
+          Da3(ild3)=Fa1(ieq)*Da2(ild2); ild3=ild3+1
+        END DO
+        Da3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_matDmat79mul_singledouble
 
@@ -7636,18 +7528,27 @@ CONTAINS
     ! single precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 7 or format 9)
 
-    SUBROUTINE do_matDmat79mul_doublesingle(Da1,Kld,neq,Fa2,Da3)
+    SUBROUTINE do_matDmat79mul_doublesingle(Da1,Kld2,Kcol2,neq,Fa2&
+        &,Kld3,Kcol3,Da3)
 
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
 
-      INTEGER :: ieq
-
+      INTEGER :: ieq,ild2,ild3,ildend3
+      
       DO ieq=1,neq
-        Da3(Kld(ieq):Kld(ieq+1)-1)=Da1(ieq)*Fa2(Kld(ieq):Kld(ieq+1)-1)
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild2=Kld2(ieq),Kld2(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol2(ild2)) EXIT
+            Da3(ild3)=0
+          END DO
+          Da3(ild3)=Da1(ieq)*Fa2(ild2); ild3=ild3+1
+        END DO
+        Da3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_matDmat79mul_doublesingle
 
@@ -7657,18 +7558,27 @@ CONTAINS
     ! single precision matrix B (format 7 or format 9)
     ! single precision matrix C (format 7 or format 9)
 
-    SUBROUTINE do_matDmat79mul_singlesingle(Fa1,Kld,neq,Fa2,Fa3)
+    SUBROUTINE do_matDmat79mul_singlesingle(Fa1,Kld2,Kcol2,neq,Fa2&
+        &,Kld3,Kcol3,Fa3)
 
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fa3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
 
-      INTEGER :: ieq
-
+      INTEGER :: ieq,ild2,ild3,ildend3
+      
       DO ieq=1,neq
-        Fa3(Kld(ieq):Kld(ieq+1)-1)=Fa1(ieq)*Fa2(Kld(ieq):Kld(ieq+1)-1)
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild2=Kld2(ieq),Kld2(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol2(ild2)) EXIT
+            Fa3(ild3)=0
+          END DO
+          Fa3(ild3)=Fa1(ieq)*Fa2(ild2); ild3=ild3+1
+        END DO
+        Fa3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_matDmat79mul_singlesingle
 
@@ -7678,20 +7588,27 @@ CONTAINS
     ! double precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
     
-    SUBROUTINE do_mat79matDmul_doubledouble(Kld,Kcol,neq,Da1,Da2,Da3)
+    SUBROUTINE do_mat79matDmul_doubledouble(Kld1,Kcol1,neq,Da1,Da2&
+        &,Kld3,Kcol3,Da3)
 
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld,Kcol
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
 
-      INTEGER :: ieq,ild
-
+      INTEGER :: ieq,ild1,ild3,ildend3
+      
       DO ieq=1,neq
-        DO ild=Kld(ieq),Kld(ieq+1)-1
-          Da3(ild)=Da1(ild)*Da2(Kcol(ild))
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol1(ild1)) EXIT
+            Da3(ild3)=0
+          END DO
+          Da3(ild3)=Da1(ild1)*Da2(Kcol1(ild1)); ild3=ild3+1
         END DO
+        Da3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_mat79matDmul_doubledouble
 
@@ -7701,20 +7618,27 @@ CONTAINS
     ! double precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
     
-    SUBROUTINE do_mat79matDmul_singledouble(Kld,Kcol,neq,Fa1,Da2,Da3)
+    SUBROUTINE do_mat79matDmul_singledouble(Kld1,Kcol1,neq,Fa1,Da2&
+        &,Kld3,Kcol3,Da3)
 
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld,Kcol
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
-
-      INTEGER :: ieq,ild
-
+      
+      INTEGER :: ieq,ild1,ild3,ildend3
+      
       DO ieq=1,neq
-        DO ild=Kld(ieq),Kld(ieq+1)-1
-          Da3(ild)=Fa1(ild)*Da2(Kcol(ild))
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol1(ild1)) EXIT
+            Da3(ild3)=0
+          END DO
+          Da3(ild3)=Fa1(ild1)*Da2(Kcol1(ild1)); ild3=ild3+1
         END DO
+        Da3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_mat79matDmul_singledouble
 
@@ -7724,20 +7648,27 @@ CONTAINS
     ! single precision matrix B (format D)
     ! double precision matrix C (format 7 or format 9)
     
-    SUBROUTINE do_mat79matDmul_doublesingle(Kld,Kcol,neq,Da1,Fa2,Da3)
+    SUBROUTINE do_mat79matDmul_doublesingle(Kld1,Kcol1,neq,Da1,Fa2&
+        &,Kld3,Kcol3,Da3)
 
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld,Kcol
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
 
-      INTEGER :: ieq,ild
-
+      INTEGER :: ieq,ild1,ild3,ildend3
+      
       DO ieq=1,neq
-        DO ild=Kld(ieq),Kld(ieq+1)-1
-          Da3(ild)=Da1(ild)*Fa2(Kcol(ild))
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol1(ild1)) EXIT
+            Da3(ild3)=0
+          END DO
+          Da3(ild3)=Da1(ild1)*Fa2(Kcol1(ild1)); ild3=ild3+1
         END DO
+        Da3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_mat79matDmul_doublesingle
 
@@ -7747,20 +7678,27 @@ CONTAINS
     ! single precision matrix B (format D)
     ! single precision matrix C (format 7 or format 9)
     
-    SUBROUTINE do_mat79matDmul_singlesingle(Kld,Kcol,neq,Fa1,Fa2,Fa3)
+    SUBROUTINE do_mat79matDmul_singlesingle(Kld1,Kcol1,neq,Fa1,Fa2&
+        &,Kld3,Kcol3,Fa3)
 
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fa3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld,Kcol
+      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1,Kld3,Kcol3
       INTEGER, INTENT(IN) :: neq
 
-      INTEGER :: ieq,ild
-
+      INTEGER :: ieq,ild1,ild3,ildend3
+      
       DO ieq=1,neq
-        DO ild=Kld(ieq),Kld(ieq+1)-1
-          Fa3(ild)=Fa1(ild)*Fa2(Kcol(ild))
+        ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+          DO ild3=ild3,ildend3
+            IF (Kcol3(ild3) == Kcol1(ild1)) EXIT
+            Fa3(ild3)=0
+          END DO
+          Fa3(ild3)=Fa1(ild1)*Fa2(Kcol1(ild1)); ild3=ild3+1
         END DO
+        Fa3(ild3:ildend3)=0
       END DO
     END SUBROUTINE do_mat79matDmul_singlesingle
 

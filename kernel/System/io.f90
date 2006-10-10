@@ -24,6 +24,29 @@ MODULE io
 
   IMPLICIT NONE
 
+!<constants>
+
+  !<constantblock description="Input/output block type identifiers">
+  
+  ! defines the default value for files
+  INTEGER, PARAMETER :: IO_UNKNOWN = 0
+
+  ! defines that a file must already exist
+  INTEGER, PARAMETER :: IO_OLD = 1
+  
+  ! defines that a file must not exist
+  INTEGER, PARAMETER :: IO_NEW = 2
+
+  ! defines that an existing file should be replaced
+  INTEGER, PARAMETER :: IO_REPLACE = 3
+
+  ! defines that a temporary file should be deleted when closed
+  INTEGER, PARAMETER :: IO_SCRATCH = 4
+    
+  !</constantblock>
+
+!</constants>
+
 
 CONTAINS
 

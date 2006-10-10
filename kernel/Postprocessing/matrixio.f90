@@ -340,7 +340,7 @@ MODULE matrixio
 
 !<subroutine>
 
-  SUBROUTINE matio_spyMatrix(sfilename,smatrixName,rmatrix,bdata)
+  SUBROUTINE matio_spyMatrix(sfilename,smatrixName,rmatrix,bdata,cstatus)
 
 !<description>
     ! Writes a scalar matrix to file so that its sparsity structure
@@ -360,6 +360,9 @@ MODULE matrixio
     ! Whether to spy the real data of the matrix or only its sparsity
     ! pattern
     LOGICAL, INTENT(IN) :: bdata
+
+    ! OPTIONAL: status of file
+    INTEGER, INTENT(IN), OPTIONAL :: cstatus
 !</input>
 !</subroutine>
     
@@ -368,23 +371,38 @@ MODULE matrixio
     REAL(SP), DIMENSION(:), POINTER :: Fa
     INTEGER(I32), DIMENSION(:), POINTER :: Kld,Kcol
     INTEGER :: iunit,ieq,ia
+    CHARACTER(LEN=10) :: cstat,cpos
 
+    ! Set file status if required
+    IF (PRESENT(cstatus)) THEN
+      SELECT CASE(cstatus)
+      CASE (IO_NEW)
+        cstat="NEW"; cpos="ASIS"
+      CASE (IO_REPLACE)
+        cstat="REPLACE"; cpos="ASIS"
+      CASE (IO_OLD)
+        cstat="OLD"; cpos="APPEND"
+      CASE DEFAULT
+        cstat="UNKNOWN"; cpos ="ASIS"
+      END SELECT
+    END IF
+    
     ! Open output file
     iunit=sys_getFreeUnit()
-    OPEN (UNIT=iunit,FILE=TRIM(ADJUSTL(sfilename))//'.m')
+    OPEN (UNIT=iunit,STATUS=TRIM(cstat),POSITION=TRIM(cpos)&
+        &,FILE=TRIM(ADJUSTL(sfilename))//'.m')
     
     ! Which matrix format are we?
     SELECT CASE(rmatrix%cmatrixFormat)
-    CASE(LSYSSC_MATRIX7,LSYSSC_MATRIX9)
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
 
-      ! Which matrix type are we?
-      SELECT CASE(rmatrix%cdataType)
-      CASE (ST_DOUBLE)
-        CALL storage_getbase_int(rmatrix%h_Kld,Kld)
-        CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
+      CALL storage_getbase_int(rmatrix%h_Kld,Kld)
+      CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
 
-        IF (bdata) THEN
-          
+      IF (bdata) THEN
+        ! Which matrix type are we?
+        SELECT CASE(rmatrix%cdataType)
+        CASE (ST_DOUBLE)
           CALL storage_getbase_double(rmatrix%h_Da,Da)
           DO ieq=1,rmatrix%NEQ
             DO ia=Kld(ieq),Kld(ieq+1)-1
@@ -393,22 +411,7 @@ MODULE matrixio
             END DO
           END DO
 
-        ELSE
-          DO ieq=1,rmatrix%NEQ
-            DO ia=Kld(ieq),Kld(ieq+1)-1
-              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
-                  &,1,';'
-            END DO
-          END DO
-
-        END IF
-
-      CASE (ST_SINGLE)
-        CALL storage_getbase_int(rmatrix%h_Kld,Kld)
-        CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
-
-        IF (bdata) THEN
-          
+        CASE (ST_SINGLE)
           CALL storage_getbase_single(rmatrix%h_Da,Fa)
           DO ieq=1,rmatrix%NEQ
             DO ia=Kld(ieq),Kld(ieq+1)-1
@@ -417,80 +420,62 @@ MODULE matrixio
             END DO
           END DO
 
-        ELSE
-          
-          DO ieq=1,rmatrix%NEQ
-            DO ia=Kld(ieq),Kld(ieq+1)-1
-              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
-                  &,1,';'
-            END DO
+        CASE DEFAULT
+          PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+          STOP
+        END SELECT
+
+      ELSE
+        
+        ! Output only matrix structure
+        DO ieq=1,rmatrix%NEQ
+          DO ia=Kld(ieq),Kld(ieq+1)-1
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',Kcol(ia),')='&
+                &,1,';'
           END DO
-
-        END IF
-
-      CASE DEFAULT
-        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
-        STOP
-
-      END SELECT
-
-
+        END DO
+      END IF
+      
     CASE(LSYSSC_MATRIXD)
       
-      ! Which matrix type are we?
-      SELECT CASE(rmatrix%cdataType)
-      CASE (ST_DOUBLE)
-
-        IF (bdata) THEN
-          
+      IF (bdata) THEN
+        ! Which matrix type are we?
+        SELECT CASE(rmatrix%cdataType)
+        CASE (ST_DOUBLE)
           CALL storage_getbase_double(rmatrix%h_Da,Da)
           DO ieq=1,rmatrix%NEQ
             WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
                 &,Da(ieq),';'
           END DO
-
-        ELSE
           
-          DO ieq=1,rmatrix%NEQ
-            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
-                &,1,';'
-          END DO
-
-        END IF
-
-      CASE (ST_SINGLE)
-
-        IF (bdata) THEN
-
+        CASE (ST_SINGLE)
           CALL storage_getbase_single(rmatrix%h_Da,Fa)
           DO ieq=1,rmatrix%NEQ
             WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
                 &,Fa(ieq),';'
           END DO
 
-        ELSE
-
-          DO ieq=1,rmatrix%NEQ
-            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
-                &,1,';'
-          END DO
-
-        END IF
-
-      CASE DEFAULT
-        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
-        STOP
-
-      END SELECT
+        CASE DEFAULT
+          PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+          STOP
+        END SELECT
+        
+      ELSE
+        
+        ! Output only matrix structure
+        DO ieq=1,rmatrix%NEQ
+          WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ieq,')='&
+              &,1,';'
+        END DO
+        
+      END IF
       
     CASE(LSYSSC_MATRIX1)
 
-      ! Which matrix type are we?
-      SELECT CASE(rmatrix%cdataType)
-      CASE (ST_DOUBLE) 
-
-        IF (bdata) THEN
-          
+      IF (bdata) THEN
+        ! Which matrix type are we?
+        SELECT CASE(rmatrix%cdataType)
+        CASE (ST_DOUBLE) 
           CALL storage_getbase_double(rmatrix%h_Da,Da)
           DO ieq=1,rmatrix%NEQ
             DO ia=1,rmatrix%NCOLS
@@ -499,21 +484,7 @@ MODULE matrixio
             END DO
           END DO
 
-        ELSE
-          
-          DO ieq=1,rmatrix%NEQ
-            DO ia=1,rmatrix%NCOLS
-              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ia,')='&
-                  &,1,';'
-            END DO
-          END DO
-
-        END IF
-
-      CASE (ST_SINGLE)
-        
-        IF (bdata) THEN
-          
+        CASE (ST_SINGLE)
           CALL storage_getbase_single(rmatrix%h_Da,Fa)
           DO ieq=1,rmatrix%NEQ
             DO ia=1,rmatrix%NCOLS
@@ -522,27 +493,27 @@ MODULE matrixio
             END DO
           END DO
 
-        ELSE
-          
-          DO ieq=1,rmatrix%NEQ
-            DO ia=1,rmatrix%NCOLS
-              WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ia,')='&
-                  &,1,';'
-            END DO
+        CASE DEFAULT
+          PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+          STOP
+        END SELECT
+        
+      ELSE
+        
+        ! Output only matrix structure
+        DO ieq=1,rmatrix%NEQ
+          DO ia=1,rmatrix%NCOLS
+            WRITE(UNIT=iunit,FMT=*) smatrixName//'(',ieq,',',ia,')='&
+                &,1,';'
           END DO
-
-        END IF
+        END DO
         
-      CASE DEFAULT
-        PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
-        STOP
-        
-      END SELECT
-
+      END IF
+      
     CASE DEFAULT
       PRINT *, 'lsyssc_spyMatrix: Unsoppurted matrix format!'
       STOP
-
+      
     END SELECT
     
     ! Close file
