@@ -2206,7 +2206,7 @@ CONTAINS
   
   ! Weights for the restruction; all coefficients are halfed, so dividing
   ! by 2 is not necessary in the calculation routines.
-  REAL(DP), PARAMETER :: A1=0.5_DP, A2=-0.125D0, A3=0_DP, A4=0.125D0
+  REAL(DP), PARAMETER :: A1=0.5_DP, A2=-0.125D0, A3=0.0_DP, A4=0.125D0
   REAL(DP), PARAMETER :: A5=0.625_DP, A6=0.125_DP, A7=0.125_DP, A8=0.125_DP
   
     ! Clear the output vector

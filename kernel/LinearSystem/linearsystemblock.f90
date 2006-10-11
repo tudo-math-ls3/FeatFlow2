@@ -220,16 +220,24 @@ MODULE linearsystemblock
 !<typeblock>
   
   ! A block matrix that can be used by scalar linear algebra routines.
+  ! Note that a block matrix is always quadratic with ndiagBlocks
+  ! block rows and ndiagBlock block columns!
+  ! If necessary, the corresponding block rows/columns are filled
+  ! up with zero matrices!
   
   TYPE t_matrixBlock
     
-    ! Total number of equations = rows in the matrix
+    ! Total number of equations = rows in the whole matrix.
+    ! This usually coincides with NCOLS. NCOLS > NEQ indicates, that 
+    ! at least one block row in the block matrix is completely zero.
     INTEGER(PREC_DOFIDX)       :: NEQ         = 0
 
-    ! Total number of columns in the matrix
-    INTEGER                    :: NCOLS       = 0
+    ! Total number of columns in the whole matrix.
+    ! This usually coincides with NEQ. NCOLS < NEQ indicates, that
+    ! at least one block column in the block matrix is completely zero.
+    INTEGER(PREC_DOFIDX)       :: NCOLS       = 0
     
-    ! Number of diagonal blocks in the matrix
+    ! Number of diagonal blocks in the matrix.
     INTEGER                    :: ndiagBlocks = 0
 
     ! Matrix specification tag. This is a bitfield coming from an OR 
@@ -977,7 +985,7 @@ CONTAINS
   
   ! Allocate one large vector holding all data.
   CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
-                      INT(rtemplateMat%NCOLS,I32), &
+                      rtemplateMat%NCOLS, &
                       cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
