@@ -24,11 +24,19 @@
 !#        'intf_coefficientVectorSc.inc'
 !#
 !# 3.) getBoundaryValues
-!#     -> Returns analitical values on the (Dirichlet) boundary of the
+!#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
+!#
+!# 4.) getBoundaryValuesFBC
+!#    
+!#     -> Returns analytic values in the inner of the domain on
+!#        fictitious boundary objects
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_bcfassembly.inc'
+!'
 !# </purpose>
 !##############################################################################
 
@@ -84,7 +92,7 @@ CONTAINS
     TYPE(t_bilinearForm), INTENT(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER, INTENT(IN)                                         :: nelements
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     INTEGER, INTENT(IN)                                         :: npointsPerElement
@@ -163,7 +171,7 @@ CONTAINS
     TYPE(t_linearForm), INTENT(IN)                              :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    INTEGER, INTENT(IN)                                         :: nelements
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     INTEGER, INTENT(IN)                                         :: npointsPerElement
@@ -260,7 +268,7 @@ CONTAINS
   ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
-  INTEGER, INTENT(IN)                                         :: iwhere
+  INTEGER(I32), INTENT(IN)                                     :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 

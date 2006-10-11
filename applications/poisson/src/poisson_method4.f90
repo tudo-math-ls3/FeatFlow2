@@ -261,7 +261,7 @@ CONTAINS
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
   
     ! Arrays for the Cuthill McKee renumbering strategy
-    INTEGER, DIMENSION(1) :: H_Iresort,IsortStrategy
+    INTEGER, DIMENSION(1) :: h_Iresort,IsortStrategy
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iresort
     
     ! Ask the problem structure to give us the discretisation structure
@@ -325,7 +325,8 @@ CONTAINS
                                  
     ! Allocate an array for holding the resorting strategy.
     CALL storage_new ('pm4_initMatVec', 'Iresort', &
-          p_rmatrix%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), ST_NEWBLOCK_ZERO)
+          p_rmatrix%RmatrixBlock(1,1)%NEQ*2_I32, ST_INT, h_Iresort(1), &
+          ST_NEWBLOCK_ZERO)
     CALL storage_getbase_int(h_Iresort(1),p_Iresort)
     
     ! Calculate the resorting strategy.

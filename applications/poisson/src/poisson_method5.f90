@@ -343,7 +343,8 @@ CONTAINS
                                    
       ! Allocate an array for holding the resorting strategy.
       CALL storage_new ('pm5_initMatVec', 'Iresort', &
-            p_rmatrix%RmatrixBlock(1,1)%NEQ*2, ST_INT, h_Iresort(1), ST_NEWBLOCK_ZERO)
+            p_rmatrix%RmatrixBlock(1,1)%NEQ*2_I32, ST_INT, h_Iresort(1), &
+            ST_NEWBLOCK_ZERO)
       CALL storage_getbase_int(h_Iresort(1),p_Iresort)
       
       ! Calculate the resorting strategy.

@@ -119,7 +119,7 @@ CONTAINS
       
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies 3 blocks in the
-      ! solution vector. In this simple problem, we only have one block.
+      ! solution vector.
       ALLOCATE(p_rdiscretisation)
       CALL spdiscr_initBlockDiscr2D (p_rdiscretisation,nequations,&
                                      p_rtriangulation, p_rboundary)
