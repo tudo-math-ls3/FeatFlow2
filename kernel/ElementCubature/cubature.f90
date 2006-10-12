@@ -1024,8 +1024,8 @@ CONTAINS
     Dxi(3,3)  =  0.5_DP
     
     Domega(1) =  0.1666666666666667_DP
-    Domega(1) =  0.1666666666666667_DP
-    Domega(1) =  0.1666666666666667_DP
+    Domega(2) =  0.1666666666666667_DP
+    Domega(3) =  0.1666666666666667_DP
     
     ncubp     =  3
     
@@ -1044,7 +1044,7 @@ CONTAINS
     
     ncubp     =  3
     
-  CASE(cub_VMC)
+  CASE(CUB_VMC)
     !center
     Dxi(1,1)  =  0.3333333333333333_DP
     Dxi(1,2)  =  0.3333333333333333_DP
