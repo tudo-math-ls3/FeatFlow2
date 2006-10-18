@@ -385,6 +385,8 @@ MODULE matrixio
       CASE DEFAULT
         cstat="UNKNOWN"; cpos ="ASIS"
       END SELECT
+    ELSE
+      cstat="UNKNOWN"; cpos="ASIS"
     END IF
     
     ! Open output file
