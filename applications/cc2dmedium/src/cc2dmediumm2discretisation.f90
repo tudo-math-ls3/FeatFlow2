@@ -84,6 +84,7 @@ CONTAINS
 
   ! local variables
   INTEGER :: I,j,k,ielementType,icubA,icubB,icubF, icubM
+  CHARACTER(LEN=SYS_NAMELEN) :: sstr
   
   ! Number of equations in our problem. velocity+velocity+pressure = 3
   INTEGER, PARAMETER :: nequations = 3
@@ -102,12 +103,33 @@ CONTAINS
     ! Which cubature formula should be used?
     CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iElementType',ielementType,3)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'icubLaplace',icubA,CUB_G2X2)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'icubB',icubB,CUB_G2X2)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'icubF',icubF,CUB_G2X2)
+
+    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'scubLaplace',sstr,'')
+    IF (sstr .EQ. '') THEN
+      CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'icubLaplace',icubA,CUB_G2X2)
+    ELSE
+      icubA = cub_igetID(sstr)
+    END IF
+
+    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'scubB',sstr,'')
+    IF (sstr .EQ. '') THEN
+      CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'icubB',icubB,CUB_G2X2)
+    ELSE
+      icubB = cub_igetID(sstr)
+    END IF
+
+    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'scubF',sstr,'')
+    IF (sstr .EQ. '') THEN
+      CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'icubF',icubF,CUB_G2X2)
+    ELSE
+      icubF = cub_igetID(sstr)
+    END IF
 
     ! Now set up discrezisation structures on all levels:
 

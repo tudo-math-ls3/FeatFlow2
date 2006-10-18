@@ -18,10 +18,11 @@
 #   value  : the value associated to the name
 #
 # The following variables are allowed in an expression:
-#    r = parameter value on the boundary, 0-1 parametrisation,
+#    L = local parameter value of an edge, [0..1].
+#    R = parameter value on the boundary, 0-1 parametrisation,
 #        relative to the segment (i.e. always starts with 0.0 an
 #        ends with 1.0)
-#    s = parameter value on the boundary, length parametrisation,
+#    S = parameter value on the boundary, length parametrisation,
 #        relative to the segment (i.e. starts with 0.0 and ends
 #        with the segment length)
 #    x = x-coordinate of the point on the boundary
@@ -32,7 +33,7 @@ bdExpressions(5) =
   'Umax'           0    0.3
   'Dirichlet0'     0    0.0
   'ParProfile'     2    0.3 # 'Umax * 4.0*r*(1-r)'
-  'ParProfExpr'   -1    '(1.0-L)*L*4.0*0.3'
+  'ParProfExpr'   -1    '4.0*0.3*L*(1.0-L)'
   
 
 ##############

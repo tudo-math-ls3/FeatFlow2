@@ -126,6 +126,7 @@ CONTAINS
     REAL(DP) :: dvalue,dpar1,dpar2
     CHARACTER(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
     CHARACTER(LEN=PARLST_MLNAME) :: cname
+    INTEGER, DIMENSION(NDIM2D) :: IvelEqns
     
     ! A local collection we use for storing named parameters during the
     ! parsing process.
@@ -368,6 +369,48 @@ CONTAINS
                    ((sbdex1 .NE. '') .AND. (sbdex2 .EQ. '')) ) THEN
                 rproblem%bdecoupledXY = .TRUE.
               END IF
+              
+            CASE (2)
+            
+              ! Pressure drop boundary conditions.
+              ! Read the line again to get the actual parameters
+              READ(cstr,*) ityp,dvalue,iintervalEnds,ibctyp,sbdex1
+              
+              ! For any string <> '', create the appropriate pressure drop boundary
+              ! condition and add it to the list of boundary conditions.
+              ! Set the string tag of the boundary condition to the name of
+              ! the expression to evaluate.
+              !
+              ! Set the integer tag of the structure to the type of the expression.
+              ! That way the callback routine for discretising the BC's can quickly
+              ! check wht is to evaluate.
+              ! If the type is a double precision value, set the double precision
+              ! tag to that value so it can be evaluated quicker that taking the
+              ! value from the collection.
+              IF (sbdex1 .NE. '') THEN
+                IvelEqns = (/1,2/)
+                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditions,
+                                              IvelEqns,&
+                                              rboundaryRegion,p_rbcRegion)          
+                p_rbcRegion%stag = sbdex1
+
+                iexptyp = collct_getvalue_int (rcoll, sbdex1)
+                p_rbcRegion%ibdrexprtype = iexptyp
+
+                SELECT CASE (iexptyp)
+                CASE (0,2)
+                  ! Constant or parabolic profile
+                  p_rbcRegion%dtag = collct_getvalue_real (rproblem%rcollection, &
+                                    sbdex1, 0, SEC_SBDEXPRESSIONS)
+                CASE (-1)
+                  ! Expression. Write the identifier for the expression
+                  ! as itag into the boundary condition structure.
+                  p_rbcRegion%itag = collct_getvalue_int (rproblem%rcollection, &
+                                     sbdex1, 0, SEC_SBDEXPRESSIONS)
+                END SELECT
+
+              END IF
+              
               
             CASE (3)
               

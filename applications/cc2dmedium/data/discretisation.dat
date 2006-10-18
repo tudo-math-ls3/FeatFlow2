@@ -86,19 +86,20 @@ iMass              = 0
 iMassLumpType      = 0
 
 # cubature formula for Mass matrix
-icubMass           = 204
+
+scubMass           = G2X2
 
 # cubature formula for Stokes/Laplacian matrix
 
-icubLaplace          = 204
+scubLaplace        = G2X2
 
 # cubature formula for Pressure matrices B
 
-icubB                = 204
+scubB              = G2X2
 
 # cubature formula for RHS F
 
-icubF                = 204
+scubF              = G2X2
 
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.
