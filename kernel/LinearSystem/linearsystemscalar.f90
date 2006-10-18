@@ -114,7 +114,7 @@
 !# 30.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 31.) lsyssc_addMatMat
+!# 31.) lsyssc_matrixLinearComb
 !#      -> Adds two matrices
 !#
 !# Sometimes useful auxiliary routines:
@@ -401,6 +401,9 @@ MODULE linearsystemscalar
     
     ! Multiplier for matrix entries. All entries in the matrix are
     ! scaled by this multiplier when doing Matrix-vector multiplication.
+    ! Note: This parameter is not supported by all algorithms, many
+    ! algorithms will simply stop when this factor is <> 1, or they
+    ! might ignore it. Therefore, use this factor with care!
     REAL(DP)         :: dscaleFactor = 1.0_DP
     
     ! Flag whether or not the matrix is resorted.
@@ -426,7 +429,6 @@ MODULE linearsystemscalar
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
     INTEGER         :: h_IsortPermutation = ST_NOHANDLE
-    
     
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
@@ -2771,10 +2773,10 @@ CONTAINS
 
 !<input>
   ! Row structure in the matrix
-  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kld
+  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld
 
   ! Column structure of the matrix
-  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
 
   ! Dimension of the matrix
   INTEGER(I32), INTENT(IN) :: neq
@@ -2841,7 +2843,7 @@ CONTAINS
   
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
-  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
 !</inputoutput>
 
 !<output>
@@ -2954,7 +2956,7 @@ CONTAINS
   
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
-  INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Kcol
 !</inputoutput>
 
 !</subroutine>
@@ -6400,7 +6402,7 @@ CONTAINS
     ! sparse matrices are used for large data. Hence, it does not
     ! make sense to multiply a sparse matrix and a full one and store
     ! the result in a full matrix which is quite likely to run out of
-    ! memory. Both CRS formats 7 and 9 can be combined. Note that if
+    ! memory. Both CSR formats 7 and 9 can be combined. Note that if
     ! at least one matrix A and/or B is stored in format 9, then the
     ! resulting matrix C will also be stored in format 9.
 !</description>
@@ -6834,7 +6836,7 @@ CONTAINS
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CRS matrix - - - - 
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - 
 
         ! memory allocation?
         IF (bmemory) THEN
@@ -6966,7 +6968,7 @@ CONTAINS
       
       !--------------------------------------------------------------
 
-    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CRS matrix ----------
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CSR matrix ----------
       
       SELECT CASE(rmatrixB%cmatrixFormat)
         
@@ -7095,7 +7097,7 @@ CONTAINS
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CRS matrix - - - - 
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - 
         
         ! Set pointers
         CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
@@ -7197,7 +7199,7 @@ CONTAINS
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat79mat79mul_numb_doubledouble(rmatrixA%NEQ&
+              CALL do_mat79mat79mul_numb_dbledble(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,DaB,KldC,KcolC,DaC,Daux)
 
@@ -7205,7 +7207,7 @@ CONTAINS
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat79mat79mul_numb_doublesingle(rmatrixA%NEQ&
+              CALL do_mat79mat79mul_numb_dblesngl(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,DaC,Daux)
               
@@ -7222,7 +7224,7 @@ CONTAINS
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat79mat79mul_numb_singledouble(rmatrixA%NEQ&
+              CALL do_mat79mat79mul_numb_sngldble(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
                   &,KcolB,DaB,KldC,KcolC,DaC,Daux)
 
@@ -7236,7 +7238,7 @@ CONTAINS
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL do_mat79mat79mul_numb_singlesingle(rmatrixA%NEQ&
+              CALL do_mat79mat79mul_numb_snglsngl(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,FaC,Faux)
 
@@ -7284,7 +7286,7 @@ CONTAINS
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      INTEGER, INTENT(IN) :: n,m,k
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,k
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(k,m), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(k,n), INTENT(INOUT) :: Da3
@@ -7293,7 +7295,7 @@ CONTAINS
       ! intrinsic MATMUL Fortran90 routine. Hence, the BLAS routine
       ! is used whenever possible, that is, when all matrices have
       ! the same precision.
-      CALL DGEMM('N','N',k,n,m,1D0,Da2,k,Da1,m,0D0,Da3,k)
+      CALL DGEMM('N','N',k,n,m,1.0_DP,Da2,k,Da1,m,0.0_DP,Da3,k)
     END SUBROUTINE do_mat1mat1mul_doubledouble
 
     !**************************************************************
@@ -7308,12 +7310,12 @@ CONTAINS
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      INTEGER, INTENT(IN) :: n,m,k
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,k
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(k,m), INTENT(IN)    :: Fa2
       REAL(DP), DIMENSION(k,n), INTENT(INOUT) :: Da3
 
-      CALL DGEMM('N','N',k,n,m,1D0,REAL(Fa2,DP),k,Da1,m,0D0,Da3,k)
+      CALL DGEMM('N','N',k,n,m,1.0_DP,REAL(Fa2,DP),k,Da1,m,0.0_DP,Da3,k)
 !!$      Da3=MATMUL(Fa2,Da1)
     END SUBROUTINE do_mat1mat1mul_doublesingle
 
@@ -7329,12 +7331,12 @@ CONTAINS
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      INTEGER, INTENT(IN) :: n,m,k
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,k
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(k,m), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(k,n), INTENT(INOUT) :: Da3
  
-      CALL DGEMM('N','N',k,n,m,1D0,Da2,k,REAL(Fa1,DP),m,0D0,Da3,k)
+      CALL DGEMM('N','N',k,n,m,1.0_DP,Da2,k,REAL(Fa1,DP),m,0.0_DP,Da3,k)
 !!$      Da3=MATMUL(Da2,Fa1)
     END SUBROUTINE do_mat1mat1mul_singledouble
 
@@ -7350,7 +7352,7 @@ CONTAINS
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      INTEGER, INTENT(IN) :: n,m,k
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,k
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(k,m), INTENT(IN)    :: Fa2
       REAL(SP), DIMENSION(k,n), INTENT(INOUT) :: Fa3
@@ -7370,7 +7372,7 @@ CONTAINS
 
     SUBROUTINE do_matDmat1mul_doubledouble(n,m,Da1,Da2,Da3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), DIMENSION(n), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
@@ -7390,7 +7392,7 @@ CONTAINS
 
     SUBROUTINE do_matDmat1mul_singledouble(n,m,Fa1,Da2,Da3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(SP), DIMENSION(n), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
@@ -7410,7 +7412,7 @@ CONTAINS
 
     SUBROUTINE do_matDmat1mul_doublesingle(n,m,Da1,Fa2,Da3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), DIMENSION(n), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
@@ -7430,7 +7432,7 @@ CONTAINS
 
     SUBROUTINE do_matDmat1mul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(SP), DIMENSION(n), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa2
       REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
@@ -7450,7 +7452,7 @@ CONTAINS
 
     SUBROUTINE do_mat1matDmul_doubledouble(n,m,Da1,Da2,Da3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(m),   INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
@@ -7470,7 +7472,7 @@ CONTAINS
 
     SUBROUTINE do_mat1matDmul_singledouble(n,m,Fa1,Da2,Da3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(m),   INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
@@ -7490,7 +7492,7 @@ CONTAINS
 
     SUBROUTINE do_mat1matDmul_doublesingle(n,m,Da1,Fa2,Da3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(m),   INTENT(IN)    :: Fa2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
@@ -7510,7 +7512,7 @@ CONTAINS
 
     SUBROUTINE do_mat1matDmul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(m),   INTENT(IN)    :: Fa2
       REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
@@ -7534,9 +7536,11 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
 
       INTEGER :: ieq,ild2,ild3,ildend3
       
@@ -7577,9 +7581,11 @@ CONTAINS
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
 
       INTEGER :: ieq,ild2,ild3,ildend3
       
@@ -7620,9 +7626,11 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
 
       INTEGER :: ieq,ild2,ild3,ildend3
       
@@ -7663,9 +7671,11 @@ CONTAINS
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fa3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
 
       INTEGER :: ieq,ild2,ild3,ildend3
       
@@ -7706,9 +7716,11 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
       
       INTEGER :: ieq,ild1,ild3,ildend3
       
@@ -7749,9 +7761,11 @@ CONTAINS
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
       
       INTEGER :: ieq,ild1,ild3,ildend3
       
@@ -7792,9 +7806,11 @@ CONTAINS
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
 
       INTEGER :: ieq,ild1,ild3,ildend3
       
@@ -7835,9 +7851,11 @@ CONTAINS
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
       REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fa3
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
 
       INTEGER :: ieq,ild1,ild3,ildend3
 
@@ -7883,7 +7901,7 @@ CONTAINS
 
       INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
       INTEGER, DIMENSION(:), INTENT(INOUT) :: Kaux
-      INTEGER, INTENT(IN) :: neq
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
       INTEGER :: NA
 
       INTEGER :: ieq,jeq,ild,irow,icol,idg,ndg,last
@@ -7942,7 +7960,7 @@ CONTAINS
     SUBROUTINE do_mat79mat79mul_symb(n,m,l,KldA,KcolA,KldB,KcolB,KldC&
         &,KcolC,Kindex,KdiagonalC)
 
-      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
       INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
       INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC,Kindex
       INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: KdiagonalC
@@ -7989,7 +8007,7 @@ CONTAINS
         
         IF (PRESENT(KdiagonalC)) THEN
           ! If KDIAGONALC is present, then the matrix C is stored in
-          ! CRS9 format, that is, all entries in KCOLC are numbered
+          ! CSR9 format, that is, all entries in KCOLC are numbered
           ! continuously but the position of the diagonal entry is
           ! kept in KDIAGONALC
           DO j=KldC(i),KldC(i+1)-1
@@ -8012,7 +8030,7 @@ CONTAINS
 
         ELSE
           ! If KDIAGONALC is not present, then the matrix C is stored
-          ! in CRS7 format, that is, all entries in KCOLC are
+          ! in CSR7 format, that is, all entries in KCOLC are
           ! numbered continuously except for the diagonal entry which
           ! is stored in the first position KLDC(I) of row I.
           
@@ -8065,10 +8083,10 @@ CONTAINS
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
     
-    SUBROUTINE do_mat79mat79mul_numb_doubledouble(n,m,l,KldA,KcolA&
+    SUBROUTINE do_mat79mat79mul_numb_dbledble(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
-      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
       INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
       INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
       REAL(DP), DIMENSION(:), INTENT(IN)    :: DaA
@@ -8103,7 +8121,7 @@ CONTAINS
           Dtemp(jj) = 0
         END DO
       END DO
-    END SUBROUTINE do_mat79mat79mul_numb_doubledouble
+    END SUBROUTINE do_mat79mat79mul_numb_dbledble
 
     !**************************************************************
     ! Format 7/9-7/9 multiplication
@@ -8118,10 +8136,10 @@ CONTAINS
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
     
-    SUBROUTINE do_mat79mat79mul_numb_singledouble(n,m,l,KldA,KcolA&
+    SUBROUTINE do_mat79mat79mul_numb_sngldble(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
-      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
       INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
       INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
       REAL(SP), DIMENSION(:), INTENT(IN)    :: FaA
@@ -8156,7 +8174,7 @@ CONTAINS
           Dtemp(jj) = 0
         END DO
       END DO
-    END SUBROUTINE do_mat79mat79mul_numb_singledouble
+    END SUBROUTINE do_mat79mat79mul_numb_sngldble
 
     !**************************************************************
     ! Format 7/9-7/9 multiplication
@@ -8171,10 +8189,10 @@ CONTAINS
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
     
-    SUBROUTINE do_mat79mat79mul_numb_doublesingle(n,m,l,KldA,KcolA&
+    SUBROUTINE do_mat79mat79mul_numb_dblesngl(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,FaB,KldC,KcolC,DaC,Dtemp)
 
-      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
       INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
       INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
       REAL(DP), DIMENSION(:), INTENT(IN)    :: DaA
@@ -8209,7 +8227,7 @@ CONTAINS
           Dtemp(jj) = 0
         END DO
       END DO
-    END SUBROUTINE do_mat79mat79mul_numb_doublesingle
+    END SUBROUTINE do_mat79mat79mul_numb_dblesngl
 
     !**************************************************************
     ! Format 7/9-7/9 multiplication
@@ -8224,10 +8242,10 @@ CONTAINS
     ! R.E. Bank and C.C. Douglas which is freely available at:
     ! http://cs-www.cs.yale.edu/homes/douglas-craig/Codes/smmp.tgz
     
-    SUBROUTINE do_mat79mat79mul_numb_singlesingle(n,m,l,KldA,KcolA&
+    SUBROUTINE do_mat79mat79mul_numb_snglsngl(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,FaB,KldC,KcolC,FaC,Ftemp)
 
-      INTEGER, INTENT(IN) :: n,m,l
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
       INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
       INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
       REAL(SP), DIMENSION(:), INTENT(IN)    :: FaA
@@ -8262,14 +8280,14 @@ CONTAINS
           Ftemp(jj) = 0
         END DO
       END DO
-    END SUBROUTINE do_mat79mat79mul_numb_singlesingle
+    END SUBROUTINE do_mat79mat79mul_numb_snglsngl
   END SUBROUTINE lsyssc_multMatMat
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_addMatMat (rmatrixA,cA,rmatrixB,cB,rmatrixC&
+  SUBROUTINE lsyssc_matrixLinearComb (rmatrixA,cA,rmatrixB,cB,rmatrixC&
       &,bmemory,bsymb,bnumb,bisExactStructure)
 
     !<description>
@@ -8297,7 +8315,7 @@ CONTAINS
 
     ! BMEMORY = FALSE: Do not allocate required memory for C=A*B.
     ! BMEMORY = TRUE:  Generate all required structures for C=A*B 
-    LOGICAL :: bmemory
+    LOGICAL, INTENT(IN) :: bmemory
 
     ! Compute symbolic matrix-matrix-product
     ! BSYMB = FALSE: Do not generate the required matrix structures.
@@ -8305,18 +8323,18 @@ CONTAINS
     !                need to be added several times, but the
     !                sparsity patterns do not change
     ! BSYMN = TRUE:  Generate all required matrix structures for C=A*B
-    LOGICAL :: bsymb
+    LOGICAL, INTENT(IN) :: bsymb
 
     ! Compute numerical matrix-matrix-product
     ! BNUMB = FALSE: Do not perform the numerical addition
     ! BNUMB = TRUE:  Perform numerical addition
-    LOGICAL bnumb
+    LOGICAL, INTENT(IN) :: bnumb
     
     ! OPTIONAL: Indicates whether the resulting matrix C has the
     ! required symbolic structure or is a superset of the symbolic
     ! matrix-matrix product. In some cases, this may allow for much
     ! more efficient implementation.
-    LOGICAL, OPTIONAL :: bisExactStructure
+    LOGICAL, INTENT(IN), OPTIONAL :: bisExactStructure
 !</input>
 
 !<inputoutput>
@@ -8544,7 +8562,7 @@ CONTAINS
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CRS matrix - - - - 
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - 
 
         ! memory allocation?
         IF (bmemory) THEN
@@ -8811,7 +8829,7 @@ CONTAINS
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CRS matrix - - - -
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - -
 
         ! memory allocation?
         IF (bmemory) THEN
@@ -8966,7 +8984,7 @@ CONTAINS
 
       !--------------------------------------------------------------
 
-    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CRS matrix ----------
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CSR matrix ----------
 
       SELECT CASE(rmatrixB%cmatrixFormat)
 
@@ -9210,7 +9228,7 @@ CONTAINS
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CRS matrix - - - - 
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - 
                 
         ! Set pointers
         CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
@@ -9296,11 +9314,11 @@ CONTAINS
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
                     &,KdiagonalC)
-                CALL do_mat79mat79add_numb_doubledouble(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_dbledble(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,DaB&
                     &,cB,KldC,KcolC,KdiagonalC,DaC)
               ELSE
-                CALL do_mat79mat79add_numb_doubledouble(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_dbledble(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,DaB&
                     &,cB,KldC,KcolC,KldC,DaC)
               END IF
@@ -9313,11 +9331,11 @@ CONTAINS
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
                     &,KdiagonalC)
-                CALL do_mat79mat79add_numb_doublesingle(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_dblesngl(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,FaB&
                     &,cB,KldC,KcolC,KdiagonalC,DaC)
               ELSE
-                CALL do_mat79mat79add_numb_doublesingle(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_dblesngl(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,FaB&
                     &,cB,KldC,KcolC,KldC,DaC)
               END IF
@@ -9339,11 +9357,11 @@ CONTAINS
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
                     &,KdiagonalC)
-                CALL do_mat79mat79add_numb_singledouble(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_sngldble(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,DaB&
                     &,cB,KldC,KcolC,KdiagonalC,DaC)
               ELSE
-                CALL do_mat79mat79add_numb_singledouble(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_sngldble(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,DaB&
                     &,cB,KldC,KcolC,KldC,DaC)
               END IF
@@ -9356,11 +9374,11 @@ CONTAINS
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
                     &,KdiagonalC)
-                CALL do_mat79mat79add_numb_singlesingle(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_snglsngl(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,FaB&
                     &,cB,KldC,KcolC,KdiagonalC,FaC)
               ELSE
-                CALL do_mat79mat79add_numb_singlesingle(rmatrixC%NEQ&
+                CALL do_mat79mat79add_numb_snglsngl(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,FaB&
                     &,cB,KldC,KcolC,KldC,FaC)
               END IF
@@ -9403,11 +9421,13 @@ CONTAINS
 
     SUBROUTINE do_mat1matDadd_doubledouble(n,m,Da1,c1,Da2,c2,Da3)
 
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
+      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(n), INTENT(IN)      :: Da2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
+      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
 
       INTEGER :: i
 
@@ -9416,6 +9436,11 @@ CONTAINS
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Da2(i)
       END DO
+      !CALL lalg_copyVectorDble(Da1,Da3)
+      !CALL lalg_scaleVectorDble(Da3,c1)
+      !DO i=0,n-1
+      !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
+      !END DO
     END SUBROUTINE do_mat1matDadd_doubledouble
 
     !**************************************************************
@@ -9426,11 +9451,13 @@ CONTAINS
 
     SUBROUTINE do_mat1matDadd_singledouble(n,m,Fa1,c1,Da2,c2,Da3)
 
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
+      !REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(n), INTENT(IN)      :: Da2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
+      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
 
       INTEGER :: i
 
@@ -9439,6 +9466,10 @@ CONTAINS
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Da2(i)
       END DO
+      !CALL lalg_scaleVectorDble(Da3,c1)
+      !DO i=0,n-1
+      !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
+      !END DO
     END SUBROUTINE do_mat1matDadd_singledouble
 
     !**************************************************************
@@ -9449,11 +9480,13 @@ CONTAINS
 
     SUBROUTINE do_mat1matDadd_doublesingle(n,m,Da1,c1,Fa2,c2,Da3)
 
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
+      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(n), INTENT(IN)      :: Fa2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
+      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
 
       INTEGER :: i
 
@@ -9462,6 +9495,11 @@ CONTAINS
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Fa2(i)
       END DO
+      !CALL lalg_copyVectorDble(Da1,Da3)
+      !CALL lalg_scaleVectorDble(Da3,c1)
+      !DO i=0,n-1
+      !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Fa2(i+1)
+      !END DO
     END SUBROUTINE do_mat1matDadd_doublesingle
 
     !**************************************************************
@@ -9472,11 +9510,13 @@ CONTAINS
 
     SUBROUTINE do_mat1matDadd_singlesingle(n,m,Fa1,c1,Fa2,c2,Fa3)
 
-      INTEGER, INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
+      !REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(n), INTENT(IN)      :: Fa2
       REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
+      !REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
 
       INTEGER :: i
 
@@ -9485,6 +9525,11 @@ CONTAINS
       DO i=1,n
         Fa3(i,i)=Fa3(i,i)+c2*Fa2(i)
       END DO
+      !CALL lalg_copyVectorSngl(Fa1,Fa3)
+      !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
+      !DO i=0,n-1
+      !  Fa3(i*m+i+1)=Fa3(i*m+i+1)+c2*Fa2(i+1)
+      !END DO
     END SUBROUTINE do_mat1matDadd_singlesingle
 
     !**************************************************************
@@ -9501,12 +9546,15 @@ CONTAINS
       ! the row and column indices I and J are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER, INTENT(IN) :: n,m
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
+      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(:), INTENT(IN)      :: Da2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
+      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
 
       INTEGER :: i,ild,j
 
@@ -9519,6 +9567,16 @@ CONTAINS
           Da3(j,i)=Da3(j,i)+c2*Da2(ild)
         END DO
       END DO
+
+      !CALL lalg_copyVectorDble(Da1,Da3)
+      !CALL lalg_scaleVectorDble(Da3,c1)
+      
+      !DO i=1,n
+      !  DO ild=Kld2(i),Kld2(i+1)-1
+      !    j=Kcol2(ild)-1
+      !    Da3(j*m+i)=Da3(j*m+i)+c2*Da2(ild)
+      !  END DO
+      !END DO
     END SUBROUTINE do_mat1mat79add_doubledouble
 
     !**************************************************************
@@ -9535,8 +9593,9 @@ CONTAINS
       ! the row and column indices I and J are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER, INTENT(IN) :: n,m
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(:), INTENT(IN)      :: Da2
@@ -9568,12 +9627,15 @@ CONTAINS
       ! the row and column indices I and J are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER, INTENT(IN) :: n,m
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
+      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(:), INTENT(IN)      :: Fa2
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
+      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
 
       INTEGER :: i,ild,j
 
@@ -9586,6 +9648,16 @@ CONTAINS
           Da3(j,i)=Da3(j,i)+c2*Fa2(ild)
         END DO
       END DO
+
+      !CALL lalg_copyVectorDble(Da1,Da3)
+      !CALL lalg_scaleVectorDble(Da3,c1)
+
+      !DO i=1,n
+      !  DO ild=Kld2(i),Kld2(i+1)-1
+      !    j=Kcol2(ild)
+      !    Da3(j*m+i)=Da3(j*m+i)+c2*Fa2(ild)
+      !  END DO
+      !END DO
     END SUBROUTINE do_mat1mat79add_doublesingle
 
     !**************************************************************
@@ -9602,12 +9674,15 @@ CONTAINS
       ! the row and column indices I and J are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER, INTENT(IN) :: n,m
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld2,Kcol2
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
+      !REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(:), INTENT(IN)      :: Fa2
       REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
+      !REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
 
       INTEGER :: i,ild,j
 
@@ -9620,6 +9695,16 @@ CONTAINS
           Fa3(j,i)=Fa3(j,i)+c2*Fa2(ild)
         END DO
       END DO
+
+      !CALL lalg_copyVectorSngl(Fa1,Fa3)
+      !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
+      
+      !DO i=1,n
+      !  DO ild=Kld2(i),Kld2(i+1)-1
+      !    j=Kcol2(ild)
+      !    Fa3(j*m+i)=Fa3(j*m+i)+c2*Fa2(ild)
+      !  END DO
+      !END DO
     END SUBROUTINE do_mat1mat79add_singlesingle
 
     !**************************************************************
@@ -9631,10 +9716,12 @@ CONTAINS
     SUBROUTINE do_mat79matDadd_doubledouble(Kld1,Kcol1,neq,Da1,c1,Da2&
         &,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      INTEGER, INTENT(IN) :: neq
-      INTEGER, INTENT(IN), OPTIONAL :: na
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3,Kdiag3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
@@ -9674,6 +9761,8 @@ CONTAINS
         
         CALL DCOPY(na,Da1,1,Da3,1)
         CALL DSCAL(na,c1,Da3,1)
+        !CALL lalg_copyVectorDble(Da1,Da3)
+        !CALL lalg_scaleVectorDble(Da3,c1)
         
         DO ieq=1,neq
           ild3=Kdiag3(ieq)
@@ -9696,10 +9785,12 @@ CONTAINS
     SUBROUTINE do_mat79matDadd_singledouble(Kld1,Kcol1,neq,Fa1,c1,Da2&
         &,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      INTEGER, INTENT(IN) :: neq
-      INTEGER, INTENT(IN), OPTIONAL :: na
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3,Kdiag3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
@@ -9760,10 +9851,12 @@ CONTAINS
     SUBROUTINE do_mat79matDadd_doublesingle(Kld1,Kcol1,neq,Da1,c1,Fa2&
         &,c2,Da3,Kld3,Kcol3,Kdiag3,na)
 
-      INTEGER, INTENT(IN) :: neq
-      INTEGER, INTENT(IN), OPTIONAL :: na
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3,Kdiag3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
@@ -9803,6 +9896,8 @@ CONTAINS
         
         CALL DCOPY(na,Da1,1,Da3,1)
         CALL DSCAL(na,c1,Da3,1)
+        !CALL lalg_copyVectorDble(Da1,Da3)
+        !CALL lalg_scaleVectorDble(Da3,c1)
 
         DO ieq=1,neq
           ild3=Kdiag3(ieq)
@@ -9825,10 +9920,12 @@ CONTAINS
     SUBROUTINE do_mat79matDadd_singlesingle(Kld1,Kcol1,neq,Fa1,c1,Fa2&
         &,c2,Fa3,Kld3,Kcol3,Kdiag3,na)
 
-      INTEGER, INTENT(IN) :: neq
-      INTEGER, INTENT(IN), OPTIONAL :: na
-      INTEGER, DIMENSION(:), INTENT(IN) :: Kld1,Kcol1
-      INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kcol3,Kdiag3
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
       REAL(DP), INTENT(IN) :: c1,c2
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
       REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
@@ -9868,6 +9965,8 @@ CONTAINS
 
         CALL SCOPY(na,Fa1,1,Fa3,1)
         CALL SSCAL(na,REAL(c1,SP),Fa3,1)
+        !CALL lalg_copyVectorSngl(Fa1,Fa3)
+        !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
       
         DO ieq=1,neq
           ild3=Kdiag3(ieq)
@@ -9892,9 +9991,10 @@ CONTAINS
     FUNCTION do_mat79mat79add_computeNA(neq,ncols,KldA,KcolA,KldB&
         &,KcolB,Kaux) RESULT(NA)
 
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: Kaux
-      INTEGER, INTENT(IN) :: neq,ncols
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolB,KcolA
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Kaux
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
       INTEGER :: NA
       
       INTEGER :: ieq,jeq,ild,icol,idg,ndg,last
@@ -9960,10 +10060,12 @@ CONTAINS
     SUBROUTINE do_mat79mat79add_symb(neq,ncols,KldA,KcolA,cmatrixFormatA,&
         &KldB,KcolB,cmatrixFormatB,KldC,KcolC,Kdiagonal)
 
-      INTEGER, INTENT(IN) :: neq,ncols,cmatrixFormatA,cmatrixFormatB
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
-      INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: Kdiagonal
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols,cmatrixFormatA,cmatrixFormatB
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: KldC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: KcolC
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Kdiagonal
       
       INTEGER :: ieq,ildA,ildB,ildC,ildendA,ildendB,icolA,icolB,icolC
 
@@ -9978,8 +10080,8 @@ CONTAINS
         ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
 
         ! Check if diagonal entry needs to be stored at leading
-        ! position for storage format CRS7. Then, both matrices A and
-        ! B must be stored in storage format CRS7 so that the pointer
+        ! position for storage format CSR7. Then, both matrices A and
+        ! B must be stored in storage format CSR7 so that the pointer
         ! ILDA and ILDB need to be increased by one (see below).
         IF (.NOT.PRESENT(Kdiagonal)) THEN
           KcolC(ildC) = ieq
@@ -10075,15 +10177,15 @@ CONTAINS
     !
     ! In this subroutine, KDIAGC is the vector which points to the
     ! position of the diagonal entries. If matrix C is stored in
-    ! format CRS7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CRS9 then KDIAGC corresponds to KDIAGONALC.
+    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
+    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_doubledouble(neq,ncols,KldA&
+    SUBROUTINE do_mat79mat79add_numb_dbledble(neq,ncols,KldA&
         &,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      INTEGER, INTENT(IN) :: neq,ncols
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB&
-          &,KldC,KcolC,KdiagC
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
       REAL(DP), INTENT(IN) :: cA,cB
       REAL(DP), DIMENSION(:), INTENT(IN) :: DaA
       REAL(DP), DIMENSION(:), INTENT(IN) :: DaB
@@ -10230,7 +10332,7 @@ CONTAINS
           END IF
         END IF
       END DO
-    END SUBROUTINE do_mat79mat79add_numb_doubledouble
+    END SUBROUTINE do_mat79mat79add_numb_dbledble
 
     !**************************************************************
     ! Format 7/9-7/9 addition
@@ -10247,15 +10349,15 @@ CONTAINS
     !
     ! In this subroutine, KDIAGC is the vector which points to the
     ! position of the diagonal entries. If matrix C is stored in
-    ! format CRS7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CRS9 then KDIAGC corresponds to KDIAGONALC.
+    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
+    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_doublesingle(neq,ncols,KldA&
+    SUBROUTINE do_mat79mat79add_numb_dblesngl(neq,ncols,KldA&
         &,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      INTEGER, INTENT(IN) :: neq,ncols
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB&
-          &,KldC,KcolC,KdiagC
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
       REAL(DP), INTENT(IN) :: cA,cB
       REAL(DP), DIMENSION(:), INTENT(IN) :: DaA
       REAL(SP), DIMENSION(:), INTENT(IN) :: FaB
@@ -10402,7 +10504,7 @@ CONTAINS
           END IF
         END IF
       END DO
-    END SUBROUTINE do_mat79mat79add_numb_doublesingle
+    END SUBROUTINE do_mat79mat79add_numb_dblesngl
 
     !**************************************************************
     ! Format 7/9-7/9 addition
@@ -10419,15 +10521,15 @@ CONTAINS
     !
     ! In this subroutine, KDIAGC is the vector which points to the
     ! position of the diagonal entries. If matrix C is stored in
-    ! format CRS7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CRS9 then KDIAGC corresponds to KDIAGONALC.
+    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
+    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_singledouble(neq,ncols,KldA&
+    SUBROUTINE do_mat79mat79add_numb_sngldble(neq,ncols,KldA&
         &,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      INTEGER, INTENT(IN) :: neq,ncols
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB&
-          &,KldC,KcolC,KdiagC
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
       REAL(DP), INTENT(IN) :: cA,cB
       REAL(SP), DIMENSION(:), INTENT(IN) :: FaA
       REAL(DP), DIMENSION(:), INTENT(IN) :: DaB
@@ -10574,7 +10676,7 @@ CONTAINS
           END IF
         END IF
       END DO
-    END SUBROUTINE do_mat79mat79add_numb_singledouble
+    END SUBROUTINE do_mat79mat79add_numb_sngldble
 
     !**************************************************************
     ! Format 7/9-7/9 addition
@@ -10591,15 +10693,15 @@ CONTAINS
     !
     ! In this subroutine, KDIAGC is the vector which points to the
     ! position of the diagonal entries. If matrix C is stored in
-    ! format CRS7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
-    ! is stored in format CRS9 then KDIAGC corresponds to KDIAGONALC.
+    ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
+    ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_singlesingle(neq,ncols,KldA&
+    SUBROUTINE do_mat79mat79add_numb_snglsngl(neq,ncols,KldA&
         &,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,FaC)
       
-      INTEGER, INTENT(IN) :: neq,ncols
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB&
-          &,KldC,KcolC,KdiagC
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
       REAL(DP), INTENT(IN) :: cA,cB
       REAL(SP), DIMENSION(:), INTENT(IN) :: FaA
       REAL(SP), DIMENSION(:), INTENT(IN) :: FaB
@@ -10746,6 +10848,6 @@ CONTAINS
           END IF
         END IF
       END DO
-    END SUBROUTINE do_mat79mat79add_numb_singlesingle
-  END SUBROUTINE lsyssc_addMatMat
+    END SUBROUTINE do_mat79mat79add_numb_snglsngl
+  END SUBROUTINE lsyssc_matrixLinearComb
 END MODULE
