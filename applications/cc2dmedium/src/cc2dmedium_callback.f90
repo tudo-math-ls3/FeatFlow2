@@ -469,7 +469,10 @@ CONTAINS
     
     ! Use boundary conditions from DAT files.
     SELECT CASE (cinfoNeeded)
-    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDDERIV,DISCBC_NEEDINTMEAN)
+    
+    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDDERIV,DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
+      
+      ! Dirichlet boundary conditions
     
       ! Get from the current component of the PDE we are discretising:
       icomponent = Icomponents(1)
@@ -495,7 +498,7 @@ CONTAINS
                                     dwhere, rbcRegion%stag,&
                                     p_rcollection)
     
-      CASE (DISCBC_NEEDNORMALSTRESS)
+      CASE (BC_PRESSUREDROP)
         ! Normal stress / pressure drop. Evaluate Evaluate the 
         ! expression iexprtyp.
         Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
@@ -503,6 +506,7 @@ CONTAINS
                                     dwhere, rbcRegion%stag,&
                                     p_rcollection)
       END SELECT
+      
     END SELECT
   
   CONTAINS

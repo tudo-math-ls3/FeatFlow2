@@ -345,6 +345,10 @@ CONTAINS
     p_rrhs    => rproblem%rrhs   
     p_rvector => rproblem%rvector
     
+    ! Implement pressure drop boundary conditions into RHS vector
+    ! if there are any.
+    CALL vecfil_discreteNLPDropBCrhs (p_rrhs)
+    
     ! Implement discrete boundary conditions into RHS vector by 
     ! filtering the vector.
     CALL vecfil_discreteBCrhs (p_rrhs)

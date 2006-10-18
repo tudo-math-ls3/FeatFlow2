@@ -389,7 +389,7 @@ CONTAINS
               ! value from the collection.
               IF (sbdex1 .NE. '') THEN
                 IvelEqns = (/1,2/)
-                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditions,
+                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditions,&
                                               IvelEqns,&
                                               rboundaryRegion,p_rbcRegion)          
                 p_rbcRegion%stag = sbdex1
