@@ -1438,7 +1438,7 @@ CONTAINS
   ! If the destination vector does not exist, create a new one
   ! based on rx.
   IF (ry%h_Ddata .EQ. ST_NOHANDLE) THEN
-    CALL lsysbl_createVecBlockIndirect (ry,ry,.FALSE.)
+    CALL lsysbl_createVecBlockIndirect (rx,ry,.FALSE.)
   END IF
   
   CALL storage_getsize1D (ry%h_Ddata, isize)
@@ -1976,10 +1976,10 @@ CONTAINS
   SUBROUTINE lsysbl_enforceStructure (rtemplateVec,rvector)
   
 !<description>
-  ! This routine enforces the structure of the vector rtemplale
+  ! This routine enforces the structure of the vector rtemplate
   ! in the vector rvector. 
   !
-  ! WARNING: This routine should be used with care if you knwo
+  ! WARNING: This routine should be used with care if you know
   !          what you are doing !!!
   ! All structural data of rtemplate (boundary conditions, spatial 
   ! discretisation, size,sorting,...) are copied from rtemplate to 
