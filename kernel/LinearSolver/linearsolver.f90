@@ -328,14 +328,47 @@
 !#      Well, search for the linsol_initXXXX routines :-)
 !#      Currently, we have:
 !#
-!#      - linsol_initDefCorr
-!#      - linsol_initJacobi
-!#      - linsol_initSSOR
-!#      - linsol_initVANCA
-!#      - linsol_initUMFPACK4
-!#      - linsol_initMILU1x1
-!#      - linsol_initBiCGStab
-!#      - linsol_initMultigrid
+!#       1.) linsol_initDefCorr
+!#           -> standard defect correction loop
+!#
+!#       2.) linsol_initJacobi
+!#           -> standard Jacobi preconditioner
+!#           -> see [http://www.netlib.org/linalg/html_templates/Templates.html],
+!#                  [http://mathworld.wolfram.com/JacobiMethod.html]
+!#
+!#       3.) linsol_initJinWeiTam
+!#           -> Jin-Wei-Tam-preconditioner
+!#           -> see [X.-Q. Jin, Y.-M. Wei, H.-S. Tam;
+!#                   Preconditioning techniques for symmetric $M$-matrices;
+!#                   2005; Calcolo 42, p. 105-113; 
+!#                   DOI: 10.1007/s10092-005-0100-6]
+!#
+!#       4.) linsol_initSSOR
+!#           -> SSOR preconditioner
+!#           -> see [http://www.netlib.org/linalg/html_templates/Templates.html],
+!#                  [http://mathworld.wolfram.com/SuccessiveOverrelaxationMethod.html]
+!#
+!#       5.) linsol_initVANCA
+!#           -> VANCA preconditioner; multiple versions
+!#
+!#       6.) linsol_initUMFPACK4
+!#           -> UMFPACK precnditioner
+!#
+!#       7.) linsol_initMILUs1x1
+!#           -> (M)ILU-preconditioner for 1x1-matrices from SPLIB
+!#           -> see [David Hysom and A. Pothen; Level-based Incomplete LU 
+!#                   factorization: Graph Model and Algorithms; 
+!#                   Tech Report UCRL-JC-150789; Lawrence Livermore National Labs;
+!#                   Nov 2002; http://www.cs.odu.edu/~pothen/papers.html]
+!#
+!#       8.) linsol_initBiCGStab
+!#           -> BiCGStab preconditioner
+!#           -> see [van der Vorst, H.A.; BiCGStab: A Fast and Smoothly Converging
+!#                   Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems;
+!#                   SIAM J. Sci. Stat. Comput. 1992, Vol. 13, No. 2, pp. 631-644]
+!#
+!#       9.) linsol_initMultigrid
+!#           -> Multigrid preconditioner
 !#
 !# </purpose>
 !##############################################################################
@@ -396,6 +429,9 @@ MODULE linearsolver
 
   ! UMFPACK4
   INTEGER, PARAMETER :: LINSOL_ALG_UMFPACK4      = 11
+  
+  ! Jin-Wei-Tam iteration
+  INTEGER, PARAMETER :: LINSOL_ALG_JINWEITAM     = 12
   
   ! ILU(0) iteration (scalar system)
   INTEGER, PARAMETER :: LINSOL_ALG_ILU01x1       = 50
@@ -724,6 +760,9 @@ MODULE linearsolver
 
     ! Pointer to a structure for SSOR; NULL() if not set
     TYPE (t_linsolSubnodeSSOR), POINTER           :: p_rsubnodeSSOR        => NULL()
+    
+    ! Pointer to a structure for Jin-Wei-Tam; NULL() if not set
+    TYPE (t_linsolSubNodeJinWeiTam), POINTER      :: p_rsubnodeJinWeiTam   => NULL()
 
   END TYPE
   
@@ -867,6 +906,24 @@ MODULE linearsolver
     ! Handle to a temporary vector for storing the solution
     TYPE(t_vectorBlock) :: rtempVector
 
+  END TYPE
+  
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the Jin-Wei-Tam solver.
+  
+  TYPE t_linsolSubNodeJinWeiTam
+  
+    ! Sum of all Matrix elements
+    REAL(DP) :: dmatrixSum
+    
+    ! some sort of relax factor
+    REAL(DP) :: drelax
+  
   END TYPE
   
 !</typeblock>
@@ -1332,6 +1389,8 @@ CONTAINS
       CALL linsol_initDataBiCGStab (rsolverNode,ierror,isubgroup)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_initDataMultigrid (rsolverNode,ierror,isubgroup)
+    CASE (LINSOL_ALG_JINWEITAM)
+      CALL linsol_initDataJinWeiTam (rsolverNode,ierror,isubgroup)
     END SELECT
   
   END SUBROUTINE
@@ -1609,6 +1668,8 @@ CONTAINS
       CALL linsol_doneMILUs1x1 (p_rsolverNode)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_doneMultigrid (p_rsolverNode)
+    CASE (LINSOL_ALG_JINWEITAM)
+      CALL linsol_doneJinWeiTam (p_rsolverNode)
     CASE DEFAULT
     END SELECT
     
@@ -1820,6 +1881,8 @@ CONTAINS
       CALL linsol_precBiCGStab (rsolverNode,rd)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_precMultigrid (rsolverNode,rd)
+    CASE (LINSOL_ALG_JINWEITAM)
+      CALL linsol_precJinWeiTam (rsolverNode,rd)
     END SELECT
 
   END SUBROUTINE
@@ -2884,6 +2947,410 @@ CONTAINS
       
     END DO
   
+  END SUBROUTINE
+
+! *****************************************************************************
+! Routines for the Jin-Wei-Tam solver
+! *****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_initJinWeiTam (p_rsolverNode, drelax, domega)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the Jin-Wei-Tam solver. The node
+  ! can be used to directly solve a problem or to be attached as a solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+!</description>
+
+!<input>
+  ! OPTIONAL: Relax parameter. Is saved to rsolverNode%p_rsubnodeJinWeiTam%drelax 
+  !           if specified
+  REAL(DP), OPTIONAL :: drelax
+!</input>
+
+!<input>
+  ! OPTIONAL: Damping parameter. Is saved to rsolverNode%domega if specified.
+  REAL(DP), OPTIONAL :: domega
+!</input>
+ 
+
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER         :: p_rsolverNode
+!</output>
+
+    ! Create a default solver structure
+    
+    CALL linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_JINWEITAM 
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
+                                LINSOL_ABIL_DIRECT
+    
+    ! No subnode for Jin-Wei-Tam. Only save domega to the structure.
+    IF (PRESENT(domega)) THEN
+      p_rsolverNode%domega = domega
+    END IF
+    
+    ! Allocate the subnode for Jin-Wei-Tam
+    ALLOCATE(p_rsolverNode%p_rsubnodeJinWeiTam)
+    
+    ! If a relax parameter has been passed, save it,
+    ! otherwise save 1.0_DP as relax parameter
+    IF (PRESENT(drelax)) THEN
+      p_rsolverNode%p_rsubnodeJinWeiTam%drelax = drelax
+    ELSE
+      p_rsolverNode%p_rsubnodeJinWeiTam%drelax = 1.0_DP
+    END IF
+    
+    ! Initialise the matrix sum to 0.0_DP
+    p_rsolverNode%p_rsubnodeJinWeiTam%dmatrixSum = 0.0_DP
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneJinWeiTam (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the Jin-Wei-Tam solver from
+  ! the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of Jin-Wei-Tam which is to be cleaned up.
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! Release the subnode structure
+    DEALLOCATE(rsolverNode%p_rsubnodeJinWeiTam)
+  
+  END SUBROUTINE
+
+!<subroutine>
+
+  ! ***************************************************************************
+  
+  RECURSIVE SUBROUTINE linsol_initDataJinWeiTam (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! This routine initialises the data for the Jin-Wei-Tam solver.
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initData.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Jin-Wei-Tam solver
+  TYPE(t_linsolNode), INTENT(INOUT), TARGET       :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: isubgroup
+    INTEGER :: iblockrow, iblockcol, ientry
+    REAL(DP) :: dsum
+    REAL(DP), DIMENSION(:), POINTER :: p_Dmatrix
+    REAL(SP), DIMENSION(:), POINTER :: p_Fmatrix
+
+    ! a pointer to the currently selected scalar matrix
+    TYPE (t_matrixScalar), POINTER :: p_rmatrix
+
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+    
+    ! format the total sum to 0
+    dSum = 0.0_DP
+
+    ! go through all block rows of our matrix
+    DO iblockrow=1, rsolverNode%rsystemMatrix%ndiagBlocks
+    
+      ! go through all blocks in our block row
+      DO iblockcol=1, rsolverNode%rsystemMatrix%ndiagBlocks
+        
+        ! store our current scalar matrix
+        p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblockrow,iblockcol)
+
+        ! skip the current block if it is empty
+        IF(p_rmatrix%NA .EQ. 0) THEN
+          CYCLE
+        END IF
+        
+        ! Check the scale factor
+        !IF(p_rmatrix%dscaleFactor .NE. 1.0_DP) THEN
+        !  PRINT *,'Jin-Wei-Tam: Unsupported scale factor'
+        !  ierror = LINSOL_ERR_INITERROR
+        !  STOP
+        !END IF
+
+        ! check the data format
+        SELECT CASE(p_rmatrix%cdataType)
+        CASE(ST_DOUBLE)
+          ! now get the matrix' data
+          CALL storage_getbase_double (p_rmatrix%h_DA, p_Dmatrix)
+        
+          ! go through all data entries of the matrix and sum them up
+          DO ientry=1, p_rmatrix%NA
+            dSum = dSum + p_Dmatrix(ientry)
+          END DO
+          
+        CASE(ST_SINGLE)
+          ! now get the matrix' data
+          CALL storage_getbase_single(p_rmatrix%h_DA, p_Fmatrix)
+
+          ! go through all data entries of the matrix and sum them up
+          DO ientry=1, p_rmatrix%NA
+            dSum = dSum + p_Fmatrix(ientry)
+          END DO
+          
+        CASE DEFAULT
+          PRINT *,'Jin-Wei-Tam: Unsupported matrix format'
+          ierror = LINSOL_ERR_INITERROR
+        
+        END SELECT
+          
+      END DO
+      
+    END DO
+    
+    ! Make sure that the sum of all matrix elements is not 0
+    IF(dSum .EQ. 0.0_DP) THEN
+      PRINT *,'Jin-Wei-Tam: Sum of all matrix elements is 0.0!'
+      ierror = LINSOL_ERR_INITERROR
+      STOP
+    END IF
+    
+    ! everything went fine, we can store the sum now
+    rsolverNode%p_rsubnodeJinWeiTam%dmatrixSum = dSum
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+  RECURSIVE SUBROUTINE linsol_precJinWeiTam (rsolverNode,rd)
+  
+!<description>
+  ! Applies the Jin-Wei-Tam preconditioner $P$ to the defect, where
+  !  $$ P :=  (\alpha * [1, ..., 1]^T * [1, ..., 1]) + D^{-1} $$
+  ! where $D$ is the main diagonal of $A$ and
+  !  $$ \alpha := \sum_{1 \leq i,j \leq n} A_{ij} $$
+  !
+  ! Instead of performing the matrix-vector-multiplication 
+  !  $$ d_{new} := Pd $$
+  ! which would cost O(n^2) arithmetic operations, we use another approach:
+  !  $$ d_{new} := [x, x, ..., x]^T + D^{-1}d $$
+  ! where
+  !  $$ x := (\sum_{1 \leq i \leq n}d_i) * \alpha^{-1} $$
+  ! Using this method, we only use O(n) operations to calculate the new
+  ! preconditioned defect vector $d_{new}$
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initData routine must have been called to 
+  ! prepare the solver for solving the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Jin-Wei-Tam solver
+  TYPE(t_linsolNode), INTENT(INOUT),TARGET  :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT),TARGET        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER iblock
+    INTEGER(PREC_VECIDX) :: ieq
+    
+    TYPE (t_matrixScalar), POINTER :: p_rmatrix
+    TYPE (t_vectorScalar), POINTER :: p_rvector
+    INTEGER (PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiag
+    REAL(DP) :: dlocOmega
+    REAL(SP) :: flocOmega
+    REAL(DP), DIMENSION(:), POINTER :: p_Dvector, p_Dmatrix
+    REAL(SP), DIMENSION(:), POINTER :: p_Fvector, p_Fmatrix
+    REAL(DP) :: dvecSum
+    
+    ! initialize vector sum to 0
+    dvecSum = 0.0_DP
+    
+    ! first, we need to calculate the sum of all vector elements
+    ! $$ dvecSum := \sum_{1 \leq i \leq n}d_i $$
+    ! For this, we need to go through all blocks of our vector
+    DO iblock = 1,rd%nblocks
+      ! Get the vector block
+      p_rvector => rd%RvectorBlock(iblock)
+
+      ! check the vector's precision
+      SELECT CASE (p_rvector%cdataType)
+      CASE(ST_DOUBLE)
+        ! get the vector's data array
+        CALL storage_getbase_double(p_rvector%h_Ddata, p_Dvector)
+      
+        ! go through all vector elements
+        DO ieq=1, rd%NEQ
+          dvecSum = dvecSum + p_Dvector(ieq)
+        END DO
+        
+      CASE(ST_SINGLE)
+        ! get the vector's data array
+        CALL storage_getbase_single(p_rvector%h_Ddata, p_Fvector)
+      
+        ! go through all vector elements
+        DO ieq=1, rd%NEQ
+          dvecSum = dvecSum + p_Fvector(ieq)
+        END DO
+
+      CASE DEFAULT      
+        PRINT *,'Jin-Wei-Tam: Unsupported Vector format'
+        STOP
+        
+      END SELECT
+      
+    END DO
+    
+    ! now, divide the vector sum through the matrix sum
+    dvecSum = dvecSum / rsolverNode%p_rsubnodeJinWeiTam%dmatrixSum
+    
+    ! and apply our relax parameter (usually 1.0_DP)
+    dvecSum = dvecSum * rsolverNode%p_rsubnodeJinWeiTam%drelax
+    
+    ! Loop through all blocks. Each block corresponds to one
+    ! diagonal block in the matrix.
+    DO iblock = 1,rd%nblocks
+      ! Get the matrix
+      p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
+      
+      ! Now we have to make some decisions. At first, which matrix
+      ! structure do we have?
+      SELECT CASE (p_rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
+        ! In case of structure 9, Kdiagonal points to the diagonal elements.
+        ! In case of structure 7, Kld points to the diagonal elements
+        IF (p_rmatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+          CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiag)
+        ELSE
+          CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kdiag)
+        END IF
+      
+        ! Get the omega parameter for the matrix. Don't forget the scaling 
+        ! factor in the matrix!
+        dlocomega = rsolverNode%domega * p_rmatrix%dScaleFactor
+
+        ! Now, which data format do we have? Single or double?
+        SELECT CASE (p_rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Get the matrix data arrays
+          CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+          
+          ! Take care of the accuracy of the vector
+          SELECT CASE (rd%cdataType)
+          CASE (ST_DOUBLE)
+            ! Get the data array
+            CALL lsysbl_getbase_double (rd,p_Dvector)
+            
+            ! and multiply all entries with the inverse of the diagonal 
+            ! of the matrix.
+            DO ieq = 1,rd%NEQ
+              p_Dvector(ieq) = dlocOmega * (dvecSum + (p_Dvector(ieq) / p_Dmatrix(p_Kdiag(ieq))))
+            END DO
+            
+          CASE (ST_SINGLE)
+            ! Get the data array
+            CALL lsysbl_getbase_single (rd,p_Fvector)
+            
+            ! and multiply all entries with the inverse of the diagonal 
+            ! of the matrix.
+            DO ieq = 1,rd%NEQ
+              p_Dvector(ieq) = dlocOmega * (dvecSum + (p_Fvector(ieq) / p_Dmatrix(p_Kdiag(ieq))))
+            END DO
+
+          CASE DEFAULT
+            PRINT *,'Jin-Wei-Tam: Unsupported vector format.'
+            STOP
+          END SELECT
+          
+        CASE (ST_SINGLE)
+
+          ! Get the matrix data arrays
+          CALL storage_getbase_single (p_rmatrix%h_Da,p_Fmatrix)
+          
+          ! Take care of the accuracy of the vector
+          SELECT CASE (rd%cdataType)
+          CASE (ST_DOUBLE)
+            ! Get the data array
+            CALL lsysbl_getbase_double (rd,p_Dvector)
+            
+            ! and multiply all entries with the inverse of the diagonal 
+            ! of the matrix.
+            DO ieq = 1,rd%NEQ
+              p_Dvector(ieq) = dlocOmega * (dvecSum + (p_Dvector(ieq) / p_Fmatrix(p_Kdiag(ieq))))
+            END DO
+            
+          CASE (ST_SINGLE)
+            ! Get the data array
+            CALL lsysbl_getbase_single (rd,p_Fvector)
+            
+            ! Multiplication with Omega can be speeded up as we use
+            ! sigle-precision only.
+            flocOmega = REAL(dlocOmega,SP)
+            
+            ! and multiply all entries with the inverse of the diagonal 
+            ! of the matrix.
+            DO ieq = 1,rd%NEQ
+              p_Dvector(ieq) = flocOmega * (dvecSum + (p_Fvector(ieq) / p_Fmatrix(p_Kdiag(ieq))))
+            END DO
+
+          CASE DEFAULT
+            PRINT *,'Jin-Wei-Tam: Unsupported vector format.'
+            STOP
+          END SELECT
+
+        CASE DEFAULT
+          PRINT *,'Jin-Wei-Tam: Unsupported matrix format.'
+          STOP
+        END SELECT
+      
+      CASE DEFAULT
+        PRINT *,'Jin-Wei-Tam: Unsupported matrix format.'
+        STOP
+      END SELECT
+      
+    END DO
+
   END SUBROUTINE
   
 ! *****************************************************************************
