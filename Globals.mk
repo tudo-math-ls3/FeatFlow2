@@ -403,9 +403,9 @@ CC=icc
 FC=ifort
 AR=xiar
 ARC=xiar
-OPTFLAGS  = -O3 -xN -ipo
-FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
-CCFLAGS   = -vec-report0
+OPTFLAGS  = -O3 -xN -ipo 
+FCFLAGS   = -cm -fpe0 -parallel -openmp -vec-report0 -openmp-report0 -par-report0 -module $(MODDIR)
+CCFLAGS   = -vec-report0 -openmp-report0 -par-report0
 LDFLAGS   = -lsvml
 BLASLIB   = 
 LAPACKLIB = 
@@ -516,7 +516,20 @@ CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -m32 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
 FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=opteron -pipe -fmove-all-movables 
+CCFLAGS   = -march=opteron -pipe
+BLASLIB   = 
+LAPACKLIB = 
+endif
+
+ifeq ($(ID),pc-opteron-linux-ifc)
+CC=icc
+FC=ifort
+AR=xiar
+ARC=xiar
+OPTFLAGS  = -O3 -ipo -mtune=pentiumpro -march=pentium4
+FCFLAGS   = -cm -fpe0 -parallel -openmp -vec-report0 -openmp-report0 -par-report0 -module $(MODDIR)
+CCFLAGS   = -vec-report0 -openmp-report0 -par-report0
+LDFLAGS   = -lsvml
 BLASLIB   = 
 LAPACKLIB = 
 endif

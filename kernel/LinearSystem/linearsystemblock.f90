@@ -276,6 +276,7 @@ MODULE linearsystemblock
 
   INTERFACE lsysbl_createVectorBlock
     MODULE PROCEDURE lsysbl_createVecBlockDirect 
+    MODULE PROCEDURE lsysbl_createVecBlockDirectDims
     MODULE PROCEDURE lsysbl_createVecBlockIndirect 
     MODULE PROCEDURE lsysbl_createVecBlockByDiscr
   END INTERFACE
@@ -713,6 +714,100 @@ CONTAINS
   
   rx%NEQ = n-1
   rx%nblocks = SIZE(Isize)
+  
+  ! The data of the vector belongs to us (we created the handle), 
+  ! not to somebody else.
+  rx%bisCopy = .FALSE.
+  
+  ! Warning: don't reformulate the following check into one IF command
+  ! as this might give problems with some compilers!
+  IF (PRESENT(bclear)) THEN
+    IF (bclear) THEN
+      CALL lsysbl_clearVector (rx)
+    END IF
+  END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_createVecBlockDirectDims (rx, isize, iblocks, bclear, cdataType)
+  
+!<description>
+  ! Initialises the vector block structure rx. Isize is an integer
+  ! which describes the length of each block. Iblocks denotes the
+  ! number of similar vector blocks.
+  ! Memory is allocated on the heap to hold vectors of the size
+  ! according to Isize.
+  !
+  ! Remark: There is no block discretisation structure attached to the vector!
+!</description>
+
+!<input>
+  ! An integer describing the length of each block
+  INTEGER(PREC_VECIDX), INTENT(IN) :: isize
+
+  ! An integer describing the number of vector blocks
+  INTEGER, INTENT(IN) :: iblocks
+  
+  ! Optional: If set to YES, the vector will be filled with zero initially.
+  LOGICAL, INTENT(IN), OPTIONAL             :: bclear
+  
+  ! OPTIONAL: Data type identifier for the entries in the vector. 
+  ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
+  INTEGER, INTENT(IN),OPTIONAL              :: cdataType
+!</input>
+
+!<output>
+  
+  ! Destination structure. Memory is allocated for each of the blocks.
+  TYPE(t_vectorBlock),INTENT(OUT) :: rx
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i,n
+  INTEGER :: cdata
+  
+  cdata = ST_DOUBLE
+  IF (PRESENT(cdataType)) cdata = cdataType
+  
+  ! rx is initialised by INTENT(OUT) with the most common data.
+  ! What is missing is the data array.
+  !
+  ! Allocate one large vector holding all data.
+  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', isize*iblocks, cdata, &
+                      rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+  rx%cdataType = cdata
+  
+  ! Initialise the sub-blocks. Save a pointer to the starting address of
+  ! each sub-block.
+  ! Denote in the subvector that the handle belongs to us - not to
+  ! the subvector.
+  
+  n=1
+  DO i = 1,iblocks
+    IF (isize .GT. 0) THEN
+      rx%RvectorBlock(i)%NEQ = isize
+      rx%RvectorBlock(i)%iidxFirstEntry = n
+      rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
+      rx%RvectorBlock(i)%cdataType = rx%cdataType
+      rx%RvectorBlock(i)%bisCopy = .TRUE.
+      rx%RvectorBlock(i)%cdataType = cdata
+      n = n+isize
+    ELSE
+      rx%RvectorBlock(i)%NEQ = 0
+      rx%RvectorBlock(i)%iidxFirstEntry = 0
+      rx%RvectorBlock(i)%h_Ddata = ST_NOHANDLE
+    END IF
+  END DO
+  
+  rx%NEQ = n-1
+  rx%nblocks = iblocks
   
   ! The data of the vector belongs to us (we created the handle), 
   ! not to somebody else.
