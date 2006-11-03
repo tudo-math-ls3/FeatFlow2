@@ -8,24 +8,35 @@
 !# element and a real element, for triangular and quadrilateral 2D elements.
 !# (3D support will come later...)
 !#
-!# 1.) trafo_calcJacPrepare
+!# 1.) trafo_calctrafo_sim
+!#     -> Calculate the transformation for multiple points on multiple
+!#        elements. Supports triangular and quadrilateral mapping.
+!#
+!# 2.) trafo_calctrafo_mult
+!#     -> Calculates the transformation for multiple points on one element.
+!#        Supports triangular and quadrilateral mapping.
+!#
+!# 3.) trafo_calcJacPrepare
 !#     -> calculates auxiliary Jacobian factors for the transformation
 !#        from a reference quadrilateral to a real quadrilateral
 !#
-!# 2.) trafo_calcJac
+!# 4.) trafo_calcJac
 !#     -> calculates the Jacobian matrix + Jacobian determinant of the mapping
 !#        from  the reference to a real quadrilateral element
 !#
-!# 3.) trafo_calcRealCoords
+!# 5.) trafo_calcRealCoords
 !#     -> maps a point from the reference element to the real element
 !#
-!# 4.) trafo_calcTrafo
+!# 6.) trafo_calcTrafo
 !#     -> calculates the Jacobian matrix + Jacobian determinant of the mapping
 !#        from  the reference to a real quadrilateral element
 !#      -> maps a point from the reference element to the real element
 !#     (so performing the same task as elem_calcJac and elem_calcRealCoords
 !#      in one routine)
 !#
+!# 7.) trafo_mapCubPts1Dto2DRefQuad
+!#     -> Maps a set of 1D cubature point coordinates on the reference 
+!#        interval to an edge of the 2D reference quadrilateral.
 !# </purpose>
 !##############################################################################
 
@@ -64,20 +75,23 @@ MODULE transformation
   ! Undefined coordinate system or no coordinate system
   INTEGER, PARAMETER :: TRAFO_CS_UNDEFINED   = 0
 
+  ! Parameter value [-1..1] on reference interval in 1D
+  INTEGER, PARAMETER :: TRAFO_CS_REF1D       = 1
+
   ! Barycentric coordinates on triangle
-  INTEGER, PARAMETER :: TRAFO_CS_BARY2DTRI   = 1
+  INTEGER, PARAMETER :: TRAFO_CS_BARY2DTRI   = 2
 
   ! 2D coordinates on reference triangle
-  INTEGER, PARAMETER :: TRAFO_CS_REF2DTRI    = 2
+  INTEGER, PARAMETER :: TRAFO_CS_REF2DTRI    = 3
 
   ! 2D coordinates on real triangle
-  INTEGER, PARAMETER :: TRAFO_CS_REAL2DTRI   = 3
+  INTEGER, PARAMETER :: TRAFO_CS_REAL2DTRI   = 4
   
   ! 2D coordinates on reference quadrilateral
-  INTEGER, PARAMETER :: TRAFO_CS_REF2DQUAD   = 4
+  INTEGER, PARAMETER :: TRAFO_CS_REF2DQUAD   = 5
 
   ! 2D coordinates on real quadrilateral
-  INTEGER, PARAMETER :: TRAFO_CS_REAL2DQUAD  = 5
+  INTEGER, PARAMETER :: TRAFO_CS_REAL2DQUAD  = 6
 !</constantblock>
 
 !</constants>
@@ -721,4 +735,139 @@ CONTAINS
   
   END SUBROUTINE
 
+  !****************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_mapCubPts1Dto2DRefQuad(iedge, ncubp, Dxi1D, Dxi2D)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points in 1D
+  ! (given by Dxi1D(1..ncubp,1)) to an edge on the reference quadrilateral
+  ! in 2D. iedge specifies the edge where to map the cubature points to.
+!</description>
+
+!<input>
+  ! Number of the local edge of the element where to map the points to.
+  INTEGER, INTENT(IN) :: iedge
+
+  ! number of cubature points
+  INTEGER , INTENT(IN) :: ncubp
+  
+  ! Cubature point coordinates on 1D reference interval [-1,1]
+  !     Dxi(1..ncubp,1)=coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dxi1D
+!</input>
+  
+!<output>
+  ! Coordinates of the cubature points on the edge in 2D.
+  !        Dxi2D(1..ncubp,1)=x-coord, 
+  !        Dxi2D(1..ncubp,2)=y-coord
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dxi2D
+!</output>
+
+!</subroutine>    
+
+    ! local variables
+    INTEGER :: ii
+
+    ! We have to transfer
+    ! the coordinates of the cubature points from 1D to 2D depending
+    ! on this edge.
+
+    IF (iedge .EQ. 1) THEN
+      ! Edge 1 is on the bottom of the reference element
+      DO ii = 1,ncubp
+        Dxi2D(ii,1) = Dxi1D(ii,1)
+        Dxi2D(ii,2) = -1D0
+      END DO
+    ELSE IF (iedge .EQ. 2) THEN
+      ! Edge 2 is on the right of the reference element
+      DO ii = 1,ncubp
+        Dxi2D(ii,1) = 1D0
+        Dxi2D(ii,2) = Dxi1D(ii,1)
+      END DO
+    ELSE IF (iedge .EQ. 3) THEN
+      ! Edge 3 is on the top of the reference element
+      DO ii = 1,ncubp
+        Dxi2D(ii,1) = -Dxi1D(ii,1)
+        Dxi2D(ii,2) = 1D0
+      END DO
+    ELSE 
+      ! Edge 4 is on the left of the reference element
+      DO ii = 1,ncubp
+        Dxi2D(ii,1) = -1D0
+        Dxi2D(ii,2) = -Dxi1D(ii,1)
+      END DO
+    END IF
+  
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_mapCubPts1Dto2DTriBary(iedge, ncubp, Dxi1D, Dxi2D)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points in 1D
+  ! (given by Dxi1D(1..ncubp,1)) to an edge on a 2D triangle
+  ! in barycentric coordinates. 
+  ! iedge specifies the edge where to map the cubature points to.
+!</description>
+
+!<input>
+  ! Number of the local edge of the element where to map the points to.
+  INTEGER, INTENT(IN) :: iedge
+
+  ! number of cubature points
+  INTEGER , INTENT(IN) :: ncubp
+  
+  ! Cubature point coordinates on 1D reference interval [-1,1]
+  !     Dxi(1..ncubp,1)=coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dxi1D
+!</input>
+  
+!<output>
+  ! Coordinates of the cubature points on the edge in 2D.
+  !        Dxi2D(1..ncubp,1)=1st barycentric coordinate, 
+  !        Dxi2D(1..ncubp,2)=2nd barycentric coordinate,
+  !        Dxi2D(1..ncubp,3)=3rd barycentric coordinate
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dxi2D
+!</output>
+
+!</subroutine>    
+
+    ! local variables
+    INTEGER :: ii
+
+    ! We have to transfer
+    ! the coordinates of the cubature points from 1D to 2D depending
+    ! on this edge.
+
+    IF (iedge .EQ. 1) THEN
+      ! Edge 1 is between 1st and 2nd point
+      DO ii = 1,ncubp
+        Dxi2D(ii,1) = 0.5_DP*(1.0_DP-Dxi1D(ii,1))
+        Dxi2D(ii,2) = 0.5_DP*(1.0_DP+Dxi1D(ii,1))
+        Dxi2D(ii,3) = 0.0_DP
+      END DO
+    ELSE IF (iedge .EQ. 2) THEN
+      ! Edge 2 is between 2nd and 2rd point
+      DO ii = 1,ncubp
+        Dxi2D(ii,1) = 0.0_DP
+        Dxi2D(ii,2) = 0.5_DP*(1.0_DP-Dxi1D(ii,1))
+        Dxi2D(ii,3) = 0.5_DP*(1.0_DP+Dxi1D(ii,1))
+      END DO
+    ELSE 
+      ! Edge 3 is between 3rd and 1st point
+      DO ii = 1,ncubp
+        Dxi2D(ii,1) = 0.5_DP*(1.0_DP+Dxi1D(ii,1))
+        Dxi2D(ii,2) = 0.0_DP
+        Dxi2D(ii,3) = 0.5_DP*(1.0_DP-Dxi1D(ii,1))
+      END DO
+    END IF
+  
+  END SUBROUTINE
+  
 END MODULE 

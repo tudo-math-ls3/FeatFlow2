@@ -826,7 +826,7 @@ CONTAINS
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
   INTEGER :: i,ilocalEdge,ieltype,icount,icount2,ipart,j,icomponent
   INTEGER(PREC_ELEMENTIDX) :: ielement
-  INTEGER :: icountmin,icountmax
+  INTEGER :: icountmin,icountmax,isubsetstart
   INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
   INTEGER, DIMENSION(1) :: Icomponents
   TYPE(t_discreteBCDirichlet),POINTER         :: p_rdirichletBCs
@@ -958,6 +958,8 @@ CONTAINS
               p_IelementsAtBoundary(Iminidx(2):Imaxidx(2)), .FALSE., &
               Idofs( :, Imaxidx(1)-Iminidx(1)+1+1 : ))
   END IF
+                 
+  isubsetstart = 0
                                
   ! Loop through the index sets
   DO ipart = 1,icountmax
@@ -1019,12 +1021,13 @@ CONTAINS
                                   p_rcollection, Dvalues)
                                  
           ! Dvalues(1) gives us the function value in the point. Save it
-          DdofValue(1,I-Iminidx(ipart)+1) = Dvalues(1)
+          DdofValue(1,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1)
           
         END IF
         
         ! Set the DOF number < 0 to indicate that it is Dirichlet
-        Idofs(1,I-Iminidx(ipart)+1) = -ABS(Idofs(1,I-Iminidx(ipart)+1))
+        Idofs(1,isubsetstart+I-Iminidx(ipart)+1) = &
+            -ABS(Idofs(1,isubsetstart+I-Iminidx(ipart)+1))
         
       CASE (EL_P1,EL_Q1)
 
@@ -1038,14 +1041,15 @@ CONTAINS
                                     p_rcollection, Dvalues)
                                     
             ! Save the computed function value
-            DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 
+            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
           ! Set the DOF number < 0 to indicate that it is Dirichlet.
           ! ilocalEdge is the number of the local edge - and at the same
           ! time the number of the local DOF of Q1, as an edge always
           ! follows a corner vertex!
-          Idofs(ilocalEdge,I-Iminidx(ipart)+1) = -ABS(Idofs(ilocalEdge,I-Iminidx(ipart)+1))
+          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
         END IF
         
         ! The right point does not have to be checked! It comes later
@@ -1067,11 +1071,12 @@ CONTAINS
                                     p_rcollection, Dvalues)
                                     
             ! Save the computed function value
-            DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 
+            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
           ! Set the DOF number < 0 to indicate that it is Dirichlet
-          Idofs(ilocalEdge,I-Iminidx(ipart)+1) = -ABS(Idofs(ilocalEdge,I-Iminidx(ipart)+1))
+          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
         END IF
         
       CASE (EL_EM31,EL_E031)
@@ -1085,11 +1090,12 @@ CONTAINS
                                     p_rcollection, Dvalues)
                                     
             ! Save the computed function value
-            DdofValue(ilocalEdge,I-Iminidx(ipart)+1) = Dvalues(1) 
+            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
           ! Set the DOF number < 0 to indicate that it is Dirichlet
-          Idofs(ilocalEdge,I-Iminidx(ipart)+1) = -ABS(Idofs(ilocalEdge,I-Iminidx(ipart)+1))
+          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
         END IF
         
       CASE DEFAULT
@@ -1099,7 +1105,9 @@ CONTAINS
       
       END SELECT
     
-    END DO
+    END DO ! i
+    
+    isubsetstart = isubsetstart + Imaxidx(ipart)-Iminidx(ipart)+1
   
   END DO
   

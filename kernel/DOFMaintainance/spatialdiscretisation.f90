@@ -214,6 +214,20 @@ MODULE spatialdiscretisation
     ! Dimension of the discretisation. 0=not initialised, 
     ! 2=2D discretisation, 3=3D discretisation
     INTEGER                          :: ndimension             = 0
+
+    ! Complexity of the discretisation. One of the SPDISC_xxxx constants.
+    ! SPDISC_UNIFORM = all elements in each discretisation
+    !   substructure RspatialDiscretisation(:) are the same.
+    ! SPDISC_CONFORMAL = Elements of different FE spaces are mixed,
+    !   but the DOF's 'fit together'. Each discretisation substructure 
+    !   RspatialDiscretisation(:) has exactly the same number of element
+    !   distributions, and each element distribution 
+    !     RspatialDiscretisation(1)%Relementistributions(i), 
+    !     RspatialDiscretisation(2)%Relementistributions(i),
+    !     RspatialDiscretisation(3)%Relementistributions(i),...
+    !   describe exactly the same set of elements (Same size, same type,
+    !   same order in the element lists,...).
+    INTEGER                          :: ccomplexity            = SPDISC_UNIFORM
   
     ! Pointer to the domain that is discretised
     TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
@@ -412,6 +426,7 @@ CONTAINS
 
   ! Initialise the variables of the structure for the simple discretisation
   rblockDiscr%ndimension             = NDIM2D
+  rblockDiscr%ccomplexity            = SPDISC_UNIFORM
   rblockDiscr%p_rtriangulation       => rtriangulation
   rblockDiscr%p_rdomain              => rdomain
   IF (PRESENT(rboundaryConditions)) THEN
@@ -621,7 +636,7 @@ CONTAINS
 
   ! local variables
   ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
-  TYPE(t_elementDistribution), POINTER :: p_relementDistr
+  ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
   
   ! Check that the source discretisation structure is valid.
   IF (rsourceDiscr%ndimension .LE. 0) THEN

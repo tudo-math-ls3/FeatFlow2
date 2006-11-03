@@ -46,16 +46,19 @@
 !#     -> Determine the type of transformation from the reference element
 !#        to the real element.\\
 !#
-!# 5.) elem_generic 
+!# 5.) elem_isnonparametric
+!#     -> Check whether an element is parametric or nonparametric\\
+!#
+!# 6.) elem_generic 
 !#     -> Realises a generic element which can be used to evaluate a finite 
 !#        element depending on its element identifier - in contrast to the 
 !#        standard evaluation routines, which ignore the element quantifier 
 !#        as they 'know' what they are...\\
 !#
-!# 6.) elem_generic_mult
+!# 7.) elem_generic_mult
 !#     -> The multiple-point-evaluation routine for a generic element.\\
 !#
-!# 7.) elem_generic_sim
+!# 8.) elem_generic_sim
 !#     -> The multiple-point/element-evaluation routine for a generic element.
 !#
 !# </purpose>
@@ -538,9 +541,11 @@ CONTAINS
   LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
-  ! The coordinates are expected on the reference element.
-  ! Dpoints(1,.)=x-coordinates,
-  ! Dpoints(2,.)=y-coordinates.
+  ! For parametric elements, the coordinates are expected on the 
+  ! reference element. For nonparametric elements, the coordinates
+  ! are expected on the real element!
+  !   Dpoints(1,.)=x-coordinates,
+  !   Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(NDIM2D,npoints), INTENT(IN) :: Dpoints
 !</input>
   
