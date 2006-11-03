@@ -83,8 +83,12 @@
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
 		<Filter Name="ElementCubature">
-		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90"/>
-		<File RelativePath="..\..\..\kernel\ElementCubature\derivatives.f90"/>
+		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\ElementCubature\derivatives.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\ElementCubature\element.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
@@ -142,6 +146,9 @@
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
 		<Filter Name="Postprocessing">
 		<File RelativePath="..\..\..\kernel\Postprocessing\matrixio.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\Postprocessing\pprocnavierstokes.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\Postprocessing\vectorio.f90">
