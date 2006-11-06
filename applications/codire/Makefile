@@ -18,7 +18,8 @@ SRC = qtrafo.f \
       gmv2doutput.f initria.f inmtri.f quad2tri.f structria.f triutil2d.f
 
 # The f90 source files
-SRC +=  codire_callback.f90 codire_method3.f90 codire.f90
+SRC +=  codire_callback.f90 codire_method3.f90 codire_method5.f90 \
+	codire.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk

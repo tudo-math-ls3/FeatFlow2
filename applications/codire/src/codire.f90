@@ -16,6 +16,10 @@
 !# communication with callback routines during the assembly, a
 !# collection structure is set up.
 !#
+!# The second example (module codire_method3) shows how to use a Multigrid
+!# solver to solve the problem. Besides that, the module is similar to
+!# codire_method3.
+!#
 !# The equation itself is set up using parameters of a .DAT file
 !# named 'data/codire.dat'. Here all parameters (alpha, beta, gamma, level,...)
 !# can be found and changed by the user without recompiling the program.
@@ -25,6 +29,7 @@
 PROGRAM codire
 
   USE codire_method3
+  USE codire_method5
   
   IMPLICIT NONE
   
@@ -62,6 +67,12 @@ PROGRAM codire
   PRINT *,'Calculating CoDiRe-Problem with method 3'
   PRINT *,'----------------------------------------'
   CALL codire3
+
+  ! Call the problem to solve - method 5 = multigrid
+  PRINT *
+  PRINT *,'Calculating CoDiRe-Problem with method 5'
+  PRINT *,'----------------------------------------'
+  CALL codire5
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
