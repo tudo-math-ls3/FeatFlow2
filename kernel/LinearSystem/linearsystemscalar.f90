@@ -8338,6 +8338,7 @@ CONTAINS
 !</input>
 
 !<inputoutput>
+    ! Output matrix. May coincode with rmatrixB.
     TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixC
 !</inputoutput>
 
@@ -9310,17 +9311,38 @@ CONTAINS
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              
+              IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
+                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. &
+                  (bfast)) THEN
+                  
+                ! We rely on the user who tells us that we should assume the
+                ! same structure for the matrices. In this case, we can
+                ! directly call a BLAS routine to do the matrix combination.
+                ! That's MUCH faster!
+                ! Note that matrix B might coincide with matrix C, so we
+                ! first check this to prevent unnecessary copy operations!
 
-              IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
+                IF (.NOT. ASSOCIATED (DaB,DaC)) THEN
+                  CALL lalg_vectorCopyDble (DaB,DaC)
+                END IF
+                
+                CALL lalg_vectorLinearCombDble (DaA,DaB,cA,cB)                
+
+              ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
+              
                 CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
                     &,KdiagonalC)
                 CALL do_mat79mat79add_numb_dbledble(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,DaB&
                     &,cB,KldC,KcolC,KdiagonalC,DaC)
+                    
               ELSE
+              
                 CALL do_mat79mat79add_numb_dbledble(rmatrixC%NEQ&
                     &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,DaB&
                     &,cB,KldC,KcolC,KldC,DaC)
+                    
               END IF
               
             CASE (ST_SINGLE)
@@ -9371,7 +9393,24 @@ CONTAINS
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
 
-              IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
+              IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
+                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. &
+                  (bfast)) THEN
+                  
+                ! We rely on the user who tells us that we should assume the
+                ! same structure for the matrices. In this case, we can
+                ! directly call a BLAS routine to do the matrix combination.
+                ! That's MUCH faster!
+                ! Note that matrix B might coincide with matrix C, so we
+                ! first check this to prevent unnecessary copy operations!
+
+                IF (.NOT. ASSOCIATED (DaB,DaC)) THEN
+                  CALL lalg_vectorCopySngl (FaB,FaC)
+                END IF
+                
+                CALL lalg_vectorLinearCombSngl (FaA,FaB,REAL(cA,SP),REAL(cB,SP))                
+
+              ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
                     &,KdiagonalC)
                 CALL do_mat79mat79add_numb_snglsngl(rmatrixC%NEQ&
