@@ -449,7 +449,9 @@ MODULE linearsystemscalar
     ! Format-9: Similar to row structure. Handle top array of length NEQ.
     ! For each row, pointer to the first element on the upper
     ! triangular part of the matrix. For matrices with elements on the
-    ! diagonal, this points to the diagonal element in each row.
+    ! diagonal, this points to the diagonal element in each row
+    ! (or to the first off-diagonal element above the diagonal if there
+    ! is no diagonal element, respectively).
     ! For matrices with no elements in the upper right part of the
     ! matrix, this points to the first element on the next line.
     !INTEGER, DIMENSION(:), POINTER            :: Kdiagonal  => NULL()
@@ -2796,11 +2798,11 @@ CONTAINS
   DO i = 1, neq
 
     ! Loop through each column in this row.
-    ! Shift every entry until the diagonal is reached.
-    DO j = Kld(i)+1, Kld(i+1)-1
+    ! Search for the first element on or above the diagonal.
+    DO j = Kld(i), Kld(i+1)-1
 
       ! Check if we reached the position of the diagonal entry...
-      IF (Kcol(j)>i) EXIT
+      IF (Kcol(j) .GE. i) EXIT
 
     END DO
 
@@ -5228,7 +5230,9 @@ CONTAINS
   ! Copies a matrix data: rsourceMatrix = rdestMatrix.
   ! Both matrices must have the same size and the same structure.
   ! All structural (discretisation related) data of rsourceMatrix is
-  ! transferred to rrdestMatrix.
+  ! transferred to rrdestMatrix. 
+  ! The content data arrays (e.g. Kcol, Kld, Da,...) in the destination matrix 
+  ! are not released but overwritten by the data arrays in the source matrix.
 !</description>
   
 !<input>
