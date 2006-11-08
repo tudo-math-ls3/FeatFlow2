@@ -9324,7 +9324,7 @@ CONTAINS
                 ! first check this to prevent unnecessary copy operations!
 
                 IF (.NOT. ASSOCIATED (DaB,DaC)) THEN
-                  CALL lalg_vectorCopyDble (DaB,DaC)
+                  CALL lalg_copyVectorDble (DaB,DaC)
                 END IF
                 
                 CALL lalg_vectorLinearCombDble (DaA,DaB,cA,cB)                
@@ -9405,7 +9405,7 @@ CONTAINS
                 ! first check this to prevent unnecessary copy operations!
 
                 IF (.NOT. ASSOCIATED (DaB,DaC)) THEN
-                  CALL lalg_vectorCopySngl (FaB,FaC)
+                  CALL lalg_copyVectorSngl (FaB,FaC)
                 END IF
                 
                 CALL lalg_vectorLinearCombSngl (FaA,FaB,REAL(cA,SP),REAL(cB,SP))                
