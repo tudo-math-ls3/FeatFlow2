@@ -42,7 +42,7 @@ PROGRAM cc2dmedium
   ! Initialise system-wide settings:
   
   CALL system_init()
-
+  
   ! The very second thing in every program: 
   ! Initialise the storage management: 
   !

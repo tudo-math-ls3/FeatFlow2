@@ -153,17 +153,18 @@ CONTAINS
     TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
     TYPE(t_matrixBlock) :: rmatrixLaplaceBlock
     TYPE(t_convUpwind) :: rupwind
+    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
 
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
-
+    
       ! Get minimum/maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
       
       ! Get the system and the Laplace matrix on the maximum level
       p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilvmax)
       p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,PAR_LAPLACE,ilvmax)
-      
+
       ! Build a temporary 3x3 block matrix rmatrixLaplace with Laplace 
       ! on the main diagonal:
       !
@@ -217,6 +218,22 @@ CONTAINS
         ! Which type of stabilisation/strategy for setting up the nonlinearity
         ! do we use?
         SELECT CASE (collct_getvalue_int (p_rcollection,'IUPWIND'))
+        CASE (0)
+        
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion%dnu = collct_getvalue_real (p_rcollection,'NU')
+          
+          ! Set stabilisation parameter
+          rstreamlineDiffusion%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
+          
+          ! Call the SD method to calculate the nonlinear defect.
+          ! As we calculate only the defect, the matrix is ignored!
+          CALL conv_streamlinediffusion2d ( &
+                           rx, rx, 1.0_DP, 0.0_DP,&
+                           rstreamlineDiffusion, CONV_MODDEFECT, &
+                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
+                  
         CASE (1)
       
           ! Set up the upwind structure for the creation of the defect.
@@ -315,6 +332,7 @@ CONTAINS
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
     TYPE(t_convUpwind) :: rupwind
+    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
 
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
@@ -423,6 +441,38 @@ CONTAINS
         ! Which type of stabilisation/strategy for setting up the nonlinearity
         ! do we use?
         SELECT CASE (collct_getvalue_int (p_rcollection,'IUPWIND'))
+        CASE (0)
+      
+          ! Construct the linear part of the nonlinear matrix on the maximum
+          ! level. 
+          !
+          ! The system matrix looks like:
+          !   (  A    0   B1 )
+          !   (  0    A   B2 )
+          !   ( B1^T B2^T 0  )
+          !
+          ! The A-matrix consists of Laplace+Convection.
+          ! We build them separately and add together.
+          !
+          ! So at first, initialise the A-matrix with the Laplace contribution.
+          ! We ignore the structure and simply overwrite the content of the
+          ! system submatrices with the Laplace matrix.
+          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion%dnu = collct_getvalue_real (p_rcollection,'NU')
+          
+          ! Set stabilisation parameter
+          rstreamlineDiffusion%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
+          
+          ! Call the streamline diffusion method to evaluate nonlinearity part 
+          ! of the matrix in the point rtemp1.
+          CALL conv_streamlinediffusion2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
+                              rstreamlineDiffusion, CONV_MODMATRIX, &
+                              p_rmatrix%RmatrixBlock(1,1))      
+                                    
         CASE (1)
       
           ! Construct the linear part of the nonlinear matrix on the maximum
@@ -454,7 +504,7 @@ CONTAINS
           CALL conv_upwind2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
-                                    
+
         CASE DEFAULT
           PRINT *,'Don''t know how to set up nonlinearity!?!'
           STOP
@@ -606,6 +656,7 @@ CONTAINS
     INTEGER :: ierror,NLMAX,NLMIN, ilev
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
     TYPE(t_convUpwind) :: rupwind
+    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
 
     ! An interlevel projection structure for changing levels
@@ -659,6 +710,14 @@ CONTAINS
         iupwind = collct_getvalue_int (p_rcollection,'IUPWIND')
       
         SELECT CASE (iupwind)
+        CASE (0)
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion%dnu = collct_getvalue_real (p_rcollection,'NU')
+          
+          ! Set stabilisation parameter
+          rstreamlineDiffusion%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
+          
         CASE (1)
           ! Set up the upwind structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
@@ -666,7 +725,7 @@ CONTAINS
           
           ! Set stabilisation parameter
           rupwind%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
-          
+
         CASE DEFAULT
           PRINT *,'Don''t know how to set up nonlinearity!?!'
           STOP
@@ -722,6 +781,28 @@ CONTAINS
           ! Which type of stabilisation/strategy for setting up the nonlinearity
           ! do we use?
           SELECT CASE (iupwind)
+          CASE (0)
+        
+            ! The system matrix looks like:
+            !   (  A    0   B1 )
+            !   (  0    A   B2 )
+            !   ( B1^T B2^T 0  )
+            !
+            ! The A-matrix consists of Laplace+Convection.
+            ! We build them separately and add together.
+            !
+            ! So at first, initialise the A-matrix with the Laplace contribution.
+            ! We ignore the structure and simply overwrite the content of the
+            ! system submatrices with the Laplace matrix.
+            CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+
+            ! Call the SD method to calculate the nonlinear matrix.
+            CALL conv_streamlineDiffusion2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+                                rstreamlineDiffusion, CONV_MODMATRIX, &
+                                p_rmatrix%RmatrixBlock(1,1))      
+                                         
           CASE (1)
         
             ! The system matrix looks like:
@@ -742,7 +823,7 @@ CONTAINS
             CALL conv_upwind2d (p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
                                 p_rmatrix%RmatrixBlock(1,1))      
-                                         
+
           CASE DEFAULT
             PRINT *,'Don''t know how to set up nonlinearity!?!'
             STOP

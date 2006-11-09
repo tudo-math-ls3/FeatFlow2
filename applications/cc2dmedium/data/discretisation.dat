@@ -74,6 +74,7 @@ iElementType       = 3
 iUpwind            = 1
 
 # Relaxation parameter for upwind/Streamline Diffusion.
+# Standard values: Upwind=0.1, Streamline diffusion=1.0
 
 dUpsam             = 0.1
 
