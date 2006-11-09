@@ -54,6 +54,24 @@ MODULE bilinearformevaluation
 !</types>
   
 !<constants>
+
+!<constantblock description="Method identifiers for construction of matrix structure.">
+
+  ! Element-based matrix construction. This is the standard matrix construction method. 
+  INTEGER, PARAMETER :: BILF_MATC_ELEMENTBASED = 0
+  
+  ! Edge-based matrix construction. The matrix stencil is extended in such a way,
+  ! that the DOF's of one element may interact with the DOF's of all other elements
+  ! that are adjacent via one of the edges.
+  INTEGER, PARAMETER :: BILF_MATC_EDGEBASED    = 1
+
+  ! Vertex-based matrix construction. The matrix stencil is extended in such a way,
+  ! that the DOF's of one element may interact with the DOF's of all other elements
+  ! that are adjacent via one of the corner vertices.
+  INTEGER, PARAMETER :: BILF_MATC_VERTEXBASED  = 2
+
+!</constantblock>
+
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
@@ -68,7 +86,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bilf_createMatrixStructure (rdiscretisation,iformat,rmatrixScalar,imemguess)
+  SUBROUTINE bilf_createMatrixStructure (rdiscretisation,iformat,rmatrixScalar, &
+                                         cconstrType,imemguess)
   
 !<description>
   ! This routine allows to calculate the structure of a finite-element matrix
@@ -83,6 +102,11 @@ CONTAINS
   ! Format of the matrix structure to be created. One of the LSYSSC_xxxx
   ! constants.
   INTEGER, INTENT(IN) :: iformat
+
+  ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
+  ! the matrix construction method. If not specified,
+  ! BILF_MATC_ELEMENTBASED is used.
+  INTEGER, INTENT(IN), OPTIONAL      :: cconstrType
 
   ! OPTIONAL: An initial guess about how much memory the matrix needs. If set 
   ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
@@ -101,11 +125,15 @@ CONTAINS
 
   ! local variables
   INTEGER(I32) :: imem
+  INTEGER :: ccType
   
   imem = 0
   IF (PRESENT(imemguess)) THEN
     imem = MAX(0,imemguess)
   END IF
+  
+  ccType = BILF_MATC_ELEMENTBASED
+  IF (PRESENT(cconstrType)) ccType = cconstrType
   
   ! Do we have a not too complex triangulation? Would simplify a lot...
   IF ( (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) .OR. &
@@ -113,13 +141,54 @@ CONTAINS
   
     ! Which matrix structure do we have to create?
     SELECT CASE (iformat) 
+    
     CASE (LSYSSC_MATRIX9)
-      ! Call the creation routine for structure 9:
-      CALL bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imem)
+    
+      SELECT CASE (ccType)
+      
+      CASE (BILF_MATC_ELEMENTBASED)
+        ! Call the creation routine for structure 9:
+        CALL bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imem)
+        
+      CASE (BILF_MATC_EDGEBASED)
+      
+        IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+          CALL bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imem)
+        ELSE
+          PRINT *,'bilf_createMatrixStructure: Edge-based matrix constrution only for'//&
+                  ' uniform discr., supported.'
+          STOP
+        END IF
+        
+      CASE DEFAULT
+        PRINT *,'Invalid matrix construction method.'
+        STOP
+      END SELECT
       
     CASE (LSYSSC_MATRIX7)
-      ! Call the creation routine for structure 9:
-      CALL bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imem)
+    
+      SELECT CASE (ccType)
+      
+      CASE (BILF_MATC_ELEMENTBASED)
+      
+        ! Call the creation routine for structure 9:
+        CALL bilf_createMatStructure9_conf (rdiscretisation,rmatrixScalar,imem)
+
+      CASE (BILF_MATC_EDGEBASED)
+      
+        IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+          CALL bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imem)
+        ELSE
+          PRINT *,'bilf_createMatrixStructure: Edge-based matrix constrution only for'//&
+                  ' uniform discr., supported.'
+          STOP
+        END IF
+        
+      CASE DEFAULT
+        PRINT *,'bilf_createMatrixStructure: Invalid matrix construction method.'
+        STOP
+      END SELECT
+        
       ! Translate to matrix structure 7:
       CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
       
@@ -990,6 +1059,778 @@ CONTAINS
   END SUBROUTINE
 
   !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imemGuess)
+  
+!<description>
+  ! This routine creates according to a given discretisation the matrix 
+  ! structure of a structure-9 matrix. The discretisation is assumed to be
+  ! uniform, i.e. there is only one combination of test- and trial functions
+  ! allowed. The matrix is created by an edge-based approach, which increases
+  ! the matrix stencil in such a way, that the DOF's of one element may
+  ! interact with the DOF's of all elements that are adjacent via the
+  ! edges.
+!</description>
+
+!<input>
+  
+  ! The underlying discretisation structure which is to be used to
+  ! create the matrix.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+  
+  ! An initial guess about how much memory the matrix needs. If set to 0,
+  ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
+  INTEGER(I32), INTENT(IN) :: imemGuess
+  
+!</input>
+
+!<output>
+  ! The structure of a scalar matrix, fitting to the given discretisation.
+  ! Memory fo rthe structure is allocated dynamically on the heap.
+  TYPE(t_matrixScalar), INTENT(OUT) :: rmatrixScalar
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
+  INTEGER :: IDOFE, JDOFE, i, IHELP,NVE, nelemBlockCount
+  INTEGER :: IELneighIdxI, IELneighIdxJ
+  INTEGER(PREC_ELEMENTIDX) :: IEL, IELmax, IELset, IELneighI, IELneighJ
+  LOGICAL :: BSORT, bIdenticalTrialAndTest
+  
+  ! An allocateable list of handles for memory blocks. Size is dynamically 
+  ! increased if there are too many columns in the matrix.
+  INTEGER, DIMENSION(:), POINTER :: p_Ihcol, p_Ihindx, p_IhTmp
+  INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_Isize, p_ISizeTmp
+  
+  ! An allocateable list of pointers to the memory blocks - corresponds
+  ! to the handles in p_Ihcol/p_Ihindx
+  TYPE(t_matrixmem), DIMENSION(:), POINTER :: Rmemblock, RmemblockTmp
+  
+  ! Pointer to current KCOL memory block,
+  ! pointer to current index memory block
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Icol, p_Iindx
+  
+  ! Number of currently allocated pointers in Ihmemblock
+  INTEGER :: iblocks
+  
+  ! Currently active memory block
+  INTEGER :: icurrentblock
+  
+  ! Size of memory blocks
+  INTEGER(PREC_DOFIDX) :: imemblkSize
+  
+  ! Blocksize in terms of NEQ for guessing memory.
+  ! The initial guess for memory is iblkSize*iblkSize*NEQ and every time
+  ! memory is needed, another iblkSize*NEQ elements are added.
+  INTEGER, PARAMETER :: iblkSize = 4
+  
+  ! Number of memory blocks to allocate
+  INTEGER, PARAMETER :: NmemBlkCount = 5
+
+  ! Pointer to KLD, KCOL, diagonal
+  INTEGER(I32), DIMENSION(:), POINTER :: p_KLD, p_KCOL, p_Kdiagonal
+  
+  ! Size of memory currently allocated
+  INTEGER(PREC_DOFIDX) :: iallocated
+  
+  ! An allocateable array accepting the DOF's of a set of elements.
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+  !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
+  !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
+  
+  INTEGER, DIMENSION(:), ALLOCATABLE :: IadjPtr, IadjElem
+  
+  ! Number of local degees of freedom for trial and test functions
+  INTEGER :: indofTrial, indofTest
+  
+  ! The triangulation structure - to shorten some things...
+  TYPE(t_triangulation), POINTER :: p_rtriangulation
+  
+  ! A pointer to an element-number list
+  INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
+  
+  ! Current element distribution
+  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
+
+  ! Number of elements in a block. Normally =BILF_NELEMSIM,
+  ! except if there are less elements in the discretisation.
+  INTEGER :: nelementsPerBlock
+  
+  ! Adjacent elements
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_Kadj
+
+  ! The algorithm is: Test every DOF on one element against each other
+  ! DOF on the same element and save the combination into a matrix
+  ! in structure 9!
+  !
+  ! At first, initialise the structure-9 matrix:
+  
+  rmatrixScalar%p_rspatialDiscretisation => rdiscretisation
+  rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
+  
+  ! Get the #DOF's of the test space - as #DOF's of the test space is
+  ! the number of equations in our matrix. The #DOF's in the trial space
+  ! gives the number of columns of our matrix.
+  rmatrixScalar%NCOLS         = dof_igetNDofGlob(rdiscretisation,.FALSE.)
+  rmatrixScalar%NEQ           = dof_igetNDofGlob(rdiscretisation,.TRUE.)
+  
+  ! and get a pointer to the triangulation.
+  p_rtriangulation => rdiscretisation%p_rtriangulation
+  
+  CALL storage_getbase_int2d (p_rtriangulation%h_IneighboursAtElement,p_Kadj)
+  
+  ! Get NEQ - we need it for guessing memory...
+  NEQ = rmatrixScalar%NEQ
+  
+  IF (NEQ .EQ. 0) THEN
+    PRINT *,'bilf_createMatrixStructure9_uni: Empty matrix!'
+    STOP
+  END IF
+  
+  ! Allocate KLD...
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
+                      NEQ+1_I32, ST_INT, rmatrixScalar%h_KLD, &
+                      ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
+  
+  ! Allocate h_Kdiagonal
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'Kdiagonal', &
+                      NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
+                      ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
+  
+  ! For saving some memory in smaller discretisations, we calculate
+  ! the number of elements per block. For smaller triangulations,
+  ! this is NEL. If there are too many elements, it's at most
+  ! BILF_NELEMSIM. This is only used for allocaing some arrays.
+  nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
+
+  ! Allocate a list of handles and a list of pointers corresponding to it.
+  ! Initially allocate NmemBlkCount pointers
+  ALLOCATE(p_Ihcol(NmemBlkCount))
+  ALLOCATE(p_Ihindx(NmemBlkCount))
+  ALLOCATE(p_Isize(NmemBlkCount))
+  ALLOCATE(Rmemblock(NmemBlkCount))
+  
+  ! Allocate the first memory block that receives a part of the
+  ! temporary matrix structure.
+  ! We make an initial guess of iblkSize*iblkSize*NEQ elements in the matrix,
+  ! if imemguess is not given.
+  IF (imemguess .NE. 0) THEN 
+    ! at least one element per line!
+    iallocated = MAX(NEQ,imemguess) 
+  ELSE  
+    iallocated = MAX(10000,iblkSize*iblkSize*NEQ)
+  END IF
+  iblocks = 1
+  imemblkSize = iblkSize*NEQ
+  p_Isize(1) = iallocated
+  
+  ! imemblkSize = iallocated is necessary at the moment to simplify
+  ! whether we leave a block or not.
+
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
+                      p_Isize(1), ST_INT, p_Ihcol(1), ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (p_Ihcol(1),p_Icol)
+
+  ! The new index array must be filled with 0 - otherwise
+  ! the search routine below won't work!
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+                      p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
+  CALL storage_getbase_int (p_Ihindx(1),p_Iindx)
+  
+  Rmemblock(1)%p_Icol => p_Icol
+  Rmemblock(1)%p_Iindx => p_Iindx
+  
+  ! Initialise Iindx and Icol.
+  ! Initially, we have only diagonal elements in our matrix.
+  !
+  ! The basic idea behind the building of the matrix is a linked
+  ! list of column numbers in each row!
+  ! We collect all upcoming columns in the whole matrix in the
+  ! array Icol, i.e. each new entry is attached to that
+  ! (-> the array is resorted to KCOL at the end).
+  ! Iindx points for every entry in the matrix to the position
+  ! inside of Icol of the next entry in the line.
+  !
+  ! At the beginning, we no entries in the matrix. 
+  ! We initialise the "head" of this collection of linked
+  ! lists with 0 to indicate this. 
+  ! Iindx(IEQ) is set to 0 to indicate that there is no following
+  ! element in each line, i.e. we only have diagonal elements.
+  ! Later, we fill Icol(1..NEQ) with the first column number in
+  ! each row. When more entries appear in a row, they are appended
+  ! to KCOL at position NEQ+1..*. Iindx keeps track of the entries
+  ! in each row by storing (starting from the head in Icol(IEQ))
+  ! the positions of the corresponding next entry inside of KCOL1
+  ! in each row - so the column numbers in each row are to be
+  ! found in KCOL1 at positions IEQ,Iindx(IEQ),Iindx(Iindx(IEQ)),...
+  !
+  ! Example: We want to add entry (1,3) to the matrix. Then
+  ! we enlarge the lists as follows:
+  ! - "2" (the column number" is added to the end of Icol, i.e.
+  !   Icol(NEQ+1) = 3
+  ! - We add a "follower" for the diagonal element by setting
+  !   Iindx(1) = NEQ+1. Furthermore we set KIND(NEQ+1)=0
+  ! So we have a linked list of matrix entries for the rows:
+  !   Icol:     1   2   3   ...   NEQ     3
+  !   Iindx:  NEQ+1 0   0   ...    0      0
+  !             |                        /:\
+  !             +-------------------------|
+  ! i.e. row 1 can be computed as:
+  !   Icol(1)               (=1),
+  !   Icol(Iindx(1))        (=3),
+  !   Icol(Iindx(Iindx(1))  -> not defined, as Iindx(Iindx(1))=0, 
+  !                            line finished
+  
+  DO IEQ=1,NEQ
+    p_Iindx(IEQ) = 0
+    p_Icol(IEQ)  = 0
+  END DO
+  
+  ! The first NEQ elements are reserved. The matrix is assumed
+  ! to have at least one element per line.
+  NA = NEQ
+  
+  ! Activate the one and only element distribution
+  p_elementDistribution => rdiscretisation%RelementDistribution(1)
+
+  ! Get the number of local DOF's for trial and test functions
+  indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+  indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
+  
+  ! Get the number of corner vertices of the element
+  NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+  IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
+    PRINT *,'bilf_createMatStructure9_conf: element spaces incompatible!'
+    STOP
+  END IF
+  
+  ! Allocate the IadjCount array. This array counts for every element,
+  ! how many elements are adjacent to that.
+  ALLOCATE(IadjPtr(nelementsPerBlock+1))
+  
+  ! Allocate the IadjElem array. This collects for every element 
+  ! the element number itself as well as all the adjacent elements. 
+  ! (It's like a KLD-array...)
+  ! IadjCount is a pointer into this array, so we can access directly 
+  ! the numbers of the elements adjacent to one element.
+  ! There is
+  !   IadjElem(IadjPtr(IEL)) = IEL
+  !   IadjElem(IadjPtr(IEL)+1..IadjPtr(IEL+1)-1) = adjacent elements
+  ! As we know the maximum number of edges, we know the maximum size
+  ! this array may need.
+  ALLOCATE(IadjElem(nelementsPerBlock*(UBOUND(p_Kadj,1)+1)))
+
+  ! Allocate an array saving a couple of DOF's for trial and test functions
+  ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock*(UBOUND(p_Kadj,1)+1)))
+  ALLOCATE(IdofsTest(indofTest,nelementsPerBlock*(UBOUND(p_Kadj,1)+1)))
+  
+  ! Allocate an array saving a couple of DOF's for trial and test functions
+  !ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
+  !ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
+  
+  ! Test if trial/test functions are identical.
+  ! We don't rely on bidenticalTrialAndTest purely, as this does not
+  ! indicate whether there are identical trial and test functions
+  ! in one block!
+  bIdenticalTrialAndTest = &
+    p_elementDistribution%itrialElement .EQ. p_elementDistribution%itestElement
+    
+  ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
+  ! space IdofTest (if both spaces are identical). 
+  ! We create a pointer for the trial space and not for the test space to
+  ! prevent pointer-arithmetic in the innerst loop below!
+  IF (bIdenticalTrialAndTest) THEN
+    p_IdofsTrial => IdofsTest
+  ELSE
+    p_IdofsTrial => IdofsTrial
+  END IF
+  
+  ! p_IelementList must point to our set of elements in the discretisation
+  ! with that combination of trial/test functions
+  CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
+                            p_IelementList)
+  
+
+  ! Set the pointers/indices to the initial position. During the
+  ! search for new DOF's, these might be changed if there's not enough
+  ! memory in the first block.    
+  icurrentblock = 1
+  istartidx = 0
+  p_Icol => Rmemblock(1)%p_Icol
+  p_Iindx => Rmemblock(1)%p_Iindx
+  
+  ! Loop over the elements. 
+  DO IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
+  
+    ! We always handle BILF_NELEMSIM elements simultaneously.
+    ! How many elements have we actually here?
+    ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+    ! elements simultaneously.
+    
+    IELmax = MIN(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
+    
+    ! --------------------- DOF SEARCH PHASE ------------------------
+    
+    ! In a first step, wwe search all the DOF's on one element
+    ! and those on the elements adjacent via an edge to this.
+    ! We want to get all the DOF numbers simultaneously!
+    ! For this, we first set up an array that holds all the element
+    ! numbers in our set as well as their neighbours.
+    !
+    ! Set up the IadjPtr array: Count 1 for the current element
+    ! and count the number of adjacent elements to each element.
+    ! Store the element number of one element to IadjElem and
+    ! behind that the numbers of the adjacent elements.
+    nelemBlockCount = 0
+    DO IEL=1,IELmax
+      nelemBlockCount = nelemBlockCount+1
+      IadjPtr(IEL) = nelemBlockCount
+      IadjElem(nelemBlockCount) = IEL
+      
+      DO i=1,UBOUND(p_Kadj,1)
+        IF (p_Kadj(i,IEL) .NE. 0) THEN
+          nelemBlockCount = nelemBlockCount+1
+          IadjElem(nelemBlockCount) = p_Kadj(i,IEL)
+        END IF
+      END DO
+      
+    END DO
+    IadjPtr(IELmax+1) = nelemBlockCount+1
+    
+    ! nelemBlockCount is now the number of elements in the current
+    ! block, consisting of the IELmax elements and their "edge-neighbours".
+  
+    ! The outstanding feature with finite elements is: A basis
+    ! function for a DOF on one element has common support only
+    ! with the DOF's on the same element! E.g. for Q1:
+    !
+    !        #. . .#. . .#. . .#
+    !        .     .     .     .
+    !        .  *  .  *  .  *  .
+    !        #-----O-----O. . .#
+    !        |     |     |     .
+    !        |     | IEL |  *  .
+    !        #-----X-----O. . .#
+    !        |     |     |     .
+    !        |     |     |  *  .
+    !        #-----#-----#. . .#
+    !        
+    ! --> On element IEL, the basis function at "X" only interacts
+    !     with the basis functions in "O". Elements in the 
+    !     neighbourhood ("*") have no support, therefore we only have
+    !     to collect all "O" DOF's.
+    !
+    ! Call dof_locGlobMapping to get the global DOF's on our current
+    ! element (the "X" and all "O"'s). 
+    ! We don't need the local DOF's, so by setting IPAR=0,
+    ! the call will only fill KDFG.
+    !
+    ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+    ! global DOF's of our nelemBlockCount elements simultaneously.
+    ! Calculate the DOF's of the test functions:
+    CALL dof_locGlobMapping_mult(rdiscretisation, IadjElem(1:nelemBlockCount), &
+                                .TRUE.,IdofsTest)
+                                 
+    ! If the DOF's for the test functions are different, calculate them, too.
+    IF (.NOT.bIdenticalTrialAndTest) THEN
+      CALL dof_locGlobMapping_mult(rdiscretisation, IadjElem(1:nelemBlockCount), &
+                                  .FALSE.,IdofsTrial)
+    END IF
+  
+    ! --------------------- DOF COMBINATION PHASE ------------------------
+    
+    ! Loop through all the elements in the current set
+    DO IEL=1,IELmax-IELset+1
+    
+      ! For building the local matrices, we have first to
+      ! loop through the test functions (the "O"'s), as these
+      ! define the rows in the matrix.
+      DO IDOFE=1,indofTest
+
+        ! The DOF IDOFE is now our "O".
+        ! This global DOF gives us the row we have to build.
+        !
+        ! The DOF's of element IEL start at position IadjPtr(IEL) in
+        ! the IdofsTest array. 
+        IROW = IdofsTest(IDOFE,IadjPtr(IEL)) 
+        
+        ! Loop through the "element-sets" in IadjElem, consisting
+        ! of the element IEL itself as well as its neighbours - for the
+        ! trial functions.
+        DO IELneighIdxJ = IadjPtr(IEL),IadjPtr(IEL+1)-1
+
+          ! Now we loop through the other DOF's on the current element
+          ! (the "X"'s).
+          ! All these have common support with our current basis function
+          ! and will therefore give an additive value to the global
+          ! matrix.
+
+          DO JDOFE=1,indofTrial
+            
+            ! Get the global DOF - our "X". This gives the column number
+            ! in the matrix where an entry occurs in row IROW (the line of 
+            ! the current global DOF "O").
+              
+            JCOL = p_IdofsTrial(JDOFE,IELneighIdxJ)
+
+            ! This JCOL has to be inserted into line IROW.
+            ! But first check, whether the element is already in that line,
+            ! i.e. whether element (IROW,JCOL) is already in the matrix.
+            ! This may happen because of an earlier loop in a neighbour
+            ! element (imagine Q1, where there are two vertices on an edge
+            ! and the edge is shared between two elements)...
+            !
+            ! We start walking through the linked list of row IROW to 
+            ! look for column JCOL. IPOS is the position in the KCOL1 
+            ! array of the column in row IROW we want to test. 
+            ! p_Iindx(IPOS) is =0 if we reach the end of the linked list.
+            !
+            ! Start searching at the "head" of the list, which is the
+            ! diagonal element at Icol(IROW).
+            ! This is always found in the first memory block.
+      
+            ! Remark: This IF command gains 8% performance due to slow
+            ! pointer handling!
+            IF (icurrentblock .NE. 1) THEN
+              icurrentblock = 1
+              istartidx = 0
+              p_Icol => Rmemblock(1)%p_Icol
+              p_Iindx => Rmemblock(1)%p_Iindx
+            END IF
+            
+            ! Is the list empty?
+
+            IF (p_Icol(IROW).EQ.0) THEN
+
+              ! Yes, row IROW is empty at the moment. Add the column as
+              ! head of the list of row IROW.
+
+              p_Icol(IROW) = JCOL
+              
+            ELSE
+
+              ! No, the list is not empty, we have a "head".
+              !
+              ! We start walking through the linked list of row IROW to 
+              ! look for column JCOL. IPOS is the position in the KCOL1 
+              ! array of the column in row IROW we want to test. 
+              ! KINDX(IPOS) is =0 if we reach the end of the linked list.
+              !
+              ! Start searching at the "head" of the list, which is the
+              ! diagonal element at p_Icol(IROW).
+
+              IPOS=IROW
+            
+              ! Loop through the elements in the list until we find
+              ! column JCOL - or the end of the list!
+              ! IPOS must be corrected by istartidx, which is the number
+              ! of elements in all blocks before the current one.
+              
+              searchloop: DO WHILE ( (p_Icol(IPOS-istartIdx)) .NE. JCOL)
+            
+                ! Did we reach the end of the list? Then we have to insert
+                ! a new element...
+                IF (p_Iindx(IPOS-istartIdx) .EQ. 0) THEN
+                
+                  ! Increase NA, which is the actual length of the matrix -
+                  ! and at the same time tells us how much memory we actually
+                  ! use.
+                  NA = NA+1
+                  
+                  ! Let p_Iindx of the last element of the row point to our
+                  ! new element. The new element is now the last in the row.
+                
+                  p_Iindx(IPOS-istartIdx) = NA
+                  
+                  ! Before really appending JCOL, first test
+                  ! NA is now larger than the marimum amount
+                  ! of storage we allocated!
+                  
+                  IF (NA .GT. iallocated) THEN
+                   
+                    ! Hmmm, we have to allocate more memory.
+                    ! Do we have enough pointers left or do we have
+                    ! to enlarge our list?
+                    
+                    IF (iblocks .GE. SIZE(p_Ihcol)) THEN 
+                    
+                      ! Not enough blocks, we have to reallocate the pointer lists!
+                      ALLOCATE (p_IhTmp(iblocks+NmemBlkCount))
+                      p_IhTmp(1:iblocks) = p_Ihcol(1:iblocks)
+                      DEALLOCATE(p_Ihcol)
+                      p_Ihcol => p_IhTmp
+
+                      ALLOCATE (p_IhTmp(iblocks+NmemBlkCount))
+                      p_IhTmp(1:iblocks) = p_Ihindx(1:iblocks)
+                      DEALLOCATE(p_Ihindx)
+                      p_Ihindx => p_IhTmp
+                    
+                      ALLOCATE (p_IsizeTmp(iblocks+NmemBlkCount))
+                      p_IsizeTmp(1:iblocks) = p_Isize(1:iblocks)
+                      DEALLOCATE(p_Isize)
+                      p_Isize => p_IsizeTmp
+
+                      ALLOCATE (RmemblockTmp(iblocks+NmemBlkCount))
+                      RmemblockTmp(1:iblocks) = Rmemblock(1:iblocks)
+                      DEALLOCATE(Rmemblock)
+                      Rmemblock => RmemblockTmp
+                      
+                      ! Now we have enough blocks again.
+                    END IF
+
+                    ! Add a new block
+
+                    iblocks = iblocks + 1
+                    p_Isize (iblocks) = imemblkSize
+                    
+                    ! Move the start index behind the last completely
+                    ! occupied block
+                             
+                    istartIdx = iallocated
+                    icurrentblock = iblocks
+                  
+                    ! Allocate a new memory block of size imemblkSize
+                    !
+                    ! Use p_Icol and p_Iindx - they are not used anymore.
+                    ! Allocate another imemblkSize elements for column numbers and
+                    ! list pointers.
+
+                    CALL storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
+                                        p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), &
+                                        ST_NEWBLOCK_NOINIT)
+                    CALL storage_getbase_int (p_Ihcol(iblocks),p_Icol)
+
+                    ! The new index array must be filled with 0 - otherwise
+                    ! the search routine below won't work!
+                    CALL storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+                                        p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
+                                        ST_NEWBLOCK_ZERO)
+                    CALL storage_getbase_int (p_Ihindx(iblocks),p_Iindx)
+                    
+                    Rmemblock(iblocks)%p_Icol => p_Icol
+                    Rmemblock(iblocks)%p_Iindx => p_Iindx
+
+                    iallocated = iallocated + p_Isize (iblocks)
+                    
+                  ELSE
+                    ! Be careful when leaving the current memory block
+                    ! for insertion of an element at position NA!
+                    !
+                    ! If the new position is not in the current block,
+                    ! it's in the last block... and so set the pointer
+                    ! and indices appropriately!
+                    
+                    IF ( NA .GT. (istartidx+p_Isize (icurrentblock))) THEN
+                      istartidx = iallocated-p_Isize(iblocks)
+                      icurrentblock = iblocks
+                      p_Icol => Rmemblock(iblocks)%p_Icol
+                      p_Iindx => Rmemblock(iblocks)%p_Iindx
+                    END IF
+                    
+                  END IF
+                
+                  ! Append JCOL to p_Icol
+                  p_Icol(NA-istartIdx) = JCOL
+                  
+                  ! We have to make sure that p_Indx(NA)=0 to indicate the end of
+                  ! the list. Ok, this is trivial because we allocated it with 
+                  ! storage_new, configured to fill the memory with 0, so it is 0.
+                  !
+                  ! The searchloop ends here, continue with next JDOFE
+                  
+                  EXIT 
+                
+                ELSE
+                
+                  ! No, the list does not end here.
+                  ! Take the next element in the list
+                  IPOS = p_Iindx(IPOS-istartidx)
+                  
+                  ! Be careful when leaving the current memory block
+                  DO WHILE ( IPOS .GT. (istartidx+p_Isize (icurrentblock)) )
+                  
+                    ! go to the next memory block and search there
+                    istartidx = istartidx+p_Isize(icurrentblock)
+                    icurrentblock = icurrentblock+1
+                    p_Icol => Rmemblock(icurrentblock)%p_Icol
+                    p_Iindx => Rmemblock(icurrentblock)%p_Iindx
+                    
+                  END DO ! IPOS .GT. (istartidx+p_Isize (iblocks))
+                
+                END IF ! p_Iindx(IPOS) = 0
+                
+              END DO searchloop
+            
+            END IF ! p_Icol(IROW) = 0
+                
+          END DO ! JDOFE
+         
+        END DO ! IELneighIdxJ
+      
+      END DO ! IDOFE
+        
+    END DO ! IEL
+  
+  END DO ! IELset
+
+  ! Clean up the DOF's arrays    
+  DEALLOCATE(IdofsTest)
+  DEALLOCATE(IdofsTrial)
+  !DEALLOCATE(IdofsTest)
+  !DEALLOCATE(IdofsTrial)
+
+  ! --------------------- DOF COLLECTION PHASE ------------------------
+    
+  ! Ok, p_Icol is built. The hardest part is done!
+  ! Now build KCOL by collecting the entries in the linear lists of 
+  ! each row.
+  !
+  ! At first, as we now NA, we can allocate the real KCOL now!
+  
+  CALL storage_new1D ('bilf_createMatStructure9_conf', 'KCOL', &
+                      NA, ST_INT, rmatrixScalar%h_KCOL, &
+                      ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (rmatrixScalar%h_KCOL,p_KCOL)
+  
+  ! Save NA in the matrix structure
+  rmatrixScalar%NA = NA
+  
+  ! Set back NA to 0 at first.
+
+  NA=0
+      
+  ! Loop through all of the NEQ linear lists:
+  
+  DO IEQ=1,NEQ
+  
+    ! We are at the head of the list, now we have to walk
+    ! through it to append the entries to KCOL.
+    ! We always start in the first memory block.
+
+    IF (icurrentblock .NE. 1) THEN
+      icurrentblock = 1
+      istartidx = 0
+      p_Icol => Rmemblock(1)%p_Icol
+      p_Iindx => Rmemblock(1)%p_Iindx
+    END IF
+    
+    ! Add the head of the list to KCOL:
+  
+    NA=NA+1
+    p_KCOL(NA)=p_Icol(IEQ)
+
+    ! Set KLD appropriately:
+
+    p_KLD(IEQ) = NA
+    
+    IPOS = IEQ
+    
+    DO WHILE (p_Iindx(IPOS-istartidx).NE.0)
+    
+      ! Get the position of the next entry in p_Icol:
+      IPOS = p_Iindx(IPOS-istartidx)
+      
+      ! Be careful when leaving the current memory block
+      DO WHILE ( IPOS .GT. (istartidx+p_Isize (icurrentblock)) )
+      
+        ! go to the next memory block and search there
+        istartidx = istartidx+p_Isize(icurrentblock)
+        icurrentblock = icurrentblock+1
+        p_Icol => Rmemblock(icurrentblock)%p_Icol
+        p_Iindx => Rmemblock(icurrentblock)%p_Iindx
+        
+      END DO ! IPOS .GT. (istartidx+p_Isize (iblocks))
+      
+      ! Add the column number to the row in KCOL:
+      NA=NA+1
+      p_KCOL(NA)=p_Icol(IPOS-istartidx)
+    
+    END DO ! KINDX(IPOS) <> 0
+
+  END DO ! IEQ
+  
+  ! Append the final entry to KLD:
+  
+  p_KLD(NEQ+1)=NA+1
+  
+  ! Sort entries on KCOL separately for each row.
+  ! This is a small bubble-sort...
+  !
+  ! Loop through all rows:
+  nmaxCol = 0
+
+  DO IEQ=1,NEQ
+
+    ! Repeat until everything is sorted.
+    
+    BSORT=.FALSE.
+    DO WHILE (.NOT. BSORT)
+    
+      BSORT=.TRUE.
+
+      !  Loop through the line 
+
+      DO JCOL=p_KLD(IEQ),p_KLD(IEQ+1)-2
+      
+        ! If the next element is larger...
+      
+        IF (p_KCOL(JCOL) .GT. p_KCOL(JCOL+1)) THEN
+        
+          ! Change position of the current and next element
+        
+          IHELP=p_KCOL(JCOL)
+          p_KCOL(JCOL)=p_KCOL(JCOL+1)
+          p_KCOL(JCOL+1)=IHELP
+          
+          ! And repeat the sorting of that line
+          
+          BSORT=.FALSE.
+          
+        END IF
+        
+      END DO ! JCOL
+      
+    END DO ! (not BSORT)      
+
+    ! Grab the diagonal
+    DO JCOL=p_KLD(IEQ),p_KLD(IEQ+1)-1
+      IF (p_KCOL(JCOL) .GE. IEQ) THEN
+        p_Kdiagonal(IEQ) = JCOL
+        EXIT
+      END IF
+    END DO   
+    
+    ! Grab the largest column number. As the current line is sorted,
+    ! we can find this using the end of the line.
+    nmaxCol = MAX(nmaxCol,p_Kcol(p_Kld(IEQ+1)-1))
+
+  END DO ! IEQ
+  
+  ! HOORAY, THAT'S IT!
+  ! Deallocate all temporary memory...
+  
+  DO i=iblocks,1,-1
+    CALL storage_free(p_Ihcol(i))
+    CALL storage_free(p_Ihindx(i))
+  END DO
+  
+  DEALLOCATE(IadjElem)
+  DEALLOCATE(IadjPtr)
+  DEALLOCATE(Rmemblock)
+  DEALLOCATE(p_Isize)
+  DEALLOCATE(p_Ihindx)
+  DEALLOCATE(p_Ihcol)
+  
+  END SUBROUTINE
+
+  !****************************************************************************
 
 !<subroutine>
 
@@ -1771,7 +2612,6 @@ CONTAINS
     IF (.NOT. rform%ballCoeffConstant) THEN
       DEALLOCATE(Dcoefficients)
     END IF
-    DEALLOCATE(IdofsTrial)
     DEALLOCATE(IdofsTest)
     DEALLOCATE(DbasTrial)
     DEALLOCATE(DbasTest)
