@@ -2275,7 +2275,7 @@ CONTAINS
       ! giving an additive contribution to the system matrix.
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! KENTRY(1..indofTrail,1..indofTest) receives the position 
+      ! KENTRY(1..indofTrial,1..indofTest) receives the position 
       !   in the global system matrix, where the corresponding value 
       !   has to be added to.
       ! (The corresponding contrbutions can be saved separately, 
