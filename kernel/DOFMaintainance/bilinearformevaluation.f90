@@ -1389,7 +1389,7 @@ CONTAINS
     ! Store the element number of one element to IadjElem and
     ! behind that the numbers of the adjacent elements.
     nelemBlockCount = 0
-    DO IEL=1,IELmax
+    DO IEL=1,IELmax-IELset+1
       nelemBlockCount = nelemBlockCount+1
       IadjPtr(IEL) = nelemBlockCount
       IadjElem(nelemBlockCount) = IEL
@@ -1402,7 +1402,7 @@ CONTAINS
       END DO
       
     END DO
-    IadjPtr(IELmax+1) = nelemBlockCount+1
+    IadjPtr(IELmax-IELset+1+1) = nelemBlockCount+1
     
     ! nelemBlockCount is now the number of elements in the current
     ! block, consisting of the IELmax elements and their "edge-neighbours".
