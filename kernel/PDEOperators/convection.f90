@@ -15,6 +15,12 @@
 !# 2.) conv_streamlinediffusion2d
 !#     -> Apply streamline diffusion to a vector, a matrix or both.
 !#
+!# Some auxiliary routines:
+!#
+!# 1.) conv_ueoJumpStabil2d_double_uni
+!#     -> Adds the Unified Edge Oriented stabilisation to a scalar matrix
+!#        which is discretised based on a uniform discretisation.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -2697,7 +2703,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE conv_ueoJumpStabil2d_Q1Td_uni (rmatrixScalar,rconfig)
+  SUBROUTINE conv_ueoJumpStabil2d_double_uni (rmatrixScalar,rconfig)
   
 !<description>
   ! Unified edge oriented jump stabilisation.
@@ -2870,7 +2876,7 @@ CONTAINS
     
     ! Get the number of corner vertices of the element
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
-      PRINT *,'conv_ueoJumpStabilQ1T9_uni: element spaces incompatible!'
+      PRINT *,'conv_ueoJumpStabil2d_double_uni: element spaces incompatible!'
       STOP
     END IF
     
