@@ -2703,7 +2703,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE conv_ueoJumpStabil2d_double_uni (rmatrixScalar,rconfig)
+  SUBROUTINE conv_ueoJumpStabil_double_uni (rmatrixScalar,rconfig)
   
 !<description>
   ! Unified edge oriented jump stabilisation.
