@@ -35,6 +35,11 @@
 !# The 6th example (module poisson_method6) demonstrates like poisson_method1
 !# a simple way of solving the Laplace-equation, but this time introduces
 !# an additional fictitious boundary object inside of the domain.
+!#
+!# The 7th example is based again on example 1 and shows how to transform
+!# a solution vector such that it gan be read by GMV. For this purpose,
+!# an appropriate interpolation routine is called, that transforms an
+!# arbitrary solution vector into a solution in the $Q_1$ space.
 !# </purpose>
 !##############################################################################
 
