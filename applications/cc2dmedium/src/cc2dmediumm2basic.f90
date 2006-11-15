@@ -208,7 +208,8 @@ MODULE cc2dmediumm2basic
 ! NLMAX                 | Maximum level of the discretisation
 ! ISTOKES               | =0: we discretise Navier Stokes, 
 !                       | =1: we discretise Stokes
-! IUPWIND               | Type of stabilisation. 0=streamline diff, 1=upwind
+! IUPWIND               | Type of stabilisation. =0:streamline diff, =1:upwind,
+!                       | =2:jump stabil
 ! UPSAM                 | Stabilisation parameter
 ! INEUMANN              | =YES, if there is Neumann boundary in the problem.
 !                       | =NO, otherwise

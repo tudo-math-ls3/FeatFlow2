@@ -154,6 +154,7 @@ CONTAINS
     TYPE(t_matrixBlock) :: rmatrixLaplaceBlock
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    TYPE(T_jumpStabilisation) :: rjumpStabil
 
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
@@ -249,6 +250,36 @@ CONTAINS
                               rupwind, CONV_MODDEFECT, &
                               p_rmatrix%RmatrixBlock(1,1), rx, rd)      
                   
+        CASE (2)
+        
+          ! Set up the SD structure for the creation of the defect.
+          ! Initialise the viscosity...
+          rstreamlineDiffusion%dnu = collct_getvalue_real (p_rcollection,'NU')
+          
+          ! Set stabilisation parameter to 0.0 to get a central difference
+          ! like discretisation.
+          rstreamlineDiffusion%dupsam = 0.0_DP
+          
+          ! Call the SD method to calculate the nonlinear defect.
+          ! As we calculate only the defect, the matrix is ignored!
+          CALL conv_streamlinediffusion2d ( &
+                           rx, rx, 1.0_DP, 0.0_DP,&
+                           rstreamlineDiffusion, CONV_MODDEFECT, &
+                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
+                           
+          ! Initialise the Jump stabilisation structure.
+          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          
+          ! Initialise the jump stabilisation parameter
+          rjumpStabil%dgamma = collct_getvalue_real (p_rcollection,'UPSAM')
+          rjumpStabil%dgammastar = rjumpStabil%dgamma 
+          
+          ! Call the Jump stabilisation to stabilise
+          CALL conv_jumpStabilisation2d ( &
+                           rx, rx, 1.0_DP, 0.0_DP,&
+                           rjumpStabil, CONV_MODDEFECT, &
+                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
+                  
         CASE DEFAULT
           PRINT *,'Don''t know how to set up nonlinearity!?!'
           STOP
@@ -333,6 +364,7 @@ CONTAINS
     TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    TYPE(t_jumpStabilisation) :: rjumpStabil
 
     ! A filter chain to pre-filter the vectors and the matrix.
     TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
@@ -505,6 +537,51 @@ CONTAINS
                               rupwind, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
 
+        CASE (2)
+      
+          ! Construct the linear part of the nonlinear matrix on the maximum
+          ! level. 
+          !
+          ! The system matrix looks like:
+          !   (  A    0   B1 )
+          !   (  0    A   B2 )
+          !   ( B1^T B2^T 0  )
+          !
+          ! The A-matrix consists of Laplace+Convection.
+          ! We build them separately and add together.
+          !
+          ! So at first, initialise the A-matrix with the Laplace contribution.
+          ! We ignore the structure and simply overwrite the content of the
+          ! system submatrices with the Laplace matrix.
+          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+
+          ! Set up the SD structure for the creation of the defect.
+          ! Initialise the viscosity...
+          rstreamlineDiffusion%dnu = collct_getvalue_real (p_rcollection,'NU')
+          
+          ! Set stabilisation parameter to 0.0 to get a central difference like
+          ! discretisation.
+          rstreamlineDiffusion%dupsam = 0.0_DP
+          
+          ! Call the streamline diffusion method to evaluate nonlinearity part 
+          ! of the matrix in the point rtemp1.
+          CALL conv_streamlinediffusion2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
+                              rstreamlineDiffusion, CONV_MODMATRIX, &
+                              p_rmatrix%RmatrixBlock(1,1))      
+
+          ! Initialise jump stabilisation block
+          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+
+          ! Initialise the jump stabilisation parameter
+          rjumpStabil%dgamma = collct_getvalue_real (p_rcollection,'UPSAM')
+          rjumpStabil%dgammastar = rjumpStabil%dgamma 
+          
+          ! Call the Jump stabilisation method to stabilise
+          CALL conv_jumpStabilisation2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
+                              rjumpStabil, CONV_MODMATRIX, &
+                              p_rmatrix%RmatrixBlock(1,1))      
+
         CASE DEFAULT
           PRINT *,'Don''t know how to set up nonlinearity!?!'
           STOP
@@ -657,6 +734,7 @@ CONTAINS
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    TYPE(t_jumpStabilisation) :: rjumpStabil
     TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
 
     ! An interlevel projection structure for changing levels
@@ -725,6 +803,22 @@ CONTAINS
           
           ! Set stabilisation parameter
           rupwind%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
+
+        CASE (2)
+          ! Set up the upwind structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rjumpStabil%dnu = collct_getvalue_real (p_rcollection,'NU')
+          
+          ! Set stabilisation parameter
+          rjumpStabil%dgammastar = collct_getvalue_real (p_rcollection,'UPSAM')
+          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          
+          ! Set up the SD structure for the creation of the defect.
+          ! Initialise the viscosity...
+          rstreamlineDiffusion%dnu = rjumpStabil%dnu
+          
+          ! Set upsam=0 to obtain a central-difference-type discretisation
+          rstreamlineDiffusion%dupsam = 0.0_DP
 
         CASE DEFAULT
           PRINT *,'Don''t know how to set up nonlinearity!?!'
@@ -823,6 +917,36 @@ CONTAINS
             CALL conv_upwind2d (p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
                                 p_rmatrix%RmatrixBlock(1,1))      
+                                
+          CASE (2)
+
+            ! The system matrix looks like:
+            !   (  A    0   B1 )
+            !   (  0    A   B2 )
+            !   ( B1^T B2^T 0  )
+            !
+            ! The A-matrix consists of Laplace+Convection.
+            ! We build them separately and add together.
+            !
+            ! At first, initialise the A-matrix with the Laplace contribution.
+            ! We ignore the structure and simply overwrite the content of the
+            ! system submatrices with the Laplace matrix.
+            CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+
+            ! Call the SD method to calculate the nonlinear matrix.
+            ! We use the streamline-diffusion discretisation routine
+            ! which uses a central-difference-like discretisation.
+            CALL conv_streamlineDiffusion2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+                                rstreamlineDiffusion, CONV_MODMATRIX, &
+                                p_rmatrix%RmatrixBlock(1,1))   
+                                
+            ! Call the jump stabilisation technique to stabilise that stuff.   
+            CALL conv_jumpStabilisation2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+                                rjumpStabil, CONV_MODMATRIX, &
+                                p_rmatrix%RmatrixBlock(1,1))   
 
           CASE DEFAULT
             PRINT *,'Don''t know how to set up nonlinearity!?!'

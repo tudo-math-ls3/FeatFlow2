@@ -69,12 +69,14 @@ iElementType       = 3
 # ------------------------------------------------------------------------
 
 # Type of stabilization of the convective term. 
-# 0=Streamline Diffusion, 1=upwind
+# 0=Streamline Diffusion
+# 1=upwind
+# 2=unified edge oriented jump stabilisation
 
 iUpwind            = 1
 
-# Relaxation parameter for upwind/Streamline Diffusion.
-# Standard values: Upwind=0.1, Streamline diffusion=1.0
+# Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
+# Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
 
 dUpsam             = 0.1
 

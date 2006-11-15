@@ -357,7 +357,7 @@ CONTAINS
 !</inputoutput>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,cmatBuildType
   
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
@@ -367,6 +367,15 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
   
+    ! When the jump stabilisation is used, we have to create an extended
+    ! matrix stencil!
+    cmatBuildType = BILF_MATC_ELEMENTBASED
+    
+    CALL parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND', i)
+    IF (i .EQ. 2) cmatBuildType = BILF_MATC_EDGEBASED
+  
+    ! Initialise all levels...
     DO i=rproblem%NLMIN,rproblem%NLMAX
 
       ! -----------------------------------------------------------------------
@@ -393,10 +402,10 @@ CONTAINS
       CALL collct_setvalue_matsca(rproblem%rcollection,PAR_LAPLACE,&
                                   p_rmatrixLaplace,.TRUE.,i)
       
-      ! Create the matrix structure of the Laplace matrix:
+      ! Create the matrix structure of the Laplace/Stokes matrix:
       CALL bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
-                p_rmatrixLaplace)
+                p_rmatrixLaplace,cmatBuildType)
       
       ! Allocate memory for the entries; don't initialise the memory.
       CALL lsyssc_createEmptyMatrixScalar (p_rmatrixLaplace,LSYSSC_SETM_UNDEFINED)
