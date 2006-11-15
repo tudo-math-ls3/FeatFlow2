@@ -34,10 +34,10 @@ MODULE codire_method3
   USE bcassembly
   USE triangulation
   USE spatialdiscretisation
-  
+
   USE collection
   USE paramlist
-    
+
   USE codire_callback
   
   IMPLICIT NONE
@@ -260,7 +260,7 @@ CONTAINS
     ! Parameters from the DAT file
     REAL(DP) :: alpha11,alpha12,alpha21,alpha22,beta1,beta2,gamma
     CHARACTER(LEN=10) :: Sstr
-  
+    
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation
     
@@ -311,11 +311,11 @@ CONTAINS
     rform%Idescriptors(2,4) = DER_DERIV_Y
     
     ! (beta1, beta2)^T * grad(u)
-    rform%Idescriptors(1,5) = DER_FUNC
-    rform%Idescriptors(2,5) = DER_DERIV_X
+    rform%Idescriptors(1,5) = DER_DERIV_X
+    rform%Idescriptors(2,5) = DER_FUNC
     
-    rform%Idescriptors(1,6) = DER_FUNC
-    rform%Idescriptors(2,6) = DER_DERIV_Y
+    rform%Idescriptors(1,6) = DER_DERIV_Y
+    rform%Idescriptors(2,6) = DER_FUNC
     
     ! gamma * u
     rform%Idescriptors(1,7) = DER_FUNC       
@@ -361,7 +361,7 @@ CONTAINS
     CALL bilf_buildMatrixScalar (rform,.TRUE.,&
                                  p_rmatrix%RmatrixBlock(1,1),coeff_CoDiRe,&
                                  rproblem%rcollection)
-    
+                                 
     ! Now we want to build up the right hand side. At first we need a block
     ! vector of the right structure. Although we could manually create
     ! that vector, the easiest way to set up the vector structure is

@@ -315,11 +315,11 @@ CONTAINS
     rform%Idescriptors(2,4) = DER_DERIV_Y
     
     ! (beta1, beta2)^T * grad(u)
-    rform%Idescriptors(1,5) = DER_FUNC
-    rform%Idescriptors(2,5) = DER_DERIV_X
+    rform%Idescriptors(1,5) = DER_DERIV_X
+    rform%Idescriptors(2,5) = DER_FUNC
     
-    rform%Idescriptors(1,6) = DER_FUNC
-    rform%Idescriptors(2,6) = DER_DERIV_Y
+    rform%Idescriptors(1,6) = DER_DERIV_Y
+    rform%Idescriptors(2,6) = DER_FUNC
     
     ! gamma * u
     rform%Idescriptors(1,7) = DER_FUNC       
