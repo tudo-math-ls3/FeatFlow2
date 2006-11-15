@@ -17,7 +17,7 @@
 !#
 !# Some auxiliary routines:
 !#
-!# 1.) conv_ueoJumpStabil2d_double_uni
+!# 1.) conv_ueoJumpStabil_double_uni
 !#     -> Adds the Unified Edge Oriented stabilisation to a scalar matrix
 !#        which is discretised based on a uniform discretisation.
 !#
