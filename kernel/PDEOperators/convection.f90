@@ -2717,6 +2717,10 @@ CONTAINS
   ! For a rerefence about the stabilisation, see
   ! [Ouazzi, A.; Finite Element Simulation of Nonlinear Fluids, Application
   ! to Granular Material and Powder; Shaker Verlag, ISBN 3-8322-5201-0, p. 55ff]
+  !
+  ! WARNING: For edge oriented stabilisation, the underlying matrix rmatrix
+  !   must have an extended stencil! The matrix structure must be set up with
+  !   the BILF_MATC_EDGEBASED switch!!!
 !</description>
 
 !<input>
