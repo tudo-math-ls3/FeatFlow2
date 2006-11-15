@@ -117,7 +117,7 @@ CONTAINS
 
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
-  ! Memory fo rthe structure is allocated dynamically on the heap.
+  ! Memory fo the structure is allocated dynamically on the heap.
   TYPE(t_matrixScalar), INTENT(OUT) :: rmatrixScalar
 !</output>
 
@@ -1096,9 +1096,9 @@ CONTAINS
 
   ! local variables
   INTEGER(PREC_DOFIDX) :: NEQ, IEQ, IROW, JCOL, IPOS, istartIdx, NA, nmaxCol
-  INTEGER :: IDOFE, JDOFE, i, IHELP,NVE, nelemBlockCount
-  INTEGER :: IELneighIdxI, IELneighIdxJ
-  INTEGER(PREC_ELEMENTIDX) :: IEL, IELmax, IELset, IELneighI, IELneighJ
+  INTEGER :: IDOFE, JDOFE, i, IHELP,NVE, nelemBlockCount, IELidx
+  INTEGER :: IELneighIdxJ
+  INTEGER(PREC_ELEMENTIDX) :: IEL, IELmax, IELset
   LOGICAL :: BSORT, bIdenticalTrialAndTest
   
   ! An allocateable list of handles for memory blocks. Size is dynamically 
@@ -1331,10 +1331,6 @@ CONTAINS
   ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock*(UBOUND(p_Kadj,1)+1)))
   ALLOCATE(IdofsTest(indofTest,nelementsPerBlock*(UBOUND(p_Kadj,1)+1)))
   
-  ! Allocate an array saving a couple of DOF's for trial and test functions
-  !ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
-  !ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
-  
   ! Test if trial/test functions are identical.
   ! We don't rely on bidenticalTrialAndTest purely, as this does not
   ! indicate whether there are identical trial and test functions
@@ -1378,7 +1374,7 @@ CONTAINS
     
     ! --------------------- DOF SEARCH PHASE ------------------------
     
-    ! In a first step, wwe search all the DOF's on one element
+    ! In a first step, we search all the DOF's on one element
     ! and those on the elements adjacent via an edge to this.
     ! We want to get all the DOF numbers simultaneously!
     ! For this, we first set up an array that holds all the element
@@ -1389,9 +1385,11 @@ CONTAINS
     ! Store the element number of one element to IadjElem and
     ! behind that the numbers of the adjacent elements.
     nelemBlockCount = 0
-    DO IEL=1,IELmax-IELset+1
+    DO IELidx=1,IELmax-IELset+1
+      IEL = IELidx+IELset-1      ! actual element number
+      
       nelemBlockCount = nelemBlockCount+1
-      IadjPtr(IEL) = nelemBlockCount
+      IadjPtr(IELidx) = nelemBlockCount
       IadjElem(nelemBlockCount) = IEL
       
       DO i=1,UBOUND(p_Kadj,1)
@@ -1683,8 +1681,6 @@ CONTAINS
   ! Clean up the DOF's arrays    
   DEALLOCATE(IdofsTest)
   DEALLOCATE(IdofsTrial)
-  !DEALLOCATE(IdofsTest)
-  !DEALLOCATE(IdofsTrial)
 
   ! --------------------- DOF COLLECTION PHASE ------------------------
     
@@ -1929,7 +1925,7 @@ CONTAINS
   
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: KENTRY
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
   REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
   
   ! An array receiving the coordinates of cubature points on
@@ -2117,7 +2113,7 @@ CONTAINS
     END DO
     
     ! Allocate an array saving the coordinates of corner vertices of elements
-    ALLOCATE(Djac(4,ncubp,nelementsPerBlock))
+    ALLOCATE(Djac(NDIM2D*NDIM2D,ncubp,nelementsPerBlock))
     ALLOCATE(Ddetj(ncubp,nelementsPerBlock))
     
     ! Allocate arrays for the values of the test- and trial functions.
@@ -2160,7 +2156,7 @@ CONTAINS
     ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    ALLOCATE(KENTRY(indofTest,indofTrial,nelementsPerBlock))
+    ALLOCATE(Kentry(indofTest,indofTrial,nelementsPerBlock))
     ALLOCATE(Dentry(indofTest,indofTrial))
     
     ! In case of nonconstant coefficients in that part of the matrix, we
@@ -2251,7 +2247,7 @@ CONTAINS
       CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                   .TRUE.,IdofsTest)
                                    
-      ! If the DOF's for the test functions are different, calculate them, too.
+      ! If the DOF's for the trial functions are different, calculate them, too.
       IF (.NOT.bIdenticalTrialAndTest) THEN
         CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                     .FALSE.,IdofsTrial)
@@ -2270,7 +2266,7 @@ CONTAINS
       ! giving an additive contribution to the system matrix.
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! KENTRY(1..indofTest,1..indofTrial) receives the position 
+      ! Kentry(1..indofTest,1..indofTrial) receives the position 
       !   in the global system matrix, where the corresponding value 
       !   has to be added to.
       ! (The corresponding contrbutions can be saved separately, 
@@ -2325,7 +2321,7 @@ CONTAINS
             ! Save the position of the matrix entry into the local
             ! matrix.
             
-            KENTRY(IDOFE,JDOFE,IEL)=JCOL
+            Kentry(IDOFE,JDOFE,IEL)=JCOL
             
           END DO ! IDOFE
           
@@ -2488,7 +2484,7 @@ CONTAINS
                   ! the coefficient of the local matrix. We save this
                   ! contriobution in the local matrix.
 
-                  !JCOLB = KENTRY(IDOFE,JDOFE,IEL)
+                  !JCOLB = Kentry(IDOFE,JDOFE,IEL)
                   !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
                   Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
                 
@@ -2501,10 +2497,10 @@ CONTAINS
           END DO ! ICUBP 
           
           ! Incorporate the local matrices into the global one.
-          ! KENTRY gives the position of the additive contributions in Dentry.
+          ! Kentry gives the position of the additive contributions in Dentry.
           DO JDOFE=1,indofTrial
             DO IDOFE=1,indofTest
-              p_DA(KENTRY(IDOFE,JDOFE,IEL)) = p_DA(KENTRY(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
+              p_DA(Kentry(IDOFE,JDOFE,IEL)) = p_DA(Kentry(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
             END DO
           END DO
 
@@ -2582,7 +2578,7 @@ CONTAINS
                   ! the coefficient of the local matrix. We save this
                   ! contriobution in the local matrix of element IEL.
 
-                  !JCOLB = KENTRY(IDOFE,JDOFE,IEL)
+                  !JCOLB = Kentry(IDOFE,JDOFE,IEL)
                   !p_DA(JCOLB) = p_DA(JCOLB) + DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
                   Dentry(IDOFE,JDOFE) = Dentry(IDOFE,JDOFE)+DB*DbasTest(IDOFE,IB,ICUBP,IEL)*AUX
                 
@@ -2595,10 +2591,10 @@ CONTAINS
           END DO ! ICUBP 
           
           ! Incorporate the local matrices into the global one.
-          ! KENTRY gives the position of the additive contributions in Dentry.
+          ! Kentry gives the position of the additive contributions in Dentry.
           DO JDOFE=1,indofTrial
             DO IDOFE=1,indofTest
-              p_DA(KENTRY(IDOFE,JDOFE,IEL)) = p_DA(KENTRY(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
+              p_DA(Kentry(IDOFE,JDOFE,IEL)) = p_DA(Kentry(IDOFE,JDOFE,IEL)) + Dentry(IDOFE,JDOFE)
             END DO
           END DO
 
@@ -2615,7 +2611,7 @@ CONTAINS
     DEALLOCATE(IdofsTest)
     DEALLOCATE(DbasTrial)
     DEALLOCATE(DbasTest)
-    DEALLOCATE(KENTRY)
+    DEALLOCATE(Kentry)
     DEALLOCATE(Dentry)
     DEALLOCATE(Ddetj)
     DEALLOCATE(Djac)
@@ -2738,7 +2734,7 @@ CONTAINS
   
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: KENTRY
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
   REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dentry
   
   ! An array receiving the coordinates of cubature points on
@@ -3005,7 +3001,7 @@ CONTAINS
     ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
     ! for this local matrix, but this would normally not fit to the cache
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    ALLOCATE(KENTRY(indofTrial,indofTest,nelementsPerBlock))
+    ALLOCATE(Kentry(indofTrial,indofTest,nelementsPerBlock))
     ALLOCATE(Dentry(indofTrial,indofTest))
     
     ! In case of nonconstant coefficients in that part of the matrix, we
@@ -3069,6 +3065,8 @@ CONTAINS
       
       IELmax = MIN(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
     
+      ! --------------------- DOF SEARCH PHASE ------------------------
+    
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
       ! with the DOF's on the same element! E.g. for Q1:
@@ -3102,6 +3100,9 @@ CONTAINS
                                     .FALSE.,IdofsTrial)
       END IF
       !CALL ZTIME(DT(4))
+      
+      ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
+      
       ! For the assembly of the global matrix, we use a "local"
       ! approach. At first we build a "local" system matrix according
       ! to the current element. This contains all additive
@@ -3115,7 +3116,7 @@ CONTAINS
       ! giving an additive contribution to the system matrix.
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
-      ! KENTRY(1..indofTrial,1..indofTest) receives the position 
+      ! Kentry(1..indofTrial,1..indofTest) receives the position 
       !   in the global system matrix, where the corresponding value 
       !   has to be added to.
       ! (The corresponding contrbutions can be saved separately, 
@@ -3171,12 +3172,12 @@ CONTAINS
             
             ! Save the position of the matrix entry into the local
             ! matrix.
-            ! Note that a column in KENTRY corresponds to a row in
-            ! the real matrix. We aligned KENTRY/DENTRY this way to get
+            ! Note that a column in Kentry corresponds to a row in
+            ! the real matrix. We aligned Kentry/DENTRY this way to get
             ! higher speed of the assembly routine, since this leads
             ! to better data locality.
             
-            KENTRY(JDOFE,IDOFE,IEL)=JCOL
+            Kentry(JDOFE,IDOFE,IEL)=JCOL
             
           END DO ! IDOFE
           
@@ -3184,6 +3185,9 @@ CONTAINS
         
       END DO ! IEL
       !CALL ZTIME(DT(5))
+      
+      ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+      
       ! Ok, we found the positions of the local matrix entries
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
@@ -3264,6 +3268,9 @@ CONTAINS
             BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial)
       END IF
       !CALL ZTIME(DT(9))
+      
+      ! --------------------- DOF COMBINATION PHASE ------------------------
+      
       ! Values of all basis functions calculated. Now we can start 
       ! to integrate!
       !
@@ -3341,9 +3348,10 @@ CONTAINS
                   ! the coefficient of the local matrix. We save this
                   ! contribution in the local matrix.
 
-                  !JCOLB = KENTRY(JDOFE,IDOFE,IEL)
+                  !JCOLB = Kentry(JDOFE,IDOFE,IEL)
                   !p_DA(JCOLB) = p_DA(JCOLB) + DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
-                  Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
+                  Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE) + &
+                                        DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
                 
                 END DO ! JDOFE
               
@@ -3354,10 +3362,11 @@ CONTAINS
           END DO ! ICUBP 
           
           ! Incorporate the local matrices into the global one.
-          ! KENTRY gives the position of the additive contributions in Dentry.
+          ! Kentry gives the position of the additive contributions in Dentry.
           DO IDOFE=1,indofTest
             DO JDOFE=1,indofTrial
-              p_DA(KENTRY(JDOFE,IDOFE,IEL)) = p_DA(KENTRY(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
+              p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
+                                              Dentry(JDOFE,IDOFE)
             END DO
           END DO
 
@@ -3433,7 +3442,7 @@ CONTAINS
                   ! the coefficient of the local matrix. We save this
                   ! contribution in the local matrix of element IEL.
 
-                  !JCOLB = KENTRY(JDOFE,IDOFE,IEL)
+                  !JCOLB = Kentry(JDOFE,IDOFE,IEL)
                   !p_DA(JCOLB) = p_DA(JCOLB) + DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
                   Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
                 
@@ -3446,10 +3455,10 @@ CONTAINS
           END DO ! ICUBP 
           
           ! Incorporate the local matrices into the global one.
-          ! KENTRY gives the position of the additive contributions in Dentry.
+          ! Kentry gives the position of the additive contributions in Dentry.
           DO IDOFE=1,indofTest
             DO JDOFE=1,indofTrial
-              p_DA(KENTRY(JDOFE,IDOFE,IEL)) = p_DA(KENTRY(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
+              p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
             END DO
           END DO
 
@@ -3470,7 +3479,7 @@ CONTAINS
     DEALLOCATE(IdofsTest)
     DEALLOCATE(DbasTrial)
     DEALLOCATE(DbasTest)
-    DEALLOCATE(KENTRY)
+    DEALLOCATE(Kentry)
     DEALLOCATE(Dentry)
 
   END DO ! icurrentElementDistr
