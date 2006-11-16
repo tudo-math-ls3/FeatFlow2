@@ -7196,16 +7196,16 @@ CONTAINS
         p_rcurrentLevel => p_rsubnode%p_rlevelInfoHead
         DO WHILE(ASSOCIATED(p_rcurrentLevel%p_rnextLevel))
           IF (p_rsubnode%icycle .EQ. 0) THEN
-            p_rcurrentLevel%ncyclesRemaining = 2
+            p_rcurrentLevel%ncycles = 2
           ELSE
-            p_rcurrentLevel%ncyclesRemaining = p_rsubnode%icycle
+            p_rcurrentLevel%ncycles = p_rsubnode%icycle
           END IF  
           p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
         END DO
         
         ! Afterwards, p_rcurrentLevel points to the maximum level again.
-        ! There, we set ncyclesRemaining to 1.
-        p_rcurrentLevel%ncyclesRemaining = 1
+        ! There, we set ncycles to 1.
+        p_rcurrentLevel%ncycles = 1
         
         ! Print out the initial residuum
 
@@ -7239,13 +7239,13 @@ CONTAINS
           ! Initialize cycle counters for all levels.
           p_rcurrentLevel => p_rsubnode%p_rlevelInfoHead
           DO WHILE(ASSOCIATED(p_rcurrentLevel%p_rnextLevel))
-            p_rcurrentLevel%ncycles = p_rcurrentLevel%ncyclesRemaining
+            p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
             p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
           END DO
           ! Don't forget the highest level.
-          p_rcurrentLevel%ncycles = p_rcurrentLevel%ncyclesRemaining
+          p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
         
-          ! p_rcurrentLevel now points to the meximum level.
+          ! p_rcurrentLevel now points to the maximum level.
           ilev = p_rsubnode%nlevels
           p_rlowerLevel => p_rcurrentLevel%p_rprevLevel
           
@@ -7500,6 +7500,9 @@ CONTAINS
                   p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
                   CYCLE cycleloop
                 END IF
+              ELSE
+                ! Next cycle; go down starting from the current level
+                CYCLE cycleloop
               END IF
               
             END DO ! ilev < nlmax
