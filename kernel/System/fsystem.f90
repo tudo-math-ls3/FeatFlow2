@@ -125,7 +125,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE sys_throwFPE()
+  PURE SUBROUTINE sys_throwFPE()
   
     !<description>
     !This routine throws a floating point exception for debugging purposes
@@ -164,7 +164,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE sys_toupper (str) 
+  PURE SUBROUTINE sys_toupper (str) 
 
   !<description>
   
@@ -199,7 +199,7 @@ CONTAINS
 !******************************************************************************
 
 !<function>
-  FUNCTION sys_upcase(sinput) RESULT(soutput)
+  PURE FUNCTION sys_upcase(sinput) RESULT(soutput)
   
   !<description>
   ! This routine converts a given string to its uppercase version.
