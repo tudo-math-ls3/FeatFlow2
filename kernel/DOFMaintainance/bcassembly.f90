@@ -1071,7 +1071,7 @@ CONTAINS
                                     ipoint1,p_DvertexParameterValue(I), &
                                     p_rcollection, Dvalues)
                                     
-            ! Save the computed function value
+            ! Save the computed function value of the corner.
             DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
@@ -1099,13 +1099,21 @@ CONTAINS
                                     iedge,p_DedgeParameterValue(I), &
                                     p_rcollection, Dvalues)
                                     
-            ! Save the computed function value
-            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+            ! Save the computed function value of the edge midpoint.
+            ! This is found at position ilocalEdge+4, as the first four
+            ! elements in DdofValue correspond to the corners!
+            DdofValue(ilocalEdge+4,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
           ! Set the DOF number < 0 to indicate that it is Dirichlet
-          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          ! ilocalEdge is the number of the local edge, corresponding
+          ! to the local DOF ilocalEdge+4, as the first four elements
+          ! in this array correspond to the values in the corners.
+          Idofs(ilocalEdge+4,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(ilocalEdge+4,isubsetstart+I-Iminidx(ipart)+1))
+              
+          ! The element midpoint does not have to be considered, as it cannot
+          ! be on the boundary.
         END IF
 
       CASE (EL_EM30,EL_E030)
