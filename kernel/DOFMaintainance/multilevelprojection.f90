@@ -911,7 +911,21 @@ CONTAINS
           CALL mlprj_prolUniformQ1_double (p_DuCoarse,p_DuFine, &
                p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,p_rtriaCoarse%NEL)
-               
+
+        CASE (EL_Q2)
+          ! Q2 prolongation
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                               p_IverticesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                               p_IedgesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
+                               
+          CALL mlprj_prolUniformQ2_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementFine,p_IedgesAtElementFine,&
+               p_IneighboursAtElementFine,&
+               p_rtriaFine%NVT, p_rtriaFine%NMT, p_rtriaCoarse%NEL)  
+                       
         CASE (EL_E030,EL_EM30)
           ! Q1~ prolongation, DOF's = integral mean value
           CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
@@ -1109,6 +1123,23 @@ CONTAINS
                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
                p_rtriaFine%NEL)
                
+        CASE (EL_Q2)
+          ! Q2 restriction
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                               p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                               p_IedgesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                               p_IedgesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
+                               
+          CALL mlprj_restUniformQ2_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementCoarse, p_IedgesAtElementCoarse, &
+               p_IedgesAtElementFine, p_IneighboursAtElementFine,&
+               p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NMT,&
+               p_rtriaFine%NMT,p_rtriaCoarse%NEL)
+                              
         CASE (EL_E030,EL_EM30)
           ! Q1~ restriction, DOF's = integral mean values
           CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
@@ -2058,7 +2089,10 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE mlprj_prolUniformQ2_double ()
+  SUBROUTINE mlprj_prolUniformQ2_double (DuCoarse,DuFine, &
+               IverticesAtElementFine,IedgesAtElementFine,&
+               IneighboursAtElementFine,&
+               NVTfine, NMTfine, NELcoarse)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
@@ -2066,18 +2100,93 @@ CONTAINS
 !</description>
   
 !<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
   
+  ! IverticesAtElement array (KVERT) on the fine grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+
+  ! IedgesAtElement array (KMID) on the fine grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
+  
+  ! IneighboursAtElement array on the fine grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
+  ! Number of vertices on the fine grid
+  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVTfine
+
+  ! Number of edges in the fine grid
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTfine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
 !</input>
   
-!<inputoutput>
-!</inputoutput>
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
   
 !</subroutine>
   
   ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER :: i
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IelFine
 
-  PRINT *,'not implemented!'
-  STOP
+    ! Copy the first NVT+NMT+NEL entries - they belong to the coarse grid 
+    ! vertices/edge midpoints/element midpoints and
+    ! are fine grid vertices at the same time.
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+
+    ! Loop over the elements of the coarse grid
+    DO iel=1,NELcoarse
+   
+      ! Obtain the numbers of the fine grid elements inside of the
+      ! coarse grid element. According to the regular refinement, the element
+      ! number of the coarse grid element is the element number of the
+      ! first element inside the coarse grid element on the fine grid.
+      IelFine(1)=iel
+      IelFine(2)=IneighboursAtElementFine(2,IelFine(1))
+      IelFine(3)=IneighboursAtElementFine(2,IelFine(2))
+      IelFine(4)=IneighboursAtElementFine(2,IelFine(3))
+
+      ! Loop over the fine grid elements in the coarse grid element.
+      ! 'Distribute' the information from the edge midpoints and the element
+      ! midpoint to the edge midpoints/element midpoints of the
+      ! fine grid element.      
+      DO i=1,4
+        ! Distribute information on the edges of the coarse grid element
+        ! to the edges of the fine grid element i inside of the coarse
+        ! grid element.
+        DUfine(IedgesAtElementFine(1,IelFine(i)))= &
+             +(3.0/8.0)*DUfine(IverticesAtElementFine(1,IelFine(i))) &
+             +(3.0/4.0)*DUfine(IverticesAtElementFine(2,IelFine(i))) &
+             -(1.0/8.0)*DUfine(IverticesAtElementFine(1,IelFine(MOD(i,4)+1)))
+        DUfine(IedgesAtElementFine(4,IelFine(i)))= &
+             +(3.0/8.0)*DUfine(IverticesAtElementFine(1,IelFine(i))) &
+             +(3.0/4.0)*DUfine(IverticesAtElementFine(4,IelFine(i))) &
+             -(1.0/8.0)*DUfine(IverticesAtElementFine(1,IelFine(MOD(i+2,4)+1)))
+        DUfine(IedgesAtElementFine(2,IelFine(i)))= &
+             +(3.0/8.0)*DUfine(IverticesAtElementFine(2,IelFine(i))) &
+             +(3.0/4.0)*DUfine(IverticesAtElementFine(3,IelFine(i))) &
+             -(1.0/8.0)*DUfine(IverticesAtElementFine(4,IelFine(MOD(i+2,4)+1)))
+             
+        ! Distribute information of the coarse grid midpoint to
+        ! the fine grid midpoint of the fine grid element i inside
+        ! of the coarse grid element.
+        DUfine(NVTfine+NMTfine+IelFine(i))= &
+             +(9.0/64.0)*DUfine(IverticesAtElementFine(1,IelFine(i))) &
+             +(18.0/64.0)*DUfine(IverticesAtElementFine(2,IelFine(i))) &
+             +(36.0/64.0)*DUfine(IverticesAtElementFine(3,IelFine(i))) &
+             +(18.0/64.0)*DUfine(IverticesAtElementFine(4,IelFine(i))) &
+             -(3.0/64.0)*DUfine(IverticesAtElementFine(1,IelFine(MOD(i,4)+1))) &
+             -(6.0/64.0)*DUfine(IverticesAtElementFine(2,IelFine(MOD(i,4)+1))) &
+             -(3.0/64.0)*DUfine(IverticesAtElementFine(1,IelFine(MOD(i+2,4)+1))) &
+             -(6.0/64.0)*DUfine(IverticesAtElementFine(4,IelFine(MOD(i+2,4)+1))) &
+             +(1.0/64.0)*DUfine(IverticesAtElementFine(1,IelFine(MOD(i+1,4)+1)))
+      ENDDO
+    ENDDO
 
   END SUBROUTINE
   
@@ -2085,26 +2194,157 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE mlprj_restUniformQ2_double ()
+  SUBROUTINE mlprj_restUniformQ2_double (DuCoarse,DuFine, &
+               IverticesAtElementCoarse, IedgesAtElementCoarse, &
+               IedgesAtElementFine, IneighboursAtElementFine,&
+               NVTcoarse,NVTfine,NMTcoarse,NMTfine,NELcoarse)
   
 !<description>
   ! Restricts a RHS vector from a fine grid to a coarse grid.
   ! $Q_2$, uniform triangulation, double precision vector.
 !</description>
   
-!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
   
+  ! IedgesAtElement array (KMID) on the coarse grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
+  
+  ! IedgesAtElement array (KMID) on the fine grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
+  
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+  
+  ! Number of vertices in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTcoarse
+
+  ! Number of vertices in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NVTfine
+
+  ! Number of edges in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NMTcoarse
+
+  ! Number of elements in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NMTfine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
 !</input>
   
-!<inputoutput>
-!</inputoutput>
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
   
 !</subroutine>
   
   ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER :: i
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IelFine
 
-  PRINT *,'not implemented!'
-  STOP
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'.
+    !
+    ! Copy the first NVT+NMT+NEL (coarse) entries - this gives the first 
+    ! additive contribution: The values in the corners/edge midpoints/
+    ! element midpoints of the coarse grid stem from with the values of the
+    ! corners of the fine grid.
+    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+
+    ! Loop over the elements to collect the missing additive contributions:
+    DO iel=1,NELcoarse
+    
+      ! Obtain the numbers of the fine grid elements inside of the
+      ! coarse grid element. According to the regular refinement, the element
+      ! number of the coarse grid element is the element number of the
+      ! first element inside the coarse grid element on the fine grid.
+      IelFine(1)=iel
+      IelFine(2)=IneighboursAtElementFine(2,IelFine(1))
+      IelFine(3)=IneighboursAtElementFine(2,IelFine(2))
+      IelFine(4)=IneighboursAtElementFine(2,IelFine(3))
+
+      DO i=1,4
+      
+        ! Collect information from the corners of the fine grid element
+        DUcoarse(IverticesAtElementCoarse(i,iel)) = &
+             DUcoarse(IverticesAtElementCoarse(i,iel)) &
+             +0.5*(24.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(i))) &
+             +0.5*(24.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(i))) &
+             -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(MOD(i,4)+1))) &
+             -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(MOD(i+2,4)+1))) &
+             +(9.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(i)) &
+             -(3.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(MOD(i,4)+1)) &
+             +(1.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(MOD(i+1,4)+1)) &
+             -(3.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(MOD(i+2,4)+1))
+             
+        IF(IneighboursAtElementFine(1,IelFine(i)).EQ.0) THEN
+          DUcoarse(IverticesAtElementCoarse(i,iel))= &
+              DUcoarse(IverticesAtElementCoarse(i,iel)) &
+              +0.5*(24.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(i)))
+        END IF
+        
+        IF(IneighboursAtElementFine(4,IelFine(i)).EQ.0) THEN
+          DUcoarse(IverticesAtElementCoarse(i,iel))= &
+              DUcoarse(IverticesAtElementCoarse(i,iel)) &
+              +0.5*(24.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(i)))
+        END IF
+        
+        IF(IneighboursAtElementFine(4,IelFine(MOD(i,4)+1)).EQ.0) THEN
+          DUcoarse(IverticesAtElementCoarse(i,iel))= &
+              DUcoarse(IverticesAtElementCoarse(i,iel)) &
+              -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(MOD(i,4)+1)))
+        END IF
+        
+        IF(IneighboursAtElementFine(1,IelFine(MOD(i+2,4)+1)).EQ.0) THEN
+          DUcoarse(IverticesAtElementCoarse(i,iel))= &
+              DUcoarse(IverticesAtElementCoarse(i,iel)) &
+              -0.5*(8.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(MOD(i+2,4)+1)))
+        END IF
+
+        ! Collect information from the edge midpoints of the fine grid element
+        DUcoarse(IEdgesAtElementCoarse(i,iel))= &
+            DUcoarse(IEdgesAtElementCoarse(i,iel)) &
+             +0.5*(48.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(i))) &
+             +(24.0/64.0)*DUfine(IEdgesAtElementFine(2,IelFine(i))) &
+             +0.5*(48.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(MOD(i,4)+1))) &
+             -(8.0/64.0)*DUfine(IEdgesAtElementFine(2,IelFine(MOD(i+1,4)+1))) &
+             +(18.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(i)) &
+             +(18.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(MOD(i,4)+1)) &
+             -(6.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(MOD(i+1,4)+1)) &
+             -(6.0/64.0)*DUfine(NVTfine+NMTFine+IelFine(MOD(i+2,4)+1))
+             
+        IF(IneighboursAtElementFine(1,IelFine(i)).EQ.0) THEN
+          DUcoarse(IEdgesAtElementCoarse(i,iel))= &
+              DUcoarse(IEdgesAtElementCoarse(i,iel)) &
+              +0.5*(48.0/64.0)*DUfine(IEdgesAtElementFine(1,IelFine(i)))
+        END IF
+        
+        IF(IneighboursAtElementFine(4,IelFine(MOD(i,4)+1)).EQ.0) THEN
+          DUcoarse(IEdgesAtElementCoarse(i,iel))= &
+              DUcoarse(IEdgesAtElementCoarse(i,iel)) &
+              +0.5*(48.0/64.0)*DUfine(IEdgesAtElementFine(4,IelFine(MOD(i,4)+1)))
+        END IF
+
+      ENDDO
+      
+      ! Collect information from the midpoints of the fine grid elements
+      DUcoarse(NVTcoarse+NMTCoarse+iel)= &
+          DUcoarse(NVTcoarse+NMTCoarse+iel) &
+           +(48.0/64.0)*DUfine(IEdgesAtElementFine(2,IelFine(1))) &
+           +(48.0/64.0)*DUfine(IEdgesAtElementFine(2,IelFine(2))) &
+           +(48.0/64.0)*DUfine(IEdgesAtElementFine(2,IelFine(3))) &
+           +(48.0/64.0)*DUfine(IEdgesAtElementFine(2,IelFine(4))) &
+           +(36.0/64.0)*DUfine(NVTfine+NMTfine+IelFine(1)) &
+           +(36.0/64.0)*DUfine(NVTfine+NMTfine+IelFine(2)) &
+           +(36.0/64.0)*DUfine(NVTfine+NMTfine+IelFine(3)) &
+           +(36.0/64.0)*DUfine(NVTfine+NMTfine+IelFine(4))
+       
+    ENDDO
 
   END SUBROUTINE
   
