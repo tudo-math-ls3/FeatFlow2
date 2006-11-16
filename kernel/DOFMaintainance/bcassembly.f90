@@ -1060,6 +1060,54 @@ CONTAINS
         ! will produce two index sets: One index set for [0.0, 0.0]
         ! and one for [3.0, TMAX).
         
+      CASE (EL_P2,EL_Q2)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
+        
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN          
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                    ipoint1,p_DvertexParameterValue(I), &
+                                    p_rcollection, Dvalues)
+                                    
+            ! Save the computed function value
+            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+          END IF
+          
+          ! Set the DOF number < 0 to indicate that it is Dirichlet.
+          ! ilocalEdge is the number of the local edge - and at the same
+          ! time the number of the local DOF of Q1, as an edge always
+          ! follows a corner vertex!
+          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+        END IF
+        
+        ! The right point does not have to be checked! It comes later
+        ! with the next edge. The situation when an element crosses the
+        ! maximum parameter value with its boundary is handled by the
+        ! outer DO-LOOP:
+        ! A boundary region with parameter value e.g. [3.0,TMAX]
+        ! will produce two index sets: One index set for [0.0, 0.0]
+        ! and one for [3.0, TMAX).
+        !
+        ! Edge inside? -> Calculate point value on midpoint of edge iedge
+        IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
+                                    iedge,p_DedgeParameterValue(I), &
+                                    p_rcollection, Dvalues)
+                                    
+            ! Save the computed function value
+            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+          END IF
+          
+          ! Set the DOF number < 0 to indicate that it is Dirichlet
+          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+        END IF
+
       CASE (EL_EM30,EL_E030)
 
         ! Edge inside? -> Calculate integral mean value over the edge

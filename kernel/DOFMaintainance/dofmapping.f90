@@ -242,7 +242,7 @@ CONTAINS
 ! </subroutine>
 
   ! local variables
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray
+  INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray,p_2darray2
   TYPE(t_triangulation), POINTER :: p_rtriangulation     
   INTEGER :: ieltype
 
@@ -277,9 +277,18 @@ CONTAINS
       CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
       CALL dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
     CASE (EL_P2)
+      ! DOF's in the vertices and egde midpoints
+      CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+      CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
+      CALL dof_locGlobUniMult_P2(p_2darray, p_2darray2, IelIdx, IdofGlob)
     CASE (EL_Q2)
-    CASE (EL_P3)
-    CASE (EL_Q3)
+      ! DOF's in the vertices, egde midpoints and element midpoints
+      CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+      CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
+      CALL dof_locGlobUniMult_Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,&
+                                 p_2darray, p_2darray2, IelIdx, IdofGlob)
+    CASE (EL_P3) 
+    CASE (EL_Q3) 
     CASE (EL_E030, EL_E031, EL_EM30, EL_EM31)
       ! DOF's in the edges
       CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
@@ -383,6 +392,133 @@ CONTAINS
     ! There's no harm and the compiler can optimise better.
     
     IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
+  END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  PURE SUBROUTINE dof_locGlobUniMult_P2(IverticesAtElement, &
+                                        IedgesAtElement,IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be P2.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+
+  ! An array with the number of edges adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  INTEGER(I32) :: i
+  
+  ! Loop through the elements to handle
+  DO i=1,SIZE(IelIdx)
+    ! Calculate the global DOF's.
+    ! The P2 element has global DOF's in the corners and edge midpoints
+    ! of the triangles. 
+    !
+    ! Take the numbers of the corners of the triangles at first.
+    IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
+
+    ! Then append the numbers of the edges as midpoint numbers.
+    ! Note that the number in this array is NVT+1..NVT+NMT.
+    IdofGlob(4:6,i) = IedgesAtElement(1:3,IelIdx(i))
+    
+  END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  PURE SUBROUTINE dof_locGlobUniMult_Q2(NVT,NMT,IverticesAtElement, &
+                                        IedgesAtElement,IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be Q2.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+
+  ! An array with the number of edges adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
+
+  ! Element indices, where the mapping should be computed.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
+  
+  ! Number of corner vertices in the triangulation
+  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVT
+  
+  ! Number of edes in the triangulation
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMT
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  INTEGER(I32) :: i
+  
+  ! Loop through the elements to handle
+  DO i=1,SIZE(IelIdx)
+    ! Calculate the global DOF's.
+    ! The Q2 element has global DOF's in the corners, edge midpoints
+    ! and element midpoints of the quads.
+    !
+    ! Take the numbers of the corners of the triangles at first.
+    IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
+
+    ! Then append the numbers of the edges as midpoint numbers.
+    ! Note that the number in this array is NVT+1..NVT+NMT.
+    IdofGlob(5:8,i) = IedgesAtElement(1:4,IelIdx(i))
+    
+    ! At last append the element number - shifted by NVT+NMT to get
+    ! a number behind.
+    IdofGlob(9,i) = IelIdx(i)+NVT+NMT
+    
   END DO
 
   END SUBROUTINE
