@@ -1243,12 +1243,16 @@ CONTAINS
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
-          
+       
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol)
           DO irow=1,NEQ
             icol = p_Kcol(p_Kld(irow))
             p_Dy(irow) = p_Dx(icol) * p_DA(p_Kld(irow))
           END DO
-          
+!$omp end parallel do
+
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
           
@@ -1269,20 +1273,28 @@ CONTAINS
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
           
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol)
           DO irow=1,NEQ
-            ICOL = p_Kcol(p_Kld(irow))
+            icol = p_Kcol(p_Kld(irow))
             p_Dy(irow) = p_Dx(icol)*p_DA(p_Kld(irow)) + p_Dy(irow) 
           END DO
+!$omp end parallel do
           
         ENDIF
         
         ! Multiply the rest of rx with the matrix and add it to ry:
         
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol)
         DO irow=1,NEQ
           DO icol = p_Kld(irow)+1,p_Kld(irow+1)-1
             p_Dy(irow) = p_Dy(irow) + p_DA(icol)*p_Dx(p_Kcol(icol))
           END DO
         END DO
+!$omp end parallel do
         
         ! Scale by cx, finish.
         
@@ -1334,16 +1346,24 @@ CONTAINS
         IF (cy .EQ. 0.0_DP) THEN
         
           ! cy = 0. Multiply cx*A with X and write to Y.
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow)
           DO irow = 1,NEQ
             p_Dy(irow) = cx*p_Da(irow)*p_Dx(irow)
           END DO
+!$omp  end parallel do
           
         ELSE
         
           ! Full multiplication: cx*A*X + cy*Y
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow)
           DO irow = 1,NEQ
             p_Dy(irow) = cy*p_Dy(irow) + cx*p_Da(irow)*p_Dx(irow) 
           END DO
+!$omp  end parallel do
         
         END IF
         
@@ -1403,9 +1423,13 @@ CONTAINS
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
           
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow)
           DO irow=1,NEQ
             p_Dy(irow) = p_Dx(irow)*p_DA(p_Kld(irow)) 
           END DO
+!$omp  end parallel do
           
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
@@ -1428,9 +1452,13 @@ CONTAINS
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
           
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow)
           DO irow=1,NEQ
             p_Dy(irow) = p_Dy(irow) + p_Dx(irow)*p_DA(p_Kld(irow)) 
           END DO
+!$omp  end parallel do
           
         ENDIF
         
@@ -4866,17 +4894,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(p_Kdiag(i))
         END DO
+!$omp  end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(p_Kdiag(i))
         END DO
+!$omp  end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
@@ -4893,17 +4929,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(p_Kdiag(i))
         END DO
+!$omp  end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(p_Kdiag(i))
         END DO
+!$omp  end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
@@ -4929,17 +4973,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(i)
         END DO
+!$omp  end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(i)
         END DO
+!$omp  end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
@@ -4956,17 +5008,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(i)
         END DO
+!$omp  end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(i)
         END DO
+!$omp  end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'

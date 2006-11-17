@@ -155,9 +155,13 @@ CONTAINS
 !</subroutine>
   INTEGER(I32) :: i
   
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i=1,SIZE(Fx)
     Dy(i) = REAL(Fx(i),DP)
   END DO
+!$omp  end parallel do
 
   END SUBROUTINE
 
@@ -188,9 +192,13 @@ CONTAINS
 !</subroutine>
   INTEGER(I32) :: i
   
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i=1,SIZE(Dx)
     Fy(i) = REAL(Dx(i),SP)
   END DO
+!$omp  end parallel do
 
   END SUBROUTINE
 
@@ -223,9 +231,13 @@ CONTAINS
   INTEGER(I32) :: i
   
   ! Does not exist in BLAS!
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i=1,SIZE(Ix)
     Iy(i) = Ix(i)
   END DO
+!$omp  end parallel do
   
   END SUBROUTINE
   
@@ -318,9 +330,13 @@ CONTAINS
   INTEGER(I32) :: i
   
   ! Does not exist in BLAS
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i=1,SIZE(Ix)
     Ix(i) = ic*Ix(i)
   END DO
+!$omp  end parallel do
 
   END SUBROUTINE
   
@@ -352,9 +368,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i = 1,SIZE(Dx)
     Dx(i) = 0.0_DP
   END DO
+!$omp  end parallel do
   
   END SUBROUTINE
   
@@ -388,9 +408,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i = 1,SIZE(Fx)
     Fx(i) = 0.0_SP
   END DO
+!$omp  end parallel do
   
   END SUBROUTINE
   
@@ -424,9 +448,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i = 1,SIZE(Ix)
     Ix(i) = 0
   END DO
+!$omp  end parallel do
   
   END SUBROUTINE
   
@@ -463,9 +491,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i = 1,SIZE(Dx)
     Dx(i) = dvalue
   END DO
+!$omp  end parallel do
   
   END SUBROUTINE
   
@@ -502,9 +534,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i = 1,SIZE(Fx)
     Fx(i) = fvalue
   END DO
+!$omp  end parallel do
   
   END SUBROUTINE
   
@@ -541,9 +577,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
   DO i = 1,SIZE(Ix)
     Ix(i) = ivalue
   END DO
+!$omp  end parallel do
   
   END SUBROUTINE
   
@@ -804,10 +844,11 @@ CONTAINS
 
   CASE (LINALG_NORMEUCLID)
     ! Euclidian norm = scalar product (vector,vector)
-    resnorm = Dx(1)*Dx(1)
-    DO i=2,SIZE(Dx)
-      resnorm = resnorm + Dx(i)*Dx(i)
-    END DO
+    resnorm = lalg_scalarProductDble(Dx,Dx)
+!!$    resnorm = Dx(1)*Dx(1)
+!!$    DO i=2,SIZE(Dx)
+!!$      resnorm = resnorm + Dx(i)*Dx(i)
+!!$    END DO
     resnorm = SQRT(resnorm)
 
   CASE (LINALG_NORML1)
@@ -822,10 +863,11 @@ CONTAINS
   CASE (LINALG_NORML2)
     ! l_2-norm - like euclidian norm, but divide by vector length.
     ! So, scale such that the vektor (1111...) to has norm = 1.
-    resnorm = Dx(1)*Dx(1)
-    DO i=2,SIZE(Dx)
-      resnorm = resnorm + Dx(i)*Dx(i)
-    END DO
+    resnorm = lalg_scalarProductDble(Dx,Dx)
+!!$    resnorm = Dx(1)*Dx(1)
+!!$    DO i=2,SIZE(Dx)
+!!$      resnorm = resnorm + Dx(i)*Dx(i)
+!!$    END DO
     resnorm = SQRT(resnorm / REAL(SIZE(Dx),DP))
     
   CASE (LINALG_NORMMAX)
@@ -891,10 +933,11 @@ CONTAINS
 
   CASE (LINALG_NORMEUCLID)
     ! Euclidian norm = scalar product (vector,vector)
-    resnorm = Fx(1)*Fx(1)
-    DO i=2,SIZE(Fx)
-      resnorm = resnorm + Fx(i)*Fx(i)
-      END DO
+    resnorm = lalg_scalarProductSngl(Fx,Fx)
+!!$    resnorm = Fx(1)*Fx(1)
+!!$    DO i=2,SIZE(Fx)
+!!$      resnorm = resnorm + Fx(i)*Fx(i)
+!!$    END DO
     resnorm = SQRT(resnorm)
 
   CASE (LINALG_NORML1)
@@ -909,10 +952,11 @@ CONTAINS
   CASE (LINALG_NORML2)
     ! l_2-norm - like euclidian norm, but divide by sqrt(vector length).
     ! So, scale such that the vektor (1111...) to has norm = 1.
-    resnorm = Fx(1)*Fx(1)
-    DO i=2,SIZE(Fx)
-      resnorm = resnorm + Fx(i)*Fx(i)
-    END DO
+    resnorm = lalg_scalarProductSNGL(Fx,Fx)
+!!$    resnorm = Fx(1)*Fx(1)
+!!$    DO i=2,SIZE(Fx)
+!!$      resnorm = resnorm + Fx(i)*Fx(i)
+!!$    END DO
     resnorm = SQRT(resnorm / REAL(SIZE(Fx),SP))
     
   CASE (LINALG_NORMMAX)

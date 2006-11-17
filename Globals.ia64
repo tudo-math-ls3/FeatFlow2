@@ -1,0 +1,66 @@
+#!/usr/bin/env gmake
+## -*- makefile -*-
+
+########################################################################
+# This file contains compiler settings for CPUID: ia64
+########################################################################
+
+########################################################################
+# IA64  /w ??? compiler
+########################################################################
+
+ifeq ($(call match,$(ID),ia64-itanium.?-linux),yes)
+CC=cc
+FC=f90
+OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
+-funroll-loops -fprefetch-loop-arrays
+FCFLAGS   = -pipe
+CCFLAGS   = -pipe
+BLASLIB   = 
+LAPACKLIB = 
+GENERIC   = 0
+endif
+
+########################################################################
+# IA64  /w Intel compiler
+########################################################################
+
+ifeq ($(call match,$(ID),ia64-itanium.?-linux-ifc),yes)
+CC=icc
+FC=ifort
+AR=xiar
+OPTFLAGS  = -fast
+FCFLAGS   = -module $(MODDIR)
+CCFLAGS   = 
+BLASLIB   = 
+LAPACKLIB = 
+GENERIC   = 0
+endif
+
+########################################################################
+# (HP) IA64  /w HP compiler
+########################################################################
+ifeq ($(ID),hpia64-hppa-hpux)
+CC=cc
+FC=f90
+OPTFLAGS  = +O4 +Ofaster +U77
+FCFLAGS   = 
+CCFLAGS   = 
+BLASLIB   = -llapack
+LAPACKLIB = -llapack
+GENERIC   = 0
+endif
+
+########################################################################
+# (HP) 9000  /w HP compiler
+########################################################################
+ifeq ($(ID),hp9000800-hppa-hpux)
+CC=cc
+FC=f90
+OPTFLAGS  = +O4 +Ofaster +U77
+FCFLAGS   = 
+CCFLAGS   = 
+BLASLIB   = -llapack
+LAPACKLIB = -llapack
+GENERIC   = 0
+endif

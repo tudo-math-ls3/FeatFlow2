@@ -14,6 +14,17 @@
 # Checks the available machine/os information and creates an id of the
 # form machine_architecture-cpu-os
 #
+# If this script is called with an additional parameter, then the 
+# corresponding substring is return instead of the complete ID.
+# Possible choices for the parameter are as follows:
+#
+# 0 : e
+# 1 : arch
+# 2 : cpu
+# 3 : core
+# 4 : os
+# 5 : nproc
+#
 # in the ideal case it should be
 # ( uname -m ) - ( uname -p ) - ( uname -s )
 # but on pc/linux (uname -p) gives either unknown or very long answer
@@ -27,86 +38,232 @@
 unset LC_MESSAGES
 unset LANG
 
-
+# standard ID settings
 arch=`(uname -m || echo none) 2>/dev/null | tr ' [A-Z]' '_[a-z]' |tr -d '*?/()-'`
 os=`(uname -s || echo none) 2>/dev/null | tr ' [A-Z]' '_[a-z]' |tr -d '*?/()-'`
 cpu=`(uname -p || echo none) 2>/dev/null | tr ' [A-Z]' '_[a-z]' |tr -d '*?/()-'`
+nproc=1
+
 id=${arch}-${cpu}-${os}
 
+# Try to specify the ID more precisely
 case ${id} in
     x86_64-*-linux|i[65432]86-*-linux|x86-*-linux|*-*-cygwin*)  
         # all the pc-arch with linux/cygwin/etc..
-        case ${arch} in
-            x86_64|ia64) arch="pc64";;
-            *) arch="pc";;
-        esac
-        cpu=x86  #generic version
-	# try to guess the cpu specs 
-        # (http://www.paradicesoftware.com/specs/cpuid/index.htm)
-	vendor=`awk '/^vendor_id/ { print $3; exit;}' /proc/cpuinfo`
-	family=`awk '/^cpu family/ { print $4; exit;}' /proc/cpuinfo`
-	model=`awk '/^model/ { print $3; exit;}' /proc/cpuinfo`
-	case "$vendor" in
-	    GenuineIntel)
-		case "$family" in
-		    4) cpu="i486";;
-		    5) cpu="pentium";;
-		    6) 
-			case "$model" in
-			    0|1) cpu="pentiumpro";;
-			    2|3|4|5|6) cpu="pentium2";;
-			    7|8|9|10|11) cpu="pentium3";;
-			    13) cpu="pentiumm";;
-                            14) cpu="core";;
-			esac
-			;;
-		    7) cpu="itanium"
-			case "$model" in
-			    0|1) cpu="itanium";;
-			    2) cpu="itanium2";;
-			esac
-			;;
-		    15) cpu="pentium4";;
-		esac
-		;;
-	    AuthenticAMD)
-		case "$family" in
-		    4) cpu="amd486";;
-		    5)  [ $model -lt 6 ] && cpu="k5";
-			[ $model -ge 6 ] && cpu="k6";;
-		    6)  [ $model -lt 6 ] && cpu="athlon";
-			[ $model -ge 6 ] && cpu="athlonxp";;
-		    15) [ $model -eq 5 ] && cpu="opteron";
-                        [ $model -lt 5 ] && cpu="athlon64";
-			[ $model -gt 5 ] && cpu="athlon64";;
-		esac
-		;;
-	esac
-	;;
+    case ${arch} in
+	ia64) arch="ia64";;
+	x86_64) arch="pc64";;	
+	*) arch="pc";;
+    esac
+
+    #generic version
+    cpu=x86
+
+    # try to guess the cpu specs 
+    # (http://www.paradicesoftware.com/specs/cpuid/index.htm)
+    vendor=`awk '/^vendor_id/ { print $3; exit;}' /proc/cpuinfo`
+    family=`awk '/^cpu family/ { print $4; exit;}' /proc/cpuinfo`
+    model=`awk '/^model/ { print $3; exit;}' /proc/cpuinfo`
+    let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
+
+    case "$vendor" in
+	# Intel
+	GenuineIntel)
+	    case "$family" in
+		4) 
+		    case "$model" in
+			0|1|3|7|8|9) core="DX";;
+			2|4|5) core="SX";;
+		    esac
+		    cpu="i486";;
+		5) 
+		    case "$model" in
+			0|1|2|3|7) core="pentium";;
+			4|8) core="pentium-mmx";;
+		    esac
+		    cpu="pentium";;
+		6) 
+		    case "$model" in
+			0|1) cpu="pentiumpro" core="katmai";;
+			3|5|6) cpu="pentium2" core="katmai";;
+			7) cpu="pentium3" core="catmai";;
+			8|10|11) cpu="pentium3" core="coppermine";;
+			9|13) cpu="pentiumm" core="banias";;
+			14) cpu="core" core="banias";;
+			15) cpu="core2" core="core2";;
+		    esac
+		    ;;
+		7) 
+		    case "$model" in
+			0|1) cpu="itanium";;
+			2) cpu="itanium2";;
+		    esac
+		    ;;
+		15) 
+		    case "$model" in
+			0|1|2) cpu="pentium4" core="northwood";;
+			3) cpu="pentium4" core="prescott";;
+			*) cpu="itanium";;
+		    esac
+		    ;;
+		*) cpu="i386";;
+	    esac
+	    ;;
+
+	# AMD
+	AuthenticAMD)
+	    case "$family" in
+		4) cpu="amd486";;
+		5) 
+		    case "$model" in
+			0|1|2|3) cpu="k5";;
+			6|7) cpu="k6";;
+			8) cpu="k6" core="k6-2";;
+			9) cpu="k6" core="k6-3";;
+			13) cpu="k6" core="k6-2";;
+		    esac
+		    ;;
+		6)
+		    case "$model" in
+			0|1|2|3) cpu="athlon";;
+			4) cpu="athlon" core="thunderbird";;
+			6) cpu="athlonxp" core="palamino";;
+			7) cpu="athlonxp" core="morgan";;
+			8) cpu="athlonxp" core="thoroughbred";;
+			10) cpu="athlonxp" core="barton";;
+		    esac
+		    ;;
+		15)
+		    case "$model" in
+			5) cpu="opteron";;
+			*) cpu="athlon64";;
+		    esac
+		    ;;
+		*) cpu="i386";;
+	    esac
+	    ;;
+
+	# Cyrix
+	CyrixInstead)
+	    case "$family" in
+		4) cpu="mediagx";;
+		5) 
+		    case "$model" in
+			2) cpu="6x86";;
+			4) cpu="mediagx";;
+		    esac
+		    ;;
+		6) 
+		    case "$model" in
+			0) cpu="6x86";;
+			5) cpu="cyrixm2";;
+			6|7|8|9) cpu="c5";;
+		    esac
+		    ;;
+	    esac
+	    ;;
+
+	# Centaur
+	CentaurHauls)
+	    case "$family" in
+		5)
+		    case "$model" in
+			4) cpu="c6";;
+			8) cpu="c2";;
+			9) cpu="c3";;
+		    esac
+		    ;;
+	    esac
+	    ;;
+	
+	# NexGen
+	NexGenDriven)
+	    case "$family" in
+		5) cpu="nx586";;
+	    esac
+	    ;;
+
+	# Transmeta
+	GenuineTMx86)
+	    case "$family" in
+		5) cpu="crusoe";;
+	    esac
+	    ;;
+
+	# Rise
+	RiseRiseRise)
+	    case "$family" in
+		5) cpu="mp6";;
+	    esac
+	    ;;
+
+	# UMC
+	'UMC UMC UMC')
+	    case "$family" in
+		4) 
+		    case "$model" in
+			1) cpu="u5d";;
+			2) cpu="u5s";;
+		    esac
+		    ;;
+	    esac
+	    ;;
+
+	# SiS
+	'SiS SiS SiS')
+	    case "$family" in
+		5) cpu="55x";;
+	    esac
+	    ;;
+
+	# National Semiconductor
+	'Geode by NSC')
+	    case "$family" in
+		5)
+		    case "$model" in
+			4) cpu="gx1";;
+			5) cpu="gx2";;
+		    esac
+		    ;;
+	    esac
+	    ;;
+	*)
+	    cpu="generic";;
+    esac
+    ;;
+    
     alpha-*-osf*)   # alpha more specific version
 	family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The alpha \([evEV0-9]*\).* processor.*$/\1/p' | head -n 1 )`
 	cpu=`(echo ${family} | tr '[ A-Z]' '[_a-z]' || echo ${cpu})`
+	nproc=`(/usr/sbin/psrinfo -n | sed 's/^number of processors on system = //g' )`
 	;;
+
     sun*-*-sunos*|sun*-*-solaris*) # sparc more specific version
 	family=`(/usr/sbin/psrinfo -v | sed -n 's/^  The \([sparcv0-9]*\).* processor.*$/\1/p' | head -n 1 )`
 	cpu=`(echo ${family} | tr '[ A-Z]' '[_a-z]' || echo ${cpu})`
+	nproc=`(/usr/sbin/psrinfo -p)`
 	;;
+    
     alpha-*-linux)   # alpha more specific version
 	family=`(sed -n 's/^cpu model.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
 	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
 	;;
+
     ia64-*-linux)
 	family=`(sed -n 's/^family.*: \(.*\)$/\1/p' /proc/cpuinfo | head -n 1)`
 	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
 	;;
+
     *-*-hpux*)
 	arch=hp`( echo ${arch} | tr '/' 's' )`;
 	cpu=hppa;
 	;;
+
     sr8000-*-hiux/mpp)
 	cpu=hppa;
 	os=hiuxmpp;
         ;;
+
     *-powerpc-aix)
         ibm_cpu_id=`/usr/sbin/lsdev -C -c processor -S available | head -1 | awk '{ print $1 }'`
         if /usr/sbin/lsattr -El ${ibm_cpu_id} | grep ' POWER' >/dev/null 2>&1; then
@@ -117,10 +274,12 @@ case ${id} in
         
 	arch=`uname -M | tr 'A-Z' 'a-z' | tr -d ' ' | awk -F, '{print $1; exit;}'`;
 	;;
+
     ppc*-*-linux)
 	family=`(sed -n 's/^cpu.*: \([^ ]*\).*$/\1/p' /proc/cpuinfo | head -n 1)`
 	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
         ;;
+
     *-*-*bsd|*-*-darwin*)  #from /usr/include/mach/machine.h
         cputype=`sysctl hw.cputype | awk '{print $2 ; exit;}'`
         cpusubt=`sysctl hw.cpusubtype | awk '{print $2; exit;}'`
@@ -139,15 +298,15 @@ case ${id} in
             16) cpu=alpha ;;
             18) cpu=ppc 
                 case "${cpusubt}" in
-                    1) cpu=ppc_601 ;;
-                    2) cpu=ppc_602 ;;
+                    1)     cpu=ppc_601 ;;
+                    2)     cpu=ppc_602 ;;
                     3|4|5) cpu=ppc_603 ;;
-                    6|7) cpu=ppc_604 ;;
-                    8) cpu=ppc_620 ;;
-                    9) cpu=ppc_750 ;;
-                    10) cpu=ppc_7400 ;;
-                    11) cpu=ppc_7450 ;;
-                    100) cpu=ppc_970 ;;
+                    6|7)   cpu=ppc_604 ;;
+                    8)     cpu=ppc_620 ;;
+                    9)     cpu=ppc_750 ;;
+                    10)    cpu=ppc_7400 ;;
+                    11)    cpu=ppc_7450 ;;
+                    100)   cpu=ppc_970 ;;
                 esac
                 ;;            
             82) cpu=ppc64   # 64+18
@@ -159,5 +318,28 @@ case ${id} in
         ;;
 esac
 
+if [ ! -n "$core" ]; then
+    core=${cpu}
+fi
+
+# Set up ID string
 id=${arch}-${cpu}-${os}
-echo ${id}
+
+# So, what to do, return the complete ID-string or only substrings
+if [ -n "$1" ]; then
+    case $1 in
+	0) 
+	    if [ "$core" == "$cpu" ]; then
+		echo ${id}
+	    else
+		echo ${arch}-${cpu}-${core}-${os}
+	    fi;;
+	1) echo ${arch};;
+	2) echo ${cpu};;
+	3) echo ${core};;
+	4) echo ${os};;
+	5) echo ${nproc};;
+    esac
+else
+    echo ${id}
+fi

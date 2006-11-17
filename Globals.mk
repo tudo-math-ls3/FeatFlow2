@@ -1,4 +1,5 @@
 #!/usr/bin/env gmake
+## -*- makefile -*-
 
 ########################################################################
 # Every makefile that includes this Globals.mk-file has to define
@@ -24,9 +25,14 @@ FFVER:=2.0ALPHA
 # The script match_id is used to match the ID agains wildcards.
 ########################################################################
 
-ID:=$(shell $(FEATFLOW)/bin/guess_id)
+#ID:=$(shell $(FEATFLOW)/bin/guess_id)
 HOST:=$(shell uname -n)
 match= $(shell $(FEATFLOW)/bin/match_id $(1) '$(2)')
+ARCH:=$(shell $(FEATFLOW)/bin/guess_id 1)
+CPU:=$(shell $(FEATFLOW)/bin/guess_id 2)
+CORE:=$(shell $(FEATFLOW)/bin/guess_id 3)
+OS:=$(shell $(FEATFLOW)/bin/guess_id 4)
+ID:=${ARCH}-${CPU}-${OS}
 
 ########################################################################
 # There is a possibility to overide the autodetected ID.  If you know
@@ -52,7 +58,8 @@ match= $(shell $(FEATFLOW)/bin/match_id $(1) '$(2)')
 # Intel Fortran Compiler with the settings defined below.
 ########################################################################
 
-ifdef ALT 
+ifdef ALT
+IDORIG:=${ID}
 ID:=$(ID)-$(ALT)
 endif
 
@@ -70,7 +77,6 @@ BENCHLOG:=$(FEATFLOW)/$(BENCHLOGFILENAME)
 LIBDIR=$(FEATFLOW)/object/libraries/lib-$(ID)
 
 # list of application modules to create by the top level make
-#APPS= trigen2d trigen3d tr2to3 cc2d pp2d cc3d pp3d 
 APPS:= $(shell ls $(FEATFLOW)/applications)
 
 # list of all library modules available at the top level
@@ -117,8 +123,6 @@ CCFLAGS=
 # list of featflow included libs to be build by the top level make
 # feat2d, feat3d and sysutils required, include lapack and blas if necessary
 
-#BUILDLIB= feat3d feat2d sysutils #lapack blas 
-
 BUILDLIB = $(LIBS)
 
 # BLAS library to be used, if left empty the included blas and lapack
@@ -162,504 +166,47 @@ LDLIBS=
 # Remember that you can modify/extend your machine-id by an alternative
 # setting. E.g. "make id ALT=ifc" will add the string "-ifc" to the
 # machine-id before evaluating it and printing it on screen.
+#
+# The GENERIC flag is used to detect if a generic compiler configuration
+# is adopted or if some detailed specification for the employed cpu
+# was found
 ########################################################################
 
+GENERIC = 1
 
-# This specifies the C compiler (CC) and fortran compiler (FC) and
-# options for the system with ID=sun4u-sparcv?-sunos (i.e
-# sun4u-sparcv7-sunos, sun4u-sparcv8-sunos or sun4u-sparcv9-sunos)
-# The compilers CC/FC can be specified with full directory path if needed. 
-
-ifeq ($(call match,$(ID),sun4u-sparcv[789]-sunos),yes)
-CC=cc
-FC=f95
-OPTFLAGS  = -fast 
-FCFLAGS   = -xarch=native -moddir=$(MODDIR)
-CCFLAGS   = -xarch=native
-BLASLIB   = -xlic_lib=sunperf
-LAPACKLIB = -xlic_lib=sunperf
-# BLASLIB=LAPACKLIB enforces to use a single combined library for
-# both, BLAS and LAPACK.
+ifeq ($(call match,$(ARCH),pc),yes)
+include $(FEATFLOW)/Globals.x86
 endif
 
-# This specification will be used on the machine with
-# ID=sun4u-sparcv9-sunos and if the ALT variable is set to 64bit by
-# make ALT=64bit ...
-# the ALT=64bit has to be specified on every call of the make command in
-# order to use these settings
-
-ifeq ($(ID),sun4u-sparcv9-sunos-64bit)
-CC=cc
-FC=f95
-OPTFLAGS  = -fast
-FCFLAGS   = -xarch=native64 -moddir=$(MODDIR)
-CCFLAGS   = -xarch=native64
-BLASLIB   = -xlic_lib=sunperf
-LAPACKLIB = -xlic_lib=sunperf
-# BLASLIB=LAPACKLIB enforces to use a single combined library for
-# both, BLAS and LAPACK.
+ifeq ($(call match,$(ARCH),pc64),yes)
+include $(FEATFLOW)/Globals.x86_64
 endif
 
-# This will use the gcc compiler on the sun machine and will apply if
-# the ALT variable is set to gcc, i.e.
-# make ALT=gcc ...
-
-ifeq ($(ID),sun4u-sparcv9-sunos-g95)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -mcpu=v9 -m64 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -mcpu=v9 -m64 -fno-globals -Wno-globals -pipe
-BLASLIB   = 
-LAPACKLIB =
+ifeq ($(call match,$(ARCH),(ia64|hp*)),yes)
+include $(FEATFLOW)/Globals.x86_64
 endif
 
-# This specifies the C compiler (CC) and fortran compiler (FC) and
-# options for the systems with ID matching regexp alpha-ev[4567]-osf1
-# i.e. alpha-ev5-osf1, alpha-ev6-osf1 and alpha-ev7-osf1
-
-ifeq ($(call match,$(ID),alpha-ev[4567]-osf1),yes)
-CC=cc
-FC=f90
-OPTFLAGS  = -fast
-FCFLAGS   = -module $(MODDIR)
-CCFLAGS   = 
-BLASLIB   = -ldxml
-LAPACKLIB = -ldxml
-# BLASLIB=LAPACKLIB enforces to use a single combined library for
-# both, BLAS and LAPACK.
+ifeq ($(call match,$(ARCH),sun),yes)
+include $(FEATFLOW)/Globals.sparc
 endif
 
-# This specifies the C compiler (CC) and fortran compiler (FC) and
-# options for the systems with ID matching regexp
-# pc-unknown-(linux|cygwin_nt?.?)  
-# i.e. pc-unknown-linux or pc-unknown-cygwin_nt?.?
-# with cygwin_nt?.? matching any version of cygwin_ntX.X
-
-ifeq ($(call match,$(ID),pc-unknown-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
-FCFLAGS   = -pipe -fmod=$(MODDIR)
-CCFLAGS   = -pipe
-BLASLIB   = 
-LAPACKLIB = 
+ifeq ($(call match,$(ARCH),alpha),yes)
+include $(FEATFLOW)/Globals.alpha
 endif
 
-ifeq ($(call match,$(ID),pc-athlon-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -march=athlon -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=athlon -pipe
-BLASLIB   = 
-LAPACKLIB = 
+ifeq ($(call match,$(ARCH),(power|ppc)),yes)
+include $(FEATFLOW)/Globals.power
 endif
 
-ifeq ($(call match,$(ID),pc-athlonxp-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
-FCFLAGS   = -march=athlon-xp -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=athlon-xp -pipe
-BLASLIB   = 
-LAPACKLIB = 
+########################################################################
+# If no matching section could be found which matches the overwritten
+# ID string then the original ID is adopted
+########################################################################
+
+ifdef ALT
+ifeq ($(GENERIC),1)
+ID:=$(IDORIG)
 endif
-
-ifeq ($(call match,$(ID),pc-pentium3-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
-FCFLAGS   = -march=pentium3 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=pentium3 -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(call match,$(ID),pc-pentiumm-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
-FCFLAGS   = -march=pentium3 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=pentium3 -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(call match,$(ID),pc-pentium4-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
-FCFLAGS   = -march=pentium4 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=pentium4 -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(call match,$(ID),pc-core-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -mfpmath=sse -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
-FCFLAGS   = -march=pentium-m -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=pentium-m -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),ppc64-power5-linux)
-CC=gcc
-FC=gfortran
-OPTFLAGS  = -mcpu=power5 -mtune=power5 -O3 -maltivec -mabi=altivec -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -pipe
-CCFLAGS   = -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-# Apple mac/osx with gcc/gfort 4.0
-ifeq ($(ID),power_macintosh-ppc_7450-darwin)
-CC=gcc
-FC=gfortran
-OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -pipe -J$(MODDIR) -I$(MODDIR)
-CCFLAGS   = -pipe
-LDFLAGS   = -bind_at_load
-BLASLIB   = -faltivec -framework Accelerate
-LAPACKLIB = -faltivec -framework Accelerate
-endif
-
-# Apple mac/osx with absoft 8 compiler
-ifeq ($(ID),power_macintosh-ppc_7450-darwin-absoft)
-CC=cc
-FC=/Applications/Absoft/bin/f90
-OPTFLAGS  = 
-FCFLAGS   = -s -N1 -N109
-CCFLAGS   = 
-LDFLAGS   = 
-BLASLIB   = -unixlib
-LAPACKLIB = -unixlib
-endif
-
-# Apple mac/osx with gcc/g95 3.x
-ifeq ($(ID),power_macintosh-ppc_7450-darwin-gcc3)
-CC=gcc
-FC=g95
-OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -pipe -fmod=$(MODDIR)
-CCFLAGS   = -pipe
-LDFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-# Apple mac/osx with IBM compilers
-ifeq ($(ID),power_macintosh-ppc_7450-darwin-xlf)
-CC=/opt/ibmcmp/vac/6.0/bin/xlc
-FC=/opt/ibmcmp/xlf/8.1/bin/f90
-OPTFLAGS  = -O4
-FCFLAGS   = 
-CCFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-
-ifeq ($(ID),pc-athlonxp-linux-ifc)
-CC=icc
-FC=ifort
-AR=xiar
-OPTFLAGS  = -O3 -ipo -tpp6
-FCFLAGS   = -cm -vec_report0 -fpe0 -module $(MODDIR)
-CCFLAGS   = -cm -vec_report0 -fpe0
-LDFLAGS   = -L/usr/local/ifc/lib -lifcore 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-athlonxp-linux-ifc8)
-# For Intel Fortran Compiler 8, which supports inter-file optimizations
-# with libraries (-ipo, -ipo_obj). Version 9.xx can't link anymore :(
-CC=icc
-FC=ifort
-OPTFLAGS  = -O3 -ipo -ipo_obj -tpp6
-FCFLAGS   = -cm -vec_report0 -fpe0  -module $(MODDIR)
-CCFLAGS   = -cm -vec_report0 -fpe0
-LDFLAGS   = -L/usr/local/ifc/lib -lifcore 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-athlonxp-linux-pgi)
-CC=gcc
-FC=pgf90
-OPTFLAGS  = -fastsse -O4 
-FCFLAGS   = -tp athlonxp -module $(MODDIR)
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-pentium4-linux-ifc)
-CC=icc
-FC=ifort
-AR=xiar
-ARC=xiar
-OPTFLAGS  = -O3 -xN -ipo 
-FCFLAGS   = -cm -fpe0 -parallel -openmp -vec-report0 -openmp-report0 -par-report0 -module $(MODDIR)
-CCFLAGS   = -vec-report0 -openmp-report0 -par-report0
-LDFLAGS   = -lsvml
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-pentium4-linux-ifc8)
-# For Intel Fortran Compiler 8, which supports inter-file optimizations
-# with libraries (-ipo, -ipo_obj). Version 9.xx can't link anymore :(
-CC=icc
-FC=ifort
-OPTFLAGS  = -O3 -xN -ipo -ipo_obj
-FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIR)
-CCFLAGS   = -cm -fpe0 -vec_report0
-LDFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-pentiumm-linux-ifc)
-# Intel Fortran Compiler 9, Intel C Compiler 9, Pentium M
-CC=icc
-FC=ifort
-AR=xiar
-OPTFLAGS  = -O3 -xB -ipo
-FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIR)
-CCFLAGS   = -cm -fpe0 -vec_report0
-LDFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-pentiumm-linux-ifc8)
-# Intel Fortran Compiler 8, Intel C Compiler 8, Pentium M
-# For Intel Fortran Compiler 8, which supports inter-file optimizations
-# with libraries (-ipo, -ipo_obj). Version 9.xx can't link anymore :(
-CC=icc
-FC=ifort
-AR=xiar
-OPTFLAGS  = -O3 -xB -ipo -ipo_obj
-FCFLAGS   = -f90rtl -cm -fpe0 -vec_report0 -module $(MODDIR)
-CCFLAGS   = -cm -fpe0 -vec_report0
-LDFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-core-linux-ifc)
-# Intel Fortran Compiler 9.x, Intel Compiler 9.x, Core Solo/Duo
-# You need Version 9.1 to include optimization for the Core CPU family.
-CC=icc
-FC=ifort
-AR=xiar
-ARC=xiar
-OPTFLAGS  = -O3 -xP -ipo
-FCFLAGS   = -fpe0 -vec_report0 -module $(MODDIR)
-CCFLAGS   = -vec_report0
-LDFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc64-opteron-linux)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -m64 -mmmx -msse -msse2 -m3dnow -mfpmath=sse \
-            -ffast-math -fexpensive-optimizations -ffinite-math-only \
-            -fgcse -floop-optimize -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
-FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=opteron -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc64-opteron-linux-path)
-CC=/opt/pathscale/bin/pathcc
-FC=/opt/pathscale/bin/pathf90
-OPTFLAGS  = -Ofast
-FCFLAGS   = -march=opteron -pipe
-CCFLAGS   = -march=opteron -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc64-athlon64-linux)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -m64 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -fmove-all-movables -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
-FCFLAGS   = -march=athlon64 -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=athlon64 -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc64-athlon64-linux-ifc)
-CC=icc
-FC=ifort
-AR=xiar
-ARC=xiar
-OPTFLAGS  = -tpp7 -xW -O3 -us -pad -funroll-loops -ip -ipo
-FCFLAGS   = -module $(MODDIR)
-CCFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(call match,$(ID),pc-opteron-(linux|cygwin_nt?.?)),yes)
-CC=gcc
-FC=g95
-OPTFLAGS  = -O3 -m32 -mmmx -msse -msse2 -m3dnow -mfpmath=sse -ffast-math -fexpensive-optimizations -ffinite-math-only -fgcse -floop-optimize -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
-FCFLAGS   = -march=opteron -pipe -fmod=$(MODDIR)
-CCFLAGS   = -march=opteron -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc-opteron-linux-ifc)
-CC=icc
-FC=ifort
-AR=xiar
-ARC=xiar
-OPTFLAGS  = -O3 -ipo -mtune=pentiumpro -march=pentium4
-FCFLAGS   = -cm -fpe0 -parallel -openmp -vec-report0 -openmp-report0 -par-report0 -module $(MODDIR)
-CCFLAGS   = -vec-report0 -openmp-report0 -par-report0
-LDFLAGS   = -lsvml
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc64-opteron-linux-gcc4)
-CC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gcc
-FC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gfortran
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
-FCFLAGS   = -march=opteron -pipe -J$(MODDIR) -I$(MODDIR)
-CCFLAGS   = -march=opteron -pipe
-LDFLAGS   = -Wl
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc64-opteron-linux-ifc)
-CC=/usr/local/icce/bin/icc
-FC=/usr/local/ifce/bin/ifort
-AR=/usr/local/ifce/bin/xiar
-ARC=/usr/local/icce/bin/xiar
-OPTFLAGS  = -O3 -ipo -mtune=pentiumpro -march=pentium4
-FCFLAGS   = -vec_report0 -mcmodel=medium -module $(MODDIR)
-CCFLAGS   = -vec_report0 -mcmodel=medium
-LDFLAGS   = -i-dynamic
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-# IFORT compiler, GOTO BLAS, large arrays > 2GB
-# High precision: 128 bit double, 64 bit integer
-
-ifeq ($(ID),pc64-opteron-linux-ifclargegoto)
-CC=/usr/local/icce/bin/icc
-FC=/usr/local/ifce/bin/ifort
-OPTFLAGS  = -O2 -ip -no-prec-div
-FCFLAGS   = -mcmodel=medium -module $(MODDIR)
-CCFLAGS   = -mcmodel=medium 
-LDFLAGS   = -i-dynamic -threads
-BLASLIB   = ./libgoto_opteron64p-r1.00.so 
-LAPACKLIB = 
-endif
-
-# IFORT compiler, standard BLAS, large arrays > 2GB
-
-ifeq ($(ID),pc64-opteron-linux-ifclarge)
-CC=/usr/local/icce/bin/icc
-FC=/usr/local/ifce/bin/ifort
-OPTFLAGS  = 
-FCFLAGS   = -mcmodel=medium  -module $(MODDIR)
-CCFLAGS   = -mcmodel=medium 
-LDFLAGS   = -i-dynamic
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-# IFORT compiler, standard BLAS, large arrays > 2GB
-# High precision: 128 bit double, 64 bit integer
-
-ifeq ($(ID),pc64-opteron-linux-ifclargeprec)
-CC=/usr/local/icce/bin/icc
-FC=/usr/local/ifce/bin/ifort
-OPTFLAGS  = 
-FCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 -module $(MODDIR)
-CCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-# GCC compiler, standard BLAS, large arrays > 2GB
-
-ifeq ($(ID),pc64-opteron-linux-gcclarge)
-CC=gcc
-FC=g95
-OPTFLAGS  = 
-FCFLAGS   = -mcmodel=medium -m64 -fmod=$(MODDIR)
-CCFLAGS   = -mcmodel=medium -m64
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),pc64-opteron-linux-pgi)
-CC=pgcc
-FC=pgf95
-OPTFLAGS  = -fastsse -O4 -tp k8-64 -Mipa -mcmodel=medium -Mlarge_arrays 
-FCFLAGS   = -module $(MODDIR)
-CCFLAGS   = 
-LDFLAGS   = -lpgftnrtl -lm
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),ia64-itanium2-linux)
-CC=cc
-FC=f90
-OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-FCFLAGS   = -pipe
-CCFLAGS   = -pipe
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),ia64-itanium2-linux-ifc)
-CC=icc
-FC=ifort
-AR=xiar
-OPTFLAGS  = -fast
-FCFLAGS   = -module $(MODDIR)
-CCFLAGS   = 
-BLASLIB   = 
-LAPACKLIB = 
-endif
-
-ifeq ($(ID),hpia64-hppa-hpux)
-CC=cc
-FC=f90
-OPTFLAGS  = +O4 +Ofaster +U77
-FCFLAGS   = 
-CCFLAGS   = 
-BLASLIB   = -llapack
-LAPACKLIB = -llapack
-endif
-
-ifeq ($(ID),hp9000800-hppa-hpux)
-CC=cc
-FC=f90
-OPTFLAGS  = +O4 +Ofaster +U77
-FCFLAGS   = 
-CCFLAGS   = 
-BLASLIB   = -llapack
-LAPACKLIB = -llapack
 endif
 
 ########################################################################
@@ -728,7 +275,6 @@ endif
 	@echo 
 	@(if [ ! -x "$(FCC)" ] ; then echo 'Please edit Globals.mk to specify your C compiler' ; exit 1; fi)
 	@(if [ ! -x "$(FFC)" ] ; then echo 'Please edit Globals.mk to specify your Fortran compiler' ; exit 1; fi)
-
 
 .help:
 	@echo 'Available global make targets:'

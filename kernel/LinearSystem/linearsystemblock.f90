@@ -136,18 +136,18 @@ MODULE linearsystemblock
   INTEGER, PARAMETER :: LSYSBS_MSPEC_GENERAL           =        0
   
   ! Block matrix is a scalar (i.e. 1x1) matrix.
-  INTEGER, PARAMETER :: LSYSBS_MSPEC_SCALAR            =     2**0
+  INTEGER, PARAMETER :: LSYSBS_MSPEC_SCALAR            =        1
 
   ! Block matrix is of saddle-point type:
   !  (A  B1)
   !  (B2 0 )
-  INTEGER, PARAMETER :: LSYSBS_MSPEC_SADDLEPOINT       =     2**1
+  INTEGER, PARAMETER :: LSYSBS_MSPEC_SADDLEPOINT       =        2
 
   ! Block matrix is nearly of saddle-point type 
   !  (A  B1)
   !  (B2 C )
   ! with C~0 being a stabilisation matrix
-  INTEGER, PARAMETER :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =     2**2
+  INTEGER, PARAMETER :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3
 
 !</constantblock>
 
