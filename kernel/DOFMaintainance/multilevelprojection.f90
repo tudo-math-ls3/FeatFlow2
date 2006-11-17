@@ -925,6 +925,12 @@ CONTAINS
                p_IverticesAtElementFine,p_IedgesAtElementFine,&
                p_IneighboursAtElementFine,&
                p_rtriaFine%NVT, p_rtriaFine%NMT, p_rtriaCoarse%NEL)  
+               
+        CASE (EL_QP1)        
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
+          CALL mlprj_prolUniformQP1_double (p_DuCoarse,p_DuFine, &
+               p_IneighboursAtElementFine,p_rtriaCoarse%NEL,p_rtriaFine%NEL)                       
                        
         CASE (EL_E030,EL_EM30)
           ! Q1~ prolongation, DOF's = integral mean value
@@ -1139,6 +1145,12 @@ CONTAINS
                p_IedgesAtElementFine, p_IneighboursAtElementFine,&
                p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NMT,&
                p_rtriaFine%NMT,p_rtriaCoarse%NEL)
+                       
+        CASE (EL_QP1)       
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
+          CALL mlprj_restUniformQP1_double (p_DuCoarse,p_DuFine, &
+               p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)                              
                               
         CASE (EL_E030,EL_EM30)
           ! Q1~ restriction, DOF's = integral mean values
@@ -1309,19 +1321,35 @@ CONTAINS
         CASE (EL_P1)
           ! P1 interpolation
           CALL mlprj_interpUniformP1_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
-          
+
+        CASE (EL_P2)
+          ! P2 interpolation
+          CALL mlprj_interpUniformP2_double (p_DuCoarse,p_DuFine, &
+                                           p_rtriaCoarse%NVT, p_rtriaCoarse%NMT)          
+                                           
         CASE (EL_Q0)
           ! Q0 interpolation
           CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
                                p_IneighboursAtElementFine)
           CALL mlprj_interpUniformQ0_double (p_DuCoarse,p_DuFine, &
-               p_IneighboursAtElementFine, &
-               p_rtriaCoarse%NEL)
+               p_IneighboursAtElementFine, p_rtriaCoarse%NEL)
                
         CASE (EL_Q1)
           ! Q1 interpolation
           CALL mlprj_interpUniformQ1_double (p_DuCoarse,p_DuFine, p_rtriaCoarse%NVT)
           
+        CASE (EL_Q2)
+          ! Q2 interpolation
+          CALL mlprj_interpUniformQ2_double (p_DuCoarse,p_DuFine, &
+                     p_rtriaCoarse%NVT, p_rtriaCoarse%NMT, p_rtriaCoarse%NEL)          
+                     
+        CASE (EL_QP1)
+          ! QP1 interpolation
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
+          CALL mlprj_interpUniformQP1_double (p_DuCoarse,p_DuFine, &
+                  p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)          
+                  
         CASE (EL_E030,EL_EM30,EL_E031,EL_EM31)
           ! Q1~ interpolation, DOF's = integral mean values
           ! We use the same routine also for interpolating Ex31 solutions - there's
@@ -2387,6 +2415,259 @@ CONTAINS
     ! the values on the coarse grid - because of the two-level ordering!
     CALL lalg_copyVectorDble(DUfine(1:NVTcoarse+NMTcoarse+NELcoarse),&
                              DUcoarse(1:NVTCoarse+NMTcoarse+NELcoarse))
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  ! Support for QP1 element
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_prolUniformQP1_double (DuCoarse,DuFine, &
+               IneighboursAtElementFine,NELcoarse,NELfine)
+  
+!<description>
+  ! Prolongate a solution vector from a coarse grid to a fine grid.
+  ! QP1, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
+  
+  ! IneighboursAtElement array on the fine grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+
+  ! Number of elements in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
+  
+!</subroutine>
+
+  ! In the QP1 element, the DOF's in the coarse and fine grid are 
+  ! organised as follows:
+  !
+  ! +-----------+-----------+
+  ! |           |           |
+  ! |           |           |
+  ! |     X4->      <-X1    |
+  ! |     |     ^     |     |
+  ! |     v     |     v     |
+  ! +--------   O->  -------+
+  ! |     ^           ^     |
+  ! |     |     |     |     |
+  ! |     X1->  |   <-X1    |
+  ! |           |           |
+  ! |           |           |
+  ! +-----------+-----------+
+  !
+  ! The function value of "O" must be transported by a linear mapping to
+  ! all the X. The derivative in "O" is mapped to all "X" as it's constant
+  ! in the whole element. This gives the following prolongation matrix
+  ! (where O=(f,u,v), Xi = (fi,ui,vi) )
+  !
+  !   ( 1 -.5 -.5 )  *  ( f )  =  ( f1 )
+  !   ( 1  .5 -.5 )     ( u )     ( f2 )
+  !   ( 1  .5  .5 )     ( v )     ( f3 )
+  !   ( 1 -.5  .5 )               ( f4 )
+  !   (     1   0 )               ( u1 )
+  !   (     0  -1 )               ( u2 )
+  !   (    -1   0 )               ( u3 )
+  !   (     1   1 )               ( u4 )
+  !   (     0   1 )               ( v1 )
+  !   (     1   0 )               ( v2 )
+  !   (     0  -1 )               ( v3 )
+  !   (    -1   0 )               ( v4 )
+  !
+  ! The restriction matrix is the transposed of that...
+  
+  ! local variables
+  REAL(DP), PARAMETER :: Q2 = .5_DP
+  
+  INTEGER(PREC_ELEMENTIDX) :: iel,ielh1,ielh2,ielh3,ielh4
+  REAL(DP) :: duh1,duh2,duh3
+
+    ! Loop over the elements
+    DO iel=1,NELCoarse
+
+      ! Get the values of the basis functions of the coarse grid element
+      duh1=DuCoarse(iel)
+      duh2=DuCoarse(iel+NELcoarse)
+      duh3=DuCoarse(iel+2*NELcoarse)
+
+      ! Get fine grid element numbers
+      ielh1=iel
+      ielh2=IneighboursAtElementFine(2,ielh1)
+      ielh3=IneighboursAtElementFine(2,ielh2)
+      ielh4=IneighboursAtElementFine(2,ielh3)
+
+      ! Apply the prolonfation matrix to the coarse grid basis functions
+      ! to get the fine grid values.
+      DuFine(ielh1) = duh1 - Q2*duh2 - Q2*duh3
+      DuFine(ielh2) = duh1 + Q2*duh2 - Q2*duh3
+      DuFine(ielh3) = duh1 + Q2*duh2 + Q2*duh3
+      DuFine(ielh4) = duh1 - Q2*duh2 + Q2*duh3
+      
+      DuFine(NELfine+ielh1) = duh2
+      DuFine(NELfine+ielh2) = -duh3
+      DuFine(NELfine+ielh3) = -duh2
+      DuFine(NELfine+ielh4) = duh3
+
+      DuFine(2*NELfine+ielh1) = duh3
+      DuFine(2*NELfine+ielh2) = duh2
+      DuFine(2*NELfine+ielh3) = -duh3
+      DuFine(2*NELfine+ielh4) = -duh2
+
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformQP1_double (DuCoarse,DuFine, &
+               IneighboursAtElementFine, NELcoarse,NELfine)
+  
+!<description>
+  ! Restricts a RHS vector from a fine grid to a coarse grid.
+  ! QP1, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+
+  ! Number of elements in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: Q2 = .5_DP
+  
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX) :: ielh1,ielh2,ielh3,ielh4
+  
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'. This means, we apply the transposed prolongation
+    ! matrix to the RHS vector.
+    
+    ! Loop over the elements to collect the additive contributions:
+    DO iel=1,NELcoarse
+    
+      ! Get fine grid element numbers
+      ielh1=iel
+      ielh2=IneighboursAtElementFine(2,ielh1)
+      ielh3=IneighboursAtElementFine(2,ielh2)
+      ielh4=IneighboursAtElementFine(2,ielh3)
+
+      ! Collect the distributed values to form the coarse grid RHS:
+      DuCoarse(iel) = DuFine(ielh1) + DuFine(ielh2) &
+                  + DuFine(ielh3) + DuFine(ielh4)
+                  
+      DuCoarse(NELcoarse+iel) = &
+          -Q2*DuFine(ielh1) + Q2*DuFine(ielh2)      &
+            + Q2*DuFine(ielh3) - Q2*DuFine(ielh4)   &
+          + DuFine(NELfine+ielh1) - DuFine(NELfine+ielh3)    &
+          + DuFine(2*NELfine+ielh2) - DuFine(2*NELfine+ielh4)
+
+      DuCoarse(2*NELcoarse+iel) = &
+          -Q2*DuFine(ielh1) - Q2*DuFine(ielh2)      &
+            + Q2*DuFine(ielh3) + Q2*DuFine(ielh4)   &
+          - DuFine(NELfine+ielh2) + DuFine(NELfine+ielh4)    &
+          + DuFine(2*NELfine+ielh1) - DuFine(2*NELfine+ielh3)
+          
+    END DO
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_interpUniformQP1_double (DuCoarse,DuFine, &
+                  IneighboursAtElementFine, NELcoarse,NELfine)
+  
+!<description>
+  ! Interpolates a solution vector from a fine grid to a coarse grid.
+  ! QP1, uniform triangulation, double precision vector.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+  
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
+
+  ! Number of elements in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: Q2 = .5_DP
+  REAL(DP), PARAMETER :: Q4 = .25_DP
+  
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_ELEMENTIDX) :: ielh1,ielh2,ielh3,ielh4
+
+    ! Loop over the elements 
+    DO iel=1,NELcoarse
+    
+      ! Get fine grid element numbers
+      ielh1=iel
+      ielh2=IneighboursAtElementFine(2,ielh1)
+      ielh3=IneighboursAtElementFine(2,ielh2)
+      ielh4=IneighboursAtElementFine(2,ielh3)
+      
+      ! Interpolate the solution on the fine grid to the coarse grid;
+      ! take the mean of 4 values each. Take care of the orientation
+      ! of the basis functions!
+
+      DuCoarse(iel) = Q4*(DuFine(ielh1) + DuFine(ielh2) &
+                         +DuFine(ielh3) + DuFine(ielh4) )
+                         
+      DuCoarse(NELcoarse+iel) = &
+        Q4*(DuFine(ielh1+NELfine) - DuFine(ielh2+2*NELfine) &
+           -DuFine(ielh3+NELfine) + DuFine(ielh4+2*NELfine) )
+
+      DuCoarse(2*NELcoarse+iel) = &
+        Q4*(DuFine(ielh1+2*NELfine) + DuFine(ielh2+NELfine) &
+           -DuFine(ielh3+2*NELfine) - DuFine(ielh4+NELfine) )
+          
+    END DO
     
   END SUBROUTINE
   

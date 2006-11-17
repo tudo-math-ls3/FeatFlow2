@@ -1116,6 +1116,32 @@ CONTAINS
           ! be on the boundary.
         END IF
 
+      CASE (EL_QP1)
+        ! Three DOF's: Function value in the element midpoint 
+        ! and derivatives.
+        ! Either the edge or an adjacent vertex is on the boundary.
+        
+        IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+          ! Get the value at the corner point and accept it as
+          ! Dirichlet value.
+          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                  rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint1,p_DvertexParameterValue(I), &
+                                  p_rcollection, Dvalues)
+                                 
+          ! Dvalues(1) gives us the function value in the point. Save it
+          DdofValue(1,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1)
+          
+          ! Save 0 as X- and Y-derivative.
+          DdofValue(2,isubsetstart+I-Iminidx(ipart)+1) = 0.0_DP
+          DdofValue(3,isubsetstart+I-Iminidx(ipart)+1) = 0.0_DP
+          
+        END IF
+        
+        ! Set the DOF numbers < 0 to indicate that it is Dirichlet
+        Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1) = &
+            -ABS(Idofs(1,isubsetstart+I-Iminidx(ipart)+1))
+        
       CASE (EL_EM30,EL_E030)
 
         ! Edge inside? -> Calculate integral mean value over the edge

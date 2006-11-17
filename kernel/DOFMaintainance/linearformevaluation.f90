@@ -506,9 +506,9 @@ CONTAINS
       ! function values in the cubature points:
       
       CALL fcoeff_buildVectorSc_sim (rdiscretisation,icurrentElementDistr, rform, &
-                IELset,IELmax-IELset+12,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
+                IELset,IELmax-IELset+1_I32,ncubp,p_IelementList(IELset:IELmax),Dcoords, &
                 DcubPtsRef,DcubPtsReal,IdofsTest,Djac,Ddetj,p_rcollection, &
-                Dcoefficients)
+                Dcoefficients(:,:,1:IELmax-IELset+1_I32))
       
       !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
@@ -1015,7 +1015,7 @@ CONTAINS
       CALL fcoeff_buildVectorSc_sim (rdiscretisation,rform, &
                 IELmax-IELset+1_I32,ncubp,p_DcubPtsReal, &
                 IdofsTest,rintSubset,p_rcollection, &
-                Dcoefficients)
+                Dcoefficients(:,:,1:IELmax-IELset+1_I32))
       
       !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
