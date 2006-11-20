@@ -371,7 +371,7 @@ CONTAINS
     !  where we have only convection in the X-direction, not in the Y-direction
     !  and a still fluid.)
     IF ((rsolverNode%DepsRel(i) .NE. 0.0_DP) .AND. &
-        (rsolverNode%dinitialDefect(i) .NE. 0.0_DP)) THEN
+        (rsolverNode%dinitialDefect(i) .GT. SYS_EPSREAL)) THEN
       IF (DvecNorm(i) .GT. &
           rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i)) THEN
         loutput = .FALSE.
