@@ -164,7 +164,34 @@ CONTAINS
                                  p_rtriangulation%NVT, p_rtriangulation%NEL, &
                                  p_IverticesAtElement,p_IedgesAtElement,&
                                  p_IelementsAtVertexIdx)
-                                 
+                          
+      CASE (EL_Q2)
+        ! Rather easy. Take the forst NVT elements of the Q2-vector
+        ! as values in the corners of Q1.
+        CALL lsyssc_getbase_double (rsourceVector,p_Dsource)
+        CALL lsyssc_getbase_double (rdestVector,p_Ddest)
+        CALL lalg_copyVectorDble (p_Dsource(1:SIZE(p_Ddest)),p_Ddest)
+
+      CASE (EL_QP1)
+        ! Also not completely trivial. Interpolation of the values on the element
+        ! midpoints to the corners, neglecting the error.
+        ! Get geometric information from the triangulation.
+        p_rtriangulation => p_rsourceDiscr%p_rtriangulation
+        CALL storage_getbase_int (p_rtriangulation%h_IelementsAtVertexIdx,&
+                                                   p_IelementsAtVertexIdx)
+        CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+                                                     p_IverticesAtElement)
+                                                     
+        ! Get the vector data
+        CALL lsyssc_getbase_double (rsourceVector,p_Dsource)
+        CALL lsyssc_getbase_double (rdestVector,p_Ddest)
+        
+        ! Call the conversion routine
+        CALL spdp_QP1toQ1_dble (p_Dsource, p_Ddest, &
+                                 p_rtriangulation%NVT, p_rtriangulation%NEL, &
+                                 p_IverticesAtElement,&
+                                 p_IelementsAtVertexIdx)
+     
       CASE DEFAULT
         PRINT *,'spdp_projectSolutionScalar: Unsupported element in source space!'
         STOP
@@ -255,6 +282,82 @@ CONTAINS
       Ddest(IV2) = Ddest(IV2) + 0.75D0*(DUH2+DUH1) - 0.25D0*(DUH3+DUH4)
       Ddest(IV3) = Ddest(IV3) + 0.75D0*(DUH3+DUH2) - 0.25D0*(DUH4+DUH1)
       Ddest(IV4) = Ddest(IV4) + 0.75D0*(DUH4+DUH3) - 0.25D0*(DUH1+DUH2)
+      
+    END DO
+
+    ! Divide by the number of adjacent elements, this results
+    ! in the interpolated solution.
+    DO iv=1,NVT
+      nadj = IelementsAtVertexIdx(iv+1) - IelementsAtVertexIdx(iv)
+      Ddest(iv) = Ddest(iv) / REAL(nadj,DP)
+    END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE spdp_QP1toQ1_dble (Dsource, Ddest, NVT, NEL, &
+                                IverticesAtElement,&
+                                IelementsAtVertexIdx)
+  
+!<description>
+  ! AUXILIARY ROUTINE.
+  ! Convert a solution vector based on a uniform discretisation with QP1,
+  ! to a solution vector based on the Q1 element.
+  !
+  ! Linear interpolation of values in the midpoints of the elements.
+!</description>
+
+!<input>
+  ! Source vector to be converted
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dsource
+  
+  ! Number of vertices in the triangulation
+  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVT
+  
+  ! Number of elements in the triangulation
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NEL
+  
+  ! IelementsAtVertexIdx array of the triangulation
+  INTEGER(PREC_POINTIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
+  
+  ! IverticesAtElement array of the triangulation (old KVERT)
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+
+!</input>
+  
+!<output>
+  ! Destination vector of size NVT; receives the interpolated solution
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddest
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_POINTIDX) :: iv
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_POINTIDX) :: IV1,IV2,IV3,IV4
+    INTEGER :: nadj
+    
+    ! Clear the output array
+    CALL lalg_clearVectorDble (Ddest)
+    
+    ! Loop through the elements
+    DO iel=1,NEL
+    
+      ! Get the global DOF's on the current element in the Q1 space
+      IV1 = IverticesAtElement(1,iel)
+      IV2 = IverticesAtElement(2,iel)
+      IV3 = IverticesAtElement(3,iel)
+      IV4 = IverticesAtElement(4,iel)
+
+      ! Get the value in the midpoint of the current element
+      ! and add it to all corners.
+      Ddest(IV1) = Ddest(IV1) + Dsource(iel)
+      Ddest(IV2) = Ddest(IV2) + Dsource(iel)
+      Ddest(IV3) = Ddest(IV3) + Dsource(iel)
+      Ddest(IV4) = Ddest(IV4) + Dsource(iel)
       
     END DO
 
