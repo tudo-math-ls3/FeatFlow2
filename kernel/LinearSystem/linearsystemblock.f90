@@ -437,6 +437,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vector/Matrix not compatible, different size!'
+      CALL sys_throwFPE()
       STOP
     END IF
   END IF

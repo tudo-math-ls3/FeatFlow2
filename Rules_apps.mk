@@ -34,10 +34,12 @@ FEATLIB+= $(if $(LAPACKLIB),,lapack) $(if $(BLASLIB),,blas)
 
 FEAT=$(FEATLIB:%=$(LIBDIR)/lib%.a)
 
+.PHONY: all
 all: greet $(EXEC)
 	@echo "Done," $(EXEC) "is ready."
 	@echo
 
+.PHONY: greet
 greet:
 	@echo "Compiling module" $(EXEC) "in" 
 	@pwd
@@ -73,16 +75,20 @@ Deps.mk: $(SRC) $(INC)
 	@($(FEATFLOW)/bin/f90mkdep.sh $(filter %.f90,$^) >>$@)
 	@($(FEATFLOW)/bin/libmkdep.sh $@ $(INCDIR))
 
+.PHONY: clean
 clean:
 	-rm -f Deps.mk
 	-rm -f $(OBJDIR)/*.o 
 	-rm -f $(MODDIR)/*.mod 
 
+.PHONY: clean_exec
 clean_exec: 
 	-rm -f $(EXEC)
 
+.PHONY: purge
 purge: clean clean_exec
 
+.PHONY: purge_all
 purge_all: purge
 	@(for i in *-*-*-* ; do if [ -x $$i ] ; then echo rm $$i ; rm -f $$i ; fi ; done )
 	-rm -f -r obj/*
@@ -100,3 +106,101 @@ id: .id
 help: .help
 -include Deps.mk
 
+##############################################################################
+# Documentation
+##############################################################################
+
+# Java compiler
+JAVAC = javac
+
+# Java runtime engine
+JAVA  = java
+
+# Name of documentation parser 
+PARSER = p1
+
+##############################################################################
+# HTML
+##############################################################################
+
+# File names for HTML header and footer
+HTML_HEADER_FILE = $(FEATFLOW)/docs/html/header.html
+HTML_FOOTER_FILE = $(FEATFLOW)/docs/html/footer.html
+
+HTMLDIR = docs/html
+
+# File name of the resulting HTML documentation
+HTML_MASTER_FILE = $(HTMLDIR)/$(shell basename $(shell pwd)).html
+
+.PHONY: html
+html: $(HTML_HEADER_FILE) $(HTML_FOOTER_FILE) $(SRC:%=$(HTMLDIR)/%.html)
+	@echo "Creating HTML documentation in <$(HTML_MASTER_FILE)>.";
+	@mkdir -p $(HTMLDIR)
+	@rm -f $(HTML_MASTER_FILE)
+	@cat $(HTML_HEADER_FILE) >> $(HTML_MASTER_FILE);
+        # Creating table of contents
+	@echo "<ul>" >> $(HTML_MASTER_FILE);
+	@$(foreach file, $(SRC), \
+		modulename=$(basename $(file)); \
+		echo "<li><a href=\"#module"$${modulename}"\">"$${modulename}"</a></li>" \
+		>> $(HTML_MASTER_FILE); )
+	@echo "</ul>" >> $(HTML_MASTER_FILE);
+	@echo "<hr>" >> $(HTML_MASTER_FILE);
+        # Creating documentation
+	@$(foreach file, $(SRC:%=$(HTMLDIR)/%.html), \
+		modulename=$(basename $(basename $(notdir $(file)))); \
+		(echo; echo; \
+		echo "<a name=\"module"$${modulename}"\"></a>"; \
+		cat ${file}; \
+		echo "<div class=\"navigate_to_top\">" ; \
+		echo "    <a href=\"#module"$${modulename}"\">To top of this module's documentation</a>"; \
+		echo "    <br>"; \
+		echo "    <a href=\"#moduleanchor\">To top of documentation</a>"; \
+		echo "</div>"; ) >> $(HTML_MASTER_FILE); )
+	@cat $(HTML_FOOTER_FILE) >> $(HTML_MASTER_FILE);
+	@echo "HTML documentation created and stored in <$(HTML_MASTER_FILE)>.";
+
+.PHONY: ps
+ps:
+	@echo "Creating documentation (PS) in"
+	@pwd
+	mkdir -p docs/tex
+
+.PHONY: pdf
+pdf:
+	@echo "Creating documentation (PDF) in"
+	@pwd
+	mkdir -p docs/tex
+
+##############################################################################
+# Implicit rules
+##############################################################################
+
+# Compile Java parser
+$(PARSER).class: $(FEATFLOW)/bin/$(PARSER).java
+	@echo "Compiling parser...";
+	$(JAVAC) -d . $<
+
+# Wrap a Fortran 77 source file to get an XML file
+# which we then can pass to the Java-based parser.
+%.f.xml: %.f
+	@echo; echo "Wrapping $< in XML format...";
+	@(echo '<?xml version="1.0" encoding="iso-8859-1" ?>'; \
+	  echo '<db>'; \
+	  cat $< | sed -f $(FEATFLOW)/bin/prepare4parser.sed; \
+	  echo '</db>') > $@;
+
+# Wrap a Fortran 90 source file to get an XML file
+# which we then can pass to the Java-based parser.
+%.f90.xml: %.f90
+	@echo; echo "Wrapping $< in XML format...";
+	@(echo '<?xml version="1.0" encoding="iso-8859-1" ?>'; \
+	  echo '<db>'; \
+	  cat $< | sed -f $(FEATFLOW)/bin/prepare4parser.sed; \
+	  echo '</db>') > $@;
+
+# Extract module documentation from wrapped FEAT kernel module
+# with help of the Java-based parser. 
+$(HTMLDIR)/%.html: %.xml $(PARSER).class
+	@echo "Parsing $< to create module documentation...";
+	@$(JAVA) -classpath . $(PARSER) html $< $(HTMLDIR);

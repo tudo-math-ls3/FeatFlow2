@@ -13,31 +13,17 @@
 # Author: Sven H.M. Buijssen (sven.buijssen@math.uni-dortmund.de)      #
 ########################################################################
 
-# Name of this Makefile
-# (used such that the user can attribute warnings to it)
-MAKEFILE = Makefile
-
+include ../../kernel/kernel.mk
 
 ##############################################################################
-# Paths and invocation of FEAST-specific scripts and settings
+# Paths and invocation of FEAT-specific scripts and settings
 #
 ##############################################################################
 
-# Location of FEAST configure script
-CONFIGURE = ../../bin/configure
-CONFIGUREFLAGS = --make="$(MAKE) MAKEFLAGS= "
 
-# Location of FEAST's Makefile.inc
-MAKEFILE_INC = ../../kernel/arch/Makefile.inc
-
-# Location of FEAST's symbolic link restoration Makefile
-MAKEFILE_SYMLINKS = ../../Makefile.symlinks
-
-# List of kernel modules
-FEAST_KERNEL_MODULES_WITH_PATH = $(shell $(CONFIGURE) $(CONFIGUREFLAGS) --list-kernel-modules | grep "\.f90" || exit 1;)
-FEAST_KERNEL_MODULES           = $(foreach file, $(FEAST_KERNEL_MODULES_WITH_PATH), $(notdir $(file)))
-
-
+FEAT_KERNEL_MODULES = $(KERNELSRC)
+FEAT_KERNEL_WITH_PATH%=%
+$(FEAT_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION))
 ##############################################################################
 # Programs and their Flags
 #
@@ -59,7 +45,7 @@ ECHO  = echo
 ##############################################################################
 
 # File name of resulting HTML documentation
-HTML_MASTER_FILE = feast.html
+HTML_MASTER_FILE = feat2.html
 
 # File names for HTML header and footer
 HTML_HEADER_FILE = header.html
@@ -79,25 +65,23 @@ SUFFIX_MODULE_DOCUMENTATION = html
 
 # Default target
 .PHONY: all
-all:	symlinks html
+all:	html
 
 .PHONY: html
-html:	| symlinks 
-html:	$(HTML_HEADER_FILE) $(HTML_FOOTER_FILE) \
-	$(FEAST_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION))
+html:	$(HTML_HEADER_FILE) $(HTML_FOOTER_FILE)
 	-rm -f $(HTML_MASTER_FILE);
 	@echo "Creating HTML documentation...";
 	@cat $(HTML_HEADER_FILE) >> $(HTML_MASTER_FILE);
         # Creating table of contents
 	@echo "<ul>" >> $(HTML_MASTER_FILE);
-	@$(foreach file, $(FEAST_KERNEL_MODULES), \
+	@$(foreach file, $(FEAT_KERNEL_MODULES), \
 		modulename=$(patsubst %.f90,%,$(notdir $(file))); \
 		echo "<li><a href=\"#module"$${modulename}"\">"$${modulename}"</a></li>" \
 	  >> $(HTML_MASTER_FILE); ) 
 	@echo "</ul>" >> $(HTML_MASTER_FILE);
 	@echo "<hr>" >> $(HTML_MASTER_FILE);
         # Creating documentation
-	@$(foreach file, $(FEAST_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION)), \
+	@$(foreach file, $(FEAT_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION)), \
 		modulename=$(patsubst %.f90.$(SUFFIX_MODULE_DOCUMENTATION),%,$(file)); \
 		(echo; echo; \
 		 echo "<a name=\"module"$${modulename}"\"></a>"; \
@@ -117,7 +101,7 @@ $(PARSER).class:	../bin/$(PARSER).java
 
 .PHONY: clean
 clean:
-	-rm -f $(FEAST_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION))
+	-rm -f $(FEAT_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION))
 	-rm -f $(PARSER).class $(PARSER)\$$1.class
 
 .PHONY: purge
@@ -139,10 +123,10 @@ purge:	clean
 	  cat $< | sed 's/&//g'; \
 	  echo '</db>') > $@;
 # Extend search path for Fortran 90 source files to include
-# FEAST kernel paths
-vpath %.f90 $(sort $(dir $(FEAST_KERNEL_MODULES_WITH_PATH)))
+# FEAT kernel paths
+vpath %.f90 $(sort $(dir $(FEAT_KERNEL_MODULES_WITH_PATH)))
 
-# Extract module documentation from wrapped FEAST kernel module
+# Extract module documentation from wrapped FEAT kernel module
 # with help of the Java-based parser. 
 %.$(SUFFIX_MODULE_DOCUMENTATION): %.xml $(PARSER).class
 	@echo "Parsing $< to create module documentation...";
@@ -153,12 +137,6 @@ vpath %.f90 $(sort $(dir $(FEAST_KERNEL_MODULES_WITH_PATH)))
 # Auxiliary targets
 #
 ##############################################################################
-
-.PHONY: symlinks
-symlinks:
-	@echo "# Creating symbolic links..."
-	$(MAKE) -C$(dir $(MAKEFILE_SYMLINKS)) -f $(notdir $(MAKEFILE_SYMLINKS)) symlinks
-	@echo "# Symbolic links created."
 
 # print a help screen
 .PHONY: help
@@ -174,7 +152,7 @@ help:
 	@echo "  html           Create module documentation in HTML format"
 	@echo
 	@echo "Note:"
-	@echo "A FEAST documentation covering more just module descriptions "
+	@echo "A FEAT documentation covering more just module descriptions "
 	@echo "is only available in PDF or Postscript format."
 	@echo "Create it via 'make pdf ps' in directory <../tex>."
 

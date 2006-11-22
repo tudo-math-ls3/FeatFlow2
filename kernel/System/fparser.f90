@@ -16,7 +16,7 @@
 !# Copyright notice
 !# ------------------------------------------------------------------------
 !# (a) This module is based on the "Fortran 90 function parser V1.1" 
-!#     written by Roland Schmehl <Roland.Schmehl@mach.uni-karlsruhe.de>
+!#     written by Roland Schmehl < Roland.Schmehl@mach.uni-karlsruhe.de >
 !#     The original Fortran90 source code is available from:
 !#     http://itsextern.its.uni-karlsruhe.de/~schmehl/functionparser.html
 !#
@@ -25,7 +25,7 @@
 !#     log, sqrt, sinh, cosh, tanh, sin, cos, tan, asin, acos, atan.
 !#
 !#     The function parser concept is based on a C++ class library written
-!#     by Warp <warp@iki.fi> available from:
+!#     by Warp < warp@iki.fi > available from:
 !#     http://warp.povusers.org/FunctionParser/
 !#
 !# (b) This FParser module is an extension of the "Fortran 90 function parser
@@ -118,7 +118,7 @@
 !#  A**B A^B       exponentiation (A raised to the power B)
 !#  A*B  A/B  A%B  multiplication, division and modulo
 !#  A+B  A-B       addition and subtraction
-!#  A=B  A!=B  A<B  A<=B  A>B  A>=B
+!#  A=B  A!=B  A < B  A <= B  A > B  A >= B
 !#                 comparison between A and B (result is either 0 or 1)
 !#  A&B            result is 1 if int(A) and int(B) differ from 0, else 0.
 !#  A|B            result is 1 if int(A) or int(B) differ from 0, else 0.
@@ -170,8 +170,8 @@
 !#             evaluated, the other parameter is skipped.
 !# log(A)    : Natural (base e) logarithm of A.
 !# log10(A)  : Base 10 logarithm of A.
-!# max(A,B)  : If A>B, the result is A, else B.
-!# min(A,B)  : If A<B, the result is A, else B.
+!# max(A,B)  : If A > B, the result is A, else B.
+!# min(A,B)  : If A < B, the result is A, else B.
 !# sec(A)    : Secant of A (equivalent to 1/cos(A)).
 !# sin(A)    : Sine of A. Returns the sine of the angle A, where A is
 !#             measured in radians.
@@ -329,9 +329,9 @@ MODULE fparser
   INTEGER(is), PARAMETER :: cPow         = 11, &
                             cNEqual      = 12, & ! NOTE: != must be prior to =
                             cEqual       = 13, &
-                            cLessOrEq    = 14, & ! NOTE: <= must be prior to <
+                            cLessOrEq    = 14, & ! NOTE: <= must be prior to < 
                             cLess        = 15, &
-                            cGreaterOrEq = 16, & ! NOTE: >= must be prior to >
+                            cGreaterOrEq = 16, & ! NOTE: >= must be prior to > 
                             cGreater     = 17, &
                             cNot         = 18, &
                             cAnd         = 19, &
@@ -667,7 +667,7 @@ CONTAINS
     IP       = 0
     Comp => rparser%Comp(i)
 
-    DO WHILE(IP<Comp%ByteCodeSize)
+    DO WHILE(IP < Comp%ByteCodeSize)
       IP=IP+1
       
       SELECT CASE (Comp%ByteCode(IP))
@@ -990,7 +990,7 @@ CONTAINS
 !<result>
     ! Error messages
     CHARACTER (LEN=LEN(m)) :: msg
-!>/result>
+!</result>
 !</function>
 
     
@@ -1033,7 +1033,7 @@ CONTAINS
     IP       = 0
     Comp => rparser%Comp(i)
 
-    DO WHILE(IP<Comp%ByteCodeSize)
+    DO WHILE(IP < Comp%ByteCodeSize)
       IP=IP+1
       
       WRITE(*,FMT='(I8.8,1X,":",1X)',ADVANCE="NO") IP

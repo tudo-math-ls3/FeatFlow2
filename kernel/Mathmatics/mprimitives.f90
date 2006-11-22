@@ -57,7 +57,8 @@ CONTAINS
 !<result>
   ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
 !</result>
-  
+!</function>
+
     ! Result: Value of the parbolic profile on position dpos on the line segment
     mprim_getParabolicProfile = 4*dmaxvalue*dpos*(dlength-dpos)/(dlength*dlength)
     
@@ -353,7 +354,6 @@ CONTAINS
     ! side vector
     REAL(SP), DIMENSION(ndim), INTENT(OUT) :: Fx
 !</output>
-
 !</subroutine>
 
     ! local variables

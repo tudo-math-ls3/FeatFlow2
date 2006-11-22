@@ -314,6 +314,8 @@ CONTAINS
   
 !</input>
 
+!</subroutine>
+
   ! Both filenames given?
   IF (PRESENT(slogFilename) .AND. PRESENT(serrorFilename)) THEN
   
@@ -369,6 +371,8 @@ CONTAINS
 !<description>
   ! Closes all log files, cleans up output system.
 !</description>
+
+!</subroutine>
   
     ! Close all open channels.
     IF (OU_LOG .NE. 0) CLOSE(OU_LOG)

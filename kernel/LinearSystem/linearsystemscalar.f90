@@ -152,7 +152,7 @@ MODULE linearsystemscalar
   ! NEQ = Number of rows, NCOLS = Number of columns, NA = Number of entries,
   ! h_Da        = handle to matrix entries,
   ! h_Kcol      = handle to column structure,
-  ! h_Kld       = handle to row structure
+  ! h_Kld       = handle to row structure,
   ! h_Kdiagonal = handle to diagonal pointer
   INTEGER, PARAMETER :: LSYSSC_MATRIX9 = 9
 
@@ -170,6 +170,25 @@ MODULE linearsystemscalar
   ! NEQ = NCOLS = NA = Number of rows = Number of columns = Number of entries,
   ! h_Da        = handle to matrix entries
   INTEGER, PARAMETER :: LSYSSC_MATRIXD = 20
+
+  ! Identifier for matrix format 7intl - CSR interleaved with diagonal element in front
+  ! Important matrix properties defining the matrix:
+  ! NEQ = Number of rows, NCOLS = Number of columns, 
+  ! NA = Number of entries, NVAR = Number of variables 
+  ! h_Da        = handle to matrix entries,
+  ! h_Kcol      = handle to column structure,
+  ! h_Kld       = handle to row structure
+  INTEGER, PARAMETER :: LSYSSC_MATRIX7INTL = 70
+
+  ! Identifier for matrix format 9intl - CSR interleaved
+  ! Important matrix properties defining the matrix:
+  ! NEQ = Number of rows, NCOLS = Number of columns, 
+  ! NA = Number of entries, NVAR = Number of variables 
+  ! h_Da        = handle to matrix entries,
+  ! h_Kcol      = handle to column structure,
+  ! h_Kld       = handle to row structure,
+  ! h_Kdiagonal = handle to diagonal pointer
+  INTEGER, PARAMETER :: LSYSSC_MATRIX9INTL = 90
 
 !</constantblock>
 
@@ -311,6 +330,13 @@ MODULE linearsystemscalar
     ! on the heap!
     INTEGER(PREC_VECIDX) :: NEQ       = 0
     
+    ! Number of local variables; in general, scalar vectors of size
+    ! NEQ posses NEQ entries. However, scalar vectors can be
+    ! interleaved, that is, each of the NEQ entries stores NVAR local
+    ! variables. In this case, NEQ remains unmodified but NVAR>1 such
+    ! that the physical length of the vector is NEQ*NVAR.
+    INTEGER :: NVAR                   = 1
+
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
     INTEGER         :: cdataType = ST_DOUBLE
@@ -373,8 +399,12 @@ MODULE linearsystemscalar
   TYPE t_matrixScalar
     
     ! Format-tag. Identifies the format of the matrix. 
-    ! Can tage one of the LSYSSC_MATRIXx format flags.
+    ! Can take one of the LSYSSC_MATRIXx format flags.
     INTEGER      :: cmatrixFormat = LSYSSC_MATRIXUNDEFINED
+
+    ! Format-tag. Identifies the format of the interleaved matrix.
+    ! Can take one of the LSYSSC_MATRIX1/D format flags.
+    INTEGER      :: cinterleavematrixFormat = LSYSSC_MATRIXUNDEFINED
     
     ! Matrix specification tag. This is a bitfield coming from an OR 
     ! combination of different LSYSSC_MSPEC_xxxx constants and specifies
@@ -398,6 +428,16 @@ MODULE linearsystemscalar
     !  exchanged with NROWS to indicate the number of columns in the
     !  transposed matrix!
     INTEGER(PREC_VECIDX) :: NCOLS = 0
+
+    ! Number of variables for interleaved matrix.
+    ! Remark: When an interleaved matrix is defined, then each
+    ! position of the symbolic matrix structure can store a quadratic
+    ! submatrix of dimension NVAR x NVAR. This is not to be confused
+    ! with layers which means that several matrices share the same
+    ! structure but their values can be treated individually. For
+    ! interleaved matrices, the matrix-vector multiplication, etc. is
+    ! adapted to the local dense blocks.
+    INTEGER :: NVAR = 1
     
     ! Multiplier for matrix entries. All entries in the matrix are
     ! scaled by this multiplier when doing Matrix-vector multiplication.
@@ -471,6 +511,11 @@ MODULE linearsystemscalar
     MODULE PROCEDURE lsyssc_isMatrixMatrixCompatible
   END INTERFACE
 
+  INTERFACE lsyssc_createVector
+    MODULE PROCEDURE lsyssc_createVector
+    MODULE PROCEDURE lsyssc_createVectorIntl
+  END INTERFACE
+
 CONTAINS
 
   ! ***************************************************************************
@@ -506,7 +551,8 @@ CONTAINS
   IF (PRESENT(bcompatible)) bcompatible = .FALSE.
   
   ! Vectors must have the same size
-  IF (rvector1%NEQ .NE. rvector2%NEQ) THEN
+  IF (rvector1%NEQ .NE. rvector2%NEQ .OR. &
+      rvector1%NVAR .NE. rvector2%NVAR) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
       RETURN
@@ -596,7 +642,8 @@ CONTAINS
   END IF
   
   ! Vector/Matrix must have the same size 
-  IF (rvector%NEQ .NE. NCOLS) THEN
+  IF ((rvector%NEQ .NE. NCOLS) .OR. &
+      (rmatrix%NVAR .NE. rvector%NVAR)) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
       RETURN
@@ -672,8 +719,10 @@ CONTAINS
   IF (PRESENT(bcompatible)) bcompatible = .FALSE.
   
   ! Matrices must have the same size 
-  IF ((rmatrix1%NEQ .NE. rmatrix2%NEQ) .OR. (rmatrix1%NCOLS .NE.&
-      & rmatrix2%NCOLS) .OR. (rmatrix1%NA .NE. rmatrix2%NA)) THEN
+  IF ((rmatrix1%NEQ .NE. rmatrix2%NEQ) .OR. &
+      (rmatrix1%NCOLS .NE. rmatrix2%NCOLS) .OR. &
+      (rmatrix1%NVAR .NE. rmatrix2%NVAR) .OR. &
+      (rmatrix1%NA .NE. rmatrix2%NA)) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
       RETURN
@@ -684,7 +733,8 @@ CONTAINS
   END IF
 
   ! Matrices must have the same sparsity pattern
-  IF (rmatrix1%cmatrixFormat .NE. rmatrix2%cmatrixFormat) THEN
+  IF ((rmatrix1%cmatrixFormat .NE. rmatrix2%cmatrixFormat) .OR. &
+      (rmatrix1%cinterleavematrixFormat .NE. rmatrix2%cinterleavematrixFormat)) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
       RETURN
@@ -767,7 +817,8 @@ CONTAINS
   CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
   
   ! Modify the starting address/length to get the real array.
-  p_Ddata => p_Ddata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  p_Ddata => p_Ddata(rvector%iidxFirstEntry:&
+      rvector%iidxFirstEntry+rvector%NEQ*rvector%NVAR-1)
   
   END SUBROUTINE
 
@@ -811,7 +862,8 @@ CONTAINS
   CALL storage_getbase_single (rvector%h_Ddata,p_Fdata)
   
   ! Modify the starting address/length to get the real array.
-  p_Fdata => p_Fdata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  p_Fdata => p_Fdata(rvector%iidxFirstEntry:&
+      rvector%iidxFirstEntry+rvector%NEQ*rvector%NVAR-1)
   
   END SUBROUTINE
 
@@ -866,6 +918,67 @@ CONTAINS
       ELSE
         CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', rvector%NEQ, &
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
+      END IF
+    END IF
+  
+  END SUBROUTINE
+
+!****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE lsyssc_createVectorIntl (rvector,NEQ,NVAR,bclear,cdataType)
+  
+!<description>
+  ! This creates an interleaved scalar vector of length NEQ with NVAR
+  ! local variables. Memory is allocated on the heap and can be
+  ! released by lsyssc_releaseVector.
+!</description>
+  
+!<input>
+  
+  ! Desired length of the vector
+  INTEGER(PREC_VECIDX), INTENT(IN)                  :: NEQ
+
+  ! Desired number of local variables
+  INTEGER, INTENT(IN)                               :: NVAR
+
+  ! Whether to fill the vector with zero initially
+  LOGICAL, INTENT(IN)                               :: bclear
+
+  ! OPTIONAL: Data type of the vector.
+  ! If not specified, ST_DOUBLE is assumed.
+  INTEGER, INTENT(IN), OPTIONAL                     :: cdataType  
+  
+!</input>
+
+!<output>
+  ! Scalar vector structure
+  TYPE(t_vectorScalar), INTENT(OUT)                 :: rvector
+!</output>
+
+!</subroutine>
+
+  INTEGER ::cdata
+
+    cdata = ST_DOUBLE
+    IF (PRESENT(cdataType)) cdata=cdataType
+
+    ! The INTENT(OUT) already initialises rvector with the most important
+    ! information. The rest comes now:
+    !
+    ! Size:
+    rvector%NEQ = MAX(0,NEQ)
+    rvector%NVAR= MAX(0,NVAR)
+    
+    ! Handle - if NEQ > 0
+    IF (rvector%NEQ*rvector%NVAR .GT. 0) THEN
+      IF (bclear) THEN
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector',&
+            & rvector%NEQ*rvector%NVAR, cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
+      ELSE
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector',&
+            & rvector%NEQ*rvector%NVAR, cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
       END IF
     END IF
   
@@ -963,7 +1076,10 @@ CONTAINS
   ! Is there data at all?
   res = 0.0_DP
   
-  IF ( (rx%NEQ .EQ. 0) .OR. (ry%NEQ .EQ. 0) .OR. (rx%NEQ .NE. rx%NEQ)) THEN
+  IF ((rx%NEQ*rx%NVAR .EQ. 0) .OR. &
+      (ry%NEQ*ry%NVAR .EQ. 0) .OR. &
+      (rx%NEQ .NE. rx%NEQ) .OR. &
+      (rx%NVAR .NE. ry%NVAR)) THEN
     PRINT *,'Error in lsyssc_scalarProduct: Vector dimensions wrong!'
     STOP
   END IF
@@ -1082,6 +1198,29 @@ CONTAINS
           STOP
         END SELECT
         
+      CASE (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
+        
+        ! Take care of the precision of the entries
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Format 7 and Format 9 multiplication
+          SELECT CASE (rx%cdataType)
+          
+          CASE (ST_DOUBLE)
+            ! double precision matrix, double precision vectors
+            CALL lsyssc_LAX79INTLdoubledouble (rmatrix,rx,ry,cx,cy)
+          
+          CASE DEFAULT
+            PRINT *,'Only double precision vectors supported for now in MV!'
+            STOP
+            
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'Only double precision matrices supported for now in MV!'
+          STOP
+        END SELECT
+
       CASE (LSYSSC_MATRIXD)
       
         ! Take care of the precision of the entries
@@ -1215,6 +1354,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_MATIDX) :: ia
     INTEGER(PREC_VECIDX) :: irow,icol
     REAL(DP) :: dtmp
     INTEGER(PREC_VECIDX) :: NEQ
@@ -1246,10 +1386,11 @@ CONTAINS
        
 !$omp  parallel do &
 !$omp& default(shared) &
-!$omp& private(irow,icol)
+!$omp& private(irow,icol,ia)
           DO irow=1,NEQ
-            icol = p_Kcol(p_Kld(irow))
-            p_Dy(irow) = p_Dx(icol) * p_DA(p_Kld(irow))
+            ia   = p_Kld(irow)
+            icol = p_Kcol(ia)
+            p_Dy(irow) = p_Dx(icol) * p_DA(ia)
           END DO
 !$omp end parallel do
 
@@ -1275,10 +1416,11 @@ CONTAINS
           
 !$omp  parallel do &
 !$omp& default(shared) &
-!$omp& private(irow,icol)
+!$omp& private(irow,icol,ia)
           DO irow=1,NEQ
-            icol = p_Kcol(p_Kld(irow))
-            p_Dy(irow) = p_Dx(icol)*p_DA(p_Kld(irow)) + p_Dy(irow) 
+            ia   = p_Kld(irow)
+            icol = p_Kcol(ia)
+            p_Dy(irow) = p_Dx(icol)*p_DA(ia) + p_Dy(irow) 
           END DO
 !$omp end parallel do
           
@@ -1288,13 +1430,229 @@ CONTAINS
         
 !$omp  parallel do &
 !$omp& default(shared) &
-!$omp& private(irow,icol)
+!$omp& private(irow,icol,ia)
         DO irow=1,NEQ
-          DO icol = p_Kld(irow)+1,p_Kld(irow+1)-1
-            p_Dy(irow) = p_Dy(irow) + p_DA(icol)*p_Dx(p_Kcol(icol))
+          DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
+            icol = p_Kcol(ia)
+            p_Dy(irow) = p_Dy(irow) + p_DA(ia)*p_Dx(icol)
           END DO
         END DO
 !$omp end parallel do
+        
+        ! Scale by cx, finish.
+        
+        IF (cx .NE. 1.0_DP) THEN
+          CALL lalg_scaleVectorDble (p_Dy,cx)
+        END IF
+        
+      ELSE 
+        ! cx = 0. The formula is just a scaling of the vector ry!
+        CALL lalg_scaleVectorDble(p_Dy,cy)
+      ENDIF
+      
+    END SUBROUTINE
+
+    !**************************************************************
+    ! Format 7 and Format 9 interleaved multiplication
+    ! double precision matrix,
+    ! double precision vectors
+    
+    SUBROUTINE lsyssc_LAX79INTLdoubledouble (rmatrix,rx,ry,cx,cy)
+
+    ! Save arguments as above - given as parameters as some compilers
+    ! might have problems with scoping units...
+    TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
+    TYPE(t_vectorScalar), INTENT(IN)                  :: rx
+    REAL(DP), INTENT(IN)                              :: cx
+    REAL(DP), INTENT(IN)                              :: cy
+    TYPE(t_vectorScalar), INTENT(INOUT)               :: ry
+
+    REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_VECIDX) :: irow,icol,ia
+    REAL(DP) :: dtmp
+    INTEGER(PREC_VECIDX) :: NEQ
+    INTEGER :: ivar,jvar
+    INTEGER :: NVAR
+
+      ! Get the matrix
+      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
+      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      
+      ! Get NEQ - from the matrix, not from the vector!
+      NEQ = rmatrix%NEQ
+
+      ! Get NVAR - from the matrix, not from the vector!
+      NVAR = rmatrix%NVAR
+
+      ! Get the vectors
+      CALL lsyssc_getbase_double (rx,p_Dx)
+      CALL lsyssc_getbase_double (ry,p_Dy)
+      
+      ! Perform the multiplication
+      IF (cx .NE. 0.0_DP) THEN
+      
+        IF (cy .EQ. 0.0_DP) THEN
+        
+          ! cy = 0. We have simply to make matrix*vector without adding ry.
+          ! Multiply the first entry in each line of the matrix with the
+          ! corresponding entry in rx and add it to ry.
+          ! Don't multiply with cy, this comes later.
+          !
+          ! What is this complicated IF-THEN structure for?
+          ! Well, to prevent an initialisation of rx with zero in case cy=0!
+
+          ! Each submatrix of an interleaved matrix can either be a
+          ! full matrix or a diagonal one
+          SELECT CASE (rmatrix%cinterleavematrixFormat)
+          CASE (LSYSSC_MATRIX1)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol,ia,ivar,jvar)
+          DO irow=1,NEQ
+            ia   = p_Kld(irow)
+            icol = p_Kcol(ia)
+
+            DO jvar=1,NVAR
+              DO ivar=1,NVAR
+                p_Dy(NVAR*(irow-1)+jvar) = p_Dx(NVAR*(icol-1)+ivar)&
+                    * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)
+              END DO
+            END DO
+          END DO
+!$omp end parallel do
+
+          CASE (LSYSSC_MATRIXD)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol,ia,ivar)
+          DO irow=1,NEQ
+            ia   = p_Kld(irow)
+            icol = p_Kcol(ia)
+            
+            DO ivar=1,NVAR
+              p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
+                  * p_DA(NVAR*NVAR*(ia-1)+ivar)
+            END DO
+          END DO
+!$omp end parallel do
+
+          CASE DEFAULT
+            PRINT *, "Wrong matrix format of interleaved matrix"
+            STOP
+          END SELECT
+
+          ! Now we have an initial ry where we can do a usual MV
+          ! with the rest of the matrix...
+          
+        ELSE 
+        
+          ! cy <> 0. We have to perform matrix*vector + vector.
+          ! What we actually calculate here is:
+          !    ry  =  cx * A * x  +  cy * y
+          !        =  cx * ( A * x  +  cy/cx * y).
+          !
+          ! Scale down y:
+        
+          dtmp = cy/cx
+          IF (dtmp .NE. 1.0_DP) THEN
+            CALL lalg_scaleVectorDble(p_Dy,dtmp)
+          END IF
+          
+          ! Multiply the first entry in each line of the matrix with the
+          ! corresponding entry in rx and add it to the (scaled) ry.
+          
+          ! Each submatrix of an interleaved matrix can either be a
+          ! full matrix or a diagonal one
+          SELECT CASE (rmatrix%cinterleavematrixFormat)
+          CASE (LSYSSC_MATRIX1)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol,ia,ivar,jvar)
+          DO irow=1,NEQ
+            ia   = p_Kld(irow)
+            icol = p_Kcol(ia)
+
+            DO jvar=1,NVAR
+              DO ivar=1,NVAR
+                p_Dy(NVAR*(irow-1)+jvar) = p_Dx(NVAR*(icol-1)+ivar)&
+                    * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)&
+                    + p_Dy(NVAR*(irow-1)+jvar)
+              END DO
+            END DO
+          END DO
+!$omp end parallel do
+
+          CASE (LSYSSC_MATRIXD)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol,ia,ivar)
+          DO irow=1,NEQ
+            ia   = p_Kld(irow)
+            icol = p_Kcol(ia)
+            
+            DO ivar=1,NVAR
+              p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
+                  * p_DA(NVAR*NVAR*(ia-1)+ivar)&
+                  + p_Dy(NVAR*(irow-1)+ivar)
+            END DO
+          END DO
+!$omp end parallel do
+
+          CASE DEFAULT
+            PRINT *, "Wrong matrix format of interleaved matrix"
+            STOP
+          END SELECT
+          
+        ENDIF
+        
+        ! Multiply the rest of rx with the matrix and add it to ry:
+
+        ! Each submatrix of an interleaved matrix can either be a
+        ! full matrix or a diagonal one
+        SELECT CASE (rmatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)      
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol,ia,ivar,jvar)
+          DO irow=1,NEQ
+            DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
+              icol = p_Kcol(ia)
+              
+              DO jvar=1,NVAR
+                DO ivar=1,NVAR
+                  p_Dy(NVAR*(irow-1)+jvar) = p_Dy(NVAR*(irow-1)+jvar)&
+                      + p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)&
+                      * p_Dx(NVAR*(icol-1)+ivar)
+                END DO
+              END DO
+            END DO
+          END DO
+!$omp end parallel do
+
+        CASE (LSYSSC_MATRIXD)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(irow,icol,ia,ivar)
+          DO irow=1,NEQ
+            DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
+              icol = p_Kcol(ia)
+              
+              DO ivar=1,NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = p_Dy(NVAR*(irow-1)+ivar)&
+                    + p_DA(NVAR*NVAR*(ia-1)+ivar)&
+                    * p_Dx(NVAR*(icol-1)+ivar)
+              END DO
+            END DO
+          END DO
+!$omp end parallel do
+          
+        CASE DEFAULT
+          PRINT *, "Wrong matrix format of interleaved matrix"
+          STOP
+        END SELECT
         
         ! Scale by cx, finish.
         
@@ -1501,6 +1859,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_MATIDX) :: ia
     INTEGER(PREC_VECIDX) :: irow,icol
     REAL(DP) :: dtmp
     INTEGER(PREC_VECIDX) :: NEQ
@@ -1548,8 +1907,9 @@ CONTAINS
         ! Multiply rx with the matrix and add it to ry:
         
         DO irow=1,NEQ
-          DO icol = p_Kld(irow),p_Kld(irow+1)-1
-            p_Dy(p_Kcol(icol)) = p_Dy(p_Kcol(icol)) + p_Dx(irow)*p_DA(icol)
+          DO ia = p_Kld(irow),p_Kld(irow+1)-1
+            icol = p_Kcol(ia)
+            p_Dy(icol) = p_Dy(icol) + p_Dx(irow)*p_DA(ia)
           END DO
         END DO
         
@@ -1597,6 +1957,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
   REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
   INTEGER(PREC_VECIDX) :: NEQ
+  INTEGER :: NVAR
 
   ! At first, copy all 'local' data.
   rnewVector = roldVector
@@ -1607,7 +1968,8 @@ CONTAINS
   ! maybe > NEQ!
   
   NEQ = roldVector%NEQ
-  CALL storage_new ('lsyssc_duplicateVector','vec-copy',NEQ,&
+  NVAR= roldVector%NVAR
+  CALL storage_new ('lsyssc_duplicateVector','vec-copy',NEQ*NVAR,&
                     roldVector%cdataType, rnewVector%h_Ddata, &
                     ST_NEWBLOCK_NOINIT)
 
@@ -1788,7 +2150,7 @@ CONTAINS
       ! And at last recreate the arrays.
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
         CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
             rsourceMatrix%NA, ST_INT, &
             rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
@@ -1801,7 +2163,7 @@ CONTAINS
             rdestMatrix%NEQ, ST_INT, &
             rdestMatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
         
-      CASE (LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         CALL storage_new ('lsyssc_duplicateMatrix', 'KCOL', &
             rdestMatrix%NA, ST_INT, &
             rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
@@ -1871,6 +2233,22 @@ CONTAINS
         CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
             rdestMatrix%NA, rsourceMatrix%cdataType, &
             rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+      CASE (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
+        ! Create a new content array in the same data type as the original matrix
+        SELECT CASE(rsourceMatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+          CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
+              rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NA, &
+              rsourceMatrix%cdataType, rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+        CASE (LSYSSC_MATRIXD)
+          CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
+              rdestMatrix%NA*rdestMatrix%NVAR,rsourceMatrix%cdataType&
+              &, rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+        CASE DEFAULT
+          PRINT *, 'lsyssc_duplicateMatrix: wrong matrix format of int&
+              &erleaved matrix'
+          STOP
+        END SELECT
       END SELECT
     END SELECT
     
@@ -1881,15 +2259,30 @@ CONTAINS
     ! -----
     
     SELECT CASE (rdestMatrix%cmatrixFormat)
-    CASE (LSYSSC_MATRIX9)
+    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
     
       ! Check length of DA
       IF (rdestMatrix%h_DA .NE. ST_NOHANDLE) THEN
         CALL storage_getsize (rdestMatrix%h_DA,isize)
-        IF (isize .NE. rdestMatrix%NA) THEN
-          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
-          STOP
-        END IF
+        SELECT CASE(rdestMatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+          IF (isize .NE. rdestMatrix%NA&
+              * rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+            STOP
+          END IF
+        CASE (LSYSSC_MATRIXD)
+          IF (isize .NE. rdestMatrix%NA&
+              * rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+            STOP
+          END IF
+        CASE DEFAULT
+          IF (isize .NE. rdestMatrix%NA) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+            STOP
+          END IF
+        END SELECT
       END IF
       
       ! Check length of KCOL
@@ -1937,15 +2330,30 @@ CONTAINS
         END IF
       END IF
       
-    CASE (LSYSSC_MATRIX7)
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
     
       ! Check length of DA
       IF (rdestMatrix%h_DA .NE. ST_NOHANDLE) THEN
         CALL storage_getsize (rdestMatrix%h_DA,isize)
-        IF (isize .NE. rdestMatrix%NA) THEN
-          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
-          STOP
-        END IF
+        SELECT CASE(rdestMatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+          IF (isize .NE. rdestMatrix%NA&
+              *rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+            STOP
+          END IF
+        CASE (LSYSSC_MATRIXD)
+          IF (isize .NE. rdestMatrix%NA&
+              *rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+            STOP
+          END IF
+        CASE DEFAULT
+          IF (isize .NE. rdestMatrix%NA) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+            STOP
+          END IF
+        END SELECT
       END IF
       
       ! Check length of KCOL
@@ -2004,7 +2412,7 @@ CONTAINS
     
       ! This is a matrix-dependent task
       SELECT CASE (rmatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
         ! Release the handles from the heap?
         ! Only release it if the data belongs to this matrix.
         IF (brelease .AND. &
@@ -2022,7 +2430,7 @@ CONTAINS
         ! Reset the ownership-status
         rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,&
                                    NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
-      CASE (LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         ! Release the handles from the heap?
         ! Only release it if the data belongs to this matrix.
         IF (brelease .AND. &
@@ -2065,9 +2473,11 @@ CONTAINS
       rdestMatrix%NA     = rsourceMatrix%NA
       rdestMatrix%NEQ    = rsourceMatrix%NEQ
       rdestMatrix%NCOLS  = rsourceMatrix%NCOLS
-      rdestMatrix%cmatrixFormat       = rsourceMatrix%cmatrixFormat
-      rdestMatrix%isortStrategy       = rsourceMatrix%isortStrategy
-      rdestMatrix%h_IsortPermutation  = rsourceMatrix%h_IsortPermutation
+      rdestMatrix%NVAR   = rsourceMatrix%NVAR
+      rdestMatrix%cmatrixFormat           = rsourceMatrix%cmatrixFormat
+      rdestMatrix%cinterleavematrixFormat = rsourceMatrix%cinterleavematrixFormat
+      rdestMatrix%isortStrategy           = rsourceMatrix%isortStrategy
+      rdestMatrix%h_IsortPermutation      = rsourceMatrix%h_IsortPermutation
       
       ! Transfer all flags except the 'dup' flags
       iflag = IAND(rsourceMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_ISCOPY))
@@ -2079,12 +2489,12 @@ CONTAINS
 
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
         rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
         rdestMatrix%h_Kdiagonal = rsourceMatrix%h_Kdiagonal
         
-      CASE (LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         ! Overwrite structural data
         rdestMatrix%h_Kcol = rsourceMatrix%h_Kcol
         rdestMatrix%h_Kld  = rsourceMatrix%h_Kld
@@ -2120,9 +2530,11 @@ CONTAINS
       rdestMatrix%NA     = rsourceMatrix%NA
       rdestMatrix%NEQ    = rsourceMatrix%NEQ
       rdestMatrix%NCOLS  = rsourceMatrix%NCOLS
-      rdestMatrix%cmatrixFormat       = rsourceMatrix%cmatrixFormat
-      rdestMatrix%isortStrategy       = rsourceMatrix%isortStrategy
-      rdestMatrix%h_IsortPermutation  = rsourceMatrix%h_IsortPermutation
+      rdestMatrix%NVAR   = rsourceMatrix%NVAR
+      rdestMatrix%cmatrixFormat           = rsourceMatrix%cmatrixFormat
+      rdestMatrix%cinterleavematrixFormat = rsourceMatrix%cinterleavematrixFormat
+      rdestMatrix%isortStrategy           = rsourceMatrix%isortStrategy
+      rdestMatrix%h_IsortPermutation      = rsourceMatrix%h_IsortPermutation
 
       ! Transfer all flags except the 'dup' flags
       iflag = IAND(rsourceMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_ISCOPY))
@@ -2181,7 +2593,7 @@ CONTAINS
         
         ! Which source matrix do we have?  
         SELECT CASE (rsourceMatrix%cmatrixFormat)
-        CASE (LSYSSC_MATRIX9)
+        CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
           IF ((rdestMatrix%h_Kcol .NE. ST_NOHANDLE) .AND. &
               (rdestMatrix%h_Kld .NE. ST_NOHANDLE) .AND. &
               (rdestMatrix%h_Kdiagonal .NE. ST_NOHANDLE)) THEN
@@ -2202,7 +2614,7 @@ CONTAINS
             
           END IF
           
-        CASE (LSYSSC_MATRIX7)
+        CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         
           IF ((rdestMatrix%h_Kcol .NE. ST_NOHANDLE) .AND. &
               (rdestMatrix%h_Kld .NE. ST_NOHANDLE)) THEN
@@ -2238,12 +2650,12 @@ CONTAINS
       !
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
         CALL storage_copy (rsourceMatrix%h_Kcol,rdestMatrix%h_Kcol)
         CALL storage_copy (rsourceMatrix%h_Kld,rdestMatrix%h_Kld)
         CALL storage_copy (rsourceMatrix%h_Kdiagonal,rdestMatrix%h_Kdiagonal)
         
-      CASE (LSYSSC_MATRIX7)
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
         CALL storage_copy (rsourceMatrix%h_Kcol,rdestMatrix%h_Kcol)
         CALL storage_copy (rsourceMatrix%h_Kld,rdestMatrix%h_Kld)
       
@@ -2272,7 +2684,8 @@ CONTAINS
     
       ! This is a matrix-dependent task
       SELECT CASE (rmatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
+          &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
         ! Release the handles from the heap?
         ! Only release it if the data belongs to this matrix.
         IF (brelease .AND. &
@@ -2312,7 +2725,8 @@ CONTAINS
 
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
+          &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
         rdestMatrix%h_Da = rsourceMatrix%h_Da
       END SELECT
       
@@ -2395,6 +2809,33 @@ CONTAINS
             bremove = .TRUE.
             
           END IF
+
+          CASE (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
+        
+          IF (rdestMatrix%h_Da .NE. ST_NOHANDLE) THEN
+        
+            CALL storage_getsize (rdestMatrix%h_Da,isize)
+            SELECT CASE(rdestMatrix%cinterleavematrixFormat)
+            CASE (LSYSSC_MATRIX1)
+              bremove = bremove .OR. (isize .NE. rdestMatrix%NA&
+                  *rdestMatrix%NVAR*rdestMatrix%NVAR)
+            CASE (LSYSSC_MATRIXD)
+              bremove = bremove .OR. (isize .NE. rdestMatrix%NA&
+                  &*rdestMatrix%NVAR)
+            CASE DEFAULT
+              PRINT *, 'copyContent: wrong interleave matrix format'
+              STOP
+            END SELECT
+          
+            ! Check the data type
+            bremove = bremove .OR. (rdestMatrix%cdataType .NE. rsourceMatrix%cdataType)
+          
+          ELSE
+          
+            ! Remove any partial information if there is any
+            bremove = .TRUE.
+            
+          END IF
           
         END SELECT
       
@@ -2411,7 +2852,8 @@ CONTAINS
       !
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
+          &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
         CALL storage_copy (rsourceMatrix%h_Da,rdestMatrix%h_Da)
       END SELECT
       
@@ -2457,6 +2899,7 @@ CONTAINS
     rvector%h_Ddata = ST_NOHANDLE
   END IF
   rvector%NEQ = 0
+  rvector%NVAR = 1
   rvector%cdataType = ST_NOHANDLE
   rvector%iidxFirstEntry = 1
   rvector%bisCopy = .FALSE.
@@ -2492,7 +2935,8 @@ CONTAINS
   ! Release the matrix data if the handle is not a copy of another matrix
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0) THEN
     SELECT CASE (rmatrix%cmatrixFormat)
-    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
+    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
+        &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
       ! Release matrix data, structure 9,7
       IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
         CALL storage_free(rmatrix%h_DA)
@@ -2504,12 +2948,12 @@ CONTAINS
   IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0) THEN
     ! Release matrix structure
     SELECT CASE (rmatrix%cmatrixFormat)
-    CASE (LSYSSC_MATRIX9)
+    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
       IF (rmatrix%h_Kcol .NE. ST_NOHANDLE)      CALL storage_free(rmatrix%h_Kcol)
       IF (rmatrix%h_Kld .NE. ST_NOHANDLE)       CALL storage_free(rmatrix%h_Kld)
       IF (rmatrix%h_Kdiagonal .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_Kdiagonal)
       
-    CASE (LSYSSC_MATRIX7)
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
       IF (rmatrix%h_Kcol .NE. ST_NOHANDLE) CALL storage_free(rmatrix%h_Kcol)
       IF (rmatrix%h_Kld .NE. ST_NOHANDLE)  CALL storage_free(rmatrix%h_Kld)
       
@@ -2527,6 +2971,7 @@ CONTAINS
   rmatrix%NA  = 0
   rmatrix%NEQ = 0
   rmatrix%NCOLS = 0
+  rmatrix%NVAR = 1
   rmatrix%dScaleFactor = 1.0_DP
   rmatrix%isortStrategy = 0
   rmatrix%h_IsortPermutation = ST_NOHANDLE
@@ -2557,7 +3002,8 @@ CONTAINS
 
   ! Which matrix type do we have?
   SELECT CASE (rmatrix%cmatrixFormat)
-  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
+      &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
     ! Get the handle, the associated memory and clear that.
     IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
       CALL storage_clear(rmatrix%h_DA)
@@ -2783,6 +3229,123 @@ CONTAINS
       STOP
     END SELECT
 
+  CASE (LSYSSC_MATRIX9INTL)
+    
+    SELECT CASE (cmatrixFormat)
+    CASE (LSYSSC_MATRIX7INTL)
+
+      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+
+      ! Check that the matrix can be converted. There's a format error
+      ! if there's no diagonal element.
+      DO i=1,rmatrix%NEQ
+        IF (p_Kcol(p_Kdiagonal(i)) .NE. i) THEN
+          PRINT *,'lsyssc_convertMatrix: incompatible Format-9 matrix!'
+          STOP
+        END IF
+      END DO
+
+      IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
+        
+        ! No matrix entries, only resort the structure
+        CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+        
+        ! Release diagonal pointer
+        IF (brelStruc) CALL storage_free (rmatrix%h_Kdiagonal)
+        
+        rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
+        
+      ELSE
+
+        ! Convert from structure 9 to structure 7. Use the sortCSRxxxx 
+        ! routine below.
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+        
+          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          SELECT CASE(rmatrix%cinterleavematrixFormat)
+          CASE (LSYSSC_MATRIX1)
+            CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
+                & rmatrix%NEQ, p_Ddata, rmatrix%NVAR*rmatrix%NVAR)
+          CASE (LSYSSC_MATRIXD)
+            CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
+                & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
+          CASE DEFAULT
+            PRINT *, 'lsyssc_convertMatrix: Unsupported interleave matrix!'
+            STOP
+          END SELECT
+
+          ! Release diagonal
+          IF (brelStruc) CALL storage_free (rmatrix%h_Kdiagonal)
+
+          rmatrix%cmatrixFormat = LSYSSC_MATRIX7INTL
+          
+        CASE DEFAULT
+          PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
+          STOP
+        END SELECT
+
+      END IF
+
+    CASE DEFAULT
+      PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
+      STOP
+    END SELECT
+    
+  CASE (LSYSSC_MATRIX7INTL)
+
+    SELECT CASE (cmatrixFormat)
+    CASE (LSYSSC_MATRIX9INTL)
+      
+      ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
+      ! routine below.
+      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      
+      ! Create a pointer to the diagonal
+      CALL storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
+          rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+
+      IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
+        
+        ! No matrix entries, only resort the structure
+        CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
+        
+        rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
+      
+      ELSE
+
+        SELECT CASE (rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          SELECT CASE(rmatrix%cinterleavematrixFormat)
+          CASE (LSYSSC_MATRIX1)
+            CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
+                & rmatrix%NEQ, p_Ddata, rmatrix%NVAR*rmatrix%NVAR)
+          CASE (LSYSSC_MATRIXD)
+            CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
+                & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
+          CASE DEFAULT
+            PRINT *, 'lsyssc_convertMatrix: Unsupported interleave matrix format!'
+            STOP
+          END SELECT
+          rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
+          
+        CASE DEFAULT
+          PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
+          STOP
+        END SELECT
+        
+      END IF
+
+    CASE DEFAULT
+      PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
+      STOP
+    END SELECT
+
   CASE DEFAULT
     PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
     STOP
@@ -2845,7 +3408,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
+  SUBROUTINE lsyssc_sortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da, nintl)
 
 !<description>
   ! Internal auxiliary routine.
@@ -2863,6 +3426,9 @@ CONTAINS
 
   ! Dimension of the matrix
   INTEGER(I32), INTENT(IN) :: neq
+
+  ! Dimension of the interleaved submatrices (if any)
+  INTEGER, INTENT(IN), OPTIONAL :: nintl
 !</input>
 
 !<inputoutput>
@@ -2884,42 +3450,91 @@ CONTAINS
 !</subroutine>
 
   ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: Daux
   REAL(DP) :: aux
-  INTEGER(I32) :: i, j
+  INTEGER :: h_Daux
+  INTEGER(I32) :: i,j
 
   IF (PRESENT(Da)) THEN
 
-    ! loop through each row
-    DO i = 1, neq
+    ! Check if size of interleave matrix is specified. If this is the
+    ! case then each "move" is performed for a local vector
+    IF (PRESENT(nintl)) THEN
 
-      ! Take the diagonal element
-      aux = Da(Kld(i))
-
-      ! Loop through each column in this row.
-      ! Shift every entry until the diagonal is reached.
-      DO j = Kld(i)+1, Kld(i+1)-1
-
-        ! Check if we reached the position of the diagonal entry...
-        IF (Kcol(j)>i) EXIT
-
-        Kcol(j-1) = Kcol(j)
-        Da(j-1) = Da(j)
-
+      ! Allocate memory for auxiliary vector
+      CALL storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
+          ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_double(h_Daux,Daux)
+      
+      ! loop through each row
+      DO i = 1, neq
+        
+        ! Take the diagonal element
+        Daux = Da(nintl*(Kld(i)-1)+1:nintl*Kld(i))
+        
+        ! Loop through each column in this row.
+        ! Shift every entry until the diagonal is reached.
+        DO j = Kld(i)+1, Kld(i+1)-1
+          
+          ! Check if we reached the position of the diagonal entry...
+          IF (Kcol(j)>i) EXIT
+          
+          Kcol(j-1) = Kcol(j)
+          Da(nintl*(j-2)+1:nintl*(j-1)) = Da(nintl*(j-1)+1:nintl*j)
+          
+        END DO
+        
+        ! If we have reached the diagonal, we can stop and save our
+        ! diagonal entry from the first position there. The rest of the
+        ! line is in ascending order according to the specifications of
+        ! storage technique 7.
+        
+        Kcol(j-1) = i
+        Da(nintl*(j-2)+1:nintl*(j-1)) = Daux
+        
+        ! Save the position of the diagonal entry
+        Kdiagonal(i) = j-1
+        
       END DO
 
-      ! If we have reached the diagonal, we can stop and save our
-      ! diagonal entry from the first position there. The rest of the
-      ! line is in ascending order according to the specifications of
-      ! storage technique 7.
-
-      Kcol(j-1) = i
-      Da(j-1) = aux
+      ! Free auxiliary memory
+      CALL storage_free(h_Daux)
       
-      ! Save the position of the diagonal entry
-      Kdiagonal(i) = j-1
+    ELSE
 
-    END DO
+      ! loop through each row
+      DO i = 1, neq
+        
+        ! Take the diagonal element
+        aux = Da(Kld(i))
+        
+        ! Loop through each column in this row.
+        ! Shift every entry until the diagonal is reached.
+        DO j = Kld(i)+1, Kld(i+1)-1
           
+          ! Check if we reached the position of the diagonal entry...
+          IF (Kcol(j)>i) EXIT
+          
+          Kcol(j-1) = Kcol(j)
+          Da(j-1) = Da(j)
+          
+        END DO
+        
+        ! If we have reached the diagonal, we can stop and save our
+        ! diagonal entry from the first position there. The rest of the
+        ! line is in ascending order according to the specifications of
+        ! storage technique 7.
+        
+        Kcol(j-1) = i
+        Da(j-1) = aux
+        
+        ! Save the position of the diagonal entry
+        Kdiagonal(i) = j-1
+        
+      END DO
+
+    END IF
+
   ELSE
 
     ! loop through each row
@@ -2956,7 +3571,7 @@ CONTAINS
 
 !<subroutine>  
   
-  SUBROUTINE lsyssc_unsortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da)
+  SUBROUTINE lsyssc_unsortCSRdouble (Kcol, Kld, Kdiagonal, neq, Da, nintl)
 
 !<description>
   ! Internal auxiliary routine.
@@ -2976,6 +3591,9 @@ CONTAINS
 
   ! Pointers to the diagonal entries of the matrix.
   INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kdiagonal
+
+  ! Dimension of the interleave submatrices (if any)
+  INTEGER, INTENT(IN), OPTIONAL :: nintl
 !</input>
 
 !<inputoutput>
@@ -2992,33 +3610,70 @@ CONTAINS
 !</subroutine>
 
   ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: Daux
   REAL(DP) :: aux
+  INTEGER :: h_Daux
   INTEGER(I32) :: i, j
 
   IF (PRESENT(Da)) THEN
 
-    ! loop through each row
-    DO i = 1, neq
+    ! Check if size of interleave matrix is specified. If this is the
+    ! case then each "move" is performed for a local vector
+    IF (PRESENT(nintl)) THEN
 
-      ! Take the diagonal element
-      aux = Da(Kdiagonal(i))
+      ! Allocate memory for auxiliary vector
+      CALL storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
+          ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_double(h_Daux,Daux)
 
-      ! Loop through each column in this row.
-      ! Shift every entry one element to the right.
-      DO j = Kdiagonal(i),Kld(i)+1,-1
-
-        Kcol(j) = Kcol(j-1)
-        Da(j) = Da(j-1)
+      ! loop through each row
+      DO i = 1, neq
+        
+        ! Take the diagonal element
+        Daux = Da(nintl*(Kdiagonal(i)-1)+1:nintl*Kdiagonal(i))
+        
+        ! Loop through each column in this row.
+        ! Shift every entry one element to the right.
+        DO j = Kdiagonal(i),Kld(i)+1,-1
+          
+          Kcol(j) = Kcol(j-1)
+          Da(nintl*(j-1)+1:nintl*j) = Da(nintl*(j-2)+1:nintl*(j-1))
+          
+        END DO
+        
+        ! Put the diagonal to the front.
+        Kcol(Kld(i)) = i
+        Da(nintl*(Kld(i)-1)+1:nintl*Kld(i)) = Daux
 
       END DO
+
+    ELSE
       
-      ! Put the diagonal to the front.
-      Kcol(Kld(i)) = i
-      Da(Kld(i)) = aux
+      ! loop through each row
+      DO i = 1, neq
+        
+        ! Take the diagonal element
+        aux = Da(Kdiagonal(i))
+        
+        ! Loop through each column in this row.
+        ! Shift every entry one element to the right.
+        DO j = Kdiagonal(i),Kld(i)+1,-1
+          
+          Kcol(j) = Kcol(j-1)
+          Da(j) = Da(j-1)
+          
+        END DO
+        
+        ! Put the diagonal to the front.
+        Kcol(Kld(i)) = i
+        Da(Kld(i)) = aux
+        
+      END DO
       
-    END DO
-    
+    END IF
+      
   ELSE
+
     ! loop through each row
     DO i = 1, neq
 
@@ -4852,7 +5507,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: h_Idiag
+  INTEGER :: h_Idiag,ivar,NVAR
   INTEGER(PREC_VECIDX) :: i
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiag
   REAL(DP), DIMENSION(:), POINTER :: p_Da, p_Dvec, p_Dvec2
@@ -4949,6 +5604,186 @@ CONTAINS
         END DO
 !$omp  end parallel do
         
+      CASE DEFAULT
+        PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        STOP
+      END SELECT
+
+    CASE DEFAULT
+      PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
+      STOP
+    END SELECT
+
+  CASE (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
+    ! Get a pointer to the diagonal - either h_KLD or h_Kdiagonal
+    IF (rmatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9INTL) THEN
+      h_Idiag = rmatrix%h_Kdiagonal
+    ELSE
+      h_Idiag = rmatrix%h_Kld
+    END IF
+    CALL storage_getbase_int(h_Idiag,p_Kdiag)
+    
+    NVAR=rmatrix%NVAR
+
+    ! Data type?
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
+      dmyscale = dscale * rmatrix%dscaleFactor
+
+      ! And the vector(s)?
+      SELECT CASE (rvectorSrc%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
+        CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
+        ! Let's go...
+        SELECT CASE(rmatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+
+        CASE (LSYSSC_MATRIXD)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+
+        CASE DEFAULT
+          PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
+              &matrix format!'
+          STOP
+        END SELECT
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
+        CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
+        ! Let's go...
+        SELECT CASE(rmatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+
+        CASE (LSYSSC_MATRIXD)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+
+        CASE DEFAULT
+          PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
+              &matrix format!'
+          STOP
+        END SELECT
+        
+      CASE DEFAULT
+        PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        STOP
+      END SELECT
+      
+    CASE (ST_SINGLE)
+      CALL storage_getbase_single (rmatrix%h_Da,p_Fa)
+      fmyscale = REAL(dscale * rmatrix%dscaleFactor,SP)
+
+      ! And the vector(s)?
+      SELECT CASE (rvectorSrc%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
+        CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
+        ! Let's go...
+        SELECT CASE(rmatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
+                  *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+
+        CASE (LSYSSC_MATRIXD)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
+                  *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+        
+        CASE DEFAULT
+          PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
+              &matrix format!'
+          STOP
+        END SELECT
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
+        CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
+        ! Let's go...
+        SELECT CASE(rmatrix%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
+                  *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+
+        CASE (LSYSSC_MATRIXD)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i,ivar)
+          DO i=1,rvectorSrc%NEQ
+            DO ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
+                  *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
+            END DO
+          END DO
+!$omp  end parallel do
+        
+        CASE DEFAULT
+          PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
+              &matrix format!'
+          STOP
+        END SELECT
+
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
         STOP
@@ -5346,7 +6181,7 @@ CONTAINS
 
   ! Which structure do we actually have?
   SELECT CASE (rsourceMatrix%cmatrixFormat)
-  CASE (LSYSSC_MATRIX9)
+  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
   
     ! Restore crucial format-specific data
     rdestMatrix%h_DA        = rtempMatrix%h_DA
@@ -5384,7 +6219,7 @@ CONTAINS
     CALL storage_getbase_int (rdestMatrix%h_Kdiagonal,p_KdiagonalDest)
     CALL lalg_copyVectorInt (p_KdiagonalSource,p_KdiagonalDest)
       
-  CASE (LSYSSC_MATRIX7)
+  CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
 
     ! Restore crucial format-specific data
     rdestMatrix%h_DA        = rtempMatrix%h_DA
@@ -6196,7 +7031,7 @@ CONTAINS
 
   ! local variables
   INTEGER(PREC_MATIDX) :: NA
-  INTEGER :: cdType
+  INTEGER :: cdType,NVAR
   REAL(SP), DIMENSION(:), POINTER :: p_Fa
   REAL(DP), DIMENSION(:), POINTER :: p_Da
   
@@ -6206,6 +7041,7 @@ CONTAINS
   END IF
   
   NA = rmatrixScalar%NA
+  NVAR = rmatrixScalar%NVAR
 
   IF (PRESENT(cdataType)) THEN
     cdType = cdataType
@@ -6230,6 +7066,57 @@ CONTAINS
         CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
                             NA, cdType, rmatrixScalar%h_DA, &
                             ST_NEWBLOCK_NOINIT)
+      END IF
+      
+      IF (iclear .GE. LSYSSC_SETM_ONE) THEN
+        SELECT CASE (cdType)
+        CASE (ST_DOUBLE)
+          CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+          CALL lalg_setVectorDble (p_Da,1.0_DP)
+        CASE (ST_SINGLE)
+          CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+          CALL lalg_setVectorSngl (p_Fa,1.0_SP)
+        CASE DEFAULT
+          PRINT *,'lsyssc_createEmptyMatrixScalar: Unknown data type!'
+          STOP
+        END SELECT
+      END IF
+      
+    END IF
+    
+  CASE (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
+    
+    ! Check if the matrix entries exist. If not, allocate the matrix.
+    IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
+    
+      IF (iclear .GE. LSYSSC_SETM_ZERO) THEN
+        SELECT CASE (rmatrixScalar%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+              NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
+        CASE (LSYSSC_MATRIXD)
+          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+              NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
+        CASE DEFAULT
+          PRINT *, 'lsyssc_createEmptyMatrixScalar: Unsupported interl&
+              &eave matrix format'
+          STOP
+        END SELECT
+
+      ELSE
+        SELECT CASE (rmatrixScalar%cinterleavematrixFormat)
+        CASE (LSYSSC_MATRIX1)
+          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+              NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
+        CASE (LSYSSC_MATRIXD)
+          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+              NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
+        CASE DEFAULT
+          PRINT *, 'lsyssc_createEmptyMatrixScalar: Unsupported interl&
+              &eave matrix format'
+          STOP
+        END SELECT
+          
       END IF
       
       IF (iclear .GE. LSYSSC_SETM_ONE) THEN
@@ -7443,9 +8330,13 @@ CONTAINS
 
       INTEGER :: i
       
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Da3(:,i)=Da1(i)*Da2(:,i)
-      END DO      
+      END DO
+!$omp  end parallel do
     END SUBROUTINE do_matDmat1mul_doubledouble
 
     !**************************************************************
@@ -7463,9 +8354,13 @@ CONTAINS
 
       INTEGER :: i
       
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Da3(:,i)=Fa1(i)*Da2(:,i)
       END DO
+!$omp  end parallel do
     END SUBROUTINE do_matDmat1mul_singledouble
 
     !**************************************************************
@@ -7482,10 +8377,14 @@ CONTAINS
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
 
       INTEGER :: i
-      
+
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Da3(:,i)=Da1(i)*Fa2(:,i)
       END DO
+!$omp  end parallel do
     END SUBROUTINE do_matDmat1mul_doublesingle
 
     !**************************************************************
@@ -7502,10 +8401,14 @@ CONTAINS
       REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
 
       INTEGER :: i
-      
+
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Fa3(:,i)=Fa1(i)*Fa2(:,i)
       END DO
+!$omp  end parallel do
     END SUBROUTINE do_matDmat1mul_singlesingle
 
     !**************************************************************
@@ -7522,10 +8425,14 @@ CONTAINS
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
 
       INTEGER :: i
-      
+
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,m
         Da3(i,:)=Da1(i,:)*Da2(i)
       END DO
+!$omp  end parallel do
     END SUBROUTINE do_mat1matDmul_doubledouble
 
     !**************************************************************
@@ -7542,10 +8449,14 @@ CONTAINS
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
 
       INTEGER :: i
-      
+
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,m
         Da3(i,:)=Fa1(i,:)*Da2(i)
       END DO
+!$omp  end parallel do
     END SUBROUTINE do_mat1matDmul_singledouble
 
     !**************************************************************
@@ -7562,10 +8473,14 @@ CONTAINS
       REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
 
       INTEGER :: i
-      
+
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)  
       DO i=1,m
         Da3(i,:)=Da1(i,:)*Fa2(i)
       END DO
+!$omp  end parallel do
     END SUBROUTINE do_mat1matDmul_doublesingle
 
     !**************************************************************
@@ -7582,10 +8497,14 @@ CONTAINS
       REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
 
       INTEGER :: i
-      
+
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,m
         Fa3(i,:)=Fa1(i,:)*Fa2(i)
       END DO
+!$omp  end parallel do
     END SUBROUTINE do_mat1matDmul_singlesingle
 
     !**************************************************************
@@ -9536,9 +10455,13 @@ CONTAINS
 
       CALL DCOPY(n*m,Da1,1,Da3,1)
       CALL DSCAL(n*m,c1,Da3,1)
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Da2(i)
       END DO
+!$omp  end parallel do
       !CALL lalg_copyVectorDble(Da1,Da3)
       !CALL lalg_scaleVectorDble(Da3,c1)
       !DO i=0,n-1
@@ -9566,9 +10489,13 @@ CONTAINS
 
       Da3=Fa1
       CALL DSCAL(n*m,c1,Da3,1)
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Da2(i)
       END DO
+!$omp  end parallel do
       !CALL lalg_scaleVectorDble(Da3,c1)
       !DO i=0,n-1
       !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
@@ -9595,9 +10522,13 @@ CONTAINS
 
       CALL DCOPY(n*m,Da1,1,Da3,1)
       CALL DSCAL(n*m,c1,Da3,1)
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Fa2(i)
       END DO
+!$omp  end parallel do
       !CALL lalg_copyVectorDble(Da1,Da3)
       !CALL lalg_scaleVectorDble(Da3,c1)
       !DO i=0,n-1
@@ -9625,9 +10556,13 @@ CONTAINS
 
       CALL SCOPY(n*m,Fa1,1,Fa3,1)
       CALL SSCAL(n*m,REAL(c1,SP),Fa3,1)
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(i)
       DO i=1,n
         Fa3(i,i)=Fa3(i,i)+c2*Fa2(i)
       END DO
+!$omp  end parallel do
       !CALL lalg_copyVectorSngl(Fa1,Fa3)
       !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
       !DO i=0,n-1

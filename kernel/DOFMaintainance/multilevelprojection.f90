@@ -2231,7 +2231,8 @@ CONTAINS
   ! Restricts a RHS vector from a fine grid to a coarse grid.
   ! $Q_2$, uniform triangulation, double precision vector.
 !</description>
-  
+
+!<input>  
   ! Fine grid vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
 

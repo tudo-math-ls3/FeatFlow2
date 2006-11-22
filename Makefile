@@ -97,6 +97,23 @@ libs:
 	@$(foreach i, $(BUILDLIB), (cd libraries/$i && $(MAKE) all ); )
 	@date
 
+html:
+	@date
+	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) html ); )
+	@date
+
+docs: html ps pdf
+
+ps:
+	@date
+	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) ps ); )
+	@date
+
+pdf:
+	@date
+	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) pdf ); )
+	@date
+
 bench: 
 	@echo "Running Featflow benchmarks..."
 	@date
@@ -211,3 +228,5 @@ help: .help
 	@echo 
 	@echo ' purge_all     - remove all that can be removed for all IDs'
 	@echo 
+
+.PHONY: docs

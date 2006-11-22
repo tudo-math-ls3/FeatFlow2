@@ -201,6 +201,8 @@ CONTAINS
 
   ! ***************************************************************************
 
+!<subroutine>
+
  SUBROUTINE conv_upwind2d (rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
                            rmatrix, rsolution, rdefect, DmeshVelocity, &
@@ -443,6 +445,8 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+
+!<subroutine>
 
   SUBROUTINE conv_upwind2dALE_Q1Tdouble ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
@@ -699,7 +703,7 @@ CONTAINS
     !
     !          u_upw = Lambda u_l  + (1-Lambda) u_k
     !
-    !     What is Lambda? 0<Lambda<1 is chosen depending on the flow
+    !     What is Lambda? 0 < Lambda < 1 is chosen depending on the flow
     !     crossing the diagonal Glk. More precisely, it's chosen
     !     depending on the flow:
     !       Flow direction       lambda        u_upw
@@ -1139,6 +1143,8 @@ CONTAINS
 
   ! ***************************************************************************
 
+!<subroutine>
+
   SUBROUTINE conv_streamlineDiffusion2d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
@@ -1381,6 +1387,8 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+
+!<subroutine>
 
   SUBROUTINE conv_strdiff2dALE_Q1Tdouble ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
@@ -2718,7 +2726,7 @@ CONTAINS
   ! Unified edge oriented jump stabilisation.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
-  ! $$<Ju,v> = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds$$
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
@@ -3342,7 +3350,7 @@ CONTAINS
       dedgeweight = 0.5_DP * dedgelength
       
       ! Compute the coefficient in front of the integral:
-      ! <Ju,v> = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
+      ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
       dcoeff = MAX(rconfig%dgammastar * rconfig%dnu * dedgelength, &
                   rconfig%dgamma * dedgelength**2)
       
@@ -3432,6 +3440,8 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+
+!<subroutine>
 
   SUBROUTINE conv_JumpStabilisation2d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
@@ -3623,6 +3633,8 @@ CONTAINS
   
   ! ***************************************************************************
 
+!<subroutine>
+
   SUBROUTINE conv_ueoJumpStabil2d_mv_unidble ( &
                   rmatrixScalar,cdef,rconfig, &
                   Du1,Du2,Ddef1,Ddef2)
@@ -3630,7 +3642,7 @@ CONTAINS
   ! Unified edge oriented jump stabilisation.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
-  ! $$<Ju,v> = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
+  ! $$< Ju,v > = \sum_E \max(\gamma^{*}*\nu*h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds$$
   ! or updates a defect vector.
   !
@@ -4293,7 +4305,7 @@ CONTAINS
       dedgeweight = 0.5_DP * dedgelength
       
       ! Compute the coefficient in front of the integral:
-      ! <Ju,v> = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
+      ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
       dcoeff = MAX(rconfig%dgammastar * rconfig%dnu * dedgelength, &
                   rconfig%dgamma * dedgelength**2)
       
