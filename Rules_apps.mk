@@ -135,7 +135,6 @@ HTML_MASTER_FILE = $(HTMLDIR)/$(shell basename $(shell pwd)).html
 .PHONY: html
 html: $(HTML_HEADER_FILE) $(HTML_FOOTER_FILE) $(SRC:%=$(HTMLDIR)/%.html)
 	@echo "Creating HTML documentation in <$(HTML_MASTER_FILE)>.";
-	@mkdir -p $(HTMLDIR)
 	@rm -f $(HTML_MASTER_FILE)
 	@cat $(HTML_HEADER_FILE) >> $(HTML_MASTER_FILE);
         # Creating table of contents
@@ -203,4 +202,5 @@ $(PARSER).class: $(FEATFLOW)/bin/$(PARSER).java
 # with help of the Java-based parser. 
 $(HTMLDIR)/%.html: %.xml $(PARSER).class
 	@echo "Parsing $< to create module documentation...";
+	@mkdir -p $(HTMLDIR)
 	@$(JAVA) -classpath . $(PARSER) html $< $(HTMLDIR);

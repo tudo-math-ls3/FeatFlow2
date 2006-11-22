@@ -97,12 +97,12 @@ libs:
 	@$(foreach i, $(BUILDLIB), (cd libraries/$i && $(MAKE) all ); )
 	@date
 
+docs: html ps pdf
+
 html:
 	@date
 	@$(foreach i, $(APPS), (cd applications/$i && $(MAKE) html ); )
 	@date
-
-docs: html ps pdf
 
 ps:
 	@date
