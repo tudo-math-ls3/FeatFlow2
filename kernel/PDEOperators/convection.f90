@@ -1310,9 +1310,7 @@ CONTAINS
     END IF
 
     i = rmatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-    IF ((rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-        ((i .NE. EL_E030) .AND. (i .NE. EL_E031) .AND. &
-         (i .NE. EL_EM30) .AND. (i .NE. EL_EM31))) THEN
+    IF (rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'SD: Unsupported discretisation.'
       STOP
     END IF
@@ -1363,7 +1361,7 @@ CONTAINS
       CALL lsyssc_getbase_double (p_rdefectX,p_DdefectX)
       CALL lsyssc_getbase_double (p_rdefectY,p_DdefectY)
       
-      CALL conv_strdiff2dALE_Q1Tdouble ( &
+      CALL conv_strdiff2dALE_double ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix,cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
@@ -1372,7 +1370,7 @@ CONTAINS
                     
     ELSE
     
-      CALL conv_strdiff2dALE_Q1Tdouble ( &
+      CALL conv_strdiff2dALE_double ( &
                     p_DvelX1,p_DvelY1,p_DvelX2,p_DvelY2,dprimWeight,dsecWeight, &
                     rmatrix, cdef, rconfig%dupsam, rconfig%dnu, &
                     rconfig%dalpha, rconfig%dbeta, rconfig%dtheta, rconfig%ddelta, &
@@ -1389,8 +1387,7 @@ CONTAINS
   ! ***************************************************************************
 
 !<subroutine>
-
-  SUBROUTINE conv_strdiff2dALE_Q1Tdouble ( &
+  SUBROUTINE conv_strdiff2dALE_double ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
                   rmatrix,cdef, &
                   dupsam,dnu,dalpha,dbeta,dtheta, ddelta, bALE, &
@@ -1677,7 +1674,7 @@ CONTAINS
     IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
       IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
                  PRESENT(Du1) .AND. PRESENT(Du2))) THEN
-        PRINT *,'conv_strdiff2dALE_Q1Tdouble: Necessary arguments missing!'
+        PRINT *,'conv_strdiff2dALE_double: Necessary arguments missing!'
         STOP
       END IF
     END IF
@@ -2482,7 +2479,8 @@ CONTAINS
       ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
       ! through element IEL.
   
-      ! For Ex30/Ex31 element, U1/U2 represent the mean velocity
+      ! For elements whose DOF's represent directly the velocity, U1/U2 
+      ! represent the mean velocity
       ! along an egde/on the midpoint of each edge, so U1/U2 is
       ! clearly an approximation to the velocity in element T.
 
