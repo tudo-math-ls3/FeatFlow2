@@ -299,8 +299,11 @@ CONTAINS
   !</output>
     
   !</subroutine>
-
+  
     Dcoefficients(:,:,:) = 0.0_DP
+    !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
+    !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
+    !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
 
   END SUBROUTINE
 
@@ -377,6 +380,9 @@ CONTAINS
   !</subroutine>
 
     Dcoefficients(:,:,:) = 0.0_DP
+    !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
+    !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
+    !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
 
   END SUBROUTINE
 
@@ -470,7 +476,8 @@ CONTAINS
     ! Use boundary conditions from DAT files.
     SELECT CASE (cinfoNeeded)
     
-    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDDERIV,DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
+    CASE (DISCBC_NEEDFUNC,DISCBC_NEEDFUNCMID,DISCBC_NEEDDERIV, &
+          DISCBC_NEEDINTMEAN,DISCBC_NEEDNORMALSTRESS)
       
       ! Dirichlet boundary conditions
     

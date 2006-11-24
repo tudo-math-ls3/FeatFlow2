@@ -185,6 +185,41 @@ CONTAINS
                     p_rdiscretisation%RspatialDiscretisation(3), &
                     EL_Q0,EL_EM30,icubB, &
                     p_rtriangulation, p_rboundary)
+
+      CASE (4)
+        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+        ! discretisation structures for every component of the solution vector.
+        ! We have a solution vector with three components:
+        !  Component 1 = X-velocity
+        !  Component 2 = Y-velocity
+        !  Component 3 = Pressure
+        ! For simplicity, we set up one discretisation structure for the 
+        ! velocity...
+        CALL spdiscr_initDiscr_simple ( &
+                    p_rdiscretisation%RspatialDiscretisation(1), &
+                    EL_Q2,icubA, &
+                    p_rtriangulation, p_rboundary)
+                    
+        ! Manually set the cubature formula for the RHS as the above routine
+        ! uses the same for matrix and vectors.
+        p_rdiscretisation%RspatialDiscretisation(1)% &
+          RelementDistribution(1)%ccubTypeLin = icubF
+                    
+        ! ...and copy this structure also to the discretisation structure
+        ! of the 2nd component (Y-velocity). This needs no additional memory, 
+        ! as both structures will share the same dynamic information afterwards,
+        ! but we have to be careful when releasing the discretisation structures
+        ! at the end of the program!
+        p_rdiscretisation%RspatialDiscretisation(2) = &
+          p_rdiscretisation%RspatialDiscretisation(1)
+    
+        ! For the pressure (3rd component), we set up a separate discretisation 
+        ! structure, as this uses different finite elements for trial and test
+        ! functions.
+        CALL spdiscr_initDiscr_combined ( &
+                    p_rdiscretisation%RspatialDiscretisation(3), &
+                    EL_QP1,EL_Q2,icubB, &
+                    p_rtriangulation, p_rboundary)
                     
       CASE DEFAULT
         PRINT *,'Unknown discretisation: iElementType = ',ielementType
