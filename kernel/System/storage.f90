@@ -238,7 +238,14 @@ MODULE storage
   
   INTERFACE storage_new
     MODULE PROCEDURE storage_new1D
+    MODULE PROCEDURE storage_new1DFixed
     MODULE PROCEDURE storage_new2D
+    MODULE PROCEDURE storage_new2DFixed
+  END INTERFACE
+
+  INTERFACE storage_realloc
+    MODULE PROCEDURE storage_realloc
+    MODULE PROCEDURE storage_reallocFixed
   END INTERFACE
 
   INTERFACE storage_getsize
@@ -527,7 +534,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_initialiseNode (rstorageNode,cinitNewBlock,istartIndex)
+  SUBROUTINE storage_initialiseNode (rstorageNode,cinitNewBlock,istartIndex,istopIndex)
 
 !<description>
   ! Internal subroutine: Initialise the memory identified by storage 
@@ -547,6 +554,11 @@ CONTAINS
   ! For multidimensional arrays, this specifies the start index of the 
   ! last dimension.
   INTEGER(I32), INTENT(IN) :: istartIndex
+
+  ! OPTIONAL: Stop index up to which to initialise; should usually be =SIZE(*).
+  ! For multidimensional arrays, this specifies the stop index of the 
+  ! last dimension.
+  INTEGER(I32), INTENT(IN), OPTIONAL :: istopIndex
 !</input>
   
 !</subroutine>
@@ -560,31 +572,59 @@ CONTAINS
       SELECT CASE (cinitNewBlock)
       CASE (ST_NEWBLOCK_ZERO) 
         ! Clear the vector if necessary
-        SELECT CASE (rstorageNode%idataType)
-        CASE (ST_SINGLE)
-          rstorageNode%p_Fsingle1D(istartIndex:) = 0.0_SP
-        CASE (ST_DOUBLE)
-          rstorageNode%p_Ddouble1D(istartIndex:) = 0.0_DP
-        CASE (ST_INT)
-          rstorageNode%p_Iinteger1D(istartIndex:) = 0_I32
-        END SELECT
-        
+        IF (PRESENT(istopIndex)) THEN
+          SELECT CASE (rstorageNode%idataType)
+          CASE (ST_SINGLE)
+            rstorageNode%p_Fsingle1D(istartIndex:istopIndex) = 0.0_SP
+          CASE (ST_DOUBLE)
+            rstorageNode%p_Ddouble1D(istartIndex:istopIndex) = 0.0_DP
+          CASE (ST_INT)
+            rstorageNode%p_Iinteger1D(istartIndex:istopIndex) = 0_I32
+          END SELECT
+        ELSE
+          SELECT CASE (rstorageNode%idataType)
+          CASE (ST_SINGLE)
+            rstorageNode%p_Fsingle1D(istartIndex:) = 0.0_SP
+          CASE (ST_DOUBLE)
+            rstorageNode%p_Ddouble1D(istartIndex:) = 0.0_DP
+          CASE (ST_INT)
+            rstorageNode%p_Iinteger1D(istartIndex:) = 0_I32
+          END SELECT
+        END IF
+
       CASE (ST_NEWBLOCK_ORDERED)
         ! Impose ordering 1,2,3,...,N if necessary
-        SELECT CASE (rstorageNode%idataType)
-        CASE (ST_SINGLE)
-          DO iorder=istartIndex,SIZE(rstorageNode%p_Fsingle1D)
-            rstorageNode%p_Fsingle1D(iorder) = REAL(iorder,SP)
-          END DO
-        CASE (ST_DOUBLE)
-          DO iorder=istartIndex,SIZE(rstorageNode%p_Ddouble1D)
-            rstorageNode%p_Ddouble1D(iorder) = REAL(iorder,DP)
-          END DO
-        CASE (ST_INT)
-          DO iorder=istartIndex,SIZE(rstorageNode%p_Iinteger1D)
-            rstorageNode%p_Iinteger1D(iorder) = INT(iorder,I32)
-          END DO
-        END SELECT
+        IF (PRESENT(istopIndex)) THEN
+          SELECT CASE (rstorageNode%idataType)
+          CASE (ST_SINGLE)
+            DO iorder=istartIndex,istopIndex
+              rstorageNode%p_Fsingle1D(iorder) = REAL(iorder,SP)
+            END DO
+          CASE (ST_DOUBLE)
+            DO iorder=istartIndex,istopIndex
+              rstorageNode%p_Ddouble1D(iorder) = REAL(iorder,DP)
+            END DO
+          CASE (ST_INT)
+            DO iorder=istartIndex,istopIndex
+              rstorageNode%p_Iinteger1D(iorder) = INT(iorder,I32)
+            END DO
+          END SELECT
+        ELSE
+          SELECT CASE (rstorageNode%idataType)
+          CASE (ST_SINGLE)
+            DO iorder=istartIndex,UBOUND(rstorageNode%p_Fsingle1D,1)
+              rstorageNode%p_Fsingle1D(iorder) = REAL(iorder,SP)
+            END DO
+          CASE (ST_DOUBLE)
+            DO iorder=istartIndex,UBOUND(rstorageNode%p_Ddouble1D,1)
+              rstorageNode%p_Ddouble1D(iorder) = REAL(iorder,DP)
+            END DO
+          CASE (ST_INT)
+            DO iorder=istartIndex,UBOUND(rstorageNode%p_Iinteger1D,1)
+              rstorageNode%p_Iinteger1D(iorder) = INT(iorder,I32)
+            END DO
+          END SELECT
+        END IF
         
       END SELECT
         
@@ -593,7 +633,16 @@ CONTAINS
       SELECT CASE (cinitNewBlock)
       CASE (ST_NEWBLOCK_ZERO) 
         ! Clear the vector
-        IF (cinitNewBlock .EQ. ST_NEWBLOCK_ZERO) THEN
+        IF (PRESENT(istopIndex)) THEN
+          SELECT CASE (rstorageNode%idataType)
+          CASE (ST_SINGLE)
+            rstorageNode%p_Fsingle2D(:,istartIndex:istopIndex) = 0.0_SP
+          CASE (ST_DOUBLE)
+            rstorageNode%p_Ddouble2D(:,istartIndex:istopIndex) = 0.0_DP
+          CASE (ST_INT)
+            rstorageNode%p_Iinteger2D(:,istartIndex:istopIndex) = 0_I32
+          END SELECT
+        ELSE
           SELECT CASE (rstorageNode%idataType)
           CASE (ST_SINGLE)
             rstorageNode%p_Fsingle2D(:,istartIndex:) = 0.0_SP
@@ -622,7 +671,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
+  SUBROUTINE storage_initialiseBlock (ihandle, cinitNewBlock,&
+      rheap, istartIndex)
 
 !<description>
   ! This routine initialises the memory associated to ihandle according
@@ -637,6 +687,9 @@ CONTAINS
   ! ST_NEWBLOCK_ORDERED). Specifies how to initialise the data block associated
   ! to ihandle.
   INTEGER, INTENT(IN) :: cinitNewBlock
+
+  ! OPTIONAL: Start index of Block
+  INTEGER(I32), INTENT(IN), OPTIONAL :: istartIndex
 !</input>
   
 !<inputoutput>
@@ -650,7 +703,7 @@ CONTAINS
   ! Pointer to the heap 
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-
+  
   ! Get the heap to use - local or global one.
   
   IF(PRESENT(rheap)) THEN
@@ -663,7 +716,11 @@ CONTAINS
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
   
   ! Initialise
-  CALL storage_initialiseNode (p_rnode,cinitNewBlock,1_I32)
+  IF (PRESENT(istartIndex)) THEN
+    CALL storage_initialiseNode (p_rnode,cinitNewBlock,istartIndex)
+  ELSE
+    CALL storage_initialiseNode (p_rnode,cinitNewBlock,1_I32)
+  END IF
 
   END SUBROUTINE
 
@@ -770,6 +827,113 @@ CONTAINS
 
   END SUBROUTINE
 
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_new1Dfixed (scall, sname, ilbound, iubound,&
+                            ctype, ihandle, cinitNewBlock, rheap)
+
+!<description>
+  !This routine reserves a 1D memory block of desired bounds and type.
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  CHARACTER(LEN=*), INTENT(IN) :: scall
+
+  !clear name of data field
+  CHARACTER(LEN=*), INTENT(IN) :: sname
+
+  !requested lower bound
+  INTEGER(I32), INTENT(IN) :: ilbound
+
+  !requested upper bound
+  INTEGER(I32), INTENT(IN) :: iubound
+
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
+  INTEGER, INTENT(IN) :: ctype
+
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
+  INTEGER, INTENT(IN) :: cinitNewBlock
+
+!</input>
+  
+!<inputoutput>
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  INTEGER, INTENT(OUT) :: ihandle
+
+!</output>
+  
+!</subroutine>
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  INTEGER(I32) :: isize
+
+  isize=iubound-ilbound+1
+  IF (isize .EQ. 0) THEN
+    PRINT *,'storage_new1Dfixed Warning: isize=0'
+    ihandle = ST_NOHANDLE
+    RETURN
+  END IF
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  ! Get a new handle
+  ihandle = storage_newhandle (p_rheap)
+
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+  ! Initialise the content
+  
+  p_rnode%idataType = ctype
+  p_rnode%idimension = 1
+  p_rnode%sname = sname
+  
+  ! Allocate memory according to isize:
+  
+  SELECT CASE (ctype)
+  CASE (ST_SINGLE)
+    ALLOCATE(p_rnode%p_Fsingle1D(ilbound:iubound))
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_SINGLE2BYTES)
+  CASE (ST_DOUBLE)
+    ALLOCATE(p_rnode%p_Ddouble1D(ilbound:iubound))
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_DOUBLE2BYTES)
+  CASE (ST_INT)
+    ALLOCATE(p_rnode%p_Iinteger1D(ilbound:iubound))
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES)
+  CASE DEFAULT
+    PRINT *,'Error: unknown mem type'
+    STOP
+  END SELECT
+  
+  p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
+  IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
+    p_rheap%dtotalMemMax = p_rheap%dtotalMem
+  
+  ! Initialise the memory block
+  CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap, ilbound)
+
+  END SUBROUTINE
 
 !************************************************************************
 
@@ -871,6 +1035,114 @@ CONTAINS
   
   ! Initialise the storage block
   CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_new2Dfixed (scall, sname, Ilbound, Iubound, ctype,&
+                            ihandle, cinitNewBlock, rheap)
+
+!<description>
+  !This routine reserves a 2D memory block of desired bounds and type.
+!</description>
+
+!<input>
+
+  !name of the calling routine
+  CHARACTER(LEN=*), INTENT(IN) :: scall
+
+  !clear name of data field
+  CHARACTER(LEN=*), INTENT(IN) :: sname
+
+  !requested lower bounds for 1st and 2nd dimension
+  INTEGER(I32), DIMENSION(2), INTENT(IN) :: Ilbound
+
+  !requested upper bounds for 1st and 2nd dimension
+  INTEGER(I32), DIMENSION(2), INTENT(IN) :: Iubound
+
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
+  INTEGER, INTENT(IN) :: ctype
+
+  !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
+  INTEGER, INTENT(IN) :: cinitNewBlock
+
+!</input>
+  
+!<inputoutput>
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</inputoutput>
+
+!<output>
+
+  ! Handle of the memory block.
+  INTEGER :: ihandle
+
+!</output>
+  
+!</subroutine>
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  TYPE(t_storageNode), POINTER :: p_rnode
+  INTEGER(I32), DIMENSION(2) :: Isize
+
+  Isize=Iubound-Ilbound+1
+  IF ((Isize(1) .EQ. 0) .OR. (Isize(2) .EQ. 0)) THEN
+    PRINT *,'storage_new2D Warning: Isize=0'
+    ihandle = 0
+    RETURN
+  END IF
+
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+  
+  ! Get a new handle
+  ihandle = storage_newhandle (p_rheap)
+
+  ! Where is the descriptor of the handle?
+  p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+  ! Initialise the content
+  
+  p_rnode%idataType = ctype
+  p_rnode%idimension = 2
+  p_rnode%sname = sname
+  
+  ! Allocate memory according to Isize:
+  
+  SELECT CASE (ctype)
+  CASE (ST_SINGLE)
+    ALLOCATE(p_rnode%p_Fsingle2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_SINGLE2BYTES)
+  CASE (ST_DOUBLE)
+    ALLOCATE(p_rnode%p_Ddouble2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_DOUBLE2BYTES)
+  CASE (ST_INT)
+    ALLOCATE(p_rnode%p_Iinteger2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_INT2BYTES)
+  CASE DEFAULT
+    PRINT *,'Error: unknown mem type'
+    STOP
+  END SELECT
+  
+  p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
+  IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
+    p_rheap%dtotalMemMax = p_rheap%dtotalMem
+  
+  ! Initialise the storage block
+  CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap, Ilbound(2))
 
   END SUBROUTINE
 
@@ -2614,6 +2886,315 @@ CONTAINS
           ! Copy by hand
           DO j=1,MIN(SIZE(rstorageNode%p_Iinteger2D,2),Isize2DOld(2))
             DO i=1,SIZE(rstorageNode%p_Iinteger2D,1)
+              rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
+            END DO
+          END DO
+        
+        END SELECT
+        
+      END IF
+      
+    CASE DEFAULT
+      PRINT *, 'Error in storage_realloc: Handle ',ihandle, &
+               ' is neither 1- nor 2- dimensional!'
+      STOP
+
+    END SELECT
+
+    ! Respect also the temporary memory in the total amount of memory used.
+    IF ((p_rheap%dtotalMem + rstorageNode%dmemBytes) .GT. p_rheap%dtotalMemMax) &
+      p_rheap%dtotalMemMax = p_rheap%dtotalMem + rstorageNode%dmemBytes
+    
+    ! Release old data
+    IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
+    IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
+    IF (ASSOCIATED(p_rnode%p_Iinteger1D)) DEALLOCATE(p_rnode%p_Iinteger1D)
+    IF (ASSOCIATED(p_rnode%p_Fsingle2D))  DEALLOCATE(p_rnode%p_Fsingle2D)
+    IF (ASSOCIATED(p_rnode%p_Ddouble2D))  DEALLOCATE(p_rnode%p_Ddouble2D)
+    IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
+    
+    ! Correct the memory statistics
+    p_rheap%dtotalMem = p_rheap%dtotalMem &
+                      - p_rnode%dmemBytes + rstorageNode%dmemBytes
+    IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
+      p_rheap%dtotalMemMax = p_rheap%dtotalMem
+    
+    ! Replace the old node by the new one, finish
+    p_rnode = rstorageNode
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_reallocFixed (scall, ilbound, iubound, ihandle, cinitNewBlock, bcopy, rheap)
+
+!<description>
+  ! This routine reallocates an existing memory block wih a new desired
+  ! size. In case of a multiple-dimension block, the last dimension
+  ! is changed. isize is the size of the new memory block / the new size
+  ! of the last dimension.
+  !
+  ! Warning: Reallocation of an array destroys all pointers associated with
+  ! the corresponding handle!
+!</description>
+
+!<input>
+
+  ! Name of the calling routine
+  CHARACTER(LEN=*), INTENT(IN) :: scall
+
+  ! Requested lower bound for the memory block / the new lower bound of the last
+  ! dimension in the memory block identified by ihandle
+  INTEGER(I32), INTENT(IN) :: ilbound
+
+  ! Requested upper bound for the memory block / the new upper bound of the last
+  ! dimension in the memory block identified by ihandle
+  INTEGER(I32), INTENT(IN) :: iubound
+
+  ! Init new storage block identifier (ST_NEWBLOCK_ZERO, 
+  ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
+  ! Specifies how to initialise memory if isize > original array size.
+  INTEGER, INTENT(IN) :: cinitNewBlock
+  
+  ! OPTIONAL: Copy old data.
+  ! =TRUE: Copy data of old array to the new one.
+  ! =FALSE: Reallocate memory, don't copy old data.
+  ! If not specified, TRUE is assumed.
+  LOGICAL, INTENT(IN), OPTIONAL :: bcopy
+
+!</input>
+  
+!<inputoutput>
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+  ! Handle of the memory block.
+  INTEGER, INTENT(INOUT) :: ihandle
+
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! local variables
+  
+    ! Pointer to the heap 
+    TYPE(t_storageBlock), POINTER :: p_rheap
+    TYPE(t_storageNode), POINTER :: p_rnode
+    
+    ! New storage node
+    TYPE(t_storageNode) :: rstorageNode
+    
+    ! size of the new 1-dimensional array
+    INTEGER(I32) :: isize
+
+    ! size of the old 1-dimensional array
+    INTEGER(I32) :: isizeOld
+
+    ! lower bound of the old 1-dimensional array
+    INTEGER(I32) :: ilboundOld
+
+    ! upper bound of the old 1-dimensional array
+    INTEGER(I32) :: iuboundOld
+
+    ! lower bound of the 1-dimensional array to be copied
+    INTEGER :: ilboundCopy
+
+    ! upper bound of the 1-dimensional array to be copied
+    INTEGER :: iuboundCopy
+
+    ! size of the old 2-dimensional array
+    INTEGER(I32), DIMENSION(2) :: Isize2Dold
+
+    ! lower bound of the old 2-dimensional array
+    INTEGER(I32), DIMENSION(2) :: ilbound2Dold
+
+    ! upper bound of the old 2-dimensional array
+    INTEGER(I32), DIMENSION(2) :: iubound2Dold
+
+    INTEGER(I32) :: i,j
+    
+    LOGICAL :: bcopyData
+
+    isize=iubound-ilbound+1
+    IF (isize .EQ. 0) THEN
+      ! Ok, not much to do...
+      CALL storage_free(ihandle,rheap)
+      RETURN
+    END IF
+    
+    ! Get the heap to use - local or global one.
+    
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbase
+    END IF
+    
+    ! Copy old data?
+    
+    IF (PRESENT(bcopy)) THEN
+      bcopyData = bcopy
+    ELSE
+      bcopyData = .TRUE.
+    END IF
+    
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+    ! Copy the data of the old storage node to rstorageNode. That way
+    ! we prepare a new storage node and will replace the old.
+    rstorageNode = p_rnode
+    
+    ! Are we 1D or 2D?
+    SELECT CASE(p_rnode%idimension)
+
+    CASE (1)
+    
+      ! Get the size and bounds of the old storage node.
+      SELECT CASE (p_rnode%idataType)
+      CASE (ST_SINGLE)
+        isizeOld   = SIZE(p_rnode%p_Fsingle1D)
+        ilboundOld = LBOUND(p_rnode%p_Fsingle1D,1)
+        iuboundOld = UBOUND(p_rnode%p_Fsingle1D,1)
+      CASE (ST_DOUBLE)
+        isizeOld   = SIZE(p_rnode%p_Ddouble1D)
+        ilboundOld = LBOUND(p_rnode%p_Ddouble1D,1)
+        iuboundOld = UBOUND(p_rnode%p_Ddouble1D,1)
+      CASE (ST_INT)
+        isizeOld   = SIZE(p_rnode%p_Iinteger1D)
+        ilboundOld = LBOUND(p_rnode%p_Iinteger1D,1)
+        iuboundOld = UBOUND(p_rnode%p_Iinteger1D,1)
+      END SELECT
+      
+      ! Do we really have to change anything?
+      IF ((ilbound == ilboundOld) .AND. &
+          (iubound == iuboundOld)) RETURN
+      
+      ! Allocate new memory and initialise it - if it's larger than the old
+      ! memory block.
+      
+      SELECT CASE (rstorageNode%idataType)
+      CASE (ST_SINGLE)
+        ALLOCATE(rstorageNode%p_Fsingle1D(ilbound:iubound))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_SINGLE2BYTES,DP)
+      CASE (ST_DOUBLE)
+        ALLOCATE(rstorageNode%p_Ddouble1D(ilbound:iubound))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_DOUBLE2BYTES,DP)
+      CASE (ST_INT)
+        ALLOCATE(rstorageNode%p_Iinteger1D(ilbound:iubound))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE DEFAULT
+        PRINT *,'Error: unknown mem type'
+        STOP
+      END SELECT
+      
+      IF (iubound > iuboundOld) &
+          CALL storage_initialiseNode (rstorageNode,cinitNewBlock,iuboundOld+1_I32)
+      IF (ilbound < ilboundOld) &
+          CALL storage_initialiseNode (rstorageNode,cinitNewBlock,ilbound,ilboundOld-1_I32)
+
+      ! Copy old data?
+      IF (bcopyData) THEN
+        ilboundCopy=MAX(ilbound,ilboundOld)
+        iuboundCopy=MIN(iubound,iuboundOld)
+        SELECT CASE (rstorageNode%idataType)
+        CASE (ST_SINGLE)
+          CALL lalg_copyVectorSngl (p_rnode%p_Fsingle1D(ilboundCopy:iuboundCopy),&
+                                    rstorageNode%p_Fsingle1D(ilboundCopy:iuboundCopy))
+        CASE (ST_DOUBLE)
+          CALL lalg_copyVectorDble (p_rnode%p_Ddouble1D(ilboundCopy:iuboundCopy),&
+                                    rstorageNode%p_Ddouble1D(ilboundCopy:iuboundCopy))
+        CASE (ST_INT)
+          CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(ilboundCopy:iuboundCopy),&
+                                  rstorageNode%p_Iinteger1D(ilboundCopy:iuboundCopy))
+        END SELECT
+      END IF
+
+    CASE (2)
+
+      ! Get the size of the old storage node.
+      SELECT CASE (p_rnode%idataType)
+      CASE (ST_SINGLE)
+        Isize2Dold = SHAPE(p_rnode%p_Fsingle2D)
+        ilbound2Dold = LBOUND(p_rnode%p_Fsingle2D)
+        iubound2Dold = UBOUND(p_rnode%p_Fsingle2D)
+      CASE (ST_DOUBLE)
+        Isize2Dold = SHAPE(p_rnode%p_Ddouble2D)
+        ilbound2Dold = LBOUND(p_rnode%p_Ddouble2D)
+        iubound2Dold = UBOUND(p_rnode%p_Ddouble2D)
+      CASE (ST_INT)
+        Isize2Dold = SHAPE(p_rnode%p_Iinteger2D)
+        ilbound2Dold = LBOUND(p_rnode%p_Iinteger2D)
+        iubound2Dold = UBOUND(p_rnode%p_Iinteger2D)
+      END SELECT
+      
+      ! Do we really have to change anything?
+      IF ((ilbound == ilbound2Dold(2)) .AND. &
+          (iubound == iubound2Dold(2))) RETURN
+      
+      ! Allocate new memory and initialise it - if it's larger than the old
+      ! memory block.
+      SELECT CASE (rstorageNode%idataType)
+      CASE (ST_SINGLE)
+        ALLOCATE(rstorageNode%p_Fsingle2D(&
+            Ilbound2Dold(1):Iubound2Dold(1),&
+            &ilbound:iubound))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_SINGLE2BYTES,DP)
+      CASE (ST_DOUBLE)
+        ALLOCATE(rstorageNode%p_Ddouble2D(&
+            Ilbound2Dold(1):Iubound2Dold(1),&
+            ilbound:iubound))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_DOUBLE2BYTES,DP)
+      CASE (ST_INT)
+        ALLOCATE(rstorageNode%p_Iinteger2D(&
+            Ilbound2Dold(1):Iubound2Dold(1),&
+            ilbound:iubound))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE DEFAULT
+        PRINT *,'Error: unknown mem type'
+        STOP
+      END SELECT
+      
+      IF (iubound > Iubound2Dold(2)) &
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                     Iubound2Dold(2)+1_I32)
+      IF (ilbound < Ilbound2Dold(2)) &
+        CALL storage_initialiseNode (rstorageNode,cinitNewBlock,&
+                                     ilbound,Ilbound2Dold(2)-1_I32)
+
+      ! Copy old data?
+      IF (bcopyData) THEN
+
+        ! Here it's easier than in storage_copy as we can be sure, source and
+        ! destination array have the same type!
+        SELECT CASE (rstorageNode%idataType)
+        CASE (ST_DOUBLE)
+          ! Copy by hand
+          DO j=MAX(ilbound,Ilbound2Dold(2)),MIN(iubound,Iubound2Dold(2))
+            DO i=Ilbound2DOld(1),Iubound2Dold(1)
+              rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
+            END DO
+          END DO
+            
+        CASE (ST_SINGLE)
+          ! Copy by hand
+          DO j=MAX(ilbound,Ilbound2Dold(2)),MIN(iubound,Iubound2Dold(2))
+            DO i=Ilbound2DOld(1),Iubound2Dold(1)
+              rstorageNode%p_Fsingle2D(i,j) = p_rnode%p_Fsingle2D(i,j)
+            END DO
+          END DO
+
+        CASE (ST_INT)
+          ! Copy by hand
+          DO j=MAX(ilbound,Ilbound2Dold(2)),MIN(iubound,Iubound2Dold(2))
+            DO i=Ilbound2DOld(1),Iubound2Dold(1)
               rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
             END DO
           END DO
