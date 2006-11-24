@@ -50,7 +50,7 @@ RE                 = 1000.0
 # Type of right hand side. 
 # 0=zero, 1=steady inhomog., 2=nonsteady force
 
-iRHS               = 0
+iRHS               = 1
 
 # Type of bdry. conditions.
 # 0=DIRICHLET, 1=Pressure drop, 2=NEUMANN part.
@@ -62,6 +62,7 @@ iBoundary          = 2
 
 # Type of element pair to use for the dioscretisation.
 # 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+# 4 = Q2(E013) / Q2(E013) / QP1
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 
 iElementType       = 3
