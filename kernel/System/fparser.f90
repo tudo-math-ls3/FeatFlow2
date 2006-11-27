@@ -192,7 +192,8 @@
 !# 3.) fparser_parseFunction
 !#     -> Parse function string and compile ot into bytecode
 !#
-!# 4.) fparser_evalFunction
+!# 4.) fparser_evalFunction = fparser_evalFunctionScalar /
+!#                            fparser_evalFunctionArray
 !#     -> Evaluate bytecode
 !#
 !# 5.) fparser_ErrorMsg
@@ -307,6 +308,11 @@ MODULE fparser
   PUBLIC :: fparser_ErrorMsg
   PUBLIC :: fparser_PrintByteCode
   public :: lowcase
+
+  INTERFACE fparser_evalFunction
+    MODULE PROCEDURE fparser_evalFunctionScalar
+    MODULE PROCEDURE fparser_evalFunctionArray
+  END INTERFACE
 
 !<constants>
 
@@ -492,9 +498,6 @@ MODULE fparser
     
     ! Immediates
     REAL(DP), DIMENSION(:), POINTER :: Immed => NULL()
-    
-    ! Stack
-    REAL(DP), DIMENSION(:), POINTER :: Stack => NULL()
   END TYPE t_fparserComponent
 !</typeblock>
 
@@ -550,7 +553,6 @@ CONTAINS
     DO i=1,rparser%nComp
       IF (ASSOCIATED(rparser%Comp(i)%ByteCode)) DEALLOCATE(rparser%Comp(i)%ByteCode)
       IF (ASSOCIATED(rparser%Comp(i)%Immed)) DEALLOCATE(rparser%Comp(i)%Immed)
-      IF (ASSOCIATED(rparser%Comp(i)%Stack)) DEALLOCATE(rparser%Comp(i)%Stack)
     END DO
     DEALLOCATE(rparser%Comp)
     rparser%nComp=0
@@ -582,7 +584,7 @@ CONTAINS
 
 !<inputoutput>
     ! Function parser
-    TYPE (t_fparser), INTENT(inout) :: rparser
+    TYPE (t_fparser), INTENT(INOUT) :: rparser
 !</inputoutput>
 !</subroutine>
 
@@ -625,7 +627,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION fparser_evalFunction (rparser, i, Val, EvalErrType) RESULT (res)
+  FUNCTION fparser_evalFunctionScalar (rparser, i, Val, EvalErrType) RESULT (res)
 
 !<description>
     ! Evaluate bytecode of ith function for the values passed in
@@ -647,7 +649,7 @@ CONTAINS
 
 !<output>
     ! OPTIONAL Error code for function evaluation
-    INTEGER, INTENT(OUT), OPTIONAL :: EvalErrTYpe
+    INTEGER, INTENT(OUT), OPTIONAL :: EvalErrType
 !</output>
 
 !<result>
@@ -655,17 +657,26 @@ CONTAINS
     REAL(DP) :: res
 !</result>
 !</function>
+
+    ! local parameters
+    REAL(DP), PARAMETER :: zero = 0._DP
     
     ! local variables
     TYPE(t_fparserComponent), POINTER :: Comp
-    INTEGER :: IP, DataPtr, StackPtr,jumpAddr,immedAddr
-    REAL(DP), PARAMETER :: zero = 0._DP
+    INTEGER :: IP, DataPtr, StackPtr,jumpAddr,immedAddr,h_Stack
+    REAL(DP), DIMENSION(:), POINTER :: Stack
     REAL(DP) :: daux
     
+    ! Initialization
     DataPtr  = 1
     StackPtr = 0
     IP       = 0
     Comp => rparser%Comp(i)
+
+    ! Allocate stack
+    CALL storage_new('fparser_evalFunctionScalar','Stack',Comp%StackSize+1,&
+        ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_double(h_Stack,Stack)
 
     DO WHILE(IP < Comp%ByteCodeSize)
       IP=IP+1
@@ -675,151 +686,148 @@ CONTAINS
         ! Functions
         !------------------------------------------------------------
       CASE (cAbs)
-        Comp%Stack(StackPtr)=ABS(Comp%Stack(StackPtr))
+        Stack(StackPtr)=ABS(Stack(StackPtr))
         
       CASE (cAcos)
-        IF ((Comp%Stack(StackPtr) < -1._DP).OR.&
-            &(Comp%Stack(StackPtr) > 1._DP)) THEN
+        IF ((Stack(StackPtr) < -1._DP) .OR. &
+            (Stack(StackPtr) > 1._DP)) THEN
           rparser%EvalErrType=4; res=zero; RETURN
         ENDIF
-        Comp%Stack(StackPtr)=ACOS(Comp%Stack(StackPtr))
+        Stack(StackPtr)=ACOS(Stack(StackPtr))
 
       CASE (cAsin)
-        IF ((Comp%Stack(StackPtr) < -1._DP).OR.&
-            (Comp%Stack(StackPtr) > 1._DP)) THEN
+        IF ((Stack(StackPtr) < -1._DP) .OR. &
+            (Stack(StackPtr) > 1._DP)) THEN
           rparser%EvalErrType=4; res=zero; RETURN
         ENDIF
-        Comp%Stack(StackPtr)=ASIN(Comp%Stack(StackPtr))
+        Stack(StackPtr)=ASIN(Stack(StackPtr))
 
       CASE (cAtan)
-        Comp%Stack(StackPtr)=ATAN(Comp%Stack(StackPtr))
+        Stack(StackPtr)=ATAN(Stack(StackPtr))
 
       CASE  (cAtan2)
-        Comp%Stack(StackPtr-1)=ATAN2(Comp%Stack(StackPtr -1),&
-            &Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=ATAN2(Stack(StackPtr -1),Stack(StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cAcosh)
-        daux=Comp%Stack(StackPtr)+SQRT(Comp%Stack(StackPtr)**2-1)
+        daux=Stack(StackPtr)+SQRT(Stack(StackPtr)**2-1)
         IF (daux <= 0._DP) THEN
           rparser%EvalErrType=5; res=zero; RETURN
         END IF
-        Comp%Stack(StackPtr)=LOG(daux)
+        Stack(StackPtr)=LOG(daux)
         
       CASE (cAnint)
-        Comp%Stack(StackPtr)=ANINT(Comp%Stack(StackPtr))
+        Stack(StackPtr)=ANINT(Stack(StackPtr))
 
       CASE (cAint)
-        Comp%Stack(StackPtr)=AINT(Comp%Stack(StackPtr))
+        Stack(StackPtr)=AINT(Stack(StackPtr))
 
       CASE (cAsinh)
-        daux=Comp%Stack(StackPtr)+SQRT(Comp%Stack(StackPtr)+1)
+        daux=Stack(StackPtr)+SQRT(Stack(StackPtr)+1)
         IF (daux <= 0._DP) THEN
           rparser%EvalErrType=5; res=zero; RETURN
         END IF
-        Comp%Stack(StackPtr)=LOG(daux)
+        Stack(StackPtr)=LOG(daux)
 
       CASE (cAtanh)
-        IF (Comp%Stack(StackPtr) == -1._DP) THEN
+        IF (Stack(StackPtr) == -1._DP) THEN
           rparser%EvalErrType=6; res=zero; RETURN
         END IF
-        daux=(1+Comp%Stack(StackPtr))/(1-Comp%Stack(StackPtr))
+        daux=(1+Stack(StackPtr))/(1-Stack(StackPtr))
         IF (daux <= 0._DP) THEN
           rparser%EvalErrType=3; res=zero; RETURN
         END IF
-        Comp%Stack(StackPtr) = LOG(daux)/2._DP
+        Stack(StackPtr)=LOG(daux)/2._DP
 
       CASE (cCeil)
-        Comp%Stack(StackPtr)=CEILING(Comp%Stack(StackPtr))
-
+        Stack(StackPtr)=CEILING(Stack(StackPtr))
+        
       CASE (cCos)
-        Comp%Stack(StackPtr)=COS(Comp%Stack(StackPtr)) 
+        Stack(StackPtr)=COS(Stack(StackPtr)) 
         
       CASE (cCosh)
-        Comp%Stack(StackPtr)=COSH(Comp%Stack(StackPtr))
+        Stack(StackPtr)=COSH(Stack(StackPtr))
 
       CASE (cCot)
-        daux=TAN(Comp%Stack(StackPtr))
+        daux=TAN(Stack(StackPtr))
         IF (daux == 0) THEN 
           rparser%EvalErrType=1; res=zero; RETURN
         END IF
-        Comp%Stack(StackPtr)=1._DP/daux
+        Stack(StackPtr)=1._DP/daux
 
       CASE (cCsc)
-        daux=SIN(Comp%Stack(StackPtr))
+        daux=SIN(Stack(StackPtr))
         IF (daux==0._DP) THEN
           rparser%EvalErrType=1; res=zero; RETURN; 
         ENDIF
-        Comp%Stack(StackPtr)=1._DP/daux
+        Stack(StackPtr)=1._DP/daux
 
       CASE (cExp)
-        Comp%Stack(StackPtr)=EXP(Comp%Stack(StackPtr))
+        Stack(StackPtr)=EXP(Stack(StackPtr))
 
       CASE (cFloor)
-        Comp%Stack(StackPtr)=FLOOR(Comp%Stack(StackPtr))
+        Stack(StackPtr)=FLOOR(Stack(StackPtr))
 
       CASE (cIf)
         IP=IP+1; jumpAddr = Comp%ByteCode(IP)
         IP=IP+1; immedAddr = Comp%ByteCode(IP)
-        IF (.NOT.DbleToLogc(Comp%Stack(StackPtr))) THEN
+        IF (.NOT.DbleToLogc(Stack(StackPtr))) THEN
           IP      = jumpAddr
           DataPtr = immedAddr
         END IF
         StackPtr=StackPtr-1
         
       CASE (cLog)
-        IF (Comp%Stack(StackPtr) <= 0._DP) THEN
+        IF (Stack(StackPtr) <= 0._DP) THEN
           rparser%EvalErrType=3; res=zero; RETURN
         ENDIF
-        Comp%Stack(StackPtr)=LOG(Comp%Stack(StackPtr)) 
+        Stack(StackPtr)=LOG(Stack(StackPtr)) 
 
       CASE (cLog10)
-        IF (Comp%Stack(StackPtr) <= 0._DP) THEN
+        IF (Stack(StackPtr) <= 0._DP) THEN
           rparser%EvalErrType=3; res=zero; RETURN
         ENDIF
-        Comp%Stack(StackPtr)=LOG10(Comp%Stack(StackPtr))
+        Stack(StackPtr)=LOG10(Stack(StackPtr))
 
       CASE (cMax)
-        Comp%Stack(StackPtr-1)=MAX(Comp%Stack(StackPtr-1),&
-            &Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=MAX(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cMin)
-        Comp%Stack(StackPtr-1)=MIN(Comp%Stack(StackPtr-1),&
-            Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=MIN(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cSec)
-        daux=COS(Comp%Stack(StackPtr))
+        daux=COS(Stack(StackPtr))
         IF (daux==0._DP) THEN
           rparser%EvalErrType=1; res=zero; RETURN
         ENDIF
-        Comp%Stack(StackPtr)=1._DP/daux
+        Stack(StackPtr)=1._DP/daux
         
       CASE (cSin)
-        Comp%Stack(StackPtr)=SIN(Comp%Stack(StackPtr))
+        Stack(StackPtr)=SIN(Stack(StackPtr))
         
       CASE(cSinh)
-        Comp%Stack(StackPtr)=SINH(Comp%Stack(StackPtr))
+        Stack(StackPtr)=SINH(Stack(StackPtr))
       
       CASE(cSqrt)
-        IF (Comp%Stack(StackPtr) < 0._DP) THEN
+        IF (Stack(StackPtr) < 0._DP) THEN
           rparser%EvalErrType=3; res=zero; RETURN
         ENDIF
-        Comp%Stack(StackPtr)=SQRT(Comp%Stack(StackPtr))
+        Stack(StackPtr)=SQRT(Stack(StackPtr))
 
       CASE (cTan)
-        Comp%Stack(StackPtr)=TAN(Comp%Stack(StackPtr))
+        Stack(StackPtr)=TAN(Stack(StackPtr))
         
       CASE (cTanh)
-        Comp%Stack(StackPtr)=TANH(Comp%Stack(StackPtr))
+        Stack(StackPtr)=TANH(Stack(StackPtr))
         
         !------------------------------------------------------------
         ! Misc
         !------------------------------------------------------------
       CASE (cImmed)
         StackPtr=StackPtr+1
-        Comp%Stack(StackPtr)=Comp%Immed(DataPtr)
+        Stack(StackPtr)=Comp%Immed(DataPtr)
         DataPtr=DataPtr+1
 
       CASE (cJump)
@@ -830,140 +838,513 @@ CONTAINS
         ! Operators
         !------------------------------------------------------------
       CASE (cNeg)
-        Comp%Stack(StackPtr)=-Comp%Stack(StackPtr)
+        Stack(StackPtr)=-Stack(StackPtr)
         
       CASE (cAdd)
-        Comp%Stack(StackPtr-1)=Comp%Stack(StackPtr-1)+&
-            Comp%Stack(StackPtr)
+        Stack(StackPtr-1)=Stack(StackPtr-1)+Stack(StackPtr)
         StackPtr=StackPtr-1
         
       CASE (cSub)
-        Comp%Stack(StackPtr-1)=Comp%Stack(StackPtr-1)-&
-            &Comp%Stack(StackPtr)
+        Stack(StackPtr-1)=Stack(StackPtr-1)-Stack(StackPtr)
         StackPtr=StackPtr-1
 
       CASE (cMul)
-        Comp%Stack(StackPtr-1)=Comp%Stack(StackPtr-1)*&
-            &Comp%Stack(StackPtr)
+        Stack(StackPtr-1)=Stack(StackPtr-1)*Stack(StackPtr)
         StackPtr=StackPtr-1
         
       CASE (cDiv)
-        IF (Comp%Stack(StackPtr)==0._DP) THEN
+        IF (Stack(StackPtr)==0._DP) THEN
           rparser%EvalErrType=1; res=zero; RETURN; 
         ENDIF
-        Comp%Stack(StackPtr-1)=Comp%Stack(StackPtr-1)/&
-            &Comp%Stack(StackPtr)
+        Stack(StackPtr-1)=Stack(StackPtr-1)/Stack(StackPtr)
         StackPtr=StackPtr-1
         
       CASE (cMod)
-        IF (Comp%Stack(StackPtr)==0._DP) THEN
+        IF (Stack(StackPtr)==0._DP) THEN
           rparser%EvalErrType=1; res=zero; RETURN; 
         ENDIF
-        Comp%Stack(StackPtr-1)=MOD(Comp%Stack(StackPtr-1),&
-            &Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=MOD(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
 
       CASE (cPow)
-        Comp%Stack(StackPtr-1)=Comp%Stack(StackPtr-1)**&
-            &Comp%Stack(StackPtr)
+        Stack(StackPtr-1)=Stack(StackPtr-1)**Stack(StackPtr)
         StackPtr=StackPtr-1
         
       CASE (cEqual)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &Comp%Stack(StackPtr-1) == Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) == Stack(StackPtr))
         StackPtr=StackPtr-1
 
       CASE (cNEqual)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &Comp%Stack(StackPtr-1) /= Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) /= Stack(StackPtr))
         StackPtr=StackPtr-1
 
       CASE (cLess)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &Comp%Stack(StackPtr-1) < Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) < Stack(StackPtr))
         StackPtr=StackPtr-1
 
       CASE (cLessOrEq)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &Comp%Stack(StackPtr-1) <= Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) <= Stack(StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cGreater)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &Comp%Stack(StackPtr-1) > Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) > Stack(StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cGreaterOrEq)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &Comp%Stack(StackPtr-1) >= Comp%Stack(StackPtr))
+        Stack(StackPtr-1)=LogcToDble(Stack(StackPtr-1) >= Stack(StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cAnd)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &DbleToLogc(Comp%Stack(StackPtr-1)) .AND. &
-            &DbleToLogc(Comp%Stack(StackPtr)) )
+        Stack(StackPtr-1)=LogcToDble(DbleToLogc( Stack(StackPtr-1)) .AND. &
+            DbleToLogc(Stack(StackPtr)) )
         StackPtr=StackPtr-1
 
       CASE (cOr)
-        Comp%Stack(StackPtr-1)=LogcToDble( &
-            &DbleToLogc(Comp%Stack(StackPtr-1)) .OR. &
-            &DbleToLogc(Comp%Stack(StackPtr)) )
+        Stack(StackPtr-1)=LogcToDble(DbleToLogc( Stack(StackPtr-1)) .OR. &
+            DbleToLogc(Stack(StackPtr)) )
         StackPtr=StackPtr-1
 
       CASE (cNot)
-        Comp%Stack(StackPtr)=LogcToDble( .NOT.&
-            DbleToLogc(Comp%Stack(StackPtr)) )
+        Stack(StackPtr)=LogcToDble( .NOT. DbleToLogc(Stack(StackPtr)) )
         
         !------------------------------------------------------------
         ! Degrees-radians conversion
         !------------------------------------------------------------
       CASE (cDeg)
-        Comp%Stack(StackPtr)=RadToDeg(Comp%Stack(StackPtr))
+        Stack(StackPtr)=RadToDeg(Stack(StackPtr))
         
       CASE (cRad)
-        Comp%Stack(StackPtr)=DegToRad(Comp%Stack(StackPtr))
+        Stack(StackPtr)=DegToRad(Stack(StackPtr))
         
       CASE DEFAULT
         StackPtr=StackPtr+1
-        Comp%Stack(StackPtr)=Val(Comp%ByteCode(IP)-VarBegin+1)
+        Stack(StackPtr)=Val(Comp%ByteCode(IP)-VarBegin+1)
       END SELECT
     END DO
     rparser%EvalErrType = 0
-    res = Comp%Stack(StackPtr)
+    res = Stack(StackPtr)
 
+    ! Set error code (if required)
     IF (PRESENT(EvalErrType)) EvalErrType = rparser%EvalErrType
 
-  CONTAINS
+    ! Free memory
+    CALL storage_free(h_Stack)
+  END FUNCTION fparser_evalFunctionScalar
 
-    FUNCTION DbleTOLogc(d) RESULT(l)
-      REAL(DP), INTENT(IN) :: d
-      LOGICAL :: l
+  ! *****************************************************************************
 
-      l=MERGE(.TRUE.,.FALSE.,ABS(1-d)<=1e-12)
-    END FUNCTION DbleTOLogc
+!<function>
 
-    FUNCTION LogcToDble(l) RESULT(d)
-      LOGICAL, INTENT(IN) :: l
-      REAL(DP) :: d
+  FUNCTION fparser_evalFunctionArray (rparser, i, isize, Ishape, Val, EvalErrType) RESULT (Res)
+
+!<description>
+    ! Evaluate bytecode of ith function for an array of values passed
+    ! in Val(:,:)
+!</description>
+
+!<input>
+    ! Function identifier
+    INTEGER, INTENT(IN) :: i
+
+    ! Size of the resulting array
+    INTEGER, INTENT(IN) :: isize
+
+    ! Shape of the value array
+    INTEGER, DIMENSION(2), INTENT(IN) :: Ishape
+
+    ! Variable values
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Val
+!</input>
+
+!<inputoutput>
+    ! Function parser
+    TYPE (t_fparser),  INTENT(INOUT) :: rparser
+!</inputoutput>
+
+!<output>
+    ! OPTIONAL Error code for function evaluation
+    INTEGER, INTENT(OUT), OPTIONAL :: EvalErrType
+!</output>
+
+!<result>
+    ! Evaluated function
+    REAL(DP), DIMENSION(isize) :: Res
+!</result>
+!</function>
+
+    ! local parameters
+    REAL(DP), PARAMETER :: zero = 0._DP
+    
+    ! local variables
+    TYPE(t_fparserComponent), POINTER :: Comp
+    INTEGER :: IP,DataPtr,StackPtr,h_Stack,j
+    REAL(DP), DIMENSION(:,:), POINTER :: Stack
+    REAL(DP) :: daux
+    LOGICAL :: bfirstdim
+
+    ! Check if dimensions agree
+    IF (ANY(SHAPE(Val) /= Ishape)) THEN
+      PRINT *, 'fparser_evalFunctionArray: invalid dimensions!'
+      STOP
+    END IF
+    
+    IF (isize == Ishape(1)) THEN
+      bfirstdim=.TRUE.
+    ELSEIF (isize == Ishape(2)) THEN
+      bfirstdim=.FALSE.
+    ELSE
+      PRINT *, 'fparser_evalFunctionArray: invalid dimensions!'
+      STOP
+    END IF
+    
+    ! Initialization
+    DataPtr  = 1
+    StackPtr = 0
+    IP       = 0
+    Comp => rparser%Comp(i)
+    rparser%EvalErrType=0
+
+    ! Allocate stack
+    CALL storage_new('fparser_evalFunctionArray','Stack',&
+        (/isize,Comp%StackSize+1/),ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_double2D(h_Stack,Stack)
+
+    DO WHILE(IP < Comp%ByteCodeSize)
+      IP=IP+1
       
-      d=MERGE(1._DP,0._DP,l)
-    END FUNCTION LogcToDble
+      SELECT CASE (Comp%ByteCode(IP))
+        !------------------------------------------------------------
+        ! Functions
+        !------------------------------------------------------------
+      CASE (cAbs)
+        Stack(:,StackPtr)=ABS(Stack(:,StackPtr))
+        
+      CASE (cAcos)
+!$omp parallel do default(shared) private(j)
+        DO j=1,isize
+          IF ((Stack(j,StackPtr) < -1._DP) .OR.&
+              (Stack(j,StackPtr) > 1._DP)) THEN
+            rparser%EvalErrType=4; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=ACOS(Stack(j,StackPtr))
+          END IF
+        END DO
+!$omp end parallel do
 
-    FUNCTION DegToRad(d) RESULT(r)
-      REAL(DP), INTENT(IN) :: d
-      REAL(DP) :: r
+      CASE (cAsin)
+!$omp parallel do default(shared) private(j)
+        DO j=1,isize
+          IF ((Stack(j,StackPtr) < -1._DP) .OR.&
+              (Stack(j,StackPtr) > 1._DP)) THEN
+            rparser%EvalErrType=4; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=ASIN(Stack(j,StackPtr))
+          END IF
+        END DO
+!$omp end parallel do
+        
+      CASE (cAtan)
+        Stack(:,StackPtr)=ATAN(Stack(:,StackPtr))
+
+      CASE  (cAtan2)
+        Stack(:,StackPtr-1)=ATAN2(Stack(:,StackPtr -1),Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+        
+      CASE (cAcosh)
+!$omp parallel do default(shared) private(j,daux)
+        DO j=1,isize
+          daux=Stack(j,StackPtr)+SQRT(Stack(j,StackPtr)**2-1)
+          IF (daux <= 0._DP) THEN
+            rparser%EvalErrType=5; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=LOG(daux)
+          END IF
+        END DO
+!$omp end parallel do
+        
+      CASE (cAnint)
+        Stack(:,StackPtr)=ANINT(Stack(:,StackPtr))
+
+      CASE (cAint)
+        Stack(:,StackPtr)=AINT(Stack(:,StackPtr))
+
+      CASE (cAsinh)
+!$omp parallel do default(shared) private(j,daux)
+        DO j=1,isize
+          daux=Stack(j,StackPtr)+SQRT(Stack(j,StackPtr)+1)
+          IF (daux <= 0._DP) THEN
+            rparser%EvalErrType=5; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=LOG(daux)
+          END IF
+        END DO
+!$omp end parallel do
+
+      CASE (cAtanh)
+!$omp parallel do default(shared) private(j,daux)
+        DO j=1,isize
+          IF (Stack(j,StackPtr) == -1._DP) THEN
+            rparser%EvalErrType=6; Res(j)=zero
+          END IF
+          daux=(1+Stack(j,StackPtr))/(1-Stack(j,StackPtr))
+          IF (daux <= 0._DP) THEN
+            rparser%EvalErrType=3; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr) = LOG(daux)/2._DP
+          END IF
+        END DO
+!$omp end parallel do
+        
+      CASE (cCeil)
+        Stack(:,StackPtr)=CEILING(Stack(:,StackPtr))
+
+      CASE (cCos)
+        Stack(:,StackPtr)=COS(Stack(:,StackPtr)) 
+        
+      CASE (cCosh)
+        Stack(:,StackPtr)=COSH(Stack(:,StackPtr))
+
+      CASE (cCot)
+!$omp parallel do default(shared) private(j,daux)
+        DO j=1,isize
+          daux=TAN(Stack(j,StackPtr))
+          IF (daux == 0) THEN 
+            rparser%EvalErrType=1; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=1._DP/daux
+          END IF
+        END DO
+!$omp end parallel do
+
+      CASE (cCsc)
+!$omp parallel do default(shared) private(j,daux)
+        DO j=1,isize
+          daux=SIN(Stack(j,StackPtr))
+          IF (daux==0._DP) THEN
+            rparser%EvalErrType=1; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=1._DP/daux
+          END IF
+        END DO
+!$omp end parallel do
+
+      CASE (cExp)
+        Stack(:,StackPtr)=EXP(Stack(:,StackPtr))
+
+      CASE (cFloor)
+        Stack(:,StackPtr)=FLOOR(Stack(:,StackPtr))
+
+      CASE (cIf)
+        ! At the moment, IF-THEN-ELSE cannot be handled for multiple
+        ! values. Hence, stop this subroutine an process each item separately
+        CALL storage_free(h_Stack)
+        IF (bfirstdim) THEN
+          DO j=1,isize
+            Res(j)=fparser_evalFunction(rparser,i,Val(j,:),EvalErrType)
+          END DO
+        ELSE
+          DO j=1,isize
+            Res(j)=fparser_evalFunction(rparser,i,Val(:,j),EvalErrType)
+          END DO
+        END IF
+        RETURN
+        
+      CASE (cLog)
+!$omp parallel do default(shared) private(j)
+        DO j=1,isize
+          IF (Stack(j,StackPtr) <= 0._DP) THEN
+            rparser%EvalErrType=3; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=LOG(Stack(j,StackPtr)) 
+          END IF
+        END DO
+!$omp end parallel do
+
+      CASE (cLog10)
+!$omp parallel do default(shared) private(j)
+        DO j=1,isize
+          IF (Stack(j,StackPtr) <= 0._DP) THEN
+            rparser%EvalErrType=3; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=LOG10(Stack(j,StackPtr))
+          END IF
+        END DO
+!$omp end parallel do
+
+      CASE (cMax)
+        Stack(:,StackPtr-1)=MAX(Stack(:,StackPtr-1),Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+        
+      CASE (cMin)
+        Stack(:,StackPtr-1)=MIN(Stack(:,StackPtr-1),Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+        
+      CASE (cSec)
+!$omp parallel do default(shared) private(j,daux)
+        DO j=1,isize
+          daux=COS(Stack(j,StackPtr))
+          IF (daux==0._DP) THEN
+            rparser%EvalErrType=1; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=1._DP/daux
+          END IF
+        END DO
+!$omp end parallel do
+        
+      CASE (cSin)
+        Stack(:,StackPtr)=SIN(Stack(:,StackPtr))
+        
+      CASE(cSinh)
+        Stack(:,StackPtr)=SINH(Stack(:,StackPtr))
       
-      r=d*(Constvals(C_PI)/180._DP)
-    END FUNCTION DegToRad
+      CASE(cSqrt)
+!$omp parallel do default(shared) private(j)
+        DO j=1,isize
+          IF (Stack(j,StackPtr) < 0._DP) THEN
+            rparser%EvalErrType=3; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr)=SQRT(Stack(j,StackPtr))
+          END IF
+        END DO
+!$omp end parallel do
 
-    FUNCTION RadToDeg(r) RESULT(d)
-      REAL(DP), INTENT(IN) :: r
-      REAL(DP) :: d
+      CASE (cTan)
+        Stack(:,StackPtr)=TAN(Stack(:,StackPtr))
+        
+      CASE (cTanh)
+        Stack(:,StackPtr)=TANH(Stack(:,StackPtr))
+        
+        !------------------------------------------------------------
+        ! Misc
+        !------------------------------------------------------------
+      CASE (cImmed)
+        StackPtr=StackPtr+1
+        Stack(:,StackPtr)=Comp%Immed(DataPtr)
+        DataPtr=DataPtr+1
 
-      d=r*(180._DP/Constvals(c_PI))
-    END FUNCTION RadToDeg
-  END FUNCTION fparser_evalFunction
+      CASE (cJump)
+        DataPtr=Comp%ByteCode(IP+2)
+        IP     =Comp%ByteCode(IP+1)
 
+        !------------------------------------------------------------
+        ! Operators
+        !------------------------------------------------------------
+      CASE (cNeg)
+        Stack(:,StackPtr)=-Stack(:,StackPtr)
+        
+      CASE (cAdd)
+        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)+Stack(:,StackPtr)
+        StackPtr=StackPtr-1
+        
+      CASE (cSub)
+        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)-Stack(:,StackPtr)
+        StackPtr=StackPtr-1
+
+      CASE (cMul)
+        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)*Stack(:,StackPtr)
+        StackPtr=StackPtr-1
+        
+      CASE (cDiv)
+!$omp parallel do default(shared) private(j)
+        DO j=1,isize
+          IF (Stack(j,StackPtr)==0._DP) THEN
+            rparser%EvalErrType=1; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr-1)=Stack(j,StackPtr-1)/Stack(j,StackPtr)
+          END IF
+        END DO
+!$omp end parallel do
+        StackPtr=StackPtr-1
+        
+      CASE (cMod)
+!$omp parallel do default(shared) private(j)
+        DO j=1,isize
+          IF (Stack(j,StackPtr)==0._DP) THEN
+            rparser%EvalErrType=1; Res(j)=zero
+          ELSE
+            Stack(j,StackPtr-1)=MOD(Stack(j,StackPtr-1),Stack(j,StackPtr))
+          END IF
+        END DO
+!$omp end parallel do
+        StackPtr=StackPtr-1
+
+      CASE (cPow)
+        Stack(:,StackPtr-1)=Stack(:,StackPtr-1)**Stack(:,StackPtr)
+        StackPtr=StackPtr-1
+        
+      CASE (cEqual)
+        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) == Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+
+      CASE (cNEqual)
+        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) /= Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+
+      CASE (cLess)
+        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) < Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+
+      CASE (cLessOrEq)
+        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) <= Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+        
+      CASE (cGreater)
+        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) > Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+        
+      CASE (cGreaterOrEq)
+        Stack(:,StackPtr-1)=LogcToDble(Stack(:,StackPtr-1) >= Stack(:,StackPtr))
+        StackPtr=StackPtr-1
+        
+      CASE (cAnd)
+        Stack(:,StackPtr-1)=LogcToDble(DbleToLogc(Stack(:,StackPtr-1)) .AND. &
+            DbleToLogc(Stack(:,StackPtr)) )
+        StackPtr=StackPtr-1
+
+      CASE (cOr)
+        Stack(:,StackPtr-1)=LogcToDble(DbleToLogc(Stack(:,StackPtr-1)) .OR. &
+            DbleToLogc(Stack(:,StackPtr)) )
+        StackPtr=StackPtr-1
+
+      CASE (cNot)
+        Stack(:,StackPtr)=LogcToDble( .NOT. DbleToLogc(Stack(:,StackPtr)) )
+        
+        !------------------------------------------------------------
+        ! Degrees-radians conversion
+        !------------------------------------------------------------
+      CASE (cDeg)
+        Stack(:,StackPtr)=RadToDeg(Stack(:,StackPtr))
+        
+      CASE (cRad)
+        Stack(:,StackPtr)=DegToRad(Stack(:,StackPtr))
+        
+      CASE DEFAULT
+        StackPtr=StackPtr+1
+        IF (bfirstdim) THEN
+          Stack(:,StackPtr)=Val(:,Comp%ByteCode(IP)-VarBegin+1)
+        ELSE
+          Stack(:,StackPtr)=Val(Comp%ByteCode(IP)-VarBegin+1,:)
+        END IF
+      END SELECT
+
+      ! Check if an error occured
+      IF (rparser%EvalErrType /= 0) THEN
+        PRINT *, "FEHLER"
+        CALL storage_free(h_Stack)    
+        RETURN
+      END IF
+
+    END DO
+    rparser%EvalErrType = 0
+    Res = Stack(:,StackPtr)
+
+    ! Set error code (if required)
+    IF (PRESENT(EvalErrType)) EvalErrType = rparser%EvalErrType
+
+    ! Free memory
+    CALL storage_free(h_Stack)    
+  END FUNCTION fparser_evalFunctionArray  
+  
   ! *****************************************************************************
 
 !<function>
@@ -1594,7 +1975,6 @@ CONTAINS
     
     IF (ASSOCIATED(Comp%ByteCode)) DEALLOCATE (Comp%ByteCode)
     IF (ASSOCIATED(Comp%Immed))    DEALLOCATE (Comp%Immed)
-    IF (ASSOCIATED(Comp%Stack))    DEALLOCATE (Comp%Stack)
     Comp%ByteCodeSize = 0
     Comp%ImmedSize    = 0
     Comp%StackSize    = 0
@@ -1614,8 +1994,6 @@ CONTAINS
     ALLOCATE(Immed(Comp%ImmedSize)); Immed=Comp%Immed
     DEALLOCATE(Comp%Immed); ALLOCATE(Comp%Immed(Comp%ImmedSize))
     Comp%Immed=Immed; DEALLOCATE(Immed)
-
-    ALLOCATE(Comp%Stack(Comp%StackSize+1))
   END SUBROUTINE Compile
 
   ! *****************************************************************************
@@ -2594,4 +2972,100 @@ CONTAINS
     
     ind2=ind2+1
   END FUNCTION CompileIf
+
+  ! *****************************************************************************
+
+!<function>
+
+  ELEMENTAL FUNCTION DbleTOLogc(d) RESULT(l)
+
+!<description>
+    ! This function transforms a Double into a Logical
+!</description>
+
+!<input>
+    ! Double variable
+    REAL(DP), INTENT(IN) :: d
+!</input>
+
+!<result>
+    ! Logical variable
+    LOGICAL :: l
+!</result>
+!</function>
+    
+    l=MERGE(.TRUE.,.FALSE.,ABS(1-d)<=1e-12)
+  END FUNCTION DbleTOLogc
+
+  ! *****************************************************************************
+
+!<function>
+  
+  ELEMENTAL FUNCTION LogcToDble(l) RESULT(d)
+
+!<description>
+    ! This function transforms a Logical into a Double
+!</description>
+
+!<input>
+    ! Logical variable
+    LOGICAL, INTENT(IN) :: l
+!</input>
+
+!<result>
+    ! Double variable
+    REAL(DP) :: d
+!</result>
+!</function>
+      
+    d=MERGE(1._DP,0._DP,l)
+  END FUNCTION LogcToDble
+
+  ! *****************************************************************************
+
+!<function>
+  
+  ELEMENTAL FUNCTION DegToRad(d) RESULT(r)
+
+!<description>
+    ! This function converts DEG to RAD
+!</desccription>
+
+!<input>
+    ! DEG
+    REAL(DP), INTENT(IN) :: d
+!</input>
+
+!<result>
+    ! RAD
+    REAL(DP) :: r
+!</result>
+!</function>
+      
+    r=d*(Constvals(C_PI)/180._DP)
+  END FUNCTION DegToRad
+
+  ! *****************************************************************************
+
+!<function>
+
+  ELEMENTAL FUNCTION RadToDeg(r) RESULT(d)
+    
+!<description>
+    ! This function converts RAD to DEG
+!</description>
+
+!<input>
+    ! RAD
+    REAL(DP), INTENT(IN) :: r
+!</input>
+
+!<result>
+    ! DEG
+    REAL(DP) :: d
+!</result>
+!</function>
+    
+    d=r*(180._DP/Constvals(c_PI))
+  END FUNCTION RadToDeg
 END MODULE fparser
