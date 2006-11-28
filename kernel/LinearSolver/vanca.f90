@@ -1110,8 +1110,7 @@ CONTAINS
         idofGlobal(inode) = idof
         
         ! Put on AA(.) the diagonal entry of matrix A
-        ia1       = p_KdiagonalA(idof)
-        AA(inode) = p_DA(ia1)
+        AA(inode) = p_DA(p_KdiagonalA(idof))
         
         ! Set FF initially to the value of the right hand
         ! side vector that belongs to our current DOF corresponding
@@ -1187,6 +1186,7 @@ CONTAINS
         !
         ! At first build: fi = fi-Aui
         
+        ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
         DO ia = ia1,ia2
           J = P_KcolA(ia)
