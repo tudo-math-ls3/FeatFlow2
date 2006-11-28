@@ -566,6 +566,8 @@ CONTAINS
           
           ! Call the streamline diffusion method to evaluate nonlinearity part 
           ! of the matrix in the point rtemp1.
+          ! As the parameter rstreamlineDiffusion%dbeta is =0 by default, the
+          ! Laplace part is not calculated in this routine.
           CALL conv_streamlinediffusion2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
@@ -932,11 +934,13 @@ CONTAINS
             ! We ignore the structure and simply overwrite the content of the
             ! system submatrices with the Laplace matrix.
             CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
-                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+                                         LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
             ! Call the SD method to calculate the nonlinear matrix.
             ! We use the streamline-diffusion discretisation routine
             ! which uses a central-difference-like discretisation.
+            ! As the parameter rstreamlineDiffusion%dbeta is =0 by default, the
+            ! Laplace part is not calculated in this routine.
             CALL conv_streamlineDiffusion2d (&
                                 p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                                 rstreamlineDiffusion, CONV_MODMATRIX, &
@@ -1178,6 +1182,8 @@ CONTAINS
   TYPE(t_ccPreconditioner), INTENT(OUT), TARGET :: rpreconditioner
 !</output>
 
+!</subroutine>
+
     ! local variables
     INTEGER :: NLMIN,NLMAX
     INTEGER :: i
@@ -1353,6 +1359,147 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_checkMatrices (rproblem,rpreconditioner)
+  
+!<description>
+  ! This routine checks the matrices against an existing preconditioner.
+  ! It may happen that e.g. VANCA does not like our matrices (probably
+  ! they have to be saved transposed or whatever). In that case, we
+  ! have to make slight modifications to our matrices in order to 
+  ! make them compatible.
+!</description>
+
+!<inputoutput>
+  ! A problem astructure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!<inputoutput>
+  ! A preconditioner structure for the CCxD problem. Will be initialised
+  ! with data.
+  TYPE(t_ccPreconditioner), INTENT(INOUT), TARGET :: rpreconditioner
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: ilev,NLMIN,NLMAX,ccompatible,iprecType
+  CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
+  TYPE(t_interlevelProjectionBlock) :: rprojection
+
+  ! An array for the system matrix(matrices) during the initialisation of
+  ! the linear solver.
+  TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    
+    ! At first, ask the parameters in the INI/DAT file which type of 
+    ! preconditioner is to be used. 
+    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                                     'itypePreconditioning', &
+                                     iprecType, 1)
+
+    SELECT CASE (iprecType)
+    CASE (1)
+      ! That preconditioner is a solver for a linear system.
+      !
+      ! Which levels have we to take care of during the solution process?
+      NLMIN = rproblem%NLMIN
+      NLMAX = rproblem%NLMAX
+
+      ! Temporarily set up the solver node for the linear subsolver.
+      !
+      ! Figure out the name of the section that contains the information
+      ! about the linear subsolver. Ask the parameter list from the INI/DAT file
+      ! for the 'slinearSolver' value
+      CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                                  'slinearSolver', sstring, '')
+      ssolverName = ''
+      IF (sstring .NE. '') READ (sstring,*) ssolverName
+      IF (ssolverName .EQ. '') THEN
+        PRINT *,'No linear subsolver!'
+        STOP
+      END IF
+                                    
+      ! Initialise a standard interlevel projection structure. We
+      ! can use the same structure for all levels. Therefore it's enough
+      ! to initialise one structure using the RHS vector on the finest
+      ! level to specify the shape of the PDE-discretisation.
+      CALL mlprj_initProjectionVec (rprojection,rproblem%rrhs)
+      
+      ! Initialise the linear subsolver using the parameters from the INI/DAT
+      ! files, the prepared filter chain and the interlevel projection structure.
+      ! This gives us the linear solver node rpreconditioner%p_rsolverNode
+      ! which identifies the linear solver.
+      CALL linsolinit_initFromFile (p_rsolverNode,&
+                                    rproblem%rparamList,ssolverName,&
+                                    NLMAX-NLMIN+1,&
+                                    rinterlevelProjection=rprojection)
+      
+      ! Check the matrices.
+      !
+      ! We copy our matrices to a big matrix array and transfer that
+      ! to the setMatrices routines. This intitialises then the matrices
+      ! on all levels according to that array.
+      Rmatrices(NLMIN:NLMAX) = rproblem%RlevelInfo(NLMIN:NLMAX)%rmatrix
+      CALL linsol_matricesCompatible(p_rsolverNode, &
+          Rmatrices(NLMIN:NLMAX),ccompatible)
+      
+      SELECT CASE (ccompatible)
+      CASE (LINSOL_COMP_OK) ! nothing to do
+      CASE (LINSOL_COMP_ERRTRANSPOSED)
+        ! There is usually a VANCA subsolver in the main linear solver which
+        ! cannot deal with our virtually transposed matrices. So we make
+        ! a copy of B1/B2 on every level and really transpose them.
+        DO ilev=NLMIN,NLMAX
+          p_rmatrix => rproblem%RlevelInfo(ilev)%rmatrix
+          
+          ! Release the old B1/B2 matrices from the system matrix. This
+          ! does not release any memory, as the content of the matrix
+          ! is saved elsewhere.
+          CALL lsyssc_releaseMatrix (p_rmatrix%RmatrixBlock(3,1))
+          CALL lsyssc_releaseMatrix (p_rmatrix%RmatrixBlock(3,2))
+          
+          ! Transpose B1/B2, write result to the system matrix.
+          CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(ilev)%rmatrixB1, &
+                                      p_rmatrix%RmatrixBlock(3,1),&
+                                      LSYSSC_TR_ALL)
+
+          CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(ilev)%rmatrixB2, &
+                                      p_rmatrix%RmatrixBlock(3,2),&
+                                      LSYSSC_TR_ALL)
+                                      
+          ! Release the memory that was allocated for the B2 structure by
+          ! the matrix-transpose routine. 
+          ! Replace the structure of B2 by that of B1; more precisely,
+          ! share the structure. We can do this as we know that B1 and B2
+          ! have exactly the same structure!
+          CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,1),&
+                  p_rmatrix%RmatrixBlock(3,2), LSYSSC_DUP_REMOVE,LSYSSC_DUP_IGNORE)
+          CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,1),&
+                  p_rmatrix%RmatrixBlock(3,2), LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
+        
+        END DO
+        
+      CASE DEFAULT
+        PRINT *,'Preconditioner incompatible to the matrices. Don''t know why!?!'
+        STOP
+      END SELECT
+      
+      ! Release the solver node again.
+      CALL linsol_releaseSolver (p_rsolverNode)
+      
+      ! We also don't need the temporary projection structure anymore.
+      CALL mlprj_doneProjection (rprojection)
+      
+    END SELECT
+
+  END SUBROUTINE
+
 ! ***************************************************************************
 
 !<subroutine>
@@ -1510,6 +1657,11 @@ CONTAINS
 
     ! The nonlinear solver configuration
     TYPE(t_nlsolNode) :: rnlSol
+    
+    ! Check the matrices if they are compatible to our
+    ! preconditioner. If not, we have to modify the matrices a little
+    ! bit to make it compatible.
+    CALL c2d2_checkMatrices (rproblem,rpreconditioner)
     
     ! Initialise the preconditioner for the nonlinear iteration
     CALL c2d2_preparePreconditioner (rproblem,rpreconditioner)
