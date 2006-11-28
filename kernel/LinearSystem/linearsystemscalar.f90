@@ -6869,6 +6869,10 @@ CONTAINS
         ! the data arrays, this results in the transposed matrix :)
         IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
         
+          IF (rmatrix%h_Da .NE. ST_NOHANDLE) THEN
+            CALL storage_copy (rmatrix%h_Da,rtransposedMatrix%h_Da)
+          END IF
+        
           CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
           CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
           CALL storage_copy (rmatrix%h_Kdiagonal,rtransposedMatrix%h_Kdiagonal)
@@ -6926,6 +6930,10 @@ CONTAINS
         ! the data arrays, this results in the transposed matrix :)
         IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
         
+          IF (rmatrix%h_Da .NE. ST_NOHANDLE) THEN
+            CALL storage_copy (rmatrix%h_Da,rtransposedMatrix%h_Da)
+          END IF
+
           CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
           CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
           rtransposedMatrix%imatrixSpec = &
@@ -6969,7 +6977,8 @@ CONTAINS
           CALL storage_free (h_Itemp)
           
           ! Pivotise the matrix to move the diagonal element to the front.
-          CALL lsyssc_pivotiseMatrix7double (rmatrix%NEQ, p_KcolDest, p_KldDest, p_DaDest)
+          CALL lsyssc_pivotiseMatrix7double (rmatrix%NEQ, &
+              p_KcolDest, p_KldDest, p_DaDest)
         END IF
       
       CASE (LSYSSC_MATRIXD)
