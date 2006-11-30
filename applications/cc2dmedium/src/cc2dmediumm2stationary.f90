@@ -150,8 +150,8 @@ CONTAINS
     ! local variables
     INTEGER :: ilvmax
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
-    TYPE(t_matrixBlock) :: rmatrixLaplaceBlock
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
+    TYPE(t_matrixBlock) :: rmatrixStokesBlock
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(T_jumpStabilisation) :: rjumpStabil
@@ -162,11 +162,11 @@ CONTAINS
       ! Get minimum/maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
       
-      ! Get the system and the Laplace matrix on the maximum level
+      ! Get the system and the Stokes matrix on the maximum level
       p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilvmax)
-      p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,PAR_LAPLACE,ilvmax)
+      p_rmatrixStokes => collct_getvalue_matsca (p_rcollection,PAR_STOKES,ilvmax)
 
-      ! Build a temporary 3x3 block matrix rmatrixLaplace with Laplace 
+      ! Build a temporary 3x3 block matrix rmatrixStokes with Stokes matrices 
       ! on the main diagonal:
       !
       ! (  L    0   B1 )
@@ -176,14 +176,14 @@ CONTAINS
       ! This is just for building the defect, so we make a simple copy,
       ! overwrite submatrices as we need and do not care about releasing 
       ! any memory!
-      rmatrixLaplaceBlock = p_rmatrix
-      rmatrixLaplaceBlock%RmatrixBlock(1,1) = p_rmatrixLaplace
-      rmatrixLaplaceBlock%RmatrixBlock(2,2) = p_rmatrixLaplace
+      rmatrixStokesBlock = p_rmatrix
+      rmatrixStokesBlock%RmatrixBlock(1,1) = p_rmatrixStokes
+      rmatrixStokesBlock%RmatrixBlock(2,2) = p_rmatrixStokes
       
       ! Now, in the first step, we build the linear part of the nonlinear defect:
       !     d_lin = rhs - (-nu * Laplace(.))*solution
       CALL lsysbl_copyVector (rb,rd)
-      CALL lsysbl_blockMatVec (rmatrixLaplaceBlock, rx, rd, -1.0_DP, 1.0_DP)
+      CALL lsysbl_blockMatVec (rmatrixStokesBlock, rx, rd, -1.0_DP, 1.0_DP)
       
       ! For the final defect
       !
@@ -361,7 +361,7 @@ CONTAINS
     INTEGER :: ilvmax
     REAL(DP) :: domegaMin, domegaMax,dskv1,dskv2
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(t_jumpStabilisation) :: rjumpStabil
@@ -395,9 +395,9 @@ CONTAINS
         RETURN
       END IF
 
-      ! Get the system and the Laplace matrix on the maximum level
+      ! Get the system and the Stokes matrix on the maximum level
       p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilvmax)
-      p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,PAR_LAPLACE,ilvmax)
+      p_rmatrixStokes => collct_getvalue_matsca (p_rcollection,PAR_STOKES,ilvmax)
 
       ! Set up a filter that modifies the block vectors/matrix
       ! according to boundary conditions.
@@ -483,13 +483,13 @@ CONTAINS
           !   (  0    A   B2 )
           !   ( B1^T B2^T 0  )
           !
-          ! The A-matrix consists of Laplace+Convection.
+          ! The A-matrix consists of Stokes+Convection.
           ! We build them separately and add together.
           !
-          ! So at first, initialise the A-matrix with the Laplace contribution.
+          ! So at first, initialise the A-matrix with the Stokes contribution.
           ! We ignore the structure and simply overwrite the content of the
-          ! system submatrices with the Laplace matrix.
-          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+          ! system submatrices with the Stokes matrix.
+          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
           ! Set up the SD structure for the creation of the defect.
@@ -515,13 +515,13 @@ CONTAINS
           !   (  0    A   B2 )
           !   ( B1^T B2^T 0  )
           !
-          ! The A-matrix consists of Laplace+Convection.
+          ! The A-matrix consists of Stokes+Convection.
           ! We build them separately and add together.
           !
-          ! So at first, initialise the A-matrix with the Laplace contribution.
+          ! So at first, initialise the A-matrix with the Stokes contribution.
           ! We ignore the structure and simply overwrite the content of the
-          ! system submatrices with the Laplace matrix.
-          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+          ! system submatrices with the Stokes matrix.
+          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
           ! Set up the upwind structure for the creation of the defect.
@@ -547,13 +547,13 @@ CONTAINS
           !   (  0    A   B2 )
           !   ( B1^T B2^T 0  )
           !
-          ! The A-matrix consists of Laplace+Convection.
+          ! The A-matrix consists of Stokes+Convection.
           ! We build them separately and add together.
           !
-          ! So at first, initialise the A-matrix with the Laplace contribution.
+          ! So at first, initialise the A-matrix with the Stokes contribution.
           ! We ignore the structure and simply overwrite the content of the
-          ! system submatrices with the Laplace matrix.
-          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+          ! system submatrices with the Stokes matrix.
+          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
           ! Set up the SD structure for the creation of the defect.
@@ -567,7 +567,7 @@ CONTAINS
           ! Call the streamline diffusion method to evaluate nonlinearity part 
           ! of the matrix in the point rtemp1.
           ! As the parameter rstreamlineDiffusion%dbeta is =0 by default, the
-          ! Laplace part is not calculated in this routine.
+          ! Stokes part is not calculated in this routine.
           CALL conv_streamlinediffusion2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
@@ -729,7 +729,7 @@ CONTAINS
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
     TYPE(t_vectorScalar), POINTER :: p_rvectorTemp,p_rvectorTemp2
     TYPE(t_vectorBlock) :: rtemp1,rtemp2
     INTEGER :: ierror,NLMAX,NLMIN, ilev
@@ -835,10 +835,10 @@ CONTAINS
       NULLIFY(p_rmatrix)
       DO ilev=NLMAX,NLMIN,-1
       
-        ! Get the system matrix and the Laplace matrix
+        ! Get the system matrix and the Stokes matrix
         p_rmatrixFine => p_rmatrix
         p_rmatrix => collct_getvalue_mat (p_rcollection,PAR_SYSTEMMAT,ilev)
-        p_rmatrixLaplace => collct_getvalue_matsca (p_rcollection,PAR_LAPLACE,ilev)
+        p_rmatrixStokes => collct_getvalue_matsca (p_rcollection,PAR_STOKES,ilev)
         
         ! On the highest level, we use rx as solution to build the nonlinear
         ! matrix. On lower levels, we have to create a solution
@@ -884,13 +884,13 @@ CONTAINS
             !   (  0    A   B2 )
             !   ( B1^T B2^T 0  )
             !
-            ! The A-matrix consists of Laplace+Convection.
+            ! The A-matrix consists of Stokes+Convection.
             ! We build them separately and add together.
             !
-            ! So at first, initialise the A-matrix with the Laplace contribution.
+            ! So at first, initialise the A-matrix with the Stokes contribution.
             ! We ignore the structure and simply overwrite the content of the
-            ! system submatrices with the Laplace matrix.
-            CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+            ! system submatrices with the Stokes matrix.
+            CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                         LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
             ! Call the SD method to calculate the nonlinear matrix.
@@ -906,13 +906,13 @@ CONTAINS
             !   (  0    A   B2 )
             !   ( B1^T B2^T 0  )
             !
-            ! The A-matrix consists of Laplace+Convection.
+            ! The A-matrix consists of Stokes+Convection.
             ! We build them separately and add together.
             !
-            ! So at first, initialise the A-matrix with the Laplace contribution.
+            ! So at first, initialise the A-matrix with the Stokes contribution.
             ! We ignore the structure and simply overwrite the content of the
-            ! system submatrices with the Laplace matrix.
-            CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+            ! system submatrices with the Stokes matrix.
+            CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                         LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
             ! Call the upwind method to calculate the nonlinear matrix.
@@ -927,20 +927,20 @@ CONTAINS
             !   (  0    A   B2 )
             !   ( B1^T B2^T 0  )
             !
-            ! The A-matrix consists of Laplace+Convection.
+            ! The A-matrix consists of Stokes+Convection.
             ! We build them separately and add together.
             !
-            ! At first, initialise the A-matrix with the Laplace contribution.
+            ! At first, initialise the A-matrix with the Stokes contribution.
             ! We ignore the structure and simply overwrite the content of the
-            ! system submatrices with the Laplace matrix.
-            CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+            ! system submatrices with the Stokes matrix.
+            CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
             ! Call the SD method to calculate the nonlinear matrix.
             ! We use the streamline-diffusion discretisation routine
             ! which uses a central-difference-like discretisation.
             ! As the parameter rstreamlineDiffusion%dbeta is =0 by default, the
-            ! Laplace part is not calculated in this routine.
+            ! Stokes part is not calculated in this routine.
             CALL conv_streamlineDiffusion2d (&
                                 p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                                 rstreamlineDiffusion, CONV_MODMATRIX, &
@@ -964,11 +964,11 @@ CONTAINS
           !   (  0    A   B2 )
           !   ( B1^T B2^T 0  )
           !
-          ! The A-matrix is a simple Laplace.
+          ! The A-matrix is a simple Stokes.
           !
-          ! Copy the Laplace matrix to A and filter it according to the boundary
+          ! Copy the Stokes matrix to A and filter it according to the boundary
           ! conditions - this gives then the system matrix.
-          CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,p_rmatrix%RmatrixBlock(1,1),&
+          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
         END IF

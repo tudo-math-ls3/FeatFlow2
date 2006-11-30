@@ -18,7 +18,7 @@
 !#     -> Allocates memory for vectors/matrices
 !#
 !# 3.) c2d2_generateStaticMatrices
-!#     -> Assembles matrix entries of static matrices (Laplace, B)
+!#     -> Assembles matrix entries of static matrices (Stokes, B)
 !#
 !# 4.) c2d2_generateStaticSystemParts
 !#     -> Initialises static parts of the global system matrix with
@@ -105,10 +105,10 @@ CONTAINS
                               'iElementType',ielementType,3)
 
     CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'scubLaplace',sstr,'')
+                                 'scubStokes',sstr,'')
     IF (sstr .EQ. '') THEN
       CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubLaplace',icubA,CUB_G2X2)
+                                'icubStokes',icubA,CUB_G2X2)
     ELSE
       icubA = cub_igetID(sstr)
     END IF
@@ -235,7 +235,7 @@ CONTAINS
       IF (j .NE. 0) THEN
       
         ! Initialise a discretisation structure for the mass matrix.
-        ! Copy the discretisation structure of the first (Laplace) block
+        ! Copy the discretisation structure of the first (Stokes) block
         ! and replace the cubature-formula identifier by that which is to be
         ! used for the mass matrix.
         ALLOCATE(p_rdiscretisationMass)
@@ -351,7 +351,7 @@ CONTAINS
                                        'INONSTATIONARY', j, 0)
       IF (j .NE. 0) THEN
         ! Release the mass matrix discretisation.
-        ! Don't release the content as we created it as a copy of the Laplace
+        ! Don't release the content as we created it as a copy of the Stokes
         ! discretisation structure.
         DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationMass)
       END IF
@@ -381,7 +381,7 @@ CONTAINS
   !                  matrix are decoupled or the same\\
   !
   ! On every level:\\
-  !  'LAPLACE'   - Laplace matrix\\
+  !  'STOKES'    - Stokes matrix\\
   !  'SYSTEMMAT' - Global system (block) matrix\\
   !  'RTEMPVEC'  - Temporary vector
 !</description>
@@ -396,7 +396,7 @@ CONTAINS
   
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
     TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector,p_rtempVector
 
     ! A pointer to the discretisation structure with the data.
@@ -427,23 +427,23 @@ CONTAINS
       !    ( B1^T B2^T    )
       !
       ! with A = L + nonlinear Convection. We compute in advance
-      ! a standard Laplace matrix L which can be added later to the
+      ! a standard Stokes matrix L which can be added later to the
       ! convection matrix, resulting in the nonlinear system matrix.
       !
-      ! Get a pointer to the (scalar) Laplace matrix:
-      p_rmatrixLaplace => rproblem%RlevelInfo(i)%rmatrixLaplace
+      ! Get a pointer to the (scalar) Stokes matrix:
+      p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
       
       ! and save it to the collection for later use.
-      CALL collct_setvalue_matsca(rproblem%rcollection,PAR_LAPLACE,&
-                                  p_rmatrixLaplace,.TRUE.,i)
+      CALL collct_setvalue_matsca(rproblem%rcollection,PAR_STOKES,&
+                                  p_rmatrixStokes,.TRUE.,i)
       
-      ! Create the matrix structure of the Laplace/Stokes matrix:
+      ! Create the matrix structure of the Stokes matrix:
       CALL bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
-                p_rmatrixLaplace,cmatBuildType)
+                p_rmatrixStokes,cmatBuildType)
       
       ! Allocate memory for the entries; don't initialise the memory.
-      CALL lsyssc_createEmptyMatrixScalar (p_rmatrixLaplace,LSYSSC_SETM_UNDEFINED)
+      CALL lsyssc_createEmptyMatrixScalar (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
       
       ! In the global system, there are two coupling matrices B1 and B2.
       ! Both have the same structure.
@@ -490,15 +490,15 @@ CONTAINS
       !    ( B1^T B2^T    )   ( A31  A32  A33 )
       !
       ! The matrices A11 and A22 of the global system matrix have exactly
-      ! the same structure as the original Laplace matrix from above!
+      ! the same structure as the original Stokes matrix from above!
       ! Initialise them with the same structure, i.e. A11, A22 and the
-      ! Laplace matrix L share(!) the same structure.
+      ! Stokes matrix L share(!) the same structure.
       !
       ! For this purpose, use the "duplicate matrix" routine.
-      ! The structure of the matrix is shared with the Laplace matrix.
+      ! The structure of the matrix is shared with the Stokes matrix.
       ! For the content, a new empty array is allocated which will later receive
       ! the entries.
-      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+      CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
                   p_rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
       IF (.NOT. rproblem%bdecoupledXY) THEN          
@@ -510,8 +510,8 @@ CONTAINS
         ! Save the value of bdecoupledXY to the collection.
         CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',NO,.TRUE.)
       ELSE
-        ! Otherwise, create another copy of the Laplace matrix.
-        CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+        ! Otherwise, create another copy of the Stokes matrix.
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
                     p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         ! Save the value of bdecoupledXY to the collection.
         CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',YES,.TRUE.)
@@ -593,7 +593,7 @@ CONTAINS
   SUBROUTINE c2d2_generateStaticMatrices (rproblem)
   
 !<description>
-  ! Calculates entries of all static matrices (Laplace, B-matrices,...)
+  ! Calculates entries of all static matrices (Stokes, B-matrices,...)
   ! of the problem, i.e. of all matrices that do not change during the 
   ! computation or which serve as template for generating other matrices.
   !
@@ -612,8 +612,8 @@ CONTAINS
     ! A bilinear and linear form describing the analytic problem to solve
     TYPE(t_bilinearForm) :: rform
     
-    ! A pointer to the Laplace and mass matrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace,p_rmatrixMass
+    ! A pointer to the Stokes and mass matrix
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
 
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
@@ -634,12 +634,12 @@ CONTAINS
       !    ( B1^T B2^T    )
       !
       ! with A = L + nonlinear Convection. We compute in advance
-      ! a standard Laplace matrix L which can be added later to the
+      ! a standard Stokes matrix L which can be added later to the
       ! convection matrix, resulting in the nonlinear system matrix,
       ! as well as both B-matrices.
       !
-      ! Get a pointer to the (scalar) Laplace matrix:
-      p_rmatrixLaplace => rproblem%RlevelInfo(i)%rmatrixLaplace
+      ! Get a pointer to the (scalar) Stokes matrix:
+      p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
       
       ! For assembling of the entries, we need a bilinear form, 
       ! which first has to be set up manually.
@@ -668,7 +668,7 @@ CONTAINS
       ! so the callback routine has access to everything what is
       ! in the collection.
       CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                   p_rmatrixLaplace,coeff_Stokes,&
+                                   p_rmatrixStokes,coeff_Stokes,&
                                    rproblem%rcollection)
       
       ! In the global system, there are two coupling matrices B1 and B2.
@@ -717,13 +717,13 @@ CONTAINS
         CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
 
         ! Generate mass matrix. The matrix has basically the same structure as
-        ! our Laplace matrix, so we can take that.
-        CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+        ! our Stokes matrix, so we can take that.
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
                     p_rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                     
         ! Change the discretisation structure of the mass matrix to the
         ! correct one; at the moment it points to the discretisation structure
-        ! of the Laplace...
+        ! of the Stokes matrix...
         p_rmatrixMass%p_rspatialDiscretisation => &
           rproblem%RlevelInfo(i)%p_rdiscretisationMass
                     
@@ -910,7 +910,7 @@ CONTAINS
 !  SUBROUTINE c2d2_initMatVec (rproblem)
 !  
 !!<description>
-!  ! Calculates entries of all static matrices (Laplace, B-matrices,...)
+!  ! Calculates entries of all static matrices (Stokes, B-matrices,...)
 !  ! of the problem. 
 !  ! Calculates the system matrix and RHS vector of the linear system
 !  ! by discretising the problem with the default discretisation structure
@@ -932,7 +932,7 @@ CONTAINS
 !    
 !    ! A pointer to the system matrix and the RHS/solution vectors.
 !    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-!    TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
+!    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
 !    TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector,p_rtempVector
 !
 !    ! A pointer to the discretisation structure with the data.
@@ -949,20 +949,20 @@ CONTAINS
 !      !    ( B1^T B2^T    )
 !      !
 !      ! with A = L + nonlinear Convection. We compute in advance
-!      ! a standard Laplace matrix L which can be added later to the
+!      ! a standard Stokes matrix L which can be added later to the
 !      ! convection matrix, resulting in the nonlinear system matrix.
 !      !
-!      ! Get a pointer to the (scalar) Laplace matrix:
-!      p_rmatrixLaplace => rproblem%RlevelInfo(i)%rmatrixLaplace
+!      ! Get a pointer to the (scalar) Stokes matrix:
+!      p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
 !      
 !      ! and save it to the collection for later use.
-!      CALL collct_setvalue_matsca(rproblem%rcollection,PAR_LAPLACE,&
-!                                  p_rmatrixLaplace,.TRUE.,i)
+!      CALL collct_setvalue_matsca(rproblem%rcollection,PAR_STOKES,&
+!                                  p_rmatrixStokes,.TRUE.,i)
 !      
-!      ! Create the matrix structure of the Laplace matrix:
+!      ! Create the matrix structure of the Stokes matrix:
 !      CALL bilf_createMatrixStructure (&
 !                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
-!                p_rmatrixLaplace)
+!                p_rmatrixStokes)
 !      
 !      ! And now to the entries of the matrix. For assembling of the entries,
 !      ! we need a bilinear form, which first has to be set up manually.
@@ -991,7 +991,7 @@ CONTAINS
 !      ! so the callback routine has access to everything what is
 !      ! in the collection.
 !      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-!                                   p_rmatrixLaplace,coeff_Stokes,&
+!                                   p_rmatrixStokes,coeff_Stokes,&
 !                                   rproblem%rcollection)
 !      
 !      ! In the global system, there are two coupling matrices B1 and B2.
@@ -1063,15 +1063,15 @@ CONTAINS
 !      !    ( B1^T B2^T    )   ( A31  A32  A33 )
 !      !
 !      ! The matrices A11 and A22 of the global system matrix have exactly
-!      ! the same structure as the original Laplace matrix from above!
+!      ! the same structure as the original Stokes matrix from above!
 !      ! Initialise them with the same structure, i.e. A11, A22 and the
-!      ! Laplace matrix L share(!) the same structure.
+!      ! Stokes matrix L share(!) the same structure.
 !      !
 !      ! For this purpose, use the "duplicate matric" routine.
-!      ! The structure of the matrix is shared with the Laplace matrix.
+!      ! The structure of the matrix is shared with the Stokes matrix.
 !      ! For the content, a new empty array is allocated which will later receive
 !      ! the entries.
-!      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+!      CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
 !                  p_rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !        
 !      IF (.NOT. rproblem%bdecoupledXY) THEN          
@@ -1083,8 +1083,8 @@ CONTAINS
 !        ! Save the value of bdecoupledXY to the collection.
 !        CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',NO,.TRUE.)
 !      ELSE
-!        ! Otherwise, create another copy of the Laplace matrix.
-!        CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+!        ! Otherwise, create another copy of the Stokes matrix.
+!        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
 !                    p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 !        ! Save the value of bdecoupledXY to the collection.
 !        CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',YES,.TRUE.)
@@ -1212,12 +1212,12 @@ CONTAINS
 
       ! Delete the variables from the collection.
       CALL collct_deletevalue (rproblem%rcollection,PAR_SYSTEMMAT,i)
-      CALL collct_deletevalue (rproblem%rcollection,PAR_LAPLACE,i)
+      CALL collct_deletevalue (rproblem%rcollection,PAR_STOKES,i)
       
-      ! Release Laplace, B1 and B2 matrix
+      ! Release Stokes, B1 and B2 matrix
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixLaplace)
+      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)
       
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.

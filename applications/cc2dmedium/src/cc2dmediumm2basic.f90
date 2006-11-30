@@ -53,8 +53,8 @@ MODULE cc2dmediumm2basic
     ! A system matrix for that specific level. 
     TYPE(t_matrixBlock) :: rmatrix
 
-    ! Laplace matrix for that specific level. 
-    TYPE(t_matrixScalar) :: rmatrixLaplace
+    ! Stokes matrix for that specific level (=nu*Laplace)
+    TYPE(t_matrixScalar) :: rmatrixStokes
 
     ! B1-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB1
@@ -150,8 +150,8 @@ MODULE cc2dmediumm2basic
   ! Name of a temporary vector in the collection
   CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_TEMPVEC      = 'RTEMPVEC'
   
-  ! Name of the Laplace matrix in the collection
-  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_LAPLACE      = 'LAPLACE'
+  ! Name of the Stokes matrix in the collection
+  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_STOKES       = 'STOKES'
   
   ! Name of the global system matrix in the collection
   CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_SYSTEMMAT    = 'SYSTEMMAT'
@@ -221,7 +221,7 @@ MODULE cc2dmediumm2basic
 !
 ! Name                  | Description
 ! ----------------------+------------------------------------------------------
-! LAPLACE               | Laplace matric
+! STOKES                | Stokes matrix (=nu*Laplace) if nu=constant
 ! SYSTEMMAT             | Nonlinear system matrix
 ! RTEMPVEC              | Temporary vector, compatible to matrix
 !

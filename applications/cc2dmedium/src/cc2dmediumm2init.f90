@@ -110,7 +110,7 @@ CONTAINS
     
     ! Which type of problem to discretise?
     CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iStokesEquation',i1,0)
+                              'iEquation',i1,0)
     CALL collct_setvalue_int (rproblem%rcollection,'ISTOKES',i1,.TRUE.)
 
     ! Stabilisation of nonlinearity

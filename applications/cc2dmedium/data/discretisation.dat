@@ -39,9 +39,9 @@ NLMAX              = 3
 
 # ------------------------------------------------------------------------
 
-# Type of equation; 0=Navier Stokes, 1=Stokes calculation
+# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
-iStokesEquation    = 0
+iEquation    = 0
 
 # Viscosity parmeter 1/NU
 
@@ -95,7 +95,7 @@ scubMass           = G2X2
 
 # cubature formula for Stokes/Laplacian matrix
 
-scubLaplace        = G2X2
+scubStokes         = G2X2
 
 # cubature formula for Pressure matrices B
 
