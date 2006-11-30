@@ -18,6 +18,9 @@
 !#
 !# 2.) mprim_invertMatrix
 !#     -> Invert a full matrix
+!#
+!# 3.) mprim_kronecker
+!#     -> Compute Kronecker delta symbol
 !# </purpose>
 !##############################################################################
 
@@ -556,4 +559,32 @@ CONTAINS
       END SELECT
     END SELECT
   END SUBROUTINE mprim_invertMatrixSngl
+  
+  ! ***************************************************************************
+
+!<function>
+
+  ELEMENTAL FUNCTION kronecker(i,j) RESULT(kron)
+    
+!<description>
+    ! Compute the Kronecker delta symbol 
+    ! $\delta_{ij}\left\{\begin{array}{ll}
+    !  1 & i=j\\
+    !  0 & i\ne j
+    !  \end{array}\right.$
+!<\description>
+
+!<input>
+    ! Evaluation points I and J
+    INTEGER, INTENT(IN) :: i,j
+!</input>
+
+!<result>
+    ! Kronecker delta symbol
+    INTEGER :: kron
+!</result>
+!</function>
+
+    kron=MERGE(1,0,i==j)
+  END FUNCTION kronecker
 END MODULE mprimitives

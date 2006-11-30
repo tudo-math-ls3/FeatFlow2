@@ -1384,9 +1384,9 @@ CONTAINS
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
        
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia)
+!$omp parallel do &
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia)
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -1414,9 +1414,9 @@ CONTAINS
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
           
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia)
+!$omp parallel do &
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia)
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -1428,9 +1428,9 @@ CONTAINS
         
         ! Multiply the rest of rx with the matrix and add it to ry:
         
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia)
+!$omp parallel do &
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia)
         DO irow=1,NEQ
           DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
             icol = p_Kcol(ia)
@@ -1449,9 +1449,9 @@ CONTAINS
         ! cx = 0. The formula is just a scaling of the vector ry!
         CALL lalg_scaleVectorDble(p_Dy,cy)
       ENDIF
-      
+   
     END SUBROUTINE
-
+    
     !**************************************************************
     ! Format 7 and Format 9 interleaved multiplication
     ! double precision matrix,
@@ -1508,9 +1508,9 @@ CONTAINS
           ! full matrix or a diagonal one
           SELECT CASE (rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIX1)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia,ivar,jvar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia,ivar,jvar)
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -1525,9 +1525,9 @@ CONTAINS
 !$omp end parallel do
 
           CASE (LSYSSC_MATRIXD)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia,ivar)
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -1568,9 +1568,9 @@ CONTAINS
           ! full matrix or a diagonal one
           SELECT CASE (rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIX1)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia,ivar,jvar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia,ivar,jvar)
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -1586,9 +1586,9 @@ CONTAINS
 !$omp end parallel do
 
           CASE (LSYSSC_MATRIXD)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia,ivar)
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -1614,9 +1614,9 @@ CONTAINS
         ! full matrix or a diagonal one
         SELECT CASE (rmatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)      
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia,ivar,jvar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia,ivar,jvar)
           DO irow=1,NEQ
             DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
@@ -1633,9 +1633,9 @@ CONTAINS
 !$omp end parallel do
 
         CASE (LSYSSC_MATRIXD)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow,icol,ia,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow,icol,ia,ivar)
           DO irow=1,NEQ
             DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
@@ -1704,24 +1704,24 @@ CONTAINS
         IF (cy .EQ. 0.0_DP) THEN
         
           ! cy = 0. Multiply cx*A with X and write to Y.
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow)
           DO irow = 1,NEQ
             p_Dy(irow) = cx*p_Da(irow)*p_Dx(irow)
           END DO
-!$omp  end parallel do
+!$omp end parallel do
           
         ELSE
         
           ! Full multiplication: cx*A*X + cy*Y
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow)
           DO irow = 1,NEQ
             p_Dy(irow) = cy*p_Dy(irow) + cx*p_Da(irow)*p_Dx(irow) 
           END DO
-!$omp  end parallel do
+!$omp end parallel do
         
         END IF
         
@@ -1781,13 +1781,13 @@ CONTAINS
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
           
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow)
           DO irow=1,NEQ
             p_Dy(irow) = p_Dx(irow)*p_DA(p_Kld(irow)) 
           END DO
-!$omp  end parallel do
+!$omp end parallel do
           
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
@@ -1810,13 +1810,13 @@ CONTAINS
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
           
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(irow)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow)
           DO irow=1,NEQ
             p_Dy(irow) = p_Dy(irow) + p_Dx(irow)*p_DA(p_Kld(irow)) 
           END DO
-!$omp  end parallel do
+!$omp end parallel do
           
         ENDIF
         
@@ -5549,25 +5549,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(p_Kdiag(i))
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(p_Kdiag(i))
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
@@ -5584,25 +5584,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(p_Kdiag(i))
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(p_Kdiag(i))
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
@@ -5639,28 +5639,28 @@ CONTAINS
         ! Let's go...
         SELECT CASE(rmatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
 
         CASE (LSYSSC_MATRIXD)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
 
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
@@ -5674,28 +5674,28 @@ CONTAINS
         ! Let's go...
         SELECT CASE(rmatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
 
         CASE (LSYSSC_MATRIXD)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
 
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
@@ -5720,28 +5720,28 @@ CONTAINS
         ! Let's go...
         SELECT CASE(rmatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
 
         CASE (LSYSSC_MATRIXD)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
         
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
@@ -5755,28 +5755,28 @@ CONTAINS
         ! Let's go...
         SELECT CASE(rmatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
 
         CASE (LSYSSC_MATRIXD)
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i,ivar)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i,ivar)
           DO i=1,rvectorSrc%NEQ
             DO ivar=1,NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
             END DO
           END DO
-!$omp  end parallel do
+!$omp end parallel do
         
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
@@ -5808,25 +5808,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(i)
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(i)
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
@@ -5843,25 +5843,25 @@ CONTAINS
         CALL lsyssc_getbase_double (rvectorSrc,p_Dvec)
         CALL lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(i)
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE (ST_SINGLE)
         CALL lsyssc_getbase_single (rvectorSrc,p_Fvec)
         CALL lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let's go...
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(i)
         DO i=1,rvectorSrc%NEQ
           p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(i)
         END DO
-!$omp  end parallel do
+!$omp end parallel do
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
@@ -8339,13 +8339,13 @@ CONTAINS
 
       INTEGER :: i
       
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Da3(:,i)=Da1(i)*Da2(:,i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
     END SUBROUTINE do_matDmat1mul_doubledouble
 
     !**************************************************************
@@ -8363,13 +8363,13 @@ CONTAINS
 
       INTEGER :: i
       
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Da3(:,i)=Fa1(i)*Da2(:,i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
     END SUBROUTINE do_matDmat1mul_singledouble
 
     !**************************************************************
@@ -8387,9 +8387,9 @@ CONTAINS
 
       INTEGER :: i
 
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Da3(:,i)=Da1(i)*Fa2(:,i)
       END DO
@@ -8411,13 +8411,13 @@ CONTAINS
 
       INTEGER :: i
 
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Fa3(:,i)=Fa1(i)*Fa2(:,i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
     END SUBROUTINE do_matDmat1mul_singlesingle
 
     !**************************************************************
@@ -8435,13 +8435,13 @@ CONTAINS
 
       INTEGER :: i
 
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,m
         Da3(i,:)=Da1(i,:)*Da2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
     END SUBROUTINE do_mat1matDmul_doubledouble
 
     !**************************************************************
@@ -8459,13 +8459,13 @@ CONTAINS
 
       INTEGER :: i
 
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,m
         Da3(i,:)=Fa1(i,:)*Da2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
     END SUBROUTINE do_mat1matDmul_singledouble
 
     !**************************************************************
@@ -8483,13 +8483,13 @@ CONTAINS
 
       INTEGER :: i
 
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)  
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)  
       DO i=1,m
         Da3(i,:)=Da1(i,:)*Fa2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
     END SUBROUTINE do_mat1matDmul_doublesingle
 
     !**************************************************************
@@ -8507,13 +8507,13 @@ CONTAINS
 
       INTEGER :: i
 
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,m
         Fa3(i,:)=Fa1(i,:)*Fa2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
     END SUBROUTINE do_mat1matDmul_singlesingle
 
     !**************************************************************
@@ -10464,13 +10464,13 @@ CONTAINS
 
       CALL DCOPY(n*m,Da1,1,Da3,1)
       CALL DSCAL(n*m,c1,Da3,1)
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Da2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
       !CALL lalg_copyVectorDble(Da1,Da3)
       !CALL lalg_scaleVectorDble(Da3,c1)
       !DO i=0,n-1
@@ -10498,13 +10498,13 @@ CONTAINS
 
       Da3=Fa1
       CALL DSCAL(n*m,c1,Da3,1)
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Da2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
       !CALL lalg_scaleVectorDble(Da3,c1)
       !DO i=0,n-1
       !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
@@ -10531,13 +10531,13 @@ CONTAINS
 
       CALL DCOPY(n*m,Da1,1,Da3,1)
       CALL DSCAL(n*m,c1,Da3,1)
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Da3(i,i)=Da3(i,i)+c2*Fa2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
       !CALL lalg_copyVectorDble(Da1,Da3)
       !CALL lalg_scaleVectorDble(Da3,c1)
       !DO i=0,n-1
@@ -10565,13 +10565,13 @@ CONTAINS
 
       CALL SCOPY(n*m,Fa1,1,Fa3,1)
       CALL SSCAL(n*m,REAL(c1,SP),Fa3,1)
-!$omp  parallel do&
-!$omp& default(shared)&
-!$omp& private(i)
+!$omp parallel do&
+!$omp&default(shared)&
+!$omp&private(i)
       DO i=1,n
         Fa3(i,i)=Fa3(i,i)+c2*Fa2(i)
       END DO
-!$omp  end parallel do
+!$omp end parallel do
       !CALL lalg_copyVectorSngl(Fa1,Fa3)
       !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
       !DO i=0,n-1

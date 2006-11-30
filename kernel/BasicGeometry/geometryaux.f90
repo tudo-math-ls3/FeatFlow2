@@ -12,6 +12,12 @@
 !# 1.) gaux_getAspectRatio_quad2D
 !#     -> Calculate the aspect ratio of a 2D quadrilateral
 !#
+!# 2.) gaux_getArea_tria2D
+!#     -> Calculate the signed area of a 2D triangle
+!#
+!# 3.) gaux_getArea_quad2D
+!#     -> Calculate the area of a 2D quadrilateral
+!#
 !# </purpose>
 !##############################################################################
 
@@ -71,4 +77,64 @@ CONTAINS
 
   END FUNCTION
 
+  ! ***************************************************************************
+
+!<function>
+  
+  PURE REAL(DP) FUNCTION gaux_getArea_tria2D (Dpoints)
+
+!<description>
+    ! This routine calculates the signed area of a 2D triangular
+    ! polygon. The polygon is given by the coordinates of its three
+    ! corners, counterclockwise.
+!</description>
+
+!<input>
+  ! The coordinates of the three corners of the polygon, ordered
+  ! counterclockwise.
+  ! Dpoints(1,.) = x-coordinates,
+  ! Dpoints(2,.) = y-coordinates
+    REAL(DP), DIMENSION(2,3), INTENT(IN) :: Dpoints
+!</input>
+
+!<result>
+  ! The signed area of the polygon.
+!</result>
+!</function>
+
+    gaux_GetArea_tria2D = 0.5*( &
+        (Dpoints(1,2)-Dpoints(1,1))*(Dpoints(2,3)-Dpoints(2,1))-&
+        (Dpoints(1,3)-Dpoints(1,1))*(Dpoints(2,2)-Dpoints(2,1)) )
+  END FUNCTION gaux_getArea_tria2D
+
+  ! ***************************************************************************
+
+!<function>
+
+  PURE REAL(DP) FUNCTION gaux_getArea_quad2D (Dpoints)
+
+!<description>
+    ! This routine calculates the area of a 2D quadrilateral
+    ! polygon. The polygon is given by the coordinates of its three
+    ! corners, counterclockwise.
+!</description>
+
+!<input>
+  ! The coordinates of the four corners of the polygon, ordered
+  ! counterclockwise.
+  ! Dpoints(1,.) = x-coordinates,
+  ! Dpoints(2,.) = y-coordinates
+    REAL(DP), DIMENSION(2,4), INTENT(IN) :: Dpoints
+!</input>
+
+!<result>
+  ! The area of the polygon.
+!</result>
+!</function>
+    
+    gaux_GetArea_quad2D = &
+        ABS(gaux_getArea_tria2D(Dpoints(1:2,1:3))) +&
+        ABS(gaux_getArea_tria2D(Dpoints(1:2,(/1,3,4/))))
+
+  END FUNCTION gaux_getArea_quad2D
 END MODULE
