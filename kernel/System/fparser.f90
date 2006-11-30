@@ -3029,7 +3029,7 @@ CONTAINS
 
 !<description>
     ! This function converts DEG to RAD
-!</desccription>
+!</description>
 
 !<input>
     ! DEG

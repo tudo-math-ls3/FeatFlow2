@@ -572,7 +572,7 @@ CONTAINS
     !  1 & i=j\\
     !  0 & i\ne j
     !  \end{array}\right.$
-!<\description>
+!</description>
 
 !<input>
     ! Evaluation points I and J
