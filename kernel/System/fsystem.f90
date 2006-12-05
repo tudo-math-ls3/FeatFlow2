@@ -119,6 +119,92 @@ MODULE fsystem
 
 !</constants>
 
+!<types>
+
+!<typeblock>
+
+  ! Emulation of an array of pointers to double precision vectors
+  TYPE t_realPointer
+    REAL(DP), DIMENSION(:), POINTER :: ptr
+  END TYPE
+
+!</typeblock>
+
+!<typeblock>
+
+  ! Emulation of an array of pointers to 2D double precision vectors
+  TYPE t_realw2DPointer
+    REAL(DP), DIMENSION(:,:), POINTER :: ptr
+  END TYPE
+
+!</typeblock>
+
+!<typeblock>
+
+  ! Emulation of an array of pointers to single precision vectors
+  TYPE t_singlePointer
+    REAL(SP), DIMENSION(:), POINTER :: ptr
+  END TYPE
+
+!</typeblock>
+  
+!<typeblock>
+
+  ! Emulation of an array of pointers to 2D single precision vectors
+  TYPE t_single2DPointer
+    REAL(SP), DIMENSION(:), POINTER :: ptr
+  END TYPE
+
+!</typeblock>
+
+!<typeblock>
+
+  ! Emulation of an array of pointers to integer vectors
+  TYPE t_intPointer
+    INTEGER(I32), DIMENSION(:), POINTER :: ptr
+  END TYPE
+  
+!</typeblock>
+  
+!<typeblock>
+
+  ! Emulation of an array of pointers to 2D integer vectors
+  TYPE t_int2DPointer
+    INTEGER(I32), DIMENSION(:,:), POINTER :: ptr
+  END TYPE
+  
+!</typeblock>
+  
+!<typeblock>
+
+  ! Global project settings and system information
+  TYPE t_sysconfig
+
+    ! project id
+    CHARACTER(LEN=SYS_STRLEN) :: sprojectID
+
+    ! project directory
+    CHARACTER(LEN=SYS_STRLEN) :: sprojectDir
+    
+  END TYPE
+
+!</typeblock>
+
+!</types>
+
+!<globals>
+  ! maximal measurable time span in seconds (system-dependend)
+  REAL(DP) :: sys_dtimeMax
+
+  ! global system configuration
+  TYPE (t_sysconfig), TARGET :: sys_sysconfig
+!</globals>
+
+  INTERFACE system_init
+    MODULE PROCEDURE system_init_simple
+    MODULE PROCEDURE system_init_ext
+  END INTERFACE
+
 CONTAINS
 
 !************************************************************************
@@ -146,19 +232,97 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE system_init()
+  SUBROUTINE system_init_simple()
 
-    !<description>
-    !This subroutine initialises some internal data structures.
-    !</description>
+!<description>
+  ! This subroutine initialises internal data structures with standard
+  ! values.
+!</description>
 
 !</subroutine>
 
-    !set value of Pi = 3.14..
+    CALL system_init_ext("","")
 
+  END SUBROUTINE 
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE system_init_ext(sprojectID,sprojectDir)
+
+!<description>
+  ! Extended initialisation.
+  ! This subroutine initialises internal data structures.
+  ! The value of the project name and directory are set according to the
+  ! parameters.
+!</description>
+
+!<input>
+  ! An ID string of the project.
+  CHARACTER(LEN=*), INTENT(IN) :: sprojectID
+
+  ! The directory of the project. "" means 'current directory'.
+  CHARACTER(LEN=*), INTENT(IN) :: sprojectDir
+!</input>
+
+!</subroutine>
+
+    INTEGER :: icount ! current system time
+    INTEGER :: irate  ! approx. number of system clock ticks per second
+    INTEGER :: icmax  ! largest possible value of icount
+
+    ! system_clock is not a FEAT, but a basic FORTRAN 90 routine
+    CALL system_clock(icount,irate,icmax)
+
+    ! maximal measurable time span in seconds (system-dependend)
+    sys_dtimeMax = REAL(icmax,DP)/REAL(irate,DP)
+
+    ! Initialise the global sysconfig structure
+    sys_sysconfig%sprojectID = sprojectID
+    sys_sysconfig%sprojectDir = sprojectDir
+
+    ! Set value of Pi = 3.14..
     SYS_PI=DASIN(1.0_DP)*2.0_DP
 
-  END SUBROUTINE system_init
+  END SUBROUTINE
+
+!************************************************************************************
+
+
+!<subroutine>
+  SUBROUTINE sys_version(ifeastVersionHigh, ifeastVersionMiddle, ifeastVersionLow, &
+                         sreldate)
+
+!<description>
+  ! This subroutine returns the library version information.
+!</description>
+
+!<output>
+
+  ! high version number
+  INTEGER :: ifeastVersionHigh
+
+  ! middle version number
+  INTEGER :: ifeastVersionMiddle
+
+  ! low version number
+  INTEGER :: ifeastVersionLow
+
+  ! release date
+  CHARACTER(LEN=*) :: sreldate
+
+!</output>
+
+!</subroutine>
+
+    ifeastVersionHigh=0
+    ifeastVersionMiddle=0
+    ifeastVersionLow=1
+
+    sreldate="01.01.2007 RC0"
+
+  END SUBROUTINE sys_version
 
 !************************************************************************
 
@@ -166,18 +330,16 @@ CONTAINS
   
   PURE SUBROUTINE sys_toupper (str) 
 
-  !<description>
-  
+!<description>
   ! Convert a string to upper case.
-  
-  !</description>
+!</description>
 
-  !<inputoutput>
+!<inputoutput>
   
   ! The string that is to make uppercase
   CHARACTER(LEN=*), INTENT(INOUT) :: str
   
-  !</inputoutput>
+!</inputoutput>
   
 !</subroutine>
   

@@ -111,7 +111,7 @@ MODULE triangulation
     ! where the entries could be accessed by means of the Oxxxx constants.
     ! !!!THIS WILL BE DELETED IN THE FINAL VERSION!!!
     INTEGER, DIMENSION(SZTRIA) :: Itria
-  
+    
     ! Duplication flag. Bitfield. Used by TRIDUP/TRIRST/TRIDEL to 
     ! mark which information of a triangulation structure 
     ! coincides with those of another triangulation structure and
@@ -142,6 +142,10 @@ MODULE triangulation
     ! Bit 19: DAREA  is a copy of another structure
     INTEGER(I32)             :: iduplicationFlag
   
+    ! Dimension of the triangulation.
+    ! NDIM2D=2D triangulation (standard), NDIM2D=3D triangulation
+    INTEGER                  :: ndim = NDIM2D
+  
     ! Number of points in the domain corresponding to corners of elements;
     ! coincides with SIZE(RcornerCoordinates)
     INTEGER(PREC_POINTIDX)   :: NVT = 0
@@ -169,11 +173,11 @@ MODULE triangulation
     ! Number of vertices per edge; normally = 0.
     ! If a regular distribution of vertices on edges is given,
     ! NVPED saves the number of vertices on each edge;
-    ! e.g. 1 if midpoints on edges exist in p_RfreeVertexCoordinates.
+    ! e.g. 1 if midpoints on edges exist in p_DfreeVertexCoordinates.
     INTEGER             :: nverticesPerEdge = 0
     
     ! Total number of vertices on edges; normally = 0.
-    ! Total number of vertices on all edges, realized in p_RfreeVertexCoordinates. 
+    ! Total number of vertices on all edges, realized in p_DfreeVertexCoordinates. 
     ! E.g. if midpoints on edges exist, there is NVEDT=NMT.
     INTEGER(PREC_POINTIDX)   :: nVerticesOnAllEdges = 0
     
@@ -181,17 +185,17 @@ MODULE triangulation
     ! If a regular distribution of vertices in the inner of 
     ! each element is given, NIELV saves the number of vertices 
     ! in the inner of each element; e.g. 1 if element-midpoints 
-    ! exist in p_RfreeVertexCoordinates.
+    ! exist in p_DfreeVertexCoordinates.
     INTEGER             :: nverticesInEachElement = 0
 
     ! Total number of vertices in elements; normally = 0.
-    ! Total number of vertices on all elements, realized in p_RfreeVertexCoordinates. 
+    ! Total number of vertices on all elements, realized in p_DfreeVertexCoordinates. 
     ! E.g. if element-midpoints exist in DCORMG, there is NIEVT=NEL.
     INTEGER(PREC_POINTIDX)   :: nverticesInAllElements = 0
     
     ! Number of additional vertices; normally = 0.
     ! Can be set <> 0 if there are any additional vertices 
-    ! realized in p_RfreeVertexCoordinates, that don't belong to a regular 
+    ! realized in p_DfreeVertexCoordinates, that don't belong to a regular 
     ! distribution of vertices in corners, on edges or on elements.
     INTEGER(PREC_POINTIDX)    :: nadditionalVertices = 0
   
@@ -374,19 +378,19 @@ MODULE triangulation
     INTEGER          :: p_IboundaryEdgePos = ST_NOHANDLE
     
     ! Handle to 
-    !       p_RfreeVertexCoordinates = array [1..NDIM2D,1..NVT] of double
+    !       p_DfreeVertexCoordinates = array [1..NDIM2D,1..NVT] of double
     ! Array containing the coordinates of all vertices on edges,
     ! inner element vertices and additional nodes in the geometry.
     !
-    ! p_RfreeVertexCoordinates(1..nVerticesOnAllEdges) contains the coordinates 
+    ! p_DfreeVertexCoordinates(1..nVerticesOnAllEdges) contains the coordinates 
     ! of the regular distributed vertices on edges. 
     !
-    ! p_RfreeVertexCoordinates(nVerticesOnAllEdges + 1 ..
+    ! p_DfreeVertexCoordinates(nVerticesOnAllEdges + 1 ..
     !                          nVerticesOnAllEdges + nVerticesOnAllElements) 
     ! contains the coordinates of the regular distributed 
     ! inner-element vertices. 
     !
-    ! p_RfreeVertexCoordinates(nVerticesOnAllEdges + nVerticesOnAllElements + 1 ..
+    ! p_DfreeVertexCoordinates(nVerticesOnAllEdges + nVerticesOnAllElements + 1 ..
     !                          nVerticesOnAllEdges + nVerticesOnAllElements + nadditionalVertices)
     ! contains the coordinates of any additional vertices that do not 
     ! belong to regular distributed vertices on edges or on elements.
@@ -395,7 +399,7 @@ MODULE triangulation
     ! The DCORMG-array is originally designed to collect the midpoints 
     ! that are associated to the edges. In the new style, this behaviour 
     ! is only a special case that happens if NVEDT=NMT is set.
-    ! The new style allowS p_RfreeVertexCoordinates to save all vertex 
+    ! The new style allowS p_DfreeVertexCoordinates to save all vertex 
     ! coordinates that are not corner vertices. This includes regular distributed
     ! vertices on edges (either midpoints or points at 1/3 and 2/3 of the edge, 
     ! or...), on elements (either midpoints or the 4 Gauss-points, or...)
@@ -410,7 +414,7 @@ MODULE triangulation
     !       (NVT-1)+(NMT-1) + (E-1)*n + 1
     !    .. (NVT-1)+(NMT-1) + (E-1)*n + n
     ! the formula for regular distributed vertices on elements is similar.
-    INTEGER           :: h_RfreeVertexCoordinates = ST_NOHANDLE
+    INTEGER           :: h_DfreeVertexCoordinates = ST_NOHANDLE
     
   END TYPE
 
@@ -574,10 +578,10 @@ CONTAINS
 
 
   ! *******************************************************
-  ! Copy DCORMG, create p_RfreeVertexCoordinates.
+  ! Copy DCORMG, create p_DfreeVertexCoordinates.
   
   CALL copy_featarray_double2d ('DCORMG',2,INT(p_rtriangulation%NMT),TRIA(OLCORMG),&
-                                p_rtriangulation%h_RfreeVertexCoordinates)
+                                p_rtriangulation%h_DfreeVertexCoordinates)
   
 
   CONTAINS
@@ -1028,7 +1032,7 @@ CONTAINS
     CALL checkAndRelease(idupflag,18,p_rtriangulation%p_IboundaryEdgePos)
     
     ! Bit  1: DCORMG is a copy of another structure
-    CALL checkAndRelease(idupflag, 1,p_rtriangulation%h_RfreeVertexCoordinates)
+    CALL checkAndRelease(idupflag, 1,p_rtriangulation%h_DfreeVertexCoordinates)
     
     ! Clean up the rest of the structure
 

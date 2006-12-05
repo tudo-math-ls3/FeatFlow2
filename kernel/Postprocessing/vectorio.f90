@@ -12,8 +12,8 @@
 !# 1.) vecio_writeBlockVectorHR
 !#     -> Writes a vector in human readable form into a text file
 !#
-!# 2.) matio_writeArray_Dble
-!#     -> Writes an array in human readable form into a text file
+!# 2.) vecio_writeArray_Dble
+!#     -> Writes an array into a text file; FEAT format
 !# </purpose>
 !#########################################################################
 
@@ -102,6 +102,7 @@ MODULE vectorio
   
   !<description>
     ! Write double precision vector into a text file.
+    ! Uses the FEAT input/output format.
   !</description>
     
   !<input>

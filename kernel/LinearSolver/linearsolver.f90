@@ -1304,7 +1304,7 @@ CONTAINS
     
   CASE (LINSOL_ALG_JINWEITAM)
     ! Ask JWT if the matrices are ok.
-    CALL linsol_matCompatJacobi (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatJinWeiTam (rsolverNode,Rmatrices,ccompatible)
     
   CASE (LINSOL_ALG_SSOR)
     ! Ask SSOR if the matrices are ok.
@@ -3166,7 +3166,7 @@ CONTAINS
 
 !<input>
   ! OPTIONAL: Relax parameter. Is saved to rsolverNode%p_rsubnodeJinWeiTam%drelax 
-  !           if specified
+  !           if specified. 0.0=Standard Jacobi, 1.0=full JinWeiTam
   REAL(DP), OPTIONAL :: drelax
 !</input>
 

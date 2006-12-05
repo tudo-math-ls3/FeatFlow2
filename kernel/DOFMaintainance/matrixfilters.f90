@@ -469,9 +469,18 @@ CONTAINS
     TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
     
     ! Imposing boundary conditions normally changes the whole matrix!
-    ! Grab the boundary condition entry list from the matrix. This
+    ! Take the given BC structure or
+    ! grab the boundary condition entry list from the matrix. This
     ! is a list of all discretised boundary conditions in the system.
-    p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
+    IF (PRESENT(rdiscreteBC)) THEN
+      p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
+    ELSE
+      IF (.NOT. ASSOCIATED(rmatrix%p_rdiscreteBC)) THEN
+        ! There are no BC's available, so we cannot do anything!
+        RETURN
+      END IF
+      p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
+    END IF
     
     IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
     

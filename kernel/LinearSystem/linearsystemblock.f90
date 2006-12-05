@@ -43,7 +43,7 @@
 !#
 !# 10.) lsysbl_assignDiscretIndirectMat
 !#      -> Assign discretisation related information of a matrix
-!#         to a vector tp make it compatible.
+!#         to a vector to make it compatible.
 !#
 !# 11.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
@@ -52,57 +52,60 @@
 !# 12.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 13.) lsysbl_blockMatVec
+!# 13.) lsysbl_releaseMatrix
+!#      -> Releases a block matrix and all submatrices
+!#
+!# 14.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 14.) lsysbl_copyVector
+!# 15.) lsysbl_copyVector
 !#       -> Copy a block vector over to another one
 !#
-!# 15.) lsysbl_scaleVector
+!# 16.) lsysbl_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 16.) lsysbl_clearVector
+!# 17.) lsysbl_clearVector
 !#      -> Clear a block vector
 !#
-!# 17.) lsysbl_vectorLinearComb
+!# 18.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 18.) lsysbl_scalarProduct
+!# 19.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 19.) lsysbl_setSortStrategy
+!# 20.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 20.) lsysbl_sortVectorInSitu
+!# 21.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 21.) lsysbl_isVectorCompatible
+!# 22.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 22.) lsysbl_isMatrixCompatible
+!# 23.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 23.) lsysbl_isMatrixSorted
+!# 24.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 24.) lsysbl_isVectorSorted
+!# 25.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 25.) lsysbl_getbase_double
+!# 26.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 26.) lsysbl_getbase_single
+!# 27.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 27.) lsysbl_vectorNorm
+!# 28.) lsysbl_vectorNorm
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 28.) lsysbl_vectorNormBlock
+!# 29.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 29.) lsysbl_invertedDiagMatVec
+!# 30.) lsysbl_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !# </purpose>
 !##############################################################################
@@ -1327,7 +1330,7 @@ CONTAINS
   SUBROUTINE lsysbl_releaseMatrix (rmatrix)
  
 !<description>
-  ! Releases the memory that is reserved by rmatrix.
+  ! Releases the memory that is reserved by rmatrix (including all submatrices).
 !</description>
   
 !<inputoutput>
