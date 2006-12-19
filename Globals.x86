@@ -197,13 +197,13 @@ endif
 endif
 
 ifeq ($(CPU),core)
-OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2
+OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
 endif
 
 ifeq ($(CPU),core2)
-OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2
+OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
 endif

@@ -691,14 +691,18 @@ CONTAINS
       CASE (cAcos)
         IF ((Stack(StackPtr) < -1._DP) .OR. &
             (Stack(StackPtr) > 1._DP)) THEN
-          rparser%EvalErrType=4; res=zero; RETURN
+          rparser%EvalErrType=4; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr)=ACOS(Stack(StackPtr))
 
       CASE (cAsin)
         IF ((Stack(StackPtr) < -1._DP) .OR. &
             (Stack(StackPtr) > 1._DP)) THEN
-          rparser%EvalErrType=4; res=zero; RETURN
+          rparser%EvalErrType=4; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr)=ASIN(Stack(StackPtr))
 
@@ -712,7 +716,9 @@ CONTAINS
       CASE (cAcosh)
         daux=Stack(StackPtr)+SQRT(Stack(StackPtr)**2-1)
         IF (daux <= 0._DP) THEN
-          rparser%EvalErrType=5; res=zero; RETURN
+          rparser%EvalErrType=5; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         END IF
         Stack(StackPtr)=LOG(daux)
         
@@ -725,17 +731,23 @@ CONTAINS
       CASE (cAsinh)
         daux=Stack(StackPtr)+SQRT(Stack(StackPtr)+1)
         IF (daux <= 0._DP) THEN
-          rparser%EvalErrType=5; res=zero; RETURN
+          rparser%EvalErrType=5; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         END IF
         Stack(StackPtr)=LOG(daux)
 
       CASE (cAtanh)
         IF (Stack(StackPtr) == -1._DP) THEN
-          rparser%EvalErrType=6; res=zero; RETURN
+          rparser%EvalErrType=6; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         END IF
         daux=(1+Stack(StackPtr))/(1-Stack(StackPtr))
         IF (daux <= 0._DP) THEN
-          rparser%EvalErrType=3; res=zero; RETURN
+          rparser%EvalErrType=3; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         END IF
         Stack(StackPtr)=LOG(daux)/2._DP
 
@@ -751,14 +763,18 @@ CONTAINS
       CASE (cCot)
         daux=TAN(Stack(StackPtr))
         IF (daux == 0) THEN 
-          rparser%EvalErrType=1; res=zero; RETURN
+          rparser%EvalErrType=1; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         END IF
         Stack(StackPtr)=1._DP/daux
 
       CASE (cCsc)
         daux=SIN(Stack(StackPtr))
         IF (daux==0._DP) THEN
-          rparser%EvalErrType=1; res=zero; RETURN; 
+          rparser%EvalErrType=1; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr)=1._DP/daux
 
@@ -779,13 +795,17 @@ CONTAINS
         
       CASE (cLog)
         IF (Stack(StackPtr) <= 0._DP) THEN
-          rparser%EvalErrType=3; res=zero; RETURN
+          rparser%EvalErrType=3; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr)=LOG(Stack(StackPtr)) 
 
       CASE (cLog10)
         IF (Stack(StackPtr) <= 0._DP) THEN
-          rparser%EvalErrType=3; res=zero; RETURN
+          rparser%EvalErrType=3; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr)=LOG10(Stack(StackPtr))
 
@@ -800,7 +820,9 @@ CONTAINS
       CASE (cSec)
         daux=COS(Stack(StackPtr))
         IF (daux==0._DP) THEN
-          rparser%EvalErrType=1; res=zero; RETURN
+          rparser%EvalErrType=1; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr)=1._DP/daux
         
@@ -812,7 +834,9 @@ CONTAINS
       
       CASE(cSqrt)
         IF (Stack(StackPtr) < 0._DP) THEN
-          rparser%EvalErrType=3; res=zero; RETURN
+          rparser%EvalErrType=3; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr)=SQRT(Stack(StackPtr))
 
@@ -854,14 +878,18 @@ CONTAINS
         
       CASE (cDiv)
         IF (Stack(StackPtr)==0._DP) THEN
-          rparser%EvalErrType=1; res=zero; RETURN; 
+          rparser%EvalErrType=1; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr-1)=Stack(StackPtr-1)/Stack(StackPtr)
         StackPtr=StackPtr-1
         
       CASE (cMod)
         IF (Stack(StackPtr)==0._DP) THEN
-          rparser%EvalErrType=1; res=zero; RETURN; 
+          rparser%EvalErrType=1; res=zero
+          CALL storage_free(h_Stack)
+          RETURN
         ENDIF
         Stack(StackPtr-1)=MOD(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
@@ -1147,6 +1175,7 @@ CONTAINS
             Res(j)=fparser_evalFunction(rparser,i,Val(:,j),EvalErrType)
           END DO
         END IF
+        CALL storage_free(h_Stack)
         RETURN
         
       CASE (cLog)
@@ -1329,7 +1358,6 @@ CONTAINS
 
       ! Check if an error occured
       IF (rparser%EvalErrType /= 0) THEN
-        PRINT *, "FEHLER"
         CALL storage_free(h_Stack)    
         RETURN
       END IF
