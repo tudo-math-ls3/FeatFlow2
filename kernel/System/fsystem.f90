@@ -15,17 +15,22 @@
 !#  1.) system_init
 !#      -> Initialise system-wide settings
 !#
-!#  2.) sys_toupper
+!#  2.) sys_version
+!#      -> Get kernal version number
+!#
+!#  3.) sys_toupper
 !#      -> Convert a string to uppercase
 !#
-!#  3.) sys_upcase
+!#  4.) sys_upcase
 !#      -> Convert a string to uppercase, function version
 !#
-!#  4.) sys_throwFPE
+!#  5.) sys_charreplace
+!#      -> Replaces characters in a string
+!#
+!#  6.) sys_throwFPE
 !#      -> Throw a floating point exception
 !#
-!#
-!#  5.) sys_getFreeUnit
+!#  7.) sys_getFreeUnit
 !#      -> Determine a free file handle for use in an OPEN() command
 !#
 !# 
@@ -394,6 +399,48 @@ CONTAINS
   END DO
   
   END FUNCTION sys_upcase
+
+!******************************************************************************
+
+!<function>
+  PURE FUNCTION sys_charreplace(sinput,scharsource,schardest) RESULT(soutput)
+  
+!<description>
+  ! Replaces all characers scharsource in sinput by schardest.
+  ! Case sensitive.
+!</description>
+
+!<input>
+  ! input string
+  CHARACTER(LEN=*), INTENT(IN) :: sinput
+  
+  ! Character to be searched for.
+  CHARACTER, INTENT(IN) :: scharsource
+  
+  ! Detinatiion character, all scarsource characters in sinput should be
+  ! replaced by.
+  CHARACTER, INTENT(IN) :: schardest
+!</input>
+
+!<output>
+  ! output string
+  CHARACTER(LEN=LEN(sinput)) :: soutput
+!</output>
+!</function>
+
+  !index variable
+  INTEGER :: i
+
+  soutput = " "   !initialise string
+  DO I = 1,LEN(sinput)
+     if(sinput(i:i) .eq. scharsource) then
+        soutput(i:i) = schardest
+     ELSE
+        soutput(i:i) = sinput(i:i)
+     END IF
+  END DO
+  
+  END FUNCTION 
 
 !************************************************************************
 
