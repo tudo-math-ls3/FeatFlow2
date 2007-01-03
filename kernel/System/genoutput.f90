@@ -80,7 +80,7 @@
 !#     -> Writes a message only to the log file
 !#
 !#     d) CALL output_line ('A special debug message.', &
-!#                          OU_CLASS_TRACE1,'OU_MODE_STD,mysubroutine')
+!#                          OU_CLASS_TRACE1,OU_MODE_STD,'mysubroutine')
 !#
 !#     -> Writes a debug message with '*** (mysubroutine):' in front to the 
 !#        terminal and the log file. This is usually used for debug purposes.
@@ -212,12 +212,12 @@ MODULE genoutput
   INTEGER :: OU_ERROR               = 6
   
   ! Global device number for log file. The log file is opened in output_init.
-  ! =0: no log file output.
+  ! <=0: no log file output.
   INTEGER :: OU_LOG                 = 0
   
   ! Global device number for error log file. The error log file is opened 
   ! in output_init and usually coincides with OU_LOG.
-  ! =0: write error messages to standard log file.
+  ! <=0: write error messages to standard log file.
   INTEGER :: OU_ERRORLOG            = 0
 
 !</constantblock>
@@ -375,8 +375,8 @@ CONTAINS
 !</subroutine>
   
     ! Close all open channels.
-    IF (OU_LOG .NE. 0) CLOSE(OU_LOG)
-    IF (OU_ERRORLOG .NE. 0) CLOSE(OU_ERRORLOG)
+    IF (OU_LOG .GT. 0) CLOSE(OU_LOG)
+    IF (OU_ERRORLOG .GT. 0) CLOSE(OU_ERRORLOG)
     
   END SUBROUTINE
 
@@ -535,7 +535,7 @@ CONTAINS
          (coClass .EQ. OU_CLASS_ERROR)) ) THEN
          
       ! Where to write the message to?
-      IF ((IAND(coMode,OU_MODE_TERM) .NE. 0) .AND. (iotChannel .NE. 0)) THEN
+      IF ((IAND(coMode,OU_MODE_TERM) .NE. 0) .AND. (iotChannel .GT. 0)) THEN
         IF (bnnewline) THEN
           WRITE (iotChannel,'(A)',ADVANCE='NO') smessage
         ELSE
@@ -544,7 +544,7 @@ CONTAINS
       END IF
       
       ! Output to log file?
-      IF ((IAND(coMode,OU_MODE_LOG) .NE. 0) .AND. (iofChannel .NE. 0)) THEN
+      IF ((IAND(coMode,OU_MODE_LOG) .NE. 0) .AND. (iofChannel .GT. 0)) THEN
         IF (bnnewline) THEN
           WRITE (iofChannel,'(A)',ADVANCE='NO') smessage
         ELSE
@@ -558,7 +558,7 @@ CONTAINS
       smsg = output_reformatMsg (smessage, coutputClass, ssubroutine) 
       
       ! Where to write the message to?
-      IF ((IAND(coMode,OU_MODE_TERM) .NE. 0) .AND. (iotChannel .NE. 0)) THEN
+      IF ((IAND(coMode,OU_MODE_TERM) .NE. 0) .AND. (iotChannel .GT. 0)) THEN
         IF (bnnewline) THEN
           WRITE (iotChannel,'(A)',ADVANCE='NO') TRIM(smsg)
         ELSE
@@ -567,7 +567,7 @@ CONTAINS
       END IF
       
       ! Output to log file?
-      IF ((IAND(coMode,OU_MODE_LOG) .NE. 0) .AND. (iofChannel .NE. 0)) THEN
+      IF ((IAND(coMode,OU_MODE_LOG) .NE. 0) .AND. (iofChannel .GT. 0)) THEN
         IF (bnnewline) THEN
           WRITE (iofChannel,'(A)',ADVANCE='NO') TRIM(smsg)
         ELSE

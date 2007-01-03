@@ -85,12 +85,12 @@
 !# ucd_startXXXX creates an export structure that identifies the output
 !# file. This is the only point, where the caller must specify the type
 !# of output. Afterwards, the ucd_setXXXX and ucd_addXXXX routines
-!# can be used to specify all the output. \\
+!# can be used to specify all the output.\\
 !#
 !# Depending on the type of file (AVS, GMV or what else), the output may 
 !# be written to the disc directly or first collected in memory. 
 !# The final ucd_write command then finishes the output process 
-!# and creates a valid GMV/AVS/...-file.
+!# and creates a valid GMV/AVS/...-file.\\
 !#
 !# The ucd_release command at the end must be used to release all memory 
 !# that was used by the ucd_setXXXX and ucd_addXXXX routines.

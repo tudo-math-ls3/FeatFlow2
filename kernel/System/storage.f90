@@ -82,6 +82,7 @@ MODULE storage
 
   USE fsystem
   USE linearalgebra
+  USE genoutput
   
   IMPLICIT NONE
   
@@ -2537,12 +2538,26 @@ CONTAINS
       END IF
     END IF
     
-    PRINT *,'Number if handles in use:        ',p_rheap%ihandlesInUse
-    PRINT *,'Memory in use (bytes):           ',INT(p_rheap%dtotalMem)
-    PRINT *,'Current total number of handles: ',SIZE(p_rheap%p_IfreeHandles)
-    PRINT *,'Maximum number of handles used:  ',p_rheap%nhandlesInUseMax
-    PRINT *,'Maximum used memory (bytes):     ',INT(p_rheap%dtotalMemMax)
-
+    CALL output_line ('Number if handles in use:        '//&
+                      TRIM(sys_siL(p_rheap%ihandlesInUse,10)))
+    IF (p_rheap%dtotalMem .GT. REAL(HUGE(0),DP)) THEN
+      CALL output_line ('Memory in use (bytes):           '//&
+                        TRIM(sys_sdL(p_rheap%dtotalMem,0)))
+    ELSE
+      CALL output_line ('Memory in use (bytes):           '//&
+                        TRIM(sys_siL(INT(p_rheap%dtotalMem),10)))
+    END IF
+    CALL output_line ('Current total number of handles: '//&
+                      TRIM(sys_siL(SIZE(p_rheap%p_IfreeHandles),10)))
+    CALL output_line ('Maximum number of handles used:  '//&
+                      TRIM(sys_siL(p_rheap%nhandlesInUseMax,10)))
+    IF (p_rheap%dtotalMem .GT. REAL(HUGE(0),DP)) THEN
+      CALL output_line ('Maximum used memory (bytes):     '//&
+                        TRIM(sys_sdL(p_rheap%dtotalMemMax,0)))
+    ELSE
+      CALL output_line ('Maximum used memory (bytes):     '//&
+                        TRIM(sys_siL(INT(p_rheap%dtotalMemMax),10)))
+    END IF
   END SUBROUTINE
 
 !************************************************************************

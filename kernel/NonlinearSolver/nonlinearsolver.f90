@@ -799,7 +799,12 @@ CONTAINS
       bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        PRINT *,'ITE:',ite,' !!RES!! = ',(DvecNorm(i),i=1,rb%nblocks)
+        CALL output_line ('NLSOL: Iteration '//&
+             TRIM(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.TRUE.)
+        DO i=1,rb%nblocks
+          CALL output_line (' '//TRIM(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.TRUE.)
+        END DO
+        CALL output_lbrk()
       END IF
     END IF
 
@@ -860,7 +865,8 @@ CONTAINS
           ! Don't change the order of these if's - produces DIVISION BY ZERO on
           ! some compilers with optimisation!
           IF (MOD(ite,rsolverNode%iautosave) .EQ. 0) THEN
-            PRINT *,'Iteration: ',ITE,': Autosave not yet implemented.'
+            CALL output_line ('Iteration: '//&
+                 TRIM(sys_siL(ITE,10))//': Autosave not yet implemented.')
           END IF
         END IF
 
@@ -874,7 +880,7 @@ CONTAINS
         ELSE
           ! Calculate the norm of the defect:
           DvecNorm = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
-          WHERE (.NOT.((DvecNorm .GE. 1D-99) .AND. (DvecNorm .LE. 1D99))) 
+          WHERE (.NOT.((DvecNorm .GE. 1E-99_DP) .AND. (DvecNorm .LE. 1E99_DP))) 
             DvecNorm = 0.0_DP
           END WHERE
           rsolverNode%DfinalDefect = DvecNorm
@@ -883,7 +889,12 @@ CONTAINS
           bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
 
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
-            PRINT *,'ITE:',ite,' !!RES!! = ',(DvecNorm(i),i=1,rb%nblocks)
+            CALL output_line ('NLSOL: Iteration '//&
+                TRIM(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.TRUE.)
+            DO i=1,rb%nblocks
+              CALL output_line (' '//TRIM(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.TRUE.)
+            END DO
+            CALL output_lbrk()
           END IF
         END IF
 
