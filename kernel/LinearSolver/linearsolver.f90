@@ -557,11 +557,22 @@ MODULE linearsolver
 !<constantblock description="Variants of the VANCA solver">
 
   ! General VANCA solver
-  INTEGER, PARAMETER :: LINSOL_VANCA_GENERAL     = 0   
+  INTEGER, PARAMETER :: LINSOL_VANCA_GENERAL           = 0   
   
   ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
   ! discretisation
-  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0   = 1
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0         = 1
+
+  ! General VANCA solver. Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  INTEGER, PARAMETER :: LINSOL_VANCA_GENERALDIRECT     = 2
+
+  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
+  ! discretisation (like above). Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0DIRECT   = 3
 
 !</constantblock>
 
@@ -4103,7 +4114,7 @@ CONTAINS
     p_rmat => Rmatrices(UBOUND(Rmatrices,1))
     ! VANCA subtype?
     SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-    CASE (LINSOL_VANCA_GENERAL)
+    CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
       
       ! Check all sub-matrices
       DO jblock = 1,p_rmat%ndiagblocks
@@ -4118,7 +4129,7 @@ CONTAINS
         END DO
       END DO
 
-    CASE (LINSOL_VANCA_2DSPQ1TQ0)
+    CASE (LINSOL_VANCA_2DSPQ1TQ0,LINSOL_VANCA_2DSPQ1TQ0DIRECT)
       ! Block (3,1) and (3,2) must be virtually transposed
       IF ((IAND(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) .OR. &
@@ -4192,7 +4203,7 @@ CONTAINS
         
   ! Which VANCA solver do we actually have?
   SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-  CASE (LINSOL_VANCA_GENERAL)
+  CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
     ! Special initialisation of the VANCA-general structure.
     CALL vanca_initGeneralVanca(rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANCA%rvancaGeneral)
@@ -4255,7 +4266,7 @@ CONTAINS
   ! Which VANCA subtype do we have? Only in some variants there's
   ! something to do...
   SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-  CASE (LINSOL_VANCA_2DSPQ1TQ0)
+  CASE (LINSOL_VANCA_2DSPQ1TQ0,LINSOL_VANCA_2DSPQ1TQ0DIRECT)
     ! Special initialisation of a VANCA structure.
     CALL vanca_init2DSPQ1TQ0simple(rsolverNode%rsystemMatrix,&
                                    rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0)
@@ -4308,7 +4319,7 @@ CONTAINS
 
     ! Which VANCA solver do we actually have?
     SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-    CASE (LINSOL_VANCA_GENERAL)
+    CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
       ! Special cleanup of the VANCA-general structure.
       CALL vanca_doneGeneralVanca(rsolverNode%p_rsubnodeVANCA%rvancaGeneral)
     END SELECT
@@ -4413,11 +4424,11 @@ CONTAINS
     ! Choose the correct (sub-)type of VANCA to call.
     SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
     
-    CASE (LINSOL_VANCA_GENERAL)
+    CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
       CALL vanca_general (rsolverNode%p_rsubnodeVANCA%rvancaGeneral, &
                           p_rvector, rd, domega)
 
-    CASE (LINSOL_VANCA_2DSPQ1TQ0)
+    CASE (LINSOL_VANCA_2DSPQ1TQ0,LINSOL_VANCA_2DSPQ1TQ0DIRECT)
       CALL vanca_2DSPQ1TQ0simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0, &
                                   p_rvector, rd, domega)
       
@@ -8394,35 +8405,93 @@ CONTAINS
     CALL lsysbl_copyVector(rb,rx)
     CALL linsol_precondDefect(rsolverNode,rx)
     
-  ELSE
-    
-    ! This is a 1-step solver, we have to emulate the smoothing
-    ! iterations. Perform rsolverNode%nmaxIterations steps of the
-    ! form
-    !     $$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$
-    ! with $x_0 = 0$.
-    
-    bfilter = ASSOCIATED(p_RfilterChain)
-    
-    !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
-    !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
-    
-    DO i=1,rsolverNode%nmaxIterations
-    
-      CALL lsysbl_copyVector(rb,rtemp)
-      CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-      
-      ! Apply the filter to this defect before preconditioning
-      IF (bfilter) THEN
-        CALL filter_applyFilterChainVec (rtemp, p_RfilterChain)
-      END IF
-      
-      CALL linsol_precondDefect(rsolverNode,rtemp)
-      CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
-      
-    END DO
+    ! That's it.
+    RETURN
     
   END IF
+    
+  IF (rsolverNode%calgorithm .EQ. LINSOL_ALG_VANCA) THEN
+    ! We are in a case where we can apply an adaptive 1-step defect-correction
+    ! type preconditioner as smoother. This is a very special case and applies
+    ! only to some special algorithms, which work directly with a solution-
+    ! and RHS vector, like special VANCA variants. 
+    !
+    ! The nice thing: This saves one matrix-vector multiplication and 
+    ! a lot of time (about 30-40%)!!!
+    !
+    ! The disadvantage: We cannot use any filtering with this approach,
+    ! since the filters only apply to defect vectors and not solution vectors!
+    !
+    ! But in most situations, this disadvantage does not have such a large
+    ! impact, as the MG solver applies filtering frequently to all the defect
+    ! vectors that pop up during its iteration. 
+    !
+    ! The basic proceeding is like below: Apply the corresponding solver multiple
+    ! times to the solution- and RHS-vector to improve the solution. Let's see
+    ! which solver we have. 
+    ! If the previous IF-guess was wrong, we will leave this IF-clause and
+    ! fall back to use the preconditioner approach.
+    
+    !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
+    !DEBUG: CALL lsysbl_getbase_double (rb,p_Ddata2)
+        
+    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_2DSPQ1TQ0DIRECT) THEN
+      ! Yes, this solver can be applied to a given solution/rhs vector directly.
+      ! Call it nmaxIterations times to perform the smoothing.
+      DO i=1,rsolverNode%nmaxIterations
+        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
+        ! without explicitly calculating (b-Ax_n) like below.
+        CALL vanca_2DSPQ1TQ0simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0, &
+                                    rx, rb, rsolverNode%domega)
+      END DO
+
+      ! That's it.
+      RETURN
+    
+    END IF
+
+    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_GENERALDIRECT) THEN
+      ! Yes, this solver can be applied to a given solution/rhs vector directly.
+      ! Call it nmaxIterations times to perform the smoothing.
+      DO i=1,rsolverNode%nmaxIterations
+        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
+        ! without explicitly calculating (b-Ax_n) like below.
+        CALL vanca_general (rsolverNode%p_rsubnodeVANCA%rvancaGeneral, &
+                            rx, rb, rsolverNode%domega)
+      END DO
+
+      ! That's it.
+      RETURN
+    
+    END IF
+
+  END IF
+    
+  ! This is a 1-step solver, we have to emulate the smoothing
+  ! iterations. Perform rsolverNode%nmaxIterations steps of the
+  ! form
+  !     $$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$
+  ! with $x_0 = 0$.
+  
+  bfilter = ASSOCIATED(p_RfilterChain)
+  
+  !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
+  !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
+  
+  DO i=1,rsolverNode%nmaxIterations
+  
+    CALL lsysbl_copyVector(rb,rtemp)
+    CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+    
+    ! Apply the filter to this defect before preconditioning
+    IF (bfilter) THEN
+      CALL filter_applyFilterChainVec (rtemp, p_RfilterChain)
+    END IF
+    
+    CALL linsol_precondDefect(rsolverNode,rtemp)
+    CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
+    
+  END DO
     
   END SUBROUTINE
 

@@ -1189,7 +1189,7 @@ CONTAINS
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
         DO ia = ia1,ia2
-          J = P_KcolA(ia)
+          J = p_KcolA(ia)
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
@@ -1238,14 +1238,17 @@ CONTAINS
             ! The same way, get DD1 and DD2.
             ! Note that DDi has exacty the same matrix structrure as BBi and is noted
             ! as 'transposed matrix' only because of the transposed-flag.
-            ! So we can use ib2 as index here to access the entry of DDi:
+            ! So we can use "ib" as index here to access the entry of DDi:
             DD1(inode) = p_DD1(ib)
             DD2(inode) = p_DD2(ib)
             
-            ! Build the pressure entry in the local defect vector
+            ! Build the pressure entry in the local defect vector:
+            !   f_i = (f_i-Aui) - D_i pi
+            ! or more precisely (as D is roughly B^T):
+            !   f_i = (f_i-Aui) - (B^T)_i pi
             FF(1+lofsp) = FF(1+lofsp) &
-                        - BB1(inode)*p_Dvector(J) &
-                        - BB2(inode)*p_Dvector(J+ioffsetv)
+                        - DD1(inode)*p_Dvector(idof) &
+                        - DD2(inode)*p_Dvector(idof+ioffsetv)
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
