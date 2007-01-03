@@ -399,6 +399,7 @@ MODULE linearsolver
   USE coarsegridcorrection
   USE vanca
   USE globalsystem
+  USE genoutput
   
   !USE matrixio
   
@@ -2802,8 +2803,9 @@ CONTAINS
     ELSE
 
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        PRINT *,&
-          'DefCorr: Iteration ',0,',  !!RES!! = ',rsolverNode%dinitialDefect
+        CALL output_line ('DefCorr: Iteration '// &
+             TRIM(sys_siL(0,10))//',  !!RES!! = '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       END IF
 
       ! Perform at most nmaxIterations loops to get a new vector
@@ -2845,7 +2847,7 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
-          PRINT *,'DefCorr: Solution diverging!'
+          CALL output_line ('DefCorr: Solution diverging!')
           rsolverNode%iresult = 1
           EXIT
         END IF
@@ -2862,8 +2864,9 @@ CONTAINS
 
         IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
             (MOD(ite,niteResOutput).EQ.0)) THEN
-          !WRITE (MTERM,'(A,I7,A,D25.16)') 
-          PRINT *,'DefCorr: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+          CALL output_line ('DefCorr: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         END IF
 
       END DO
@@ -2880,8 +2883,9 @@ CONTAINS
       IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
           (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
           (rsolverNode%iresult .GE. 0)) THEN
-        !WRITE (MTERM,'(A,I7,A,D25.16)') 
-        PRINT *,'DefCorr: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+        CALL output_line ('DefCorr: Iteration '// &
+            TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       END IF
 
     END IF
@@ -2918,49 +2922,33 @@ CONTAINS
       END IF
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A)') 
-        PRINT *,'DefCorr statistics:'
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A,I5)')     'Iterations              : ',
-    !*            IPARAM(OITE)
-        PRINT *,'Iterations              : ',rsolverNode%iiterations
-        !WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
-    !*            DPARAM(ODEFINI)
-        PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
-        !WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
-    !*            DPARAM(ODEFFIN)
-        PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
+        CALL output_lbrk()
+        CALL output_line ('DefCorr statistics:')
+        CALL output_lbrk()
+        CALL output_line ('Iterations              : '//&
+             TRIM(sys_siL(rsolverNode%iiterations,10)) )
+        CALL output_line ('!!INITIAL RES!!         : '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        CALL output_line ('!!RES!!                 : '//&
+             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
-          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-    !*              rparam%dfinalDefect / rparam%dinitialDefect
-          PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
-                  rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         ELSE
-          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-    !*              0D0
-          PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               TRIM(sys_sdEL(0.0_DP,15)) )
         END IF
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
-    !*            DPARAM(ORHO)
-        PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
+        CALL output_lbrk ()
+        CALL output_line ('Rate of convergence     : '//&
+             TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       END IF
 
       IF (rsolverNode%ioutputLevel .EQ. 1) THEN
-!          WRITE (MTERM,'(A,I5,A,D24.12)') 
-!     *          'DefCorr: Iterations/Rate of convergence: ',
-!     *          IPARAM(OITE),' /',DPARAM(ORHO)
-!          WRITE (MTERM,'(A,I5,A,D24.12)') 
-!     *          'DefCorr: Iterations/Rate of convergence: ',
-!     *          IPARAM(OITE),' /',DPARAM(ORHO)
-        PRINT *,&
-              'DefCorr: Iterations/Rate of convergence: ',&
-              rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
+        CALL output_line (&
+              'DefCorr: Iterations/Rate of convergence: '//&
+              TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       END IF
       
     ELSE
@@ -6089,8 +6077,9 @@ CONTAINS
     ELSE
 
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        PRINT *,&
-          'CG: Iteration ',0,',  !!RES!! = ',rsolverNode%dinitialDefect
+        CALL output_line ('CG: Iteration '// &
+             TRIM(sys_siL(0,10))//',  !!RES!! = '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       END IF
 
       ! Copy the residuum vector p_DR to the preconditioned one.
@@ -6134,7 +6123,7 @@ CONTAINS
           ! We are below machine exactness - we can't do anything more...
           ! May happen with very small problems with very few unknowns!
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
-            PRINT *,'CG: Convergence failed, ALPHA=0!'
+            CALL output_line('CG: Convergence failed, ALPHA=0!')
             rsolverNode%iresult = -2
             EXIT
           END IF
@@ -6178,7 +6167,7 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
-          PRINT *,'CG: Solution diverging!'
+          CALL output_line('CG: Solution diverging!')
           rsolverNode%iresult = 1
           EXIT
         END IF
@@ -6195,7 +6184,9 @@ CONTAINS
 
         IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
             (MOD(ite,niteResOutput).EQ.0)) THEN
-          PRINT *,'CG: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+          CALL output_line ('CG: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         END IF
         
         !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -6254,7 +6245,9 @@ CONTAINS
       IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
           (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
           (rsolverNode%iresult .GE. 0)) THEN
-        PRINT *,'CG: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+        CALL output_line ('CG: Iteration '// &
+            TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       END IF
 
     END IF
@@ -6289,31 +6282,37 @@ CONTAINS
                     (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                     (1.0_DP/REAL(rsolverNode%iiterations,DP))
       END IF
-      
+
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        PRINT *
-        PRINT *,'CG statistics:'
-        PRINT *
-        PRINT *,'Iterations              : ',rsolverNode%iiterations
-        PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
-        PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
+        CALL output_lbrk()
+        CALL output_line ('CG statistics:')
+        CALL output_lbrk()
+        CALL output_line ('Iterations              : '//&
+             TRIM(sys_siL(rsolverNode%iiterations,10)) )
+        CALL output_line ('!!INITIAL RES!!         : '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        CALL output_line ('!!RES!!                 : '//&
+             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
-          PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
-                  rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         ELSE
-          PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               TRIM(sys_sdEL(0.0_DP,15)) )
         END IF
-        PRINT *
-        PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
+        CALL output_lbrk ()
+        CALL output_line ('Rate of convergence     : '//&
+             TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       END IF
 
       IF (rsolverNode%ioutputLevel .EQ. 1) THEN
-        PRINT *,&
-              'CG: Iterations/Rate of convergence: ',&
-              rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
+        CALL output_line (&
+              'CG: Iterations/Rate of convergence: '//&
+              TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       END IF
-      
+
     ELSE
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
@@ -6936,8 +6935,9 @@ CONTAINS
     ELSE
 
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        PRINT *,&
-          'BiCGStab: Iteration ',0,',  !!RES!! = ',rsolverNode%dinitialDefect
+        CALL output_line ('BiCGStab: Iteration '// &
+             TRIM(sys_siL(0,10))//',  !!RES!! = '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       END IF
 
       CALL lsysbl_copyVector(p_DR,p_DR0)
@@ -6953,8 +6953,8 @@ CONTAINS
         IF (drho0*domega0 .EQ. 0.0_DP) THEN
           ! Should not happen
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
-            PRINT *,&
-      'BiCGStab: Iteration prematurely stopped! Correction vector is zero!'
+            CALL output_line ('BiCGStab: Iteration prematurely stopped! '//&
+                 'Correction vector is zero!')
           END IF
 
           ! Some tuning for the output, then cancel.
@@ -6989,7 +6989,7 @@ CONTAINS
           ! We are below machine exactness - we can't do anything more...
           ! May happen with very small problems with very few unknowns!
           IF (rsolverNode%ioutputLevel .GE. 2) THEN
-            PRINT *,'BiCGStab: Convergence failed, ALPHA=0!'
+            CALL output_line ('BiCGStab: Convergence failed, ALPHA=0!')
             rsolverNode%iresult = -2
             EXIT
           END IF
@@ -7019,7 +7019,7 @@ CONTAINS
         ELSE
           IF (domega2 .EQ. 0.0_DP) THEN
             IF (rsolverNode%ioutputLevel .GE. 2) THEN
-              PRINT *,'BiCGStab: Convergence failed: omega=0!'
+              CALL output_line ('BiCGStab: Convergence failed: omega=0!')
               rsolverNode%iresult = -2
               EXIT
             END IF
@@ -7046,7 +7046,7 @@ CONTAINS
 
         ! Test if the iteration is diverged
         IF (linsol_testDivergence(rsolverNode,dfr)) THEN
-          PRINT *,'BiCGStab: Solution diverging!'
+          CALL output_line ('BiCGStab: Solution diverging!')
           rsolverNode%iresult = 1
           EXIT
         END IF
@@ -7063,8 +7063,9 @@ CONTAINS
 
         IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
             (MOD(ite,niteResOutput).EQ.0)) THEN
-          !WRITE (MTERM,'(A,I7,A,D25.16)') 
-          PRINT *,'BiCGStab: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+          CALL output_line ('BiCGStab: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         END IF
 
       END DO
@@ -7082,8 +7083,9 @@ CONTAINS
       IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
           (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
           (rsolverNode%iresult .GE. 0)) THEN
-        !WRITE (MTERM,'(A,I7,A,D25.16)') 
-        PRINT *,'BiCGStab: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+        CALL output_line ('BiCGStab: Iteration '// &
+            TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       END IF
 
     END IF
@@ -7118,51 +7120,35 @@ CONTAINS
                     (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
                     (1.0_DP/REAL(rsolverNode%iiterations,DP))
       END IF
-      
+
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A)') 
-        PRINT *,'BiCGStab statistics:'
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A,I5)')     'Iterations              : ',
-    !*            IPARAM(OITE)
-        PRINT *,'Iterations              : ',rsolverNode%iiterations
-        !WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
-    !*            DPARAM(ODEFINI)
-        PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
-        !WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
-    !*            DPARAM(ODEFFIN)
-        PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
+        CALL output_lbrk()
+        CALL output_line ('BiCGStab statistics:')
+        CALL output_lbrk()
+        CALL output_line ('Iterations              : '//&
+             TRIM(sys_siL(rsolverNode%iiterations,10)) )
+        CALL output_line ('!!INITIAL RES!!         : '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        CALL output_line ('!!RES!!                 : '//&
+             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
-          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-    !*              rparam%dfinalDefect / rparam%dinitialDefect
-          PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
-                  rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         ELSE
-          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-    !*              0D0
-          PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               TRIM(sys_sdEL(0.0_DP,15)) )
         END IF
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
-    !*            DPARAM(ORHO)
-        PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
+        CALL output_lbrk ()
+        CALL output_line ('Rate of convergence     : '//&
+             TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       END IF
 
       IF (rsolverNode%ioutputLevel .EQ. 1) THEN
-!          WRITE (MTERM,'(A,I5,A,D24.12)') 
-!     *          'BiCGStab: Iterations/Rate of convergence: ',
-!     *          IPARAM(OITE),' /',DPARAM(ORHO)
-!          WRITE (MTERM,'(A,I5,A,D24.12)') 
-!     *          'BiCGStab: Iterations/Rate of convergence: ',
-!     *          IPARAM(OITE),' /',DPARAM(ORHO)
-        PRINT *,&
-              'BiCGStab: Iterations/Rate of convergence: ',&
-              rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
+        CALL output_line (&
+              'BiCGStab: Iterations/Rate of convergence: '//&
+              TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       END IF
       
     ELSE
@@ -8556,7 +8542,8 @@ CONTAINS
     IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
     
       IF (rsolverNode%ioutputLevel .GT. 1) THEN
-        PRINT *,'Multigrid: Only one level. Switching back to standard solver.'
+        CALL output_line ('Multigrid: Only one level. '//&
+             'Switching back to standard solver.')
       END IF
       CALL linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,rd)
       
@@ -8640,8 +8627,9 @@ CONTAINS
         ! Print out the initial residuum
 
         IF (rsolverNode%ioutputLevel .GE. 2) THEN
-          !WRITE (MTERM,'(A,I7,A,D25.16)') 
-          PRINT *,'Multigrid: Iteration ',0,',  !!RES!! = ',rsolverNode%dinitialDefect
+          CALL output_line ('Multigrid: Iteration '// &
+              TRIM(sys_siL(0,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         END IF
         
         ! Copy the initial RHS to the RHS vector on the maximum level.
@@ -8974,7 +8962,7 @@ CONTAINS
           
           ! Test if the iteration is diverged
           IF (linsol_testDivergence(rsolverNode,dres)) THEN
-            PRINT *,'Multigrid: Solution diverging!'
+            CALL output_line ('Multigrid: Solution diverging!')
             rsolverNode%iresult = 1
             EXIT
           END IF
@@ -8991,8 +8979,9 @@ CONTAINS
 
           IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
               (MOD(ite,niteResOutput).EQ.0)) THEN
-            !WRITE (MTERM,'(A,I7,A,D25.16)') 
-            PRINT *,'Multigrid: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+            CALL output_line ('Multigrid: Iteration '// &
+                TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+                TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           END IF
           
         END DO  ! ite
@@ -9009,8 +8998,9 @@ CONTAINS
         IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
             (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
             (rsolverNode%iresult .GE. 0)) THEN
-          !WRITE (MTERM,'(A,I7,A,D25.16)') 
-          PRINT *,'Multigrid: Iteration ',ITE,',  !!RES!! = ',rsolverNode%dfinalDefect
+          CALL output_line ('Multigrid: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         END IF
         
         ! Final number of iterations
@@ -9054,51 +9044,35 @@ CONTAINS
     IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A)') 
-        PRINT *,'Multigrid statistics:'
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A,I5)')     'Iterations              : ',
-    !*            IPARAM(OITE)
-        PRINT *,'Iterations              : ',rsolverNode%iiterations
-        !WRITE (MTERM,'(A,D24.12)') '!!INITIAL RES!!         : ',
-    !*            DPARAM(ODEFINI)
-        PRINT *,'!!INITIAL RES!!         : ',rsolverNode%dinitialDefect
-        !WRITE (MTERM,'(A,D24.12)') '!!RES!!                 : ',
-    !*            DPARAM(ODEFFIN)
-        PRINT *,'!!RES!!                 : ',rsolverNode%dfinalDefect
+        CALL output_lbrk()
+        CALL output_line ('Multigrid statistics:')
+        CALL output_lbrk()
+        CALL output_line ('Iterations              : '//&
+             TRIM(sys_siL(rsolverNode%iiterations,10)) )
+        CALL output_line ('!!INITIAL RES!!         : '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        CALL output_line ('!!RES!!                 : '//&
+             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
-          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-    !*              rparam%dfinalDefect / rparam%dinitialDefect
-          PRINT *,'!!RES!!/!!INITIAL RES!! : ',&
-                  rsolverNode%dfinalDefect / rsolverNode%dinitialDefect
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
         ELSE
-          !WRITE (MTERM,'(A,D24.12)') '!!RES!!/!!INITIAL RES!! : ',
-    !*              0D0
-          PRINT*,'!!RES!!/!!INITIAL RES!! : ',0.0_DP
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               TRIM(sys_sdEL(0.0_DP,15)) )
         END IF
-        !WRITE (MTERM,'(A)') ''
-        PRINT *
-        !WRITE (MTERM,'(A,D24.12)') 'Rate of convergence     : ',
-    !*            DPARAM(ORHO)
-        PRINT *,'Rate of convergence     : ',rsolverNode%dconvergenceRate
+        CALL output_lbrk ()
+        CALL output_line ('Rate of convergence     : '//&
+             TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
 
       END IF
 
       IF (rsolverNode%ioutputLevel .EQ. 1) THEN
-!          WRITE (MTERM,'(A,I5,A,D24.12)') 
-!     *          'Multigrid: Iterations/Rate of convergence: ',
-!     *          IPARAM(OITE),' /',DPARAM(ORHO)
-!          WRITE (MTERM,'(A,I5,A,D24.12)') 
-!     *          'Multigrid: Iterations/Rate of convergence: ',
-!     *          IPARAM(OITE),' /',DPARAM(ORHO)
-        PRINT *,&
-              'MG: Iterations/Rate of convergence: ',&
-              rsolverNode%iiterations,' /',rsolverNode%dconvergenceRate
+        CALL output_line (&
+              'MG: Iterations/Rate of convergence: '//&
+              TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       END IF
-      
+
     ELSE
       ! DEF=Infinity; RHO=Infinity, set to 1
       rsolverNode%dconvergenceRate = 1.0_DP
