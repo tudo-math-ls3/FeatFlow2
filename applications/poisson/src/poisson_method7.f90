@@ -26,6 +26,7 @@ MODULE poisson_method7
   USE bcassembly
   USE triangulation
   USE spatialdiscretisation
+  USE ucd
 
   USE poisson_callback
   USE spdiscprojection
@@ -124,12 +125,12 @@ CONTAINS
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror
 
-    ! We need some more variables for pre/postprocessing - i.e. writing
-    ! a GMV file.
+    ! We need some more variables for pre/postprocessing.
     CHARACTER(LEN=60) :: CFILE
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER :: NCELLS,NVERTS
-    INTEGER :: ihandle
+    
+    ! Output block for UCD output to GMV file
+    TYPE(t_ucdExport) :: rexport
 
     ! Declarations for projecting a vector to the Q1 space for GMV export
     TYPE(t_vectorBlock) :: rprjVector
@@ -417,18 +418,16 @@ CONTAINS
       rvectorBlock%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
       
     ! Call the GMV library to write out a GMV file for our solution.
-    ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u7.gmv')
-    CALL GMVHEA (ihandle)
-    CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
-
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
-    CALL GMVSCA (ihandle,p_rtriangulation%Itria,1,NVERTS,&
-                 rprjVector%RvectorBlock(1)%NEQ,p_Ddata,'sol')
-
-    CALL GMVFOT (ihandle)
-    CLOSE(ihandle)
+    ! Start UCD export to GMV file:
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u7.gmv')
     
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+    CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    
+    ! Write the file to disc, that's it.
+    CALL ucd_write (rexport)
+    CALL ucd_release (rexport)
+
     ! Step 7: Release our discrete version of the boundary conditions of Q1.
     CALL bcasm_releaseDiscreteBC(p_rdiscreteBC_Q1)
     

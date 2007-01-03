@@ -23,6 +23,7 @@ MODULE poisson_method1
   USE bcassembly
   USE triangulation
   USE spatialdiscretisation
+  USE ucd
     
   USE poisson_callback
   
@@ -119,12 +120,12 @@ CONTAINS
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
     
-    ! We need some more variables for pre/postprocessing - i.e. writing
-    ! a GMV file.
-    CHARACTER(LEN=60) :: CFILE
+    ! Output block for UCD output to GMV file
+    TYPE(t_ucdExport) :: rexport
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    INTEGER :: NCELLS,NVERTS
-    INTEGER :: ihandle
+
+    ! We need some more variables for pre/postprocessing.
+    CHARACTER(LEN=60) :: CFILE
 
     ! Ok, let's start. 
     !
@@ -169,7 +170,7 @@ CONTAINS
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
                                    EL_E011,CUB_G2X2,p_rtriangulation, p_rboundary)
-                                   
+                 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
@@ -358,19 +359,16 @@ CONTAINS
     CALL linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That's it, rvectorBlock now contains our solution. We can now
-    ! start the postprocessing. Call the GMV library to write out
-    ! a GMV file for our solution.
-    ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u1.gmv')
-    CALL GMVHEA (ihandle)
-    CALL GMVTRI (ihandle,p_rtriangulation%Itria,0,NCELLS,NVERTS)
+    ! start the postprocessing. 
+    ! Start UCD export to GMV file:
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u1.gmv')
     
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-    CALL GMVSCA (ihandle,p_rtriangulation%Itria,1,NVERTS,&
-                 rvectorBlock%RvectorBlock(1)%NEQ,p_Ddata,'sol')
+    CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    CALL GMVFOT (ihandle)
-    CLOSE(ihandle)
+    ! Write the file to disc, that's it.
+    CALL ucd_write (rexport)
+    CALL ucd_release (rexport)
     
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
