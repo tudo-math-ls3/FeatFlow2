@@ -14,8 +14,10 @@
 !#
 !# The routine splits up the tasks of reading the domain, creating 
 !# triangulations, discretisation, solving, postprocessing and creanup into
-!# different subroutines. The communication between these subroutines
-!# is done using an application-specific structure saving problem data
+!# different subroutines, which are separated from the main application;
+!# they can be found in the files cc2dminim2basic.f90, cc2dminim2boundary,...
+!# The communication between these subroutines is done using an 
+!# application-specific structure saving problem data
 !# as well as a collection structure for the communication with callback
 !# routines.
 !#

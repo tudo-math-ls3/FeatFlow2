@@ -35,6 +35,7 @@ MODULE stokes_method2
   USE spatialdiscretisation
   USE coarsegridcorrection
   USE spdiscprojection
+  USE ucd
   
   USE collection
     
@@ -935,11 +936,11 @@ CONTAINS
 
   ! local variables
   
-    ! We need some more variables for postprocessing - i.e. writing
-    ! a GMV file.
+    ! We need some more variables for postprocessing
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
-    INTEGER :: NCELLS,NVERTS
-    INTEGER :: ihandle
+    
+    ! Output block for UCD output to GMV file
+    TYPE(t_ucdExport) :: rexport
 
     ! A pointer to the solution vector and to the triangulation.
     TYPE(t_vectorBlock), POINTER :: p_rvector
@@ -1012,23 +1013,24 @@ CONTAINS
       p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
     
     ! p_rvector now contains our solution. We can now
-    ! start the postprocessing. Call the GMV library to write out
-    ! a GMV file for our solution.
-    ihandle = sys_getFreeUnit()
-    CALL GMVOF0 (ihandle,-2,'gmv/u2.gmv')
-    CALL GMVHEA (ihandle)
-    CALL GMVTRI (ihandle,p_rtriangulation%Itria,1,NCELLS,NVERTS)
-    
+    ! start the postprocessing. 
+    ! Start UCD export to GMV file:
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u2.gmv')
+
+    ! Write velocity field
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
-    CALL GMVVEL (ihandle,p_rtriangulation%Itria,1,NVERTS,&
-                 rprjVector%RvectorBlock(1)%NEQ,p_Ddata,p_Ddata2)
-    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
-    CALL GMVSCA (ihandle,p_rtriangulation%Itria,0,NCELLS,&
-                 rprjVector%RvectorBlock(3)%NEQ,p_Ddata,'pressure')
     
-    CALL GMVFOT (ihandle)
-    CLOSE(ihandle)
+    CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
+    CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+    
+    ! Write pressure
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+    CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    
+    ! Write the file to disc, that's it.
+    CALL ucd_write (rexport)
+    CALL ucd_release (rexport)
     
     ! Release the auxiliary vector
     CALL lsysbl_releaseVector (rprjVector)

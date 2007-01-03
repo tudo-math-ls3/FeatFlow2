@@ -15,7 +15,7 @@ SRC = qtrafo.f \
       condoutput.f dstrings1.f dstrings2.f dstrings3.f dstringsaux.f \
       heapsort.f invert.f\
       inipar.f parq2d.f parq2domega.f parq2dwrap.f rdparm.f\
-      gmv2doutput.f initria.f inmtri.f quad2tri.f structria.f triutil2d.f
+      initria.f inmtri.f quad2tri.f structria.f triutil2d.f
 
 # The f90 source files 
 SRC +=  stokes_callback.f90 stokes_method1.f90 stokes_method2.f90 \
