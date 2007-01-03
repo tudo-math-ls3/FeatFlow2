@@ -219,6 +219,10 @@ MODULE storage
     ! as a double as this allows to save values > 2GB!
     REAL(DP) :: dtotalMem = 0.0_DP
     
+    ! Maximum number of handles that were in use ofer the whole lifetime
+    ! of this structure.
+    INTEGER :: nhandlesInUseMax = 0
+
     ! Maximum amount of memory that was in use ofer the whole lifetime
     ! of this structure.
     REAL(DP) :: dtotalMemMax = 0.0_DP
@@ -333,6 +337,7 @@ CONTAINS
   p_rheap%p_inextFreeHandle = 1
   p_rheap%p_ilastFreeHandle = ihandles
   p_rheap%ihandlesInUse = 0
+  p_rheap%nhandlesInUseMax = 0
   ALLOCATE(p_rheap%p_Rdescriptors(ihandles))
   ALLOCATE(p_rheap%p_IfreeHandles(ihandles))
   
@@ -477,6 +482,8 @@ CONTAINS
   rheap%p_inextFreeHandle = MOD(rheap%p_inextFreeHandle,rheap%nhandlesTotal)+1
   
   rheap%ihandlesInUse = rheap%ihandlesInUse + 1
+  
+  rheap%nhandlesInUseMax = MAX(rheap%nhandlesInUseMax,rheap%ihandlesInUse)
 
   END FUNCTION
 
@@ -2530,10 +2537,11 @@ CONTAINS
       END IF
     END IF
     
-    PRINT *,'Number of allocated handles:     ',p_rheap%ihandlesInUse
+    PRINT *,'Number if handles in use:        ',p_rheap%ihandlesInUse
+    PRINT *,'Memory in use (bytes):           ',INT(p_rheap%dtotalMem)
     PRINT *,'Current total number of handles: ',SIZE(p_rheap%p_IfreeHandles)
-    PRINT *,'Memory in use:                   ',INT(p_rheap%dtotalMem)
-    PRINT *,'Maximum used memory:             ',INT(p_rheap%dtotalMemMax)
+    PRINT *,'Maximum number of handles used:  ',p_rheap%nhandlesInUseMax
+    PRINT *,'Maximum used memory (bytes):     ',INT(p_rheap%dtotalMemMax)
 
   END SUBROUTINE
 

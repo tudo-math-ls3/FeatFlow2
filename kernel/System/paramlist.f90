@@ -92,6 +92,9 @@
 !# 11.) parlst_setvalue
 !#      -> Modifies the value of a parameter in the list
 !#
+!# 12.) parlst_getStringRepresentation
+!#      -> Creates a string representation of the parameter list.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -2197,6 +2200,165 @@ CONTAINS
   ! Close the file, finish.
   CLOSE (iunit)
 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE parlst_getStringRepresentation (rparlist, p_sconfiguration)
+  
+!<description>
+  ! Creates a string representation of the given parameter list rparlist.
+  ! p_sconfiguration will be created as "array[1..*] of char" on
+  ! the heap containing this representation. The memory must be manually 
+  ! released by the caller using DEALLOCATE when finished using the string
+  ! representation.
+!</description>
+  
+!<input> 
+  ! The parameter list which is filled with data from the file
+  TYPE(t_parlist), INTENT(IN) :: rparlist
+!</input>
+
+!<output>
+  ! A pointer to a character array containing all lines of the parameter list.
+  ! Points to NULL() if there is no data in the parameter list.
+  ! Each line is terminated by NEWLINE.
+  ! If there is data, a new pointer is allocated for this on the heap. 
+  ! The user must manually release the memory when finished using it.
+  CHARACTER, DIMENSION(:), POINTER :: p_sconfiguration
+!</output>
+
+!</subroutine>
+
+  INTEGER :: ilength,isection,ivalue,ientry,icount
+  CHARACTER, DIMENSION(:), POINTER :: p_sbuf
+  
+    IF (rparlist%isectionCount .EQ. 0) THEN
+      PRINT *,'parlst_getStringRepresentation: Parameter list not initialised!'
+      STOP
+    END IF
+  
+    NULLIFY(p_sbuf)
+    
+    ! Number of characters in the buffer
+    ilength = 0
+    
+    ! Loop through all sections
+    DO isection = 1,rparlist%isectionCount
+    
+      ! Append the section name. May be empty for the unnamed section,
+      ! which is always the first one.
+      IF (isection .GT. 1) THEN
+        ! Empty line before
+        IF (ilength .GT. 0) CALL appendString(p_sbuf,ilength,'')
+        CALL appendString(p_sbuf,ilength,&
+          '['//TRIM(rparlist%p_Rsections(isection)%ssectionName)//']')
+      END IF
+        
+      ! Loop through the values in the section
+      DO ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
+        
+        ! Do we have one or multiple entries to that parameter?
+        icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
+        IF (icount .EQ. 0) THEN
+          ! Write "name=value"
+          CALL appendString(p_sbuf,ilength,&
+            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+            //"="// &
+            TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
+        ELSE
+          ! Write "name(icount)="
+          CALL appendString(p_sbuf,ilength,&
+            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+            //"("//TRIM(sys_siL(icount, 10))//")=")
+          ! Write all the entries of that value, one each line.
+          DO ientry = 1,icount
+            CALL appendString(p_sbuf,ilength,&
+              TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
+                   p_Sentry(ientry)))
+          END DO
+        END IF
+      
+      END DO ! ivalue
+    
+    END DO ! isection
+    
+    ! Allocate a new character array with the correct size, copy p_sbuf to
+    ! that ald release the old p_sbuf.
+    ! Return NULL() if there is no data.
+    NULLIFY(p_sconfiguration)
+    IF (ilength .GT. 0) THEN
+      ALLOCATE(p_sconfiguration(ilength))
+      p_sconfiguration = p_sbuf(1:ilength)
+    END IF
+    
+    ! Release our temp buffer
+    IF (ASSOCIATED(p_sbuf)) DEALLOCATE(p_sbuf)
+
+  CONTAINS
+  
+    ! Makes sure, the character buffer points to a character memory block of
+    ! size nsize. If not, the block is reallocated to have that size.
+    SUBROUTINE assumeBufSize(p_sconfig,nsize)
+    
+    CHARACTER, DIMENSION(:), POINTER :: p_sconfig
+    INTEGER, INTENT(IN) :: nsize
+    
+    CHARACTER, DIMENSION(:), POINTER :: p_sconfignew
+    
+      IF (.NOT. ASSOCIATED(p_sconfig)) THEN
+        ALLOCATE(p_sconfig(nsize))
+      ELSE IF (SIZE(p_sconfig) .LT. nsize) THEN
+        ALLOCATE(p_sconfignew(nsize))
+        p_sconfignew(1:SIZE(p_sconfig)) = p_sconfig
+        DEALLOCATE(p_sconfig)
+        p_sconfig => p_sconfignew
+      END IF
+    
+    END SUBROUTINE
+    
+    ! Appends sstring to the buffer p_sconfig, followed by a NEWLINE
+    ! character. Reallocates memory if necessary.
+    SUBROUTINE appendString(p_sconfig,iconfigLength,sstring)
+    
+    ! Pointer to character data
+    CHARACTER, DIMENSION(:), POINTER :: p_sconfig
+    
+    ! In: Current length of data stream in p_sconfig.
+    ! Out: New length of data stream in p_sconfig
+    INTEGER, INTENT(INOUT) :: iconfigLength
+    
+    ! The string to be added.
+    CHARACTER(LEN=*), INTENT(IN) :: sstring
+    
+      INTEGER :: nblocks,nblocksneeded,i
+    
+      ! How many memory blocks do we need for the current configuration?
+      ! We work block-wise to prevent too often reallocation.
+      IF (.NOT. ASSOCIATED(p_sconfig)) THEN
+        nblocks = 0
+      ELSE
+        nblocks = SIZE(p_sconfig) / SYS_STRLEN
+      END IF
+      nblocksneeded = 1 + (iconfigLength+LEN(sstring)+1) / SYS_STRLEN
+      IF (nblocksneeded .GT. nblocks) THEN
+        CALL assumeBufSize(p_sconfig,nblocksneeded*SYS_STRLEN)
+      END IF
+      
+      ! Append the data
+      DO i=1,LEN(sstring)
+        iconfigLength = iconfigLength+1
+        p_sconfig(iconfigLength) = sstring(i:i)
+      END DO
+      
+      ! Append NEWLINE as line-end character
+      iconfigLength = iconfigLength+1
+      p_sconfig(iconfigLength) = NEWLINE
+    
+    END SUBROUTINE
+  
   END SUBROUTINE
   
 END MODULE
