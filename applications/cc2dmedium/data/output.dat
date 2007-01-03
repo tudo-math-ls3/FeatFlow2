@@ -14,4 +14,4 @@ MSHOW_Initialisation = 2
 # level of output to terminal
 # =0: no output, =1: basic output; =2: standard output; 
 # >=3: extended output with more and more details
-MT_Outputevel = 2
+MT_Outputevel = 4

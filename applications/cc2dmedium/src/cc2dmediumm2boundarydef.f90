@@ -90,7 +90,7 @@ MODULE cc2dmediumm2boundarydef
   ! Depending on the situation, this list may be extended by situation
   ! specific variables or variables that are only available at runtime.
   CHARACTER(LEN=10), DIMENSION(7), PARAMETER :: SEC_EXPRVARIABLES = &
-    (/'X    ','Y    ','Z    ','L     ','R    ','S    ','TIME '/)
+    (/'X    ','Y    ','Z    ','L    ','R    ','S    ','TIME '/)
 
 !</constantblock>
 
@@ -119,7 +119,7 @@ CONTAINS
 
     ! local variables
     LOGICAL :: bNeumann
-    INTEGER :: i,ityp,itag,ivalue,ibdComponent,isegment,iintervalEnds
+    INTEGER :: i,ityp,ivalue,ibdComponent,isegment,iintervalEnds
     INTEGER :: ibctyp,icount,iexptyp
     INTEGER, DIMENSION(2) :: IminIndex,imaxIndex
     INTEGER, DIMENSION(NDIM2D) :: IvelComp
