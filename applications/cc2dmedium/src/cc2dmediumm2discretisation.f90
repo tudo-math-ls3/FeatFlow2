@@ -364,7 +364,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_allocMatVec (rproblem)
+  SUBROUTINE c2d2_allocMatVec (rproblem,rvector,rrhs)
   
 !<description>
   ! Allocates memory for all matrices and vectors of the problem on the heap
@@ -389,7 +389,17 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  
+  ! A vector structure for the solution vector. The structure is initialised,
+  ! memory is allocated for the data entries.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+
+  ! A vector structure for the RHS vector. The structure is initialised,
+  ! memory is allocated for the data entries.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i,cmatBuildType
@@ -397,7 +407,7 @@ CONTAINS
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
-    TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector,p_rtempVector
+    TYPE(t_vectorBlock), POINTER :: p_rtempVector
 
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
@@ -569,21 +579,14 @@ CONTAINS
 
     ! (Only) on the finest level, we need to have to allocate a RHS vector
     ! and a solution vector.
-    p_rrhs    => rproblem%rrhs   
-    p_rvector => rproblem%rvector
-
+    !
     ! Although we could manually create the solution/RHS vector,
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template.
     ! Initialise the vectors with 0.
-    CALL lsysbl_createVecBlockIndMat (p_rmatrix,p_rrhs, .TRUE.)
-    CALL lsysbl_createVecBlockIndMat (p_rmatrix,p_rvector, .TRUE.)
+    CALL lsysbl_createVecBlockIndMat (p_rmatrix,rrhs, .TRUE.)
+    CALL lsysbl_createVecBlockIndMat (p_rmatrix,rvector, .TRUE.)
 
-    ! Save the solution/RHS vector to the collection. Might be used
-    ! later (e.g. in nonlinear problems)
-    CALL collct_setvalue_vec(rproblem%rcollection,PAR_RHS,p_rrhs,.TRUE.)
-    CALL collct_setvalue_vec(rproblem%rcollection,PAR_SOLUTION,p_rvector,.TRUE.)
-    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -605,6 +608,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i,j
@@ -781,6 +786,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i
@@ -1190,7 +1197,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneMatVec (rproblem)
+  SUBROUTINE c2d2_doneMatVec (rproblem,rvector,rrhs)
   
 !<description>
   ! Releases system matrix and vectors.
@@ -1199,6 +1206,14 @@ CONTAINS
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! A vector structure for the solution vector. The structure is cleaned up,
+  ! memory is released.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+
+  ! A vector structure for the RHS vector. The structure is cleaned up,
+  ! memory is released.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
 !</inputoutput>
 
 !</subroutine>
@@ -1229,13 +1244,9 @@ CONTAINS
     END DO
 
     ! Delete solution/RHS vector
-    CALL lsysbl_releaseVector (rproblem%rvector)
-    CALL lsysbl_releaseVector (rproblem%rrhs)
+    CALL lsysbl_releaseVector (rvector)
+    CALL lsysbl_releaseVector (rrhs)
 
-    ! Delete the variables from the collection.
-    CALL collct_deletevalue (rproblem%rcollection,PAR_RHS)
-    CALL collct_deletevalue (rproblem%rcollection,PAR_SOLUTION)
-    
     CALL collct_deletevalue (rproblem%rcollection,'DECOUPLEDXY')
 
   END SUBROUTINE

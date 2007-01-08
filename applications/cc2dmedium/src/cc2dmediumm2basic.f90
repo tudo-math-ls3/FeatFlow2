@@ -85,7 +85,7 @@ MODULE cc2dmediumm2basic
 !</typeblock>
 
 
-!<typeblock description="Application-specific type block for Nav.St. problem">
+!<typeblock description="Application-specific type block for the stationary Nav.St. problem">
 
   TYPE t_problem
   
@@ -101,10 +101,7 @@ MODULE cc2dmediumm2basic
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
 
-    ! A solution vector and a RHS vector on the finest level. 
-    TYPE(t_vectorBlock) :: rvector,rrhs
-    
-    ! Fla if the X- and Y-velocity is decoupled (i.e. yield different 
+    ! Flag indicating if the X- and Y-velocity is decoupled (i.e. yield different 
     ! matrices). This is the case e.g. for no-slip boundary conditions
     ! where then implementation of the BC's into the first velocity
     ! matrix must not affect the 2nd velocity matrix!

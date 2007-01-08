@@ -95,6 +95,9 @@ CONTAINS
     ! A problem structure for our problem
     TYPE(t_problem), TARGET :: rproblem
     
+    ! A structure for the solution vector and the RHS vector of the problem.
+    TYPE(t_vectorBlock) :: rvector,rrhs
+    
     INTEGER :: i
     
     ! Ok, let's start. 
@@ -135,24 +138,24 @@ CONTAINS
     ! Initialisation
     CALL c2d2_initParamTriang (rproblem)
     CALL c2d2_initDiscretisation (rproblem)    
-    CALL c2d2_allocMatVec (rproblem)    
+    CALL c2d2_allocMatVec (rproblem,rvector,rrhs)    
     CALL c2d2_generateStaticMatrices (rproblem)
     CALL c2d2_generateStaticSystemParts (rproblem)
-    CALL c2d2_generateBasicRHS (rproblem,rproblem%rrhs)
+    CALL c2d2_generateBasicRHS (rproblem,rrhs)
     CALL c2d2_initAnalyticBC (rproblem)   
-    CALL c2d2_initDiscreteBC (rproblem)
+    CALL c2d2_initDiscreteBC (rproblem,rvector,rrhs)
     
     ! Implementation of boundary conditions
-    CALL c2d2_implementBC (rproblem)
+    CALL c2d2_implementBC (rproblem,rvector,rrhs)
     
     ! Solve the problem
-    CALL c2d2_solve (rproblem)
+    CALL c2d2_solve (rproblem,rvector,rrhs)
     
     ! Postprocessing
-    CALL c2d2_postprocessing (rproblem)
+    CALL c2d2_postprocessing (rproblem,rvector)
     
     ! Cleanup
-    CALL c2d2_doneMatVec (rproblem)
+    CALL c2d2_doneMatVec (rproblem,rvector,rrhs)
     CALL c2d2_doneBC (rproblem)
     CALL c2d2_doneDiscretisation (rproblem)
     CALL c2d2_doneParamTriang (rproblem)

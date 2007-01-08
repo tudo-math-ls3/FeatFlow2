@@ -1162,7 +1162,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_preparePreconditioner (rproblem,rpreconditioner)
+  SUBROUTINE c2d2_preparePreconditioner (rproblem,rpreconditioner,rvector,rrhs)
   
 !<description>
   ! This routine prepares the preconditioner that us used during the
@@ -1175,6 +1175,14 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!<input>
+  ! The current solution vector.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+
+  ! The right-hand-side vector to use in the equation
+  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+!</input>
 
 !<output>
   ! A preconditioner structure for the CCxD problem. Will be initialised
@@ -1198,7 +1206,6 @@ CONTAINS
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_vectorBlock), POINTER :: p_rrhs,p_rvector
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -1222,8 +1229,6 @@ CONTAINS
     
       ! Get our right hand side / solution / matrix on the finest
       ! level from the problem structure.
-      p_rrhs    => rproblem%rrhs   
-      p_rvector => rproblem%rvector
       p_rmatrix => rproblem%RlevelInfo(NLMAX)%rmatrix
       
       ! During the linear solver, the boundary conditions must
@@ -1255,7 +1260,7 @@ CONTAINS
       ! can use the same structure for all levels. Therefore it's enough
       ! to initialise one structure using the RHS vector on the finest
       ! level to specify the shape of the PDE-discretisation.
-      CALL mlprj_initProjectionVec (rpreconditioner%rprojection,rproblem%rrhs)
+      CALL mlprj_initProjectionVec (rpreconditioner%rprojection,rrhs)
       
       ! Initialise the projection structure with data from the INI/DAT
       ! files. This allows to configure prolongation/restriction.
@@ -1295,14 +1300,14 @@ CONTAINS
       ! matrices. It must be at least as large as MAXMEM and NEQ(finest level),
       ! as we use it for resorting vectors, too.
       CALL lsyssc_createVector (rpreconditioner%rtempVectorSc,&
-                                MAX(imaxmem,rproblem%rrhs%NEQ),.FALSE.)
+                                MAX(imaxmem,rrhs%NEQ),.FALSE.)
       CALL collct_setvalue_vecsca(rproblem%rcollection,'RTEMPSCALAR',&
                                   rpreconditioner%rtempVectorSc,.TRUE.)
       
       ! Set up a second temporary vector that we need for calculating
       ! the optimal defect correction.
       CALL lsyssc_createVector (rpreconditioner%rtempVectorSc2,&
-                                rproblem%rrhs%NEQ,.FALSE.,ST_DOUBLE)
+                                rrhs%NEQ,.FALSE.,ST_DOUBLE)
       CALL collct_setvalue_vecsca(rproblem%rcollection,'RTEMP2SCALAR',&
                                   rpreconditioner%rtempVectorSc2,.TRUE.)
       
@@ -1363,7 +1368,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_checkMatrices (rproblem,rpreconditioner)
+  SUBROUTINE c2d2_checkMatrices (rproblem,rpreconditioner,rrhs)
   
 !<description>
   ! This routine checks the matrices against an existing preconditioner.
@@ -1377,6 +1382,11 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!<input>
+  ! The right-hand-side vector to use in the equation
+  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+!</input>
 
 !<inputoutput>
   ! A preconditioner structure for the CCxD problem. Will be initialised
@@ -1429,7 +1439,7 @@ CONTAINS
       ! can use the same structure for all levels. Therefore it's enough
       ! to initialise one structure using the RHS vector on the finest
       ! level to specify the shape of the PDE-discretisation.
-      CALL mlprj_initProjectionVec (rprojection,rproblem%rrhs)
+      CALL mlprj_initProjectionVec (rprojection,rrhs)
       
       ! Initialise the linear subsolver using the parameters from the INI/DAT
       ! files, the prepared filter chain and the interlevel projection structure.
@@ -1638,17 +1648,37 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_solve (rproblem)
+  SUBROUTINE c2d2_solve (rproblem,rvector,rrhs)
   
 !<description>
   ! Solves the given problem by applying a nonlinear solver with a preconditioner
   ! configured in the INI/DAT files.
+  !
+  ! On call to this routine, rproblem%rrhs configures the right hand side of
+  ! the nonlinear iteration, while rproblem%rvector specifies the initial iteration
+  ! vector.
+  ! With $u$:=rvector, $f$:=rrhs and the (nonlinear) matrix $A(u)$ configured 
+  ! in rproblem, the routine calls the nonlinear solver to solve $A(u)u = f$.
+  ! During the nonlinear iteration, the nonlinear matrix (matrices on all levels),
+  ! and the vector rvector in rproblem will be changed.
+  ! rproblem%rvector receives the final solution vector of the nonlinear iteration.
 !</description>
 
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! The solution vector which is to be used as initial vector for the nonlinear
+  ! iteration. After the iteration, this is replaced by the new solution vector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
 !</inputoutput>
+
+!<input>
+  ! The right-hand-side vector to use in the equation
+  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+!</input>
+
+!</subroutine>
 
     ! local variables
     TYPE(t_ccPreconditioner) :: rpreconditioner    
@@ -1661,10 +1691,10 @@ CONTAINS
     ! Check the matrices if they are compatible to our
     ! preconditioner. If not, we have to modify the matrices a little
     ! bit to make it compatible.
-    CALL c2d2_checkMatrices (rproblem,rpreconditioner)
+    CALL c2d2_checkMatrices (rproblem,rpreconditioner,rrhs)
     
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL c2d2_preparePreconditioner (rproblem,rpreconditioner)
+    CALL c2d2_preparePreconditioner (rproblem,rpreconditioner,rvector,rrhs)
     
     ! Add the minimum/maximum damping parameter to the collection
     CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
@@ -1675,8 +1705,13 @@ CONTAINS
                                  'domegaMax', d1, 0.0_DP)
     CALL collct_setvalue_real(rproblem%rcollection,'OMEGAMAX',d1,.TRUE.)
     
+    ! Save the solution/RHS vector to the collection. Might be used
+    ! later (e.g. in nonlinear problems)
+    CALL collct_setvalue_vec(rproblem%rcollection,PAR_RHS,rrhs,.TRUE.)
+    CALL collct_setvalue_vec(rproblem%rcollection,PAR_SOLUTION,rvector,.TRUE.)
+    
     ! Create a temporary vector we need for the nonliner iteration.
-    CALL lsysbl_createVecBlockIndirect (rproblem%rrhs, rtempBlock, .FALSE.)
+    CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .FALSE.)
 
     ! Initialise the nonlinear solver node rnlSol with parameters from
     ! the INI/DAT files.
@@ -1684,13 +1719,17 @@ CONTAINS
 
     ! Call the nonlinear solver. For preconditioning and defect calculation,
     ! the solver calls our callback routines.
-    CALL nlsol_performSolve(rnlSol,rproblem%rvector,rproblem%rrhs,rtempBlock,&
+    CALL nlsol_performSolve(rnlSol,rvector,rrhs,rtempBlock,&
                             c2d2_getDefect,c2d2_precondDefect,&
                             rcollection=rproblem%rcollection)
                             
     ! Delete min./max. damping parameters from the collection
     CALL collct_deletevalue (rproblem%rcollection,'OMEGAMAX')
     CALL collct_deletevalue (rproblem%rcollection,'OMEGAMIN')
+
+    ! Delete solution/RHS from the collection
+    CALL collct_deletevalue (rproblem%rcollection,PAR_RHS)
+    CALL collct_deletevalue (rproblem%rcollection,PAR_SOLUTION)
 
     ! Release the temporary vector
     CALL lsysbl_releaseVector (rtempBlock)

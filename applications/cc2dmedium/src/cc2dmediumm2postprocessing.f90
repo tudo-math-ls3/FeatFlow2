@@ -98,7 +98,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_postprocessing (rproblem)
+  SUBROUTINE c2d2_postprocessing (rproblem,rvector)
   
 !<description>
   ! Writes the solution into a GMV file.
@@ -109,14 +109,20 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!<input>
+  ! The solution vector which is to be evaluated by the postprocessing routines.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+
+!</subroutine>
+
   ! local variables
   
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
-    ! A pointer to the solution vector and to the triangulation.
-    TYPE(t_vectorBlock), POINTER :: p_rvector
+    ! A pointer to the triangulation.
     TYPE(t_triangulation), POINTER :: p_rtriangulation
     
     ! A vector accepting Q1 data
@@ -137,16 +143,13 @@ CONTAINS
     ! REAL(DP) :: df1,df2
     ! TYPE(t_boundaryRegion) :: rregion
 
-    ! Get the solution vector from the problem structure.
-    p_rvector => rproblem%rvector
-    
     ! Calculate drag-/lift coefficients on the 2nd boundary component
-    ! CALL boundary_createRegion (p_rvector%p_rblockDiscretisation%p_rdomain, 
+    ! CALL boundary_createRegion (rvector%p_rblockDiscretisation%p_rdomain, 
     !     2, 0, rregion)
     ! rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
     ! df1 = 1.0_DP/1000.0_DP
     ! df2 = 0.1_DP * 0.2_DP**2
-    ! CALL ppns2D_bdforces_uniform (p_rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
+    ! CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
     ! PRINT *,'Forces: ',Dforces(1),Dforces(2)
     
     ! The solution vector is probably not in the way, GMV likes it!
@@ -154,22 +157,22 @@ CONTAINS
     ! Therefore, we first have to convert the vector to a form that
     ! GMV understands.
     ! GMV understands only Q1 solutions! So the task is now to create
-    ! a Q1 solution from p_rvector and write that out.
+    ! a Q1 solution from rvector and write that out.
     !
     ! For this purpose, first create a 'derived' simple discretisation
     ! structure based on Q1 by copying the main guiding block discretisation
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    rprjDiscretisation = p_rvector%p_rblockDiscretisation
+    rprjDiscretisation = rvector%p_rblockDiscretisation
     
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
+                 rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscretisation(1))
 
     CALL spdiscr_deriveSimpleDiscrSc (&
-                 p_rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
+                 rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscretisation(2))
                  
@@ -181,7 +184,7 @@ CONTAINS
     
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
-    CALL spdp_projectSolution (p_rvector,rprjVector)
+    CALL spdp_projectSolution (rvector,rprjVector)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
@@ -211,7 +214,7 @@ CONTAINS
     !
     ! From the attached discretisation, get the underlying triangulation
     p_rtriangulation => &
-      p_rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
+      rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
     
     ! Start UCD export to GMV file:
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u.gmv')
