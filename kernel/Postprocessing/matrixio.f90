@@ -531,7 +531,7 @@ MODULE matrixio
     CLOSE(UNIT=iunit)
 
 10  FORMAT(A,"=sparse([...")
-20  FORMAT(I10,X,I10,X,E15.8,";")
+20  FORMAT(I10,1X,I10,X,E15.8,";")
 30  FORMAT("]');")
   END SUBROUTINE matio_spyMatrix
 
