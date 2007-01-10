@@ -372,7 +372,7 @@ CONTAINS
 
 !<description>
   ! Releases all memory in the UCD export structure rexport.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure that is to be released.
@@ -627,7 +627,7 @@ CONTAINS
   ! postprocessing tool (GMV, AVS,...).
   ! The optional ImaterialsMid and ImaterialsElem arrays allow to specify
   ! also for each edge midpoint and element midpoint a material id as well.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -737,7 +737,7 @@ CONTAINS
   ! All pending data in rexport is written into the file. 
   ! If the file is identified by a filename, a new file is opened,
   ! data is written to it and the file is closed at the end.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure that specifies the output.
@@ -1448,7 +1448,7 @@ CONTAINS
 !<description>
   ! (Re)allocates memory for variables. Increases the number of available
   ! variables in the export structure.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure which is to be tackled.
@@ -1505,7 +1505,7 @@ CONTAINS
 !<description>
   ! (Re)allocates memory for polygons. Increases the number of available
   ! variables in the export structure.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure which is to be tackled.
@@ -1542,7 +1542,7 @@ CONTAINS
 !<description>
   ! (Re)allocates memory for tracer variables. Increases the number of 
   ! available tracer variables in the export structure.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure which is to be tackled.
@@ -1577,7 +1577,7 @@ CONTAINS
 !<description>
   ! Adds variable data to the ouput file identified by rexport, based
   ! on vertices.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -1687,7 +1687,7 @@ CONTAINS
 
 !<description>
   ! Adds variable data to the ouput file identified by rexport, based on elements.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -1779,7 +1779,7 @@ CONTAINS
   ! DpolygonCoords is a 2D or 3D array with (X,Y)-/(X,Y,Z)-coordinates.
   ! Line i is specified by the start coordinates DpolygonCoords(i)
   ! and the end coordinates DpolygonCoords(i+1).
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -1846,7 +1846,7 @@ CONTAINS
   ! This routine adds tracer information to the export structure rexport.
   ! If there is already any tracer data attached to rexport, it will be
   ! deleted.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -1899,7 +1899,7 @@ CONTAINS
 
 !<description>
   ! Removes all information about tracers from the structure rexport.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -1935,7 +1935,7 @@ CONTAINS
 
 !<description>
   ! Adds tracer variable data to the ouput file identified by rexport.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -1999,7 +1999,7 @@ CONTAINS
 
 !<description>
   ! Specifies the simulation time, the export structure should represent.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -2052,7 +2052,7 @@ CONTAINS
 
 !<description>
   ! Specifies the number format of numbers in the outpuot file.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -2100,7 +2100,7 @@ CONTAINS
   ! Adds a comment line to the comment buffer.
   ! All comments are written to a single comment block at the
   ! beginning of the output file.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
@@ -2156,7 +2156,7 @@ CONTAINS
   ! Adds the parameter list rparList to the output file identified by
   ! rexport. All parameters in this parameter list will be written
   ! as comment block to the output file.
-!<!description>
+!</description>
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.

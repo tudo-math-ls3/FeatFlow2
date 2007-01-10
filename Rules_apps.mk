@@ -198,6 +198,15 @@ $(PARSER).class: $(FEATFLOW)/bin/$(PARSER).java
 	  cat $< | sed -f $(FEATFLOW)/bin/prepare4parser.sed; \
 	  echo '</db>') > $@;
 
+# Wrap a C source file to get an XML file
+# which we then can pass to the Java-based parser.
+%.c.xml: %.c
+	@echo; echo "Wrapping $< in XML format...";
+	@(echo '<?xml version="1.0" encoding="iso-8859-1" ?>'; \
+	  echo '<db>'; \
+	  cat $< | sed -f $(FEATFLOW)/bin/prepare4parser.sed; \
+	  echo '</db>') > $@;
+
 # Extract module documentation from wrapped FEAT kernel module
 # with help of the Java-based parser. 
 $(HTMLDIR)/%.html: %.xml $(PARSER).class
