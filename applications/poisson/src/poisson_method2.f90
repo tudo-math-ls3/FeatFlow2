@@ -59,12 +59,11 @@ CONTAINS
   ! the triangulation is refined as described by the parameter ilv.
 !</description>
 
-!<input>
-  ! The level up to where we refine the coarse mesh.
-  INTEGER, INTENT(IN) :: ilv
-!</input>
-
 !<inputoutput>
+  ! The level up to where we refine the coarse mesh.
+  ! If the number is too large, ilv is reduced to the maximum allowed value.
+  INTEGER, INTENT(INOUT) :: ilv
+
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
@@ -83,7 +82,7 @@ CONTAINS
 
     ! Variable for a filename:  
     CHARACTER(LEN=60) :: CFILE
-
+    
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     ! Set p_rboundary to NULL() to create a new structure.

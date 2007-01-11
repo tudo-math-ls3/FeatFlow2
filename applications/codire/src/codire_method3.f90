@@ -156,14 +156,15 @@ CONTAINS
     ! Now read in the triangulation - in FEAT 1.x syntax.
     ! Refine it to level LV...
     CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,ilv,ilv,0,0,CFILE)
+    CALL INMTRI (2,TRIAS,rproblem%NLMAX,rproblem%NLMAX,0,0,CFILE)
     
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
     ! to get a triangulation.
     ! Set p_rtriangulation to NULL() to create a new structure on the heap.
     NULLIFY(rproblem%RlevelInfo(1)%p_rtriangulation)
-    CALL tria_wrp_tria2Structure(TRIAS(:,ilv),rproblem%RlevelInfo(1)%p_rtriangulation)
+    CALL tria_wrp_tria2Structure(TRIAS(:,rproblem%NLMAX),&
+         rproblem%RlevelInfo(1)%p_rtriangulation)
     
     ! The TRIAS(,)-array is now part pf the triangulation structure,
     ! we don't need it anymore.
