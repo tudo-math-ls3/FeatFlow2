@@ -84,11 +84,11 @@ CONTAINS
 !</description>
 
 !<input>
-    ! source right-hand side vector
-    REAL(DP), DIMENSION(ndim), INTENT(IN) :: Df
-
     ! dimension of the matrix
     INTEGER, INTENT(IN) :: ndim
+
+    ! source right-hand side vector
+    REAL(DP), DIMENSION(ndim), INTENT(IN) :: Df
 
     ! What to do?
     ! IPAR = 0 : invert matrix by means of Gaussian elimination with
@@ -331,11 +331,11 @@ CONTAINS
 !</description>
 
 !<input>
-    ! source right-hand side vector
-    REAL(SP), DIMENSION(ndim), INTENT(IN) :: Ff
-
     ! dimension of the matrix
     INTEGER, INTENT(IN) :: ndim
+
+    ! source right-hand side vector
+    REAL(SP), DIMENSION(ndim), INTENT(IN) :: Ff
 
     ! What to do?
     ! IPAR = 0 : invert matrix by means of Gaussian elimination with
