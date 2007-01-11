@@ -28,11 +28,24 @@ FFVER:=2.0ALPHA
 #ID:=$(shell $(FEATFLOW)/bin/guess_id)
 HOST:=$(shell uname -n)
 match= $(shell $(FEATFLOW)/bin/match_id $(1) '$(2)')
+
+ifndef ARCH
 ARCH:=$(shell $(FEATFLOW)/bin/guess_id 1)
+endif
+
+ifndef CPU
 CPU:=$(shell $(FEATFLOW)/bin/guess_id 2)
+endif
+
+ifndef CORE
 CORE:=$(shell $(FEATFLOW)/bin/guess_id 3)
+endif
+
 OS:=$(shell $(FEATFLOW)/bin/guess_id 4)
+
+ifndef ID
 ID:=${ARCH}-${CPU}-${OS}
+endif
 
 ########################################################################
 # There is a possibility to overide the autodetected ID.  If you know
@@ -289,5 +302,11 @@ endif
 	@echo ' ALT=xxx       - specification of alternative ID to use ID-xxx as a new ID.'
 	@echo '                 (See Globals.mk for examples)'
 	@echo ' ID=xxx        - overides the autodetected architecture ID by xxx'
+	@echo '                 (See Globals.mk for details)'
+	@echo ' ARCH=xxx      - overwrites the autodetected value for ARCH by xxx'
+	@echo '                 (See Globals.mk for details)'
+	@echo ' CPU=xxx       - overwrites the autodetected value for CPU by xxx'
+	@echo '                 (See Globals.mk for details)'
+	@echo ' CORE=xxx      - overwrites the autodetected value for CORE by xxx'
 	@echo '                 (See Globals.mk for details)'
 
