@@ -423,7 +423,7 @@ MODULE linearsolver
   ! Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
   INTEGER, PARAMETER :: LINSOL_ALG_JACOBI        = 2
   
-  ! SOR/GS iteration $x_1 = x_0 + (L+\omega D)^{-1}(b-Ax_0)$
+  ! SOR/GS iteration $x_1 = x_0 + (D+\omega L)^{-1}(b-Ax_0)$
   INTEGER, PARAMETER :: LINSOL_ALG_SOR           = 4
   
   ! SSOR iteration
@@ -574,6 +574,18 @@ MODULE linearsolver
   ! correction approach to give an additional speedup. 
   INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0DIRECT   = 3
 
+!</constantblock>
+
+! *****************************************************************************
+
+!<constantblock description="Variants of the BiCGStab solver">
+
+  ! BiCGStab with Left-Preconditioning (or without preconditioning)
+  INTEGER, PARAMETER :: LINSOL_BICGSTAB_LEFT_PRECOND           = 0
+  
+  ! BiCGStab with Right-Preconditioning
+  INTEGER, PARAMETER :: LINSOL_BICGSTAB_RIGHT_PRECOND          = 1
+  
 !</constantblock>
 
 !</constants>
@@ -926,9 +938,15 @@ MODULE linearsolver
   
   TYPE t_linsolSubnodeBiCGStab
   
+    ! Type of preconditioning. One of the LINSOL_BICGSTAB_xxxx constants.
+    INTEGER :: cprecondType = LINSOL_BICGSTAB_LEFT_PRECOND
+  
     ! Temporary vectors to use during the solution process
     TYPE(t_vectorBlock), DIMENSION(6) :: RtempVectors
-
+    
+    ! Another temporary vector for right- and symmetrical preconditioning
+    TYPE(t_vectorBlock) :: rprecondTemp
+    
     ! A pointer to the solver node for the preconditioner or NULL(),
     ! if no preconditioner is used.
     TYPE(t_linsolNode), POINTER       :: p_rpreconditioner            => NULL()
@@ -1351,6 +1369,10 @@ CONTAINS
   CASE (LINSOL_ALG_JINWEITAM)
     ! Ask JWT if the matrices are ok.
     CALL linsol_matCompatJinWeiTam (rsolverNode,Rmatrices,ccompatible)
+    
+  CASE (LINSOL_ALG_SOR)
+    ! Ask SOR if the matrices are ok.
+    CALL linsol_matCompatSOR (rsolverNode,Rmatrices,ccompatible)
     
   CASE (LINSOL_ALG_SSOR)
     ! Ask SSOR if the matrices are ok.
@@ -2055,6 +2077,8 @@ CONTAINS
       CALL linsol_precDefCorr (rsolverNode,rd)
     CASE (LINSOL_ALG_JACOBI)
       CALL linsol_precJacobi (rsolverNode,rd)
+    CASE (LINSOL_ALG_SOR)
+      CALL linsol_precSOR (rsolverNode,rd)
     CASE (LINSOL_ALG_SSOR)
       CALL linsol_precSSOR (rsolverNode,rd)
     CASE (LINSOL_ALG_UMFPACK4)
@@ -3644,6 +3668,266 @@ CONTAINS
   END SUBROUTINE
   
 ! *****************************************************************************
+! Routines for the SOR solver
+! *****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_initSOR (p_rsolverNode, domega)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the SOR solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  !
+  ! This SOR solver has no done-routine as there is no dynamic information
+  ! allocated. The given damping parameter domega is saved to the solver
+  ! structure rsolverNode%domega.
+  !
+  ! For domega = 1.0_DP this SOR solver is identical to the Gauss-Seidel
+  ! algorithm.
+!</description>
+  
+!<input>
+  ! OPTIONAL: Damping parameter. Is saved to rsolverNode%domega if specified.
+  REAL(DP), INTENT(IN), OPTIONAL :: domega
+
+!</input>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER         :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+  
+    ! Create a default solver structure
+    
+    CALL linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_SOR
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK + &
+                                LINSOL_ABIL_DIRECT
+    
+    ! Save domega to the structure.
+    IF (PRESENT(domega)) THEN
+      p_rsolverNode%domega = domega
+    END IF
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_matCompatSOR (rsolverNode,Rmatrices,ccompatible)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  TYPE(t_linsolNode), INTENT(IN)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  TYPE(t_matrixBlock), DIMENSION(:), INTENT(IN)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  INTEGER, INTENT(OUT) :: ccompatible
+!</output>
+  
+!</subroutine>
+
+    ! Normally we are compatible.
+    ccompatible = LINSOL_COMP_OK
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_precSOR (rsolverNode,rd)
+  
+!<description>
+  ! Applies the SOR preconditioner $D \in A$ to the defect 
+  ! vector rd and solves 
+  !  $$ (D + \omega L) d_{new} = d.$$
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the SOR solver
+  TYPE(t_linsolNode), INTENT(INOUT),TARGET  :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: iblock
+    
+    TYPE (t_matrixScalar), POINTER :: p_rmatrix
+    REAL(DP), DIMENSION(:), POINTER :: p_Dvector, p_Dmatrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal
+   
+    ! Loop through all diagonal blocks. Each block corresponds to one
+    ! diagonal block in the matrix.
+    DO iblock = 1,rd%nblocks
+      ! Get the matrix
+      p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock(iblock,iblock)
+      
+      ! Some small checks...
+      IF (p_rmatrix%NEQ .EQ. 0) THEN
+        PRINT *,'SOR: No diagonal submatrix for component ',iblock
+        STOP
+      END IF
+      
+      IF (p_rmatrix%dscaleFactor .NE. 1.0_DP) THEN
+        PRINT *,'SOR: No support for scaled matrices up to now!'
+        STOP
+      END IF
+      
+      IF (IAND(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+          .NE. 0) THEN
+        PRINT *,'SOR: Transposed submatrices not supported.'
+        STOP
+      END IF
+
+      ! Now we have to make some decisions. At first, which matrix
+      ! structure do we have?
+      SELECT CASE (p_rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX9)
+
+        CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiagonal)
+        CALL storage_getbase_int(p_rmatrix%h_Kcol,p_Kcol)
+        CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kld)
+      
+        ! Now, which data format do we have? Single or double?
+        SELECT CASE (p_rmatrix%cdataType)
+        CASE (ST_DOUBLE)
+          ! Get the matrix data arrays
+          CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+          
+          ! Take care of the accuracy of the vector
+          SELECT CASE (rd%cdataType)
+          CASE (ST_DOUBLE)
+            ! Get the data array
+            CALL lsysbl_getbase_double (rd,p_Dvector)
+            
+            ! Call the SOR subroutine (see below), do the work.
+            CALL performSOR9dbledble_ID119 (p_Dmatrix,p_Kcol,p_Kld,&
+                                             p_Kdiagonal,rsolverNode%domega,&
+                                             p_Dvector)
+            
+          CASE DEFAULT
+            PRINT *,'SOR: Unsupported vector format.'
+            STOP
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *,'SOR: Unsupported matrix format.'
+          STOP
+        END SELECT
+      
+      CASE DEFAULT
+        PRINT *,'SOR: Unsupported matrix format.'
+        STOP
+      END SELECT
+      
+    END DO
+    
+  CONTAINS
+  
+    !--------------------------------------------------------------------------
+    ! Auxiliary routine: SOR
+    ! Matrix format 9, double precision matrix, double precision vector
+    
+    SUBROUTINE performSOR9dbledble_ID119 (DA,Kcol,Kld,Kdiagonal,domega,Dx)
+    
+    ! input: Matrix array
+    REAL(DP), DIMENSION(:), INTENT(IN) :: DA
+    
+    ! input: column structure
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol
+    
+    ! input: row structure
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld
+    
+    ! input: position of diagonal entries in the matrix
+    INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kdiagonal
+    
+    ! input: Relaxation parameter; standard value is 1.2.
+    REAL(DP), INTENT(IN) :: domega
+    
+    ! input: vector to be preconditioned.
+    ! output: preconditioned vector
+    REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dx
+    
+      ! local variables
+      INTEGER(PREC_VECIDX) :: NEQ,ieq
+      INTEGER(PREC_MATIDX) :: Idiag,ICOL
+      REAL(DP) :: daux
+      
+      NEQ = SIZE(Dx)
+
+      ! We perform the following preconditioning step:
+      !
+      !    (D+\omega L) d_{new} = d
+      !
+      ! and replace the vector Dx in-situ.
+      !
+      ! We're doing it this way:
+      !
+      !          (D+\omega L) d = d
+      !
+      !                          i-1
+      ! <=> a_ii d_i  +  \omega \sum a_ij d_j  =  d_i          (i=1,...,n)
+      !                          j=1
+      !
+      !                                       i-1
+      ! <=> d_i :=  1/aii * ( d_i  -  \omega \sum a_ij d_j )   (i=1,...,n)
+      !                                       j=1
+      !  
+      
+      DO ieq=1,NEQ
+        daux = 0.0_DP
+        ! Loop through the L; this is given by all
+        ! entries below Kdiagonal.
+        Idiag = Kdiagonal(ieq)
+        DO ICOL=Kld(ieq),Kdiagonal(ieq)-1
+          daux=daux+DA(ICOL)*Dx(Kcol(ICOL))
+        END DO
+        Dx(ieq) = (Dx(ieq) - daux*domega) / DA(Idiag)
+      END DO
+ 
+    END SUBROUTINE
+  
+  END SUBROUTINE
+
+! *****************************************************************************
 ! Routines for the SSOR solver
 ! *****************************************************************************
 
@@ -3656,10 +3940,6 @@ CONTAINS
   ! can be used to directly solve a problem or to be attached as solver
   ! or preconditioner to another solver structure. The node can be deleted
   ! by linsol_releaseSolver.
-  !
-  ! This SSOR solver has no done-routine as there is no dynamic information
-  ! allocated. The given damping parameter domega is saved to the solver
-  ! structure rsolverNode%domega.
 !</description>
   
 !<input>
@@ -6338,7 +6618,8 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter)
+  SUBROUTINE linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter,&
+                                 cprecondType)
   
 !<description>
   ! Creates a t_linsolNode solver structure for the BiCGStab solver. The node
@@ -6359,6 +6640,11 @@ CONTAINS
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
   TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_Rfilter
+  
+  ! OPTIONAL: An integer specifying what type of preconditioning we want to
+  ! use. Can be one of the LINSOL_BICGSTAB_* constants (see contant block).
+  ! If not given, Left-preconditioning is used.
+  INTEGER, OPTIONAL :: cprecondType
 !</input>
   
 !<output>
@@ -6396,6 +6682,22 @@ CONTAINS
     
     IF (PRESENT(p_Rfilter)) THEN
       p_rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain => p_Rfilter
+    END IF
+    
+    ! Set brightPrecond
+    
+    IF (PRESENT(cprecondType)) THEN
+      ! We explicitly check if cprecondType holds a valid constant to avoid
+      ! errors during further execution of the algorithm.
+      IF (cprecondType .EQ. LINSOL_BICGSTAB_RIGHT_PRECOND) THEN
+        p_rsolverNode%p_rsubnodeBiCGStab%cprecondType = LINSOL_BICGSTAB_RIGHT_PRECOND
+      ELSE
+        p_rsolverNode%p_rsubnodeBiCGStab%cprecondType = LINSOL_BICGSTAB_LEFT_PRECOND
+      END IF
+    ELSE
+      ! If no preconditioner type has been explicitly requested, we use
+      ! left-preconditioning by default.
+      p_rsolverNode%p_rsubnodeBiCGStab%cprecondType = LINSOL_BICGSTAB_LEFT_PRECOND
     END IF
   
   END SUBROUTINE
@@ -6552,6 +6854,13 @@ CONTAINS
       CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
           p_rsubnode%RtempVectors(i),.FALSE.,rsolverNode%cdefaultDataType)
     END DO
+    
+    ! If we want to use right-preconditioning, we need one more
+    ! temporary vector.
+    IF (p_rsubnode%cprecondType .EQ. LINSOL_BICGSTAB_RIGHT_PRECOND) THEN
+      CALL lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+          p_rsubnode%rprecondTemp,.FALSE.,rsolverNode%cdefaultDataType)
+    END IF      
   
   END SUBROUTINE
   
@@ -6727,6 +7036,13 @@ CONTAINS
         CALL lsysbl_releaseVector (p_rsubnode%RtempVectors(i))
       END DO
     END IF
+    
+    ! Release temporary vector for right-preconditioning
+    IF (p_rsubnode%cprecondType .EQ. LINSOL_BICGSTAB_RIGHT_PRECOND) THEN
+      IF (p_rsubnode%rprecondTemp%NEQ .NE. 0) THEN
+        CALL lsysbl_releaseVector (p_rsubnode%rprecondTemp)
+      END IF
+    END IF
       
   END SUBROUTINE
   
@@ -6769,8 +7085,47 @@ CONTAINS
   ! ***************************************************************************
 
 !<subroutine>
-  
   RECURSIVE SUBROUTINE linsol_precBiCGStab (rsolverNode,rd)
+
+!<inputoutput>
+  ! The t_linsolNode structure of the BiCGStab solver
+  TYPE(t_linsolNode), INTENT(INOUT), TARGET :: rsolverNode
+   
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+!</inputoutput>
+
+!</subroutine>
+
+    ! Now we check what type of preconditioning we have to use.
+    ! If our preconditioning type is LINSOL_BICGSTAB_LEFT_PRECOND, we try to solve
+    ! the system 
+    !                       P^{-1} A * x = P^{1} * b
+    ! where P is the preconditioner matrix.
+    !
+    ! If our preconditioning type is LINSOL_BICGSTAB_RIGHT_PRECOND, we try to solve
+    ! the system(s)
+    !                        AP^{-1} * y = b
+    !                              P * x = y
+    ! where P is the preconditioner matrix.
+    !
+    ! Depending on which constant has been passed to linsol_initBiCGStab, we call
+    ! the left or right variant of the BiCGStab solver here.
+    IF (rsolverNode%p_rsubnodeBiCGStab%cprecondType .EQ. &
+        LINSOL_BICGSTAB_RIGHT_PRECOND) THEN
+      CALL linsol_precBiCGStabRight(rsolverNode,rd)
+    ELSE
+      CALL linsol_precBiCGStabLeft(rsolverNode,rd)
+    END IF
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  RECURSIVE SUBROUTINE linsol_precBiCGStabLeft (rsolverNode,rd)
   
 !<description>
   ! Applies BiCGStab preconditioner $P \approx A$ to the defect 
@@ -7170,6 +7525,431 @@ CONTAINS
   
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_precBiCGStabRight (rsolverNode,rd)
+  
+!<description>
+  ! Applies BiCGStab preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+  !
+  ! The implementation follows the original paper introducing BiCGStab:
+  !   van der Vorst, H.A.; BiCGStab: A Fast and Smoothly Converging
+  !   Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems;
+  !   SIAM J. Sci. Stat. Comput. 1992, Vol. 13, No. 2, pp. 631-644
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the BiCGStab solver
+  TYPE(t_linsolNode), INTENT(INOUT), TARGET :: rsolverNode
+   
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  REAL(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
+  REAL(DP) :: drho1,drho0,dfr
+  INTEGER :: ireslength,ite,i
+
+  ! The queue saves the current residual and the two previous residuals.
+  REAL(DP), DIMENSION(32) :: Dresqueue
+  
+  ! The system matrix
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  
+  ! Minimum number of iterations, print-sequence for residuals
+  INTEGER :: nminIterations, niteResOutput
+  
+  ! Whether to filter/prcondition
+  LOGICAL bprec,bfilter
+  
+  ! Our structure
+  TYPE(t_linsolSubnodeBiCGStab), POINTER :: p_rsubnode
+  
+  ! Pointers to temporary vectors - named for easier access
+  TYPE(t_vectorBlock), POINTER :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_DZ,p_rx
+  TYPE(t_linsolNode), POINTER :: p_rprecSubnode
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  
+    ! Solve the system!
+  
+    ! Status reset
+    rsolverNode%iresult = 0
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+    p_rmatrix => rsolverNode%rsystemMatrix
+
+    ! Check the parameters
+    IF ((rd%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .EQ. 0) .OR. &
+        (p_rmatrix%NEQ .NE. rd%NEQ) ) THEN
+    
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+
+    ! Length of the queue of last residuals for the computation of
+    ! the asymptotic convergence rate
+
+    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+
+    ! Minimum number of iterations
+ 
+    nminIterations = MAX(rsolverNode%nminIterations,0)
+      
+    ! Use preconditioning? Filtering?
+
+    bprec = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
+    bfilter = ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain)
+    
+    ! Iteration when the residuum is printed:
+
+    niteResOutput = MAX(1,rsolverNode%niteResOutput)
+
+    ! Set pointers to the temporary vectors
+    p_DR   => p_rsubnode%RtempVectors(1)
+    p_DR0  => p_rsubnode%RtempVectors(2)
+    p_DP   => p_rsubnode%RtempVectors(3)
+    p_DPA  => p_rsubnode%RtempVectors(4)
+    p_DSA  => p_rsubnode%RtempVectors(5)
+    p_rx   => p_rsubnode%RtempVectors(6)
+    p_DZ   => p_rsubnode%rprecondTemp
+    
+    
+    ! All vectors share the same boundary conditions as rd!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vectors.
+    CALL lsysbl_assignDiscretIndirect (rd,p_DR )
+    CALL lsysbl_assignDiscretIndirect (rd,p_DR0)
+    CALL lsysbl_assignDiscretIndirect (rd,p_DP )
+    CALL lsysbl_assignDiscretIndirect (rd,p_DPA)
+    CALL lsysbl_assignDiscretIndirect (rd,p_DSA)
+    CALL lsysbl_assignDiscretIndirect (rd,p_rx)
+    CALL lsysbl_assignDiscretIndirect (rd,p_DZ)
+    
+    IF (bprec) THEN
+      p_rprecSubnode => p_rsubnode%p_rpreconditioner
+    END IF
+    IF (bfilter) THEN
+      p_RfilterChain => p_rsubnode%p_RfilterChain
+    END IF
+    
+    ! rd is our RHS. p_rx points to a new vector which will be our
+    ! iteration vector. At the end of this routine, we replace
+    ! rd by p_rx.
+    ! Clear our iteration vector p_rx.
+    CALL lsysbl_clearVector (p_rx)
+      
+    ! Initialize used vectors with zero
+      
+    CALL lsysbl_clearVector(p_DP)
+    CALL lsysbl_clearVector(p_DPA)
+    
+    ! Initialise the iteration vector with zero.
+
+    ! Initialization
+
+    drho0  = 1.0_DP
+    dalpha = 1.0_DP
+    domega0 = 1.0_DP
+
+    ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
+    ! is also our initial defect.
+
+    CALL lsysbl_copyVector(rd,p_DR)
+    IF (bfilter) THEN
+      ! Apply the filter chain to the vector
+      CALL filter_applyFilterChainVec (p_DR, p_RfilterChain)
+    END IF
+    !IF (bprec) THEN
+      ! Perform preconditioning with the assigned preconditioning
+      ! solver structure.
+      !CALL linsol_precondDefect (p_rprecSubnode,p_DR)
+    !END IF
+    
+    ! Get the norm of the residuum
+    dres = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
+    IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+              (dres .LE. 1E99_DP))) dres = 0.0_DP
+
+    ! Initialize starting residuum
+      
+    rsolverNode%dinitialDefect = dres
+
+    ! initialize the queue of the last residuals with RES
+
+    Dresqueue = dres
+
+    ! Check if out initial defect is zero. This may happen if the filtering
+    ! routine filters "everything out"!
+    ! In that case we can directly stop our computation.
+
+    IF ( rsolverNode%dinitialDefect .LT. rsolverNode%drhsZero ) THEN
+     
+      ! final defect is 0, as initialised in the output variable above
+
+      CALL lsysbl_clearVector(p_rx)
+      ite = 0
+      rsolverNode%dfinalDefect = dres
+          
+    ELSE
+
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        CALL output_line ('BiCGStab: Iteration '// &
+             TRIM(sys_siL(0,10))//',  !!RES!! = '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+      END IF
+
+      CALL lsysbl_copyVector(p_DR,p_DR0)
+
+      ! Perform at most nmaxIterations loops to get a new vector
+
+      DO ite = 1,rsolverNode%nmaxIterations
+      
+        rsolverNode%icurrentIteration = ite
+
+        drho1 = lsysbl_scalarProduct (p_DR0,p_DR) 
+
+        IF (drho0*domega0 .EQ. 0.0_DP) THEN
+          ! Should not happen
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            CALL output_line ('BiCGStab: Iteration prematurely stopped! '//&
+                 'Correction vector is zero!')
+          END IF
+
+          ! Some tuning for the output, then cancel.
+
+          rsolverNode%iresult = -1
+          rsolverNode%iiterations = ITE-1
+          EXIT
+          
+        END IF
+
+        dbeta=(drho1*dalpha)/(drho0*domega0)
+        drho0 = drho1
+
+        CALL lsysbl_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
+        CALL lsysbl_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
+        
+        ! We need to copy p_DP to p_DZ for preconditioning now
+        CALL lsysbl_copyVector(p_DP, p_DZ)
+        
+        ! Call preconditioner
+        IF (bprec) THEN
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          CALL linsol_precondDefect (p_rprecSubnode,p_DZ)
+        END IF
+
+        CALL lsysbl_blockMatVec (p_rmatrix, p_DZ,p_DPA, 1.0_DP,0.0_DP)
+        
+        IF (bfilter) THEN
+          ! Apply the filter chain to the vector
+          CALL filter_applyFilterChainVec (p_DPA, p_RfilterChain)
+        END IF
+
+        dalpha = lsysbl_scalarProduct (p_DR0,p_DPA)
+        
+        IF (dalpha .EQ. 0.0_DP) THEN
+          ! We are below machine exactness - we can't do anything more...
+          ! May happen with very small problems with very few unknowns!
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            CALL output_line ('BiCGStab: Convergence failed, ALPHA=0!')
+            rsolverNode%iresult = -2
+            EXIT
+          END IF
+        END IF
+        
+        dalpha = drho1/dalpha
+
+        CALL lsysbl_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
+
+        ! We need to copy p_DR to p_DZ for preconditioning now
+        CALL lsysbl_copyVector(p_DR, p_DZ)
+        
+        ! Call preconditioner
+        IF (bprec) THEN
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          CALL linsol_precondDefect (p_rprecSubnode,p_DZ)
+        END IF
+
+        CALL lsysbl_blockMatVec (p_rmatrix, p_DZ,p_DSA, 1.0_DP,0.0_DP)
+        
+        IF (bfilter) THEN
+          ! Apply the filter chain to the vector
+          CALL filter_applyFilterChainVec (p_DSA, p_RfilterChain)
+        END IF
+        
+        domega1 = lsysbl_scalarProduct (p_DSA,p_DR)
+        domega2 = lsysbl_scalarProduct (p_DSA,p_DSA)
+        
+        IF (domega1 .EQ. 0.0_DP) THEN
+          domega0 = 0.0_DP
+        ELSE
+          IF (domega2 .EQ. 0.0_DP) THEN
+            IF (rsolverNode%ioutputLevel .GE. 2) THEN
+              CALL output_line ('BiCGStab: Convergence failed: omega=0!')
+              rsolverNode%iresult = -2
+              EXIT
+            END IF
+          END IF
+          domega0 = domega1/domega2
+        END IF
+
+        CALL lsysbl_vectorLinearComb (p_DP ,p_rx,dalpha,1.0_DP)
+        CALL lsysbl_vectorLinearComb (p_DR ,p_rx,domega0,1.0_DP)
+
+        CALL lsysbl_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
+
+        ! Get the norm of the new (final?) residuum
+        dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
+     
+        ! Shift the queue with the last residuals and add the new
+        ! residual to it. Check length of ireslength to be larger than
+        ! 0 as some compilers might produce Floating exceptions
+        ! otherwise! (stupid pgf95)
+        IF (ireslength .GT. 0) &
+          dresqueue(1:ireslength) = EOSHIFT(dresqueue(1:ireslength),1,dfr)
+
+        rsolverNode%dfinalDefect = dfr
+
+        ! Test if the iteration is diverged
+        IF (linsol_testDivergence(rsolverNode,dfr)) THEN
+          CALL output_line ('BiCGStab: Solution diverging!')
+          rsolverNode%iresult = 1
+          EXIT
+        END IF
+     
+        ! At least perform nminIterations iterations
+        IF (ite .GE. nminIterations) THEN
+        
+          ! Check if the iteration converged
+          IF (linsol_testConvergence(rsolverNode,dfr)) EXIT
+          
+        END IF
+
+        ! print out the current residuum
+
+        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+            (MOD(ite,niteResOutput).EQ.0)) THEN
+          CALL output_line ('BiCGStab: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        END IF
+
+      END DO
+
+      ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+      ! completed
+
+      IF (ite .GT. rsolverNode%nmaxIterations) &
+        ite = rsolverNode%nmaxIterations
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+
+
+      IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+          (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
+          (rsolverNode%iresult .GE. 0)) THEN
+        CALL output_line ('BiCGStab: Iteration '// &
+            TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+      END IF
+
+    END IF
+
+    rsolverNode%iiterations = ite
+    
+    ! Since we are using right-preconditioning here, we need to apply the
+    ! preconditioner to our iteration vector here.
+    IF (bprec) THEN
+      CALL linsol_precondDefect (p_rprecSubnode,p_rx)
+    END IF
+
+    ! Overwrite our previous RHS by the new correction vector p_rx.
+    ! This completes the preconditioning.
+    CALL lsysbl_copyVector (p_rx,rd)
+      
+    ! Don't calculate anything if the final residuum is out of bounds -
+    ! would result in NaN's,...
+      
+    IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+    
+      ! Calculate asymptotic convergence rate
+    
+      IF (dresqueue(1) .GE. 1E-70_DP) THEN
+        I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+        rsolverNode%dasymptoticConvergenceRate = &
+          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+      END IF
+
+      ! If the initial defect was zero, the solver immediately
+      ! exits - and so the final residuum is zero and we performed
+      ! no steps; so the resulting convergence rate stays zero.
+      ! In the other case the convergence rate computes as
+      ! (final defect/initial defect) ** 1/nit :
+
+      IF (rsolverNode%dfinalDefect .GT. rsolverNode%drhsZero) THEN
+        rsolverNode%dconvergenceRate = &
+                    (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                    (1.0_DP/REAL(rsolverNode%iiterations,DP))
+      END IF
+
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        CALL output_lbrk()
+        CALL output_line ('BiCGStab statistics:')
+        CALL output_lbrk()
+        CALL output_line ('Iterations              : '//&
+             TRIM(sys_siL(rsolverNode%iiterations,10)) )
+        CALL output_line ('!!INITIAL RES!!         : '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        CALL output_line ('!!RES!!                 : '//&
+             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
+        ELSE
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               TRIM(sys_sdEL(0.0_DP,15)) )
+        END IF
+        CALL output_lbrk ()
+        CALL output_line ('Rate of convergence     : '//&
+             TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+
+      END IF
+
+      IF (rsolverNode%ioutputLevel .EQ. 1) THEN
+        CALL output_line (&
+              'BiCGStab: Iterations/Rate of convergence: '//&
+              TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+      END IF
+      
+    ELSE
+      ! DEF=Infinity; RHO=Infinity, set to 1
+      rsolverNode%dconvergenceRate = 1.0_DP
+      rsolverNode%dasymptoticConvergenceRate = 1.0_DP
+    END IF  
+  
+  END SUBROUTINE
+
+
+
 ! *****************************************************************************
 ! Routines for the Multigrid solver
 ! *****************************************************************************

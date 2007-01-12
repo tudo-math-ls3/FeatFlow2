@@ -2512,29 +2512,31 @@ CONTAINS
       p_rheap => rbase
     END IF
     
-    PRINT *,'Heap statistics:'
-    PRINT *,'----------------'
+    CALL output_line ('Heap statistics:')
+    CALL output_line ('----------------')
     IF (PRESENT(bprintHandles)) THEN
       IF (bprintHandles .AND. (p_rheap%ihandlesInUse .GT. 0)) THEN
-        PRINT *,'Handles on the heap: '
-        PRINT *
+        CALL output_line ('Handles on the heap: ')
+        CALL output_lbrk ()
         ! Loop through the heap and search allocated handles
         DO i=1,SIZE(p_rheap%p_IfreeHandles)
           IF (p_rheap%p_Rdescriptors(i)%idataType .NE. ST_NOHANDLE) THEN
             IF (p_rheap%p_Rdescriptors(i)%idimension .EQ. 1) THEN
-              PRINT *,'Handle ',i,', 1D, Length=',&
-                      INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),&
-                      ', Type=',p_rheap%p_Rdescriptors(i)%idataType,&
-                      ' Name=',TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname))
+              CALL output_line ( &
+                   'Handle ' // TRIM(sys_siL(i,10)) // ', 1D, Length=' // &
+                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),10)) //&
+                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,10)) //&
+                   ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             ELSE
-              PRINT *,'Handle ',i,', 2D, Length=',&
-                      INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),&
-                      ', Type=',p_rheap%p_Rdescriptors(i)%idataType,&
-                      ' Name=',TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname))
+              CALL output_line ( &
+                   'Handle ' // TRIM(sys_siL(i,10)) // ', 2D, Length=' // &
+                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),10)) // &
+                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,10)) // &
+                   ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             END IF
           END IF
         END DO
-        PRINT *
+        CALL output_lbrk ()
       END IF
     END IF
     
