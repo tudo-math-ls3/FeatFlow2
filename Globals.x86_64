@@ -186,3 +186,49 @@ BLASLIB   =
 LAPACKLIB = 
 GENERIC   = 0
 endif
+
+########################################################################
+# Intel /w GNU compiler
+########################################################################
+
+ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)),yes)
+CC=gcc
+FC=g95
+OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
+FCFLAGS   = -pipe -fmod=$(MODDIR)
+CCFLAGS   = -pipe
+BLASLIB   =
+LAPACKLIB =
+GENERIC   = 0 
+
+# Try to find more sophisticated compiler settings
+ifeq ($(CPU),core2)
+OPTFLAGS  += -mmmx -msse -msse2 -msse3
+FCFLAGS   += -march=nocona
+CCFLAGS   += -march=nocona
+endif
+endif
+
+########################################################################
+# Intel /w Intel compiler
+########################################################################
+
+ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-ifc),yes)
+CC=icc
+FC=ifort
+AR=xiar
+OPTFLAGS  = -O3 -ipo
+FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
+CCFLAGS   = -vec-report0
+LDFLAGS   = -lsvml
+BLASLIB   =
+LAPACKLIB =
+GENERIC   = 1
+
+# Try to find more sophisticated compiler settings
+ifeq ($(CPU),core2)
+OPTFLAGS  += -xT
+GENERIC   = 0
+endif
+endif
+
