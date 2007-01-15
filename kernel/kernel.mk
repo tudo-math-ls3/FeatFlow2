@@ -23,46 +23,52 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
 	bilinearformevaluation.f90 linearformevaluation.f90 \
 	bcassembly.f90 matrixio.f90 vectorio.f90 convection.f90 \
 	nonlinearsolver.f90 matrixrestriction.f90 fparser.f90 \
-	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90 signal_ccode.c
+	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90 signal_ccode.c \
+	timestepping.f90
 
 # path for the make where to look for which files
 
 vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
-	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
+	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
 	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/TimeDependence \
 	$(KERNEL) $(INCOMING)
 
 vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
-	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
+	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
 	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
-	$(KERNEL) $(INCOMING)
-
-vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
-	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
-	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
-	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
-	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
-	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
-	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/TimeDependence \
 	$(KERNEL) $(INCOMING)
 
 vpath %.c $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
 	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
-	$(KERNEL)/Boundary $(KERNEL)/DOFMaintainance \
+	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
 	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/TimeDependence \
 	$(KERNEL) $(INCOMING)
+
+vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
+	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
+	$(KERNEL)/Triangulation $(KERNEL)/ContinuousFormulation \
+	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
+	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
+	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
+	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
+	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/TimeDependence \
+	$(KERNEL) $(INCOMING)
+
