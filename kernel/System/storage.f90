@@ -19,7 +19,8 @@
 !# With 'storage_free', the memory assigned to a handle can be released.
 !#
 !# The memory management supports 1D and 2D arrays for SINGLE and DOUBLE
-!# PRECISION floating point variables as well as I32 integer variables.
+!# PRECISION floating point variables as well as I32 integer variables and
+!# LOGICAL and CHAR variables.
 !#
 !# Before any memory is allocated, the memory management must be initialised
 !# by a call to 'storage_init'!
@@ -44,20 +45,24 @@
 !#  6.) storage_getbase_single,
 !#      storage_getbase_double,
 !#      storage_getbase_int,
-!#      -> Determine pointer associated to a handle for singles, doubles
-!#         or 32-Bit integers
+!#      storage_getbase_logical,
+!#      storage_getbase_char,
+!#      -> Determine pointer associated to a handle for singles, doubles,
+!#         32-Bit integers, logicals or chars
 !#
 !#  7.) storage_getbase_single2D,
 !#      storage_getbase_double2D,
 !#      storage_getbase_int2D,
-!#      -> Determine pointer associated to a handle for singles, doubles
-!#         or 32-Bit integers, 2D array
+!#      storage_getbase_logical,
+!#      storage_getbase_char,
+!#      -> Determine pointer associated to a handle for singles, doubles,
+!#         32-Bit integers, logicals or chars, 2D array
 !#
 !#  8.) storage_copy = storage_copy / storage_copy_explicit / storage_copy_explicit2D
 !#      -> Copies the content of one array to another.
 !#
 !#  9.) storage_clear
-!#      -> Clears an array by overwriting the entries with 0.
+!#      -> Clears an array by overwriting the entries with 0 (or .FALSE. for LOGICALs).
 !#
 !# 10.) storage_getsize = storage_getsize1d / storage_getsize2d
 !#      -> Get the length of an array on the heap.
@@ -90,29 +95,37 @@ MODULE storage
 
   !<constantblock description="Storage block type identifiers">
   
-  !defines an non-allocated storage block handle
+  ! defines an non-allocated storage block handle
   INTEGER, PARAMETER :: ST_NOHANDLE = 0
 
-  !storage block contains single floats
+  ! storage block contains single floats
   INTEGER, PARAMETER :: ST_SINGLE = 1
 
-  !storage block contains double floats
+  ! storage block contains double floats
   INTEGER, PARAMETER :: ST_DOUBLE = 2
 
-  !storage block contains ints
+  ! storage block contains ints
   INTEGER, PARAMETER :: ST_INT = 3
+  
+  ! storage block contains logicals
+  INTEGER, PARAMETER :: ST_LOGICAL = 4
+  
+  ! storage block contains characters
+  INTEGER, PARAMETER :: ST_CHAR = 5
   
   !</constantblock>
 
   !<constantblock description="Constants for initialisation of memory on allocation">
   
-  ! init new storage block with zeros
+  ! init new storage block with zeros (or .FALSE. for logicals)
   INTEGER, PARAMETER :: ST_NEWBLOCK_ZERO = 0
 
   ! no init new storage block
   INTEGER, PARAMETER :: ST_NEWBLOCK_NOINIT = 1
 
   ! init new storage block with 1,2,3,...,n
+  ! Note: This initialization constant must NOT be used for initialisation of logicals
+  !       or characters!!!
   INTEGER, PARAMETER :: ST_NEWBLOCK_ORDERED = 2
 
   !</constantblock>
@@ -127,6 +140,13 @@ MODULE storage
 
   ! How many bytes has a double precision real?
   INTEGER :: ST_DOUBLE2BYTES = DP
+  
+  ! How many bytes has a logical?
+  INTEGER :: ST_LOGICAL2BYTES = I32
+  
+  ! How many bytes has a character?
+  ! Note: We are not 100% sure, but this may differ on other architectures... O_o
+  INTEGER :: ST_CHAR2BYTES = 1
 
   !</constantblock>
   
@@ -158,22 +178,34 @@ MODULE storage
     REAL(DP) :: dmemBytes = 0.0_DP
     
     ! Pointer to 1D real array or NULL() if not assigned
-    REAL(SP), DIMENSION(:), POINTER       :: p_Fsingle1D   => NULL()
+    REAL(SP), DIMENSION(:), POINTER       :: p_Fsingle1D    => NULL()
 
     ! Pointer to 1D double precision array or NULL() if not assigned
-    REAL(DP), DIMENSION(:), POINTER       :: p_Ddouble1D   => NULL()
+    REAL(DP), DIMENSION(:), POINTER       :: p_Ddouble1D    => NULL()
 
     ! Pointer to 1D integer array or NULL() if not assigned
     INTEGER(I32), DIMENSION(:), POINTER   :: p_Iinteger1D   => NULL()
+    
+    ! Pointer to 1D logical array or NULL() if not assigned
+    LOGICAL, DIMENSION(:), POINTER        :: p_Blogical1D   => NULL()
+    
+    ! Pointer to 1D character array or NULL() if not assigned
+    CHARACTER, DIMENSION(:), POINTER      :: p_Schar1D      => NULL()
 
     ! Pointer to 2D real array or NULL() if not assigned
-    REAL(SP), DIMENSION(:,:), POINTER     :: p_Fsingle2D   => NULL()
+    REAL(SP), DIMENSION(:,:), POINTER     :: p_Fsingle2D    => NULL()
 
     ! Pointer to 2D double precision array or NULL() if not assigned
-    REAL(DP), DIMENSION(:,:), POINTER     :: p_Ddouble2D   => NULL()
+    REAL(DP), DIMENSION(:,:), POINTER     :: p_Ddouble2D    => NULL()
 
     ! Pointer to 2D integer array or NULL() if not assigned
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Iinteger2D  => NULL()
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Iinteger2D   => NULL()
+
+    ! Pointer to 2D logical array or NULL() if not assigned
+    LOGICAL, DIMENSION(:,:), POINTER        :: p_Blogical2D => NULL()
+    
+    ! Pointer to 2D character array or NULL() if not assigned
+    CHARACTER, DIMENSION(:,:), POINTER      :: p_Schar2D    => NULL()
 
   END TYPE
   
@@ -443,7 +475,7 @@ CONTAINS
   IF (rheap%ihandlesInUse .GE. rheap%nhandlesTotal) THEN
   
     ! All handles are in use. We have to modify our ring to accept more
-    ! andles.
+    ! handles.
     !
     ! At first, reallocate the descriptor-array and the queue-array with
     ! the new size.
@@ -526,9 +558,13 @@ CONTAINS
   NULLIFY(p_rnode%p_Fsingle1D)
   NULLIFY(p_rnode%p_Ddouble1D)
   NULLIFY(p_rnode%p_Iinteger1D)
+  NULLIFY(p_rnode%p_Blogical1D)
+  NULLIFY(p_rnode%p_Schar1D)
   NULLIFY(p_rnode%p_Fsingle2D)
   NULLIFY(p_rnode%p_Ddouble2D)
   NULLIFY(p_rnode%p_Iinteger2D)
+  NULLIFY(p_rnode%p_Blogical2D)
+  NULLIFY(p_rnode%p_Schar2D)
   
   ! Handle ihandle is available now - put it to the list of available handles.
   rheap%p_ilastFreeHandle = MOD(rheap%p_ilastFreeHandle,rheap%nhandlesTotal) + 1
@@ -588,6 +624,10 @@ CONTAINS
             rstorageNode%p_Ddouble1D(istartIndex:istopIndex) = 0.0_DP
           CASE (ST_INT)
             rstorageNode%p_Iinteger1D(istartIndex:istopIndex) = 0_I32
+          CASE (ST_LOGICAL)
+            rstorageNode%p_Blogical1D(istartIndex:istopIndex) = .FALSE.
+          CASE (ST_CHAR)
+            rstorageNode%p_Schar1D(istartIndex:istopIndex) = ACHAR(0)
           END SELECT
         ELSE
           SELECT CASE (rstorageNode%idataType)
@@ -597,6 +637,10 @@ CONTAINS
             rstorageNode%p_Ddouble1D(istartIndex:) = 0.0_DP
           CASE (ST_INT)
             rstorageNode%p_Iinteger1D(istartIndex:) = 0_I32
+          CASE (ST_LOGICAL)
+            rstorageNode%p_Blogical1D(istartIndex:) = .FALSE.
+          CASE (ST_CHAR)
+            rstorageNode%p_Schar1D(istartIndex:) = ACHAR(0)
           END SELECT
         END IF
 
@@ -616,6 +660,12 @@ CONTAINS
             DO iorder=istartIndex,istopIndex
               rstorageNode%p_Iinteger1D(iorder) = INT(iorder,I32)
             END DO
+          CASE (ST_LOGICAL)
+            PRINT *, "Error: Logical array can not be initialised with ST_NEWBLOCK_ORDERED !"
+            STOP
+          CASE (ST_CHAR)
+            PRINT *, "Error: Character array can not be initialised with ST_NEWBLOCK_ORDERED !"
+            STOP
           END SELECT
         ELSE
           SELECT CASE (rstorageNode%idataType)
@@ -631,6 +681,12 @@ CONTAINS
             DO iorder=istartIndex,UBOUND(rstorageNode%p_Iinteger1D,1)
               rstorageNode%p_Iinteger1D(iorder) = INT(iorder,I32)
             END DO
+          CASE (ST_LOGICAL)
+            PRINT *, "Error: Logical array can not be initialised with ST_NEWBLOCK_ORDERED !"
+            STOP
+          CASE (ST_CHAR)
+            PRINT *, "Error: Character array can not be initialised with ST_NEWBLOCK_ORDERED !"
+            STOP
           END SELECT
         END IF
         
@@ -649,6 +705,10 @@ CONTAINS
             rstorageNode%p_Ddouble2D(:,istartIndex:istopIndex) = 0.0_DP
           CASE (ST_INT)
             rstorageNode%p_Iinteger2D(:,istartIndex:istopIndex) = 0_I32
+          CASE (ST_LOGICAL)
+            rstorageNode%p_Blogical2D(:,istartIndex:istopIndex) = .FALSE.
+          CASE (ST_CHAR)
+            rstorageNode%p_Schar2D(:,istartIndex:istopIndex) = ACHAR(0)
           END SELECT
         ELSE
           SELECT CASE (rstorageNode%idataType)
@@ -658,6 +718,10 @@ CONTAINS
             rstorageNode%p_Ddouble2D(:,istartIndex:) = 0.0_DP
           CASE (ST_INT)
             rstorageNode%p_Iinteger2D(:,istartIndex:) = 0_I32
+          CASE (ST_LOGICAL)
+            rstorageNode%p_Blogical2D(:,istartIndex:) = .FALSE.
+          CASE (ST_CHAR)
+            rstorageNode%p_Schar2D(:,istartIndex:) = ACHAR(0)
           END SELECT
         END IF
 
@@ -754,7 +818,7 @@ CONTAINS
   !requested storage size
   INTEGER(I32), INTENT(IN) :: isize
 
-  !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
   INTEGER, INTENT(IN) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
@@ -821,6 +885,12 @@ CONTAINS
   CASE (ST_INT)
     ALLOCATE(p_rnode%p_Iinteger1D(isize))
     p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES)
+  CASE (ST_LOGICAL)
+    ALLOCATE(p_rnode%p_Blogical1D(isize))
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_LOGICAL2BYTES)
+  CASE (ST_CHAR)
+    ALLOCATE(p_rnode%p_Schar1D(isize))
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
     STOP
@@ -860,7 +930,7 @@ CONTAINS
   !requested upper bound
   INTEGER(I32), INTENT(IN) :: iubound
 
-  !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
   INTEGER, INTENT(IN) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
@@ -929,6 +999,12 @@ CONTAINS
   CASE (ST_INT)
     ALLOCATE(p_rnode%p_Iinteger1D(ilbound:iubound))
     p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES)
+  CASE (ST_LOGICAL)
+    ALLOCATE(p_rnode%p_Blogical1D(ilbound:iubound))
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_LOGICAL2BYTES)
+  CASE (ST_CHAR)
+    ALLOCATE(p_rnode%p_Schar1D(ilbound:iubound))
+    p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
     STOP
@@ -965,7 +1041,7 @@ CONTAINS
   !requested storage size for 1st and 2nd dimension
   INTEGER(I32), DIMENSION(2), INTENT(IN) :: Isize
 
-  !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
   INTEGER, INTENT(IN) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
@@ -1032,6 +1108,12 @@ CONTAINS
   CASE (ST_INT)
     ALLOCATE(p_rnode%p_Iinteger2D(Isize(1),Isize(2)))
     p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_INT2BYTES)
+  CASE (ST_LOGICAL)
+    ALLOCATE(p_rnode%p_Blogical2D(Isize(1),Isize(2)))
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_LOGICAL2BYTES)
+  CASE (ST_CHAR)
+    ALLOCATE(p_rnode%p_Schar2D(Isize(1),Isize(2)))
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
     STOP
@@ -1071,7 +1153,7 @@ CONTAINS
   !requested upper bounds for 1st and 2nd dimension
   INTEGER(I32), DIMENSION(2), INTENT(IN) :: Iubound
 
-  !data type (ST_SINGLE,ST_DOUBLE,ST_INT)
+  !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
   INTEGER, INTENT(IN) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
@@ -1140,6 +1222,12 @@ CONTAINS
   CASE (ST_INT)
     ALLOCATE(p_rnode%p_Iinteger2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
     p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_INT2BYTES)
+  CASE (ST_LOGICAL)
+    ALLOCATE(p_rnode%p_Blogical2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_LOGICAL2BYTES)
+  CASE (ST_CHAR)
+    ALLOCATE(p_rnode%p_Schar2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
+    p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
     STOP
@@ -1211,9 +1299,13 @@ CONTAINS
   IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
   IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
   IF (ASSOCIATED(p_rnode%p_Iinteger1D)) DEALLOCATE(p_rnode%p_Iinteger1D)
+  IF (ASSOCIATED(p_rnode%p_Blogical1D)) DEALLOCATE(p_rnode%p_Blogical1D)
+  IF (ASSOCIATED(p_rnode%p_Schar1D))    DEALLOCATE(p_rnode%p_Schar1D)
   IF (ASSOCIATED(p_rnode%p_Fsingle2D))  DEALLOCATE(p_rnode%p_Fsingle2D)
   IF (ASSOCIATED(p_rnode%p_Ddouble2D))  DEALLOCATE(p_rnode%p_Ddouble2D)
   IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
+  IF (ASSOCIATED(p_rnode%p_Blogical2D)) DEALLOCATE(p_rnode%p_Blogical2D)
+  IF (ASSOCIATED(p_rnode%p_Schar2D))    DEALLOCATE(p_rnode%p_Schar2D)
   
   ! Release the handle itself.
   CALL storage_releasehandle (ihandle,p_rheap)
@@ -1286,6 +1378,10 @@ CONTAINS
       p_rnode%p_Ddouble1D = 0.0_DP
     CASE (ST_INT)
       p_rnode%p_Iinteger1D = 0_I32
+    CASE (ST_LOGICAL)
+      p_rnode%p_Blogical1D = .FALSE.
+    CASE (ST_CHAR)
+      p_rnode%p_Schar1D = ACHAR(0)
     END SELECT
   CASE (2)
     SELECT CASE (p_rnode%idataType)
@@ -1295,6 +1391,10 @@ CONTAINS
       p_rnode%p_Ddouble2D = 0.0_DP
     CASE (ST_INT)
       p_rnode%p_Iinteger2D = 0_I32
+    CASE (ST_LOGICAL)
+      p_rnode%p_Blogical2D = .FALSE.
+    CASE (ST_CHAR)
+      p_rnode%p_Schar2D = ACHAR(0)
     END SELECT
   CASE DEFAULT
     PRINT *,'storage_clear: invalid dimension.'
@@ -1373,6 +1473,10 @@ CONTAINS
     isize = SIZE(p_rnode%p_Ddouble1D)
   CASE (ST_INT)
     isize = SIZE(p_rnode%p_Iinteger1D)
+  CASE (ST_LOGICAL)
+    isize = SIZE(p_rnode%p_Blogical1D)
+  CASE (ST_CHAR)
+    isize = SIZE(p_rnode%p_Schar1D)
   CASE DEFAULT
     PRINT *,'Error in storage_getsize1D: Invalid data type!' 
     STOP
@@ -1450,6 +1554,10 @@ CONTAINS
     Isize = SHAPE(p_rnode%p_Ddouble2D)
   CASE (ST_INT)
     Isize = SHAPE(p_rnode%p_Iinteger2D)
+  CASE (ST_LOGICAL)
+    Isize = SHAPE(p_rnode%p_Blogical2D)
+  CASE (ST_CHAR)
+    Isize = SHAPE(p_rnode%p_Schar2D)
   CASE DEFAULT
     PRINT *,'Error in storage_getsize2D: Invalid data type!' 
     STOP
@@ -1633,6 +1741,7 @@ CONTAINS
   END IF
   
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
+
     PRINT *,'storage_getbase_double: Wrong data format!'
     STOP
   END IF
@@ -1640,6 +1749,130 @@ CONTAINS
   ! Get the pointer  
   
   p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_logical (ihandle, p_Larray, rheap)
+  
+!<description>
+  
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array.
+  
+!</description>
+  
+!<input>
+  
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+  
+!<output>
+  
+  ! The pointer associated to the handle.
+  LOGICAL, DIMENSION(:), POINTER :: p_Larray 
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_logical: Wrong handle'
+    STOP
+  END IF
+  
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_LOGICAL) THEN
+    PRINT *,'storage_getbase_logical: Wrong data format!'
+    STOP
+  END IF
+  
+  ! Get the pointer  
+  
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_char (ihandle, p_Carray, rheap)
+  
+!<description>
+  
+  ! This routine returns the pointer to a handle associated to a
+  ! character array.
+  
+!</description>
+  
+!<input>
+  
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+  
+!<output>
+  
+  ! The pointer associated to the handle.
+  CHARACTER, DIMENSION(:), POINTER :: p_Carray
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_char: Wrong handle'
+    STOP
+  END IF
+  
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_CHAR) THEN
+    PRINT *,'storage_getbase_char: Wrong data format!'
+    STOP
+  END IF
+  
+  ! Get the pointer  
+  
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D
   
   END SUBROUTINE
 
@@ -1813,6 +2046,120 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
+
+  SUBROUTINE storage_getbase_logical2D (ihandle, p_Larray, rheap)
+  
+!<description>
+  
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array.
+  
+!</description>
+  
+!<input>
+  
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+  
+!<output>
+  
+  ! The pointer associated to the handle.
+  LOGICAL, DIMENSION(:,:), POINTER :: p_Larray
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_logical2D: Wrong handle'
+    STOP
+  END IF
+  
+  ! Get the pointer  
+  
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_char2D (ihandle, p_Carray, rheap)
+  
+!<description>
+  
+  ! This routine returns the pointer to a handle associated to a
+  ! character array.
+  
+!</description>
+  
+!<input>
+  
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+  
+!<output>
+  
+  ! The pointer associated to the handle.
+  CHARACTER, DIMENSION(:,:), POINTER :: p_Carray
+  
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  
+  ! Pointer to the heap 
+  TYPE(t_storageBlock), POINTER :: p_rheap
+  
+  ! Get the heap to use - local or global one.
+  
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_char2D: Wrong handle'
+    STOP
+  END IF
+  
+  ! Get the pointer  
+  
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
   
   SUBROUTINE storage_copy(h_source, h_dest, rheap)
   
@@ -1886,6 +2233,14 @@ CONTAINS
           CALL storage_new ('storage_copy',p_rsource%sname,&
                             INT(SIZE(p_rsource%p_Iinteger1D),I32),&
                             ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_LOGICAL)
+          CALL storage_new ('storage_copy',p_rsource%sname,&
+                            INT(SIZE(p_rsource%p_Blogical1D),I32),&
+                            ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_CHAR)
+          CALL storage_new ('storage_copy',p_rsource%sname,&
+                            INT(SIZE(p_rsource%p_Schar1D),I32),&
+                            ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         END SELECT
       CASE (2) 
         SELECT CASE (p_rsource%IdataType)
@@ -1901,6 +2256,14 @@ CONTAINS
           Isize = UBOUND(p_rsource%p_Iinteger2D)      ! =SIZE(...) here
           CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
                             ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_LOGICAL)
+          Isize = UBOUND(p_rsource%p_Blogical2D)      ! =SIZE(...) here
+          CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+                            ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+        CASE (ST_CHAR)
+          Isize = UBOUND(p_rsource%p_Schar2D)      ! =SIZE(...) here
+          CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+                            ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         END SELECT
       END SELECT
       
@@ -1947,6 +2310,29 @@ CONTAINS
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
         END IF
+        
+      CASE (ST_LOGICAL)
+        IF (p_rdest%idataType .EQ. ST_LOGICAL) THEN
+          ! Copy by hand
+          DO i=1,SIZE(p_rsource%p_Blogical1D)
+            p_rdest%p_Blogical1D(i) = p_rsource%p_Blogical1D(i)
+          END DO
+        ELSE
+          PRINT *,'storage_copy: Unsupported data type combination'
+          STOP
+        END IF
+        
+      CASE (ST_CHAR)
+        IF (p_rdest%idataType .EQ. ST_CHAR) THEN
+          ! Copy by hand
+          DO i=1,SIZE(p_rsource%p_Schar1D)
+            p_rdest%p_Schar1D(i) = p_rsource%p_Schar1D(i)
+          END DO
+        ELSE
+          PRINT *,'storage_copy: Unsupported data type combination'
+          STOP
+        END IF
+
       CASE DEFAULT
         PRINT *,'storage_copy: Unknown data type'
         STOP
@@ -1982,9 +2368,13 @@ CONTAINS
           ! Copy by hand
           DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
             DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
-              p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Fsingle2D(i,j)
+              p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Ddouble2D(i,j)
             END DO
           END DO
+          
+        CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
+          PRINT *,'storage_copy: Unsupported data type combination'
+          STOP
           
         END SELECT
         
@@ -2019,6 +2409,12 @@ CONTAINS
               p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Fsingle2D(i,j)
             END DO
           END DO
+        
+        ! Might be ST_LOGICAL or ST_CHAR
+        CASE DEFAULT 
+          PRINT *,'storage_copy: Unsupported data type combination'
+          STOP
+
         END SELECT
 
       CASE (ST_INT)
@@ -2039,6 +2435,42 @@ CONTAINS
           END DO
         END DO
 
+      CASE (ST_LOGICAL)
+        IF ((SIZE(p_rsource%p_Blogical2D,1) .NE. SIZE(p_rdest%p_Blogical2D,1)) .OR.&
+            (SIZE(p_rsource%p_Blogical2D,2) .NE. SIZE(p_rdest%p_Blogical2D,2))) THEN
+          PRINT *,'storage_copy: Structure different!'
+          STOP
+        END IF
+        IF (p_rdest%idataType .NE. ST_LOGICAL) THEN
+          PRINT *,'storage_copy: unsupported data type combination'
+          STOP
+        END IF
+        
+        ! Copy by hand
+        DO j=1,SIZE(p_rsource%p_Blogical2D,2)
+          DO i=1,SIZE(p_rsource%p_Blogical2D,1)
+            p_rdest%p_Blogical2D(i,j) = p_rsource%p_Blogical2D(i,j)
+          END DO
+        END DO
+
+      CASE (ST_CHAR)
+        IF ((SIZE(p_rsource%p_Schar2D,1) .NE. SIZE(p_rdest%p_Schar2D,1)) .OR.&
+            (SIZE(p_rsource%p_Schar2D,2) .NE. SIZE(p_rdest%p_Schar2D,2))) THEN
+          PRINT *,'storage_copy: Structure different!'
+          STOP
+        END IF
+        IF (p_rdest%idataType .NE. ST_CHAR) THEN
+          PRINT *,'storage_copy: unsupported data type combination'
+          STOP
+        END IF
+        
+        ! Copy by hand
+        DO j=1,SIZE(p_rsource%p_Schar2D,2)
+          DO i=1,SIZE(p_rsource%p_Schar2D,1)
+            p_rdest%p_Schar2D(i,j) = p_rsource%p_Schar2D(i,j)
+          END DO
+        END DO
+
       CASE DEFAULT
         PRINT *,'storage_copy: Unknown data type'
         STOP
@@ -2051,7 +2483,8 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE storage_copy_explicit(h_source, h_dest, istart_source, istart_dest, ilength, rheap)
+  SUBROUTINE storage_copy_explicit(h_source, h_dest, istart_source, &
+             istart_dest, ilength, rheap)
   
 !<description>
   ! This routine copies the information of one array to another.
@@ -2143,6 +2576,14 @@ CONTAINS
          CALL storage_new ('storage_copy_explicit',p_rsource%sname,&
               INT(SIZE(p_rsource%p_Iinteger1D),I32),&
               ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_LOGICAL)
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,&
+              INT(SIZE(p_rsource%p_Blogical1D),I32),&
+              ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_CHAR)
+         CALL storage_new ('storage_copy_explicit',p_rsource%sname,&
+              INT(SIZE(p_rsource%p_Schar1D),I32),&
+              ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       END SELECT
       
    END IF
@@ -2167,7 +2608,8 @@ CONTAINS
           END IF  
           ! Copy by hand
           DO i=1,ilength
-            p_rdest%p_Ddouble1D(istart_dest+i-1) = p_rsource%p_Ddouble1D(istart_source+i-1)
+            p_rdest%p_Ddouble1D(istart_dest+i-1) = &
+              p_rsource%p_Ddouble1D(istart_source+i-1)
           END DO
        CASE (ST_SINGLE)
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Ddouble1D) .OR. &
@@ -2177,7 +2619,8 @@ CONTAINS
           END IF  
           ! Copy by hand
           DO i=1,ilength
-            p_rdest%p_Fsingle1D(istart_dest+i-1) = p_rsource%p_Ddouble1D(istart_source+i-1)
+            p_rdest%p_Fsingle1D(istart_dest+i-1) = &
+              p_rsource%p_Ddouble1D(istart_source+i-1)
           END DO
        CASE DEFAULT
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
@@ -2194,7 +2637,8 @@ CONTAINS
           END IF
           ! Copy by hand
           DO i=1,ilength
-             p_rdest%p_Ddouble1D(istart_dest+i-1) = p_rsource%p_Fsingle1D(istart_source+i-1)
+             p_rdest%p_Ddouble1D(istart_dest+i-1) = &
+               p_rsource%p_Fsingle1D(istart_source+i-1)
           END DO
        CASE (ST_SINGLE)
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Fsingle1D) .OR. &
@@ -2204,7 +2648,8 @@ CONTAINS
           END IF
           ! Copy by hand
           DO i=1,ilength
-             p_rdest%p_Fsingle1D(istart_dest+i-1) = p_rsource%p_Fsingle1D(istart_source+i-1)
+             p_rdest%p_Fsingle1D(istart_dest+i-1) = &
+               p_rsource%p_Fsingle1D(istart_source+i-1)
           END DO
        CASE DEFAULT
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
@@ -2226,6 +2671,39 @@ CONTAINS
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
           STOP
        END IF
+
+    CASE (ST_LOGICAL)
+       IF (p_rdest%idataType .EQ. ST_LOGICAL) THEN
+          IF (istart_source+ilength-1 > SIZE(p_rsource%p_Blogical1D) .OR. &
+               istart_dest+ilength-1 > SIZE(p_rdest%p_Blogical1D)) THEN
+             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO i=1,ilength
+             p_rdest%p_Blogical1D(istart_dest+i-1) = p_rsource%p_Blogical1D(istart_source+i-1)
+          END DO
+       ELSE
+          PRINT *,'storage_copy_explicit: Unsupported data type combination'
+          STOP
+       END IF
+
+    CASE (ST_CHAR)
+       IF (p_rdest%idataType .EQ. ST_CHAR) THEN
+          IF (istart_source+ilength-1 > SIZE(p_rsource%p_Schar1D) .OR. &
+               istart_dest+ilength-1 > SIZE(p_rdest%p_Schar1D)) THEN
+             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
+             STOP
+          END IF
+          ! Copy by hand
+          DO i=1,ilength
+             p_rdest%p_Schar1D(istart_dest+i-1) = p_rsource%p_Schar1D(istart_source+i-1)
+          END DO
+       ELSE
+          PRINT *,'storage_copy_explicit: Unsupported data type combination'
+          STOP
+       END IF
+
     CASE DEFAULT
        PRINT *,'storage_copy_explicit: Unknown data type'
        STOP
@@ -2330,6 +2808,14 @@ CONTAINS
          Isize = UBOUND(p_rsource%p_Iinteger2D)      ! =SIZE(...) here
          CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
               ST_INT, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_LOGICAL)
+         Isize = UBOUND(p_rsource%p_Blogical2D)      ! =SIZE(...) here
+         CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+              ST_LOGICAL, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
+      CASE (ST_CHAR)
+         Isize = UBOUND(p_rsource%p_Schar2D)      ! =SIZE(...) here
+         CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
+              ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       END SELECT
       
    END IF
@@ -2394,6 +2880,10 @@ CONTAINS
              END DO
           END DO
           
+       CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
+          PRINT *,'storage_copy_explicit2D: Unsupported data type combination'
+          STOP
+          
        END SELECT
        
     CASE (ST_SINGLE)     
@@ -2445,11 +2935,16 @@ CONTAINS
                      p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
              END DO
           END DO
+
+       CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
+          PRINT *,'storage_copy_explicit2D: Unsupported data type combination'
+          STOP
+
        END SELECT
        
     CASE (ST_INT)
        IF (p_rdest%idataType .NE. ST_INT) THEN
-          PRINT *,'storage_copy: unsupported data type combination'
+          PRINT *,'storage_copy_explicit2D: unsupported data type combination'
           STOP
        END IF
        IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Iinteger2D,1) .OR. &
@@ -2468,6 +2963,48 @@ CONTAINS
           END DO
        END DO
        
+    CASE (ST_LOGICAL)
+       IF (p_rdest%idataType .NE. ST_LOGICAL) THEN
+          PRINT *,'storage_copy_explicit2D: unsupported data type combination'
+          STOP
+       END IF
+       IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Blogical2D,1) .OR. &
+            Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Blogical2D,2) .OR. &
+            Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Blogical2D,1) .OR. &
+            Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Blogical2D,2)) THEN
+          PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+          STOP
+       END IF
+
+       ! Copy by hand
+       DO j=1,Ilength(2)
+          DO i=1,Ilength(1)
+             p_rdest%p_Blogical2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                  p_rsource%p_Blogical2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          END DO
+       END DO
+
+    CASE (ST_CHAR)
+       IF (p_rdest%idataType .NE. ST_CHAR) THEN
+          PRINT *,'storage_copy_explicit2D: unsupported data type combination'
+          STOP
+       END IF
+       IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Schar2D,1) .OR. &
+            Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Schar2D,2) .OR. &
+            Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Schar2D,1) .OR. &
+            Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Schar2D,2)) THEN
+          PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
+          STOP
+       END IF
+
+       ! Copy by hand
+       DO j=1,Ilength(2)
+          DO i=1,Ilength(1)
+             p_rdest%p_Schar2D(Istart_dest(1)+i-1,Istart_dest(2)+j-1) = &
+                  p_rsource%p_Schar2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
+          END DO
+       END DO
+
     CASE DEFAULT
        PRINT *,'storage_copy: Unknown data type'
        STOP
@@ -2531,7 +3068,7 @@ CONTAINS
               CALL output_line ( &
                    'Handle ' // TRIM(sys_siL(i,10)) // ', 2D, Length=' // &
                    TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),10)) // &
-                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,10)) // &
+                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,10)) //&
                    ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             END IF
           END IF
@@ -2553,6 +3090,7 @@ CONTAINS
                       TRIM(sys_siL(SIZE(p_rheap%p_IfreeHandles),10)))
     CALL output_line ('Maximum number of handles used:  '//&
                       TRIM(sys_siL(p_rheap%nhandlesInUseMax,10)))
+
     IF (p_rheap%dtotalMem .GT. REAL(HUGE(0),DP)) THEN
       CALL output_line ('Maximum used memory (bytes):     '//&
                         TRIM(sys_sdL(p_rheap%dtotalMemMax,0)))
@@ -2619,6 +3157,10 @@ CONTAINS
     idatatype = ST_DOUBLE
   CASE (ST_INT)
     idatatype = ST_INT
+  CASE (ST_LOGICAL)
+    idatatype = ST_LOGICAL
+  CASE (ST_CHAR)
+    idatatype = ST_CHAR
   CASE (ST_NOHANDLE)
     PRINT *,'Error in storage_getdatatype: Handle invalid!'
     PRINT *,'Handle number: ',ihandle
@@ -2804,6 +3346,10 @@ CONTAINS
         isizeOld = SIZE(p_rnode%p_Ddouble1D)
       CASE (ST_INT)
         isizeOld = SIZE(p_rnode%p_Iinteger1D)
+      CASE (ST_LOGICAL)
+        isizeOld = SIZE(p_rnode%p_Blogical1D)
+      CASE (ST_CHAR)
+        isizeOld = SIZE(p_rnode%p_Schar1D)
       END SELECT
       
       ! Do we really have to change anything?
@@ -2822,6 +3368,12 @@ CONTAINS
       CASE (ST_INT)
         ALLOCATE(rstorageNode%p_Iinteger1D(isize))
         rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE (ST_LOGICAL)
+        ALLOCATE(rstorageNode%p_Blogical1D(isize))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_LOGICAL2BYTES,DP)
+      CASE (ST_CHAR)
+        ALLOCATE(rstorageNode%p_Schar1D(isize))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
         STOP
@@ -2843,6 +3395,16 @@ CONTAINS
         CASE (ST_INT)
           CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(1:isizeCopy),&
                                   rstorageNode%p_Iinteger1D(1:isizeCopy))
+        CASE (ST_LOGICAL)
+          ! Copy by hand
+          DO i = 1, isizeCopy
+            rstorageNode%p_Blogical1D(i) = p_rnode%p_Blogical1D(i)
+          END DO
+        CASE (ST_CHAR)
+          ! Copy by hand
+          DO i = 1, isizeCopy
+            rstorageNode%p_Schar1D(i) = p_rnode%p_Schar1D(i)
+          END DO
         END SELECT
       END IF
 
@@ -2856,6 +3418,10 @@ CONTAINS
         Isize2Dold = SHAPE(p_rnode%p_Ddouble2D)
       CASE (ST_INT)
         Isize2Dold = SHAPE(p_rnode%p_Iinteger2D)
+      CASE (ST_LOGICAL)
+        Isize2Dold = SHAPE(p_rnode%p_Blogical2D)
+      CASE (ST_CHAR)
+        Isize2Dold = SHAPE(p_rnode%p_Schar2D)
       END SELECT
       
       ! Do we really have to change anything?
@@ -2876,6 +3442,14 @@ CONTAINS
         ALLOCATE(rstorageNode%p_Iinteger2D(Isize2Dold(1),isize))
         rstorageNode%dmemBytes = &
              REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE (ST_LOGICAL)
+        ALLOCATE(rstorageNode%p_Blogical2D(Isize2Dold(1),isize))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_LOGICAL2BYTES,DP)
+      CASE (ST_CHAR)
+        ALLOCATE(rstorageNode%p_Schar2D(Isize2Dold(1),isize))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
         STOP
@@ -2915,6 +3489,21 @@ CONTAINS
             END DO
           END DO
         
+        CASE (ST_LOGICAL)
+          ! Copy by hand
+          DO j=1,MIN(SIZE(rstorageNode%p_Blogical2D,2),Isize2DOld(2))
+            DO i=1,SIZE(rstorageNode%p_Blogical2D,1)
+              rstorageNode%p_Blogical2D(i,j) = p_rnode%p_Blogical2D(i,j)
+            END DO
+          END DO
+
+        CASE (ST_CHAR)
+          ! Copy by hand
+          DO j=1,MIN(SIZE(rstorageNode%p_Schar2D,2),Isize2DOld(2))
+            DO i=1,SIZE(rstorageNode%p_Schar2D,1)
+              rstorageNode%p_Schar2D(i,j) = p_rnode%p_Schar2D(i,j)
+            END DO
+          END DO
         END SELECT
         
       END IF
@@ -2934,9 +3523,13 @@ CONTAINS
     IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
     IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
     IF (ASSOCIATED(p_rnode%p_Iinteger1D)) DEALLOCATE(p_rnode%p_Iinteger1D)
+    IF (ASSOCIATED(p_rnode%p_Blogical1D)) DEALLOCATE(p_rnode%p_Blogical1D)
+    IF (ASSOCIATED(p_rnode%p_Schar1D))    DEALLOCATE(p_rnode%p_Schar1D)
     IF (ASSOCIATED(p_rnode%p_Fsingle2D))  DEALLOCATE(p_rnode%p_Fsingle2D)
     IF (ASSOCIATED(p_rnode%p_Ddouble2D))  DEALLOCATE(p_rnode%p_Ddouble2D)
     IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
+    IF (ASSOCIATED(p_rnode%p_Blogical2D)) DEALLOCATE(p_rnode%p_Blogical2D)
+    IF (ASSOCIATED(p_rnode%p_Schar2D))    DEALLOCATE(p_rnode%p_Schar2D)
     
     ! Correct the memory statistics
     p_rheap%dtotalMem = p_rheap%dtotalMem &
@@ -2953,7 +3546,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_reallocFixed (scall, ilbound, iubound, ihandle, cinitNewBlock, bcopy, rheap)
+  SUBROUTINE storage_reallocFixed (scall, ilbound, iubound, ihandle, &
+             cinitNewBlock, bcopy, rheap)
 
 !<description>
   ! This routine reallocates an existing memory block wih a new desired
@@ -3093,6 +3687,14 @@ CONTAINS
         isizeOld   = SIZE(p_rnode%p_Iinteger1D)
         ilboundOld = LBOUND(p_rnode%p_Iinteger1D,1)
         iuboundOld = UBOUND(p_rnode%p_Iinteger1D,1)
+      CASE (ST_LOGICAL)
+        isizeOld   = SIZE(p_rnode%p_Blogical1D)
+        ilboundOld = LBOUND(p_rnode%p_Blogical1D,1)
+        iuboundOld = UBOUND(p_rnode%p_Blogical1D,1)
+      CASE (ST_CHAR)
+        isizeOld   = SIZE(p_rnode%p_Schar1D)
+        ilboundOld = LBOUND(p_rnode%p_Schar1D,1)
+        iuboundOld = UBOUND(p_rnode%p_Schar1D,1)
       END SELECT
       
       ! Do we really have to change anything?
@@ -3112,6 +3714,12 @@ CONTAINS
       CASE (ST_INT)
         ALLOCATE(rstorageNode%p_Iinteger1D(ilbound:iubound))
         rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE (ST_LOGICAL)
+        ALLOCATE(rstorageNode%p_Blogical1D(ilbound:iubound))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_LOGICAL2BYTES,DP)
+      CASE (ST_CHAR)
+        ALLOCATE(rstorageNode%p_Schar1D(ilbound:iubound))
+        rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
         STOP
@@ -3136,6 +3744,16 @@ CONTAINS
         CASE (ST_INT)
           CALL lalg_copyVectorInt (p_rnode%p_Iinteger1D(ilboundCopy:iuboundCopy),&
                                   rstorageNode%p_Iinteger1D(ilboundCopy:iuboundCopy))
+        CASE (ST_LOGICAL)
+          ! Copy by hand
+          DO i = ilboundCopy, iuboundCopy
+            rstorageNode%p_Blogical1D(i) = p_rnode%p_Blogical1D(i)
+          END DO
+        CASE (ST_CHAR)
+          ! Copy by hand
+          DO i = ilboundCopy, iuboundCopy
+            rstorageNode%p_Schar1D(i) = p_rnode%p_Schar1D(i)
+          END DO
         END SELECT
       END IF
 
@@ -3155,6 +3773,14 @@ CONTAINS
         Isize2Dold = SHAPE(p_rnode%p_Iinteger2D)
         ilbound2Dold = LBOUND(p_rnode%p_Iinteger2D)
         iubound2Dold = UBOUND(p_rnode%p_Iinteger2D)
+      CASE (ST_LOGICAL)
+        Isize2Dold = SHAPE(p_rnode%p_Blogical2D)
+        ilbound2Dold = LBOUND(p_rnode%p_Blogical2D)
+        iubound2Dold = UBOUND(p_rnode%p_Blogical2D)
+      CASE (ST_CHAR)
+        Isize2Dold = SHAPE(p_rnode%p_Schar2D)
+        ilbound2Dold = LBOUND(p_rnode%p_Schar2D)
+        iubound2Dold = UBOUND(p_rnode%p_Schar2D)
       END SELECT
       
       ! Do we really have to change anything?
@@ -3182,6 +3808,18 @@ CONTAINS
             ilbound:iubound))
         rstorageNode%dmemBytes = &
              REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_INT2BYTES,DP)
+      CASE (ST_LOGICAL)
+        ALLOCATE(rstorageNode%p_Blogical2D(&
+            Ilbound2Dold(1):Iubound2Dold(1),&
+            ilbound:iubound))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_LOGICAL2BYTES,DP)
+      CASE (ST_CHAR)
+        ALLOCATE(rstorageNode%p_Schar2D(&
+            Ilbound2Dold(1):Iubound2Dold(1),&
+            ilbound:iubound))
+        rstorageNode%dmemBytes = &
+             REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
         STOP
@@ -3224,6 +3862,21 @@ CONTAINS
             END DO
           END DO
         
+        CASE (ST_LOGICAL)
+          ! Copy by hand
+          DO j=MAX(ilbound,Ilbound2Dold(2)),MIN(iubound,Iubound2Dold(2))
+            DO i=Ilbound2DOld(1),Iubound2Dold(1)
+              rstorageNode%p_Blogical2D(i,j) = p_rnode%p_Blogical2D(i,j)
+            END DO
+          END DO
+
+        CASE (ST_CHAR)
+          ! Copy by hand
+          DO j=MAX(ilbound,Ilbound2Dold(2)),MIN(iubound,Iubound2Dold(2))
+            DO i=Ilbound2DOld(1),Iubound2Dold(1)
+              rstorageNode%p_Schar2D(i,j) = p_rnode%p_Schar2D(i,j)
+            END DO
+          END DO
         END SELECT
         
       END IF
@@ -3243,9 +3896,13 @@ CONTAINS
     IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
     IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
     IF (ASSOCIATED(p_rnode%p_Iinteger1D)) DEALLOCATE(p_rnode%p_Iinteger1D)
+    IF (ASSOCIATED(p_rnode%p_Blogical1D)) DEALLOCATE(p_rnode%p_Blogical1D)
+    IF (ASSOCIATED(p_rnode%p_Schar1D))    DEALLOCATE(p_rnode%p_Schar1D)
     IF (ASSOCIATED(p_rnode%p_Fsingle2D))  DEALLOCATE(p_rnode%p_Fsingle2D)
     IF (ASSOCIATED(p_rnode%p_Ddouble2D))  DEALLOCATE(p_rnode%p_Ddouble2D)
     IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
+    IF (ASSOCIATED(p_rnode%p_Blogical2D)) DEALLOCATE(p_rnode%p_Blogical2D)
+    IF (ASSOCIATED(p_rnode%p_Schar2D))    DEALLOCATE(p_rnode%p_Schar2D)
     
     ! Correct the memory statistics
     p_rheap%dtotalMem = p_rheap%dtotalMem &
