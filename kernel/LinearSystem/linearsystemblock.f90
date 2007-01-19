@@ -1711,8 +1711,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest
-  REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
+  REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest, p_Ddest2
+  REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest, p_Sdest2
   
   ! The vectors must be compatible to each other.
   CALL lsysbl_isVectorCompatible (rx,ry)
@@ -1734,6 +1734,8 @@ CONTAINS
       CALL lsysbl_getbase_double(ry,p_Ddest)
     ELSE
       CALL lsysbl_getbase_double(rdest,p_Ddest)
+      CALL lsysbl_getbase_double(ry,p_Ddest2)
+      CALL lalg_copyVectorDble (p_Ddest2,p_Ddest)
     END IF
     
     CALL lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
@@ -1745,6 +1747,8 @@ CONTAINS
       CALL lsysbl_getbase_single(ry,p_Sdest)
     ELSE
       CALL lsysbl_getbase_single(rdest,p_Sdest)
+      CALL lsysbl_getbase_single(ry,p_Sdest2)
+      CALL lalg_copyVectorSngl (p_Sdest2,p_Sdest)
     END IF
     
     CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,REAL(cx,SP),REAL(cy,SP))
@@ -2301,6 +2305,106 @@ CONTAINS
           -ABS(rvector%RvectorBlock(iblock)%isortStrategy))
     END DO
   END IF
+
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsysbl_synchroniseSortVecVec (rvectorSrc,rvectorDst,rtemp)
+  
+!<description>
+  ! Synchronises the sorting strategy of rvectorDest according to rvectorSrc:
+  ! If rvectorSrc is unsorted, rvectorDest will be unsorted (without changing
+  ! the attached sorting permutation).
+  ! If rvectorSrc is sorted differently to rvectorDest, rvectorDest is
+  ! sorted according to rvectorSrc.
+  ! Therefore if the routine is finished, rvectorDest 'looks like'
+  ! rvectorSrc according to the sorting strategy.
+!</description>
+
+!<input>
+  ! Source vector defining the sorting strategy.
+  TYPE(t_vectorBlock), INTENT(IN)               :: rvectorSrc
+!</input>
+
+!<inputoutput>
+  ! Destination vector; is resorted according to the sort strategy in rvectorSrc
+  ! or is unsorted, if rvectorSrc is unsorted.
+  ! Must have the same size as rvectorSrc.
+  TYPE(t_vectorBlock), INTENT(INOUT)            :: rvectorDst
+
+  ! A scalar temporary vector. Must be of the same data type as rvector.
+  ! Must be at least as large as the longest subvector in rvector.
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rtemp
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: iblock
+    
+    ! Loop over the blocks
+    DO iblock = 1,rvectorDst%nblocks
+      ! Synchronise every subvector
+      CALL lsyssc_synchroniseSortVecVec (rvectorSrc%RvectorBlock(iblock),&
+          rvectorDst%RvectorBlock(iblock),rtemp)
+    END DO
+
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsysbl_synchroniseSortMatVec (rmatrixSrc,rvectorDst,rtemp)
+  
+!<description>
+  ! Synchronises the sorting strategy of rvectorDest according to rmatrixSrc:
+  ! If rmatrixSrc is unsorted, rvectorDest will be unsorted (without changing
+  ! the attached sorting permutation).
+  ! If rmatrixSrc is sorted differently to rvectorDest, rvectorDest is
+  ! sorted according to rmatrixSrc.
+  ! Therefore if the routine is finished, rvectorDest is compatible to
+  ! rmatrixSrc according to the sorting strategy.
+!</description>
+
+!<input>
+  ! Source matrix defining the sorting strategy.
+  TYPE(t_matrixBlock), INTENT(IN)               :: rmatrixSrc
+!</input>
+
+!<inputoutput>
+  ! Destination vector; is resorted according to the sort strategy in rmatrixSrc
+  ! or is unsorted, if rmatrixSrc is unsorted.
+  ! Must have the same size (NEQ) as rmatrixSrc.
+  TYPE(t_vectorBlock), INTENT(INOUT)            :: rvectorDst
+
+  ! A temporary vector. Must be of the same data type as rvector.
+  ! Must be at least as large as rvectorDst.
+  TYPE(t_vectorScalar), INTENT(INOUT)            :: rtemp
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: i,j
+    
+    ! Loop over the columns of the block matrix
+    DO j=1,rmatrixSrc%ndiagBlocks
+      ! Loop through all rows in that column. Find the first matrix that can
+      ! provide us with a sorting strategy we can use.
+      ! We can assume that all submatrices in that matrix column have 
+      ! the same sorting strategy, otherwise something like matrix-vector
+      ! multiplication will quickly lead to a program failure...
+      DO i = 1,rmatrixSrc%ndiagBlocks
+        IF (rmatrixSrc%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+          CALL lsyssc_synchroniseSortMatVec (rmatrixSrc%RmatrixBlock(i,j),&
+              rvectorDst%RvectorBlock(i),rtemp)
+          ! Next column / subvector
+          EXIT
+        END IF
+      END DO
+    END DO
 
   END SUBROUTINE
 

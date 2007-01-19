@@ -11,12 +11,14 @@
 !# The module contains the following routines:
 !#
 !# 1.) mlprj_initProjectionDirect /
+!#     mlprj_initProjectionDiscr /
 !#     mlprj_initProjectionVec /
 !#     mlprj_initProjectionMat
 !#     -> Initialises a projection structure with values according to a
 !#        spatial discretisation.
-!#        Uses a discretisation structure, a (block) vector or a (block)
-!#        matrix on the fine/coarse grid as template.
+!#        Uses a discretisation structure, a (block) vector, a (block)
+!#        matrix on the fine/coarse grid or a block discretisation structure
+!#        as template.
 !#
 !# 2.) mlprj_doneProjection
 !#     -> Cleans up a projection structure.
@@ -271,6 +273,53 @@ CONTAINS
   ! In a later implementation, this might change if a special prolongation/
   ! restriction needs to precalculate a prolongation/restriction matrix.
     
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE mlprj_initProjectionDiscr (rprojection,rdiscretisation)
+  
+!<description>
+  ! This subroutine initialises an t_interlevelProjectionBlock with default
+  ! values for a given PDE system. This allows the interlevel-projection
+  ! routines to calculate constants that are necessary during a level
+  ! change. (This is used e.g. in the general prolongation/restriction
+  ! where the prolongation/restriction matrix must be calculated).
+  !
+  ! The calculated information is saved to rprojection and released
+  ! with mlprj_doneProjection.
+  !
+  ! The PDE system is specified by the given block discretisation structure.
+!</description>
+
+!<input>
+  ! A block discretisation structure specifying the discretisation
+  TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+!</input>
+  
+!<output>
+  ! A t_interlevelProjectionBlock structure that will be filled with data
+  ! about the projection of all the equations described by RspatialDiscretisation.
+  TYPE(t_interlevelProjectionBlock), INTENT(OUT) :: rprojection 
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
+    INTEGER :: i
+
+    IF (rdiscretisation%ncomponents .EQ. 0) THEN
+      PRINT *,'mlprj_initProjectionDiscr: No discretisation!'
+      STOP
+    END IF
+
+    ! Call the standard initialisation routine
+    CALL mlprj_initProjectionDirect (rprojection,&
+         rdiscretisation%RspatialDiscretisation)
+
   END SUBROUTINE
   
   ! ***************************************************************************
