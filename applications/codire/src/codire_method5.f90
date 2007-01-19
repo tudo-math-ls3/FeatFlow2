@@ -1098,15 +1098,8 @@ CONTAINS
     INTEGER :: i
     
     ! Ok, let's start. 
-    ! We want to solve our CoDiRe problem on level...
+    ! Minimum level in Multigrid
     NLMIN = 1
-    NLMAX = 7
-    
-    ! Initialise the collection.
-    CALL collct_init (rproblem%rcollection)
-    DO i=1,NLMAX
-      CALL collct_addlevel_all (rproblem%rcollection)
-    END DO
     
     ! Initialise the parameter list
     CALL parlst_init(rparams)
@@ -1114,11 +1107,18 @@ CONTAINS
     ! Read the parameters from disc and put a reference to it
     ! to the collection
     CALL parlst_readfromfile(rparams, 'data/codire.dat')
-    CALL collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .TRUE.)
 
     ! We want to solve our Laplace problem on level...
     CALL parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7)
 
+    ! Initialise the collection.
+    CALL collct_init (rproblem%rcollection)
+    DO i=1,NLMAX
+      CALL collct_addlevel_all (rproblem%rcollection)
+    END DO
+
+    CALL collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .TRUE.)
+    
     ! So now the different steps - one after the other.
     !
     ! Initialisation
