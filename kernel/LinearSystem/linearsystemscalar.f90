@@ -788,6 +788,55 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE lsyssc_checkDiscretisation (rvector,rdiscretisation,bcompatible)
+  
+!<description>
+  ! Checks whether a given discretisation structure rdiscretisation is
+  ! basically compatible to a given vector (concerning NEQ, cubature formulas
+  ! on element distribution, element compatibility,...)
+!</description>
+
+!<input>
+  ! The vector which is to be checked.
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector
+
+  ! A scalar discretisation structure to check against the vector.
+  TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether vector and matrix are compatible or not.
+  ! If not given, an error will inform the user if the vector/matrix are
+  ! not compatible and the program will halt.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bcompatible
+!</output>
+
+!</subroutine>
+
+    INTEGER(PREC_DOFIDX) :: NEQ
+
+    ! We assume that we are compatible
+    IF (PRESENT(bcompatible)) bcompatible = .TRUE.
+
+    ! NEQ must be correct.
+    NEQ = dof_igetNDofGlob(rdiscretisation)
+    IF (NEQ .NE. rvector%NEQ) THEN
+      IF (PRESENT(bcompatible)) THEN
+        bcompatible = .FALSE.
+        RETURN
+      ELSE
+        PRINT *,'Vector not compatible to discretisation, different NEQ!'
+        STOP
+      END IF
+    END IF
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE lsyssc_getbase_double (rvector,p_Ddata)
   
 !<description>

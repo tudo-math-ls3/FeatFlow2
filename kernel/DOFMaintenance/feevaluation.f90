@@ -76,6 +76,7 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the points where to evaluate.
+  ! DIMENSION(NDIM2D,npoints,nelements).
   ! The coordinates are expected 
   ! - on the reference element, if ieltyp identifies a parametric element
   ! - on the real element, if ieltyp identifies a nonparametric element
@@ -86,7 +87,7 @@ CONTAINS
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  REAL(DP), DIMENSION(NDIM2D,npoints,nelements), INTENT(IN) :: Dpoints
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dpoints
 
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
@@ -96,7 +97,8 @@ CONTAINS
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
-  REAL(DP), DIMENSION(npoints,nelements), INTENT(OUT) :: Dvalues
+  ! DIMENSION(npoints,nelements).
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dvalues
 !</output>
 
 !</subroutine>

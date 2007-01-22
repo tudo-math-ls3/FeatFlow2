@@ -1688,7 +1688,7 @@ CONTAINS
     
     ! Initialise the cubature formula,
     ! get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_relementDistribution%ccubType, ncubp, Dxi, Domega)
+    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:

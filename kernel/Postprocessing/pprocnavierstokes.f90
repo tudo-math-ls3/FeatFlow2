@@ -1,6 +1,6 @@
 !#########################################################################
 !# ***********************************************************************
-!# <name> ppnavierstokes </name>
+!# <name> pprocnavierstokes </name>
 !# ***********************************************************************
 !#
 !# <purpose>
@@ -9,7 +9,9 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) 
+!# 1.) ppns2D_bdforces_uniform
+!#     -> Calculate the body forces acting on a boundary component
+!#        of a given parametrisation.
 !# </purpose>
 !#########################################################################
 

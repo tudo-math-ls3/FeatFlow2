@@ -2093,7 +2093,7 @@ CONTAINS
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubType, ncubp, Dxi, Domega)
+    CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Allocate arrays accepting cubature point coordinates.
     ! It's at most as large as number of elements or length
@@ -2914,7 +2914,7 @@ CONTAINS
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubType, ncubp, Dxi, Domega)
+    CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:

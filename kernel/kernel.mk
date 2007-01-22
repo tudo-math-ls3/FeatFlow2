@@ -24,7 +24,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
 	bcassembly.f90 matrixio.f90 vectorio.f90 convection.f90 \
 	nonlinearsolver.f90 matrixrestriction.f90 fparser.f90 \
 	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90 signal_ccode.c \
-	timestepping.f90
+	timestepping.f90 pprocerror.f90
 
 # path for the make where to look for which files
 

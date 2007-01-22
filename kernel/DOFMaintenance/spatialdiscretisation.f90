@@ -108,12 +108,17 @@ MODULE spatialdiscretisation
     INTEGER :: itestElement         = EL_UNDEFINED
     
     ! Cubature formula to use for the discretisation of this element pair
-    ! during the evaluation of bilinear forms.
-    INTEGER :: ccubType             = 0
+    ! during the evaluation of bilinear forms (matrix generation).
+    INTEGER :: ccubTypeBilForm      = 0
     
     ! Cubature formula to use for the discretisation of this element pair
     ! during the evaluation of linear forms (RHS generation).
-    INTEGER :: ccubTypeLin          = 0
+    INTEGER :: ccubTypeLinForm      = 0
+
+    ! Cubature formula to use for the evaluation of integrals over an FE
+    ! function. This is used e.g. in postprocessing routines to calculate
+    ! an integral to get an error to a reference solution.
+    INTEGER :: ccubTypeEval         = 0
     
     ! Type of transformation to use from the reference element to
     ! the real element. One of the TRAFO_IDxxxx constants of the module 
@@ -568,8 +573,9 @@ CONTAINS
   ! Initialise test and trial space for that block
   p_relementDistr%itrialElement = ieltyp
   p_relementDistr%itestElement = ieltyp
-  p_relementDistr%ccubType = ccubType
-  p_relementDistr%ccubTypeLin = ccubType
+  p_relementDistr%ccubTypeBilForm = ccubType
+  p_relementDistr%ccubTypeLinForm = ccubType
+  p_relementDistr%ccubTypeEval = ccubType
   
   ! Get the typical transformation used with the element
   p_relementDistr%ctrafoType = elem_igetTrafoType(ieltyp)
@@ -670,8 +676,9 @@ CONTAINS
     rdestDiscr%RelementDistribution(1)%itestElement
   
   ! Init the cubature rule
-  rdestDiscr%RelementDistribution(1)%ccubType = ccubType
-  rdestDiscr%RelementDistribution(1)%ccubTypeLin = ccubType
+  rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccubType
+  rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccubType
+  rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccubType
   
   ! Get the typical transformation used with the element
   rdestDiscr%RelementDistribution(1)%ctrafoType = elem_igetTrafoType(ieltyp)
@@ -782,8 +789,9 @@ CONTAINS
   ! Initialise test and trial space for that block
   p_relementDistr%itrialElement = ieltypTrial
   p_relementDistr%itestElement = ieltypTest
-  p_relementDistr%ccubType = ccubType
-  p_relementDistr%ccubTypeLin = ccubType
+  p_relementDistr%ccubTypeBilForm = ccubType
+  p_relementDistr%ccubTypeLinForm = ccubType
+  p_relementDistr%ccubTypeEval = ccubType
   
   ! Get the typical transformation used with the element
   p_relementDistr%ctrafoType = elem_igetTrafoType(ieltypTrial)

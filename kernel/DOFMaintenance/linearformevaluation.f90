@@ -250,7 +250,7 @@ CONTAINS
   ! Array with coordinates of the corners that form the real element.
   REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoords
   
-  ! A small vector holding only the additive controbutions of
+  ! A small vector holding only the additive contributions of
   ! one element
   REAL(DP), DIMENSION(EL_MAXNBAS) :: DlocalData
   
@@ -389,7 +389,7 @@ CONTAINS
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubType, ncubp, Dxi, Domega)
+    CALL cub_getCubPoints(p_elementDistribution%ccubTypeLinForm, ncubp, Dxi, Domega)
     
     ! Allocate arrays accepting cubature point coordinates.
     ! It's at most as large as number of elements or length
@@ -877,7 +877,7 @@ CONTAINS
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
-    CALL cub_getCubPoints(p_elementDistribution%ccubType, ncubp, Dxi, Domega)
+    CALL cub_getCubPoints(p_elementDistribution%ccubTypeLinForm, ncubp, Dxi, Domega)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
