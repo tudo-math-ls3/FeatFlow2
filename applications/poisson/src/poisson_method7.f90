@@ -27,6 +27,7 @@ MODULE poisson_method7
   USE triangulation
   USE spatialdiscretisation
   USE ucd
+  USE pprocerror
 
   USE poisson_callback
   USE spdiscprojection
@@ -131,6 +132,9 @@ CONTAINS
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
+
+    ! Error of FE function to reference function
+    REAL(DP) :: derror
 
     ! Declarations for projecting a vector to the Q1 space for GMV export
     TYPE(t_vectorBlock) :: rprjVector
@@ -438,6 +442,15 @@ CONTAINS
     ! Projection and GMV export finished.
     ! -------------------------------------------------------------------------
 
+    ! Calculate the error to the reference function.
+    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'L2-error: ',derror
+
+    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'H1-error: ',derror
+    
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
     !

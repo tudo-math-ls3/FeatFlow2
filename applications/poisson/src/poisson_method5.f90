@@ -37,6 +37,7 @@ MODULE poisson_method5
   USE sortstrategy
   USE coarsegridcorrection
   USE ucd
+  USE pprocerror
   
   USE collection
     
@@ -307,7 +308,7 @@ CONTAINS
       CALL bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
                 p_rmatrix%RmatrixBlock(1,1))
-      
+
       ! Update the structural information of the block matrix, as we manually
       ! changed one of the submatrices:
       CALL lsysbl_updateMatStrucInfo (p_rmatrix)
@@ -824,6 +825,8 @@ CONTAINS
     ! A pointer to the solution vector and to the triangulation.
     TYPE(t_vectorBlock), POINTER :: p_rvector
     TYPE(t_triangulation), POINTER :: p_rtriangulation
+    
+    REAL(DP) :: derror
 
     ! Get the solution vector from the problem structure.
     p_rvector => rproblem%rvector
@@ -843,6 +846,15 @@ CONTAINS
     ! Write the file to disc, that's it.
     CALL ucd_write (rexport)
     CALL ucd_release (rexport)
+    
+    ! Calculate the error to the reference function.
+    CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'L2-error: ',derror
+
+    CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_H1ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'H1-error: ',derror
     
   END SUBROUTINE
 

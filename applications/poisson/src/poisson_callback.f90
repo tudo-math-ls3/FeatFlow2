@@ -36,7 +36,14 @@
 !#        fictitious boundary objects
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcfassembly.inc'
-!'
+!#
+!# 5.) getReferenceFunction
+!#
+!#     -> Returns the values of the analytic function and its derivatives,
+!#        corresponding to coeff_RHS
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
 !# </purpose>
 !##############################################################################
 
@@ -206,7 +213,110 @@ CONTAINS
     
   !</subroutine>
 
-    Dcoefficients = 1.0_DP
+    !    u(x,y) = 16*x*(1-x)*y*(1-y)
+    ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
+    Dcoefficients (1,:,:) = 32.0_DP * &
+                    ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+                      Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE getReferenceFunction (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dvalues)
+  
+  USE basicgeometry
+  USE triangulation
+  USE collection
+  USE scalarpde
+  USE domainintegration
+  
+!<description>
+  ! This subroutine is called during the calculation of errors. It has to compute
+  ! the (analytical) values of a function in a couple of points on a couple
+  ! of elements. These values are compared to those of a computed FE function
+  ! and used to calculate an error.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  INTEGER, INTENT(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN)                      :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. May point to NULL() if not defined.
+  TYPE(t_collection), POINTER                      :: p_rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+  SELECT CASE (cderivative)
+  CASE (DER_FUNC)
+    ! u(x,y) = 16*x*(1-x)*y*(1-y)
+    Dvalues (:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
+                              Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+  CASE (DER_DERIV_X)
+    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+    ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
+    Dvalues (:,:) = 16.0_DP * ( &
+        Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
+  CASE (DER_DERIV_Y)
+    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+    ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
+    Dvalues (:,:) = 16.0_DP * ( &
+        Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
+  CASE DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  END SELECT
+  
 
   END SUBROUTINE
 

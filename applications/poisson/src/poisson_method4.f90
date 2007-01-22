@@ -37,6 +37,7 @@ MODULE poisson_method4
   USE spatialdiscretisation
   USE sortstrategy
   USE ucd
+  USE pprocerror
   
   USE collection
     
@@ -732,6 +733,9 @@ CONTAINS
     TYPE(t_vectorBlock), POINTER :: p_rvector
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
+    ! Error of FE function to reference function
+    REAL(DP) :: derror
+
     ! Get the solution vector from the problem structure.
     p_rvector => rproblem%RlevelInfo(1)%rvector
     
@@ -750,6 +754,15 @@ CONTAINS
     ! Write the file to disc, that's it.
     CALL ucd_write (rexport)
     CALL ucd_release (rexport)
+    
+    ! Calculate the error to the reference function.
+    CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'L2-error: ',derror
+
+    CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_H1ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'H1-error: ',derror
     
   END SUBROUTINE
 

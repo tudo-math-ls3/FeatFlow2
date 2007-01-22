@@ -24,6 +24,7 @@ MODULE poisson_method1
   USE triangulation
   USE spatialdiscretisation
   USE ucd
+  USE pprocerror
     
   USE poisson_callback
   
@@ -119,6 +120,9 @@ CONTAINS
     
     ! Error indicator during initialisation of the solver
     INTEGER :: ierror    
+    
+    ! Error of FE function to reference function
+    REAL(DP) :: derror
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
@@ -369,6 +373,15 @@ CONTAINS
     ! Write the file to disc, that's it.
     CALL ucd_write (rexport)
     CALL ucd_release (rexport)
+    
+    ! Calculate the error to the reference function.
+    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'L2-error: ',derror
+
+    CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
+                       getReferenceFunction)
+    PRINT *,'H1-error: ',derror
     
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
