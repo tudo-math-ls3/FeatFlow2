@@ -59,7 +59,7 @@ MODULE heatcond_method5
   TYPE t_problem_lvl
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    TYPE(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation (trial/test functions,...)
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
@@ -221,10 +221,8 @@ CONTAINS
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
     ! to get a triangulation.
-    ! Set p_rtriangulation to NULL() to create a new structure on the heap.
     DO i=rproblem%ilvmin,rproblem%ilvmax
-      NULLIFY(rproblem%RlevelInfo(i)%p_rtriangulation)
-      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%p_rtriangulation)
+      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
     ! The TRIAS(,)-array is now part pf the triangulation structure,
@@ -245,7 +243,7 @@ CONTAINS
 
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
   ! local variables
@@ -264,7 +262,7 @@ CONTAINS
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
       p_rboundary => rproblem%p_rboundary
-      p_rtriangulation => rproblem%RlevelInfo(i)%p_rtriangulation
+      p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
       
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies the blocks in the
@@ -1403,16 +1401,15 @@ CONTAINS
     ! For compatibility to old F77: an array accepting a set of triangulations
     INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
-
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
       ! Release the old FEAT 1.x handles.
       ! Get the old triangulation structure of level ilv from the
       ! FEAT2.0 triangulation:
-      TRIAS(:,i) = rproblem%RlevelInfo(i)%p_rtriangulation%Itria
+      TRIAS(:,i) = rproblem%RlevelInfo(i)%rtriangulation%Itria
       CALL DNMTRI (i,i,TRIAS)
       
       ! then the FEAT 2.0 stuff...
-      CALL tria_done (rproblem%RlevelInfo(i)%p_rtriangulation)
+      CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
     ! Finally release the domain.

@@ -478,7 +478,7 @@ CONTAINS
         SELECT CASE (icomponent)
         CASE (1) ! X-velocity
           IF ((dwhere .GE. 3.0_DP) .AND. (dwhere .LE. 4.0_DP)) THEN
-            CALL boundary_getCoords(rdiscretisation%p_rdomain, &
+            CALL boundary_getCoords(rdiscretisation%p_rboundary, &
                           rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, &
                           x, y)
             Dvalues(1) = mprim_getParabolicProfile (y,0.41_DP,dinflowSpeed)
@@ -491,7 +491,7 @@ CONTAINS
     
     CASE (DISCBC_NEEDNORMALSTRESS)
       
-      ! Normal stress on inflow is 1.0, let's say.
+      ! Normal stress on inflow is 0.025, let's say.
       Dvalues(1) = -0.025_DP
     
     END SELECT

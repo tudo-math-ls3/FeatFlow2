@@ -79,7 +79,7 @@ CONTAINS
 
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
   ! local variables
@@ -137,7 +137,7 @@ CONTAINS
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
       p_rboundary => rproblem%p_rboundary
-      p_rtriangulation => rproblem%RlevelInfo(i)%p_rtriangulation
+      p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
       
       ! Now we can start to initialise the discretisation. At first, set up
       ! a block discretisation structure that specifies 3 blocks in the
@@ -168,7 +168,7 @@ CONTAINS
         ! Manually set the cubature formula for the RHS as the above routine
         ! uses the same for matrix and vectors.
         p_rdiscretisation%RspatialDiscretisation(1)% &
-          RelementDistribution(1)%ccubTypeLin = icubF
+          RelementDistribution(1)%ccubTypeLinForm = icubF
                     
         ! ...and copy this structure also to the discretisation structure
         ! of the 2nd component (Y-velocity). This needs no additional memory, 
@@ -203,7 +203,7 @@ CONTAINS
         ! Manually set the cubature formula for the RHS as the above routine
         ! uses the same for matrix and vectors.
         p_rdiscretisation%RspatialDiscretisation(1)% &
-          RelementDistribution(1)%ccubTypeLin = icubF
+          RelementDistribution(1)%ccubTypeLinForm = icubF
                     
         ! ...and copy this structure also to the discretisation structure
         ! of the 2nd component (Y-velocity). This needs no additional memory, 
@@ -250,7 +250,7 @@ CONTAINS
 
         ! Initialise the cubature formula appropriately.
         DO k = 1,p_rdiscretisationMass%inumFESpaces
-          p_rdiscretisationMass%RelementDistribution(k)%ccubType = icubM
+          p_rdiscretisationMass%RelementDistribution(k)%ccubTypeBilForm = icubM
         END DO
 
         ! Should we do mass lumping?
@@ -283,7 +283,7 @@ CONTAINS
               END IF
               
               ! Set the cubature formula appropriately
-              p_rdiscretisationMass%RelementDistribution(k)%ccubType = icubM
+              p_rdiscretisationMass%RelementDistribution(k)%ccubTypeBilForm = icubM
 
             END DO
           

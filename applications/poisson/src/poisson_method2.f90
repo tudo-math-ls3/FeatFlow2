@@ -105,8 +105,7 @@ CONTAINS
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
     ! to get a triangulation.
-    ! Set p_rtriangulation to NULL() to create a new structure on the heap.
-    NULLIFY(p_rtriangulation)
+    ALLOCATE(p_rtriangulation)
     CALL tria_wrp_tria2Structure(TRIAS(:,ilv),p_rtriangulation)
     
     ! The TRIAS(,)-array is now part pf the triangulation structure,
@@ -322,7 +321,7 @@ CONTAINS
     p_rdiscretisation => collct_getvalue_bldiscr(rcollection,'DISCR2D')
     
     ! Get the domain from the discretisation
-    p_rboundary => p_rdiscretisation%p_rdomain
+    p_rboundary => p_rdiscretisation%p_rboundary
     
     ! For implementing boundary conditions, we use a 'filter technique with
     ! discretised boundary conditions'. This means, we first have to calculate
@@ -335,7 +334,7 @@ CONTAINS
     !
     ! Set p_rboundaryConditions to NULL() to create a new structure on the heap.
     NULLIFY (p_rboundaryConditions)
-    CALL bcond_initBC (p_rboundaryConditions,p_rdiscretisation%p_rdomain)
+    CALL bcond_initBC (p_rboundaryConditions,p_rdiscretisation%p_rboundary)
     
     ! We 'know' already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for inforcing
@@ -824,6 +823,7 @@ CONTAINS
     
     ! then the FEAT 2.0 stuff...
     CALL tria_done (p_rtriangulation)
+    DEALLOCATE(p_rtriangulation)
     
     ! Finally release the domain.
     CALL boundary_release (p_rboundary)

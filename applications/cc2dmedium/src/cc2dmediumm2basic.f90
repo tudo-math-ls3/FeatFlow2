@@ -28,6 +28,7 @@ MODULE cc2dmediumm2basic
   USE spdiscprojection
   USE nonlinearsolver
   USE paramlist
+  USE timestepping
   
   USE collection
     
@@ -44,7 +45,7 @@ MODULE cc2dmediumm2basic
   TYPE t_problem_lvl
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    TYPE(t_triangulation) :: rtriangulation
 
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...)
@@ -84,8 +85,36 @@ MODULE cc2dmediumm2basic
   
 !</typeblock>
 
+!<typeblock description="Application-specific type block for the nonstationary Nav.St. problem">
 
-!<typeblock description="Application-specific type block for the stationary Nav.St. problem">
+  TYPE t_problem_nonst
+  
+    ! Time stepping structure of Theta-scheme that defines the current 
+    ! point in time, current time step, etc.
+    TYPE(t_explicitTimeStepping) :: rtimeStepping
+    
+    ! Number of current time step
+    INTEGER :: itimeStep           = 0
+  
+    ! Maximum number of time steps
+    INTEGER :: niterations         = 0
+    
+    ! Absolute start time of the simulation
+    REAL(DP) :: dtimeInit          = 0.0_DP            
+    
+    ! Maximum time of the simulation
+    REAL(DP) :: dtimeMax           = 0.0_DP
+  
+    ! Lower limit for the time derivative to be treated as zero. Former EPSANS.
+    ! Simulation stops if time derivative drops below this value.
+    REAL(DP) :: dminTimeDerivative = 0.00001_DP
+    
+  END TYPE
+
+!</typeblock>
+
+
+!<typeblock description="Application-specific type block for the Nav.St. problem">
 
   TYPE t_problem
   

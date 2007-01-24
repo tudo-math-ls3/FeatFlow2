@@ -56,7 +56,7 @@ MODULE poisson_method4
   TYPE t_problem_lvl
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    TYPE(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation (structure of the
     ! solution, trial/test functions,...)
@@ -168,10 +168,8 @@ CONTAINS
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
     ! to get a triangulation.
-    ! Set p_rtriangulation to NULL() to create a new structure on the heap.
-    NULLIFY(rproblem%RlevelInfo(1)%p_rtriangulation)
     CALL tria_wrp_tria2Structure(TRIAS(:,rproblem%NLMAX),&
-         rproblem%RlevelInfo(1)%p_rtriangulation)
+         rproblem%RlevelInfo(1)%rtriangulation)
     
     ! The TRIAS(,)-array is now part pf the triangulation structure,
     ! we don't need it anymore.
@@ -191,7 +189,7 @@ CONTAINS
 
 !<inputoutput>
   ! A problem astructure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
   ! local variables
@@ -208,7 +206,7 @@ CONTAINS
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
     p_rboundary => rproblem%p_rboundary
-    p_rtriangulation => rproblem%RlevelInfo(1)%p_rtriangulation
+    p_rtriangulation => rproblem%RlevelInfo(1)%rtriangulation
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -414,7 +412,7 @@ CONTAINS
     p_rdiscretisation => rproblem%RlevelInfo(1)%p_rdiscretisation
     
     ! Get the domain from the discretisation
-    p_rboundary => p_rdiscretisation%p_rdomain
+    p_rboundary => p_rdiscretisation%p_rboundary
     
     ! For implementing boundary conditions, we use a 'filter technique with
     ! discretised boundary conditions'. This means, we first have to calculate
@@ -428,7 +426,7 @@ CONTAINS
     ! Set p_rboundaryConditions to NULL() to create a new structure on the heap.
     NULLIFY (rproblem%p_rboundaryConditions)
     CALL bcond_initBC (rproblem%p_rboundaryConditions,&
-                       p_rdiscretisation%p_rdomain)
+                       p_rdiscretisation%p_rboundary)
     
     ! We 'know' already (from the problem definition) that we have four boundary
     ! segments in the domain. Each of these, we want to use for inforcing
@@ -878,11 +876,11 @@ CONTAINS
     ! Release the old FEAT 1.x handles.
     ! Get the old triangulation structure of level ilv from the
     ! FEAT2.0 triangulation:
-    TRIAS(:,rproblem%NLMAX) = rproblem%RlevelInfo(1)%p_rtriangulation%Itria
+    TRIAS(:,rproblem%NLMAX) = rproblem%RlevelInfo(1)%rtriangulation%Itria
     CALL DNMTRI (rproblem%NLMAX,rproblem%NLMAX,TRIAS)
     
     ! then the FEAT 2.0 stuff...
-    CALL tria_done (rproblem%RlevelInfo(1)%p_rtriangulation)
+    CALL tria_done (rproblem%RlevelInfo(1)%rtriangulation)
     
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)

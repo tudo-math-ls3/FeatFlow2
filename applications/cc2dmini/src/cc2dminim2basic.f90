@@ -44,7 +44,7 @@ MODULE cc2dminim2basic
   TYPE t_problem_lvl
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    TYPE(t_triangulation) :: rtriangulation
 
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...)

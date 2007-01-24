@@ -80,7 +80,7 @@ CONTAINS
     TYPE(t_boundary), POINTER :: p_rboundary
     
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    TYPE(t_triangulation) :: rtriangulation
 
     ! For compatibility to old F77: an array accepting a set of triangulations
     INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
@@ -169,23 +169,20 @@ CONTAINS
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
     ! to get a triangulation.
-    !
-    ! Set p_rtriangulation to NULL() to create a new structure on the heap.
-    NULLIFY(p_rtriangulation)
-    CALL tria_wrp_tria2Structure(TRIAS(:,NLMAX),p_rtriangulation)
+    CALL tria_wrp_tria2Structure(TRIAS(:,NLMAX),rtriangulation)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
     CALL spdiscr_initBlockDiscr2D (rdiscretisation,1,&
-                                   p_rtriangulation, p_rboundary)
+                                   rtriangulation, p_rboundary)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-                                   EL_E011,CUB_G2X2,p_rtriangulation, p_rboundary)
+                                   EL_E011,CUB_G2X2,rtriangulation, p_rboundary)
                                    
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -402,7 +399,7 @@ CONTAINS
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
     ! Start UCD export to GMV file:
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u6.gmv')
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u6.gmv')
     
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
@@ -448,7 +445,7 @@ CONTAINS
     CALL spdiscr_releaseBlockDiscr(rdiscretisation, .TRUE.)
     
     ! Release the triangulation. First the FEAT 2.0 stuff...
-    CALL tria_done (p_rtriangulation)
+    CALL tria_done (rtriangulation)
     
     ! and then the old FEAT 1.x handles.
     CALL DNMTRI (NLMAX,NLMAX,TRIAS)

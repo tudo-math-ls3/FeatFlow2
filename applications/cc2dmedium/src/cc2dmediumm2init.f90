@@ -237,10 +237,8 @@ CONTAINS
     ! ... and create a FEAT 2.0 triangulation for that. Until the point where
     ! we recreate the triangulation routines, this method has to be used
     ! to get a triangulation.
-    ! Set p_rtriangulation to NULL() to create a new structure on the heap.
     DO i=rproblem%NLMIN,rproblem%NLMAX
-      NULLIFY(rproblem%RlevelInfo(i)%p_rtriangulation)
-      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%p_rtriangulation)
+      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
     ! The TRIAS(,)-array is now part pf the triangulation structure,
@@ -275,11 +273,11 @@ CONTAINS
       ! Release the old FEAT 1.x handles.
       ! Get the old triangulation structure of level ilv from the
       ! FEAT2.0 triangulation:
-      TRIAS(:,i) = rproblem%RlevelInfo(i)%p_rtriangulation%Itria
+      TRIAS(:,i) = rproblem%RlevelInfo(i)%rtriangulation%Itria
       CALL DNMTRI (i,i,TRIAS)
       
       ! then the FEAT 2.0 stuff...
-      CALL tria_done (rproblem%RlevelInfo(i)%p_rtriangulation)
+      CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
     ! Finally release the domain.
