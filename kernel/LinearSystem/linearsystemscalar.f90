@@ -129,6 +129,9 @@
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
 !#     -> Rebuild the Kdiagonal array in a matrix of format 9
 !#
+!# 2.) lsyssc_infoMatrix
+!#     -> Outputs information about the matrix (mostly used for debugging)
+!#
 !# </purpose>
 !##############################################################################
 
@@ -1124,7 +1127,6 @@ CONTAINS
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata1dp
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata2dp
   REAL(DP) :: res
-  ! INTEGER(PREC_VECIDX) i
   
   ! Vectors must be compatible!
   CALL lsyssc_isVectorCompatible (rx,ry)
@@ -1155,10 +1157,6 @@ CONTAINS
     
     ! Perform the scalar product
     res=lalg_scalarProductDble(p_Ddata1dp,p_Ddata2dp)
-!!$    res = p_Ddata1dp(1)*p_Ddata2dp(1)
-!!$    DO i=2,rx%NEQ
-!!$      res = res + p_Ddata1dp(i)*p_Ddata2dp(i)
-!!$    END DO
     
   CASE (ST_SINGLE)
 
@@ -1168,10 +1166,6 @@ CONTAINS
     
     ! Perform the scalar product
     res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
-!!$    res = p_Fdata1dp(1)*p_Fdata2dp(1)
-!!$    DO i=2,rx%NEQ
-!!$      res = res + p_Fdata1dp(i)*p_Fdata2dp(i)
-!!$    END DO
     
   CASE DEFAULT
     PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
@@ -1180,6 +1174,93 @@ CONTAINS
   
   ! Return the scalar product, finish
   lsyssc_scalarProduct = res
+
+  END FUNCTION
+
+  !****************************************************************************
+!<subroutine>
+  
+  REAL(DP) FUNCTION lsyssc_scalarProductMatVec (rx, ry)
+  
+!<description>
+  ! Calculates a scalar product of two vectors, whereby the first
+    ! vector is a diagonal matrix.
+!</description>
+  
+!<input>
+  ! First vector given as diagonal matrix
+  TYPE(t_MatrixScalar), INTENT(IN)                  :: rx
+
+  ! Second vector
+  TYPE(t_vectorScalar), INTENT(IN)                  :: ry
+
+!</input>
+
+!<result>
+  ! The scalar product (rx,ry) of the two vectors.
+!</result>
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata1dp
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata2dp
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata1dp
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata2dp
+  REAL(DP) :: res
+  
+  ! Matrix must be diagonal matrix
+  IF (rx%cmatrixFormat .NE. LSYSSC_MATRIXD) THEN
+    PRINT *, 'lsyssc_scalarProductMatVec: Matrix must be diagonal matrix!'
+    STOP
+  END IF
+
+  ! Vectors must be compatible!
+  CALL lsyssc_isMatrixVectorCompatible (ry,rx,.FALSE.)
+  
+  ! Is there data at all?
+  res = 0.0_DP
+  
+  IF ((rx%NEQ*rx%NVAR .EQ. 0) .OR. &
+      (ry%NEQ*ry%NVAR .EQ. 0) .OR. &
+      (rx%NEQ .NE. rx%NEQ) .OR. &
+      (rx%NVAR .NE. ry%NVAR)) THEN
+    PRINT *,'Error in lsyssc_scalarProductMatVec: Vector dimensions wrong!'
+    STOP
+  END IF
+  
+  IF (rx%cdataType .NE. ry%cdataType) THEN
+    PRINT *,'lsyssc_scalarProductMatVec: Data types different!'
+    STOP
+  END IF
+
+  ! Take care of the data type before doing a scalar product!
+  SELECT CASE (rx%cdataType)
+  CASE (ST_DOUBLE)
+     
+    ! Get the data arrays
+    CALL storage_getbase_double (rx%h_Da,p_Ddata1dp)
+    CALL lsyssc_getbase_double (ry,p_Ddata2dp)
+    
+    ! Perform the scalar product
+    res=lalg_scalarProductDble(p_Ddata1dp,p_Ddata2dp)
+    
+  CASE (ST_SINGLE)
+
+    ! Get the data arrays
+    CALL storage_getbase_single (rx%h_Da,p_Fdata1dp)
+    CALL lsyssc_getbase_single (ry,p_Fdata2dp)
+    
+    ! Perform the scalar product
+    res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
+    
+  CASE DEFAULT
+    PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
+    STOP
+  END SELECT
+  
+  ! Return the scalar product, finish
+  lsyssc_scalarProductMatVec = res
 
   END FUNCTION
 
@@ -12947,4 +13028,39 @@ CONTAINS
       END DO
     END SUBROUTINE do_mat79mat79add_numb_snglsngl
   END SUBROUTINE lsyssc_matrixLinearComb
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_infoMatrix(rmatrix)
+
+!<description>
+    ! This subroutine outputs information about the matrix
+!</description>
+
+!<input>
+    ! scalar matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+!</subroutine>
+
+    WRITE(*,FMT='(A)')       '-------------------------'
+    WRITE(*,FMT='(A,1X,I2)') 'cmatrixFormat           =',rmatrix%cmatrixFormat
+    WRITE(*,FMT='(A,1X,I2)') 'cinterleavematrixFormat =',rmatrix%cinterleavematrixFormat
+    WRITE(*,FMT='(A,1X,I4)') 'imatrixSpec             =',rmatrix%imatrixSpec
+    WRITE(*,FMT='(A,1X,I8)') 'NA                      =',rmatrix%NA
+    WRITE(*,FMT='(A,1X,I8)') 'NEQ                     =',rmatrix%NEQ
+    WRITE(*,FMT='(A,1X,I8)') 'NCOLS                   =',rmatrix%NCOLS
+    WRITE(*,FMT='(A,1X,I4)') 'NVAR                    =',rmatrix%NVAR
+    WRITE(*,FMT='(A,1X,F8.3)') 'dscaleFactor            =',rmatrix%dscaleFactor
+    WRITE(*,FMT='(A,1X,I2)') 'isortStrategy           =',rmatrix%isortStrategy
+    WRITE(*,FMT='(A,1X,I4)') 'h_IsortPermutation      =',rmatrix%h_IsortPermutation
+    WRITE(*,FMT='(A,1X,I2)') 'cdataType               =',rmatrix%cdataType
+    WRITE(*,FMT='(A,1X,I4)') 'h_DA                    =',rmatrix%h_DA
+    WRITE(*,FMT='(A,1X,I4)') 'h_Kcol                  =',rmatrix%h_Kcol
+    WRITE(*,FMT='(A,1X,I4)') 'h_Kld                   =',rmatrix%h_Kld
+    WRITE(*,FMT='(A,1X,I4)') 'h_Kdiagonal             =',rmatrix%h_Kdiagonal
+    WRITE(*,FMT='(A)')       '-------------------------'
+  END SUBROUTINE lsyssc_infoMatrix
 END MODULE

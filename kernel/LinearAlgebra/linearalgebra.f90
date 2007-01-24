@@ -1090,4 +1090,37 @@ CONTAINS
   
   END SUBROUTINE 
 
+!<subroutine>
+
+  SUBROUTINE lalg_tensorProductDble(Dx,Dy,Dtensor)
+
+!<description>
+    ! Calculates the tensor product of two double precision vectors:
+    ! Dtensor = Dx (*) Dy
+!</description>
+
+!<input>
+    ! First source vector
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Dx
+  
+    ! Second source vector
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Dy
+!</input>
+
+!<output>
+    ! Tensor product
+    REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dtensor
+!</output>
+!</subroutine>
+    
+    ! local variables
+    INTEGER :: i,j
+
+    DO i=1,SIZE(Dy)
+      DO j=1,SIZE(Dx)
+        Dtensor(j,i)=Dx(j)*Dy(i)
+      END DO
+    END DO
+  END SUBROUTINE lalg_tensorProductDble
+
 END MODULE
