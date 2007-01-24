@@ -25,6 +25,17 @@
 !# 3.) tria_quadToTri
 !#     -> Converts an arbitrary mesh into a triangular mesh.
 !#
+!# 4.) tria_duplicate
+!#     -> Creates a duplicate / backup of a triangulation.
+!#        Some information may be shared between two triangulation structures.
+!#
+!# 5.) tria_restore
+!#     -> Restores a triangulation previously backed up with tria_backup.
+!#
+!# 6.) tria_recoverHandles
+!#     -> Recovers destroyed handles of a triangulation structure from a 
+!#        backup.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -67,6 +78,34 @@ MODULE triangulation
 
   ! kind value for indexing the elements in a triangulation
   INTEGER, PARAMETER :: PREC_ELEMENTIDX = I32
+
+!</constantblock>
+  
+!<constantblock description="Duplication flags. Specifies which information is shared \
+!                            between triangulation structures">
+
+  INTEGER(I32), PARAMETER :: TR_SHARE_DCORNERCOORDINATES     = 2** 0  ! DCORVG 
+  INTEGER(I32), PARAMETER :: TR_SHARE_DFREEVERTEXCOORDINATES = 2** 1  ! DCORMG
+  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATELEMENT     = 2** 2  ! KVERT 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATELEMENT        = 2** 3  ! KMID  
+  INTEGER(I32), PARAMETER :: TR_SHARE_INEIGHBOURSATELEMENT   = 2** 4  ! KADJ  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATVERTEX      = 2** 5  ! KVEL  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATEDGE        = 2** 6  ! KMEL  
+  INTEGER(I32), PARAMETER :: TR_SHARE_INODALPROPERTY         = 2** 7  ! KNPR  
+  INTEGER(I32), PARAMETER :: TR_SHARE_KMM                    = 2** 8  ! KMM   
+  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATBOUNDARY    = 2** 9  ! KVBD  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IELEMENTSATBOUNDARY    = 2**10  ! KEBD  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYCPIDX         = 2**11  ! KBCT  
+  INTEGER(I32), PARAMETER :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2**12  ! DVBDP 
+  INTEGER(I32), PARAMETER :: TR_SHARE_DEDGEPARAMETERVALUE    = 2**13  ! DMBDP 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IEDGESATBOUNDARY       = 2**14  ! KMBD  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IVERTICESATEDGE        = 2**16  ! KEAN  
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**17  ! KVBDI 
+  INTEGER(I32), PARAMETER :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**18  ! KMBDI 
+  INTEGER(I32), PARAMETER :: TR_SHARE_DELEMENTAREA           = 2**19  ! DAREA 
+  
+  ! Share everything
+  INTEGER(I32), PARAMETER :: TR_SHARE_ALL = NOT(0_I32)
 
 !</constantblock>
   
@@ -143,8 +182,8 @@ MODULE triangulation
     INTEGER(I32)             :: iduplicationFlag
   
     ! Dimension of the triangulation.
-    ! NDIM2D=2D triangulation (standard), NDIM2D=3D triangulation
-    INTEGER                  :: ndim = NDIM2D
+    ! NDIM2D=2D triangulation, NDIM2D=3D triangulation, 0=not initialised
+    INTEGER                  :: ndim = 0
   
     ! Number of points in the domain corresponding to corners of elements;
     ! coincides with SIZE(RcornerCoordinates)
@@ -428,7 +467,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_wrp_tria2Structure (TRIA, p_rtriangulation)
+  SUBROUTINE tria_wrp_tria2Structure (TRIA, rtriangulation)
   
   USE afcutil
   
@@ -436,8 +475,8 @@ CONTAINS
   ! Wrapper routine. Accepts an 'old' triangulation structure array of CC2D
   ! and converts it completely to a triangulation structure. All 'old'
   ! information in the triangulation structure is overwritten.
-  ! If p_rtriangulation is NULL(), a new structure will be created. 
-  ! Otherwise, the existing structure is recreated/updated.
+  ! If rtriangulation contains an old structure, the existing structure 
+  ! is recreated/updated.
 !</description>
   
 !<input>
@@ -449,139 +488,140 @@ CONTAINS
 !<inputoutput>
   ! The triangulation structure which will be overwritten by the information
   ! in TRIA.
-  TYPE(t_triangulation), POINTER      :: p_rtriangulation
+  TYPE(t_triangulation), INTENT(INOUT)      :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
 
   ! Do we have a structure?
-  IF (.NOT. ASSOCIATED(p_rtriangulation)) THEN
-    ALLOCATE(p_rtriangulation)
-  ELSE
+  IF (rtriangulation%ndim .NE. 0) THEN
     ! Release the old structure without removing it from the heap.
-    CALL tria_done (p_rtriangulation,.TRUE.)
+    CALL tria_done (rtriangulation)
   END IF
 
   ! We take the ownership of the triangulation structure - for compatibility
   ! to old FEAT 1.x:
-  p_rtriangulation%Itria = TRIA
+  rtriangulation%Itria = TRIA
   
   ! Copy static entries
-  p_rtriangulation%NVT                      = TRIA(ONVT  )
-  p_rtriangulation%NMT                      = TRIA(ONMT  )
-  p_rtriangulation%NEL                      = TRIA(ONEL  )
-  p_rtriangulation%NBCT                     = TRIA(ONBCT )
-  p_rtriangulation%NVBD                     = TRIA(ONVBD )
-  p_rtriangulation%NMBD                     = TRIA(ONVBD ) ! NMBD=NVBD !!!
-  p_rtriangulation%nverticesPerEdge         = TRIA(ONVPED)
-  p_rtriangulation%nVerticesOnAllEdges      = TRIA(ONVEDT)
-  p_rtriangulation%nverticesInEachElement   = TRIA(ONVEDT)
-  p_rtriangulation%nverticesInAllElements   = TRIA(ONIEVT)
-  p_rtriangulation%nadditionalVertices      = TRIA(ONANT )
+  rtriangulation%NVT                      = TRIA(ONVT  )
+  rtriangulation%NMT                      = TRIA(ONMT  )
+  rtriangulation%NEL                      = TRIA(ONEL  )
+  rtriangulation%NBCT                     = TRIA(ONBCT )
+  rtriangulation%NVBD                     = TRIA(ONVBD )
+  rtriangulation%NMBD                     = TRIA(ONVBD ) ! NMBD=NVBD !!!
+  rtriangulation%nverticesPerEdge         = TRIA(ONVPED)
+  rtriangulation%nVerticesOnAllEdges      = TRIA(ONVEDT)
+  rtriangulation%nverticesInEachElement   = TRIA(ONVEDT)
+  rtriangulation%nverticesInAllElements   = TRIA(ONIEVT)
+  rtriangulation%nadditionalVertices      = TRIA(ONANT )
+  
+  ! Set ndim <> 0; this declares the structure as 'initialised'.
+  rtriangulation%ndim = NDIM2D
   
   ! The duplication flag stays at 0 - as for now, all
   ! arrays are created from the feat arrays as new arrays, and
   ! so they are not a copy of another array.
   
-  p_rtriangulation%iduplicationFlag = 0
+  rtriangulation%iduplicationFlag = 0
   
   ! *******************************************************
   ! Copy DCORVG, create p_RcornerCoordinates.
   
-  CALL copy_featarray_double2d ('DCORVG',2,INT(p_rtriangulation%NVT),TRIA(OLCORVG),&
-                                p_rtriangulation%h_DcornerCoordinates)
+  CALL copy_featarray_double2d ('DCORVG',2,INT(rtriangulation%NVT),TRIA(OLCORVG),&
+                                rtriangulation%h_DcornerCoordinates)
   
   ! *******************************************************
   ! Copy KVERT, create p_RverticesAtElement.
   
-  CALL copy_featarray_int2d ('KVERT',4,INT(p_rtriangulation%NEL),TRIA(OLVERT),&
-                             p_rtriangulation%h_IverticesAtElement)
+  CALL copy_featarray_int2d ('KVERT',4,INT(rtriangulation%NEL),TRIA(OLVERT),&
+                             rtriangulation%h_IverticesAtElement)
 
   ! *******************************************************
   ! Copy KMID, create p_RedgesAtElement.
   
-  CALL copy_featarray_int2d ('KMID',4,INT(p_rtriangulation%NEL),TRIA(OLMID),&
-                             p_rtriangulation%h_IedgesAtElement)
+  CALL copy_featarray_int2d ('KMID',4,INT(rtriangulation%NEL),TRIA(OLMID),&
+                             rtriangulation%h_IedgesAtElement)
 
   ! *******************************************************
   ! Copy KADJ, create p_RneighboursAtElement.
   
-  CALL copy_featarray_int2d ('KADJ',4,INT(p_rtriangulation%NEL),TRIA(OLADJ),&
-                             p_rtriangulation%h_IneighboursAtElement)
+  CALL copy_featarray_int2d ('KADJ',4,INT(rtriangulation%NEL),TRIA(OLADJ),&
+                             rtriangulation%h_IneighboursAtElement)
 
   ! *******************************************************
   ! Copy KMEL, create p_IelementsAtEdge.
   
-  CALL copy_featarray_int2d ('KMEL',2,INT(p_rtriangulation%NMT),TRIA(OLMEL),&
-                             p_rtriangulation%h_IelementsAtEdge)
+  CALL copy_featarray_int2d ('KMEL',2,INT(rtriangulation%NMT),TRIA(OLMEL),&
+                             rtriangulation%h_IelementsAtEdge)
 
   ! *******************************************************
   ! Copy KEAN, create p_IverticesAtEdge.
   
-  CALL copy_featarray_int2d ('KEAN',2,INT(p_rtriangulation%NMT),TRIA(OLEAN),&
-                             p_rtriangulation%h_IverticesAtEdge)
+  CALL copy_featarray_int2d ('KEAN',2,INT(rtriangulation%NMT),TRIA(OLEAN),&
+                             rtriangulation%h_IverticesAtEdge)
 
   ! *******************************************************
   ! Copy KNPR, create p_InodalProperty.
   
-  CALL copy_featarray_int1d ('KNPR',INT(p_rtriangulation%NVT+p_rtriangulation%NMT),&
-                             TRIA(OLNPR),p_rtriangulation%h_InodalProperty)
+  CALL copy_featarray_int1d ('KNPR',INT(rtriangulation%NVT+rtriangulation%NMT),&
+                             TRIA(OLNPR),rtriangulation%h_InodalProperty)
                              
   ! *******************************************************
   ! Copy KAREA, create hpDelementArea.
   
-  CALL copy_featarray_double1d ('KAREA',INT(p_rtriangulation%NEL+1),&
-                                TRIA(OLAREA),p_rtriangulation%h_DelementArea)
+  CALL copy_featarray_double1d ('KAREA',INT(rtriangulation%NEL+1),&
+                                TRIA(OLAREA),rtriangulation%h_DelementArea)
                              
   ! *******************************************************
   ! Initialise the new KVEL, create p_IelementsAtVertexIdx/p_IelementsAtVertex.
                              
-  CALL translate_KVEL (TRIA(ONVEL),INT(p_rtriangulation%NVT),TRIA(OLVEL), &
-                       p_rtriangulation%h_IelementsAtVertex,&
-                       p_rtriangulation%h_IelementsAtVertexIdx)
+  CALL translate_KVEL (TRIA(ONVEL),INT(rtriangulation%NVT),TRIA(OLVEL), &
+                       rtriangulation%h_IelementsAtVertex,&
+                       rtriangulation%h_IelementsAtVertexIdx)
 
   ! *******************************************************
   ! Copy KBCT, create p_IboundaryCpIdx.
   
-  CALL copy_featarray_int1d ('KBCT',(p_rtriangulation%NBCT+1),&
-                             TRIA(OLBCT),p_rtriangulation%h_IboundaryCpIdx)
+  CALL copy_featarray_int1d ('KBCT',(rtriangulation%NBCT+1),&
+                             TRIA(OLBCT),rtriangulation%h_IboundaryCpIdx)
   
   ! *******************************************************
   ! Copy KVBD, create p_IverticesAtBoundary.
   
-  CALL copy_featarray_int1d ('KVBD',INT(p_rtriangulation%NVBD),&
-                             TRIA(OLVBD),p_rtriangulation%h_IverticesAtBoundary)
+  CALL copy_featarray_int1d ('KVBD',INT(rtriangulation%NVBD),&
+                             TRIA(OLVBD),rtriangulation%h_IverticesAtBoundary)
 
   ! *******************************************************
   ! Copy KMBD, create p_IedgesAtBoundary.
   
-  CALL copy_featarray_int1d ('KMBD',(p_rtriangulation%NMBD),&
-                             TRIA(OLMBD),p_rtriangulation%h_IedgesAtBoundary)
+  CALL copy_featarray_int1d ('KMBD',(rtriangulation%NMBD),&
+                             TRIA(OLMBD),rtriangulation%h_IedgesAtBoundary)
 
   ! *******************************************************
   ! Copy KEBD, create p_IelementsAtBoundary.
   
-  CALL copy_featarray_int1d ('KEBD',INT(p_rtriangulation%NMBD),&
-                             TRIA(OLEBD),p_rtriangulation%h_IelementsAtBoundary)
+  CALL copy_featarray_int1d ('KEBD',INT(rtriangulation%NMBD),&
+                             TRIA(OLEBD),rtriangulation%h_IelementsAtBoundary)
 
   ! *******************************************************
   ! Copy DVBDP, create p_DvertexParameterValue.
   
-  CALL copy_featarray_double1d ('DVBDP',INT(p_rtriangulation%NVBD),&
-                                TRIA(OLVBDP),p_rtriangulation%h_DvertexParameterValue)
+  CALL copy_featarray_double1d ('DVBDP',INT(rtriangulation%NVBD),&
+                                TRIA(OLVBDP),rtriangulation%h_DvertexParameterValue)
 
   ! *******************************************************
   ! Copy DMBDP, create p_DedgeParameterValue.
   
-  CALL copy_featarray_double1d ('DMBDP',INT(p_rtriangulation%NMBD),&
-                                TRIA(OLMBDP),p_rtriangulation%h_DedgeParameterValue)
+  CALL copy_featarray_double1d ('DMBDP',INT(rtriangulation%NMBD),&
+                                TRIA(OLMBDP),rtriangulation%h_DedgeParameterValue)
 
 
   ! *******************************************************
   ! Copy DCORMG, create p_DfreeVertexCoordinates.
   
-  CALL copy_featarray_double2d ('DCORMG',2,INT(p_rtriangulation%NMT),TRIA(OLCORMG),&
-                                p_rtriangulation%h_DfreeVertexCoordinates)
+  CALL copy_featarray_double2d ('DCORMG',2,INT(rtriangulation%NMT),TRIA(OLCORMG),&
+                                rtriangulation%h_DfreeVertexCoordinates)
   
 
   CONTAINS
@@ -942,7 +982,569 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_done (p_rtriangulation,bkeepStructure)
+  SUBROUTINE tria_duplicate (rtriangulation,rbackupTriangulation,&
+                             iduplicationFlag,bupdate)
+  
+!<description>
+  ! This routine makes a copy of a triangulation structure in memory.
+  ! The variable iduplicationFlag decides on which arrays are copied in memory
+  ! and which not.
+  ! 
+  ! By setting the corresponding bit in iduplicationFlag to 0, the array is
+  ! duplicated in memory, and any change to the new array will not harm
+  ! the original one.
+  ! By setting a flag TR_SHARE_xxxx in iduplicationFlag, the corresponding array is
+  ! not duplicated. The handle of the original structure is simply put into
+  ! the new structure to make the information accessable. Then this array
+  ! is shared between two triangulation structures!
+!</description>
+
+!<input>
+  ! The "source" discretisation structure that provides the information.
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  
+  ! Bitfield that decides which handles are a copy of another
+  ! structure, thus which arrays are shared between the new
+  ! and the old structure. 
+  ! The bitfield contains a combination of TR_SHARE_xxxx canstants.
+  ! Every triangulation information whose flag is set in iduplicationFlag
+  ! is shared between rtriangulation and rbackupTriangulation.
+  ! Therefore e.g., iduplicationFlag=0 copies all arrays from
+  ! rtriangulation in memory, while TR_SHARE_ALL will copy
+  ! nothing, but will hare everything between rtriangulation
+  ! and rbackupTriangulation.
+  INTEGER(I32), INTENT(IN)          :: iduplicationFlag
+  
+  ! OPTIONAL. Defines how to create the backup.
+  ! = .FALSE.: Treat rbackupTriangulation as empty destination structure.
+  !    If necessary, information in rbackupTriangulation is released.
+  !    rbackupTriangulation is rebuild according to rtriangulation 
+  !    and iduplicationFlag. 
+  !    This is the standard setting if bupdate is not specified.
+  ! = .TRUE. : Treat rbackupTriangulation as existing copy of rtriangulation
+  !    which has to be updated. Recover all vectors of rbackupTriangulation 
+  !    by those of rtriangulation.
+  !    (I.e. those arrays which were duplicated by a previous
+  !    call to iduplicationFlag with IUPD=0.)
+  !    iduplicationFlag can used to specify which data do copy
+  !    from rtriangulation to rbackupTriangulation. It is OR'ed
+  !    with rbackupTriangulation%iduplicationFlag to get the actual
+  !    duplication flag. This leads to the following interpretation
+  !    of iduplicationFlag:
+  !     =0:  Copy all data that was copied previously. This is the usual
+  !          setting.
+  !    <>0:  Copy all arrays where the corresponding flag
+  !          in iduplicationFlag is not set and which exist as
+  !          duplicates. Arrays corresponding to flags which
+  !          are set or where the handles in rtriangulation and
+  !          rbackupTriangulation coincide are not touched.
+  LOGICAL, INTENT(IN), OPTIONAL     :: bupdate
+!</input>
+
+!<inputoutput>
+  ! The "destination" discretisation structure receives the information.
+  ! Depending on iduplicationFlag, the arrays are duplicated or shared
+  ! between rtriangulation and rbackupTriangulation
+  TYPE(t_triangulation), INTENT(INOUT), TARGET :: rbackupTriangulation
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! local variables
+    INTEGER(I32) :: idupFlag
+    
+    LOGICAL :: bupd
+    
+    bupd = .FALSE.
+    IF (PRESENT(bupdate)) bupd = bupdate
+
+    IF (.NOT. bupd) THEN
+      ! Release any old data.
+      CALL tria_done (rbackupTriangulation)
+      
+      rbackupTriangulation%ndim                   = rtriangulation%ndim                  
+      rbackupTriangulation%NVT                    = rtriangulation%NVT                   
+      rbackupTriangulation%NMT                    = rtriangulation%NMT                   
+      rbackupTriangulation%NEL                    = rtriangulation%NEL                   
+      rbackupTriangulation%NBCT                   = rtriangulation%NBCT                  
+      rbackupTriangulation%NVBD                   = rtriangulation%NVBD                  
+      rbackupTriangulation%NMBD                   = rtriangulation%NMBD                  
+      rbackupTriangulation%nverticesPerEdge       = rtriangulation%nverticesPerEdge      
+      rbackupTriangulation%nVerticesOnAllEdges    = rtriangulation%nVerticesOnAllEdges   
+      rbackupTriangulation%nverticesInEachElement = rtriangulation%nverticesInEachElement
+      rbackupTriangulation%nverticesInAllElements = rtriangulation%nverticesInAllElements
+      rbackupTriangulation%nadditionalVertices    = rtriangulation%nadditionalVertices   
+      
+      ! Decide on IDPFLG which arrays to copy
+      rbackupTriangulation%iduplicationFlag = iduplicationFlag
+      idupFlag = iduplicationFlag
+      
+    ELSE
+
+      ! Create a bitfield what to copy by ORing iduplicationFlag with what
+      ! we have in rbackupTriangulation. That way, only arrays that exist as
+      ! real duplicates are copied from rtriangulation to rbackupTriangulation.
+      
+      idupFlag = IOR(iduplicationFlag,rbackupTriangulation%iduplicationFlag)
+    
+    END IF
+    
+    ! Call checkAndCopy for all the arrays. this will either copy the handle
+    ! or allocate new memory and copy the content of the array.
+    
+    ! Bit  0: DCORVG 
+    CALL checkAndCopy(idupflag, TR_SHARE_DCORNERCOORDINATES,&
+          rtriangulation%h_DcornerCoordinates, &
+          rbackupTriangulation%h_DcornerCoordinates)
+
+    ! Bit  2: KVERT  
+    CALL checkAndCopy(idupflag, TR_SHARE_IVERTICESATELEMENT,&
+          rtriangulation%h_IverticesAtElement, &
+          rbackupTriangulation%h_IverticesAtElement)
+
+    ! Bit  3: KMID   
+    CALL checkAndCopy(idupflag, TR_SHARE_IEDGESATELEMENT,&
+          rtriangulation%h_IedgesAtElement, &
+          rbackupTriangulation%h_IedgesAtElement)
+    
+    ! Bit  4: KADJ   
+    CALL checkAndCopy(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
+          rtriangulation%h_IneighboursAtElement, &
+          rbackupTriangulation%h_IneighboursAtElement)
+
+    ! Bit  6: KMEL   
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge, &
+          rbackupTriangulation%h_IelementsAtEdge)
+
+    ! Bit 16: KEAN   
+    CALL checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge, &
+          rbackupTriangulation%h_IverticesAtEdge)
+
+    ! Bit  7: KNPR   
+    CALL checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_InodalProperty, &
+          rbackupTriangulation%h_InodalProperty)
+
+    ! Bit 19: DAREA  
+    CALL checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementArea, &
+          rbackupTriangulation%h_DelementArea)
+
+    ! Bit  5: KVEL   
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertexIdx, &
+          rbackupTriangulation%h_IelementsAtVertexIdx)
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertex, &
+          rbackupTriangulation%h_IelementsAtVertex)
+
+    ! Bit 11: KBCT   
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx, &
+          rbackupTriangulation%h_IboundaryCpIdx)
+
+    ! Bit  9: KVBD   
+    CALL checkAndCopy(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
+          rtriangulation%h_IverticesAtBoundary, &
+          rbackupTriangulation%h_IverticesAtBoundary)
+
+    ! Bit 14: KMBD   
+    CALL checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary, &
+          rbackupTriangulation%h_IedgesAtBoundary)
+
+    ! Bit 10: KEBD   
+    CALL checkAndCopy(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
+          rtriangulation%h_IelementsAtBoundary, &
+          rbackupTriangulation%h_IelementsAtBoundary)
+
+    ! Bit 12: DVBDP  
+    CALL checkAndCopy(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
+          rtriangulation%h_DvertexParameterValue, &
+          rbackupTriangulation%h_DvertexParameterValue)
+
+    ! Bit 13: DMBDP  
+    CALL checkAndCopy(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
+          rtriangulation%h_DedgeParameterValue, &
+          rbackupTriangulation%h_DedgeParameterValue)
+
+    ! Bit 17: KVBDI  
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
+          rtriangulation%h_IboundaryVertexPos, &
+          rbackupTriangulation%h_IboundaryVertexPos)
+
+    ! Bit 18: KMBDI  
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
+          rtriangulation%p_IboundaryEdgePos, &
+          rbackupTriangulation%p_IboundaryEdgePos)
+    
+    ! Bit  1: DCORMG 
+    CALL checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
+          rtriangulation%h_DfreeVertexCoordinates, &
+          rbackupTriangulation%h_DfreeVertexCoordinates)
+    
+  CONTAINS
+  
+    SUBROUTINE checkAndCopy (idupFlag,ibitfield,isourcehandle,idesthandle)
+    
+    ! Checks if idupFlag has all bits ibitfield set.
+    ! If yes, idesthandle is set to isourcehandle.
+    ! Otherwise, the memory behind isourcehandle is duplicated in memory
+    ! and idesthandle receives the handle to the new memory block.
+    
+    INTEGER(I32), INTENT(IN) :: ibitfield
+    INTEGER(I32), INTENT(IN) :: idupFlag
+    INTEGER, INTENT(IN) :: isourcehandle
+    INTEGER, INTENT(INOUT) :: idesthandle
+    
+      IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
+        IF (isourcehandle .NE. isourcehandle) THEN
+          CALL storage_copy(isourcehandle,idesthandle)
+        END IF
+      ELSE
+        idesthandle = isourcehandle
+      END IF
+      
+    END SUBROUTINE
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_restore (rbackupTriangulation,rtriangulation)
+  
+!<description>
+  ! This routine restores data of a triangulation structure. All
+  ! information arrays not shared between rbackupTriangulation and another 
+  ! triangulation structure is copied (back) into the rtriangulation.
+!</description>
+
+!<input>
+  ! Backup of a triangulation structure.
+  TYPE(t_triangulation), INTENT(IN) :: rbackupTriangulation
+!</input>
+
+!<inputoutput>
+  ! Destination triangulation.
+  ! All arrays where a duplicates exist in rtriangulation are copied
+  ! to rtriangulation, overwriting the old information arrays.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER(I32) :: idupFlag
+  
+    idupFlag = rtriangulation%iduplicationFlag
+      
+    ! Call checkAndCopy for all the arrays. this will either copy the handle
+    ! or copy the content of the array.
+    
+    ! Bit  0: DCORVG 
+    CALL checkAndCopy(idupflag, TR_SHARE_DCORNERCOORDINATES,&
+          rtriangulation%h_DcornerCoordinates, &
+          rbackupTriangulation%h_DcornerCoordinates)
+
+    ! Bit  2: KVERT  
+    CALL checkAndCopy(idupflag, TR_SHARE_IVERTICESATELEMENT,&
+          rtriangulation%h_IverticesAtElement, &
+          rbackupTriangulation%h_IverticesAtElement)
+
+    ! Bit  3: KMID   
+    CALL checkAndCopy(idupflag, TR_SHARE_IEDGESATELEMENT,&
+          rtriangulation%h_IedgesAtElement, &
+          rbackupTriangulation%h_IedgesAtElement)
+    
+    ! Bit  4: KADJ   
+    CALL checkAndCopy(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
+          rtriangulation%h_IneighboursAtElement, &
+          rbackupTriangulation%h_IneighboursAtElement)
+
+    ! Bit  6: KMEL   
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge, &
+          rbackupTriangulation%h_IelementsAtEdge)
+
+    ! Bit 16: KEAN   
+    CALL checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge, &
+          rbackupTriangulation%h_IverticesAtEdge)
+
+    ! Bit  7: KNPR   
+    CALL checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_InodalProperty, &
+          rbackupTriangulation%h_InodalProperty)
+
+    ! Bit 19: DAREA  
+    CALL checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementArea, &
+          rbackupTriangulation%h_DelementArea)
+
+    ! Bit  5: KVEL   
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertexIdx, &
+          rbackupTriangulation%h_IelementsAtVertexIdx)
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertex, &
+          rbackupTriangulation%h_IelementsAtVertex)
+
+    ! Bit 11: KBCT   
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx, &
+          rbackupTriangulation%h_IboundaryCpIdx)
+
+    ! Bit  9: KVBD   
+    CALL checkAndCopy(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
+          rtriangulation%h_IverticesAtBoundary, &
+          rbackupTriangulation%h_IverticesAtBoundary)
+
+    ! Bit 14: KMBD   
+    CALL checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary, &
+          rbackupTriangulation%h_IedgesAtBoundary)
+
+    ! Bit 10: KEBD   
+    CALL checkAndCopy(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
+          rtriangulation%h_IelementsAtBoundary, &
+          rbackupTriangulation%h_IelementsAtBoundary)
+
+    ! Bit 12: DVBDP  
+    CALL checkAndCopy(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
+          rtriangulation%h_DvertexParameterValue, &
+          rbackupTriangulation%h_DvertexParameterValue)
+
+    ! Bit 13: DMBDP  
+    CALL checkAndCopy(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
+          rtriangulation%h_DedgeParameterValue, &
+          rbackupTriangulation%h_DedgeParameterValue)
+
+    ! Bit 17: KVBDI  
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
+          rtriangulation%h_IboundaryVertexPos, &
+          rbackupTriangulation%h_IboundaryVertexPos)
+
+    ! Bit 18: KMBDI  
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
+          rtriangulation%p_IboundaryEdgePos, &
+          rbackupTriangulation%p_IboundaryEdgePos)
+    
+    ! Bit  1: DCORMG 
+    CALL checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
+          rtriangulation%h_DfreeVertexCoordinates, &
+          rbackupTriangulation%h_DfreeVertexCoordinates)
+    
+  CONTAINS
+  
+    SUBROUTINE checkAndCopy (idupFlag,ibitfield,idesthandle,isourcehandle)
+    
+    ! Checks if idupFlag has all bits ibitfield set.
+    ! If not, the memory behind isourcehandle is copied to idesthandle
+    ! overwriting all previous information.
+    
+    INTEGER(I32), INTENT(IN) :: ibitfield
+    INTEGER(I32), INTENT(IN) :: idupFlag
+    INTEGER, INTENT(IN) :: isourcehandle
+    INTEGER, INTENT(INOUT) :: idesthandle
+    
+      IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
+        IF (isourcehandle .NE. ST_NOHANDLE) THEN
+          CALL storage_copy(isourcehandle,idesthandle)
+        END IF
+      END IF
+      
+    END SUBROUTINE
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_recoverHandles (rtriangulation,rbackupTriangulation)
+  
+!<description>
+  ! With this routine, destroyed handles of shared information between
+  ! two triangulation structures can be recovered. TRIA is assumed to
+  ! be a valid triangulation structure. The handles of all arrays
+  ! of information that TRIA shares with TRIADS are copied to TRIADS.
+  !
+  ! This routine is typically used in refinement processes when e.g.
+  ! coordinates of grid points are shared between two levels of
+  ! refinement. Upon refining the coarser grid, the handle in the
+  ! source grid gets invalid, while the handle of the fine grid is
+  ! the new valid one. TRICSH can now be used to copy the handle
+  ! back from the fine grid triangulation structure to the coarse
+  ! grid triangulation structure.
+  !
+  ! Example: DcornerCoordinates is shared between all refinement levels.
+  ! Then the caller can create the grid by:
+  !
+  !   CALL GENTRI (IMETH=2, filename='anything.tri')  -> read coarse gr.
+  !   DO I=NLMIN+1,NLMAX                              -> refine to NLMAX
+  !     CALL GENTRI (TRIA(I-1),TRIA(I),IMETH=1,IDPFLG=1)
+  !     --> generates TRIA(I), whereas destroys LCORVG on level I-1!
+  !   END DO
+  !   DO I=NLMAX-1,NLMIN,-1             -> write LCORVG of lv. n+1 into
+  !     CALL tria_recoverHandles (TRIA(I),TRIA(I+1))  -> h_DcornerCoordinates of level n
+  !   END DO
+  !
+  ! Afterwards, the information is again shared correctly between all
+  ! levels.
+  !
+  ! WARNING: Use this routine with care. It does not check whether
+  ! rtriangulation and rbackupTriangulation are 'compatible' to each other
+  ! and may throw away old handles which may lead to memory leaks!
+  ! Only apply this routine to handles of memory block which are really
+  ! invalid!
+!</description>
+
+!<input>
+  ! Valid triangulation structure, which is a modified copy of 
+  ! rtriangulation.
+  TYPE(t_triangulation), INTENT(IN) :: rbackupTriangulation
+!</input>
+
+!<inputoutput>
+  ! Destination triangulation.
+  ! The handles of all arrays that are shared with rbackupTriangulation
+  ! are copied to rtriangulation. Old handles in rtriangulation are assumed
+  ! to be invalid and will be overwritten by those of rbackupTriangulation.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! local variables
+    INTEGER(I32) :: idupFlag
+
+    idupFlag = rtriangulation%iduplicationFlag
+      
+    ! Call checkAndCopy for all the arrays. this will either copy the handle
+    ! or copy the content of the array.
+    
+    ! Bit  0: DCORVG 
+    CALL checkAndCopy(idupflag, TR_SHARE_DCORNERCOORDINATES,&
+          rtriangulation%h_DcornerCoordinates, &
+          rbackupTriangulation%h_DcornerCoordinates)
+
+    ! Bit  2: KVERT  
+    CALL checkAndCopy(idupflag, TR_SHARE_IVERTICESATELEMENT,&
+          rtriangulation%h_IverticesAtElement, &
+          rbackupTriangulation%h_IverticesAtElement)
+
+    ! Bit  3: KMID   
+    CALL checkAndCopy(idupflag, TR_SHARE_IEDGESATELEMENT,&
+          rtriangulation%h_IedgesAtElement, &
+          rbackupTriangulation%h_IedgesAtElement)
+    
+    ! Bit  4: KADJ   
+    CALL checkAndCopy(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
+          rtriangulation%h_IneighboursAtElement, &
+          rbackupTriangulation%h_IneighboursAtElement)
+
+    ! Bit  6: KMEL   
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge, &
+          rbackupTriangulation%h_IelementsAtEdge)
+
+    ! Bit 16: KEAN   
+    CALL checkAndCopy(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge, &
+          rbackupTriangulation%h_IverticesAtEdge)
+
+    ! Bit  7: KNPR   
+    CALL checkAndCopy(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_InodalProperty, &
+          rbackupTriangulation%h_InodalProperty)
+
+    ! Bit 19: DAREA  
+    CALL checkAndCopy(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementArea, &
+          rbackupTriangulation%h_DelementArea)
+
+    ! Bit  5: KVEL   
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertexIdx, &
+          rbackupTriangulation%h_IelementsAtVertexIdx)
+    CALL checkAndCopy(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertex, &
+          rbackupTriangulation%h_IelementsAtVertex)
+
+    ! Bit 11: KBCT   
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx, &
+          rbackupTriangulation%h_IboundaryCpIdx)
+
+    ! Bit  9: KVBD   
+    CALL checkAndCopy(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
+          rtriangulation%h_IverticesAtBoundary, &
+          rbackupTriangulation%h_IverticesAtBoundary)
+
+    ! Bit 14: KMBD   
+    CALL checkAndCopy(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary, &
+          rbackupTriangulation%h_IedgesAtBoundary)
+
+    ! Bit 10: KEBD   
+    CALL checkAndCopy(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
+          rtriangulation%h_IelementsAtBoundary, &
+          rbackupTriangulation%h_IelementsAtBoundary)
+
+    ! Bit 12: DVBDP  
+    CALL checkAndCopy(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
+          rtriangulation%h_DvertexParameterValue, &
+          rbackupTriangulation%h_DvertexParameterValue)
+
+    ! Bit 13: DMBDP  
+    CALL checkAndCopy(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
+          rtriangulation%h_DedgeParameterValue, &
+          rbackupTriangulation%h_DedgeParameterValue)
+
+    ! Bit 17: KVBDI  
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
+          rtriangulation%h_IboundaryVertexPos, &
+          rbackupTriangulation%h_IboundaryVertexPos)
+
+    ! Bit 18: KMBDI  
+    CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
+          rtriangulation%p_IboundaryEdgePos, &
+          rbackupTriangulation%p_IboundaryEdgePos)
+    
+    ! Bit  1: DCORMG 
+    CALL checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
+          rtriangulation%h_DfreeVertexCoordinates, &
+          rbackupTriangulation%h_DfreeVertexCoordinates)
+    
+  CONTAINS
+  
+    SUBROUTINE checkAndCopy (idupFlag,ibitfield,idesthandle,isourcehandle)
+    
+    ! Checks if idupFlag has all bits ibitfield set.
+    ! If yes, the handle isourcehandle is copied to idesthandle.
+    
+    INTEGER(I32), INTENT(IN) :: ibitfield
+    INTEGER(I32), INTENT(IN) :: idupFlag
+    INTEGER, INTENT(IN) :: isourcehandle
+    INTEGER, INTENT(INOUT) :: idesthandle
+    
+      IF (IAND(idupFlag,ibitfield) .EQ. ibitfield) THEN
+        idesthandle = isourcehandle
+      END IF
+      
+    END SUBROUTINE
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_done (rtriangulation)
   
 !<description>
   ! This routine cleans up a triangulation structure.
@@ -951,26 +1553,18 @@ CONTAINS
   ! rtriangulation%Itria substructure!
 !</description>
 
-!<input>
-  ! OPTIONAL: If set to TRUE, the structure rtriangulation itself is not 
-  ! released from memory. If set to FALSE or not existent (the usual setting), 
-  ! the structure p_rboundary will also be removed from the heap after 
-  ! cleaning up.
-  LOGICAL, INTENT(IN), OPTIONAL :: bkeepStructure
-!</input>
-
 !<inputoutput>
   ! The triangulation structure to be cleaned up.
-  TYPE(t_triangulation), POINTER :: p_rtriangulation
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
 
     INTEGER(I32) :: idupflag
     
-    IF (.NOT. ASSOCIATED(p_rtriangulation)) RETURN
+    IF (rtriangulation%ndim .EQ. 0) RETURN
     
-    idupflag = p_rtriangulation%iduplicationFlag
+    idupflag = rtriangulation%iduplicationFlag
     
     ! Bit  8: KMM    is a copy of another structure
     ! ... does not exist!?!
@@ -980,96 +1574,109 @@ CONTAINS
     ! these must not be released, as we are not the owner of them!
     
     ! Bit  0: DCORVG is a copy of another structure
-    CALL checkAndRelease(idupflag, 0,p_rtriangulation%h_DcornerCoordinates)
+    CALL checkAndRelease(idupflag, TR_SHARE_DCORNERCOORDINATES,&
+          rtriangulation%h_DcornerCoordinates)
 
     ! Bit  2: KVERT  is a copy of another structure
-    CALL checkAndRelease(idupflag, 2,p_rtriangulation%h_IverticesAtElement)
+    CALL checkAndRelease(idupflag, TR_SHARE_IVERTICESATELEMENT,&
+          rtriangulation%h_IverticesAtElement)
 
     ! Bit  3: KMID   is a copy of another structure
-    CALL checkAndRelease(idupflag, 3,p_rtriangulation%h_IedgesAtElement)
+    CALL checkAndRelease(idupflag, TR_SHARE_IEDGESATELEMENT,&
+          rtriangulation%h_IedgesAtElement)
     
     ! Bit  4: KADJ   is a copy of another structure
-    CALL checkAndRelease(idupflag, 4,p_rtriangulation%h_IneighboursAtElement)
+    CALL checkAndRelease(idupflag, TR_SHARE_INEIGHBOURSATELEMENT,&
+          rtriangulation%h_IneighboursAtElement)
 
     ! Bit  6: KMEL   is a copy of another structure
-    CALL checkAndRelease(idupflag, 6,p_rtriangulation%h_IelementsAtEdge)
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATEDGE,&
+          rtriangulation%h_IelementsAtEdge)
 
     ! Bit 16: KEAN   is a copy of another structure
-    CALL checkAndRelease(idupflag,16,p_rtriangulation%h_IverticesAtEdge)
+    CALL checkAndRelease(idupflag,TR_SHARE_IVERTICESATEDGE,&
+          rtriangulation%h_IverticesAtEdge)
 
     ! Bit  7: KNPR   is a copy of another structure
-    CALL checkAndRelease(idupflag, 7,p_rtriangulation%h_InodalProperty)
+    CALL checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_InodalProperty)
 
     ! Bit 19: DAREA  is a copy of another structure
-    CALL checkAndRelease(idupflag,19,p_rtriangulation%h_DelementArea)
+    CALL checkAndRelease(idupflag,TR_SHARE_DELEMENTAREA,&
+          rtriangulation%h_DelementArea)
 
     ! Bit  5: KVEL   is a copy of another structure
-    CALL checkAndRelease(idupflag, 5,p_rtriangulation%h_IelementsAtVertexIdx)
-    CALL checkAndRelease(idupflag, 5,p_rtriangulation%h_IelementsAtVertex)
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertexIdx)
+    CALL checkAndRelease(idupflag, TR_SHARE_IELEMENTSATVERTEX,&
+          rtriangulation%h_IelementsAtVertex)
 
     ! Bit 11: KBCT   is a copy of another structure
-    CALL checkAndRelease(idupflag,11,p_rtriangulation%h_IboundaryCpIdx)
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYCPIDX,&
+          rtriangulation%h_IboundaryCpIdx)
 
     ! Bit  9: KVBD   is a copy of another structure
-    CALL checkAndRelease(idupflag, 9,p_rtriangulation%h_IverticesAtBoundary)
+    CALL checkAndRelease(idupflag, TR_SHARE_IVERTICESATBOUNDARY,&
+          rtriangulation%h_IverticesAtBoundary)
 
     ! Bit 14: KMBD   is a copy of another structure
-    CALL checkAndRelease(idupflag,14,p_rtriangulation%h_IedgesAtBoundary)
+    CALL checkAndRelease(idupflag,TR_SHARE_IEDGESATBOUNDARY,&
+          rtriangulation%h_IedgesAtBoundary)
 
     ! Bit 10: KEBD   is a copy of another structure
-    CALL checkAndRelease(idupflag,10,p_rtriangulation%h_IelementsAtBoundary)
+    CALL checkAndRelease(idupflag,TR_SHARE_IELEMENTSATBOUNDARY,&
+          rtriangulation%h_IelementsAtBoundary)
 
     ! Bit 12: DVBDP  is a copy of another structure
-    CALL checkAndRelease(idupflag,12,p_rtriangulation%h_DvertexParameterValue)
+    CALL checkAndRelease(idupflag,TR_SHARE_DVERTEXPARAMETERVALUE,&
+          rtriangulation%h_DvertexParameterValue)
 
     ! Bit 13: DMBDP  is a copy of another structure
-    CALL checkAndRelease(idupflag,13,p_rtriangulation%h_DedgeParameterValue)
+    CALL checkAndRelease(idupflag,TR_SHARE_DEDGEPARAMETERVALUE,&
+          rtriangulation%h_DedgeParameterValue)
 
     ! Bit 17: KVBDI  is a copy of another structure
-    CALL checkAndRelease(idupflag,17,p_rtriangulation%h_IboundaryVertexPos)
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYVERTEXPOS,&
+          rtriangulation%h_IboundaryVertexPos)
 
     ! Bit 18: KMBDI  is a copy of another structure
-    CALL checkAndRelease(idupflag,18,p_rtriangulation%p_IboundaryEdgePos)
+    CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
+          rtriangulation%p_IboundaryEdgePos)
     
     ! Bit  1: DCORMG is a copy of another structure
-    CALL checkAndRelease(idupflag, 1,p_rtriangulation%h_DfreeVertexCoordinates)
+    CALL checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
+          rtriangulation%h_DfreeVertexCoordinates)
     
     ! Clean up the rest of the structure
 
-    p_rtriangulation%iduplicationFlag = 0
-    p_rtriangulation%NVT = 0
-    p_rtriangulation%NMT = 0
-    p_rtriangulation%NEL = 0
-    p_rtriangulation%NBCT = 0
-    p_rtriangulation%NVBD = 0
-    p_rtriangulation%NMBD = 0
-    p_rtriangulation%nverticesPerEdge = 0
-    p_rtriangulation%nVerticesOnAllEdges = 0
-    p_rtriangulation%nverticesInEachElement = 0
-    p_rtriangulation%nverticesInAllElements = 0
-    p_rtriangulation%nadditionalVertices = 0
-
-    ! Deallocate the structure (if we are allowed to), finish.
-    IF (.NOT. PRESENT(bkeepStructure)) THEN
-      DEALLOCATE(p_rtriangulation)
-    ELSE
-      IF (.NOT. bkeepStructure) DEALLOCATE(p_rtriangulation)
-    END IF
+    rtriangulation%iduplicationFlag = 0
+    rtriangulation%ndim = 0
+    rtriangulation%NVT = 0
+    rtriangulation%NMT = 0
+    rtriangulation%NEL = 0
+    rtriangulation%NBCT = 0
+    rtriangulation%NVBD = 0
+    rtriangulation%NMBD = 0
+    rtriangulation%nverticesPerEdge = 0
+    rtriangulation%nVerticesOnAllEdges = 0
+    rtriangulation%nverticesInEachElement = 0
+    rtriangulation%nverticesInAllElements = 0
+    rtriangulation%nadditionalVertices = 0
 
     ! That's it...
 
   CONTAINS
   
     ! **********************************************************
-    ! Release handle ihandle if bit ibit in idubFlag is not set.
+    ! Release handle ihandle if bitfield ibitfield in idubFlag is not set.
     ! Otherwise, ihandle is set to ST_NOHANDLE.    
-    SUBROUTINE checkAndRelease (idupFlag,ibit,ihandle)
+    SUBROUTINE checkAndRelease (idupFlag,ibitfield,ihandle)
     
-    INTEGER, INTENT(IN) :: ibit
+    INTEGER(I32), INTENT(IN) :: ibitfield
     INTEGER(I32), INTENT(IN) :: idupFlag
     INTEGER, INTENT(INOUT) :: ihandle
     
-      IF (IAND(idupFlag,2**ibit) .EQ. 0) THEN
+      IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
         IF (ihandle .NE. ST_NOHANDLE) CALL storage_free(ihandle)
       ELSE
         ihandle = ST_NOHANDLE

@@ -396,7 +396,7 @@ MODULE collection
     TYPE(t_discreteBC), POINTER  :: p_rdiscreteBC     => NULL()
 
     ! Pointer to a domain
-    TYPE(t_boundary), POINTER      :: p_rdomain => NULL()
+    TYPE(t_boundary), POINTER      :: p_rboundary => NULL()
 
     ! Pointer to scalar boundary conditions
     TYPE(t_boundaryConditions), POINTER      :: p_rboundaryConditions => NULL()
@@ -1525,7 +1525,7 @@ CONTAINS
     NULLIFY(p_rvalue%p_rparlist)
     NULLIFY(p_rvalue%p_rlinearSolver)
     NULLIFY(p_rvalue%p_rdiscreteBC)
-    NULLIFY(p_rvalue%p_rdomain)
+    NULLIFY(p_rvalue%p_rboundary)
     NULLIFY(p_rvalue%p_rboundaryConditions)
     NULLIFY(p_rvalue%p_rcollection)
     
@@ -2442,7 +2442,7 @@ CONTAINS
 
   ! Return the quantity
   IF (ASSOCIATED(p_rvalue)) THEN
-    value => p_rvalue%p_rdomain
+    value => p_rvalue%p_rboundary
   ELSE
     NULLIFY(value)
   END IF
@@ -3686,7 +3686,7 @@ CONTAINS
                               badd,p_rvalue, ilevel, bexists, ssectionName)
   
   ! Set the value
-  p_rvalue%p_rdomain => value
+  p_rvalue%p_rboundary => value
 
   END SUBROUTINE
 

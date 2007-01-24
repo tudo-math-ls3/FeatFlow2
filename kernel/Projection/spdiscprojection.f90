@@ -90,7 +90,7 @@ CONTAINS
       STOP
     END IF
     
-    IF (.NOT. ASSOCIATED(p_rsourceDiscr%p_rdomain, p_rdestDiscr%p_rdomain)) THEN
+    IF (.NOT. ASSOCIATED(p_rsourceDiscr%p_rboundary, p_rdestDiscr%p_rboundary)) THEN
       PRINT *,'spdp_projectSolutionScalar: Different domains'
       STOP
     END IF

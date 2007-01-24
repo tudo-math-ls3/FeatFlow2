@@ -295,7 +295,7 @@ MODULE boundarycondition
   
     ! Pointer to the domain that is connected with this boundary 
     ! condition
-    TYPE(t_boundary), POINTER :: rdomain => NULL()
+    TYPE(t_boundary), POINTER :: p_rboundary => NULL()
     
     ! Number of regions in the list of boundary condition regions,
     ! corresponding to boundary regions.
@@ -345,7 +345,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE bcond_initBC (p_rboundaryConditions,rdomain,ibcRegionsCount)
+  SUBROUTINE bcond_initBC (p_rboundaryConditions,rboundary,ibcRegionsCount)
   
 !<description>
   ! This routine initialises a boundary condition structure.
@@ -355,7 +355,7 @@ CONTAINS
 
 !<input>
   ! The domain which is to be connected to the boundary conditions.
-  TYPE(t_boundary), INTENT(IN), TARGET :: rdomain
+  TYPE(t_boundary), INTENT(IN), TARGET :: rboundary
   
   ! OPTIONAL: The initial size of the lists saving boundary conditions.
   ! When adding boundary conditions to the rboundaryConditions structure,
@@ -386,7 +386,7 @@ CONTAINS
   ! rboundaryConditions is assumed as 'intent=out'. We only have to make
   ! the connection to the domain.
   
-  p_rboundaryConditions%rdomain => rdomain
+  p_rboundaryConditions%p_rboundary => rboundary
   
   ! Allocate memory for boundary condition lists
   ibcCount = BC_LISTBLOCKSIZE
@@ -433,7 +433,7 @@ CONTAINS
   p_rboundaryConditions%iregionCountFBC = 0
   !p_rboundaryConditions%iregionCountFree = 0
   p_rboundaryConditions%iregionCount = 0
-  p_rboundaryConditions%rdomain => NULL()
+  p_rboundaryConditions%p_rboundary => NULL()
 
   ! Deallocate the structure (if we are allowed to), finish.
   IF (.NOT. PRESENT(bkeepStructure)) THEN

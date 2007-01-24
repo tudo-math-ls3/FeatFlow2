@@ -162,7 +162,7 @@ MODULE spatialdiscretisation
     LOGICAL                          :: bisCopy                = .FALSE.
   
     ! Pointer to the domain that is discretised
-    TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
+    TYPE(t_boundary), POINTER        :: p_rboundary            => NULL()
     
     ! Pointer to the underlying triangulation of the mesh (2D)
     TYPE(t_triangulation), POINTER   :: p_rtriangulation       => NULL()
@@ -235,7 +235,7 @@ MODULE spatialdiscretisation
     INTEGER                          :: ccomplexity            = SPDISC_UNIFORM
   
     ! Pointer to the domain that is discretised
-    TYPE(t_boundary), POINTER        :: p_rdomain              => NULL()
+    TYPE(t_boundary), POINTER        :: p_rboundary            => NULL()
     
     ! Pointer to the underlying triangulation of the mesh (2D)
     TYPE(t_triangulation), POINTER   :: p_rtriangulation     => NULL()
@@ -388,7 +388,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE spdiscr_initBlockDiscr2D (rblockDiscr,ncomponents,&
-                                       rtriangulation, rdomain, rboundaryConditions)
+                                       rtriangulation, rboundary, rboundaryConditions)
   
 !<description>
   
@@ -409,7 +409,7 @@ CONTAINS
   TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
   
   ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rdomain
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
   
   ! Number of solution components maintained by the block structure
   INTEGER, INTENT(IN)                          :: ncomponents
@@ -433,7 +433,7 @@ CONTAINS
   rblockDiscr%ndimension             = NDIM2D
   rblockDiscr%ccomplexity            = SPDISC_UNIFORM
   rblockDiscr%p_rtriangulation       => rtriangulation
-  rblockDiscr%p_rdomain              => rdomain
+  rblockDiscr%p_rboundary            => rboundary
   IF (PRESENT(rboundaryConditions)) THEN
     rblockDiscr%p_rboundaryConditions  => rboundaryConditions
   ELSE
@@ -476,7 +476,7 @@ CONTAINS
 
   ! Cut the connection to the other structures
   NULLIFY(rblockDiscr%p_rtriangulation)
-  NULLIFY(rblockDiscr%p_rdomain)
+  NULLIFY(rblockDiscr%p_rboundary)
   NULLIFY(rblockDiscr%p_rboundaryConditions)
   
   ! Release substructures?
@@ -497,7 +497,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE spdiscr_initDiscr_simple (rspatialDiscr,ieltyp, ccubType,&
-                                       rtriangulation, rdomain, rboundaryConditions)
+                                       rtriangulation, rboundary, rboundaryConditions)
   
 !<description>
   ! This routine initialises a discretisation structure for a uniform
@@ -519,7 +519,7 @@ CONTAINS
   TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
   
   ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rdomain
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
   
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
@@ -547,7 +547,7 @@ CONTAINS
   ! Initialise the variables of the structure for the simple discretisation
   rspatialDiscr%ndimension             = NDIM2D
   rspatialDiscr%p_rtriangulation       => rtriangulation
-  rspatialDiscr%p_rdomain              => rdomain
+  rspatialDiscr%p_rboundary            => rboundary
   rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   ! All trial elements are ieltyp:
@@ -697,7 +697,7 @@ CONTAINS
 
   SUBROUTINE spdiscr_initDiscr_combined (rspatialDiscr, &
                                ieltypTrial, ieltypTest, ccubType,&
-                               rtriangulation, rdomain, rboundaryConditions)
+                               rtriangulation, rboundary, rboundaryConditions)
   
 !<description>
   ! This routine initialises a discretisation structure for a uniform
@@ -724,7 +724,7 @@ CONTAINS
   TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
   
   ! The underlying domain.
-  TYPE(t_boundary), INTENT(IN), TARGET         :: rdomain
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
   
   ! OPTIONAL: The analytical description of the boundary conditions.
   ! Parameter can be ommitted if boundary conditions are not defined.
@@ -752,7 +752,7 @@ CONTAINS
   ! Initialise the variables of the structure for the simple discretisation
   rspatialDiscr%ndimension             = NDIM2D
   rspatialDiscr%p_rtriangulation       => rtriangulation
-  rspatialDiscr%p_rdomain              => rdomain
+  rspatialDiscr%p_rboundary            => rboundary
   rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
   
   rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
@@ -847,7 +847,7 @@ CONTAINS
 
   ! Cut the connection to the other structures
   NULLIFY(rspatialDiscr%p_rtriangulation)
-  NULLIFY(rspatialDiscr%p_rdomain)
+  NULLIFY(rspatialDiscr%p_rboundary)
   
   ! Release element identifier lists.
   ! The element identifier list is never a copy of another structure!

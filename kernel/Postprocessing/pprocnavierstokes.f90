@@ -305,7 +305,7 @@ CONTAINS
         dvtp2 = p_DvertexParameterValue (iedgeidx+1)
       ELSE
         ! Last vertex has maximum parameter value! (TMAX)
-        dvtp2 = boundary_dgetMaxParVal(p_rdiscrU%p_rdomain,icp)
+        dvtp2 = boundary_dgetMaxParVal(p_rdiscrU%p_rboundary,icp)
       END IF
       
       ! Is the edge in the specified boundary region, so we are allowed 

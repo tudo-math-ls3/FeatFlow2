@@ -889,10 +889,10 @@ CONTAINS
   ! to give us the minimum and maximum index of the vertices and edges on the
   ! bondary that belong to this boundary segment.
   
-  CALL bcasm_getVertInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rdomain, &
+  CALL bcasm_getVertInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
                                 rbcRegion%rboundaryRegion, &
                                 IminVertex,ImaxVertex,icount)
-  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rdomain, &
+  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
                                  rbcRegion%rboundaryRegion, &
                                  IminEdge,ImaxEdge,icount2)
                                  
@@ -1407,7 +1407,7 @@ CONTAINS
   ! to give us the minimum and maximum index of the edges on the
   ! bondary that belong to this boundary segment.
   
-  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rdomain, &
+  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
                                  rbcRegion%rboundaryRegion, &
                                  IminEdge,ImaxEdge,icount)
                                  
@@ -1671,7 +1671,7 @@ CONTAINS
   ! to give us the minimum and maximum index of the edges on the
   ! bondary that belong to this boundary segment.
   
-  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rdomain, &
+  CALL bcasm_getEdgesInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
                                  rbcRegion%rboundaryRegion, &
                                  IminEdge,ImaxEdge,icount)
                                  

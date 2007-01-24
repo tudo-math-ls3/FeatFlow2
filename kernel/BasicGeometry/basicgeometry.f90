@@ -71,7 +71,7 @@ MODULE basicgeometry
   
   ! The point structure for regular 2D coordinate systems, consisting of
   ! a rotated X- and Y-axes
-  TYPE t_coordinateSystem3D
+  TYPE t_coordinateSystem2D
   
     ! Coordinates of the origin
     TYPE(t_point2D) :: origin = t_point2D(0.0_DP,0.0_DP)

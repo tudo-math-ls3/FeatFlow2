@@ -119,7 +119,7 @@ CONTAINS
     INTEGER, DIMENSION(ndim) :: Kindx,Kindy
 
     REAL(DP) :: dpivot,daux
-    INTEGER :: idim1,idim2,idim3,ix,iy,indx,indy,info
+    INTEGER :: idim1,idim2,ix,iy,indx,indy,info
 
     SELECT CASE (ipar)
     CASE (0)
@@ -365,7 +365,7 @@ CONTAINS
     INTEGER, DIMENSION(ndim) :: Kindx,Kindy
 
     REAL(SP) :: fpivot,faux
-    INTEGER :: idim1,idim2,idim3,ix,iy,indx,indy,info
+    INTEGER :: idim1,idim2,ix,iy,indx,indy,info
 
     SELECT CASE (ipar)
     CASE (0)
@@ -587,4 +587,53 @@ CONTAINS
 
     kron=MERGE(1,0,i==j)
   END FUNCTION kronecker
+
+!************************************************************************
+
+!<subroutine>
+  
+  PURE SUBROUTINE mprim_linearRescale(dx,da,db,dc,dd,dy)
+  
+!<description>
+  ! Scales a coordinate x linearly from the interval [a,b] to the
+  ! interval [c,d].
+!</description>
+
+!<input>
+  ! coordinate to be rescaled
+  REAL(DP), INTENT(IN) :: dx
+  
+  ! [a,b] - source interval
+  REAL(DP), INTENT(IN) :: da,db
+  
+  ! [c,d] - destination interval
+  REAL(DP), INTENT(IN) :: dc,dd
+!</input>
+
+!<output>
+  ! Rescaled coordinate
+  REAL(DP), INTENT(OUT) :: dy
+!</output>
+
+!</subroutine>
+
+    REAL(DP) :: d1,d2,d3
+
+    ! Calculate the coefficients of the transformation 
+    !    D1*A+D2 = C, D1*B+D2 = D.
+    ! Use them to calculate Y=D1*X+D2.
+
+    IF (dA .EQ. db) THEN
+      dy = dc
+      RETURN
+    END IF
+
+    d3 = 1.0_DP/(da-db)
+    d1 = (dc-dd)*d3
+    d2 = (-db*dc+da*dd)*d3
+    
+    dy = d1*dx+d2
+
+  END SUBROUTINE
+
 END MODULE mprimitives
