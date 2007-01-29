@@ -66,7 +66,7 @@ dtheta = 1.0
 niterations = 10
 
 # Time step size.
-dtstep = 0.1
+dtstep = 0.01
 
 # Start time
 dtimemin = 0.0
