@@ -232,7 +232,7 @@ CONTAINS
       CALL lsysbl_updateMatStrucInfo (p_rmatrixMass)
 
       ! Now we can build the matrix entries of the mass matrix.
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+      CALL bilf_buildMatrixScalar (rformmass,.TRUE.,&
                                    p_rmatrixMass%RmatrixBlock(1,1))
 
       ! -------------------------------------------------------------
