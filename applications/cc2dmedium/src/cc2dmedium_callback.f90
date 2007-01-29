@@ -588,7 +588,7 @@ CONTAINS
         ! by SEC_EXPRVARIABLES!
         Rval = 0.0_DP
         
-        CALL boundary_getCoords(rdiscretisation%p_rdomain, &
+        CALL boundary_getCoords(rdiscretisation%p_rboundary, &
                                 rboundaryRegion%iboundCompIdx, &
                                 dpar, dx, dy)
         
@@ -599,7 +599,7 @@ CONTAINS
         !      and 0 <= dmaxpar <= max.par!
         d = dpar 
         IF (d .LT. rboundaryRegion%dminParam) &
-          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rdomain,&
+          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
         
@@ -608,7 +608,7 @@ CONTAINS
         ! Rval(3) = .
         Rval(4) = d
         Rval(5) = dpar
-        Rval(6) = boundary_convertParameter(rdiscretisation%p_rdomain, &
+        Rval(6) = boundary_convertParameter(rdiscretisation%p_rboundary, &
                                             rboundaryRegion%iboundCompIdx, dpar, &
                                             BDR_PAR_01, BDR_PAR_LENGTH) 
         Rval(7) = 0.0_DP
@@ -628,7 +628,7 @@ CONTAINS
         !      and 0 <= dmaxpar <= max.par!
         d = dpar 
         IF (d .LT. rboundaryRegion%dminParam) &
-          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rdomain,&
+          d = d + boundary_dgetMaxParVal(rdiscretisation%p_rboundary,&
                                          rboundaryRegion%iboundCompIdx)
         d = d - rboundaryRegion%dminParam
     
