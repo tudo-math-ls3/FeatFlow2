@@ -66,6 +66,7 @@
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_bcassembly.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_coefficientMatrixSc.inc"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_coefficientTrilMatrixSc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_coefficientVectorSc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_fbcassembly.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\linearformevaluation.f90">
@@ -81,6 +82,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\spatialdiscretisation.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\trilinearformevaluation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\vectorfilters.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
