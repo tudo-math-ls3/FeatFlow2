@@ -59,15 +59,15 @@ PROGRAM heatcond
              'log/feat1.sys','log/feat1.trc') 
   
   ! Call the problem to solve - method 5 = multigrid
-  PRINT *
-  PRINT *,'Calculating heatcond-Problem with method 5'
-  PRINT *,'------------------------------------------'
+  CALL output_lbrk()
+  CALL output_line('Calculating heatcond-Problem with method 5')
+  CALL output_line('------------------------------------------')
   CALL heatcond5
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  PRINT *
+  CALL output_lbrk()
   CALL storage_info(.TRUE.)
   
   ! Clean up the storage management, finish

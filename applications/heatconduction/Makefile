@@ -18,8 +18,11 @@ SRC = qtrafo.f \
       initria.f inmtri.f quad2tri.f structria.f triutil2d.f
 
 # The f90 source files
-SRC +=  heatcond_callback.f90 heatcond_method5.f90 \
-	heatcond.f90
+SRC +=  heatcond_callback.f90 \
+	heatcond_basic.f90 heatcond_boundarycondition.f90 \
+	heatcond_partridiscr.f90 heatcond_solver.f90 \
+	heatcond_matvec.f90 heatcond_timeloop.f90 \
+	heatcond_method5.f90 heatcond.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
