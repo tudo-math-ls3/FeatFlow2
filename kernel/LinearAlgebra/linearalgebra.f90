@@ -56,7 +56,7 @@ MODULE linearalgebra
   ! $l_1$-norm: 1/NEQ * sum(abs(entries))
   INTEGER, PARAMETER :: LINALG_NORML1     = 1
   
-  ! $l_2$-norm: 1/sqrt(SEQ) * (vector,vector)
+  ! $l_2$-norm: 1/sqrt(NEQ) * (vector,vector)
   INTEGER, PARAMETER :: LINALG_NORML2     = 2
   
   ! max-norm

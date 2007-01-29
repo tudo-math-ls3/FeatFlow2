@@ -60,11 +60,69 @@ MODULE scalarpde
     INTEGER :: itermCount = 0
     
     ! Descriptors of additive terms.
-    ! idescriptors(1,.) = trial function descriptor,
-    ! idescriptors(2,.) = test function descriptor.
+    ! Idescriptors(1,.) = trial function descriptor,
+    ! Idescriptors(2,.) = test function descriptor.
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
     INTEGER, DIMENSION(2,SCPDE_NNAB) :: Idescriptors = DER_FUNC
+    
+    ! TRUE if all coefficients in the biliear form are constant,
+    ! FALSE if there is at least one nonconstant coefficient.
+    LOGICAL                          :: ballCoeffConstant = .TRUE.
+    
+    ! For every additive term in the integral:
+    ! = true, if the coefficient in front of the term is constant,
+    ! = false, if the coefficient is nonconstant.
+    LOGICAL, DIMENSION(SCPDE_NNAB)   :: BconstantCoeff = .TRUE.
+    
+    ! If ballCoeffConstant=TRUE: the constant coefficients in front of
+    ! each additive terms in the bilinear form.
+    ! Otherwise: Not used.
+    REAL(DP), DIMENSION(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
+  END TYPE
+  
+  !</typeblock>
+
+  !<typeblock>
+  
+  ! A structure for a scalar trilinear form.
+  !
+  ! Example: Let's take a look at the 2D equation
+  !
+  !    $   \int_{\Omega}  ( F(x,y) \nabla u , \nabla v )  dx $
+  !    $ = \int_{\Omega}  f_1(x,y)*1*u_x*v_x  +  f_2(x,y)*1*u_y*v_y  dx $
+  !
+  ! with $F=matrix([f_1,0],[0,f_2])$.
+  !
+  ! This trilinear form consists of two additive terms. Both terms have
+  ! a constant coefficient '1' in front of them and consist of a combination
+  ! of derivatives in different directions. Additionally to that, there is
+  ! a finite element function f(.) given that specifies variable coefficients.
+  ! The form itself is encoded with the structure t_trilinearForm as follows:
+  !
+  !  1.) itermCount = 2                     -> 2 additive terms     
+  !  2.) BconstantCoeff = true              -> constant coefficients
+  !  3.) Dcoefficients(1)  = 1.0            -> 1st coefficient      
+  !  5.) Idescriptors(1,1) = DER_FUNC       -> f_1 in the 1st term  
+  !  6.) Idescriptors(2,1) = DER_DERIV_X    -> u_x in the 1st term  
+  !  7.) Idescriptors(3,1) = DER_DERIV_X    -> v_x in the 1st term  
+  !  8.) Dcoefficients(2)  = 1.0            -> 2nd coefficient      
+  !  9.) Idescriptors(1,2) = DER_FUNC       -> f_2 in the 2nd term  
+  ! 10.) Idescriptors(2,2) = DER_DERIV_Y    -> u_y in the 2nd term  
+  ! 11.) Idescriptors(3,2) = DER_DERIV_Y    -> v_y in the 2nd term
+  
+  TYPE t_trilinearForm
+  
+    ! Number of additive terms in the bilinear form
+    INTEGER :: itermCount = 0
+    
+    ! Descriptors of additive terms.
+    ! Idescriptors(1,.) = coefficient function descriptor,
+    ! Idescriptors(2,.) = trial function descriptor,
+    ! Idescriptors(3,.) = test function descriptor.
+    ! The descriptor itself is a DER_xxxx derivatrive
+    ! identifier (c.f. module 'derivatives').
+    INTEGER, DIMENSION(3,SCPDE_NNAB) :: Idescriptors = DER_FUNC
     
     ! TRUE if all coefficients in the biliear form are constant,
     ! FALSE if there is at least one nonconstant coefficient.

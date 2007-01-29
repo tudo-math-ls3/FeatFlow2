@@ -269,7 +269,7 @@ CONTAINS
   ! of a vector, since there's a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   IF (rmatrixScalar%isortStrategy .GT. 0) THEN
-    PRINT *,'linf_buildMatrixScalar: Vector must be unsorted!'
+    PRINT *,'bilf_buildMatrixScalar: Vector must be unsorted!'
     STOP
   END IF
 
@@ -305,11 +305,11 @@ CONTAINS
         CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
                                        
       CASE DEFAULT
-        PRINT *,'bilf_buildMatrix: Not supported matrix structure!'
+        PRINT *,'bilf_buildMatrixScalar: Not supported matrix structure!'
         STOP
       END SELECT
     CASE DEFAULT
-      PRINT *,'bilf_buildMatrix: Single precision matrices currently not supported!'
+      PRINT *,'bilf_buildMatrixScalar: Single precision matrices currently not supported!'
       STOP
     END SELECT
     
@@ -340,15 +340,15 @@ CONTAINS
         CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
       CASE DEFAULT
-        PRINT *,'bilf_buildMatrix: Not supported matrix structure!'
+        PRINT *,'bilf_buildMatrixScalar: Not supported matrix structure!'
         STOP
       END SELECT
     CASE DEFAULT
-      PRINT *,'bilf_buildMatrix: Single precision matrices currently not supported!'
+      PRINT *,'bilf_buildMatrixScalar: Single precision matrices currently not supported!'
       STOP
     END SELECT
   CASE DEFAULT
-    PRINT *,'bilf_buildMatrix: General discretisation not implemented!'
+    PRINT *,'bilf_buildMatrixScalar: General discretisation not implemented!'
     STOP
   END SELECT
 
@@ -2953,7 +2953,7 @@ CONTAINS
 
       IF ((IB.LT.0) .OR. &
           (IB .GT. elem_getMaxDerivative(p_elementDistribution%itestElement))) THEN
-        PRINT *,'bilf_buildMatrix9d_conf2: Specified test-derivative',IA,&
+        PRINT *,'bilf_buildMatrix9d_conf2: Specified test-derivative',IB,&
                 ' not available'
         STOP
       END IF
@@ -3056,14 +3056,14 @@ CONTAINS
                               p_IelementList)
                               
     ! Loop over the elements - blockwise.
-    DO IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
+    DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = MIN(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
+      IELmax = MIN(SIZE(p_IelementList),IELset-1+BILF_NELEMSIM)
     
       ! --------------------- DOF SEARCH PHASE ------------------------
     

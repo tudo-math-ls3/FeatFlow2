@@ -1082,15 +1082,19 @@ CONTAINS
 
   INTEGER :: cdata
   INTEGER(PREC_VECIDX) :: NEQ
+  LOGICAL :: bcl
   
   cdata = ST_DOUBLE
   IF (PRESENT(cdataType)) cdata = cdataType
+  
+  bcl = .FALSE.
+  IF (PRESENT(bclear)) bcl = bclear
   
   ! Get NEQ:
   NEQ = dof_igetNDofGlob(rdiscretisation)
   
   ! Create a new vector with that block structure
-  CALL lsyssc_createVector (rx, NEQ, bclear, cdataType)
+  CALL lsyssc_createVector (rx, NEQ, bcl, cdataType)
   
   ! Initialise further data of the block vector
   rx%p_rspatialDiscretisation => rdiscretisation
