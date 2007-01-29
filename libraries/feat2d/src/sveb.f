@@ -150,9 +150,9 @@ C *** Allocate vector for element numbers if needed
 C
       CALL ZNEW(2*NVBD,-3,LSORT,'KSORT ')
       IF (IER.NE.0) GOTO 99999
-      CALL SVEB(KWORK(L(LNPR)),KWORK(L(LVERT)),KWORK(L(LVBD)),
-     *          KWORK(L(LEBD)),KWORK(L(LBCT)),KWORK(L(LSORT)),
-     *          DWORK(L(LCORVG)),TMAX,IPAR)
+      CALL SVEB(KWORK(L(LNPR)),KWORK(L(LVERT)),KWORK(L(LADJ)),
+     *          KWORK(L(LVBD)),KWORK(L(LEBD)),KWORK(L(LBCT)),
+     *          KWORK(L(LSORT)),DWORK(L(LCORVG)),TMAX,IPAR)
 C
       CALL ZDISP(0,LSORT,'KSORT ')
 C
@@ -160,11 +160,13 @@ C
 C
 C
 C
-      SUBROUTINE SVEB(KNPR,KVERT,KVBD,KEBD,KBCT,KSORT,DCORVG,TMAX,IPAR)
+      SUBROUTINE SVEB(KNPR,KVERT,KADJ,KVBD,KEBD,KBCT,KSORT,DCORVG,
+     *                TMAX,IPAR)
 C
       IMPLICIT DOUBLE PRECISION (A,C-H,O-U,W-Z),LOGICAL(B)
       PARAMETER (NNVE=4)
-      DIMENSION KNPR(*),KVERT(NNVE,*),KVBD(*),KEBD(*),KSORT(2,*),KBCT(*)
+      DIMENSION KNPR(*),KVERT(NNVE,*),KADJ(NNVE,*),KVBD(*),KEBD(*),
+     *          KSORT(2,*),KBCT(*)
       DIMENSION DCORVG(2,*)
       COMMON /TRIAD/  NEL,NVT,NMT,NVE,NVEL,NBCT,NVBD
       COMMON /ERRCTL/ IER,ICHECK
@@ -183,12 +185,12 @@ C
        ISORT=KSORT(1,IBCT)
        KVBD(ISORT)=IVT
        KSORT(1,IBCT)=ISORT+1
-	ENDIF
+      ENDIF
 20    CONTINUE
 C
 C *** Sorting of vertices
 C
-      IF (IPAR.EQ.1) THEN
+      IF (IPAR.GE.1) THEN
 C
        DO 50 IBCT=1,NBCT
        IBCT1=KBCT(IBCT)
@@ -197,6 +199,10 @@ C
        H=TMAX(IBCT)/NBD
        CALL SVEBS(KVBD(IBCT1),NBD,KSORT,DCORVG,H)
 C
+C *** Check if KEBD should be generated
+C
+       IF (IPAR.EQ.2) GOTO 50
+C
        DO 51 IVBD=IBCT1,IBCT2
        IVBD1=KVBD(IVBD)
        IF (IVBD.NE.IBCT2) THEN
@@ -204,17 +210,60 @@ C
        ELSE
         IVBD2=KVBD(IBCT1)
        ENDIF
-C       IVBD2=KVBD(MOD(IVBD,IBCT2)+IBCT1)
-C *** could be improved using KADJ
-       DO 52 IEL=1,NEL
-       DO 52 IVE=1,NVE
-       IVE1=KVERT(IVE,IEL)
-       IVE2=KVERT(MOD(IVE,NVE)+1,IEL)
-       IF ((IVBD1.EQ.IVE1).AND.(IVBD2.EQ.IVE2)) THEN
-        KEBD(IVBD)=IEL
-        GOTO 51
-       ENDIF
-52     CONTINUE
+C
+C *** Find first element of boundary component via extensive search
+C
+       IF (IVBD.EQ.IBCT1) THEN
+C
+        DO 52 IEL=1,NEL
+        IF (KVERT(4,IEL).EQ.0) THEN
+         NVE=3
+        ELSE
+         NVE=4
+        ENDIF
+        DO 52 IVE=1,NVE
+        IVE1=KVERT(IVE,IEL)
+        IVE2=KVERT(MOD(IVE,NVE)+1,IEL)
+        IF ((IVBD1.EQ.IVE1).AND.(IVBD2.EQ.IVE2)) THEN
+         KEBD(IVBD)=IEL
+         GOTO 51
+        ENDIF
+52      CONTINUE
+C
+       ELSE
+C
+C *** Find all other elements using KADJ
+C       
+        DO 53 IVE=1,NVE
+        IF (KVERT(IVE,IEL).EQ.IVBD1 .AND. 
+     *      KVERT(MOD(IVE,NVE)+1,IEL).EQ.IVBD2) THEN
+         KEBD(IVBD)=IEL
+         GOTO 51
+        ENDIF
+53      CONTINUE
+C 
+60      DO 54 IVE=1,NVE
+        IF (KVERT(IVE,IEL).EQ.IVBD1) THEN
+         IEL=KADJ(IVE,IEL)
+         IF (KVERT(4,IEL).EQ.0) THEN
+          NVE1=3
+         ELSE
+          NVE1=4
+         ENDIF
+C
+         DO 55 IVE1=1,NVE1
+         IF (KVERT(IVE1,IEL).EQ.IVBD1 .AND. 
+     *       KVERT(MOD(IVE1,NVE1)+1,IEL).EQ.IVBD2) THEN
+          KEBD(IVBD)=IEL
+          NVE=NVE1
+          GOTO 51
+         ENDIF
+55       CONTINUE
+         GOTO 60
+        ENDIF
+54      CONTINUE
+       ENDIF 
+C
 51     CONTINUE
 C
 50     CONTINUE
