@@ -21,8 +21,8 @@ SRCLIST= aa03.f aa07.f aa09.f ab03.f  ab07.f ab09.f ap3.f ap7.f ap9.f \
 	lws1.f lws2.f lws3.f m010.f mp0.f mp1.f mr0.f mr1.f ndfg.f \
 	ndfgl.f ndfl.f oerr.f of0.f omsg.f ora.f orsc.f otrc.f owa.f \
 	rc13.f rc17.f rc19.f rc23.f rc27.f rc29.f s2a.f s2c.f s2db.f \
-	s2di.f s2m.f s2v.f sa0.f sa1.f sb0.f sb1.f sbd00.f sivb.f smas.f \
-	sveb.f va0.f va1.f vb0.f vb1.f werr.f xgmows.f xic01.f xic02.f \
+	s2di.f s2m.f s2v.f sa0.f sa1.f sb0.f sb1.f sbd00.f sc0.f sivb.f \
+	smas.f sveb.f va0.f va1.f vb0.f vb1.f werr.f xgmows.f xic01.f xic02.f \
 	xie01.f xie02.f xie03.f xie31.f xie32.f xie33.f xm010.f xm017.f \
 	xmaa03.f xmaa07.f xmab03.f xmab07.f xmap.f xmors.f xmows.f xmsa0.f \
 	xmsb0.f xmsb1.f xmscl.f xmva0.f xmva1.f xmvb0.f xmvb1.f xora.f \
