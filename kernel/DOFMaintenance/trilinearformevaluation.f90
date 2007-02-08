@@ -132,7 +132,7 @@ CONTAINS
   ! of a vector, since there's a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   IF (rmatrixScalar%isortStrategy .GT. 0) THEN
-    PRINT *,'trilf_buildMatrixScalar: Vector must be unsorted!'
+    PRINT *,'trilf_buildMatrixScalar: Matrix-structure must be unsorted!'
     STOP
   END IF
 
@@ -273,7 +273,7 @@ CONTAINS
   ! local variables
   INTEGER :: i,i1,j,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
   LOGICAL :: bnonparFunc, bnonparTest, bnonparTrial
-  LOGICAL :: bIdenticalTrialAndTest, bIdenticalTrialAndFunc
+  LOGICAL :: bIdenticalTrialAndTest, bIdenticalFuncAndTrial, bIdenticalFuncAndTest
   INTEGER(I32) :: IEL, IELmax, IELset, IDOFE, JDOFE
   INTEGER(PREC_DOFIDX) :: JCOL0,JCOL,idertype
   REAL(DP) :: OM,AUX, DB
@@ -410,12 +410,12 @@ CONTAINS
     ! At first build the descriptors for the trial functions
     I1=rform%Idescriptors(1,I)
     
-    IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
+    IF ((I1 .LT.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
       STOP
     ENDIF
     
-    BderFuncTempl(I1)=.TRUE.
+    IF (I1 .NE. 0) BderFuncTempl(I1)=.TRUE.
 
     I1=rform%Idescriptors(2,I)
     
@@ -427,7 +427,7 @@ CONTAINS
     BderTrialTempl(I1)=.TRUE.
 
     ! Then those of the test functions
-    I1=rform%Idescriptors(2,I)
+    I1=rform%Idescriptors(3,I)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
@@ -574,14 +574,14 @@ CONTAINS
         STOP
       END IF
       
-      IF ((IA.LT.0) .OR. &
+      IF ((IA.LE.0) .OR. &
           (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified trial-derivative',IA,&
                 ' not available'
         STOP
       END IF
 
-      IF ((IB.LT.0) .OR. &
+      IF ((IB.LE.0) .OR. &
           (IB .GT. elem_getMaxDerivative(p_elementDistribution%itestElement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified test-derivative',IB,&
                 ' not available'
@@ -683,17 +683,23 @@ CONTAINS
     
     ! Test whether the u trial functions are identical to the trial functions
     ! of the discretisation.
-    bIdenticalTrialAndFunc = p_elementDistribution%itrialElement .EQ. &
+    bIdenticalFuncAndTest = p_elementDistribution%itestElement .EQ. &
+                            p_elementDistributionFunc%itrialElement
+    bIdenticalFuncAndTrial = p_elementDistribution%itrialElement .EQ. &
                              p_elementDistributionFunc%itrialElement
                              
     ! If yes, we can use the data calculated for the trial functions.
-    IF (bIdenticalTrialAndFunc) THEN
-      p_IdofsFunc => p_IdofsTrial
-      p_DbasFunc  => p_DbasTrial
+    IF (bIdenticalFuncAndTest) THEN
+      p_IdofsFunc => IdofsTest
+      p_DbasFunc  => DbasTest
       ! Build the actual combination of what the element should calculate.
       ! As we evaluate only once, what the element must calculate is an
       ! OR combination of the BDER from trial and test functions.
-      BderTrial = BderTrialTempl .OR. BderTestTempl .OR. BderFuncTempl
+      BderTest = BderTest .OR. BderFuncTempl
+    ELSE IF (bIdenticalFuncAndTrial) THEN
+      p_IdofsFunc => p_IdofsTrial
+      p_DbasFunc  => p_DbasTrial
+      BderTrial = BderTrial .OR. BderFuncTempl
     ELSE
       p_IdofsFunc => IdofsFunc
       p_DbasFunc  => DbasFunc
@@ -755,7 +761,7 @@ CONTAINS
 
       ! If the DOF's for the coefficient function values are different, 
       ! calculate them, too.
-      IF (.NOT.bIdenticalTrialAndFunc) THEN
+      IF ((.NOT. bIdenticalFuncAndTest) .AND. (.NOT. bIdenticalFuncAndTrial)) THEN
         CALL dof_locGlobMapping_mult(p_rdiscretisationFunc, p_IelementList(IELset:IELmax), &
                                      .FALSE.,IdofsFunc)
       END IF
@@ -933,7 +939,7 @@ CONTAINS
       
       ! Omit the calculation of the coefficient function values if they
       ! are identical to the trial function values.
-      IF (.NOT. bidenticalTrialAndFunc) THEN
+      IF ((.NOT. bIdenticalFuncAndTest) .AND. (.NOT. bIdenticalFuncAndTrial)) THEN
         CALL elem_generic_sim (p_elementDistributionFunc%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
             BderFunc, DbasFunc, ncubp, IELmax-IELset+1, p_DcubPtsFunc)
@@ -951,38 +957,44 @@ CONTAINS
       IF (rform%ballCoeffConstant) THEN
         ! Constant coefficients. Take the coefficients from the bilinear form
         ! and multiply with the values of f(u).
-        DO iel=1,IELmax-IELset+1
-          DO ICUBP = 1,ncubp
-            DO IALBET = 1,rform%itermcount
-              iderType = rform%Idescriptors(1,IALBET)
-              ! Calculate the value in the point
-              DB = 0.0_DP
-              DO IDOFE = 1,indofTrial
-                DB = DB + &
-                  p_Ddata(p_IdofsFunc(IDOFE,iel)) * p_DbasFunc(IDOFE,iderType,ICUBP,iel)
+        DO IALBET = 1,rform%itermcount
+          iderType = rform%Idescriptors(1,IALBET)
+          IF (iderType .NE. 0) THEN
+            DO iel=1,IELmax-IELset+1
+              DO ICUBP = 1,ncubp
+                ! Calculate the value in the point
+                DB = 0.0_DP
+                DO IDOFE = 1,indofTrial
+                  DB = DB + &
+                    p_Ddata(p_IdofsFunc(IDOFE,iel)) * p_DbasFunc(IDOFE,iderType,ICUBP,iel)
+                END DO
+                ! Save the value in the point, multiplied with the coefficient
+                Dcoefficients(IALBET,ICUBP,iel) = rform%Dcoefficients(IALBET) * DB
               END DO
-              ! Save the value in the point, multiplied with the coefficient
-              Dcoefficients(IALBET,ICUBP,iel) = rform%Dcoefficients(IALBET) * DB
             END DO
-          END DO
+          ELSE
+            Dcoefficients(IALBET,1:ncubp,1:IELmax-IELset+1) = rform%Dcoefficients(IALBET)
+          END IF
         END DO
       ELSE
         ! Nonconstant coefficients. Take the calculated coefficients in Dcoefficients
         ! and multiply with the values of f(u).      
-        DO iel=1,IELmax-IELset+1
-          DO ICUBP = 1,ncubp
-            DO IALBET = 1,rform%itermcount
-              iderType = rform%Idescriptors(1,IALBET)
-              ! Calculate the value in the point
-              DB = 0.0_DP
-              DO IDOFE = 1,indofTrial
-                DB = DB + &
-                  p_Ddata(p_IdofsFunc(IDOFE,iel)) * p_DbasFunc(IDOFE,iderType,ICUBP,iel)
+        DO IALBET = 1,rform%itermcount
+          iderType = rform%Idescriptors(1,IALBET)
+          IF (iderType .NE. 0) THEN
+            DO iel=1,IELmax-IELset+1
+              DO ICUBP = 1,ncubp
+                ! Calculate the value in the point
+                DB = 0.0_DP
+                DO IDOFE = 1,indofTrial
+                  DB = DB + &
+                    p_Ddata(p_IdofsFunc(IDOFE,iel)) * p_DbasFunc(IDOFE,iderType,ICUBP,iel)
+                END DO
+                ! Save the value in the point, multiplied with the existing coefficient
+                Dcoefficients(IALBET,ICUBP,iel) = Dcoefficients(IALBET,ICUBP,iel) * DB
               END DO
-              ! Save the value in the point, multiplied with the existing coefficient
-              Dcoefficients(IALBET,ICUBP,iel) = Dcoefficients(IALBET,ICUBP,iel) * DB
             END DO
-          END DO
+          END IF
         END DO
       END IF
       

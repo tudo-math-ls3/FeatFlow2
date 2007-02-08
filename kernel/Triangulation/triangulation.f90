@@ -1200,7 +1200,7 @@ CONTAINS
     INTEGER, INTENT(INOUT) :: idesthandle
     
       IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
-        IF (isourcehandle .NE. isourcehandle) THEN
+        IF (isourcehandle .NE. ST_NOHANDLE) THEN
           CALL storage_copy(isourcehandle,idesthandle)
         END IF
       ELSE

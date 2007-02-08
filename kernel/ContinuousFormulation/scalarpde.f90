@@ -113,6 +113,11 @@ MODULE scalarpde
   !  9.) Idescriptors(1,2) = DER_FUNC       -> w(x,y) in the 2nd term  
   ! 10.) Idescriptors(2,2) = DER_DERIV_Y    -> u_y in the 2nd term  
   ! 11.) Idescriptors(3,2) = DER_DERIV_Y    -> v_y in the 2nd term
+  !
+  ! One diffence to the usual meaning of the descriptors: A value of
+  !   Idescriptors(1,i) = 0
+  ! instead of DER_xxxx means that the function f is the constant 
+  ! mapping f_i(u):=1. So this disables the contribution of u for that term.
   
   TYPE t_trilinearForm
   

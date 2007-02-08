@@ -346,41 +346,46 @@
 !#                   2005; Calcolo 42, p. 105-113; 
 !#                   DOI: 10.1007/s10092-005-0100-6]
 !#
-!#       4.) linsol_initSSOR
+!#       5.) linsol_initSOR
+!#           -> SOR preconditioner / GS preconditioner (=SOR(1.0))
+!#           -> see [http://www.netlib.org/linalg/html_templates/Templates.html],
+!#                  [http://mathworld.wolfram.com/SuccessiveOverrelaxationMethod.html]
+!#
+!#       5.) linsol_initSSOR
 !#           -> SSOR preconditioner
 !#           -> see [http://www.netlib.org/linalg/html_templates/Templates.html],
 !#                  [http://mathworld.wolfram.com/SuccessiveOverrelaxationMethod.html]
 !#
-!#       5.) linsol_initVANCA
+!#       6.) linsol_initVANCA
 !#           -> VANCA preconditioner; multiple versions
 !#
-!#       6.) linsol_initUMFPACK4
+!#       7.) linsol_initUMFPACK4
 !#           -> UMFPACK preconditioner
 !#
-!#       7.) linsol_initMILUs1x1
+!#       8.) linsol_initMILUs1x1
 !#           -> (M)ILU-preconditioner for 1x1-matrices from SPLIB
 !#           -> see [David Hysom and A. Pothen; Level-based Incomplete LU 
 !#                   factorization: Graph Model and Algorithms; 
 !#                   Tech Report UCRL-JC-150789; Lawrence Livermore National Labs;
 !#                   Nov 2002; http://www.cs.odu.edu/~pothen/papers.html]
 !#
-!#       8.) linsol_initBiCGStab
+!#       9.) linsol_initBiCGStab
 !#           -> BiCGStab preconditioner
 !#           -> see [van der Vorst, H.A.; BiCGStab: A Fast and Smoothly Converging
 !#                   Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems;
 !#                   SIAM J. Sci. Stat. Comput. 1992, Vol. 13, No. 2, pp. 631-644]
 !#
-!#       9.) linsol_initCG
+!#      10.) linsol_initCG
 !#           -> Conjugate Gradient preconditioner
 !#
-!#      10.) linsol_initGMRES
+!#      11.) linsol_initGMRES
 !#           -> (flexible) Generalized Minimal-Residual preconditioner
 !#           -> see [Y. Saad; A flexible inner outer preconditioned GMRES algorithm;
 !#                   SIAM J. Sci. Comput. 1993, Vol. 14, No. 2, pp. 461-469]
 !#                  [http://www-users.cs.umn.edu/~saad/]
 !#                  [http://www.netlib.org/linalg/html_templates/Templates.html]
 !#
-!#      11.) linsol_initMultigrid
+!#      12.) linsol_initMultigrid
 !#           -> Multigrid preconditioner
 !#
 !# 9.) What is this linsol_matricesCompatible?
@@ -6308,7 +6313,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  REAL(DP) :: dalpha,dbeta,dgamma,dgammaOld,dres,dfr,dtmp
+  REAL(DP) :: dalpha,dbeta,dgamma,dgammaOld,dres,dfr
   INTEGER :: ireslength,ite,i
 
   ! The queue saves the current residual and the two previous residuals.
@@ -8273,7 +8278,6 @@ CONTAINS
     ! local variables
     INTEGER :: isubgroup,i,idim
     INTEGER , DIMENSION(2) :: idim2
-    INTEGER, POINTER :: p_hDC, p_hDs, p_hDq, p_hDh
     TYPE(t_linsolSubnodeGMRES), POINTER :: p_rsubnode
     
     ! A-priori we have no error...
@@ -8617,7 +8621,7 @@ CONTAINS
 
   ! local variables
   REAL(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf
-  INTEGER :: ireslength,ite,i,j,k
+  INTEGER :: ireslength,ite,i,k
   
   ! Here come our 1D/2D arrays
   REAL(DP), DIMENSION(:), POINTER :: p_Dc, p_Ds, p_Dq

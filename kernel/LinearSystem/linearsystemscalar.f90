@@ -58,61 +58,64 @@
 !#      -> Synchronises the sorting strategy of a vector according to a matrix.
 !#
 !# 13.) lsyssc_sortMatrix
-!#      -> Resort the entries of a matrix or unsort them
+!#      -> Resort the entries of a matrix or unsort them.
 !#
-!# 14.) lsyssc_isVectorCompatible
+!# 14.) lsyssc_unsortMatrix
+!#      -> Unsorts a matrix.
+!#
+!# 15.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 15.) lsyssc_isMatrixCompatible = lsyssc_isMatrixVectorCompatible /
+!# 16.) lsyssc_isMatrixCompatible = lsyssc_isMatrixVectorCompatible /
 !#                                  lsyssc_isMatrixMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 16.) lsyssc_getbase_double
+!# 17.) lsyssc_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 17.) lsyssc_getbase_single
+!# 18.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 18.) lsyssc_addIndex
+!# 19.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
 !#         array.
 !#
-!# 19.) lsyssc_vectorNorm
+!# 20.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 20.) lsyssc_invertedDiagMatVec
+!# 21.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 21.) lsyssc_clearMatrix
+!# 22.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !#
-!# 22.) lsyssc_convertMatrix
+!# 23.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 23.) lsyssc_copyVector
+!# 24.) lsyssc_copyVector
 !#       -> Copy a vector over to another one
 !#
-!# 24.) lsyssc_scaleVector
+!# 25.) lsyssc_scaleVector
 !#      -> Scale a vector by a constant
 !#
-!# 25.) lsyssc_clearVector
+!# 26.) lsyssc_clearVector
 !#      -> Clear a vector
 !#
-!# 26.) lsyssc_vectorLinearComb
+!# 27.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
 !#
-!# 27.) lsyssc_copyMatrix
+!# 28.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 28.) lsyssc_transposeMatrix
+!# 29.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
-!# 29.) lsyssc_createEmptyMatrixScalar
+!# 30.) lsyssc_createEmptyMatrixScalar
 !#      -> Allocates memory for an empty matrix
 !#
-!# 30.) lsyssc_lumpMatrixScalar
+!# 31.) lsyssc_lumpMatrixScalar
 !#      -> Performs lumping of a given matrix
 !#
 !# 32.) lsyssc_scaleMatrix
@@ -4250,16 +4253,19 @@ CONTAINS
   ! Sort the entries or only the structure of the matrix.
   ! = FALSE: Only sort the structure of the matrix,
   ! = TRUE : Sort both, entries and structure of the matrix.
-  LOGICAL bsortEntries
+  LOGICAL, INTENT(IN) :: bsortEntries
 
-  ! Identifier for the sorting strategy to apply to the matrix.
+  ! OPTIONAL: Identifier for the sorting strategy to apply to the matrix.
   ! This is usually one of the SSTRAT_xxxx constants from the module
   ! 'sortstrategy', although it's actually used here as follows:
   ! <=0: Calculate the unsorted matrix
   !  >0: Resort the vector according to a permutation;
   !      this is either the permutation specified in the vector
   !      or that one identified by h_IsortPermutation
- INTEGER, INTENT(IN)                                :: isortStrategy
+  ! If not specified, the sorting of the matrix is activated using
+  ! the isortStrategy specifier in the matrix -- i.e. this 'activates'
+  ! a previously attached sorting.
+ INTEGER, INTENT(IN), OPTIONAL                      :: isortStrategy
   
   ! OPTIONAL: Handle to permutation to use for resorting the matrix.
   ! 
@@ -4284,30 +4290,33 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: h_Iperm
+  INTEGER :: h_Iperm, isortStrat
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
   INTEGER(PREC_VECIDX) :: NEQ
   TYPE(t_matrixScalar), POINTER :: p_rmatrix
   LOGICAL :: bsortEntriesTmp
   
+  isortStrat = ABS(rmatrix%isortStrategy)
+  IF (PRESENT(isortStrategy)) isortStrat = isortStrategy
+  
     ! Desired sorting strategy and currently active sorting strategy identical?
     IF (.NOT. PRESENT(h_IsortPermutation)) THEN
     
-      IF (isortStrategy .EQ. rmatrix%isortStrategy) RETURN
-      IF ((isortStrategy .LE. 0) .AND. (rmatrix%isortStrategy .LE. 0)) RETURN
+      IF (isortStrat .EQ. rmatrix%isortStrategy) RETURN
+      IF ((isortStrat .LE. 0) .AND. (rmatrix%isortStrategy .LE. 0)) RETURN
     
     ELSE
     
-      IF ((isortStrategy .LE. 0) .AND. (rmatrix%isortStrategy .LE. 0)) THEN
+      IF ((isortStrat .LE. 0) .AND. (rmatrix%isortStrategy .LE. 0)) THEN
         IF (h_IsortPermutation .NE. rmatrix%h_IsortPermutation) THEN
           ! Matrix is unsorted and should stay unsorted, but
           ! permutation should change.
-          rmatrix%isortStrategy = isortStrategy
+          rmatrix%isortStrategy = isortStrat
           rmatrix%h_IsortPermutation = h_IsortPermutation
         END IF
         RETURN
       END IF
-      IF ((isortStrategy .GT. 0) .AND. (rmatrix%isortStrategy .GT. 0) .AND.&
+      IF ((isortStrat .GT. 0) .AND. (rmatrix%isortStrategy .GT. 0) .AND.&
           (h_IsortPermutation .EQ. rmatrix%h_IsortPermutation)) RETURN
     
     END IF
@@ -4315,7 +4324,7 @@ CONTAINS
     NEQ = rmatrix%NEQ
     
     ! Sort the matrix back?
-    IF (isortStrategy .LE. 0) THEN
+    IF (isortStrat .LE. 0) THEN
       ! Get the permutation that describes how to resort the matrix:
       CALL storage_getbase_int(rmatrix%h_IsortPermutation,p_Iperm)
       
@@ -4325,7 +4334,7 @@ CONTAINS
       CALL do_matsort (rmatrix,p_Iperm(NEQ+1:NEQ*2),p_Iperm(1:NEQ),bsortEntries)
       
       ! Inform the vector about which sorting strategy we now use.
-      rmatrix%isortStrategy = isortStrategy
+      rmatrix%isortStrategy = isortStrat
       RETURN
     END IF
     
@@ -4413,7 +4422,7 @@ CONTAINS
     END IF
     
     ! Inform the vector about which sorting strategy we now use.
-    rmatrix%isortStrategy = isortStrategy
+    rmatrix%isortStrategy = isortStrat
     
     ! If h_IsortPermutation was given, change the permutation
     IF (PRESENT(h_IsortPermutation)) rmatrix%h_IsortPermutation = h_IsortPermutation
@@ -6485,6 +6494,41 @@ CONTAINS
   
   END SUBROUTINE 
   
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsyssc_unsortMatrix (rmatrix,bsortEntries)
+  
+!<description>
+  ! This routine deactivates the sorting of matrix rmatrix, the matrix
+  ! is unsorted. If bsortEntries=TRUE, the entries of the matrix are unsorted
+  ! together with the structure; otherwise, only the structure is unsorted,
+  ! thus leaving the entries in an undefined state.
+  ! rmatrix%isortStrategy is set to negative to indicate that the sorting
+  ! is deactivated.
+!</description>
+  
+!<inputoutput>
+  ! Vector to resort
+  TYPE(t_matrixScalar), INTENT(INOUT), TARGET       :: rmatrix
+!</inputoutput>
+
+!<input>
+  ! Sort the entries or only the structure of the matrix.
+  ! = FALSE: Only sort the structure of the matrix,
+  ! = TRUE : Sort both, entries and structure of the matrix.
+  LOGICAL, INTENT(IN) :: bsortEntries
+
+!</input>
+
+!</subroutine>
+
+    ! Call the sort-routine, deactivate the sorting -- if activated.
+    CALL lsyssc_sortMatrix (rmatrix,bsortEntries,-ABS(rmatrix%isortStrategy))
+
+  END SUBROUTINE
+
   !****************************************************************************
 
 !<subroutine>
@@ -10461,6 +10505,7 @@ CONTAINS
     ! required symbolic structure or is a superset of the symbolic
     ! matrix-matrix product. In some cases, this may allow for much
     ! more efficient implementation.
+    ! Standard: FALSE
     LOGICAL, INTENT(IN), OPTIONAL :: bisExactStructure
 !</input>
 

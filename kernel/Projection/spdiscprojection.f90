@@ -278,10 +278,10 @@ CONTAINS
       
       ! Bilinear interpolation gives what we have to add to the
       ! value in each corner:
-      Ddest(IV1) = Ddest(IV1) + 0.75D0*(DUH1+DUH4) - 0.25D0*(DUH2+DUH3)
-      Ddest(IV2) = Ddest(IV2) + 0.75D0*(DUH2+DUH1) - 0.25D0*(DUH3+DUH4)
-      Ddest(IV3) = Ddest(IV3) + 0.75D0*(DUH3+DUH2) - 0.25D0*(DUH4+DUH1)
-      Ddest(IV4) = Ddest(IV4) + 0.75D0*(DUH4+DUH3) - 0.25D0*(DUH1+DUH2)
+      Ddest(IV1) = Ddest(IV1) + 0.75_DP*(DUH1+DUH4) - 0.25_DP*(DUH2+DUH3)
+      Ddest(IV2) = Ddest(IV2) + 0.75_DP*(DUH2+DUH1) - 0.25_DP*(DUH3+DUH4)
+      Ddest(IV3) = Ddest(IV3) + 0.75_DP*(DUH3+DUH2) - 0.25_DP*(DUH4+DUH1)
+      Ddest(IV4) = Ddest(IV4) + 0.75_DP*(DUH4+DUH3) - 0.25_DP*(DUH1+DUH2)
       
     END DO
 

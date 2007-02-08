@@ -116,10 +116,10 @@ MODULE filtersupport
 
 !<constantblock description="Filter type flags for t\_filterChain%ifilterType">
 
-  ! Undefined filter
-  INTEGER, PARAMETER :: FILTER_NOFILTER          =  0
+  ! Abort-filter. Causes the filter chain to stop filtering immediately.
+  INTEGER, PARAMETER :: FILTER_ABORT             =  -1
 
-  ! Do-nothing filter; does nothing to a vector
+  ! Do-nothing filter; does nothing
   INTEGER, PARAMETER :: FILTER_DONOTHING         =  0
 
   ! Vector filter for imposing discrete boundary conditions of the 
@@ -172,7 +172,7 @@ MODULE filtersupport
     
     ! Tag that identifies the type of filter to be applied to a vector.
     ! One of the FILTER_XXXX constants
-    INTEGER                            :: ifilterType = FILTER_NOFILTER
+    INTEGER                            :: ifilterType = FILTER_ABORT
     
     ! Information tag for the TOL20 filterif ifilterType=FILTER_TOL20:
     ! Number of the subvector that should be filtered to be in the
@@ -227,10 +227,13 @@ CONTAINS
   
     ! Choose the filter and apply it
     SELECT CASE (ifilterType)
-    CASE (FILTER_NOFILTER)
+    CASE (FILTER_ABORT)
       ! Cancel if we reached the last filter before reaching the end of the
       ! array
       EXIT
+      
+    CASE (FILTER_DONOTHING)
+      ! Do nothing
       
     CASE (FILTER_DISCBCSOLREAL)
       ! Impose Dirichlet boundary contitions into the solution vector rx
@@ -317,7 +320,7 @@ CONTAINS
   
     ! Choose the filter and apply it
     SELECT CASE (ifilterType)
-    CASE (FILTER_NOFILTER)
+    CASE (FILTER_ABORT)
       ! Cancel if we reached the last filter before reaching the end of the
       ! array
       EXIT
@@ -335,6 +338,9 @@ CONTAINS
       ! The filter is the same for both, solution and defect filter,
       ! as the matrix modification is teh same (for now).
       CALL matfil_discreteFBC (rmatrix)
+
+    CASE (FILTER_TOL20,FILTER_DONOTHING)
+      ! These filters have no effect for matrices.
     
     CASE DEFAULT
       PRINT *,'filter_applyFilterChainMat: Unknown filter.'

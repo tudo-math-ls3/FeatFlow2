@@ -252,7 +252,7 @@ CONTAINS
     INTEGER :: isolverType,isolverSubtype
     TYPE(t_linsolNode), POINTER :: p_rpreconditioner,p_rpresmoother,p_rpostsmoother
     TYPE(t_linsolNode), POINTER :: p_rcoarsegridsolver
-    INTEGER :: i1,ilev
+    INTEGER :: i1,ilev,ikrylowDim
     REAL(DP) :: d1
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_Rfilter
     TYPE(t_linsolMGLevelInfo), POINTER     :: p_rlevelInfo
@@ -279,7 +279,7 @@ CONTAINS
     ! mandatory; if not, the get-routine will stop.
     CALL parlst_getvalue_int (p_rsection, 'iSolverType', isolverType)
 
-    ! Try to et the solver subtype from the parameter list.
+    ! Try to get the solver subtype from the parameter list.
     ! This allows switching between different variants of the same
     ! basic algorithm (e.g. VANCA)
     CALL parlst_getvalue_int (p_rsection, 'iSolverSubtype', isolverSubtype,0)
@@ -313,6 +313,14 @@ CONTAINS
       ! Init the solver node
       CALL linsol_initJacobi (p_rsolverNode)
       
+    CASE (LINSOL_ALG_SOR)
+      ! SOR/GS solver
+      !
+      ! Init the solver node. domega is set to 1.0 as standard
+      ! to activate GS. The actual domega is initialised later if specified
+      ! in the DAT file.
+      CALL linsol_initSOR (p_rsolverNode,1.0_DP)
+      
     CASE (LINSOL_ALG_SSOR)
       ! SSOR solver
       !
@@ -333,8 +341,38 @@ CONTAINS
         CALL linsolinit_initFromFile (p_rpreconditioner,rparamList,&
                                       spreconditioner,nlevels,RfilterChain)
       END IF
+
+      ! Try to get the solver subtype from the parameter list.
+      ! This allows switching between right- and left preconditioned BiCGStab.
+      CALL parlst_getvalue_int (p_rsection, 'iSolverSubtype', isolverSubtype,0)
+
       ! Init the solver node
-      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter)
+      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter,&
+        isolverSubtype)
+      
+    CASE (LINSOL_ALG_GMRES)
+      ! GMRES solver
+      !
+      ! Initialise a solver node for the preconditioner - if there is one.
+      NULLIFY(p_rpreconditioner)
+      IF (spreconditioner .NE. '') THEN
+        CALL linsolinit_initFromFile (p_rpreconditioner,rparamList,&
+                                      spreconditioner,nlevels,RfilterChain)
+      END IF
+
+      ! Try to get the solver subtype from the parameter list.
+      ! This allows switching between right- and left preconditioned BiCGStab.
+      CALL parlst_getvalue_int (p_rsection, 'iSolverSubtype', isolverSubtype,0)
+
+      ! Krylow space dimension
+      CALL parlst_getvalue_int (p_rsection, 'ikrylovDim', ikrylowDim,40)
+      
+      ! Apply Gram Schmidt twice
+      CALL parlst_getvalue_int (p_rsection, 'itwiceGS', i1,0)
+
+      ! Init the solver node
+      CALL linsol_initGMRES (p_rsolverNode,ikrylowDim,p_rpreconditioner,p_Rfilter,&
+        i1 .EQ. 1)
       
     CASE (LINSOL_ALG_UMFPACK4)
       ! UMFPACK4 solver

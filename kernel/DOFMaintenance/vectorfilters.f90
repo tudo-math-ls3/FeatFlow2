@@ -525,7 +525,7 @@ CONTAINS
       ! This is approximated by
       !   dpintegral = SUM_Elements P(Element)*Volume(Element)
       
-      dpintegral=0D0
+      dpintegral=0.0_DP
       DO iel=1,nel 
         dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
       END DO
@@ -1506,9 +1506,16 @@ CONTAINS
 
 !</subroutine>
 
-    IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock)) .OR. &
-        (rx%RvectorBlock(isubvector)%h_Ddata .EQ. ST_NOHANDLE) .OR. &
-        (rx%RvectorBlock(isubvector)%NEQ .LE. 0)) RETURN
+    IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock))) THEN
+      PRINT *,'vecfil_subvectorToL20: isubvector out of allowed range!'
+      STOP
+    END IF
+      
+    ! Don't use one single IF here as this may lead to errors depending
+    ! on the compiler (subvector=0 and access to vector(isubvector)).
+    IF ((rx%RvectorBlock(isubvector)%h_Ddata .EQ. ST_NOHANDLE) .OR. &
+        (rx%RvectorBlock(isubvector)%NEQ .LE. 0)) &
+      RETURN
         
     ! Normalise the subvector isubvector
     CALL vecfil_normaliseToL20Sca (rx%RvectorBlock(isubvector))

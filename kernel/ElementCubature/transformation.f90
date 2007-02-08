@@ -779,24 +779,24 @@ CONTAINS
       ! Edge 1 is on the bottom of the reference element
       DO ii = 1,ncubp
         Dxi2D(ii,1) = Dxi1D(ii,1)
-        Dxi2D(ii,2) = -1D0
+        Dxi2D(ii,2) = -1.0_DP
       END DO
     ELSE IF (iedge .EQ. 2) THEN
       ! Edge 2 is on the right of the reference element
       DO ii = 1,ncubp
-        Dxi2D(ii,1) = 1D0
+        Dxi2D(ii,1) = 1.0_DP
         Dxi2D(ii,2) = Dxi1D(ii,1)
       END DO
     ELSE IF (iedge .EQ. 3) THEN
       ! Edge 3 is on the top of the reference element
       DO ii = 1,ncubp
         Dxi2D(ii,1) = -Dxi1D(ii,1)
-        Dxi2D(ii,2) = 1D0
+        Dxi2D(ii,2) = 1.0_DP
       END DO
     ELSE 
       ! Edge 4 is on the left of the reference element
       DO ii = 1,ncubp
-        Dxi2D(ii,1) = -1D0
+        Dxi2D(ii,1) = -1.0_DP
         Dxi2D(ii,2) = -Dxi1D(ii,1)
       END DO
     END IF

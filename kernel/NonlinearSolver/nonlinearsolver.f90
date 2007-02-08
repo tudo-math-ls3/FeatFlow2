@@ -788,7 +788,8 @@ CONTAINS
       CALL fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
     ELSE
       ! Calculate the norm of the defect:
-      DvecNorm = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
+      DvecNorm = 0.0_DP
+      DvecNorm = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:rd%nblocks))
       WHERE (.NOT.((DvecNorm .GE. 1D-99) .AND. (DvecNorm .LE. 1D99))) 
         DvecNorm = 0.0_DP
       END WHERE
@@ -879,7 +880,7 @@ CONTAINS
           CALL fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
         ELSE
           ! Calculate the norm of the defect:
-          DvecNorm = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
+          DvecNorm(1:rd%nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
           WHERE (.NOT.((DvecNorm .GE. 1E-99_DP) .AND. (DvecNorm .LE. 1E99_DP))) 
             DvecNorm = 0.0_DP
           END WHERE

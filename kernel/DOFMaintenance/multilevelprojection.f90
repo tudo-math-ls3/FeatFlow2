@@ -2777,7 +2777,7 @@ CONTAINS
   
   ! Weights for the restruction; all coefficients are halfed, so dividing
   ! by 2 is not necessary in the calculation routines.
-  REAL(DP), PARAMETER :: A1=0.5_DP, A2=-0.125D0, A3=0.0_DP, A4=0.125D0
+  REAL(DP), PARAMETER :: A1=0.5_DP, A2=-0.125_DP, A3=0.0_DP, A4=0.125_DP
   REAL(DP), PARAMETER :: A5=0.625_DP, A6=0.125_DP, A7=0.125_DP, A8=0.125_DP
   
     ! Clear the output vector
@@ -3278,7 +3278,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel, IELH1, IELH2, IELH3, IELH4
     
     ! Weights for the restruction
-    REAL(DP), PARAMETER :: A1=1.0_DP, A2=-0.125D0, A3=0.0_DP, A4=0.125D0
+    REAL(DP), PARAMETER :: A1=1.0_DP, A2=-0.125_DP, A3=0.0_DP, A4=0.125_DP
     REAL(DP), PARAMETER :: A5=0.625_DP, A6=0.125_DP, A7=0.125_DP, A8=0.125_DP
 
     ! Loop over the coarse grid elements
@@ -3344,9 +3344,9 @@ CONTAINS
         ENDIF
       ELSE
         ! boundary edge 
-        DuCoarse(IM1)=     A1*(DUH1+DUH2)+2D0*A2*(DUH4+DUH7) &
-                +2D0*A3*(DUH5+DUH6)+2D0*A4*(DUH3+DUH8) &
-                +    A5*DUH9+A6*(DUH10+DUH12)+A7*DUH11
+        DuCoarse(IM1)=     A1*(DUH1+DUH2)+2.0_DP*A2*(DUH4+DUH7) &
+                +2.0_DP*A3*(DUH5+DUH6)+2.0_DP*A4*(DUH3+DUH8) &
+                +       A5*DUH9+A6*(DUH10+DUH12)+A7*DUH11
       ENDIF
  
       ! Calculate the value of the edge IM2
@@ -3364,9 +3364,9 @@ CONTAINS
         ENDIF
       ELSE
         ! boundary edge
-        DuCoarse(IM2)= A1*(DUH3+DUH4)+2D0*A2*(DUH6+DUH1) &
-                +2D0*A3*(DUH7+DUH8)+2D0*A4*(DUH5+DUH2) &
-                +    A5*DUH10+A6*(DUH11+DUH9)+A7*DUH12
+        DuCoarse(IM2)= A1*(DUH3+DUH4)+2.0_DP*A2*(DUH6+DUH1) &
+                +2.0_DP*A3*(DUH7+DUH8)+2.0_DP*A4*(DUH5+DUH2) &
+                +       A5*DUH10+A6*(DUH11+DUH9)+A7*DUH12
       ENDIF
       
       ! Calculate the value of the edge IM3
@@ -3384,9 +3384,9 @@ CONTAINS
         ENDIF
       ELSE
         ! boundary edge
-        DuCoarse(IM3)= A1*(DUH5+DUH6)+2D0*A2*(DUH8+DUH3) &
-                +2D0*A3*(DUH1+DUH2)+2D0*A4*(DUH7+DUH4) &
-                +    A5*DUH11+A6*(DUH12+DUH10)+A7*DUH9
+        DuCoarse(IM3)= A1*(DUH5+DUH6)+2.0_DP*A2*(DUH8+DUH3) &
+                +2.0_DP*A3*(DUH1+DUH2)+2.0_DP*A4*(DUH7+DUH4) &
+                +       A5*DUH11+A6*(DUH12+DUH10)+A7*DUH9
       ENDIF
 
       ! Calculate the value of the edge IM4
@@ -3404,9 +3404,9 @@ CONTAINS
         ENDIF
       ELSE
         ! boundary edge
-        DuCoarse(IM4)= A1*(DUH7+DUH8)+2D0*A2*(DUH2+DUH5) &
-                +2D0*A3*(DUH3+DUH4)+2D0*A4*(DUH1+DUH6) &
-                +    A5*DUH12+A6*(DUH9+DUH11)+A7*DUH10
+        DuCoarse(IM4)= A1*(DUH7+DUH8)+2.0_DP*A2*(DUH2+DUH5) &
+                +2.0_DP*A3*(DUH3+DUH4)+2.0_DP*A4*(DUH1+DUH6) &
+                +       A5*DUH12+A6*(DUH9+DUH11)+A7*DUH10
       ENDIF
 
     END DO

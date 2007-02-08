@@ -34,6 +34,8 @@
 !# 8.) lalg_vectorSortXXX
 !#     -> Resort the entries of a vector according to a given permutation
 !#
+!# 9.) lalg_vectorAddScalar
+!#     -> Adds a scalar to each entry of a vector
 !# </purpose>
 !##############################################################################
 
@@ -625,7 +627,7 @@ CONTAINS
   IF (dcy .EQ. 0.0_DP) THEN
     CALL DCOPY(SIZE(Dx),Dx,1,Dy,1)
     IF (dcx .NE. 1.0_DP) CALL DSCAL(SIZE(Dx),dcx,Dy,1)
-  ELSE IF (dcy .EQ. 1D0) THEN
+  ELSE IF (dcy .EQ. 1.0_DP) THEN
     CALL DAXPY(SIZE(Dx),dcx,Dx,1,Dy,1)
   ELSE
     c=dcx/dcy
@@ -673,7 +675,7 @@ CONTAINS
   IF (scy .EQ. 0.0_SP) THEN
     CALL SCOPY(SIZE(Fx),Fx,1,Fy,1)
     IF (scx .NE. 1.0_SP) CALL SSCAL(SIZE(Fx),scx,Fy,1)
-  ELSE IF (scy .EQ. 1D0) THEN
+  ELSE IF (scy .EQ. 1.0_DP) THEN
     CALL SAXPY(SIZE(Fx),scx,Fx,1,Fy,1)
   ELSE
     c=scx/scy
@@ -1122,5 +1124,102 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE lalg_tensorProductDble
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorAddScalarDble (Dx,dvalue)
+  
+!<description>
+  ! This routine adds the value dvalue to each entry of the vector Id.
+!</description>
+  
+!<input>
+  ! The value to add to every entry.
+  REAL(DP) :: dvalue
+!</input>
+
+!<inputoutput>
+  ! Data array to be modified.
+  REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dx
+!<inputoutput>
+
+!</subroutine>
+    
+    REAL(DP) :: dval
+    INTEGER(I32) :: i
+    
+    dval = dvalue
+    DO i=1,SIZE(Dx)
+      Dx(i) = Dx(i) + dval
+    END DO
+    
+  END SUBROUTINE
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorAddScalarSngl (Fx,fvalue)
+  
+!<description>
+  ! This routine adds the value dvalue to each entry of the vector Fx.
+!</description>
+  
+!<input>
+  ! The value to add to every entry.
+  REAL(SP) :: fvalue
+!</input>
+
+!<inputoutput>
+  ! Data array to be modified.
+  REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fx
+!<inputoutput>
+
+!</subroutine>
+    
+    REAL(SP) :: fval
+    INTEGER(I32) :: i
+    
+    fval = fvalue
+    DO i=1,SIZE(Fx)
+      Fx(i) = Fx(i) + fval
+    END DO
+    
+  END SUBROUTINE
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorAddScalarInt (Ix,ivalue)
+  
+!<description>
+  ! This routine adds the value ivalue to each entry of the vector Ix.
+!</description>
+  
+!<input>
+  ! The value to add to every entry.
+  INTEGER(I32) :: ivalue
+!</input>
+
+!<inputoutput>
+  ! Data array to be modified.
+  INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Ix
+!<inputoutput>
+
+!</subroutine>
+    
+    INTEGER(I32) :: ival
+    INTEGER(I32) :: i
+    
+    ival = ivalue
+    DO i=1,SIZE(Ix)
+      Ix(i) = Ix(i) + ival
+    END DO
+    
+  END SUBROUTINE
+  
 
 END MODULE

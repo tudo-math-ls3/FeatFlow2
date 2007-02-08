@@ -269,7 +269,7 @@ CONTAINS
   ! of a vector, since there's a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   IF (rmatrixScalar%isortStrategy .GT. 0) THEN
-    PRINT *,'bilf_buildMatrixScalar: Vector must be unsorted!'
+    PRINT *,'bilf_buildMatrixScalar: Matrix-structure must be unsorted!'
     STOP
   END IF
 

@@ -1122,8 +1122,13 @@ CONTAINS
   ! Get the section
   CALL parlst_querysection(rparlist, ssectionName, p_rsection) 
   IF (.NOT. ASSOCIATED(p_rsection)) THEN
-    PRINT *,'Section not found'
-    RETURN
+    IF (PRESENT(sdefault)) THEN
+      svalue = sdefault
+      RETURN
+    ELSE
+      PRINT *,'Section not found'
+      STOP
+    END IF
   END IF
 
   ! Get the value
