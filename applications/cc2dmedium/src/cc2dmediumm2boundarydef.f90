@@ -108,6 +108,9 @@ CONTAINS
   !
   ! For this purpose, the parameters in the [BDEXPRESSIONS] and [BDCONDITIONS]
   ! sections of the DAT files (saved in rproblem\%rparamList) are evaluated.
+  !
+  ! A flag 'INEUMANN'==YES/NO is added to the collection that tells about
+  ! whether there is Neumann boundary somewhere.
 !</description>
   
 !<inputoutput>

@@ -155,9 +155,10 @@ CONTAINS
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(T_jumpStabilisation) :: rjumpStabil
+    LOGICAL :: bneumann
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
+    TYPE(t_filterChain), DIMENSION(3), TARGET :: RfilterChain
     
       ! Get minimum/maximum level from the collection
       ilvmax = collct_getvalue_int (p_rcollection,'NLMAX')
@@ -202,6 +203,16 @@ CONTAINS
       ! components
       RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
       
+      ! Do we have Neumann boundary?
+      bneumann = collct_getvalue_int (p_rcollection, 'INEUMANN') .EQ. YES
+      RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      IF (.NOT. bneumann) THEN
+        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+        ! Filter the pressure to avoid indefiniteness.
+        RfilterChain(3)%ifilterType = FILTER_TOL20
+        RfilterChain(3)%itoL20component = 3
+      END IF
+      
       ! Apply the filter chain to the defect vector.
       ! As the filter consists only of an implementation filter for
       ! boundary conditions, this implements the boundary conditions
@@ -210,7 +221,7 @@ CONTAINS
       ! Note that the above matrix did not contain any rows replaced by
       ! unit vectors according to boundary conditions! This is even
       ! not necessary, as the boundary conditions only need to be imposed
-      ! to the defect vectp
+      ! to the defect vector.
       CALL filter_applyFilterChainVec (rd, RfilterChain)
       
       ! Should we discretise the Navier-Stokes nonlinearity?
@@ -291,6 +302,33 @@ CONTAINS
         ! nodes in the vector!
         CALL filter_applyFilterChainVec (rd, RfilterChain)
         
+      ELSE
+        ! Which type of stabilisation/strategy for setting up the nonlinearity
+        ! do we use?
+        SELECT CASE (collct_getvalue_int (p_rcollection,'IUPWIND'))
+        CASE (2)
+          ! Jump stabilisation. Can also be used with Stokes.
+          !
+          ! Initialise the Jump stabilisation structure.
+          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          
+          ! Initialise the jump stabilisation parameter
+          rjumpStabil%dgamma = collct_getvalue_real (p_rcollection,'UPSAM')
+          rjumpStabil%dgammastar = rjumpStabil%dgamma 
+          
+          ! Call the Jump stabilisation to stabilise
+          CALL conv_jumpStabilisation2d ( &
+                           rx, rx, 1.0_DP, 0.0_DP,&
+                           rjumpStabil, CONV_MODDEFECT, &
+                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
+
+          ! Apply the filter chain to the defect vector again - since the
+          ! implementation of the nonlinearity usually changes the Dirichlet
+          ! nodes in the vector!
+          CALL filter_applyFilterChainVec (rd, RfilterChain)
+          
+        END SELECT
+        
       END IF
 
       ! Filter the resulting defect vector through the slip-boundary-
@@ -365,9 +403,10 @@ CONTAINS
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(t_jumpStabilisation) :: rjumpStabil
+    LOGICAL :: bneumann
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
+    TYPE(t_filterChain), DIMENSION(3), TARGET :: RfilterChain
 
 !    ! DEBUG!!!:
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_temp1,p_temp2,p_da
@@ -408,6 +447,16 @@ CONTAINS
       ! The second filter filters for boundary conditions of fictitious boundary
       ! components
       RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
+      
+      ! Do we have Neumann boundary?
+      bneumann = collct_getvalue_int (p_rcollection, 'INEUMANN') .EQ. YES
+      RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      IF (.NOT. bneumann) THEN
+        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+        ! Filter the pressure to avoid indefiniteness.
+        RfilterChain(3)%ifilterType = FILTER_TOL20
+        RfilterChain(3)%itoL20component = 3
+      END IF
       
       ! We now want to calculate a new OMEGA parameter
       ! with OMGMIN < OMEGA < OMGMAX.
@@ -604,7 +653,50 @@ CONTAINS
         ! Note: implementation commented out!
         ! Seems to work better without!
         ! CALL matfil_discreteNLSlipBC (p_rmatrix,.FALSE.)
+
+      ELSE
           
+        ! Which type of stabilisation/strategy for setting up the nonlinearity
+        ! do we use?
+        SELECT CASE (collct_getvalue_int (p_rcollection,'IUPWIND'))
+          
+        CASE (2)
+          ! Jump stabilisation; can also be used with Stokes.
+          !
+          ! The system matrix looks like:
+          !   (  A    0   B1 )
+          !   (  0    A   B2 )
+          !   ( B1^T B2^T 0  )
+          !
+          ! The A-matrix consists of Stokes+Convection.
+          ! We build them separately and add together.
+          !
+          ! So at first, initialise the A-matrix with the Stokes contribution.
+          ! We ignore the structure and simply overwrite the content of the
+          ! system submatrices with the Stokes matrix.
+          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
+                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+          
+          ! Initialise jump stabilisation block
+          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+
+          ! Initialise the jump stabilisation parameter
+          rjumpStabil%dgamma = collct_getvalue_real (p_rcollection,'UPSAM')
+          rjumpStabil%dgammastar = rjumpStabil%dgamma 
+          
+          ! Call the Jump stabilisation method to stabilise
+          CALL conv_jumpStabilisation2d (rtemp1, rtemp1, 1.0_DP, 0.0_DP,&
+                              rjumpStabil, CONV_MODMATRIX, &
+                              p_rmatrix%RmatrixBlock(1,1))      
+
+          ! Apply the filter chain to the matrix.
+          ! As the filter consists only of an implementation filter for
+          ! boundary conditions, this implements the boundary conditions
+          ! into the system matrix.
+          CALL filter_applyFilterChainMat (p_rmatrix, RfilterChain)
+          
+        END SELECT
+
       END IF
         
       ! ==================================================================
@@ -725,6 +817,7 @@ CONTAINS
     INTEGER :: istokes, iupwind,iadaptivematrix
     REAL(DP) :: dadmatthreshold
     LOGICAL :: bdecoupledXY
+    LOGICAL :: bneumann
   
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -743,7 +836,7 @@ CONTAINS
     TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
 
     ! A filter chain to pre-filter the vectors and the matrix.
-    TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
+    TYPE(t_filterChain), DIMENSION(3), TARGET :: RfilterChain
 
     ! DEBUG!!!
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
@@ -772,6 +865,16 @@ CONTAINS
       ! The second filter filters for boundary conditions of fictitious boundary
       ! components
       RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
+      
+      ! Do we have Neumann boundary?
+      bneumann = collct_getvalue_int (p_rcollection, 'INEUMANN') .EQ. YES
+      RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      IF (.NOT. bneumann) THEN
+        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+        ! Filter the pressure to avoid indefiniteness.
+        RfilterChain(3)%ifilterType = FILTER_TOL20
+        RfilterChain(3)%itoL20component = 3
+      END IF
       
       ! Get the interlevel projection structure and the temporary vector
       ! from the collection.
@@ -807,7 +910,7 @@ CONTAINS
           rupwind%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
 
         CASE (2)
-          ! Set up the upwind structure for the creation of the defect.
+          ! Set up the jump stabilisation structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rjumpStabil%dnu = collct_getvalue_real (p_rcollection,'NU')
           
@@ -827,6 +930,23 @@ CONTAINS
           STOP
         
         END SELECT
+        
+      ELSE
+        iupwind = collct_getvalue_int (p_rcollection,'IUPWIND')
+      
+        SELECT CASE (iupwind)
+        CASE (2)
+          ! Jump stabilisation; can also be used with Stokes.
+          !
+          ! Set up the jump stabilisation structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rjumpStabil%dnu = collct_getvalue_real (p_rcollection,'NU')
+          
+          ! Set stabilisation parameter
+          rjumpStabil%dgammastar = collct_getvalue_real (p_rcollection,'UPSAM')
+          rjumpStabil%dgamma = rjumpStabil%dgammastar
+        END SELECT      
+        
       END IF
       
       ! On all levels, we have to set up the nonlinear system matrix,
@@ -970,6 +1090,17 @@ CONTAINS
           ! conditions - this gives then the system matrix.
           CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+
+          SELECT CASE (iupwind)
+          CASE (2)
+            ! Jump stabilisation; can also be used with Stokes.
+            !
+            ! Call the jump stabilisation technique to stabilise that stuff.   
+            CALL conv_jumpStabilisation2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+                                rjumpStabil, CONV_MODMATRIX, &
+                                p_rmatrix%RmatrixBlock(1,1))   
+          END SELECT
 
         END IF
 
@@ -1722,7 +1853,7 @@ CONTAINS
     CALL nlsol_performSolve(rnlSol,rvector,rrhs,rtempBlock,&
                             c2d2_getDefect,c2d2_precondDefect,&
                             rcollection=rproblem%rcollection)
-                            
+             
     ! Delete min./max. damping parameters from the collection
     CALL collct_deletevalue (rproblem%rcollection,'OMEGAMAX')
     CALL collct_deletevalue (rproblem%rcollection,'OMEGAMIN')

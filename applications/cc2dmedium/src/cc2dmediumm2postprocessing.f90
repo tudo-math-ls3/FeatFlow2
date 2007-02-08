@@ -38,6 +38,8 @@ MODULE cc2dmediumm2postprocessing
   
   USE ucd
   
+  USE pprocnavierstokes
+  
   USE cc2dmediumm2basic
   USE cc2dmedium_callback
   
@@ -117,6 +119,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
+    INTEGER :: ieltype
   
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
@@ -139,18 +142,67 @@ CONTAINS
     TYPE(t_ucdExport) :: rexport
     
     ! Forces on the object
-    ! REAL(DP), DIMENSION(NDIM2D) :: Dforces
-    ! REAL(DP) :: df1,df2
-    ! TYPE(t_boundaryRegion) :: rregion
+    REAL(DP), DIMENSION(NDIM2D) :: Dforces
+    REAL(DP) :: df1,df2
+    TYPE(t_boundaryRegion) :: rregion
+    
+    ! Divergence
+    TYPE(t_matrixScalar) :: rBmatrix
+    TYPE(t_vectorScalar), TARGET :: rtempVector
 
-    ! Calculate drag-/lift coefficients on the 2nd boundary component
-    ! CALL boundary_createRegion (rvector%p_rblockDiscretisation%p_rdomain, 
-    !     2, 0, rregion)
-    ! rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-    ! df1 = 1.0_DP/1000.0_DP
-    ! df2 = 0.1_DP * 0.2_DP**2
-    ! CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
-    ! PRINT *,'Forces: ',Dforces(1),Dforces(2)
+    ! If we have a uniform discreisation, calculate the body forces on the
+    ! 2nd boundary component - if it exists.
+    IF ((rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
+        (boundary_igetNBoundComp(rproblem%p_rboundary) .GE. 2)) THEN
+
+      ! Calculate drag-/lift coefficients on the 2nd boundary component.
+      ! This is for the benchmark channel!
+      CALL boundary_createRegion (rproblem%p_rboundary, &
+          2, 0, rregion)
+      rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      df1 = 1.0_DP/1000.0_DP
+      df2 = 0.1_DP * 0.2_DP**2
+      CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
+      PRINT *,'Forces: ',Dforces(1),Dforces(2)
+      
+    ENDIF
+    
+    ! If we have a simple Q1~ discretisation, calculate the streamfunction.
+    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+        
+      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+                RelementDistribution(1)%itrialElement
+                
+      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
+          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+      
+        ! Create a temporary vector 
+        CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
+            rtempVector,.TRUE.)
+
+        ! Calculate divergence = B1^T u1 + B2^T u2
+        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
+            rBmatrix,LSYSSC_TR_VIRTUAL)
+        CALL lsyssc_scalarMatVec (&
+            rBmatrix, rvector%RvectorBlock(1), &
+            rtempVector, 1.0_DP, 0.0_DP)
+        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
+            rBmatrix,LSYSSC_TR_VIRTUAL)
+        CALL lsyssc_scalarMatVec (&
+            rBmatrix, rvector%RvectorBlock(2), &
+            rtempVector, 1.0_DP, 1.0_DP)
+        
+        PRINT *
+        PRINT *,'Divergence: ',&
+            lsyssc_vectorNorm(rtempVector,LINALG_NORML2)
+            
+        CALL lsyssc_releaseVector (rtempVector)
+      
+      END IF
+      
+    END IF    
     
     ! The solution vector is probably not in the way, GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
@@ -236,6 +288,26 @@ CONTAINS
     ! Write pressure
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    
+    ! If we have a simple Q1~ discretisation, calculate the streamfunction.
+    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+        
+      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+                RelementDistribution(1)%itrialElement
+                
+      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
+          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+          
+        CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
+        
+        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
+            UCD_VAR_STANDARD, p_Ddata)
+            
+      END IF
+      
+    END IF
     
     ! Write the file to disc, that's it.
     CALL ucd_write (rexport)
