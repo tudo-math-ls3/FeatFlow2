@@ -11,7 +11,7 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-inonstationary = 0                        # ISTAT
+itimedependence = 0                       # ISTAT
 
 # ----------------------------------------------------------------------
 
@@ -22,16 +22,33 @@ niterations = 1000                        # NITNS
 
 # Absolute start time of the simulation (TIMENS)
 
-dtimestart = 0.0                          # TIMENS
+dtimeInit = 0.0                          # TIMENS
 
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimemax = 20.0                           # TIMEMX
+dtimeMax = 20.0                           # TIMEMX
 
 # Initial time step size
 
 dtimeStep = 0.01                          # DTSTEP
+
+# Lower limit for the time derivative to be treated as zero. (EPSNS)
+# Simulation stops if time derivative drops below this value.
+
+dminTimeDerivative = 0.00001              # EPSNS
+
+# ----------------------------------------------------------------------
+
+# Time-stepping scheme (IFRSTP);
+# 0=one step scheme, 1=fractional step
+
+itimeStepScheme = 1                       # IFRSTP
+
+# parameter for one step scheme (THETA) if itimeStepScheme=0;
+# =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
+
+dtimeStepTheta = 0.5                      # THETA
 
 # ----------------------------------------------------------------------
 
@@ -42,9 +59,10 @@ dtimeStep = 0.01                          # DTSTEP
 # 3=with prediction, repetition if MG fails or time error too large
 # <0=with extrapolation in time
 
-iadaptiveTimeStepping = 0                 # IADTIM
+cadaptiveTimeStepping = 0                 # IADTIM
 
 # max. number of repetitions for |iadaptiveTimeStepping|=3 (IREPIT)
+
 irepetitions = 3                          # IREPIT
 
 # min. time step (DTMIN)
@@ -75,32 +93,22 @@ depsAdaptiveRelTimeStep = 0.5             # EPSADU
 
 # ----------------------------------------------------------------------
 
-# Time-stepping scheme (IFRSTP);
-# 0=one step scheme, 1=fractional step
-
-itimeStepScheme = 1                       # IFRSTP
-
-# parameter for one step scheme (THETA) if itimeStepScheme=0;
-# =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
-
-dtimeStepTheta = 0.5                      # THETA
-
-# ----------------------------------------------------------------------
-
-# type of start procedure (IADIN) when starting a nonstationary 
+# Type of start procedure (IADIN) when starting a nonstationary 
 # simulation if iadaptiveTimeStepping<>0 (to prevent time step
 # to be reduced to 0.0)
 # 0=constant start
-# 1=linear start
-# 2=logarith. start
+# 1=linear start (linear blending between dadTimeStepEpsDuringInit
+#   and dadTimeStepEpsAfterInit)
+# 2=logarith. start (logarithmic blending between dadTimeStepEpsDuringInit
+#   and dadTimeStepEpsAfterInit)
 
-iadTimeStepInit = 2                       # IADIN
+cadTimeStepInit = 2                       # IADIN
 
-# time for start procedure; must be >0 if iadaptiveTimeStepping<>0,
+# Time length of start procedure; must be >0 if iadaptiveTimeStepping<>0,
 # otherwise nonsteady simulations will stuck at the initial time
 # reducing the time step size to 0.0
 
-iadTimeStepInitDuration = 0.5             # TIMEIN
+dadTimeStepInitDuration = 0.5             # TIMEIN
 
 # Type of error indicator to measure error in time (IEPSAD) when doing
 # adaptive time stepping;

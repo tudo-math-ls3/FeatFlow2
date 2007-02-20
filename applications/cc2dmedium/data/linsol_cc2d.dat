@@ -46,7 +46,12 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 1
+ioutputLevel       = 2
+
+# How to check residuals.
+# =0: Check in Euclidian norm (like in old CC).
+
+iresNorm = 0
 
 # ------General multigrid parameters, coarse grid correction--------------
 #
@@ -55,6 +60,13 @@ ioutputLevel       = 1
 # Cycle identifier. 0=F-cycle, 1=V-cycle, 2=W-cycle
 
 icycle             = 0
+
+# Method to calculate the optimal MG-ALPHA, i.e. the optimal damping 
+# parameter for the coarse grid correction.
+# =0: use constant 1.0 = standard for conforming elements.
+# =1: use energy minimisation = standard for Q1~/Q0 discretisation
+# =2: use defect minimisation
+ccorrectionTypeAlpha = 1
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -111,7 +123,7 @@ nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 0.7
+domega             = 1.0
 
 # ========================================================================
 # The following section describes the parameters of the VANCA coarse grid
@@ -172,7 +184,7 @@ isolverSubtype     = 1
 
 # Relaxation parameter
 
-domega             = 0.9
+domega             = 0.7
 
 
 # ========================================================================
