@@ -420,10 +420,15 @@ CONTAINS
       ! At first, initialise the solver:
       CALL linsol_initMultigrid (p_rsolverNode,p_Rfilter)
       
-      ! THen, get solver specific:
+      ! Then, get solver specific data.
       CALL parlst_getvalue_int (p_rsection, 'icycle', &
                                 p_rsolverNode%p_rsubnodeMultigrid%icycle,&
                                 p_rsolverNode%p_rsubnodeMultigrid%icycle)
+
+      ! Coarse grid correction parameters
+      CALL parlst_getvalue_int (p_rsection, 'ccorrectionTypeAlpha', &
+           p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%ccorrectionType,&
+           p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%ccorrectionType)
 
       CALL parlst_getvalue_double (p_rsection, 'dalphaMin', &
            p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection%dalphaMin,&

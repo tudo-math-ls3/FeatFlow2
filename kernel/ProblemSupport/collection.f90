@@ -231,6 +231,7 @@ MODULE collection
   USE linearsolver
   USE boundary
   USE multilevelprojection
+  USE filtersupport
   USE fparser
   
   IMPLICIT NONE
@@ -329,8 +330,11 @@ MODULE collection
   ! A parser structure for a 'precompiled' expression
   INTEGER, PARAMETER :: COLLCT_FPARSER      = 19
 
+  ! A filter chain
+  INTEGER, PARAMETER :: COLLCT_FILTERCHAIN  = 20
+
   ! The collection structure itself
-  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 20
+  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 21
 
 !</constantblock>
 
@@ -408,10 +412,13 @@ MODULE collection
     TYPE(t_interlevelProjectionBlock), POINTER  :: p_rilvprojection => NULL()
 
     ! Pointer to a parser object
-    TYPE(t_fparser), POINTER                 :: p_rparser => NULL()
+    TYPE(t_fparser), POINTER                    :: p_rparser => NULL()
+
+    ! Pointer to a filter chain
+    TYPE(t_filterChain), DIMENSION(:), POINTER  :: p_RfilterChain => NULL()
 
     ! Pointer to a collection structure
-    TYPE(t_collection), POINTER              :: p_rcollection => NULL()
+    TYPE(t_collection), POINTER                 :: p_rcollection => NULL()
 
   END TYPE
   
@@ -3200,6 +3207,68 @@ CONTAINS
 
   ! ***************************************************************************
   
+!<function>
+
+  FUNCTION collct_getvalue_fchn (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a filter chain.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    value => p_rvalue%p_RfilterChain
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
 !<subroutine>
 
   SUBROUTINE collct_setvalue_char (rcollection, sparameter, value, badd, &
@@ -4419,6 +4488,67 @@ CONTAINS
   
   ! Set the value
   p_rvalue%p_rparser => value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_fchn (rcollection, sparameter, value, badd, &
+                                   ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_filterChain), DIMENSION(:), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_FILTERCHAIN,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+  
+  ! Set the value
+  p_rvalue%p_RfilterChain => value
 
   END SUBROUTINE
 

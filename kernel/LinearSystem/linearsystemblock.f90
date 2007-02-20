@@ -1787,10 +1787,10 @@ CONTAINS
 !</function>
 
   ! local variables
-  REAL(DP), DIMENSION(:), POINTER :: h_Ddata1dp
-  REAL(DP), DIMENSION(:), POINTER :: h_Ddata2dp
-  REAL(SP), DIMENSION(:), POINTER :: h_Fdata1dp
-  REAL(SP), DIMENSION(:), POINTER :: h_Fdata2dp
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata1dp
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata2dp
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata1dp
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata2dp
   ! INTEGER(PREC_VECIDX) :: i
   REAL(DP) :: res
 
@@ -1815,24 +1815,24 @@ CONTAINS
   CASE (ST_DOUBLE)
 
     ! Get the data arrays
-    CALL lsysbl_getbase_double (rx,h_Ddata1dp)
-    CALL lsysbl_getbase_double (ry,h_Ddata2dp)
+    CALL lsysbl_getbase_double (rx,p_Ddata1dp)
+    CALL lsysbl_getbase_double (ry,p_Ddata2dp)
     
     ! Perform the scalar product
-    res=lalg_scalarProductDble(h_Ddata1dp,h_Ddata2dp)
+    res=lalg_scalarProductDble(p_Ddata1dp,p_Ddata2dp)
 !!$      res = 0.0_DP
 !!$      DO i=1,rx%NEQ
-!!$        res = res + h_Ddata1dp(i)*h_Ddata2dp(i)
+!!$        res = res + p_Ddata1dp(i)*p_Ddata2dp(i)
 !!$      END DO
     
   CASE (ST_SINGLE)
 
     ! Get the data arrays
-    CALL lsysbl_getbase_single (rx,h_Fdata1dp)
-    CALL lsysbl_getbase_single (ry,h_Fdata2dp)
+    CALL lsysbl_getbase_single (rx,p_Fdata1dp)
+    CALL lsysbl_getbase_single (ry,p_Fdata2dp)
 
     ! Perform the scalar product
-    res=lalg_scalarProductSngl(h_Fdata1dp,h_Fdata2dp)
+    res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
 
   CASE DEFAULT
     PRINT *,'lsysbl_scalarProduct: Not supported precision combination'
@@ -1913,7 +1913,11 @@ CONTAINS
 !<description>
   ! Calculates the norms of all subvectors in a given block vector.
   ! Cnorms is an array containing the type of norm to compute for each
-  ! subvector. 
+  ! subvector.
+  !
+  ! If the arrays Cnorms or IposMax are sre smaller than rx%nblocks,
+  ! only the first couple of subvectors are processed until the
+  ! forst array (Cnorms or IposMax) is completely filled.
 !</description>
   
 !<input>
@@ -1941,10 +1945,14 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,nblk
 
-  ! Loop over the subvectors
-  DO i=1,rx%nblocks
+  nblk = MIN(rx%nblocks,SIZE(Cnorms))
+  IF (PRESENT(IposMax)) nblk = MIN(nblk,SIZE(IposMax))
+
+  ! Loop over the subvectors. Don't calculate more subvectors as we 
+  ! are allowed to.
+  DO i=1,nblk
     ! Calculate the norm of that subvector.
     IF (PRESENT(IposMax)) THEN
       Dnorms(i) = lsyssc_vectorNorm (rx%RvectorBlock(i),Cnorms(i),IposMax(i))

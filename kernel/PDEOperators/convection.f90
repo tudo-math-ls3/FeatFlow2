@@ -1869,7 +1869,7 @@ CONTAINS
       IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
         DO IEL=1,IELmax-IELset+1
           CALL getLocalDelta (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
-                      IEL,DUMAXR,DlocalDelta(IEL), &
+                      IEL+IELset-1,DUMAXR,DlocalDelta(IEL), &
                       p_IverticesAtElement,p_IedgesAtElement,&
                       p_DcornerCoordinates,Idofs(:,IEL),indof, &
                       dupsam,dre)

@@ -21,6 +21,10 @@
 !# 2.) timstp_nextSubstep
 !#     -> Go to next time (sub-)step
 !#
+!# 3.) timstp_getOrder
+!#     -> Retrieves the order of the time error that is expected from a
+!#        defined time stepping algorithm.
+!#
 !# How to use this module?
 !#
 !# Well, that's simple. It's like this:
@@ -191,6 +195,45 @@ MODULE timestepping
 !</types>
 
 CONTAINS
+
+  !****************************************************************************
+
+!<function>
+
+  PURE INTEGER FUNCTION timstp_getOrder (rtstepScheme) RESULT(iorder)
+  
+!<description>
+  ! This routine analyses the time stepping structure rtstepScheme and returns
+  ! the expected order of the time stepping algorithm that is described by
+  ! that structure (e.g. 1 for explicit Euler, 2 for Crank Nicolson).
+!</description>
+
+!<input>
+  ! Time stepping structure that describes an explicit time stepping scheme.
+  TYPE(t_explicitTimeStepping), INTENT(IN) :: rtstepScheme
+!</input>
+
+!<result>
+  ! Expected order of the time stepping algorithm described by rtstepScheme.
+!</result>
+  
+!</function>
+
+    SELECT CASE (rtstepScheme%ctimestepType)
+    CASE (TSCHM_FRACTIONALSTEP)
+      iorder = 2
+    CASE (TSCHM_ONESTEP)
+      IF (rtstepScheme%dthStep .EQ. 0.5_DP) THEN
+        iorder = 2
+      ELSE
+        iorder = 1
+      END IF
+    CASE DEFAULT
+      ! Error case
+      iorder = 0
+    END SELECT
+
+  END FUNCTION
 
   !****************************************************************************
   
