@@ -231,7 +231,7 @@ CONTAINS
       ! -----------------------------------------------------------------------
 
       CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'INONSTATIONARY', j, 0)
+                                       'ITIMEDEPENDENCE', j, 0)
       IF (j .NE. 0) THEN
       
         ! Initialise a discretisation structure for the mass matrix.
@@ -348,7 +348,7 @@ CONTAINS
       ! -----------------------------------------------------------------------
 
       CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'INONSTATIONARY', j, 0)
+                                       'ITIMEDEPENDENCE', j, 0)
       IF (j .NE. 0) THEN
         ! Release the mass matrix discretisation.
         ! Don't release the content as we created it as a copy of the Stokes
@@ -443,10 +443,6 @@ CONTAINS
       ! Get a pointer to the (scalar) Stokes matrix:
       p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
       
-      ! and save it to the collection for later use.
-      CALL collct_setvalue_matsca(rproblem%rcollection,PAR_STOKES,&
-                                  p_rmatrixStokes,.TRUE.,i)
-      
       ! Create the matrix structure of the Stokes matrix:
       CALL bilf_createMatrixStructure (&
                 p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
@@ -484,10 +480,6 @@ CONTAINS
       ! the discretisation.
       CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
       
-      ! Save the system matrix to the collection.
-      ! They maybe used later, expecially in nonlinear problems.
-      CALL collct_setvalue_mat(rproblem%rcollection,PAR_SYSTEMMAT,p_rmatrix,.TRUE.,i)
-
       ! Inform the matrix that we build a saddle-point problem.
       ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
       ! but probably some solvers can use the special structure later.
@@ -562,6 +554,7 @@ CONTAINS
       ! changed the submatrices:
       CALL lsysbl_updateMatStrucInfo (p_rmatrix)
       
+      
       ! Now on all levels except for the maximum one, create a temporary 
       ! vector on that level, based on the matrix template.
       ! It's used for building the matrices on lower levels.
@@ -574,6 +567,7 @@ CONTAINS
         CALL collct_setvalue_vec(rproblem%rcollection,PAR_TEMPVEC,p_rtempVector,&
                                 .TRUE.,i)
       END IF
+      
 
     END DO
 
@@ -713,7 +707,7 @@ CONTAINS
       ! -----------------------------------------------------------------------
 
       CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'INONSTATIONARY', j, 0)
+                                       'ITIMEDEPENDENCE', j, 0)
       IF (j .NE. 0) THEN
       
         p_rmatrixMass => rproblem%RlevelInfo(i)%rmatrixMass
@@ -962,10 +956,6 @@ CONTAINS
 !      ! Get a pointer to the (scalar) Stokes matrix:
 !      p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
 !      
-!      ! and save it to the collection for later use.
-!      CALL collct_setvalue_matsca(rproblem%rcollection,PAR_STOKES,&
-!                                  p_rmatrixStokes,.TRUE.,i)
-!      
 !      ! Create the matrix structure of the Stokes matrix:
 !      CALL bilf_createMatrixStructure (&
 !                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
@@ -1054,10 +1044,6 @@ CONTAINS
 !      ! the discretisation.
 !      CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
 !      
-!      ! Save the system matrix to the collection.
-!      ! They maybe used later, expecially in nonlinear problems.
-!      CALL collct_setvalue_mat(rproblem%rcollection,PAR_SYSTEMMAT,p_rmatrix,.TRUE.,i)
-!
 !      ! Inform the matrix that we build a saddle-point problem.
 !      ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
 !      ! but probably some solvers can use the special structure later.
@@ -1225,10 +1211,6 @@ CONTAINS
       ! Delete the matrix
       CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
 
-      ! Delete the variables from the collection.
-      CALL collct_deletevalue (rproblem%rcollection,PAR_SYSTEMMAT,i)
-      CALL collct_deletevalue (rproblem%rcollection,PAR_STOKES,i)
-      
       ! Release Stokes, B1 and B2 matrix
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)

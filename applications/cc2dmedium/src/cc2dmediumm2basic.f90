@@ -31,6 +31,8 @@ MODULE cc2dmediumm2basic
   USE timestepping
   
   USE collection
+  
+  USE adaptivetimestep
     
   IMPLICIT NONE
   
@@ -77,7 +79,7 @@ MODULE cc2dmediumm2basic
     TYPE(t_matrixScalar) :: rmatrixMass
 
     ! Nonstationary simulation: A scalar discretisation structure that 
-    ! specifies for to generate the mass matrix.
+    ! specifies how to generate the mass matrix.
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
     
 
@@ -85,29 +87,35 @@ MODULE cc2dmediumm2basic
   
 !</typeblock>
 
+
 !<typeblock description="Application-specific type block for the nonstationary Nav.St. problem">
 
-  TYPE t_problem_nonst
+  TYPE t_problem_explTimeStepping
   
-    ! Time stepping structure of Theta-scheme that defines the current 
-    ! point in time, current time step, etc.
-    TYPE(t_explicitTimeStepping) :: rtimeStepping
-    
-    ! Number of current time step
+    ! Number of current time step; changes during the simulation.
     INTEGER :: itimeStep           = 0
+    
+    ! Current simulation time; changes during the simulation.
+    REAL(DP) :: dtime              = 0.0_DP
   
-    ! Maximum number of time steps
+    ! Maximum number of time steps; former NITNS
     INTEGER :: niterations         = 0
     
     ! Absolute start time of the simulation
-    REAL(DP) :: dtimeInit          = 0.0_DP            
+    REAL(DP) :: dtimeInit          = 0.0_DP     
+    
+    ! Time step size; former TSTEP
+    REAL(DP) :: dtimeStep          = 0.0_DP       
     
     ! Maximum time of the simulation
     REAL(DP) :: dtimeMax           = 0.0_DP
   
-    ! Lower limit for the time derivative to be treated as zero. Former EPSANS.
+    ! Lower limit for the time derivative to be treated as zero. Former EPSNS.
     ! Simulation stops if time derivative drops below this value.
     REAL(DP) :: dminTimeDerivative = 0.00001_DP
+    
+    ! Configuration block for the adaptive time stepping.
+    TYPE(t_adaptimeTimeStepping) :: radaptiveTimeStepping
     
   END TYPE
 
@@ -139,23 +147,33 @@ MODULE cc2dmediumm2basic
     LOGICAL :: bdecoupledXY
 
     ! A variable describing the analytic boundary conditions.    
-    TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
+    TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditions
 
     ! A solver node that accepts parameters for the linear solver    
-    TYPE(t_linsolNode), POINTER :: p_rsolverNode
+    TYPE(t_linsolNode), POINTER           :: p_rsolverNode
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by NLMAX!
     TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
     
+    ! Type of simulation.
+    ! =0: stationary simulation.
+    ! =1: time-dependent simulation with explicit time stepping configured 
+    !     by rtimedependence
+    INTEGER                               :: itimedependence
+    
+    ! A parameter block for everything that controls the time dependence.
+    ! Only valid if itimedependence=1!
+    TYPE(t_problem_explTimeStepping)      :: rtimedependence
+    
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
     ! callback routines.
-    TYPE(t_collection) :: rcollection
+    TYPE(t_collection)                    :: rcollection
     
     ! A param list that saves all parameters from the DAT/INI file(s).
-    TYPE(t_parlist) :: rparamList
+    TYPE(t_parlist)                       :: rparamList
 
   END TYPE
 
@@ -175,12 +193,6 @@ MODULE cc2dmediumm2basic
   
   ! Name of a temporary vector in the collection
   CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_TEMPVEC      = 'RTEMPVEC'
-  
-  ! Name of the Stokes matrix in the collection
-  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_STOKES       = 'STOKES'
-  
-  ! Name of the global system matrix in the collection
-  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_SYSTEMMAT    = 'SYSTEMMAT'
   
   !</constantblock>
 

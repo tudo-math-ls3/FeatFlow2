@@ -326,7 +326,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs)
+  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs,bmatrices,bvectors)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -344,6 +344,12 @@ CONTAINS
 
   ! A vector structure for the RHS vector. The discrete BC's are implamented into that.
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  
+  ! Whether to implement the BC's into the system matrix/matrices or not.
+  LOGICAL, INTENT(IN) :: bmatrices
+
+  ! Whether to implement the BC's into the solution/rhs vector or not
+  LOGICAL, INTENT(IN) :: bvectors
 !</inputoutput>
 
 !</subroutine>
@@ -359,35 +365,43 @@ CONTAINS
     ! on the finest level
     ilvmax = rproblem%NLMAX
     
-    ! Implement pressure drop boundary conditions into RHS vector
-    ! if there are any.
-    CALL vecfil_discreteNLPDropBCrhs (rrhs)
+    IF (bvectors) THEN
     
-    ! Implement discrete boundary conditions into RHS vector by 
-    ! filtering the vector.
-    CALL vecfil_discreteBCrhs (rrhs)
+      ! Implement pressure drop boundary conditions into RHS vector
+      ! if there are any.
+      CALL vecfil_discreteNLPDropBCrhs (rrhs)
+      
+      ! Implement discrete boundary conditions into RHS vector by 
+      ! filtering the vector.
+      CALL vecfil_discreteBCrhs (rrhs)
 
-    ! Implement discrete boundary conditions into solution vector by
-    ! filtering the vector.
-    CALL vecfil_discreteBCsol (rvector)
-    
-    ! Implement discrete boundary conditions of fictitious boundary components
-    ! into RHS vector by filtering the vector.
-    CALL vecfil_discreteFBCrhs (rrhs)
+      ! Implement discrete boundary conditions into solution vector by
+      ! filtering the vector.
+      CALL vecfil_discreteBCsol (rvector)
+      
+      ! Implement discrete boundary conditions of fictitious boundary components
+      ! into RHS vector by filtering the vector.
+      CALL vecfil_discreteFBCrhs (rrhs)
 
-    ! Implement discrete boundary conditions of fictitioous boundary comnponents
-    ! into solution vector by filtering the vector.
-    CALL vecfil_discreteFBCsol (rvector)
+      ! Implement discrete boundary conditions of fictitioous boundary comnponents
+      ! into solution vector by filtering the vector.
+      CALL vecfil_discreteFBCsol (rvector)
+      
+    END IF
     
-    ! Implement discrete boundary conditions into the matrices on all 
-    ! levels, too.
-    ! In fact, this modifies the B-matrices. The A-matrices are overwritten
-    ! later and must then be modified again!
-    DO i=rproblem%NLMIN ,rproblem%NLMAX
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      CALL matfil_discreteBC (p_rmatrix)  ! standard boundary conditions
-      CALL matfil_discreteFBC (p_rmatrix)  ! fictitious boundary boundary conditions
-    END DO
+    IF (bmatrices) THEN
+    
+      ! Implement discrete boundary conditions into the matrices on all 
+      ! levels, too.
+      ! In fact, this modifies the B-matrices. The A-matrices are overwritten
+      ! later and must then be modified again!
+      DO i=rproblem%NLMIN ,rproblem%NLMAX
+        p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+        CALL matfil_discreteBC (p_rmatrix)  ! standard boundary conditions
+        CALL matfil_discreteFBC (p_rmatrix)  ! fictitious boundary boundary conditions
+      END DO
+      
+    END IF
 
   END SUBROUTINE
 

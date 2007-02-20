@@ -45,6 +45,7 @@ MODULE cc2dmediumm2init
   USE convection
     
   USE cc2dmediumm2basic
+  USE cc2dmediumm2nonstationary
   
   IMPLICIT NONE
   
@@ -121,6 +122,10 @@ CONTAINS
     CALL parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'dUpsam',d1,0.0_DP)
     CALL collct_setvalue_real (rproblem%rcollection,'UPSAM',d1,.TRUE.)
+
+    ! Time dependence
+    CALL c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
+        rproblem%rparamList)
 
   END SUBROUTINE
 

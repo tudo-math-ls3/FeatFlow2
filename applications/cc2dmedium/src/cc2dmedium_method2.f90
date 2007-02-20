@@ -139,20 +139,52 @@ CONTAINS
     CALL c2d2_initParamTriang (rproblem)
     CALL c2d2_initDiscretisation (rproblem)    
     CALL c2d2_allocMatVec (rproblem,rvector,rrhs)    
-    CALL c2d2_generateStaticMatrices (rproblem)
-    CALL c2d2_generateStaticSystemParts (rproblem)
-    CALL c2d2_generateBasicRHS (rproblem,rrhs)
     CALL c2d2_initAnalyticBC (rproblem)   
-    CALL c2d2_initDiscreteBC (rproblem,rvector,rrhs)
+
+    ! Now choose the algorithm. Stationary or time-dependent simulation?
+    IF (rproblem%itimedependence .EQ. 0) THEN
     
-    ! Implementation of boundary conditions
-    CALL c2d2_implementBC (rproblem,rvector,rrhs)
+      ! Stationary simulation
+      !
+      ! Generate matrices
+      CALL c2d2_generateStaticMatrices (rproblem)
+      CALL c2d2_generateStaticSystemParts (rproblem)
+
+      ! Generate the RHS vector.
+      CALL c2d2_generateBasicRHS (rproblem,rrhs)
+      
+      ! Generate discrete boundary conditions
+      CALL c2d2_initDiscreteBC (rproblem,rvector,rrhs)
+
+      ! Implementation of boundary conditions
+      CALL c2d2_implementBC (rproblem,rvector,rrhs,.TRUE.,.TRUE.)
     
-    ! Solve the problem
-    CALL c2d2_solve (rproblem,rvector,rrhs)
+      ! Solve the problem
+      CALL c2d2_solve (rproblem,rvector,rrhs)
     
-    ! Postprocessing
-    CALL c2d2_postprocessing (rproblem,rvector)
+      ! Postprocessing
+      CALL c2d2_postprocessingStationary (rproblem,rvector)
+      
+    ELSE
+    
+      ! Time dependent simulation with explicit time stepping.
+      !
+      ! Generate matrices
+      CALL c2d2_generateStaticMatrices (rproblem)
+      CALL c2d2_generateStaticSystemParts (rproblem)
+      
+      ! Generate the RHS vector for the first time step.
+      CALL c2d2_generateBasicRHS (rproblem,rrhs)
+      
+      ! Initialise the boundary conditions, but 
+      ! don't implement any boundary conditions as the nonstationary solver
+      ! doesn't like this.
+      CALL c2d2_initDiscreteBC (rproblem,rvector,rrhs)
+      
+      ! Call the nonstationary solver to solve the problem.
+      CALL c2d2_solveNonstationary (rproblem,rvector,rrhs)
+      
+    END IF
     
     ! Cleanup
     CALL c2d2_doneMatVec (rproblem,rvector,rrhs)

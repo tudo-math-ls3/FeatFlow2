@@ -100,10 +100,11 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_postprocessing (rproblem,rvector)
+  SUBROUTINE c2d2_postprocessingStationary (rproblem,rvector)
   
 !<description>
-  ! Writes the solution into a GMV file.
+  ! Postprocessing of solutions of stationary simulations.
+  ! Writes the solution into a GMV file, calculates forces,...
 !</description>
 
 !<inputoutput>
@@ -270,6 +271,241 @@ CONTAINS
     
     ! Start UCD export to GMV file:
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,'gmv/u.gmv')
+    
+    ! Write the configuration of the application as comment block
+    ! to the output file.
+    CALL ucd_addCommentLine (rexport,'Configuration:')
+    CALL ucd_addCommentLine (rexport,'---------------')
+    CALL ucd_addParameterList (rexport,rproblem%rparamList)
+    CALL ucd_addCommentLine (rexport,'---------------')
+
+    ! Write velocity field
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+    
+    CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
+    CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
+    
+    ! Write pressure
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
+    CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    
+    ! If we have a simple Q1~ discretisation, calculate the streamfunction.
+    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+        
+      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+                RelementDistribution(1)%itrialElement
+                
+      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
+          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+          
+        CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
+        
+        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
+            UCD_VAR_STANDARD, p_Ddata)
+            
+      END IF
+      
+    END IF
+    
+    ! Write the file to disc, that's it.
+    CALL ucd_write (rexport)
+    CALL ucd_release (rexport)
+    
+    ! Release the auxiliary vector
+    CALL lsysbl_releaseVector (rprjVector)
+    
+    ! Throw away the discrete BC's - not used anymore.
+    CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteFBC (p_rdiscreteFBC)
+    
+    ! Release the auxiliary discretisation structure.
+    ! We only release the two substructures we manually created before.
+    ! The large structure must not be released - it's a copy of 
+    ! another one.
+    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(1))
+    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(2))
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_postprocessingNonstat (rproblem,rvector)
+  
+!<description>
+  ! Postprocessing of solutions of stationary simulations.
+  ! Writes the solution into a GMV file, calculates forces,...
+!</description>
+
+!<inputoutput>
+  ! A problem astructure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!<input>
+  ! The solution vector which is to be evaluated by the postprocessing routines.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+
+!</subroutine>
+
+  ! local variables
+    INTEGER :: ieltype
+  
+    ! We need some more variables for postprocessing - i.e. writing
+    ! a GMV file.
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+
+    ! A pointer to the triangulation.
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
+    
+    ! A vector accepting Q1 data
+    TYPE(t_vectorBlock) :: rprjVector
+    
+    ! A discretisation structure for Q1
+    TYPE(t_blockDiscretisation) :: rprjDiscretisation
+    
+    ! Discrete boundary conditions for the output vector
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    
+    ! Output block for UCD output to GMV file
+    TYPE(t_ucdExport) :: rexport
+    
+    ! Forces on the object
+    REAL(DP), DIMENSION(NDIM2D) :: Dforces
+    REAL(DP) :: df1,df2
+    TYPE(t_boundaryRegion) :: rregion
+    
+    ! Divergence
+    TYPE(t_matrixScalar) :: rBmatrix
+    TYPE(t_vectorScalar), TARGET :: rtempVector
+
+    ! If we have a uniform discreisation, calculate the body forces on the
+    ! 2nd boundary component - if it exists.
+    IF ((rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
+        (boundary_igetNBoundComp(rproblem%p_rboundary) .GE. 2)) THEN
+
+      ! Calculate drag-/lift coefficients on the 2nd boundary component.
+      ! This is for the benchmark channel!
+      CALL boundary_createRegion (rproblem%p_rboundary, &
+          2, 0, rregion)
+      rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      df1 = 1.0_DP/1000.0_DP
+      df2 = 0.1_DP * 0.2_DP**2
+      CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
+      PRINT *,'Forces: ',Dforces(1),Dforces(2)
+      
+    ENDIF
+    
+    ! If we have a simple Q1~ discretisation, calculate the streamfunction.
+    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+        
+      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+                RelementDistribution(1)%itrialElement
+                
+      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
+          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+      
+        ! Create a temporary vector 
+        CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
+            rtempVector,.TRUE.)
+
+        ! Calculate divergence = B1^T u1 + B2^T u2
+        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
+            rBmatrix,LSYSSC_TR_VIRTUAL)
+        CALL lsyssc_scalarMatVec (&
+            rBmatrix, rvector%RvectorBlock(1), &
+            rtempVector, 1.0_DP, 0.0_DP)
+        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
+            rBmatrix,LSYSSC_TR_VIRTUAL)
+        CALL lsyssc_scalarMatVec (&
+            rBmatrix, rvector%RvectorBlock(2), &
+            rtempVector, 1.0_DP, 1.0_DP)
+        
+        PRINT *
+        PRINT *,'Divergence: ',&
+            lsyssc_vectorNorm(rtempVector,LINALG_NORML2)
+            
+        CALL lsyssc_releaseVector (rtempVector)
+      
+      END IF
+      
+    END IF    
+    
+    ! The solution vector is probably not in the way, GMV likes it!
+    ! GMV for example does not understand Q1~ vectors!
+    ! Therefore, we first have to convert the vector to a form that
+    ! GMV understands.
+    ! GMV understands only Q1 solutions! So the task is now to create
+    ! a Q1 solution from rvector and write that out.
+    !
+    ! For this purpose, first create a 'derived' simple discretisation
+    ! structure based on Q1 by copying the main guiding block discretisation
+    ! structure and modifying the discretisation structures of the
+    ! two velocity subvectors:
+    
+    rprjDiscretisation = rvector%p_rblockDiscretisation
+    
+    CALL spdiscr_deriveSimpleDiscrSc (&
+                 rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
+                 EL_Q1, CUB_G2X2, &
+                 rprjDiscretisation%RspatialDiscretisation(1))
+
+    CALL spdiscr_deriveSimpleDiscrSc (&
+                 rvector%p_rblockDiscretisation%RspatialDiscretisation(2), &
+                 EL_Q1, CUB_G2X2, &
+                 rprjDiscretisation%RspatialDiscretisation(2))
+                 
+    ! The pressure discretisation substructure stays the old.
+    !
+    ! Now set up a new solution vector based on this discretisation,
+    ! allocate memory.
+    CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
+    
+    ! Then take our original solution vector and convert it according to the
+    ! new discretisation:
+    CALL spdp_projectSolution (rvector,rprjVector)
+    
+    ! Discretise the boundary conditions according to the Q1/Q1/Q0 
+    ! discretisation for implementing them into a solution vector.
+    NULLIFY(p_rdiscreteBC)
+    CALL bcasm_discretiseBC (rprjDiscretisation,p_rdiscreteBC, &
+                            .FALSE.,getBoundaryValues,rproblem%rcollection,&
+                            BCASM_DISCFORSOL)
+                            
+    ! Connect the vector to the BC's
+    rprjVector%p_rdiscreteBC => p_rdiscreteBC
+    
+    ! The same way, discretise boundary conditions of fictitious boundary components.
+    NULLIFY(p_rdiscreteFBC)
+    CALL bcasm_discretiseFBC (rprjDiscretisation,p_rdiscreteFBC, &
+                              .FALSE.,getBoundaryValuesFBC,rproblem%rcollection,&
+                              BCASM_DISCFORSOL)
+    rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
+    
+    ! Filter the solution vector to implement discrete BC's.
+    CALL vecfil_discreteBCsol (rprjVector)
+
+    ! Filter the solution vector to implement discrete BC's for fictitious 
+    ! boundary components.
+    CALL vecfil_discreteFBCsol (rprjVector)
+    
+    ! Now we have a Q1/Q1/Q0 solution in rprjVector.
+    !
+    ! From the attached discretisation, get the underlying triangulation
+    p_rtriangulation => &
+      rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
+    
+    ! Start UCD export to GMV file:
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
+        'gmv/u.gmv.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
     
     ! Write the configuration of the application as comment block
     ! to the output file.
