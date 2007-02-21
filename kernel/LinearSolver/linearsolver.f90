@@ -586,6 +586,26 @@ MODULE linearsolver
   ! correction approach to give an additional speedup. 
   INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0DIRECT   = 3
 
+  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
+  ! discretisation
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ2QP1         = 4
+
+  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
+  ! discretisation (like above). Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ2QP1DIRECT   = 5
+
+  ! Full VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
+  ! discretisation
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DFPQ2QP1         = 6
+
+  ! Full VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
+  ! discretisation (like above). Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DFPQ2QP1DIRECT   = 7
+
 !</constantblock>
 
 ! *****************************************************************************
@@ -943,6 +963,9 @@ MODULE linearsolver
     
     ! For simple 2D-Saddle-Point Q1~/Q0 VANCA
     TYPE(t_vancaPointer2DSPQ1TQ0) :: rvanca2DSPQ1TQ0
+  
+    ! For simple 2D-Saddle-Point Q2/QP1 VANCA
+    TYPE(t_vancaPointer2DSPQ2QP1) :: rvanca2DSPQ2QP1
   
     ! Temporary vector to use during the solution process
     TYPE(t_vectorBlock) :: rtempVector
@@ -4636,6 +4659,14 @@ CONTAINS
     ! Special initialisation of a VANCA structure.
     CALL vanca_init2DSPQ1TQ0simple(rsolverNode%rsystemMatrix,&
                                    rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0)
+  CASE (LINSOL_VANCA_2DSPQ2QP1,LINSOL_VANCA_2DSPQ2QP1DIRECT)
+    ! Special initialisation of a VANCA structure.
+    CALL vanca_init2DSPQ2QP1(rsolverNode%rsystemMatrix,&
+                             rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1)
+  CASE (LINSOL_VANCA_2DFPQ2QP1,LINSOL_VANCA_2DFPQ2QP1DIRECT)
+    ! Special initialisation of a VANCA structure.
+    CALL vanca_init2DSPQ2QP1(rsolverNode%rsystemMatrix,&
+                             rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1)
   END SELECT
   
   END SUBROUTINE
@@ -4798,6 +4829,14 @@ CONTAINS
       CALL vanca_2DSPQ1TQ0simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0, &
                                   p_rvector, rd, domega)
       
+    CASE (LINSOL_VANCA_2DSPQ2QP1,LINSOL_VANCA_2DSPQ2QP1DIRECT)
+      CALL vanca_2DSPQ2QP1simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
+                                  p_rvector, rd, domega)
+
+    CASE (LINSOL_VANCA_2DFPQ2QP1,LINSOL_VANCA_2DFPQ2QP1DIRECT)
+      CALL vanca_2DSPQ2QP1full (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
+                                 p_rvector, rd, domega)
+
     CASE DEFAULT
       PRINT *,'Unknown VANCA variant!'
       STOP
@@ -10410,6 +10449,36 @@ CONTAINS
         ! without explicitly calculating (b-Ax_n) like below.
         CALL vanca_2DSPQ1TQ0simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0, &
                                     rx, rb, rsolverNode%domega)
+      END DO
+
+      ! That's it.
+      RETURN
+    
+    END IF
+
+    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_2DSPQ2QP1DIRECT) THEN
+      ! Yes, this solver can be applied to a given solution/rhs vector directly.
+      ! Call it nmaxIterations times to perform the smoothing.
+      DO i=1,rsolverNode%nmaxIterations
+        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
+        ! without explicitly calculating (b-Ax_n) like below.
+        CALL vanca_2DSPQ2QP1simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
+                                    rx, rb, rsolverNode%domega)
+      END DO
+
+      ! That's it.
+      RETURN
+    
+    END IF
+
+    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_2DFPQ2QP1DIRECT) THEN
+      ! Yes, this solver can be applied to a given solution/rhs vector directly.
+      ! Call it nmaxIterations times to perform the smoothing.
+      DO i=1,rsolverNode%nmaxIterations
+        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
+        ! without explicitly calculating (b-Ax_n) like below.
+        CALL vanca_2DSPQ2QP1full (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
+                                  rx, rb, rsolverNode%domega)
       END DO
 
       ! That's it.
