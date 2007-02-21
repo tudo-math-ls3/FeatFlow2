@@ -282,7 +282,7 @@ CONTAINS
     ! We are on boundary component
     icp = rregion%iboundCompIdx
     
-    ! We assemble the integrap contributions separately
+    ! We assemble the integral contributions separately
     DintU = 0.0_DP
     DintP = 0.0_DP
 
@@ -432,7 +432,7 @@ CONTAINS
 
           dpres = 0.0_DP
           DO idfl=1,idoflocP
-            dpres = p_DdataP(IdofsP(idfl))*DbasP(idfl,DER_FUNC,icubp)
+            dpres = dpres+p_DdataP(IdofsP(idfl))*DbasP(idfl,DER_FUNC,icubp)
           END DO
           
           ! Sum this up to the two integral contributions for the pressure and
