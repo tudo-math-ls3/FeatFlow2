@@ -3061,14 +3061,14 @@ CONTAINS
             IF (p_rheap%p_Rdescriptors(i)%idimension .EQ. 1) THEN
               CALL output_line ( &
                    'Handle ' // TRIM(sys_siL(i,10)) // ', 1D, Length=' // &
-                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),10)) //&
-                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,10)) //&
+                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),15)) //&
+                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
                    ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             ELSE
               CALL output_line ( &
                    'Handle ' // TRIM(sys_siL(i,10)) // ', 2D, Length=' // &
-                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),10)) // &
-                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,10)) //&
+                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),15)) // &
+                   ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
                    ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             END IF
           END IF
@@ -3078,25 +3078,25 @@ CONTAINS
     END IF
     
     CALL output_line ('Number if handles in use:        '//&
-                      TRIM(sys_siL(p_rheap%ihandlesInUse,10)))
+                      TRIM(sys_siL(p_rheap%ihandlesInUse,15)))
     IF (p_rheap%dtotalMem .GT. REAL(HUGE(0),DP)) THEN
       CALL output_line ('Memory in use (bytes):           '//&
                         TRIM(sys_sdL(p_rheap%dtotalMem,0)))
     ELSE
       CALL output_line ('Memory in use (bytes):           '//&
-                        TRIM(sys_siL(INT(p_rheap%dtotalMem),10)))
+                        TRIM(sys_siL(INT(p_rheap%dtotalMem),15)))
     END IF
     CALL output_line ('Current total number of handles: '//&
-                      TRIM(sys_siL(SIZE(p_rheap%p_IfreeHandles),10)))
+                      TRIM(sys_siL(SIZE(p_rheap%p_IfreeHandles),15)))
     CALL output_line ('Maximum number of handles used:  '//&
-                      TRIM(sys_siL(p_rheap%nhandlesInUseMax,10)))
+                      TRIM(sys_siL(p_rheap%nhandlesInUseMax,15)))
 
     IF (p_rheap%dtotalMem .GT. REAL(HUGE(0),DP)) THEN
       CALL output_line ('Maximum used memory (bytes):     '//&
                         TRIM(sys_sdL(p_rheap%dtotalMemMax,0)))
     ELSE
       CALL output_line ('Maximum used memory (bytes):     '//&
-                        TRIM(sys_siL(INT(p_rheap%dtotalMemMax),10)))
+                        TRIM(sys_siL(INT(p_rheap%dtotalMemMax),15)))
     END IF
   END SUBROUTINE
 
