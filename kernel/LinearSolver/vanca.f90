@@ -1790,25 +1790,25 @@ CONTAINS
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new
-    !        |---X---|                |---X---|
+    !      old  old  old            new  new  new
+    !        X---X---X                X---X---X
     !        |       |                |       |
-    !    old X   1   X old   -->  new X   1   X new
-    !        |       |                |       |
-    !        |---X---|                |---X---|
-    !           old                      new
+    !    old X   X   X old   -->  new X   X   X new
+    !        |   1   |                |   1   |
+    !        X---X---X                X---X---X
+    !      old  old  old            new  new  new
     !
     !    From the second cell on, there might be "old" data and "new" 
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
     !    
-    !           new     old                   new     new
-    !        |---X---|---X---|             |---X---|---X---|
-    !        |       |       |             |       |       |
-    !    new X   1   X   2   X old --> new X   1   X   2   X new
-    !        |       |new    |             |       |newer  |
-    !        |---X---|---X---|             |---X---|---X---|
-    !           new     old                   new     new
+    !      new  new new old  old         new  new newer new new
+    !        X---X---X---X---X             X---X---|---X---X
+    !        |       |       |             |   1   |   2   |
+    !    new X   X   X   X   X old --> new X   X   X   X   X new
+    !        |   1   |new 1  |             |       |newer  |
+    !        X---X---X---X---X             X---X---X---X---X
+    !      new  new new old  old         new  new newer new new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -1826,15 +1826,17 @@ CONTAINS
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                      U3/V3
-      ! |---------|                       |----X----|
+      !                                               
+      ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
-      ! |         |                       |         |
-      ! |---------|                       |----X----|
-      !                                      U1/V1
+      ! |   IEL   |   with DOF's          8    9    6      
+      ! |         |                       |    P1-3 |
+      ! +---------+                       1----5----2
+      !                                               
       !
-      ! Fetch the pressure P on the current element into FFP
+      ! Fetch the pressure P on the current element into FFP.
+      ! The numbers of the DOF's coincide with the definition
+      ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       FF(2+lofsp) = p_Drhs(iel+NEL+ioffsetp)
@@ -1875,9 +1877,6 @@ CONTAINS
         ! inode     : "local" number of DOF on element IEL, i.e.      
         !              number of the edge         
         !                     
-        ! WARNING: DOCUMENTATION MUST BE UPDATED! SOME RUBBISH
-        ! OF Q1~/Q0 INCLUDED.
-        !
         ! Now comes the crucial point with the "update": How to         
         ! subsequently update the vertex values, such that the whole    
         ! thing still converges to the solution, even if a node         
@@ -1890,8 +1889,8 @@ CONTAINS
         !    [ B^t 0 ] (p)   (g)                                        
         !                                                               
         ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
+        ! given - except for the velocity and pressure unknowns 
+        ! on the current element; these 21 unknowns  
         ! are located anywhere in the (u,p) vector. The idea is to      
         ! shift "everything known" to the right hand side to obtain     
         ! a system for only these unknowns!                             
@@ -1906,19 +1905,32 @@ CONTAINS
         !                      (p)                                      
         !                                                               
         ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B being an (2*18) x 3 matrix that couples the   
+        ! components and B~ being an (2*9) x 12 matrix that couples the   
         ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 3 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
+        ! 4*3 pressure elements on the neighbour cell, so we have       
+        ! 12 columns in the B-matrix.                                    
         !                                                               
         !        IEL                              IEL                   
         !     |--------|             |--------|--------|                
         !     |        |             |        |        |                
         !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
+        !     |   X    |             |        |        |                
+        !   --|--------|--           |--------|--------|                
+        !
+        ! or
+        !
+        !              IEL   
+        ! |--------|--------|
+        ! |        |        |
+        ! |   Q1   |   P    |
+        ! |        |        |
+        ! |--------X--------|   or X a vertex or an edge on the boundary.
+        ! |        |        |
+        ! |   Q2   |   Q3   |
+        ! |        |        |
+        ! |--------|--------|
+        !
         ! Now, throw all summands to the RHS vector to build a local
         ! 'defect' on our single element IEL!  
         !                                                               
@@ -1928,9 +1940,9 @@ CONTAINS
         !                                                                 
         !
         ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 3-matrix B~ reduces to  
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
+        ! the 3 pressure DOF's on that cell, so we have       
         ! 3 columns in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -1955,15 +1967,14 @@ CONTAINS
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
         END DO
         
-        ! Ok, up to now, all loops are clean and vectoriseable. Now the only
-        ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
+        ! In the next loop we have to determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
         ! Remember: The column numbers in B correspond to the pressure-DOF's
         ! and so to element numbers. 
         !
-        ! Btw: Each row of B has at most 12 entries:
+        ! Btw: Each row of the original B has at most 12 entries:
         !
         !      IEL                              IEL
         !   |-------|              +--------X-------+
@@ -1979,6 +1990,9 @@ CONTAINS
         ! Either 12 (for corner DOF's), 6 (if the velocity DOF is an edge with 
         ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
         ! the boundary and there is no neighbour, or if it's the element midpoint).
+        !
+        ! 3 of these 12 entries in each line come into our 'local' B-matrices.
+        
         DO ib = ib1,ib2
         
           IF (p_KcolB(ib) .EQ. IEL) THEN
@@ -2038,14 +2052,14 @@ CONTAINS
       ! to the DOF's on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
-      ! C = ( AA(1,1)  ..............                                   :::::: )
-      !     (    :                  :                                   :AA :: )
-      !     (    :                  :                                   :(B1): )
-      !     (    ................ AA(9,9)                               :::::: )
-      !     (                            AA(10,10) ..............       :::::: )
-      !     (                                :                  :       :AA :: )
-      !     (                                :                  :       :(B2): )
-      !     (                                ............... AA(18,18)  :::::: )
+      ! C = ( AA(1,1)                                                   :::::: )
+      !     (          ..                                               :AA :: )
+      !     (               ..                                          :(B1): )
+      !     (                     AA(9,9)                               :::::: )
+      !     (                            AA(10,10)                      :::::: )
+      !     (                                      ..                   :AA :: )
+      !     (                                           ..              :(B2): )
+      !     (                                                AA(18,18)  :::::: )
       !     ( ===== AA (D1-block) =====  ======= AA (D2-block) ======          )
       !
       ! To solve this (a little bit larger) system, we invoke LAPACK.
@@ -2215,25 +2229,25 @@ CONTAINS
     !    first cell, we have only "old" velocity entries. These values
     !    are updated and then the calculation proceeds with the 2nd cell.
     !
-    !           old                      new
-    !        |---X---|                |---X---|
+    !      old  old  old            new  new  new
+    !        X---X---X                X---X---X
     !        |       |                |       |
-    !    old X   1   X old   -->  new X   1   X new
-    !        |       |                |       |
-    !        |---X---|                |---X---|
-    !           old                      new
+    !    old X   X   X old   -->  new X   X   X new
+    !        |   1   |                |   1   |
+    !        X---X---X                X---X---X
+    !      old  old  old            new  new  new
     !
     !    From the second cell on, there might be "old" data and "new" 
     !    data on that cell - the old data that has not been updated and
     !    perhaps some already updated velocity data from a neighbor cell.
     !    
-    !           new     old                   new     new
-    !        |---X---|---X---|             |---X---|---X---|
-    !        |       |       |             |       |       |
-    !    new X   1   X   2   X old --> new X   1   X   2   X new
-    !        |       |new    |             |       |newer  |
-    !        |---X---|---X---|             |---X---|---X---|
-    !           new     old                   new     new
+    !      new  new new old  old         new  new newer new new
+    !        X---X---X---X---X             X---X---|---X---X
+    !        |       |       |             |   1   |   2   |
+    !    new X   X   X   X   X old --> new X   X   X   X   X new
+    !        |   1   |new 1  |             |       |newer  |
+    !        X---X---X---X---X             X---X---X---X---X
+    !      new  new new old  old         new  new newer new new
     !
     !    These values are updated and then the calculation proceeds
     !    with the next cell.
@@ -2251,15 +2265,17 @@ CONTAINS
       AA(:,:) = 0.0_DP
       
       ! We now have the element
-      !                                      U3/V3
-      ! |---------|                       |----X----|
+      !                                               
+      ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
-      ! |         |                       |         |
-      ! |---------|                       |----X----|
-      !                                      U1/V1
+      ! |   IEL   |   with DOF's          8    9    6      
+      ! |         |                       |    P1-3 |
+      ! +---------+                       1----5----2
+      !                                               
       !
-      ! Fetch the pressure P on the current element into FFP
+      ! Fetch the pressure P on the current element into FFP.
+      ! The numbers of the DOF's coincide with the definition
+      ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       FF(2+lofsp) = p_Drhs(iel+NEL+ioffsetp)
@@ -2295,9 +2311,6 @@ CONTAINS
         ! inode     : "local" number of DOF on element IEL, i.e.      
         !              number of the edge         
         !                     
-        ! WARNING: DOCUMENTATION MUST BE UPDATED! SOME RUBBISH
-        ! OF Q1~/Q0 INCLUDED.
-        !
         ! Now comes the crucial point with the "update": How to         
         ! subsequently update the vertex values, such that the whole    
         ! thing still converges to the solution, even if a node         
@@ -2310,8 +2323,8 @@ CONTAINS
         !    [ B^t 0 ] (p)   (g)                                        
         !                                                               
         ! We assume, that all components in the vector (u,p) are        
-        ! given - except for the four velocity unknowns and the         
-        ! pressure unknown on the current element; these five unknowns  
+        ! given - except for the velocity and pressure unknowns 
+        ! on the current element; these 21 unknowns  
         ! are located anywhere in the (u,p) vector. The idea is to      
         ! shift "everything known" to the right hand side to obtain     
         ! a system for only these unknowns!                             
@@ -2326,19 +2339,32 @@ CONTAINS
         !                      (p)                                      
         !                                                               
         ! with A^ being an 18 x 2*(NVT+NMT+NEL) matrix for the two velocity      
-        ! components and B being an (2*18) x 3 matrix that couples the   
+        ! components and B~ being an (2*9) x 12 matrix that couples the   
         ! velocities to the pressure on our current element.            
-        ! B~ is a 18 x 3 matrix: As every velocity couples with at most  
-        ! two pressure elements on the neighbour cell, so we have       
-        ! 2 columns in the B-matrix.                                    
+        ! B~ is a 18 x 12 matrix: As every velocity couples with at most  
+        ! 4*3 pressure elements on the adjacent cells, so we have       
+        ! 12 columns in the B-matrix.                                    
         !                                                               
         !        IEL                              IEL                   
         !     |--------|             |--------|--------|                
         !     |        |             |        |        |                
         !     |   P    |      or     |   Q    X   P    |                
-        !     |        |             |        |        |                
-        !   --|---X----|--           |--------|--------|                
-        !                                                               
+        !     |   X    |             |        |        |                
+        !   --|--------|--           |--------|--------|                
+        !
+        ! or
+        !
+        !              IEL   
+        ! |--------|--------|
+        ! |        |        |
+        ! |   Q1   |   P    |
+        ! |        |        |
+        ! |--------X--------|   or X a vertex or an edge on the boundary.
+        ! |        |        |
+        ! |   Q2   |   Q3   |
+        ! |        |        |
+        ! |--------|--------|
+        !
         ! Now, throw all summands to the RHS vector to build a local
         ! 'defect' on our single element IEL!  
         !                                                               
@@ -2348,9 +2374,9 @@ CONTAINS
         !                                                                 
         !
         ! That way, A^ is reduced to a square matrix with two square    
-        ! submatrices A~ of size 9 x 9. The 18 x 3-matrix B~ reduces to  
+        ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! two pressure elements on the neighbour cell, so we have       
+        ! the 3 pressure DOF's on that cell, so we have       
         ! 3 columns in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -2385,8 +2411,7 @@ CONTAINS
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
         END DO
         
-        ! Ok, up to now, all loops are clean and vectoriseable. Now the only
-        ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
+        ! In the next loop we have to determine the local B1, B2, D1 and D2.
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
@@ -2409,6 +2434,9 @@ CONTAINS
         ! Either 12 (for corner DOF's), 6 (if the velocity DOF is an edge with 
         ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
         ! the boundary and there is no neighbour, or if it's the element midpoint).
+        !
+        ! 3 of these 12 entries in each line come into our 'local' B-matrices.
+        
         DO ib = ib1,ib2
         
           IF (p_KcolB(ib) .EQ. IEL) THEN

@@ -10519,7 +10519,7 @@ CONTAINS
   ! solver is called only once and performs nmaxIterations steps internally.
   ! (This is a convention. Calling an iterative solver i times with j internal steps
   ! would also be possible, but we don't implement that here.)
-  IF (IAND(rsolverNode%ccapability,LINSOL_ABIL_DIRECT) .EQ. 0) THEN
+  IF (IAND(rsolverNode%ccapability,LINSOL_ABIL_DIRECT) .NE. 0) THEN
     iiterations = rsolverNode%nmaxIterations
   ELSE
     iiterations = 1
