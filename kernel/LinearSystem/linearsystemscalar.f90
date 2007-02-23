@@ -135,6 +135,8 @@
 !# 2.) lsyssc_infoMatrix
 !#     -> Outputs information about the matrix (mostly used for debugging)
 !#
+!# 3.) lsyssc_infoVector
+!#     -> Outputs information about the vector (mostly used for debugging)
 !# </purpose>
 !##############################################################################
 
@@ -2374,23 +2376,21 @@ CONTAINS
       SELECT CASE (rsourceMatrix%cmatrixFormat)
       CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
         ! Create a new content array in the same data type as the original matrix
-        CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
-            rdestMatrix%NA, rsourceMatrix%cdataType, &
-            rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+        CALL storage_new('lsyssc_duplicateMatrix', 'DA', rdestMatrix%NA, &
+            rsourceMatrix%cdataType, rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
       CASE (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
         ! Create a new content array in the same data type as the original matrix
         SELECT CASE(rsourceMatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
           CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
-              rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NA, &
+              rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR, &
               rsourceMatrix%cdataType, rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
         CASE (LSYSSC_MATRIXD)
           CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
-              rdestMatrix%NA*rdestMatrix%NVAR,rsourceMatrix%cdataType&
-              &, rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
+              rdestMatrix%NA*rdestMatrix%NVAR,rsourceMatrix%cdataType, &
+              rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
         CASE DEFAULT
-          PRINT *, 'lsyssc_duplicateMatrix: wrong matrix format of int&
-              &erleaved matrix'
+          PRINT *, 'lsyssc_duplicateMatrix: wrong matrix format of interleaved matrix'
           STOP
         END SELECT
       END SELECT
@@ -2410,14 +2410,12 @@ CONTAINS
         CALL storage_getsize (rdestMatrix%h_DA,isize)
         SELECT CASE(rdestMatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-          IF (isize .NE. rdestMatrix%NA&
-              * rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
+          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR * rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
             STOP
           END IF
         CASE (LSYSSC_MATRIXD)
-          IF (isize .NE. rdestMatrix%NA&
-              * rdestMatrix%NVAR) THEN
+          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
             STOP
           END IF
@@ -2481,14 +2479,12 @@ CONTAINS
         CALL storage_getsize (rdestMatrix%h_DA,isize)
         SELECT CASE(rdestMatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-          IF (isize .NE. rdestMatrix%NA&
-              *rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
+          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
             STOP
           END IF
         CASE (LSYSSC_MATRIXD)
-          IF (isize .NE. rdestMatrix%NA&
-              *rdestMatrix%NVAR) THEN
+          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
             STOP
           END IF
@@ -2828,8 +2824,8 @@ CONTAINS
     
       ! This is a matrix-dependent task
       SELECT CASE (rmatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
-          &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
+          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
         ! Release the handles from the heap?
         ! Only release it if the data belongs to this matrix.
         IF (brelease .AND. &
@@ -2869,8 +2865,8 @@ CONTAINS
 
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
-          &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
+          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
         rdestMatrix%h_Da = rsourceMatrix%h_Da
       END SELECT
       
@@ -2961,11 +2957,9 @@ CONTAINS
             CALL storage_getsize (rdestMatrix%h_Da,isize)
             SELECT CASE(rdestMatrix%cinterleavematrixFormat)
             CASE (LSYSSC_MATRIX1)
-              bremove = bremove .OR. (isize .NE. rdestMatrix%NA&
-                  *rdestMatrix%NVAR*rdestMatrix%NVAR)
+              bremove = bremove .OR. (isize .NE. rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR)
             CASE (LSYSSC_MATRIXD)
-              bremove = bremove .OR. (isize .NE. rdestMatrix%NA&
-                  &*rdestMatrix%NVAR)
+              bremove = bremove .OR. (isize .NE. rdestMatrix%NA*rdestMatrix%NVAR)
             CASE DEFAULT
               PRINT *, 'copyContent: wrong interleave matrix format'
               STOP
@@ -2996,8 +2990,8 @@ CONTAINS
       !
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
-      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
-          &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
+          LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
         CALL storage_copy (rsourceMatrix%h_Da,rdestMatrix%h_Da)
       END SELECT
       
@@ -10458,8 +10452,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_matrixLinearComb (rmatrixA,cA,rmatrixB,cB,rmatrixC&
-      &,bmemory,bsymb,bnumb,bisExactStructure)
+  SUBROUTINE lsyssc_matrixLinearComb (rmatrixA,cA,rmatrixB,cB,rmatrixC,&
+      bmemory,bsymb,bnumb,bisExactStructure)
 
     !<description>
     ! Adds constant times a matrix to another matrix
@@ -10484,19 +10478,19 @@ CONTAINS
     ! scaling factors
     REAL(DP), INTENT(IN) :: cA,cB
 
-    ! BMEMORY = FALSE: Do not allocate required memory for C=A*B.
-    ! BMEMORY = TRUE:  Generate all required structures for C=A*B 
+    ! BMEMORY = FALSE: Do not allocate required memory for C=A+B.
+    ! BMEMORY = TRUE:  Generate all required structures for C=A+B 
     LOGICAL, INTENT(IN) :: bmemory
 
-    ! Compute symbolic matrix-matrix-product
+    ! Compute symbolic matrix-matrix-addition
     ! BSYMB = FALSE: Do not generate the required matrix structures.
     !                This may be useful, if the same matrices A and B
     !                need to be added several times, but the
     !                sparsity patterns do not change
-    ! BSYMN = TRUE:  Generate all required matrix structures for C=A*B
+    ! BSYMN = TRUE:  Generate all required matrix structures for C=A+B
     LOGICAL, INTENT(IN) :: bsymb
 
-    ! Compute numerical matrix-matrix-product
+    ! Compute numerical matrix-matrix-addition
     ! BNUMB = FALSE: Do not perform the numerical addition
     ! BNUMB = TRUE:  Perform numerical addition
     LOGICAL, INTENT(IN) :: bnumb
@@ -10519,9 +10513,8 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: DaA,DaB,DaC
     REAL(SP), DIMENSION(:), POINTER :: FaA,FaB,FaC
-    INTEGER, DIMENSION(:), POINTER :: KldA,KldB,KldC,KcolA,KcolB&
-        &,KcolC,KdiagonalC,Kaux
-    INTEGER :: h_Kaux
+    INTEGER, DIMENSION(:), POINTER :: KldA,KldB,KldC,KcolA,KcolB,KcolC,KdiagonalC,Kaux
+    INTEGER :: h_Kaux,isizeIntl
     LOGICAL :: bfast
 
     h_Kaux=ST_NOHANDLE
@@ -10534,22 +10527,21 @@ CONTAINS
     ! Check if both matrices are compatible
     IF (rmatrixA%NEQ /= rmatrixB%NEQ .OR. &
         & rmatrixA%NCOLS /= rmatrixB%NCOLS) THEN
-      PRINT *, 'lsyssc_addMatMat: number of rows/columns of matrix A &
+      PRINT *, 'lsyssc_matrixLinearComb: number of rows/columns of matrix A &
           &is not compatible with number of rows/columns of matrix B'
       STOP
     END IF
 
     ! Check if both matrices have the same sorting
     IF (rmatrixA%isortStrategy /= rmatrixB%isortStrategy) THEN
-      PRINT *, 'lsyssc_addMatMat: incompatible sorting strategies'
+      PRINT *, 'lsyssc_matrixLinearComb: incompatible sorting strategies'
       STOP
     END IF
 
     ! Release matrix if required and set common variables
     IF (bmemory) THEN
       CALL lsyssc_releaseMatrix(rmatrixC)
-      IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB&
-          &%cdataType == ST_DOUBLE) THEN
+      IF (rmatrixA%cdataType == ST_DOUBLE .OR. rmatrixB%cdataType == ST_DOUBLE) THEN
         rmatrixC%cdataType = ST_DOUBLE
       ELSE
         rmatrixC%cdataType = ST_SINGLE
@@ -10562,36 +10554,35 @@ CONTAINS
 
     SELECT CASE(rmatrixA%cmatrixFormat)
 
-    CASE (LSYSSC_MATRIX1)   ! A is full matrix ----------------------
+    CASE (LSYSSC_MATRIX1)   ! A is full matrix ---------------------------------
 
       SELECT CASE(rmatrixB%cmatrixFormat)
 
-      CASE (LSYSSC_MATRIX1) ! B is full matrix  - - - - - - - - - - -
-
+      CASE (LSYSSC_MATRIX1) ! B is full matrix  - - - - - - - - - - - - - - - -
+        
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixA%NEQ*rmatrixA%NCOLS
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
-
+        
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolic addition?
         IF (bsymb) THEN
           rmatrixC%NEQ = rmatrixA%NEQ
           rmatrixC%NCOLS = rmatrixA%NCOLS
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
-
+          
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -10617,7 +10608,7 @@ CONTAINS
               CALL lalg_vectorLinearCombDble(REAL(FaB,DP),DaC,cB,cA)
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
 
@@ -10637,46 +10628,44 @@ CONTAINS
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
               CALL lalg_copyVectorSngl(FaA,FaC)
-              CALL lalg_vectorLinearCombSngl(FaB,FaC,REAL(cB,SP)&
-                  &,REAL(cA,SP))
+              CALL lalg_vectorLinearCombSngl(FaB,FaC,REAL(cB,SP),REAL(cA,SP))
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
-
+            
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
-
-      CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - 
-
+        
+      CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
+        
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixA%NEQ*rmatrixA%NCOLS
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolical addition?
         IF (bsymb) THEN
           rmatrixC%NEQ = rmatrixA%NEQ
           rmatrixC%NCOLS = rmatrixA%NCOLS
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
-
+          
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -10691,18 +10680,16 @@ CONTAINS
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat1matDadd_doubledouble(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,DaA,cA,DaB,cB,DaC)
+              CALL do_mat1matDadd_doubledouble(rmatrixA%NEQ,rmatrixA%NCOLS,DaA,cA,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,DaA,cA,FaB,cB,DaC)
+              CALL do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,DaA,cA,FaB,cB,DaC)
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
 
@@ -10714,50 +10701,47 @@ CONTAINS
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat1matDadd_singledouble(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,FaA,cA,DaB,cB,DaC)
+              CALL do_mat1matDadd_singledouble(rmatrixA%NEQ,rmatrixA%NCOLS,FaA,cA,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL do_mat1matDadd_singlesingle(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,FaA,cA,FaB,cB,FaC)
+              CALL do_mat1matDadd_singlesingle(rmatrixA%NEQ,rmatrixA%NCOLS,FaA,cA,FaB,cB,FaC)
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
-
+            
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - 
-
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
+        
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixA%NEQ*rmatrixA%NCOLS
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolical addition?
         IF (bsymb) THEN
           rmatrixC%NEQ = rmatrixA%NEQ
           rmatrixC%NCOLS = rmatrixA%NCOLS
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
 
@@ -10766,9 +10750,9 @@ CONTAINS
           ! double if at least one of the source matrices is of type
           ! double          
           SELECT CASE(rmatrixA%cdataType)
-
+            
           CASE (ST_DOUBLE)
-
+            
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
@@ -10777,8 +10761,8 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
               CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
-              CALL do_mat1mat79add_doubledouble(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,DaA,cA,KldB,KcolB,DaB,cB,DaC)
+              CALL do_mat1mat79add_doubledouble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                  DaA,cA,KldB,KcolB,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
@@ -10786,11 +10770,11 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
               CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
-              CALL do_mat1mat79add_doublesingle(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,DaA,cA,KldB,KcolB,FaB,cB,DaC)
+              CALL do_mat1mat79add_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                  DaA,cA,KldB,KcolB,FaB,cB,DaC)
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
 
@@ -10804,8 +10788,8 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
               CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
-              CALL do_mat1mat79add_singledouble(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,FaA,cA,KldB,KcolB,DaB,cB,DaC)
+              CALL do_mat1mat79add_singledouble(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                  FaA,cA,KldB,KcolB,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
@@ -10813,67 +10797,66 @@ CONTAINS
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
               CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
               CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
-              CALL do_mat1mat79add_singlesingle(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,FaA,cA,KldB,KcolB,FaB,cB,FaC)
+              CALL do_mat1mat79add_singlesingle(rmatrixA%NEQ,rmatrixA%NCOLS,&
+                  FaA,cA,KldB,KcolB,FaB,cB,FaC)
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
 
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
 
       CASE DEFAULT
-        PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+        PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
         STOP
       END SELECT
 
-      !--------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
-    CASE (LSYSSC_MATRIXD)   ! A is diagonal matrix ------------------
+    CASE (LSYSSC_MATRIXD)   ! A is diagonal matrix -----------------------------
 
       SELECT CASE(rmatrixB%cmatrixFormat)
 
-      CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - 
-
+      CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
+        
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = LSYSSC_MATRIXD
           rmatrixC%NA = rmatrixA%NA
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolical addition?
         IF (bsymb) THEN
           rmatrixC%NEQ = rmatrixA%NEQ
           rmatrixC%NCOLS = rmatrixA%NCOLS
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
-
+          
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double          
           SELECT CASE(rmatrixA%cdataType)
-
+            
           CASE (ST_DOUBLE)
-
+            
             SELECT CASE(rmatrixB%cdataType)
-
+              
             CASE (ST_DOUBLE)
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
@@ -10885,9 +10868,9 @@ CONTAINS
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               DaC=cA*DaA+cb*FaB
-
+              
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
 
@@ -10908,12 +10891,12 @@ CONTAINS
               FaC=cA*FaA+cb*FaB
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
 
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
@@ -10924,23 +10907,22 @@ CONTAINS
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixB%NEQ*rmatrixB%NCOLS
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolical addition?
         IF (bsymb) THEN
           rmatrixC%NEQ = rmatrixB%NEQ
           rmatrixC%NCOLS = rmatrixB%NCOLS
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
 
@@ -10958,18 +10940,16 @@ CONTAINS
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat1matDadd_doubledouble(rmatrixB%NEQ,rmatrixB&
-                  &%NCOLS,DaB,cB,DaA,cA,DaC)
-
+              CALL do_mat1matDadd_doubledouble(rmatrixB%NEQ,rmatrixB%NCOLS,DaB,cB,DaA,cA,DaC)
+              
             CASE (ST_SINGLE)
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat1matDadd_singledouble(rmatrixB%NEQ,rmatrixB&
-                  &%NCOLS,FaB,cB,DaA,cA,DaC)
+              CALL do_mat1matDadd_singledouble(rmatrixB%NEQ,rmatrixB%NCOLS,FaB,cB,DaA,cA,DaC)
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
 
@@ -10981,53 +10961,49 @@ CONTAINS
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA&
-                  &%NCOLS,DaB,cB,FaA,cA,DaC)
+              CALL do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,DaB,cB,FaA,cA,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL do_mat1matDadd_singlesingle(rmatrixB%NEQ,rmatrixB&
-                  &%NCOLS,FaB,cB,FaA,cA,FaC)
+              CALL do_mat1matDadd_singlesingle(rmatrixB%NEQ,rmatrixB%NCOLS,FaB,cB,FaA,cA,FaC)
 
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
-
+            
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
-
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - -
-
+        
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
+        
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = rmatrixB%cmatrixFormat
           rmatrixC%NA = rmatrixB%NA
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolic addition?
         IF (bsymb) THEN
-          CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC&
-              &,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+          CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
-
+          
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -11048,17 +11024,15 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixB&
-                    &%NEQ,DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_doubledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixB&
-                    &%NEQ,DaB,cB,DaA,cA,DaC,KldC,KcolC)
+                CALL do_mat79matDadd_doubledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    DaB,cB,DaA,cA,DaC,KldC,KcolC)
               END IF
               
             CASE (ST_SINGLE)
@@ -11071,21 +11045,19 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixB&
-                    &%NEQ,FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_singledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixB&
-                    &%NEQ,FaB,cB,DaA,cA,DaC,KldC,KcolC)
+                CALL do_mat79matDadd_singledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    FaB,cB,DaA,cA,DaC,KldC,KcolC)
               END IF
-
+              
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
             
@@ -11103,19 +11075,17 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixB&
-                    &%NEQ,DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_doublesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixB&
-                    &%NEQ,DaB,cB,FaA,cA,DaC,KldC,KcolC)
+                CALL do_mat79matDadd_doublesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    DaB,cB,FaA,cA,DaC,KldC,KcolC)
               END IF
-
+              
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
@@ -11126,75 +11096,261 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixB&
-                    &%NEQ,FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_singlesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixB&
-                    &%NEQ,FaB,cB,FaA,cA,FaC,KldC,KcolC)
+                CALL do_mat79matDadd_singlesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
+                    FaB,cB,FaA,cA,FaC,KldC,KcolC)
               END IF
               
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
             
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            STOP
+          END SELECT
+        END IF
+
+      CASE (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! B is interleave CSR matrix
+        
+        ! Set size of interleave block
+        isizeIntl=rmatrixB%NVAR
+        IF (rmatrixB%cinterleavematrixFormat == LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
+        
+        ! memory allocation?
+        IF (bmemory) THEN
+          rmatrixC%cmatrixFormat = rmatrixB%cmatrixFormat
+          rmatrixC%cinterleavematrixFormat = rmatrixB%cinterleavematrixFormat
+          rmatrixC%NA = rmatrixB%NA
+          rmatrixC%NVAR = rmatrixB%NVAR
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        END IF
+
+        ! Check if matrix is given in the correct format
+        IF (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat .OR. &
+            rmatrixC%cinterleavematrixFormat /= rmatrixB%cinterleavematrixFormat) THEN
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+          STOP
+        END IF
+
+        ! symbolic addition?
+        IF (bsymb) THEN
+          CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+        END IF
+
+        ! numerical addition?
+        IF (bnumb) THEN
+
+          ! Find the correct internal subroutine for the specified
+          ! data types. Note that the resulting matrix C will be
+          ! double if at least one of the source matrices is of type
+          ! double
+          SELECT CASE(rmatrixA%cdataType)
+            
+          CASE (ST_DOUBLE)
+            
+            SELECT CASE(rmatrixB%cdataType)
+              
+            CASE (ST_DOUBLE)
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,KldC,KcolC)
+                END IF
+              END IF
+              
+            CASE (ST_SINGLE)
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,KldC,KcolC)
+                END IF
+              END IF
+
+            CASE DEFAULT
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              STOP
+            END SELECT
+
+          CASE (ST_SINGLE)
+            
+            SELECT CASE(rmatrixB%cdataType)
+              
+            CASE (ST_DOUBLE)
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,KldC,KcolC)
+                END IF
+              END IF
+              
+            CASE (ST_SINGLE)
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
+              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,1,&
+                      rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,KldC,KcolC)
+                END IF
+              END IF
+              
+            CASE DEFAULT
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              STOP
+            END SELECT
+            
+          CASE DEFAULT
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
 
       CASE DEFAULT
-        PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+        PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
         STOP
       END SELECT
 
-      !--------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
-    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CSR matrix ----------
-
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! A is CSR matrix ---------------------
+      
       SELECT CASE(rmatrixB%cmatrixFormat)
-
-      CASE (LSYSSC_MATRIX1) ! B is full matrix - - - - - - - - - - - 
+        
+      CASE (LSYSSC_MATRIX1) ! B is full matrix - - - - - - - - - - - - - - - - -
         
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = LSYSSC_MATRIX1
           rmatrixC%NA = rmatrixB%NEQ*rmatrixB%NCOLS
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolical addition?
         IF (bsymb) THEN
           rmatrixC%NEQ = rmatrixB%NEQ
           rmatrixC%NCOLS = rmatrixB%NCOLS
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
-
+          
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
           ! double          
           SELECT CASE(rmatrixA%cdataType)
-
+            
           CASE (ST_DOUBLE)
-
+            
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
@@ -11203,8 +11359,8 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-              CALL do_mat1mat79add_doubledouble(rmatrixB%NEQ,rmatrixB&
-                  &%NCOLS,DaB,cB,KldA,KcolA,DaA,cA,DaC)
+              CALL do_mat1mat79add_doubledouble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                  DaB,cB,KldA,KcolA,DaA,cA,DaC)
 
             CASE (ST_SINGLE)
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
@@ -11212,70 +11368,68 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-              CALL do_mat1mat79add_singledouble(rmatrixB%NEQ,rmatrixB&
-                  &%NCOLS,FaB,cB,KldA,KcolA,DaA,cA,DaC)
-
+              CALL do_mat1mat79add_singledouble(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                  FaB,cB,KldA,KcolA,DaA,cA,DaC)
+              
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
-
+            
           CASE (ST_SINGLE)
-
+            
             SELECT CASE(rmatrixB%cdataType)
-
+              
             CASE (ST_DOUBLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-              CALL do_mat1mat79add_doublesingle(rmatrixB%NEQ,rmatrixB&
-                  &%NCOLS,DaB,cB,KldA,KcolA,FaA,cA,DaC)
-
+              CALL do_mat1mat79add_doublesingle(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                  DaB,cB,KldA,KcolA,FaA,cA,DaC)
+              
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
               CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
               CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-              CALL do_mat1mat79add_singlesingle(rmatrixB%NEQ,rmatrixB&
-                  &%NCOLS,FaB,cB,KldA,KcolA,FaA,cA,FaC)
+              CALL do_mat1mat79add_singlesingle(rmatrixB%NEQ,rmatrixB%NCOLS,&
+                  FaB,cB,KldA,KcolA,FaA,cA,FaC)
               
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
             
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - -
-
+      CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
+        
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
           rmatrixC%NA = rmatrixA%NA
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
         
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolic addition?
         IF (bsymb) THEN
-          CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC&
-              &,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+          CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
 
@@ -11299,17 +11453,15 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixA&
-                    &%NEQ,DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_doubledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixA&
-                    &%NEQ,DaA,cA,DaB,cB,DaC,KldC,KcolC)
+                CALL do_mat79matDadd_doubledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    DaA,cA,DaB,cB,DaC,KldC,KcolC)
               END IF
               
             CASE (ST_SINGLE)
@@ -11322,28 +11474,26 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixA&
-                    &%NEQ,DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_doublesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixA&
-                    &%NEQ,DaA,cA,FaB,cB,DaC,KldC,KcolC)
+                CALL do_mat79matDadd_doublesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    DaA,cA,FaB,cB,DaC,KldC,KcolC)
               END IF
-
+              
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
             
           CASE (ST_SINGLE)
             
             SELECT CASE(rmatrixB%cdataType)
-
+              
             CASE (ST_DOUBLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_double(rmatrixB%h_Da,DaB)
@@ -11354,17 +11504,15 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixA&
-                    &%NEQ,FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_singledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixA&
-                    &%NEQ,FaA,cA,DaB,cB,DaC,KldC,KcolC)
+                CALL do_mat79matDadd_singledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    FaA,cA,DaB,cB,DaC,KldC,KcolC)
               END IF
 
             CASE (ST_SINGLE)
@@ -11377,31 +11525,29 @@ CONTAINS
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
                   CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                      &,KdiagonalC)
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
                 END IF
-                CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixA&
-                    &%NEQ,FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na&
-                    &=rmatrixC%NA)
+                CALL do_mat79matDadd_singlesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
                 CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
                 CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-                CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixA&
-                    &%NEQ,FaA,cA,FaB,cB,FaC,KldC,KcolC)
+                CALL do_mat79matDadd_singlesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
+                    FaA,cA,FaB,cB,FaC,KldC,KcolC)
               END IF
               
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
             
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
 
-      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - 
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
                 
         ! Set pointers
         CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
@@ -11414,35 +11560,30 @@ CONTAINS
           ! Duplicate structure of matrix A or B depending on which
           ! matrix is given in the encompassing matrix format
           IF (rmatrixA%cmatrixFormat >= rmatrixB%cmatrixFormat) THEN
-            CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC&
-                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+            CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           ELSE
-            CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC&
-                &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+            CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           END IF
           
           ! Set auxiliary pointers
-          CALL storage_new('lsyssc_addMatMat','Kaux',rmatrixB%NCOLS,&
+          CALL storage_new('lsyssc_matrixLinearComb','Kaux',rmatrixB%NCOLS,&
               &ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
           CALL storage_getbase_int(h_Kaux,Kaux)
           
           ! Compute number of nonzero matrix entries: NA
-          rmatrixC%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ&
-              &,rmatrixA%NCOLS,KldA,KcolA,KldB,KcolB,Kaux)
-          CALL storage_new('lsyssc_addMatMat','h_Da',rmatrixC&
-              &%NA,rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
-          CALL storage_realloc('lsyssc_addMatMat',rmatrixC%NA&
-              &,rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.FALSE.)
+          rmatrixC%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,rmatrixA%NCOLS,KldA,KcolA,KldB,KcolB,Kaux)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_realloc('lsyssc_matrixLinearComb',rmatrixC%NA,&
+              rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.FALSE.)
         END IF
         
         ! Check if matrix is given in the correct format
-        IF (rmatrixC%cmatrixFormat /= MAX(rmatrixA%cmatrixFormat&
-            &,rmatrixB%cmatrixFormat)) THEN
-          PRINT *, 'lsyssc_addMatMat: destination matrix has incompati&
-              &ble format'
+        IF (rmatrixC%cmatrixFormat /= MAX(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) THEN
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           STOP
         END IF
-
+        
         ! symbolic addition?
         IF (bsymb) THEN
           
@@ -11452,23 +11593,21 @@ CONTAINS
                     
           IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
             CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
-            CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS&
-                &,KldA,KcolA,rmatrixA%cmatrixFormat,KldB,KcolB&
-                &,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
+            CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
+                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
           ELSE
-            CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS&
-                &,KldA,KcolA,rmatrixA%cmatrixFormat,KldB,KcolB&
-                &,rmatrixB%cmatrixFormat,KldC,KcolC)
+            CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
+                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC)
           END IF
         END IF
-
+        
         ! numerical addition?
         IF (bnumb) THEN
           
           ! Set pointers
           CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
           CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
-        
+          
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
           ! double if at least one of the source matrices is of type
@@ -11485,9 +11624,8 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
               
               IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
-                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. &
-                  (bfast)) THEN
-                  
+                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
+                
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
                 ! directly call a BLAS routine to do the matrix combination.
@@ -11500,20 +11638,17 @@ CONTAINS
                 END IF
                 
                 CALL lalg_vectorLinearCombDble (DaA,DaB,cA,cB)                
-
+                
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
-              
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                    &,KdiagonalC)
-                CALL do_mat79mat79add_numb_dbledble(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,DaB&
-                    &,cB,KldC,KcolC,KdiagonalC,DaC)
-                    
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_dbledble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
+                
               ELSE
-              
-                CALL do_mat79mat79add_numb_dbledble(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,DaB&
-                    &,cB,KldC,KcolC,KldC,DaC)
+                
+                CALL do_mat79mat79add_numb_dbledble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
                     
               END IF
               
@@ -11521,21 +11656,22 @@ CONTAINS
               CALL storage_getbase_double(rmatrixA%h_Da,DaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-
+              
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                    &,KdiagonalC)
-                CALL do_mat79mat79add_numb_dblesngl(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,FaB&
-                    &,cB,KldC,KcolC,KdiagonalC,DaC)
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_dblesngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,DaC)
+                
               ELSE
-                CALL do_mat79mat79add_numb_dblesngl(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,DaA,cA,KldB,KcolB,FaB&
-                    &,cB,KldC,KcolC,KldC,DaC)
+                
+                CALL do_mat79mat79add_numb_dblesngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,DaC)
+                
               END IF
-
+              
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
             
@@ -11549,25 +11685,25 @@ CONTAINS
               CALL storage_getbase_double(rmatrixC%h_Da,DaC)
 
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                    &,KdiagonalC)
-                CALL do_mat79mat79add_numb_sngldble(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,DaB&
-                    &,cB,KldC,KcolC,KdiagonalC,DaC)
-              ELSE
-                CALL do_mat79mat79add_numb_sngldble(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,DaB&
-                    &,cB,KldC,KcolC,KldC,DaC)
-              END IF
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_sngldble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
 
+              ELSE
+                
+                CALL do_mat79mat79add_numb_sngldble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
+                
+              END IF
+              
             CASE (ST_SINGLE)
               CALL storage_getbase_single(rmatrixA%h_Da,FaA)
               CALL storage_getbase_single(rmatrixB%h_Da,FaB)
               CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-
+              
               IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
-                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. &
-                  (bfast)) THEN
+                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
                   
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
@@ -11575,7 +11711,7 @@ CONTAINS
                 ! That's MUCH faster!
                 ! Note that matrix B might coincide with matrix C, so we
                 ! first check this to prevent unnecessary copy operations!
-
+                
                 IF (.NOT. ASSOCIATED (DaB,DaC)) THEN
                   CALL lalg_copyVectorSngl (FaB,FaC)
                 END IF
@@ -11583,37 +11719,445 @@ CONTAINS
                 CALL lalg_vectorLinearCombSngl (FaA,FaB,REAL(cA,SP),REAL(cB,SP))                
 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal&
-                    &,KdiagonalC)
-                CALL do_mat79mat79add_numb_snglsngl(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,FaB&
-                    &,cB,KldC,KcolC,KdiagonalC,FaC)
-              ELSE
-                CALL do_mat79mat79add_numb_snglsngl(rmatrixC%NEQ&
-                    &,rmatrixC%NCOLS,KldA,KcolA,FaA,cA,KldB,KcolB,FaB&
-                    &,cB,KldC,KcolC,KldC,FaC)
-              END IF
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_snglsngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,FaC)
 
+              ELSE
+                
+                CALL do_mat79mat79add_numb_snglsngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,FaC)
+                
+              END IF
+              
             CASE DEFAULT
-              PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
               STOP
             END SELECT
             
           CASE DEFAULT
-            PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
             STOP
           END SELECT
         END IF
 
       CASE DEFAULT
-        PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+        PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
         STOP
       END SELECT
-    
-      !--------------------------------------------------------------
+      
+      !-------------------------------------------------------------------------
+      
+    CASE (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! A is interleave CSR matrix -
+      
+      ! Set size of interleave block
+      isizeIntl=rmatrixB%NVAR
+      IF (rmatrixB%cinterleavematrixFormat == LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
+
+      SELECT CASE(rmatrixB%cmatrixFormat)
+
+      CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
+
+        ! memory allocation?
+        IF (bmemory) THEN
+          rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
+          rmatrixC%cinterleavematrixFormat = rmatrixA%cinterleavematrixFormat
+          rmatrixC%NA = rmatrixA%NA
+          rmatrixC%NVAR = rmatrixA%NVAR
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+        END IF
+
+        ! Check if matrix is given in the correct format
+        IF (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat .OR. &
+            rmatrixC%cinterleavematrixFormat /= rmatrixA%cinterleavematrixFormat) THEN
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+          STOP
+        END IF
+
+        ! symbolic addition?
+        IF (bsymb) THEN
+          CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+        END IF
+
+        ! numerical addition?
+        IF (bnumb) THEN
+          
+          ! Find the correct internal subroutine for the specified
+          ! data types. Note that the resulting matrix C will be
+          ! double if at least one of the source matrices is of type
+          ! double
+          SELECT CASE(rmatrixA%cdataType)
+            
+          CASE (ST_DOUBLE)
+            
+            SELECT CASE(rmatrixB%cdataType)
+
+            CASE (ST_DOUBLE)
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
+              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,KldC,KcolC)
+                END IF
+              END IF
+
+            CASE (ST_SINGLE)
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
+              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+                
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,KldC,KcolC)
+                END IF
+              END IF
+
+            CASE DEFAULT
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              STOP
+            END SELECT
+
+          CASE (ST_SINGLE)
+            
+            SELECT CASE(rmatrixB%cdataType)
+              
+            CASE (ST_DOUBLE)
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
+              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,KldC,KcolC)
+                END IF
+              END IF
+
+            CASE (ST_SINGLE)
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
+              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              IF (bfast) THEN
+                IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
+                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                ELSE
+                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                END IF
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                ELSE
+                  CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
+                END IF
+
+              ELSE
+                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
+                  CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
+                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,KldC,KcolC)
+                ELSE
+                  CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,1,&
+                      rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,KldC,KcolC)
+                END IF
+              END IF
+              
+            CASE DEFAULT
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              STOP
+            END SELECT
+
+          CASE DEFAULT
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            STOP
+          END SELECT
+        END IF
+                
+      CASE (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! B is interleave CSR matrix-
+
+        ! Check if interleave matrices are compatible
+        IF (rmatrixA%NVAR /= rmatrixB% NVAR .OR. &
+            rmatrixA%cinterleavematrixFormat /= rmatrixB%cinterleavematrixFormat) THEN
+          PRINT *, 'lsyssc_matrixLinearComb: incompatible interleave matrices!'
+          STOP
+        END IF
+        
+        ! Set size of interleave block
+        isizeIntl=rmatrixA%NVAR
+        IF (rmatrixA%cinterleavematrixFormat == LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
+        
+        ! Set pointers
+        CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
+        CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+        CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
+        CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+        
+        ! memory allocation?
+        IF (bmemory) THEN
+          ! Duplicate structure of matrix A or B depending on which
+          ! matrix is given in the encompassing matrix format
+          IF (rmatrixA%cmatrixFormat >= rmatrixB%cmatrixFormat) THEN
+            CALL lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+          ELSE
+            CALL lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
+          END IF
+          
+          ! Set auxiliary pointers
+          CALL storage_new('lsyssc_matrixLinearComb','Kaux',rmatrixB%NCOLS,ST_INT,h_Kaux,ST_NEWBLOCK_NOINIT)
+          CALL storage_getbase_int(h_Kaux,Kaux)
+          
+          ! Compute number of nonzero matrix entries: NA
+          rmatrixC%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,rmatrixA%NCOLS,KldA,KcolA,KldB,KcolB,Kaux)
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
+              rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
+          CALL storage_realloc('lsyssc_matrixLinearComb',rmatrixC%NA,&
+              rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.FALSE.)
+        END IF
+
+        ! Check if matrix is given in the correct format
+        IF (rmatrixC%cmatrixFormat /= MAX(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat) .OR. &
+          rmatrixC%cinterleavematrixFormat /= rmatrixA%cinterleavematrixFormat .OR. &
+          rmatrixC%NA /= rmatrixA%NVAR) THEN
+          PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
+          STOP
+        END IF
+
+        ! symbolic addition?
+        IF (bsymb) THEN
+          
+          ! Set pointers
+          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          
+          IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
+            CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+            CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
+                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
+          ELSE
+            CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
+                rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC)
+          END IF
+        END IF
+
+        ! numerical addition?
+        IF (bnumb) THEN
+          
+          ! Set pointers
+          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
+          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          
+          ! Find the correct internal subroutine for the specified
+          ! data types. Note that the resulting matrix C will be
+          ! double if at least one of the source matrices is of type
+          ! double   
+          SELECT CASE(rmatrixA%cdataType)
+            
+          CASE (ST_DOUBLE)
+
+            SELECT CASE(rmatrixB%cdataType)
+
+            CASE (ST_DOUBLE)
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+
+              IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
+                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
+                
+                ! We rely on the user who tells us that we should assume the
+                ! same structure for the matrices. In this case, we can
+                ! directly call a BLAS routine to do the matrix combination.
+                ! That's MUCH faster!
+                ! Note that matrix B might coincide with matrix C, so we
+                ! first check this to prevent unnecessary copy operations!
+                
+                IF (.NOT. ASSOCIATED (DaB,DaC)) THEN
+                  CALL lalg_copyVectorDble (DaB,DaC)
+                END IF
+                
+                CALL lalg_vectorLinearCombDble (DaA,DaB,cA,cB)                
+                
+              ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_dbledble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
+                
+              ELSE
+                
+                CALL do_mat79mat79add_numb_dbledble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
+                
+              END IF
+
+            CASE (ST_SINGLE)
+              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              
+              IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_dblesngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,DaC)
+                
+              ELSE
+                
+                CALL do_mat79mat79add_numb_dblesngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,DaC)
+                
+              END IF
+              
+            CASE DEFAULT
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              STOP
+            END SELECT
+
+          CASE (ST_SINGLE)
+            
+            SELECT CASE(rmatrixB%cdataType)
+              
+            CASE (ST_DOUBLE) 
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
+              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              
+              IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_sngldble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
+
+              ELSE
+                
+                CALL do_mat79mat79add_numb_sngldble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KldC,DaC)
+                
+              END IF
+              
+            CASE (ST_SINGLE)
+              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
+              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
+              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+
+              IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
+                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
+                
+                ! We rely on the user who tells us that we should assume the
+                ! same structure for the matrices. In this case, we can
+                ! directly call a BLAS routine to do the matrix combination.
+                ! That's MUCH faster!
+                ! Note that matrix B might coincide with matrix C, so we
+                ! first check this to prevent unnecessary copy operations!
+                
+                IF (.NOT. ASSOCIATED (DaB,DaC)) THEN
+                  CALL lalg_copyVectorSngl (FaB,FaC)
+                END IF
+                
+                CALL lalg_vectorLinearCombSngl (FaA,FaB,REAL(cA,SP),REAL(cB,SP))                
+                
+              ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
+                
+                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL do_mat79mat79add_numb_snglsngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,FaC)
+
+              ELSE
+                
+                CALL do_mat79mat79add_numb_snglsngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
+                    KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KldC,FaC)
+                
+              END IF
+
+            CASE DEFAULT
+              PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+              STOP
+            END SELECT
+            
+          CASE DEFAULT
+            PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+            STOP
+          END SELECT
+        END IF
+
+      CASE DEFAULT
+        PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
+        STOP
+      END SELECT
+
+      !-------------------------------------------------------------------------
 
     CASE DEFAULT
-      PRINT *, 'lsyssc_addMatMat: Unsupported data type!'
+      PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
       STOP
     END SELECT
 
@@ -11630,32 +12174,32 @@ CONTAINS
     ! double precision matrix B (format D)
     ! double precision matrix C (format 1)
 
-    SUBROUTINE do_mat1matDadd_doubledouble(n,m,Da1,c1,Da2,c2,Da3)
+    SUBROUTINE do_mat1matDadd_doubledouble(neq,ncols,Da1,c1,Da2,c2,Da3)
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
-      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-      REAL(DP), DIMENSION(n), INTENT(IN)      :: Da2
-      REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
-      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+      INTEGER(PREC_DOFIDX), INTENT(IN)              :: neq,ncols
+      REAL(DP), INTENT(IN)                          :: c1,c2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(IN)    :: Da1
+      REAL(DP), DIMENSION(neq), INTENT(IN)          :: Da2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT) :: Da3
+      INTEGER(PREC_DOFIDX)                          :: ieq
 
-      INTEGER :: i
-
-      CALL DCOPY(n*m,Da1,1,Da3,1)
-      CALL DSCAL(n*m,c1,Da3,1)
-!$omp parallel do&
-!$omp&default(shared)&
-!$omp&private(i)
-      DO i=1,n
-        Da3(i,i)=Da3(i,i)+c2*Da2(i)
+      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
+      CALL DSCAL(neq*ncols,c1,Da3,1)
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(ieq)
+      DO ieq=1,neq
+        Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Da2(ieq)
       END DO
-!$omp end parallel do
-      !CALL lalg_copyVectorDble(Da1,Da3)
-      !CALL lalg_scaleVectorDble(Da3,c1)
-      !DO i=0,n-1
-      !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
-      !END DO
+!$omp  end parallel do
+
+!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      CALL lalg_copyVectorDble(Da1,Da3)
+!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      DO i=0,n-1
+!!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
+!!$      END DO
     END SUBROUTINE do_mat1matDadd_doubledouble
 
     !**************************************************************
@@ -11664,31 +12208,39 @@ CONTAINS
     ! double precision matrix B (format D)
     ! double precision matrix C (format 1)
 
-    SUBROUTINE do_mat1matDadd_singledouble(n,m,Fa1,c1,Da2,c2,Da3)
+    SUBROUTINE do_mat1matDadd_singledouble(neq,ncols,Fa1,c1,Da2,c2,Da3)
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
-      !REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
-      REAL(DP), DIMENSION(n), INTENT(IN)      :: Da2
-      REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
-      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+      INTEGER(PREC_DOFIDX), INTENT(IN)              :: neq,ncols
+      REAL(DP), INTENT(IN)                          :: c1,c2
+      REAL(SP), DIMENSION(ncols,neq), INTENT(IN)    :: Fa1
+      REAL(DP), DIMENSION(neq), INTENT(IN)          :: Da2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT) :: Da3
+      INTEGER(PREC_DOFIDX)                          :: ieq,icols
 
-      INTEGER :: i
-
-      Da3=Fa1
-      CALL DSCAL(n*m,c1,Da3,1)
-!$omp parallel do&
-!$omp&default(shared)&
-!$omp&private(i)
-      DO i=1,n
-        Da3(i,i)=Da3(i,i)+c2*Da2(i)
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ieq,icols)
+      DO ieq=1,neq
+        DO icols=1,ncols
+          Da3(icols,ieq) = c1*Fa1(icols,ieq)
+        END DO
       END DO
-!$omp end parallel do
-      !CALL lalg_scaleVectorDble(Da3,c1)
-      !DO i=0,n-1
-      !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
-      !END DO
+!$omp  end parallel do
+
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(ieq)
+      DO ieq=1,neq
+        Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Da2(ieq)
+      END DO
+!$omp  end parallel do
+
+!!$      REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      DO i=0,n-1
+!!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
+!!$      END DO
     END SUBROUTINE do_mat1matDadd_singledouble
 
     !**************************************************************
@@ -11697,32 +12249,32 @@ CONTAINS
     ! single precision matrix B (format D)
     ! double precision matrix C (format 1)
 
-    SUBROUTINE do_mat1matDadd_doublesingle(n,m,Da1,c1,Fa2,c2,Da3)
+    SUBROUTINE do_mat1matDadd_doublesingle(neq,ncols,Da1,c1,Fa2,c2,Da3)
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
-      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-      REAL(SP), DIMENSION(n), INTENT(IN)      :: Fa2
-      REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
-      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+      INTEGER(PREC_DOFIDX), INTENT(IN)              :: neq,ncols
+      REAL(DP), INTENT(IN)                          :: c1,c2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(IN)    :: Da1
+      REAL(SP), DIMENSION(neq), INTENT(IN)          :: Fa2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT) :: Da3
+      INTEGER(PREC_DOFIDX) :: ieq
 
-      INTEGER :: i
-
-      CALL DCOPY(n*m,Da1,1,Da3,1)
-      CALL DSCAL(n*m,c1,Da3,1)
-!$omp parallel do&
-!$omp&default(shared)&
-!$omp&private(i)
-      DO i=1,n
-        Da3(i,i)=Da3(i,i)+c2*Fa2(i)
+      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
+      CALL DSCAL(neq*ncols,c1,Da3,1)
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(ieq)
+      DO ieq=1,neq
+        Da3(ieq,ieq)=Da3(ieq,ieq)+c2*Fa2(ieq)
       END DO
-!$omp end parallel do
-      !CALL lalg_copyVectorDble(Da1,Da3)
-      !CALL lalg_scaleVectorDble(Da3,c1)
-      !DO i=0,n-1
-      !  Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Fa2(i+1)
-      !END DO
+!$omp  end parallel do
+
+!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      CALL lalg_copyVectorDble(Da1,Da3)
+!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      DO i=0,n-1
+!!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Fa2(i+1)
+!!$      END DO
     END SUBROUTINE do_mat1matDadd_doublesingle
 
     !**************************************************************
@@ -11731,32 +12283,32 @@ CONTAINS
     ! single precision matrix B (format D)
     ! single precision matrix C (format 1)
 
-    SUBROUTINE do_mat1matDadd_singlesingle(n,m,Fa1,c1,Fa2,c2,Fa3)
+    SUBROUTINE do_mat1matDadd_singlesingle(neq,ncols,Fa1,c1,Fa2,c2,Fa3)
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
       REAL(DP), INTENT(IN) :: c1,c2
-      REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
-      !REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
-      REAL(SP), DIMENSION(n), INTENT(IN)      :: Fa2
-      REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
-      !REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
+      REAL(SP), DIMENSION(ncols,neq), INTENT(IN)    :: Fa1
+      REAL(SP), DIMENSION(neq), INTENT(IN)      :: Fa2
+      REAL(SP), DIMENSION(ncols,neq), INTENT(INOUT) :: Fa3
+      INTEGER(PREC_DOFIDX) :: ieq
 
-      INTEGER :: i
-
-      CALL SCOPY(n*m,Fa1,1,Fa3,1)
-      CALL SSCAL(n*m,REAL(c1,SP),Fa3,1)
-!$omp parallel do&
-!$omp&default(shared)&
-!$omp&private(i)
-      DO i=1,n
-        Fa3(i,i)=Fa3(i,i)+c2*Fa2(i)
+      CALL SCOPY(neq*ncols,Fa1,1,Fa3,1)
+      CALL SSCAL(neq*ncols,REAL(c1,SP),Fa3,1)
+!$omp  parallel do&
+!$omp& default(shared)&
+!$omp& private(ieq)
+      DO ieq=1,neq
+        Fa3(ieq,ieq)=Fa3(ieq,ieq)+c2*Fa2(ieq)
       END DO
-!$omp end parallel do
-      !CALL lalg_copyVectorSngl(Fa1,Fa3)
-      !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
-      !DO i=0,n-1
-      !  Fa3(i*m+i+1)=Fa3(i*m+i+1)+c2*Fa2(i+1)
-      !END DO
+!$omp  end parallel do
+
+!!$      REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
+!!$      REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
+!!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
+!!$      CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
+!!$      DO i=0,n-1
+!!$        Fa3(i*m+i+1)=Fa3(i*m+i+1)+c2*Fa2(i+1)
+!!$      END DO
     END SUBROUTINE do_mat1matDadd_singlesingle
 
     !**************************************************************
@@ -11765,45 +12317,43 @@ CONTAINS
     ! double precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 1)
 
-    SUBROUTINE do_mat1mat79add_doubledouble(n,m,Da1,c1,Kld2,Kcol2,Da2&
-        &,c2,Da3)
+    SUBROUTINE do_mat1mat79add_doubledouble(neq,ncols,Da1,c1,Kld2,Kcol2,Da2,c2,Da3)
 
       ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
       ! this subroutine handles the transposed of matrix A. Therefore,
-      ! the row and column indices I and J are swapped when the
+      ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
-      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-      REAL(DP), DIMENSION(:), INTENT(IN)      :: Da2
-      REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
-      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+      REAL(DP), INTENT(IN)                           :: c1,c2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(IN)     :: Da1
+      REAL(DP), DIMENSION(:), INTENT(IN)             :: Da2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT)  :: Da3
+      INTEGER(PREC_DOFIDX) :: ild,ieq,icol
 
-      INTEGER :: i,ild,j
-
-      CALL DCOPY(n*m,Da1,1,Da3,1)
-      CALL DSCAL(n*m,c1,Da3,1)
+      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
+      CALL DSCAL(neq*ncols,c1,Da3,1)
       
-      DO i=1,n
-        DO ild=Kld2(i),Kld2(i+1)-1
-          j=Kcol2(ild)
-          Da3(j,i)=Da3(j,i)+c2*Da2(ild)
+      DO ieq=1,neq
+        DO ild=Kld2(ieq),Kld2(ieq+1)-1
+          icol=Kcol2(ild)
+          Da3(icol,ieq)=Da3(icol,ieq)+c2*Da2(ild)
         END DO
       END DO
 
-      !CALL lalg_copyVectorDble(Da1,Da3)
-      !CALL lalg_scaleVectorDble(Da3,c1)
-      
-      !DO i=1,n
-      !  DO ild=Kld2(i),Kld2(i+1)-1
-      !    j=Kcol2(ild)-1
-      !    Da3(j*m+i)=Da3(j*m+i)+c2*Da2(ild)
-      !  END DO
-      !END DO
+!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      CALL lalg_copyVectorDble(Da1,Da3)
+!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      
+!!$      DO i=1,n
+!!$        DO ild=Kld2(i),Kld2(i+1)-1
+!!$          j=Kcol2(ild)-1
+!!$          Da3(j*m+i)=Da3(j*m+i)+c2*Da2(ild)
+!!$        END DO
+!!$      END DO
     END SUBROUTINE do_mat1mat79add_doubledouble
 
     !**************************************************************
@@ -11812,30 +12362,36 @@ CONTAINS
     ! double precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 1)
 
-    SUBROUTINE do_mat1mat79add_singledouble(n,m,Fa1,c1,Kld2,Kcol2,Da2&
-        &,c2,Da3)
+    SUBROUTINE do_mat1mat79add_singledouble(neq,ncols,Fa1,c1,Kld2,Kcol2,Da2,c2,Da3)
 
       ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
       ! this subroutine handles the transposed of matrix A. Therefore,
-      ! the row and column indices I and J are swapped when the
+      ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
-      REAL(DP), DIMENSION(:), INTENT(IN)      :: Da2
-      REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
+      REAL(DP), INTENT(IN)                           :: c1,c2
+      REAL(SP), DIMENSION(ncols,neq), INTENT(IN)     :: Fa1
+      REAL(DP), DIMENSION(:), INTENT(IN)             :: Da2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT)  :: Da3
+      INTEGER(PREC_DOFIDX) :: ild,ieq,icol
 
-      INTEGER :: i,ild,j
-
-      Da3=c1*Fa1
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ieq,icol)
+      DO ieq=1,neq
+        DO icol=1,ncols
+          Da3(icol,ieq)=c1*Fa1(icol,ieq)
+        END DO
+      END DO
+!$omp  end parallel do
       
-      DO i=1,n
-        DO ild=Kld2(i),Kld2(i+1)-1
-          j=Kcol2(ild)
-          Da3(j,i)=Da3(j,i)+c2*Da2(ild)
+      DO ieq=1,neq
+        DO ild=Kld2(ieq),Kld2(ieq+1)-1
+          icol=Kcol2(ild)
+          Da3(icol,ieq)=Da3(icol,ieq)+c2*Da2(ild)
         END DO
       END DO
     END SUBROUTINE do_mat1mat79add_singledouble
@@ -11846,45 +12402,43 @@ CONTAINS
     ! single precision matrix B (format 7 or format 9)
     ! double precision matrix C (format 1)
 
-    SUBROUTINE do_mat1mat79add_doublesingle(n,m,Da1,c1,Kld2,Kcol2,Fa2&
-        &,c2,Da3)
+    SUBROUTINE do_mat1mat79add_doublesingle(neq,ncols,Da1,c1,Kld2,Kcol2,Fa2,c2,Da3)
 
       ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
       ! this subroutine handles the transposed of matrix A. Therefore,
-      ! the row and column indices I and J are swapped when the
+      ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(DP), DIMENSION(m,n), INTENT(IN)    :: Da1
-      !REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-      REAL(SP), DIMENSION(:), INTENT(IN)      :: Fa2
-      REAL(DP), DIMENSION(m,n), INTENT(INOUT) :: Da3
-      !REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+      REAL(DP), INTENT(IN)                           :: c1,c2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(IN)     :: Da1
+      REAL(SP), DIMENSION(:), INTENT(IN)             :: Fa2
+      REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT)  :: Da3
+      INTEGER(PREC_DOFIDX) :: ild,ieq,icol
 
-      INTEGER :: i,ild,j
+      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
+      CALL DSCAL(neq*ncols,c1,Da3,1)
 
-      CALL DCOPY(n*m,Da1,1,Da3,1)
-      CALL DSCAL(n*m,c1,Da3,1)
-
-      DO i=1,n
-        DO ild=Kld2(i),Kld2(i+1)-1
-          j=Kcol2(ild)
-          Da3(j,i)=Da3(j,i)+c2*Fa2(ild)
+      DO ieq=1,neq
+        DO ild=Kld2(ieq),Kld2(ieq+1)-1
+          icol=Kcol2(ild)
+          Da3(icol,ieq)=Da3(icol,ieq)+c2*Fa2(ild)
         END DO
       END DO
-
-      !CALL lalg_copyVectorDble(Da1,Da3)
-      !CALL lalg_scaleVectorDble(Da3,c1)
-
-      !DO i=1,n
-      !  DO ild=Kld2(i),Kld2(i+1)-1
-      !    j=Kcol2(ild)
-      !    Da3(j*m+i)=Da3(j*m+i)+c2*Fa2(ild)
-      !  END DO
-      !END DO
+      
+!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      CALL lalg_copyVectorDble(Da1,Da3)
+!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$
+!!$      DO i=1,n
+!!$        DO ild=Kld2(i),Kld2(i+1)-1
+!!$          j=Kcol2(ild)
+!!$          Da3(j*m+i)=Da3(j*m+i)+c2*Fa2(ild)
+!!$        END DO
+!!$      END DO
     END SUBROUTINE do_mat1mat79add_doublesingle
 
     !**************************************************************
@@ -11893,316 +12447,536 @@ CONTAINS
     ! single precision matrix B (format 7 or format 9)
     ! single precision matrix C (format 1)
 
-    SUBROUTINE do_mat1mat79add_singlesingle(n,m,Fa1,c1,Kld2,Kcol2,Fa2&
-        &,c2,Fa3)
+    SUBROUTINE do_mat1mat79add_singlesingle(neq,ncols,Fa1,c1,Kld2,Kcol2,Fa2,c2,Fa3)
 
       ! REMARK: The matrix A (format 1) is stored row-wise. Hence,
       ! this subroutine handles the transposed of matrix A. Therefore,
-      ! the row and column indices I and J are swapped when the
+      ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld2
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol2
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(SP), DIMENSION(m,n), INTENT(IN)    :: Fa1
-      !REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
-      REAL(SP), DIMENSION(:), INTENT(IN)      :: Fa2
-      REAL(SP), DIMENSION(m,n), INTENT(INOUT) :: Fa3
-      !REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
-
-      INTEGER :: i,ild,j
-
-      CALL SCOPY(n*m,Fa1,1,Fa3,1)
-      CALL SSCAL(n*m,REAL(c1,SP),Fa3,1)
+      REAL(DP), INTENT(IN)                           :: c1,c2
+      REAL(SP), DIMENSION(ncols,neq), INTENT(IN)     :: Fa1
+      REAL(SP), DIMENSION(:), INTENT(IN)             :: Fa2
+      REAL(SP), DIMENSION(ncols,neq), INTENT(INOUT)  :: Fa3
+      INTEGER(PREC_DOFIDX) :: ild,ieq,icol
       
-      DO i=1,n
-        DO ild=Kld2(i),Kld2(i+1)-1
-          j=Kcol2(ild)
-          Fa3(j,i)=Fa3(j,i)+c2*Fa2(ild)
+      CALL SCOPY(neq*ncols,Fa1,1,Fa3,1)
+      CALL SSCAL(neq*ncols,REAL(c1,SP),Fa3,1)
+      
+      DO ieq=1,neq
+        DO ild=Kld2(ieq),Kld2(ieq+1)-1
+          icol=Kcol2(ild)
+          Fa3(icol,ieq)=Fa3(icol,ieq)+c2*Fa2(ild)
         END DO
       END DO
-
-      !CALL lalg_copyVectorSngl(Fa1,Fa3)
-      !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
       
-      !DO i=1,n
-      !  DO ild=Kld2(i),Kld2(i+1)-1
-      !    j=Kcol2(ild)
-      !    Fa3(j*m+i)=Fa3(j*m+i)+c2*Fa2(ild)
-      !  END DO
-      !END DO
+!!$      REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
+!!$      REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
+!!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
+!!$      CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
+!!$      
+!!$      DO i=1,n
+!!$        DO ild=Kld2(i),Kld2(i+1)-1
+!!$          j=Kcol2(ild)
+!!$          Fa3(j*m+i)=Fa3(j*m+i)+c2*Fa2(ild)
+!!$        END DO
+!!$      END DO
     END SUBROUTINE do_mat1mat79add_singlesingle
 
     !**************************************************************
     ! Format 7/9-D addition
-    ! double precision matrix A (format 7 or format 9)
+    ! double precision matrix A (format 7 or format 9, interleave possible)
     ! double precision matrix B (format D)
-    ! double precision matrix C (format 7 or format 9)
+    ! double precision matrix C (format 7 or format 9, interleave possible)
 
-    SUBROUTINE do_mat79matDadd_doubledouble(Kld1,Kcol1,neq,Da1,c1,Da2&
-        &,c2,Da3,Kld3,Kcol3,Kdiag3,na)
+    SUBROUTINE do_mat79matDadd_doubledouble(Kld1,Kcol1,nvar,mvar,neq,&
+        Da1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
-      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_DOFIDX), INTENT(IN)                         :: neq
+      INTEGER, INTENT(IN)                                      :: nvar,mvar
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL               :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)           :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)           :: Kcol1
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
-      REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
-      REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
-
-      INTEGER :: ieq,ild1,icol1,ild3,ildend3,icol3
+      REAL(DP), INTENT(IN)                                     :: c1,c2
+      REAL(DP), DIMENSION(nvar,mvar,*), INTENT(IN)             :: Da1
+      REAL(DP), DIMENSION(:), INTENT(IN)                       :: Da2
+      REAL(DP), DIMENSION(nvar,mvar,*), INTENT(INOUT)          :: Da3
       
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ild1,ild3,ildend3
+      INTEGER(PREC_MATIDX) :: icol1,icol3
+      INTEGER :: ivar
+
       IF (PRESENT(Kld3) .AND. PRESENT(Kcol3)) THEN
+      
+        ! The structure of matrix A may be only a subset of C, so that
+        ! each entry must be visited separately
         
-        ! Loop over all rows
-        DO ieq=1,neq
-          ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-          
-          ! Loop over all columns of current row
-          DO ild1=Kld1(ieq),Kld1(ieq+1)-1
-            icol1=Kcol1(ild1)
+        IF (nvar /= mvar) THEN
+
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
             
-            ! Skip positions in resulting matrix if required
-            DO ild3=ild3,ildend3
-              icol3=Kcol3(ild3)
-              IF (icol3 == icol1) EXIT
-              Da3(ild3)=0
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Da3(:,1,ild3)=0._DP
+              END DO
+              
+              Da3(:,1,ild3)=c1*Da1(:,1,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
+              ild3=ild3+1
             END DO
-            
-            IF (icol3 == ieq) THEN
-              ! Diagonal entry
-              Da3(ild3)=c1*Da1(ild1)+c2*Da2(ieq)
-            ELSE
-              Da3(ild3)=c1*Da1(ild1)
-            END IF
-            ild3=ild3+1
+            Da3(:,1,ild3:ildend3)=0._DP
           END DO
-          Da3(ild3:ildend3)=0
-        END DO
         
+        ELSE
+          
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+            
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Da3(:,:,ild3)=0._DP
+              END DO
+              
+              Da3(:,:,ild3)=c1*Da1(:,:,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) THEN
+                DO ivar=1,nvar
+                  Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
+                END DO
+              END IF
+              ild3=ild3+1
+            END DO
+            Da3(:,:,ild3:ildend3)=0._DP
+          END DO
+
+        END IF
+
       ELSEIF (PRESENT(Kdiag3) .AND. PRESENT(na)) THEN
         
-        CALL DCOPY(na,Da1,1,Da3,1)
-        CALL DSCAL(na,c1,Da3,1)
-        !CALL lalg_copyVectorDble(Da1,Da3)
-        !CALL lalg_scaleVectorDble(Da3,c1)
-        
-        DO ieq=1,neq
-          ild3=Kdiag3(ieq)
-          Da3(ild3)=Da3(ild3)+c2*Da2(ieq)
-        END DO
+        ! Structure of matrices A and C is identical
+
+        CALL DCOPY(nvar*mvar*na,Da1,1,Da3,1)
+        CALL DSCAL(nvar*mvar*na,c1,Da3,1)
+
+        IF (nvar /= mvar) THEN
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ieq,ild3)        
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
+          END DO
+!$omp  end parallel do
+        ELSE
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ivar,ieq,ild3)        
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            DO ivar=1,nvar
+              Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
+            END DO
+          END DO
+!$omp  end parallel do
+        END IF
 
       ELSE
-        PRINT *, "do_mat79matDadd_doubledouble: either Kld,Kcol or Kdi&
-            &ag must be present."
+        PRINT *, "do_mat79matDadd_doubledouble: either Kld,Kcol or Kdiag must be present."
         STOP        
       END IF
     END SUBROUTINE do_mat79matDadd_doubledouble
 
     !**************************************************************
     ! Format 7/9-D addition
-    ! single precision matrix A (format 7 or format 9)
+    ! single precision matrix A (format 7 or format 9, interleave possible)
     ! double precision matrix B (format D)
-    ! double precision matrix C (format 7 or format 9)
+    ! double precision matrix C (format 7 or format 9, interleave possible)
 
-    SUBROUTINE do_mat79matDadd_singledouble(Kld1,Kcol1,neq,Fa1,c1,Da2&
-        &,c2,Da3,Kld3,Kcol3,Kdiag3,na)
+    SUBROUTINE do_mat79matDadd_singledouble(Kld1,Kcol1,nvar,mvar,neq,&
+        Fa1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
-      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_DOFIDX), INTENT(IN)                         :: neq
+      INTEGER, INTENT(IN)                                      :: nvar,mvar
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL               :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)           :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)           :: Kcol1
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
-      REAL(DP), DIMENSION(:), INTENT(IN)    :: Da2
-      REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
+      REAL(DP), INTENT(IN)                                     :: c1,c2
+      REAL(SP), DIMENSION(nvar,mvar,*), INTENT(IN)             :: Fa1
+      REAL(DP), DIMENSION(:), INTENT(IN)                       :: Da2
+      REAL(DP), DIMENSION(nvar,mvar,*), INTENT(INOUT)          :: Da3
 
-      INTEGER :: ieq,ild1,icol1,ild3,ildend3,icol3
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ild1,ild3,ildend3
+      INTEGER(PREC_MATIDX) :: icol1,icol3,ia
+      INTEGER :: ivar
       
       IF (PRESENT(Kld3) .AND. PRESENT(Kcol3)) THEN
-
-        ! Loop over all rows
-        DO ieq=1,neq
-          ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-          
-          ! Loop over all columns of current row
-          DO ild1=Kld1(ieq),Kld1(ieq+1)-1
-            icol1=Kcol1(ild1)
-            
-            ! Skip positions in resulting matrix if required
-            DO ild3=ild3,ildend3
-              icol3=Kcol3(ild3)
-              IF (icol3 == icol1) EXIT
-              Da3(ild3)=0
-            END DO
-            
-            IF (icol3 == ieq) THEN
-              ! Diagonal entry
-              Da3(ild3)=c1*Fa1(ild1)+c2*Da2(ieq)
-            ELSE
-              Da3(ild3)=c1*Fa1(ild1)
-            END IF
-            ild3=ild3+1
-          END DO
-          Da3(ild3:ildend3)=0
-        END DO
         
+        ! The structure of matrix A may be only a subset of C, so that
+        ! each entry must be visited separately
+        
+        IF (nvar /= mvar) THEN
+          
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+            
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Da3(:,1,ild3)=0._DP
+              END DO
+              
+              Da3(:,1,ild3)=c1*Fa1(:,1,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
+              ild3=ild3+1
+            END DO
+            Da3(:,1,ild3:ildend3)=0._DP
+          END DO
+          
+        ELSE
+
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+            
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Da3(:,:,ild3)=0._DP
+              END DO
+              
+              Da3(:,:,ild3)=c1*Fa1(:,:,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) THEN
+                DO ivar=1,nvar
+                  Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
+                END DO
+              END IF
+              ild3=ild3+1
+            END DO
+            Da3(:,:,ild3:ildend3)=0._DP
+          END DO
+
+        END IF
+
       ELSEIF (PRESENT(Kdiag3) .AND. PRESENT(na)) THEN
         
-        Da3=c1*Fa1
-        
-        DO ieq=1,neq
-          ild3=Kdiag3(ieq)
-          Da3(ild3)=Da3(ild3)+c2*Da2(ieq)
+        ! Structure of matrices A and C is identical
+
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ia)
+        DO ia=1,na
+          Da3(:,:,ia)=c1*Fa1(:,:,ia)
         END DO
+!$omp  end parallel do
+        
+        IF (nvar /= mvar) THEN
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ieq,ild3)
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
+          END DO
+!$omp  end parallel do
+        ELSE
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ivar,ieq,ild3)
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            DO ivar=1,nvar
+              Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
+            END DO
+          END DO
+!$omp  end parallel do
+        END IF
         
       ELSE
-        PRINT *, "do_mat79matDadd_singledouble: either Kld,Kcol or Kdi&
-            &ag must be present."
+        PRINT *, "do_mat79matDadd_singledouble: either Kld,Kcol or Kdiag must be present."
         STOP        
       END IF
     END SUBROUTINE do_mat79matDadd_singledouble
 
     !**************************************************************
     ! Format 7/9-D addition
-    ! double precision matrix A (format 7 or format 9)
+    ! double precision matrix A (format 7 or format 9, interleave possible)
     ! single precision matrix B (format D)
-    ! double precision matrix C (format 7 or format 9)
+    ! double precision matrix C (format 7 or format 9, interleave possible)
 
-    SUBROUTINE do_mat79matDadd_doublesingle(Kld1,Kcol1,neq,Da1,c1,Fa2&
-        &,c2,Da3,Kld3,Kcol3,Kdiag3,na)
+    SUBROUTINE do_mat79matDadd_doublesingle(Kld1,Kcol1,nvar,mvar,neq,&
+        Da1,c1,Fa2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
-      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_DOFIDX), INTENT(IN)                         :: neq
+      INTEGER, INTENT(IN)                                      :: nvar,mvar
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL               :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)           :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)           :: Kcol1
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(DP), DIMENSION(:), INTENT(IN)    :: Da1
-      REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
-      REAL(DP), DIMENSION(:), INTENT(INOUT) :: Da3
+      REAL(DP), INTENT(IN)                                     :: c1,c2
+      REAL(DP), DIMENSION(nvar,mvar,*), INTENT(IN)             :: Da1
+      REAL(SP), DIMENSION(:), INTENT(IN)                       :: Fa2
+      REAL(DP), DIMENSION(nvar,mvar,*), INTENT(INOUT)          :: Da3
 
-      INTEGER :: ieq,ild1,icol1,ild3,ildend3,icol3
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ild1,ild3,ildend3
+      INTEGER(PREC_MATIDX) :: icol1,icol3
+      INTEGER :: ivar
       
       IF (PRESENT(Kld3) .AND. PRESENT(Kcol3)) THEN
-
-        ! Loop over all rows
-        DO ieq=1,neq
-          ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+        
+        ! The structure of matrix A may be only a subset of C, so that
+        ! each entry must be visited separately
+        
+        IF (nvar /= mvar) THEN
           
-          ! Loop over all columns of current row
-          DO ild1=Kld1(ieq),Kld1(ieq+1)-1
-            icol1=Kcol1(ild1)
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
             
-            ! Skip positions in resulting matrix if required
-            DO ild3=ild3,ildend3
-              icol3=Kcol3(ild3)
-              IF (icol3 == icol1) EXIT
-              Da3(ild3)=0
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Da3(:,1,ild3)=0._DP
+              END DO
+              
+              Da3(:,1,ild3)=c1*Da1(:,1,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Fa2(ieq)
+              ild3=ild3+1
             END DO
-            
-            IF (icol3 == ieq) THEN
-              ! Diagonal entry
-              Da3(ild3)=c1*Da1(ild1)+c2*Fa2(ieq)
-            ELSE
-              Da3(ild3)=c1*Da1(ild1)
-            END IF
-            ild3=ild3+1
+            Da3(:,1,ild3:ildend3)=0._DP
           END DO
-          Da3(ild3:ildend3)=0
-        END DO
+        
+        ELSE
+
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+            
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Da3(:,:,ild3)=0._DP
+              END DO
+              
+              Da3(:,:,ild3)=c1*Da1(:,:,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) THEN
+                DO ivar=1,nvar
+                  Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Fa2(ieq)
+                END DO
+              END IF
+              ild3=ild3+1
+            END DO
+            Da3(:,:,ild3:ildend3)=0._DP
+          END DO
+          
+        END IF
         
       ELSEIF (PRESENT(Kdiag3) .AND. PRESENT(na)) THEN
-        
-        CALL DCOPY(na,Da1,1,Da3,1)
-        CALL DSCAL(na,c1,Da3,1)
-        !CALL lalg_copyVectorDble(Da1,Da3)
-        !CALL lalg_scaleVectorDble(Da3,c1)
 
-        DO ieq=1,neq
-          ild3=Kdiag3(ieq)
-          Da3(ild3)=Da3(ild3)+c2*Fa2(ieq)
-        END DO
+        ! Structure of matrices A and C is identical
+        
+        CALL DCOPY(nvar*mvar*na,Da1,1,Da3,1)
+        CALL DSCAL(nvar*mvar*na,c1,Da3,1)
+
+        IF (nvar /= mvar) THEN
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ivar,ieq,ild3)
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            DO ivar=1,nvar
+              Da3(ivar,1,ild3)=Da3(ivar,1,ild3)+c2*Fa2(ieq)
+            END DO
+          END DO
+!$omp  end parallel do
+        ELSE
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ivar,ieq,ild3)
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            DO ivar=1,nvar
+              Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Fa2(ieq)
+            END DO
+          END DO
+!$omp  end parallel do
+        END IF
      
       ELSE
-        PRINT *, "do_mat79matDadd_doublesingle: either Kld,Kcol or Kdi&
-            &ag must be present."
+        PRINT *, "do_mat79matDadd_doublesingle: either Kld,Kcol or Kdiag must be present."
         STOP        
       END IF
     END SUBROUTINE do_mat79matDadd_doublesingle
 
     !**************************************************************
     ! Format 7/9-D addition
-    ! single precision matrix A (format 7 or format 9)
+    ! single precision matrix A (format 7 or format 9, interleave possible)
     ! single precision matrix B (format D)
-    ! single precision matrix C (format 7 or format 9)
+    ! single precision matrix C (format 7 or format 9, interleave possible)
 
-    SUBROUTINE do_mat79matDadd_singlesingle(Kld1,Kcol1,neq,Fa1,c1,Fa2&
-        &,c2,Fa3,Kld3,Kcol3,Kdiag3,na)
+    SUBROUTINE do_mat79matDadd_singlesingle(Kld1,Kcol1,nvar,mvar,neq,&
+        Fa1,c1,Fa2,c2,Fa3,Kld3,Kcol3,Kdiag3,na)
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
-      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: na
-      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: Kld1
-      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Kcol1
+      INTEGER(PREC_DOFIDX), INTENT(IN)                         :: neq
+      INTEGER, INTENT(IN)                                      :: nvar,mvar
+      INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL               :: na
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)           :: Kld1
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)           :: Kcol1
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kld3,Kdiag3
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: Kcol3
-      REAL(DP), INTENT(IN) :: c1,c2
-      REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa1
-      REAL(SP), DIMENSION(:), INTENT(IN)    :: Fa2
-      REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fa3
+      REAL(DP), INTENT(IN)                                     :: c1,c2
+      REAL(SP), DIMENSION(nvar,mvar,*), INTENT(IN)             :: Fa1
+      REAL(SP), DIMENSION(:), INTENT(IN)                       :: Fa2
+      REAL(SP), DIMENSION(nvar,mvar,*), INTENT(INOUT)          :: Fa3
 
-      INTEGER :: ieq,ild1,icol1,ild3,ildend3,icol3
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ild1,ild3,ildend3
+      INTEGER(PREC_MATIDX) :: icol1,icol3
+      INTEGER :: ivar
       
       IF (PRESENT(Kld3) .AND. PRESENT(Kcol3)) THEN
+
+        ! The structure of matrix A may be only a subset of C, so that
+        ! each entry must be visited separately
         
-        ! Loop over all rows
-        DO ieq=1,neq
-          ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
-          
-          ! Loop over all columns of current row
-          DO ild1=Kld1(ieq),Kld1(ieq+1)-1
-            icol1=Kcol1(ild1)
+        IF (nvar /= mvar) THEN
+
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
             
-            ! Skip positions in resulting matrix if required
-            DO ild3=ild3,ildend3
-              icol3=Kcol3(ild3)
-              IF (icol3 == icol1) EXIT
-              Fa3(ild3)=0
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Fa3(:,1,ild3)=0._SP
+              END DO
+              
+              Fa3(:,1,ild3)=c1*Fa1(:,1,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) Fa3(:,1,ild3)=Fa3(:,1,ild3)+c2*Fa2(ieq)
+              ild3=ild3+1
             END DO
-            
-            IF (icol3 == ieq) THEN
-              ! Diagonal entry
-              Fa3(ild3)=c1*Fa1(ild1)+c2*Fa2(ieq)
-            ELSE
-              Fa3(ild3)=c1*Fa1(ild1)
-            END IF
-            ild3=ild3+1
+            Fa3(:,1,ild3:ildend3)=0._SP
           END DO
-          Fa3(ild3:ildend3)=0
-        END DO
+
+        ELSE
+
+          ! Loop over all rows
+          DO ieq=1,neq
+            ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
+            
+            ! Loop over all columns of current row
+            DO ild1=Kld1(ieq),Kld1(ieq+1)-1
+              icol1=Kcol1(ild1)
+              
+              ! Skip positions in resulting matrix if required
+              DO ild3=ild3,ildend3
+                icol3=Kcol3(ild3)
+                IF (icol3 == icol1) EXIT
+                Fa3(:,:,ild3)=0._SP
+              END DO
+              
+              Fa3(:,:,ild3)=c1*Fa1(:,:,ild1)
+              ! Diagonal entry?
+              IF (icol3 == ieq) THEN
+                DO ivar=1,nvar
+                  Fa3(ivar,ivar,ild3)=Fa3(ivar,ivar,ild3)+c2*Fa2(ieq)
+                END DO
+              END IF
+              ild3=ild3+1
+            END DO
+            Fa3(:,1,ild3:ildend3)=0._SP
+          END DO
+
+        END IF
         
       ELSEIF (PRESENT(Kdiag3) .AND. PRESENT(na)) THEN
 
-        CALL SCOPY(na,Fa1,1,Fa3,1)
-        CALL SSCAL(na,REAL(c1,SP),Fa3,1)
-        !CALL lalg_copyVectorSngl(Fa1,Fa3)
-        !CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
-      
-        DO ieq=1,neq
-          ild3=Kdiag3(ieq)
-          Fa3(ild3)=Fa3(ild3)+c2*Fa2(ieq)
-        END DO
+        ! Structure of matrices A and C is identical
+        
+        CALL SCOPY(nvar*mvar*na,Fa1,1,Fa3,1)
+        CALL SSCAL(nvar*mvar*na,REAL(c1,SP),Fa3,1)
+
+        IF (nvar /= mvar) THEN
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ieq,ild3)      
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            Fa3(:,1,ild3)=Fa3(:,1,ild3)+c2*Fa2(ieq)
+          END DO
+!$omp  end parallel do
+        ELSE
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(ivar,ieq,ild3)      
+          DO ieq=1,neq
+            ild3=Kdiag3(ieq)
+            DO ivar=1,nvar
+              Fa3(ivar,ivar,ild3)=Fa3(ivar,ivar,ild3)+c2*Fa2(ieq)
+            END DO
+          END DO
+!$omp  end parallel do
+        END IF
 
       ELSE
-        PRINT *, "do_mat79matDadd_singlesingle: either Kld,Kcol or Kdi&
-            &ag must be present."
+        PRINT *, "do_mat79matDadd_singlesingle: either Kld,Kcol or Kdiag must be present."
         STOP        
       END IF
     END SUBROUTINE do_mat79matDadd_singlesingle
@@ -12407,23 +13181,25 @@ CONTAINS
     ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
     ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_dbledble(neq,ncols,KldA&
-        &,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
+    SUBROUTINE do_mat79mat79add_numb_dbledble(isizeIntl,neq,ncols,&
+        KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
+      INTEGER, INTENT(IN)                            :: isizeIntl
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
-      REAL(DP), INTENT(IN) :: cA,cB
-      REAL(DP), DIMENSION(:), INTENT(IN) :: DaA
-      REAL(DP), DIMENSION(:), INTENT(IN) :: DaB
-      REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC
+      REAL(DP), INTENT(IN)                           :: cA,cB
+      REAL(DP), DIMENSION(isizeIntl,*), INTENT(IN)   :: DaA
+      REAL(DP), DIMENSION(isizeIntl,*), INTENT(IN)   :: DaB
+      REAL(DP), DIMENSION(isizeIntl,*), INTENT(INOUT):: DaC
       
-      INTEGER :: ieq,ildA,ildB,ildC,ildendA,ildendB,ildendC,icolA&
-          &,icolB,icolC,idiagC
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      INTEGER(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
 
       ! Loop over all ROWS
       DO ieq=1,neq
-                        
+        
         ! Initialize column pointers for matrix A, B and C
         ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
         ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
@@ -12435,7 +13211,7 @@ CONTAINS
         ! Since the final value of the diagonal entry
         !    c_i,i = ca * a_i,i + cb * b_i,i
         ! is updated step-by-step, set the diagonal entry to zero
-        DaC(idiagC) = 0
+        DaC(:,idiagC) = 0._DP
         
         ! For each row IEQ loop over the columns of matrix A and B
         ! simultaneously and collect the corresponding matrix entries
@@ -12461,24 +13237,24 @@ CONTAINS
           ! and proceed to the next iteration
           IF (icolA == ieq) THEN
             IF (icolB == ieq) THEN
-          
+              
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
-              DaC(idiagC)=cA*DaA(ildA)+cB*DaB(ildB)
+              DaC(:,idiagC)=cA*DaA(:,ildA)+cB*DaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
             ELSE
 
               ! 2. Case: For matrix A the diagonal entry has been
               ! reached. Hence, skip matrix B.
-              DaC(idiagC)=DaC(idiagC)+cA*DaA(ildA)
+              DaC(:,idiagC)=DaC(:,idiagC)+cA*DaA(:,ildA)
               ildA = ildA+1
             END IF
           ELSEIF (icolB == ieq) THEN
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
-            DaC(idiagC)=DaC(idiagC)+cB*DaB(ildB)
+            DaC(:,idiagC)=DaC(:,idiagC)+cB*DaB(:,ildB)
             ildB = ildB+1
 
           ELSE
@@ -12503,10 +13279,10 @@ CONTAINS
               DO ildC=ildc,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cA*DaA(ildA)+cB*DaB(ildB)
+              DaC(:,ildC)=cA*DaA(:,ildA)+cB*DaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
               ildC = ildC+1
@@ -12519,10 +13295,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cA*DaA(ildA)
+              DaC(:,ildC)=cA*DaA(:,ildA)
               ildA = ildA+1
               ildC = ildC+1
               
@@ -12534,10 +13310,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolB) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cB*DaB(ildB)
+              DaC(:,ildC)=cB*DaB(:,ildB)
               ildB = ildB+1
               ildC = ildC+1
 
@@ -12553,9 +13329,9 @@ CONTAINS
         ! remainder of C needs to be nullified by hand
         IF (ildC <= ildendC) THEN
           IF (KcolC(ildC) == ieq) THEN
-            DaC(ildC+1:1:ildendC) = 0
+            DaC(:,ildC+1:1:ildendC) = 0._DP
           ELSE
-            DaC(ildC:1:ildendC) = 0
+            DaC(:,ildC:1:ildendC)   = 0._DP
           END IF
         END IF
       END DO
@@ -12579,23 +13355,25 @@ CONTAINS
     ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
     ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_dblesngl(neq,ncols,KldA&
-        &,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,DaC)
+    SUBROUTINE do_mat79mat79add_numb_dblesngl(isizeIntl,neq,ncols,&
+        KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
+      INTEGER, INTENT(IN)                            :: isizeIntl
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
-      REAL(DP), INTENT(IN) :: cA,cB
-      REAL(DP), DIMENSION(:), INTENT(IN) :: DaA
-      REAL(SP), DIMENSION(:), INTENT(IN) :: FaB
-      REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC
+      REAL(DP), INTENT(IN)                           :: cA,cB
+      REAL(DP), DIMENSION(isizeIntl,*), INTENT(IN)   :: DaA
+      REAL(SP), DIMENSION(isizeIntl,*), INTENT(IN)   :: FaB
+      REAL(DP), DIMENSION(isizeIntl,*), INTENT(INOUT):: DaC
       
-      INTEGER :: ieq,ildA,ildB,ildC,ildendA,ildendB,ildendC,icolA&
-          &,icolB,icolC,idiagC
-
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      INTEGER(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
+      
       ! Loop over all ROWS
       DO ieq=1,neq
-                        
+        
         ! Initialize column pointers for matrix A, B and C
         ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
         ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
@@ -12607,7 +13385,7 @@ CONTAINS
         ! Since the final value of the diagonal entry
         !    c_i,i = ca * a_i,i + cb * b_i,i
         ! is updated step-by-step, set the diagonal entry to zero
-        DaC(idiagC) = 0
+        DaC(:,idiagC) = 0._DP
         
         ! For each row IEQ loop over the columns of matrix A and B
         ! simultaneously and collect the corresponding matrix entries
@@ -12636,21 +13414,21 @@ CONTAINS
           
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
-              DaC(idiagC)=cA*DaA(ildA)+cB*FaB(ildB)
+              DaC(:,idiagC)=cA*DaA(:,ildA)+cB*FaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
             ELSE
 
               ! 2. Case: For matrix A the diagonal entry has been
               ! reached. Hence, skip matrix B.
-              DaC(idiagC)=DaC(idiagC)+cA*DaA(ildA)
+              DaC(:,idiagC)=DaC(:,idiagC)+cA*DaA(:,ildA)
               ildA = ildA+1
             END IF
           ELSEIF (icolB == ieq) THEN
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
-            DaC(idiagC)=DaC(idiagC)+cB*FaB(ildB)
+            DaC(:,idiagC)=DaC(:,idiagC)+cB*FaB(:,ildB)
             ildB = ildB+1
 
           ELSE
@@ -12675,10 +13453,10 @@ CONTAINS
               DO ildC=ildc,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cA*DaA(ildA)+cB*FaB(ildB)
+              DaC(:,ildC)=cA*DaA(:,ildA)+cB*FaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
               ildC = ildC+1
@@ -12691,10 +13469,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cA*DaA(ildA)
+              DaC(:,ildC)=cA*DaA(:,ildA)
               ildA = ildA+1
               ildC = ildC+1
               
@@ -12706,10 +13484,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolB) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cB*FaB(ildB)
+              DaC(:,ildC)=cB*FaB(:,ildB)
               ildB = ildB+1
               ildC = ildC+1
 
@@ -12725,9 +13503,9 @@ CONTAINS
         ! remainder of C needs to be nullified by hand
         IF (ildC <= ildendC) THEN
           IF (KcolC(ildC) == ieq) THEN
-            DaC(ildC+1:1:ildendC) = 0
+            DaC(:,ildC+1:1:ildendC) = 0._DP
           ELSE
-            DaC(ildC:1:ildendC) = 0
+            DaC(:,ildC:1:ildendC)   = 0._DP
           END IF
         END IF
       END DO
@@ -12751,23 +13529,25 @@ CONTAINS
     ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
     ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_sngldble(neq,ncols,KldA&
-        &,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
+    SUBROUTINE do_mat79mat79add_numb_sngldble(isizeIntl,neq,ncols,&
+        KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
+      INTEGER, INTENT(IN)                            :: isizeIntl
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
-      REAL(DP), INTENT(IN) :: cA,cB
-      REAL(SP), DIMENSION(:), INTENT(IN) :: FaA
-      REAL(DP), DIMENSION(:), INTENT(IN) :: DaB
-      REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC
-      
-      INTEGER :: ieq,ildA,ildB,ildC,ildendA,ildendB,ildendC,icolA&
-          &,icolB,icolC,idiagC
+      REAL(DP), INTENT(IN)                           :: cA,cB
+      REAL(SP), DIMENSION(isizeIntl,*), INTENT(IN)   :: FaA
+      REAL(DP), DIMENSION(isizeIntl,*), INTENT(IN)   :: DaB
+      REAL(DP), DIMENSION(isizeIntl,*), INTENT(INOUT):: DaC
 
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      INTEGER(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
+      
       ! Loop over all ROWS
       DO ieq=1,neq
-                        
+        
         ! Initialize column pointers for matrix A, B and C
         ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
         ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
@@ -12779,7 +13559,7 @@ CONTAINS
         ! Since the final value of the diagonal entry
         !    c_i,i = ca * a_i,i + cb * b_i,i
         ! is updated step-by-step, set the diagonal entry to zero
-        DaC(idiagC) = 0
+        DaC(:,idiagC) = 0._DP
         
         ! For each row IEQ loop over the columns of matrix A and B
         ! simultaneously and collect the corresponding matrix entries
@@ -12808,21 +13588,21 @@ CONTAINS
           
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
-              DaC(idiagC)=cA*FaA(ildA)+cB*DaB(ildB)
+              DaC(:,idiagC)=cA*FaA(:,ildA)+cB*DaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
             ELSE
 
               ! 2. Case: For matrix A the diagonal entry has been
               ! reached. Hence, skip matrix B.
-              DaC(idiagC)=DaC(idiagC)+cA*FaA(ildA)
+              DaC(:,idiagC)=DaC(:,idiagC)+cA*FaA(:,ildA)
               ildA = ildA+1
             END IF
           ELSEIF (icolB == ieq) THEN
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
-            DaC(idiagC)=DaC(idiagC)+cB*DaB(ildB)
+            DaC(:,idiagC)=DaC(:,idiagC)+cB*DaB(:,ildB)
             ildB = ildB+1
 
           ELSE
@@ -12847,10 +13627,10 @@ CONTAINS
               DO ildC=ildc,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cA*FaA(ildA)+cB*DaB(ildB)
+              DaC(:,ildC)=cA*FaA(:,ildA)+cB*DaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
               ildC = ildC+1
@@ -12863,10 +13643,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cA*FaA(ildA)
+              DaC(:,ildC)=cA*FaA(:,ildA)
               ildA = ildA+1
               ildC = ildC+1
               
@@ -12878,10 +13658,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolB) EXIT
-                IF (icolC /= ieq) DaC(ildC) = 0
+                IF (icolC /= ieq) DaC(:,ildC) = 0._DP
               END DO
 
-              DaC(ildC)=cB*DaB(ildB)
+              DaC(:,ildC)=cB*DaB(:,ildB)
               ildB = ildB+1
               ildC = ildC+1
 
@@ -12897,9 +13677,9 @@ CONTAINS
         ! remainder of C needs to be nullified by hand
         IF (ildC <= ildendC) THEN
           IF (KcolC(ildC) == ieq) THEN
-            DaC(ildC+1:1:ildendC) = 0
+            DaC(:,ildC+1:1:ildendC) = 0._DP
           ELSE
-            DaC(ildC:1:ildendC) = 0
+            DaC(:,ildC:1:ildendC)   = 0._DP
           END IF
         END IF
       END DO
@@ -12923,23 +13703,25 @@ CONTAINS
     ! format CSR7 then KDIAGC corresponds to KLDC(1:NEQ). If matrix C
     ! is stored in format CSR9 then KDIAGC corresponds to KDIAGONALC.
 
-    SUBROUTINE do_mat79mat79add_numb_snglsngl(neq,ncols,KldA&
-        &,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,FaC)
+    SUBROUTINE do_mat79mat79add_numb_snglsngl(isizeIntl,neq,ncols,&
+        KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,FaC)
       
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER(PREC_DOFIDX), INTENT(IN)               :: neq,ncols
+      INTEGER, INTENT(IN)                            :: isizeIntl
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB,KldC,KdiagC
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB,KcolC
-      REAL(DP), INTENT(IN) :: cA,cB
-      REAL(SP), DIMENSION(:), INTENT(IN) :: FaA
-      REAL(SP), DIMENSION(:), INTENT(IN) :: FaB
-      REAL(SP), DIMENSION(:), INTENT(INOUT) :: FaC
+      REAL(DP), INTENT(IN)                           :: cA,cB
+      REAL(SP), DIMENSION(isizeIntl,*), INTENT(IN)   :: FaA
+      REAL(SP), DIMENSION(isizeIntl,*), INTENT(IN)   :: FaB
+      REAL(SP), DIMENSION(isizeIntl,*), INTENT(INOUT):: FaC
       
-      INTEGER :: ieq,ildA,ildB,ildC,ildendA,ildendB,ildendC,icolA&
-          &,icolB,icolC,idiagC
-
+      INTEGER(PREC_DOFIDX) :: ieq
+      INTEGER(PREC_VECIDX) :: ildA,ildB,ildC,ildendA,ildendB,ildendC
+      INTEGER(PREC_MATIDX) :: icolA,icolB,icolC,idiagC
+      
       ! Loop over all ROWS
       DO ieq=1,neq
-                        
+        
         ! Initialize column pointers for matrix A, B and C
         ildA=KldA(ieq); ildendA=KldA(ieq+1)-1
         ildB=KldB(ieq); ildendB=KldB(ieq+1)-1
@@ -12951,7 +13733,7 @@ CONTAINS
         ! Since the final value of the diagonal entry
         !    c_i,i = ca * a_i,i + cb * b_i,i
         ! is updated step-by-step, set the diagonal entry to zero
-        FaC(idiagC) = 0
+        FaC(:,idiagC) = 0._SP
         
         ! For each row IEQ loop over the columns of matrix A and B
         ! simultaneously and collect the corresponding matrix entries
@@ -12980,21 +13762,21 @@ CONTAINS
           
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
-              FaC(idiagC)=cA*FaA(ildA)+cB*FaB(ildB)
+              FaC(:,idiagC)=cA*FaA(:,ildA)+cB*FaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
             ELSE
 
               ! 2. Case: For matrix A the diagonal entry has been
               ! reached. Hence, skip matrix B.
-              FaC(idiagC)=FaC(idiagC)+cA*FaA(ildA)
+              FaC(:,idiagC)=FaC(:,idiagC)+cA*FaA(:,ildA)
               ildA = ildA+1
             END IF
           ELSEIF (icolB == ieq) THEN
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
-            FaC(idiagC)=FaC(idiagC)+cB*FaB(ildB)
+            FaC(:,idiagC)=FaC(:,idiagC)+cB*FaB(:,ildB)
             ildB = ildB+1
 
           ELSE
@@ -13019,10 +13801,10 @@ CONTAINS
               DO ildC=ildc,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) FaC(ildC) = 0
+                IF (icolC /= ieq) FaC(:,ildC) = 0._SP
               END DO
 
-              FaC(ildC)=cA*FaA(ildA)+cB*FaB(ildB)
+              FaC(:,ildC)=cA*FaA(:,ildA)+cB*FaB(:,ildB)
               ildA = ildA+1
               ildB = ildB+1
               ildC = ildC+1
@@ -13035,10 +13817,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolA) EXIT
-                IF (icolC /= ieq) FaC(ildC) = 0
+                IF (icolC /= ieq) FaC(:,ildC) = 0._SP
               END DO
 
-              FaC(ildC)=cA*FaA(ildA)
+              FaC(:,ildC)=cA*FaA(:,ildA)
               ildA = ildA+1
               ildC = ildC+1
               
@@ -13050,10 +13832,10 @@ CONTAINS
               DO ildC=ildC,ildendC
                 icolC=KcolC(ildC)
                 IF (icolC == icolB) EXIT
-                IF (icolC /= ieq) FaC(ildC) = 0
+                IF (icolC /= ieq) FaC(:,ildC) = 0._SP
               END DO
 
-              FaC(ildC)=cB*FaB(ildB)
+              FaC(:,ildC)=cB*FaB(:,ildB)
               ildB = ildB+1
               ildC = ildC+1
 
@@ -13069,9 +13851,9 @@ CONTAINS
         ! remainder of C needs to be nullified by hand
         IF (ildC <= ildendC) THEN
           IF (KcolC(ildC) == ieq) THEN
-            FaC(ildC+1:1:ildendC) = 0
+            FaC(:,ildC+1:1:ildendC) = 0._SP
           ELSE
-            FaC(ildC:1:ildendC) = 0
+            FaC(:,ildC:1:ildendC)   = 0._SP
           END IF
         END IF
       END DO
@@ -13112,4 +13894,32 @@ CONTAINS
     WRITE(*,FMT='(A,1X,I4)') 'h_Kdiagonal             =',rmatrix%h_Kdiagonal
     WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoMatrix
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_infoVector(rvector)
+
+!<description>
+    ! This subroutine outputs information about the vector
+!</description>
+
+!<input>
+    ! scalar vector
+    TYPE(t_vectorScalar), INTENT(IN) :: rvector
+!</input>
+!</subroutine>
+
+    WRITE(*,FMT='(A)')       '-------------------------'
+    WRITE(*,FMT='(A,1X,I2)') 'cdataType               =',rvector%cdataType
+    WRITE(*,FMT='(A,1X,I8)') 'NEQ                     =',rvector%NEQ
+    WRITE(*,FMT='(A,1X,I4)') 'NVAR                    =',rvector%NVAR
+    WRITE(*,FMT='(A,1X,I2)') 'isortStrategy           =',rvector%isortStrategy
+    WRITE(*,FMT='(A,1X,I4)') 'h_IsortPermutation      =',rvector%h_IsortPermutation
+    WRITE(*,FMT='(A,1X,I2)') 'cdataType               =',rvector%cdataType
+    WRITE(*,FMT='(A,1X,I4)') 'h_Ddata                 =',rvector%h_Ddata
+    WRITE(*,FMT='(A,1X,I8)') 'iidxFirstEntry          =',rvector%iidxFirstEntry
+    WRITE(*,FMT='(A)')       '-------------------------'
+  END SUBROUTINE lsyssc_infoVector
 END MODULE

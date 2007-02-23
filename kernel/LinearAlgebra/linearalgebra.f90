@@ -684,6 +684,81 @@ CONTAINS
   ENDIF
   
   END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lalg_vectorLinearCombSnglDble (Fx,Dy,scx,dcy)
+  
+!<description>
+  ! Performs a linear combination: Dy = scx * Fx  +  dcy * Dy
+!</description>
+
+!<input>
+  
+  ! First source vector
+  REAL(SP), DIMENSION(:), INTENT(IN) :: Fx
+  
+  ! Scaling factor for Dx
+  REAL(SP), INTENT(IN)               :: scx
+
+  ! Scaling factor for Dy
+  REAL(DP), INTENT(IN)               :: dcy
+  
+!</input>
+
+!<inputoutput>
+  
+  ! Second source vector; also receives the result
+  REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dy
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  REAL(DP) :: c
+  
+  IF (dcy .EQ. 0.0_DP) THEN
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
+    DO i=1,SIZE(Fx)
+      Dy(i) = Fx(i)
+    END DO
+!$omp  end parallel do
+    IF (scx .NE. 1.0_SP) THEN
+!$omp  parallel do &
+!$omp& default(shared) & 
+!$omp& private(i)
+      DO i=1,SIZE(Fx)
+        Dy(i) = scx*Fx(i)
+      END DO
+!$omp  end parallel do
+    END IF
+  ELSE IF (dcy .EQ. 1.0_DP) THEN
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
+    DO i=1,SIZE(Fx)
+      Dy(i) = Dy(i) + scx*Fx(i)
+    END DO
+!$omp  end parallel do
+  ELSE
+    c=scx/dcy
+!$omp  parallel do &
+!$omp& default(shared) &
+!$omp& private(i)
+    DO i=1,SIZE(Fx)
+      Dy(i) = Dy(i) + c*Fx(i)
+    END DO
+!$omp  end parallel do
+    CALL DSCAL(SIZE(Dy),dcy,Dy,1)
+  ENDIF
+  
+  END SUBROUTINE
   
   ! ***************************************************************************
 
