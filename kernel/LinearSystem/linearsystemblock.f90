@@ -107,6 +107,9 @@
 !#
 !# 30.) lsysbl_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
+!#
+!# 31.) lsysbl_swapVectors
+!#      -> Swap two vectors
 !# </purpose>
 !##############################################################################
 
@@ -2546,4 +2549,62 @@ CONTAINS
   lsysbl_isVectorSorted = k .GT. 0
 
   END FUNCTION
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_swapVectors(rvector1,rvector2)
+
+!<description>
+    ! This subroutine swaps two vectors
+!</description>
+
+!<inputoutput>
+    ! first block vector
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector1
+
+    ! second block vector
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rvector2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_vectorBlock) :: rvector
+    INTEGER :: iblock
+
+    ! Vcetor1 -> Vector
+    rvector = rvector1
+    rvector%p_rblockDiscretisation => rvector1%p_rblockDiscretisation
+    rvector%p_rdiscreteBC          => rvector1%p_rdiscreteBC
+    rvector%p_rdiscreteBCfict      => rvector1%p_rdiscreteBCfict
+    DO iblock=1,rvector%nblocks
+      rvector1%RvectorBlock(iblock)=rvector%RvectorBlock(iblock)
+      rvector1%RvectorBlock(iblock)%p_rspatialDiscretisation =>&
+          rvector%RvectorBlock(iblock)%p_rspatialDiscretisation
+    END DO
+
+    ! Vector2 -> Vector1
+    rvector1 = rvector2
+    rvector1%p_rblockDiscretisation => rvector2%p_rblockDiscretisation
+    rvector1%p_rdiscreteBC          => rvector2%p_rdiscreteBC
+    rvector1%p_rdiscreteBCfict      => rvector2%p_rdiscreteBCfict
+    DO iblock=1,rvector1%nblocks
+      rvector1%RvectorBlock(iblock)=rvector2%RvectorBlock(iblock)
+      rvector1%RvectorBlock(iblock)%p_rspatialDiscretisation =>&
+          rvector2%RvectorBlock(iblock)%p_rspatialDiscretisation
+    END DO
+
+    ! Vector -> Vector2
+    rvector2 = rvector2
+    rvector2%p_rblockDiscretisation => rvector%p_rblockDiscretisation
+    rvector2%p_rdiscreteBC          => rvector%p_rdiscreteBC
+    rvector2%p_rdiscreteBCfict      => rvector%p_rdiscreteBCfict
+    DO iblock=1,rvector2%nblocks
+      rvector2%RvectorBlock(iblock)=rvector%RvectorBlock(iblock)
+      rvector2%RvectorBlock(iblock)%p_rspatialDiscretisation =>&
+          rvector%RvectorBlock(iblock)%p_rspatialDiscretisation
+    END DO
+  END SUBROUTINE lsysbl_swapVectors
+
 END MODULE

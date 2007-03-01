@@ -127,6 +127,9 @@
 !# 34.) lsyssc_matrixLinearComb
 !#      -> Adds two matrices
 !#
+!# 35. lsyssc_swapVectors
+!#      -> Swap two vectors
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -13859,6 +13862,38 @@ CONTAINS
       END DO
     END SUBROUTINE do_mat79mat79add_numb_snglsngl
   END SUBROUTINE lsyssc_matrixLinearComb
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_swapVectors(rvector1,rvector2)
+
+!<description>
+    ! This subroutine swaps the content of two different vectors
+!</description>
+
+!<inputoutput>
+    ! first scalar vector
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector1
+
+    ! second scalar vector
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rvector2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_vectorScalar) :: rvector
+
+    rvector  = rvector1
+    rvector%p_rspatialDiscretisation => rvector1%p_rspatialDiscretisation
+    
+    rvector1 = rvector2
+    rvector1%p_rspatialDiscretisation => rvector2%p_rspatialDiscretisation
+    
+    rvector2 = rvector
+    rvector2%p_rspatialDiscretisation => rvector%p_rspatialDiscretisation
+  END SUBROUTINE lsyssc_swapVectors
 
   ! ***************************************************************************
 
