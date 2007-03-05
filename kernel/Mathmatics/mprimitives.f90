@@ -21,6 +21,13 @@
 !#
 !# 3.) mprim_kronecker
 !#     -> Compute Kronecker delta symbol
+!#
+!# 4.) mprim_invert4x4MatrixDirectDble
+!#     -> Inverts a 4x4 matrix directly without pivoting.
+!#
+!# 5.) mprim_invertMatrixPivotDble
+!#     -> Inverts a 4x4 matrix directly with pivoting.
+!# 
 !# </purpose>
 !##############################################################################
 
