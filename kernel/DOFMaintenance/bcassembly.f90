@@ -1006,7 +1006,7 @@ CONTAINS
         ieltype = p_ItrialElements(p_IelementsAtBoundary(I))
       END IF
       
-      SELECT CASE (ieltype)
+      SELECT CASE (elem_getPrimaryElement(ieltype))
       
       CASE (EL_P0,EL_Q0)
         ! Nice element, only one DOF :-)
@@ -1142,42 +1142,53 @@ CONTAINS
         Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1) = &
             -ABS(Idofs(1,isubsetstart+I-Iminidx(ipart)+1))
         
-      CASE (EL_EM30,EL_E030)
-
-        ! Edge inside? -> Calculate integral mean value over the edge
-        IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
-          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
-            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
-                                    iedge,p_DedgeParameterValue(I), &
-                                    p_rcollection, Dvalues)
-                                    
-            ! Save the computed function value
-            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
-          END IF
-          
-          ! Set the DOF number < 0 to indicate that it is Dirichlet
-          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
-        END IF
+      CASE (EL_Q1T)
+      
+        ! The Q1T-element has different variants. Check which variant we have
+        ! and choose the right way to calculate boundary values.
+      
+        IF (IAND(ieltype,2**16) .NE. 0) THEN
         
-      CASE (EL_EM31,EL_E031)
+          ! Integral mean value based element.
+          !
+          ! Edge inside? -> Calculate integral mean value over the edge
+          IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
+            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+              CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                      rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                      iedge,p_DedgeParameterValue(I), &
+                                      p_rcollection, Dvalues)
+                                      
+              ! Save the computed function value
+              DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+            END IF
 
-        ! Edge inside? -> Calculate point value on midpoint of edge iedge
-        IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
-          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
-            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
-                                    iedge,p_DedgeParameterValue(I), &
-                                    p_rcollection, Dvalues)
-                                    
-            ! Save the computed function value
-            DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
           END IF
+
+        ELSE
           
-          ! Set the DOF number < 0 to indicate that it is Dirichlet
-          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          ! Edge midpoint based element.
+          !
+          ! Edge inside? -> Calculate point value on midpoint of edge iedge
+          IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
+            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+              CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                      rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
+                                      iedge,p_DedgeParameterValue(I), &
+                                      p_rcollection, Dvalues)
+                                      
+              ! Save the computed function value
+              DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+            END IF
+            
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          END IF
+
         END IF
         
       CASE DEFAULT
@@ -1369,8 +1380,7 @@ CONTAINS
   END IF
 
   ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-  IF ((ieltype .NE. EL_E030) .AND. (ieltype .NE. EL_E031) .AND. &
-      (ieltype .NE. EL_EM30) .AND. (ieltype .NE. EL_E031)) THEN
+  IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
     PRINT *,'Discrete pressure drop boundary conditions currently only supported'
     PRINT *,'for Q1~ element!'
     STOP
@@ -1633,8 +1643,7 @@ CONTAINS
   END IF
 
   ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-  IF ((ieltype .NE. EL_E030) .AND. (ieltype .NE. EL_E031) .AND. &
-      (ieltype .NE. EL_EM30) .AND. (ieltype .NE. EL_E031)) THEN
+  IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
     PRINT *,'Discrete Slip boundary conditions currently only supported'
     PRINT *,'for Q1~ element!'
     STOP
@@ -2264,10 +2273,7 @@ CONTAINS
     END IF
     
     ! Calculate values in the edge midpoints / / integral mean values for Q1~
-    IF ((ieltype .EQ. EL_E031) .OR. &
-        (ieltype .EQ. EL_EM31) .OR. &
-        (ieltype .EQ. EL_E030) .OR. &
-        (ieltype .EQ. EL_EM30)) THEN
+    IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
     
       ! Let's start to collect values. This is a rather element-dependent
       ! part. At first, loop through the vertices in case we have a

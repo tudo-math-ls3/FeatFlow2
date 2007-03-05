@@ -46,19 +46,23 @@
 !#     -> Determine the type of transformation from the reference element
 !#        to the real element.\\
 !#
-!# 5.) elem_isnonparametric
+!# 5.) elem_isNonparametric
 !#     -> Check whether an element is parametric or nonparametric\\
 !#
-!# 6.) elem_generic 
+!# 5.) elem_getPrimaryElement
+!#     -> Returns the element identifier of the 'primary' element without
+!#        any subtype information, which identifies an element family.\\
+!#
+!# 7.) elem_generic 
 !#     -> Realises a generic element which can be used to evaluate a finite 
 !#        element depending on its element identifier - in contrast to the 
 !#        standard evaluation routines, which ignore the element quantifier 
 !#        as they 'know' what they are...\\
 !#
-!# 7.) elem_generic_mult
+!# 8.) elem_generic_mult
 !#     -> The multiple-point-evaluation routine for a generic element.\\
 !#
-!# 8.) elem_generic_sim
+!# 9.) elem_generic_sim
 !#     -> The multiple-point/element-evaluation routine for a generic element.
 !#
 !#
@@ -101,6 +105,86 @@
 !#   An "element" in the sense of this library focuses on one single
 !#   polygon, not on the whole patch.
 !#
+!# 2.) What does the variable 'ieltyp' mean, which must be passed to
+!#   the element subroutines?
+!#
+!#   This variable identifies the type of the element. For example
+!#   ieltyp=EL_Q1 identifies a Q1-element.
+!#
+!# 3.) I wrote a subroutine which works for a special element family. More 
+!#   precisely for example, my routine works for all variants of $\tilde Q_1$.
+!#   Do I really have to check all element types at the beginning of the
+!#   routine? That would be legthy!?! Like in
+!#
+!#    SUBROUTINE abc (ieltype)
+!#    ...
+!#      IF ( (ieltype .NE. EL_E030) .AND. (ieltype .NE. EL_EM30) ...) THEN
+!#        STOP
+!#      END IF
+!#
+!#   No you don't need to. The simplest method for such element families:
+!#   Use elem_getPrimaryElement! This returns an element identifier
+!#   identifying all elements 'of the same type'. The above can be
+!#   shortened this way to:
+!#
+!#    SUBROUTINE abc (ieltype)
+!#    ...
+!#      IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
+!#        STOP
+!#      END IF
+!#
+!#   Which directly describes all $\tilde Q_1$ elements. If you additionally
+!#   want to check it whether it is parametric/nonparametric, use an
+!#   additional check with elem_isNonparametric!
+!#
+!#   Of course, for 'standard' elements, elem_getPrimaryElement does nothing.
+!#   So writing for $Q_1$ for example,
+!#
+!#      IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1) THEN
+!#
+!#   is exactly the same as
+!#
+!#      IF (ieltype .NE. EL_Q1) THEN
+!#
+!#   but the first version is cleaner :-)
+!#
+!# 4.) How is this thing with the 'primary' element realised? I mean, for example, 
+!#   EL_EM30 is defined as EL_EM30=EL_Q1T+2**8!?! What does this mean?
+!#
+!#   The element constants follow a special pattern oriented on a bitfield to 
+!#   encode as much information into an integer as possible.
+!#   Every element identifier consists of a 32 bit integer, which is coded as
+!#   follows:
+!#
+!#% Bit | 31 ... 24 23 ... 16 | 15 ... 12 | 11  10 |  8                |7 ............ 0|
+!#% -------------------------------------------------------------------------------------
+!#%     |         ****        | unused    | dimens | =1: nonparametric | Element number |
+!#
+!#   Bits 0..7   specifies the element number/family (1=P1, 11=Q1,...).
+!#   Bit     8   specifies whether an element is nonparametric (1) or parametric (1).
+!#   Bits 9+10   encodes the dimension of the element. =0: 2D, =1: 3D, =2: 1D.
+!#   Bits 16..31 encodes special variants of elements. This is used only for some special
+!#               type elements:
+!#               Q1T: Bit 16 =1: element nonconformal, integral mean value based, 
+!#                           =0: element conformal, midpoint value based
+!#                    Bit 17:=0: Standard handling
+!#                           =1: For nonparametric element: Don't use pivoting when 
+!#                               solving local 4x4 systems; faster but less stable on 
+!#                               cruel elements.
+!#
+!#   To obtain the actual element identifier, one must mask out all bits 
+!#   except for bit 0..7, i.e. to check whether an element is Q1~, one can use
+!#   elem_getPrimaryElement, which masks out all unimportant bits with IAND:
+!#
+!#     if ( elem_getPrimaryElement(ieltype) .EQ. EL_Q1T ) then ...
+!#
+!#   or to check all variants
+!#
+!#     if ( (ieltype .eq. EL_E030) .OR. (ieltype .eq. EL_EM30). OR. ...) then ...
+!# 
+!#   When it's clear that it's a $\tilde Q_1$ element, one can have a closer
+!#   look which variant it is -- if this is necessary.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -110,6 +194,7 @@ MODULE element
   USE basicgeometry
   USE derivatives
   USE transformation
+  USE mprimitives
 
   IMPLICIT NONE
   
@@ -117,74 +202,88 @@ MODULE element
 !<constantblock description="Element identifiers for 2D elements">
 
   ! unspecified element
-  INTEGER, PARAMETER :: EL_UNDEFINED = -1
+  INTEGER(I32), PARAMETER :: EL_UNDEFINED = -1
 
   ! ID of bilinear conforming triangular FE, P0 (just for the FEAST-users...)
-  INTEGER, PARAMETER :: EL_P0   = 0
+  INTEGER(I32), PARAMETER :: EL_P0   = 0
 
   ! ID of bilinear conforming triangular FE, P0
-  INTEGER, PARAMETER :: EL_E000 = 0
+  INTEGER(I32), PARAMETER :: EL_E000 = 0
 
   ! ID of bilinear conforming triangular FE, P1 (just for the FEAST-users...)
-  INTEGER, PARAMETER :: EL_P1   = 1
+  INTEGER(I32), PARAMETER :: EL_P1   = 1
 
   ! ID of bilinear conforming triangular FE, P1 
-  INTEGER, PARAMETER :: EL_E001 = 1
+  INTEGER(I32), PARAMETER :: EL_E001 = 1
 
   ! ID of bilinear conforming triangular FE, P2 (just for the FEAST-users...)
-  INTEGER, PARAMETER :: EL_P2   = 2
+  INTEGER(I32), PARAMETER :: EL_P2   = 2
 
   ! ID of bilinear conforming triangular FE, P2 
-  INTEGER, PARAMETER :: EL_E002 = 2
+  INTEGER(I32), PARAMETER :: EL_E002 = 2
 
   ! ID of bilinear conforming triangular FE, P3 (just for the FEAST-users...)
-  INTEGER, PARAMETER :: EL_P3   = 3
+  INTEGER(I32), PARAMETER :: EL_P3   = 3
 
   ! ID of bilinear conforming triangular FE, P3
-  INTEGER, PARAMETER :: EL_E003 = 3
+  INTEGER(I32), PARAMETER :: EL_E003 = 3
 
   ! ID of bilinear conforming triangular FE, Q0 (just for the FEAST-users...)
-  INTEGER, PARAMETER :: EL_Q0   = 10
+  INTEGER(I32), PARAMETER :: EL_Q0   = 10
 
   ! ID of bilinear conforming triangular FE, Q0
-  INTEGER, PARAMETER :: EL_E010 = 10
+  INTEGER(I32), PARAMETER :: EL_E010 = 10
 
   ! ID of bilinear conforming quadrilateral FE, Q1 (just for the FEAST-users...)
-  INTEGER, PARAMETER :: EL_Q1   = 11
+  INTEGER(I32), PARAMETER :: EL_Q1   = 11
 
   ! ID of bilinear conforming quadrilateral FE, Q1 
-  INTEGER, PARAMETER :: EL_E011 = 11 
+  INTEGER(I32), PARAMETER :: EL_E011 = 11 
 
   ! ID of biquadratic conforming quadrilateral FE, Q2 (just for the FEAST-users...)
-  INTEGER, PARAMETER :: EL_Q2   = 13
+  INTEGER(I32), PARAMETER :: EL_Q2   = 13
 
   ! ID of biquadratic conforming quadrilateral FE, Q2 
-  INTEGER, PARAMETER :: EL_E013 = 13
+  INTEGER(I32), PARAMETER :: EL_E013 = 13
 
   ! ID of bicubic conforming quadrilateral FE, Q3 (just for the FEAT-users...)
-  INTEGER, PARAMETER :: EL_Q3   = 14
+  INTEGER(I32), PARAMETER :: EL_Q3   = 14
 
   ! ID of biquadratic conforming quadrilateral FE, Q3 
-  INTEGER, PARAMETER :: EL_E014 = 14
+  INTEGER(I32), PARAMETER :: EL_E014 = 14
   
   ! ID of nonconforming parametric linear P1 element on a quadrilareral
   ! element, given by function value in the midpoint and the two
   ! derivatives.
-  INTEGER, PARAMETER :: EL_QP1  = 21
+  INTEGER(I32), PARAMETER :: EL_QP1  = 21
 
-  ! ID of biquadratic conforming quadrilateral FE, Q1~, integral
+  ! General rotated bilinear $\tilde Q1$ element, all variants (conformal, 
+  ! nonconformal, parametric, nonparametric).
+  ! Simplest variant is: parametric, edge midpoint-value based.
+  INTEGER(I32), PARAMETER :: EL_Q1T  = 30
+
+!</constantblock>
+
+!<constantblock description="Special element variants.">
+
+  ! ID of rotated bilinear conforming quadrilateral FE, Q1~, integral
   ! mean value based
-  INTEGER, PARAMETER :: EL_E030 = 30
+  INTEGER(I32), PARAMETER :: EL_E030 = EL_Q1T + 2**16
 
-  ! ID of biquadratic conforming quadrilateral FE, Q1~, edge-midpoint based
-  INTEGER, PARAMETER :: EL_E031 = 31
+  ! ID of rotated bilinear conforming quadrilateral FE, Q1~, edge-midpoint based
+  INTEGER(I32), PARAMETER :: EL_E031 = EL_Q1T
 
-  ! ID of biquadratic nonconforming quadrilateral FE, Q1~, integral
+  ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
   ! mean value based
-  INTEGER, PARAMETER :: EL_EM30 = -30
+  INTEGER(I32), PARAMETER :: EL_EM30 = EL_Q1T + 2**16 + 2**8
 
-  ! ID of biquadratic nonconforming quadrilateral FE, Q1~, edge-midpoint based
-  INTEGER, PARAMETER :: EL_EM31 = -31
+  ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, integral
+  ! mean value based; 'unpivoted' variant, solving local 4x4 systems directly 
+  ! without pivoting. Faster but less stable.
+  INTEGER(I32), PARAMETER :: EL_EM30_UNPIVOTED = EL_Q1T + 2**17 + 2**16 + 2**8
+
+  ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
+  INTEGER(I32), PARAMETER :: EL_EM31 = EL_Q1T + 2**8
 
 !</constantblock>
 
@@ -243,7 +342,7 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (ieltype)
+  SELECT CASE (elem_getPrimaryElement(ieltype))
   CASE (EL_P0, EL_Q0)
     ! local DOF's for Q0
     elem_igetNDofLoc = 1
@@ -268,7 +367,7 @@ CONTAINS
   CASE (EL_QP1)
     ! local DOF's for QP1
     elem_igetNDofLoc = 3
-  CASE (EL_E030, EL_E031, EL_EM30, EL_EM31)
+  CASE (EL_Q1T)
     ! local DOF's for Ex30
     elem_igetNDofLoc = 4
   CASE DEFAULT
@@ -309,7 +408,7 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (ieltype)
+  SELECT CASE (elem_getPrimaryElement(ieltype))
   CASE (EL_P0, EL_Q0)
     ! local DOF's for Q0
     ndofAtVertices = 0
@@ -350,7 +449,7 @@ CONTAINS
     ndofAtVertices = 0
     ndofAtEdges    = 0
     ndofAtElement  = 3
-  CASE (EL_E030, EL_E031, EL_EM30, EL_EM31)
+  CASE (EL_Q1T)
     ! local DOF's for Ex30
     ndofAtVertices = 0
     ndofAtEdges    = 4
@@ -389,11 +488,10 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (ieltype)
+  SELECT CASE (elem_getPrimaryElement(ieltype))
   CASE (EL_P0,EL_P1,EL_P2,EL_P3)
     elem_igetNVE = 3
-  CASE (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1, &
-        EL_E030, EL_E031, EL_EM30, EL_EM31)
+  CASE (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1, EL_Q1T)
     elem_igetNVE = 4
   CASE DEFAULT
     elem_igetNVE = 0
@@ -430,15 +528,15 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (ieltype)
+  SELECT CASE (IAND(ieltype,255+2**8))
   CASE (EL_P0,EL_P1,EL_P2,EL_P3)
     ! Triangular elements work in barycentric coordinates
     elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
-  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_E030, EL_E031)
+  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T)
     ! These work on the reference quadrilateral
     elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
-  CASE (EL_EM30, EL_EM31)
-    ! These work in real coordinates
+  CASE (EL_Q1T+2**8)
+    ! EM30, EM31; these work in real coordinates
     elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
   CASE DEFAULT
     elem_igetCoordSystem = TRAFO_CS_UNDEFINED
@@ -471,11 +569,11 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (ieltype)
+  SELECT CASE (elem_getPrimaryElement(ieltype))
   CASE (EL_P0, EL_P1, EL_P2, EL_P3)
     ! Linear triangular transformation
     elem_igetTrafoType = TRAFO_IDLINTRI
-  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_E030, EL_E031, EL_EM30, EL_EM31)
+  CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T)
     ! Bilinear quadrilateral transformation
     elem_igetTrafoType = TRAFO_IDBILINQUAD
   CASE DEFAULT
@@ -510,7 +608,7 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (ieltype)
+  SELECT CASE (elem_getPrimaryElement(ieltype))
   CASE (EL_P0, EL_Q0)
     ! Function + 1st derivative
     elem_getMaxDerivative = 1
@@ -535,7 +633,7 @@ CONTAINS
   CASE (EL_QP1)
     ! Function + 1st derivative
     elem_getMaxDerivative = 3
-  CASE (EL_E030, EL_E031, EL_EM30, EL_EM31)
+  CASE (EL_Q1T)
     ! Function + 1st derivative
     elem_getMaxDerivative = 3
   CASE DEFAULT
@@ -635,8 +733,10 @@ CONTAINS
     CALL elem_Q2 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE (EL_QP1)
     CALL elem_QP1 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-  CASE (EL_EM30)
+  CASE (EL_EM30,EL_EM30_UNPIVOTED)
     CALL elem_EM30 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+  CASE (EL_E030)
+    CALL elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
   CASE DEFAULT
     ! Element not implemened!
     ! Thow a floating point exception so that the program stops here!
@@ -726,8 +826,10 @@ CONTAINS
     CALL elem_Q0_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE (EL_Q1)
     CALL elem_Q1_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-  CASE (EL_EM30)
+  CASE (EL_EM30,EL_EM30_UNPIVOTED)
     CALL elem_EM30_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+  CASE (EL_E030)
+    CALL elem_E030_mult (ieltyp, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
   CASE DEFAULT
     ! Compatibility handling: evaluate all points separately
     DO i=1,npoints
@@ -846,8 +948,11 @@ CONTAINS
   CASE (EL_Q2)
     CALL elem_Q2_sim (ieltyp, Dcoords, Djac, Ddetj, &
                       Bder, Dbas, npoints, nelements, Dpoints)
-  CASE (EL_EM30)
+  CASE (EL_EM30,EL_EM30_UNPIVOTED)
     CALL elem_EM30_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                        Bder, Dbas, npoints, nelements, Dpoints)
+  CASE (EL_E030)
+    CALL elem_E030_sim (ieltyp, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
   CASE DEFAULT
     ! Compatibility handling: evaluate on all elements separately
@@ -863,7 +968,7 @@ CONTAINS
   
 !<function>  
 
-  ELEMENTAL LOGICAL FUNCTION elem_isnonparametric (ieltyp) RESULT (inonpar)
+  ELEMENTAL LOGICAL FUNCTION elem_isNonparametric (ieltyp) RESULT (inonpar)
 
   !<description>
   
@@ -885,9 +990,142 @@ CONTAINS
  
 !</function>
  
-  inonpar = ieltyp .LT. -1
+    inonpar = IAND(ieltyp,2**8) .NE. 0
   
   END FUNCTION
+
+  !************************************************************************
+  
+!<function>  
+
+  ELEMENTAL INTEGER(I32) FUNCTION elem_getPrimaryElement (ieltyp) RESULT (iresult)
+
+!<description>
+  ! Determines the 'primary' element type identifier. For standard elements
+  ! like $Q_1$, there is usually ieltyp=elem_getPrimaryElement(ieltyp).
+  ! But some elements like $\tilde Q_1$ have different modifications,
+  ! which are encoded in ieltyp. In this case, elem_getPrimaryElement
+  ! returns the element identifier of the element without any
+  ! modification; this can be seen as 'standard' or 'primary' element
+  ! type.
+  ! In case of $\tilde Q_1$ for example, there is
+  !    elem_getPrimaryElement(EL_E030) = elem_getPrimaryElement(EL_EM30)
+  !  = elem_getPrimaryElement(EL_E031) = elem_getPrimaryElement(EL_EM31)
+  !  = EL_Q1T,
+  ! which identifies the 'general' $\tilde Q_1$ element.
+!</description>
+  
+!<result>
+  ! The identifier of the 'standard' element, ieltyp refers to.
+!</result>
+  
+  !<input>
+  
+  ! Element type qualifier.
+  INTEGER, INTENT(IN) :: ieltyp
+  
+  !</input>
+ 
+!</function>
+ 
+    ! To get the standard identifier, we just have to mask out all bits
+    ! except for bit 0..7. These 8 bits encode the standard element
+    ! identifier.
+    iresult = IAND(ieltyp,255)
+  
+  END FUNCTION
+
+!**************************************************************************
+! General information: Function values and derivatives of 
+!                      triangular elements
+!                      with linear transformation from the reference
+!                      to the real element.
+!
+! The element subroutines return
+! - the function value and
+! - the X- and Y-derivatives
+! of the basis function in a (cubature) point (x,y) on the real mesh!
+! The coordinates of a (cubature) point is given
+! - as coordinate triple (xi1, xi2, xi3) on the reference element, if the
+!   the element is parametric; the actual cubature point is then at
+!   (x,y) = s(t(xi1,xi2,xi3))
+! - as coordinate pair (x,y) on the real element, if the element is
+!   nonparametric.
+! The mapping  s=(s1,s2):R^2->R^2  is the bilinear mapping "sigma" from 
+! transformation.f90, that maps the reference element T^ to the real
+! element T; its shape is of no importance here.
+! The transformation t:R^3->R^2 maps the coordinates from the barycenric
+! coordinate system on the reference element to the standard space
+! (to get the (X,Y) coordinate on the reference element), so
+!
+!    t(xi1,xi2,xi3) = xi2 * [1,0]  +  xi3 * [0,1]
+!
+! The linear transformation s(.) from the reference to the real element
+! has the form
+!
+!    s(X,Y) = c1  +  c2 X  +  c3 Y  =:  (x,y)
+!
+! Let u be an arbitrary FE (basis) function on an element T and
+! p be the associated polynomial on the reference element T^. Then,
+! we can obtain the function value of u at (x,y) easily:
+!
+!   u(x,y) = u(s(t(xi1,xi2,xi3)) = p(t^-1(s^-1(x,y))) = p(xi1,xi2,xi3)
+!
+!   [0,1]
+!   | \               s(t(.))                C
+!   |   \           --------->              / \
+!   |  T^ \                               /     \
+!   |       \                           /    T    \
+!   [0,0]----[1,0]                     A-----------B
+!
+! The derivative is a little bit harder to calculate because of the
+! mapping. We have:
+!
+!    grad(u)(x,y) = grad( p(t^-1(s^-1(x,y))) )
+!
+! Let's use the notation 
+!
+!    P(X,Y)  :=  p( t^-1 (X,Y) )  =  p (xi1,xi2,xi3)
+!
+! which is the 'standard' form of the polynomials on the
+! reference element without barycentric coordinates involved (i.e.
+! for the P1-element it's of the form P(x,y) = c1 x + c2 y + c3).
+!
+! Because of the chain rule, we have:
+!
+!    grad( p( t^-1 (s^-1) ) ) = (DP)( (s^-1) * D(s^-1) )
+!
+!       = ( P_X(s^-1)  P_Y(s^-1)) * ( (s1^-1)_x   (s1^-1)_y )
+!                                   ( (s2^-1)_x   (s2^-1)_y )
+!
+!      =: ( P_X(s^-1)  P_Y(s^-1)) * ( e f )
+!                                   ( g h )
+!
+! With s^-1(x,y)=(X,Y), we therefore have:
+!
+!    grad(u)(x,y) = ( P_X(X,Y) * e  +  P_Y(X,Y) * g )
+!                   ( P_X(X,Y) * f  +  P_Y(X,Y) * h )
+!
+! Now, from e.g. http://mathworld.wolfram.com/MatrixInverse.html we know,
+! that:
+! 
+!     A = ( a b )    =>   A^-1  =  1/det(A) (  d -b )
+!         ( c d )                           ( -c  a )
+!
+! Therefore:
+!
+!    ( e f )  =  D(s^-1)  =  (Ds)^-1  =  1/(ad-bc) (  d -b )
+!    ( g h )                                       ( -c  a )
+!
+! with
+!
+!    A = ( a b )  =  ( s1_X   s1_Y )  =  ( B-A  C-A )
+!        ( c d )     ( s2_X   s2_Y )
+!
+! being the matrix from the transformation (according to
+! http://mathworld.wolfram.com/BarycentricCoordinates.html).
+!
+!**************************************************************************
 
 !**************************************************************************
 ! Element subroutines for parametric P0 element.
@@ -957,6 +1195,8 @@ CONTAINS
   ! Q0 is a single basis function, constant in the element.
   ! The function value of the basis function is =1, the derivatives are all 0!
   DBas(1,DER_FUNC) = 1.0_DP
+  
+  ! We have no derivatives.
 
   END SUBROUTINE 
   
@@ -1194,6 +1434,15 @@ CONTAINS
 
   REAL(DP) :: dxj !auxiliary variable
   
+  ! The P1 space consists of 'linear' finite elements. We have three basis 
+  ! functions on the reference element, which can be written down in
+  ! standard coordinates (-> P(.)) as well as in barycentric coordinates
+  ! (-> p(.)). These are:
+  !
+  !   p1(xi1,xi2,xi3) = xi1 =  1 - X - Y  = P1(X,Y)
+  !   p2(xi1,xi2,xi3) = xi2 =  X          = P2(X,Y)
+  !   p3(xi1,xi2,xi3) = xi3 =  Y          = P3(X,Y)
+  
   ! Clear the output array
   !Dbas = 0.0_DP
     
@@ -1201,16 +1450,23 @@ CONTAINS
   ! That's even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
-  !if function values are desired
+  ! If function values are desired, calculate them.
+  ! Use the p(.) representation in barycentric coordinates to calculate the
+  ! function values.
 !  if (el_bder(DER_FUNC)) then
     Dbas(1:3,DER_FUNC) = Dpoint(1:3)
 !  endif
   
-  !if x-or y-derivatives are desired
+  ! If x-or y-derivatives are desired, calculate them.
+  ! Here, we use the P(.) representation to get P_X and P_Y (which are
+  ! only 0, 1 or -1)!
+  ! These are then multiplied with the inverse of the transformation
+  ! as described above to get the actual values of the derivatives.
+  
 !  if ((el_bder(DER_DERIV_X)) .or. (el_bder(DER_DERIV_Y))) then
     dxj = 1E0_DP / ddetj
     
-    !x-derivatives on current element
+    ! x-derivatives on current element.
 !    if (el_bder(DER_DERIV_X)) then
       Dbas(1,DER_DERIV_X) = -(Djac(4)-Djac(2))*dxj
       Dbas(2,DER_DERIV_X) =  Djac(4)*dxj
@@ -1919,7 +2175,10 @@ CONTAINS
   END SUBROUTINE 
   
 !**************************************************************************
-! General information: Derivatives of quadrilateral elements
+! General information: Functino values and derivatives of 
+!                      quadrilateral elements
+!                      with bilinear transformation between the
+!                      reference and the real element.
 !
 ! The element subroutines return
 ! - the function value and
@@ -1979,8 +2238,6 @@ CONTAINS
 !
 ! being the matrix from the transformation.
 !**************************************************************************
-  
-  
 
 !**************************************************************************
 ! Element subroutines for parametric Q0 element.
@@ -2299,6 +2556,17 @@ CONTAINS
 
   REAL(DP) :: dxj !auxiliary variable
   
+  ! The Q1 element is specified by four polynomials on the reference element.
+  ! These four polynomials are:
+  !
+  !  P1(X,Y) = 1/4 (1-x) (1-y)
+  !  P2(X,Y) = 1/4 (1+x) (1-y)
+  !  P3(X,Y) = 1/4 (1+x) (1+y)
+  !  P4(X,Y) = 1/4 (1-x) (1+y)
+  !
+  ! Each of them calculated that way that Pi(Xj)=delta_ij (Kronecker)
+  ! for X1,X2,X3,X4 the four corners of the reference element [-1,1]x[-1,1].
+  
   ! Clear the output array
   !Dbas = 0.0_DP
   
@@ -2309,7 +2577,7 @@ CONTAINS
   ! That's even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
-  ! if function values are desired
+  ! If function values are desired, calculate them.
 !  if (el_bder(DER_FUNC)) then
     Dbas(1,DER_FUNC) = 0.25E0_DP*(1E0_DP-dx)*(1E0_DP-dy)
     Dbas(2,DER_FUNC) = 0.25E0_DP*(1E0_DP+dx)*(1E0_DP-dy)
@@ -2317,11 +2585,15 @@ CONTAINS
     Dbas(4,DER_FUNC) = 0.25E0_DP*(1E0_DP-dx)*(1E0_DP+dy)
 !  endif
   
-  ! if x-or y-derivatives are desired
+  ! If x-or y-derivatives are desired, calculate them.
+  ! The values of the derivatives are calculated by taking the
+  ! derivative of the polynomials and multiplying them with the
+  ! inverse of the transformation matrix (in each point) as
+  ! stated above.
 !  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
     dxj = 0.25E0_DP / ddetj
     
-    !x- and y-derivatives on reference element
+    ! x- and y-derivatives on reference element
     Dhelp(1,1) =-(1E0_DP-dy)
     Dhelp(2,1) = (1E0_DP-dy)
     Dhelp(3,1) = (1E0_DP+dy)
@@ -2331,7 +2603,7 @@ CONTAINS
     Dhelp(3,2) = (1E0_DP+dx)
     Dhelp(4,2) = (1E0_DP-dx)
       
-    !x-derivatives on current element
+    ! x-derivatives on current element
 !    if (Bder(DER_DERIV_X)) then
       Dbas(1,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(1,1) - Djac(2) * Dhelp(1,2))
       Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(2,1) - Djac(2) * Dhelp(2,2))
@@ -2339,7 +2611,7 @@ CONTAINS
       Dbas(4,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(4,1) - Djac(2) * Dhelp(4,2))
 !    endif
     
-    !y-derivatives on current element
+    ! y-derivatives on current element
 !    if (Bder(DER_DERIV_Y)) then
       Dbas(1,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(1,1) - Djac(1) * Dhelp(1,2))
       Dbas(2,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(2,1) - Djac(1) * Dhelp(2,2))
@@ -3250,6 +3522,186 @@ CONTAINS
 ! Element subroutines for nonparametric Q1~ element.
 ! The routines are defines with the F95 PURE statement as they work 
 ! only on the parameters; helps some compilers in optimisation.
+!**************************************************************************
+  
+! The standard integral-based Q1~-element looks locally as follows:
+!
+!                 phi_3
+!           +-----X-----+                            +-----e3----+
+!           |           |                            |           |
+!           |           |                            |           |
+!     phi_4 X           X phi_2    for the edges     e4          e2
+!           |           |                            |           |
+!           |           |                            |           |
+!           +-----X-----+                            +-----e1----+
+!                 phi_1
+! 
+! on the reference element [-1,1] x [-1,1].
+!
+! On the element, we can see the four basis functions phi_1, ..., phi_4.
+! Correspondiong to these, we have the following four local basis functions:
+!
+!  p_1(x,y) = a1 (x^2-y^2)  +  b1 x  +  c1 y  +  d1
+!  p_2(x,y) = a2 (x^2-y^2)  +  b2 x  +  c2 y  +  d2
+!  p_3(x,y) = a3 (x^2-y^2)  +  b3 x  +  c3 y  +  d3
+!  p_4(x,y) = a4 (x^2-y^2)  +  b4 x  +  c4 y  +  d4
+!
+! each of them designed (with ai, bi, ci and di) in such a way, such that
+!
+!      int_ei p_j(x,y) = delta_ij
+!
+! Solving this 4x4 system given by this integral set gives for the standard 
+! parametric integral mean based Q1~ element the following local polynomials:
+!
+!  p_1(x,y) = -3/8 (x^2-y^2)  -  1/2 y^2  +  1/4
+!  p_2(x,y) =  3/8 (x^2-y^2)  +  1/2 y^2  +  1/4
+!  p_3(x,y) = -3/8 (x^2-y^2)  +  1/2 y^2  +  1/4
+!  p_4(x,y) =  3/8 (x^2-y^2)  -  1/2 y^2  +  1/4
+!
+! with x=-1..1, y=-1..1.
+!
+! The nonparametric variant of the integral-mean based Q1~ extends this.
+! We have the usual mapping between the reference element and the real element:
+!
+!   +-----e3----+                        +--------E3--------+
+!   |           |                       /                    \
+!   |           |       sigma          /                      \
+!   e4          e2     ------->       E4                       \
+!   |           |                    /                          E2
+!   |           |                   /                            \ 
+!   +-----e1----+                  /                              \
+!                                 +----_____                       \
+!                                           -----__E1_              \
+!                                                      -----_____    \
+!                                                                -----+
+!
+! 
+! with the bilinear mapping
+!
+!    sigma: [-1,1]^2 -> T
+!
+!    sigma(x,y) = s1 x^2  +  s2 y^2  +  s3 x y  +  s4 x  +  s5 y  + s6
+!
+! On the real element T, we fix the midpoints of the edges on E1, ..., E4 and
+! define a normalised local coordinate system in terms of xi and eta by taking
+! the opposite midpoints as vectors of the coordinate system. 
+!                                           
+!           +---------X--------+            
+!          /          ^         \           
+!         /           |vec_2     \          
+!        X--------____|___        \               
+!       /             |   -------->X    
+!      /              |     vec_1   \       
+!     /               |              \      
+!    +----_____       |               \     
+!              -----__X__              \    
+!                         -----_____    \   
+!                                   -----+
+!
+! We shift both of these vectors vec_1 and vec_2 into the origin (0,0)
+! and normalise them to have length=1 (otherwise, the LBB condition might
+! get violated!). So the picture we are looking at here is the following:
+!
+!   ^ xi             +---------X--------+          
+!   |               /          ^         \         
+!   |              /           |vec_2     \        
+!   |             X--------____|___        \       
+!   |            /             |   -------->X    
+!   |           /              |     vec_1   \     
+!   |          /               |              \    
+!   |         +----_____       |               \   
+!   |                   -----__X__              \  
+!   |                              -----_____    \ 
+!   |                                        -----+
+!   |
+!   |
+!   X--------________          
+! (0,0)              --------________            
+!                                    ---> eta
+!
+! Every point (x,y) in the 'old' standard coordinate system has a
+! representation (z1,z2) in the new coordinate system. To get this
+! representation, we need a linear mapping. We define it as:
+!
+!   ( z1 ) := r(x,y) := ( k11 k12 ) ( x ) 
+!   ( z2 )              ( k21 k22 ) ( y )
+!
+! This mapping should fulfill:
+!
+!   ( eta_1 ) = ( k11 k12 ) ( 1 ) 
+!   ( eta_2 )   ( k21 k22 ) ( 0 )
+!  
+!   ( xi_1 ) = ( k11 k12 ) ( 0 ) 
+!   ( xi_2 )   ( k21 k22 ) ( 1 )
+!
+! so that the vector eta has the coordinates (1,0) and xi the coordinates
+! (0,1). This simply means:
+!
+!   r(x,y) = ( eta_1 xi_1 ) ( x )  =  ( eta_1 x  +  xi_1 y ) 
+!            ( eta_2 xi_2 ) ( y )     ( eta_2 x  +  xi_2 y )
+!
+! Then, we set up the local basis functions in terms of xi and eta,
+! i.e. in the coordinate space of the new coordinate system, 
+! with a new set of (unknown) coefficents ai, bi, ci and di:
+!
+!  P1(z1,z2)  :=  d1 (z1^2 - z2^2)  +  c1 z2  +  b1 z1  +  a1
+!  P2(z1,z2)  :=  d2 (z1^2 - z2^2)  +  c2 z2  +  b2 z1  +  a2
+!  P3(z1,z2)  :=  d3 (z1^2 - z2^2)  +  c3 z2  +  b3 z1  +  a3
+!  P4(z1,z2)  :=  d4 (z1^2 - z2^2)  +  c4 z2  +  b4 z1  +  a4
+!
+! Later, we want to evaluate these P_i. Each P_i consists of a linear 
+! combination of some coefficients ai, bi, ci, di with the four monoms
+!
+!  m1(xi,eta) := 1
+!  m2(xi,eta) := z1
+!  m3(xi,eta) := z2
+!  m4(xi,eta) := (z1^2-z2^2)
+!
+! To evaluate these mi's in the new coordinate system, we concatenate them
+! with the mapping r(.,.). As result, we get the four functions F1,F2,F3,F4
+! which are defined as functions at the bottom of this routine:
+!
+!  F1(x,y) := m1(r(x,y)) = 1
+!  F2(x,y) := m2(r(x,y)) = eta_1 x  +  xi_1 y
+!  F3(x,y) := m3(r(x,y)) = eta_2 x  +  xi_2 y
+!  F4(x,y) := m4(r(x,y)) = ( eta_1 x + xi_1 y )^2 - ( eta_2 x + xi_2 y )^2
+!                        =           ( eta_1^2 - eta_2^2 ) x^2 
+!                          + 2 ( eta_1 xi_1 - eta_2 xi_2 ) x y
+!                          +           ( xi_1^2 - xi_2^2 ) y^2
+!
+! So the polynomials have now the form:
+!
+!  P1(r(x,y)) = a1 F1(x,y)  +  b1 F2(x,y)  +  c1 F3(x,y)  +  d1 F4(x,y)
+!  P2(r(x,y)) = a2 F1(x,y)  +  b2 F2(x,y)  +  c2 F3(x,y)  +  d2 F4(x,y)
+!  P3(r(x,y)) = a3 F1(x,y)  +  b3 F2(x,y)  +  c3 F3(x,y)  +  d3 F4(x,y)
+!  P4(r(x,y)) = a4 F1(x,y)  +  b4 F2(x,y)  +  c4 F3(x,y)  +  d4 F4(x,y)
+!
+! It doesn't matter whether the local coordinate system starts in (0,0) or in
+! the midpoint of the element or whereever. As the rotation of the element
+! coincides with the rotation of the new coordinate system, the polynomial 
+! space is unisolvent and therefore exist the above local basis functions uniquely.
+!
+! The coefficients ai, bi, ci, di are to be calculated in such a way, that
+!
+!    int_Ei Pj(r(.)) ds = delta_ij
+!
+! holds. The integral "int_Ei ... ds" over the edge Ei is approximated
+! by a 2-point gauss integral.
+! This gives four 4x4 systems for the computation of ai, bi, ci and di, which
+! can be written as:
+!
+!   ( . . . . ) ( a1 a2 a3 a4 ) = ( 1 0 0 0 )
+!   ( . .V. . ) ( b1 b2 b3 b4 )   ( 0 1 0 0 )
+!   ( . . . . ) ( c1 c2 c3 c4 )   ( 0 0 1 0 )
+!   ( . . . . ) ( d1 d2 d3 d4 )   ( 0 0 0 1 )
+!
+! So to get all the coefficients, one has to calculate V^-1 !
+! The entries of the matrix V = {v_ij} are defined (because of the linearity
+! of the integral) as
+!
+!         vij = int_Ei Fj(x,y) d(x,y)
+!
+! Now let's go...
  
 !<subroutine>  
 
@@ -3318,51 +3770,28 @@ CONTAINS
   ! auxiliary variables  
   INTEGER :: IVE,IA,IK
   REAL(DP) :: PXL,PYL,PXU,PYU, D1,D2
-  REAL(DP),DIMENSION(4) :: DXM,DYM,DLX,DLY,CKH,F
+  REAL(DP),DIMENSION(4) :: DXM,DYM,DLX,DLY
   REAL(DP),DIMENSION(4,4) :: A       ! local 4x4 system
-  REAL(DP),DIMENSION(4,4) :: CK
-  REAL(DP),DIMENSION(256) :: Dlapack
   REAL(DP) :: CA1,CA2,CA3,CB1,CB2,CB3,CC3
   REAL(DP),DIMENSION(EL_MAXNBAS,EL_MAXNCOF) :: COB
   INTEGER :: INFO
   INTEGER, DIMENSION(NVE) :: IPIV
   REAL(DP) :: dx, dy
   
-  INTERFACE
-   
-    ! Declare the two LAPACK subroutines as PURE using an interface.
-    ! Then we can use them here.
-  
-    PURE SUBROUTINE DGETRF( M, N, A, LDA, IPIV, INFO )
-    USE fsystem
-    INTEGER, INTENT(IN) :: LDA, M, N
-    INTEGER, DIMENSION(N), INTENT(OUT) :: IPIV
-    INTEGER, INTENT(OUT) :: INFO
-    REAL(DP),INTENT(INOUT) :: A(LDA,N)
-    END SUBROUTINE
-    
-    PURE SUBROUTINE DGETRI( N, A, LDA, IPIV, WORK, LWORK, INFO )
-    USE fsystem
-    INTEGER, INTENT(IN) :: LDA, N, LWORK
-    INTEGER, DIMENSION(N), INTENT(OUT) :: IPIV
-    INTEGER, INTENT(OUT) :: INFO
-    REAL(DP),INTENT(INOUT) :: A(LDA,N),WORK(256)
-    END SUBROUTINE
-
-    PURE SUBROUTINE INVERT(A,F,X,IPAR)
-    USE fsystem
-    REAL(DP), DIMENSION(4,4), INTENT(INOUT) :: A
-    REAL(DP), DIMENSION(4), INTENT(INOUT) :: F,X
-    INTEGER, INTENT(IN) :: IPAR
-    END SUBROUTINE
-
-  END INTERFACE
-  
   ! Clear the output array
   !Dbas = 0.0_DP
   
+  ! Where to evaluate? On the real element T...
+  
   dx = Dpoint(1)
   dy = Dpoint(2)
+  
+  ! Calculate the edge midpoints and length of edges: 
+  !  DXM(:) := X-coordinates of midpoints
+  !  DYM(:) := Y-coordinates of midpoints
+  !  DLX(:) := length of each edge in X-direction
+  !  DLY(:) := length of each edge in Y-direction
+  ! So SQRT(DLX(:)**2+DLY(:)**2) = length of the edges.
   
   DO IVE=1,NVE
     DXM(IVE)=0.5_DP*(Dcoords(1,IVE)+Dcoords(1,MOD(IVE,4)+1))
@@ -3371,64 +3800,88 @@ CONTAINS
     DLY(IVE)=0.5_DP*(Dcoords(2,MOD(IVE,4)+1)-Dcoords(2,IVE))
   END DO
 
+  ! Calculate the scaling factors for the local coordinate system.
+  !  D1 := 1 / ||xi||_2
+  !  D2 := 1 / ||eta||_2
+  
   D1 = 1.0_DP / SQRT((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
   D2 = 1.0_DP / SQRT((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+  
+  ! Calculate the vector eta = (CA1,CB1); these numbers coincide
+  ! with the coefficients of the polynomial F2(x,y) := m2(r(x,y))
   CA1 = (DXM(2)-DXM(4)) * D1
   CB1 = (DYM(2)-DYM(4)) * D1
+  
+  ! Calculate the vector xi = (CA2,CB2); these numbers coincide
+  ! with the coefficients of the polynomial F3(x,y) := m3(r(x,y))
   CA2 = (DXM(3)-DXM(1)) * D2
   CB2 = (DYM(3)-DYM(1)) * D2
+  
+  ! Calculate the coefficients of the polynomial F4(x,y) := m4(r(x,y))
   CA3 = CA1**2-CA2**2
   CB3 = 2.0_DP*(CA1*CB1-CA2*CB2)
   CC3 = CB1**2-CB2**2
   
+  ! Calculate the matrix V (=A) with vij = int_ei Fj (x,y) d(x,y).
+  ! Loop over the edges.
   DO IA = 1,NVE
+  
+    ! Calculate the X- and Y-coordinates of the two Gauss points on the
+    ! current edge. (PXL,PYL) = 1st Gauss point, (PXU,PYU) = 2nd Gauss point.
+    
     PXL = DXM(IA)-SQRT(1.0_DP/3.0_DP)*DLX(IA)
     PYL = DYM(IA)-SQRT(1.0_DP/3.0_DP)*DLY(IA)
     PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
     PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
-    A(IA,1)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                  +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-    A(IA,2)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                  +F2(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-    A(IA,3)=0.5_DP*( F3(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                  +F3(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-    A(IA,4)=0.5_DP*( F4(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                  +F4(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+    
+    ! Set up the coefficients of the linear system to calculate ai, bi, ci and di.
+    A(1,IA)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                    +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+    A(2,IA)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                    +F2(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+    A(3,IA)=0.5_DP*( F3(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                    +F3(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+    A(4,IA)=0.5_DP*( F4(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                    +F4(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
   END DO
   
-  CALL INVERT(A,F,CKH,0)
+  ! Invert that matrix V to get the matrix of the coefficients of the
+  ! four polynomials. The matix A (=V) is replaced by the inverse.
+  !CALL INVERT(A,F,CKH,0)
+  CALL mprim_invertMatrixPivotDble(A,4)
 
-  ! Invert the matrix with LAPACK
-  !CALL DGETRF (4,4,A,4,IPIV,INFO)
-  !CALL DGETRI (4,A,4,IPIV, Dlapack, 256, INFO )
-  
-!  DO IK1=1,4
-!    DO IK2=1,4
-!      CK(IK1,IK2)=A(IK2,IK1)
-!    END DO
-!  END DO
-  CK = TRANSPOSE(A)
+  ! Ok, the coefficients ai, bi, ci, di are calculated.
+  ! The next point is: We want to evaluate the polynoms Pi(r(.))
+  ! in the point (x,y) which is specified as input parameter to this routine!
+  !
+  ! For this purpose, we first transform the polynom Pi(r(.)) into the
+  ! monomial representation:
+  !
+  !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
+  !             =   COB(i,1) x^2  +  COB(i,2) x y  +  COB(i,3) y^2
+  !               + COB(i,4) x    +  COB(i,5) y
+  !               + COB(i,6)
 
   DO IK=1,4
-    COB(IK,1) = CK(IK,4)*CA3
-    COB(IK,2) = CK(IK,4)*CC3
-    COB(IK,3) = CK(IK,4)*CB3
-    COB(IK,4) = CK(IK,2)*CA1+CK(IK,3)*CA2
-    COB(IK,5) = CK(IK,2)*CB1+CK(IK,3)*CB2
-    COB(IK,6) = CK(IK,1)
+    COB(IK,1) = A(IK,4)*CA3
+    COB(IK,2) = A(IK,4)*CC3
+    COB(IK,3) = A(IK,4)*CB3
+    COB(IK,4) = A(IK,2)*CA1+A(IK,3)*CA2
+    COB(IK,5) = A(IK,2)*CB1+A(IK,3)*CB2
+    COB(IK,6) = A(IK,1)
   END DO
 
   ! Function values
 
   IF (BDER(DER_FUNC)) THEN
     Dbas(1,DER_FUNC)= COB(1,1)*dx**2+COB(1,2)*dy**2+COB(1,3)*dx*dy &
-                    +COB(1,4)*dx   +COB(1,5)*dy   +COB(1,6)
+                     +COB(1,4)*dx   +COB(1,5)*dy   +COB(1,6)
     Dbas(2,DER_FUNC)= COB(2,1)*dx**2+COB(2,2)*dy**2+COB(2,3)*dx*dy &
-                    +COB(2,4)*dx   +COB(2,5)*dy   +COB(2,6)
+                     +COB(2,4)*dx   +COB(2,5)*dy   +COB(2,6)
     Dbas(3,DER_FUNC)= COB(3,1)*dx**2+COB(3,2)*dy**2+COB(3,3)*dx*dy &
-                    +COB(3,4)*dx   +COB(3,5)*dy   +COB(3,6)
+                     +COB(3,4)*dx   +COB(3,5)*dy   +COB(3,6)
     Dbas(4,DER_FUNC)= COB(4,1)*dx**2+COB(4,2)*dy**2+COB(4,3)*dx*dy &
-                    +COB(4,4)*dx   +COB(4,5)*dy   +COB(4,6)
+                     +COB(4,4)*dx   +COB(4,5)*dy   +COB(4,6)
   END IF
 
   ! Derivatives:
@@ -3548,42 +4001,12 @@ CONTAINS
   ! auxiliary variables  
   INTEGER :: IVE,IA,IK,i
   REAL(DP) :: PXL,PYL,PXU,PYU, D1,D2
-  REAL(DP),DIMENSION(4) :: DXM,DYM,DLX,DLY,CKH,F
+  REAL(DP),DIMENSION(4) :: DXM,DYM,DLX,DLY
   REAL(DP),DIMENSION(4,4) :: A       ! local 4x4 system
-  REAL(DP),DIMENSION(4,4) :: CK
-  REAL(DP),DIMENSION(256) :: Dlapack
   REAL(DP) :: CA1,CA2,CA3,CB1,CB2,CB3,CC3
   REAL(DP),DIMENSION(EL_MAXNBAS,EL_MAXNCOF) :: COB
   INTEGER :: INFO
   INTEGER, DIMENSION(NVE) :: IPIV
-  
-  INTERFACE
-   
-    ! Declare the two LAPACK subroutines as PURE using an interface.
-    ! Then we can use them here.
-  
-    PURE SUBROUTINE DGETRF( M, N, A, LDA, IPIV, INFO )
-    INTEGER, INTENT(IN) :: LDA, M, N
-    INTEGER, DIMENSION(N), INTENT(OUT) :: IPIV
-    INTEGER, INTENT(OUT) :: INFO
-    DOUBLE PRECISION,INTENT(INOUT) :: A(LDA,N)
-    END SUBROUTINE
-    
-    PURE SUBROUTINE DGETRI( N, A, LDA, IPIV, WORK, LWORK, INFO )
-    INTEGER, INTENT(IN) :: LDA, N, LWORK
-    INTEGER, DIMENSION(N), INTENT(OUT) :: IPIV
-    INTEGER, INTENT(OUT) :: INFO
-    DOUBLE PRECISION,INTENT(INOUT) :: A(LDA,N),WORK(256)
-    END SUBROUTINE
-
-    PURE SUBROUTINE INVERT(A,F,X,IPAR)
-    USE fsystem
-    REAL(DP), DIMENSION(4,4), INTENT(INOUT) :: A
-    REAL(DP), DIMENSION(4), INTENT(INOUT) :: F,X
-    INTEGER, INTENT(IN) :: IPAR
-    END SUBROUTINE
-
-  END INTERFACE
   
   ! Clear the output array
   !Dbas = 0.0_DP
@@ -3610,36 +4033,26 @@ CONTAINS
     PYL = DYM(IA)-SQRT(1.0_DP/3.0_DP)*DLY(IA)
     PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
     PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
-    A(IA,1)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+    A(1,IA)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
                   +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-    A(IA,2)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+    A(2,IA)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
                   +F2(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-    A(IA,3)=0.5_DP*( F3(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+    A(3,IA)=0.5_DP*( F3(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
                   +F3(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-    A(IA,4)=0.5_DP*( F4(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+    A(4,IA)=0.5_DP*( F4(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
                   +F4(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
   END DO
   
-  CALL INVERT(A,F,CKH,0)
-
-  ! Invert the matrix with LAPACK
-  !CALL DGETRF (4,4,A,4,IPIV,INFO)
-  !CALL DGETRI (4,A,4,IPIV, Dlapack, 256, INFO )
-  
-!  DO IK1=1,4
-!    DO IK2=1,4
-!      CK(IK1,IK2)=A(IK2,IK1)
-!    END DO
-!  END DO
-  CK = TRANSPOSE(A)
+  !CALL INVERT(A,F,CKH,0)
+  CALL mprim_invertMatrixPivotDble(A,4)
 
   DO IK=1,4
-    COB(IK,1) = CK(IK,4)*CA3
-    COB(IK,2) = CK(IK,4)*CC3
-    COB(IK,3) = CK(IK,4)*CB3
-    COB(IK,4) = CK(IK,2)*CA1+CK(IK,3)*CA2
-    COB(IK,5) = CK(IK,2)*CB1+CK(IK,3)*CB2
-    COB(IK,6) = CK(IK,1)
+    COB(IK,1) = A(IK,4)*CA3
+    COB(IK,2) = A(IK,4)*CC3
+    COB(IK,3) = A(IK,4)*CB3
+    COB(IK,4) = A(IK,2)*CA1+A(IK,3)*CA2
+    COB(IK,5) = A(IK,2)*CB1+A(IK,3)*CB2
+    COB(IK,6) = A(IK,1)
   END DO
 
   ! Function values
@@ -3811,47 +4224,14 @@ CONTAINS
   ! auxiliary variables  
   INTEGER :: IVE,IA,IK,i,j
   REAL(DP) :: PXL,PYL,PXU,PYU, D1,D2
-  REAL(DP),DIMENSION(4) :: DXM,DYM,DLX,DLY , CKH,F
+  REAL(DP),DIMENSION(4) :: DXM,DYM,DLX,DLY
   REAL(DP), DIMENSION(4,4) :: A       ! local 4x4 system
   REAL(DP), DIMENSION(4,4) :: CK
-  REAL(DP) :: Dlapack(256)
-  REAL(DP) :: CA1,CA2,CA3,CB1,CB2,CB3,CC3,X,Y
+  REAL(DP) :: CA1,CA2,CA3,CB1,CB2,CB3,CC3
   REAL(DP) :: COB(EL_MAXNBAS,EL_MAXNCOF)
   INTEGER :: INFO
   INTEGER, DIMENSION(NVE) :: IPIV
   INTEGER :: npointsfunc,npointsderx,npointsdery
-  
-  !INCLUDE 'cbasictria.inc'
-  !INCLUDE 'cbasicelem.inc'
-  !INCLUDE 'celem.inc'
-  
-  INTERFACE
-   
-    ! Declare the two LAPACK subroutines as PURE using an interface.
-    ! Then we can use them here.
-  
-    PURE SUBROUTINE DGETRF( M, N, A, LDA, IPIV, INFO )
-    INTEGER, INTENT(IN) :: LDA, M, N
-    INTEGER, DIMENSION(N), INTENT(OUT) :: IPIV
-    INTEGER, INTENT(OUT) :: INFO
-    DOUBLE PRECISION,INTENT(INOUT) :: A(LDA,N)
-    END SUBROUTINE
-    
-    PURE SUBROUTINE DGETRI( N, A, LDA, IPIV, WORK, LWORK, INFO )
-    INTEGER, INTENT(IN) :: LDA, N, LWORK
-    INTEGER, DIMENSION(N), INTENT(OUT) :: IPIV
-    INTEGER, INTENT(OUT) :: INFO
-    DOUBLE PRECISION,INTENT(INOUT) :: A(LDA,N),WORK(256)
-    END SUBROUTINE
-    
-    PURE SUBROUTINE INVERT(A,F,X,IPAR)
-    USE fsystem
-    REAL(DP), DIMENSION(4,4), INTENT(INOUT) :: A
-    REAL(DP), DIMENSION(4), INTENT(INOUT) :: F,X
-    INTEGER, INTENT(IN) :: IPAR
-    END SUBROUTINE
-
-  END INTERFACE
   
   ! Calculate the loop counters in advance. Help us to get rid
   ! of any if-commands in the element loop below.
@@ -3865,136 +4245,269 @@ CONTAINS
   ! Clear the output array
   !Dbas = 0.0_DP
   
-  ! Loop over the elements
+  ! Check which element variant we have; with or without pivoting...
+  IF (IAND(ieltyp,2**17) .EQ. 0) THEN
   
-  DO j=1,nelements
+    ! Use pivoting for increased numerical stability.
+  
+    ! Loop over the elements
     
-!    DO ive=1,4
-!      DX(ive) = Dcoords(1,IVE,j)
-!      DY(ive) = Dcoords(2,IVE,j)
-!    END DO
-!    BDER = Bder1
-!    
-!    CALL EM30(0.0_DP,0.0_DP,-2)
-!    
-!    DO ive=1,npoints
-!      CALL EM30(Dpoints(1,ive,j),Dpoints(2,ive,j),0)
-!      DBas1(:,1:3,1,1) = DBAS(:,1:3)
-!      !DBas1(:,1:3,ive,j) = DBAS(:,1:3)
-!    END DO
-!    
-!  
-    DO IVE=1,NVE
-      DXM(IVE)=0.5_DP*(Dcoords(1,IVE,j)+Dcoords(1,MOD(IVE,4)+1,j))
-      DYM(IVE)=0.5_DP*(Dcoords(2,IVE,j)+Dcoords(2,MOD(IVE,4)+1,j))
-      DLX(IVE)=0.5_DP*(Dcoords(1,MOD(IVE,4)+1,j)-Dcoords(1,IVE,j))
-      DLY(IVE)=0.5_DP*(Dcoords(2,MOD(IVE,4)+1,j)-Dcoords(2,IVE,j))
-    END DO
+    DO j=1,nelements
+      
+      DO IVE=1,NVE
+        DXM(IVE)=0.5_DP*(Dcoords(1,IVE,j)+Dcoords(1,MOD(IVE,4)+1,j))
+        DYM(IVE)=0.5_DP*(Dcoords(2,IVE,j)+Dcoords(2,MOD(IVE,4)+1,j))
+        DLX(IVE)=0.5_DP*(Dcoords(1,MOD(IVE,4)+1,j)-Dcoords(1,IVE,j))
+        DLY(IVE)=0.5_DP*(Dcoords(2,MOD(IVE,4)+1,j)-Dcoords(2,IVE,j))
+      END DO
 
-    D1 = 1.0_DP / SQRT((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
-    D2 = 1.0_DP / SQRT((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
-    CA1 = (DXM(2)-DXM(4)) * D1
-    CB1 = (DYM(2)-DYM(4)) * D1
-    CA2 = (DXM(3)-DXM(1)) * D2
-    CB2 = (DYM(3)-DYM(1)) * D2
-    CA3 = CA1**2-CA2**2
-    CB3 = 2.0_DP*(CA1*CB1-CA2*CB2)
-    CC3 = CB1**2-CB2**2
+      D1 = 1.0_DP / SQRT((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
+      D2 = 1.0_DP / SQRT((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+      CA1 = (DXM(2)-DXM(4)) * D1
+      CB1 = (DYM(2)-DYM(4)) * D1
+      CA2 = (DXM(3)-DXM(1)) * D2
+      CB2 = (DYM(3)-DYM(1)) * D2
+      CA3 = CA1**2-CA2**2
+      CB3 = 2.0_DP*(CA1*CB1-CA2*CB2)
+      CC3 = CB1**2-CB2**2
+      
+      DO IA = 1,4
+        PXL = DXM(IA)-SQRT(1.0_DP/3.0_DP)*DLX(IA)
+        PYL = DYM(IA)-SQRT(1.0_DP/3.0_DP)*DLY(IA)
+        PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
+        PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
+        A(1,IA)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+        A(2,IA)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F2(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+        A(3,IA)=0.5_DP*( F3(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F3(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+        A(4,IA)=0.5_DP*( F4(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F4(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+      END DO
+      
+      ! Invert the matrix in-place.
+      !CALL INVERT(A,F,CKH,0)
+      CALL mprim_invertMatrixPivotDble(A,4)
+
+      ! In comparison to the standard EM30 routine above, we use the
+      ! COB-array transposed!:
+      !
+      !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
+      !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+      !               + COB(4,i) x    +  COB(5,i) y
+      !               + COB(6,i)
+      !
+      ! This gives easier array access to the processor and gains a little
+      ! bit speed!
+
+      DO IK=1,4
+        COB(1,IK) = A(IK,4)*CA3
+        COB(2,IK) = A(IK,4)*CC3
+        COB(3,IK) = A(IK,4)*CB3
+        COB(4,IK) = A(IK,2)*CA1+A(IK,3)*CA2
+        COB(5,IK) = A(IK,2)*CB1+A(IK,3)*CB2
+        COB(6,IK) = A(IK,1)
+      END DO
+
+      ! Function values
+      DO i=1,npointsfunc   ! either 0 or npoints
+
+        Dbas(1,DER_FUNC,i,j)=  COB(1,1)*Dpoints(1,i,j)**2 &
+                              +COB(2,1)*Dpoints(2,i,j)**2 &
+                              +COB(3,1)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,1)*Dpoints(1,i,j)   &
+                              +COB(5,1)*Dpoints(2,i,j)   &
+                              +COB(6,1)
+        Dbas(2,DER_FUNC,i,j)=  COB(1,2)*Dpoints(1,i,j)**2 &
+                              +COB(2,2)*Dpoints(2,i,j)**2 &
+                              +COB(3,2)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,2)*Dpoints(1,i,j)   &
+                              +COB(5,2)*Dpoints(2,i,j)   &
+                              +COB(6,2)
+        Dbas(3,DER_FUNC,i,j)=  COB(1,3)*Dpoints(1,i,j)**2 &
+                              +COB(2,3)*Dpoints(2,i,j)**2 &
+                              +COB(3,3)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,3)*Dpoints(1,i,j)   &
+                              +COB(5,3)*Dpoints(2,i,j)   &
+                              +COB(6,3)
+        Dbas(4,DER_FUNC,i,j)=  COB(1,4)*Dpoints(1,i,j)**2 &
+                              +COB(2,4)*Dpoints(2,i,j)**2 &
+                              +COB(3,4)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,4)*Dpoints(1,i,j)    &
+                              +COB(5,4)*Dpoints(2,i,j)    &
+                              +COB(6,4)
+      END DO
+      
+      ! x-derivatives
+            
+      DO i=1,npointsderx   ! either 0 or npoints
+        Dbas(1,DER_DERIV_X,i,j) = 2.0_DP*COB(1,1)*Dpoints(1,i,j) &
+                                        +COB(3,1)*Dpoints(2,i,j) &
+                                        +COB(4,1)
+        Dbas(2,DER_DERIV_X,i,j) = 2.0_DP*COB(1,2)*Dpoints(1,i,j) &
+                                        +COB(3,2)*Dpoints(2,i,j) &
+                                        +COB(4,2)
+        Dbas(3,DER_DERIV_X,i,j) = 2.0_DP*COB(1,3)*Dpoints(1,i,j) &
+                                        +COB(3,3)*Dpoints(2,i,j) &
+                                        +COB(4,3)
+        Dbas(4,DER_DERIV_X,i,j) = 2.0_DP*COB(1,4)*Dpoints(1,i,j) &
+                                        +COB(3,4)*Dpoints(2,i,j) &
+                                        +COB(4,4)
+      END DO
+
+      ! y-derivatives
+            
+      DO i=1,npointsdery   ! either 0 or npoints
+        Dbas(1,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,1)*Dpoints(2,i,j) &
+                                        +COB(3,1)*Dpoints(1,i,j) &
+                                        +COB(5,1)
+        Dbas(2,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,2)*Dpoints(2,i,j) &
+                                        +COB(3,2)*Dpoints(1,i,j) &
+                                        +COB(5,2)
+        Dbas(3,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,3)*Dpoints(2,i,j) &
+                                        +COB(3,3)*Dpoints(1,i,j) &
+                                        +COB(5,3)
+        Dbas(4,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,4)*Dpoints(2,i,j) &
+                                        +COB(3,4)*Dpoints(1,i,j) &
+                                        +COB(5,4)
+
+      END DO
+      
+    END DO ! ielement
     
-    DO IA = 1,4
-      PXL = DXM(IA)-SQRT(1.0_DP/3.0_DP)*DLX(IA)
-      PYL = DYM(IA)-SQRT(1.0_DP/3.0_DP)*DLY(IA)
-      PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
-      PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
-      A(IA,1)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                    +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-      A(IA,2)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                    +F2(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-      A(IA,3)=0.5_DP*( F3(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                    +F3(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-      A(IA,4)=0.5_DP*( F4(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
-                    +F4(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
-    END DO
+  ELSE
+  
+    ! Don't use pivoting.
     
-    CALL INVERT(A,F,CKH,0)
-
-    ! Invert the matrix with LAPACK
-    !CALL DGETRF (4,4,A,4,IPIV,INFO)
-    !CALL DGETRI (4,A,4,IPIV, Dlapack, 256, INFO )
+    ! Loop over the elements
     
-!    DO IK1=1,4
-!      DO IK2=1,4
-!        CK(IK1,IK2)=A(IK2,IK1)
-!      END DO
-!    END DO
-    CK = TRANSPOSE(A)
+    DO j=1,nelements
+      
+      DO IVE=1,NVE
+        DXM(IVE)=0.5_DP*(Dcoords(1,IVE,j)+Dcoords(1,MOD(IVE,4)+1,j))
+        DYM(IVE)=0.5_DP*(Dcoords(2,IVE,j)+Dcoords(2,MOD(IVE,4)+1,j))
+        DLX(IVE)=0.5_DP*(Dcoords(1,MOD(IVE,4)+1,j)-Dcoords(1,IVE,j))
+        DLY(IVE)=0.5_DP*(Dcoords(2,MOD(IVE,4)+1,j)-Dcoords(2,IVE,j))
+      END DO
 
-    DO IK=1,4
-      COB(IK,1) = CK(IK,4)*CA3
-      COB(IK,2) = CK(IK,4)*CC3
-      COB(IK,3) = CK(IK,4)*CB3
-      COB(IK,4) = CK(IK,2)*CA1+CK(IK,3)*CA2
-      COB(IK,5) = CK(IK,2)*CB1+CK(IK,3)*CB2
-      COB(IK,6) = CK(IK,1)
-    END DO
+      D1 = 1.0_DP / SQRT((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
+      D2 = 1.0_DP / SQRT((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+      CA1 = (DXM(2)-DXM(4)) * D1
+      CB1 = (DYM(2)-DYM(4)) * D1
+      CA2 = (DXM(3)-DXM(1)) * D2
+      CB2 = (DYM(3)-DYM(1)) * D2
+      CA3 = CA1**2-CA2**2
+      CB3 = 2.0_DP*(CA1*CB1-CA2*CB2)
+      CC3 = CB1**2-CB2**2
+      
+      DO IA = 1,4
+        PXL = DXM(IA)-SQRT(1.0_DP/3.0_DP)*DLX(IA)
+        PYL = DYM(IA)-SQRT(1.0_DP/3.0_DP)*DLY(IA)
+        PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
+        PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
+        A(1,IA)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+        A(2,IA)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F2(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+        A(3,IA)=0.5_DP*( F3(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F3(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+        A(4,IA)=0.5_DP*( F4(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
+                        +F4(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
+      END DO
+      
+      ! Invert the matrix to get the coefficients.
+      ! Use direct inversion and save the result to CK directly.
+      CALL mprim_invert4x4MatrixDirectDble(A,CK)
 
-    ! Function values
-    DO i=1,npointsfunc   ! either 0 or npoints
+      ! In comparison to the standard EM30 routine above, we use the
+      ! COB-array transposed!:
+      !
+      !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
+      !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+      !               + COB(4,i) x    +  COB(5,i) y
+      !               + COB(6,i)
+      !
+      ! This gives easier array access to the processor and gains a little
+      ! bit speed!
 
-      Dbas(1,DER_FUNC,i,j)= COB(1,1)*Dpoints(1,i,j)**2 &
-                +COB(1,2)*Dpoints(2,i,j)**2 &
-                +COB(1,3)*Dpoints(1,i,j)*Dpoints(2,i,j) &
-                +COB(1,4)*Dpoints(1,i,j)   &
-                +COB(1,5)*Dpoints(2,i,j)   &
-                +COB(1,6)
-      Dbas(2,DER_FUNC,i,j)= COB(2,1)*Dpoints(1,i,j)**2 &
-                +COB(2,2)*Dpoints(2,i,j)**2 &
-                +COB(2,3)*Dpoints(1,i,j)*Dpoints(2,i,j) &
-                +COB(2,4)*Dpoints(1,i,j)   &
-                +COB(2,5)*Dpoints(2,i,j)   &
-                +COB(2,6)
-      Dbas(3,DER_FUNC,i,j)= COB(3,1)*Dpoints(1,i,j)**2 &
-                +COB(3,2)*Dpoints(2,i,j)**2 &
-                +COB(3,3)*Dpoints(1,i,j)*Dpoints(2,i,j) &
-                +COB(3,4)*Dpoints(1,i,j)   &
-                +COB(3,5)*Dpoints(2,i,j)   &
-                +COB(3,6)
-      Dbas(4,DER_FUNC,i,j)= COB(4,1)*Dpoints(1,i,j)**2 &
-                +COB(4,2)*Dpoints(2,i,j)**2 &
-                +COB(4,3)*Dpoints(1,i,j)*Dpoints(2,i,j) &
-                +COB(4,4)*Dpoints(1,i,j)    &
-                +COB(4,5)*Dpoints(2,i,j)    &
-                +COB(4,6)
-    END DO
-    
-    ! x-derivatives
-          
-    DO i=1,npointsderx   ! either 0 or npoints
-      Dbas(1,DER_DERIV_X,i,j) = 2.0_DP*COB(1,1)*Dpoints(1,i,j) &
-                                      +COB(1,3)*Dpoints(2,i,j)+COB(1,4)
-      Dbas(2,DER_DERIV_X,i,j) = 2.0_DP*COB(2,1)*Dpoints(1,i,j) &
-                                      +COB(2,3)*Dpoints(2,i,j)+COB(2,4)
-      Dbas(3,DER_DERIV_X,i,j) = 2.0_DP*COB(3,1)*Dpoints(1,i,j) &
-                                      +COB(3,3)*Dpoints(2,i,j)+COB(3,4)
-      Dbas(4,DER_DERIV_X,i,j) = 2.0_DP*COB(4,1)*Dpoints(1,i,j) &
-                                      +COB(4,3)*Dpoints(2,i,j)+COB(4,4)
-    END DO
+      ! Calculate the coefficients of the monoms.
+      DO IK=1,4
+        COB(1,IK) = CK(IK,4)*CA3
+        COB(2,IK) = CK(IK,4)*CC3
+        COB(3,IK) = CK(IK,4)*CB3
+        COB(4,IK) = CK(IK,2)*CA1+CK(IK,3)*CA2
+        COB(5,IK) = CK(IK,2)*CB1+CK(IK,3)*CB2
+        COB(6,IK) = CK(IK,1)
+      END DO
 
-    ! y-derivatives
-          
-    DO i=1,npointsdery   ! either 0 or npoints
-      Dbas(1,DER_DERIV_Y,i,j) = 2.0_DP*COB(1,2)*Dpoints(2,i,j) &
-                                      +COB(1,3)*Dpoints(1,i,j)+COB(1,5)
-      Dbas(2,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,2)*Dpoints(2,i,j) &
-                                      +COB(2,3)*Dpoints(1,i,j)+COB(2,5)
-      Dbas(3,DER_DERIV_Y,i,j) = 2.0_DP*COB(3,2)*Dpoints(2,i,j) &
-                                      +COB(3,3)*Dpoints(1,i,j)+COB(3,5)
-      Dbas(4,DER_DERIV_Y,i,j) = 2.0_DP*COB(4,2)*Dpoints(2,i,j) &
-                                      +COB(4,3)*Dpoints(1,i,j)+COB(4,5)
+      ! Function values
+      DO i=1,npointsfunc   ! either 0 or npoints
 
-    END DO
-    
-  END DO ! ielement
+        Dbas(1,DER_FUNC,i,j)=  COB(1,1)*Dpoints(1,i,j)**2 &
+                              +COB(2,1)*Dpoints(2,i,j)**2 &
+                              +COB(3,1)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,1)*Dpoints(1,i,j)   &
+                              +COB(5,1)*Dpoints(2,i,j)   &
+                              +COB(6,1)
+        Dbas(2,DER_FUNC,i,j)=  COB(1,2)*Dpoints(1,i,j)**2 &
+                              +COB(2,2)*Dpoints(2,i,j)**2 &
+                              +COB(3,2)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,2)*Dpoints(1,i,j)   &
+                              +COB(5,2)*Dpoints(2,i,j)   &
+                              +COB(6,2)
+        Dbas(3,DER_FUNC,i,j)=  COB(1,3)*Dpoints(1,i,j)**2 &
+                              +COB(2,3)*Dpoints(2,i,j)**2 &
+                              +COB(3,3)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,3)*Dpoints(1,i,j)   &
+                              +COB(5,3)*Dpoints(2,i,j)   &
+                              +COB(6,3)
+        Dbas(4,DER_FUNC,i,j)=  COB(1,4)*Dpoints(1,i,j)**2 &
+                              +COB(2,4)*Dpoints(2,i,j)**2 &
+                              +COB(3,4)*Dpoints(1,i,j)*Dpoints(2,i,j) &
+                              +COB(4,4)*Dpoints(1,i,j)    &
+                              +COB(5,4)*Dpoints(2,i,j)    &
+                              +COB(6,4)
+      END DO
+      
+      ! x-derivatives
+            
+      DO i=1,npointsderx   ! either 0 or npoints
+        Dbas(1,DER_DERIV_X,i,j) = 2.0_DP*COB(1,1)*Dpoints(1,i,j) &
+                                        +COB(3,1)*Dpoints(2,i,j) &
+                                        +COB(4,1)
+        Dbas(2,DER_DERIV_X,i,j) = 2.0_DP*COB(1,2)*Dpoints(1,i,j) &
+                                        +COB(3,2)*Dpoints(2,i,j) &
+                                        +COB(4,2)
+        Dbas(3,DER_DERIV_X,i,j) = 2.0_DP*COB(1,3)*Dpoints(1,i,j) &
+                                        +COB(3,3)*Dpoints(2,i,j) &
+                                        +COB(4,3)
+        Dbas(4,DER_DERIV_X,i,j) = 2.0_DP*COB(1,4)*Dpoints(1,i,j) &
+                                        +COB(3,4)*Dpoints(2,i,j) &
+                                        +COB(4,4)
+      END DO
+
+      ! y-derivatives
+            
+      DO i=1,npointsdery   ! either 0 or npoints
+        Dbas(1,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,1)*Dpoints(2,i,j) &
+                                        +COB(3,1)*Dpoints(1,i,j) &
+                                        +COB(5,1)
+        Dbas(2,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,2)*Dpoints(2,i,j) &
+                                        +COB(3,2)*Dpoints(1,i,j) &
+                                        +COB(5,2)
+        Dbas(3,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,3)*Dpoints(2,i,j) &
+                                        +COB(3,3)*Dpoints(1,i,j) &
+                                        +COB(5,3)
+        Dbas(4,DER_DERIV_Y,i,j) = 2.0_DP*COB(2,4)*Dpoints(2,i,j) &
+                                        +COB(3,4)*Dpoints(1,i,j) &
+                                        +COB(5,4)
+
+      END DO
+      
+    END DO ! ielement
+  
+  END IF
              
   CONTAINS
 
@@ -4020,6 +4533,451 @@ CONTAINS
     F4 = CA3*X*X+CB3*X*Y+CC3*Y*Y
     END FUNCTION
 
+  END SUBROUTINE 
+
+!**************************************************************************
+! Element subroutines for parametric Q1~ element.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+ 
+!<subroutine>  
+
+  PURE SUBROUTINE elem_E030 (ieltyp, Dcoords, Djac, ddetj, Bder, &
+                             Dpoint, Dbas)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_Q1.
+  INTEGER, INTENT(IN)  :: ieltyp
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(1,2)
+  !  Djac(4) = J(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  REAL(DP), DIMENSION(EL_NJACENTRIES2D), INTENT(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  REAL(DP), INTENT(IN) :: ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
+  
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate
+  REAL(DP), DIMENSION(2), INTENT(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  !auxiliary vector containing the first derivatives on the reference element
+  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D) :: Dhelp
+  REAL(DP) :: dx,dy
+
+  REAL(DP) :: dxj !auxiliary variable
+  
+  ! The Q1 element is specified by four polynomials on the reference element.
+  ! These four polynomials are:
+  !
+  !  p_1(x,y) = -3/8 (x^2-y^2)  -  1/2 y^2  +  1/4
+  !  p_2(x,y) =  3/8 (x^2-y^2)  +  1/2 y^2  +  1/4
+  !  p_3(x,y) = -3/8 (x^2-y^2)  +  1/2 y^2  +  1/4
+  !  p_4(x,y) =  3/8 (x^2-y^2)  -  1/2 y^2  +  1/4
+  !
+  ! Each of them calculated that way that Pi(Xj)=delta_ij (Kronecker)
+  ! for X1,X2,X3,X4 the four corners of the reference element [-1,1]x[-1,1].
+  
+  ! Clear the output array
+  !Dbas = 0.0_DP
+  
+  dx = Dpoint(1)
+  dy = Dpoint(2)
+    
+  ! Remark: The Q1~-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  ! If function values are desired, calculate them.
+!  if (el_bder(DER_FUNC)) then
+    Dbas(1,DER_FUNC) = 0.125E0_DP*(-3.0_DP*(dx**2-dy**2)-4.0_DP*dy+2.0_DP) 
+    Dbas(2,DER_FUNC) = 0.125E0_DP*( 3.0_DP*(dx**2-dy**2)+4.0_DP*dx+2.0_DP)
+    Dbas(3,DER_FUNC) = 0.125E0_DP*( 3.0_DP*(dx**2-dy**2)-4.0_DP*dy-2.0_DP)
+    Dbas(4,DER_FUNC) = 0.125E0_DP*(-3.0_DP*(dx**2-dy**2)+4.0_DP*dx-2.0_DP)
+!  endif
+  
+  ! If x-or y-derivatives are desired, calculate them.
+  ! The values of the derivatives are calculated by taking the
+  ! derivative of the polynomials and multiplying them with the
+  ! inverse of the transformation matrix (in each point) as
+  ! stated above.
+!  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
+    dxj = 0.125E0_DP / ddetj
+    
+    ! x- and y-derivatives on reference element
+    Dhelp(1,1) = -6.0_DP*dx
+    Dhelp(2,1) =  6.0_DP*dx+4.0_DP
+    Dhelp(3,1) = -6.0_DP*dx
+    Dhelp(4,1) =  6.0_DP*dx-4.0_DP
+    Dhelp(1,2) =  6.0_DP*dy-4.0_DP
+    Dhelp(2,2) = -6.0_DP*dy
+    Dhelp(3,2) =  6.0_DP*dy+4.0_DP
+    Dhelp(4,2) = -6.0_DP*dy
+      
+    ! x-derivatives on current element
+!    if (Bder(DER_DERIV_X)) then
+      Dbas(1,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(1,1) - Djac(2) * Dhelp(1,2))
+      Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(2,1) - Djac(2) * Dhelp(2,2))
+      Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(3,1) - Djac(2) * Dhelp(3,2))
+      Dbas(4,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(4,1) - Djac(2) * Dhelp(4,2))
+!    endif
+    
+    ! y-derivatives on current element
+!    if (Bder(DER_DERIV_Y)) then
+      Dbas(1,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(1,1) - Djac(1) * Dhelp(1,2))
+      Dbas(2,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(2,1) - Djac(1) * Dhelp(2,2))
+      Dbas(3,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(3,1) - Djac(1) * Dhelp(3,2))
+      Dbas(4,DER_DERIV_Y) = -dxj * (Djac(3) * Dhelp(4,1) - Djac(1) * Dhelp(4,2))
+!    endif
+!  endif
+    
+  END SUBROUTINE 
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  PURE SUBROUTINE elem_E030_mult (ieltyp, Dcoords, Djac, Ddetj, &
+                                  Bder, Dbas, npoints, Dpoints)
+
+!<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at multiple given points on the reference element. 
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_Q1.
+  INTEGER, INTENT(IN)  :: ieltyp
+  
+  ! Number of points on every element where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element. For every point i:
+  !  Djac(1,i) = J_i(1,1)
+  !  Djac(2,i) = J_i(2,1)
+  !  Djac(3,i) = J_i(1,2)
+  !  Djac(4,i) = J_i(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints), INTENT(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element for every of the npoints points.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  REAL(DP), DIMENSION(npoints), INTENT(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(NDIM2D,npoints).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates.
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  REAL(DP), DIMENSION(:,:,:), INTENT(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+
+  REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
+  
+  INTEGER :: i   ! point counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The Q1-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  !if function values are desired
+  !IF (Bder(DER_FUNC)) THEN
+    DO i=1,npoints
+      Dbas(1,DER_FUNC,i) = 0.125E0_DP* &
+          (-3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)-4.0_DP*Dpoints(2,i)+2.0_DP) 
+      Dbas(2,DER_FUNC,i) = 0.125E0_DP* &
+          ( 3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)+4.0_DP*Dpoints(1,i)+2.0_DP)
+      Dbas(3,DER_FUNC,i) = 0.125E0_DP* &
+          ( 3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)-4.0_DP*Dpoints(2,i)-2.0_DP)
+      Dbas(4,DER_FUNC,i) = 0.125E0_DP* &
+          (-3.0_DP*(Dpoints(1,i)**2-Dpoints(2,i)**2)+4.0_DP*Dpoints(1,i)-2.0_DP)
+    END DO
+  !ENDIF
+  
+  !if x-or y-derivatives are desired
+!  IF ((Bder(DER_DERIV_X)) .OR. (Bder(DER_DERIV_Y))) THEN
+    dxj = 0.125E0_DP / Ddetj
+    
+    !x- and y-derivatives on reference element
+    DO i=1,npoints
+      Dhelp(1,1,i) = -6.0_DP*Dpoints(1,i)
+      Dhelp(2,1,i) =  6.0_DP*Dpoints(1,i)+4.0_DP
+      Dhelp(3,1,i) = -6.0_DP*Dpoints(1,i)
+      Dhelp(4,1,i) =  6.0_DP*Dpoints(1,i)-4.0_DP
+      Dhelp(1,2,i) =  6.0_DP*Dpoints(2,i)-4.0_DP
+      Dhelp(2,2,i) = -6.0_DP*Dpoints(2,i)
+      Dhelp(3,2,i) =  6.0_DP*Dpoints(2,i)+4.0_DP
+      Dhelp(4,2,i) = -6.0_DP*Dpoints(2,i)
+    END DO
+      
+    !x-derivatives on current element
+!    IF (Bder(DER_DERIV_X)) THEN
+      DO i=1,npoints
+        Dbas(1,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(1,1,i) - Djac(2,i) * Dhelp(1,2,i))
+        Dbas(2,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(2,1,i) - Djac(2,i) * Dhelp(2,2,i))
+        Dbas(3,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(3,1,i) - Djac(2,i) * Dhelp(3,2,i))
+        Dbas(4,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(4,1,i) - Djac(2,i) * Dhelp(4,2,i))
+!      END DO
+!    ENDIF
+    
+    !y-derivatives on current element
+!    IF (Bder(DER_DERIV_Y)) THEN
+!      DO i=1,npoints
+        Dbas(1,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(1,1,i) - Djac(1,i) * Dhelp(1,2,i))
+        Dbas(2,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(2,1,i) - Djac(1,i) * Dhelp(2,2,i))
+        Dbas(3,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(3,1,i) - Djac(1,i) * Dhelp(3,2,i))
+        Dbas(4,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(4,1,i) - Djac(1,i) * Dhelp(4,2,i))
+      END DO
+!    ENDIF
+!  ENDIF
+    
+  END SUBROUTINE 
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  PURE SUBROUTINE elem_E030_sim (ieltyp, Dcoords, Djac, Ddetj, &
+                                 Bder, Dbas, npoints, nelements, Dpoints)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the reference 
+  ! element for multiple given elements.
+!</description>
+
+!<input>
+  ! Element type identifier. Must be =EL_Q1.
+  INTEGER, INTENT(IN)  :: ieltyp
+
+  ! Number of points on every element where to evalate the basis functions.
+  INTEGER, INTENT(IN) :: npoints
+  
+  ! Number of elements, the basis functions are evaluated at
+  INTEGER, INTENT(IN)  :: nelements
+  
+  ! Array with coordinates of the corners that form the real element.
+  !  Dcoords(1,.,.)=x-coordinates,
+  !  Dcoords(2,.,.)=y-coordinates.
+  ! furthermore:
+  !  Dcoords(:,i,.) = Coordinates of vertex i
+  ! furthermore:
+  !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
+  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real elements. For every point i:
+  !  Djac(1,i,.) = J_i(1,1,.)
+  !  Djac(2,i,.) = J_i(2,1,.)
+  !  Djac(3,i,.) = J_i(1,2,.)
+  !  Djac(4,i,.) = J_i(2,2,.)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  !  Djac(:,:,j) refers to the determinants of the points of element j.
+  REAL(DP), DIMENSION(EL_NJACENTRIES2D,npoints,nelements), INTENT(IN) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! elements for every of the npoints points on all the elements.
+  !  Ddetj(i,.) = Determinant of point i
+  !  Ddetj(:,j) = determinants of all points on element j
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  REAL(DP), DIMENSION(npoints,nelements), INTENT(IN) :: Ddetj
+  
+  ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  LOGICAL, DIMENSION(EL_MAXNDER), INTENT(IN) :: Bder
+  
+  ! Array with coordinates of the points where to evaluate.
+  ! The coordinates are expected on the reference element.
+  ! DIMENSION(NDIM2D,npoints,nelements).
+  !  Dpoints(1,.)=x-coordinates,
+  !  Dpoints(2,.)=y-coordinates.
+  ! furthermore:
+  !  Dpoints(:,i,.) = Coordinates of point i
+  ! furthermore:
+  !  Dpoints(:,:,j) = Coordinates of all points on element j
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dpoints
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  !   basis function of the finite element k in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
+  REAL(DP), DIMENSION(:,:,:,:), INTENT(OUT) :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! auxiliary vector containing the first derivatives on the reference element
+  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+
+  REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
+  
+  INTEGER :: i   ! point counter
+  INTEGER :: j   ! element counter
+    
+  ! Clear the output array
+  !Dbas = 0.0_DP
+
+  ! Remark: The Q1-element always computes function value and 1st derivatives.
+  ! That's even faster than when using three IF commands for preventing
+  ! the computation of one of the values!
+      
+  !if function values are desired
+  IF (Bder(DER_FUNC)) THEN
+  
+    DO j=1,nelements
+    
+      DO i=1,npoints
+        Dbas(1,DER_FUNC,i,j) = 0.125E0_DP* &
+            (-3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)-4.0_DP*Dpoints(2,i,j)+2.0_DP) 
+        Dbas(2,DER_FUNC,i,j) = 0.125E0_DP* &
+            ( 3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)+4.0_DP*Dpoints(1,i,j)+2.0_DP)
+        Dbas(3,DER_FUNC,i,j) = 0.125E0_DP* &
+            ( 3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)-4.0_DP*Dpoints(2,i,j)-2.0_DP)
+        Dbas(4,DER_FUNC,i,j) = 0.125E0_DP* &
+            (-3.0_DP*(Dpoints(1,i,j)**2-Dpoints(2,i,j)**2)+4.0_DP*Dpoints(1,i,j)-2.0_DP)
+      END DO
+      
+    END DO
+    
+  END IF
+    
+  !if x-or y-derivatives are desired
+  IF ((Bder(DER_DERIV_X)) .OR. (Bder(DER_DERIV_Y))) THEN
+  
+    DO j=1,nelements
+      dxj = 0.125E0_DP / Ddetj(:,j)
+      
+      !x- and y-derivatives on reference element
+      DO i=1,npoints
+        Dhelp(1,1,i) = -6.0_DP*Dpoints(1,i,j)
+        Dhelp(2,1,i) =  6.0_DP*Dpoints(1,i,j)+4.0_DP
+        Dhelp(3,1,i) = -6.0_DP*Dpoints(1,i,j)
+        Dhelp(4,1,i) =  6.0_DP*Dpoints(1,i,j)-4.0_DP
+        Dhelp(1,2,i) =  6.0_DP*Dpoints(2,i,j)-4.0_DP
+        Dhelp(2,2,i) = -6.0_DP*Dpoints(2,i,j)
+        Dhelp(3,2,i) =  6.0_DP*Dpoints(2,i,j)+4.0_DP
+        Dhelp(4,2,i) = -6.0_DP*Dpoints(2,i,j)
+      END DO
+        
+      !x-derivatives on current element
+!      IF (Bder(DER_DERIV_X)) THEN
+        DO i=1,npoints
+          Dbas(1,DER_DERIV_X,i,j) = dxj(i) * (Djac(4,i,j) * Dhelp(1,1,i) &
+                                    - Djac(2,i,j) * Dhelp(1,2,i))
+          Dbas(2,DER_DERIV_X,i,j) = dxj(i) * (Djac(4,i,j) * Dhelp(2,1,i) &
+                                    - Djac(2,i,j) * Dhelp(2,2,i))
+          Dbas(3,DER_DERIV_X,i,j) = dxj(i) * (Djac(4,i,j) * Dhelp(3,1,i) &
+                                    - Djac(2,i,j) * Dhelp(3,2,i))
+          Dbas(4,DER_DERIV_X,i,j) = dxj(i) * (Djac(4,i,j) * Dhelp(4,1,i) &
+                                    - Djac(2,i,j) * Dhelp(4,2,i))
+        END DO
+!      ENDIF
+      
+      !y-derivatives on current element
+!      IF (Bder(DER_DERIV_Y)) THEN
+        DO i=1,npoints
+          Dbas(1,DER_DERIV_Y,i,j) = -dxj(i) * (Djac(3,i,j) * Dhelp(1,1,i) &
+                                    - Djac(1,i,j) * Dhelp(1,2,i))
+          Dbas(2,DER_DERIV_Y,i,j) = -dxj(i) * (Djac(3,i,j) * Dhelp(2,1,i) &
+                                    - Djac(1,i,j) * Dhelp(2,2,i))
+          Dbas(3,DER_DERIV_Y,i,j) = -dxj(i) * (Djac(3,i,j) * Dhelp(3,1,i) &
+                                    - Djac(1,i,j) * Dhelp(3,2,i))
+          Dbas(4,DER_DERIV_Y,i,j) = -dxj(i) * (Djac(3,i,j) * Dhelp(4,1,i) &
+                                    - Djac(1,i,j) * Dhelp(4,2,i))
+        END DO
+!      ENDIF
+
+    END DO
+      
+  END IF
+    
   END SUBROUTINE 
 
 END MODULE 

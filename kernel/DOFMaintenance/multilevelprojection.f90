@@ -926,7 +926,7 @@ CONTAINS
         ! discretisation, choose the right prolongation and call it.
         p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
         p_rtriaFine => p_rdiscrFine%p_rtriangulation
-        SELECT CASE (ractProjection%ielementTypeProlongation)
+        SELECT CASE (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
         CASE (EL_P1)
           ! P1 prolongation
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
@@ -981,7 +981,7 @@ CONTAINS
           CALL mlprj_prolUniformQP1_double (p_DuCoarse,p_DuFine, &
                p_IneighboursAtElementFine,p_rtriaCoarse%NEL,p_rtriaFine%NEL)                       
                        
-        CASE (EL_E030,EL_EM30)
+        CASE (EL_Q1T)
           ! Q1~ prolongation, DOF's = integral mean value
           CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                                p_IedgesAtElementFine)
@@ -1147,7 +1147,7 @@ CONTAINS
         ! discretisation, choose the right prolongation and call it.
         p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
         p_rtriaFine => p_rdiscrFine%p_rtriangulation
-        SELECT CASE (ractProjection%ielementTypeProlongation)
+        SELECT CASE (elem_getPrimaryElement(ractProjection%ielementTypeRestriction))
         CASE (EL_P1)
           ! P1 restriction
           CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
@@ -1201,7 +1201,7 @@ CONTAINS
           CALL mlprj_restUniformQP1_double (p_DuCoarse,p_DuFine, &
                p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)                              
                               
-        CASE (EL_E030,EL_EM30)
+        CASE (EL_Q1T)
           ! Q1~ restriction, DOF's = integral mean values
           CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                                p_IedgesAtElementFine)
@@ -1366,7 +1366,7 @@ CONTAINS
         ! discretisation, choose the right prolongation and call it.
         p_rtriaCoarse => p_rdiscrCoarse%p_rtriangulation
         p_rtriaFine => p_rdiscrFine%p_rtriangulation
-        SELECT CASE (ractProjection%ielementTypeProlongation)
+        SELECT CASE (elem_getPrimaryElement(ractProjection%ielementTypeProlongation))
         CASE (EL_P1)
           ! P1 interpolation
           CALL mlprj_interpUniformP1_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
@@ -1399,7 +1399,7 @@ CONTAINS
           CALL mlprj_interpUniformQP1_double (p_DuCoarse,p_DuFine, &
                   p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)          
                   
-        CASE (EL_E030,EL_EM30,EL_E031,EL_EM31)
+        CASE (EL_Q1T)
           ! Q1~ interpolation, DOF's = integral mean values
           ! We use the same routine also for interpolating Ex31 solutions - there's
           ! not too much difference...

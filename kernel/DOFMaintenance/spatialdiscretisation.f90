@@ -356,7 +356,7 @@ CONTAINS
       END IF
     END IF
 
-    SELECT CASE (ielementType)
+    SELECT CASE (elem_getPrimaryElement(ielementType))
     CASE (EL_P0)
       ! Use Gauss 1X1
       ccubType = CUB_G1_T
@@ -373,7 +373,7 @@ CONTAINS
       ! Use trapezoidal rule
       ccubType = CUB_TRZ
 
-    CASE (EL_E030,EL_EM30,EL_E031,EL_EM31)
+    CASE (EL_Q1T)
       ! Use midpoint rule
       ccubType = CUB_MID
       

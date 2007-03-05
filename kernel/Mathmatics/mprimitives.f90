@@ -318,6 +318,215 @@ CONTAINS
 
 !<subroutine>
 
+  PURE SUBROUTINE mprim_invert4x4MatrixDirectDble(Da,Db)
+
+!<description>
+  ! This subroutine directly inverts a 4x4 system without any pivoting.
+  ! 'Da' is a 2-dimensional 4x4 m matrix. The inverse of Da is written
+  ! to the 2-dimensional 4x4 matrix Db.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Da and Db are assumed to be 4x4 arrays!
+!</description>
+
+!<input>
+  ! source square matrix to be inverted
+  REAL(DP), DIMENSION(4,4), INTENT(IN) :: Da
+!</input>
+
+!<output>
+  ! destination square matrix; receives $A^{-1}$.
+  REAL(DP), DIMENSION(4,4), INTENT(OUT) :: Db
+!</output>
+
+!</subroutine>
+
+    REAL(DP) :: daux
+
+      ! Explicit formula for 4x4 system
+      Db(1,1)=Da(2,2)*Da(3,3)*Da(4,4)+Da(2,3)*Da(3,4)*Da(4,2)+Da(2&
+          &,4)*Da(3,2)*Da(4,3)- Da(2,2)*Da(3,4)*Da(4,3)-Da(2,3)&
+          &*Da(3,2)*Da(4,4)-Da(2,4)*Da(3,3)*Da(4,2)
+      Db(2,1)=Da(2,1)*Da(3,4)*Da(4,3)+Da(2,3)*Da(3,1)*Da(4,4)+Da(2&
+          &,4)*Da(3,3)*Da(4,1)- Da(2,1)*Da(3,3)*Da(4,4)-Da(2,3)&
+          &*Da(3,4)*Da(4,1)-Da(2,4)*Da(3,1)*Da(4,3)
+      Db(3,1)=Da(2,1)*Da(3,2)*Da(4,4)+Da(2,2)*Da(3,4)*Da(4,1)+Da(2&
+          &,4)*Da(3,1)*Da(4,2)- Da(2,1)*Da(3,4)*Da(4,2)-Da(2,2)&
+          &*Da(3,1)*Da(4,4)-Da(2,4)*Da(3,2)*Da(4,1)
+      Db(4,1)=Da(2,1)*Da(3,3)*Da(4,2)+Da(2,2)*Da(3,1)*Da(4,3)+Da(2&
+          &,3)*Da(3,2)*Da(4,1)- Da(2,1)*Da(3,2)*Da(4,3)-Da(2,2)&
+          &*Da(3,3)*Da(4,1)-Da(2,3)*Da(3,1)*Da(4,2)
+      Db(1,2)=Da(1,2)*Da(3,4)*Da(4,3)+Da(1,3)*Da(3,2)*Da(4,4)+Da(1&
+          &,4)*Da(3,3)*Da(4,2)- Da(1,2)*Da(3,3)*Da(4,4)-Da(1,3)&
+          &*Da(3,4)*Da(4,2)-Da(1,4)*Da(3,2)*Da(4,3)
+      Db(2,2)=Da(1,1)*Da(3,3)*Da(4,4)+Da(1,3)*Da(3,4)*Da(4,1)+Da(1&
+          &,4)*Da(3,1)*Da(4,3)- Da(1,1)*Da(3,4)*Da(4,3)-Da(1,3)&
+          &*Da(3,1)*Da(4,4)-Da(1,4)*Da(3,3)*Da(4,1)
+      Db(3,2)=Da(1,1)*Da(3,4)*Da(4,2)+Da(1,2)*Da(3,1)*Da(4,4)+Da(1&
+          &,4)*Da(3,2)*Da(4,1)- Da(1,1)*Da(3,2)*Da(4,4)-Da(1,2)&
+          &*Da(3,4)*Da(4,1)-Da(1,4)*Da(3,1)*Da(4,2)
+      Db(4,2)=Da(1,1)*Da(3,2)*Da(4,3)+Da(1,2)*Da(3,3)*Da(4,1)+Da(1&
+          &,3)*Da(3,1)*Da(4,2)- Da(1,1)*Da(3,3)*Da(4,2)-Da(1,2)&
+          &*Da(3,1)*Da(4,3)-Da(1,3)*Da(3,2)*Da(4,1)
+      Db(1,3)=Da(1,2)*Da(2,3)*Da(4,4)+Da(1,3)*Da(2,4)*Da(4,2)+Da(1&
+          &,4)*Da(2,2)*Da(4,3)- Da(1,2)*Da(2,4)*Da(4,3)-Da(1,3)&
+          &*Da(2,2)*Da(4,4)-Da(1,4)*Da(2,3)*Da(4,2)
+      Db(2,3)=Da(1,1)*Da(2,4)*Da(4,3)+Da(1,3)*Da(2,1)*Da(4,4)+Da(1&
+          &,4)*Da(2,3)*Da(4,1)- Da(1,1)*Da(2,3)*Da(4,4)-Da(1,3)&
+          &*Da(2,4)*Da(4,1)-Da(1,4)*Da(2,1)*Da(4,3)
+      Db(3,3)=Da(1,1)*Da(2,2)*Da(4,4)+Da(1,2)*Da(2,4)*Da(4,1)+Da(1&
+          &,4)*Da(2,1)*Da(4,2)- Da(1,1)*Da(2,4)*Da(4,2)-Da(1,2)&
+          &*Da(2,1)*Da(4,4)-Da(1,4)*Da(2,2)*Da(4,1)
+      Db(4,3)=Da(1,1)*Da(2,3)*Da(4,2)+Da(1,2)*Da(2,1)*Da(4,3)+Da(1&
+          &,3)*Da(2,2)*Da(4,1)- Da(1,1)*Da(2,2)*Da(4,3)-Da(1,2)&
+          &*Da(2,3)*Da(4,1)-Da(1,3)*Da(2,1)*Da(4,2)
+      Db(1,4)=Da(1,2)*Da(2,4)*Da(3,3)+Da(1,3)*Da(2,2)*Da(3,4)+Da(1&
+          &,4)*Da(2,3)*Da(3,2)- Da(1,2)*Da(2,3)*Da(3,4)-Da(1,3)&
+          &*Da(2,4)*Da(3,2)-Da(1,4)*Da(2,2)*Da(3,3)
+      Db(2,4)=Da(1,1)*Da(2,3)*Da(3,4)+Da(1,3)*Da(2,4)*Da(3,1)+Da(1&
+          &,4)*Da(2,1)*Da(3,3)- Da(1,1)*Da(2,4)*Da(3,3)-Da(1,3)&
+          &*Da(2,1)*Da(3,4)-Da(1,4)*Da(2,3)*Da(3,1)
+      Db(3,4)=Da(1,1)*Da(2,4)*Da(3,2)+Da(1,2)*Da(2,1)*Da(3,4)+Da(1&
+          &,4)*Da(2,2)*Da(3,1)- Da(1,1)*Da(2,2)*Da(3,4)-Da(1,2)&
+          &*Da(2,4)*Da(3,1)-Da(1,4)*Da(2,1)*Da(3,2)
+      Db(4,4)=Da(1,1)*Da(2,2)*Da(3,3)+Da(1,2)*Da(2,3)*Da(3,1)+Da(1&
+          &,3)*Da(2,1)*Da(3,2)- Da(1,1)*Da(2,3)*Da(3,2)-Da(1,2)&
+          &*Da(2,1)*Da(3,3)-Da(1,3)*Da(2,2)*Da(3,1)
+      daux=Da(1,1)*Da(2,2)*Da(3,3)*Da(4,4)+Da(1,1)*Da(2,3)*Da(3,4)&
+          &*Da(4,2)+Da(1,1)*Da(2,4)*Da(3,2)*Da(4,3)+ Da(1,2)*Da(2&
+          &,1)*Da(3,4)*Da(4,3)+Da(1,2)*Da(2,3)*Da(3,1)*Da(4,4)+Da(1&
+          &,2)*Da(2,4)*Da(3,3)*Da(4,1)+ Da(1,3)*Da(2,1)*Da(3,2)&
+          &*Da(4,4)+Da(1,3)*Da(2,2)*Da(3,4)*Da(4,1)+Da(1,3)*Da(2,4)&
+          &*Da(3,1)*Da(4,2)+ Da(1,4)*Da(2,1)*Da(3,3)*Da(4,2)+Da(1&
+          &,4)*Da(2,2)*Da(3,1)*Da(4,3)+Da(1,4)*Da(2,3)*Da(3,2)*Da(4&
+          &,1)- Da(1,1)*Da(2,2)*Da(3,4)*Da(4,3)-Da(1,1)*Da(2,3)&
+          &*Da(3,2)*Da(4,4)-Da(1,1)*Da(2,4)*Da(3,3)*Da(4,2)- Da(1&
+          &,2)*Da(2,1)*Da(3,3)*Da(4,4)-Da(1,2)*Da(2,3)*Da(3,4)*Da(4&
+          &,1)-Da(1,2)*Da(2,4)*Da(3,1)*Da(4,3)- Da(1,3)*Da(2,1)&
+          &*Da(3,4)*Da(4,2)-Da(1,3)*Da(2,2)*Da(3,1)*Da(4,4)-Da(1,3)&
+          &*Da(2,4)*Da(3,2)*Da(4,1)- Da(1,4)*Da(2,1)*Da(3,2)*Da(4&
+          &,3)-Da(1,4)*Da(2,2)*Da(3,3)*Da(4,1)-Da(1,4)*Da(2,3)*Da(3&
+          &,1)*Da(4,2)
+      Db=Db*(1.0_DP/daux)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE mprim_invertMatrixPivotDble(Da,ndim)
+
+!<description>
+  ! This subroutine directly inverts a (ndim x ndim) system with pivoting.
+  ! 'Da' is a 2-dimensional (ndim x ndim) matrix and will be replaced
+  ! by its inverse.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Da and Db are assumed to be 4x4 arrays!
+!</description>
+
+!<input>
+  ! Dimension of the matrix Da and Db.
+  INTEGER, INTENT(IN) :: ndim
+!</input>
+
+!<inputoutput>
+  ! source square matrix to be inverted
+  REAL(DP), DIMENSION(ndim,ndim), INTENT(INOUT) :: Da
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER, DIMENSION(ndim) :: Kindx,Kindy
+
+    REAL(DP) :: dpivot,daux
+    INTEGER :: idim1,idim2,ix,iy,indx,indy
+
+    ! Perform factorization of matrix Da
+
+    ! Initialization
+    Kindx=0
+    Kindy=0
+
+    DO idim1=1,ndim
+
+      ! Determine pivotal element
+      dpivot=0
+
+      DO iy=1,ndim
+        IF (Kindy(iy) /= 0) CYCLE
+
+        DO ix=1,ndim
+          IF (Kindx(ix) /= 0) CYCLE
+
+          IF (ABS(Da(ix,iy)) .LE. ABS(dpivot)) CYCLE
+          dpivot=Da(ix,iy);  indx=ix;  indy=iy
+        END DO
+      END DO
+
+      ! Return if pivotal element is zero
+      IF (ABS(dpivot) .LE. 0._DP) RETURN
+
+      Kindx(indx)=indy;  Kindy(indy)=indx;  Da(indx,indy)=1._DP&
+          &/dpivot
+
+      DO idim2=1,ndim
+        IF (idim2 == indy) CYCLE 
+        Da(1:indx-1,idim2)=Da(1:indx-1,idim2)-Da(1:indx-1,  &
+            & indy)*Da(indx,idim2)/dpivot
+        Da(indx+1:ndim,idim2)=Da(indx+1:ndim,idim2)-Da(indx+1:ndim&
+            &,indy)*Da(indx,idim2)/dpivot
+      END DO
+
+      DO ix=1,ndim
+        IF (ix /= indx) Da(ix,indy)=Da(ix,indy)/dpivot
+      END DO
+
+      DO iy=1,ndim
+        IF (iy /= indy) Da(indx,iy)=-Da(indx,iy)/dpivot
+      END DO
+    END DO
+
+    DO ix=1,ndim
+      IF (Kindx(ix) == ix) CYCLE
+
+      DO iy=1,ndim
+        IF (Kindx(iy) == ix) EXIT
+      END DO
+
+      DO idim1=1,ndim
+        daux=Da(ix,idim1)
+        Da(ix,idim1)=Da(iy,idim1)
+        Da(iy,idim1)=daux
+      END DO
+
+      Kindx(iy)=Kindx(ix);  Kindx(ix)=ix
+    END DO
+
+    DO ix=1,ndim
+      IF (Kindy(ix) == ix) CYCLE
+
+      DO iy=1,ndim
+        IF (Kindy(iy) == ix) EXIT
+      END DO
+
+      DO idim1=1,ndim
+        daux=Da(idim1,ix)
+        Da(idim1,ix)=Da(idim1,iy)
+        Da(idim1,iy)=daux
+      END DO
+      
+      Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
+    END DO
+
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE mprim_invertMatrixSngl(Fa,Ff,Fx,ndim,ipar)
 
 !<description>

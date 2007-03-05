@@ -105,6 +105,10 @@
 !#     -> Adds a pressure-drop boundary condition the real boundary to a 
 !#        boundary-condition object
 !#
+!# 6.) bcond_newSlipBConRealBD
+!#     -> Adds (nonlinear) slip boundary conditions on the real boundary
+!#        to a boundary-condition object
+!#
 !# </purpose>
 !##############################################################################
 

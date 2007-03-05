@@ -135,12 +135,14 @@ CONTAINS
     
     ! What is the destination space?
     ! Remark: Currently only Q1 supported...
-    SELECT CASE (p_rdestDiscr%RelementDistribution(1)%itrialElement)
+    SELECT CASE (elem_getPrimaryElement(p_rdestDiscr%RelementDistribution(1)%&
+                                        itrialElement))
     CASE (EL_Q1)
       ! So we should convert the source vector into a Q1 destination vector.
       ! Which element is used in the trial space?
-      SELECT CASE (p_rsourceDiscr%RelementDistribution(1)%itrialElement)
-      CASE (EL_E030,EL_E031,EL_EM30,EL_EM31)
+      SELECT CASE (elem_getPrimaryElement(p_rsourceDiscr%RelementDistribution(1)%&
+                                          itrialElement))
+      CASE (EL_Q1T)
         ! That's a little bit harder. We have to convert an FE space with DOF's
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
         ! is treated as if the DOF's were in the edge midpoints. The error

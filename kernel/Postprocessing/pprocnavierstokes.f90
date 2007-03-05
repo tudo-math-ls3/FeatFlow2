@@ -550,13 +550,11 @@ CONTAINS
     ieltypeDest = rdestVector%p_rspatialDiscretisation% &
         RelementDistribution(1)%itrialElement
 
-    IF ((ieltype1 .NE. EL_E030) .AND. (ieltype1 .NE. EL_EM30) .AND. &
-        (ieltype1 .NE. EL_E031) .AND. (ieltype1 .NE. EL_EM31)) THEN
+    IF (elem_getPrimaryElement(ieltype1) .NE. EL_Q1T) THEN
       PRINT *,'ppns2D_streamfct_uniform: rvector must be discretised with Q1~!'
     END IF
 
-    IF ((ieltype2 .NE. EL_E030) .AND. (ieltype2 .NE. EL_EM30) .AND. &
-        (ieltype2 .NE. EL_E031) .AND. (ieltype2 .NE. EL_EM31)) THEN
+    IF (elem_getPrimaryElement(ieltype2) .NE. EL_Q1T) THEN
       PRINT *,'ppns2D_streamfct_uniform: rvector must be discretised with Q1~!'
     END IF
 

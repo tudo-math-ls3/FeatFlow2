@@ -368,8 +368,7 @@ CONTAINS
 
     i = rmatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
     IF ((rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-        ((i .NE. EL_E030) .AND. (i .NE. EL_E031) .AND. &
-         (i .NE. EL_EM30) .AND. (i .NE. EL_EM31))) THEN
+        (elem_getPrimaryElement(i) .NE. EL_Q1T)) THEN
       PRINT *,'UPWIND: Unsupported discretisation.'
       STOP
     END IF

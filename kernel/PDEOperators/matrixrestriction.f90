@@ -159,10 +159,8 @@ CONTAINS
 
     i1 = rfineMatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
     i2 = rcoarseMatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-    IF (((i1 .NE. EL_E030) .AND. (i1 .NE. EL_EM30) .AND. &
-         (i1 .NE. EL_EM30) .AND. (i1 .NE. EL_EM31)) .OR. &
-        ((i2 .NE. EL_E030) .AND. (i2 .NE. EL_EM30) .AND. &
-         (i2 .NE. EL_EM30) .AND. (i2 .NE. EL_EM31))) THEN
+    IF ((elem_getPrimaryElement(i1) .NE. EL_Q1T) .OR. &
+        (elem_getPrimaryElement(i2) .NE. EL_Q1T)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Only Q1~-discretisation supported!'
       STOP
     END IF

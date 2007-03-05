@@ -118,7 +118,7 @@ CONTAINS
     ! OUT: number of global DOF's.
     
     ! The number of global DOF's depends on the element type...
-    SELECT CASE (ieltype)
+    SELECT CASE (elem_getPrimaryElement(ieltype))
     CASE (EL_P0, EL_Q0)
       ! DOF's in the cell midpoints
       NDFG_uniform2D = rtriangulation%NEL
@@ -140,7 +140,7 @@ CONTAINS
     CASE (EL_QP1)
       ! 3 DOF's in the midpoint of the element.
       NDFG_uniform2D = 3*rtriangulation%NEL
-    CASE (EL_E030, EL_E031, EL_EM30, EL_EM31)
+    CASE (EL_Q1T)
       ! 1 DOF per edge
       NDFG_uniform2D = rtriangulation%NMT
     END SELECT
@@ -271,7 +271,7 @@ CONTAINS
       ieltype = rdiscretisation%RelementDistribution(1)%itrialElement
     END IF
     
-    SELECT CASE (ieltype)
+    SELECT CASE (elem_getPrimaryElement(ieltype))
     CASE (EL_P0, EL_Q0)
       ! DOF's for Q0
       CALL dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
@@ -296,7 +296,7 @@ CONTAINS
     CASE (EL_QP1)
       ! DOF's for Q1
       CALL dof_locGlobUniMult_QP1(p_rtriangulation%NEL,IelIdx, IdofGlob)
-    CASE (EL_E030, EL_E031, EL_EM30, EL_EM31)
+    CASE (EL_Q1T)
       ! DOF's in the edges
       CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
       CALL dof_locGlobUniMult_E30(p_rtriangulation%NVT,p_2darray, IelIdx, IdofGlob)
