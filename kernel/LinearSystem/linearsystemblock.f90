@@ -1999,8 +1999,8 @@ CONTAINS
 !</subroutine>
 
     ! Fill the rmatrix structure with data.
-    rmatrix%NEQ         = rscalarMat%NEQ
-    rmatrix%NCOLS       = rscalarMat%NCOLS
+    rmatrix%NEQ         = rscalarMat%NEQ * rscalarMat%NVAR
+    rmatrix%NCOLS       = rscalarMat%NCOLS * rscalarMat%NVAR
     rmatrix%ndiagBlocks = 1
     rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
     
@@ -2054,7 +2054,7 @@ CONTAINS
 !</subroutine>
 
     ! Fill the rvector structure with data.
-    rvector%NEQ         = rscalarVec%NEQ
+    rvector%NEQ         = rscalarVec%NEQ * rscalarVec%NVAR
     rvector%cdataType   = rscalarVec%cdataType
     rvector%h_Ddata     = rscalarVec%h_Ddata
     rvector%nblocks     = 1

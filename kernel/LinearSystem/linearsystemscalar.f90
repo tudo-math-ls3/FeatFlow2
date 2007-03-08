@@ -660,8 +660,7 @@ CONTAINS
   END IF
   
   ! Vector/Matrix must have the same size 
-  IF ((rvector%NEQ .NE. NCOLS) .OR. &
-      (rmatrix%NVAR .NE. rvector%NVAR)) THEN
+  IF (rvector%NEQ .NE. NCOLS) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
       RETURN
@@ -739,7 +738,6 @@ CONTAINS
   ! Matrices must have the same size 
   IF ((rmatrix1%NEQ .NE. rmatrix2%NEQ) .OR. &
       (rmatrix1%NCOLS .NE. rmatrix2%NCOLS) .OR. &
-      (rmatrix1%NVAR .NE. rmatrix2%NVAR) .OR. &
       (rmatrix1%NA .NE. rmatrix2%NA)) THEN
     IF (PRESENT(bcompatible)) THEN
       bcompatible = .FALSE.
@@ -1636,6 +1634,12 @@ CONTAINS
       ! Get NVAR - from the matrix, not from the vector!
       NVAR = rmatrix%NVAR
 
+      ! Check if vectors are compatible
+      IF (rx%NVAR /= NVAR .OR. ry%NVAR /= NVAR) THEN
+        PRINT *, "lsyssc_LAX79INTLdoubledouble: Matrix/Vector is incompatible!"
+        STOP
+      END IF
+
       ! Get the vectors
       CALL lsyssc_getbase_double (rx,p_Dx)
       CALL lsyssc_getbase_double (ry,p_Dy)
@@ -1663,12 +1667,16 @@ CONTAINS
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
-
-            DO jvar=1,NVAR
-              DO ivar=1,NVAR
-                p_Dy(NVAR*(irow-1)+jvar) = p_Dx(NVAR*(icol-1)+ivar)&
+            
+            ! Here, we compute
+            !   y(ivar,irow) = SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
+            DO ivar=1,NVAR
+              dtmp = 0
+              DO jvar=1,NVAR
+                dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
                     * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)
               END DO
+              p_Dy(NVAR*(irow-1)+ivar) = dtmp
             END DO
           END DO
 !$omp end parallel do
@@ -1680,10 +1688,10 @@ CONTAINS
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
-            
+
             DO ivar=1,NVAR
               p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
-                  * p_DA(NVAR*NVAR*(ia-1)+ivar)
+                  * p_DA(NVAR*(ia-1)+ivar)
             END DO
           END DO
 !$omp end parallel do
@@ -1724,11 +1732,13 @@ CONTAINS
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
 
-            DO jvar=1,NVAR
-              DO ivar=1,NVAR
-                p_Dy(NVAR*(irow-1)+jvar) = p_Dx(NVAR*(icol-1)+ivar)&
+            ! Here, we compute
+            !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
+            DO ivar=1,NVAR
+              DO jvar=1,NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+jvar)&
                     * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)&
-                    + p_Dy(NVAR*(irow-1)+jvar)
+                    + p_Dy(NVAR*(irow-1)+ivar)
               END DO
             END DO
           END DO
@@ -1744,7 +1754,7 @@ CONTAINS
             
             DO ivar=1,NVAR
               p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
-                  * p_DA(NVAR*NVAR*(ia-1)+ivar)&
+                  * p_DA(NVAR*(ia-1)+ivar)&
                   + p_Dy(NVAR*(irow-1)+ivar)
             END DO
           END DO
@@ -1770,11 +1780,13 @@ CONTAINS
             DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
               
-              DO jvar=1,NVAR
-                DO ivar=1,NVAR
-                  p_Dy(NVAR*(irow-1)+jvar) = p_Dy(NVAR*(irow-1)+jvar)&
-                      + p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)&
-                      * p_Dx(NVAR*(icol-1)+ivar)
+              ! Here, we compute
+              !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
+              DO ivar=1,NVAR
+                DO jvar=1,NVAR
+                  p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+jvar)&
+                      * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)&
+                      + p_Dy(NVAR*(irow-1)+ivar)
                 END DO
               END DO
             END DO
@@ -1790,9 +1802,9 @@ CONTAINS
               icol = p_Kcol(ia)
               
               DO ivar=1,NVAR
-                p_Dy(NVAR*(irow-1)+ivar) = p_Dy(NVAR*(irow-1)+ivar)&
-                    + p_DA(NVAR*NVAR*(ia-1)+ivar)&
-                    * p_Dx(NVAR*(icol-1)+ivar)
+                p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
+                    * p_DA(NVAR*(ia-1)+ivar)&
+                    + p_Dy(NVAR*(irow-1)+ivar)
               END DO
             END DO
           END DO
@@ -1813,7 +1825,6 @@ CONTAINS
         ! cx = 0. The formula is just a scaling of the vector ry!
         CALL lalg_scaleVectorDble(p_Dy,cy)
       ENDIF
-      
     END SUBROUTINE
    
     !**************************************************************
@@ -1836,6 +1847,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_DA, p_Dx, p_Dy
     REAL(DP) :: dtmp
     INTEGER(PREC_VECIDX) :: irow,NEQ
+    INTEGER :: ivar,NVAR
 
       ! Get the matrix - it's an 1D array
       CALL storage_getbase_double (rmatrix%h_DA,p_DA)
@@ -1843,44 +1855,96 @@ CONTAINS
       ! Get NEQ - from the matrix, not from the vector!
       NEQ = rmatrix%NEQ
 
+      ! Get NVAR - from the vector not from the matrix!
+      NVAR = rx%NVAR
+
+      IF (NVAR /= ry%NVAR) THEN
+        PRINT *, "Internal structure of vectors is not compatible!"
+        STOP
+      END IF
+
       ! Get the vectors
       CALL lsyssc_getbase_double (rx,p_Dx)
       CALL lsyssc_getbase_double (ry,p_Dy)
+
+      IF (NVAR == 1) THEN
       
-      ! Perform the multiplication
-      IF (cx .NE. 0.0_DP) THEN
-      
-        IF (cy .EQ. 0.0_DP) THEN
-        
-          ! cy = 0. Multiply cx*A with X and write to Y.
+        ! Perform the multiplication
+        IF (cx .NE. 0.0_DP) THEN
+          
+          IF (cy .EQ. 0.0_DP) THEN
+            
+            ! cy = 0. Multiply cx*A with X and write to Y.
 !$omp parallel do&
 !$omp&default(shared) &
 !$omp&private(irow)
-          DO irow = 1,NEQ
-            p_Dy(irow) = cx*p_Da(irow)*p_Dx(irow)
-          END DO
+            DO irow = 1,NEQ
+              p_Dy(irow) = cx*p_Da(irow)*p_Dx(irow)
+            END DO
 !$omp end parallel do
           
-        ELSE
+          ELSE
         
-          ! Full multiplication: cx*A*X + cy*Y
+            ! Full multiplication: cx*A*X + cy*Y
 !$omp parallel do&
 !$omp&default(shared) &
 !$omp&private(irow)
-          DO irow = 1,NEQ
-            p_Dy(irow) = cy*p_Dy(irow) + cx*p_Da(irow)*p_Dx(irow) 
-          END DO
+            DO irow = 1,NEQ
+              p_Dy(irow) = cy*p_Dy(irow) + cx*p_Da(irow)*p_Dx(irow) 
+            END DO
 !$omp end parallel do
         
-        END IF
+          END IF
         
-      ELSE 
+        ELSE 
+          
+          ! cx = 0. The formula is just a scaling of the vector ry!
+          CALL lalg_scaleVectorDble(p_Dy,cy)
+          
+        ENDIF
       
-        ! cx = 0. The formula is just a scaling of the vector ry!
-        CALL lalg_scaleVectorDble(p_Dy,cy)
+      ELSE
+
+        ! Perform the multiplication
+        IF (cx .NE. 0.0_DP) THEN
+          
+          IF (cy .EQ. 0.0_DP) THEN
+            
+            ! cy = 0. Multiply cx*A with X and write to Y.
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow)
+            DO irow = 1,NEQ
+              DO ivar=1,NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = cx*p_Da(irow)*p_Dx(NVAR*(irow-1)+ivar)
+              END DO
+            END DO
+!$omp end parallel do
+          
+          ELSE
         
-      ENDIF
-      
+            ! Full multiplication: cx*A*X + cy*Y
+!$omp parallel do&
+!$omp&default(shared) &
+!$omp&private(irow)
+            DO irow = 1,NEQ
+              DO ivar=1,NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = cy*p_Dy(NVAR*(irow-1)+ivar) + cx*p_Da(irow)*p_Dx(NVAR*(irow-1)+ivar) 
+              END DO
+            END DO
+!$omp end parallel do
+        
+          END IF
+        
+        ELSE 
+          
+          ! cx = 0. The formula is just a scaling of the vector ry!
+          CALL lalg_scaleVectorDble(p_Dy,cy)
+          
+        ENDIF
+
+      END IF
+
     END SUBROUTINE
    
     !**************************************************************
