@@ -144,7 +144,7 @@ CONTAINS
     ! Ok, let's start.
     !
     ! We want to solve our Laplace problem on level...
-    NLMAX = 7
+    NLMAX = 2
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -338,7 +338,8 @@ CONTAINS
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
     NULLIFY(p_rpreconditioner)
-    CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    !CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    CALL linsol_initUMFPACK4 (p_rsolverNode)
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
