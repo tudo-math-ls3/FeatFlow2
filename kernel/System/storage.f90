@@ -7,8 +7,8 @@
 !# This module contains the FEAT implementation of the global memory
 !# management. The usual memory management in Fortran 90 uses pointers
 !# for referring to a memory block. As this handling is rather nasty in
-!# many circumstances (e.g. it's hard to set up something like an 'array of 
-!# pointers'), we decided to implement our own memory management - based on 
+!# many circumstances (e.g. it's hard to set up something like an 'array of
+!# pointers'), we decided to implement our own memory management - based on
 !# ALLOCATE and DEALLOCATE.
 !#
 !# The new memory management makes use of 'handles'. A handle is an integer
@@ -79,7 +79,7 @@
 !# 14.) storage_initialiseBlock
 !#      -> Initialise a storage block with zero (like storage_clear)
 !#         or increasing number.
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -88,13 +88,13 @@ MODULE storage
   USE fsystem
   USE linearalgebra
   USE genoutput
-  
+
   IMPLICIT NONE
-  
+
 !<constants>
 
   !<constantblock description="Storage block type identifiers">
-  
+
   ! defines an non-allocated storage block handle
   INTEGER, PARAMETER :: ST_NOHANDLE = 0
 
@@ -106,17 +106,17 @@ MODULE storage
 
   ! storage block contains ints
   INTEGER, PARAMETER :: ST_INT = 3
-  
+
   ! storage block contains logicals
   INTEGER, PARAMETER :: ST_LOGICAL = 4
-  
+
   ! storage block contains characters
   INTEGER, PARAMETER :: ST_CHAR = 5
-  
+
   !</constantblock>
 
   !<constantblock description="Constants for initialisation of memory on allocation">
-  
+
   ! init new storage block with zeros (or .FALSE. for logicals)
   INTEGER, PARAMETER :: ST_NEWBLOCK_ZERO = 0
 
@@ -129,7 +129,7 @@ MODULE storage
   INTEGER, PARAMETER :: ST_NEWBLOCK_ORDERED = 2
 
   !</constantblock>
-  
+
   !<constantblock description="Constants for calculating memory">
 
   ! How many bytes has an integer?
@@ -140,43 +140,43 @@ MODULE storage
 
   ! How many bytes has a double precision real?
   INTEGER :: ST_DOUBLE2BYTES = DP
-  
+
   ! How many bytes has a logical?
   INTEGER :: ST_LOGICAL2BYTES = I32
-  
+
   ! How many bytes has a character?
   ! Note: We are not 100% sure, but this may differ on other architectures... O_o
   INTEGER :: ST_CHAR2BYTES = 1
 
   !</constantblock>
-  
+
 !</constants>
-  
+
 !<types>
-  
+
   !<typeblock>
-  
+
   ! Type block for describing a handle. This collects the number of the
   ! handle, the storage amount associated to it, the pointer to the memory
   ! location etc.
-  
+
   TYPE t_storageNode
     PRIVATE
-    
-    ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE, 
+
+    ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE,
     ! ST_DOUBLE, ST_INT)
     INTEGER :: idataType = ST_NOHANDLE
-    
+
     ! Dimension associated to the handle (0=not assigned, 1=1D, 2=2D array)
     INTEGER :: idimension = 0
-    
+
     ! The name of the array that is associated to that handle
     CHARACTER(LEN=SYS_NAMELEN) :: sname = ''
-    
+
     ! Amount of memory (in bytes) associated to this block.
     ! We store that as a double to allow storing numbers > 2GB !
     REAL(DP) :: dmemBytes = 0.0_DP
-    
+
     ! Pointer to 1D real array or NULL() if not assigned
     REAL(SP), DIMENSION(:), POINTER       :: p_Fsingle1D    => NULL()
 
@@ -185,10 +185,10 @@ MODULE storage
 
     ! Pointer to 1D integer array or NULL() if not assigned
     INTEGER(I32), DIMENSION(:), POINTER   :: p_Iinteger1D   => NULL()
-    
+
     ! Pointer to 1D logical array or NULL() if not assigned
     LOGICAL, DIMENSION(:), POINTER        :: p_Blogical1D   => NULL()
-    
+
     ! Pointer to 1D character array or NULL() if not assigned
     CHARACTER, DIMENSION(:), POINTER      :: p_Schar1D      => NULL()
 
@@ -203,55 +203,55 @@ MODULE storage
 
     ! Pointer to 2D logical array or NULL() if not assigned
     LOGICAL, DIMENSION(:,:), POINTER        :: p_Blogical2D => NULL()
-    
+
     ! Pointer to 2D character array or NULL() if not assigned
     CHARACTER, DIMENSION(:,:), POINTER      :: p_Schar2D    => NULL()
 
   END TYPE
-  
+
   !</typeblock>
-  
+
   !<typeblock>
-  
-  ! This block represents a heap that maintains singole, double precision 
+
+  ! This block represents a heap that maintains singole, double precision
   ! and integer data. It contains a list of t_storageNode elements for all
   ! the handles.
   ! There's one global object of this type for the global storage management,
-  ! but if necessary, an algorithm can create such a block locally, too, 
+  ! but if necessary, an algorithm can create such a block locally, too,
   ! to prevent conflicts with the global memory.
-  
+
   TYPE t_storageBlock
 
     PRIVATE
-    
+
     ! An array of t_storageNode objects corresponding to the handles.
     ! Can be dynamically extended if there are not enough handles available.
     TYPE(t_storageNode), DIMENSION(:), POINTER :: p_Rdescriptors => NULL()
-    
+
     ! A list of all 'free' handles. This is a 'ring' queue. If all
     ! handles are in use, p_Rdescriptors and p_IfreeHandles are dynamically
     ! extended.
     INTEGER, DIMENSION(:), POINTER :: p_IfreeHandles => NULL()
-    
+
     ! Index in p_IfreeHandles to the next free handle
     INTEGER :: p_inextFreeHandle = 0
 
     ! Index in p_IfreeHandles to the last free handle
     INTEGER :: p_ilastFreeHandle = 0
-    
+
     ! Number of handles in use
     INTEGER :: ihandlesInUse = 0
-    
+
     ! Total number of handles maintained by this block; = size(p_Rdescriptors).
     INTEGER :: nhandlesTotal = 0
-    
+
     ! Number of handles to add if there are not enough free handles.
     INTEGER :: ihandlesDelta = 0
-    
+
     ! Total amount of memory (in bytes) that is in use. We maintain it
     ! as a double as this allows to save values > 2GB!
     REAL(DP) :: dtotalMem = 0.0_DP
-    
+
     ! Maximum number of handles that were in use ofer the whole lifetime
     ! of this structure.
     INTEGER :: nhandlesInUseMax = 0
@@ -262,17 +262,17 @@ MODULE storage
 
   END TYPE
 
-  !</typeblock>  
-  
+  !</typeblock>
+
 !</types>
 
 !<globals>
 
   ! Global memory management structure
   TYPE(t_storageBlock), SAVE, TARGET :: rbase
-  
+
 !</globals>
-  
+
   INTERFACE storage_new
     MODULE PROCEDURE storage_new1D
     MODULE PROCEDURE storage_new1DFixed
@@ -295,7 +295,7 @@ MODULE storage
     MODULE PROCEDURE storage_copy_explicit
     MODULE PROCEDURE storage_copy_explicit2D
   END INTERFACE
-  
+
 CONTAINS
 
 !************************************************************************
@@ -320,51 +320,51 @@ CONTAINS
 
   ! Initial number of handles maintained by the storage routines.
   INTEGER, INTENT(IN) :: ihandleCount
-  
+
   ! OPTIONAL: Number of handles to increase the memory block by, if there are
   ! not enough handles available. Standard setting is 1/2*ihandleCount.
   INTEGER, INTENT(IN), OPTIONAL :: ihandlesDelta
-  
+
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is initialised.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
-  
+
   ! the real 'handle-delta'
   INTEGER :: ihandles, ihDelta
-  
+
   ! Pointer to the heap to initialise
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   INTEGER :: i
-  
+
   ! Initialise ihDelta and p_rheap and work with these - as the other
   ! parameters are optional.
   ! We work at least with 1 handles and ihDelta = 1.
-  
+
   ihandles = MAX(1,ihandlecount)
-  
+
   ihDelta = 1
   IF(PRESENT(ihandlesDelta)) ihDelta = ihandlesDelta
   ihDelta = MAX(1,ihDelta)
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   ! Initialise the memory management block
-  
+
   p_rheap%nhandlesTotal = ihandles
   p_rheap%ihandlesDelta = ihDelta
   p_rheap%p_inextFreeHandle = 1
@@ -373,14 +373,14 @@ CONTAINS
   p_rheap%nhandlesInUseMax = 0
   ALLOCATE(p_rheap%p_Rdescriptors(ihandles))
   ALLOCATE(p_rheap%p_IfreeHandles(ihandles))
-  
+
   ! All handles free
   DO i=1,ihandles
     p_rheap%p_IfreeHandles(i) = i
   END DO
-  
+
   END SUBROUTINE
-  
+
 !************************************************************************
 
 !<subroutine>
@@ -397,67 +397,67 @@ CONTAINS
   ! global heap is cleaned up.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 !</inputoutput>
-  
+
 !</subroutine>
 
   ! local variables
-  
+
   ! Pointer to the heap to initialise
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   INTEGER :: i,ihandle
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   ! Delete all data from the heap
   DO i = 1,SIZE(p_rheap%p_Rdescriptors)
-    ! Don't pass i as handle as storage_free will set the handle 
+    ! Don't pass i as handle as storage_free will set the handle
     ! passed to it to 0!
     ihandle = i
     IF (p_rheap%p_Rdescriptors(i)%idataType .NE. ST_NOHANDLE) &
       CALL storage_free(ihandle,rheap)
   END DO
-  
+
   ! Clean up the memory management block
   p_rheap%nhandlesTotal = 0
   p_rheap%ihandlesDelta = 0
   p_rheap%p_inextFreeHandle = 0
   p_rheap%p_ilastFreeHandle = 0
   p_rheap%ihandlesInUse = 0
-  
+
   ! Release the descriptors
   DEALLOCATE(p_rheap%p_IfreeHandles)
   DEALLOCATE(p_rheap%p_Rdescriptors)
-  
+
   END SUBROUTINE
-  
+
 !************************************************************************
 
 !<function>
 
   INTEGER FUNCTION storage_newhandle (rheap) RESULT(ihandle)
-  
+
 !<description>
   ! This routine creates a new handle in the heap structure rheap and
   ! returns the handle number in ihandle. If there is no handle
   ! available, the heap structure is changed to take more handles.
 !</description>
-  
+
   !<result>
   ! The new handle number.
   !</result>
 
 !<inputoutput>
-  
+
   ! The heap structure where to create a new handle
   TYPE(t_storageBlock), INTENT(INOUT) :: rheap
-  
+
 !</inputoutput>
-  
+
 !</function>
 
   ! local variables
@@ -469,11 +469,11 @@ CONTAINS
     PRINT *,'Error: Heap not initialised!'
     STOP
   END IF
-  
+
   ! Handles available?
-  
+
   IF (rheap%ihandlesInUse .GE. rheap%nhandlesTotal) THEN
-  
+
     ! All handles are in use. We have to modify our ring to accept more
     ! handles.
     !
@@ -481,31 +481,31 @@ CONTAINS
     ! the new size.
     ALLOCATE (p_Rdescriptors (rheap%nhandlesTotal + rheap%ihandlesDelta) )
     ALLOCATE (p_IfreeHandles (rheap%nhandlesTotal + rheap%ihandlesDelta) )
-    
+
     ! Copy the content, release the old arrays and replace them by the new
     ! ones.
     p_Rdescriptors(1:rheap%nhandlesTotal) = rheap%p_Rdescriptors(1:rheap%nhandlesTotal)
     p_IfreeHandles(1:rheap%nhandlesTotal) = rheap%p_IfreeHandles(1:rheap%nhandlesTotal)
-    
+
     DEALLOCATE(rheap%p_Rdescriptors)
     DEALLOCATE(rheap%p_IfreeHandles)
     rheap%p_Rdescriptors => p_Rdescriptors
     rheap%p_IfreeHandles => p_IfreeHandles
-    
+
     ! Add the new handles to the list of 'free' handles.
     DO i=rheap%nhandlesTotal+1, rheap%nhandlesTotal + rheap%ihandlesDelta
       p_IfreeHandles (i) = i
     END DO
-    
+
     ! The first new 'free' handle is not at position...
     rheap%p_inextFreeHandle = rheap%nhandlesTotal+1
-    
+
     ! And the last 'free' handle is at the end of the new list.
     rheap%p_ilastFreeHandle = rheap%nhandlesTotal + rheap%ihandlesDelta
 
     ! Modify the heap structure - we have more handles now.
     rheap%nhandlesTotal = rheap%nhandlesTotal + rheap%ihandlesDelta
-    
+
   END IF
 
   ! Get the new handle...
@@ -513,9 +513,9 @@ CONTAINS
 
   ! and modify our queue pointers that we use a new one.
   rheap%p_inextFreeHandle = MOD(rheap%p_inextFreeHandle,rheap%nhandlesTotal)+1
-  
+
   rheap%ihandlesInUse = rheap%ihandlesInUse + 1
-  
+
   rheap%nhandlesInUseMax = MAX(rheap%nhandlesInUseMax,rheap%ihandlesInUse)
 
   END FUNCTION
@@ -525,13 +525,13 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_releasehandle (ihandle,rheap)
-  
+
 !<description>
   ! This routine releases a handle from the heap structure rheap.
   ! Memory is not deallocated, simply the structures are cleaned up.
 !</description>
 
-!<input>  
+!<input>
   ! The handle to release
   INTEGER, INTENT(INOUT) :: ihandle
 !</input>
@@ -540,17 +540,17 @@ CONTAINS
   ! The heap structure where to release the handle from.
   TYPE(t_storageBlock), INTENT(INOUT) :: rheap
 !</inputoutput>
-  
+
 !</subroutine>
 
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => rheap%p_Rdescriptors(ihandle)
-  
+
   ! Subtract the memory amount from the statistics
   rheap%dtotalMem = rheap%dtotalMem - p_rnode%dmemBytes
-  
+
   ! Clear the descriptor structure
   p_rnode%idataType = ST_NOHANDLE
   p_rnode%idimension = 0
@@ -565,13 +565,13 @@ CONTAINS
   NULLIFY(p_rnode%p_Iinteger2D)
   NULLIFY(p_rnode%p_Blogical2D)
   NULLIFY(p_rnode%p_Schar2D)
-  
+
   ! Handle ihandle is available now - put it to the list of available handles.
   rheap%p_ilastFreeHandle = MOD(rheap%p_ilastFreeHandle,rheap%nhandlesTotal) + 1
   rheap%p_IfreeHandles (rheap%p_ilastFreeHandle) = ihandle
-   
+
   rheap%ihandlesInUse = rheap%ihandlesInUse - 1
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -581,7 +581,7 @@ CONTAINS
   SUBROUTINE storage_initialiseNode (rstorageNode,cinitNewBlock,istartIndex,istopIndex)
 
 !<description>
-  ! Internal subroutine: Initialise the memory identified by storage 
+  ! Internal subroutine: Initialise the memory identified by storage
   ! node rstorageNode according to the constant cinitNewBlock.
 !</description>
 
@@ -593,28 +593,28 @@ CONTAINS
   ! ST_NEWBLOCK_ORDERED). Specifies how to initialise the data block associated
   ! to ihandle.
   INTEGER, INTENT(IN) :: cinitNewBlock
-  
+
   ! Start index from where to initialise; should usually be =1.
-  ! For multidimensional arrays, this specifies the start index of the 
+  ! For multidimensional arrays, this specifies the start index of the
   ! last dimension.
   INTEGER(I32), INTENT(IN) :: istartIndex
 
   ! OPTIONAL: Stop index up to which to initialise; should usually be =SIZE(*).
-  ! For multidimensional arrays, this specifies the stop index of the 
+  ! For multidimensional arrays, this specifies the stop index of the
   ! last dimension.
   INTEGER(I32), INTENT(IN), OPTIONAL :: istopIndex
 !</input>
-  
+
 !</subroutine>
-  
+
     ! variable for ordering 1,2,3,...,N
     INTEGER :: iorder
-    
+
     SELECT CASE (rstorageNode%idimension)
-    CASE (1) 
+    CASE (1)
 
       SELECT CASE (cinitNewBlock)
-      CASE (ST_NEWBLOCK_ZERO) 
+      CASE (ST_NEWBLOCK_ZERO)
         ! Clear the vector if necessary
         IF (PRESENT(istopIndex)) THEN
           SELECT CASE (rstorageNode%idataType)
@@ -689,13 +689,13 @@ CONTAINS
             STOP
           END SELECT
         END IF
-        
+
       END SELECT
-        
+
     CASE (2)
 
       SELECT CASE (cinitNewBlock)
-      CASE (ST_NEWBLOCK_ZERO) 
+      CASE (ST_NEWBLOCK_ZERO)
         ! Clear the vector
         IF (PRESENT(istopIndex)) THEN
           SELECT CASE (rstorageNode%idataType)
@@ -728,13 +728,13 @@ CONTAINS
       CASE (ST_NEWBLOCK_ORDERED)
         PRINT *, 'Error: ordering not available for multidimensional array'
         STOP
-        
+
       END SELECT
 
     CASE DEFAULT
       PRINT *,'storage_initialiseNode: Unsupported dimension'
       STOP
-    
+
     END SELECT
 
   END SUBROUTINE
@@ -763,7 +763,7 @@ CONTAINS
   ! OPTIONAL: Start index of Block
   INTEGER(I32), INTENT(IN), OPTIONAL :: istartIndex
 !</input>
-  
+
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -771,22 +771,22 @@ CONTAINS
 !</inputoutput>
 
 !</subroutine>
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
-  
+
   ! Initialise
   IF (PRESENT(istartIndex)) THEN
     CALL storage_initialiseNode (p_rnode,cinitNewBlock,istartIndex)
@@ -825,9 +825,9 @@ CONTAINS
   INTEGER, INTENT(IN) :: cinitNewBlock
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
@@ -840,10 +840,10 @@ CONTAINS
   INTEGER, INTENT(OUT) :: ihandle
 
 !</output>
-  
+
 !</subroutine>
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
 
@@ -852,15 +852,15 @@ CONTAINS
     ihandle = ST_NOHANDLE
     RETURN
   END IF
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   ! Get a new handle
   ihandle = storage_newhandle (p_rheap)
 
@@ -868,13 +868,13 @@ CONTAINS
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
   ! Initialise the content
-  
+
   p_rnode%idataType = ctype
   p_rnode%idimension = 1
   p_rnode%sname = sname
-  
+
   ! Allocate memory according to isize:
-  
+
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
     ALLOCATE(p_rnode%p_Fsingle1D(isize))
@@ -895,11 +895,11 @@ CONTAINS
     PRINT *,'Error: unknown mem type'
     STOP
   END SELECT
-  
+
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
   IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
     p_rheap%dtotalMemMax = p_rheap%dtotalMem
-  
+
   ! Initialise the memory block
   CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
 
@@ -937,9 +937,9 @@ CONTAINS
   INTEGER, INTENT(IN) :: cinitNewBlock
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
@@ -952,10 +952,10 @@ CONTAINS
   INTEGER, INTENT(OUT) :: ihandle
 
 !</output>
-  
+
 !</subroutine>
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
   INTEGER(I32) :: isize
@@ -966,15 +966,15 @@ CONTAINS
     ihandle = ST_NOHANDLE
     RETURN
   END IF
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   ! Get a new handle
   ihandle = storage_newhandle (p_rheap)
 
@@ -982,13 +982,13 @@ CONTAINS
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
   ! Initialise the content
-  
+
   p_rnode%idataType = ctype
   p_rnode%idimension = 1
   p_rnode%sname = sname
-  
+
   ! Allocate memory according to isize:
-  
+
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
     ALLOCATE(p_rnode%p_Fsingle1D(ilbound:iubound))
@@ -1009,11 +1009,11 @@ CONTAINS
     PRINT *,'Error: unknown mem type'
     STOP
   END SELECT
-  
+
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
   IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
     p_rheap%dtotalMemMax = p_rheap%dtotalMem
-  
+
   ! Initialise the memory block
   CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap, ilbound)
 
@@ -1048,9 +1048,9 @@ CONTAINS
   INTEGER, INTENT(IN) :: cinitNewBlock
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
@@ -1063,13 +1063,13 @@ CONTAINS
   INTEGER :: ihandle
 
 !</output>
-  
+
 !</subroutine>
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   IF ((Isize(1) .EQ. 0) .OR. (Isize(2) .EQ. 0)) THEN
     PRINT *,'storage_new2D Warning: Isize=0'
     ihandle = 0
@@ -1077,13 +1077,13 @@ CONTAINS
   END IF
 
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   ! Get a new handle
   ihandle = storage_newhandle (p_rheap)
 
@@ -1091,13 +1091,13 @@ CONTAINS
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
   ! Initialise the content
-  
+
   p_rnode%idataType = ctype
   p_rnode%idimension = 2
   p_rnode%sname = sname
-  
+
   ! Allocate memory according to Isize:
-  
+
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
     ALLOCATE(p_rnode%p_Fsingle2D(Isize(1),Isize(2)))
@@ -1118,11 +1118,11 @@ CONTAINS
     PRINT *,'Error: unknown mem type'
     STOP
   END SELECT
-  
+
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
   IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
     p_rheap%dtotalMemMax = p_rheap%dtotalMem
-  
+
   ! Initialise the storage block
   CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap)
 
@@ -1160,9 +1160,9 @@ CONTAINS
   INTEGER, INTENT(IN) :: cinitNewBlock
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
@@ -1175,10 +1175,10 @@ CONTAINS
   INTEGER :: ihandle
 
 !</output>
-  
+
 !</subroutine>
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
   INTEGER(I32), DIMENSION(2) :: Isize
@@ -1191,13 +1191,13 @@ CONTAINS
   END IF
 
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   ! Get a new handle
   ihandle = storage_newhandle (p_rheap)
 
@@ -1205,13 +1205,13 @@ CONTAINS
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
   ! Initialise the content
-  
+
   p_rnode%idataType = ctype
   p_rnode%idimension = 2
   p_rnode%sname = sname
-  
+
   ! Allocate memory according to Isize:
-  
+
   SELECT CASE (ctype)
   CASE (ST_SINGLE)
     ALLOCATE(p_rnode%p_Fsingle2D(Ilbound(1):Iubound(1),Ilbound(2):Iubound(2)))
@@ -1232,11 +1232,11 @@ CONTAINS
     PRINT *,'Error: unknown mem type'
     STOP
   END SELECT
-  
+
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
   IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
     p_rheap%dtotalMemMax = p_rheap%dtotalMem
-  
+
   ! Initialise the storage block
   CALL storage_initialiseBlock (ihandle, cinitNewBlock, rheap, Ilbound(2))
 
@@ -1254,7 +1254,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  
+
   ! Handle of the memory block to be releases
   INTEGER :: ihandle
 
@@ -1267,27 +1267,27 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_free: Releasing ST_NOHANDLE is not allowed!'
     STOP
   END IF
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
-  
+
   ! Is the node associated at all?
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_free: Trying to release nonexistent handle!'
@@ -1306,7 +1306,7 @@ CONTAINS
   IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
   IF (ASSOCIATED(p_rnode%p_Blogical2D)) DEALLOCATE(p_rnode%p_Blogical2D)
   IF (ASSOCIATED(p_rnode%p_Schar2D))    DEALLOCATE(p_rnode%p_Schar2D)
-  
+
   ! Release the handle itself.
   CALL storage_releasehandle (ihandle,p_rheap)
 
@@ -1327,7 +1327,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  
+
   ! Handle of the memory block to be releases
   INTEGER :: ihandle
 
@@ -1340,27 +1340,27 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_clear: Handle invalid!'
     STOP
   END IF
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
-  
+
   ! Is the node associated at all?
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_clear: Trying to release nonexistent handle!'
@@ -1432,27 +1432,27 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize1D: Handle invalid!'
     STOP
   END IF
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
-  
+
   ! Is the node associated at all?
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize1D: Handle invalid!'
@@ -1465,7 +1465,7 @@ CONTAINS
     PRINT *,'Error in storage_getsize1D: Handle ',ihandle,' is not 1-dimensional!'
     STOP
   END IF
-  
+
   SELECT CASE (p_rnode%idataType)
   CASE (ST_SINGLE)
     isize = SIZE(p_rnode%p_Fsingle1D)
@@ -1478,7 +1478,7 @@ CONTAINS
   CASE (ST_CHAR)
     isize = SIZE(p_rnode%p_Schar1D)
   CASE DEFAULT
-    PRINT *,'Error in storage_getsize1D: Invalid data type!' 
+    PRINT *,'Error in storage_getsize1D: Invalid data type!'
     STOP
   END SELECT
 
@@ -1513,27 +1513,27 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize2D: Handle invalid!'
     STOP
   END IF
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
-  
+
   ! Is the node associated at all?
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize2D: Handle invalid!'
@@ -1546,7 +1546,7 @@ CONTAINS
     PRINT *,'Error in storage_getsize1D: Handle ',ihandle,' is not 2-dimensional!'
     STOP
   END IF
-  
+
   SELECT CASE (p_rnode%idataType)
   CASE (ST_SINGLE)
     Isize = SHAPE(p_rnode%p_Fsingle2D)
@@ -1559,7 +1559,7 @@ CONTAINS
   CASE (ST_CHAR)
     Isize = SHAPE(p_rnode%p_Schar2D)
   CASE DEFAULT
-    PRINT *,'Error in storage_getsize2D: Invalid data type!' 
+    PRINT *,'Error in storage_getsize2D: Invalid data type!'
     STOP
   END SELECT
 
@@ -1570,41 +1570,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_int (ihandle, p_Iarray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
-  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray 
-  
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -1615,16 +1615,16 @@ CONTAINS
     PRINT *,'storage_getbase_int: Wrong handle'
     STOP
   END IF
-  
+
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
     PRINT *,'storage_getbase_int: Wrong data format!'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -1632,41 +1632,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_single (ihandle, p_Sarray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
   REAL(SP), DIMENSION(:), POINTER :: p_Sarray
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -1677,16 +1677,16 @@ CONTAINS
     PRINT *,'storage_getbase_single: Wrong handle'
     STOP
   END IF
-  
+
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
     PRINT *,'storage_getbase_single: Wrong data format!'
     STOP
   END IF
 
-  ! Get the pointer  
-  
+  ! Get the pointer
+
   p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -1694,41 +1694,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_double (ihandle, p_Darray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
   REAL(DP), DIMENSION(:), POINTER :: p_Darray
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -1739,17 +1739,17 @@ CONTAINS
     PRINT *,'storage_getbase_double: Wrong handle'
     STOP
   END IF
-  
+
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
 
     PRINT *,'storage_getbase_double: Wrong data format!'
     STOP
   END IF
 
-  ! Get the pointer  
-  
+  ! Get the pointer
+
   p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -1757,41 +1757,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_logical (ihandle, p_Larray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to a
   ! logical array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
-  LOGICAL, DIMENSION(:), POINTER :: p_Larray 
-  
+  LOGICAL, DIMENSION(:), POINTER :: p_Larray
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -1802,16 +1802,16 @@ CONTAINS
     PRINT *,'storage_getbase_logical: Wrong handle'
     STOP
   END IF
-  
+
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_LOGICAL) THEN
     PRINT *,'storage_getbase_logical: Wrong data format!'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -1819,41 +1819,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_char (ihandle, p_Carray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to a
   ! character array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
   CHARACTER, DIMENSION(:), POINTER :: p_Carray
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -1864,16 +1864,16 @@ CONTAINS
     PRINT *,'storage_getbase_char: Wrong handle'
     STOP
   END IF
-  
+
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_CHAR) THEN
     PRINT *,'storage_getbase_char: Wrong data format!'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -1881,41 +1881,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_int2D (ihandle, p_Iarray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to an
   ! interger array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_Iarray
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -1926,11 +1926,11 @@ CONTAINS
     PRINT *,'storage_getbase_int2D: Wrong handle'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -1938,41 +1938,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_single2D (ihandle, p_Sarray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to an
   ! single precision array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
   REAL(SP), DIMENSION(:,:), POINTER :: p_Sarray
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -1983,11 +1983,11 @@ CONTAINS
     PRINT *,'storage_getbase_single2D: Wrong handle'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -1995,37 +1995,37 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_double2D (ihandle, p_Darray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to an
   ! double precision array.
-  
+
 !</description>
-  
+
 !<input>
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 !</input>
-  
+
 !<output>
   ! The pointer associated to the handle.
   REAL(DP), DIMENSION(:,:), POINTER :: p_Darray
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -2036,11 +2036,11 @@ CONTAINS
     PRINT *,'storage_getbase_double2D: Wrong handle'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -2048,41 +2048,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_logical2D (ihandle, p_Larray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to a
   ! logical array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
   LOGICAL, DIMENSION(:,:), POINTER :: p_Larray
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -2093,11 +2093,11 @@ CONTAINS
     PRINT *,'storage_getbase_logical2D: Wrong handle'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -2105,41 +2105,41 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE storage_getbase_char2D (ihandle, p_Carray, rheap)
-  
+
 !<description>
-  
+
   ! This routine returns the pointer to a handle associated to a
   ! character array.
-  
+
 !</description>
-  
+
 !<input>
-  
+
   ! The handle
   INTEGER, INTENT(IN) :: ihandle
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
 
 !</input>
-  
+
 !<output>
-  
+
   ! The pointer associated to the handle.
   CHARACTER, DIMENSION(:,:), POINTER :: p_Carray
-  
+
 !</output>
-  
+
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
@@ -2150,19 +2150,19 @@ CONTAINS
     PRINT *,'storage_getbase_char2D: Wrong handle'
     STOP
   END IF
-  
-  ! Get the pointer  
-  
+
+  ! Get the pointer
+
   p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D
-  
+
   END SUBROUTINE
 
 !************************************************************************
 
 !<subroutine>
-  
+
   SUBROUTINE storage_copy(h_source, h_dest, rheap)
-  
+
 !<description>
   ! This routine copies the information of one array to another.
   ! The structure of the arrays behind h_source and h_dest must be the
@@ -2172,7 +2172,7 @@ CONTAINS
 !<input>
   ! Handle of the source array to copy
   INTEGER, INTENT(IN) :: h_source
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(IN), TARGET, OPTIONAL :: rheap
@@ -2188,15 +2188,15 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
   INTEGER(I32) :: i,j
   INTEGER(I32), DIMENSION(2) :: Isize
-  
+
     ! Get the heap to use - local or global one.
-    
+
     IF(PRESENT(rheap)) THEN
       p_rheap => rheap
     ELSE
@@ -2213,7 +2213,7 @@ CONTAINS
     END IF
 
     p_rsource => p_rheap%p_Rdescriptors(h_source)
-    
+
     ! Create a new array?
     IF (h_dest .EQ. ST_NOHANDLE) THEN
       ! Create a new array in the same size and structure
@@ -2242,7 +2242,7 @@ CONTAINS
                             INT(SIZE(p_rsource%p_Schar1D),I32),&
                             ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         END SELECT
-      CASE (2) 
+      CASE (2)
         SELECT CASE (p_rsource%IdataType)
         CASE (ST_DOUBLE)
           Isize = UBOUND(p_rsource%p_Ddouble2D)   ! =SIZE(...) here
@@ -2266,9 +2266,9 @@ CONTAINS
                             ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
         END SELECT
       END SELECT
-      
+
     END IF
-    
+
     p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
     ! 1D/2D the same?
@@ -2291,7 +2291,7 @@ CONTAINS
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
         END SELECT
-        
+
       CASE (ST_SINGLE)
         SELECT CASE (p_rdest%idataType)
         CASE (ST_DOUBLE)
@@ -2302,7 +2302,7 @@ CONTAINS
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
         END SELECT
-        
+
       CASE (ST_INT)
         IF (p_rdest%idataType .EQ. ST_INT) THEN
           CALL lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
@@ -2310,7 +2310,7 @@ CONTAINS
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
         END IF
-        
+
       CASE (ST_LOGICAL)
         IF (p_rdest%idataType .EQ. ST_LOGICAL) THEN
           ! Copy by hand
@@ -2321,7 +2321,7 @@ CONTAINS
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
         END IF
-        
+
       CASE (ST_CHAR)
         IF (p_rdest%idataType .EQ. ST_CHAR) THEN
           ! Copy by hand
@@ -2336,8 +2336,8 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'storage_copy: Unknown data type'
         STOP
-      END SELECT  
-      
+      END SELECT
+
     CASE (2)
       SELECT CASE (p_rsource%idataType)
       CASE (ST_DOUBLE)
@@ -2346,7 +2346,7 @@ CONTAINS
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
-        
+
         SELECT CASE (p_rdest%idataType)
         CASE (ST_DOUBLE)
           ! Copy by hand
@@ -2355,7 +2355,7 @@ CONTAINS
               p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Ddouble2D(i,j)
             END DO
           END DO
-          
+
         CASE (ST_SINGLE)
           ! Copy by hand
           DO j=1,SIZE(p_rsource%p_Fsingle2D,2)
@@ -2363,7 +2363,7 @@ CONTAINS
               p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Ddouble2D(i,j)
             END DO
           END DO
-        
+
         CASE (ST_INT)
           ! Copy by hand
           DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
@@ -2371,13 +2371,13 @@ CONTAINS
               p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Ddouble2D(i,j)
             END DO
           END DO
-          
+
         CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
-          
+
         END SELECT
-        
+
       CASE (ST_SINGLE)
         IF ((SIZE(p_rsource%p_Fsingle2D,1) .NE. SIZE(p_rdest%p_Fsingle2D,1)) .OR.&
             (SIZE(p_rsource%p_Fsingle2D,2) .NE. SIZE(p_rdest%p_Fsingle2D,2))) THEN
@@ -2409,9 +2409,9 @@ CONTAINS
               p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Fsingle2D(i,j)
             END DO
           END DO
-        
+
         ! Might be ST_LOGICAL or ST_CHAR
-        CASE DEFAULT 
+        CASE DEFAULT
           PRINT *,'storage_copy: Unsupported data type combination'
           STOP
 
@@ -2427,7 +2427,7 @@ CONTAINS
           PRINT *,'storage_copy: unsupported data type combination'
           STOP
         END IF
-        
+
         ! Copy by hand
         DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
           DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
@@ -2445,7 +2445,7 @@ CONTAINS
           PRINT *,'storage_copy: unsupported data type combination'
           STOP
         END IF
-        
+
         ! Copy by hand
         DO j=1,SIZE(p_rsource%p_Blogical2D,2)
           DO i=1,SIZE(p_rsource%p_Blogical2D,1)
@@ -2463,7 +2463,7 @@ CONTAINS
           PRINT *,'storage_copy: unsupported data type combination'
           STOP
         END IF
-        
+
         ! Copy by hand
         DO j=1,SIZE(p_rsource%p_Schar2D,2)
           DO i=1,SIZE(p_rsource%p_Schar2D,1)
@@ -2474,7 +2474,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'storage_copy: Unknown data type'
         STOP
-      END SELECT  
+      END SELECT
     END SELECT
 
   END SUBROUTINE
@@ -2482,13 +2482,13 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  
+
   SUBROUTINE storage_copy_explicit(h_source, h_dest, istart_source, &
              istart_dest, ilength, rheap)
-  
+
 !<description>
   ! This routine copies the information of one array to another.
-  ! The structure of the arrays behind h_source and h_dest must be 
+  ! The structure of the arrays behind h_source and h_dest must be
   ! "similar" in the following sense: Both datatypes and dimensions
   ! must be the same. The routine allows for copying only parts of
   ! of the arrays. Therefor the relevant parts of the arrays must
@@ -2498,7 +2498,7 @@ CONTAINS
 !<input>
   ! Handle of the source array to copy
   INTEGER, INTENT(IN) :: h_source
-  
+
   ! First entry of the source array to copy
   INTEGER, INTENT(IN) :: istart_source
 
@@ -2523,12 +2523,12 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-  
-    ! Pointer to the heap 
+
+    ! Pointer to the heap
     TYPE(t_storageBlock), POINTER :: p_rheap
     TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
     INTEGER(I32) :: i
-  
+
     ! Check if the start address is positive
     IF (istart_source <= 0 .OR. istart_dest <= 0) THEN
       PRINT *, 'storage_copy_explicit: start address must be positive'
@@ -2536,7 +2536,7 @@ CONTAINS
     END IF
 
     ! Get the heap to use - local or global one.
-    
+
     IF(PRESENT(rheap)) THEN
       p_rheap => rheap
     ELSE
@@ -2553,7 +2553,7 @@ CONTAINS
     END IF
 
     p_rsource => p_rheap%p_Rdescriptors(h_source)
-    
+
     ! Create a new array?
     IF (h_dest .EQ. ST_NOHANDLE) THEN
       ! Create a new array in the same size and structure
@@ -2585,9 +2585,9 @@ CONTAINS
               INT(SIZE(p_rsource%p_Schar1D),I32),&
               ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       END SELECT
-      
+
    END IF
-    
+
     p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
     ! 1D/2D the same?
@@ -2605,7 +2605,7 @@ CONTAINS
                istart_dest+ilength-1 > SIZE(p_rdest%p_Ddouble1D)) THEN
             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
             STOP
-          END IF  
+          END IF
           ! Copy by hand
           DO i=1,ilength
             p_rdest%p_Ddouble1D(istart_dest+i-1) = &
@@ -2616,7 +2616,7 @@ CONTAINS
                istart_dest+ilength-1 > SIZE(p_rdest%p_Fsingle1D)) THEN
             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
             STOP
-          END IF  
+          END IF
           ! Copy by hand
           DO i=1,ilength
             p_rdest%p_Fsingle1D(istart_dest+i-1) = &
@@ -2626,7 +2626,7 @@ CONTAINS
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
           STOP
        END SELECT
-       
+
     CASE (ST_SINGLE)
        SELECT CASE (p_rdest%idataType)
        CASE (ST_DOUBLE)
@@ -2655,7 +2655,7 @@ CONTAINS
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
           STOP
        END SELECT
-       
+
     CASE (ST_INT)
        IF (p_rdest%idataType .EQ. ST_INT) THEN
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Iinteger1D) .OR. &
@@ -2708,18 +2708,18 @@ CONTAINS
        PRINT *,'storage_copy_explicit: Unknown data type'
        STOP
     END SELECT
-  
+
   END SUBROUTINE
 
 !************************************************************************
 
 !<subroutine>
-  
+
   SUBROUTINE storage_copy_explicit2D(h_source, h_dest, Istart_source, Istart_dest, Ilength, rheap)
-  
+
 !<description>
   ! This routine copies the information of one array to another.
-  ! The structure of the arrays behind h_source and h_dest must be 
+  ! The structure of the arrays behind h_source and h_dest must be
   ! "similar" in the following sense: Both datatypes and dimensions
   ! must be the same. The routine allows for copying only parts of
   ! of the arrays. Therefor the relevant parts of the arrays must
@@ -2729,7 +2729,7 @@ CONTAINS
 !<input>
   ! Handle of the source array to copy
   INTEGER, INTENT(IN) :: h_source
-  
+
   ! First entry of the source array to copy
   INTEGER, DIMENSION(2), INTENT(IN) :: Istart_source
 
@@ -2754,13 +2754,13 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
   INTEGER(I32) :: i,j
   INTEGER(I32), DIMENSION(2) :: Isize
-  
+
     ! Check if the start address is positive
     IF (ANY(istart_source <= 0) .OR. ANY(istart_dest <= 0)) THEN
       PRINT *, 'storage_copy_explicit: start address must be positive'
@@ -2768,7 +2768,7 @@ CONTAINS
     END IF
 
     ! Get the heap to use - local or global one.
-    
+
     IF(PRESENT(rheap)) THEN
       p_rheap => rheap
     ELSE
@@ -2785,7 +2785,7 @@ CONTAINS
     END IF
 
     p_rsource => p_rheap%p_Rdescriptors(h_source)
-    
+
     ! Create a new array?
     IF (h_dest .EQ. ST_NOHANDLE) THEN
       ! Create a new array in the same size and structure
@@ -2817,9 +2817,9 @@ CONTAINS
          CALL storage_new ('storage_copy', p_rsource%sname, Isize,&
               ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       END SELECT
-      
+
    END IF
-    
+
     p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
     ! 1D/2D the same?
@@ -2830,7 +2830,7 @@ CONTAINS
 
     ! What is to copy
     SELECT CASE (p_rsource%idataType)
-    CASE (ST_DOUBLE)      
+    CASE (ST_DOUBLE)
        SELECT CASE (p_rdest%idataType)
        CASE (ST_DOUBLE)
           IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
@@ -2847,7 +2847,7 @@ CONTAINS
                      p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
              END DO
           END DO
-          
+
        CASE (ST_SINGLE)
           IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
                Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
@@ -2863,7 +2863,7 @@ CONTAINS
                      p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
              END DO
           END DO
-          
+
        CASE (ST_INT)
           IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
                Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
@@ -2879,14 +2879,14 @@ CONTAINS
                      p_rsource%p_Ddouble2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
              END DO
           END DO
-          
+
        CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
           PRINT *,'storage_copy_explicit2D: Unsupported data type combination'
           STOP
-          
+
        END SELECT
-       
-    CASE (ST_SINGLE)     
+
+    CASE (ST_SINGLE)
        SELECT CASE (p_rdest%idataType)
        CASE (ST_DOUBLE)
           IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
@@ -2903,7 +2903,7 @@ CONTAINS
                      p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
              END DO
           END DO
-                    
+
        CASE (ST_SINGLE)
           IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
                Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
@@ -2919,7 +2919,7 @@ CONTAINS
                      p_rsource%p_Fsingle2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
              END DO
           END DO
-          
+
        CASE (ST_INT)
           IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
                Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
@@ -2941,7 +2941,7 @@ CONTAINS
           STOP
 
        END SELECT
-       
+
     CASE (ST_INT)
        IF (p_rdest%idataType .NE. ST_INT) THEN
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
@@ -2962,7 +2962,7 @@ CONTAINS
                   p_rsource%p_Iinteger2D(Istart_source(1)+i-1,Istart_source(2)+j-1)
           END DO
        END DO
-       
+
     CASE (ST_LOGICAL)
        IF (p_rdest%idataType .NE. ST_LOGICAL) THEN
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
@@ -3015,9 +3015,9 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  
+
   SUBROUTINE storage_info(bprintHandles,rheap)
-  
+
 !<description>
   ! This routine prints information about the current memory consumption
   ! in a memory block to screen.
@@ -3027,7 +3027,7 @@ CONTAINS
   ! OPTIONAL: If set to TRUE, the handles still remaining in the
   ! heap together with their names are printed to the terminal.
   LOGICAL, INTENT(IN), OPTIONAL :: bprintHandles
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(IN), TARGET, OPTIONAL :: rheap
@@ -3037,18 +3037,18 @@ CONTAINS
 
   ! local variables
   INTEGER :: i
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
-  
+
     ! Get the heap to use - local or global one.
-    
+
     IF(PRESENT(rheap)) THEN
       p_rheap => rheap
     ELSE
       p_rheap => rbase
     END IF
-    
+
     CALL output_line ('Heap statistics:')
     CALL output_line ('----------------')
     IF (PRESENT(bprintHandles)) THEN
@@ -3076,8 +3076,8 @@ CONTAINS
         CALL output_lbrk ()
       END IF
     END IF
-    
-    CALL output_line ('Number if handles in use:        '//&
+
+    CALL output_line ('Number of handles in use:        '//&
                       TRIM(sys_siL(p_rheap%ihandlesInUse,15)))
     IF (p_rheap%dtotalMem .GT. REAL(HUGE(0),DP)) THEN
       CALL output_line ('Memory in use (bytes):           '//&
@@ -3129,27 +3129,27 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getdatatype: Handle invalid!'
     STOP
   END IF
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
-  
+
   SELECT CASE (p_rnode%idataType)
   CASE (ST_SINGLE)
     idatatype = ST_SINGLE
@@ -3166,12 +3166,12 @@ CONTAINS
     PRINT *,'Handle number: ',ihandle
     STOP
   CASE DEFAULT
-    PRINT *,'Error in storage_getdatatype: Invalid data type!' 
+    PRINT *,'Error in storage_getdatatype: Invalid data type!'
     STOP
   END SELECT
-  
+
   END SUBROUTINE
-  
+
 !************************************************************************
 
 !<subroutine>
@@ -3201,34 +3201,34 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  
-  ! Pointer to the heap 
+
+  ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
-  
+
   ! Get the heap to use - local or global one.
-  
+
   IF(PRESENT(rheap)) THEN
     p_rheap => rheap
   ELSE
     p_rheap => rbase
   END IF
-  
+
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getdatatype: Handle invalid!'
     STOP
   END IF
-  
+
   ! Where is the descriptor of the handle?
   p_rnode => p_rheap%p_Rdescriptors(ihandle)
-  
+
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize1D: Handle invalid!'
     STOP
   END IF
 
   idimension = p_rnode%idimension
-  
+
   END SUBROUTINE
 
 !************************************************************************
@@ -3256,11 +3256,11 @@ CONTAINS
   ! dimension in the memory block identified by ihandle
   INTEGER(I32), INTENT(IN) :: isize
 
-  ! Init new storage block identifier (ST_NEWBLOCK_ZERO, 
+  ! Init new storage block identifier (ST_NEWBLOCK_ZERO,
   ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
   ! Specifies how to initialise memory if isize > original array size.
   INTEGER, INTENT(IN) :: cinitNewBlock
-  
+
   ! OPTIONAL: Copy old data.
   ! =TRUE: Copy data of old array to the new one.
   ! =FALSE: Reallocate memory, don't copy old data.
@@ -3268,9 +3268,9 @@ CONTAINS
   LOGICAL, INTENT(IN), OPTIONAL :: bcopy
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
@@ -3279,18 +3279,18 @@ CONTAINS
   INTEGER, INTENT(INOUT) :: ihandle
 
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! local variables
-  
-    ! Pointer to the heap 
+
+    ! Pointer to the heap
     TYPE(t_storageBlock), POINTER :: p_rheap
     TYPE(t_storageNode), POINTER :: p_rnode
-    
+
     ! New storage node
     TYPE(t_storageNode) :: rstorageNode
-    
+
     ! size of the old 1-dimensional array
     INTEGER(I32) :: isizeOld
 
@@ -3301,7 +3301,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(2) :: Isize2Dold
 
     INTEGER(I32) :: i,j
-    
+
     LOGICAL :: bcopyData
 
     IF (isize .EQ. 0) THEN
@@ -3309,35 +3309,35 @@ CONTAINS
       CALL storage_free(ihandle,rheap)
       RETURN
     END IF
-    
+
     ! Get the heap to use - local or global one.
-    
+
     IF(PRESENT(rheap)) THEN
       p_rheap => rheap
     ELSE
       p_rheap => rbase
     END IF
-    
+
     ! Copy old data?
-    
+
     IF (PRESENT(bcopy)) THEN
       bcopyData = bcopy
     ELSE
       bcopyData = .TRUE.
     END IF
-    
+
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
     ! Copy the data of the old storage node to rstorageNode. That way
     ! we prepare a new storage node and will replace the old.
     rstorageNode = p_rnode
-    
+
     ! Are we 1D or 2D?
     SELECT CASE(p_rnode%idimension)
 
     CASE (1)
-    
+
       ! Get the size of the old storage node.
       SELECT CASE (p_rnode%idataType)
       CASE (ST_SINGLE)
@@ -3351,13 +3351,13 @@ CONTAINS
       CASE (ST_CHAR)
         isizeOld = SIZE(p_rnode%p_Schar1D)
       END SELECT
-      
+
       ! Do we really have to change anything?
       IF (isize == isizeOld) RETURN
-      
+
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
-      
+
       SELECT CASE (rstorageNode%idataType)
       CASE (ST_SINGLE)
         ALLOCATE(rstorageNode%p_Fsingle1D(isize))
@@ -3378,10 +3378,10 @@ CONTAINS
         PRINT *,'Error: unknown mem type'
         STOP
       END SELECT
-      
+
       IF (isize > isizeOld) &
         CALL storage_initialiseNode (rstorageNode,cinitNewBlock,isizeOld+1_I32)
-      
+
       ! Copy old data?
       IF (bcopyData) THEN
         isizeCopy=MIN(isize,isizeOld)
@@ -3423,10 +3423,10 @@ CONTAINS
       CASE (ST_CHAR)
         Isize2Dold = SHAPE(p_rnode%p_Schar2D)
       END SELECT
-      
+
       ! Do we really have to change anything?
       IF (isize == Isize2Dold(2)) RETURN
-      
+
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
       SELECT CASE (rstorageNode%idataType)
@@ -3454,7 +3454,7 @@ CONTAINS
         PRINT *,'Error: unknown mem type'
         STOP
       END SELECT
-      
+
       IF (isize > Isize2Dold(2)) &
         CALL storage_initialiseNode (rstorageNode,cinitNewBlock,&
                                      Isize2Dold(2)+1_I32)
@@ -3472,7 +3472,7 @@ CONTAINS
               rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
             END DO
           END DO
-            
+
         CASE (ST_SINGLE)
           ! Copy by hand
           DO j=1,MIN(SIZE(rstorageNode%p_Fsingle2D,2),Isize2DOld(2))
@@ -3488,7 +3488,7 @@ CONTAINS
               rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
             END DO
           END DO
-        
+
         CASE (ST_LOGICAL)
           ! Copy by hand
           DO j=1,MIN(SIZE(rstorageNode%p_Blogical2D,2),Isize2DOld(2))
@@ -3505,9 +3505,9 @@ CONTAINS
             END DO
           END DO
         END SELECT
-        
+
       END IF
-      
+
     CASE DEFAULT
       PRINT *, 'Error in storage_realloc: Handle ',ihandle, &
                ' is neither 1- nor 2- dimensional!'
@@ -3518,7 +3518,7 @@ CONTAINS
     ! Respect also the temporary memory in the total amount of memory used.
     IF ((p_rheap%dtotalMem + rstorageNode%dmemBytes) .GT. p_rheap%dtotalMemMax) &
       p_rheap%dtotalMemMax = p_rheap%dtotalMem + rstorageNode%dmemBytes
-    
+
     ! Release old data
     IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
     IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
@@ -3530,13 +3530,13 @@ CONTAINS
     IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
     IF (ASSOCIATED(p_rnode%p_Blogical2D)) DEALLOCATE(p_rnode%p_Blogical2D)
     IF (ASSOCIATED(p_rnode%p_Schar2D))    DEALLOCATE(p_rnode%p_Schar2D)
-    
+
     ! Correct the memory statistics
     p_rheap%dtotalMem = p_rheap%dtotalMem &
                       - p_rnode%dmemBytes + rstorageNode%dmemBytes
     IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
       p_rheap%dtotalMemMax = p_rheap%dtotalMem
-    
+
     ! Replace the old node by the new one, finish
     p_rnode = rstorageNode
 
@@ -3572,11 +3572,11 @@ CONTAINS
   ! dimension in the memory block identified by ihandle
   INTEGER(I32), INTENT(IN) :: iubound
 
-  ! Init new storage block identifier (ST_NEWBLOCK_ZERO, 
+  ! Init new storage block identifier (ST_NEWBLOCK_ZERO,
   ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
   ! Specifies how to initialise memory if isize > original array size.
   INTEGER, INTENT(IN) :: cinitNewBlock
-  
+
   ! OPTIONAL: Copy old data.
   ! =TRUE: Copy data of old array to the new one.
   ! =FALSE: Reallocate memory, don't copy old data.
@@ -3584,9 +3584,9 @@ CONTAINS
   LOGICAL, INTENT(IN), OPTIONAL :: bcopy
 
 !</input>
-  
+
 !<inputoutput>
-  
+
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
   TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
@@ -3595,18 +3595,18 @@ CONTAINS
   INTEGER, INTENT(INOUT) :: ihandle
 
 !</inputoutput>
-  
+
 !</subroutine>
-  
+
     ! local variables
-  
-    ! Pointer to the heap 
+
+    ! Pointer to the heap
     TYPE(t_storageBlock), POINTER :: p_rheap
     TYPE(t_storageNode), POINTER :: p_rnode
-    
+
     ! New storage node
     TYPE(t_storageNode) :: rstorageNode
-    
+
     ! size of the new 1-dimensional array
     INTEGER(I32) :: isize
 
@@ -3635,7 +3635,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(2) :: iubound2Dold
 
     INTEGER(I32) :: i,j
-    
+
     LOGICAL :: bcopyData
 
     isize=iubound-ilbound+1
@@ -3644,35 +3644,35 @@ CONTAINS
       CALL storage_free(ihandle,rheap)
       RETURN
     END IF
-    
+
     ! Get the heap to use - local or global one.
-    
+
     IF(PRESENT(rheap)) THEN
       p_rheap => rheap
     ELSE
       p_rheap => rbase
     END IF
-    
+
     ! Copy old data?
-    
+
     IF (PRESENT(bcopy)) THEN
       bcopyData = bcopy
     ELSE
       bcopyData = .TRUE.
     END IF
-    
+
     ! Where is the descriptor of the handle?
     p_rnode => p_rheap%p_Rdescriptors(ihandle)
 
     ! Copy the data of the old storage node to rstorageNode. That way
     ! we prepare a new storage node and will replace the old.
     rstorageNode = p_rnode
-    
+
     ! Are we 1D or 2D?
     SELECT CASE(p_rnode%idimension)
 
     CASE (1)
-    
+
       ! Get the size and bounds of the old storage node.
       SELECT CASE (p_rnode%idataType)
       CASE (ST_SINGLE)
@@ -3696,14 +3696,14 @@ CONTAINS
         ilboundOld = LBOUND(p_rnode%p_Schar1D,1)
         iuboundOld = UBOUND(p_rnode%p_Schar1D,1)
       END SELECT
-      
+
       ! Do we really have to change anything?
       IF ((ilbound == ilboundOld) .AND. &
           (iubound == iuboundOld)) RETURN
-      
+
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
-      
+
       SELECT CASE (rstorageNode%idataType)
       CASE (ST_SINGLE)
         ALLOCATE(rstorageNode%p_Fsingle1D(ilbound:iubound))
@@ -3724,7 +3724,7 @@ CONTAINS
         PRINT *,'Error: unknown mem type'
         STOP
       END SELECT
-      
+
       IF (iubound > iuboundOld) &
           CALL storage_initialiseNode (rstorageNode,cinitNewBlock,iuboundOld+1_I32)
       IF (ilbound < ilboundOld) &
@@ -3782,11 +3782,11 @@ CONTAINS
         ilbound2Dold = LBOUND(p_rnode%p_Schar2D)
         iubound2Dold = UBOUND(p_rnode%p_Schar2D)
       END SELECT
-      
+
       ! Do we really have to change anything?
       IF ((ilbound == ilbound2Dold(2)) .AND. &
           (iubound == iubound2Dold(2))) RETURN
-      
+
       ! Allocate new memory and initialise it - if it's larger than the old
       ! memory block.
       SELECT CASE (rstorageNode%idataType)
@@ -3824,7 +3824,7 @@ CONTAINS
         PRINT *,'Error: unknown mem type'
         STOP
       END SELECT
-      
+
       IF (iubound > Iubound2Dold(2)) &
         CALL storage_initialiseNode (rstorageNode,cinitNewBlock,&
                                      Iubound2Dold(2)+1_I32)
@@ -3845,7 +3845,7 @@ CONTAINS
               rstorageNode%p_Ddouble2D(i,j) = p_rnode%p_Ddouble2D(i,j)
             END DO
           END DO
-            
+
         CASE (ST_SINGLE)
           ! Copy by hand
           DO j=MAX(ilbound,Ilbound2Dold(2)),MIN(iubound,Iubound2Dold(2))
@@ -3861,7 +3861,7 @@ CONTAINS
               rstorageNode%p_Iinteger2D(i,j) = p_rnode%p_Iinteger2D(i,j)
             END DO
           END DO
-        
+
         CASE (ST_LOGICAL)
           ! Copy by hand
           DO j=MAX(ilbound,Ilbound2Dold(2)),MIN(iubound,Iubound2Dold(2))
@@ -3878,9 +3878,9 @@ CONTAINS
             END DO
           END DO
         END SELECT
-        
+
       END IF
-      
+
     CASE DEFAULT
       PRINT *, 'Error in storage_realloc: Handle ',ihandle, &
                ' is neither 1- nor 2- dimensional!'
@@ -3891,7 +3891,7 @@ CONTAINS
     ! Respect also the temporary memory in the total amount of memory used.
     IF ((p_rheap%dtotalMem + rstorageNode%dmemBytes) .GT. p_rheap%dtotalMemMax) &
       p_rheap%dtotalMemMax = p_rheap%dtotalMem + rstorageNode%dmemBytes
-    
+
     ! Release old data
     IF (ASSOCIATED(p_rnode%p_Fsingle1D))  DEALLOCATE(p_rnode%p_Fsingle1D)
     IF (ASSOCIATED(p_rnode%p_Ddouble1D))  DEALLOCATE(p_rnode%p_Ddouble1D)
@@ -3903,13 +3903,13 @@ CONTAINS
     IF (ASSOCIATED(p_rnode%p_Iinteger2D)) DEALLOCATE(p_rnode%p_Iinteger2D)
     IF (ASSOCIATED(p_rnode%p_Blogical2D)) DEALLOCATE(p_rnode%p_Blogical2D)
     IF (ASSOCIATED(p_rnode%p_Schar2D))    DEALLOCATE(p_rnode%p_Schar2D)
-    
+
     ! Correct the memory statistics
     p_rheap%dtotalMem = p_rheap%dtotalMem &
                       - p_rnode%dmemBytes + rstorageNode%dmemBytes
     IF (p_rheap%dtotalMem .GT. p_rheap%dtotalMemMax) &
       p_rheap%dtotalMemMax = p_rheap%dtotalMem
-    
+
     ! Replace the old node by the new one, finish
     p_rnode = rstorageNode
 
