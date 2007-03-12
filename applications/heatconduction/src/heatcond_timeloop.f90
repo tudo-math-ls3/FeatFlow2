@@ -126,7 +126,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
   
   ! The current solution vector at time $t^n$. Is replaced by the
@@ -136,6 +136,7 @@ CONTAINS
   ! The RHS vector at time $t^n$. Is replaced by the RHS at time $t^{n+1}$.
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
 !</inputoutput>
+!</subroutine>
 
   ! local variables
     INTEGER :: ilvmin,ilvmax
@@ -193,7 +194,7 @@ CONTAINS
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     p_rrhs    => rproblem%rrhs 
     
-    ! Create a temporary vector we need that for some preparation.
+    ! Create a temporary vector we need for some preparations.
     CALL lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .FALSE.)
     
     ! Set up w_2*N(u_n) + w_4*f_n.
@@ -201,7 +202,7 @@ CONTAINS
     CALL lsysbl_vectorLinearComb(rrhs,p_rrhs,&
          rproblem%rtimedependence%rtimestepping%dweightOldRHS,0.0_DP)
     
-    ! Synchronise the sorting of the vectors accoring to the system matrix.
+    ! Synchronise the sorting of the vectors according to the system matrix.
     ! We use the first subvector of rtempBlock as temporary data; it's
     ! large enough, as we have only one block.
     CALL lsysbl_synchroniseSortMatVec (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))

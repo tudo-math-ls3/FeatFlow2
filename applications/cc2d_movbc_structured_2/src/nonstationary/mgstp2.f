@@ -25,7 +25,7 @@
 *
 * This routine calculates the solution u^(n+1) for the next time step
 * based on the solution u^n in the current time step. It builds up
-* right-hand-side vectors acctording to the time stepping and then
+* right-hand-side vectors according to the time stepping and then
 * calls the stationary solver to calculate the solution.
 *
 * The routine is configured by the information in the double/integer
@@ -33,10 +33,10 @@
 * solver as well as parameters for the nonlinear solver are needed
 * to adapt to the problem.
 * IMGPAR/DMGPAR that defines the behaviour of the multigrid
-* solution engine for the linear subproblems. Apart of that,
+* solution engine for the linear subproblems. Apart from that,
 * a parameter block TRIAS must define the underlying triangulations
 * on level NLMIN..NLMAX, MATDAT must provide information about
-* the system matrices anc VECDAT must provide space for the
+* the system matrices and VECDAT must provide space for the
 * solution of the linear systems with multigrid.
 *
 * In:
@@ -49,7 +49,7 @@
 *            deformation in every time step from the original grids).
 *   MATDAT : array [1..SZN2MI,1..NNLEV] of integer
 *            TNS2DMatrixParams-structures for level NLMIN..NLMAX, 
-*            initialized with data
+*            initialised with data
 *   VECDAT : array [1..SZN2VI,1..NNLEV] of integer
 *            TNS2DVectorParams-structures for level NLMIN..NLMAX. 
 *            This structure array must specify the structure of
@@ -73,7 +73,7 @@
 *   DSTPAR : array [1..SZNSDD] of double
 *            Integer and double prec. parameter block for the stationary 
 *            sub-solver NSDEF2.
-*            The input-variables of the array must be initialized, e.g.
+*            The input-variables of the array must be initialised, e.g.
 *            with INISTS.
 *            The structures will be modified problem-specifically for the
 *            solution of the subproblems, but restored onto return
@@ -81,16 +81,16 @@
 *   IMGPAR : array [1..SZ020I+3*SZSLVI] of integer
 *   DMGPAR : array [1..SZ020D+3*SZSLVD] of double
 *            Integer and double parameter blocks for the multigrid 
-*            sub-solver M020. These must be initialized as described
+*            sub-solver M020. These must be initialised as described
 *            in NSDEF2.F. The variables in these blocks are not used
 *            in MGSTP2, they are directly passed to NSDEF2.
 *   IASMBL : array [1..SZASMI] of integer
 *   DASMBL : array [1..SZASMD] of double
 *            Integer and double prec. parameter block that controls the
-*            discretization. This tells all assembly-routines how to 
+*            discretisation. This tells all assembly-routines how to 
 *            set up the nonlinearity in the system matrices, which 
 *            cubature formula to use, etc.
-*            The discretization structures are modified during the
+*            The discretisation structures are modified during the
 *            time stepping according to the situation of the simulation,
 *            but restored to their original state upon returning of
 *            this routine.
@@ -227,7 +227,7 @@
 *        between TRIAS and CURTRI, the original vertex coordinates
 *        in TRIAS are changed during the grid deformation!
 * 3.) IALE > 0 - ALE method
-*     => The grid velocity field in the discretization structure
+*     => The grid velocity field in the discretisation structure
 *        is updated.
 ************************************************************************
 
@@ -278,7 +278,7 @@ C     generation of RHS and grid
 
 C     externals
 
-C     Parametrization of the domain
+C     Parametrisation of the domain
 
       DOUBLE PRECISION PARX,PARY,TMAX
       EXTERNAL PARX,PARY,TMAX
@@ -302,7 +302,7 @@ C     INTEGER KRHS
       INTEGER KM1,KST1,KA1,KCOLA,KLDA,NA,KVERT,KMID,KCORVG
       LOGICAL BGRADAP
 
-C     Backup of the discretization structures
+C     Backup of the discretisation structures
       
       INTEGER IASMBK (SZASMI)
       DOUBLE PRECISION DASMBK(SZASMD)
@@ -484,10 +484,10 @@ C       with
 C
 C           S(u) = [alpha*M + Theta_1*nu*k*L + Theta_2*k*K(u)] u
 C
-C       Here, alpha=0 for stationationary and alpha=1 for
-C       instationary problems,L=KST1=Laplace-Matrix.
+C       Here, alpha=0 for stationary and alpha=1 for
+C       instationary problems, L=KST1=Laplace-Matrix.
 C       The time-step constant k=TSTEP in front of the pressure 
-C       B p_h in the abstract system above can be realized by 
+C       B p_h in the abstract system above can be realised by 
 C       scaling the pressure in every time-step.
 C***********************************************************************
 
@@ -529,9 +529,9 @@ C       [I - (1-Theta) k N(u^n)]u^n + Theta k f^(n+1) + (1-Theta) k f^n
 C          ^^^^^^^^^^^^^              ^^^^^^^           ^^^^^^^^^^^
 C            TRMWGH                   TR1WGH             TR2WGH
 C
-C       In case that we have steaty (in-)homogenuous RHS, we have
-C       f^n = f^(n+1) = DRHS and there fore the latter both terms
-C       reduce:
+C       In case we have steady (in-)homogenuous RHS, we have
+C       f^n = f^(n+1) = DRHS and therefore the latter both terms
+C       reduce to:
 C
 C         Theta k f^(n+1) + (1-Theta) k f^n
 C       = Theta k f^(n+1) + (1-Theta) k f^(n+1)
@@ -568,18 +568,18 @@ C               Theta = 1-2/sqrt(2)
 C               Theta'= (1-2Theta)
 C
 C         WARNING: The documentation on page 165 (151) in Turek's book 
-C          on the Theta Scheme is different as implemented here!!!
+C          on the Theta Scheme is different than implemented here!!!
 C          This version of the Theta Scheme has never been published,
 C          but was derived independently of Glowinski by Rannacher/
 C          Turek! It makes more sense than the Glowinski-scheme
-C          as the coefficients before f^n+1 and f^n add to 1 and
-C          the RHS f^(n+1-Theta) is not used in both, the second
-C          and the third step!
+C          as the coefficients before f^n+1 and f^n add up to 1 and
+C          the RHS f^(n+1-Theta) is used neither in the second nor
+C          the third step!
 C***********************************************************************
 
-C       The RHS handling is at most easy if the RHS is stationary.
+C       The RHS handling is easiest if the RHS is stationary.
 C
-C       If we have homogenuous RHS, simply force the RHS to 0.
+C       If we have homogeneous RHS, simply force the RHS to 0.
         
         IF (IPARAM(OIRHS).EQ.0) THEN
         
@@ -936,7 +936,7 @@ C                             TR2WGH = (1-Theta)*k
         
 C       Now treat the convective part.
 C
-C       Modify the current RHS-vector KF that way, that
+C       Modify the current RHS-vector KF such that
 C           OTRMSTP * u grad(u)
 C       is subtracted - but because we want to *add* this term,
 C
@@ -1168,10 +1168,10 @@ C       the old state when we are finished.
         CALL LCP1 (DASMBL,DASMBK,SZASMD)
 
 C       In a nonstationary simulation, the mass matrix has to be added
-C       to the system matrix following the discretization rule
+C       to the system matrix following the discretisation rule
 C                  [ M  +  THWEIG * N(u) ] u + ... = ...
-C       This is because of the time discretization du/dt. So we have to
-C       impose IALPHA=1 in the discretization structure to enforce
+C       This is because of the time discretisation du/dt. So we have to
+C       impose IALPHA=1 in the discretisation structure to enforce
 C       NSDEF not to forget this mass matrix.
 
         IASMBL(OIALPHA) = 1
@@ -1281,7 +1281,7 @@ C     Release memory that was allocated for backups of grids:
         CALL TRIDEL (SOLTRI(1,I))
       END DO
 
-C     Restore the original discretization setup
+C     Restore the original discretisation setup
       
       CALL LCP3(IASMBK,IASMBL,SZASMI)
       CALL LCP1(DASMBK,DASMBL,SZASMD)

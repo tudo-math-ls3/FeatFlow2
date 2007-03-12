@@ -416,7 +416,7 @@ C parameters
 C local variables
 
       INTEGER STEP,CNT
-      INTEGER LCOORDS,LRES,LRESTM,CDIM,J,I
+      INTEGER LCOORDS,LRES,LRESTM,CDIM,J,I,IMPRVD
       DOUBLE PRECISION NEWVAL,VAL,H
       
 C We work with parameters in DFINAL; copy start point from DSTART:
@@ -429,7 +429,7 @@ C Current stepsize in every dimension
       
 C Reserve some memory for the current parameter setting:
 
-      CALL ZNEW (IDIMS,-1,LCOORDS,'DCOORDS')
+      CALL ZNEW (IDIMS*2,-1,LCOORDS,'DCOORDS')
       
 C And for storing the results. 
 
@@ -459,6 +459,14 @@ C Crippled DO-WHILE loop to realize a maximum of MAXSTP steps:
       
 10    CONTINUE
       
+        IMPRVD = 0
+        
+C       DCOORDS(IDIMS+1..2*IDIMS) holds the current center,
+C       DFINAL the current best point.
+C       Start with the coordinates in DFINAL as center:
+
+        CALL LCP1(DFINAL,DWORK(L(LCOORDS)+IDIMS),IDIMS)
+      
 C       Loop over all possible dimensions:
 
         DO CDIM = 0,IDIMS-1
@@ -473,7 +481,7 @@ C           Increase probing counter
         
 C           Copy our current point to the probe coordinate array
 
-            CALL LCP1(DFINAL,DWORK(L(LCOORDS)),IDIMS)
+            CALL LCP1(DWORK(L(LCOORDS)+IDIMS),DWORK(L(LCOORDS)),IDIMS)
           
 C           Modify the CDIM'th entry according to the stepsize
 C           to create a neighbour point of our current midpoint:
@@ -526,6 +534,14 @@ C             value
               CALL LCP1(DWORK(L(LRESTM)),DWORK(L(LRES)),NRES)
               VAL = NEWVAL
               STEP = STEP + 1
+              
+C             We improved!
+
+              IMPRVD = 1
+
+C             When the following GOTO is commented out, an extensive
+C             search is done in all directions to find the *best*
+C             iterate. Otherwise, the first better iterate is taken.
             
               GOTO 80000
 
@@ -537,21 +553,24 @@ C         Otherwise check next dimension...
         
         END DO
       
-C       All dimensions testet, no one was better. Halfen the step-
-C       length and calculate the maximum step length
+80000   CONTINUE
+      
+        IF (IMPRVD .EQ. 0) THEN
+        
+C         All dimensions testet, no one was better. Halfen the step-
+C         length and calculate the maximum step length
 
-        H = 0.5D0 * FINTOL(1)
-        DO J=1,IDIMS
-          FINTOL(J) = 0.5D0 * FINTOL(J)
-          IF (FINTOL(J).GT.H) H = FINTOL(J)
-        END DO
+          H = 0.5D0 * FINTOL(1)
+          DO J=1,IDIMS
+            FINTOL(J) = 0.5D0 * FINTOL(J)
+            IF (FINTOL(J).GT.H) H = FINTOL(J)
+          END DO
+        END IF
         
 C       Stop the algorithm if our current maximum step-length drops
 C       below the EPS-value...
 
         IF (H.LT.EPS) GOTO 90000
-      
-80000   CONTINUE
       
 C Perform next step if we haven't reached the maximum
       
