@@ -11,7 +11,7 @@
 !# The discretised core equation reads at the moment:
 !#
 !#   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = f1
-!#                                                B^T*p = f2
+!#                                                B^T*u = f2
 !#
 !# with:
 !#   alpha = 0/1    - for time dependence; 
@@ -50,12 +50,12 @@
 !#     -> Callback routine: Check the residuals for convergence
 !#
 !# 8.) c2d2_getProlRest
-!#     -> Auxiliary routine: Set up iterlevel projection structure 
+!#     -> Auxiliary routine: Set up interlevel projection structure
 !#        with information from INI/DAT files
 !#
-!# The routines in 1.)/2.)/3.) initialises a structure that represents the 
+!# The routines in 1.)/2.)/3.) initialise a structure that represents the
 !# settings of the core equation and the nonlinear iteration to solve that.
-!# Routines 4.)-7.) represent the four callback routines 
+!# Routines 4.)-7.) represent the four internal callback routines 
 !# that are given as parameters to the nonlinear solver in the kernel.
 !#
 !#  8.) c2d2_preparePreconditioner
@@ -299,7 +299,7 @@ CONTAINS
 !</description>
 
 !<input>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(IN), TARGET :: rproblem
 
   ! The solution vector which is modified later during the nonlinear iteration.
@@ -959,6 +959,9 @@ CONTAINS
         ! Set stabilisation parameter
         rstreamlineDiffusion%dupsam = collct_getvalue_real (rcollection,'UPSAM')
         
+        ! Matrix weight
+        rstreamlineDiffusion%dtheta = rnonlinearIteration%dgamma
+
       CASE (1)
         ! Set up the upwind structure for the creation of the defect.
         ! There's not much to do, only initialise the viscosity...
@@ -966,6 +969,9 @@ CONTAINS
         
         ! Set stabilisation parameter
         rupwind%dupsam = collct_getvalue_real (rcollection,'UPSAM')
+
+        ! Matrix weight
+        rupwind%dtheta = rnonlinearIteration%dgamma
 
       CASE (2)
         ! Set up the jump stabilisation structure for the creation of the defect.
@@ -982,6 +988,10 @@ CONTAINS
         
         ! Set upsam=0 to obtain a central-difference-type discretisation
         rstreamlineDiffusion%dupsam = 0.0_DP
+
+        ! Matrix weight
+        rstreamlineDiffusion%dtheta = rnonlinearIteration%dgamma
+        rjumpStabil%dtheta = rnonlinearIteration%dgamma
 
       CASE DEFAULT
         PRINT *,'Don''t know how to set up nonlinearity!?!'
@@ -1104,7 +1114,7 @@ CONTAINS
           ! Call the SD method to calculate the nonlinear matrix.
           CALL conv_streamlineDiffusion2d (&
                               p_rvectorCoarse, p_rvectorCoarse, &
-                              rnonlinearIteration%dgamma, 0.0_DP,&
+                              1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
                                        
@@ -1148,7 +1158,7 @@ CONTAINS
 
           ! Call the upwind method to calculate the nonlinear matrix.
           CALL conv_upwind2d (p_rvectorCoarse, p_rvectorCoarse, &
-                              rnonlinearIteration%dgamma, 0.0_DP,&
+                              1.0_DP, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
                               
@@ -1196,7 +1206,7 @@ CONTAINS
           ! Stokes part is not calculated in this routine.
           CALL conv_streamlineDiffusion2d (&
                               p_rvectorCoarse, p_rvectorCoarse, &
-                              rnonlinearIteration%dgamma, 0.0_DP,&
+                              1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))   
                               
@@ -1354,19 +1364,23 @@ CONTAINS
   !</subroutine>
 
     ! local variables
-    INTEGER :: ilvmax
+    INTEGER :: ilvmax,i,j
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
-    TYPE(t_matrixBlock) :: rmatrixStokesBlock
+    TYPE(t_matrixBlock) :: rmatrixStokesBlock,rmatrixMassBlock
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(T_jumpStabilisation) :: rjumpStabil
     
     !!! DEBUG
-    ! REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
     ! A filter chain for the linear solver
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    
+      ! DEBUG!!!
+      CALL lsysbl_getbase_double (rx,p_Ddata)
+      CALL lsysbl_getbase_double (rd,p_Ddata2)
     
       ! Rebuild the nonlinear-iteration structure from the collection
       p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
@@ -1379,37 +1393,91 @@ CONTAINS
       p_rmatrixStokes => rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
       p_rmatrixMass => rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
-      ! Build a temporary 3x3 block matrix rmatrixStokes with Stokes matrices 
-      ! on the main diagonal:
-      !
-      ! (  L    0   B1 )
-      ! (  0    L   B2 )
-      ! ( B1^T B2^T 0  )
-      !
-      ! This is just for building the defect, so we make a simple copy,
-      ! overwrite submatrices as we need and do not care about releasing 
-      ! any memory!
-      rmatrixStokesBlock = p_rmatrix
-      rmatrixStokesBlock%RmatrixBlock(1,1) = p_rmatrixStokes
-      rmatrixStokesBlock%RmatrixBlock(2,2) = p_rmatrixStokes
-      
       ! Now, in the first step, we build the linear part of the nonlinear defect:
       !     d_lin = rhs - theta*(-nu * Laplace(.))*solution
       !
       ! rd already contains the rhs.
       IF (rnonlinearIteration%dtheta .NE. 0.0_DP) THEN
+        ! Build a temporary 3x3 block matrix rmatrixStokes with Stokes matrices 
+        ! on the main diagonal.
+        !
+        ! (  L    0   B1 )
+        ! (  0    L   B2 )
+        ! ( B1^T B2^T 0  )
+        !
+        ! Note that by default, lsysbl_duplicateMatrix does not allocate any memory,
+        ! so the following is a rather quick operation!
+        
+        CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixStokesBlock)
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,rmatrixStokesBlock%RmatrixBlock(1,1),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,rmatrixStokesBlock%RmatrixBlock(2,2),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            
+        ! Remove all rows and columns from the 3rd line on. For setting up the defect, we will
+        ! treat these separately. For stationary simulations, this is the same as
+        ! setting up the defect with the complete matrix as above. For nonstationary
+        ! simulations, there is a difference, as the divergence part of the equation
+        ! is not scaled with the time step! (see below).
+        !
+        ! (  L    0   0  )
+        ! (  0    L   0  )
+        ! (  0    0   0  )
+        !
+        DO i=NDIM2D+1,rmatrixStokesBlock%ndiagBlocks
+          CALL lsysbl_releaseMatrixRow (rmatrixStokesBlock,i)
+          CALL lsysbl_releaseMatrixColumn (rmatrixStokesBlock,i)
+        END DO
+      
+        ! Build the defect in the velocity equations
         CALL lsysbl_blockMatVec (rmatrixStokesBlock, rx, rd, &
             -1.0_DP*rnonlinearIteration%dtheta, 1.0_DP)
+            
+        CALL lsysbl_releaseMatrix (rmatrixStokesBlock)
+        
+        ! Now a similar thing again, this time for the divergence equation.
+        ! Set up a block system for the divergence by duplicating the system
+        ! matrix and removing the velocity equation parts:
+        !
+        ! (  0    0   B1 )
+        ! (  0    0   B2 )
+        ! ( B1^T B2^T 0  )
+        !
+        CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixStokesBlock)
+        DO j=1,NDIM2D
+          DO i=1,NDIM2D
+            CALL lsyssc_releaseMatrix (rmatrixStokesBlock%RmatrixBlock(i,j))
+          END DO
+        END DO
+
+        ! Build the rest of the defect. Here, no time step is involved!
+        CALL lsysbl_blockMatVec (rmatrixStokesBlock, rx, rd, &
+            -1.0_DP, 1.0_DP)
+            
+        CALL lsysbl_releaseMatrix (rmatrixStokesBlock)
       END IF
         
       ! Let's see, if the weight of the mass matrix is <> 0, subtract that
       ! contribution, too:
       !     d_lin = dlin - dalpha*mass*solution
       IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
-        rmatrixStokesBlock%RmatrixBlock(1,1) = p_rmatrixMass
-        rmatrixStokesBlock%RmatrixBlock(2,2) = p_rmatrixMass
-        CALL lsysbl_blockMatVec (rmatrixStokesBlock, rx, rd, &
+        ! Set up a new block mass matrix that is completely zero.
+        ! Copy references to our scalar mass matrices to the diagonal blocks (1,1)
+        ! and (2,2).
+        ! Multiply with the mass matrix and release the block matrix again, as we
+        ! don't need it afterwards.
+        ! Note that no matrix entries will be copied, so this is a quick operation!
+      
+        CALL lsysbl_createMatBlockByDiscr (rx%p_rblockDiscretisation,rmatrixMassBlock)
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixMassBlock%RmatrixBlock(1,1),&
+                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixMassBlock%RmatrixBlock(2,2),&
+                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+                                     
+        CALL lsysbl_blockMatVec (rmatrixMassBlock, rx, rd, &
             -1.0_DP*rnonlinearIteration%dalpha, 1.0_DP)
+            
+        CALL lsysbl_releaseMatrix (rmatrixMassBlock)
       END IF
       
       ! For the final defect
@@ -1446,10 +1514,13 @@ CONTAINS
           ! Set stabilisation parameter
           rstreamlineDiffusion%dupsam = collct_getvalue_real (rcollection,'UPSAM')
           
+          ! Matrix weight
+          rstreamlineDiffusion%dtheta = rnonlinearIteration%dgamma
+
           ! Call the SD method to calculate the nonlinear defect.
           ! As we calculate only the defect, the matrix is ignored!
           CALL conv_streamlinediffusion2d ( &
-                           rx, rx, rnonlinearIteration%dgamma, 0.0_DP,&
+                           rx, rx, 1.0_DP, 0.0_DP,&
                            rstreamlineDiffusion, CONV_MODDEFECT, &
                            p_rmatrix%RmatrixBlock(1,1), rx, rd)
                   
@@ -1462,9 +1533,12 @@ CONTAINS
           ! Set stabilisation parameter
           rupwind%dupsam = collct_getvalue_real (rcollection,'UPSAM')
           
+          ! Matrix weight
+          rupwind%dtheta = rnonlinearIteration%dgamma
+          
           ! Call the upwind method to calculate the nonlinear defect.
           ! As we calculate only the defect, the matrix is ignored!
-          CALL conv_upwind2d (rx, rx, rnonlinearIteration%dgamma, 0.0_DP,&
+          CALL conv_upwind2d (rx, rx, 1.0_DP, 0.0_DP,&
                               rupwind, CONV_MODDEFECT, &
                               p_rmatrix%RmatrixBlock(1,1), rx, rd)      
                   
@@ -1478,10 +1552,13 @@ CONTAINS
           ! like discretisation.
           rstreamlineDiffusion%dupsam = 0.0_DP
           
+          ! Matrix weight
+          rstreamlineDiffusion%dtheta = rnonlinearIteration%dgamma
+
           ! Call the SD method to calculate the nonlinear defect.
           ! As we calculate only the defect, the matrix is ignored!
           CALL conv_streamlinediffusion2d ( &
-                           rx, rx, rnonlinearIteration%dgamma, 0.0_DP,&
+                           rx, rx, 1.0_DP, 0.0_DP,&
                            rstreamlineDiffusion, CONV_MODDEFECT, &
                            p_rmatrix%RmatrixBlock(1,1), rx, rd)
                            
@@ -1492,6 +1569,9 @@ CONTAINS
           rjumpStabil%dgamma = collct_getvalue_real (rcollection,'UPSAM')
           rjumpStabil%dgammastar = rjumpStabil%dgamma 
           
+          ! Matrix weight
+          rjumpStabil%dtheta = rnonlinearIteration%dgamma
+
           ! Call the Jump stabilisation to stabilise
           CALL conv_jumpStabilisation2d ( &
                            rx, rx, rnonlinearIteration%dgamma, 0.0_DP,&
@@ -1524,6 +1604,9 @@ CONTAINS
           rjumpStabil%dgamma = collct_getvalue_real (rcollection,'UPSAM')
           rjumpStabil%dgammastar = rjumpStabil%dgamma 
           
+          ! Matrix weight
+          rjumpStabil%dtheta = rnonlinearIteration%dgamma
+
           ! Call the Jump stabilisation to stabilise
           CALL conv_jumpStabilisation2d ( &
                            rx, rx, rnonlinearIteration%dgamma, 0.0_DP,&
@@ -1592,12 +1675,20 @@ CONTAINS
   
       ! The nonlinear iteration structure
       TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
+      
+      ! DEBUG!!!
+      REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
       ! Rebuild the nonlinear-iteration structure from the collection
       CALL c2d2_restoreNonlinearLoop (rnonlinearIteration,p_rcollection)
     
       ! Build the nonlinear defect
       CALL lsysbl_copyVector (rb,rd)
+      
+      ! DEBUG!!!
+      CALL lsysbl_getbase_double (rx,p_Ddata)
+      CALL lsysbl_getbase_double (rd,p_Ddata2)
+      
       CALL c2d2_assembleNonlinearDefect (rnonlinearIteration,rx,rd,&
           .TRUE.,.TRUE.,p_rcollection)      
 
@@ -1896,9 +1987,9 @@ CONTAINS
     TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
 
     ! DEBUG!!!
-!    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
-!    call lsysbl_getbase_double (rd,p_def)
-!    call lsysbl_getbase_double (rx,p_vec)
+    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
+    call lsysbl_getbase_double (rd,p_def)
+    call lsysbl_getbase_double (rx,p_vec)
 !    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
 
       ! Reconstruct the nonlinear iteration structure from the collection.
@@ -2104,7 +2195,7 @@ CONTAINS
         dtmp = Dresiduals(3)
         IF (dtmp .LT. 1.0E-8_DP) dtmp = 1.0_DP
         ddelP = rnonlinearIteration%DresidualCorr(3)/dtmp
-
+        
         ! Check if the nonlinear iteration can prematurely terminate.
         !        
         ! Get the stopping criteria from the parameters.
@@ -2124,6 +2215,10 @@ CONTAINS
         dresDIV = Dresiduals(2)
         dres    = SQRT(dresU**2 + dresDIV**2)
         
+        ! Replace the 'old' residual
+        rnonlinearIteration%DresidualOld(1) = dresU
+        rnonlinearIteration%DresidualOld(2) = dresDIV
+
         ! Check for divergence; use a NOT for better NaN handling.
         bdivergence = .NOT. (dres/dresOld .LT. 1E2)
         
@@ -2262,7 +2357,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -2423,10 +2518,7 @@ CONTAINS
       ! other cases.
       p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscretisation(1)
       IF ((p_rdiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-          ((p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_E030) .AND. &
-           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_E031) .AND. &
-           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_EM30) .AND. &
-           (p_rdiscr%RelementDistribution(1)%itrialElement .NE. EL_EM31))) THEN
+          (elem_getPrimaryElement(p_rdiscr%RelementDistribution(1)%itrialElement) .NE. EL_Q1T)) THEN
         i = 0
       END IF
       
@@ -2455,7 +2547,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 
   ! The preconditioner structure for the CCxD problem. 

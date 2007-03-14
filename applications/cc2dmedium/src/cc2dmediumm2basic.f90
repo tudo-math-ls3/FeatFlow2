@@ -248,6 +248,11 @@ MODULE cc2dmediumm2basic
 !                       | =1: we discretise Stokes
 ! IUPWIND               | Type of stabilisation. =0:streamline diff, =1:upwind,
 !                       | =2:jump stabil
+! IBOUNDARY             ! =0: stationary Dirichlet boundary conditions
+!                       ! =1: nonstationary boundary conditions, possibly with
+!                       !     pressure drop
+!                       ! =2: nonstationary boundary conditions, possibly with
+!                       !     prssure drop and/or Neumann boundary parts
 ! UPSAM                 | Stabilisation parameter
 ! INEUMANN              | =YES, if there is Neumann boundary in the problem.
 !                       | =NO, otherwise

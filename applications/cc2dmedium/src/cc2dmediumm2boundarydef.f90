@@ -114,7 +114,7 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -465,7 +465,7 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 

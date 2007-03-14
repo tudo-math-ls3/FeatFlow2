@@ -71,7 +71,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -251,7 +251,7 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -326,7 +326,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs,bmatrices,bvectors)
+  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs,bmatrices,&
+      bsolvector,brhsvector)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -335,7 +336,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 
   ! A vector structure for the solution vector. The discrete BC's are implemented
@@ -348,8 +349,11 @@ CONTAINS
   ! Whether to implement the BC's into the system matrix/matrices or not.
   LOGICAL, INTENT(IN) :: bmatrices
 
-  ! Whether to implement the BC's into the solution/rhs vector or not
-  LOGICAL, INTENT(IN) :: bvectors
+  ! Whether to implement the BC's into the solution vector or not
+  LOGICAL, INTENT(IN) :: bsolvector
+
+  ! Whether to implement the BC's into the solution vector or not
+  LOGICAL, INTENT(IN) :: brhsvector
 !</inputoutput>
 
 !</subroutine>
@@ -365,7 +369,19 @@ CONTAINS
     ! on the finest level
     ilvmax = rproblem%NLMAX
     
-    IF (bvectors) THEN
+    IF (bsolvector) THEN
+    
+      ! Implement discrete boundary conditions into solution vector by
+      ! filtering the vector.
+      CALL vecfil_discreteBCsol (rvector)
+      
+      ! Implement discrete boundary conditions of fictitioous boundary comnponents
+      ! into solution vector by filtering the vector.
+      CALL vecfil_discreteFBCsol (rvector)
+      
+    END IF
+    
+    IF (brhsvector) THEN
     
       ! Implement pressure drop boundary conditions into RHS vector
       ! if there are any.
@@ -375,18 +391,10 @@ CONTAINS
       ! filtering the vector.
       CALL vecfil_discreteBCrhs (rrhs)
 
-      ! Implement discrete boundary conditions into solution vector by
-      ! filtering the vector.
-      CALL vecfil_discreteBCsol (rvector)
-      
       ! Implement discrete boundary conditions of fictitious boundary components
       ! into RHS vector by filtering the vector.
       CALL vecfil_discreteFBCrhs (rrhs)
 
-      ! Implement discrete boundary conditions of fictitioous boundary comnponents
-      ! into solution vector by filtering the vector.
-      CALL vecfil_discreteFBCsol (rvector)
-      
     END IF
     
     IF (bmatrices) THEN
@@ -416,7 +424,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 

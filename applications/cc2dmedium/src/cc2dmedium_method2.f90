@@ -157,7 +157,7 @@ CONTAINS
       CALL c2d2_initDiscreteBC (rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
-      CALL c2d2_implementBC (rproblem,rvector,rrhs,.TRUE.,.TRUE.)
+      CALL c2d2_implementBC (rproblem,rvector,rrhs,.TRUE.,.TRUE.,.TRUE.)
     
       ! Solve the problem
       CALL c2d2_solve (rproblem,rvector,rrhs)

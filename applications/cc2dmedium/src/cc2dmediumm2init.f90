@@ -67,7 +67,7 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
@@ -123,6 +123,11 @@ CONTAINS
                                 'dUpsam',d1,0.0_DP)
     CALL collct_setvalue_real (rproblem%rcollection,'UPSAM',d1,.TRUE.)
 
+    ! Type of boundary conditions
+    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iBoundary',i1,0)
+    CALL collct_setvalue_int( rproblem%rcollection,'IBOUNDARY',i1,.TRUE.)
+
     ! Time dependence
     CALL c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
         rproblem%rparamList)
@@ -142,12 +147,15 @@ CONTAINS
 !</description>
   
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
+    ! Remove information about boundary conditions
+    CALL collct_deleteValue(rproblem%rcollection,'IBOUNDARY')
+    
     ! Remove information about stabilisation
     CALL collct_deleteValue(rproblem%rcollection,'UPSAM')
     CALL collct_deleteValue(rproblem%rcollection,'IUPWIND')
@@ -183,7 +191,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
@@ -262,7 +270,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 

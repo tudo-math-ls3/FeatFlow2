@@ -151,10 +151,14 @@ CONTAINS
     REAL(DP) :: dtheta,dtstep,dtimemin
 
     ! Get the parameters for the time stepping scheme from the parameter list
-    CALL parlst_getvalue_int (rparams, 'TIMESTEPPING', 'ITIMESTEPSCHEME', cscheme, 0)
-    CALL parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMESTEPTHETA', dtheta, 1.0_DP)
-    CALL parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMESTEP', dtstep, 0.1_DP)
-    CALL parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMEINIT', dtimemin, 0.0_DP)
+    CALL parlst_getvalue_int (rparams, &
+        'TIME-DISCRETISATION', 'ITIMESTEPSCHEME', cscheme, 0)
+    CALL parlst_getvalue_double (rparams, &
+        'TIME-DISCRETISATION', 'DTIMESTEPTHETA', dtheta, 1.0_DP)
+    CALL parlst_getvalue_double (rparams, &
+        'TIME-DISCRETISATION', 'DTIMESTEP', dtstep, 0.1_DP)
+    CALL parlst_getvalue_double (rparams, &
+        'TIME-DISCRETISATION', 'DTIMEINIT', dtimemin, 0.0_DP)
     
     ! Initialise the time stepping in the problem structure
     CALL timstp_init (rtimestepping, &
@@ -178,7 +182,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
   
   ! The current solution vector at time $t^n$. Is replaced by the
@@ -206,15 +210,23 @@ CONTAINS
     ! local variables
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    
     ! Restore the standard matrix structure in case the matrices had been
-    ! modified for the solver.
-    !CALL c2d2_unfinaliseMatrices (rnonlinearIteration, &
-    !    rnonlinearIteration%rfinalAssembly,.FALSE.)
+    ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e. 
+    ! temporarily switch to the matrix structure that is compatible to 
+    ! the discretisation.
+    CALL c2d2_unfinaliseMatrices (rnonlinearIteration, &
+        rnonlinearIteration%rfinalAssembly,.FALSE.)
   
     ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
     ! boundary conditions of rrhs to that vector so that rtempVectorRhs
     ! acts as a RHS vector.
     CALL lsysbl_assignDiscretIndirect(rrhs,rtempVectorRhs)
+    
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rtempVectorRhs,p_Ddata)
   
     ! We have an equation of the type
     !
@@ -250,7 +262,7 @@ CONTAINS
       -rtimestepping%dweightMatrixRHS, &
       -rtimestepping%dweightMatrixRHS * &
        REAL(1-collct_getvalue_int (rproblem%rcollection,'ISTOKES'),DP))
-             
+    
     CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp, &
         rvector, rtempVectorRhs,&
         .FALSE.,.FALSE.,rproblem%rcollection)
@@ -268,7 +280,7 @@ CONTAINS
     ! -------------------------------------------    
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
-    ! Con't implement any BC's! Wem need the "raw" RHS for the next timestep.
+    ! Don't implement any BC's! We need the "raw" RHS for the next timestep.
     CALL c2d2_generateBasicRHS (rproblem,rrhs)
     
     ! Add w_3*f_{n+1} to the current RHS.     
@@ -277,7 +289,7 @@ CONTAINS
 
     ! Implement boundary conditions into the RHS and solution vector, not
     ! into the matrices; the latter is done during the nonlinear iteration.
-    CALL c2d2_implementBC (rproblem,rvector,rtempVectorRhs,.FALSE.,.TRUE.)
+    CALL c2d2_implementBC (rproblem,rvector,rtempVectorRhs,.FALSE.,.TRUE.,.TRUE.)
 
     ! That's it for the RHS and solution vector.
     !    
@@ -297,13 +309,32 @@ CONTAINS
     ! the callback routines how the core equation looks like.
     CALL c2d2_saveNonlinearLoop (rnonlinearIterationTmp,rproblem%rcollection)
     
+    ! Using rfinalAssembly, make the matrices compatible 
+    ! to our preconditioner if they are not. So we switch again to the matrix
+    ! representation that is compatible to our preconditioner.
+    CALL c2d2_finaliseMatrices (rnonlinearIteration)
+    
+    ! Scale the pressure by the step length. The core equation routines
+    ! handle the equation
+    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = ...
+    ! but we want to solve
+    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + theta*B*p = ...
+    !
+    ! So the trick is to scale p by theta, solve the core equation
+    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*(theta*p) = ...
+    ! and scale it back afterwards.
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(3),rtimestepping%dweightMatrixLHS)
+    
     ! Call the solver of the core equation to solve it using a nonlinear
     ! iteration.
     ! Call the nonlinear solver. For preconditioning and defect calculation,
     ! the solver calls our callback routines.
     CALL nlsol_performSolve(rnlSolver,rvector,rtempVectorRhs,rtempVector,&
-                            c2d2_getDefect,c2d2_precondDefect,&
+                            c2d2_getDefect,c2d2_precondDefect,c2d2_resNormCheck,&
                             rcollection=rproblem%rcollection)
+
+    ! scale the pressure back, then we have again the correct solution vector.
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(3),1.0_DP/rtimestepping%dweightMatrixLHS)
 
     ! rvector is the solution vector u^{n+1}.    
     !
@@ -329,7 +360,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 
   ! The initial solution vector. Is replaced by the final solution vector.
@@ -373,12 +404,18 @@ CONTAINS
     CALL c2d2_initTimeSteppingScheme (rproblem%rparamList,rtimestepping)
     
     ! Check the matrices if they are compatible to our
-    ! preconditioner. If not, we have to modify the matrices a little
-    ! bit to make it compatible. The rfinalAssembly structure receives
-    ! infrmation about how what has to be modified.
+    ! preconditioner. If not, we later have to modify the matrices a little
+    ! bit to make it compatible. 
+    ! The result of this matrix analysis is saved to the rfinalAssembly structure 
+    ! in rnonlinearIteration and allows us later to switch between these two
+    ! matrix representations: Compatibility to the discretisation routines
+    ! and compatibity to the preconditioner.
+    ! The c2d2_checkAssembly routine below uses this information to perform
+    ! the actual modification in the matrices.
     CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration)
     
-    ! Using rfinalAssembly, make the matrices compatible if they are not
+    ! Using rfinalAssembly as computed above, make the matrices compatible 
+    ! to our preconditioner if they are not.
     CALL c2d2_finaliseMatrices (rnonlinearIteration)
     
     ! Initialise the preconditioner for the nonlinear iteration
@@ -388,6 +425,12 @@ CONTAINS
     ! Create temporary vectors we need for the nonlinear iteration.
     CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .FALSE.)
     CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .FALSE.)
+
+    ! Implement the initial boundary conditions into the solution vector.
+    ! Don't implement anything to matrices or RHS vector as these are
+    ! maintained in the timeloop.
+    ! Afterwards, we can start the timeloop.
+    CALL c2d2_implementBC (rproblem,rvector,rrhs,.FALSE.,.TRUE.,.FALSE.)
 
     ! Let's start the timeloop
   

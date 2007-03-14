@@ -22,7 +22,7 @@
 !#
 !# 4.) c2d2_generateStaticSystemParts
 !#     -> Initialises static parts of the global system matrix with
-!#        entries of templace (B-) matrices
+!#        entries of template (B-) matrices
 !#
 !# 5.) c2d2_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
@@ -78,7 +78,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -151,6 +151,111 @@ CONTAINS
       rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
 
       SELECT CASE (ielementType)
+      CASE (0)
+        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+        ! discretisation structures for every component of the solution vector.
+        ! We have a solution vector with three components:
+        !  Component 1 = X-velocity
+        !  Component 2 = Y-velocity
+        !  Component 3 = Pressure
+        ! For simplicity, we set up one discretisation structure for the 
+        ! velocity...
+        CALL spdiscr_initDiscr_simple ( &
+                    p_rdiscretisation%RspatialDiscretisation(1), &
+                    EL_E031,icubA, &
+                    p_rtriangulation, p_rboundary)
+                    
+        ! Manually set the cubature formula for the RHS as the above routine
+        ! uses the same for matrix and vectors.
+        p_rdiscretisation%RspatialDiscretisation(1)% &
+          RelementDistribution(1)%ccubTypeLinForm = icubF
+                    
+        ! ...and copy this structure also to the discretisation structure
+        ! of the 2nd component (Y-velocity). This needs no additional memory, 
+        ! as both structures will share the same dynamic information afterwards,
+        ! but we have to be careful when releasing the discretisation structures
+        ! at the end of the program!
+        p_rdiscretisation%RspatialDiscretisation(2) = &
+          p_rdiscretisation%RspatialDiscretisation(1)
+    
+        ! For the pressure (3rd component), we set up a separate discretisation 
+        ! structure, as this uses different finite elements for trial and test
+        ! functions.
+        CALL spdiscr_initDiscr_combined ( &
+                    p_rdiscretisation%RspatialDiscretisation(3), &
+                    EL_Q0,EL_E031,icubB, &
+                    p_rtriangulation, p_rboundary)
+
+      CASE (1)
+        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+        ! discretisation structures for every component of the solution vector.
+        ! We have a solution vector with three components:
+        !  Component 1 = X-velocity
+        !  Component 2 = Y-velocity
+        !  Component 3 = Pressure
+        ! For simplicity, we set up one discretisation structure for the 
+        ! velocity...
+        CALL spdiscr_initDiscr_simple ( &
+                    p_rdiscretisation%RspatialDiscretisation(1), &
+                    EL_E030,icubA, &
+                    p_rtriangulation, p_rboundary)
+                    
+        ! Manually set the cubature formula for the RHS as the above routine
+        ! uses the same for matrix and vectors.
+        p_rdiscretisation%RspatialDiscretisation(1)% &
+          RelementDistribution(1)%ccubTypeLinForm = icubF
+                    
+        ! ...and copy this structure also to the discretisation structure
+        ! of the 2nd component (Y-velocity). This needs no additional memory, 
+        ! as both structures will share the same dynamic information afterwards,
+        ! but we have to be careful when releasing the discretisation structures
+        ! at the end of the program!
+        p_rdiscretisation%RspatialDiscretisation(2) = &
+          p_rdiscretisation%RspatialDiscretisation(1)
+    
+        ! For the pressure (3rd component), we set up a separate discretisation 
+        ! structure, as this uses different finite elements for trial and test
+        ! functions.
+        CALL spdiscr_initDiscr_combined ( &
+                    p_rdiscretisation%RspatialDiscretisation(3), &
+                    EL_Q0,EL_E030,icubB, &
+                    p_rtriangulation, p_rboundary)
+
+      CASE (2)
+        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+        ! discretisation structures for every component of the solution vector.
+        ! We have a solution vector with three components:
+        !  Component 1 = X-velocity
+        !  Component 2 = Y-velocity
+        !  Component 3 = Pressure
+        ! For simplicity, we set up one discretisation structure for the 
+        ! velocity...
+        CALL spdiscr_initDiscr_simple ( &
+                    p_rdiscretisation%RspatialDiscretisation(1), &
+                    EL_EM31,icubA, &
+                    p_rtriangulation, p_rboundary)
+                    
+        ! Manually set the cubature formula for the RHS as the above routine
+        ! uses the same for matrix and vectors.
+        p_rdiscretisation%RspatialDiscretisation(1)% &
+          RelementDistribution(1)%ccubTypeLinForm = icubF
+                    
+        ! ...and copy this structure also to the discretisation structure
+        ! of the 2nd component (Y-velocity). This needs no additional memory, 
+        ! as both structures will share the same dynamic information afterwards,
+        ! but we have to be careful when releasing the discretisation structures
+        ! at the end of the program!
+        p_rdiscretisation%RspatialDiscretisation(2) = &
+          p_rdiscretisation%RspatialDiscretisation(1)
+    
+        ! For the pressure (3rd component), we set up a separate discretisation 
+        ! structure, as this uses different finite elements for trial and test
+        ! functions.
+        CALL spdiscr_initDiscr_combined ( &
+                    p_rdiscretisation%RspatialDiscretisation(3), &
+                    EL_Q0,EL_EM31,icubB, &
+                    p_rtriangulation, p_rboundary)
+
       CASE (3)
         ! p_rdiscretisation%Rdiscretisations is a list of scalar 
         ! discretisation structures for every component of the solution vector.
@@ -221,6 +326,76 @@ CONTAINS
                     EL_QP1,EL_Q2,icubB, &
                     p_rtriangulation, p_rboundary)
                     
+      CASE (5)
+        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+        ! discretisation structures for every component of the solution vector.
+        ! We have a solution vector with three components:
+        !  Component 1 = X-velocity
+        !  Component 2 = Y-velocity
+        !  Component 3 = Pressure
+        ! For simplicity, we set up one discretisation structure for the 
+        ! velocity...
+        CALL spdiscr_initDiscr_simple ( &
+                    p_rdiscretisation%RspatialDiscretisation(1), &
+                    EL_EM30_UNPIVOTED,icubA, &
+                    p_rtriangulation, p_rboundary)
+                    
+        ! Manually set the cubature formula for the RHS as the above routine
+        ! uses the same for matrix and vectors.
+        p_rdiscretisation%RspatialDiscretisation(1)% &
+          RelementDistribution(1)%ccubTypeLinForm = icubF
+                    
+        ! ...and copy this structure also to the discretisation structure
+        ! of the 2nd component (Y-velocity). This needs no additional memory, 
+        ! as both structures will share the same dynamic information afterwards,
+        ! but we have to be careful when releasing the discretisation structures
+        ! at the end of the program!
+        p_rdiscretisation%RspatialDiscretisation(2) = &
+          p_rdiscretisation%RspatialDiscretisation(1)
+    
+        ! For the pressure (3rd component), we set up a separate discretisation 
+        ! structure, as this uses different finite elements for trial and test
+        ! functions.
+        CALL spdiscr_initDiscr_combined ( &
+                    p_rdiscretisation%RspatialDiscretisation(3), &
+                    EL_Q0,EL_EM30_UNPIVOTED,icubB, &
+                    p_rtriangulation, p_rboundary)
+
+      CASE (6)
+        ! p_rdiscretisation%Rdiscretisations is a list of scalar 
+        ! discretisation structures for every component of the solution vector.
+        ! We have a solution vector with three components:
+        !  Component 1 = X-velocity
+        !  Component 2 = Y-velocity
+        !  Component 3 = Pressure
+        ! For simplicity, we set up one discretisation structure for the 
+        ! velocity...
+        CALL spdiscr_initDiscr_simple ( &
+                    p_rdiscretisation%RspatialDiscretisation(1), &
+                    EL_EM30_UNSCALED,icubA, &
+                    p_rtriangulation, p_rboundary)
+                    
+        ! Manually set the cubature formula for the RHS as the above routine
+        ! uses the same for matrix and vectors.
+        p_rdiscretisation%RspatialDiscretisation(1)% &
+          RelementDistribution(1)%ccubTypeLinForm = icubF
+                    
+        ! ...and copy this structure also to the discretisation structure
+        ! of the 2nd component (Y-velocity). This needs no additional memory, 
+        ! as both structures will share the same dynamic information afterwards,
+        ! but we have to be careful when releasing the discretisation structures
+        ! at the end of the program!
+        p_rdiscretisation%RspatialDiscretisation(2) = &
+          p_rdiscretisation%RspatialDiscretisation(1)
+    
+        ! For the pressure (3rd component), we set up a separate discretisation 
+        ! structure, as this uses different finite elements for trial and test
+        ! functions.
+        CALL spdiscr_initDiscr_combined ( &
+                    p_rdiscretisation%RspatialDiscretisation(3), &
+                    EL_Q0,EL_EM30_UNSCALED,icubB, &
+                    p_rtriangulation, p_rboundary)
+
       CASE DEFAULT
         PRINT *,'Unknown discretisation: iElementType = ',ielementType
         STOP
@@ -245,8 +420,14 @@ CONTAINS
         ! to prevent accidental deallocation of memory.
         p_rdiscretisationMass%bisCopy = .TRUE.
 
-        CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'icubMass',icubM,CUB_G2X2)
+        CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                    'scubStokes',sstr,'')
+        IF (sstr .EQ. '') THEN
+          CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                    'icubStokes',icubM,CUB_G2X2)
+        ELSE
+          icubM = cub_igetID(sstr)
+        END IF
 
         ! Initialise the cubature formula appropriately.
         DO k = 1,p_rdiscretisationMass%inumFESpaces
@@ -310,7 +491,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -387,7 +568,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
   
   ! A vector structure for the solution vector. The structure is initialised,
@@ -599,7 +780,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -777,7 +958,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -807,7 +988,7 @@ CONTAINS
       ! The purpose of this routine is to initialise the static parts of this
       ! matrix. The two A-blocks are nonlinear, i.e. dynamic, so we don't
       ! have to deal with them. What we do here is to initialise the
-      ! B-matrices of this system according to giben templates!
+      ! B-matrices of this system according to given templates!
       !
       ! The B1/B2 matrices exist up to now only in our local problem structure
       ! as scalar 'template' matrices. Put a copy of them into the block matrix.
@@ -851,7 +1032,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
   
   ! The RHS vector which is to be filled with data.
@@ -920,7 +1101,7 @@ CONTAINS
 !!</description>
 !
 !!<inputoutput>
-!  ! A problem astructure saving problem-dependent information.
+!  ! A problem structure saving problem-dependent information.
 !  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !!</inputoutput>
 !
@@ -1190,7 +1371,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 
   ! A vector structure for the solution vector. The structure is cleaned up,
@@ -1208,8 +1389,11 @@ CONTAINS
 
     ! Release matrices and vectors on all levels
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Delete the matrix
+      ! Delete the system matrix
       CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
+
+      ! If there is an existing mass matrix, release it.
+      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
 
       ! Release Stokes, B1 and B2 matrix
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)

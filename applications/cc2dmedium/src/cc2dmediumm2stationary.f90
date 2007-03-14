@@ -66,7 +66,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 
   ! The solution vector which is to be used as initial vector for the nonlinear
@@ -103,11 +103,18 @@ CONTAINS
         0.0_DP,1.0_DP,REAL(1-collct_getvalue_int (rproblem%rcollection,'ISTOKES'),DP))
     
     ! Check the matrices if they are compatible to our
-    ! preconditioner. If not, we have to modify the matrices a little
-    ! bit to make it compatible.
+    ! preconditioner. If not, we later have to modify the matrices a little
+    ! bit to make it compatible. 
+    ! The result of this matrix analysis is saved to the rfinalAssembly structure 
+    ! in rnonlinearIteration and allows us later to switch between these two
+    ! matrix representations: Compatibility to the discretisation routines
+    ! and compatibity to the preconditioner.
+    ! The c2d2_checkAssembly routine below uses this information to perform
+    ! the actual modification in the matrices.
     CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration)
     
-    ! Make the matrices compatible if they are not
+    ! Using rfinalAssembly as computed above, make the matrices compatible 
+    ! to our preconditioner if they are not.
     CALL c2d2_finaliseMatrices (rnonlinearIteration)
     
     ! Initialise the preconditioner for the nonlinear iteration

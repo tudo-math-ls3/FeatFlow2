@@ -108,7 +108,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -176,8 +176,7 @@ CONTAINS
       ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
                 RelementDistribution(1)%itrialElement
                 
-      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
-          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
       
         ! Create a temporary vector 
         CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
@@ -297,8 +296,7 @@ CONTAINS
       ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
                 RelementDistribution(1)%itrialElement
                 
-      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
-          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
           
         CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
         
@@ -342,7 +340,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -410,8 +408,7 @@ CONTAINS
       ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
                 RelementDistribution(1)%itrialElement
                 
-      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
-          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
       
         ! Create a temporary vector 
         CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
@@ -532,8 +529,7 @@ CONTAINS
       ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
                 RelementDistribution(1)%itrialElement
                 
-      IF ((ieltype .EQ. EL_E030) .OR. (ieltype .EQ. EL_EM30) .OR. &
-          (ieltype .EQ. EL_E031) .OR. (ieltype .EQ. EL_E031)) THEN
+      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
           
         CALL ppns2D_streamfct_uniform (rvector,rprjVector%RvectorBlock(1))
         

@@ -55,8 +55,8 @@ PROGRAM cc2dmedium
   
   ! Call the problem to solve. 
   PRINT *
-  PRINT *,'Calculating cc2dmini-Problem'
-  PRINT *,'----------------------------'
+  PRINT *,'Calculating cc2dmedium-Problem'
+  PRINT *,'------------------------------'
   CALL cc2dmedium2
 
   ! Print out heap statistics - just to check if everything
