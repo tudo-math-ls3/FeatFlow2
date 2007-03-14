@@ -50,20 +50,28 @@ RE                 = 1000.0
 # Type of right hand side. 
 # 0=zero, 1=steady inhomog., 2=nonsteady force
 
-iRHS               = 1
+iRHS               = 0
 
 # Type of bdry. conditions.
-# 0=DIRICHLET, 1=Pressure drop, 2=NEUMANN part.
-# Must be >= 1 for moving fictitious boundary components!
+# 0=DIRICHLET stationary, 1=Pressure drop nonstationary, 
+# 2=NEUMANN part. nonstationary (standard)
+# Must be >= 1 for moving fictitious boundary components and/or 
+# nonstationary boundary conditions.
 
 iBoundary          = 2
 
 # ------------------------------------------------------------------------
 
 # Type of element pair to use for the dioscretisation.
+# 0 = Q1~(E031) / Q1~(E031) / Q0
+# 1 = Q1~(E030) / Q1~(E030) / Q0
+# 2 = Q1~(EM31) / Q1~(EM31) / Q0
 # 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
-# 4 = Q2(E013) / Q2(E013) / QP1
+# 4 = Q2 (E013) / Q2 (E013) / QP1
+# 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+# 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+# (QP1  = Quadrilateral discontinuous P1 element)
 
 iElementType       = 3
 
@@ -84,26 +92,26 @@ dUpsam             = 0.1
 # ------------------------------------------------------------------------
 
 # Generation of mass matrix. 0=lumped mass,1=real mass matrix
-iMass              = 0
+iMass              = 1
 
 # Type of lumping of the mass matrix. 0=usual lumping,1=diagonal lumping
 iMassLumpType      = 0
 
 # cubature formula for Mass matrix
 
-scubMass           = G2X2
+scubMass           = G4X4
 
 # cubature formula for Stokes/Laplacian matrix
 
-scubStokes         = G2X2
+scubStokes         = G4X4
 
 # cubature formula for Pressure matrices B
 
-scubB              = G2X2
+scubB              = G4X4
 
 # cubature formula for RHS F
 
-scubF              = G2X2
+scubF              = G4X4
 
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.
