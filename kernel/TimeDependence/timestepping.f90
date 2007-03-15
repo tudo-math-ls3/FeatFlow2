@@ -21,7 +21,13 @@
 !# 2.) timstp_nextSubstep
 !#     -> Go to next time (sub-)step
 !#
-!# 3.) timstp_getOrder
+!# 3.) timstp_nextSubstepTime
+!#     -> Increase the simulation time without updating the weights
+!#
+!# 4.) timstp_nextSubstepWeights
+!#     -> Set the weights for the next substep without updating the time
+!#
+!# 5.) timstp_getOrder
 !#     -> Retrieves the order of the time error that is expected from a
 !#        defined time stepping algorithm.
 !#
@@ -51,6 +57,33 @@
 !# are to be used in front of the different terms in the PDE. See the 
 !# documentation of t_explicitTimeStepping which constants are to be used
 !# for what.
+!#
+!# Note: The timstp_nextSubstep routine increases the simulation time and
+!#   updates the weights in one step. In some simulations, this has to be
+!#   decoupled, e.g. when some things on the right hand side of a system
+!#   must be assembled at timestep $t^n$ and some on timestep $t^{n+1}$.
+!#   In this case, one can use timstp_nextSubstepTime and 
+!#   timstp_nextSubstepWeights. The usage is as follows:
+!#
+!#    TYPE(t_explicitTimeStepping) :: tstepping
+!#
+!#    ! Initialise time stepping  
+!#    CALL timstp_init (tstepping,...)
+!#
+!#    DO istep = 1,#max number of time steps
+!# 
+!#      ... (do some assembly at the timestep $t^n$)
+!#
+!#      ! Increase the simulation time
+!#      CALL timstp_nextSubstepTime (tstepping)
+!#
+!#      ... (do some assembly at the timestep $t^{n+1}$
+!#
+!#      ! Proceed to next time step. Increase step number and update weights.
+!#      CALL timstp_nextSubstepWeights (tstepping)
+!#
+!#    END DO
+!#
 !# </purpose>
 !##############################################################################
 
@@ -368,7 +401,32 @@ CONTAINS
 
 !</subroutine>
 
-    REAL(DP) :: dtstep,dtheta1,dthetp1,dalpha ,dbeta
+    ! Update simulation time and weights, right after each other.
+    CALL timstp_nextSubstepTime (rtstepScheme)
+    CALL timstp_nextSubstepWeights (rtstepScheme)
+
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE timstp_nextSubstepTime (rtstepScheme)
+  
+!<description>
+  ! Advances in time. In rtstepScheme, the current simulation time is increased
+  ! to the next point in time.
+  ! Note that the weights and the number of the current (sub)step are not 
+  ! changed! These have to be updated with an additional call to
+  ! timstp_nextSubstepWeights!
+!</description>
+  
+!<inputoutput>
+  ! The time stepping structure. Is modified to represent the next time step.
+  TYPE(t_explicitTimeStepping), INTENT(INOUT) :: rtstepScheme
+!</inputoutput>
+
+!</subroutine>
 
     IF (rtstepScheme%ctimestepType .LT. 0) THEN
       CALL output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
@@ -377,6 +435,34 @@ CONTAINS
     ! Increase the simulation time
     rtstepScheme%dcurrentTime = rtstepScheme%dcurrentTime + rtstepScheme%dtstep
     
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE timstp_nextSubstepWeights (rtstepScheme)
+  
+!<description>
+  ! Advances the weights of the time step scheme in time. The number of the 
+  ! current time (sub)step in increased and the weights for the terms in the 
+  ! differential equation are updated according to the next substep in 
+  ! the time stepping scheme.
+!</description>
+  
+!<inputoutput>
+  ! The time stepping structure. Is modified to represent the next time step.
+  TYPE(t_explicitTimeStepping), INTENT(INOUT) :: rtstepScheme
+!</inputoutput>
+
+!</subroutine>
+
+    REAL(DP) :: dtstep,dtheta1,dthetp1,dalpha,dbeta
+
+    IF (rtstepScheme%ctimestepType .LT. 0) THEN
+      CALL output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
+    END IF
+
     ! Increase number of current substep
     rtstepScheme%isubstep = rtstepScheme%isubstep + 1
     
