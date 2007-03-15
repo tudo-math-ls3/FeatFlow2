@@ -211,7 +211,7 @@ CONTAINS
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
     
     ! Restore the standard matrix structure in case the matrices had been
     ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e. 
@@ -226,7 +226,8 @@ CONTAINS
     CALL lsysbl_assignDiscretIndirect(rrhs,rtempVectorRhs)
     
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rtempVectorRhs,p_Ddata)
+    CALL lsysbl_getbase_double (rvector,p_Ddata)
+    CALL lsysbl_getbase_double (rtempVectorRhs,p_Ddata2)
   
     ! We have an equation of the type
     !
@@ -249,7 +250,7 @@ CONTAINS
          rtimestepping%dweightOldRHS,0.0_DP)
     
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
-    ! to calculate the nonlinear defect. This builds 
+    ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds 
     ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
     !
     ! Don't implement any boundary conditions when assembling this -- it's not
@@ -262,10 +263,9 @@ CONTAINS
       -rtimestepping%dweightMatrixRHS, &
       -rtimestepping%dweightMatrixRHS * &
        REAL(1-collct_getvalue_int (rproblem%rcollection,'ISTOKES'),DP))
-    
-    CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp, &
-        rvector, rtempVectorRhs,&
-        .FALSE.,.FALSE.,rproblem%rcollection)
+
+    CALL c2d2_assembleConvDiffDefect (rnonlinearIterationTmp,rvector,rtempVectorRhs,&
+        rproblem%rcollection)    
 
     ! -------------------------------------------    
     ! switch to the next point in time.
@@ -314,16 +314,23 @@ CONTAINS
     ! representation that is compatible to our preconditioner.
     CALL c2d2_finaliseMatrices (rnonlinearIteration)
     
-    ! Scale the pressure by the step length. The core equation routines
+    ! Scale the pressure by the length of the time step. The core equation routines
     ! handle the equation
     !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = ...
     ! but we want to solve
-    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + theta*B*p = ...
+    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + tstep*B*p = ...
     !
-    ! So the trick is to scale p by theta, solve the core equation
-    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*(theta*p) = ...
+    ! So the trick is to scale p by tstep, solve the core equation
+    !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*(tstep*p) = ...
     ! and scale it back afterwards.
-    CALL lsyssc_scaleVector (rvector%RvectorBlock(3),rtimestepping%dweightMatrixLHS)
+    !
+    ! Note that there is an error in the book of [Turel] describing the factor
+    ! in front of the pressure in the Crank Nicolson scheme! The pressure is
+    ! handled fully implicitely. There is no part of the pressure on the RHS
+    ! of the time step scheme and so the factor in front of the pressure
+    ! is always the length of the current (sub)step!
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+        rtimestepping%dtstep)
     
     ! Call the solver of the core equation to solve it using a nonlinear
     ! iteration.
@@ -334,7 +341,8 @@ CONTAINS
                             rcollection=rproblem%rcollection)
 
     ! scale the pressure back, then we have again the correct solution vector.
-    CALL lsyssc_scaleVector (rvector%RvectorBlock(3),1.0_DP/rtimestepping%dweightMatrixLHS)
+    CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+        1.0_DP/rtimestepping%dtstep)
 
     ! rvector is the solution vector u^{n+1}.    
     !
