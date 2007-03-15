@@ -1,10 +1,28 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmmediumm2timeerror </name>
+!# <name> cc2dmediumm2nonstationary </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# 
+!# This module realises a time dependent solver for the coupled Navier-Stokes
+!# system.
+!#
+!# The following routines can be found here:
+!#
+!# 1.) c2d2_initParTimeDependence
+!#     -> Initialise the parameters of the time dependent solver from DAT file
+!#        parameters.
+!#
+!# 2.) c2d2_initTimeSteppingScheme
+!#     -> Initialise the time stepping scheme from from DAT file
+!#        parameters.
+!#
+!# 3.) c2d2_performTimestep
+!#     -> Calculates one time step.
+!#
+!# 4.) c2d2_solveNonstationary
+!#     -> Realises a time-loop to solve multiple time steps. Solves the
+!#        nonstationary Navier-Stokes system.
 !# </purpose>
 !##############################################################################
 
@@ -36,13 +54,14 @@ MODULE cc2dmediumm2nonstationary
   USE cc2dmediumm2basic
   USE cc2dmedium_callback
 
+  USE cc2dmediumm2nonlinearcore
+  USE cc2dmediumm2nonlinearcoreinit
   USE cc2dmediumm2stationary
   USE adaptivetimestep
   USE cc2dmediumm2timeerror
   USE cc2dmediumm2boundary
   USE cc2dmediumm2discretisation
   USE cc2dmediumm2postprocessing
-  
     
   IMPLICIT NONE
 
@@ -268,7 +287,7 @@ CONTAINS
         rproblem%rcollection)    
 
     ! -------------------------------------------    
-    ! switch to the next point in time.
+    ! Switch to the next point in time.
     rproblem%rtimedependence%dtime = rtimestepping%dcurrenttime + rtimestepping%dtstep
           
     ! Discretise the boundary conditions at the new point in time -- 
@@ -304,10 +323,6 @@ CONTAINS
       rtimestepping%dweightMatrixLHS * &
        REAL(1-collct_getvalue_int (rproblem%rcollection,'ISTOKES'),DP))
     
-    ! Save the core equation structure to the collection to inform
-    ! the callback routines how the core equation looks like.
-    CALL c2d2_saveNonlinearLoop (rnonlinearIterationTmp,rproblem%rcollection)
-    
     ! Using rfinalAssembly, make the matrices compatible 
     ! to our preconditioner if they are not. So we switch again to the matrix
     ! representation that is compatible to our preconditioner.
@@ -333,22 +348,14 @@ CONTAINS
     
     ! Call the solver of the core equation to solve it using a nonlinear
     ! iteration.
-    ! Call the nonlinear solver. For preconditioning and defect calculation,
-    ! the solver calls our callback routines.
-    CALL nlsol_performSolve(rnlSolver,rvector,rtempVectorRhs,rtempVector,&
-                            c2d2_getDefect,c2d2_precondDefect,c2d2_resNormCheck,&
-                            rcollection=rproblem%rcollection)
+    CALL c2d2_solveCoreEquation (rnlSolver,rnonlinearIterationTmp,&
+        rvector,rtempVectorRhs,rproblem%rcollection,rtempVector)             
 
     ! scale the pressure back, then we have again the correct solution vector.
     CALL lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
         1.0_DP/rtimestepping%dtstep)
 
     ! rvector is the solution vector u^{n+1}.    
-    !
-    ! Clean up the temporary core equation. Only remove the elements from
-    ! the collection, i.e. don't clean up the structure as it's a copy
-    ! of the one of our parent -- we mustn't destroy that!
-    CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp,rproblem%rcollection,.FALSE.)
   
     ! Finally tell the time stepping scheme that we completed the time step.
     CALL timstp_nextSubstep (rtimestepping)
@@ -419,7 +426,7 @@ CONTAINS
     ! and compatibity to the preconditioner.
     ! The c2d2_checkAssembly routine below uses this information to perform
     ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration)
+    CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration%rfinalAssembly)
     
     ! Using rfinalAssembly as computed above, make the matrices compatible 
     ! to our preconditioner if they are not.
@@ -427,7 +434,7 @@ CONTAINS
     
     ! Initialise the preconditioner for the nonlinear iteration
     CALL c2d2_preparePreconditioner (rproblem,&
-        rnonlinearIteration%rpreconditioner,rvector,rrhs)
+        rnonlinearIteration,rvector,rrhs)
 
     ! Create temporary vectors we need for the nonlinear iteration.
     CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .FALSE.)
@@ -477,7 +484,7 @@ CONTAINS
     CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
              
     ! Release the preconditioner
-    CALL c2d2_releasePreconditioner (rproblem,rnonlinearIteration%rpreconditioner)
+    CALL c2d2_releasePreconditioner (rnonlinearIteration)
     
   END SUBROUTINE
   

@@ -40,6 +40,7 @@ MODULE cc2dmediumm2stationary
   USE cc2dmedium_callback
   
   USE cc2dmediumm2nonlinearcore
+  USE cc2dmediumm2nonlinearcoreinit
   
   IMPLICIT NONE
 
@@ -82,7 +83,6 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    TYPE(t_vectorBlock), TARGET :: rtempBlock
     TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
 
     ! The nonlinear solver configuration
@@ -111,7 +111,7 @@ CONTAINS
     ! and compatibity to the preconditioner.
     ! The c2d2_checkAssembly routine below uses this information to perform
     ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration)
+    CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration%rfinalAssembly)
     
     ! Using rfinalAssembly as computed above, make the matrices compatible 
     ! to our preconditioner if they are not.
@@ -119,29 +119,17 @@ CONTAINS
     
     ! Initialise the preconditioner for the nonlinear iteration
     CALL c2d2_preparePreconditioner (rproblem,&
-        rnonlinearIteration%rpreconditioner,rvector,rrhs)
+        rnonlinearIteration,rvector,rrhs)
 
-    ! Save the nonlinear-iteration structure to the collection.
-    ! It's rebuild from the collection in the callback routines.
-    CALL c2d2_saveNonlinearLoop (rnonlinearIteration,rproblem%rcollection)
-    
-    ! Create a temporary vector we need for the nonlinear iteration.
-    CALL lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .FALSE.)
-
-    ! Call the nonlinear solver. For preconditioning and defect calculation,
-    ! the solver calls our callback routines.
-    CALL nlsol_performSolve(rnlSol,rvector,rrhs,rtempBlock,&
-                            c2d2_getDefect,c2d2_precondDefect,c2d2_resNormCheck,&
-                            rcollection=rproblem%rcollection)
-
-    ! Release the temporary vector
-    CALL lsysbl_releaseVector (rtempBlock)
-    
+    ! Call the nonlinear solver to solve the core equation.
+    CALL c2d2_solveCoreEquation (rnlSol,rnonlinearIteration,&
+        rvector,rrhs,rproblem%rcollection)             
+             
     ! Release parameters of the nonlinear loop
-    CALL c2d2_doneNonlinearLoop (rnonlinearIteration,rproblem%rcollection)
+    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
              
     ! Release the preconditioner
-    CALL c2d2_releasePreconditioner (rproblem,rnonlinearIteration%rpreconditioner)
+    CALL c2d2_releasePreconditioner (rnonlinearIteration)
     
     CALL output_lbrk()
     CALL output_line ('Nonlinear solver statistics')

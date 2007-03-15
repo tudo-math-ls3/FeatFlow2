@@ -23,6 +23,7 @@ SRC +=  cc2dmedium_callback.f90 cc2dmediumm2basic.f90 \
 	cc2dmediumm2boundary.f90 cc2dmediumm2nonlinearcore.f90\
 	cc2dmediumm2discretisation.f90 cc2dmediumm2postprocessing.f90 \
 	cc2dmediumm2stationary.f90 cc2dmedium_method2.f90\
+	cc2dmediumm2nonlinearcoreinit.f90\
         cc2dmediumm2nonstationary.f90 adaptivetimestep.f90\
         cc2dmediumm2timeerror.f90\
         cc2dmedium.f90

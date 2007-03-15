@@ -55,6 +55,7 @@ MODULE cc2dmediumm2discretisation
   USE spdiscprojection
   USE nonlinearsolver
   USE paramlist
+  USE stdoperators
   
   USE collection
   USE convection
@@ -790,7 +791,7 @@ CONTAINS
   INTEGER :: i,j
   
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
+    !TYPE(t_bilinearForm) :: rform
     
     ! A pointer to the Stokes and mass matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
@@ -821,67 +822,46 @@ CONTAINS
       ! Get a pointer to the (scalar) Stokes matrix:
       p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
       
-      ! For assembling of the entries, we need a bilinear form, 
-      ! which first has to be set up manually.
-      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-      ! scalar system matrix in 2D.
-      
-      rform%itermCount = 2
-      rform%Idescriptors(1,1) = DER_DERIV_X
-      rform%Idescriptors(2,1) = DER_DERIV_X
-      rform%Idescriptors(1,2) = DER_DERIV_Y
-      rform%Idescriptors(2,2) = DER_DERIV_Y
-
-      ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
-      rform%Dcoefficients(1)  = rproblem%dnu
-      rform%Dcoefficients(2)  = rproblem%dnu
-
-      ! Now we can build the matrix entries.
-      ! We specify the callback function coeff_Stokes for the coefficients.
-      ! As long as we use constant coefficients, this routine is not used.
-      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-      ! the framework will call the callback routine to get analytical data.
-      !
-      ! We pass our collection structure as well to this routine, 
-      ! so the callback routine has access to everything what is
-      ! in the collection.
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                   p_rmatrixStokes,coeff_Stokes,&
-                                   rproblem%rcollection)
+!      ! For assembling of the entries, we need a bilinear form, 
+!      ! which first has to be set up manually.
+!      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+!      ! scalar system matrix in 2D.
+!      
+!      rform%itermCount = 2
+!      rform%Idescriptors(1,1) = DER_DERIV_X
+!      rform%Idescriptors(2,1) = DER_DERIV_X
+!      rform%Idescriptors(1,2) = DER_DERIV_Y
+!      rform%Idescriptors(2,2) = DER_DERIV_Y
+!
+!      ! In the standard case, we have constant coefficients:
+!      rform%ballCoeffConstant = .TRUE.
+!      rform%BconstantCoeff = .TRUE.
+!      rform%Dcoefficients(1)  = rproblem%dnu
+!      rform%Dcoefficients(2)  = rproblem%dnu
+!
+!      ! Now we can build the matrix entries.
+!      ! We specify the callback function coeff_Stokes for the coefficients.
+!      ! As long as we use constant coefficients, this routine is not used.
+!      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+!      ! the framework will call the callback routine to get analytical data.
+!      !
+!      ! We pass our collection structure as well to this routine, 
+!      ! so the callback routine has access to everything what is
+!      ! in the collection.
+!      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+!                                   p_rmatrixStokes,coeff_Stokes,&
+!                                   rproblem%rcollection)
+      CALL stdop_assembleLaplaceMatrix (p_rmatrixStokes,.TRUE.,rproblem%dnu)
       
       ! In the global system, there are two coupling matrices B1 and B2.
       !
       ! Build the first pressure matrix B1.
-      ! Again first set up the bilinear form, then call the matrix assembly.
-      rform%itermCount = 1
-      rform%Idescriptors(1,1) = DER_FUNC
-      rform%Idescriptors(2,1) = DER_DERIV_X
-
-      ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
-      rform%Dcoefficients(1)  = -1.0_DP
-      
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                  rproblem%RlevelInfo(i)%rmatrixB1,coeff_Pressure,&
-                                  rproblem%rcollection)
+      CALL stdop_assembleSimpleMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
+          DER_FUNC,DER_DERIV_X,-1.0_DP)
 
       ! Build the second pressure matrix B2.
-      ! Again first set up the bilinear form, then call the matrix assembly.
-      rform%itermCount = 1
-      rform%Idescriptors(1,1) = DER_FUNC
-      rform%Idescriptors(2,1) = DER_DERIV_Y
-
-      ! In the standard case, we have constant coefficients:
-      rform%ballCoeffConstant = .TRUE.
-      rform%BconstantCoeff = .TRUE.
-      rform%Dcoefficients(1)  = -1.0_DP
-      
-      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-                                  rproblem%RlevelInfo(i)%rmatrixB2,coeff_Pressure,&
-                                  rproblem%rcollection)
+      CALL stdop_assembleSimpleMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
+          DER_FUNC,DER_DERIV_Y,-1.0_DP)
                                   
       ! -----------------------------------------------------------------------
       ! Time-dependent problem
@@ -906,21 +886,9 @@ CONTAINS
         ! of the Stokes matrix...
         p_rmatrixMass%p_rspatialDiscretisation => &
           rproblem%RlevelInfo(i)%p_rdiscretisationMass
-                    
-        ! Set up bilinear form for generating the mass matrix
-        rform%itermCount = 1
-        rform%Idescriptors(1,1) = DER_FUNC
-        rform%Idescriptors(2,1) = DER_FUNC
 
-        ! We have constant coefficients:
-        rform%ballCoeffConstant = .TRUE.
-        rform%BconstantCoeff = .TRUE.
-        rform%Dcoefficients(1)  = 1.0_DP
-
-        ! Now we can build the matrix entries.
-        ! We don't have to specify any callback function; the mass matrix has
-        ! constant coefficients.
-        CALL bilf_buildMatrixScalar (rform,.TRUE.,p_rmatrixMass)
+        ! Call the standard matrix setup routine to build the matrix.                    
+        CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
                     
         ! Should we do mass lumping?
         CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
