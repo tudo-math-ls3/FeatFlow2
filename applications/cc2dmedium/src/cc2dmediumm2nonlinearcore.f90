@@ -322,6 +322,13 @@ MODULE cc2dmediumm2nonlinearcore
     
     ! Auxiliary variable: Convergence criteria of the nonlinear solver
     REAL(DP), DIMENSION(5) :: DepsNL = 0.0_DP
+    
+    ! Auxiliary variable: Last calculated damping parameter
+    REAL(DP) :: domegaNL = 0.0_DP
+    
+    ! Auxiliary variable: Convergence rate of linear solver (if this is
+    ! applied as preconditioner).
+    REAL(DP) :: drhoLinearSolver = 0.0_DP
   END TYPE
 
 !</typeblock>
@@ -332,7 +339,7 @@ CONTAINS
   
   ! ***************************************************************************
   ! Routines to create a nonlinear iteration structure, to save it
-  ! to a collection rebuild it from there and to clean it up.
+  ! to a collection, to rebuild it from there and to clean it up.
   ! ***************************************************************************
 
 !<subroutine>
@@ -539,6 +546,12 @@ CONTAINS
     CALL collct_setvalue_real(rcollection,'CCNL_EPSNL5',&
         rnonlinearIteration%DepsNL(5),.TRUE.)
 
+    ! Other statistical data
+    CALL collct_setvalue_real(rcollection,'CCNL_OMEGANL',&
+        rnonlinearIteration%domegaNL,.TRUE.)
+    CALL collct_setvalue_real(rcollection,'CCNL_RHOMG',&
+        rnonlinearIteration%drhoLinearSolver,.TRUE.)
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -677,6 +690,11 @@ CONTAINS
     rnonlinearIteration%DepsNL(5) = &
         collct_getvalue_real(rcollection,'CCNL_EPSNL5')
     
+    ! Other statistical data
+    rnonlinearIteration%domegaNL = &
+        collct_getvalue_real(rcollection,'CCNL_OMEGANL')
+    rnonlinearIteration%drhoLinearSolver = &
+        collct_getvalue_real(rcollection,'CCNL_RHOMG')
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -696,95 +714,95 @@ CONTAINS
 
   ! The collection structure which is to be cleaned up if
   ! the nonlinear iteratino structure is saved to that by c2d2_saveNonlinearLoop.
-  TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
 !</subroutine>
 
     INTEGER :: itypePreconditioner,ilevel
 
-    IF (PRESENT(rcollection)) THEN
+    ! Delete statistical data
+    CALL collct_deletevalue(rcollection,'CCNL_OMEGANL')
+    CALL collct_deletevalue(rcollection,'CCNL_RHOMG')
 
-      ! Delete min./max. damping parameters from the collection
-      CALL collct_deletevalue (rcollection,'CCNL_OMEGAMAX')
-      CALL collct_deletevalue (rcollection,'CCNL_OMEGAMIN')
+    ! Delete min./max. damping parameters from the collection
+    CALL collct_deletevalue (rcollection,'CCNL_OMEGAMAX')
+    CALL collct_deletevalue (rcollection,'CCNL_OMEGAMIN')
 
-      ! Delete parameters that specify the core equation
-      CALL collct_deletevalue (rcollection,'CCNL_ALPHA')
-      CALL collct_deletevalue (rcollection,'CCNL_THETA')
-      CALL collct_deletevalue (rcollection,'CCNL_GAMMA')
+    ! Delete parameters that specify the core equation
+    CALL collct_deletevalue (rcollection,'CCNL_ALPHA')
+    CALL collct_deletevalue (rcollection,'CCNL_THETA')
+    CALL collct_deletevalue (rcollection,'CCNL_GAMMA')
 
-      ! Delete solution/RHS from the collection
-      CALL collct_deletevalue (rcollection,'CCNL_RHS')
-      CALL collct_deletevalue (rcollection,'CCNL_SOLUTION')
-      
-      ! Get information about the preconditioner
-      itypePreconditioner = &
-          collct_getvalue_int(rcollection,'CCNL_PRECONDITIONER')
-
-      ! Which preconditioner is chosen?
-      SELECT CASE (itypePreconditioner)
-      CASE (1)
-
-        ! Remove the solver node from the collection - not needed anymore there
-        CALL collct_deletevalue(rcollection,'CCNL_LINSOLVER')
-        
-        ! Remove the temporary vector from the collection
-        CALL collct_deletevalue(rcollection,'CCNL_RTEMPSCALAR')
-        CALL collct_deletevalue(rcollection,'CCNL_RTEMP2SCALAR')
-        
-        ! Remove the interlevel projection structure
-        CALL collct_deletevalue(rcollection,'CCNL_ILVPROJECTION')
-        
-        ! Remove the filter chain
-        CALL collct_deletevalue(rcollection,'CCNL_FILTERCHAIN')
-        
-        ! Remove parameters for adaptive matrix generation
-        CALL collct_deletevalue(rcollection,'CCNL_IBMATTRANSPOSED')
-        CALL collct_deletevalue(rcollection,'CCNL_IADAPTIVEMATRIX')
-      END SELECT
+    ! Delete solution/RHS from the collection
+    CALL collct_deletevalue (rcollection,'CCNL_RHS')
+    CALL collct_deletevalue (rcollection,'CCNL_SOLUTION')
     
-      CALL collct_deletevalue(rcollection,'CCNL_PRECONDITIONER')
+    ! Get information about the preconditioner
+    itypePreconditioner = &
+        collct_getvalue_int(rcollection,'CCNL_PRECONDITIONER')
+
+    ! Which preconditioner is chosen?
+    SELECT CASE (itypePreconditioner)
+    CASE (1)
+
+      ! Remove the solver node from the collection - not needed anymore there
+      CALL collct_deletevalue(rcollection,'CCNL_LINSOLVER')
       
-      ! Release the final-assembly structure
+      ! Remove the temporary vector from the collection
+      CALL collct_deletevalue(rcollection,'CCNL_RTEMPSCALAR')
+      CALL collct_deletevalue(rcollection,'CCNL_RTEMP2SCALAR')
+      
+      ! Remove the interlevel projection structure
+      CALL collct_deletevalue(rcollection,'CCNL_ILVPROJECTION')
+      
+      ! Remove the filter chain
+      CALL collct_deletevalue(rcollection,'CCNL_FILTERCHAIN')
+      
+      ! Remove parameters for adaptive matrix generation
       CALL collct_deletevalue(rcollection,'CCNL_IBMATTRANSPOSED')
       CALL collct_deletevalue(rcollection,'CCNL_IADAPTIVEMATRIX')
-      CALL collct_deletevalue(rcollection,'CCNL_DADMATTHRESHOLD')
-      CALL collct_deletevalue(rcollection,'CCNL_INEUMANN')
-      
-      ! Delete residual information
-      CALL collct_deletevalue (rcollection,'CCNL_RESINIT1')
-      CALL collct_deletevalue (rcollection,'CCNL_RESINIT2')
-      CALL collct_deletevalue (rcollection,'CCNL_RESOLD1')
-      CALL collct_deletevalue (rcollection,'CCNL_RESOLD2')
-      CALL collct_deletevalue (rcollection,'CCNL_RESPREC1')
-      CALL collct_deletevalue (rcollection,'CCNL_RESPREC2')
-      CALL collct_deletevalue (rcollection,'CCNL_RESPREC3')
-      CALL collct_deletevalue (rcollection,'CCNL_RESDEL1')
-      CALL collct_deletevalue (rcollection,'CCNL_RESDEL2')
-      CALL collct_deletevalue (rcollection,'CCNL_RESDEL3')
-      
-      ! Delete convergence criteria of nonlinear iteration
-      CALL collct_deletevalue (rcollection,'CCNL_EPSNL1')
-      CALL collct_deletevalue (rcollection,'CCNL_EPSNL2')
-      CALL collct_deletevalue (rcollection,'CCNL_EPSNL3')
-      CALL collct_deletevalue (rcollection,'CCNL_EPSNL4')
-      CALL collct_deletevalue (rcollection,'CCNL_EPSNL5')
-
-      ! Release the level-array in the nonlinear iteration structure
-      CALL collct_deletevalue(rcollection,'CCNL_NLMAX')
-      CALL collct_deletevalue(rcollection,'CCNL_NLMIN')
-      
-      DO ilevel = rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
-        CALL collct_deletevalue (rcollection,'CCNL_SYSTEMMAT',ilevel)
-        CALL collct_deletevalue (rcollection,'CCNL_STOKES',ilevel)
-        CALL collct_deletevalue (rcollection,'CCNL_MATB1',ilevel)
-        CALL collct_deletevalue (rcollection,'CCNL_MATB2',ilevel)
-        CALL collct_deletevalue (rcollection,'CCNL_MATMASS',ilevel)
-      END DO
-      
-    END IF
+    END SELECT
+  
+    CALL collct_deletevalue(rcollection,'CCNL_PRECONDITIONER')
     
+    ! Release the final-assembly structure
+    CALL collct_deletevalue(rcollection,'CCNL_IBMATTRANSPOSED')
+    CALL collct_deletevalue(rcollection,'CCNL_IADAPTIVEMATRIX')
+    CALL collct_deletevalue(rcollection,'CCNL_DADMATTHRESHOLD')
+    CALL collct_deletevalue(rcollection,'CCNL_INEUMANN')
+    
+    ! Delete residual information
+    CALL collct_deletevalue (rcollection,'CCNL_RESINIT1')
+    CALL collct_deletevalue (rcollection,'CCNL_RESINIT2')
+    CALL collct_deletevalue (rcollection,'CCNL_RESOLD1')
+    CALL collct_deletevalue (rcollection,'CCNL_RESOLD2')
+    CALL collct_deletevalue (rcollection,'CCNL_RESPREC1')
+    CALL collct_deletevalue (rcollection,'CCNL_RESPREC2')
+    CALL collct_deletevalue (rcollection,'CCNL_RESPREC3')
+    CALL collct_deletevalue (rcollection,'CCNL_RESDEL1')
+    CALL collct_deletevalue (rcollection,'CCNL_RESDEL2')
+    CALL collct_deletevalue (rcollection,'CCNL_RESDEL3')
+    
+    ! Delete convergence criteria of nonlinear iteration
+    CALL collct_deletevalue (rcollection,'CCNL_EPSNL1')
+    CALL collct_deletevalue (rcollection,'CCNL_EPSNL2')
+    CALL collct_deletevalue (rcollection,'CCNL_EPSNL3')
+    CALL collct_deletevalue (rcollection,'CCNL_EPSNL4')
+    CALL collct_deletevalue (rcollection,'CCNL_EPSNL5')
+
+    ! Release the level-array in the nonlinear iteration structure
+    CALL collct_deletevalue(rcollection,'CCNL_NLMAX')
+    CALL collct_deletevalue(rcollection,'CCNL_NLMIN')
+    
+    DO ilevel = rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+      CALL collct_deletevalue (rcollection,'CCNL_SYSTEMMAT',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_STOKES',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_MATB1',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_MATB2',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_MATMASS',ilevel)
+    END DO
+      
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -2023,6 +2041,9 @@ CONTAINS
         ! RHS and x a defect update to be added to a solution vector,
         ! we would have to use linsol_precondDefect instead.
         CALL linsol_precondDefect (p_rsolverNode,rd)
+        
+        ! Remember convergence rate for output
+        rnonlinearIteration%drhoLinearSolver = p_rsolverNode%dconvergenceRate
 
         ! Release the numeric factorisation of the matrix.
         ! We don't release the symbolic factorisation, as we can use them
@@ -2053,6 +2074,9 @@ CONTAINS
       ! Calculate the omega
       CALL c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,&
                                    domega,rnonlinearIteration,p_rcollection)
+
+      ! Remember damping parameter for output
+      rnonlinearIteration%domegaNL = domega
 
       ! Release the temp block vectors. This only cleans up the structure.
       ! The data is not released from heap as it belongs to the
@@ -2140,7 +2164,7 @@ CONTAINS
         CALL output_line (' IT  RELU     RELP     DEF-U    DEF-DIV'// &
                           '  DEF-TOT  RHONL    OMEGNL   RHOMG')
         CALL output_separator (OU_SEP_MINUS)     
-        CALL output_line ('  0                  '// &
+        CALL output_line ('  0                   '// &
             TRIM(sys_sdEP(Dresiduals(1),9,2))//&
             TRIM(sys_sdEP(Dresiduals(2),9,2))//&
             TRIM(sys_sdEP(Dresiduals(3),9,2)))
@@ -2240,7 +2264,10 @@ CONTAINS
             TRIM(sys_sdEP(dresU,9,2))// &
             TRIM(sys_sdEP(dresDIV,9,2))// &
             TRIM(sys_sdEP(dres,9,2))// &
-            TRIM(sys_sdEP(drhoNL,9,2)))
+            TRIM(sys_sdEP(drhoNL,9,2))// &
+            TRIM(sys_sdEP(rnonlinearIteration%domegaNL,9,2))// &
+            TRIM(sys_sdEP(rnonlinearIteration%drhoLinearSolver,9,2)) &
+            )
         
       END IF
       
