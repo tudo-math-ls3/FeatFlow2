@@ -150,7 +150,7 @@ MODULE genoutput
   INTEGER, PARAMETER :: OU_MODE_TERM     = 2**1
 
   ! Output mode: Write to both, log file and terminal
-  INTEGER, PARAMETER :: OU_MODE_STANDARD = OU_MODE_LOG+OU_MODE_TERM
+  INTEGER, PARAMETER :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
   
 !</constantblock>
   
@@ -483,7 +483,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: smessage
   
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
-  ! OU_MODE_STANDARD is assumed.
+  ! OU_MODE_STD is assumed.
   INTEGER, INTENT(IN), OPTIONAL :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
@@ -513,7 +513,7 @@ CONTAINS
   
     ! Get the actual parameters.
     
-    coMode = OU_MODE_STANDARD
+    coMode = OU_MODE_STD
     coClass = OU_CLASS_MSG
     bntrim = .FALSE.
     bnnewline = .FALSE.
@@ -617,7 +617,7 @@ CONTAINS
     ! and output_line_feast anymore in that case! (as all parameter names
     ! are the same).
 
-    CALL output_line_std (smsg, coutputClass, OU_MODE_STANDARD, ssubroutine)
+    CALL output_line_std (smsg, coutputClass, OU_MODE_STD, ssubroutine)
 
   END SUBROUTINE
 
@@ -638,7 +638,7 @@ CONTAINS
 
 !<input>
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
-  ! OU_MODE_STANDARD is assumed.
+  ! OU_MODE_STD is assumed.
   INTEGER, INTENT(IN), OPTIONAL :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
@@ -679,7 +679,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: csepType
 
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
-  ! OU_MODE_STANDARD is assumed.
+  ! OU_MODE_STD is assumed.
   INTEGER, INTENT(IN), OPTIONAL :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.

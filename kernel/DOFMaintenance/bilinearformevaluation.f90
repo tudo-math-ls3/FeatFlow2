@@ -29,6 +29,7 @@ MODULE bilinearformevaluation
   USE cubature
   USE collection
   USE domainintegration
+  USE genoutput
   
   IMPLICIT NONE
 
@@ -2836,7 +2837,14 @@ CONTAINS
   NA = rmatrixScalar%NA
   NEQ = rmatrixScalar%NEQ
   
-  ! We need KCOL/KLD of our matric
+  ! We need KCOL/KLD of our matrix
+  IF ((rmatrixScalar%h_KCOL .EQ. ST_NOHANDLE) .OR. &
+      (rmatrixScalar%h_KLD .EQ. ST_NOHANDLE)) THEN
+    CALL output_line ('No discretisation structure! Cannot assemble matrix!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+    STOP
+  END IF
+  
   CALL storage_getbase_int (rmatrixScalar%h_KCOL,p_KCOL)
   CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
   
