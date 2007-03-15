@@ -211,7 +211,7 @@ CONTAINS
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
     
     ! Restore the standard matrix structure in case the matrices had been
     ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e. 
@@ -226,8 +226,8 @@ CONTAINS
     CALL lsysbl_assignDiscretIndirect(rrhs,rtempVectorRhs)
     
     ! DEBUG!!!
-    CALL lsysbl_getbase_double (rvector,p_Ddata)
-    CALL lsysbl_getbase_double (rtempVectorRhs,p_Ddata2)
+    !CALL lsysbl_getbase_double (rvector,p_Ddata)
+    !CALL lsysbl_getbase_double (rtempVectorRhs,p_Ddata2)
   
     ! We have an equation of the type
     !
@@ -269,8 +269,7 @@ CONTAINS
 
     ! -------------------------------------------    
     ! switch to the next point in time.
-    rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtime + &
-          rtimestepping%dtstep
+    rproblem%rtimedependence%dtime = rtimestepping%dcurrenttime + rtimestepping%dtstep
           
     ! Discretise the boundary conditions at the new point in time -- 
     ! if the boundary conditions are nonconstant in time!

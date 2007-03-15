@@ -1376,8 +1376,8 @@ CONTAINS
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     
       ! DEBUG!!!
-      CALL lsysbl_getbase_double (rx,p_Ddata)
-      CALL lsysbl_getbase_double (rd,p_Ddata2)
+      !CALL lsysbl_getbase_double (rx,p_Ddata)
+      !CALL lsysbl_getbase_double (rd,p_Ddata2)
     
       ! Rebuild the nonlinear-iteration structure from the collection
       p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
@@ -1626,8 +1626,8 @@ CONTAINS
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     
       ! DEBUG!!!
-      CALL lsysbl_getbase_double (rx,p_Ddata)
-      CALL lsysbl_getbase_double (rd,p_Ddata2)
+      !CALL lsysbl_getbase_double (rx,p_Ddata)
+      !CALL lsysbl_getbase_double (rd,p_Ddata2)
     
       ! Rebuild the nonlinear-iteration structure from the collection
       p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
@@ -1691,318 +1691,6 @@ CONTAINS
 
   !<subroutine>
   
-    SUBROUTINE c2d2_assembleFullDefect (rnonlinearIteration,rx,rd,&
-        bboundaryConditions,bboundaryConditionsNonlin,rcollection)
-  
-    USE linearsystemblock
-    USE collection
-    
-  !<description>
-    ! Assembles the nonlinear defect of the core equation.
-  !</description>
-
-  !<input>
-    ! Current iteration vector
-    TYPE(t_vectorBlock), INTENT(IN),TARGET        :: rx
-  
-    ! TRUE  = include (linear) boundary conditions into the system 
-    !   matrix/matrices after assembly
-    ! FASLE = don't incorporate any boundary conditions
-    LOGICAL, INTENT(IN) :: bboundaryConditions
-
-    ! TRUE  = include nonlinear boundary conditions into the system 
-    !   matrix/matrices after assembly
-    ! FASLE = don't incorporate any boundary conditions
-    LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
-
-!</input>
-               
-  !<inputoutput>
-    ! Nonlinear iteration structure that specifies the core equation.
-    TYPE(t_ccnonlinearIteration), INTENT(IN)      :: rnonlinearIteration
-  
-    ! Collection structure of the application. 
-    TYPE(t_collection), INTENT(INOUT)             :: rcollection
-
-    ! IN: Right hand side vector of the equation.
-    ! OUT: Defect vector b-A(x)x. 
-    TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
-  !</inputoutput>
-  
-  !</subroutine>
-
-    ! local variables
-    INTEGER :: ilvmax,i,j
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
-    TYPE(t_matrixBlock) :: rmatrixStokesBlock,rmatrixMassBlock
-    TYPE(t_convUpwind) :: rupwind
-    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    TYPE(T_jumpStabilisation) :: rjumpStabil
-    
-    !!! DEBUG
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
-
-    ! A filter chain for the linear solver
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-    
-      ! DEBUG!!!
-      CALL lsysbl_getbase_double (rx,p_Ddata)
-      CALL lsysbl_getbase_double (rd,p_Ddata2)
-    
-      ! Rebuild the nonlinear-iteration structure from the collection
-      p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
-    
-      ! Get minimum/maximum level from the collection
-      ilvmax = rnonlinearIteration%NLMAX
-      
-      ! Get the system and the Stokes matrix on the maximum level
-      p_rmatrix => rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrix
-      p_rmatrixStokes => rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
-      p_rmatrixMass => rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-
-      ! Now, in the first step, we build the linear part of the nonlinear defect:
-      !     d_lin = rhs - theta*(-nu * Laplace(.))*solution
-      !
-      ! rd already contains the rhs.
-      IF (rnonlinearIteration%dtheta .NE. 0.0_DP) THEN
-        ! Build a temporary 3x3 block matrix rmatrixStokes with Stokes matrices 
-        ! on the main diagonal.
-        !
-        ! (  L    0   B1 )
-        ! (  0    L   B2 )
-        ! ( B1^T B2^T 0  )
-        
-        CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixStokesBlock, &
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,rmatrixStokesBlock%RmatrixBlock(1,1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,rmatrixStokesBlock%RmatrixBlock(2,2),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-            
-        ! Remove all rows and columns from the 3rd line on. For setting up the defect, we will
-        ! treat these separately. For stationary simulations, this is the same as
-        ! setting up the defect with the complete matrix as above. For nonstationary
-        ! simulations, there is a difference, as the divergence part of the equation
-        ! is not scaled with the time step! (see below).
-        !
-        ! (  L    0   0  )
-        ! (  0    L   0  )
-        ! (  0    0   0  )
-        !
-        DO i=NDIM2D+1,rmatrixStokesBlock%ndiagBlocks
-          CALL lsysbl_releaseMatrixRow (rmatrixStokesBlock,i)
-          CALL lsysbl_releaseMatrixColumn (rmatrixStokesBlock,i)
-        END DO
-      
-        ! Build the defect in the velocity equations
-        CALL lsysbl_blockMatVec (rmatrixStokesBlock, rx, rd, &
-            -1.0_DP*rnonlinearIteration%dtheta, 1.0_DP)
-            
-        CALL lsysbl_releaseMatrix (rmatrixStokesBlock)
-        
-        ! Now a similar thing again, this time for the divergence equation.
-        ! Set up a block system for the divergence by duplicating the system
-        ! matrix and removing the velocity equation parts:
-        !
-        ! (  0    0   B1 )
-        ! (  0    0   B2 )
-        ! ( B1^T B2^T 0  )
-        !
-        CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixStokesBlock, &
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        DO j=1,NDIM2D
-          DO i=1,NDIM2D
-            CALL lsyssc_releaseMatrix (rmatrixStokesBlock%RmatrixBlock(i,j))
-          END DO
-        END DO
-
-        ! Build the rest of the defect. Here, no time step is involved!
-        CALL lsysbl_blockMatVec (rmatrixStokesBlock, rx, rd, &
-            -1.0_DP, 1.0_DP)
-            
-        CALL lsysbl_releaseMatrix (rmatrixStokesBlock)
-      END IF
-        
-      ! Let's see, if the weight of the mass matrix is <> 0, subtract that
-      ! contribution, too:
-      !     d_lin = dlin - dalpha*mass*solution
-      IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
-        ! Set up a new block mass matrix that is completely zero.
-        ! Copy references to our scalar mass matrices to the diagonal blocks (1,1)
-        ! and (2,2).
-        ! Multiply with the mass matrix and release the block matrix again, as we
-        ! don't need it afterwards.
-        ! Note that no matrix entries will be copied, so this is a quick operation!
-      
-        CALL lsysbl_createMatBlockByDiscr (rx%p_rblockDiscretisation,rmatrixMassBlock)
-        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixMassBlock%RmatrixBlock(1,1),&
-                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixMassBlock%RmatrixBlock(2,2),&
-                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-                                     
-        CALL lsysbl_blockMatVec (rmatrixMassBlock, rx, rd, &
-            -1.0_DP*rnonlinearIteration%dalpha, 1.0_DP)
-            
-        CALL lsysbl_releaseMatrix (rmatrixMassBlock)
-      END IF
-      
-      ! For the final defect
-      !
-      !   d = rhs - alpha*mass - theta*(-nu * Laplace(.))*solution - u*grad(.)*solution
-      !     = d_lin -  u*grad(.)*solution
-      !
-      ! in case of the Navier-Stokes equation, we need the nonlinearity.
-      
-      ! Apply the filter chain to the defect vector.
-      ! As the filter consists only of an implementation filter for
-      ! boundary conditions, this implements the boundary conditions
-      ! into the defect vector.
-      !
-      ! Note that the above matrix did not contain any rows replaced by
-      ! unit vectors according to boundary conditions! This is even
-      ! not necessary, as the boundary conditions only need to be imposed
-      ! to the defect vector.
-      IF (bboundaryConditions) &
-        CALL filter_applyFilterChainVec (rd, p_RfilterChain)
-      
-      ! Should we discretise the Navier-Stokes nonlinearity?
-      IF (rnonlinearIteration%dgamma .NE. 0.0_DP) THEN
-      
-        ! Which type of stabilisation/strategy for setting up the nonlinearity
-        ! do we use?
-        SELECT CASE (collct_getvalue_int (rcollection,'IUPWIND'))
-        CASE (0)
-        
-          ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = collct_getvalue_real (rcollection,'UPSAM')
-          
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearIteration%dgamma
-
-          ! Call the SD method to calculate the nonlinear defect.
-          ! As we calculate only the defect, the matrix is ignored!
-          CALL conv_streamlinediffusion2d ( &
-                           rx, rx, 1.0_DP, 0.0_DP,&
-                           rstreamlineDiffusion, CONV_MODDEFECT, &
-                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
-                  
-        CASE (1)
-      
-          ! Set up the upwind structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rupwind%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rupwind%dupsam = collct_getvalue_real (rcollection,'UPSAM')
-          
-          ! Matrix weight
-          rupwind%dtheta = rnonlinearIteration%dgamma
-          
-          ! Call the upwind method to calculate the nonlinear defect.
-          ! As we calculate only the defect, the matrix is ignored!
-          CALL conv_upwind2d (rx, rx, 1.0_DP, 0.0_DP,&
-                              rupwind, CONV_MODDEFECT, &
-                              p_rmatrix%RmatrixBlock(1,1), rx, rd)      
-                  
-        CASE (2)
-        
-          ! Set up the SD structure for the creation of the defect.
-          ! Initialise the viscosity...
-          rstreamlineDiffusion%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter to 0.0 to get a central difference
-          ! like discretisation.
-          rstreamlineDiffusion%dupsam = 0.0_DP
-          
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearIteration%dgamma
-
-          ! Call the SD method to calculate the nonlinear defect.
-          ! As we calculate only the defect, the matrix is ignored!
-          CALL conv_streamlinediffusion2d ( &
-                           rx, rx, 1.0_DP, 0.0_DP,&
-                           rstreamlineDiffusion, CONV_MODDEFECT, &
-                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
-                           
-          ! Initialise the Jump stabilisation structure.
-          rjumpStabil%dnu = rstreamlineDiffusion%dnu
-          
-          ! Initialise the jump stabilisation parameter
-          rjumpStabil%dgamma = collct_getvalue_real (rcollection,'UPSAM')
-          rjumpStabil%dgammastar = rjumpStabil%dgamma 
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearIteration%dgamma
-
-          ! Call the Jump stabilisation to stabilise
-          CALL conv_jumpStabilisation2d ( &
-                           rx, rx, rnonlinearIteration%dgamma, 0.0_DP,&
-                           rjumpStabil, CONV_MODDEFECT, &
-                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
-                  
-        CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
-          
-        END SELECT
-        
-        ! Apply the filter chain to the defect vector again - since the
-        ! implementation of the nonlinearity usually changes the Dirichlet
-        ! nodes in the vector!
-        IF (bboundaryConditions) &
-          CALL filter_applyFilterChainVec (rd, p_RfilterChain)
-        
-      ELSE
-        ! Which type of stabilisation/strategy for setting up the nonlinearity
-        ! do we use?
-        SELECT CASE (collct_getvalue_int (rcollection,'IUPWIND'))
-        CASE (2)
-          ! Jump stabilisation. Can also be used with Stokes.
-          !
-          ! Initialise the Jump stabilisation structure.
-          rjumpStabil%dnu = rstreamlineDiffusion%dnu
-          
-          ! Initialise the jump stabilisation parameter
-          rjumpStabil%dgamma = collct_getvalue_real (rcollection,'UPSAM')
-          rjumpStabil%dgammastar = rjumpStabil%dgamma 
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearIteration%dgamma
-
-          ! Call the Jump stabilisation to stabilise
-          CALL conv_jumpStabilisation2d ( &
-                           rx, rx, rnonlinearIteration%dgamma, 0.0_DP,&
-                           rjumpStabil, CONV_MODDEFECT, &
-                           p_rmatrix%RmatrixBlock(1,1), rx, rd)
-
-          ! Apply the filter chain to the defect vector again - since the
-          ! implementation of the nonlinearity usually changes the Dirichlet
-          ! nodes in the vector!
-          IF (bboundaryConditions) &
-            CALL filter_applyFilterChainVec (rd, p_RfilterChain)
-          
-        END SELECT
-        
-      END IF
-
-      ! Filter the resulting defect vector through the slip-boundary-
-      ! condition vector filter for implementing nonlinear slip boundary
-      ! conditions into a defect vector. This changes the vector only IF we
-      ! have slip boundary conditions!
-      IF (bboundaryConditionsNonlin) &
-        CALL vecfil_discreteNLSlipBCdef (rd)
-
-    END SUBROUTINE
-
-  ! ***************************************************************************
-
-  !<subroutine>
-  
     SUBROUTINE c2d2_getDefect (ite,rx,rb,rd,p_rcollection)
   
     USE linearsystemblock
@@ -2044,7 +1732,7 @@ CONTAINS
       TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
       
       ! DEBUG!!!
-      REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+      !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
       ! Rebuild the nonlinear-iteration structure from the collection
       CALL c2d2_restoreNonlinearLoop (rnonlinearIteration,p_rcollection)
@@ -2053,8 +1741,8 @@ CONTAINS
       CALL lsysbl_copyVector (rb,rd)
       
       ! DEBUG!!!
-      CALL lsysbl_getbase_double (rx,p_Ddata)
-      CALL lsysbl_getbase_double (rd,p_Ddata2)
+      !CALL lsysbl_getbase_double (rx,p_Ddata)
+      !CALL lsysbl_getbase_double (rd,p_Ddata2)
       
       CALL c2d2_assembleNonlinearDefect (rnonlinearIteration,rx,rd,&
           .TRUE.,.TRUE.,p_rcollection)      
@@ -2354,9 +2042,9 @@ CONTAINS
     TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
 
     ! DEBUG!!!
-    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
-    call lsysbl_getbase_double (rd,p_def)
-    call lsysbl_getbase_double (rx,p_vec)
+    !real(dp), dimension(:), pointer :: p_vec,p_def,p_da
+    !call lsysbl_getbase_double (rd,p_def)
+    !call lsysbl_getbase_double (rx,p_vec)
 !    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
 
       ! Reconstruct the nonlinear iteration structure from the collection.
