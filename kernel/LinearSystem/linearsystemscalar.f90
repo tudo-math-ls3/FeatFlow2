@@ -2275,7 +2275,7 @@ CONTAINS
   ! on a template matrix rsourceMatrix.
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
-  ! iduipStructure and idupContent decide on how to set up rdestMatrix.
+  ! idupStructure and idupContent decide on how to set up rdestMatrix.
   ! Depending on their setting, it's possible to copy only the handles
   ! of such dynamic information, so that both matrices share the same
   ! information.

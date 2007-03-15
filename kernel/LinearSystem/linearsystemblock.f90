@@ -33,79 +33,88 @@
 !#  7.) lsysbl_createMatBlockByDiscr
 !#      -> Create an empty block matrix using a block discretisation structure
 !#
-!#  8.) lsysbl_enforceStructure
+!#  8.) lsysbl_duplicateMatrix
+!#      -> Duplicates a block matrix by duplicating all sub-matrices
+!#
+!#  9.) lsysbl_enforceStructure
 !#      -> Enforces the structure of a given block vector in another
 !#         block vector
 !#
-!#  9.) lsysbl_assignDiscretIndirect
+!# 10.) lsysbl_assignDiscretIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!# 10.) lsysbl_assignDiscretIndirectMat
+!# 11.) lsysbl_assignDiscretIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector to make it compatible.
 !#
-!# 11.) lsysbl_updateMatStrucInfo
+!# 12.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!# 12.) lsysbl_releaseVector
+!# 13.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 13.) lsysbl_releaseMatrix
+!# 14.) lsysbl_releaseMatrix
 !#      -> Releases a block matrix and all submatrices
 !#
-!# 14.) lsysbl_blockMatVec
+!# 15.) lsysbl_releaseMatrixRow
+!#      -> Releases a row of submatrices from a block matrix
+!#
+!# 16.) lsysbl_releaseMatrixColumn
+!#      -> Releases a column of submatrices from a block matrix
+!#
+!# 17.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 15.) lsysbl_copyVector
+!# 18.) lsysbl_copyVector
 !#       -> Copy a block vector over to another one
 !#
-!# 16.) lsysbl_scaleVector
+!# 19.) lsysbl_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 17.) lsysbl_clearVector
+!# 20.) lsysbl_clearVector
 !#      -> Clear a block vector
 !#
-!# 18.) lsysbl_vectorLinearComb
+!# 21.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 19.) lsysbl_scalarProduct
+!# 22.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 20.) lsysbl_setSortStrategy
+!# 23.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 21.) lsysbl_sortVectorInSitu
+!# 24.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 22.) lsysbl_isVectorCompatible
+!# 25.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 23.) lsysbl_isMatrixCompatible
+!# 26.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 24.) lsysbl_isMatrixSorted
+!# 27.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 25.) lsysbl_isVectorSorted
+!# 28.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 26.) lsysbl_getbase_double
+!# 29.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 27.) lsysbl_getbase_single
+!# 30.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 28.) lsysbl_vectorNorm
+!# 31.) lsysbl_vectorNorm
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 29.) lsysbl_vectorNormBlock
+!# 32.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 30.) lsysbl_invertedDiagMatVec
+!# 33.) lsysbl_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !#
 !# 31.) lsysbl_swapVectors
@@ -1372,6 +1381,76 @@ CONTAINS
 
 !<subroutine>
   
+  SUBROUTINE lsysbl_releaseMatrixRow (rmatrix,irow)
+ 
+!<description>
+  ! Releases all submatrices in row irow from the block matrix rmatrix.
+!</description>
+  
+!<input>
+  ! Matrix row which should be released.
+  INTEGER, INTENT(IN)                               :: irow
+!</input>
+  
+!<inputoutput>
+  ! Block matrix to be released (partially)
+  TYPE(t_matrixBlock), INTENT(INOUT)                :: rMatrix
+!</inputoutput>
+
+!</subroutine>
+  
+  ! local variables
+  INTEGER :: x
+  
+  ! loop through all the submatrices in row irow and release them
+  DO x=1,rmatrix%ndiagBlocks
+    ! Only release the matrix if there is one.
+    IF (rmatrix%RmatrixBlock(irow,x)%NA .NE. 0) THEN
+      CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(irow,x))
+    END IF
+  END DO
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE lsysbl_releaseMatrixColumn (rmatrix,icolumn)
+ 
+!<description>
+  ! Releases all submatrices in column icolumn from the block matrix rmatrix.
+!</description>
+  
+!<input>
+  ! Matrix column which should be released.
+  INTEGER, INTENT(IN)                               :: icolumn
+!</input>
+  
+!<inputoutput>
+  ! Block matrix to be released (partially)
+  TYPE(t_matrixBlock), INTENT(INOUT)                :: rMatrix
+!</inputoutput>
+
+!</subroutine>
+  
+  ! local variables
+  INTEGER :: y
+  
+  ! loop through all the submatrices in row irow and release them
+  DO y=1,rmatrix%ndiagBlocks
+    ! Only release the matrix if there is one.
+    IF (rmatrix%RmatrixBlock(y,icolumn)%NA .NE. 0) THEN
+      CALL lsyssc_releaseMatrix (rmatrix%RmatrixBlock(y,icolumn))
+    END IF
+  END DO
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
   SUBROUTINE lsysbl_blockMatVec (rmatrix, rx, ry, cx, cy)
  
 !<description>
@@ -2262,6 +2341,151 @@ CONTAINS
 
   END SUBROUTINE
 
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsysbl_duplicateMatrix (rsourceMatrix,rdestMatrix,&
+                                     idupStructure, idupContent)
+  
+!<description>
+  ! Duplicates an existing matrix, creates a new matrix rdestMatrix based
+  ! on a template matrix rsourceMatrix. To duplicate a block matrix means here
+  ! to copy all the existing submatrices in the block matrix in the same way.
+  !
+  ! Duplicating a matrix does not necessarily mean that new memory is
+  ! allocated and the matrix entries are copied to that. The two flags
+  ! idupStructure and idupContent decide on how to set up rdestMatrix.
+  ! Depending on their setting, it's possible to copy only the handles
+  ! of such dynamic information, so that both matrices share the same
+  ! information.
+  !
+  ! We follow the following convention:
+  !  Structure = Column structure, Row structure, Sorting permutation,
+  !              Discretisation-related information
+  !  Content   = Enties in a matrix.
+  !
+  ! Remark: There is never memory allocated on the heap for the sorting
+  !  permutation. A matrix is never the 'owner' of a permutation, i.e.
+  !  does not maintain it. Therefore, copying a permutation in one of
+  !  the submatrices means copying the corresponding handle. 
+  !  The application must keep track of the permutations.
+!</description>
+  
+!<input>
+  ! Source matrix.
+  TYPE(t_matrixBlock), INTENT(IN)               :: rsourceMatrix
+  
+  ! Duplication flag that decides on how to set up the structure
+  ! of rdestMatrix. This duplication flag is applied to all submatrices
+  ! of rsourceMatrix.
+  !
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Don't set up the structure of rdestMatrix. Any
+  !   matrix structure is ignored and therefore preserved.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
+  !   rdestMatrix if there is any. Releases memory if necessary.
+  !   Does not delete 'static' information like NEQ,NCOLS,NA,...
+  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix structure from 
+  !   rdestMatrix if there is any. No memory is released, handles are simply
+  !   dismissed. Does not delete 'static' information like NEQ,NCOLS,NA,...
+  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  !   structural data as rsourceMatrix and therefore shares the same structure.
+  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the structure of 
+  !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
+  !   If rdestMatrix already contains allocated memory, structural data
+  !   is simply copied from rsourceMatrix into that.
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the structure of 
+  !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
+  !   of the structure; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the structure of rsourceMatrix belongs to another
+  !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
+  !   rsourceMatrix and is therefore a third matrix sharing the same structure
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   other matrix have the same structure).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the structure in the
+  !   same size as the structure in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
+  !   is removed from the destination matrix, all handles are reset.
+  INTEGER, INTENT(IN)                            :: idupStructure
+  
+  ! Duplication flag that decides on how to set up the content
+  ! of rdestMatrix. This duplication flag is applied to all submatrices
+  ! of rsourceMatrix.
+  !
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Don't set up the content of rdestMatrix. Any
+  !   matrix content is ignored and therefore preserved.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
+  !   rdestMatrix if there is any. Releases memory if necessary.
+  ! LSYSSC_DUP_DISMISS    : Removes any existing matrix content from 
+  !   rdestMatrix if there is any. No memory is released, handles are simply
+  !   dismissed.
+  ! LSYSSC_DUP_SHARE      : rdestMatrix receives the same handles for
+  !   matrix content data as rsourceMatrix and therefore shares the same content.
+  ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the content of rsourceMatrix.
+  !   If necessary, new memory is allocated for the content.
+  !   If rdestMatrix already contains allocated memory, content data
+  !   is simply copied from rsourceMatrix into that.
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
+  !   of the content; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the content of rsourceMatrix belongs to another
+  !   matrix than rsourceMatrix, rdestMatrix receives the same handles as
+  !   rsourceMatrix and is therefore a third matrix sharing the same content
+  !   (the same as LSYSSC_DUP_SHARE, so rsourceMatrix, rdestMatrix and the 
+  !   other matrix have the same content).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  !   same size as the structure in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
+  !   is removed from the destination matrix, all handles are reset.
+  INTEGER, INTENT(IN)                            :: idupContent
+!</input>
+
+!<output>
+  ! Destination matrix.
+  TYPE(t_matrixBlock), INTENT(INOUT)            :: rdestMatrix
+!</output>  
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_MATIDX) :: i,j
+    
+    ! Copy the matrix structure of rsourceMatrix to rdestMatrix. This will also
+    ! copy the structures of the submatrices, what we have to correct later.
+    rdestMatrix = rsourceMatrix
+    
+    ! For every submatrix in the source matrix, call the 'scalar' variant
+    ! of duplicateMatrix. Dismiss all old information and replace it by
+    ! the new one.
+    DO j=1,rsourceMatrix%ndiagBlocks
+      DO i=1,rsourceMatrix%ndiagBlocks
+        IF (rdestMatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) THEN
+        
+          ! Set the specification flags to "matrix is copy", so the releaseMatrix
+          ! routine will not release any memory but only dismiss all information.
+          rdestMatrix%RmatrixBlock(i,j)%imatrixSpec = &
+              IOR(rdestMatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+          CALL lsyssc_releaseMatrix (rdestMatrix%RmatrixBlock(i,j))
+              
+          CALL lsyssc_duplicateMatrix ( &
+              rsourceMatrix%RmatrixBlock(i,j), rdestMatrix%RmatrixBlock(i,j),&
+              idupStructure, idupContent)
+                                       
+        END IF
+      END DO
+    END DO
+    
+    ! Update the structural information of the block matrix for completeness.
+    CALL lsysbl_updateMatStrucInfo(rdestMatrix)
+    
+  END SUBROUTINE
+    
   ! ***************************************************************************
   
 !<subroutine>

@@ -3590,7 +3590,7 @@ CONTAINS
 !
 ! each of them designed (with ai, bi, ci and di) in such a way, such that
 !
-!      int_ei p_j(x,y) = delta_ij
+!      1/|ei| int_ei p_j(x,y) ds = delta_ij
 !
 ! Solving this 4x4 system given by this integral set gives for the standard 
 ! parametric integral mean based Q1~ element the following local polynomials:
@@ -3725,9 +3725,9 @@ CONTAINS
 !
 ! The coefficients ai, bi, ci, di are to be calculated in such a way, that
 !
-!    int_Ei Pj(r(.)) ds = delta_ij
+!    1/|ei| int_ei Pj(r(.)) ds = delta_ij
 !
-! holds. The integral "int_Ei ... ds" over the edge Ei is approximated
+! holds. The integral "1/|ei| int_ei ... ds" over the edge Ei is approximated
 ! by a 2-point gauss integral.
 ! This gives four 4x4 systems for the computation of ai, bi, ci and di, which
 ! can be written as:
@@ -3741,7 +3741,7 @@ CONTAINS
 ! The entries of the matrix V = {v_ij} are defined (because of the linearity
 ! of the integral) as
 !
-!         vij = int_Ei Fj(x,y) d(x,y)
+!         vij = 1/|ei| int_ei Fj(x,y) ds
 !
 ! Now let's go...
  
@@ -3881,7 +3881,8 @@ CONTAINS
     PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
     PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
     
-    ! Set up the coefficients of the linear system to calculate ai, bi, ci and di.
+    ! Set up the coefficients of the linear system to calculate ai, bi, ci and di;
+    ! i.e. "1/|ei| int_ei Fj(x,y) ds"
     A(1,IA)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
                     +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
     A(2,IA)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
@@ -3905,7 +3906,7 @@ CONTAINS
   ! monomial representation:
   !
   !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-  !             =   COB(i,1) x^2  +  COB(i,2) x y  +  COB(i,3) y^2
+  !             =   COB(i,1) x^2  +  COB(i,2) y^2  +  COB(i,3) x y
   !               + COB(i,4) x    +  COB(i,5) y
   !               + COB(i,6)
 
@@ -4291,11 +4292,11 @@ CONTAINS
   ! Check which element variant we have; with or without pivoting...
   IF (IAND(ieltyp,2**17) .EQ. 0) THEN
 
-    ! Check whether to scae the local coordinate system or not.
+    ! Check whether to scale the local coordinate system or not.
   
     IF (IAND(ieltyp,2**18) .EQ. 0) THEN
   
-      ! Use pivoting an scaled local coordinate system for 
+      ! Use pivoting and scaled local coordinate system for 
       ! increased numerical stability.
     
       ! Loop over the elements
@@ -4324,6 +4325,7 @@ CONTAINS
           PYL = DYM(IA)-SQRT(1.0_DP/3.0_DP)*DLY(IA)
           PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
           PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
+          
           A(1,IA)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
                           +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
           A(2,IA)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
@@ -4342,7 +4344,7 @@ CONTAINS
         ! COB-array transposed!:
         !
         !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-        !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+        !             =   COB(1,i) x^2  +  COB(2,i) y^2  +  COB(3,i) x y
         !               + COB(4,i) x    +  COB(5,i) y
         !               + COB(6,i)
         !
@@ -4426,8 +4428,8 @@ CONTAINS
       
     ELSE
     
-      ! Use pivoting an scaled local coordinate system for 
-      ! increased numerical stability.
+      ! Use pivoting for increased numerical stability.
+      ! Don't scaled local coordinate system 
     
       ! Loop over the elements
       
@@ -4456,6 +4458,7 @@ CONTAINS
           PYL = DYM(IA)-SQRT(1.0_DP/3.0_DP)*DLY(IA)
           PXU = DXM(IA)+SQRT(1.0_DP/3.0_DP)*DLX(IA)
           PYU = DYM(IA)+SQRT(1.0_DP/3.0_DP)*DLY(IA)
+          
           A(1,IA)=0.5_DP*( F1(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
                           +F1(PXU,PYU,CA1,CB1,CA2,CB2,CA3,CB3,CC3))
           A(2,IA)=0.5_DP*( F2(PXL,PYL,CA1,CB1,CA2,CB2,CA3,CB3,CC3) &
@@ -4474,7 +4477,7 @@ CONTAINS
         ! COB-array transposed!:
         !
         !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-        !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+        !             =   COB(1,i) x^2  +  COB(2,i) y^2  +  COB(3,i) x y
         !               + COB(4,i) x    +  COB(5,i) y
         !               + COB(6,i)
         !
@@ -4610,7 +4613,7 @@ CONTAINS
         ! COB-array transposed!:
         !
         !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-        !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+        !             =   COB(1,i) x^2  +  COB(2,i) y^2  +  COB(3,i) x y
         !               + COB(4,i) x    +  COB(5,i) y
         !               + COB(6,i)
         !
@@ -4740,7 +4743,7 @@ CONTAINS
         ! COB-array transposed!:
         !
         !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-        !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+        !             =   COB(1,i) x^2  +  COB(2,i) y^2  +  COB(3,i) x y
         !               + COB(4,i) x    +  COB(5,i) y
         !               + COB(6,i)
         !
@@ -5500,7 +5503,7 @@ CONTAINS
   ! monomial representation:
   !
   !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-  !             =   COB(i,1) x^2  +  COB(i,2) x y  +  COB(i,3) y^2
+  !             =   COB(i,1) x^2  +  COB(i,2) y^2  +  COB(i,3) x y
   !               + COB(i,4) x    +  COB(i,5) y
   !               + COB(i,6)
 
@@ -5916,7 +5919,7 @@ CONTAINS
       ! COB-array transposed!:
       !
       !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-      !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+      !             =   COB(1,i) x^2  +  COB(2,i) y^2  +  COB(3,i) x y
       !               + COB(4,i) x    +  COB(5,i) y
       !               + COB(6,i)
       !
@@ -6038,7 +6041,7 @@ CONTAINS
       ! COB-array transposed!:
       !
       !  Pi(r(x,y)) = ai F4(x,y)  +  bi F3(x,y)  +  ci F2(x,y)  +  di F1(x,y)
-      !             =   COB(1,i) x^2  +  COB(2,i) x y  +  COB(3,i) y^2
+      !             =   COB(1,i) x^2  +  COB(2,i) y^2  +  COB(3,i) x y
       !               + COB(4,i) x    +  COB(5,i) y
       !               + COB(6,i)
       !

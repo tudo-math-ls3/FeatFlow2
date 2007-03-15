@@ -312,6 +312,9 @@ CONTAINS
     ELSE
     
       rtstepScheme%ctimestepType    = TSCHM_FRACTIONALSTEP
+
+      ! The FS-scheme has 3 substeps.
+      rtstepScheme%nsubsteps        = 3
       
       ! The FS Theta-Scheme uses by theory 4 parameters:           
       !                                                            
@@ -379,7 +382,10 @@ CONTAINS
     
     IF (rtstepScheme%isubstep .GT. rtstepScheme%nsubsteps) THEN
       rtstepScheme%isubstep = 1
-      rtstepScheme%dtimeMacrostep = rtstepScheme%dcurrentTime
+      ! Set the time with a slightly different approach to prevent rounding errors.
+      rtstepScheme%dtimeMacrostep = rtstepScheme%dtimeMacrostep + &
+          REAL(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
+      rtstepScheme%dcurrentTime = rtstepScheme%dtimeMacrostep
     END IF
 
     IF (rtstepScheme%ctimestepType .EQ. TSCHM_FRACTIONALSTEP) THEN
@@ -421,9 +427,9 @@ CONTAINS
         rtstepScheme%dtstep           =  3.0_DP * dtstep * dthetp1
         
         rtstepScheme%dweightMatrixLHS =  3.0_DP * dtstep * dalpha * dtheta1
-        rtstepScheme%dweightMatrixRHS = -3.0_DP * dtstep * dbeta * dthetp1
-        rtstepScheme%dweightNewRHS    =  3.0_DP * dtstep * dalpha * dthetp1
-        rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dbeta * dthetp1
+        rtstepScheme%dweightMatrixRHS = -3.0_DP * dtstep * dalpha * dthetp1
+        rtstepScheme%dweightNewRHS    =  3.0_DP * dtstep * dbeta * dthetp1
+        rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dalpha * dthetp1
         rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dthetp1
       
       END IF
