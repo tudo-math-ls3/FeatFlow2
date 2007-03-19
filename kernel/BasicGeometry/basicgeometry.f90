@@ -23,6 +23,9 @@ MODULE basicgeometry
 !<constants>
 !<constantblock description="Dimension constants">
   
+  ! Dimension constant for 1D triangulations.
+  INTEGER, PARAMETER :: NDIM1D = 1
+
   ! Dimension constant for 2D triangulations.
   INTEGER, PARAMETER :: NDIM2D = 2
 

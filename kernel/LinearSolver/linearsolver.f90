@@ -571,40 +571,28 @@ MODULE linearsolver
   ! General VANCA solver
   INTEGER, PARAMETER :: LINSOL_VANCA_GENERAL           = 0   
   
-  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
-  ! discretisation
-  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0         = 1
-
   ! General VANCA solver. Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  INTEGER, PARAMETER :: LINSOL_VANCA_GENERALDIRECT     = 2
+  INTEGER, PARAMETER :: LINSOL_VANCA_GENERALDIRECT     = 1
 
-  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
-  ! discretisation (like above). Specialised 'direct' version, i.e. when 
+  ! Simple VANCA, 2D Navier-Stokes proble, general discretisation
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DNAVST           = 2
+
+  ! Simple VANCA, 2D Navier-Stokes proble, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ1TQ0DIRECT   = 3
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DNAVSTDIRECT     = 3
 
-  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
-  ! discretisation
-  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ2QP1         = 4
+  ! Full VANCA, 2D Navier-Stokes proble, general discretisation
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVST          = 4
 
-  ! Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
-  ! discretisation (like above). Specialised 'direct' version, i.e. when 
+  ! Full VANCA, 2D Navier-Stokes proble, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
-  INTEGER, PARAMETER :: LINSOL_VANCA_2DSPQ2QP1DIRECT   = 5
-
-  ! Full VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
-  ! discretisation
-  INTEGER, PARAMETER :: LINSOL_VANCA_2DFPQ2QP1         = 6
-
-  ! Full VANCA, 2D saddle-point problem, $\tilde Q_2/P_1$
-  ! discretisation (like above). Specialised 'direct' version, i.e. when 
-  ! used as a smoother in multigrid, this bypasses the usual defect
-  ! correction approach to give an additional speedup. 
-  INTEGER, PARAMETER :: LINSOL_VANCA_2DFPQ2QP1DIRECT   = 7
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTDIRECT    = 5
 
 !</constantblock>
 
@@ -957,15 +945,8 @@ MODULE linearsolver
     ! for improved speed.
     INTEGER             :: csubtypeVANCA
   
-    ! For general VANCA (csubtypeVANCA=LINSOL_VANCA_GENERAL):
-    ! Algorithm-specific structure.
-    TYPE(t_vancaGeneral) :: rvancaGeneral
-    
-    ! For simple 2D-Saddle-Point Q1~/Q0 VANCA
-    TYPE(t_vancaPointer2DSPQ1TQ0) :: rvanca2DSPQ1TQ0
-  
-    ! For simple 2D-Saddle-Point Q2/QP1 VANCA
-    TYPE(t_vancaPointer2DSPQ2QP1) :: rvanca2DSPQ2QP1
+    ! For general 2D Navier-Stokes problem
+    TYPE(t_vanca)       :: rvanca
   
     ! Temporary vector to use during the solution process
     TYPE(t_vectorBlock) :: rtempVector
@@ -1846,7 +1827,7 @@ CONTAINS
     
     SELECT CASE(rsolverNode%calgorithm)
     CASE (LINSOL_ALG_VANCA)
-      ! VANCA: no done-data-routine.
+      CALL linsol_doneDataVANCA (rsolverNode,isubgroup)
     CASE (LINSOL_ALG_DEFCORR)
       CALL linsol_doneDataDefCorr (rsolverNode,isubgroup)
     CASE (LINSOL_ALG_UMFPACK4)
@@ -4518,7 +4499,8 @@ CONTAINS
         END DO
       END DO
 
-    CASE (LINSOL_VANCA_2DSPQ1TQ0,LINSOL_VANCA_2DSPQ1TQ0DIRECT)
+    CASE (LINSOL_VANCA_2DNAVST  , LINSOL_VANCA_2DNAVSTDIRECT  ,&
+          LINSOL_VANCA_2DFNAVST , LINSOL_VANCA_2DFNAVSTDIRECT )
       ! Block (3,1) and (3,2) must be virtually transposed
       IF ((IAND(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) .OR. &
@@ -4590,14 +4572,6 @@ CONTAINS
         rsolverNode%p_rsubnodeVANCA%rtempVector,.FALSE.,&
         rsolverNode%cdefaultDataType)
         
-  ! Which VANCA solver do we actually have?
-  SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-  CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
-    ! Special initialisation of the VANCA-general structure.
-    CALL vanca_initGeneralVanca(rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANCA%rvancaGeneral)
-  END SELECT
-    
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -4635,50 +4609,56 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: isubgroup
+    ! local variables
+    INTEGER :: isubgroup
 
-  ! A-priori we have no error...
-  ierror = LINSOL_ERR_NOERROR
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
 
-  ! by default, initialise solver subroup 0
-  isubgroup = 0
-  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
 
-  ! Stop if there's no matrix assigned
-  
-  IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
-    PRINT *,'Error: No matrix associated!'
-    STOP
-  END IF
-  
-  ! Which VANCA subtype do we have? Only in some variants there's
-  ! something to do...
-  SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-  CASE (LINSOL_VANCA_2DSPQ1TQ0,LINSOL_VANCA_2DSPQ1TQ0DIRECT)
-    ! Special initialisation of a VANCA structure.
-    CALL vanca_init2DSPQ1TQ0simple(rsolverNode%rsystemMatrix,&
-                                   rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0)
-  CASE (LINSOL_VANCA_2DSPQ2QP1,LINSOL_VANCA_2DSPQ2QP1DIRECT)
-    ! Special initialisation of a VANCA structure.
-    CALL vanca_init2DSPQ2QP1(rsolverNode%rsystemMatrix,&
-                             rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1)
-  CASE (LINSOL_VANCA_2DFPQ2QP1,LINSOL_VANCA_2DFPQ2QP1DIRECT)
-    ! Special initialisation of a VANCA structure.
-    CALL vanca_init2DSPQ2QP1(rsolverNode%rsystemMatrix,&
-                             rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1)
-  END SELECT
-  
+    ! Stop if there's no matrix assigned
+    
+    IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
+      PRINT *,'Error: No matrix associated!'
+      STOP
+    END IF
+    
+    ! Which VANCA solver do we actually have?
+    SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
+    CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
+      ! General VANCA for everything
+      CALL vanca_initConformal(rsolverNode%rsystemMatrix,&
+                              rsolverNode%p_rsubnodeVANCA%rvanca,&
+                              VANCAPC_GENERAL,VANCATP_STANDARD)
+                               
+    CASE (LINSOL_VANCA_2DNAVST  , LINSOL_VANCA_2DNAVSTDIRECT  )
+      ! Diagonal-type VANCA for Navier-Stokes
+      CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANCA%rvanca,&
+                                VANCAPC_2DNAVIERSTOKES,VANCATP_DIAGONAL)
+                                
+    CASE (LINSOL_VANCA_2DFNAVST , LINSOL_VANCA_2DFNAVSTDIRECT )
+      ! Full VANCA for Navier-Stokes
+      CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANCA%rvanca,&
+                                VANCAPC_2DNAVIERSTOKES,VANCATP_FULL)
+                                
+    END SELECT
+      
   END SUBROUTINE
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_doneStructureVANCA (rsolverNode, isolverSubgroup)
+  RECURSIVE SUBROUTINE linsol_doneDataVANCA (rsolverNode, isolverSubgroup)
   
 !<description>
-  ! Releases temporary memory of the VANCA solver.
+  ! Releases temporary memory of the VANCA solver allocated in 
+  ! linsol_initDataVANCA
 !</description>
   
 !<inputoutput>
@@ -4698,31 +4678,66 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: isubgroup
-  
-  ! by default, initialise solver subroup 0
-  isubgroup = 0
-  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+    ! local variables
+    INTEGER :: isubgroup
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
 
-  ! If isubgroup does not coincide with isolverSubgroup from the solver
-  ! structure, skip the rest here.
-  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
-  
-  ! Release the temp vector and associated data if associated
-  IF (rsolverNode%p_rsubnodeVANCA%rtempVector%NEQ .NE. 0) THEN
-  
-    CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeVANCA%rtempVector)
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+    
+    ! Release VANCA.
+    CALL vanca_doneConformal (rsolverNode%p_rsubnodeVANCA%rvanca)
 
-    ! Which VANCA solver do we actually have?
-    SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-    CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
-      ! Special cleanup of the VANCA-general structure.
-      CALL vanca_doneGeneralVanca(rsolverNode%p_rsubnodeVANCA%rvancaGeneral)
-    END SELECT
-
-  END IF
+  END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneStructureVANCA (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Releases temporary memory of the VANCA solver allocated in
+  ! linsol_initStrutureVANCA.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the VANCA solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: isubgroup
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+    
+    ! Release the temp vector and associated data if associated
+    IF (rsolverNode%p_rsubnodeVANCA%rtempVector%NEQ .NE. 0) THEN
+      CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeVANCA%rtempVector)
+    END IF
+    
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -4750,7 +4765,7 @@ CONTAINS
   isubgroup = rsolverNode%isolverSubgroup
 
   ! Release temporary data.
-  CALL linsol_doneStructureVANCA (rsolverNode, isubgroup)
+  CALL linsol_doneDataVANCA (rsolverNode, isubgroup)
   
   DEALLOCATE(rsolverNode%p_rsubnodeVANCA)
   
@@ -4817,31 +4832,11 @@ CONTAINS
   
     ! Clear our solution vector
     CALL lsysbl_clearVector (p_rvector)
-
-    ! Choose the correct (sub-)type of VANCA to call.
-    SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
     
-    CASE (LINSOL_VANCA_GENERAL,LINSOL_VANCA_GENERALDIRECT)
-      CALL vanca_general (rsolverNode%p_rsubnodeVANCA%rvancaGeneral, &
-                          p_rvector, rd, domega)
+    ! Execute VANCA
+    CALL vanca_conformal (rsolverNode%p_rsubnodeVANCA%rvanca, &
+        p_rvector, rd, domega)
 
-    CASE (LINSOL_VANCA_2DSPQ1TQ0,LINSOL_VANCA_2DSPQ1TQ0DIRECT)
-      CALL vanca_2DSPQ1TQ0simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0, &
-                                  p_rvector, rd, domega)
-      
-    CASE (LINSOL_VANCA_2DSPQ2QP1,LINSOL_VANCA_2DSPQ2QP1DIRECT)
-      CALL vanca_2DSPQ2QP1simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
-                                  p_rvector, rd, domega)
-
-    CASE (LINSOL_VANCA_2DFPQ2QP1,LINSOL_VANCA_2DFPQ2QP1DIRECT)
-      CALL vanca_2DSPQ2QP1full (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
-                                 p_rvector, rd, domega)
-
-    CASE DEFAULT
-      PRINT *,'Unknown VANCA variant!'
-      STOP
-    END SELECT
-    
     ! Copy the solution vector to rd - it's our preconditioned defect now.
     CALL lsysbl_copyVector (p_rvector,rd)
   
@@ -5180,7 +5175,8 @@ CONTAINS
   !CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
   !WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
   !CALL matio_writeMatrixHR (p_rmatrix, 'matrix',&
-  !                          .TRUE., 0, 'matrix.txt', '(D10.3)')
+  !                          .TRUE., 0, 'matrix.txt', '(D20.10)')
+  !STOP
 
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
   CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
@@ -10441,65 +10437,23 @@ CONTAINS
     !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
     !DEBUG: CALL lsysbl_getbase_double (rb,p_Ddata2)
         
-    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_2DSPQ1TQ0DIRECT) THEN
+    SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
+    CASE (LINSOL_VANCA_GENERALDIRECT,&
+          LINSOL_VANCA_2DNAVSTDIRECT,&
+          LINSOL_VANCA_2DFNAVSTDIRECT)
       ! Yes, this solver can be applied to a given solution/rhs vector directly.
       ! Call it nmaxIterations times to perform the smoothing.
       DO i=1,rsolverNode%nmaxIterations
         ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
         ! without explicitly calculating (b-Ax_n) like below.
-        CALL vanca_2DSPQ1TQ0simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ1TQ0, &
-                                    rx, rb, rsolverNode%domega)
+        CALL vanca_conformal (rsolverNode%p_rsubnodeVANCA%rvanca, &
+                              rx, rb, rsolverNode%domega)
       END DO
 
       ! That's it.
       RETURN
     
-    END IF
-
-    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_2DSPQ2QP1DIRECT) THEN
-      ! Yes, this solver can be applied to a given solution/rhs vector directly.
-      ! Call it nmaxIterations times to perform the smoothing.
-      DO i=1,rsolverNode%nmaxIterations
-        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
-        ! without explicitly calculating (b-Ax_n) like below.
-        CALL vanca_2DSPQ2QP1simple (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
-                                    rx, rb, rsolverNode%domega)
-      END DO
-
-      ! That's it.
-      RETURN
-    
-    END IF
-
-    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_2DFPQ2QP1DIRECT) THEN
-      ! Yes, this solver can be applied to a given solution/rhs vector directly.
-      ! Call it nmaxIterations times to perform the smoothing.
-      DO i=1,rsolverNode%nmaxIterations
-        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
-        ! without explicitly calculating (b-Ax_n) like below.
-        CALL vanca_2DSPQ2QP1full (rsolverNode%p_rsubnodeVANCA%rvanca2DSPQ2QP1, &
-                                  rx, rb, rsolverNode%domega)
-      END DO
-
-      ! That's it.
-      RETURN
-    
-    END IF
-
-    IF (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA .EQ. LINSOL_VANCA_GENERALDIRECT) THEN
-      ! Yes, this solver can be applied to a given solution/rhs vector directly.
-      ! Call it nmaxIterations times to perform the smoothing.
-      DO i=1,rsolverNode%nmaxIterations
-        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
-        ! without explicitly calculating (b-Ax_n) like below.
-        CALL vanca_general (rsolverNode%p_rsubnodeVANCA%rvancaGeneral, &
-                            rx, rb, rsolverNode%domega)
-      END DO
-
-      ! That's it.
-      RETURN
-    
-    END IF
+    END SELECT
     
   END SELECT
     

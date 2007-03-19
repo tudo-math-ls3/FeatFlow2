@@ -857,58 +857,69 @@ CONTAINS
           
         END SELECT
         
-        ! Add the correction vector in rd to rx;
-        ! damped by the damping parameter:           x := x + domega u
-        CALL lsysbl_vectorLinearComb (rd,rx,domega,1.0_DP)
-        
-        ! Autosave: Save the current iteration vector to disc if desired.
-        IF (rsolverNode%iautosave .NE. 0) THEN
-          ! Don't change the order of these if's - produces DIVISION BY ZERO on
-          ! some compilers with optimisation!
-          IF (MOD(ite,rsolverNode%iautosave) .EQ. 0) THEN
-            CALL output_line ('Iteration: '//&
-                 TRIM(sys_siL(ITE,10))//': Autosave not yet implemented.')
-          END IF
-        END IF
-
-        ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
-        CALL fcb_getDefect (ite,rx,rb,rd,p_rcollection)
-
-        ! Check the defect for convergence        
-        IF (PRESENT(fcb_resNormCheck)) THEN
-          ! Calculate the defect with the callback routine
-          CALL fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
-        ELSE
-          ! Calculate the norm of the defect:
-          DvecNorm(1:rd%nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
-          WHERE (.NOT.((DvecNorm .GE. 1E-99_DP) .AND. (DvecNorm .LE. 1E99_DP))) 
-            DvecNorm = 0.0_DP
-          END WHERE
-          rsolverNode%DfinalDefect = DvecNorm
-          
-          bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, rd%nblocks)
-          bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
-
-          IF (rsolverNode%ioutputLevel .GE. 2) THEN
-            CALL output_line ('NLSOL: Iteration '//&
-                TRIM(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.TRUE.)
-            DO i=1,rb%nblocks
-              CALL output_line (' '//TRIM(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.TRUE.)
-            END DO
-            CALL output_lbrk()
-          END IF
-        END IF
-
-        ! Perform at least nminIterations iterations
-        IF (ite .LT. rsolverNode%nminIterations) bconvergence = .FALSE.
-      
-        ! Check for convergence
-        IF (bconvergence) EXIT
-      
-        ! Check for divergence
-        IF (bdivergence) THEN
-          rsolverNode%iresult = 1
+        ! If domega=0.0, the solution vector would stay unchanged. In this
+        ! case, the nonlinear solver would not proceed at all, and the next
+        ! iteration would behave exactly as before!
+        ! So in this case, there's nothing to do, we can stop the iteration.
+        IF (domega .EQ. 0.0_DP) THEN
+          CALL output_line ('NLSOL: Iteration '//&
+              TRIM(sys_siL(ite,10))//' canceled as there is no progress anymore!')
           EXIT
+        ELSE
+          ! Add the correction vector in rd to rx;
+          ! damped by the damping parameter:           x := x + domega u
+          CALL lsysbl_vectorLinearComb (rd,rx,domega,1.0_DP)
+          
+          ! Autosave: Save the current iteration vector to disc if desired.
+          IF (rsolverNode%iautosave .NE. 0) THEN
+            ! Don't change the order of these if's - produces DIVISION BY ZERO on
+            ! some compilers with optimisation!
+            IF (MOD(ite,rsolverNode%iautosave) .EQ. 0) THEN
+              CALL output_line ('Iteration: '//&
+                  TRIM(sys_siL(ITE,10))//': Autosave not yet implemented.')
+            END IF
+          END IF
+
+          ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
+          CALL fcb_getDefect (ite,rx,rb,rd,p_rcollection)
+
+          ! Check the defect for convergence        
+          IF (PRESENT(fcb_resNormCheck)) THEN
+            ! Calculate the defect with the callback routine
+            CALL fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
+          ELSE
+            ! Calculate the norm of the defect:
+            DvecNorm(1:rd%nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
+            WHERE (.NOT.((DvecNorm .GE. 1E-99_DP) .AND. (DvecNorm .LE. 1E99_DP))) 
+              DvecNorm = 0.0_DP
+            END WHERE
+            rsolverNode%DfinalDefect = DvecNorm
+            
+            bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, rd%nblocks)
+            bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
+
+            IF (rsolverNode%ioutputLevel .GE. 2) THEN
+              CALL output_line ('NLSOL: Iteration '//&
+                  TRIM(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.TRUE.)
+              DO i=1,rb%nblocks
+                CALL output_line (' '//TRIM(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.TRUE.)
+              END DO
+              CALL output_lbrk()
+            END IF
+          END IF
+
+          ! Perform at least nminIterations iterations
+          IF (ite .LT. rsolverNode%nminIterations) bconvergence = .FALSE.
+        
+          ! Check for convergence
+          IF (bconvergence) EXIT
+        
+          ! Check for divergence
+          IF (bdivergence) THEN
+            rsolverNode%iresult = 1
+            EXIT
+          END IF
+        
         END IF
         
       END DO ! ite

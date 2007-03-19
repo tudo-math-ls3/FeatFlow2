@@ -46,23 +46,26 @@
 !#     -> Determine the type of transformation from the reference element
 !#        to the real element.\\
 !#
-!# 5.) elem_isNonparametric
+!# 5.) elem_igetDimension
+!#     -> Determine the dimension of an element; 1D, 2D, 3D,...\\
+!#
+!# 6.) elem_isNonparametric
 !#     -> Check whether an element is parametric or nonparametric\\
 !#
-!# 5.) elem_getPrimaryElement
+!# 7.) elem_getPrimaryElement
 !#     -> Returns the element identifier of the 'primary' element without
 !#        any subtype information, which identifies an element family.\\
 !#
-!# 7.) elem_generic 
+!# 8.) elem_generic 
 !#     -> Realises a generic element which can be used to evaluate a finite 
 !#        element depending on its element identifier - in contrast to the 
 !#        standard evaluation routines, which ignore the element quantifier 
 !#        as they 'know' what they are...\\
 !#
-!# 8.) elem_generic_mult
+!# 9.) elem_generic_mult
 !#     -> The multiple-point-evaluation routine for a generic element.\\
 !#
-!# 9.) elem_generic_sim
+!# 10.) elem_generic_sim
 !#     -> The multiple-point/element-evaluation routine for a generic element.
 !#
 !#
@@ -175,6 +178,23 @@
 !#                           =1: No scaling of the local coodinate system for 
 !#                               nonparametric $\tilde Q_1$ element. Slightly faster but 
 !#                               less stable on cruel elements.
+!#               Q1HN: Bit 16/17: These three bits encode the local number of the edge
+!#                               where there is a hanging node.
+!#                               =0: local edge 1, =1: local edge 2,...
+!#               Q2ISO: Bit 16/17: These three bits encode how many edges of the $Q_2$
+!#                               element are to be handled with an isoparametric mapping
+!#                               to the reference element. 
+!#                               =0: isoparametric mapping with one edge not linear
+!#                               =1: isoparametric mapping with two edges not linear
+!#                               =2: isoparametric mapping with three edges not linear
+!#                               =3: isoparametric mapping with all four edges not linear
+!#                    Bit 18/19/20/21: These four bits encode which of the edges are
+!#                               to be mapped nonlinear from the reference to the real
+!#                               element.
+!#                               Bit 18:=1 1st edge maps nonlinear
+!#                               Bit 19:=1 2nd edge maps nonlinear
+!#                               Bit 20:=1 3rd edge maps nonlinear
+!#                               Bit 21:=1 4th edge maps nonlinear
 !#
 !#   To obtain the actual element identifier, one must mask out all bits 
 !#   except for bit 0..7, i.e. to check whether an element is Q1~, one can use
@@ -207,13 +227,13 @@ MODULE element
   INTEGER(I32), PARAMETER :: EL_DIMENSION = 2**8 + 2**9
   
   ! 1D element
-  INTEGER(I32), PARAMETER :: EL_1D = 2**8
+  INTEGER(I32), PARAMETER :: EL_1D = ISHFT(NDIM1D,8)
 
   ! 2D element
-  INTEGER(I32), PARAMETER :: EL_2D = 2**9
+  INTEGER(I32), PARAMETER :: EL_2D = ISHFT(NDIM2D,8)
   
   ! 3D element
-  INTEGER(I32), PARAMETER :: EL_3D = 2**9 + 2**8
+  INTEGER(I32), PARAMETER :: EL_3D = ISHFT(NDIM3D,8)
   
   ! Bitmask for element number including dimension
   INTEGER(I32), PARAMETER :: EL_ELNRMASK = 255 + EL_DIMENSION
@@ -286,6 +306,17 @@ MODULE element
   ! nonconformal, parametric, nonparametric).
   ! Simplest variant is: parametric, edge midpoint-value based.
   INTEGER(I32), PARAMETER :: EL_Q1T  = EL_2D + 30
+  
+  ! Quadrilateral $Q_1$ element with one hanging node. In the property
+  ! bitfield of the element identifier, the local number of the edge where there
+  ! is a hanging node must be encoded! (i.e. one must add a corresponding
+  ! value to the constant EL_Q1HN1 to get the actual element identifier!)
+  INTEGER(I32), PARAMETER :: EL_Q1HN1 = EL_2D + 40
+  
+  ! Quadrilateral $Q_2$ element with isoparametric mapping from the reference
+  ! to the real element. In the property bitfield, one must set the corresponding
+  ! bits to identify the edge that should map isoparametric!
+  INTEGER(I32), PARAMETER :: EL_Q2ISO = EL_2D + 50
 
 !</constantblock>
 
@@ -314,6 +345,26 @@ MODULE element
 
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   INTEGER(I32), PARAMETER :: EL_EM31 = EL_Q1T + EL_NONPARAMETRIC
+
+  ! Isoparametric $Q_2$ element with one edge mapped nonlinear from the reference
+  ! to the real element. Additionally, one bit in the property bitfield must
+  ! be set to identify the edge.
+  INTEGER(I32), PARAMETER :: EL_Q2ISO1 = EL_Q2ISO 
+
+  ! Isoparametric $Q_2$ element with two edges mapped nonlinear from the reference
+  ! to the real element. Additionally, two bits in the property bitfield must
+  ! be set to identify the edges.
+  INTEGER(I32), PARAMETER :: EL_Q2ISO2 = EL_Q2ISO + 2**16
+
+  ! Isoparametric $Q_2$ element with three edges mapped nonlinear from the reference
+  ! to the real element. Additionally, three bits in the property bitfield must
+  ! be set to identify the edges.
+  INTEGER(I32), PARAMETER :: EL_Q2ISO3 = EL_Q2ISO + 2**17
+
+  ! Isoparametric $Q_2$ element with four edges mapped nonlinear from the reference
+  ! to the real element. Additionally, four bits in the property bitfield must
+  ! be set to identify the edges.
+  INTEGER(I32), PARAMETER :: EL_Q2ISO4 = EL_Q2ISO + 2**16 + 2**17
 
 !</constantblock>
 
@@ -362,7 +413,7 @@ CONTAINS
 !<input>    
 
   ! The element type identifier.
-  INTEGER, INTENT(IN) :: ieltype
+  INTEGER(I32), INTENT(IN) :: ieltype
 
 !</input>
 
@@ -420,7 +471,7 @@ CONTAINS
 
 !<input>    
   ! The element type identifier.
-  INTEGER, INTENT(IN) :: ieltype
+  INTEGER(I32), INTENT(IN) :: ieltype
 !</input>
 
 !<output>
@@ -507,7 +558,7 @@ CONTAINS
 !<input>    
 
   ! The element type identifier.
-  INTEGER, INTENT(IN) :: ieltype
+  INTEGER(I32), INTENT(IN) :: ieltype
 
 !</input>
 
@@ -547,7 +598,7 @@ CONTAINS
 !<input>    
 
   ! The element type identifier.
-  INTEGER, INTENT(IN) :: ieltype
+  INTEGER(I32), INTENT(IN) :: ieltype
 
 !</input>
 
@@ -587,10 +638,8 @@ CONTAINS
 !</description>
 
 !<input>    
-
   ! The element type identifier.
-  INTEGER, INTENT(IN) :: ieltype
-
+  INTEGER(I32), INTENT(IN) :: ieltype
 !</input>
 
 !<result>
@@ -609,6 +658,34 @@ CONTAINS
   CASE DEFAULT
     elem_igetTrafoType = TRAFO_IDUNKNOWN
   END SELECT
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>  
+
+  ELEMENTAL INTEGER FUNCTION elem_igetDimension(ieltype)
+
+!<description>
+  ! This function returns the dimensional constant that specifies which
+  ! dimension (1D, 2D,...) an element uses.
+!</description>
+
+!<input>    
+  ! The element type identifier.
+  INTEGER(I32), INTENT(IN) :: ieltype
+!</input>
+
+!<result>
+  ! A constant that specifies the dimension of an element. NDIM2 for 2D,
+  ! NDIM3D for 3D,...
+!</result>
+
+!</function>
+
+    ! The dimension is encoded in two bits in the element quantifier!
+    elem_igetDimension = ISHFT(IAND(ieltype,EL_DIMENSION),-8)
 
   END FUNCTION
 
