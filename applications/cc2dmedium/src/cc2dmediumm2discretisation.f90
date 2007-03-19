@@ -589,6 +589,7 @@ CONTAINS
     ! A pointer to the system matrix and the RHS/solution vectors.
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
     TYPE(t_vectorBlock), POINTER :: p_rtempVector
 
     ! A pointer to the discretisation structure with the data.
@@ -622,33 +623,64 @@ CONTAINS
       ! a standard Stokes matrix L which can be added later to the
       ! convection matrix, resulting in the nonlinear system matrix.
       !
+      ! At first, we create 'template' matrices that define the structure
+      ! of each of the submatrices in that global system. These matrices
+      ! are later used to 'derive' the actual Laplace/Stokes matrices
+      ! by sharing the structure (KCOL/KLD).
+      !
+      ! Get a pointer to the template FEM matrix. This is used for the
+      ! Laplace/Stokes matrix and probably for the mass matrix.
+      
+      p_rmatrixTemplateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
+
+      ! Create the matrix structure
+      CALL bilf_createMatrixStructure (&
+                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
+                p_rmatrixTemplateFEM,cmatBuildType)
+
+      ! In the global system, there are two gradient matrices B1 and B2.
+      ! Create a template matrix that defines their structure.
+      p_rmatrixTemplateGradient => rproblem%RlevelInfo(i)%rmatrixTemplateGradient
+      
+      ! Create the matrices structure of the pressure using the 3rd
+      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscretisation.
+      CALL bilf_createMatrixStructure (&
+                p_rdiscretisation%RspatialDiscretisation(3),LSYSSC_MATRIX9,&
+                p_rmatrixTemplateGradient)
+      
+      ! Ok, now we use the matrices from above to create the actual submatrices
+      ! that are used in the global system.
+      !
       ! Get a pointer to the (scalar) Stokes matrix:
       p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
       
-      ! Create the matrix structure of the Stokes matrix:
-      CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(1),LSYSSC_MATRIX9,&
-                p_rmatrixStokes,cmatBuildType)
+      ! Connect the Stokes matrix to the template FEM matrix such that they
+      ! use the same structure.
+      !
+      ! Don't create a content array yet, it will be created by 
+      ! the assembly routines later.
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                  p_rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       
       ! Allocate memory for the entries; don't initialise the memory.
       CALL lsyssc_createEmptyMatrixScalar (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
       
       ! In the global system, there are two coupling matrices B1 and B2.
-      ! Both have the same structure.
+      ! Both have the structure of the template gradient matrix.
+      ! So connect the two B-matrices to the template gradient matrix
+      ! such that they share the same structure.
       ! Create the matrices structure of the pressure using the 3rd
       ! spatial discretisation structure in p_rdiscretisation%RspatialDiscretisation.
-      CALL bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscretisation(3),LSYSSC_MATRIX9,&
-                rproblem%RlevelInfo(i)%rmatrixB1)
-                
-      ! Duplicate the B1 matrix structure to the B2 matrix, so use
-      ! lsyssc_duplicateMatrix to create B2. Share the matrix 
-      ! structure between B1 and B2 (B1 is the parent and B2 the child). 
+      !
       ! Don't create a content array yet, it will be created by 
       ! the assembly routines later.
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
-                  rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_COPY,LSYSSC_DUP_REMOVE)
-
+      
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
+                  rproblem%RlevelInfo(i)%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                  
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
+                  rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
       ! Allocate memory for the entries; don't initialise the memory.
       CALL lsyssc_createEmptyMatrixScalar (rproblem%RlevelInfo(i)%rmatrixB1,&
                                            LSYSSC_SETM_UNDEFINED)
@@ -679,10 +711,10 @@ CONTAINS
       ! Stokes matrix L share(!) the same structure.
       !
       ! For this purpose, use the "duplicate matrix" routine.
-      ! The structure of the matrix is shared with the Stokes matrix.
+      ! The structure of the matrix is shared with the template FEM matrix.
       ! For the content, a new empty array is allocated which will later receive
       ! the entries.
-      CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   p_rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
       IF (.NOT. rproblem%bdecoupledXY) THEN          
@@ -694,8 +726,8 @@ CONTAINS
         ! Save the value of bdecoupledXY to the collection.
         CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',NO,.TRUE.)
       ELSE
-        ! Otherwise, create another copy of the Stokes matrix.
-        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
+        ! Otherwise, create another copy of the template matrix.
+        CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                     p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         ! Save the value of bdecoupledXY to the collection.
         CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',YES,.TRUE.)
@@ -877,8 +909,8 @@ CONTAINS
         CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
 
         ! Generate mass matrix. The matrix has basically the same structure as
-        ! our Stokes matrix, so we can take that.
-        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
+        ! our template FEM matrix, so we can take that.
+        CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEM,&
                     p_rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                     
         ! Change the discretisation structure of the mass matrix to the
@@ -1367,6 +1399,11 @@ CONTAINS
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)
+      
+      ! Release the template matrices. This is the point, where the
+      ! memory of the matrix structure is released.
+      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateGradient)
+      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEM)
       
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.

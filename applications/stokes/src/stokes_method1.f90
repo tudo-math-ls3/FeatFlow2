@@ -858,7 +858,7 @@ CONTAINS
       NULLIFY(p_rcoarseGridSolver)
       IF (i .EQ. ilvmin) THEN
         ! Set up a BiCGStab solver with VANCA preconditioning as coarse grid solver:
-        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DSPQ1TQ0)
+        CALL linsol_initVANCA (p_rpreconditioner,1.0_DP,LINSOL_VANCA_2DNAVST)
         CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
         !p_rcoarseGridSolver%ioutputLevel = 2
         
@@ -868,7 +868,7 @@ CONTAINS
       ELSE
         ! Set up the VANCA smoother for multigrid with damping parameter 0.7,
         ! 4 smoothing steps:
-        CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DSPQ1TQ0)
+        CALL linsol_initVANCA (p_rsmoother,1.0_DP,LINSOL_VANCA_2DNAVST)
         CALL linsol_convertToSmoother (p_rsmoother,4,0.7_DP)
       END IF
     

@@ -52,6 +52,14 @@ MODULE cc2dmediumm2basic
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...)
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+
+    ! A template FEM matrix that defines the structure of Laplace/Stokes/...
+    ! matrices. The matrix contains only a stucture, no content.
+    TYPE(t_matrixScalar) :: rmatrixTemplateFEM
+
+    ! A template FEM matrix that defines the structure of gradient
+    ! matrices (B1/B2) matrices. The matrix contains only a stucture, no content.
+    TYPE(t_matrixScalar) :: rmatrixTemplateGradient
     
     ! A system matrix for that specific level. 
     TYPE(t_matrixBlock) :: rmatrix
