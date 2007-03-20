@@ -88,7 +88,7 @@ MODULE multilevelprojection
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' prolongation
     ! (i.e. that configured by the spatial discretisation) should be used.
-    INTEGER                     :: ielementTypeProlongation = EL_UNDEFINED
+    INTEGER(I32)                :: ielementTypeProlongation = EL_UNDEFINED
     
     ! Order of the prolongation to use. 
     ! -1=use default prolongation (e.g. linear for $Q_1$, quadratic for 
@@ -139,7 +139,7 @@ MODULE multilevelprojection
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' restriction
     ! (i.e. that configured by the spatial discretisation) should be used.
-    INTEGER                     :: ielementTypeRestriction = EL_UNDEFINED
+    INTEGER(I32)                :: ielementTypeRestriction = EL_UNDEFINED
 
     ! Order of the restriction to use. 
     ! -1=use default restriction (e.g. linear for $Q_1$, quadratic for 
@@ -189,7 +189,7 @@ MODULE multilevelprojection
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' interpolation
     ! (i.e. that configured by the spatial discretisation) should be used.
-    INTEGER                     :: ielementTypeInterpolation = EL_UNDEFINED
+    INTEGER(I32)                :: ielementTypeInterpolation = EL_UNDEFINED
     
     ! Order of the interpolation to use when interpolating a solution vector
     ! to a lower level.

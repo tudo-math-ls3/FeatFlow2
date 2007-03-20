@@ -520,29 +520,29 @@ MODULE linearsolver
 !<constantblock description="Bitfield identifiers for the ability of a linear solver">
 
   ! Solver can handle scalar systems
-  INTEGER, PARAMETER :: LINSOL_ABIL_SCALAR       = 2**0
+  INTEGER(I32), PARAMETER :: LINSOL_ABIL_SCALAR       = 2**0
 
   ! Solver can handle block systems
-  INTEGER, PARAMETER :: LINSOL_ABIL_BLOCK        = 2**1
+  INTEGER(I32), PARAMETER :: LINSOL_ABIL_BLOCK        = 2**1
 
   ! Solver can handle multiple levels
-  INTEGER, PARAMETER :: LINSOL_ABIL_MULTILEVEL   = 2**2
+  INTEGER(I32), PARAMETER :: LINSOL_ABIL_MULTILEVEL   = 2**2
   
   ! Solver allows checking the defect during the iteration.
   ! Solvers not capable of this perform only a fixed number of solution
   ! steps (e.g. UMFPACK performs always one step).
-  INTEGER, PARAMETER :: LINSOL_ABIL_CHECKDEF     = 2**3
+  INTEGER(I32), PARAMETER :: LINSOL_ABIL_CHECKDEF     = 2**3
   
   ! Solver is a direct solver (e.g. UMFPACK, ILU).
   ! Otherwise the solver is of iterative nature and might perform
   ! multiple steps to solve the problem.
-  INTEGER, PARAMETER :: LINSOL_ABIL_DIRECT       = 2**4
+  INTEGER(I32), PARAMETER :: LINSOL_ABIL_DIRECT       = 2**4
   
   ! Solver might use subsolvers (preconditioners, smoothers,...)
-  INTEGER, PARAMETER :: LINSOL_ABIL_USESUBSOLVER = 2**5
+  INTEGER(I32), PARAMETER :: LINSOL_ABIL_USESUBSOLVER = 2**5
   
   ! Solver supports filtering
-  INTEGER, PARAMETER :: LINSOL_ABIL_USEFILTER    = 2**6
+  INTEGER(I32), PARAMETER :: LINSOL_ABIL_USEFILTER    = 2**6
 
 !</constantblock>
 
@@ -8311,8 +8311,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubgroup,i,idim
-    INTEGER , DIMENSION(2) :: idim2
+    INTEGER :: isubgroup,i
+    INTEGER(I32) :: idim
+    INTEGER(I32) , DIMENSION(2) :: idim2
     TYPE(t_linsolSubnodeGMRES), POINTER :: p_rsubnode
     
     ! A-priori we have no error...
@@ -8361,7 +8362,7 @@ CONTAINS
         ST_DOUBLE, p_rsubnode%hDs, ST_NEWBLOCK_NOINIT)
     CALL storage_new('linsol_initStructureGMRES', 'Ds', idim, &
         ST_DOUBLE, p_rsubnode%hDc, ST_NEWBLOCK_NOINIT)
-    CALL storage_new('linsol_initStructureGMRES', 'Dq', idim+1, &
+    CALL storage_new('linsol_initStructureGMRES', 'Dq', idim+1_I32, &
         ST_DOUBLE,  p_rsubnode%hDq, ST_NEWBLOCK_NOINIT)
     
     ! Get the pointers

@@ -1761,7 +1761,7 @@ CONTAINS
 
   !<input>
     ! Number of elements in the old grid
-    INTEGER,INTENT(IN) :: nel
+    INTEGER(PREC_ELEMENTIDX),INTENT(IN) :: nel
 
     ! Number of quads in the old grid
     INTEGER,INTENT(IN) :: nelquad

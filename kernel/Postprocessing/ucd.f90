@@ -110,56 +110,56 @@ MODULE ucd
 !<constantblock description="Constants for the cflags variable in ucd_startXXXX. Bitfield.">
 
   ! Standard flags. Write information in corner vertices only, linear interpolation.
-  INTEGER, PARAMETER :: UCD_FLAG_STANDARD            = 0
+  INTEGER(I32), PARAMETER :: UCD_FLAG_STANDARD            = 0
   
   ! Construct edge midpoints and write them as vertices to the output file.
-  INTEGER, PARAMETER :: UCD_FLAG_USEEDGEMIDPOINTS    = 2**0
+  INTEGER(I32), PARAMETER :: UCD_FLAG_USEEDGEMIDPOINTS    = 2**0
   
   ! Construct element midpoints and write them as vertices to the output file.
-  INTEGER, PARAMETER :: UCD_FLAG_USEELEMENTMIDPOINTS = 2**1
+  INTEGER(I32), PARAMETER :: UCD_FLAG_USEELEMENTMIDPOINTS = 2**1
   
   ! Quadratic buld interpolation. Information is given in corner vertices and
   ! edge midpoints. Implies UCD_FLAG_USEEDGEMIDPOINTS.
-  INTEGER, PARAMETER :: UCD_FLAG_BULBQUADRATIC       = 2**2
+  INTEGER(I32), PARAMETER :: UCD_FLAG_BULBQUADRATIC       = 2**2
   
   ! Output of a linear interpolated solution on a once refined mesh. 
   ! Implies UCD_FLAG_USEEDGEMIDPOINTS and UCD_FLAG_USEELEMENTMIDPOINTS. 
   ! Cannot be used with UCD_FLAG_BULBQUADRATIC.
-  INTEGER, PARAMETER :: UCD_FLAG_ONCEREFINED         = 2**3
+  INTEGER(I32), PARAMETER :: UCD_FLAG_ONCEREFINED         = 2**3
 
 !</constantblock>
 
 !<constantblock description="Specification flags for variables. Bitfield.">
   ! Standard 'scalar' variable.
-  INTEGER, PARAMETER :: UCD_VAR_STANDARD             = 0
+  INTEGER(I32), PARAMETER :: UCD_VAR_STANDARD             = 0
 
   ! The variable specifies the X velocity of a velocity field.
   ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_YVELOCITY or UCD_VAR_ZVELOCITY.
-  INTEGER, PARAMETER :: UCD_VAR_XVELOCITY            = 2**0
+  INTEGER(I32), PARAMETER :: UCD_VAR_XVELOCITY            = 2**0
 
   ! The variable specifies the Y velocity of a velocity field.
   ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_XVELOCITY or UCD_VAR_ZVELOCITY.
-  INTEGER, PARAMETER :: UCD_VAR_YVELOCITY            = 2**1
+  INTEGER(I32), PARAMETER :: UCD_VAR_YVELOCITY            = 2**1
 
   ! The variable specifies the Z velocity of a velocity field.
   ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_XVELOCITY or UCD_VAR_YVELOCITY.
-  INTEGER, PARAMETER :: UCD_VAR_ZVELOCITY            = 2**2
+  INTEGER(I32), PARAMETER :: UCD_VAR_ZVELOCITY            = 2**2
   
 !</constantblock>
 
 !<constantblock description="Constants for specifying alternative source files. Bitfield.">
 
   ! Whole triangulation is specified by a different source file.
-  INTEGER, PARAMETER :: UCD_ASRC_ALL                 = NOT(0)
+  INTEGER(I32), PARAMETER :: UCD_ASRC_ALL                 = NOT(0)
 
   ! Coordinates of mesh points are specified in a different source file.
-  INTEGER, PARAMETER :: UCD_ASRC_POINTS              = 2**0
+  INTEGER(I32), PARAMETER :: UCD_ASRC_POINTS              = 2**0
 
   ! Cell information is specified in a different source file.
-  INTEGER, PARAMETER :: UCD_ASRC_CELLS               = 2**1
+  INTEGER(I32), PARAMETER :: UCD_ASRC_CELLS               = 2**1
 
 !</constantblock>
 
@@ -188,7 +188,7 @@ MODULE ucd
     INTEGER :: iunit = 0
     
     ! Export flags specifying the output
-    INTEGER :: cflags            = 0
+    INTEGER(I32) :: cflags            = 0
     
     ! Number of currently attached variables
     INTEGER :: nvariables        = 0
@@ -226,7 +226,7 @@ MODULE ucd
     ! A pointer to an array with specification flags. p_IvariableSpec(I)
     ! is a bitfield for variable I that specifies the type of the variable
     ! and how to handle it.
-    INTEGER, DIMENSION(:), POINTER :: p_IvariableSpec => NULL()
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IvariableSpec => NULL()
     
     ! A pointer to an array that specifies whether a variable is vertex based (1)
     ! or cell based (0).
@@ -318,7 +318,7 @@ CONTAINS
   CHARACTER(LEN=*), INTENT(IN) :: sfilename
   
   ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
-  INTEGER, INTENT(IN) :: cflags
+  INTEGER(I32), INTENT(IN) :: cflags
   
   ! Specification of the underlying triangulation. A pointer to this
   ! object is saved until the otput is finished.
@@ -697,7 +697,7 @@ CONTAINS
     ! Create a new hImaterials handle if it does not exist.
     IF (rexport%hIvertexMaterial .EQ. ST_NOHANDLE) THEN
       CALL storage_new ('ucd_setVertexMaterial','hIvertexMaterial',&
-          rexport%nvertices,ST_INT,rexport%hIvertexMaterial,ST_NEWBLOCK_ZERO)
+          INT(rexport%nvertices,I32),ST_INT,rexport%hIvertexMaterial,ST_NEWBLOCK_ZERO)
     END IF
 
     CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
@@ -1457,8 +1457,8 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER, DIMENSION(:), POINTER :: p_IvariableSpec ,p_IvariableBase
-    INTEGER, DIMENSION(:), POINTER :: p_Hvariables 
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IvariableSpec 
+    INTEGER, DIMENSION(:), POINTER :: p_Hvariables,p_IvariableBase
     CHARACTER(LEN=SYS_NAMELEN), DIMENSION(:), POINTER :: p_SvariableNames
     INTEGER :: nsize
     
@@ -1522,8 +1522,8 @@ CONTAINS
       nsize = SIZE(rexport%p_Hpolygons)
 
     ALLOCATE(p_Hpolygons(nsize+16))
-    CALL storage_realloc ('ucd_morePolygons', nsize+16, &
-        rexport%hpolygonMaterial, nsize+16)
+    CALL storage_realloc ('ucd_morePolygons', INT(nsize+16,I32), &
+        rexport%hpolygonMaterial, ST_NEWBLOCK_ZERO)
     
     IF (ASSOCIATED(rexport%p_Hpolygons)) THEN
       p_Hpolygons(1:SIZE(rexport%p_Hpolygons)) = rexport%p_Hpolygons
@@ -1591,7 +1591,7 @@ CONTAINS
   ! Specification bitfield for the variable. A combination of the 
   ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
   ! Standard value=UCD_VAR_STANDARD.
-  INTEGER, INTENT(IN) :: cvarSpec
+  INTEGER(I32), INTENT(IN) :: cvarSpec
   
   ! DdataVert(I) os the value of the variable in vertex I of the triangulation.
   REAL(DP), DIMENSION(:), INTENT(IN) :: DdataVert
@@ -1639,7 +1639,8 @@ CONTAINS
     
     ! Allocate a new vector for the data
     CALL storage_new ('ucd_addVariableVertexBased','hvariable',&
-        rexport%nvertices,ST_DOUBLE,rexport%p_Hvariables(rexport%nvariables),&
+        INT(rexport%nvertices,I32),ST_DOUBLE,&
+	rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
     
     ! Copy the vertex data into that vector
@@ -1700,7 +1701,7 @@ CONTAINS
   
   ! Specification bitfield for the variable. A combination of the 
   ! UCD_VAR_xxxx flags.
-  INTEGER, INTENT(IN) :: cvarSpec
+  INTEGER(I32), INTENT(IN) :: cvarSpec
   
   ! DdataVert(I) os the value of the variable in element I of the triangulation.
   REAL(DP), DIMENSION(:), INTENT(IN) :: Ddata
@@ -1729,7 +1730,8 @@ CONTAINS
     
     ! Allocate a new vector for the data
     CALL storage_new ('ucd_addVariableVertexBased','hvariable',&
-        rexport%ncells,ST_DOUBLE,rexport%p_Hvariables(rexport%nvariables),&
+        INT(rexport%ncells,I32),ST_DOUBLE,&
+	rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
         
     ! Copy the element data into that vector
@@ -1800,7 +1802,7 @@ CONTAINS
 !</subroutine>
 
     ! local varables
-    INTEGER, DIMENSION(2) :: Ilength
+    INTEGER(I32), DIMENSION(2) :: Ilength
     REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
 
@@ -1862,7 +1864,7 @@ CONTAINS
 !</subroutine>
 
     ! local varables
-    INTEGER, DIMENSION(2) :: Ilength
+    INTEGER(I32), DIMENSION(2) :: Ilength
     REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata
 
     IF (rexport%coutputFormat .EQ. 0) THEN
@@ -1979,7 +1981,7 @@ CONTAINS
     
     ! Allocate a new vector for the data
     CALL storage_new ('ucd_addTracerVariable','hvariable',&
-        rexport%ntracers,ST_DOUBLE,&
+        INT(rexport%ntracers,I32),ST_DOUBLE,&
         rexport%p_HtracerVariables(rexport%ntracerVariables),&
         ST_NEWBLOCK_ZERO)
         

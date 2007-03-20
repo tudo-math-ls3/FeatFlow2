@@ -577,9 +577,10 @@ MODULE matrixio
     ! SPY CSR matrix in double precision
     
     SUBROUTINE do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da)
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kld
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kcol
-      INTEGER, INTENT(IN)                :: neq,ncols,nvar
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
+      INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
+      INTEGER, INTENT(IN)                             :: nvar
       REAL(DP), DIMENSION(nvar,*), INTENT(IN), OPTIONAL :: Da
       INTEGER :: ieq,ild,ivar
 
@@ -609,9 +610,10 @@ MODULE matrixio
     ! SPY CSR matrix in single precision
     
     SUBROUTINE do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa)
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kld
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kcol
-      INTEGER, INTENT(IN)                :: neq,ncols,nvar
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
+      INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
+      INTEGER, INTENT(IN)                             :: nvar
       REAL(SP), DIMENSION(nvar,*), INTENT(IN), OPTIONAL :: Fa
       INTEGER :: ieq,ild,ivar
 
@@ -640,9 +642,10 @@ MODULE matrixio
     ! SPY CSR matrix in double precision
     
     SUBROUTINE do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da)
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kld
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kcol
-      INTEGER, INTENT(IN)                :: neq,ncols,nvar,mvar
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
+      INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
+      INTEGER, INTENT(IN)                             :: nvar,mvar
       REAL(DP), DIMENSION(nvar,mvar,*), INTENT(IN), OPTIONAL :: Da
       INTEGER :: ieq,ild,ivar,jvar
 
@@ -675,9 +678,10 @@ MODULE matrixio
     ! SPY CSR matrix in double precision
     
     SUBROUTINE do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa)
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kld
-      INTEGER, DIMENSION(:), INTENT(IN)  :: Kcol
-      INTEGER, INTENT(IN)                :: neq,ncols,nvar,mvar
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
+      INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
+      INTEGER, INTENT(IN)                             :: nvar,mvar
       REAL(SP), DIMENSION(nvar,mvar,*), INTENT(IN), OPTIONAL :: Fa
       INTEGER :: ieq,ild,ivar,jvar
 
@@ -710,7 +714,7 @@ MODULE matrixio
     ! SPY full matrix in double precision
     
     SUBROUTINE do_spy_mat1_double(neq,ncols,Da)
-      INTEGER, INTENT(IN) :: neq,ncols
+      INTEGER(PREC_VECIDX), INTENT(IN) :: neq,ncols
       REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Da
       INTEGER :: ieq,icol
 
@@ -735,7 +739,7 @@ MODULE matrixio
     ! SPY full matrix in single precision
     
     SUBROUTINE do_spy_mat1_single(neq,ncols,Fa)
-      INTEGER, INTENT(IN) :: neq,ncols
+      INTEGER(PREC_VECIDX), INTENT(IN) :: neq,ncols
       REAL(SP), DIMENSION(:), INTENT(IN), OPTIONAL :: Fa
       INTEGER :: ieq,icol
 

@@ -48,7 +48,7 @@ CONTAINS
   ! elements where it should be evaluated here. ieltyp defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  INTEGER, INTENT(IN)                           :: ieltyp
+  INTEGER(I32), INTENT(IN)                      :: ieltyp
 
   ! A list of the corner vertices of all elements in progress.
   ! array [1..NDIM2D,1..TRIA_MAXNVE2D,1..Number of elements] of double

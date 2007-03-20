@@ -108,7 +108,7 @@ CONTAINS
   TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrU, p_rdiscrP
 
   ! Element type identifier for U and P
-  INTEGER :: ielemU, ielemP
+  INTEGER(I32) :: ielemU, ielemP
   
   ! Number of local DOF's in U and P
   INTEGER :: idoflocU, idoflocP
@@ -503,7 +503,8 @@ CONTAINS
 
     INTEGER(PREC_ELEMENTIDX) :: iel,ielaux,icurrentelement
     INTEGER(PREC_POINTIDX) :: jve
-    INTEGER :: ieltype1,ieltype2,ieltypeDest,haux,ive,iadj
+    INTEGER(I32) :: ieltype1,ieltype2,ieltypeDest
+    INTEGER :: haux,ive,iadj
     INTEGER :: ilastMarked,imarkCounter,imarktmp
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 

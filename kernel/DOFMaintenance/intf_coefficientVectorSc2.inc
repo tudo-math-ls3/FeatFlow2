@@ -49,7 +49,7 @@
 
     ! Number of elements, where the coefficients must be computed.
     ! This is always a part of the element distribution.
-    INTEGER, INTENT(IN)                                         :: nelements
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     INTEGER, INTENT(IN)                                         :: npointsPerElement

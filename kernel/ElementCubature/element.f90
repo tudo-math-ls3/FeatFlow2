@@ -704,7 +704,7 @@ CONTAINS
 !<input>    
 
   ! The element type identifier.
-  INTEGER, INTENT(IN) :: ieltype
+  INTEGER(I32), INTENT(IN) :: ieltype
 
 !</input>
 
@@ -771,7 +771,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -871,7 +871,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -970,7 +970,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -1105,7 +1105,7 @@ CONTAINS
   !<input>
   
   ! Element type qualifier.
-  INTEGER, INTENT(IN) :: ieltyp
+  INTEGER(I32), INTENT(IN) :: ieltyp
   
   !</input>
  
@@ -1143,7 +1143,7 @@ CONTAINS
   !<input>
   
   ! Element type qualifier.
-  INTEGER, INTENT(IN) :: ieltyp
+   INTEGER(I32), INTENT(IN) :: ieltyp
   
   !</input>
  
@@ -1265,7 +1265,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q0.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -1335,7 +1335,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_P0.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -1413,7 +1413,7 @@ CONTAINS
 !<input>
 
   ! Element type identifier. Must be =EL_P0.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -1506,7 +1506,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_P1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -1619,7 +1619,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_P1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -1737,7 +1737,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_P1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
 
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -1877,7 +1877,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_P1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -1994,7 +1994,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_P2.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -2138,7 +2138,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_P2.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
 
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -2377,7 +2377,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q0.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -2448,7 +2448,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_Q0.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -2527,7 +2527,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_Q0.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -2622,7 +2622,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -2757,7 +2757,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -2889,7 +2889,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
 
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -3059,7 +3059,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_Q2.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -3195,7 +3195,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q2.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -3352,7 +3352,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q2.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
 
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -3542,7 +3542,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_QP1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -3843,7 +3843,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_EM30.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -4068,7 +4068,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_EM30.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -4272,7 +4272,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_EM30.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -4367,11 +4367,11 @@ CONTAINS
   !Dbas = 0.0_DP
   
   ! Check which element variant we have; with or without pivoting...
-  IF (IAND(ieltyp,2**17) .EQ. 0) THEN
+  IF (IAND(ieltyp,INT(2**17,I32)) .EQ. 0) THEN
 
     ! Check whether to scale the local coordinate system or not.
   
-    IF (IAND(ieltyp,2**18) .EQ. 0) THEN
+    IF (IAND(ieltyp,INT(2**18,I32)) .EQ. 0) THEN
   
       ! Use pivoting and scaled local coordinate system for 
       ! increased numerical stability.
@@ -4644,7 +4644,7 @@ CONTAINS
     
     ! Check whether to scae the local coordinate system or not.
   
-    IF (IAND(ieltyp,2**18) .EQ. 0) THEN
+    IF (IAND(ieltyp,INT(2**18,I32)) .EQ. 0) THEN
   
       ! Loop over the elements
       
@@ -4953,7 +4953,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -5089,7 +5089,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -5233,7 +5233,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
 
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -5452,7 +5452,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_EM30.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -5665,7 +5665,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_EM30.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -5861,7 +5861,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_EM30.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -5956,7 +5956,7 @@ CONTAINS
   !Dbas = 0.0_DP
   
   ! Check which element variant we have; with or without pivoting...
-  IF (IAND(ieltyp,2**17) .EQ. 0) THEN
+  IF (IAND(ieltyp,INT(2**17,I32)) .EQ. 0) THEN
   
     ! Use pivoting for increased numerical stability.
   
@@ -6248,7 +6248,7 @@ CONTAINS
   !<input>
 
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
   ! Dcoords(1,.)=x-coordinates,
@@ -6383,7 +6383,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints
@@ -6527,7 +6527,7 @@ CONTAINS
 
 !<input>
   ! Element type identifier. Must be =EL_Q1.
-  INTEGER, INTENT(IN)  :: ieltyp
+  INTEGER(I32), INTENT(IN)  :: ieltyp
 
   ! Number of points on every element where to evalate the basis functions.
   INTEGER, INTENT(IN) :: npoints

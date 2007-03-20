@@ -90,7 +90,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: i1,i2,iedge,iedge1,iedge2,iedge4,jedge,jedge1,jedge2,jedge4
+    INTEGER(I32) :: i1,i2
+    INTEGER :: iedge,iedge1,iedge2,iedge4,jedge,jedge1,jedge2,jedge4
     INTEGER(PREC_ELEMENTIDX) :: iel,iadj1,iadj2,iadj4,iel1,iel2,jadj2,jadj4,jel1,jel2
     INTEGER(PREC_EDGEIDX) :: imid1,imid2,imid3,imid4,imid5
     INTEGER(PREC_EDGEIDX) :: im1,im2,im3,im4,im5,im6,im7,im8,im9,im10,im11,im12

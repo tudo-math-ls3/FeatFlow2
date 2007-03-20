@@ -213,30 +213,30 @@ MODULE linearsystemscalar
 !<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
-  INTEGER, PARAMETER :: LSYSSC_MSPEC_STANDARD =        0
+  INTEGER(I32), PARAMETER :: LSYSSC_MSPEC_STANDARD =        0
   
   ! Matrix structure is a copy of another matrix, shared via the same
   ! handles. 
-  INTEGER, PARAMETER :: LSYSSC_MSPEC_STRUCTUREISCOPY = 2**0
+  INTEGER(I32), PARAMETER :: LSYSSC_MSPEC_STRUCTUREISCOPY = 2**0
 
   ! Matrix content is a copy of another matrix, shared via the same
   ! handles. 
-  INTEGER, PARAMETER :: LSYSSC_MSPEC_CONTENTISCOPY   = 2**1
+  INTEGER(I32), PARAMETER :: LSYSSC_MSPEC_CONTENTISCOPY   = 2**1
   
   ! Complete matrix is duplicate of another matrix and shares structure
   ! and entries via the same pointers
-  INTEGER, PARAMETER :: LSYSSC_MSPEC_ISCOPY = LSYSSC_MSPEC_STRUCTUREISCOPY +&
-                                              LSYSSC_MSPEC_CONTENTISCOPY
+  INTEGER(I32), PARAMETER :: LSYSSC_MSPEC_ISCOPY = LSYSSC_MSPEC_STRUCTUREISCOPY +&
+                                                   LSYSSC_MSPEC_CONTENTISCOPY
 
   ! Matrix is saved transposed.
   ! To use a matrix in a transposed way, the application has to
   ! 1.) set this flag in the imatrixSpec bitfield
   ! 2.) exchange the values in t_matrixScalar\%NEQ and t_matrixScalar\%NCOLS 
   !     of the matrix structure.
-  INTEGER, PARAMETER :: LSYSSC_MSPEC_TRANSPOSED =      2**2
+  INTEGER(I32), PARAMETER :: LSYSSC_MSPEC_TRANSPOSED =      2**2
 
   ! Matrix not present in memory
-  INTEGER, PARAMETER :: LSYSSC_MSPEC_NOTINMEMORY =     2**3
+  INTEGER(I32), PARAMETER :: LSYSSC_MSPEC_NOTINMEMORY =     2**3
   
 !</constantblock>
 
@@ -1040,10 +1040,10 @@ CONTAINS
     IF (rvector%NEQ*rvector%NVAR .GT. 0) THEN
       IF (bclear) THEN
         CALL storage_new1D ('lsyssc_createVector', 'ScalarVector',&
-            & rvector%NEQ*rvector%NVAR, cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
+            & INT(rvector%NEQ*rvector%NVAR,I32), cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
       ELSE
         CALL storage_new1D ('lsyssc_createVector', 'ScalarVector',&
-            & rvector%NEQ*rvector%NVAR, cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
+            & INT(rvector%NEQ*rvector%NVAR,I32), cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
       END IF
     END IF
   
@@ -2236,7 +2236,7 @@ CONTAINS
   
   NEQ = roldVector%NEQ
   NVAR= roldVector%NVAR
-  CALL storage_new ('lsyssc_duplicateVector','vec-copy',NEQ*NVAR,&
+  CALL storage_new ('lsyssc_duplicateVector','vec-copy',INT(NEQ*NVAR,I32),&
                     roldVector%cdataType, rnewVector%h_Ddata, &
                     ST_NEWBLOCK_NOINIT)
 
@@ -2423,7 +2423,7 @@ CONTAINS
             rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
 
         CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
-            rdestMatrix%NEQ+1, ST_INT, &
+            rdestMatrix%NEQ+1_I32, ST_INT, &
             rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
 
         CALL storage_new ('lsyssc_duplicateMatrix', 'Kdiagonal', &
@@ -2436,7 +2436,7 @@ CONTAINS
             rdestMatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
 
         CALL storage_new ('lsyssc_duplicateMatrix', 'KLD', &
-            rdestMatrix%NEQ+1, ST_INT, &
+            rdestMatrix%NEQ+1_I32, ST_INT, &
             rdestMatrix%h_Kld, ST_NEWBLOCK_NOINIT)
 
       CASE (LSYSSC_MATRIXD)
@@ -2504,11 +2504,11 @@ CONTAINS
         SELECT CASE(rsourceMatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
           CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
-              rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR, &
+              INT(rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR,I32), &
               rsourceMatrix%cdataType, rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
         CASE (LSYSSC_MATRIXD)
           CALL storage_new('lsyssc_duplicateMatrix', 'DA', &
-              rdestMatrix%NA*rdestMatrix%NVAR,rsourceMatrix%cdataType, &
+              INT(rdestMatrix%NA*rdestMatrix%NVAR,I32),rsourceMatrix%cdataType, &
               rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
         CASE DEFAULT
           PRINT *, 'lsyssc_duplicateMatrix: wrong matrix format of interleaved matrix'
@@ -3721,7 +3721,7 @@ CONTAINS
     IF (PRESENT(nintl)) THEN
 
       ! Allocate memory for auxiliary vector
-      CALL storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
+      CALL storage_new1D ('lsyssc_sortCSRdouble', 'Daux', INT(nintl,I32), &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_double(h_Daux,Daux)
       
@@ -3881,7 +3881,7 @@ CONTAINS
     IF (PRESENT(nintl)) THEN
 
       ! Allocate memory for auxiliary vector
-      CALL storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
+      CALL storage_new1D ('lsyssc_sortCSRdouble', 'Daux', INT(nintl,I32), &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_double(h_Daux,Daux)
 
@@ -8072,7 +8072,7 @@ CONTAINS
           ! matrix!
           CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           
           ! Get Kcol/Kld
@@ -8120,7 +8120,7 @@ CONTAINS
           ! matrix!
           CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
 
           ! Get Kcol/Kld
@@ -8180,7 +8180,7 @@ CONTAINS
           ! matrix!
           CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           CALL storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                             rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
@@ -8240,7 +8240,7 @@ CONTAINS
           ! matrix!
           CALL storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
                             ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+          CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           CALL storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
                             rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
@@ -8396,10 +8396,10 @@ CONTAINS
         SELECT CASE (rmatrixScalar%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
           CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
-              NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
+              INT(NA*NVAR*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         CASE (LSYSSC_MATRIXD)
           CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
-              NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
+              INT(NA*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         CASE DEFAULT
           PRINT *, 'lsyssc_createEmptyMatrixScalar: Unsupported interl&
               &eave matrix format'
@@ -8410,10 +8410,10 @@ CONTAINS
         SELECT CASE (rmatrixScalar%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
           CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
-              NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
+              INT(NA*NVAR*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         CASE (LSYSSC_MATRIXD)
           CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
-              NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
+              INT(NA*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         CASE DEFAULT
           PRINT *, 'lsyssc_createEmptyMatrixScalar: Unsupported interl&
               &eave matrix format'
@@ -8698,8 +8698,8 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: DaA,DaB,DaC,Daux
     REAL(SP), DIMENSION(:), POINTER :: FaA,FaB,FaC,Faux
-    INTEGER, DIMENSION(:), POINTER :: KldA,KldB,KldC,KcolA,KcolB&
-        &,KcolC,KdiagonalC,Kaux
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: KcolA,KcolB,KcolC,Kaux
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: KldA,KldB,KldC,KdiagonalC
     INTEGER :: h_Kaux,h_Daux,h_Faux
     LOGICAL :: bfast
 
@@ -10185,8 +10185,8 @@ CONTAINS
     FUNCTION do_mat79mat79mul_computeNA(KldA,KcolA,neq,KldB,KcolB&
         &,Kaux) RESULT(NA)
 
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: Kaux
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: Kaux
       INTEGER(PREC_DOFIDX), INTENT(IN) :: neq
       INTEGER :: NA
 
@@ -10247,9 +10247,11 @@ CONTAINS
         &,KcolC,Kindex,KdiagonalC)
 
       INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC,Kindex
-      INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: KdiagonalC
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: KldC,Kindex
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: KcolC
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT), OPTIONAL :: KdiagonalC
 
       INTEGER :: i,j,k,istart,ilength,jj,jk,kaux,ioff
 
@@ -10373,8 +10375,10 @@ CONTAINS
         &,DaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
       INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: KldC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: KcolC
       REAL(DP), DIMENSION(:), INTENT(IN)    :: DaA
       REAL(DP), DIMENSION(:), INTENT(IN)    :: DaB
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC,Dtemp
@@ -10426,8 +10430,10 @@ CONTAINS
         &,FaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
       INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: KldC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: KcolC
       REAL(SP), DIMENSION(:), INTENT(IN)    :: FaA
       REAL(DP), DIMENSION(:), INTENT(IN)    :: DaB
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC,Dtemp
@@ -10479,8 +10485,10 @@ CONTAINS
         &,DaA,KldB,KcolB,FaB,KldC,KcolC,DaC,Dtemp)
 
       INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: KldC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: KcolC
       REAL(DP), DIMENSION(:), INTENT(IN)    :: DaA
       REAL(SP), DIMENSION(:), INTENT(IN)    :: FaB
       REAL(DP), DIMENSION(:), INTENT(INOUT) :: DaC,Dtemp
@@ -10532,8 +10540,10 @@ CONTAINS
         &,FaA,KldB,KcolB,FaB,KldC,KcolC,FaC,Ftemp)
 
       INTEGER(PREC_DOFIDX), INTENT(IN) :: n,m,l
-      INTEGER, DIMENSION(:), INTENT(IN) :: KldA,KcolA,KldB,KcolB
-      INTEGER, DIMENSION(:), INTENT(INOUT) :: KldC,KcolC
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB
+      INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: KldC
+      INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(INOUT) :: KcolC
       REAL(SP), DIMENSION(:), INTENT(IN)    :: FaA
       REAL(SP), DIMENSION(:), INTENT(IN)    :: FaB
       REAL(SP), DIMENSION(:), INTENT(INOUT) :: FaC,Ftemp
@@ -10634,7 +10644,8 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: DaA,DaB,DaC
     REAL(SP), DIMENSION(:), POINTER :: FaA,FaB,FaC
-    INTEGER, DIMENSION(:), POINTER :: KldA,KldB,KldC,KcolA,KcolB,KcolC,KdiagonalC,Kaux
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: KldA,KldB,KldC,KdiagonalC,Kaux
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: KcolA,KcolB,KcolC
     INTEGER :: h_Kaux,isizeIntl
     LOGICAL :: bfast
 
@@ -11251,7 +11262,7 @@ CONTAINS
           rmatrixC%cinterleavematrixFormat = rmatrixB%cinterleavematrixFormat
           rmatrixC%NA = rmatrixB%NA
           rmatrixC%NVAR = rmatrixB%NVAR
-          CALL storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',INT(isizeIntl*rmatrixC%NA,I32),&
               rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
 
@@ -11886,7 +11897,7 @@ CONTAINS
           rmatrixC%cinterleavematrixFormat = rmatrixA%cinterleavematrixFormat
           rmatrixC%NA = rmatrixA%NA
           rmatrixC%NVAR = rmatrixA%NVAR
-          CALL storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',INT(isizeIntl*rmatrixC%NA,I32),&
               rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
         END IF
 
@@ -12098,7 +12109,7 @@ CONTAINS
           
           ! Compute number of nonzero matrix entries: NA
           rmatrixC%NA=do_mat79mat79add_computeNA(rmatrixA%NEQ,rmatrixA%NCOLS,KldA,KcolA,KldB,KcolB,Kaux)
-          CALL storage_new('lsyssc_matrixLinearComb','h_Da',isizeIntl*rmatrixC%NA,&
+          CALL storage_new('lsyssc_matrixLinearComb','h_Da',INT(isizeIntl*rmatrixC%NA,I32),&
               rmatrixC%cdataType,rmatrixC%h_Da,ST_NEWBLOCK_NOINIT)
           CALL storage_realloc('lsyssc_matrixLinearComb',rmatrixC%NA,&
               rmatrixC%h_Kcol,ST_NEWBLOCK_NOINIT,.FALSE.)
@@ -12304,8 +12315,8 @@ CONTAINS
       REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT) :: Da3
       INTEGER(PREC_DOFIDX)                          :: ieq
 
-      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
-      CALL DSCAL(neq*ncols,c1,Da3,1)
+      CALL DCOPY(INT(neq*ncols),Da1,1,Da3,1)
+      CALL DSCAL(INT(neq*ncols),c1,Da3,1)
 !$omp  parallel do&
 !$omp& default(shared)&
 !$omp& private(ieq)
@@ -12379,8 +12390,8 @@ CONTAINS
       REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT) :: Da3
       INTEGER(PREC_DOFIDX) :: ieq
 
-      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
-      CALL DSCAL(neq*ncols,c1,Da3,1)
+      CALL DCOPY(INT(neq*ncols),Da1,1,Da3,1)
+      CALL DSCAL(INT(neq*ncols),c1,Da3,1)
 !$omp  parallel do&
 !$omp& default(shared)&
 !$omp& private(ieq)
@@ -12413,8 +12424,8 @@ CONTAINS
       REAL(SP), DIMENSION(ncols,neq), INTENT(INOUT) :: Fa3
       INTEGER(PREC_DOFIDX) :: ieq
 
-      CALL SCOPY(neq*ncols,Fa1,1,Fa3,1)
-      CALL SSCAL(neq*ncols,REAL(c1,SP),Fa3,1)
+      CALL SCOPY(INT(neq*ncols),Fa1,1,Fa3,1)
+      CALL SSCAL(INT(neq*ncols),REAL(c1,SP),Fa3,1)
 !$omp  parallel do&
 !$omp& default(shared)&
 !$omp& private(ieq)
@@ -12454,8 +12465,8 @@ CONTAINS
       REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT)  :: Da3
       INTEGER(PREC_DOFIDX) :: ild,ieq,icol
 
-      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
-      CALL DSCAL(neq*ncols,c1,Da3,1)
+      CALL DCOPY(INT(neq*ncols),Da1,1,Da3,1)
+      CALL DSCAL(INT(neq*ncols),c1,Da3,1)
       
       DO ieq=1,neq
         DO ild=Kld2(ieq),Kld2(ieq+1)-1
@@ -12539,8 +12550,8 @@ CONTAINS
       REAL(DP), DIMENSION(ncols,neq), INTENT(INOUT)  :: Da3
       INTEGER(PREC_DOFIDX) :: ild,ieq,icol
 
-      CALL DCOPY(neq*ncols,Da1,1,Da3,1)
-      CALL DSCAL(neq*ncols,c1,Da3,1)
+      CALL DCOPY(INT(neq*ncols),Da1,1,Da3,1)
+      CALL DSCAL(INT(neq*ncols),c1,Da3,1)
 
       DO ieq=1,neq
         DO ild=Kld2(ieq),Kld2(ieq+1)-1
@@ -12584,8 +12595,8 @@ CONTAINS
       REAL(SP), DIMENSION(ncols,neq), INTENT(INOUT)  :: Fa3
       INTEGER(PREC_DOFIDX) :: ild,ieq,icol
       
-      CALL SCOPY(neq*ncols,Fa1,1,Fa3,1)
-      CALL SSCAL(neq*ncols,REAL(c1,SP),Fa3,1)
+      CALL SCOPY(INT(neq*ncols),Fa1,1,Fa3,1)
+      CALL SSCAL(INT(neq*ncols),REAL(c1,SP),Fa3,1)
       
       DO ieq=1,neq
         DO ild=Kld2(ieq),Kld2(ieq+1)-1
@@ -12698,8 +12709,8 @@ CONTAINS
         
         ! Structure of matrices A and C is identical
 
-        CALL DCOPY(nvar*mvar*na,Da1,1,Da3,1)
-        CALL DSCAL(nvar*mvar*na,c1,Da3,1)
+        CALL DCOPY(INT(nvar*mvar*na),Da1,1,Da3,1)
+        CALL DSCAL(INT(nvar*mvar*na),c1,Da3,1)
 
         IF (nvar /= mvar) THEN
 !$omp  parallel do &
@@ -12947,8 +12958,8 @@ CONTAINS
 
         ! Structure of matrices A and C is identical
         
-        CALL DCOPY(nvar*mvar*na,Da1,1,Da3,1)
-        CALL DSCAL(nvar*mvar*na,c1,Da3,1)
+        CALL DCOPY(INT(nvar*mvar*na),Da1,1,Da3,1)
+        CALL DSCAL(INT(nvar*mvar*na),c1,Da3,1)
 
         IF (nvar /= mvar) THEN
 !$omp  parallel do &
@@ -13071,8 +13082,8 @@ CONTAINS
 
         ! Structure of matrices A and C is identical
         
-        CALL SCOPY(nvar*mvar*na,Fa1,1,Fa3,1)
-        CALL SSCAL(nvar*mvar*na,REAL(c1,SP),Fa3,1)
+        CALL SCOPY(INT(nvar*mvar*na),Fa1,1,Fa3,1)
+        CALL SSCAL(INT(nvar*mvar*na),REAL(c1,SP),Fa3,1)
 
         IF (nvar /= mvar) THEN
 !$omp  parallel do &
@@ -13182,7 +13193,8 @@ CONTAINS
     SUBROUTINE do_mat79mat79add_symb(neq,ncols,KldA,KcolA,cmatrixFormatA,&
         &KldB,KcolB,cmatrixFormatB,KldC,KcolC,Kdiagonal)
 
-      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols,cmatrixFormatA,cmatrixFormatB
+      INTEGER(PREC_DOFIDX), INTENT(IN) :: neq,ncols
+      INTEGER, INTENT(IN) :: cmatrixFormatA,cmatrixFormatB
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN) :: KldA,KldB
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: KcolA,KcolB
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(INOUT) :: KldC

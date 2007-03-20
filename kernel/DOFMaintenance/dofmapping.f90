@@ -77,7 +77,7 @@ CONTAINS
 
 !</function>
 
-  INTEGER :: ieltyp
+  INTEGER(I32) :: ieltyp
 
   dof_igetNDofGlob = 0
 
@@ -113,7 +113,7 @@ CONTAINS
     TYPE(t_triangulation), INTENT(IN) :: rtriangulation
     
     ! IN: The element type of the discretisation
-    INTEGER, INTENT(IN) :: ieltype
+    INTEGER(I32), INTENT(IN) :: ieltype
     
     ! OUT: number of global DOF's.
     
@@ -247,7 +247,7 @@ CONTAINS
   ! local variables
   INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray,p_2darray2
   TYPE(t_triangulation), POINTER :: p_rtriangulation     
-  INTEGER :: ieltype
+  INTEGER(I32) :: ieltype
 
   ! 3D currently not supported
   IF (rdiscretisation%ndimension .NE. NDIM2D) THEN

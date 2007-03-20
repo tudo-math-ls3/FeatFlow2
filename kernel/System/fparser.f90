@@ -674,7 +674,7 @@ CONTAINS
     Comp => rparser%Comp(i)
 
     ! Allocate stack
-    CALL storage_new('fparser_evalFunctionScalar','Stack',Comp%StackSize+1,&
+    CALL storage_new('fparser_evalFunctionScalar','Stack',INT(Comp%StackSize+1,I32),&
         ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_double(h_Stack,Stack)
 
@@ -1009,6 +1009,7 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), POINTER :: Stack
     REAL(DP) :: daux
     LOGICAL :: bfirstdim
+    INTEGER(I32), DIMENSION(2) :: IsizeAlloc
 
     ! Check if dimensions agree
     IF (ANY(SHAPE(Val) /= Ishape)) THEN
@@ -1033,8 +1034,9 @@ CONTAINS
     rparser%EvalErrType=0
 
     ! Allocate stack
+    IsizeAlloc = (/INT(isize,I32),INT(Comp%StackSize+1,I32)/)
     CALL storage_new('fparser_evalFunctionArray','Stack',&
-        (/isize,Comp%StackSize+1/),ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
+        IsizeAlloc,ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_double2D(h_Stack,Stack)
 
     DO WHILE(IP < Comp%ByteCodeSize)

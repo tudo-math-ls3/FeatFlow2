@@ -796,7 +796,8 @@ CONTAINS
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', isize*iblocks, cdata, &
+  CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
+                      INT(isize*iblocks,I32), cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   

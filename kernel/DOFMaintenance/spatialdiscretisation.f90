@@ -101,11 +101,11 @@ MODULE spatialdiscretisation
   
     ! Element identifier for trial functions to use in this element list
     ! during the evaluation of bilinear forms (matrix generation).
-    INTEGER :: itrialElement        = EL_UNDEFINED
+    INTEGER(I32) :: itrialElement        = EL_UNDEFINED
     
     ! Element identifier for test functions to use in this element list
     ! during the evaluation of linear and bilinear forms.
-    INTEGER :: itestElement         = EL_UNDEFINED
+    INTEGER(I32) :: itestElement         = EL_UNDEFINED
     
     ! Cubature formula to use for the discretisation of this element pair
     ! during the evaluation of bilinear forms (matrix generation).
@@ -279,7 +279,7 @@ CONTAINS
   INTEGER, INTENT(IN)                       :: ccubType
   
   ! The element type the cubature formula should be checked against
-  INTEGER, INTENT(IN)                       :: ielementType
+   INTEGER(I32), INTENT(IN)                       :: ielementType
 !</input>
   
 !</subroutine>
@@ -335,7 +335,7 @@ CONTAINS
 
 !<input>
   ! An element type identifier
-  INTEGER, INTENT(IN)                       :: ielementType
+  INTEGER(I32), INTENT(IN)                       :: ielementType
   
   ! OPTIONAL: Dimension identifier. NDIM2D=2D, NDIM3D=3D. If not specified,
   ! 2D is assumed.
@@ -510,7 +510,7 @@ CONTAINS
 
 !<input>
   ! The element type identifier that is to be used for all elements.
-  INTEGER, INTENT(IN)                       :: ieltyp
+  INTEGER(I32), INTENT(IN)                       :: ieltyp
   
   ! Cubature formula to use for calculating integrals
   INTEGER, INTENT(IN)                       :: ccubType
@@ -626,7 +626,7 @@ CONTAINS
 
   ! The element type identifier that is to be used for all elements
   ! in the new discretisation structure
-  INTEGER, INTENT(IN)                       :: ieltyp
+  INTEGER(I32), INTENT(IN)                       :: ieltyp
   
   ! Cubature formula to use for calculating integrals
   ! in the new discretisation structure
@@ -711,11 +711,11 @@ CONTAINS
 !<input>
   ! The element type identifier that is to be used for all elements
   ! in the trial space.
-  INTEGER, INTENT(IN)                       :: ieltypTrial
+  INTEGER(I32), INTENT(IN)                       :: ieltypTrial
   
   ! The element type identifier that is to be used for all elements
   ! in the test space.
-  INTEGER, INTENT(IN)                       :: ieltypTest
+  INTEGER(I32), INTENT(IN)                       :: ieltypTest
 
   ! Cubature formula to use for calculating integrals
   INTEGER, INTENT(IN)                       :: ccubType

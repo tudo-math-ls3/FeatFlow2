@@ -1144,7 +1144,7 @@ CONTAINS
   !INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
   !INTEGER(PREC_DOFIDX), DIMENSION(:,:), POINTER :: p_IdofsTrial
   
-  INTEGER, DIMENSION(:), ALLOCATABLE :: IadjPtr, IadjElem
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: IadjPtr, IadjElem
   
   ! Number of local degees of freedom for trial and test functions
   INTEGER :: indofTrial, indofTest

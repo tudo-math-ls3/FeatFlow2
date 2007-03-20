@@ -3061,13 +3061,13 @@ CONTAINS
             IF (p_rheap%p_Rdescriptors(i)%idimension .EQ. 1) THEN
               CALL output_line ( &
                    'Handle ' // TRIM(sys_siL(i,10)) // ', 1D, Length=' // &
-                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),15)) //&
+                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes),15)) //&
                    ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
                    ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             ELSE
               CALL output_line ( &
                    'Handle ' // TRIM(sys_siL(i,10)) // ', 2D, Length=' // &
-                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes,I32),15)) // &
+                   TRIM(sys_siL(INT(p_rheap%p_Rdescriptors(i)%dmemBytes),15)) // &
                    ', Type=' // TRIM(sys_siL(p_rheap%p_Rdescriptors(i)%idataType,15)) //&
                    ' Name=' // TRIM(ADJUSTL(p_rheap%p_Rdescriptors(i)%sname)) )
             END IF

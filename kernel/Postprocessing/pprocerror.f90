@@ -450,7 +450,7 @@ CONTAINS
           ! The result is saved in Dcoefficients(:,:,1)
           
           CALL ffunctionReference (DER_FUNC,rdiscretisation, &
-                      IELmax-IELset+1_I32,ncubp,p_DcubPtsReal, &
+                      INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
                       IdofsTrial,rintSubset,p_rcollection, &
                       Dcoefficients(:,1:IELmax-IELset+1_I32,1))
           
@@ -461,7 +461,7 @@ CONTAINS
           CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
-               ncubp, IELmax-IELset+1_I32, p_DcubPtsTrial, DER_FUNC,&
+               ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC,&
                Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
           
           ! Subtracttion of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
@@ -499,14 +499,14 @@ CONTAINS
           ! The result is saved in Dcoefficients(:,:,1)
           
           CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
-                      IELmax-IELset+1_I32,ncubp,p_DcubPtsReal, &
+                      INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
                       IdofsTrial,rintSubset,p_rcollection, &
                       Dcoefficients(:,1:IELmax-IELset+1_I32,1))
                       
           ! Calculate the Y-derivative to Dcoefficients(:,:,2)
 
           CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
-                      IELmax-IELset+1_I32,ncubp,p_DcubPtsReal, &
+                      INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
                       IdofsTrial,rintSubset,p_rcollection, &
                       Dcoefficients(:,1:IELmax-IELset+1_I32,2))
           
@@ -517,13 +517,13 @@ CONTAINS
           CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
-               ncubp, IELmax-IELset+1_I32, p_DcubPtsTrial, DER_DERIV_X,&
+               ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_X,&
                Dcoefficients(:,1:IELmax-IELset+1_I32,3))        
 
           CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, &
                p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
                p_elementDistribution%itrialElement, IdofsTrial, &
-               ncubp, IELmax-IELset+1_I32, p_DcubPtsTrial, DER_DERIV_Y,&
+               ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
                Dcoefficients(:,1:IELmax-IELset+1_I32,4))        
           
           ! Subtracttion of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives

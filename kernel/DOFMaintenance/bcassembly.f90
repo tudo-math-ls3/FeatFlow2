@@ -76,23 +76,23 @@ MODULE bcassembly
 !<constantblock description="Complexity of the discretised BC's">
 
   ! Discretise BC's for implementing them into a defect vector
-  INTEGER, PARAMETER :: BCASM_DISCFORDEF = 2**0
+  INTEGER(I32), PARAMETER :: BCASM_DISCFORDEF = 2**0
 
   ! Discretise BC's for implementing them into a solution vector
-  INTEGER, PARAMETER :: BCASM_DISCFORSOL = 2**1
+  INTEGER(I32), PARAMETER :: BCASM_DISCFORSOL = 2**1
 
   ! Discretise BC's for implementing them into a RHS vector
-  INTEGER, PARAMETER :: BCASM_DISCFORRHS = 2**2
+  INTEGER(I32), PARAMETER :: BCASM_DISCFORRHS = 2**2
 
   ! Discretise BC's for implementing them into a matrix
-  INTEGER, PARAMETER :: BCASM_DISCFORMAT = 2**3
+  INTEGER(I32), PARAMETER :: BCASM_DISCFORMAT = 2**3
 
   ! Discretise BC's for implementing them into matrix and defect vector
-  INTEGER, PARAMETER :: BCASM_DISCFORDEFMAT = BCASM_DISCFORDEF + BCASM_DISCFORMAT
+  INTEGER(I32), PARAMETER :: BCASM_DISCFORDEFMAT = BCASM_DISCFORDEF + BCASM_DISCFORMAT
   
   ! Discretise BC's for implementing them into everything
-  INTEGER, PARAMETER :: BCASM_DISCFORALL = BCASM_DISCFORDEF + BCASM_DISCFORSOL + &
-                                           BCASM_DISCFORRHS + BCASM_DISCFORMAT
+  INTEGER(I32), PARAMETER :: BCASM_DISCFORALL = BCASM_DISCFORDEF + BCASM_DISCFORSOL + &
+                                                BCASM_DISCFORRHS + BCASM_DISCFORMAT
 
 !</constantblock>
 
@@ -824,7 +824,8 @@ CONTAINS
 
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex,IminEdge,ImaxEdge,Iminidx,Imaxidx
-  INTEGER :: i,ilocalEdge,ieltype,icount,icount2,ipart,j,icomponent
+  INTEGER :: i,ilocalEdge,icount,icount2,ipart,j,icomponent
+  INTEGER(I32) :: ieltype
   INTEGER(PREC_ELEMENTIDX) :: ielement
   INTEGER :: icountmin,icountmax,isubsetstart
   INTEGER(I32) :: iedge,ipoint1,ipoint2,NVT
@@ -1147,7 +1148,7 @@ CONTAINS
         ! The Q1T-element has different variants. Check which variant we have
         ! and choose the right way to calculate boundary values.
       
-        IF (IAND(ieltype,2**16) .NE. 0) THEN
+        IF (IAND(ieltype,INT(2**16,I32)) .NE. 0) THEN
         
           ! Integral mean value based element.
           !
@@ -1223,7 +1224,7 @@ CONTAINS
                     ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(p_rdirichletBCs%h_IdirichletDOFs,p_IdirichletDOFs)
     
-    IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+    IF (IAND(casmComplexity,INT(NOT(BCASM_DISCFORDEFMAT),I32)) .NE. 0) THEN
       CALL storage_new('bcasm_discrBCDirichlet', 'h_DdirichletValues', & 
                       INT(icount,I32), ST_DOUBLE, p_rdirichletBCs%h_DdirichletValues, &
                       ST_NEWBLOCK_NOINIT)
@@ -1339,7 +1340,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,icount,ipart,ieltype
+  INTEGER :: i,icount,ipart
+  INTEGER(I32) :: ieltype
   INTEGER, DIMENSION(2) :: IminEdge,ImaxEdge,Iminidx,Imaxidx
   REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
   REAL(DP),DIMENSION(NDIM2D)                  :: Dtangential,Dnormal
@@ -1601,7 +1603,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,icount,ipart,ieltype
+  INTEGER :: i,icount,ipart
+  INTEGER(I32) :: ieltype
   INTEGER, DIMENSION(2) :: IminEdge,ImaxEdge,Iminidx,Imaxidx
   REAL(DP),DIMENSION(NDIM2D)                  :: Dtangential,Dnormal
   INTEGER(PREC_POINTIDX)                      :: NVT,ipoint1,ipoint2
@@ -2126,7 +2129,8 @@ CONTAINS
     TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
     
     INTEGER(PREC_DOFIDX) :: nDOFs
-    INTEGER :: h_Ddofs, h_Idofs, i, j, icomponent, ieltype
+    INTEGER :: h_Ddofs, h_Idofs, i, j, icomponent
+    INTEGER(I32) :: ieltype
     INTEGER(I32) :: nequations
     INTEGER(PREC_DOFIDX), DIMENSION(2) :: IdofCount
     

@@ -305,7 +305,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: i
+    INTEGER(PREC_ELEMENTIDX) :: i
     INTEGER, DIMENSION(2) :: Icomp
     TYPE(t_vectorScalar), POINTER :: p_rvelX1,p_rvelX2,p_rvelY1,p_rvelY2
     TYPE(t_vectorScalar), POINTER :: p_rsolX,p_rsolY,p_rdefectX,p_rdefectY
@@ -1868,7 +1868,7 @@ CONTAINS
       IF ((ddelta .NE. 0.0_DP) .AND. (dupsam .NE. 0.0_DP))THEN
         DO IEL=1,IELmax-IELset+1
           CALL getLocalDelta (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
-                      IEL+IELset-1,DUMAXR,DlocalDelta(IEL), &
+                      INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
                       p_IverticesAtElement,p_IedgesAtElement,&
                       p_DcornerCoordinates,Idofs(:,IEL),indof, &
                       dupsam,dre)
@@ -2456,7 +2456,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: IEL
     
     ! Number of degrees of freedom on element IEL
-    INTEGER(PREC_DOFIDX) :: IDFL
+    INTEGER :: IDFL
     
     ! Array with global degrees of freedom, corresponding to
     ! local degrees of freedom 1..IDFL on element IEL.
@@ -2773,7 +2773,7 @@ CONTAINS
   
   ! Arrays saving the local DOF numbers belonging to the global
   ! DOF numbers in IdofsTest/IdofsTrial  
-  INTEGER, DIMENSION(EL_MAXNBAS*2),TARGET :: IlocalDofsTest,IlocalDofsTrial
+  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2),TARGET :: IlocalDofsTest,IlocalDofsTrial
   INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IlocalDofsTrial
   
   ! Renumbering strategy for local DOF's
@@ -3728,7 +3728,7 @@ CONTAINS
   
   ! Arrays saving the local DOF numbers belonging to the global
   ! DOF numbers in IdofsTest/IdofsTrial  
-  INTEGER, DIMENSION(EL_MAXNBAS*2),TARGET :: IlocalDofsTest,IlocalDofsTrial
+  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS*2),TARGET :: IlocalDofsTest,IlocalDofsTrial
   INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IlocalDofsTrial
   
   ! Renumbering strategy for local DOF's
