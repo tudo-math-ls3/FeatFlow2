@@ -370,7 +370,7 @@ MODULE matrixio
     REAL(DP), DIMENSION(:), POINTER :: Da
     REAL(SP), DIMENSION(:), POINTER :: Fa
     INTEGER(I32), DIMENSION(:), POINTER :: Kld,Kcol
-    INTEGER :: iunit,ieq,ia
+    INTEGER :: iunit,ieq
     CHARACTER(LEN=10) :: cstat,cpos
 
     ! Set file status if required
@@ -561,7 +561,7 @@ MODULE matrixio
     END SELECT
     
     ! Close file
-    WRITE(UNIT=iunit,FMT=40),smatrixName
+    WRITE(UNIT=iunit,FMT=40) smatrixName
     CLOSE(UNIT=iunit)
 
 10  FORMAT("data=[...")
