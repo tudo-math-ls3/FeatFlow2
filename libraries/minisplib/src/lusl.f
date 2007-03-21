@@ -14,7 +14,7 @@ c   Preconditioner application for SPLIB.  This routine computes the	*
 c   action of the preconditioner on a vector; usually this is a lower	*
 c   and upper triangular solve, explaining the name.  In particular,	*
 c   (lu, jlu) is usually the MSR data structure for L and U combined	*
-c   with the integer vector uptr giving the pointers to the start	*
+c   with the integer*4 vector uptr giving the pointers to the start	*
 c   position of the upper triangular part of each row.  However, for	*
 c   SSOR preconditioning lu is the scalar relaxation parameter omega	*
 c   and uptr is a vector of pointers to the diagonal entries in the	*
@@ -31,16 +31,16 @@ c
 c  Arguments:
 c  ==========
 c
-c  x       : double precision vector of length n (output).
-c  y       : double precision vector of length n (input).
+c  x       : real*8 vector of length n (output).
+c  y       : real*8 vector of length n (input).
 c
 c  n       : Order of matrix A, and system Mx = y where M is the
 c            preconditioning matrix.
-c  A       : double precision array for nonzero entries of matrix A; of
+c  A       : real*8 array for nonzero entries of matrix A; of
 c            length nnz = rwptr(n+1)-1.
-c  colind  : Integer array of column indices for entries in A; of
+c  colind  : integer*4 array of column indices for entries in A; of
 c            length nnz = rwptr(n+1)-1.
-c  rwptr   : Integer array of pointers to beginning position of rows
+c  rwptr   : integer*4 array of pointers to beginning position of rows
 c            in arrays A and colind.  Must be of length n+1.
 c  uptr, 
 c  lu,jlu  : Data structure for the preconditioner M, with different meanings
@@ -54,7 +54,7 @@ c                 stored in lu(1:n) inverted, to replace divisions in the algori
 c                 with multiplications.  Each i-th row of the combined L/U matrix in
 c                 the (lu,jlu) data structure contains the i-th row of L (excluding
 c                 the diagonal entry = 1), followed by the i-th row of u.
-c                 uptr is a integer vector of length n containing pointers to the
+c                 uptr is a integer*4 vector of length n containing pointers to the
 c                 start position of each row of U in (lu, jlu).
 c
 c            SSOR(omega)   --->
@@ -66,7 +66,7 @@ c            TRID(s)   --->
 c                 This implements block diagonal preconditioning, where
 c                 each diagonal block is from the corresponding tridiagonal part
 c                 of the matrix A.  The size of the blocks is given implicitly in
-c                 the integer iskip, stored in jlu(n).  Factors are set up for 
+c                 the integer*4 iskip, stored in jlu(n).  Factors are set up for 
 c                 contiguous blocks of iskip rows and so by using iskip = n the 
 c                 factor can be for the entire matrix's tridiagonal part.
 c                 Using iskip = 1 is an inefficient way of performing diagonal
@@ -117,20 +117,20 @@ c-------------------------------------------------------------------------
 
 c     Declarations of arguments
 c     =========================
-      double precision y(*),x(*),lu(*)
-      double precision a(*)
-      integer n
-      integer jlu(*),uptr(*),pcmeth
-      integer colind(*),rwptr(n+1)
+      real*8 y(*),x(*),lu(*)
+      real*8 a(*)
+      integer*4 n
+      integer*4 jlu(*),uptr(*),pcmeth
+      integer*4 colind(*),rwptr(n+1)
 
 c     Local variables
 c     ===============
-      integer k, length, ierr
+      integer*4 k, length, ierr
 
 c     Instrumentation variables for timing.
 c     =====================================
       include '../include/heads.inc'
-c      double precision mytime, tstart
+c      real*8 mytime, tstart
 c      external mytime
 
 c========================================================================
@@ -211,9 +211,9 @@ c each row.
 c
 c-----------------------------------------------------------------------
         implicit none
-        integer jlu(*),uptr(*),n,i,k
-        double precision x(n), lu(*)
-        double precision x_i
+        integer*4 jlu(*),uptr(*),n,i,k
+        real*8 x(n), lu(*)
+        real*8 x_i
 
         if (n .le. 0)  return
 
@@ -271,10 +271,10 @@ c          LU = (D + LA) (I + (D)^-1 UA)
 c
 c----------------------------------------------------------------------- 
       implicit none
-      integer n, colind(*), rwptr(n+1), diag(n)
-      double precision x(n), pivots(n)
-      double precision a(*), sum
-      integer i, j
+      integer*4 n, colind(*), rwptr(n+1), diag(n)
+      real*8 x(n), pivots(n)
+      real*8 a(*), sum
+      integer*4 i, j
 
       do i = 1, n
          sum = 0.0d0
@@ -315,10 +315,10 @@ c
 c-----------------------------------------------------------------------
 
       implicit none
-      integer n, colind(*), rwptr(n+1), diag(n)
-      double precision x(n)
-      double precision a(*), omega, sum
-      integer j, k
+      integer*4 n, colind(*), rwptr(n+1), diag(n)
+      real*8 x(n)
+      real*8 a(*), omega, sum
+      integer*4 j, k
 
       do k = 1, n
          sum = 0.0d0

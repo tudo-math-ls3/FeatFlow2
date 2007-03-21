@@ -33,7 +33,7 @@ c This version differs from earlier SPLIB versions in performing the
 c computations in-place, without using a software accumulator register
 c row(:).  The reasoning is that for very large systems, the memory
 c access patterns when using such a register will cause many cache
-c misses.  The technique (suggested by Xiaoge Wang) is to use an integer
+c misses.  The technique (suggested by Xiaoge Wang) is to use an integer*4
 c vector colptrs which simultaneously identifies which columns correspond
 c to allowed fill by being nonzero, and stores the index within the data
 c structure for L/U of that allowed fill.
@@ -290,24 +290,24 @@ c========================================================================
 c     ------------------------
 c     Declaration of arguments
 c     ------------------------
-      integer  n, colind(*), rwptr(*), jlu(*), uptr(*)
-      DOUBLE PRECISION  a(*), lu(*), relax
-      integer  colptrs(n), ierr, nrw
+      integer*4  n, colind(*), rwptr(*), jlu(*), uptr(*)
+      real*8  a(*), lu(*), relax
+      integer*4  colptrs(n), ierr, nrw
 
 c     ---------------
 c     Functions used
 c     ---------------
-      DOUBLE PRECISION dlamch
+      real*8 dlamch
       external dlamch
 
 c     ---------------
 c     Local variables
 c     ---------------
-      integer  k, indj, inds, indja
-      integer  jluj, jlus, ijaj
+      integer*4  k, indj, inds, indja
+      integer*4  jluj, jlus, ijaj
       logical  milu
-      DOUBLE PRECISION  SMALL
-      DOUBLE PRECISION  rwnrm, mult
+      real*8  SMALL
+      real*8  rwnrm, mult
 
 c========================================================================
 c      Beginning of Executable Statements

@@ -15,9 +15,9 @@ c                                                                      	*
 c  Symbolic factorization of a matrix in compressed sparse row format, 	*
 c    with resulting factors stored in a single MSR data structure.     	*
 c                                                                      	*
-c  This routine uses the CSR data structure of A in two integer vectors	*
+c  This routine uses the CSR data structure of A in two integer*4 vectors	*
 c    colind, rwptr to set up the data structure for the ILU(levfill) 	*
-c    factorization of A in the integer vectors ijlu and uptr.  Both L	*
+c    factorization of A in the integer*4 vectors ijlu and uptr.  Both L	*
 c    and U are stored in the same structure, and uptr(i) is the pointer	*
 c    to the beginning of the i-th row of U in ijlu.			*
 c                                                                      	*
@@ -90,7 +90,7 @@ c  Vectors used:							*
 c  =============							*
 c  									*
 c  lastcol(n):								*
-c  	The integer lastcol(k) is the row index of the last row		*
+c  	The integer*4 lastcol(k) is the row index of the last row		*
 c  	to have a nonzero in column k, including the current		*
 c  	row, and fill-in up to this point.  So for the matrix		*
 c  									*
@@ -116,7 +116,7 @@ c   	to determine if a nonzero occurs in column j because		*
 c   	it is a nonzero in the original matrix, or was a fill.		*
 c									*  
 c  rowll(n):								*
-c  	The integer vector rowll is used to keep a linked list of	*
+c  	The integer*4 vector rowll is used to keep a linked list of	*
 c  	the nonzeros in the current row, allowing fill-in to be		*
 c   	introduced sensibly.  rowll is initialized with the		*
 c  	original nonzeros of the current row, and then sorted		*
@@ -125,7 +125,7 @@ c  	(what ingenuity) is  initialized.  Note that at any		*
 c  	point rowll may contain garbage left over from previous		*
 c  	rows, which the linked list structure skips over.		*
 c  	For row 4 of the matrix above, first rowll is set to		*
-c   	rowll() = [3  1  2  5  -  -], where - indicates any integer.	*
+c   	rowll() = [3  1  2  5  -  -], where - indicates any integer*4.	*
 c   	Then the vector is sorted, which yields				*
 c   	rowll() = [1  2  3  5  -  -].  The vector is then expanded	*
 c  	to linked list form by setting head = 1  and         		*
@@ -174,9 +174,9 @@ c
 c on entry:
 c========== 
 c  n       = The order of the matrix A.
-c  ija     = Integer array. Matrix A stored in modified sparse row format.
-c  levfill = Integer. Level of fill-in allowed.
-c  nzmax   = Integer. The maximum number of nonzero entries in the
+c  ija     = integer*4 array. Matrix A stored in modified sparse row format.
+c  levfill = integer*4. Level of fill-in allowed.
+c  nzmax   = integer*4. The maximum number of nonzero entries in the
 c           approximate factorization of a.  This is the amount of storage
 c           allocated for ijlu.
 c
@@ -184,11 +184,11 @@ c on return:
 c=========== 
 c
 c nzlu   = The actual number of entries in the approximate factors, plus one.
-c ijlu   = Integer array of length nzlu containing pointers to 
+c ijlu   = integer*4 array of length nzlu containing pointers to 
 c           delimit rows and specify column number for stored 
 c           elements of the approximate factors of a.  the l 
 c           and u factors are stored as one matrix.
-c uptr   = Integer array of length n containing the pointers to        
+c uptr   = integer*4 array of length n containing the pointers to        
 c
 c ierr is an error flag:
 c        ierr  = -i --> near zero pivot in step i
@@ -201,12 +201,12 @@ c		of additional storage needed for ldu
 c
 c work arrays:
 c=============
-c lastcol    = integer array of length n containing last update of the
+c lastcol    = integer*4 array of length n containing last update of the
 c              corresponding column.
-c levels     = integer array of length n containing the level of
+c levels     = integer*4 array of length n containing the level of
 c              fill-in in current row in its first n entries, and
 c              level of fill of previous rows of U in remaining part.
-c rowll      = integer array of length n containing pointers to implement a
+c rowll      = integer*4 array of length n containing pointers to implement a
 c              linked list for the fill-in elements.
 c
 c
@@ -217,11 +217,11 @@ c
 c======================================================================== 
 
 
-      integer n,colind(*),rwptr(*),ijlu(*),uptr(*),rowll(*), lastcol(*),
-     1        levels(*), levfill,nzmax,nzlu
-      integer  ierr,   mneed
-      integer icolindj,ijlum,i,j,k,m,ibegin,iend,Ujbeg,Ujend
-      integer head,prev,lm,actlev,lowct,k1,k2,levp1,lmk,nzi,rowct
+      integer*4 n,colind(*),rwptr(*),ijlu(*),uptr(*),rowll(*), 
+     1        lastcol(*),levels(*), levfill,nzmax,nzlu
+      integer*4  ierr,   mneed
+      integer*4 icolindj,ijlum,i,j,k,m,ibegin,iend,Ujbeg,Ujend
+      integer*4 head,prev,lm,actlev,lowct,k1,k2,levp1,lmk,nzi,rowct
 
 c======================================================================== 
 c       Beginning of Executable Statements
@@ -340,13 +340,13 @@ c           ------------------------------------------------------------
             nzlu  =  nzlu + nzi - 1
 
 c           ------------------------------------------------------------
-c           The integer j will be used as a pointer to track through the
+c           The integer*4 j will be used as a pointer to track through the
 c           linked list rowll:
 c           ------------------------------------------------------------
             j  =  head
 c
 c           ------------------------------------------------------------
-c           The integer lowct is used to keep count of the number of
+c           The integer*4 lowct is used to keep count of the number of
 c           nonzeros in the current row's strictly lower triangular part,
 c           for setting uptr pointers to indicate where in ijlu the upperc
 c           triangular part starts. 
@@ -600,7 +600,7 @@ c----------------------------------------------------------------
 c
 c  The increments here are 1, 4, 13, 40, 121, ..., (3**i - 1)/2, ...
 c  In this case, nextinc(inc,n) = (inc-1)/3.  Usually shellsort
-c  would have the largest increment the largest integer of the form
+c  would have the largest increment the largest integer*4 of the form
 c  (3**i - 1)/2 that is less than n, but here it is fixed at 121
 c  because most sparse matrices have 121 or fewer nonzero entries
 c  per row.  If this routine is expanded for a complete sparse
@@ -619,9 +619,10 @@ c     Mon Jan 17 20:47:45 EST 1994
 c
 c======================================================================== 
 c
-      integer num, q(num)
+      integer num
+      integer*4 q(num)
 c
-      integer iinc(5), key, icn, ih, ii, i, j, jj
+      integer*4 iinc(5), key, icn, ih, ii, i, j, jj
       data iinc/1,4,13,40,121/
 c
       if   (num .eq. 0) then

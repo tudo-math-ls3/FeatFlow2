@@ -9,8 +9,10 @@ c-----------------------------------------------------------------------
 c     number of integer words per real variable on the target computer.
 c-----------------------------------------------------------------------
 c                             
-      double precision tstdbl                                          
+      real*8 tstdbl                                          
       parameter  ( tstdbl = 0 )
+      integer*4    tstint
+      parameter  ( tstint = 0 )
       integer      intdbl
-      parameter  ( intdbl = KIND(tstdbl)/KIND(0) )
+      parameter  ( intdbl = KIND(tstdbl)/KIND(tstint) )
 c
