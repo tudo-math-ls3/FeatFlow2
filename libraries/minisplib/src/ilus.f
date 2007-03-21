@@ -189,25 +189,21 @@ c     ------------------------------------------------------------------
       if (remain .le. 0) then
          ierr = 1
          mneed = 4*n + 1
-         print *,'e0: ',ierr,lastcol,rowll,jlu,remain,mneed
          return
       end if
 
 c     -------------------------------
 c     Perform symbolic factorization:
 c     -------------------------------
-      print *,'symb'
       call symbfac(n  , colind    ,rwptr     ,s      ,remain ,nzlu ,
      1     iwork(jlu)   ,iwork(ilup), iwork(lastcol),iwork(levels),
      2     iwork(rowll), ierr  ,mneed)
-      print *,'symb ok'
 
 c     -----------------------------------------------------------------
 c     If error encountered (probably because of lack of storage space),
 c     return.
 c     -----------------------------------------------------------------
       if (ierr .ne. 0) then
-      	print *,'e1: ',ierr
       	return
       endif
 
@@ -224,7 +220,6 @@ c     -----------------------------------------------------------------
        if (remain .lt. intdbl*nzlu) then
           ierr = 1
           mneed = intdbl*nzlu - remain
-          print *,'e2: ',ierr,mneed
           return
        end if
 
@@ -237,10 +232,8 @@ c     ----------------------------------------
 c     --------------------------------
 c     Perform numerical factorization.
 c     --------------------------------
-      print *,'numb'
       call numfac(n, colind, rwptr, iwork(jlu),iwork(ilup), a, 
      &              iwork(lu),relax, ierr, iwork(colptrs), milu)
-      print *,'numb ok'
 
 c     ----------------------------------------------------
 c     Return actual integer*4 words used in LU factors.
@@ -250,7 +243,6 @@ c     ----------------------------------------------------
       mneed = (1 + intdbl)*nzlu + n + mod(INT(n),intdbl)
      &                          + mod(INT(nzlu),intdbl)
 c
-      print *,'ok: ',mneed
       return
 
 c==================== End of ILUS ======================================= 
