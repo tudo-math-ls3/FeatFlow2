@@ -261,7 +261,7 @@ CONTAINS
   TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  INTEGER(PREC_ELEMENTIDX), INTENT(IN)                        :: nelements
+  INTEGER, INTENT(IN)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
   INTEGER, INTENT(IN)                                         :: npointsPerElement
