@@ -31,7 +31,7 @@ CONTAINS
 
   FUNCTION feat_htpint(n,handle) RESULT(p)
     INTEGER, INTENT(IN) :: n,handle
-    INTEGER(I32), DIMENSION(:), POINTER :: p
+    INTEGER, DIMENSION(:), POINTER :: p
     INCLUDE 'cmem.inc'
     
     p => feat_vi(n,KWORK(L(handle)))
@@ -40,7 +40,7 @@ CONTAINS
 
   FUNCTION feat_htpint2D(n,m,handle) RESULT(p)
     INTEGER, INTENT(IN) :: n,m,handle
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p
+    INTEGER, DIMENSION(:,:), POINTER :: p
     INCLUDE 'cmem.inc'
     
     p => feat_mi(n,m,KWORK(L(handle)))
@@ -68,8 +68,8 @@ CONTAINS
 
   FUNCTION feat_vi(n,arr) RESULT(p)
     INTEGER, INTENT(IN) :: n
-    INTEGER(I32), DIMENSION(n), TARGET :: arr
-    INTEGER(I32), DIMENSION(:), POINTER :: p
+    INTEGER, DIMENSION(n), TARGET :: arr
+    INTEGER, DIMENSION(:), POINTER :: p
 
     p => arr
 
@@ -77,8 +77,8 @@ CONTAINS
 
   FUNCTION feat_mi(n,m,arr) RESULT(p)
     INTEGER, INTENT(IN) :: n,m
-    INTEGER(I32), DIMENSION(n,m), TARGET :: arr
-    INTEGER(I32), DIMENSION(:,:), POINTER :: p
+    INTEGER, DIMENSION(n,m), TARGET :: arr
+    INTEGER, DIMENSION(:,:), POINTER :: p
 
     p => arr
 
