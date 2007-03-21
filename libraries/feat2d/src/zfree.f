@@ -42,6 +42,9 @@ C
       COMMON /ERRCTL/ IER,ICHECK
       SAVE /CHAR/,/ERRCTL/
 C
+      INTEGER ZILEND,ZVLEND
+      EXTERNAL ZILEND,ZVLEND
+
       IF (ICHECK.GE.998) CALL OTRC('ZFREE ','08/14/90')
       IER=0
 C
@@ -54,6 +57,7 @@ C ***  Error *** Wrong value of ITYPE ***
 C
 C *** Calculate number of free elements on DWORK ***
       IFREE=NWORK-IWORK
-      IF (ITYPE.GT.1) IFREE=IFREE*2
+      IF (ITYPE.EQ.2) IFREE=IFREE*ZVLEND()
+      IF (ITYPE.EQ.3) IFREE=IFREE*ZILEND()
 C
 99999 END

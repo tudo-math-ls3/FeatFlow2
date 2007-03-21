@@ -34,6 +34,7 @@ SRCLIST= aa03.f aa07.f aa09.f ab03.f  ab07.f ab09.f ap3.f ap7.f ap9.f \
 	ii010.f  ii410.f ii210.f ij010.f xii217.f xii01.f xii410.f \
 	iv017.f iv01m.f iw217.f msr2t7.f \
 	if21.f if22.f if23.f if01.f if02.f if03.f m011.f sort.f cmsort.f \
-	yiv21m.f iv02m.f zcheck.f mpr013.f mpr002.f
+	yiv21m.f iv02m.f zcheck.f mpr013.f mpr002.f \
+	zdiv.f90
 
 include $(FEATFLOW)/Rules_libs.mk

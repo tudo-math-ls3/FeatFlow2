@@ -49,6 +49,17 @@ C
       EQUIVALENCE (DWORK(1),VWORK(1),KWORK(1))
       SAVE /OUTPUT/,/ERRCTL/,/CHAR/,/TABLE/
       DATA LNR1/0/
+      
+      INTEGER ZILEND,ZVLEND
+      EXTERNAL ZILEND,ZVLEND
+
+C     Get #integers / #reals per double
+      NI2D = ZILEND()
+      NV2D = ZVLEND()
+      
+C     Maximum remainder when dividing by size of double
+      NREMI = NI2D-1
+      NREMV = NV2D-1
 C
       IF (ICHECK.GE.998) CALL OTRC('ZDISP ','01/02/89')
       BMSG2=M.GE.2.OR.MT.GE.2
@@ -90,9 +101,12 @@ C ***  Array LNR is the last array on DWORK
        L1=L(LNR)
 C ***  Determine correct length corresponding to datatype
        JLONG=ILONG
-       IF (ITYPE.GT.1) THEN
-        JLONG=(JLONG+1)/2
-        L1=(L1+1)/2
+       IF (ITYPE.EQ.2) THEN
+        JLONG=(JLONG+NREMV)/NV2D
+        L1=(L1+NREMV)/NV2D
+       ELSE IF (ITYPE.EQ.3) THEN
+        JLONG=(JLONG+NREMI)/NI2D
+        L1=(L1+NREMI)/NI2D
        ENDIF
        IF (JLONG.GT.KLEN8(LNR)) GOTO 300
        IWORK=L1+JLONG-1
@@ -106,7 +120,8 @@ C *** Last call of ZNEW using ILONG > 0
 C
 C ***  Determine correct length corresponding to datatype
        JLONG=ILONG
-       IF (ITYPE.GT.1) JLONG=(JLONG+1)/2
+       IF (ITYPE.EQ.2) JLONG=(JLONG+NREMV)/NV2D
+       IF (ITYPE.EQ.3) JLONG=(JLONG+NREMI)/NI2D
 C ***  Determine correct offset according to data type ***
        ID=KLEN8(LNR)-JLONG
 C
@@ -114,7 +129,10 @@ C
 C
 C ***  Adjust starting address corresponding to datatype REAL*8
        DO 210 IARR=1,NNARR
-       IF (L(IARR).GE.1.AND.KTYPE(IARR).GT.1) L(IARR)=(L(IARR)+1)/2
+       IF (L(IARR).GE.1.AND.KTYPE(IARR).EQ.2) 
+     *   L(IARR)=(L(IARR)+NREMV)/NV2D
+       IF (L(IARR).GE.1.AND.KTYPE(IARR).EQ.3) 
+     *   L(IARR)=(L(IARR)+NREMI)/NI2D
 210    CONTINUE
 C
 C ***  Find first element of the next array ***
@@ -128,15 +146,16 @@ C ***  Revise L ***
 C ***  Compress DWORK copying INTEGER*4 elements ***
 C       J1=J0*2-1
 C       CALL LCP3(KWORK(J1),KWORK(J1-2*ID),2*(IWORK-J0+1))
-       DO 230 J1=J0*2-1,2*IWORK
-230    KWORK(J1-2*ID)=KWORK(J1)
+       DO 230 J1=J0*NI2D-NREMI,NI2D*IWORK
+230    KWORK(J1-NI2D*ID)=KWORK(J1)
 C
 C ***  Determine new value of IWORK ***
 240    IWORK=IWORK-ID
 C
 C ***  Adjust starting address corresponding to datatype
        DO 250 IARR=1,NNARR
-       IF (L(IARR).GE.1.AND.KTYPE(IARR).GT.1) L(IARR)=2*L(IARR)-1
+       IF (L(IARR).GE.1.AND.KTYPE(IARR).EQ.2) L(IARR)=NV2D*L(IARR)-NREMV
+       IF (L(IARR).GE.1.AND.KTYPE(IARR).EQ.3) L(IARR)=NI2D*L(IARR)-NREMI
 250    CONTINUE
 C
       ENDIF

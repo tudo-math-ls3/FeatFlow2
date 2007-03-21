@@ -58,7 +58,18 @@ C
       COMMON /TABLE/  KTYPE(NNARR),KLEN(NNARR),KLEN8(NNARR),IFLAG
       EQUIVALENCE (DWORK(1),VWORK(1),KWORK(1))
       SAVE /OUTPUT/,/CHAR/,/ERRCTL/,/TABLE/
-C
+      
+      INTEGER ZILEND,ZVLEND
+      EXTERNAL ZILEND,ZVLEND
+
+C     Get #integers / #reals per double
+      NI2D = ZILEND()
+      NV2D = ZVLEND()
+
+C     Maximum remainder when dividing by size of double
+      NREMI = NI2D-1
+      NREMV = NV2D-1
+
       IF (ICHECK.GE.998) CALL OTRC('ZNEW  ','01/02/89')
       IER=0
 C
@@ -99,7 +110,8 @@ C
 C
 C *** Calculation of space needed for allocation ***
       JLONGD=ILONG
-      IF (ITYPE.GT.1) JLONGD=(JLONGD+1)/2
+      IF (ITYPE.EQ.2) JLONGD=(JLONGD+1)/NV2D
+      IF (ITYPE.EQ.3) JLONGD=(JLONGD+1)/NI2D
       JREQ=IWORK+JLONGD
 C
       IF (JREQ.GT.NWORK) THEN
@@ -114,7 +126,8 @@ C *** Set new value for KTYPE , KLEN , L , IWORK, IWMAX ***
       KLEN(LNR)=ILONG
       KLEN8(LNR)=JLONGD
       L(LNR)=IWORK+1
-      IF (ITYPE.GT.1) L(LNR)=2*L(LNR)-1
+      IF (ITYPE.EQ.2) L(LNR)=NV2D*L(LNR)-NREMV
+      IF (ITYPE.EQ.3) L(LNR)=NI2D*L(LNR)-NREMI
       IWORK=JREQ
       IWMAX=MAX(IWMAX,IWORK)
 C
@@ -144,9 +157,12 @@ C *** Calculate number of free elements on DWORK ***
       KLEN8(LNR)=ILONG
       KTYPE(LNR)=ITYPE
       L(LNR)=IWORK+1
-      IF (ITYPE.GT.1) THEN
-       ILONG=ILONG*2
-       L(LNR)=2*L(LNR)-1
+      IF (ITYPE.EQ.2) THEN
+       ILONG=ILONG*NV2D
+       L(LNR)=NV2D*L(LNR)-NREMV
+      ELSE IF (ITYPE.EQ.3) THEN
+       ILONG=ILONG*NI2D
+       L(LNR)=NI2D*L(LNR)-NREMI
       ENDIF
       KLEN(LNR)=ILONG
 C *** reserve remaining part of DWORK - no initialization ***
