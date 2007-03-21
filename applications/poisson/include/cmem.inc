@@ -57,10 +57,10 @@
 ! Now the declaration of the main global structures follow
 
       INTEGER NWORK, IWORK, IWMAX, L
-      
+
       DOUBLE PRECISION, DIMENSION(NNWORK) :: DWORK
-      REAL, DIMENSION(NNWORK*2)           :: VWORK
-      INTEGER(4), DIMENSION(NNWORK*2)        :: KWORK
+      REAL, DIMENSION(NNWORK*KIND(DWORK(1))/KIND(0.0))  :: VWORK
+      INTEGER, DIMENSION(NNWORK*KIND(DWORK(1))/KIND(0)) :: KWORK
       
       COMMON  NWORK,IWORK,IWMAX,L(NNARR),DWORK
 

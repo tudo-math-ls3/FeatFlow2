@@ -135,7 +135,7 @@ CONTAINS
     ! Ok, let's start. 
     !
     ! We want to solve our Laplace problem on level...
-    NLMAX = 9
+    NLMAX = 7
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -358,16 +358,7 @@ CONTAINS
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    CALL CPU_TIME(TTT0)
     CALL linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
-    CALL CPU_TIME(TTT1)
-    PRINT *,'Löserzeit: ',TTT1-TTT0
-    
-    PRINT *,1.0002_SP*0.9998_SP
-    PRINT *,1.0002_DP*0.9998_DP
-    PRINT *,1.00000002_SP*0.99999998_SP
-    PRINT *,1.00000002_DP*0.99999998_DP
-    STOP
     
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
