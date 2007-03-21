@@ -144,7 +144,7 @@ CONTAINS
     ! Ok, let's start.
     !
     ! We want to solve our Laplace problem on level...
-    NLMAX = 2
+    NLMAX = 7
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.

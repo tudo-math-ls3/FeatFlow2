@@ -8,7 +8,9 @@ c**********************************************************************
 c-----------------------------------------------------------------------
 c     number of integer words per real variable on the target computer.
 c-----------------------------------------------------------------------
-c                                                                       
+c                             
+      double precision tstdbl                                          
+      parameter  ( tstdbl = 0 )
       integer      intdbl
-      parameter  ( intdbl = 2 )
+      parameter  ( intdbl = KIND(tstdbl)/KIND(0) )
 c
