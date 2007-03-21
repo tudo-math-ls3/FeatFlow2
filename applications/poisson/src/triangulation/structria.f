@@ -377,15 +377,15 @@ C Transform corner vertices, generate KXNPR
         IF (KWORK(KNPR+I).GT.0) THEN
 C Boundary node - to be handled as Dirichlet in standard setting
           KWORK(KXNPR+2*I+1) = KWORK(KNPR+I)
-          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),2**8+2**12)
+          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),INT(2**8+2**12,4))
         ELSE IF (KWORK(KNPR+I).LT.-TRIA(ONEL)) THEN
 C Fictitious boundary node
           KWORK(KXNPR+2*I+1) = -KWORK(KNPR+I)-TRIA(ONEL)
-          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),2**13)
+          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),INT(2**13,4))
         ELSE IF (KWORK(KNPR+I).LT.0) THEN
 C Irregular inner node
           KWORK(KXNPR+2*I+1) = -KWORK(KNPR+I)
-          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),2**9)
+          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),INT(2**9,4))
         END IF
       END DO
       
@@ -395,11 +395,11 @@ C Transform edges
         IF (KWORK(KNPR+I).GT.0) THEN
 C Boundary edge
           KWORK(KXNPR+2*I+1) = KWORK(KNPR+KWORK(KNPR+I)-1)
-          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),2**8)
+          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),INT(2**8,4))
         ELSE IF (KWORK(KNPR+I).LT.0) THEN
 C Irregular inner edge
           KWORK(KXNPR+2*I+1) = -KWORK(KNPR+I)
-          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),2**9)
+          KWORK(KXNPR+2*I) = IOR(KWORK(KXNPR+2*I),INT(2**9,4))
         END IF
       END DO
       
@@ -1004,12 +1004,12 @@ C Vertex information
 C Inner node or real boundary node?
 C          print *,'1: ',KWORK(KNPR+I)
           
-          IF (IAND(KWORK(KXNPR+2*I),2**8).NE.0) THEN 
+          IF (IAND(KWORK(KXNPR+2*I),INT(2**8,4)).NE.0) THEN 
           
 C           This is a real boundary node. Should it be treated
 C           as Neumann?
 
-            IF (IAND(KWORK(KXNPR+2*I),2**12).EQ.0) THEN
+            IF (IAND(KWORK(KXNPR+2*I),INT(2**12,4)).EQ.0) THEN
 
 C             Yep, Neumann boundary node
 
@@ -1028,7 +1028,7 @@ C             Standard boundary node
 C           This is an inner node - maybe a fictitious boundary
 C           one, which should be treated as Dirichlet
 
-            IF (IAND(KWORK(KXNPR+2*I),2**12+2**13).EQ.
+            IF (IAND(KWORK(KXNPR+2*I),INT(2**12+2**13,4)).EQ.
      *          (2**12+2**13)) THEN
             
 C             Ok, fictitious boundary Dirichlet node!
@@ -1037,7 +1037,7 @@ C             Ok, fictitious boundary Dirichlet node!
               
 C           Otherwise test, if we have an irregular inner node:              
               
-            ELSE IF (IAND(KWORK(KXNPR+2*I),2**9).NE.0) THEN
+            ELSE IF (IAND(KWORK(KXNPR+2*I),INT(2**9,4)).NE.0) THEN
             
               KWORK(KNPR+I) = -KWORK(KXNPR+2*I+1)
             
@@ -1061,7 +1061,7 @@ C Edge information
         
 C Inner node or real bondary node?
 
-          IF (IAND(KWORK(KNPR+I),2**8).NE.0) THEN 
+          IF (IAND(KWORK(KNPR+I),INT(2**8,4)).NE.0) THEN 
           
 C inner vertex; fictitious boundary edges do not exist
 

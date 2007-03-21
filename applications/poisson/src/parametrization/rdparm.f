@@ -22,10 +22,12 @@ C local variables
       INTEGER NPAR,KITYP,KNSPLN,KNPAR,KIPPTR,KXPAR,KYPAR,ICPTR
       INTEGER IPPTR,KKPAR,IPAR
       DOUBLE PRECISION XPAR,YPAR
+      CHARACTER*(10) CDATA2
 
 C=======================================================================
 C   open file 'cdata'
 C=======================================================================
+      print *,0,mdata
       OPEN(UNIT=MDATA,FILE=CDATA,ERR=222)
       GOTO 221
 222   WRITE(*,*)'ERROR IN RDPARM: OPEN FAILED'
@@ -34,8 +36,11 @@ C=======================================================================
 C=======================================================================
 C   determine dimensions for creating arrays
 C=======================================================================
-      READ(MDATA,*,ERR=111)
+      print *,1,mdata
+      READ(MDATA,*,ERR=111) CDATA2
+      print *,2
       READ(MDATA,*,ERR=111) NBCT
+      print *,3
 C *** NBCT=0 MEANS: RDPARM IS A DUMMY PROCESS (NO PREPROCESSING)
       IF (NBCT.EQ.0) GOTO 99999
 C *** LOOP OVER NBCT BOUNDARY PARTS
@@ -62,6 +67,7 @@ C ***   LOOP OVER NCOMP COMPONENTS OF PART IBCT
         NNNPAR=NNNPAR + NNPAR
 C
       ENDDO
+      print *,4
 C=======================================================================
 C      read error
 C=======================================================================
@@ -93,7 +99,9 @@ C=======================================================================
 C   fill the arrays
 C=======================================================================
         CLOSE(MDATA)
+      print *,5
         OPEN(UNIT=MDATA,FILE=CDATA,ERR=222)
+      print *,6
 C--------------------------------------------------------------
 C     determine KWORK/DWORK-pointers 
 C--------------------------------------------------------------
@@ -139,7 +147,8 @@ C ***   LOOP OVER NCOMP COMPONENTS OF PART IBCT
         ENDDO
 C
       ENDDO
-C
+      print *,7
+
 C ***   LOOP OVER NNNPAR PARAMETER PAIRS OF BOUNDARY PART IBCT
         READ(MDATA,*,ERR=111)
         KXPAR=L(LXPAR)
@@ -150,6 +159,7 @@ C ***   LOOP OVER NNNPAR PARAMETER PAIRS OF BOUNDARY PART IBCT
           DWORK(KYPAR+IPAR)=YPAR
         ENDDO
 C
+      print *,8
 C=======================================================================
 C   error case for ZNEW
 C=======================================================================
