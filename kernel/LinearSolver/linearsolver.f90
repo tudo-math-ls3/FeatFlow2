@@ -1114,6 +1114,9 @@ MODULE linearsolver
     
     ! Relaxation factor for (M)ILU(s)
     REAL(DP) :: drelax
+    
+    ! Scaling factor of the matrix; usually = 1.0
+    REAL(DP) :: dscaleFactor
 
     ! Handle to array [1..*] of integer.
     ! Workspace containing the decomposed matrix.
@@ -3202,8 +3205,8 @@ CONTAINS
     
     TYPE (t_matrixScalar), POINTER :: p_rmatrix
     INTEGER (PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiag
-    REAL(DP) :: dlocOmega
-    REAL(SP) :: flocOmega
+    REAL(DP) :: dlocOmega,dscale
+    REAL(SP) :: flocOmega,fscale
     REAL(DP), DIMENSION(:), POINTER :: p_Dvector, p_Dmatrix
     REAL(SP), DIMENSION(:), POINTER :: p_Fvector, p_Fmatrix
     
@@ -3243,9 +3246,17 @@ CONTAINS
             
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
-            DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = dlocOmega * p_Dvector(ieq) / p_Dmatrix(p_Kdiag(ieq))
-            END DO
+            IF (p_rmatrix%dscaleFactor .EQ. 1.0_DP) THEN
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = dlocOmega * p_Dvector(ieq) / p_Dmatrix(p_Kdiag(ieq))
+              END DO
+            ELSE
+              dscale = 1.0_DP/p_rmatrix%dscaleFactor
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = dscale * dlocOmega * p_Dvector(ieq) &
+                                 / p_Dmatrix(p_Kdiag(ieq))
+              END DO
+            END IF
             
           CASE (ST_SINGLE)
             ! Get the data array
@@ -3253,9 +3264,17 @@ CONTAINS
             
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
-            DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = dlocOmega * p_Fvector(ieq) / p_Dmatrix(p_Kdiag(ieq))
-            END DO
+            IF (p_rmatrix%dscaleFactor .EQ. 1.0_DP) THEN
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = dlocOmega * p_Fvector(ieq) / p_Dmatrix(p_Kdiag(ieq))
+              END DO
+            ELSE
+              dscale = 1.0_DP/p_rmatrix%dscaleFactor
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = dscale * dlocOmega * p_Fvector(ieq) &
+                                 / p_Dmatrix(p_Kdiag(ieq))
+              END DO
+            END IF
 
           CASE DEFAULT
             PRINT *,'Jacobi: Unsupported vector format.'
@@ -3275,9 +3294,17 @@ CONTAINS
             
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
-            DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = dlocOmega * p_Dvector(ieq) / p_Fmatrix(p_Kdiag(ieq)) 
-            END DO
+            IF (p_rmatrix%dscaleFactor .EQ. 1.0_DP) THEN
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = dlocOmega * p_Dvector(ieq) / p_Fmatrix(p_Kdiag(ieq)) 
+              END DO
+            ELSE
+              dscale = 1.0_DP/p_rmatrix%dscaleFactor
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = dscale * dlocOmega * p_Dvector(ieq) &
+                                 / p_Fmatrix(p_Kdiag(ieq)) 
+              END DO
+            END IF
             
           CASE (ST_SINGLE)
             ! Get the data array
@@ -3289,9 +3316,17 @@ CONTAINS
             
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
-            DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = flocOmega * p_Fvector(ieq) / p_Fmatrix(p_Kdiag(ieq))
-            END DO
+            IF (p_rmatrix%dscaleFactor .EQ. 1.0_DP) THEN
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = flocOmega * p_Fvector(ieq) / p_Fmatrix(p_Kdiag(ieq))
+              END DO
+            ELSE
+              fscale = 1.0_DP/p_rmatrix%dscaleFactor
+              DO ieq = 1,rd%NEQ
+                p_Dvector(ieq) = fscale * flocOmega * p_Fvector(ieq) &
+                                 / p_Fmatrix(p_Kdiag(ieq))
+              END DO
+            END IF
 
           CASE DEFAULT
             PRINT *,'Jacobi: Unsupported vector format.'
@@ -3689,7 +3724,8 @@ CONTAINS
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
             DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = dlocOmega * (dvecSum + (p_Dvector(ieq) / p_Dmatrix(p_Kdiag(ieq))))
+              p_Dvector(ieq) = dlocOmega * &
+                  (dvecSum + (p_Dvector(ieq) / p_Dmatrix(p_Kdiag(ieq))))
             END DO
             
           CASE (ST_SINGLE)
@@ -3699,7 +3735,8 @@ CONTAINS
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
             DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = dlocOmega * (dvecSum + (p_Fvector(ieq) / p_Dmatrix(p_Kdiag(ieq))))
+              p_Dvector(ieq) = dlocOmega * &
+                  (dvecSum + (p_Fvector(ieq) / p_Dmatrix(p_Kdiag(ieq))))
             END DO
 
           CASE DEFAULT
@@ -3721,7 +3758,8 @@ CONTAINS
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
             DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = dlocOmega * (dvecSum + (p_Dvector(ieq) / p_Fmatrix(p_Kdiag(ieq))))
+              p_Dvector(ieq) = dlocOmega * &
+                  (dvecSum + (p_Dvector(ieq) / p_Fmatrix(p_Kdiag(ieq))))
             END DO
             
           CASE (ST_SINGLE)
@@ -3735,7 +3773,8 @@ CONTAINS
             ! and multiply all entries with the inverse of the diagonal 
             ! of the matrix.
             DO ieq = 1,rd%NEQ
-              p_Dvector(ieq) = flocOmega * (dvecSum + (p_Fvector(ieq) / p_Fmatrix(p_Kdiag(ieq))))
+              p_Dvector(ieq) = flocOmega * &
+                  (dvecSum + (p_Fvector(ieq) / p_Fmatrix(p_Kdiag(ieq))))
             END DO
 
           CASE DEFAULT
@@ -3895,11 +3934,6 @@ CONTAINS
         STOP
       END IF
       
-      IF (p_rmatrix%dscaleFactor .NE. 1.0_DP) THEN
-        PRINT *,'SOR: No support for scaled matrices up to now!'
-        STOP
-      END IF
-      
       IF (IAND(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
           .NE. 0) THEN
         PRINT *,'SOR: Transposed submatrices not supported.'
@@ -3930,7 +3964,7 @@ CONTAINS
             ! Call the SOR subroutine (see below), do the work.
             CALL performSOR9dbledble_ID119 (p_Dmatrix,p_Kcol,p_Kld,&
                                              p_Kdiagonal,rsolverNode%domega,&
-                                             p_Dvector)
+                                             p_Dvector,p_rmatrix%dscaleFactor)
             
           CASE DEFAULT
             PRINT *,'SOR: Unsupported vector format.'
@@ -3955,7 +3989,7 @@ CONTAINS
     ! Auxiliary routine: SOR
     ! Matrix format 9, double precision matrix, double precision vector
     
-    SUBROUTINE performSOR9dbledble_ID119 (DA,Kcol,Kld,Kdiagonal,domega,Dx)
+    SUBROUTINE performSOR9dbledble_ID119 (DA,Kcol,Kld,Kdiagonal,domega,Dx,dscale)
     
     ! input: Matrix array
     REAL(DP), DIMENSION(:), INTENT(IN) :: DA
@@ -3972,6 +4006,9 @@ CONTAINS
     ! input: Relaxation parameter; standard value is 1.2.
     REAL(DP), INTENT(IN) :: domega
     
+    ! Scaling factor of the matrix; usually = 1.0
+    REAL(DP), INTENT(IN) :: dscale
+    
     ! input: vector to be preconditioned.
     ! output: preconditioned vector
     REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dx
@@ -3979,7 +4016,7 @@ CONTAINS
       ! local variables
       INTEGER(PREC_VECIDX) :: NEQ,ieq
       INTEGER(PREC_MATIDX) :: Idiag,ICOL
-      REAL(DP) :: daux
+      REAL(DP) :: daux,dsc
       
       NEQ = SIZE(Dx)
 
@@ -4000,7 +4037,12 @@ CONTAINS
       !                                       i-1
       ! <=> d_i :=  1/aii * ( d_i  -  \omega \sum a_ij d_j )   (i=1,...,n)
       !                                       j=1
-      !  
+      !
+      ! The scaling factor in introduced into that formula by multiplying
+      ! all a_ij by dscale -- which reduces to dividing d_i by dscale
+      ! in every step...
+      
+      dsc = 1.0_DP/dscale  
       
       DO ieq=1,NEQ
         daux = 0.0_DP
@@ -4010,7 +4052,7 @@ CONTAINS
         DO ICOL=Kld(ieq),Kdiagonal(ieq)-1
           daux=daux+DA(ICOL)*Dx(Kcol(ICOL))
         END DO
-        Dx(ieq) = (Dx(ieq) - daux*domega) / DA(Idiag)
+        Dx(ieq) = (dsc*Dx(ieq) - daux*domega) / DA(Idiag)
       END DO
  
     END SUBROUTINE
@@ -4186,11 +4228,6 @@ CONTAINS
         STOP
       END IF
       
-      IF (p_rmatrix%dscaleFactor .NE. 1.0_DP) THEN
-        PRINT *,'SSOR: No support for scaled matrices up to now!'
-        STOP
-      END IF
-      
       IF (IAND(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
           .NE. 0) THEN
         PRINT *,'SSOR: Transposed submatrices not supported.'
@@ -4221,7 +4258,8 @@ CONTAINS
             ! Call the SSOR subroutine (see below), do the work.
             CALL performSSOR9dbledble_ID119 (p_Dmatrix,p_Kcol,p_Kld,&
                                              p_Kdiagonal,rsolverNode%domega,&
-                                             bscale,p_Dvector)
+                                             bscale,p_Dvector,&
+                                             p_rmatrix%dscaleFactor)
             
           CASE DEFAULT
             PRINT *,'SSOR: Unsupported vector format.'
@@ -4247,7 +4285,7 @@ CONTAINS
     ! Matrix format 9, double precision matrix, double precision vector
     
     SUBROUTINE performSSOR9dbledble_ID119 (DA,Kcol,Kld,Kdiagonal,domega,bscale,&
-                                           Dx)
+                                           Dx,dscale)
     
     ! input: Matrix array
     REAL(DP), DIMENSION(:), INTENT(IN) :: DA
@@ -4263,6 +4301,9 @@ CONTAINS
     
     ! input: Relaxation parameter; standard value is 1.2.
     REAL(DP), INTENT(IN) :: domega
+
+    ! input: Scaling factor of the matrix; usually = 1.0
+    REAL(DP), INTENT(IN) :: dscale
     
     ! input: Whether the solution should be scaled as suggested in 
     ! the literature
@@ -4275,7 +4316,7 @@ CONTAINS
       ! local variables
       INTEGER(PREC_VECIDX) :: NEQ,ieq
       INTEGER(PREC_MATIDX) :: Idiag,ICOL
-      REAL(DP) :: daux
+      REAL(DP) :: daux,dsc
       
       NEQ = SIZE(Dx)
 
@@ -4297,6 +4338,11 @@ CONTAINS
       ! <=> d_i :=  1/aii * ( d_i  -  \omega \sum a_ij d_j )   (i=1,...,n)
       !                                       j=1
       !  
+      ! The scaling factor in introduced into that formula by multiplying
+      ! all a_ij by dscale -- which reduces to dividing d_i by dscale
+      ! in every step...
+      
+      dsc = 1.0_DP/dscale  
       
       DO ieq=1,NEQ
         daux = 0.0_DP
@@ -4306,7 +4352,7 @@ CONTAINS
         DO ICOL=Kld(ieq),Kdiagonal(ieq)-1
           daux=daux+DA(ICOL)*Dx(Kcol(ICOL))
         END DO
-        Dx(ieq) = (Dx(ieq) - daux*domega) / DA(Idiag)
+        Dx(ieq) = (dsc*Dx(ieq) - daux*domega) / DA(Idiag)
       END DO
       
       ! Next step is to solve
@@ -4329,6 +4375,9 @@ CONTAINS
       !
       ! Note that the case i=n is trivial, the sum is empty; so we can
       ! start the loop with i=n-1.
+      !
+      ! The scaling factor cancels out in this equation, so nothing has
+      ! to be done here concerning that.
 
       DO ieq = NEQ-1,1,-1
         daux=0.0_DP
@@ -5005,11 +5054,6 @@ CONTAINS
     STOP
   END IF
 
-  IF (p_rmatrix%dScaleFactor .NE. 1.0_DP) THEN
-    PRINT *,'UMFPACK cannot handle scaled matrices!'
-    STOP
-  END IF
-  
   SELECT CASE (p_rmatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
     ! Format 9 is exactly the UMFPACK matrix.
@@ -5150,17 +5194,19 @@ CONTAINS
     STOP
   END IF
 
-  IF (p_rmatrix%dScaleFactor .NE. 1.0_DP) THEN
-    PRINT *,'UMFPACK cannot handle scaled matrices!'
-    STOP
-  END IF
-
   SELECT CASE (p_rmatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
     ! Format 9 is exactly the UMFPACK matrix.
-    ! Make a copy of the matrix structure, but use the same matrix entries.
-    CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
-                                  LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
+    IF (p_rmatrix%dScaleFactor .EQ. 1.0_DP) THEN
+      ! Make a copy of the matrix structure, but use the same matrix entries.
+      CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
+                                    LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
+    ELSE
+      ! Make a copy of the whole matrix. We will resolve the scaling factor later,
+      ! which changes the entries!
+      CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
+                                    LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+    END IF
   CASE (LSYSSC_MATRIX7)
     ! For format 7, we have to modify the matrix slightly.
     ! Make a copy of the whole matrix:
@@ -5170,6 +5216,14 @@ CONTAINS
     ! This means: Convert the structure-7 matrix to a structure-9 matrix:
     CALL lsyssc_convertMatrix (p_rmatrix,LSYSSC_MATRIX9)
   END SELECT
+  
+  IF (rtempMatrix%dscaleFactor .NE. 1.0_DP) THEN
+    ! The matrix entries have been duplicated above in this case, so we are
+    ! allowed to change the entries of rtempMatrix without changing the
+    ! original entries. So, 'un'-scale the matrix.
+    CALL lsyssc_scaleMatrix (rtempMatrix,rtempMatrix%dscaleFactor)
+    rtempMatrix%dscaleFactor = 1.0_DP
+  END IF
 
   !!! DEBUG
   !CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
@@ -5178,7 +5232,7 @@ CONTAINS
   !                          .TRUE., 0, 'matrix.txt', '(D20.10)')
   !STOP
 
-  ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
+  ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
   CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
   CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
   
@@ -5727,6 +5781,10 @@ CONTAINS
       rsolverNode%p_rsubnodeMILUs1x1%lu = lu
       rsolverNode%p_rsubnodeMILUs1x1%jlu = jlu
       rsolverNode%p_rsubnodeMILUs1x1%ilup = ilup
+      
+      ! Save 1/scaling factor of the matrix -- to support scaled matrices
+      ! when preconditioning.
+      rsolverNode%p_rsubnodeMILUs1x1%dscaleFactor = 1.0_DP/p_rmatrixSc%dScaleFactor
     END IF
       
   END SUBROUTINE
@@ -5878,11 +5936,16 @@ CONTAINS
     ilup = rsolverNode%p_rsubnodeMILUs1x1%ilup 
     CALL storage_getbase_int (h_Iwork,p_Iwork)
 
+    ! When the scaling factor is not = 1, scale the vector before
+    ! preconditioning. This emulates: d = (cA)^-1 d = A^-1 (x/c)!
+    ! (The value saved in the structure is 1/c!)
+    CALL lsysbl_scaleVector(rd,rsolverNode%p_rsubnodeMILUs1x1%dscaleFactor)
+
     ! Solve the system. Call SPLIB, this overwrites the defect vector
     ! with the preconditioned one.
     CALL lusolt (INT(SIZE(p_Dd),I32),p_Dd, p_Iwork(lu:), &
                  p_Iwork(jlu:), p_Iwork(ilup:))
-  
+                 
   END SUBROUTINE
   
 ! *****************************************************************************
