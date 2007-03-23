@@ -519,6 +519,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER :: i
     TYPE(t_vectorBlock) :: rtempBlock1,rtempBlock2
     TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
     
@@ -539,6 +540,7 @@ CONTAINS
     INTEGER :: irepetition
     INTEGER(I32) :: isolverStatus,isolverStatusPredictor
     TYPE(t_timeError) :: rtimeerror
+    TYPE(t_timeDerivatives) :: rtimeDerivative
 
     ! Some preparations for the nonlinear solver.
     !
@@ -648,12 +650,20 @@ CONTAINS
                 rproblem%rtimedependence%dtime, &
                 3.0_DP*rtimestepping%dtstepFixed, 1.0_DP)
 
-          CALL output_separator(OU_SEP_MINUS)
-          CALL output_line (&
-            'Macro step '//TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
-            '      Time '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,5)) // &
-            '      Step size '//TRIM(sys_sdL(rtimesteppingPredictor%dtstep,5)))
           CALL output_lbrk ()
+          CALL output_separator(OU_SEP_EQUAL)
+          CALL output_line ('Predictor-Step at Time-Step '// &
+              TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
+              ', Time = '// &
+              TRIM(sys_sdL(rproblem%rtimedependence%dtime,5))// &
+              ', Stepsize: DT1 = '// &
+              TRIM(sys_sdL(rtimesteppingPredictor%dtstep,5)) )
+          CALL output_separator(OU_SEP_EQUAL)
+          !CALL output_line (&
+          !  'Macro step '//TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
+          !  '      Time '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,5)) // &
+          !  '      Step size '//TRIM(sys_sdL(rtimesteppingPredictor%dtstep,5)))
+          !CALL output_lbrk ()
           
           ! Proceed in time, calculate the predicted solution. 
           CALL lsysbl_copyVector (rvector,rpredictedSolution)              
@@ -683,6 +693,18 @@ CONTAINS
                 timstp_getOrder(rtimeStepping), &
                 isolverStatus,irepetition) 
                 
+            ! Tell the user that we have a new time step size.
+            CALL output_separator(OU_SEP_AT)
+            CALL output_line ('Timestepping by '&
+                //TRIM(sys_siL(irepetition,2)) &
+                //' (' &
+                //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6)) &
+                //'), New Stepsize = ' &
+                //TRIM(sys_sdEP(dtmp,9,2)) &
+                //', Old Stepsize = ' &
+                //TRIM(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
+            CALL output_separator(OU_SEP_AT)
+
             ! Accept the new step size
             CALL timstp_setBaseSteplength (rtimeStepping, dtmp)
             
@@ -708,12 +730,20 @@ CONTAINS
       !----------------------------------------------------
       IF (.NOT. babortTimestep) THEN
       
-        CALL output_separator(OU_SEP_MINUS)
-        CALL output_line (&
-          'Time step '//TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
-          '     Time '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,5)) // &
-          '     Step size '//TRIM(sys_sdL(rtimestepping%dtstep,5)))
+        !CALL output_separator(OU_SEP_MINUS)
+        !CALL output_line (&
+        !  'Time step '//TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
+        !  '     Time '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,5)) // &
+        !  '     Step size '//TRIM(sys_sdL(rtimestepping%dtstep,5)))
         CALL output_lbrk ()
+        CALL output_separator(OU_SEP_AT)
+        CALL output_line ('Time-Step '// &
+            TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
+            ', Time = '// &
+            TRIM(sys_sdL(rproblem%rtimedependence%dtime,5))// &
+            ', Stepsize: DT3 = '// &
+            TRIM(sys_sdL(rtimestepping%dtstep,5)) )
+        CALL output_separator(OU_SEP_AT)
         
         ! Snapshot the current solution for the later calculation of the
         ! time derivative.
@@ -752,6 +782,18 @@ CONTAINS
                   timstp_getOrder(rtimeStepping), &
                   isolverStatus,irepetition) 
 
+              ! Tell the user that we have a new time step size.
+              CALL output_separator(OU_SEP_AT)
+              CALL output_line ('Timestepping by '&
+                  //TRIM(sys_siL(irepetition,2)) &
+                  //' (' &
+                  //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6)) &
+                  //'), New Stepsize = ' &
+                  //TRIM(sys_sdEP(dtmp,9,2)) &
+                  //', Old Stepsize = ' &
+                  //TRIM(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
+              CALL output_separator(OU_SEP_AT)
+
               ! Accept the new step size
               CALL timstp_setBaseSteplength (rtimeStepping, dtmp)
 
@@ -789,8 +831,7 @@ CONTAINS
             ! At first, calculate the time error.
             dtmperror =  c2d2_timeErrorByPredictor (&
                 rproblem%rtimedependence%radaptiveTimeStepping%cadTimeStepErrorControl,&
-                rvector,rpredictedSolution,rtempBlock1,&
-                rtimeError)            
+                rvector,rpredictedSolution,rtempBlock1,rtimeError)            
 
             ! Evaluate everything that went wrong in the solvers
             isolverStatus = 0
@@ -827,7 +868,36 @@ CONTAINS
               END IF
               
             END IF
+
+            ! Assign i either 2 or 8, depending on whether we have a time stepping
+            ! algorithm of order one or two in time!
+            i = 2 + 6*(timstp_getOrder(rtimeStepping)-1)
+
+            ! Print the result of the time error analysis
+            CALL output_separator(OU_SEP_AT)
+            CALL output_line ('OLD DT='&
+                //TRIM(sys_sdEP(rtimeStepping%dtstepFixed,8,2)) &
+                //' U(L2)=' &
+                //TRIM(sys_sdEP(rtimeError%drelUL2/REAL(i,DP),8,2)) &
+                //' U(MX)=' &
+                //TRIM(sys_sdEP(rtimeError%drelUmax/REAL(i,DP),8,2)) &
+                //' P(L2)=' &
+                //TRIM(sys_sdEP(rtimeError%drelPL2/REAL(i,DP),8,2)) &
+                //' P(MX)=' &
+                //TRIM(sys_sdEP(rtimeError%drelPmax/REAL(i,DP),8,2)) )
+            CALL output_separator(OU_SEP_AT)
             
+            ! Tell the user that we have a new time step size.
+            CALL output_line ('Timestepping by '&
+                //TRIM(sys_siL(irepetition,2)) &
+                //' (' &
+                //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6)) &
+                //'), New Stepsize = ' &
+                //TRIM(sys_sdEP(dtmp,9,2)) &
+                //', Old Stepsize = ' &
+                //TRIM(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
+            CALL output_separator(OU_SEP_AT)
+
             ! Accept the new step size
             CALL timstp_setBaseSteplength (rtimeStepping, dtmp)
 
@@ -851,7 +921,41 @@ CONTAINS
         ! above to check if the solution got stationary.
         dtimeDerivative = c2d2_timeDerivative (&
             rproblem%rtimedependence%radaptiveTimeStepping%cadTimeStepErrorControl,&
-            rvector,roldSolution,rtimestepping%dtstep,rtempBlock1)
+            rvector,roldSolution,rtimestepping%dtstep,rtempBlock1,rtimeDerivative)
+            
+        ! Print the results of the time analysis.
+        
+        ! Do we count in steps a 1 or in steps a 3?
+        ! Respecting this, i is assigned the number of the substep in the
+        ! macrostep.
+        SELECT CASE (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
+        CASE (TADTS_FIXED) 
+          i = 1
+        CASE (TADTS_PREDICTION,TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
+          i = MOD(rproblem%rtimedependence%itimeStep-1,3)+1
+        END SELECT
+        
+        CALL output_separator(OU_SEP_AT)
+        CALL output_line ('#'&
+            //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))&
+            //' (' &
+            //TRIM(sys_siL(i,6)) &
+            //') TIME=' &
+            //TRIM(sys_sdL(rproblem%rtimedependence%dtime,5)) &
+            //' RELU(L2)=' &
+            //TRIM(sys_sdEP(rtimeDerivative%drelUL2,9,2)) &
+            //' RELP(L2)=' &
+            //TRIM(sys_sdEP(rtimeDerivative%drelPL2,9,2)) &
+            //' REL=' &
+            //TRIM(sys_sdEP(dtimeDerivative,9,2)) )
+        CALL output_separator(OU_SEP_AT)
+        
+        !CALL output_line ('Time-Step '// &
+        !    TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
+        !    ', Time = '// &
+        !    TRIM(sys_sdL(rproblem%rtimedependence%dtime,5))// &
+        !    ', Stepsize: DT3 = '// &
+        !    TRIM(sys_sdL(rtimestepping%dtstep,5)) )
         
       END IF
         
@@ -920,6 +1024,8 @@ CONTAINS
     ! Clean up the stuff of/for the nonlinear solver.
     !
     ! Release the temporary vectors
+    IF (rpredictedSolution%NEQ .NE. 0) &
+      CALL lsysbl_releaseVector (rpredictedSolution)
     IF (roldSolution%NEQ .NE. 0) &
       CALL lsysbl_releaseVector (roldSolution)
     CALL lsysbl_releaseVector (rtempBlock2)
