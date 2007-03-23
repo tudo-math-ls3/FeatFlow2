@@ -31,7 +31,6 @@ PROGRAM cc2dmedium
 
   ! As we still use some FEAT 1.x routines, we have to initialise some
   ! output variables.
-
   M = 0
   MT = 2
   MTERM = 6

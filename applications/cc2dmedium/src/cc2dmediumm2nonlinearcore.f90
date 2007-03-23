@@ -1952,7 +1952,7 @@ CONTAINS
 
   !<subroutine>
 
-    SUBROUTINE c2d2_precondDefect (rd,rx,rb,domega,p_rcollection)
+    SUBROUTINE c2d2_precondDefect (rd,rx,rb,domega,bsuccess,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -1982,6 +1982,12 @@ CONTAINS
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it's changed again.
     REAL(DP), INTENT(INOUT)                       :: domega
+
+    ! If the preconditioning was a success. Is normally automatically set to
+    ! TRUE. If there is an error in the preconditioner, this flag can be
+    ! set to FALSE. In this case, the nonlinear solver breaks down with
+    ! the error flag set to 'preconditioner broke down'.
+    LOGICAL, INTENT(INOUT)                        :: bsuccess
   !</inputoutput>
   
   !<input>
@@ -2050,48 +2056,56 @@ CONTAINS
         ! for the next iteration.
         CALL linsol_doneData (p_rsolverNode)
         
+        ! Did the preconditioner work?
+        bsuccess = p_rsolverNode%iresult .EQ. 0
+        
       END SELECT
       
-      ! Finally calculate a new damping parameter domega.
-      !
-      ! For this purpose, we need two temporary vectors.
-      ! On one hand, we have p_rvectorTemp.
-      ! Get the second temporary vector from the collection as it was
-      ! prepared by our 'parent' that invoked the nonlinear solver.
-      p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
-      p_rvectorTemp2 => rnonlinearIteration%rpreconditioner%p_rtempVectorSc2
-      
-      ! Both temp vectors are scalar, but we need block-vectors in the
-      ! structure of rx/rb. Derive block vectors in that structure that
-      ! share their memory with the scalar temp vectors. Note that the
-      ! temp vectors are created large enough by our parent!
-      CALL lsysbl_createVecFromScalar (p_rvectorTemp,rtemp1)
-      CALL lsysbl_enforceStructure (rb,rtemp1)
+      IF (bsuccess) THEN
+        ! Finally calculate a new damping parameter domega.
+        !
+        ! For this purpose, we need two temporary vectors.
+        ! On one hand, we have p_rvectorTemp.
+        ! Get the second temporary vector from the collection as it was
+        ! prepared by our 'parent' that invoked the nonlinear solver.
+        p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
+        p_rvectorTemp2 => rnonlinearIteration%rpreconditioner%p_rtempVectorSc2
+        
+        ! Both temp vectors are scalar, but we need block-vectors in the
+        ! structure of rx/rb. Derive block vectors in that structure that
+        ! share their memory with the scalar temp vectors. Note that the
+        ! temp vectors are created large enough by our parent!
+        CALL lsysbl_createVecFromScalar (p_rvectorTemp,rtemp1)
+        CALL lsysbl_enforceStructure (rb,rtemp1)
 
-      CALL lsysbl_createVecFromScalar (p_rvectorTemp2,rtemp2)
-      CALL lsysbl_enforceStructure (rb,rtemp2)
+        CALL lsysbl_createVecFromScalar (p_rvectorTemp2,rtemp2)
+        CALL lsysbl_enforceStructure (rb,rtemp2)
 
-      ! Calculate the omega
-      CALL c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,&
-                                   domega,rnonlinearIteration,p_rcollection)
+        ! Calculate the omega
+        CALL c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,&
+                                    domega,rnonlinearIteration,p_rcollection)
 
-      ! Remember damping parameter for output
-      rnonlinearIteration%domegaNL = domega
+        ! Remember damping parameter for output
+        rnonlinearIteration%domegaNL = domega
 
-      ! Release the temp block vectors. This only cleans up the structure.
-      ! The data is not released from heap as it belongs to the
-      ! scalar temp vectors.
-      CALL lsysbl_releaseVector (rtemp2)
-      CALL lsysbl_releaseVector (rtemp1)
-      
-      ! Calculate the max-norm of the correction vector.
-      ! This is used for the stopping criterium in c2d2_resNormCheck!
-      Cnorms(:) = LINALG_NORMMAX
-      rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+        ! Release the temp block vectors. This only cleans up the structure.
+        ! The data is not released from heap as it belongs to the
+        ! scalar temp vectors.
+        CALL lsysbl_releaseVector (rtemp2)
+        CALL lsysbl_releaseVector (rtemp1)
+        
+        ! Calculate the max-norm of the correction vector.
+        ! This is used for the stopping criterium in c2d2_resNormCheck!
+        Cnorms(:) = LINALG_NORMMAX
+        rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+        
+        ! Save the nonlinear-iteration structure.
+        CALL c2d2_saveNonlinearLoop (rnonlinearIteration,p_rcollection)
+      END IF
 
-      ! Save and release the nonlinear-iteration structure, that's it.
-      CALL c2d2_saveNonlinearLoop (rnonlinearIteration,p_rcollection)
+      ! Release the nonlinear-iteration structure, that's it.
       CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+      
     END SUBROUTINE
 
   ! ***************************************************************************

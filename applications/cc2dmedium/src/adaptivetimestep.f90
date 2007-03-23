@@ -26,6 +26,9 @@
 !#
 !#  2.) adtstp_calcTimeStep
 !#      -> Calculate a new time step size
+!#
+!#  3.) adtstp_getTolerance
+!#      -> Calculate a stopping criterion for the adaptive tim stepping
 !# </purpose>
 !##############################################################################
 
@@ -33,6 +36,7 @@ MODULE adaptivetimestep
 
   USE fsystem
   USE paramlist
+  use timestepping
     
   IMPLICIT NONE
   
@@ -74,6 +78,7 @@ MODULE adaptivetimestep
   INTEGER, PARAMETER :: TADTS_START_LOGARITHMIC = 2
 
 !</constantblock>
+
 
 !</constants>  
 
@@ -139,7 +144,7 @@ MODULE adaptivetimestep
     ! Type of error indicator to measure error in time (IEPSAD) when doing
     ! adaptive time stepping;
     ! 1=u(L2),2=u(MX),3=p(L2),4=p(MX),5-8=mix
-    INTEGER :: iadTimeStepErrorControl        = 1
+    INTEGER :: cadTimeStepErrorControl        = 1
 
     ! Low accuracy for acceptance during start procedure (EPSADI);
     ! if time error is larger, the step is repeated
@@ -231,9 +236,9 @@ CONTAINS
                             radTimeStepping%dadTimeStepInitDuration,&
                             radTimeStepping%dadTimeStepInitDuration)
 
-    CALL parlst_getvalue_int(p_rsection,'iadTimeStepErrorControl',&
-                           radTimeStepping%iadTimeStepErrorControl,&
-                           radTimeStepping%iadTimeStepErrorControl)
+    CALL parlst_getvalue_int(p_rsection,'cadTimeStepErrorControl',&
+                           radTimeStepping%cadTimeStepErrorControl,&
+                           radTimeStepping%cadTimeStepErrorControl)
 
     CALL parlst_getvalue_double(p_rsection,'dadTimeStepEpsDuringInit',&
                             radTimeStepping%dadTimeStepEpsDuringInit,&
@@ -253,7 +258,6 @@ CONTAINS
                 RESULT(depsad)
   
 !<description>
-  ! Auxiliary routine.
   ! Based on the configuration of the adaptive time stepping, this function 
   ! computes a bound that can be used in the adaptive time stepping as 
   ! stopping criterion.
@@ -377,10 +381,10 @@ CONTAINS
   ! Lower bits represent a failue of critical solver components while higher bits
   ! indicate the failure of noncritical solver components:
   !
-  !  Bit 0 = failure of the (linear) preconditioner
-  !  Bit 1 = failore of the nonlinear solver
-  !  Bit 2 = failure of the (linear) preconditioner in the predictor step
-  !  Bit 3 = failure of the nonlinear solver in the predictor step
+  !  Bit 0 = failure of the nonlinear solver
+  !  Bit 1 = nonlinear solver did not converge
+  !  Bit 2 = failure of the nonlinear solver during the predictor step
+  !  Bit 3 = nonlinear solver in the predictor step did not converge
   !
   ! If Bit 0 or 1 are set, the value of derrorIndicator is ignored.
   INTEGER(I32), INTENT(IN)                 :: isolverStatus
@@ -495,7 +499,6 @@ CONTAINS
           
     dnewTimeStep = MIN(radTimeStepping%dtimeStepMax, &
                        MAX(dnewTimeStep, radTimeStepping%dtimeStepMin))
-
   END FUNCTION
   
 END MODULE
