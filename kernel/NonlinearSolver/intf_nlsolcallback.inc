@@ -47,7 +47,7 @@
 
   INTERFACE 
   
-    SUBROUTINE fcb_precondDefect (rd,rx,rb,domega,p_rcollection)
+    SUBROUTINE fcb_precondDefect (rd,rx,rb,domega,bsuccess,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -76,6 +76,12 @@
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it's changed again.
     REAL(DP), INTENT(INOUT)                       :: domega
+    
+    ! If the preconditioning was a success. Is normally automatically set to
+    ! TRUE. If there is an error in the preconditioner, this flag can be
+    ! set to FALSE. In this case, the nonlinear solver breaks down with
+    ! the error flag set to 'preconditioner broke down'.
+    LOGICAL, INTENT(INOUT)                        :: bsuccess
   !</inputoutput>
   
   !<input>

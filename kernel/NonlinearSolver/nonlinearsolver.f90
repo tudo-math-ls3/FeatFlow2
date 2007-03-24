@@ -139,7 +139,11 @@ MODULE nonlinearsolver
     
     ! OUTPUT: Result
     ! The result of the solution process.
-    ! =0: success. =1: iteration broke down, diverging, =2: error in the parameters
+    ! =-1: convergence criterion not reached.
+    ! =0: success. 
+    ! =1: iteration broke down, diverging.
+    ! =2: iteration broke down, preconditioner did not work.
+    ! =3: error in the parameters.
     INTEGER                    :: iresult
     
     ! OUTPUT: Number of performed iterations, if the solver
@@ -760,7 +764,7 @@ CONTAINS
   REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS) :: DvecNorm
   TYPE(t_vectorBlock) :: rtemp
   REAL(DP) :: domega
-  LOGICAL :: bconvergence,bdivergence
+  LOGICAL :: bconvergence,bdivergence,bsuccess
   
     ! Do we have a collection?
     NULLIFY(p_rcollection)
@@ -829,6 +833,7 @@ CONTAINS
         rsolverNode%icurrentIteration = ite
       
         ! Perform preconditioning on the defect vector:  u = J^{-1} d
+        bsuccess = .TRUE.
         SELECT CASE (rsolverNode%cpreconditioner)
         CASE (NLSOL_PREC_MATRIX)
           ! Multiplication with a matrix.
@@ -844,6 +849,7 @@ CONTAINS
         CASE (NLSOL_PREC_LINSOL)
           ! Preconditioner is a linear solver with fixed matrix.
           CALL linsol_precondDefect(rsolverNode%p_rlinsolNode,rd)
+          bsuccess = rsolverNode%p_rlinsolNode%iresult .EQ. 0
           
         CASE DEFAULT
           ! User defined or no preconditioning.
@@ -852,10 +858,18 @@ CONTAINS
             ! The callback routine is allowed to change domega during the
             ! iteration if necessary. The nonlinear solver here does not touch
             ! domega anymore, so the callback routine is the only one changing it.
-            CALL fcb_precondDefect (rd,rx,rb,domega,p_rcollection)
+            CALL fcb_precondDefect (rd,rx,rb,domega,bsuccess,p_rcollection)
           END IF
           
         END SELECT
+        
+        ! If bsuccess=false, the preconditioner had an error.
+        IF (.NOT. bsuccess) THEN
+          CALL output_line ('NLSOL: Iteration '//&
+              TRIM(sys_siL(ite,10))//' canceled as the preconditioner went down!')
+          rsolverNode%iresult = 3
+          EXIT
+        END IF
         
         ! If domega=0.0, the solution vector would stay unchanged. In this
         ! case, the nonlinear solver would not proceed at all, and the next
@@ -931,6 +945,11 @@ CONTAINS
 
     IF (ite .GT. rsolverNode%nmaxIterations) &
       ite = rsolverNode%nmaxIterations
+      
+    IF (.NOT. bconvergence) THEN 
+      ! Convergence criterion not reached, but solution did not diverge.
+      rsolverNode%iresult = -1
+    END IF
 
     rsolverNode%iiterations = ite
     

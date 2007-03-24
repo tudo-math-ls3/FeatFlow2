@@ -31,6 +31,9 @@
 !#     -> Retrieves the order of the time error that is expected from a
 !#        defined time stepping algorithm.
 !#
+!# 6.) timstp_setBaseSteplength
+!#     Modify the base step length of a time stepping scheme
+!#
 !# How to use this module?
 !#
 !# Well, that's simple. It's like this:
@@ -287,9 +290,10 @@ CONTAINS
   ! The initial simulational time. 
   REAL(DP), INTENT(IN)   :: dtime
     
-  ! (Theoretical) Time step length of the simulation.
+  ! (Theoretical) Time step length of the simulation / 'base' step length of the
+  ! time stepping scheme.
   ! Might vary from the real time step size by the type of the
-  ! scheme, which is indicated by rtstepScheme%dtstep
+  ! scheme. THe real time step site is found in rtstepScheme%dtstep.
   REAL(DP), INTENT(IN)   :: dtstep
 
   ! OPTIONAL: Theta scheme identifier. 
@@ -319,9 +323,6 @@ CONTAINS
     rtstepScheme%isubstep         = 1
     rtstepScheme%dcurrentTime     = dtime
     rtstepScheme%dtimeMacrostep   = dtime
-    rtstepScheme%dtstepFixed      = dtstep
-
-    ! Do we have standard time stepping or Fractional Step?
     
     IF (ctimestepType .NE. TSCHM_FRACTIONALSTEP) THEN
       
@@ -334,13 +335,6 @@ CONTAINS
       rtstepScheme%dtstep           = dtstep
       rtstepScheme%dtheta           = dtheta1
       rtstepScheme%dthStep          = dtstep * dtheta1
-      
-      ! Initialize weights for matrices and RHS:   
-      rtstepScheme%dweightMatrixLHS = dtstep * dtheta1
-      rtstepScheme%dweightMatrixRHS = dtstep * (dtheta1 - 1.0_DP)
-      rtstepScheme%dweightNewRHS    = dtstep * dtheta1
-      rtstepScheme%dweightOldRHS    = dtstep * (dtheta1 - 1.0_DP)
-      rtstepScheme%dweightStationaryRHS = dtstep
       
     ELSE
     
@@ -369,14 +363,111 @@ CONTAINS
       rtstepScheme%dalpha           = dalpha
       rtstepScheme%dbeta            = dbeta
       
-      ! Initialise for 1st substep
+    END IF
 
-      rtstepScheme%dtstep           =  3.0_DP * dtstep * dtheta1
-      rtstepScheme%dweightMatrixLHS =  3.0_DP * dtstep * dalpha * dtheta1
-      rtstepScheme%dweightMatrixRHS = -3.0_DP * dtstep * dbeta * dtheta1
-      rtstepScheme%dweightNewRHS    =  3.0_DP * dtstep * dalpha * dtheta1
-      rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dbeta * dtheta1
-      rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
+    ! Initialise the weights for the first time step by calling
+    ! timstp_setBaseSteplength with time step length = dtstep
+    CALL timstp_setBaseSteplength (rtstepScheme, dtstep)
+    
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE timstp_setBaseSteplength (rtstepScheme, dtstep)
+  
+!<description>
+  ! Modifies the base step length of the time stepping scheme in rtstepScheme
+  ! to dtstep. The base step length is the theoretical time step length
+  ! if an equidistant time discretisation is used. It coincides with the actual
+  ! time step length only if a one step scheme is used.
+  ! Reinitialises all weights according to the current time step configuration
+  ! in rtstepScheme.
+!</description>
+  
+!<input>
+  ! (Theoretical) Time step length of the simulation.
+  ! Might vary from the real time step size by the type of the
+  ! scheme, which is indicated by rtstepScheme%dtstep
+  REAL(DP), INTENT(IN)   :: dtstep
+!</input>
+
+!<output>
+  ! The time stepping structure. This is initialised according to the
+  ! new time step length.
+  TYPE(t_explicitTimeStepping), INTENT(INOUT) :: rtstepScheme
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: dtheta1,dthetp1,dalpha,dbeta
+    
+    ! Set the new step length
+    rtstepScheme%dtstepFixed        = dtstep
+
+    IF (rtstepScheme%ctimestepType .NE. TSCHM_FRACTIONALSTEP) THEN
+      ! Standard time stepping scheme.
+      rtstepScheme%dtstep = dtstep
+
+      rtstepScheme%nsubsteps        = 1
+      
+      dtheta1                       = rtstepScheme%dtheta
+      
+      rtstepScheme%dtstep           = dtstep
+      rtstepScheme%dthStep          = dtstep * dtheta1
+      
+      ! Initialize weights for matrices and RHS:   
+      rtstepScheme%dweightMatrixLHS = dtstep * dtheta1
+      rtstepScheme%dweightMatrixRHS = dtstep * (dtheta1 - 1.0_DP)
+      rtstepScheme%dweightNewRHS    = dtstep * dtheta1
+      rtstepScheme%dweightOldRHS    = dtstep * (dtheta1 - 1.0_DP)
+      rtstepScheme%dweightStationaryRHS = dtstep
+    
+    ELSE
+
+      ! In case of Fractional step, we have to modify the length of the
+      ! current time step according to the substep:
+      !
+      ! For fractional step the handling of the time step size dtstep
+      ! is slightly different than for a 1-step scheme.                                   
+      ! There we are orienting on the length of the macrostep of    
+      ! step length 3*dtstep and break up that into three different  
+      ! substeps at different points in time, not corresponding to  
+      ! dtstep. Depending on the number of the current substep, we   
+      ! have two settings for the weights and time length:          
+      
+      dtheta1 = rtstepScheme%dtheta           
+      dthetp1 = rtstepScheme%dthetaPrime      
+      dalpha  = rtstepScheme%dalpha           
+      dbeta   = rtstepScheme%dbeta    
+      
+      IF (rtstepScheme%isubstep .NE. 2) THEN     
+
+        ! 1st and 3rd substep
+        
+        rtstepScheme%dtstep           =  3.0_DP * dtstep * dtheta1
+        
+        rtstepScheme%dweightMatrixLHS =  3.0_DP * dtstep * dalpha * dtheta1
+        rtstepScheme%dweightMatrixRHS = -3.0_DP * dtstep * dbeta * dtheta1
+        rtstepScheme%dweightNewRHS    =  3.0_DP * dtstep * dalpha * dtheta1
+        rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dbeta * dtheta1
+        rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
+
+      ELSE
+      
+        ! 2nd substep
+
+        rtstepScheme%dtstep           =  3.0_DP * dtstep * dthetp1
+        
+        rtstepScheme%dweightMatrixLHS =  3.0_DP * dtstep * dalpha * dtheta1
+        rtstepScheme%dweightMatrixRHS = -3.0_DP * dtstep * dalpha * dthetp1
+        rtstepScheme%dweightNewRHS    =  3.0_DP * dtstep * dbeta * dthetp1
+        rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dalpha * dthetp1
+        rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dthetp1
+      
+      END IF
       
     END IF
     
@@ -457,8 +548,6 @@ CONTAINS
 
 !</subroutine>
 
-    REAL(DP) :: dtstep,dtheta1,dthetp1,dalpha,dbeta
-
     IF (rtstepScheme%ctimestepType .LT. 0) THEN
       CALL output_line ('timstp_nextSubstep: Time stepping structure not initialised!')
     END IF
@@ -473,55 +562,12 @@ CONTAINS
           REAL(rtstepScheme%nsubsteps,DP) * rtstepScheme%dtstepFixed
       rtstepScheme%dcurrentTime = rtstepScheme%dtimeMacrostep
     END IF
-
-    IF (rtstepScheme%ctimestepType .EQ. TSCHM_FRACTIONALSTEP) THEN
     
-      ! In case of Fractional step, we have to modify the length of the
-      ! current time step according to the substep:
-      !
-      ! For fractional step the handling of the time step size dtstep
-      ! is slightly different than for a 1-step scheme.                                   
-      ! There we are orienting on the length of the macrostep of    
-      ! step length 3*dtstep and break up that into three different  
-      ! substeps at different points in time, not corresponding to  
-      ! dtstep. Depending on the number of the current substep, we   
-      ! have two settings for the weights and time length:          
-      
-      dtheta1 = rtstepScheme%dtheta           
-      dthetp1 = rtstepScheme%dthetaPrime      
-      dalpha  = rtstepScheme%dalpha           
-      dbeta   = rtstepScheme%dbeta    
-      
-      dtstep  = rtstepScheme%dtstepFixed
-
-      IF (rtstepScheme%isubstep .NE. 2) THEN     
-
-        ! 1st and 3rd substep
-        
-        rtstepScheme%dtstep           =  3.0_DP * dtstep * dtheta1
-        
-        rtstepScheme%dweightMatrixLHS =  3.0_DP * dtstep * dalpha * dtheta1
-        rtstepScheme%dweightMatrixRHS = -3.0_DP * dtstep * dbeta * dtheta1
-        rtstepScheme%dweightNewRHS    =  3.0_DP * dtstep * dalpha * dtheta1
-        rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dbeta * dtheta1
-        rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dtheta1
-
-      ELSE
-      
-        ! 2nd substep
-
-        rtstepScheme%dtstep           =  3.0_DP * dtstep * dthetp1
-        
-        rtstepScheme%dweightMatrixLHS =  3.0_DP * dtstep * dalpha * dtheta1
-        rtstepScheme%dweightMatrixRHS = -3.0_DP * dtstep * dalpha * dthetp1
-        rtstepScheme%dweightNewRHS    =  3.0_DP * dtstep * dbeta * dthetp1
-        rtstepScheme%dweightOldRHS    =  3.0_DP * dtstep * dalpha * dthetp1
-        rtstepScheme%dweightStationaryRHS = 3.0_DP * dtstep * dthetp1
-      
-      END IF
-      
-    END IF
-
+    ! Initialise all weights by calling the timstp_setBaseSteplength routine
+    ! with time step length = current time step length, saved in the dtstepFixed
+    ! variable of rtstepScheme.
+    CALL timstp_setBaseSteplength (rtstepScheme, rtstepScheme%dtstepFixed)
+    
   END SUBROUTINE
 
 END MODULE

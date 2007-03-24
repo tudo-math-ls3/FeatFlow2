@@ -1577,7 +1577,7 @@ CONTAINS
   DO isection=1,rcollection%isectionCount
   
     ! Print the segment name:
-    PRINT *,'['//TRIM(rcollection%p_Rsections(isection)%ssectionName)//']'
+    CALL output_line ('['//TRIM(rcollection%p_Rsections(isection)%ssectionName)//']')
     
     ! Print the content of level 0 of the current section
     CALL printlevel(0,rcollection%p_Rsections(isection)%rlevel0)
@@ -1610,7 +1610,7 @@ CONTAINS
       
         ! A level > 0 has a name:
         IF (ilevel .GT. 0) THEN
-          PRINT *,'  [Level ',ilevel,']'
+          CALL output_line ('  [Level '//TRIM(sys_siL(ilevel,8))//']')
         END IF
         
         ! Loop through all values
@@ -1622,8 +1622,8 @@ CONTAINS
           IF (p_rvalue%itype .NE. COLLCT_UNDEFINED) THEN
           
             ! Print that there is data:
-            PRINT *,'  '//TRIM(p_rvalue%sname)//' (Type: ',&
-                    p_rvalue%itype,')'
+            CALL output_line ('  '//TRIM(p_rvalue%sname)//' (Type: '//&
+                              TRIM(sys_siL(p_rvalue%itype,8))//')')
           
           END IF
         END DO
