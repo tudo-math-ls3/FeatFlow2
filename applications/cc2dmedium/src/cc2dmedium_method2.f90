@@ -200,10 +200,10 @@ CONTAINS
     CALL parlst_done (rproblem%rparamList)
     
     ! Print some statistical data about the collection - anything forgotten?
-    PRINT *
-    PRINT *,'Remaining collection statistics:'
-    PRINT *,'--------------------------------'
-    PRINT *
+    CALL output_lbrk ()
+    CALL output_line ('Remaining collection statistics:')
+    CALL output_line ('--------------------------------')
+    CALL output_lbrk ()
     CALL collct_printStatistics (rproblem%rcollection)
     
     ! Finally release the collection.

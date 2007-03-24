@@ -165,7 +165,13 @@ CONTAINS
       df1 = 1.0_DP/1000.0_DP
       df2 = 0.1_DP * 0.2_DP**2
       CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
-      PRINT *,'Forces: ',Dforces(1),Dforces(2)
+
+      CALL output_lbrk()
+      CALL output_line ('Body forces real bd., bdc/horiz/vert')
+      CALL output_line (' 2 / ' &
+          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
+          //TRIM(sys_sdEP(Dforces(2),15,6)) )
+          
       
     ENDIF
     
@@ -194,10 +200,10 @@ CONTAINS
             rBmatrix, rvector%RvectorBlock(2), &
             rtempVector, 1.0_DP, 1.0_DP)
         
-        PRINT *
-        PRINT *,'Divergence: ',&
-            lsyssc_vectorNorm(rtempVector,LINALG_NORML2)
-            
+        CALL output_lbrk()
+        CALL output_line ('Divergence = ' &
+            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
+
         CALL lsyssc_releaseVector (rtempVector)
       
       END IF
@@ -397,7 +403,12 @@ CONTAINS
       df1 = 1.0_DP/1000.0_DP
       df2 = 0.1_DP * 0.2_DP**2
       CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
-      PRINT *,'Forces: ',Dforces(1),Dforces(2)
+      
+      CALL output_lbrk()
+      CALL output_line ('Body forces real bd., bdc/horiz/vert')
+      CALL output_line (' 2 / ' &
+          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
+          //TRIM(sys_sdEP(Dforces(2),15,6)) )
       
     ENDIF
     
@@ -426,9 +437,9 @@ CONTAINS
             rBmatrix, rvector%RvectorBlock(2), &
             rtempVector, 1.0_DP, 1.0_DP)
         
-        PRINT *
-        PRINT *,'Divergence: ',&
-            lsyssc_vectorNorm(rtempVector,LINALG_NORML2)
+        CALL output_lbrk()
+        CALL output_line ('Divergence = ' &
+            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
             
         CALL lsyssc_releaseVector (rtempVector)
       
@@ -501,6 +512,10 @@ CONTAINS
       rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
     
     ! Start UCD export to GMV file:
+    CALL output_lbrk ()
+    CALL output_line ('Writing GMV file: ' &
+        //'gmv/u.gmv.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+    
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
         'gmv/u.gmv.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
     

@@ -382,9 +382,9 @@ CONTAINS
   ! indicate the failure of noncritical solver components:
   !
   !  Bit 0 = failure of the nonlinear solver
-  !  Bit 1 = nonlinear solver did not converge
+  !  Bit 1 = nonlinear solver did not converge completely
   !  Bit 2 = failure of the nonlinear solver during the predictor step
-  !  Bit 3 = nonlinear solver in the predictor step did not converge
+  !  Bit 3 = nonlinear solver in the predictor step did not converge completely
   !
   ! If Bit 0 or 1 are set, the value of derrorIndicator is ignored.
   INTEGER(I32), INTENT(IN)                 :: isolverStatus
@@ -409,7 +409,7 @@ CONTAINS
     ! As standard, take the old stepsize as the new
     dnewTimeStep = dtimeStep
     
-    IF (radTimeStepping%ctype .EQ.TADTS_FIXED) RETURN
+    IF (radTimeStepping%ctype .EQ. TADTS_FIXED) RETURN
     
     ! Check if we can use time analysis...
     IF (IAND(isolverStatus,3) .NE. 0) THEN

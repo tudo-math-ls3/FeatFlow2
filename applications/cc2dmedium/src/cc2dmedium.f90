@@ -42,6 +42,9 @@ PROGRAM cc2dmedium
   
   CALL system_init()
   
+  ! Initialise log file for output.
+  CALL output_init ('log/output.txt')
+  
   ! The very second thing in every program: 
   ! Initialise the storage management: 
   !
@@ -53,15 +56,16 @@ PROGRAM cc2dmedium
              'log/feat1.sys','log/feat1.trc') 
   
   ! Call the problem to solve. 
-  PRINT *
-  PRINT *,'Calculating cc2dmedium-Problem'
-  PRINT *,'------------------------------'
-  CALL cc2dmedium2
+  CALL output_lbrk ()
+  CALL output_line ('Calculating cc2dmedium-Problem')
+  CALL output_separator (OU_SEP_MINUS)
+  
+  CALL cc2dmedium2 ()
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  PRINT *
+  CALL output_lbrk ()
   CALL storage_info(.TRUE.)
   
   ! Clean up the storage management, finish
