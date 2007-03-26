@@ -285,7 +285,7 @@ MODULE cc2dmediumm2nonlinearcore
     REAL(DP) :: domegaMin = 0.0_DP
     
     ! Maximum allowed damping parameter; OMGMAX
-    REAL(DP) :: domegaMax = 1.0_DP
+    REAL(DP) :: domegaMax = 2.0_DP
     
     ! Minimum discretisation level
     INTEGER :: NLMIN = 1

@@ -123,15 +123,16 @@ CONTAINS
     INTEGER :: ilevel
     TYPE(t_parlstSection), POINTER :: p_rsection
 
-    ! Get the minimum/maximum damping parameter to the collection
+    ! Basic initialisation of the nonlinenar iteration structure.
+    CALL c2d2_createNonlinearLoop (rnonlinearIteration,rproblem%NLMIN,rproblem%NLMAX)    
+    
+    ! Get the minimum/maximum damping parameter from the parameter list, save
+    ! them to the nonlinear iteration structure (which is now initialised).
     CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
                                  'domegaMin', rnonlinearIteration%domegaMin, 0.0_DP)
                               
     CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                 'domegaMax', rnonlinearIteration%domegaMax, 0.0_DP)
-    
-    ! Basic initialisation of the nonlienar iteration structure.
-    CALL c2d2_createNonlinearLoop (rnonlinearIteration,rproblem%NLMIN,rproblem%NLMAX)    
+                                 'domegaMax', rnonlinearIteration%domegaMax, 2.0_DP)
     
     ! Save pointers to the RHS and solution vector
     rnonlinearIteration%p_rsolution => rvector

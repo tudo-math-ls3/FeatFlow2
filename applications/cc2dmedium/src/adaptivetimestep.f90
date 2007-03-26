@@ -80,6 +80,30 @@ MODULE adaptivetimestep
 !</constantblock>
 
 
+!<constantblock description="Solver status flags. Bitfield constants for the isolverStatus variable.">
+
+  ! Nonlinear solver failed
+  INTEGER(I32), PARAMETER :: TADTS_SST_NLFAIL          = 2**0
+  
+  ! Nonlinear solver failed because preconditioner did not work
+  INTEGER(I32), PARAMETER :: TADTS_SST_NLPRECFAIL      = 2**1
+  
+  ! Nonlinear solver converged but has not reached the convergence criterion
+  INTEGER(I32), PARAMETER :: TADTS_SST_NLINCOMPLETE    = 2**2
+
+  ! Nonlinear solver in the predictor step failed
+  INTEGER(I32), PARAMETER :: TADTS_SST_NLPREDFAIL      = 2**3
+  
+  ! Nonlinear solver in the predictor step failed because preconditioner did not work
+  INTEGER(I32), PARAMETER :: TADTS_SST_NLPREDPRECFAIL  = 2**4
+  
+  ! Nonlinear solverin the predictor step converged but has not reached 
+  ! the convergence criterion
+  INTEGER(I32), PARAMETER :: TADTS_SST_NLPREDINCOMPLETE = 2**5
+
+!</constantblock>
+
+
 !</constants>  
 
   
@@ -349,6 +373,7 @@ CONTAINS
   
 !<description>
   ! Calculates a new time step size based on a time error indicator derrorIndicator.
+  ! The implementation follows p. 160ff, Turek's CFD-book.
 !</description>
 
 !<input>
@@ -377,16 +402,24 @@ CONTAINS
   INTEGER, INTENT(IN)                      :: itimeApproximationOrder
   
   ! Status of the solver. Indicates whether any of the solvers broke down during
-  ! the solution process. Bitfield. Standard value = 0 = all solvers worked fine.
+  ! the solution process. Bitfield, combination of TADTS_SSL_xxxx constante. 
+  ! Standard value = 0 = all solvers worked fine.
   ! Lower bits represent a failue of critical solver components while higher bits
-  ! indicate the failure of noncritical solver components:
+  ! indicate the failure of noncritical solver components.
   !
-  !  Bit 0 = failure of the nonlinear solver
-  !  Bit 1 = nonlinear solver did not converge completely
-  !  Bit 2 = failure of the nonlinear solver during the predictor step
-  !  Bit 3 = nonlinear solver in the predictor step did not converge completely
+  !  TADTS_SST_NLFAIL           = failure of the nonlinear solver
+  !  TADTS_SST_NLPRECFAIL       = failure of the nonlinear solver and 
+  !                               preconditioner in the nonlinear solver
+  !  TADTS_SST_NLINCOMPLETE     = nonlinear solver did not converge completely
+  !  TADTS_SST_NLPREDFAIL       = failure of the nonlinear solver and preconditioner 
+  !                               in the nonlinear solver during the predictor step
+  !  TADTS_SST_NLPREDPRECFAIL   = failure of the nonlinear solver during 
+  !                               the predictor step
+  !  TADTS_SST_NLPREDINCOMPLETE = nonlinear solver in the predictor step did 
+  !                               not converge completely
   !
-  ! If Bit 0 or 1 are set, the value of derrorIndicator is ignored.
+  ! If TADTS_SST_NLFAIL or TADTS_SST_NLPRECFAIL is set, the value of 
+  ! derrorIndicator is ignored.
   INTEGER(I32), INTENT(IN)                 :: isolverStatus
   
   ! Repetition counter.
@@ -419,7 +452,8 @@ CONTAINS
       ! We can just "guess" a new time step - if we are at all allowed
       ! to change it!
 
-      IF (IAND(isolverStatus,2**1+2**2) .NE. 0) THEN
+      IF (IAND(isolverStatus,&
+               TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL + TADTS_SST_NLPREDFAIL) .NE. 0) THEN
       
         ! If the linear solvers of the predictior step or
         ! the nonlinear solver of the correction step broke down,
@@ -427,7 +461,7 @@ CONTAINS
       
         dnewTimeStep = dtimeStep / SQRT(radTimeStepping%dtimeStepFactor)
       
-      ELSE IF (IAND(isolverStatus,2**0).NE.0) THEN
+      ELSE IF (IAND(isolverStatus,TADTS_SST_NLPREDPRECFAIL).NE.0) THEN
 
         ! If the linear solvers of the correction step broke down,
         ! broke down, reduce the time step by DTFACT
@@ -474,7 +508,7 @@ CONTAINS
       ! bound the time step: dnewTimeStep must result in the interval
       ! [ dtimeStep/SQRT(radTimeStepping%dtimeStepFactor) .. dtimeStep ]:
 
-      IF (IAND(isolverStatus,2**3).NE. 0) THEN
+      IF (IAND(isolverStatus,TADTS_SST_NLPREDFAIL) .NE. 0) THEN
         dnewTimeStep = MAX( dtimeStep/SQRT(radTimeStepping%dtimeStepFactor), &
                             MIN(dnewTimeStep,dtimeStep) )
       ENDIF

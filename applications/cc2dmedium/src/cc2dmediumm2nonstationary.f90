@@ -671,7 +671,7 @@ CONTAINS
               rtimesteppingPredictor,rnonlinearIteration,rnlSol,&
               rtempBlock1,rtempBlock2)
               
-          ! Remember the status of the nonlinear solver.
+          ! Remember the status of the nonlinear solver for later use.
           isolverStatusPredictor = rnlSol%iresult
           
           ! Did the nonlinear solver break down?
@@ -683,7 +683,24 @@ CONTAINS
             ! Set bit 0 and not bit 2/3 in isolverStatus as we want to compute the 
             ! new time step based on the solver status of the last computation and
             ! not on a combined analysis of predictor step and actual solution!
-            isolverStatus = 2**0
+            isolverStatus = 0
+            SELECT CASE (rnlSol%iresult)
+            CASE (:-1)
+              ! Nonlinear solver worked, but could not reach convergence criterion
+              isolverStatus = IOR(isolverStatus,TADTS_SST_NLINCOMPLETE)
+            CASE (0)
+              ! Everything fine
+            CASE (1)
+              ! Nonlinear solver diverged
+              isolverStatus =  IOR(isolverStatus,TADTS_SST_NLFAIL)
+            CASE (2)
+              ! Nonlinear solver diverged because of error in the preconditioner
+              isolverStatus =  IOR(isolverStatus,&
+                                   TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL)
+            CASE (3)
+              ! General error
+              isolverStatus = NOT(0)
+            END SELECT
             dtmp = adtstp_calcTimeStep (&
                 rproblem%rtimedependence%radaptiveTimeStepping, &
                 0.0_DP, &
@@ -798,7 +815,23 @@ CONTAINS
                               'Calculating new time step size...')
             
             ! Calculate a new time step size.
-            isolverStatus = 2**0
+            SELECT CASE (rnlSol%iresult)
+            CASE (:-1)
+              ! Nonlinear solver worked, but could not reach convergence criterion
+              isolverStatus = IOR(isolverStatus,TADTS_SST_NLINCOMPLETE)
+            CASE (0)
+              ! Everything fine
+            CASE (1)
+              ! Nonlinear solver diverged
+              isolverStatus =  IOR(isolverStatus,TADTS_SST_NLFAIL)
+            CASE (2)
+              ! Nonlinear solver diverged because of error in the preconditioner
+              isolverStatus =  IOR(isolverStatus,&
+                                   TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL)
+            CASE (3)
+              ! General error
+              isolverStatus = NOT(0)
+            END SELECT
             dtmp = adtstp_calcTimeStep (&
                 rproblem%rtimedependence%radaptiveTimeStepping, &
                 0.0_DP, &
@@ -868,13 +901,42 @@ CONTAINS
 
             ! Evaluate everything that went wrong in the solvers
             isolverStatus = 0
-            IF (rnlSol%iresult .LT. 0) &
-              isolverStatus = IOR(isolverStatus,INT(2**1,I32)) 
-            IF (isolverStatusPredictor .GT. 0) &
-              isolverStatus = IOR(isolverStatus,INT(2**2,I32)) 
-            IF (isolverStatusPredictor .LT. 0) &
-              isolverStatus = IOR(isolverStatus,INT(2**3,I32)) 
-              
+            SELECT CASE (rnlSol%iresult)
+            CASE (:-1)
+              ! Nonlinear solver worked, but could not reach convergence criterion
+              isolverStatus = IOR(isolverStatus,TADTS_SST_NLINCOMPLETE)
+            CASE (0)
+              ! Everything fine
+            CASE (1)
+              ! Nonlinear solver diverged
+              isolverStatus =  IOR(isolverStatus,TADTS_SST_NLFAIL)
+            CASE (2)
+              ! Nonlinear solver diverged because of error in the preconditioner
+              isolverStatus =  IOR(isolverStatus,&
+                                   TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL)
+            CASE (3)
+              ! General error
+              isolverStatus = NOT(0)
+            END SELECT
+
+            SELECT CASE (isolverStatusPredictor)
+            CASE (:-1)
+              ! Nonlinear solver worked, but could not reach convergence criterion
+              isolverStatus = IOR(isolverStatus,TADTS_SST_NLPREDINCOMPLETE)
+            CASE (0)
+              ! Everything fine
+            CASE (1)
+              ! Nonlinear solver diverged
+              isolverStatus =  IOR(isolverStatus,TADTS_SST_NLPREDFAIL)
+            CASE (2)
+              ! Nonlinear solver diverged because of error in the preconditioner
+              isolverStatus =  IOR(isolverStatus,&
+                                   TADTS_SST_NLPREDFAIL + TADTS_SST_NLPREDPRECFAIL)
+            CASE (3)
+              ! General error
+              isolverStatus = NOT(0)
+            END SELECT
+
             ! Calculate the new time step size
             dtmp = adtstp_calcTimeStep (&
                 rproblem%rtimedependence%radaptiveTimeStepping, dtmperror, &

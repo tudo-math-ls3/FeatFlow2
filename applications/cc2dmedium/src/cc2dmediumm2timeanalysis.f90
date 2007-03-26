@@ -17,6 +17,9 @@
 !# 1.) c2d2_timeErrorByPredictor
 !#     -> Calculate an approximation to the time error using a predictor-like
 !#        approach.
+!#
+!# 2.) c2d2_timeDerivative
+!#     -> Calculate the (1st order) time derivative of a solution.
 !# </purpose>
 !##############################################################################
 
@@ -195,9 +198,12 @@ CONTAINS
     Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
     Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
 
-    dtmp = SQRT(Dnorms2(1)**2+Dnorms2(2)**2)
+    ! Compatibility note: For full compatibility to the old CC2D version, one must
+    ! test (dtmp .LE. 1.0_DP) everywhere here instead of (dtmp .EQ. 0.0_DP) !
+
+    dtmp = SQRT( 0.5_DP * (Dnorms2(1)**2+Dnorms2(2)**2) )
     IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
-    p_rtimeError%drelUL2 = SQRT(Dnorms1(1)**2+Dnorms1(2)**2) / dtmp
+    p_rtimeError%drelUL2 = SQRT(0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) / dtmp
 
     dtmp = Dnorms2(3)
     IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
@@ -320,7 +326,7 @@ CONTAINS
     Cnorms = LINALG_NORML2
     Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
     
-    p_rtimeNorm%drelUL2 = SQRT(Dnorms1(1)**2+Dnorms1(2)**2) &
+    p_rtimeNorm%drelUL2 = SQRT( 0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) &
         / (SQRT(REAL(nequ,DP)) * dtstep)
     p_rtimeNorm%drelPL2 = Dnorms1(3) / (SQRT(REAL(neqp,DP)) * dtstep)
 
