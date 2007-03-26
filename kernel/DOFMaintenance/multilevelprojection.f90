@@ -995,7 +995,7 @@ CONTAINS
           ! Type of prolongation? Extended or not?
           SELECT CASE (ractProjection%iprolEX3Yvariant)
           CASE (:1) ! Standard prolongation
-            IF (IAND(ractProjection%ielementTypeRestriction,2**16) .NE. 0) THEN
+            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
                   p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
@@ -1018,7 +1018,7 @@ CONTAINS
             CALL storage_getbase_double(p_rtriaCoarse%h_DelementArea, &
                                         p_DelementAreaCoarse)
             ! (what a nasty call...)                                       
-            IF (IAND(ractProjection%ielementTypeRestriction,2**16) .NE. 0) THEN
+            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
                       p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
@@ -1238,7 +1238,7 @@ CONTAINS
           ! Type of restriction? Extended or not?
           SELECT CASE (ractProjection%iprolEX3Yvariant)
           CASE (:1) ! Standard prolongation
-            IF (IAND(ractProjection%ielementTypeRestriction,2**16) .NE. 0) THEN
+            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
                   p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
@@ -1261,7 +1261,7 @@ CONTAINS
             CALL storage_getbase_double(p_rtriaCoarse%h_DelementArea, &
                                         p_DelementAreaCoarse)
             ! (what a nasty call...)                                       
-            IF (IAND(ractProjection%ielementTypeRestriction,2**16) .NE. 0) THEN
+            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
                       p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
