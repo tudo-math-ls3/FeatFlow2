@@ -265,6 +265,12 @@ MODULE vanca
     ! Spatial discretisation structure for pressure
     TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrP => NULL()
     
+    ! Multiplication factors for the submatrices; taken from the system matrix.
+    ! (-> Not used in the current implementation! Although it's easy to include
+    ! that into VANCA, some further speed analysis has to be done to make
+    ! sure there's not too much speed impact when using these!)
+    REAL(DP), DIMENSION(3,3) :: Dmultipliers
+    
   END TYPE
   
 !</typeblock>
@@ -448,6 +454,11 @@ CONTAINS
       ELSE
         rvanca%rvanca2DNavSt%p_KdiagonalA => rvanca%rvanca2DNavSt%p_KldA
       END IF
+
+      ! Get the multiplication factors of the submatrices.
+      ! (-> for a later implementation; currently, the multipliers are not used!)
+      rvanca%rvanca2DNavSt%Dmultipliers(1:3,1:3) = &
+          rmatrix%RmatrixBlock(1:3,1:3)%dscaleFactor
 
       ! Get the block discretisation structure from the matrix.
       p_rblockDiscr => rmatrix%p_rblockDiscretisation
@@ -1463,6 +1474,9 @@ CONTAINS
     ELSE
       rvanca%p_KdiagonalA => rvanca%p_KldA
     END IF
+    
+    ! Get the multiplication factors of the submatrices
+    rvanca%Dmultipliers(:,:) = rmatrix%RmatrixBlock(1:3,1:3)%dscaleFactor
 
   END SUBROUTINE
 
@@ -1525,6 +1539,7 @@ CONTAINS
     INTEGER, PARAMETER :: lofsv = 4
     INTEGER, PARAMETER :: lofsp = 8
     REAL(DP) :: daux
+    REAL(DP), DIMENSION(3,3) :: Dmult
     
     ! Local arrays for informations about one element
     REAL(DP), DIMENSION(4) :: AA,BB1,BB2,DD1,DD2
@@ -1544,6 +1559,9 @@ CONTAINS
     p_DB2 => rvanca%p_DB2
     p_DD1 => rvanca%p_DD1
     p_DD2 => rvanca%p_DD2
+    
+    ! For support of scaled matrices, use the following line; currently switched off.
+    !Dmult(:,:) = rvanca%Dmultipliers(:,:)
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
@@ -1646,6 +1664,11 @@ CONTAINS
         ! Put on AA(.) the diagonal entry of matrix A
         AA(inode) = p_DA(p_KdiagonalA(idof))
         
+        ! For support of scaled matrices, use the following line; currently switched off.
+        ! Node that this way, VANCA would not support a different scaling factor for
+        ! A(1,1) than for A(2,2)! Let's hope that this is nowhere used!
+        !AA(inode) = Dmult(1,1)*p_DA(p_KdiagonalA(idof))
+        
         ! Set FF initially to the value of the right hand
         ! side vector that belongs to our current DOF corresponding
         ! to inode
@@ -1727,6 +1750,11 @@ CONTAINS
           daux = p_DA(ia)
           FF(inode)       = FF(inode)      -daux*p_Dvector(J)
           FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
+          
+          ! For support of scaled matrices, use the following line; currently switched off.
+          !daux = Dmult(1,1)*p_DA(ia)
+          !FF(inode)       = FF(inode)      -daux*p_Dvector(J)
+          !FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
         END DO
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -1738,6 +1766,10 @@ CONTAINS
           daux = p_Dvector(j+ioffsetp)
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
+          
+          ! For support of scaled matrices, use the following lines; currently switched off.
+          !FF(inode)       = FF(inode)      -Dmult(1,3)*p_DB1(ib)*daux
+          !FF(inode+lofsv) = FF(inode+lofsv)-Dmult(2,3)*p_DB2(ib)*daux
         END DO
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
@@ -1775,6 +1807,12 @@ CONTAINS
             ! So we can use "ib" as index here to access the entry of DDi:
             DD1(inode) = p_DD1(ib)
             DD2(inode) = p_DD2(ib)
+            
+            ! For support of scaled matrices, use the following lines; currently switched off.
+            !BB1(inode) = Dmult(1,3)*p_DB1(ib)
+            !BB2(inode) = Dmult(2,3)*p_DB2(ib)
+            !DD1(inode) = Dmult(3,1)*p_DD1(ib)
+            !DD2(inode) = Dmult(3,2)*p_DD2(ib)
             
             ! Build the pressure entry in the local defect vector:
             !   f_i = (f_i-Aui) - D_i pi
