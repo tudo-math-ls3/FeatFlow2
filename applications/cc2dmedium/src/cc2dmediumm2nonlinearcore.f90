@@ -10,8 +10,8 @@
 !#
 !# The discretised core equation reads at the moment:
 !#
-!#   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = f1
-!#                                                B^T*u = f2
+!#   alpha*M*u + theta*Stokes*u + gamma*N(u)u + B*p = f1
+!#                                            B^T*u = f2
 !#
 !# with:
 !#   alpha = 0/1    - for time dependence; 
@@ -19,6 +19,11 @@
 !#   theta in [0,1] - for time dependent THETA scheme; 
 !#                    =1 for stationary problem
 !#   gamma = 0/1    - for Stokes/Navier-Stokes
+!#
+!# "Stokes" is the Stokes matrix (=nu*Laplace) in deformation or gradient
+!# formulation.
+!# N(u)u is the nonlinearity with stabilisation. This may also include things
+!# like Newton matrices, etc.
 !#
 !# The core equation is abstractly written a nonlinear system of the form
 !#
@@ -142,6 +147,7 @@ MODULE cc2dmediumm2nonlinearcore
   USE paramlist
   USE linearsolverautoinitialise
   USE matrixrestriction
+  USE trilinearformevaluation
   
   USE collection
   USE convection
@@ -253,7 +259,25 @@ MODULE cc2dmediumm2nonlinearcore
 
     ! Mass matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixMass => NULL()
+
+    ! Block matrix, which is used in the defect correction / Newton
+    ! algorithm as preconditioner matrix of the correspnding underlying
+    ! linear sytem. Is usually the (linearise) system matrix or
+    ! a Newton matrix. This matrix is changed during the
+    ! nonlinear iteration and used e.g. if a linear solver (Multigrid) is
+    ! used for preconditioning.
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner
   
+    ! Velocity coupling matrix $A_{12}$.
+    ! Exists only of deformation tensor or Newton iteration is used in the
+    ! nonlinear iteration.
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixVelocityCoupling12 => NULL()
+
+    ! Velocity coupling matrix $A_{12}$.
+    ! Exists only of deformation tensor or Newton iteration is used in the
+    ! nonlinear iteration.
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixVelocityCoupling21 => NULL()
+    
   END TYPE
 
 !</typeblock>
@@ -455,7 +479,7 @@ CONTAINS
 
     ! Which preconditioner is chosen?
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! Save temporary vectors
       CALL collct_setvalue_vecsca(rcollection,'CCNL_RTEMPSCALAR',&
           rnonlinearIteration%rpreconditioner%p_rtempVectorSc,.TRUE.)
@@ -513,7 +537,18 @@ CONTAINS
 
       CALL collct_setvalue_matsca(rcollection,'CCNL_MATMASS',&
           rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass,.TRUE.,ilevel)
+
+      CALL collct_setvalue_mat(rcollection,'CCNL_MATPREC',&
+          rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixPreconditioner,&
+          .TRUE.,ilevel)
       
+      CALL collct_setvalue_matsca(rcollection,'CCNL_MATA12',&
+          rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixVelocityCoupling12,&
+          .TRUE.,ilevel)
+
+      CALL collct_setvalue_matsca(rcollection,'CCNL_MATA21',&
+          rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixVelocityCoupling21,&
+          .TRUE.,ilevel)
     END DO
     
     ! Save auxiliary variables for the nonlinear iteration
@@ -604,7 +639,7 @@ CONTAINS
 
     ! Which preconditioner is chosen?
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! Get temporary vectors.
       rnonlinearIteration%rpreconditioner%p_rtempVectorSc => &
           collct_getvalue_vecsca(rcollection,'CCNL_RTEMPSCALAR')
@@ -660,6 +695,14 @@ CONTAINS
           collct_getvalue_matsca(rcollection,'CCNL_MATB2',ilevel)
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass => &
           collct_getvalue_matsca(rcollection,'CCNL_MATMASS',ilevel)
+          
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixPreconditioner => &
+          collct_getvalue_mat(rcollection,'CCNL_MATPrec',ilevel)
+
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixVelocityCoupling12 => &
+          collct_getvalue_matsca(rcollection,'CCNL_MATA12',ilevel)
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixVelocityCoupling21 => &
+          collct_getvalue_matsca(rcollection,'CCNL_MATA21',ilevel)
     END DO
     
     ! Reconstruct residual information
@@ -744,7 +787,7 @@ CONTAINS
 
     ! Which preconditioner is chosen?
     SELECT CASE (itypePreconditioner)
-    CASE (1)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
 
       ! Remove the solver node from the collection - not needed anymore there
       CALL collct_deletevalue(rcollection,'CCNL_LINSOLVER')
@@ -801,6 +844,9 @@ CONTAINS
       CALL collct_deletevalue (rcollection,'CCNL_MATB1',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_MATB2',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_MATMASS',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_MATA12',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_MATA21',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_MATPREC',ilevel)
     END DO
       
   END SUBROUTINE
@@ -812,7 +858,8 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE c2d2_assembleLinearisedMatrices (rnonlinearIteration,rcollection,&
-      blevelHirarchy,bboundaryConditions,bboundaryConditionsNonlin,rx)
+      blevelHirarchy,bboundaryConditions,bboundaryConditionsNonlin,&
+      bassemblePreconditioner,rx)
 
   USE linearsystemblock
   USE collection
@@ -852,6 +899,12 @@ CONTAINS
   ! FASLE = don't incorporate any boundary conditions
   LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
 
+  ! TRUE  = Assemble the preconditioner matrices p_rmatrixPreconditioner
+  !         on every level in rnonlinearIteration.
+  ! FALSE = assemble the linearised system matrices p_rmatrix
+  !         on every level in rnonlinearIteration.
+  LOGICAL, INTENT(IN) :: bassemblePreconditioner
+  
   ! OPTIONAL: Current iteration vector. Must be specified if the nonlinearity
   ! should be discretised.
   TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL       :: rx
@@ -862,7 +915,6 @@ CONTAINS
 
   ! local variables
   INTEGER :: iupwind
-  LOGICAL :: bdecoupledXY
 
   ! An array for the system matrix(matrices) during the initialisation of
   ! the linear solver.
@@ -874,12 +926,12 @@ CONTAINS
   TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
   TYPE(t_jumpStabilisation) :: rjumpStabil
   TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
-
+  
   TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
 
   ! A filter chain for the linear solver
   TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-
+  
   ! DEBUG!!!
 !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
 !    call lsysbl_getbase_double (rd,p_def)
@@ -895,8 +947,6 @@ CONTAINS
       NLMIN = NLMAX
     END IF
     
-    bdecoupledXY = collct_getvalue_int (rcollection,'DECOUPLEDXY') == YES
-
     ! Get the interlevel projection structure and the temporary vector
     ! from the collection.
     ! Our 'parent' prepared there how to interpolate the solution on the
@@ -988,10 +1038,15 @@ CONTAINS
     
       ! Get the system matrix and the Stokes matrix
       p_rmatrixFine => p_rmatrix
-      p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
+      ! What should we assemble? Linearised matrix or preconditioner?
+      IF (bassemblePreconditioner) THEN
+        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
+      ELSE
+        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
+      END IF
       p_rmatrixStokes => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
       p_rmatrixMass => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
-
+      
       ! On the highest level, we use rx as solution to build the nonlinear
       ! matrix. On lower levels, we have to create a solution
       ! on that level from a fine-grid solution before we can use
@@ -1054,8 +1109,10 @@ CONTAINS
           IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
               (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
           
+            ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
             CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
-                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+                                         LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+                                        
             ! Mass matrix?
             IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
               CALL lsyssc_matrixLinearComb (&
@@ -1074,13 +1131,112 @@ CONTAINS
             END IF
           END IF
 
-          ! Call the SD method to calculate the nonlinear matrix.
-          CALL conv_streamlineDiffusion2d (&
-                              p_rvectorCoarse, p_rvectorCoarse, &
-                              1.0_DP, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              p_rmatrix%RmatrixBlock(1,1))      
-                                       
+          IF (.NOT. bassemblePreconditioner .OR. &
+              (rnonlinearIteration%rpreconditioner%ctypePreconditioning .NE. &
+                CCPREC_NEWTON) ) THEN
+
+            ! If A22=A11, that's all for the diagonals of the matrix.
+            ! If A22 has a separate content in memory, we copy the content
+            ! of A11 to A22 so that they are the same.
+            IF (.NOT. lsyssc_isMatrixContentShared( &
+              p_rmatrix%RmatrixBlock(1,1),p_rmatrix%RmatrixBlock(2,2))) THEN
+              CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                  p_rmatrix%RmatrixBlock(2,2),&
+                  LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            END IF
+
+            ! Call the SD method to calculate the nonlinear part in A11 and A22.
+            CALL conv_streamlineDiffusionBlk2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, &
+                                1.0_DP, 0.0_DP,&
+                                rstreamlineDiffusion, CONV_MODMATRIX, &
+                                p_rmatrix)
+                                
+            ! Alternative iplementation with the scalar version of SD:
+            !$
+            ! Call the SD method to calculate the nonlinear matrix.
+            !CALL conv_streamlineDiffusion2d (&
+            !                    p_rvectorCoarse, p_rvectorCoarse, &
+            !                    1.0_DP, 0.0_DP,&
+            !                    rstreamlineDiffusion, CONV_MODMATRIX, &
+            !                    p_rmatrix%RmatrixBlock(1,1))
+            !
+            ! If A22=A11, that's all for the diagonals of the matrix.
+            ! If A22 has a separate content in memory, we copy the content
+            ! of A11 to A22 so that they are the same.
+            !IF (.NOT. lsyssc_isMatrixContentShared( &
+            !  p_rmatrix%RmatrixBlock(1,1),p_rmatrix%RmatrixBlock(2,2))) THEN
+            !  CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+            !      p_rmatrix%RmatrixBlock(2,2),&
+            !      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            !END IF
+            
+          ELSE
+            
+            ! Copy A11 to A22 and clear A12 and A21. Then, assemble the
+            ! convectve operator + Newton into A11, A12, A21 and A22.
+            CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                p_rmatrix%RmatrixBlock(2,2),&
+                LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(1,2))
+            CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(2,1))
+          
+            ! Call the extended SD method to set up the velocity part
+            ! including the Newton matrix.
+            ! Configure SD to calculate Newton.
+            rstreamlineDiffusion%dnewton = 1.0_DP
+            CALL conv_streamlineDiffusionBlk2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, &
+                                1.0_DP, 0.0_DP,&
+                                rstreamlineDiffusion, CONV_MODMATRIX, &
+                                p_rmatrix)
+
+!            ! Alternative implementation of Newton with the trilinear form:
+!            ! 
+!            ! First assemble the nonlinearity into A11,
+!            CALL conv_streamlineDiffusion2d (&
+!                                p_rvectorCoarse, p_rvectorCoarse, &
+!                                1.0_DP, 0.0_DP,&
+!                                rstreamlineDiffusion, CONV_MODMATRIX, &
+!                                p_rmatrix%RmatrixBlock(1,1))
+!            ! Copy A11 to A22
+!            CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+!                p_rmatrix%RmatrixBlock(2,2),&
+!                LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+!
+!            ! Add the Newton matrix to A11, A12, A21 and A22 using the
+!            ! trilinear form.
+!
+!            TYPE(t_trilinearForm) :: rform
+!
+!            rform%itermCount = 1
+!            rform%BconstantCoeff = .TRUE.          
+!            rform%BallCoeffConstant = .TRUE.      
+!            rform%Dcoefficients(1)  = rnonlinearIteration%dgamma
+!            rform%Idescriptors(2,1) = DER_FUNC
+!            rform%Idescriptors(3,1) = DER_FUNC
+!
+!            CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(1,2))
+!            CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(2,1))
+!
+!            rform%Idescriptors(1,1) = DER_DERIV_X
+!            CALL trilf_buildMatrix9d_conf2 (rform,.FALSE., &
+!                p_rmatrix%RmatrixBlock(1,1),p_rvectorCoarse%RvectorBlock(1))
+!            
+!            rform%Idescriptors(1,1) = DER_DERIV_Y
+!            CALL trilf_buildMatrix9d_conf2 (rform,.FALSE., &
+!                p_rmatrix%RmatrixBlock(1,2),p_rvectorCoarse%RvectorBlock(1))
+!
+!            rform%Idescriptors(1,1) = DER_DERIV_X
+!            CALL trilf_buildMatrix9d_conf2 (rform,.FALSE., &
+!                p_rmatrix%RmatrixBlock(2,1),p_rvectorCoarse%RvectorBlock(2))
+!
+!            rform%Idescriptors(1,1) = DER_DERIV_Y
+!            CALL trilf_buildMatrix9d_conf2 (rform,.FALSE., &
+!                p_rmatrix%RmatrixBlock(2,2),p_rvectorCoarse%RvectorBlock(2))
+                
+          END IF
+          
         CASE (1)
       
           ! The system matrix looks like:
@@ -1098,8 +1254,9 @@ CONTAINS
           IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
               (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
 
+            ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
             CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
-                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
             ! Mass matrix?
             IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
               CALL lsyssc_matrixLinearComb (&
@@ -1125,6 +1282,15 @@ CONTAINS
                               rupwind, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))      
                               
+          ! If A22=A11, that's all for the diagonals of the matrix.
+          ! If A22 has a separate content in memory, we copy the content
+          ! of A11 to A22 so that they are the same.
+          IF (.NOT. lsyssc_isMatrixContentShared(p_rmatrix%RmatrixBlock(2,2))) THEN
+            CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                                        p_rmatrix%RmatrixBlock(2,2),&
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+          END IF
+
         CASE (2)
 
           ! The system matrix looks like:
@@ -1141,8 +1307,9 @@ CONTAINS
           IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
               (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
 
+            ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
             CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
-                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
             ! Mass matrix?
             IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
               CALL lsyssc_matrixLinearComb (&
@@ -1179,6 +1346,15 @@ CONTAINS
                               rjumpStabil, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))   
 
+          ! If A22=A11, that's all for the diagonals of the matrix.
+          ! If A22 has a separate content in memory, we copy the content
+          ! of A11 to A22 so that they are the same.
+          IF (.NOT. lsyssc_isMatrixContentShared(p_rmatrix%RmatrixBlock(2,2))) THEN
+            CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                                        p_rmatrix%RmatrixBlock(2,2),&
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+          END IF
+
         CASE DEFAULT
           PRINT *,'Don''t know how to set up nonlinearity!?!'
           STOP
@@ -1199,8 +1375,9 @@ CONTAINS
         IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
             (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
 
+          ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
           CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
-                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
           ! Mass matrix?
           IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
             CALL lsyssc_matrixLinearComb (&
@@ -1231,6 +1408,15 @@ CONTAINS
           
         END IF
 
+        ! If A22=A11, that's all.
+        ! If A22 has a separate content in memory, we copy the content
+        ! of A11 to A22 so that they are the same.
+        IF (.NOT. lsyssc_isMatrixContentShared(p_rmatrix%RmatrixBlock(2,2))) THEN
+          CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                                      p_rmatrix%RmatrixBlock(2,2),&
+                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+        END IF
+
       END IF
 
       ! For the construction of matrices on lower levels, call the matrix
@@ -1244,20 +1430,15 @@ CONTAINS
             p_rmatrix%RmatrixBlock(1,1), &
             rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
             rnonlinearIteration%rfinalAssembly%dadmatthreshold)
+            
+        IF (.NOT. lsyssc_isMatrixContentShared(p_rmatrix%RmatrixBlock(2,2))) THEN
+          CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(2,2), &
+              p_rmatrix%RmatrixBlock(1,1), &
+              rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
+              rnonlinearIteration%rfinalAssembly%dadmatthreshold)
+        END IF
       END IF
       
-      ! In case the X- and Y-velocity is 'coupled' in the sense that the
-      ! matrices are the same, that's all we have to do. If the X- and
-      ! Y-velocity is 'decoupled' however (because of no-slip boundary
-      ! conditions which impose different BC's in the first than in the
-      ! 2nd matrix), we have to copy the entries of submatrix (1,1)
-      ! to submatrix (2,2) before imposing boundary conditions.
-      IF (bdecoupledXY) THEN
-        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
-                                     p_rmatrix%RmatrixBlock(2,2),&
-                                     LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
-      END IF
-    
       IF (bboundaryConditions) THEN
     
         ! Apply the filter chain to the matrix.
@@ -1875,7 +2056,7 @@ CONTAINS
         ! at the point rtemp1.
         ! Don't incorporate nonlinear (slip) boundary conditions.
         CALL c2d2_assembleLinearisedMatrices (rnonlinearIteration,p_rcollection,&
-          .FALSE.,.TRUE.,.FALSE.,rtemp1)      
+          .FALSE.,.TRUE.,.FALSE.,.FALSE.,rtemp1)      
       
       END IF
         
@@ -1952,7 +2133,7 @@ CONTAINS
 
   !<subroutine>
 
-    SUBROUTINE c2d2_precondDefect (rd,rx,rb,domega,bsuccess,p_rcollection)
+    SUBROUTINE c2d2_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -1967,6 +2148,9 @@ CONTAINS
   !</description>
 
   !<inputoutput>
+    ! Number of current iteration. 
+    INTEGER, INTENT(IN)                           :: ite
+
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
     TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
 
@@ -2007,6 +2191,9 @@ CONTAINS
     INTEGER :: ierror
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
     INTEGER, DIMENSION(3) :: Cnorms
+    
+    INTEGER :: i
+    TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
 
     ! The nonlinear iteration structure
     TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
@@ -2022,19 +2209,41 @@ CONTAINS
       CALL c2d2_restoreNonlinearLoop (rnonlinearIteration,p_rcollection)
 
       SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-      CASE (CCPREC_LINEARSOLVER)
+      CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
         ! Preconditioning with a linear solver.
         !
-        ! At first, assemble the linearised system matrices on all levels
+        ! At first, assemble the preconditioner matrices on all levels
         ! and incorporate all boundary conditions.
         CALL c2d2_assembleLinearisedMatrices (rnonlinearIteration,p_rcollection,&
-            .TRUE.,.TRUE.,.TRUE.,rx)
+            .TRUE.,.TRUE.,.TRUE.,.TRUE.,rx)
           
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
         ! factorised matrices). Get this from the collection.
       
         p_rsolverNode => rnonlinearIteration%rpreconditioner%p_rsolverNode
+
+        ! Re-attach the system matrices to the solver.
+        ! Note that no pointers and no handles are changed, so we can savely do
+        ! that without calling linsol_doneStructure/linsol_doneStructure.
+        ! This simply informs the solver about possible new scaling factors
+        ! in the matrices in case they have changed...
+        ALLOCATE(Rmatrices(rnonlinearIteration%NLMIN:rnonlinearIteration%NLMAX))
+        DO i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+          CALL lsysbl_duplicateMatrix ( &
+            rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner, &
+            Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        END DO
+        
+        CALL linsol_setMatrices(&
+            rnonlinearIteration%rpreconditioner%p_rsolverNode,Rmatrices(:))
+            
+        ! The solver got the matrices; clean up Rmatrices, it was only of temporary
+        ! nature...
+        DO i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+          CALL lsysbl_releaseMatrix (Rmatrices(i))
+        END DO
+        DEALLOCATE(Rmatrices)
 
         ! Initialise data of the solver. This in fact performs a numeric
         ! factorisation of the matrices in UMFPACK-like solvers.
@@ -2061,46 +2270,50 @@ CONTAINS
         
       END SELECT
       
-      IF (bsuccess) THEN
-        ! Finally calculate a new damping parameter domega.
-        !
-        ! For this purpose, we need two temporary vectors.
-        ! On one hand, we have p_rvectorTemp.
-        ! Get the second temporary vector from the collection as it was
-        ! prepared by our 'parent' that invoked the nonlinear solver.
-        p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
-        p_rvectorTemp2 => rnonlinearIteration%rpreconditioner%p_rtempVectorSc2
-        
-        ! Both temp vectors are scalar, but we need block-vectors in the
-        ! structure of rx/rb. Derive block vectors in that structure that
-        ! share their memory with the scalar temp vectors. Note that the
-        ! temp vectors are created large enough by our parent!
-        CALL lsysbl_createVecFromScalar (p_rvectorTemp,rtemp1)
-        CALL lsysbl_enforceStructure (rb,rtemp1)
+      ! Finally calculate a new damping parameter domega.
+      !
+      ! For this purpose, we need two temporary vectors.
+      ! On one hand, we have p_rvectorTemp.
+      ! Get the second temporary vector from the collection as it was
+      ! prepared by our 'parent' that invoked the nonlinear solver.
+      p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
+      p_rvectorTemp2 => rnonlinearIteration%rpreconditioner%p_rtempVectorSc2
+      
+      ! Both temp vectors are scalar, but we need block-vectors in the
+      ! structure of rx/rb. Derive block vectors in that structure that
+      ! share their memory with the scalar temp vectors. Note that the
+      ! temp vectors are created large enough by our parent!
+      CALL lsysbl_createVecFromScalar (p_rvectorTemp,rtemp1)
+      CALL lsysbl_enforceStructure (rb,rtemp1)
 
-        CALL lsysbl_createVecFromScalar (p_rvectorTemp2,rtemp2)
-        CALL lsysbl_enforceStructure (rb,rtemp2)
+      CALL lsysbl_createVecFromScalar (p_rvectorTemp2,rtemp2)
+      CALL lsysbl_enforceStructure (rb,rtemp2)
 
-        ! Calculate the omega
-        CALL c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,&
-                                    domega,rnonlinearIteration,p_rcollection)
+      ! Calculate the omega
+      CALL c2d2_getOptimalDamping (rd,rx,rb,rtemp1,rtemp2,&
+                                  domega,rnonlinearIteration,p_rcollection)
 
-        ! Remember damping parameter for output
-        rnonlinearIteration%domegaNL = domega
+      ! Remember damping parameter for output
+      rnonlinearIteration%domegaNL = domega
 
-        ! Release the temp block vectors. This only cleans up the structure.
-        ! The data is not released from heap as it belongs to the
-        ! scalar temp vectors.
-        CALL lsysbl_releaseVector (rtemp2)
-        CALL lsysbl_releaseVector (rtemp1)
-        
-        ! Calculate the max-norm of the correction vector.
-        ! This is used for the stopping criterium in c2d2_resNormCheck!
-        Cnorms(:) = LINALG_NORMMAX
-        rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
-        
-        ! Save the nonlinear-iteration structure.
-        CALL c2d2_saveNonlinearLoop (rnonlinearIteration,p_rcollection)
+      ! Release the temp block vectors. This only cleans up the structure.
+      ! The data is not released from heap as it belongs to the
+      ! scalar temp vectors.
+      CALL lsysbl_releaseVector (rtemp2)
+      CALL lsysbl_releaseVector (rtemp1)
+      
+      ! Calculate the max-norm of the correction vector.
+      ! This is used for the stopping criterium in c2d2_resNormCheck!
+      Cnorms(:) = LINALG_NORMMAX
+      rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+      
+      ! Save the nonlinear-iteration structure.
+      CALL c2d2_saveNonlinearLoop (rnonlinearIteration,p_rcollection)
+      
+      IF ((.NOT. bsuccess) .AND. (domega .GE. 0.001_DP)) THEN
+        ! The preconditioner did actually not work, but the solution is not
+        ! 'too bad'. So we accept it all the same.
+        bsuccess = .TRUE.
       END IF
 
       ! Release the nonlinear-iteration structure, that's it.

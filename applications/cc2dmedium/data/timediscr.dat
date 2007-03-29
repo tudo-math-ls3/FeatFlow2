@@ -55,8 +55,8 @@ dtimeStepTheta = 1.0                      # THETA
 # Adaptive time stepping (IADTIM)
 # 0=fixed time step
 # 1=with prediction no repetition if nonlinear solver fails
-# 2=with prediction, repetition if nonlinear solver  fails
-# 3=with prediction, repetition if nonlinear solver  fails or
+# 2=with prediction, repetition if nonlinear solver fails
+# 3=with prediction, repetition if nonlinear solver fails or
 #   time error too large
 # <0=with extrapolation in time
 

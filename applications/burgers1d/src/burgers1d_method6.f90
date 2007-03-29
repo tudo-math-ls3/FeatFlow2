@@ -754,7 +754,7 @@ CONTAINS
     
   ! ***************************************************************************
 
-    SUBROUTINE b1d6_precondDefect (rd,rx,rb,domega,bsuccess,p_rcollection)
+    SUBROUTINE b1d6_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -769,6 +769,9 @@ CONTAINS
   !</description>
 
   !<inputoutput>
+    ! Number of current iteration. 
+    INTEGER, INTENT(IN)                           :: ite
+
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
     TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
 

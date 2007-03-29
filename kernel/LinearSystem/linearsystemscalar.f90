@@ -127,8 +127,14 @@
 !# 34.) lsyssc_matrixLinearComb
 !#      -> Adds two matrices
 !#
-!# 35. lsyssc_swapVectors
+!# 35.) lsyssc_swapVectors
 !#      -> Swap two vectors
+!#
+!# 36.) lsyssc_isMatrixStructureShared
+!#      -> Tests if the structure of a matrix is shared with another matrix
+!#
+!# 37.) lsyssc_isMatrixContentShared
+!#      -> Tests if the content of a matrix is shared with another matrix
 !#
 !# Sometimes useful auxiliary routines:
 !#
@@ -273,23 +279,35 @@ MODULE linearsystemscalar
   
   ! The destination matrix gets a copy of the content of rsourceMatrix.
   ! If necessary, new memory is allocated.
-  ! If the destination matrix  already contains allocated memory, content/structure
-  ! data is simply copied from rsourceMatrix into that.
+  ! If the destination matrix  already contains allocated memory that belongs
+  ! to that matrix, content/structure data is simply copied from rsourceMatrix into that.
+  ! Note that this respects the ownership! I.e. if the destination matrix is not
+  ! the owner of the content/structure data arrays, new memory is allocated to
+  ! prevent the actual owner from getting destroyed!
   INTEGER, PARAMETER :: LSYSSC_DUP_COPY = 4
+  
+  ! The destination matrix gets a copy of the content of rsourceMatrix.
+  ! If necessary, new memory is allocated.
+  ! If the destination matrix  already contains allocated memory, content/structure 
+  ! data is simply copied from rsourceMatrix into that.
+  ! The ownership of the content/data arrays is not respected, i.e. if the
+  ! destination matrix is not the owner, the actual owner of the data arrays is
+  ! modified, too!
+  INTEGER, PARAMETER :: LSYSSC_DUP_COPYOVERWRITE = 5
   
   ! Duplicate by ownership. What belongs to the source matrix is copied 
   ! (the same as LSYSSC_DUP_COPY). What belongs even to another matrix than
   ! the source matrix is shared (the same as LSYSSC_DUP_SHARE, .
-  INTEGER, PARAMETER :: LSYSSC_DUP_ASIS = 5
+  INTEGER, PARAMETER :: LSYSSC_DUP_ASIS = 6
   
   ! New memory is allocated for the structure/content in the same size as 
   ! in the source matrix but no data is copied; the arrays are left uninitialised.
-  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTY = 6 
+  INTEGER, PARAMETER :: LSYSSC_DUP_EMPTY = 7 
                                                
   ! Copy the basic matrix information but don't copy handles.
   ! Set all handles of dynamic information to ST_NOHANDLE, so the matrix
   ! 'looks like' the old but has no dynamic data associated.
-  INTEGER, PARAMETER :: LSYSSC_DUP_TEMPLATE   = 7
+  INTEGER, PARAMETER :: LSYSSC_DUP_TEMPLATE   = 8
                  
 !</constantblock>
 
@@ -1307,7 +1325,10 @@ CONTAINS
 !</inputoutput>
 
 !</subroutine>
-  
+
+    ! If the scale factor is =0, we have nothing to do.
+    IF (rmatrix%dscaleFactor .EQ. 0.0_DP) RETURN
+    
     ! Vectors must be compatible to the matrix.
     CALL lsyssc_isMatrixCompatible (rx,rmatrix,.FALSE.)
     CALL lsyssc_isMatrixCompatible (ry,rmatrix,.TRUE.)
@@ -1317,6 +1338,10 @@ CONTAINS
       PRINT *,'MV with different data types for rx and ry not supported!'
       STOP
     END IF
+    
+    ! Handle the scaling factor by multiplication of cx with dscaleFactor.
+    !
+    ! Now, which matrix format do we have?
     
     IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
       ! Select the right MV multiplication routine from the matrix format
@@ -1332,7 +1357,8 @@ CONTAINS
           
           CASE (ST_DOUBLE)
             ! double precision matrix, double precision vectors
-            CALL lsyssc_LAX79doubledouble (rmatrix,rx,ry,cx,cy)
+            CALL lsyssc_LAX79doubledouble (&
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
@@ -1357,10 +1383,12 @@ CONTAINS
             ! double precision matrix, double precision vectors
             SELECT CASE(rmatrix%cinterleavematrixFormat)
             CASE (LSYSSC_MATRIX1)
-              CALL lsyssc_LAX79INTL1doubledouble (rmatrix,rx,ry,cx,cy)
+              CALL lsyssc_LAX79INTL1doubledouble (&
+                  rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
 
             CASE (LSYSSC_MATRIXD)
-              CALL lsyssc_LAX79INTLDdoubledouble (rmatrix,rx,ry,cx,cy)
+              CALL lsyssc_LAX79INTLDdoubledouble (&
+                  rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
 
             CASE DEFAULT
               PRINT *, 'Invalid interleave matrix format!'
@@ -1388,7 +1416,8 @@ CONTAINS
           
           CASE (ST_DOUBLE)
             ! double precision matrix, double precision vectors
-            CALL lsyssc_LATXDdoubledouble (rmatrix,rx,ry,cx,cy)
+            CALL lsyssc_LATXDdoubledouble (&
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
@@ -1421,7 +1450,8 @@ CONTAINS
           
           CASE (ST_DOUBLE)
             ! double precision matrix, double precision vectors
-            CALL lsyssc_LTX9doubledouble (rmatrix,rx,ry,cx,cy)
+            CALL lsyssc_LTX9doubledouble (&
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
@@ -1444,7 +1474,8 @@ CONTAINS
           
           CASE (ST_DOUBLE)
             ! double precision matrix, double precision vectors
-            CALL lsyssc_LTX7doubledouble (rmatrix,rx,ry,cx,cy)
+            CALL lsyssc_LTX7doubledouble (&
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
@@ -1467,7 +1498,8 @@ CONTAINS
           
           CASE (ST_DOUBLE)
             ! double precision matrix, double precision vectors
-            CALL lsyssc_LATXDdoubledouble (rmatrix,rx,ry,cx,cy)
+            CALL lsyssc_LATXDdoubledouble (&
+                rmatrix,rx,ry,cx*rmatrix%dscaleFactor,cy)
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
@@ -2310,8 +2342,19 @@ CONTAINS
   !   structural data as rsourceMatrix and therefore shares the same structure.
   ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the structure of 
   !   rsourceMatrix. If necessary, new memory is allocated for the structure. 
-  !   If rdestMatrix already contains allocated memory, structural data
-  !   is simply copied from rsourceMatrix into that.
+  !   If rdestMatrix already contains allocated memory that belongs
+  !   to that matrix, content/structure data is simply copied from rsourceMatrix
+  !   into that.
+  !   Note that this respects the ownership! I.e. if the destination matrix is not
+  !   the owner of the content/structure data arrays, new memory is allocated to
+  !   prevent the actual owner from getting destroyed!
+  ! LSYSSC_DUP_COPYOVERWRITE:   The destination matrix gets a copy of the content 
+  !   of rsourceMatrix. If necessary, new memory is allocated.
+  !   If the destination matrix  already contains allocated memory, content/structure 
+  !   data is simply copied from rsourceMatrix into that.
+  !   The ownership of the content/data arrays is not respected, i.e. if the
+  !   destination matrix is not the owner, the actual owner of the data arrays is
+  !   modified, too!
   ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the structure of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the structure; new memory is allocated if necessary (the same as 
@@ -2341,8 +2384,19 @@ CONTAINS
   !   matrix content data as rsourceMatrix and therefore shares the same content.
   ! LSYSSC_DUP_COPY       : rdestMatrix gets a copy of the content of rsourceMatrix.
   !   If necessary, new memory is allocated for the content.
-  !   If rdestMatrix already contains allocated memory, content data
-  !   is simply copied from rsourceMatrix into that.
+  !   If rdestMatrix already contains allocated memory that belongs
+  !   to that matrix, content/structure data is simply copied from rsourceMatrix
+  !   into that.
+  !   Note that this respects the ownership! I.e. if the destination matrix is not
+  !   the owner of the content/structure data arrays, new memory is allocated to
+  !   prevent the actual owner from getting destroyed!
+  ! LSYSSC_DUP_COPYOVERWRITE:   The destination matrix gets a copy of the content 
+  !   of rsourceMatrix. If necessary, new memory is allocated.
+  !   If the destination matrix  already contains allocated memory, content/structure 
+  !   data is simply copied from rsourceMatrix into that.
+  !   The ownership of the content/data arrays is not respected, i.e. if the
+  !   destination matrix is not the owner, the actual owner of the data arrays is
+  !   modified, too!
   ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
   !   rsourceMatrix belongs to rsourceMatrix, rdestMatrix gets a copy
   !   of the content; new memory is allocated if necessary (the same as 
@@ -2395,13 +2449,17 @@ CONTAINS
       
     CASE (LSYSSC_DUP_COPY)
       ! Copy the structure of rsourceMatrix to rdestMatrix
-      CALL copyStructure(rsourceMatrix, rdestMatrix)  
+      CALL copyStructure(rsourceMatrix, rdestMatrix, .FALSE.)  
+      
+    CASE (LSYSSC_DUP_COPYOVERWRITE)
+      ! Copy the structure of rsourceMatrix to rdestMatrix, don't respect ownership
+      CALL copyStructure(rsourceMatrix, rdestMatrix, .TRUE.)  
       
     CASE (LSYSSC_DUP_ASIS)
       ! What's with the source matrix. Does the structure belong to it?
       IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0) THEN
         ! Copy the structure
-        CALL copyStructure(rsourceMatrix, rdestMatrix)
+        CALL copyStructure(rsourceMatrix, rdestMatrix, .FALSE.)
       ELSE
         ! Share the structure
         CALL shareStructure(rsourceMatrix, rdestMatrix)  
@@ -2466,7 +2524,11 @@ CONTAINS
       
     CASE (LSYSSC_DUP_COPY)
       ! Copy the structure of rsourceMatrix to rdestMatrix
-      CALL copyContent(rsourceMatrix, rdestMatrix)  
+      CALL copyContent(rsourceMatrix, rdestMatrix, .FALSE.)  
+      
+    CASE (LSYSSC_DUP_COPYOVERWRITE)
+      ! Copy the structure of rsourceMatrix to rdestMatrix, don't respect ownership
+      CALL copyContent(rsourceMatrix, rdestMatrix, .TRUE.)  
       
     CASE (LSYSSC_DUP_TEMPLATE)
       ! Remove the structure - if there is any.
@@ -2479,7 +2541,7 @@ CONTAINS
       ! What's with the source matrix. Does the structure belong to it?
       IF (IAND(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .NE. 0) THEN
         ! Copy the structure
-        CALL copyContent(rsourceMatrix, rdestMatrix)
+        CALL copyContent(rsourceMatrix, rdestMatrix, .FALSE.)
       ELSE
         ! Share the structure
         CALL shareContent(rsourceMatrix, rdestMatrix)  
@@ -2811,7 +2873,7 @@ CONTAINS
     ! Auxiliary routine: Copy the structure of rsourceMatrix
     ! to rdestMatrix
     
-    SUBROUTINE copyStructure(rsourceMatrix, rdestMatrix)
+    SUBROUTINE copyStructure(rsourceMatrix, rdestMatrix, bignoreOwner)
     
     ! The source matrix 
     TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
@@ -2819,11 +2881,15 @@ CONTAINS
     ! The destination matrix 
     TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
     
+    ! Whether to respect the ownership of the arrays and allocate 
+    ! memory automatically if a matrix is not the owner of the arrays.
+    LOGICAL, INTENT(IN) :: bignoreOwner
+
       ! local variables
       INTEGER(I32) :: iflag,iflag2
       INTEGER(PREC_MATIDX) :: isize
       INTEGER(PREC_VECIDX) :: NEQ
-      LOGICAL :: bremove
+      LOGICAL :: bremove 
     
       ! Overwrite structural data
       CALL copyStaticStructure(rsourceMatrix, rdestMatrix)
@@ -2834,7 +2900,8 @@ CONTAINS
       
       ! But at first, check if rdestMatrix is the owner of the matrix
       ! structure:
-      IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0) THEN
+      IF ((.NOT. bignoreOwner) .AND. &
+          (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0)) THEN
         ! No, the structure belongs to someone else, but we want to have
         ! our own. Detach the foreign matrix structure.
         bremove = .TRUE.
@@ -2925,9 +2992,11 @@ CONTAINS
 
       END SELECT
       
-      ! Indicate via the matrixSpec-flag that we are the owner of the structure.
-      rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
-                                    NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
+      IF (.NOT. bignoreOwner) THEN
+        ! Indicate via the matrixSpec-flag that we are the owner of the structure.
+        rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
+                                      NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
+      END IF
     
     END SUBROUTINE
   
@@ -3020,7 +3089,7 @@ CONTAINS
     ! Auxiliary routine: Copy the content of rsourceMatrix
     ! to rdestMatrix
     
-    SUBROUTINE copyContent(rsourceMatrix, rdestMatrix)
+    SUBROUTINE copyContent(rsourceMatrix, rdestMatrix, bignoreOwner)
     
     ! The source matrix 
     TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
@@ -3028,9 +3097,13 @@ CONTAINS
     ! The destination matrix 
     TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
     
+    ! Whether to respect the ownership of the arrays and allocate 
+    ! memory automatically if a matrix is not the owner of the arrays.
+    LOGICAL, INTENT(IN) :: bignoreOwner
+    
       ! local variables
       LOGICAL :: bremove
-    
+      
       ! Overwrite structural data
       CALL copyStaticContent(rsourceMatrix, rdestMatrix)
       
@@ -3040,7 +3113,9 @@ CONTAINS
       
       ! But at first, check if rdestMatrix is the owner of the matrix
       ! structure:
-      IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .NE. 0) THEN
+      IF ((.NOT. bignoreOwner) .AND. &
+          (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .NE. 0)) THEN
+          
         ! No, the content belongs to someone else, but we want to have
         ! our own. Detach the foreign matrix content.
         bremove = .TRUE.
@@ -3116,9 +3191,11 @@ CONTAINS
         CALL storage_copy (rsourceMatrix%h_Da,rdestMatrix%h_Da)
       END SELECT
       
-      ! Indicate via the matrixSpec-flag that we are the owner of the structure.
-      rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
-                                    NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+      IF (.NOT. bignoreOwner) THEN
+        ! Indicate via the matrixSpec-flag that we are the owner of the structure.
+        rdestMatrix%imatrixSpec = IAND(rdestMatrix%imatrixSpec,&
+                                      NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+      END IF
     
     END SUBROUTINE
   
@@ -14087,4 +14164,113 @@ CONTAINS
     WRITE(*,FMT='(A,1X,I8)') 'iidxFirstEntry          =',rvector%iidxFirstEntry
     WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoVector
+
+  ! ***************************************************************************
+  
+!<function>
+
+  ELEMENTAL LOGICAL FUNCTION lsyssc_isMatrixStructureShared (rmatrix,&
+      rmatrix2) RESULT (bresult)
+  
+!<description>
+  ! Checks whether the structure of rmatrix belongs to that matrix or if it's
+  ! shared among rmatrix and another matrix.
+!</description>
+
+!<input>
+  ! A scalar matrix to be checked.
+  TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+  
+  ! OPTIONAL: A second matrix to be compared with rmatrix.
+  ! If not specified, lsyssc_isMatrixStructureShared checks if rmatrix
+  !   shares its structure with any other matrix.
+  ! If specified, lsyssc_isMatrixStructureShared checks if rmatrix
+  !   shares its entries with rmatrix2.
+  TYPE(t_matrixScalar), INTENT(IN), OPTIONAL :: rmatrix2
+!</input>
+
+!<result>
+  ! TRUE, if the structure arrays in rmatrix are shared among rmatrix and
+  !   another matrix or with the matrix rmatrix2, respectively.
+  ! FALSE, if the structure arrays in rmatrix belong to rmatrix.
+!</result>
+
+!</function>
+
+    IF (.NOT. PRESENT(rmatrix2)) THEN
+      ! General check
+      bresult = IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0
+    ELSE
+      ! Check if the structure is shared among rmatrix and rmatrix2.
+      ! This depends on the matrix format...
+      ! The matrix is declared as 'structure is shared' if at least one
+      ! of the handles that define the structure is shared among the matrices.
+      bresult = .FALSE.
+      IF (rmatrix%cmatrixFormat .NE. rmatrix2%cmatrixFormat) RETURN
+      SELECT CASE (rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX1,LSYSSC_MATRIXD)
+        ! No structure, full matrix
+        bresult = .FALSE.
+      CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+        bresult = (rmatrix%h_Kcol .EQ. rmatrix2%h_Kcol) .OR. &
+                  (rmatrix%h_Kld .EQ. rmatrix2%h_Kld)
+      CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+        bresult = (rmatrix%h_Kcol .EQ. rmatrix2%h_Kcol) .OR. &
+                  (rmatrix%h_Kld .EQ. rmatrix2%h_Kld) .OR. &
+                  (rmatrix%h_Kdiagonal .EQ. rmatrix2%h_Kdiagonal)
+      END SELECT
+    END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  ELEMENTAL LOGICAL FUNCTION lsyssc_isMatrixContentShared (rmatrix, &
+      rmatrix2) RESULT (bresult)
+  
+!<description>
+  ! Checks whether the content of rmatrix belongs to that matrix or if it's
+  ! shared among rmatrix and another matrix.
+!</description>
+
+!<input>
+  ! A scalar matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+
+  ! OPTIONAL: A second matrix to be compared with rmatrix.
+  ! If not specified, lsyssc_isMatrixContentShared checks if rmatrix
+  !   shares its content with any other matrix.
+  ! If specified, lsyssc_isMatrixStructureShared checks if rmatrix
+  !   shares its content with rmatrix2.
+  TYPE(t_matrixScalar), INTENT(IN), OPTIONAL :: rmatrix2
+!</input>
+
+!<result>
+  ! TRUE, if the content arrays in rmatrix are shared among rmatrix and
+  !   another matrix or with the matrix rmatrix2, respectively.
+  ! FALSE, if the content arrays in rmatrix belong to rmatrix.
+!</result>
+
+!</function>
+
+    IF (.NOT. PRESENT(rmatrix2)) THEN
+      bresult = IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .NE. 0
+    ELSE
+      ! Check if the content is shared among rmatrix and rmatrix2.
+      ! This depends on the matrix format...
+      ! The matrix is declared as 'content is shared' if at least one
+      ! of the handles that define the structure is shared among the matrices.
+      bresult = .FALSE.
+      IF (rmatrix%cmatrixFormat .NE. rmatrix2%cmatrixFormat) RETURN
+      SELECT CASE (rmatrix%cmatrixFormat)
+      CASE (LSYSSC_MATRIX1,LSYSSC_MATRIX7,LSYSSC_MATRIX9,LSYSSC_MATRIXD, &
+            LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
+        bresult = (rmatrix%h_Da .EQ. rmatrix2%h_Da)
+      END SELECT
+    END IF
+
+  END FUNCTION
+
 END MODULE

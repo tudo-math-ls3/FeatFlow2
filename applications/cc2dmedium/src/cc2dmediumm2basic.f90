@@ -63,17 +63,26 @@ MODULE cc2dmediumm2basic
     
     ! A system matrix for that specific level. 
     TYPE(t_matrixBlock) :: rmatrix
-
+    
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
-
+    
     ! B1-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB1
 
     ! B2-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB2
 
-    ! A temporary vector for building the solution when assembling the
+    ! Coupling velocity matrix $A_{12}$ for that specific level.
+    ! Exists only of deformation tensor or Newton iteration is used in the
+    ! nonlinera iteration.
+    TYPE(t_matrixScalar) :: rmatrixVelocityCoupling12
+
+    ! Coupling velocity matrix $A_{21}$ for that specific level.
+    ! Exists only of deformation tensor or Newton iteration is used in the
+    ! nonlinear iteration.
+    TYPE(t_matrixScalar) :: rmatrixVelocityCoupling21
+
     ! matrix on lower levels.
     TYPE(t_vectorBlock) :: rtempVector
 
@@ -143,6 +152,17 @@ MODULE cc2dmediumm2basic
     ! Viscosity parameter nu = 1/Re
     REAL(DP) :: dnu
     
+    ! Type of problem.
+    ! =0: Stokes.
+    ! =1: Navier-Stokes.
+    INTEGER :: iequation
+    
+    ! Type of subproblem of the main problem. Depending on iequationType.
+    ! If iequationType=0 or =1:
+    ! =0: (Navier-)Stokes with gradient tensor
+    ! =1: (Navier-)Stokes with deformation tensor
+    INTEGER :: isubEquation
+        
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
 
@@ -252,8 +272,6 @@ MODULE cc2dmediumm2basic
 ! NU                    | Reciprocal 1/RE of parameter RE from the DAT file
 ! NLMIN                 | Minimum level of the discretisation
 ! NLMAX                 | Maximum level of the discretisation
-! ISTOKES               | =0: we discretise Navier Stokes, 
-!                       | =1: we discretise Stokes
 ! IUPWIND               | Type of stabilisation. =0:streamline diff, =1:upwind,
 !                       | =2:jump stabil
 ! IBOUNDARY             ! =0: stationary Dirichlet boundary conditions
@@ -299,14 +317,6 @@ MODULE cc2dmediumm2basic
 !                       |
 ! LINSOLVER             | t_linsol object
 !                       | Configures the linear solver for preconditioning
-!                       |
-! OMEGAMIN              | Minimum damping parameter for correction in nonlinear
-!                       | solver
-! OMEGAMAX              | Maximum damping parameter for correction in nonlinear
-!                       | solver
-! IADAPTIVEMATRIX       | Whether to activate adaptive matrix construction
-!                       | for coarse grid matrices
-! DADMATTHRESHOLD       | Threshold parameter dor adaptive matrix construction
 !
 ! Expressions for boundary conditions are saved in special 
 ! sections in the collection:

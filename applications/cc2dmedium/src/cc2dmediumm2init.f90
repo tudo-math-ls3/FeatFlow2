@@ -109,10 +109,15 @@ CONTAINS
     CALL collct_setvalue_int (rproblem%rcollection,'NLMIN',ilvmin,.TRUE.)
     CALL collct_setvalue_int (rproblem%rcollection,'NLMAX',ilvmax,.TRUE.)
     
-    ! Which type of problem to discretise?
+    ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iEquation',i1,0)
-    CALL collct_setvalue_int (rproblem%rcollection,'ISTOKES',i1,.TRUE.)
+    rproblem%iequation = i1
+
+    ! Type of subproblem (gradient tensor, deformation tensor,...)
+    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'isubEquation',i1,0)
+    rproblem%isubEquation = i1
 
     ! Stabilisation of nonlinearity
     CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&

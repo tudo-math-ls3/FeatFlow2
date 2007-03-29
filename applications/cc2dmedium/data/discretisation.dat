@@ -41,7 +41,11 @@ NLMAX              = 3
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
-iEquation    = 0
+iequation    = 0
+
+# Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
+
+isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
@@ -53,7 +57,8 @@ RE                 = 1000.0
 iRHS               = 0
 
 # Type of bdry. conditions.
-# 0=DIRICHLET stationary, 1=Pressure drop nonstationary, 
+# 0=DIRICHLET stationary, 
+# 1=Pressure drop nonstationary, 
 # 2=NEUMANN part. nonstationary (standard)
 # Must be >= 1 for moving fictitious boundary components and/or 
 # nonstationary boundary conditions.

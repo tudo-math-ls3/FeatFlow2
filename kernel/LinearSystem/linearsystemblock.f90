@@ -1509,7 +1509,8 @@ CONTAINS
     DO x=1,rMatrix%ndiagBlocks
       
       ! Only call the MV when there is a scalar matrix that we can use!
-      IF (rMatrix%RmatrixBlock(y,x)%NA .NE. 0) THEN
+      IF ((rMatrix%RmatrixBlock(y,x)%NA .NE. 0) .AND. &
+          (rMatrix%RmatrixBlock(y,x)%dscaleFactor .NE. 0.0_DP)) THEN
         CALL lsyssc_scalarMatVec (rMatrix%RmatrixBlock(y,x), rx%RvectorBlock(x), &
                                   ry%RvectorBlock(y), cx, cyact)
         cyact = 1.0_DP

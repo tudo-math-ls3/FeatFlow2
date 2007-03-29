@@ -75,7 +75,6 @@ CONTAINS
     ! local variables
     INTEGER :: cdataTypeLocal, cmatrixFormatLocal,i,j
     LOGICAL :: balloc
-    INTEGER(I32) :: icopyFlag
     TYPE(t_matrixBlock) :: rlocalMatrix
     TYPE(t_matrixScalar) :: rlocalMatrixScalar
     INTEGER(PREC_VECIDX), DIMENSION(LSYSBL_MAXBLOCKS+1) :: Icolumns,Irows
@@ -174,7 +173,6 @@ CONTAINS
   IF (bstructure .AND. bcontent) THEN
     
     ! Initialise general data of the destination matrix.
-    icopyFlag = rdestMatrix%RmatrixBlock(1,1)%imatrixSpec
     CALL glmatasm_initDestination (rlocalMatrix,rdestMatrix,&
                                    cmatrixFormatLocal,cdataTypeLocal)
     
@@ -190,7 +188,7 @@ CONTAINS
       ! Allocate a KLD in the destination matrix if we don't have a previous
       ! array in the correct size.
       balloc = .TRUE.
-      IF ((IAND(icopyFlag,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0) .AND. &
+      IF ((.NOT. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Kld .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kld,isize)
         ! Matrix is for sure not transposed!
@@ -208,7 +206,7 @@ CONTAINS
       ! Allocate a KCOL in the destination matrix if we don't have a previous
       ! array in the correct size.
       balloc = .TRUE.
-      IF ((IAND(icopyFlag,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0) .AND. &
+      IF ((.NOT. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Kcol .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kcol,isize)
         ! Matrix is for sure not transposed!
@@ -222,7 +220,7 @@ CONTAINS
       ! Allocate the data array if we don't have a previous
       ! array in the correct size.
       balloc = .TRUE.
-      IF ((IAND(icopyFlag,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0) .AND. &
+      IF ((.NOT. lsyssc_isMatrixContentShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Da .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Da,isize)
         IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) balloc = .FALSE.
@@ -255,7 +253,6 @@ CONTAINS
     ! Assemble only the structure of the global matrix
     
     ! Initialise general data of the destination matrix.
-    icopyFlag = rdestMatrix%RmatrixBlock(1,1)%imatrixSpec
     CALL glmatasm_initDestination (rlocalMatrix,rdestMatrix,&
                                    cmatrixFormatLocal,cdataTypeLocal)
     
@@ -269,7 +266,7 @@ CONTAINS
       ! Allocate a KLD in the destination matrix if we don't have a previous
       ! array in the correct size.
       balloc = .TRUE.
-      IF ((IAND(icopyFlag,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0) .AND. &
+      IF ((.NOT. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Kld .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kld,isize)
         ! Matrix is for sure not transposed!
@@ -287,7 +284,7 @@ CONTAINS
       ! Allocate a KCOL in the destination matrix if we don't have a previous
       ! array in the correct size.
       balloc = .TRUE.
-      IF ((IAND(icopyFlag,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0) .AND. &
+      IF ((.NOT. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Kcol .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kcol,isize)
         ! Matrix is for sure not transposed!
@@ -320,7 +317,6 @@ CONTAINS
     ! Assemble only the entries of the global matrix; the structure
     ! is already there.
     ! Initialise general data of the destination matrix.
-    icopyFlag = rdestMatrix%RmatrixBlock(1,1)%imatrixSpec
     CALL glmatasm_initDestination (rlocalMatrix,rdestMatrix,&
                                    cmatrixFormatLocal,cdataTypeLocal)
     
@@ -336,7 +332,7 @@ CONTAINS
       ! Allocate the data array if we don't have a previous
       ! array in the correct size.
       balloc = .TRUE.
-      IF ((IAND(icopyFlag,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0) .AND. &
+      IF ((.NOT. lsyssc_isMatrixContentShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Da .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Da,isize)
         IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) balloc = .FALSE.

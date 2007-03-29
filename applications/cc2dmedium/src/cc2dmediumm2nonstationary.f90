@@ -409,8 +409,7 @@ CONTAINS
     CALL c2d2_setupCoreEquation (rnonlinearIterationTmp, &
       -1.0_DP, &
       -rtimestepping%dweightMatrixRHS, &
-      -rtimestepping%dweightMatrixRHS * &
-       REAL(1-collct_getvalue_int (rproblem%rcollection,'ISTOKES'),DP))
+      -rtimestepping%dweightMatrixRHS * REAL(1-rproblem%iequation,DP))
 
     CALL c2d2_assembleConvDiffDefect (rnonlinearIterationTmp,rvector,rtempVectorRhs,&
         rproblem%rcollection)    
@@ -449,8 +448,7 @@ CONTAINS
     CALL c2d2_setupCoreEquation (rnonlinearIterationTmp, &
       1.0_DP, &
       rtimestepping%dweightMatrixLHS, &
-      rtimestepping%dweightMatrixLHS * &
-       REAL(1-collct_getvalue_int (rproblem%rcollection,'ISTOKES'),DP))
+      rtimestepping%dweightMatrixLHS * REAL(1-rproblem%iequation,DP))
     
     ! Using rfinalAssembly, make the matrices compatible 
     ! to our preconditioner if they are not. So we switch again to the matrix
@@ -1147,12 +1145,12 @@ CONTAINS
     ! Release existing snapshots
     CALL c2d2_releaseSnapshop (rsnapshotLastMacrostep)
     
-    ! Release parameters of the nonlinear loop
-    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
-             
     ! Release the preconditioner
     CALL c2d2_releasePreconditioner (rnonlinearIteration)
     
+    ! Release parameters of the nonlinear loop, final clean up
+    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+             
   END SUBROUTINE
   
 END MODULE

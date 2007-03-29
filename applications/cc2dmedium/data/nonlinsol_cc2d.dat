@@ -24,7 +24,7 @@ nmaxIterations     = 10
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 
-depsD              = 1.0E-5
+depsD              = 1.0E-10
 
 # (absolute) limit for DIV-defects, standard = 1.0E-5
 
@@ -50,17 +50,26 @@ ioutputLevel       = 2
 # Preconditioner in nonlinear defect correction
 
 # Type of preconditioner to use in nonlinear defect correction.
-# =0: Preconditioning with inverse mass matrix (not yet implemented),
-# =1: Preconditioning by linear solver, solving the linearised system,
-# =2: Preconditioning by Newton-Iteration (not yet implemented),
+# =0: Preconditioning with inverse mass matrix (not yet implemented).
+# =1: Preconditioning by defect correction loop, using a linear solver
+#     to solve the linearised system.
+# =2: Preconditioning by Newton-Iteration (not yet implemented).
+#     This is a combination of a linear solver (itypePreconditioning=1)
+#     in conjunction with an extended matrix to improve convergence speed
+#     (at the cost of assembly time).
 
 itypePreconditioning = 1
 
-# If itypePreconditioning = 1: Name of the section in the file 
+# If itypePreconditioning = 1 or = 2: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
 # preconditioning.
 
 slinearSolver        = 'CC-MULTIGRID'
+
+# If itypePreconditioning = 2: Name of the section that controls the
+# assembly of the Newton matrices and the use of the Newton iteration.
+
+spreconditionerNewton = 'CC-NEWTONITERATION'
 
 # ------------------------------------------------------------------------
 # Upper and lower bound for optimal damping parameter in nonlinear
@@ -74,8 +83,21 @@ domegaMin          = 0.0 1.0 0.0
 # upper limit for opt. OMEGA in nonlinear defect correction,
 # <0: no rel. changes
 
-domegaMax          = 2.0
+domegaMax          = 2.0 1.0 2.0
 
 # initial value limit for opt. OMEGA in nonlinear defect correction
 
 domegaIni          = 1.0
+
+
+# ========================================================================
+# The following section describes the parameters of the Newton iteration.
+# For the use of Newton, an extended matrix must be generated.
+# Furthermore, a combination of Newton and the usual defect correction
+# approach can be configured here, as Newton may fail if the current
+# iterate of the nonlinear solver is 'too far away' from the solution-
+
+####################
+[CC-NEWTONITERATION]
+####################
+

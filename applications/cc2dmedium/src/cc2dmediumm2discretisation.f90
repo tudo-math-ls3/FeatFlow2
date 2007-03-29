@@ -17,21 +17,25 @@
 !# 2.) c2d2_allocMatVec
 !#     -> Allocates memory for vectors/matrices
 !#
-!# 3.) c2d2_generateStaticMatrices
+!# 3.) c2d2_allocVelCouplingMatrices
+!#     -> Allocate memory for the velocity coupling matrices in the global
+!#        system matrix.
+!#
+!# 4.) c2d2_generateStaticMatrices
 !#     -> Assembles matrix entries of static matrices (Stokes, B)
 !#
-!# 4.) c2d2_generateStaticSystemParts
+!# 5.) c2d2_generateStaticSystemParts
 !#     -> Initialises static parts of the global system matrix with
 !#        entries of template (B-) matrices
 !#
-!# 5.) c2d2_generateBasicRHS
+!# 6.) c2d2_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
 !#        implemented
 !#
-!# 3.) c2d2_doneMatVec
+!# 7.) c2d2_doneMatVec
 !#     -> Cleanup of matrices/vectors, release all memory
 !#
-!# 4.) c2d2_doneDiscretisation
+!# 8.) c2d2_doneDiscretisation
 !#     -> Cleanup of the underlying discretisation structures
 !#
 !# </purpose>
@@ -784,6 +788,15 @@ CONTAINS
       
 
     END DO
+    
+    ! If we discretise (Navier-)Stokes with deformation tensor, allocate
+    ! memory for the velocity coupling matrices.
+    SELECT CASE (rproblem%isubEquation)
+    CASE (1) 
+      ! Deformation tensor. Allocate memory for the additional matrices 
+      ! and include them into the global system.
+      CALL c2d2_allocVelCouplingMatrices (rproblem,.TRUE.,.TRUE.)
+    END SELECT
 
     ! (Only) on the finest level, we need to have to allocate a RHS vector
     ! and a solution vector.
@@ -795,6 +808,126 @@ CONTAINS
     CALL lsysbl_createVecBlockIndMat (p_rmatrix,rrhs, .TRUE.)
     CALL lsysbl_createVecBlockIndMat (p_rmatrix,rvector, .TRUE.)
 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_allocVelCouplingMatrices (rproblem,&
+      bsymmetry,bincludeToGlobalSystem)
+  
+!<description>
+  ! Allocates memory for additional velocity coupling matrices. This is
+  ! a separate allocation routine that c2d2_allocMatVec, since memory for
+  ! these matrices does not always have to be reserved.
+  !
+  ! Note that this routine must (if used at all) be called *after*
+  ! c2d2_allocMatVec! Depending on the type of problem to discretise,
+  ! this routine automatically called in c2d2_allocMatVec. 
+  !
+  ! The routine works 'incrementally', i.e. it can be multiple times
+  ! to 'extend' the current matrix configuration.
+  ! (I.e. in a first call with bsymmetry=TRUE, it will allocate memory only
+  ! for $A_{12}$. In a second call with bsymmetry=TRUE, it will allocate
+  ! additional memory for $A_{21}$ etc.).
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! Whether to exploit symmetry.
+  ! =FALSE: The velocity coupling matrices A12 and A21 are different from 
+  !         each other. Memory is allocated for each of them.
+  ! =TRUE:  There is A12 = A21, so memory is allocated only for A12 of
+  !         the matrices. The other matrix A21 is initialised as 'copy'
+  !         of A12, sharing both, data and structure.
+  !         (This is the case e.g. for Navier-Stokes with deformation tensor).
+  LOGICAL, INTENT(IN) :: bsymmetry
+  
+  ! Whether to include the velocity coupling matrices into the global system.
+  ! Typically used in the case of Navier-Stokes with deformation tensor.
+  ! =FALSE: Don't include, just allocate memory.
+  ! =TRUE:  Include the velocity coupling matrices into the global system.
+  LOGICAL, INTENT(IN) :: bincludeToGlobalSystem
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  
+    ! A pointer to the system matrix and the RHS/solution vectors.
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixA12,p_rmatrixA21
+    TYPE(t_matrixBlock), POINTER :: p_rmatrix
+
+    ! Initialise all levels...
+    DO i=rproblem%NLMIN,rproblem%NLMAX
+
+      ! The global system looks as follows:
+      !
+      !    ( A    A12  B1 )
+      !    ( A21  A    B2 )
+      !    ( B1^T B2^T    )
+      !
+      ! Get a pointer to the template FEM matrix. This is used for the
+      ! Laplace/Stokes matrix and probably for the mass matrix.
+      
+      p_rmatrixTemplateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
+      p_rmatrixA12 => rproblem%RlevelInfo(i)%rmatrixVelocityCoupling12
+      p_rmatrixA21 => rproblem%RlevelInfo(i)%rmatrixVelocityCoupling21
+
+      ! We turn to our matrix A12. Does it already exist?
+      IF (p_rmatrixA12%cmatrixFormat .EQ. &
+          LSYSSC_MATRIXUNDEFINED) THEN
+        ! Connect the matrix to the template FEM matrix such that they
+        ! use the same structure.
+        !
+        ! Don't create a content array yet, it will be created by 
+        ! the assembly routines later.
+        CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                    p_rmatrixA12,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        
+        ! Allocate memory for the entries; don't initialise the memory.
+        CALL lsyssc_createEmptyMatrixScalar (p_rmatrixA12,LSYSSC_SETM_UNDEFINED)
+      END IF
+      
+      ! Now turn to the matrix A21. Do we have to exploit symmetry?
+      IF (bsymmetry) THEN
+        ! Does the matrix exist? If yes, there's nothing to do (-> if the matrix
+        ! exists as separate matrix, it will stay that way!). If not, create it
+        ! as copy of A12.
+        IF (p_rmatrixA21%cmatrixFormat .EQ. LSYSSC_MATRIXUNDEFINED) THEN
+          CALL lsyssc_duplicateMatrix (p_rmatrixA12,&
+              p_rmatrixA21,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        END IF
+      ELSE
+        ! No symmetry. Does the matrix already exist? As separate matrix?
+        IF ((p_rmatrixA21%cmatrixFormat .EQ. LSYSSC_MATRIXUNDEFINED) .OR. &
+            lsyssc_isMatrixContentShared(p_rmatrixA21) ) THEN
+          ! Release the old matrix (usually, this does nothing, just in case) and
+          ! create a new, empty matrix in memory based on A12.
+          CALL lsyssc_duplicateMatrix (p_rmatrixA12,&
+                      p_rmatrixA21,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+          
+          ! Allocate memory for the entries; don't initialise the memory.
+          CALL lsyssc_createEmptyMatrixScalar (p_rmatrixA21,LSYSSC_SETM_UNDEFINED)
+        END IF
+      END IF
+      
+      ! Should we include the two matrices into the global system?
+      IF (bincludeToGlobalSystem) THEN
+        p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+        
+        CALL lsyssc_duplicateMatrix (p_rmatrixA12,&
+                    p_rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrixA21,&
+                    p_rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      END IF
+      
+    END DO
+      
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -1389,8 +1522,12 @@ CONTAINS
 
     ! Release matrices and vectors on all levels
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Delete the system matrix
+      ! Delete the system matrix.
       CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
+
+      ! If there are velocity coupling matrices, release them.
+      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixVelocityCoupling12)
+      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixVelocityCoupling21)
 
       ! If there is an existing mass matrix, release it.
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)

@@ -47,7 +47,7 @@
 
   INTERFACE 
   
-    SUBROUTINE fcb_precondDefect (rd,rx,rb,domega,bsuccess,p_rcollection)
+    SUBROUTINE fcb_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
   
     USE linearsystemblock
     USE collection
@@ -61,6 +61,9 @@
   !</description>
 
   !<inputoutput>
+    ! Number of current iteration. 
+    INTEGER, INTENT(IN)                           :: ite
+
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
     TYPE(t_vectorBlock), INTENT(INOUT), TARGET    :: rd
 
@@ -113,9 +116,7 @@
   !</description>
 
   !<inputoutput>
-    ! Number of current iteration. Is set to 0 when the callback routine
-    ! is called the first time. In this situation, rd describes the initial
-    ! defect vector.
+    ! Number of current iteration. 
     INTEGER, INTENT(IN)                           :: ite
   
     ! Current iteration vector

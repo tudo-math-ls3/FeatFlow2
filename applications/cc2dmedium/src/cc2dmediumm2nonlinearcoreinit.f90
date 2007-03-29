@@ -76,6 +76,7 @@ MODULE cc2dmediumm2nonlinearcoreinit
     
   USE cc2dmediumm2basic
   USE cc2dmediumm2nonlinearcore
+  USE cc2dmediumm2discretisation
   
   IMPLICIT NONE
   
@@ -145,6 +146,8 @@ CONTAINS
     rnonlinearIteration%rfinalAssembly%iBmatricesTransposed = NO
     rnonlinearIteration%rfinalAssembly%iadaptiveMatrices = 0
     
+    ! Assign the matrix pointers in the nonlinear iteration structure to
+    ! all our matrices that we want to use.
     DO ilevel = rproblem%NLMIN,rproblem%NLMAX
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrix => &
         rproblem%RlevelInfo(ilevel)%rmatrix
@@ -160,6 +163,13 @@ CONTAINS
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass => &
         rproblem%RlevelInfo(ilevel)%rmatrixMass
+
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixVelocityCoupling12 => &
+        rproblem%RlevelInfo(ilevel)%rmatrixVelocityCoupling12
+
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixVelocityCoupling21 => &
+        rproblem%RlevelInfo(ilevel)%rmatrixVelocityCoupling21
+        
     END DO
       
     ! Clear auxiliary variables for the nonlinear iteration
@@ -244,9 +254,15 @@ CONTAINS
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
 
+    ! A pointer to the matrix of the preconditioner
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner
+
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    
+    ! Pointer to the template FEM matrix
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM
     
     ! At first, ask the parameters in the INI/DAT file which type of 
     ! preconditioner is to be used. The data in the preconditioner structure
@@ -256,14 +272,14 @@ CONTAINS
         rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
     
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! Ok, we have to initialise a linear solver for solving the linearised
       ! problem.
-      
+      !
       ! Which levels have we to take care of during the solution process?
       NLMIN = rproblem%NLMIN
       NLMAX = rproblem%NLMAX
-    
+      
       ! Get our right hand side / solution / matrix on the finest
       ! level from the problem structure.
       p_rmatrix => rproblem%RlevelInfo(NLMAX)%rmatrix
@@ -309,12 +325,15 @@ CONTAINS
       
       ! Do we have Neumann boundary?
       bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
-      rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%ifilterType = &
+          FILTER_DONOTHING
       IF (.NOT. bneumann) THEN
         ! Pure Dirichlet problem -- Neumann boundary for the pressure.
         ! Filter the pressure to avoid indefiniteness.
-        rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_TOL20
-        rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%itoL20component = NDIM2D+1
+        rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%ifilterType = &
+            FILTER_TOL20
+        rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%itoL20component = &
+            NDIM2D+1
       END IF
       
       ! Initialise the linear subsolver using the parameters from the INI/DAT
@@ -356,19 +375,142 @@ CONTAINS
       CALL lsyssc_createVector (rnonlinearIteration%rpreconditioner%p_rtempVectorSc2,&
                                 rrhs%NEQ,.FALSE.,ST_DOUBLE)
       
+      ! Initialise the preconditioner matrices on all levels.
+      DO i=NLMIN,NLMAX
+      
+        ! Prepare the preconditioner matrices level i. This is
+        ! basically the system matrix...
+        ALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+        p_rmatrixPreconditioner => &
+            rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner
+      
+        CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+            p_rmatrixPreconditioner,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        
+        ! Should the linear solver use the Newton matrix?
+        IF (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+            CCPREC_NEWTON) THEN
+          ! That mens, our preconditioner matrix must look like
+          !
+          !  A11  A12  B1
+          !  A21  A22  B2
+          !  B1^T B2^T 0
+          !
+          ! With A12, A21, A11, A22 independent of each other!
+          ! Do we have that case? If not, we have to allocate memory 
+          ! for these matrices.
+          p_rmatrixTempateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
+          
+          IF (p_rmatrixPreconditioner%RmatrixBlock(1,2)%cmatrixFormat &
+              .EQ. LSYSSC_MATRIXUNDEFINED) THEN
+              
+            CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
+              p_rmatrixPreconditioner%RmatrixBlock(1,2), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+              
+            ! Allocate memory for the entries; don't initialise the memory.
+            CALL lsyssc_createEmptyMatrixScalar (&
+                p_rmatrixPreconditioner%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
+              
+          END IF
+
+          IF (p_rmatrixPreconditioner%RmatrixBlock(2,1)%cmatrixFormat &
+              .EQ. LSYSSC_MATRIXUNDEFINED) THEN
+              
+            ! Create a new matrix A21 in memory. create a new matrix
+            ! using the template FEM matrix...
+            CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
+              p_rmatrixPreconditioner%RmatrixBlock(2,1), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+              
+            ! Allocate memory for the entries; don't initialise the memory.
+            CALL lsyssc_createEmptyMatrixScalar (&
+                p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
+             
+          ELSE
+          
+            ! A21 may share its entries with A12. If that's the case,
+            ! allocate additional memory for A21!
+            IF (lsyssc_isMatrixContentShared( &
+                p_rmatrixPreconditioner%RmatrixBlock(1,2), &
+                p_rmatrixPreconditioner%RmatrixBlock(2,1)) ) THEN
+
+              ! Release the matrix structure. As the matrix is a copy
+              ! of another one, this will clean up the structure but
+              ! not release any memory.
+              CALL lsyssc_releaseMatrix ( &
+                  p_rmatrixPreconditioner%RmatrixBlock(2,1))
+
+              ! Create a new matrix A21 in memory. create a new matrix
+              ! using the template FEM matrix...
+              CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
+                p_rmatrixPreconditioner%RmatrixBlock(2,1),&
+                LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
+              ! ... then allocate memory for the entries; 
+              ! don't initialise the memory.
+              CALL lsyssc_createEmptyMatrixScalar (&
+                  p_rmatrixPreconditioner%RmatrixBlock(2,1),&
+                  LSYSSC_SETM_UNDEFINED)
+                
+            END IF
+            
+          END IF
+
+          ! A22 may share its entries with A11. If that's the case,
+          ! allocate additional memory for A22, as the Newton matrix
+          ! requires a separate A22!
+          IF (lsyssc_isMatrixContentShared( &
+              p_rmatrixPreconditioner%RmatrixBlock(1,1), &
+              p_rmatrixPreconditioner%RmatrixBlock(2,2)) ) THEN
+            ! Release the matrix structure. As the matrix is a copy
+            ! of another one, this will clean up the structure but
+            ! not release any memory.
+            CALL lsyssc_releaseMatrix ( &
+                p_rmatrixPreconditioner%RmatrixBlock(2,2))
+
+            ! Create a new matrix A21 in memory. create a new matrix
+            ! using the template FEM matrix...
+            CALL lsyssc_duplicateMatrix ( &
+              p_rmatrixPreconditioner%RmatrixBlock(1,1), &
+              p_rmatrixPreconditioner%RmatrixBlock(2,2),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+              
+            ! ... then allocate memory for the entries; 
+            ! don't initialise the memory.
+            CALL lsyssc_createEmptyMatrixScalar (&
+                p_rmatrixPreconditioner%RmatrixBlock(2,2),&
+                LSYSSC_SETM_UNDEFINED)
+          END IF
+          
+        END IF
+      END DO
+      
       ! Attach the system matrices to the solver.
       !
-      ! We copy our matrices to a big matrix array and transfer that
-      ! to the setMatrices routines. This intitialises then the matrices
-      ! on all levels according to that array.
-      Rmatrices(NLMIN:NLMAX) = rproblem%RlevelInfo(NLMIN:NLMAX)%rmatrix
+      ! For this purpose, copy the matrix structures from the preconditioner
+      ! matrices to Rmatrix.
+      DO i=NLMIN,NLMAX
+        CALL lsysbl_duplicateMatrix ( &
+          rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner, &
+          Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      END DO
+      
       CALL linsol_setMatrices(&
           rnonlinearIteration%rpreconditioner%p_rsolverNode,Rmatrices(NLMIN:NLMAX))
+          
+      ! The solver got the matrices; clean up Rmatrices, it was only of temporary
+      ! nature...
+      DO i=NLMIN,NLMAX
+        CALL lsysbl_releaseMatrix (Rmatrices(i))
+      END DO
       
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
-      CALL linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,ierror)
+      CALL linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
+          ierror)
       IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
       
       ! Switch off adaptive matrix generation if our discretisation is not a 
@@ -411,11 +553,21 @@ CONTAINS
 
 !</subroutine>
 
+    ! local variables
+    INTEGER :: i
+
     ! Which preconditioner do we have?    
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! Preconditioner was a linear solver structure.
       !
+      ! Release the preconditioner matrix on every level
+      DO i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+        CALL lsysbl_releaseMatrix ( &
+          rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+        DEALLOCATE(rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
+      END DO
+      
       ! Release the temporary vector(s)
       CALL lsyssc_releaseVector (rnonlinearIteration%rpreconditioner%p_rtempVectorSc)
       DEALLOCATE(rnonlinearIteration%rpreconditioner%p_rtempVectorSc)
@@ -588,7 +740,7 @@ CONTAINS
                                      iprecType, 1)
 
     SELECT CASE (iprecType)
-    CASE (1)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
       ! That preconditioner is a solver for a linear system.
       !
       ! Which levels have we to take care of during the solution process?
@@ -700,6 +852,7 @@ CONTAINS
 
       ! Loop through the levels, transpose the B-matrices  
       DO ilev=NLMIN,NLMAX
+        ! Get the matrix of the preconditioner
         p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
         
         ! Release the old B1/B2 matrices from the system matrix. This
@@ -779,7 +932,8 @@ CONTAINS
 
     ! Loop through the levels, transpose the B-matrices  
     DO ilev=NLMIN,NLMAX
-      p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
+      ! Get the matrix of the preconditioner
+      p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
         
       IF ((rfinalAssembly%iBmatricesTransposed .EQ. YES) .AND. &
           (IAND(p_rmatrix%RmatrixBlock(3,1)%imatrixSpec,&

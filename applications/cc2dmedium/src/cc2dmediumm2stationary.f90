@@ -100,7 +100,7 @@ CONTAINS
         
     ! Initialise the core equation to the stationary (Navier)-Stokes.
     CALL c2d2_setupCoreEquation (rnonlinearIteration,&
-        0.0_DP,1.0_DP,REAL(1-collct_getvalue_int (rproblem%rcollection,'ISTOKES'),DP))
+        0.0_DP,1.0_DP,REAL(1-rproblem%iequation,DP))
     
     ! Check the matrices if they are compatible to our
     ! preconditioner. If not, we later have to modify the matrices a little
@@ -125,12 +125,12 @@ CONTAINS
     CALL c2d2_solveCoreEquation (rnlSol,rnonlinearIteration,&
         rvector,rrhs,rproblem%rcollection)             
              
-    ! Release parameters of the nonlinear loop
-    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
-             
     ! Release the preconditioner
     CALL c2d2_releasePreconditioner (rnonlinearIteration)
     
+    ! Release parameters of the nonlinear loop, final clean up
+    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+             
     CALL output_lbrk()
     CALL output_line ('Nonlinear solver statistics')
     CALL output_line ('---------------------------')

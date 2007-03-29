@@ -858,7 +858,7 @@ CONTAINS
             ! The callback routine is allowed to change domega during the
             ! iteration if necessary. The nonlinear solver here does not touch
             ! domega anymore, so the callback routine is the only one changing it.
-            CALL fcb_precondDefect (rd,rx,rb,domega,bsuccess,p_rcollection)
+            CALL fcb_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
           END IF
           
         END SELECT
