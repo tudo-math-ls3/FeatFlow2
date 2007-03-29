@@ -2940,8 +2940,15 @@ CONTAINS
 
   ! Local matrices, used during the assembly.
   ! Values and positions of values in the global matrix.
-  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:,:), ALLOCATABLE :: Kentry
-  REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: Dentry
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dentry
+  
+  ! Additional contributions for the submatrices A11, A12, A21, A22 stemming from Newton.
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), ALLOCATABLE :: Kentry12
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA11
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA12
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA21
+  REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: DentryA22
 
   ! A pointer to an element-number list
   INTEGER(I32), DIMENSION(:), POINTER :: p_IelementList
@@ -3107,18 +3114,29 @@ CONTAINS
     ! for this local matrix, but this would normally not fit to the cache
     ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
     !
-    ! Kentry (:,:,:,1) defines the positions of the local matrices
+    ! Kentry (:,:,:) defines the positions of the local matrices
     ! in the submatrices A11 and A22.
-    ! Kentry (:,:,:,2) defines the positions of the local matrices
+    ! KentryA12 (:,:,:) defines the positions of the local matrices
     ! in the submatrices A12 and A21.
-    ALLOCATE(Kentry(indof,indof,nelementsPerBlock,2))
+    ALLOCATE(Kentry(indof,indof,nelementsPerBlock))
     
-    ! Dentry (:,:,:,1) fetches the 'main' matrix entries (Laplace, Mass,
+    IF (dnewton .NE. 0.0_DP) THEN
+      ALLOCATE(Kentry12(indof,indof,nelementsPerBlock))
+    END IF
+    
+    ! Dentry (:,:,:) fetches the 'main' matrix entries (Laplace, Mass,
     ! Convection).
-    ! Dentry (:,:,:,2:5) fetches additional entries in A11, A12, A21 and
-    ! A22 (in this order) of the Newton matrix, which is not always calculated
+    ! DentryA11, DentryA12, DentryA21 and DentryA22 fetches additional entries in 
+    ! A11, A12, A21 and A22 of the Newton matrix, which is not always calculated
     ! and therefore not always used!
-    ALLOCATE(Dentry(indof,indof,nelementsPerBlock,5))
+    ALLOCATE(Dentry(indof,indof,nelementsPerBlock))
+    
+    IF (dnewton .NE. 0.0_DP) THEN
+      ALLOCATE(DentryA11(indof,indof,nelementsPerBlock))
+      ALLOCATE(DentryA12(indof,indof,nelementsPerBlock))
+      ALLOCATE(DentryA21(indof,indof,nelementsPerBlock))
+      ALLOCATE(DentryA22(indof,indof,nelementsPerBlock))
+    END IF
     
     ! Allocate memory for the velocity in the cubature points.
     ALLOCATE(Dvelocity(NDIM2D,ncubp,nelementsPerBlock))
@@ -3319,7 +3337,7 @@ CONTAINS
             ! higher speed of the assembly routine, since this leads
             ! to better data locality.
             
-            Kentry(JDOFE,IDOFE,IEL,1)=JCOL
+            Kentry(JDOFE,IDOFE,IEL)=JCOL
             
           END DO ! IDOFE
           
@@ -3333,7 +3351,7 @@ CONTAINS
       IF (dnewton .NE. 0.0_DP) THEN
         IF (ASSOCIATED(p_Kcol,p_Kcol12)) THEN
         
-          Kentry(:,:,:,2) = Kentry(:,:,:,1)
+          Kentry12(:,:,:) = Kentry(:,:,:)
           
         ELSE
 
@@ -3387,7 +3405,7 @@ CONTAINS
                 ! higher speed of the assembly routine, since this leads
                 ! to better data locality.
                 
-                Kentry(JDOFE,IDOFE,IEL,2)=JCOL
+                Kentry(JDOFE,IDOFE,IEL)=JCOL
                 
               END DO ! IDOFE
               
@@ -3694,17 +3712,64 @@ CONTAINS
           
         END DO ! IEL
         
+        ! Subtract the X- and Y-derivative of the mesh velocity to the
+        ! velocity derivative field if Newton is active.
+        IF (dnewton .NE. 0.0_DP) THEN
+        
+          DO IEL=1,IELmax-IELset+1
+          
+            ! Loop over all cubature points on the current element
+            DO ICUBP = 1, ncubp
+            
+              du1locx = 0.0_DP
+              du1locy = 0.0_DP
+              du2locx = 0.0_DP
+              du2locy = 0.0_DP
+            
+              ! Perform a loop through the trial DOF's.
+              DO JDOFE=1,indof
+
+                ! Get the value of the (trial) basis function 
+                ! phi_i in the cubature point:
+                dbx = Dbas(JDOFE,DER_DERIV_X,ICUBP,IEL)
+                dby = Dbas(JDOFE,DER_DERIV_Y,ICUBP,IEL)
+
+                ! Sum up to the value in the cubature point
+                JDFG = Idofs(JDOFE,IEL)
+                du1locx = du1locx + DmeshVelocity(1,JDFG)*dbx
+                du1locy = du1locy + DmeshVelocity(1,JDFG)*dby
+                du2locx = du2locx + DmeshVelocity(2,JDFG)*dby
+                du2locy = du2locy + DmeshVelocity(2,JDFG)*dby
+
+              END DO ! JDOFE
+              
+              ! Subtract the velocity derivative to the previously calculated one.
+              DvelocityUderiv(1,ICUBP,IEL) = DvelocityUderiv(1,ICUBP,IEL)-du1locx
+              DvelocityUderiv(2,ICUBP,IEL) = DvelocityUderiv(2,ICUBP,IEL)-du1locy
+              DvelocityVderiv(1,ICUBP,IEL) = DvelocityVderiv(1,ICUBP,IEL)-du2locx
+              DvelocityVderiv(2,ICUBP,IEL) = DvelocityVderiv(2,ICUBP,IEL)-du2locy
+            
+            END DO ! ICUBP
+            
+          END DO ! IEL
+        
+        END IF ! dnewton != 0
+        
       END IF
       
       ! Ok, we now use Dvelocity as coefficient array in the assembly
       ! of a bilinear form!
       !
       ! Clear the local matrices. If the Newton part is to be calculated,
-      ! we must clear everything. If not, we only need Dentry(:,:,:,1)!
+      ! we must clear everything, otherwise only Dentry.
       IF (dnewton .NE. 0) THEN
         Dentry = 0.0_DP
+        DentryA11 = 0.0_DP
+        DentryA12 = 0.0_DP
+        DentryA21 = 0.0_DP
+        DentryA22 = 0.0_DP
       ELSE
-        Dentry (:,:,:,1) = 0.0_DP
+        Dentry = 0.0_DP
       END IF
       
       ! If ddelta != 0, set up the nonlinearity U*grad(u), probably with
@@ -3845,7 +3910,7 @@ CONTAINS
                 ! loop over all DOF's is finished, each entry contains
                 ! the calculated integral.
 
-                Dentry(JDOFE,IDOFE,IEL,1) = Dentry(JDOFE,IDOFE,IEL,1)+OM*AH
+                Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL)+OM*AH
                 
               END DO ! IDOFE
               
@@ -3917,7 +3982,7 @@ CONTAINS
                 ! loop over all DOF's is finished, each entry contains
                 ! the calculated integral.
 
-                Dentry(JDOFE,IDOFE,IEL,1) = Dentry(JDOFE,IDOFE,IEL,1)+OM*AH
+                Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL)+OM*AH
                 
               END DO ! IDOFE
               
@@ -3991,10 +4056,10 @@ CONTAINS
                 ! loop over all DOF's is finished, each entry contains
                 ! the calculated integral.
 
-                Dentry(JDOFE,IDOFE,IEL,2) = Dentry(JDOFE,IDOFE,IEL,2)+OM*AH11
-                Dentry(JDOFE,IDOFE,IEL,3) = Dentry(JDOFE,IDOFE,IEL,3)+OM*AH12
-                Dentry(JDOFE,IDOFE,IEL,4) = Dentry(JDOFE,IDOFE,IEL,4)+OM*AH21
-                Dentry(JDOFE,IDOFE,IEL,5) = Dentry(JDOFE,IDOFE,IEL,5)+OM*AH22
+                DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
+                DentryA12(JDOFE,IDOFE,IEL) = DentryA12(JDOFE,IDOFE,IEL)+OM*AH12
+                DentryA21(JDOFE,IDOFE,IEL) = DentryA21(JDOFE,IDOFE,IEL)+OM*AH21
+                DentryA22(JDOFE,IDOFE,IEL) = DentryA22(JDOFE,IDOFE,IEL)+OM*AH22
                 
               END DO ! IDOFE
               
@@ -4033,8 +4098,8 @@ CONTAINS
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
               DO JDOFE=1,indof
-                p_Da11(Kentry(JDOFE,IDOFE,IEL,1)) = p_Da11(Kentry(JDOFE,IDOFE,IEL,1)) + &
-                    dtheta * Dentry(JDOFE,IDOFE,IEL,1)
+                p_Da11(Kentry(JDOFE,IDOFE,IEL)) = p_Da11(Kentry(JDOFE,IDOFE,IEL)) + &
+                    dtheta * Dentry(JDOFE,IDOFE,IEL)
               END DO
             END DO
           END DO
@@ -4044,9 +4109,9 @@ CONTAINS
             DO IEL=1,IELmax-IELset+1
               DO IDOFE=1,indof
                 DO JDOFE=1,indof
-                  p_Da22(Kentry(JDOFE,IDOFE,IEL,1)) = &
-                      p_Da22(Kentry(JDOFE,IDOFE,IEL,1)) + &
-                      dtheta * Dentry(JDOFE,IDOFE,IEL,1)
+                  p_Da22(Kentry12(JDOFE,IDOFE,IEL)) = &
+                      p_Da22(Kentry12(JDOFE,IDOFE,IEL)) + &
+                      dtheta * Dentry(JDOFE,IDOFE,IEL)
                 END DO
               END DO
             END DO
@@ -4062,17 +4127,17 @@ CONTAINS
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
               DO JDOFE=1,indof
-                ! Kentry (:,:,:,1) -> positions of local matrix in A11 and A22.
+                ! Kentry (:,:,:) -> positions of local matrix in A11 and A22.
                 !
-                ! Dentry (:,:,:,2) -> Newton part of A11
-                p_Da11(Kentry(JDOFE,IDOFE,IEL,1)) = p_Da11(Kentry(JDOFE,IDOFE,IEL,1)) + &
-                    dtheta * ( Dentry(JDOFE,IDOFE,IEL,1) + &
-                               Dentry(JDOFE,IDOFE,IEL,2) )
+                ! DentryA11 (:,:,:) -> Newton part of A11
+                p_Da11(Kentry(JDOFE,IDOFE,IEL)) = p_Da11(Kentry(JDOFE,IDOFE,IEL)) + &
+                    dtheta * ( Dentry(JDOFE,IDOFE,IEL) + &
+                               DentryA11(JDOFE,IDOFE,IEL) )
 
-                ! Dentry (:,:,:,5) -> Newton part of A22
-                p_Da22(Kentry(JDOFE,IDOFE,IEL,1)) = p_Da22(Kentry(JDOFE,IDOFE,IEL,1)) + &
-                    dtheta * ( Dentry(JDOFE,IDOFE,IEL,1) + &
-                               Dentry(JDOFE,IDOFE,IEL,5) )
+                ! DentryA22 (:,:,:) -> Newton part of A22
+                p_Da22(Kentry(JDOFE,IDOFE,IEL)) = p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
+                    dtheta * ( Dentry(JDOFE,IDOFE,IEL) + &
+                               DentryA22(JDOFE,IDOFE,IEL) )
               END DO
             END DO
           END DO
@@ -4081,15 +4146,15 @@ CONTAINS
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
               DO JDOFE=1,indof
-                ! Kentry (:,:,:,2) -> positions of local matrix in A12 and A21.
+                ! Kentry12 (:,:,:) -> positions of local matrix in A12 and A21.
                 !
-                ! Dentry (:,:,:,3) -> Newton part of A12
-                p_Da12(Kentry(JDOFE,IDOFE,IEL,2)) = p_Da12(Kentry(JDOFE,IDOFE,IEL,2)) + &
-                    dtheta * Dentry(JDOFE,IDOFE,IEL,3) 
+                ! Dentry (:,:,:) -> Newton part of A12
+                p_Da12(Kentry12(JDOFE,IDOFE,IEL)) = p_Da12(Kentry12(JDOFE,IDOFE,IEL)) + &
+                    dtheta * DentryA12(JDOFE,IDOFE,IEL) 
 
-                ! Dentry (:,:,:,4) -> Newton part of A21
-                p_Da21(Kentry(JDOFE,IDOFE,IEL,2)) = p_Da21(Kentry(JDOFE,IDOFE,IEL,2)) + &
-                    dtheta * Dentry(JDOFE,IDOFE,IEL,4) 
+                ! Dentry (:,:,:) -> Newton part of A21
+                p_Da21(Kentry12(JDOFE,IDOFE,IEL)) = p_Da21(Kentry12(JDOFE,IDOFE,IEL)) + &
+                    dtheta * DentryA21(JDOFE,IDOFE,IEL) 
               END DO
             END DO
           END DO
@@ -4117,7 +4182,7 @@ CONTAINS
 
               DO JDOFE=1,indof
 
-                denth = dtheta*Dentry(JDOFE,IDOFE,IEL,1)         
+                denth = dtheta*Dentry(JDOFE,IDOFE,IEL)         
       
                 JDFG=Idofs(JDOFE,IEL)
                 Ddef1(IDFG)= Ddef1(IDFG) - denth*Du1(JDFG)
@@ -4136,7 +4201,7 @@ CONTAINS
 
               DO JDOFE=1,indof
 
-                denth = dtheta*Dentry(JDOFE,IDOFE,IEL,1)         
+                denth = dtheta*Dentry(JDOFE,IDOFE,IEL)         
       
                 JDFG=Idofs(JDOFE,IEL)
                 Ddef1(IDFG)= Ddef1(IDFG) - denth*Du1(JDFG)
@@ -4144,11 +4209,11 @@ CONTAINS
                 
                 ! Newton part
                 Ddef1(IDFG)= Ddef1(IDFG) &
-                           - dtheta*Dentry(JDOFE,IDOFE,IEL,2)*Du1(JDFG) &
-                           - dtheta*Dentry(JDOFE,IDOFE,IEL,3)*Du2(JDFG)
+                           - dtheta*DentryA11(JDOFE,IDOFE,IEL)*Du1(JDFG) &
+                           - dtheta*DentryA12(JDOFE,IDOFE,IEL)*Du2(JDFG)
                 Ddef2(IDFG)= Ddef2(IDFG) &
-                           - dtheta*Dentry(JDOFE,IDOFE,IEL,4)*Du1(JDFG) &
-                           - dtheta*Dentry(JDOFE,IDOFE,IEL,5)*Du2(JDFG)
+                           - dtheta*DentryA21(JDOFE,IDOFE,IEL)*Du1(JDFG) &
+                           - dtheta*DentryA22(JDOFE,IDOFE,IEL)*Du2(JDFG)
 
               END DO
             END DO
@@ -4165,6 +4230,11 @@ CONTAINS
 
     DEALLOCATE(DlocalDelta)
     IF (dnewton .NE. 0.0_DP) THEN
+      DEALLOCATE(DentryA22)
+      DEALLOCATE(DentryA21)
+      DEALLOCATE(DentryA12)
+      DEALLOCATE(DentryA11)
+      DEALLOCATE(Kentry12)
       DEALLOCATE(DvelocityUderiv)
       DEALLOCATE(DvelocityVderiv)
     END IF
