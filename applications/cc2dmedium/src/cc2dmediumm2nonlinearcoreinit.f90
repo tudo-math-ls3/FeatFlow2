@@ -243,7 +243,7 @@ CONTAINS
     INTEGER :: NLMIN,NLMAX
     INTEGER :: i
     INTEGER(PREC_VECIDX) :: imaxmem
-    CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
+    CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring,snewton
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
     LOGICAL :: bneumann
 
@@ -272,7 +272,7 @@ CONTAINS
         rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
     
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
       ! Ok, we have to initialise a linear solver for solving the linearised
       ! problem.
       !
@@ -387,10 +387,13 @@ CONTAINS
         CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
             p_rmatrixPreconditioner,&
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
+            
+        ! ----------------------------------------------------
         ! Should the linear solver use the Newton matrix?
-        IF (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
-            CCPREC_NEWTON) THEN
+        IF ((rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+            CCPREC_NEWTON) .OR. &
+            (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+            CCPREC_NEWTONDYNAMIC)) THEN
           ! That mens, our preconditioner matrix must look like
           !
           !  A11  A12  B1
@@ -484,6 +487,40 @@ CONTAINS
                 LSYSSC_SETM_UNDEFINED)
           END IF
           
+          ! ----------------------------------------------------
+          ! Should we even use the adaptive Newton?
+          IF (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+            CCPREC_NEWTONDYNAMIC) THEN
+            
+            ! We have even the extended, dynamic Newton as preconditioner.
+            ! Put the parameters for the extended Newton from the DAT file
+            ! into the Adaptive-Newton configuration block.
+            
+            CALL parlst_getvalue_string (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                                        'spreconditionerAdaptiveNewton', sstring, '')
+            snewton = ''
+            IF (sstring .NE. '') READ (sstring,*) snewton
+            IF (snewton .NE. '') THEN
+              ! Initialise the parameters of the adaptive Newton
+              CALL parlst_getvalue_int (rproblem%rparamList, snewton, &
+                  'nminFixPointIterations', rnonlinearIteration%rpreconditioner% &
+                  radaptiveNewton%nminFixPointIterations, 0)
+
+              CALL parlst_getvalue_int (rproblem%rparamList, snewton, &
+                  'nmaxFixPointIterations', rnonlinearIteration%rpreconditioner% &
+                  radaptiveNewton%nmaxFixPointIterations, 999)
+
+              CALL parlst_getvalue_double (rproblem%rparamList, snewton, &
+                  'depsAbsNewton', rnonlinearIteration%rpreconditioner% &
+                  radaptiveNewton%depsAbsNewton, 1E-5_DP)
+
+              CALL parlst_getvalue_double (rproblem%rparamList, snewton, &
+                  'depsRelNewton', rnonlinearIteration%rpreconditioner% &
+                  radaptiveNewton%depsRelNewton, 1E99_DP)
+            END IF
+            
+          END IF
+          
         END IF
       END DO
       
@@ -558,7 +595,7 @@ CONTAINS
 
     ! Which preconditioner do we have?    
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
       ! Preconditioner was a linear solver structure.
       !
       ! Release the preconditioner matrix on every level
@@ -740,7 +777,7 @@ CONTAINS
                                      iprecType, 1)
 
     SELECT CASE (iprecType)
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
       ! That preconditioner is a solver for a linear system.
       !
       ! Which levels have we to take care of during the solution process?

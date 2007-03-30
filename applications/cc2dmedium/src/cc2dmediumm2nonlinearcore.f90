@@ -164,13 +164,17 @@ MODULE cc2dmediumm2nonlinearcore
   INTEGER, PARAMETER :: CCPREC_NONE         = -1
 
   ! Preconditioning with inverse mass matrix (not yet implemented)
-  INTEGER, PARAMETER :: CCPREC_INVERSEMASS  = 0
+  INTEGER, PARAMETER :: CCPREC_INVERSEMASS   = 0
 
   ! Preconditioning by linear solver, solving the linearised system
-  INTEGER, PARAMETER :: CCPREC_LINEARSOLVER = 1
+  INTEGER, PARAMETER :: CCPREC_LINEARSOLVER  = 1
 
-  ! Preconditioning by Newton-Iteration (not yet implemented)
-  INTEGER, PARAMETER :: CCPREC_NEWTON       = 2
+  ! Preconditioning by Newton-Iteration
+  INTEGER, PARAMETER :: CCPREC_NEWTON        = 2
+
+  ! Preconditioning by dynamic Newton-Iteration (uses defect correction
+  ! and switches automatically to Newton if the error is small enough)
+  INTEGER, PARAMETER :: CCPREC_NEWTONDYNAMIC = 3
 
 !</constantblock>
 
@@ -178,6 +182,52 @@ MODULE cc2dmediumm2nonlinearcore
 
   
 !<types>
+
+!<typeblock>
+
+  ! This structure controls the Newton iteration -- i.e. the preconditioning
+  ! with the Frechet derivative of the Navier--Stokes equation, which
+  ! can lead to quadratic covergence of the nonlinear solver.
+  ! As Newton works only in the basin of attraction of the solution,
+  ! the parameters in this structure allow to define a switching criterion
+  ! when to use Newton. In the first couple of iterations, defect correction
+  ! is used, while the iteration switches to Newton if the residuum is small
+  ! enough.
+  ! This block is used if CCPREC_NEWTONDYNAMIC is used as preconditioner.
+  TYPE t_ccDynamicNewtonControl
+  
+    ! Minimum number of usul fix point iteration before to switch to
+    ! preconfitioning with the Newton matrix. (IFIXMIN)
+
+    INTEGER :: nminFixPointIterations = 0
+
+    ! Maximum number of usul fix point iteration before to switch to
+    ! preconfitioning with the Newton matrix. (IFIXMAX)
+
+    INTEGER :: nmaxFixPointIterations = 999
+
+    ! Norm of absolute residuum before applying Newton. 
+    ! Newton is only applied
+    ! if   ||absolute residuum|| < depsAbsNewton
+    ! and  ||relative residuum|| < depsRelNewton.
+    ! Otherwise, the usual fix point iteration is used.
+    ! Stamndard value = 1E-5.
+
+    REAL(DP) :: depsAbsNewton = 1.0E-5_DP
+
+    ! Norm of relative residuum before applying Newton. 
+    ! Newton is only applied
+    ! if   ||absolute residuum|| < depsAbsNewton
+    ! and  ||relative residuum|| < depsRelNewton.
+    ! Otherwise, the usual fix point iteration is used.
+    ! Standard value = 1E99 -> The absolute residuum counts.
+
+    REAL(DP) :: depsRelNewton = 1.0E99_DP
+  
+  END TYPE
+  
+!</typeblock>
+
 
 !<typeblock>
 
@@ -192,7 +242,8 @@ MODULE cc2dmediumm2nonlinearcore
     ! system, CCPREC_NEWTON for a Newton iteration,...)
     INTEGER :: ctypePreconditioning = CCPREC_NONE
     
-    ! Pointer to linear solver node if a linear solver is the preconditioner
+    ! Pointer to linear solver node if a linear solver is the preconditioner.
+    ! (Thus, this applies for the defect correction and the Newton preconditioner).
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
     
     ! An interlevel projection structure for changing levels
@@ -201,6 +252,10 @@ MODULE cc2dmediumm2nonlinearcore
     ! A filter chain that is used for implementing boundary conditions or other
     ! things when invoking the linear solver.
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    
+    ! Configuration block for the adaptive Newton preconditioner.
+    ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
+    TYPE(t_ccDynamicNewtonControl) :: radaptiveNewton
 
     ! Temporary scalar vector; used for calculating the nonlinear matrix
     ! on lower levels / projecting the solution from higher to lower levels.
@@ -339,7 +394,7 @@ MODULE cc2dmediumm2nonlinearcore
     
     ! Auxiliary variable: Saves the last defect in the nonlinear iteration
     REAL(DP), DIMENSION(2) :: DresidualOld = 0.0_DP
-    
+
     ! Auxiliary variable: Norm of the relative change = norm of the 
     ! preconditioned residual in the nonlinear iteration
     REAL(DP), DIMENSION(3) :: DresidualCorr = 0.0_DP
@@ -479,7 +534,7 @@ CONTAINS
 
     ! Which preconditioner is chosen?
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
       ! Save temporary vectors
       CALL collct_setvalue_vecsca(rcollection,'CCNL_RTEMPSCALAR',&
           rnonlinearIteration%rpreconditioner%p_rtempVectorSc,.TRUE.)
@@ -502,6 +557,22 @@ CONTAINS
       CALL collct_setvalue_linsol(rcollection,'CCNL_LINSOLVER',&
           rnonlinearIteration%rpreconditioner%p_rsolverNode,.TRUE.)
       
+      ! Remember the Newton parameters
+      CALL collct_setvalue_int(rcollection,'CCNL_NEWTONMINFP',&
+          rnonlinearIteration%rpreconditioner%radaptiveNewton%nminFixPointIterations,&
+          .TRUE.)
+
+      CALL collct_setvalue_int(rcollection,'CCNL_NEWTONMAXFP',&
+          rnonlinearIteration%rpreconditioner%radaptiveNewton%nmaxFixPointIterations,&
+          .TRUE.)
+
+      CALL collct_setvalue_real(rcollection,'CCNL_NEWTONEPSABS',&
+          rnonlinearIteration%rpreconditioner%radaptiveNewton%depsAbsNewton,&
+          .TRUE.)
+
+      CALL collct_setvalue_real(rcollection,'CCNL_NEWTONEPSREL',&
+          rnonlinearIteration%rpreconditioner%radaptiveNewton%depsRelNewton,&
+          .TRUE.)
     END SELECT
 
     CALL collct_setvalue_int(rcollection,'CCNL_IBMATTRANSPOSED',&
@@ -639,7 +710,7 @@ CONTAINS
 
     ! Which preconditioner is chosen?
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
       ! Get temporary vectors.
       rnonlinearIteration%rpreconditioner%p_rtempVectorSc => &
           collct_getvalue_vecsca(rcollection,'CCNL_RTEMPSCALAR')
@@ -660,6 +731,19 @@ CONTAINS
       ! iteration!
       rnonlinearIteration%rpreconditioner%p_rsolverNode => &
           collct_getvalue_linsol(rcollection,'CCNL_LINSOLVER')
+      
+      ! Get the Newton parameters
+      rnonlinearIteration%rpreconditioner%radaptiveNewton%nminFixPointIterations = &
+          collct_getvalue_int(rcollection,'CCNL_NEWTONMINFP')
+      
+      rnonlinearIteration%rpreconditioner%radaptiveNewton%nmaxFixPointIterations = &
+          collct_getvalue_int(rcollection,'CCNL_NEWTONMAXFP')
+      
+      rnonlinearIteration%rpreconditioner%radaptiveNewton%depsAbsNewton = &
+          collct_getvalue_real(rcollection,'CCNL_NEWTONEPSABS')
+      
+      rnonlinearIteration%rpreconditioner%radaptiveNewton%depsRelNewton = &
+          collct_getvalue_real(rcollection,'CCNL_NEWTONEPSREL')
       
     END SELECT
 
@@ -787,7 +871,7 @@ CONTAINS
 
     ! Which preconditioner is chosen?
     SELECT CASE (itypePreconditioner)
-    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
 
       ! Remove the solver node from the collection - not needed anymore there
       CALL collct_deletevalue(rcollection,'CCNL_LINSOLVER')
@@ -805,6 +889,13 @@ CONTAINS
       ! Remove parameters for adaptive matrix generation
       CALL collct_deletevalue(rcollection,'CCNL_IBMATTRANSPOSED')
       CALL collct_deletevalue(rcollection,'CCNL_IADAPTIVEMATRIX')
+      
+      ! Remove Newton parameters
+      CALL collct_deletevalue(rcollection,'CCNL_NEWTONMINFP')
+      CALL collct_deletevalue(rcollection,'CCNL_NEWTONMAXFP')
+      CALL collct_deletevalue(rcollection,'CCNL_NEWTONEPSABS')
+      CALL collct_deletevalue(rcollection,'CCNL_NEWTONEPSREL')
+      
     END SELECT
   
     CALL collct_deletevalue(rcollection,'CCNL_PRECONDITIONER')
@@ -859,7 +950,7 @@ CONTAINS
 
   SUBROUTINE c2d2_assembleLinearisedMatrices (rnonlinearIteration,rcollection,&
       blevelHirarchy,bboundaryConditions,bboundaryConditionsNonlin,&
-      bassemblePreconditioner,rx)
+      bassemblePreconditioner,bassembleNewton,rx)
 
   USE linearsystemblock
   USE collection
@@ -901,9 +992,15 @@ CONTAINS
 
   ! TRUE  = Assemble the preconditioner matrices p_rmatrixPreconditioner
   !         on every level in rnonlinearIteration.
-  ! FALSE = assemble the linearised system matrices p_rmatrix
+  ! FALSE = Assemble the linearised system matrices p_rmatrix
   !         on every level in rnonlinearIteration.
   LOGICAL, INTENT(IN) :: bassemblePreconditioner
+  
+  ! Applies only if bassemblePreconditioner=TRUE:
+  ! TRUE  = Assemble the Newton preconditioner.
+  ! FALSE = Assemble the standard defect correction preconditioner
+  !         (i.e. the linearised system matrix).
+  LOGICAL, INTENT(IN) :: bassembleNewton
   
   ! OPTIONAL: Current iteration vector. Must be specified if the nonlinearity
   ! should be discretised.
@@ -1130,10 +1227,10 @@ CONTAINS
               END IF
             END IF
           END IF
+          
+          ! Assemble either the standard linearised matrix or the Newton matrix.
 
-          IF (.NOT. bassemblePreconditioner .OR. &
-              (rnonlinearIteration%rpreconditioner%ctypePreconditioning .NE. &
-                CCPREC_NEWTON) ) THEN
+          IF ((.NOT. bassemblePreconditioner) .OR. (.NOT. bassembleNewton)) THEN
 
             ! If A22=A11, that's all for the diagonals of the matrix.
             ! If A22 has a separate content in memory, we copy the content
@@ -1145,12 +1242,22 @@ CONTAINS
                   LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
             END IF
 
+            ! Make sure not to calculate the Newton part.
+            rstreamlineDiffusion%dnewton = 0.0_DP
+
             ! Call the SD method to calculate the nonlinear part in A11 and A22.
             CALL conv_streamlineDiffusionBlk2d (&
                                 p_rvectorCoarse, p_rvectorCoarse, &
                                 1.0_DP, 0.0_DP,&
                                 rstreamlineDiffusion, CONV_MODMATRIX, &
                                 p_rmatrix)
+                                
+            ! Deactivate the matrices A12 and A21 by setting the multiplicators
+            ! to 0.0. Whatever the content is (if there's content at all),
+            ! these matrices are ignored then by the kernel.
+            
+            p_rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+            p_rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
                                 
             ! Alternative iplementation with the scalar version of SD:
             !$
@@ -1178,9 +1285,14 @@ CONTAINS
             CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
                 p_rmatrix%RmatrixBlock(2,2),&
                 LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            
             CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(1,2))
             CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(2,1))
           
+            ! Activate the submatrices A12 and A21 if they aren't.
+            p_rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+            p_rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+
             ! Call the extended SD method to set up the velocity part
             ! including the Newton matrix.
             ! Configure SD to calculate Newton.
@@ -1866,8 +1978,7 @@ CONTAINS
     ! if there is none.
     TYPE(t_collection), POINTER                   :: p_rcollection
 
-    ! Defect vector b-A(x)x. This must be filled by the callback routine
-    ! with data.
+    ! Defect vector b-A(x)x. This must be filled with data by the callback routine.
     TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
   !</inputoutput>
   
@@ -1891,7 +2002,7 @@ CONTAINS
       
       CALL c2d2_assembleNonlinearDefect (rnonlinearIteration,rx,rd,&
           .TRUE.,.TRUE.,p_rcollection)      
-
+          
       ! Release the nonlinear-iteration structure, that's it.
       CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
       
@@ -2056,7 +2167,7 @@ CONTAINS
         ! at the point rtemp1.
         ! Don't incorporate nonlinear (slip) boundary conditions.
         CALL c2d2_assembleLinearisedMatrices (rnonlinearIteration,p_rcollection,&
-          .FALSE.,.TRUE.,.FALSE.,.FALSE.,rtemp1)      
+          .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.,rtemp1)      
       
       END IF
         
@@ -2193,7 +2304,10 @@ CONTAINS
     INTEGER, DIMENSION(3) :: Cnorms
     
     INTEGER :: i
+    REAL(DP) :: dresInit,dres
+    LOGICAL :: bassembleNewton
     TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
+    TYPE(t_ccDynamicNewtonControl), POINTER :: p_rnewton
 
     ! The nonlinear iteration structure
     TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
@@ -2209,13 +2323,57 @@ CONTAINS
       CALL c2d2_restoreNonlinearLoop (rnonlinearIteration,p_rcollection)
 
       SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
-      CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON)
+      CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
         ! Preconditioning with a linear solver.
         !
         ! At first, assemble the preconditioner matrices on all levels
         ! and incorporate all boundary conditions.
+        !
+        ! Should we assemble the Newton part?
+        
+        bassembleNewton = .FALSE.
+        
+        IF (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+            CCPREC_NEWTON) THEN
+            
+          ! Use Newton in any case.
+          bassembleNewton = .TRUE.
+          
+        ELSE IF (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
+            CCPREC_NEWTONDYNAMIC) THEN
+            
+          ! Adaptive Newton. Check the iteration and the residual whether to use
+          ! Newton or not. But at first, get a shortcut to the parameter structure
+          ! of the adaptive Newton...
+            
+          p_rnewton => rnonlinearIteration%rpreconditioner%radaptiveNewton
+          
+          IF (ite .GT. p_rnewton%nmaxFixPointIterations) THEN
+            ! Force Newton to be used.
+            bassembleNewton = .TRUE.
+          ELSE
+            IF (ite .GT. p_rnewton%nminFixPointIterations) THEN
+              ! In this case, the residuum of the last iterate decides on 
+              ! whether to use Newton or not.
+              dresInit = SQRT(rnonlinearIteration%DresidualInit(1)**2 + &
+                            rnonlinearIteration%DresidualInit(2)**2)
+              dres    = SQRT(rnonlinearIteration%DresidualOld(1)**2 + &
+                            rnonlinearIteration%DresidualOld(2)**2)
+              IF ((dres .LT. p_rnewton%depsAbsNewton) .AND. &
+                  (dres .LT. p_rnewton%depsRelNewton * dresInit)) THEN
+                bassembleNewton = .TRUE.
+              END IF
+            END IF
+            
+            ! Otherwise: Use fixpoint iteration...
+            
+          END IF
+          
+        END IF
+        
+        ! Ok, now assemble the preconditioner matrices in  rnonlinearIteration.
         CALL c2d2_assembleLinearisedMatrices (rnonlinearIteration,p_rcollection,&
-            .TRUE.,.TRUE.,.TRUE.,.TRUE.,rx)
+            .TRUE.,.TRUE.,.TRUE.,.TRUE.,bassembleNewton,rx)
           
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
@@ -2380,11 +2538,15 @@ CONTAINS
       ! We need it for some parameters.
       CALL c2d2_restoreNonlinearLoop (rnonlinearIteration,p_rcollection)
 
-      ! Calculate the norm of the defect
-      CALL c2d2_getDefectNorm (rx,rb,rd,Dresiduals)   
-      Dresiduals(3) = SQRT(Dresiduals(1)**2+Dresiduals(2)**2)
-      
-      ! In the first iteration, print the norm of the defect.
+      ! Calculate norms of the solution/defect vector
+      CALL c2d2_getDefectNorm (rx,rb,rd,Dresiduals)
+      Dresiduals(3) = SQRT(Dresiduals(1)**2 + Dresiduals(2)**2)
+
+      ! Replace the 'old' residual by the current one
+      rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
+
+      ! In the first iteration (initial defect), print the norm of the defect
+      ! and save the norm of the initial residuum to the structure
       IF (ite .EQ. 0) THEN
       
         CALL output_separator (OU_SEP_MINUS)     
@@ -2397,10 +2559,9 @@ CONTAINS
             TRIM(sys_sdEP(Dresiduals(3),9,2)))
         CALL output_separator (OU_SEP_MINUS)     
 
-        ! Save the initial residuum to the structure
         rnonlinearIteration%DresidualInit (1:2) = Dresiduals(1:2)
         rnonlinearIteration%DresidualOld (1:2) = Dresiduals(1:2)
-        
+
         bconvergence = .FALSE.
         bdivergence = .FALSE.
       
@@ -2414,6 +2575,11 @@ CONTAINS
         
         ! Nonlinear convergence rate
         drhoNL = (Dresiduals(3)/dresOld) ** (1.0_DP/REAL(ite,DP))
+        
+        ! Calculate norms of the solution/defect vector, calculated above
+        dresU   = Dresiduals(1)
+        dresDIV = Dresiduals(2)
+        dres    = SQRT(dresU**2 + dresDIV**2)
         
         ! Calculate relative maximum changes 
         ! This simply calculates some postprocessing values of the relative
@@ -2442,7 +2608,7 @@ CONTAINS
         dtmp = MAX(Dresiduals(1),Dresiduals(2))
         IF (dtmp .LT. 1.0E-8_DP) dtmp = 1.0_DP
         ddelU = MAX(rnonlinearIteration%DresidualCorr(1),&
-                   rnonlinearIteration%DresidualCorr(2))/dtmp
+                    rnonlinearIteration%DresidualCorr(2))/dtmp
         
         dtmp = Dresiduals(3)
         IF (dtmp .LT. 1.0E-8_DP) dtmp = 1.0_DP
@@ -2461,17 +2627,8 @@ CONTAINS
         depsPR  = rnonlinearIteration%DepsNL(4)
         depsRES = rnonlinearIteration%DepsNL(5)*dresINIT
         
-        ! Calculate norms of the solution/defect vector
-        CALL c2d2_getDefectNorm (rx,rb,rd,Dresiduals)
-        dresU   = Dresiduals(1)
-        dresDIV = Dresiduals(2)
-        dres    = SQRT(dresU**2 + dresDIV**2)
-        
-        ! Replace the 'old' residual
-        rnonlinearIteration%DresidualOld(1) = dresU
-        rnonlinearIteration%DresidualOld(2) = dresDIV
-
-        ! Check for divergence; use a NOT for better NaN handling.
+        ! All residual information calculated.
+        ! Check for divergence; use a 'NOT' for better NaN handling.
         bdivergence = .NOT. (dres/dresOld .LT. 1E2)
         
         ! Check for convergence
