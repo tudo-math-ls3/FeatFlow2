@@ -706,6 +706,11 @@ CONTAINS
   ! This routine can check the residuum for convergence/divergence and can print
   ! information about the norm of the residuum to screen.
   !
+  ! At the beginning of the nonlinear iteration, the callback routines 
+  ! fcb_getResiduum and fcb_resNormCheck are called once with ite=0 to calculate
+  ! the initial defect, its norm and to check if already the initial vector
+  ! is the solution.
+  !
   ! If a linear solver is chosen for preconditioning, the nonlinear solver
   ! assumes that this is completely initialised by the application and ready 
   ! for action; it will directly call linsol_precondDefect without any further

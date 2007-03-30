@@ -4109,8 +4109,8 @@ CONTAINS
             DO IEL=1,IELmax-IELset+1
               DO IDOFE=1,indof
                 DO JDOFE=1,indof
-                  p_Da22(Kentry12(JDOFE,IDOFE,IEL)) = &
-                      p_Da22(Kentry12(JDOFE,IDOFE,IEL)) + &
+                  p_Da22(Kentry(JDOFE,IDOFE,IEL)) = &
+                      p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
                       dtheta * Dentry(JDOFE,IDOFE,IEL)
                 END DO
               END DO

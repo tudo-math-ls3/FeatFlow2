@@ -1640,7 +1640,7 @@ CONTAINS
     ! Allocate a new vector for the data
     CALL storage_new ('ucd_addVariableVertexBased','hvariable',&
         INT(rexport%nvertices,I32),ST_DOUBLE,&
-	rexport%p_Hvariables(rexport%nvariables),&
+        rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
     
     ! Copy the vertex data into that vector
@@ -1731,7 +1731,7 @@ CONTAINS
     ! Allocate a new vector for the data
     CALL storage_new ('ucd_addVariableVertexBased','hvariable',&
         INT(rexport%ncells,I32),ST_DOUBLE,&
-	rexport%p_Hvariables(rexport%nvariables),&
+        rexport%p_Hvariables(rexport%nvariables),&
         ST_NEWBLOCK_ZERO)
         
     ! Copy the element data into that vector
