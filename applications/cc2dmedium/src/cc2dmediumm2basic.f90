@@ -143,6 +143,12 @@ MODULE cc2dmediumm2basic
 
   TYPE t_problem
   
+    ! Output level during the initialisation phase.
+    INTEGER :: MSHOW_Initialisation
+  
+    ! Output level of the application.
+    INTEGER :: MT_OutputLevel
+  
     ! Minimum refinement level; = Level i in RlevelInfo
     INTEGER :: NLMIN
     

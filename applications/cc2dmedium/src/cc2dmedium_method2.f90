@@ -129,6 +129,9 @@ CONTAINS
     CALL parlst_readfromfile (rproblem%rparamList, './data/timediscr.dat')
     
     ! Ok, parameters are read in.
+    ! Get the output levels during the initialisation phase and during the program.
+    CALL c2d2_initOutput (rproblem)
+    
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     CALL c2d2_initParameters (rproblem)

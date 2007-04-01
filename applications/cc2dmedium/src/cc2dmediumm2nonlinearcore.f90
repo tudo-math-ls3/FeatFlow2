@@ -366,6 +366,9 @@ MODULE cc2dmediumm2nonlinearcore
     ! Maximum allowed damping parameter; OMGMAX
     REAL(DP) :: domegaMax = 2.0_DP
     
+    ! Output level of the nonlinear iteration
+    INTEGER :: MT_OutputLevel = 2
+    
     ! Minimum discretisation level
     INTEGER :: NLMIN = 1
     
@@ -584,6 +587,10 @@ CONTAINS
     CALL collct_setvalue_real(rcollection,'CCNL_DADMATTHRESHOLD',&
         rnonlinearIteration%rfinalAssembly%dadMatThreshold,.TRUE.)
 
+    ! Output level
+    CALL collct_setvalue_int(rcollection,'CCNL_MT',&
+        rnonlinearIteration%MT_OutputLevel,.TRUE.)
+
     ! Min/Max level
     CALL collct_setvalue_int(rcollection,'CCNL_NLMIN',&
         rnonlinearIteration%NLMIN,.TRUE.)
@@ -757,6 +764,10 @@ CONTAINS
     rnonlinearIteration%rfinalAssembly%dadMatThreshold = &
         collct_getvalue_real(rcollection,'CCNL_DADMATTHRESHOLD')
 
+    ! Output level
+    rnonlinearIteration%MT_OutputLevel = &
+        collct_getvalue_int(rcollection,'CCNL_MT')
+
     ! Get information about the levels
     rnonlinearIteration%NLMIN = &
         collct_getvalue_int(rcollection,'CCNL_NLMIN')
@@ -924,6 +935,9 @@ CONTAINS
     CALL collct_deletevalue (rcollection,'CCNL_EPSNL3')
     CALL collct_deletevalue (rcollection,'CCNL_EPSNL4')
     CALL collct_deletevalue (rcollection,'CCNL_EPSNL5')
+
+    ! Release information about the output level
+    CALL collct_deletevalue(rcollection,'CCNL_MT')
 
     ! Release the level-array in the nonlinear iteration structure
     CALL collct_deletevalue(rcollection,'CCNL_NLMAX')
@@ -1279,6 +1293,11 @@ CONTAINS
             !END IF
             
           ELSE
+          
+            IF (rnonlinearIteration%MT_OutputLevel .GE. 3) THEN
+              CALL output_line ('Assembling Newton matrix on level '&
+                  //TRIM(sys_siL(ilev,10))//'.',OU_CLASS_TRACE1)
+            END IF
             
             ! Copy A11 to A22 and clear A12 and A21. Then, assemble the
             ! convectve operator + Newton into A11, A12, A21 and A22.

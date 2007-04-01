@@ -127,6 +127,8 @@ CONTAINS
     ! Basic initialisation of the nonlinenar iteration structure.
     CALL c2d2_createNonlinearLoop (rnonlinearIteration,rproblem%NLMIN,rproblem%NLMAX)    
     
+    rnonlinearIteration%MT_OutputLevel = rproblem%MT_OutputLevel
+    
     ! Get the minimum/maximum damping parameter from the parameter list, save
     ! them to the nonlinear iteration structure (which is now initialised).
     CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &

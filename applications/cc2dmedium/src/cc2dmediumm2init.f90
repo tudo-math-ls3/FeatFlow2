@@ -55,6 +55,33 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE c2d2_initOutput (rproblem)
+  
+!<description>
+  ! Initialises basic output settings based on the parameters in the DAT file.
+!</description>
+  
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    ! Get the output level for the whole application -- during the
+    ! initialisation phase and during the rest of the program.
+    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+                              'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
+
+    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+                              'MT_OutputLevel',rproblem%MT_OutputLevel,2)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE c2d2_initParameters (rproblem)
   
 !<description>
@@ -75,6 +102,14 @@ CONTAINS
 
     REAL(DP) :: dnu,d1
     INTEGER :: ilvmin,ilvmax,i1
+
+    ! Get the output level for the whole application -- during the
+    ! initialisation phase and during the rest of the program.
+    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+                              'MSHOW_Initialisation',rproblem%MSHOW_Initialisation,2)
+
+    CALL parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
+                              'MT_OutputLevel',rproblem%MT_OutputLevel,2)
 
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
