@@ -1096,6 +1096,11 @@ CONTAINS
 
         ! Matrix weight
         rupwind%dtheta = rnonlinearIteration%dgamma
+        
+        IF (bassembleNewton .AND. (rnonlinearIteration%MT_OutputLevel .GE. 2)) THEN
+          CALL output_line ('Warning: Upwind does not support assembly '&
+              //'of the Newton matrix!',OU_CLASS_TRACE1)
+        END IF
 
       CASE (2)
         ! Set up the jump stabilisation structure for the creation of the defect.
@@ -1435,12 +1440,13 @@ CONTAINS
           ! At first, initialise the A-matrix with the Stokes contribution.
           ! We ignore the structure and simply overwrite the content of the
           ! system submatrices with the Stokes matrix.
+
           IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
               (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
 
             ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
             CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
-                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+                                         LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
             ! Mass matrix?
             IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
               CALL lsyssc_matrixLinearComb (&
@@ -1460,23 +1466,82 @@ CONTAINS
             
           END IF
 
-          ! Call the SD method to calculate the nonlinear matrix.
-          ! We use the streamline-diffusion discretisation routine
-          ! which uses a central-difference-like discretisation.
-          ! As the parameter rstreamlineDiffusion%dbeta is =0 by default, the
-          ! Stokes part is not calculated in this routine.
-          CALL conv_streamlineDiffusion2d (&
-                              p_rvectorCoarse, p_rvectorCoarse, &
-                              1.0_DP, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              p_rmatrix%RmatrixBlock(1,1))   
-                              
           ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! We can assemble the jump part any time as it's independent of any
+          ! convective parts...
           CALL conv_jumpStabilisation2d (&
                               p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
                               rjumpStabil, CONV_MODMATRIX, &
                               p_rmatrix%RmatrixBlock(1,1))   
 
+          ! Assemble either the standard linearised matrix or the Newton matrix.
+          ! Call the SD method to calculate the nonlinear matrix.
+          ! We use the streamline-diffusion discretisation routine
+          ! which uses a central-difference-like discretisation.
+          ! As the parameter rstreamlineDiffusion%dbeta is =0 by default, the
+          ! Stokes part is not calculated in this routine.
+
+          IF ((.NOT. bassemblePreconditioner) .OR. (.NOT. bassembleNewton)) THEN
+
+            ! If A22=A11, that's all for the diagonals of the matrix.
+            ! If A22 has a separate content in memory, we copy the content
+            ! of A11 to A22 so that they are the same.
+            IF (.NOT. lsyssc_isMatrixContentShared( &
+              p_rmatrix%RmatrixBlock(1,1),p_rmatrix%RmatrixBlock(2,2))) THEN
+              CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                  p_rmatrix%RmatrixBlock(2,2),&
+                  LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            END IF
+
+            ! Make sure not to calculate the Newton part.
+            rstreamlineDiffusion%dnewton = 0.0_DP
+
+            ! Call the SD method to calculate the nonlinear part in A11 and A22.
+            CALL conv_streamlineDiffusionBlk2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, &
+                                1.0_DP, 0.0_DP,&
+                                rstreamlineDiffusion, CONV_MODMATRIX, &
+                                p_rmatrix)
+                                
+            ! Deactivate the matrices A12 and A21 by setting the multiplicators
+            ! to 0.0. Whatever the content is (if there's content at all),
+            ! these matrices are ignored then by the kernel.
+            
+            p_rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
+            p_rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
+                                
+          ELSE
+          
+            IF (rnonlinearIteration%MT_OutputLevel .GE. 3) THEN
+              CALL output_line ('Assembling Newton matrix on level '&
+                  //TRIM(sys_siL(ilev,10))//'.',OU_CLASS_TRACE1)
+            END IF
+            
+            ! Copy A11 to A22 and clear A12 and A21. Then, assemble the
+            ! convectve operator + Newton into A11, A12, A21 and A22.
+            CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                p_rmatrix%RmatrixBlock(2,2),&
+                LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            
+            CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(1,2))
+            CALL lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(2,1))
+          
+            ! Activate the submatrices A12 and A21 if they aren't.
+            p_rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+            p_rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+
+            ! Call the extended SD method to set up the velocity part
+            ! including the Newton matrix.
+            ! Configure SD to calculate Newton.
+            rstreamlineDiffusion%dnewton = 1.0_DP
+            CALL conv_streamlineDiffusionBlk2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, &
+                                1.0_DP, 0.0_DP,&
+                                rstreamlineDiffusion, CONV_MODMATRIX, &
+                                p_rmatrix)
+                
+          END IF
+          
           ! If A22=A11, that's all for the diagonals of the matrix.
           ! If A22 has a separate content in memory, we copy the content
           ! of A11 to A22 so that they are the same.
