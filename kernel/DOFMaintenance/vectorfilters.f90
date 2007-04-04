@@ -818,7 +818,11 @@ CONTAINS
     IF (.NOT. PRESENT(rdiscreteBC)) THEN
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+      IF (ASSOCIATED(rx%p_rdiscreteBC)) THEN
+        p_RdiscreteBC => rx%p_rdiscreteBC%p_RdiscBCList  
+      ELSE
+        NULLIFY(p_RdiscreteBC)
+      END IF
     ELSE
       p_RdiscreteBC => rdiscreteBC%p_RdiscBCList
     END IF
@@ -1245,7 +1249,11 @@ CONTAINS
     IF (.NOT. PRESENT(rdiscreteFBC)) THEN
       ! Grab the boundary condition entry list from the vector. This
       ! is a list of all discretised boundary conditions in the system.
-      p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
+      IF (ASSOCIATED(rx%p_rdiscreteBCfict)) THEN
+        p_RdiscreteFBC => rx%p_rdiscreteBCfict%p_RdiscFBCList  
+      ELSE
+        NULLIFY(p_RdiscreteFBC)
+      END IF
     ELSE
       p_RdiscreteFBC => rdiscreteFBC%p_RdiscFBCList
     END IF

@@ -12,7 +12,10 @@
 !# 1.) matio_writeMatrixHR
 !#     -> Writes a matrix in human readable form into a text file
 !#
-!# 2.) matio_spyMatrix
+!# 1.) matio_writeBlockMatrixHR
+!#     -> Writes a block matrix in human readable form into a text file
+!#
+!# 3.) matio_spyMatrix
 !#     -> Writes a scalar matrix into a file which can be visualized
 !#        by means of the MATLAB command SPY
 !#
@@ -34,10 +37,79 @@ MODULE matrixio
   USE storage
   USE io
   USE linearsystemscalar
+  USE linearsystemblock
+  USE globalsystem
   
   IMPLICIT NONE
 
   CONTAINS
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE matio_writeBlockMatrixHR (rmatrix, sarray,&
+                                       bnoZero, ifile, sfile, sformat, dthreshold)
+  
+  !<description>
+    ! This routine writes a block matrix into a text file.
+    ! The matrix is written in human readable form.
+    ! Note that for this purpose, a new matrix is temporarily created in memory!
+  !</description>
+    
+  !<input>
+    ! The matrix to be written out
+    TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+    
+    ! Name of the matrix
+    CHARACTER(len=*), INTENT(IN) :: sarray
+    
+    ! Suppress zeroes in output: yes/no
+    LOGICAL, INTENT(IN) :: bnoZero
+    
+    ! Output channel to use for output
+    !  = 0: Get temporary channel for file 'sfile'
+    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    !       'sfile' is ignored.
+    INTEGER(I32), INTENT(IN) :: ifile
+    
+    ! Name of the file where to write to. Only relevant for ifile=0!
+    CHARACTER(len=*), INTENT(IN) :: sfile
+    
+    ! Format string to use for the output; e.g. '(E20.10)'
+    CHARACTER(len=*), INTENT(IN) :: sformat
+    
+    ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for beter visualisation.
+    ! If not present, a default of 1E-12 is assumed.
+    REAL(DP), INTENT(IN), OPTIONAL :: dthreshold
+  !</input>
+    
+!</subroutine>
+
+    ! local variables
+    TYPE(t_matrixBlock) :: rtempMatrix
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    REAL(DP) :: dthres 
+
+    ! We have to create a global matrix first!
+    CALL glsys_assembleGlobal (rmatrix,rtempMatrix,.TRUE.,.TRUE.)
+                              
+    ! Replace small values by zero
+    dthres = 1E-12_DP
+    IF (PRESENT(dthreshold)) dthres = dthreshold
+    IF (ABS(dthres) .GT. 0.0_DP) THEN
+      CALL storage_getbase_double (rtempMatrix%RmatrixBlock(1,1)%h_DA,p_DA)
+      WHERE (abs(p_Da) .LT. dthres) p_Da = 0.0_DP
+    END IF
+    
+    ! Write matrix to the file
+    CALL matio_writeMatrixHR (rtempMatrix%RmatrixBlock(1,1), sarray,&
+                              bnoZero, ifile, sfile, sformat)
+
+    ! Release the temporary matrix
+    CALL lsysbl_releaseMatrix (rtempMatrix)
+
+  END SUBROUTINE 
 
   ! ***************************************************************************
 

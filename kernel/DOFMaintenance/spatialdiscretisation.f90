@@ -23,17 +23,21 @@
 !#        all geometric elements in the trial space, another element type
 !#        for all geometric elements in the test space
 !#
-!# 4.) spdiscr_deriveSimpleDiscrSc
+!# 4.) spdiscr_deriveBlockDiscr
+!#     -> Creates a block discretisation structure as a subset of
+!#        another block discretisation structure
+!#
+!# 5.) spdiscr_deriveSimpleDiscrSc
 !#     -> Based on an existing discretisation structure, derive a new
 !#        discretisation structure with different trial elements
 !#
-!# 5.) spdiscr_releaseDiscr
+!# 6.) spdiscr_releaseDiscr
 !#     -> Release a scalar discretisation structure.
 !#
-!# 6.) spdiscr_releaseBlockDiscr
+!# 7.) spdiscr_releaseBlockDiscr
 !#     -> Releases a block discretisation structure from memory
 !#
-!# 6.) spdiscr_checkCubature
+!# 8.) spdiscr_checkCubature
 !#     -> Checks if a cubature formula is compatible to an element
 !#        distribution.
 !#
@@ -445,6 +449,93 @@ CONTAINS
   
   END SUBROUTINE  
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_deriveBlockDiscr (rsourceDiscr, rdestDiscr, &
+      ifirstBlock,ilastBlock)
+  
+!<description>
+  ! This routine derives a block discretisation structure from another one.
+  !
+  ! rsourceDiscr is a given block discretisation structure. 
+  ! ifirstBlock is the number of the block in rsourceDiscr that should be
+  ! used as first block in rdestDiscr.
+  ! ilastBlock is the number of the block in rsourceDiscr that should be
+  ! used as last block in rdestDiscr.
+  !
+  ! rdestDiscr will therefore contain the blocks
+  ! ifirstBlock..ilastBlock of rsourceDiscr. No memory will be allocated by
+  ! this procedure, rdestDiscr will simply share all handles with
+  ! rsourceDiscr.
+!</description>
+
+!<input>
+  ! A source discretisation structure that should be used as template
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rsourceDiscr
+
+  ! OPTIONAL: Number of the block in rsourceDiscr that should be
+  ! used as first block in rdestDiscr. Default value is =1.
+  INTEGER, INTENT(IN), OPTIONAL :: ifirstBlock
+
+  ! OPTIONAL: Number of the last block in rsourceDiscr that should be
+  ! used as last block in rdestDiscr. Default value is the 
+  ! number of components in rsourceDiscr.
+  INTEGER, INTENT(IN), OPTIONAL :: ilastBlock
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  TYPE(t_blockDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: ifirst, ilast, ncount
+    
+    ! Check that the source discretisation structure is valid.
+    IF (rsourceDiscr%ndimension .LE. 0) THEN
+      PRINT *,'spdiscr_deriveBlockDiscr: Source structure invalid!'
+      STOP
+    END IF
+
+    ! Evaluate the optional parameters
+    ifirst = 1
+    ilast = rsourceDiscr%ncomponents
+    
+    IF (PRESENT(ifirstBlock)) THEN
+      ifirst = MIN(MAX(ifirst,ifirstBlock),ilast)
+    END IF
+    
+    IF (PRESENT(ilastBlock)) THEN
+      ilast = MAX(MIN(ilast,ilastBlock),ifirst)
+    END IF
+    
+    ncount = ilast-ifirst+1
+    
+    ! Copy all information from the source discretisation structure
+
+    rdestDiscr%ndimension             =  rsourceDiscr%ndimension           
+    rdestDiscr%ccomplexity            =  rsourceDiscr%ccomplexity          
+    rdestDiscr%p_rboundary            => rsourceDiscr%p_rboundary          
+    rdestDiscr%p_rtriangulation       => rsourceDiscr%p_rtriangulation     
+    rdestDiscr%p_rboundaryConditions  => rsourceDiscr%p_rboundaryConditions
+    rdestDiscr%ncomponents            =  rsourceDiscr%ncomponents          
+
+    ! Copy all substructures -- from ifirstBlock to ilastBlock
+    rdestDiscr%RspatialDiscretisation(1:ncount) = &
+      rsourceDiscr%RspatialDiscretisation(ifirstBlock:ilastBlock)
+      
+    ! Mark the scalar discretisation structures as 'being a copy of something'.
+    ! This is to prevent the dynamic information to be released.
+    ! The dynamic information 'belongs' to rdiscrSource and not to the
+    ! newly created rdiscrDest!
+    rdestDiscr%RspatialDiscretisation(1:ncount)%bisCopy = .TRUE.
+
+    END SUBROUTINE  
+  
   ! ***************************************************************************
   
 !<subroutine>

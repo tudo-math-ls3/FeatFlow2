@@ -43,7 +43,7 @@ CONTAINS
 
 !<function>
   
-  PURE REAL(DP) FUNCTION mprim_getParabolicProfile (dpos,dlength,dmaxvalue)
+  ELEMENTAL REAL(DP) FUNCTION mprim_getParabolicProfile (dpos,dlength,dmaxvalue)
   
 !<description>
   ! Calculates the value of a parabolic profile along a line.
@@ -70,7 +70,7 @@ CONTAINS
 !</function>
 
     ! Result: Value of the parbolic profile on position dpos on the line segment
-    mprim_getParabolicProfile = 4*dmaxvalue*dpos*(dlength-dpos)/(dlength*dlength)
+    mprim_getParabolicProfile = 4.0_DP*dmaxvalue*dpos*(dlength-dpos)/(dlength*dlength)
     
   END FUNCTION
 
@@ -808,7 +808,7 @@ CONTAINS
 
 !<subroutine>
   
-  PURE SUBROUTINE mprim_linearRescale(dx,da,db,dc,dd,dy)
+  ELEMENTAL SUBROUTINE mprim_linearRescale(dx,da,db,dc,dd,dy)
   
 !<description>
   ! Scales a coordinate x linearly from the interval [a,b] to the

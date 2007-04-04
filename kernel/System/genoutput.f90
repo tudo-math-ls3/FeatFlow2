@@ -442,15 +442,15 @@ CONTAINS
 
       SELECT CASE (ioc)
       CASE (OU_CLASS_TRACE1)
-        s = '*** '//trim(ssubroutine)//':'//smessage
+        s = '*** '//trim(ssubroutine)//': '//smessage
       CASE (OU_CLASS_TRACE2)
-        s = '***** '//trim(ssubroutine)//':'//smessage
+        s = '***** '//trim(ssubroutine)//': '//smessage
       CASE (OU_CLASS_TRACE3)
-        s = '******* '//trim(ssubroutine)//':'//smessage
+        s = '******* '//trim(ssubroutine)//': '//smessage
       CASE (OU_CLASS_SYSTEM)
-        s = '* System ('//trim(ssubroutine)//'):'//smessage
+        s = '* System ('//trim(ssubroutine)//'): '//smessage
       CASE (OU_CLASS_ERROR)
-        s = '* Error ('//trim(ssubroutine)//'):'//smessage
+        s = '* Error ('//trim(ssubroutine)//'): '//smessage
       CASE DEFAULT
         s = smessage
       END SELECT

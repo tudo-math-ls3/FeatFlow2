@@ -196,7 +196,7 @@ CONTAINS
       END IF
       
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Kld',  &
-                                    rlocalMatrix%NEQ+1_I32, &
+                                    rlocalMatrix%NEQ+1_PREC_VECIDX, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kld,&
                                     ST_NEWBLOCK_ZERO)
       
@@ -274,7 +274,7 @@ CONTAINS
       END IF
       
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Kld',  &
-                                    rlocalMatrix%NEQ+1_I32, &
+                                    rlocalMatrix%NEQ+1_PREC_VECIDX, &
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kld,&
                                     ST_NEWBLOCK_ZERO)
       
@@ -431,6 +431,9 @@ CONTAINS
       INTEGER :: i,j
       INTEGER(PREC_VECIDX) :: irow
       INTEGER(PREC_MATIDX) :: irowoffset,narow
+      
+      Icolumns(:) = 0
+      Irows(:) = 0
       
       ! Loop through all matrix blocks.
       DO i=1,rsourceMatrix%ndiagBlocks

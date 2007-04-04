@@ -155,6 +155,7 @@ MODULE linearsystemscalar
   USE storage
   USE spatialdiscretisation
   USE dofmapping
+  USE genoutput
 
   IMPLICIT NONE
 
@@ -886,13 +887,15 @@ CONTAINS
 
   ! Do we have data at all?
  IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
-   NULLIFY(p_Ddata)
-   RETURN
+   CALL output_line('Trying to access empty vector!', &
+      OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
+   STOP
  END IF
 
   ! Check that the vector is really double precision
   IF (rvector%cdataType .NE. ST_DOUBLE) THEN
-    PRINT *,'lsyssc_getbase_double: Vector is of wrong precision!'
+    CALL output_line('Vector is of wrong precision!', &
+       OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
     STOP
   END IF
 
@@ -3266,6 +3269,10 @@ CONTAINS
 
 !</subroutine>
 
+  ! Matrix template; initialised by the default initialisation strategy
+  ! of Fortran 90.
+  TYPE(t_matrixScalar) :: rmatrixTemplate
+
   ! Which handles do we have to release?
   !
   ! Release the matrix data if the handle is not a copy of another matrix
@@ -3298,20 +3305,25 @@ CONTAINS
     END SELECT
   END IF
   
-  ! Clean up the rest
-  rmatrix%h_DA        = ST_NOHANDLE
-  rmatrix%h_Kcol      = ST_NOHANDLE
-  rmatrix%h_Kld       = ST_NOHANDLE
-  rmatrix%h_Kdiagonal = ST_NOHANDLE
-  rmatrix%cdataType   = ST_DOUBLE
-  rmatrix%NA  = 0
-  rmatrix%NEQ = 0
-  rmatrix%NCOLS = 0
-  rmatrix%NVAR = 1
-  rmatrix%dScaleFactor = 1.0_DP
-  rmatrix%isortStrategy = 0
-  rmatrix%h_IsortPermutation = ST_NOHANDLE
-  rmatrix%p_rspatialDiscretisation => NULL()
+  ! Clean up the rest. For this purpose, overwrite the matrix structure
+  ! by a matrix structure which is initialised by the default Fortran
+  ! initialisation routines.
+  rmatrix = rmatrixTemplate
+  !rmatrix%h_DA        = ST_NOHANDLE
+  !rmatrix%h_Kcol      = ST_NOHANDLE
+  !rmatrix%h_Kld       = ST_NOHANDLE
+  !rmatrix%h_Kdiagonal = ST_NOHANDLE
+  !rmatrix%cdataType   = ST_DOUBLE
+  !rmatrix%cmatrixFormat = LSYSSC_MATRIXUNDEFINED
+  !rmatrix%imatrixSpec = 0
+  !rmatrix%NA  = 0
+  !rmatrix%NEQ = 0
+  !rmatrix%NCOLS = 0
+  !rmatrix%NVAR = 1
+  !rmatrix%dscaleFactor = 1.0_DP
+  !rmatrix%isortStrategy = 0
+  !rmatrix%h_IsortPermutation = ST_NOHANDLE
+  !rmatrix%p_rspatialDiscretisation => NULL()
 
   END SUBROUTINE
 
@@ -7255,7 +7267,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_copyVector (rx,ry,bforceOnlyData)
+  SUBROUTINE lsyssc_copyVector (rx,ry,bcopyStructure,bcopyData)
   
 !<description>
   ! Copies vector data: ry = rx.
@@ -7267,10 +7279,13 @@ CONTAINS
   ! Source vector
   TYPE(t_vectorScalar),INTENT(IN) :: rx
   
-  ! OPTIONAL: Copy only data.
-  ! If set to TRUE, this forces the routine to copy only the vector data of rx to ry.
-  ! Structural data is not copied.
-  LOGICAL, INTENT(IN), OPTIONAL :: bforceOnlyData
+  ! OPTIONAL: Copy vector structure. Standard=TRUE.
+  ! If set to TRUE, this routine will copy structural information from rx to ry.
+  LOGICAL, INTENT(IN), OPTIONAL :: bcopyStructure
+
+  ! OPTIONAL: Copy vector data. Standard=TRUE.
+  ! If set to TRUE, this routine will copy the content data from rx to ry.
+  LOGICAL, INTENT(IN), OPTIONAL :: bcopyData
 !</input>
 
 !<inputoutput>
@@ -7280,60 +7295,70 @@ CONTAINS
   
 !</subroutine>
 
-  ! local variables
-  INTEGER :: h_Ddata, cdataType
-  LOGICAL :: bisCopy,bonlyData
-  INTEGER(PREC_VECIDX) :: ioffset
-  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
-  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
-  
-  IF (PRESENT(bforceOnlyData)) THEN 
-    bonlyData = bforceOnlyData
-  ELSE
-    bonlyData = .FALSE.
-  END IF
-  
-  IF (.NOT. bonlyData) THEN
-    ! Standard case: Copy the whole vector information
-    !
-    ! First, make a backup of some crucial data so that it does not
-    ! get destroyed.
-    h_Ddata = ry%h_Ddata
-    cdataType = ry%cdataType
-    bisCopy = ry%bisCopy
-    ioffset = rx%iidxFirstEntry
+    ! local variables
+    INTEGER :: h_Ddata, cdataType
+    LOGICAL :: bisCopy,bdoCopyStructure,bdoCopyData
+    INTEGER(PREC_VECIDX) :: ioffset
+    REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+    REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
     
-    ! Then transfer all structural information of rx to ry.
-    ! This automatically makes both vectors compatible to each other.
-    ry = rx
+    IF (PRESENT(bcopyStructure)) THEN 
+      bdoCopyStructure = bcopyStructure
+    ELSE
+      bdoCopyStructure = .TRUE.
+    END IF
     
-    ! Restore crucial data
-    ry%h_Ddata = h_Ddata
-    ry%bisCopy = bisCopy
-    ry%iidxFirstEntry = ioffset 
-  END IF
-  
-  IF (rx%cdataType .NE. ry%cdataType) THEN
-    PRINT *,'lsyssc_copyVector: different data types not supported!'
-    STOP
-  END IF
-  
-  ! And finally copy the data. 
-  SELECT CASE (rx%cdataType)
-  CASE (ST_DOUBLE)
-    CALL lsyssc_getbase_double (rx,p_Dsource)
-    CALL lsyssc_getbase_double (ry,p_Ddest)
-    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    IF (PRESENT(bcopyData)) THEN 
+      bdoCopyData = bcopyData
+    ELSE
+      bdoCopyData = .TRUE.
+    END IF
     
-  CASE (ST_SINGLE)
-    CALL lsyssc_getbase_single (rx,p_Fsource)
-    CALL lsyssc_getbase_single (ry,p_Fdest)
-    CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+    IF (bdoCopyStructure) THEN
+      ! Standard case: Copy the whole vector information
+      !
+      ! First, make a backup of some crucial data so that it does not
+      ! get destroyed.
+      h_Ddata = ry%h_Ddata
+      cdataType = ry%cdataType
+      bisCopy = ry%bisCopy
+      ioffset = rx%iidxFirstEntry
+      
+      ! Then transfer all structural information of rx to ry.
+      ! This automatically makes both vectors compatible to each other.
+      ry = rx
+      
+      ! Restore crucial data
+      ry%h_Ddata = h_Ddata
+      ry%bisCopy = bisCopy
+      ry%iidxFirstEntry = ioffset 
+    END IF
+    
+    IF (bdoCopyData) THEN
+    
+      IF (rx%cdataType .NE. ry%cdataType) THEN
+        PRINT *,'lsyssc_copyVector: different data types not supported!'
+        STOP
+      END IF
+      
+      ! And finally copy the data. 
+      SELECT CASE (rx%cdataType)
+      CASE (ST_DOUBLE)
+        CALL lsyssc_getbase_double (rx,p_Dsource)
+        CALL lsyssc_getbase_double (ry,p_Ddest)
+        CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+        
+      CASE (ST_SINGLE)
+        CALL lsyssc_getbase_single (rx,p_Fsource)
+        CALL lsyssc_getbase_single (ry,p_Fdest)
+        CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
-  CASE DEFAULT
-    PRINT *,'lsyssc_copyVector: Unsupported data type!'
-    STOP
-  END SELECT
+      CASE DEFAULT
+        PRINT *,'lsyssc_copyVector: Unsupported data type!'
+        STOP
+      END SELECT
+    
+    END IF
    
   END SUBROUTINE
   

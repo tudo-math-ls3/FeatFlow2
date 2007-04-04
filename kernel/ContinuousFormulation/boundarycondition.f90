@@ -526,7 +526,7 @@ CONTAINS
   ! Space left, or do we have to reallocate?
   IF (ifull .GE. SIZE(p_Rregion)) THEN
     ALLOCATE(p_temp(ifull+BC_LISTBLOCKSIZE))
-    p_temp = p_Rregion
+    p_temp(1:SIZE(p_Rregion)) = p_Rregion(:)
     DEALLOCATE(p_Rregion)
     p_Rregion => p_temp
     

@@ -148,8 +148,8 @@ MODULE convection
     ! be used to assembly the not-weighted operator matrix.
     REAL(DP) :: dtheta = 1.0_DP
     
-    ! Weighting factor for the Newton matrix (Frechet derivative of
-    ! the convective operator, used for preconditioning).
+    ! Weighting factor for the Newton matrix (Frechet derivative $\cdot\Nabla u$ of
+    ! the convective operator $u\Nabla u$, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     REAL(DP) :: dnewton = 0.0_DP
     
@@ -593,11 +593,11 @@ CONTAINS
   
   ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
   
   ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
 !</inputoutput>
 
 !</subroutine>
@@ -1538,11 +1538,11 @@ CONTAINS
   
   ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
   
   ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
 !</inputoutput>
 
 !</subroutine>
@@ -2853,11 +2853,11 @@ CONTAINS
   
   ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
   
   ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
 !</inputoutput>
 
 !</subroutine>
@@ -5534,11 +5534,11 @@ CONTAINS
   
   ! OPTIONAL: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef1
   
   ! OPTIONAL: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2(:)
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddef2
 !</inputoutput>
 
 !</subroutine>
