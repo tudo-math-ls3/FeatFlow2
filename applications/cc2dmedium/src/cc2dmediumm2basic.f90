@@ -75,7 +75,7 @@ MODULE cc2dmediumm2basic
 
     ! Coupling velocity matrix $A_{12}$ for that specific level.
     ! Exists only of deformation tensor or Newton iteration is used in the
-    ! nonlinera iteration.
+    ! nonlinear iteration.
     TYPE(t_matrixScalar) :: rmatrixVelocityCoupling12
 
     ! Coupling velocity matrix $A_{21}$ for that specific level.
@@ -288,9 +288,6 @@ MODULE cc2dmediumm2basic
 ! UPSAM                 | Stabilisation parameter
 ! INEUMANN              | =YES, if there is Neumann boundary in the problem.
 !                       | =NO, otherwise
-! DECOUPLEDXY           | =YES, if X- and Y-velocity matrix is different
-!                       |       (e.g. due to no-slip boundary conditions)
-!                       | =NO, if they are identical
 !
 ! On every level between NLMIN and NLMAX:
 !

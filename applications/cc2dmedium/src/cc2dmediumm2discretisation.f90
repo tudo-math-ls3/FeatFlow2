@@ -563,8 +563,6 @@ CONTAINS
   ! Level independent data:\\
   !  'RHS'         - Right hand side vector\\
   !  'SOLUTION'    - Solution vector\\
-  !  'DECOUPLEDXY' - Whether X- and Y-velocity submatrices in the global system
-  !                  matrix are decoupled or the same\\
   !
   ! On every level:\\
   !  'STOKES'    - Stokes matrix\\
@@ -727,14 +725,10 @@ CONTAINS
         ! structure and the content.
         CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
                     p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        ! Save the value of bdecoupledXY to the collection.
-        CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',NO,.TRUE.)
       ELSE
         ! Otherwise, create another copy of the template matrix.
         CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                     p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        ! Save the value of bdecoupledXY to the collection.
-        CALL collct_setvalue_int(rproblem%rcollection,'DECOUPLEDXY',YES,.TRUE.)
       END IF
 
       ! Manually change the discretisation structure of the Y-velocity 
@@ -1554,8 +1548,6 @@ CONTAINS
     ! Delete solution/RHS vector
     CALL lsysbl_releaseVector (rvector)
     CALL lsysbl_releaseVector (rrhs)
-
-    CALL collct_deletevalue (rproblem%rcollection,'DECOUPLEDXY')
 
   END SUBROUTINE
 

@@ -2705,6 +2705,11 @@ CONTAINS
         dresINIT = SQRT(rnonlinearIteration%DresidualInit(1)**2 + &
                         rnonlinearIteration%DresidualInit(2)**2)
                         
+        ! dresInit=0 may hardly occur -- except when we expect 'no flow'.
+        ! But to prevent a check against "something<=0" in this case below,
+        ! set dresInit to something <> 0.
+        IF (dresINIT .EQ. 0.0_DP) dresINIT = 1.0_DP
+
         depsD   = rnonlinearIteration%DepsNL(1)
         depsDiv = rnonlinearIteration%DepsNL(2)
         depsUR  = rnonlinearIteration%DepsNL(3)
