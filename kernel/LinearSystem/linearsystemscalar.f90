@@ -685,6 +685,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vector/Matrix not compatible, different block structure!'
+      CALL sys_throwFPE()
       STOP
     END IF
   END IF
@@ -1732,9 +1733,7 @@ CONTAINS
           
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
-!$omp parallel do&
-!$omp&default(shared) &
-!$omp&private(irow,icol,ia,ivar,jvar)
+!$omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           DO irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -1742,11 +1741,12 @@ CONTAINS
             ! Here, we compute
             !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
             DO ivar=1,NVAR
+              dtmp = 0
               DO jvar=1,NVAR
-                p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+jvar)&
-                    * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)&
-                    + p_Dy(NVAR*(irow-1)+ivar)
+                dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
+                    * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)
               END DO
+              p_Dy(NVAR*(irow-1)+ivar) = dtmp + p_Dy(NVAR*(irow-1)+ivar)
             END DO
           END DO
 !$omp end parallel do
@@ -1754,9 +1754,7 @@ CONTAINS
         ENDIF
         
         ! Multiply the rest of rx with the matrix and add it to ry:
-!$omp parallel do&
-!$omp&default(shared) &
-!$omp&private(irow,icol,ia,ivar,jvar)
+!$omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           DO irow=1,NEQ
             DO ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
@@ -1764,11 +1762,12 @@ CONTAINS
               ! Here, we compute
               !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
               DO ivar=1,NVAR
+                dtmp = 0
                 DO jvar=1,NVAR
-                  p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+jvar)&
-                      * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)&
-                      + p_Dy(NVAR*(irow-1)+ivar)
+                  dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
+                      * p_DA(NVAR*NVAR*(ia-1)+NVAR*(jvar-1)+ivar)
                 END DO
+                p_Dy(NVAR*(irow-1)+ivar) = dtmp + p_Dy(NVAR*(irow-1)+ivar)
               END DO
             END DO
           END DO
