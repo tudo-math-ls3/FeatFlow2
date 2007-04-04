@@ -77,19 +77,19 @@ MODULE basicgeometry
   TYPE t_coordinateSystem2D
   
     ! Coordinates of the origin
-    TYPE(t_point2D) :: origin = t_point2D(0.0_DP,0.0_DP)
+    REAL(DP), DIMENSION(2) :: Dorigin = (/0.0_DP,0.0_DP/)
     
     ! Rotation angle; 0..2*PI
-    REAL(DP) :: rotation = 0.0_DP
+    REAL(DP) :: drotation = 0.0_DP
     
     ! precalculated value: sin(rotation); for quicker calculations
-    REAL(DP) :: sin_rotation = 0.0_DP
+    REAL(DP) :: dsin_rotation = 0.0_DP
 
     ! precalculated value: cos(rotation); for quicker calculations
-    REAL(DP) :: cos_rotation = 1.0_DP
+    REAL(DP) :: dcos_rotation = 1.0_DP
     
     ! scaling factor of the coordinate system; usually = 1.0
-    REAL(DP) :: scalingFactor = 1.0_DP
+    REAL(DP) :: dscalingFactor = 1.0_DP
     
   END TYPE
 
