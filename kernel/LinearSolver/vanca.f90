@@ -895,9 +895,9 @@ CONTAINS
           ! Get a/the discretisation structure of the current block/matrix column
           p_rdiscretisation => rmatrix%RmatrixBlock(j,i)%p_rspatialDiscretisation
           
-          IF (p_rdiscretisation%ccomplexity .NE. &
-              SPDISC_UNIFORM) THEN
-            PRINT *,'General VANCA supports only uniform triangulation!'
+          IF ((p_rdiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND. &
+              (p_rdiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
+            PRINT *,'General VANCA supports only uniform and conformal discretisations!'
             STOP
           END IF
           
@@ -1026,10 +1026,11 @@ CONTAINS
 
   ! local variables
   INTEGER :: i,j
-  INTEGER(PREC_ELEMENTIDX) :: IELmax, IELset, iel
+  INTEGER(PREC_ELEMENTIDX) :: IELmax, IELset, iel, ieldistr
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
   REAL(DP), DIMENSION(:), POINTER                 :: p_Drhs,p_Dvector
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER     :: p_Ipermutation
+  TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
     
   ! Saved matrix and the vector(s) must be compatible!
   CALL lsysbl_isMatrixCompatible(rvector,rvancaGeneral%p_rmatrix)
@@ -1039,64 +1040,72 @@ CONTAINS
   CALL lsysbl_getbase_double (rvector,p_Dvector)
   CALL lsysbl_getbase_double (rrhs,p_Drhs)
   
-  ! p_IelementList must point to our set of elements in the discretisation
-  ! with that combination of trial/test functions.
-  CALL storage_getbase_int (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
-                            RelementDistribution(1)%h_IelementList, &
-                            p_IelementList)
-    
-  ! Loop over the elements - blockwise.
-  DO IELset = 1, rvector%RvectorBlock(1)%p_rspatialDiscretisation%&
-                         p_rtriangulation%NEL, VANCA_NELEMSIM
+  ! Get the discretisation structure that tells us which elements form
+  ! element groups...
+  p_rdiscretisation => rvector%RvectorBlock(1)%p_rspatialDiscretisation
   
-    ! We always handle LINF_NELEMSIM elements simultaneously.
-    ! How many elements have we actually here?
-    ! Get the maximum element number, such that we handle at most VANCA_NELEMSIM
-    ! elements simultaneously.
-    IELmax = MIN(rvector%RvectorBlock(1)%p_rspatialDiscretisation%&
-                        p_rtriangulation%NEL,IELset-1+VANCA_NELEMSIM)
+  ! Loop over the element distributions/groups
+  DO ieldistr = 1,p_rdiscretisation%inumFEspaces
   
-    ! Loop over the blocks in the block vector to get the DOF's everywhere.
-    
-    DO i=1,rvector%nblocks
-
-      ! Calculate the global DOF's of all blocks.
-      !
-      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our VANCA_NELEMSIM elements simultaneously.
-      CALL dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscretisation,&
-                                   p_IelementList(IELset:IELmax), &
-                                   .FALSE.,rvancaGeneral%IelementDOFs(:,:,i))
-
-      ! If the vector is sorted, push the DOF's through the permutation to get
-      ! the actual DOF's.
-      IF (rvector%RvectorBlock(i)%isortStrategy .GT. 0) THEN
+    ! p_IelementList must point to our set of elements in the discretisation
+    ! with that combination of trial/test functions.
+    CALL storage_getbase_int (p_rdiscretisation% &
+                              RelementDistribution(ieldistr)%h_IelementList, &
+                              p_IelementList)
       
-        CALL storage_getbase_int(rvector%RvectorBlock(i)%h_IsortPermutation,&
-                                 p_Ipermutation)
-
-        DO iel=1,IELmax-IELset+1
-          DO j=1,rvancaGeneral%InDofsLocal(i)
-            ! We are not resorting the vector but determining the 'sorted'
-            ! DOF's - this needs the 2nd half of the permutation.
-            rvancaGeneral%IelementDOFs(j,iel,i) = &
-              p_Ipermutation(rvancaGeneral%IelementDOFs(j,iel,i)+rvector%RvectorBlock(i)%NEQ)
-          END DO
-        END DO
-      END IF
+    ! Loop over the elements - blockwise.
+    DO IELset = 1, SIZE(p_IelementList), VANCA_NELEMSIM
     
-    END DO  
-  
-    ! Now, IdofsTotal contains all DOF's on each element, over all discretisations.
-    !
-    ! Call the actual VANCA to process the DOF's on each element.
-    CALL vanca_general_double_mat79 (p_Dvector, p_Drhs, domega, &
-         rvancaGeneral%p_Rmatrices,IELmax-IELset+1_PREC_ELEMENTIDX,&
-         rvancaGeneral%IblockOffset,rvancaGeneral%nblocks,&
-         rvancaGeneral%InDofsLocal,rvancaGeneral%ndofsPerElement,&
-         rvancaGeneral%IelementDOFs)
-                 
-  END DO
+      ! We always handle LINF_NELEMSIM elements simultaneously.
+      ! How many elements have we actually here?
+      ! Get the maximum element number, such that we handle at most VANCA_NELEMSIM
+      ! elements simultaneously.
+      IELmax = MIN(SIZE(p_IelementList),IELset-1+VANCA_NELEMSIM)
+    
+      ! Loop over the blocks in the block vector to get the DOF's everywhere.
+      
+      DO i=1,rvector%nblocks
+
+        ! Calculate the global DOF's of all blocks.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our VANCA_NELEMSIM elements simultaneously.
+        CALL dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscretisation,&
+                                     p_IelementList(IELset:IELmax), &
+                                     .FALSE.,rvancaGeneral%IelementDOFs(:,:,i))
+
+        ! If the vector is sorted, push the DOF's through the permutation to get
+        ! the actual DOF's.
+        IF (rvector%RvectorBlock(i)%isortStrategy .GT. 0) THEN
+        
+          CALL storage_getbase_int(rvector%RvectorBlock(i)%h_IsortPermutation,&
+                                  p_Ipermutation)
+
+          DO iel=1,IELmax-IELset+1
+            DO j=1,rvancaGeneral%InDofsLocal(i)
+              ! We are not resorting the vector but determining the 'sorted'
+              ! DOF's - this needs the 2nd half of the permutation.
+              rvancaGeneral%IelementDOFs(j,iel,i) = &
+                 p_Ipermutation(rvancaGeneral%IelementDOFs(j,iel,i) &
+                +rvector%RvectorBlock(i)%NEQ)
+            END DO
+          END DO
+        END IF
+      
+      END DO  
+    
+      ! Now, IdofsTotal contains all DOF's on each element, over all discretisations.
+      !
+      ! Call the actual VANCA to process the DOF's on each element.
+      CALL vanca_general_double_mat79 (p_Dvector, p_Drhs, domega, &
+          rvancaGeneral%p_Rmatrices,IELmax-IELset+1_PREC_ELEMENTIDX,&
+          rvancaGeneral%IblockOffset,rvancaGeneral%nblocks,&
+          rvancaGeneral%InDofsLocal,rvancaGeneral%ndofsPerElement,&
+          rvancaGeneral%IelementDOFs)
+                   
+    END DO
+    
+  END DO ! ieldistr
   
   END SUBROUTINE
 
@@ -1356,7 +1365,8 @@ CONTAINS
         DO j=1,SIZE(Rmatrices,2)
         
           ! Is there a matrix saved at this position?
-          IF (Rmatrices(i,j)%bexists) THEN
+          IF (Rmatrices(i,j)%bexists .AND. &
+              Rmatrices(i,j)%dscaleFactor .NE. 0.0_DP) THEN
 
             dscale = Rmatrices(i,j)%dscaleFactor
         
@@ -1409,7 +1419,7 @@ CONTAINS
                 DO iminiDOF = 1,InDOFsLocal(j)
                   IF (icol .EQ. IglobalDOF(iidx+iminiDOF)) THEN
                     ! Yes. Get the matrix entry, write it to the local matrix
-                    Daa(irow,iidx+iminiDOF) = Rmatrices(i,j)%p_Da(k)
+                    Daa(irow,iidx+iminiDOF) = dscale*Rmatrices(i,j)%p_Da(k)
                     EXIT
                   END IF
                 END DO ! idof

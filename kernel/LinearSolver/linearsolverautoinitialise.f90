@@ -470,29 +470,35 @@ CONTAINS
       ! Build all levels. Level 1 receives the coarse grid solver.
       DO ilev = 1,nlevels
         
-        ! Is there a presmoother?
-        IF (spresmoother .NE. '') THEN
-          CALL linsolinit_initFromFile (p_rpresmoother,rparamList,&
-                                        spresmoother,nlevels,RfilterChain)
-        ELSE
+        ! Where we have a coarse grid solver (level 1), we don't need smoothers.
+        IF (ASSOCIATED(p_rcoarsegridsolver)) THEN
           NULLIFY(p_rpresmoother)
-        END IF
-        
-        ! Is there a postsmoother?
-        IF (spostsmoother .NE. '') THEN
-          ! Check if pre- and postsmoother are identical.
-          CALL sys_toupper (spresmoother) 
-          CALL sys_toupper (spostsmoother) 
-          IF (spresmoother .NE. spostsmoother) THEN
-            CALL linsolinit_initFromFile (p_rpostsmoother,rparamList,&
-                                          spostsmoother,nlevels,RfilterChain)
-          ELSE 
-            ! Let the pointer point to the presmoother
-            p_rpostsmoother => p_rpresmoother
-          END IF
-        
-        ELSE
           NULLIFY(p_rpostsmoother)
+        ELSE
+          ! Is there a presmoother?
+          IF (spresmoother .NE. '') THEN
+            CALL linsolinit_initFromFile (p_rpresmoother,rparamList,&
+                                          spresmoother,nlevels,RfilterChain)
+          ELSE
+            NULLIFY(p_rpresmoother)
+          END IF
+          
+          ! Is there a postsmoother?
+          IF (spostsmoother .NE. '') THEN
+            ! Check if pre- and postsmoother are identical.
+            CALL sys_toupper (spresmoother) 
+            CALL sys_toupper (spostsmoother) 
+            IF (spresmoother .NE. spostsmoother) THEN
+              CALL linsolinit_initFromFile (p_rpostsmoother,rparamList,&
+                                            spostsmoother,nlevels,RfilterChain)
+            ELSE 
+              ! Let the pointer point to the presmoother
+              p_rpostsmoother => p_rpresmoother
+            END IF
+          
+          ELSE
+            NULLIFY(p_rpostsmoother)
+          END IF
         END IF
         
         ! Add the level to Multigrid
