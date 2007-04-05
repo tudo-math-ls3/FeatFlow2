@@ -394,8 +394,8 @@ CONTAINS
     ! Allocate arrays accepting cubature point coordinates.
     ! It's at most as large as number of elements or length
     ! of the element set.
-    ALLOCATE(DcubPtsRef(NDIM2D,ncubp,nelementsPerBlock))
-    ALLOCATE(DcubPtsReal(NDIM2D,ncubp,nelementsPerBlock))
+    ALLOCATE(DcubPtsRef(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
+    ALLOCATE(DcubPtsReal(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
     
     ! Put the cubature point coordinates in the right format to the
     ! cubature-point array.
@@ -481,7 +481,7 @@ CONTAINS
 !      END DO
       DO IEL=1,IELmax-IELset+1
         DO J = 1,NVE
-          DO I = 1,NDIM2D
+          DO I = 1,p_rtriangulation%ndim
             DCoords(I,J,IEL) = p_DcornerCoordinates(I, &
                                p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
           END DO
@@ -884,7 +884,8 @@ CONTAINS
     j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
     
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,NDIM2D)
+    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,&
+        j,p_rtriangulation%ndim)
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -984,7 +985,7 @@ CONTAINS
 !      END DO
       DO IEL=1,IELmax-IELset+1
         DO J = 1,NVE
-          DO I = 1,NDIM2D
+          DO I = 1,p_rtriangulation%ndim
             p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
                                p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
           END DO
