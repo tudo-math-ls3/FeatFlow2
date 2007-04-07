@@ -90,7 +90,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE domint_initIntegration (rintSubset,nelements,npointsPerElement,&
-                                     icoordSystem,ndimSpace)
+                                     icoordSystem,ndimSpace,nverticesPerElement)
   
 !<description>
   ! This routine initialises a t_domainIntSubset structure. Memory is allocated
@@ -114,6 +114,10 @@ CONTAINS
   ! Number of space dimensions. Either NDIM2D or NDIM3D for 2D or 3D, 
   ! respectively.
   INTEGER, INTENT(IN) :: ndimSpace
+  
+  ! Number of vertices per element that are necessary to specify the 
+  ! transformation from the reference to the real element
+  INTEGER, INTENT(IN) :: nverticesPerElement
 !</input>
 
 !<output>
@@ -132,7 +136,7 @@ CONTAINS
     ! Allocate memory for the structures:
     !
     ! Allocate memory for corner coordinates.
-    ALLOCATE(rintSubset%p_DCoords(ndimSpace,TRIA_MAXNVE2D,nelements))
+    ALLOCATE(rintSubset%p_DCoords(ndimSpace,nverticesPerElement,nelements))
 
     ! Allocate arrays accepting cubature point coordinates.
     ! It's at most as large as number of elements or length

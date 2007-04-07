@@ -119,8 +119,8 @@ CONTAINS
   ! An accepting the DOF's of an element.
   INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS), TARGET :: IdofsU, IdofsP
   
-  ! Coordinates of the corners of an element
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE) :: DCoords
+  ! Coordinates of the coordinates of an element
+  REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DCoords
   
   ! Coordinates of the cubature points on reference and real element
   REAL(DP), DIMENSION(NDIM2D,CUB_MAXCUBP_1D) :: DpointsRef,DpointsReal
@@ -237,6 +237,9 @@ CONTAINS
     
     ! Number of local edges
     nlocaledges = elem_igetNVE (ielemU)
+    
+    ! Allocate memory for the coordinates of the element
+    ALLOCATE(DCoords(NDIM2D,MAX(elem_igetNVE(ielemU),elem_igetNVE(ielemP))))
     
     ! The triangulation - it's the same for U and P
     p_rtriangulation => p_rdiscrU%p_rtriangulation
@@ -455,6 +458,9 @@ CONTAINS
     
     Dforces = 0.0_DP
     Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (dpf1*DintU(:) + DintP(:))
+    
+    ! Deallocate memory, finish.
+    DEALLOCATE(DCoords)
   
   END SUBROUTINE
 

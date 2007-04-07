@@ -181,6 +181,18 @@
 !#               Q1HN: Bit 16/17: These three bits encode the local number of the edge
 !#                               where there is a hanging node.
 !#                               =0: local edge 1, =1: local edge 2,...
+!#               P2ISO: Bit 16/17: These three bits encode how many edges of the $P_2$
+!#                               element are to be handled with an isoparametric mapping
+!#                               to the reference element. 
+!#                               =0: isoparametric mapping with one edge not linear
+!#                               =1: isoparametric mapping with two edges not linear
+!#                               =2: isoparametric mapping with three edges not linear
+!#                    Bit 18/19/20/21: These four bits encode which of the edges are
+!#                               to be mapped nonlinear from the reference to the real
+!#                               element.
+!#                               Bit 18:=1 1st edge maps nonlinear
+!#                               Bit 19:=1 2nd edge maps nonlinear
+!#                               Bit 20:=1 3rd edge maps nonlinear
 !#               Q2ISO: Bit 16/17: These three bits encode how many edges of the $Q_2$
 !#                               element are to be handled with an isoparametric mapping
 !#                               to the reference element. 
@@ -209,6 +221,11 @@
 !#   When it's clear that it's a $\tilde Q_1$ element, one can have a closer
 !#   look which variant it is -- if this is necessary.
 !#
+!#   Final note: For implementational reasons, the bits 8+9+16..31 coincide --
+!#   depending on the element -- with the ID of the transformation formula
+!#   from the reference to the real element! This allows an easier and more
+!#   transparent implementation of isoparametric elements!
+!#
 !# </purpose>
 !##############################################################################
 
@@ -222,17 +239,17 @@ MODULE element
 
   IMPLICIT NONE
   
-!<constantblock description="Internal constants for element ID bitfield">
-  ! Bitmasks for dimension
+!<constantblock description="Internal constants for element ID bitfield.">
+  ! Bitmasks for dimension; coincides on purpose with TRAFO_DIM_DIMENSION!
   INTEGER(I32), PARAMETER :: EL_DIMENSION = 2**8 + 2**9
   
-  ! 1D element
+  ! 1D element; coincides on purpose with TRAFO_DIM_1D!
   INTEGER(I32), PARAMETER :: EL_1D = ISHFT(NDIM1D,8)
 
-  ! 2D element
+  ! 2D element; coincides on purpose with TRAFO_DIM_2D!
   INTEGER(I32), PARAMETER :: EL_2D = ISHFT(NDIM2D,8)
   
-  ! 3D element
+  ! 3D element; coincides on purpose with TRAFO_DIM_3D!
   INTEGER(I32), PARAMETER :: EL_3D = ISHFT(NDIM3D,8)
   
   ! Bitmask for element number including dimension
@@ -374,9 +391,6 @@ MODULE element
   ! local DOF's per element.
   INTEGER, PARAMETER :: EL_MAXNBAS = 21
 
-  ! (maximum) number of vertices per element
-  INTEGER, PARAMETER :: EL_MAXNVE = 4
-  
   ! Maximum different derivative descriptor types supported by elements;
   ! corresponds to the maximum value of DER_xxxx constants in the 
   ! module 'derivatives'. Can be used as first quantifier in the
@@ -547,7 +561,7 @@ CONTAINS
 
 !<function>  
 
-  ELEMENTAL INTEGER(I32) FUNCTION elem_igetNVE(ieltype)
+  ELEMENTAL INTEGER FUNCTION elem_igetNVE(ieltype)
 
 !<description>
   ! This function returns for a given element type the number of vertices
@@ -569,14 +583,19 @@ CONTAINS
 
 !</function>
 
-  SELECT CASE (elem_getPrimaryElement(ieltype))
-  CASE (EL_P0,EL_P1,EL_P2,EL_P3)
-    elem_igetNVE = 3
-  CASE (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1, EL_Q1T)
-    elem_igetNVE = 4
-  CASE DEFAULT
-    elem_igetNVE = 0
-  END SELECT
+  ! NVE coincides with that NVE from the transformation.
+  ! Use the transformation routine to determine that value!
+  
+  elem_igetNVE = trafo_igetNVE(elem_igetTrafoType(ieltype))
+
+  !SELECT CASE (elem_getPrimaryElement(ieltype))
+  !CASE (EL_P0,EL_P1,EL_P2,EL_P3)
+  !  elem_igetNVE = 3
+  !CASE (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1, EL_Q1T)
+  !  elem_igetNVE = 4
+  !CASE DEFAULT
+  !  elem_igetNVE = 0
+  !END SELECT
 
   END FUNCTION
 
@@ -629,7 +648,7 @@ CONTAINS
 
 !<function>  
 
-  ELEMENTAL INTEGER FUNCTION elem_igetTrafoType(ieltype)
+  ELEMENTAL INTEGER(I32) FUNCTION elem_igetTrafoType(ieltype)
 
 !<description>
   ! This function returns the typical type of transformation, a specific 
@@ -649,14 +668,18 @@ CONTAINS
 !</function>
 
   SELECT CASE (elem_getPrimaryElement(ieltype))
+  
   CASE (EL_P0, EL_P1, EL_P2, EL_P3)
-    ! Linear triangular transformation
-    elem_igetTrafoType = TRAFO_IDLINTRI
+    ! Linear triangular transformation, 2D
+    elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
+    
   CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T)
-    ! Bilinear quadrilateral transformation
-    elem_igetTrafoType = TRAFO_IDBILINQUAD
+    ! Bilinear quadrilateral transformation, 2D.
+    elem_igetTrafoType = TRAFO_ID_BILINCUBE + TRAFO_DIM_2D
+    
   CASE DEFAULT
-    elem_igetTrafoType = TRAFO_IDUNKNOWN
+    elem_igetTrafoType = TRAFO_ID_UNKNOWN
+    
   END SELECT
 
   END FUNCTION
@@ -774,9 +797,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -877,9 +901,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -904,9 +929,10 @@ CONTAINS
   ! For parametric elements, the coordinates are expected on the 
   ! reference element. For nonparametric elements, the coordinates
   ! are expected on the real element!
+  ! DIMENSION(#space dimensions,npoints)
   !   Dpoints(1,.)=x-coordinates,
   !   Dpoints(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,npoints), INTENT(IN) :: Dpoints
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
 !</input>
   
 !<output>
@@ -979,13 +1005,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -1268,9 +1295,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -1341,9 +1369,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -1422,13 +1451,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
 
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelemens)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -1509,9 +1539,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -1625,9 +1656,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -1746,13 +1778,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -1880,9 +1913,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -2000,9 +2034,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -2147,13 +2182,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -2380,9 +2416,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -2454,9 +2491,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -2481,9 +2519,10 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints)
   ! Dpoints(1,.)=x-coordinates,
   ! Dpoints(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,npoints), INTENT(IN) :: Dpoints
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
   
   !</input>
   
@@ -2536,13 +2575,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
 
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE^,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -2569,13 +2609,14 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
+  ! DIMENSION(#space dimensions,npoints,nelements)
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  REAL(DP), DIMENSION(NDIM2D,npoints), INTENT(IN) :: Dpoints
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dpoints
   
   !</input>
   
@@ -2625,9 +2666,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -2672,7 +2714,7 @@ CONTAINS
 ! </subroutine>
 
   !auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D) :: Dhelp
   REAL(DP) :: dx,dy
 
   REAL(DP) :: dxj !auxiliary variable
@@ -2763,9 +2805,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -2792,7 +2835,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints).
+  ! DIMENSION(#space dimensions,npoints).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
@@ -2812,7 +2855,7 @@ CONTAINS
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D,npoints) :: Dhelp
 
   REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
   
@@ -2898,13 +2941,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements).
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -2934,7 +2978,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints,nelements).
+  ! DIMENSION(#space dimensions,npoints,nelements).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -2959,7 +3003,7 @@ CONTAINS
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D,npoints) :: Dhelp
 
   REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
   
@@ -3062,9 +3106,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -3201,9 +3246,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -3230,7 +3276,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints).
+  ! DIMENSION(#space dimensions,npoints).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
@@ -3361,13 +3407,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -3397,7 +3444,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints,nelements).
+  ! DIMENSION(#space dimensions,npoints,nelements).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -3545,9 +3592,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -3846,9 +3894,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE),
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -4074,9 +4123,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -4101,7 +4151,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints)
+  ! DIMENSION(#space dimensions,npoints)
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
@@ -4281,13 +4331,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -4317,7 +4368,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the real element.
-  ! DIMENSION(NDIM2D,npoints,nelements)
+  ! DIMENSION(#space dimensions,npoints,nelements)
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -4956,9 +5007,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -5002,8 +5054,8 @@ CONTAINS
 
 ! </subroutine>
 
-  !auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D) :: Dhelp
+  ! auxiliary vector containing the first derivatives on the reference element
+  REAL(DP), DIMENSION(4,NDIM2D) :: Dhelp
   REAL(DP) :: dx,dy
 
   REAL(DP) :: dxj !auxiliary variable
@@ -5095,9 +5147,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -5124,7 +5177,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints).
+  ! DIMENSION(#space dimensions,npoints).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
@@ -5144,7 +5197,7 @@ CONTAINS
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D,npoints) :: Dhelp
 
   REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
   
@@ -5242,13 +5295,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -5278,7 +5332,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints,nelements).
+  ! DIMENSION(#space dimensions,npoints,nelements).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -5303,7 +5357,7 @@ CONTAINS
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D,npoints) :: Dhelp
 
   REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
   
@@ -5455,9 +5509,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -5671,9 +5726,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -5698,7 +5754,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints)
+  ! DIMENSION(#space dimensions,npoints)
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
@@ -5870,13 +5926,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -5906,7 +5963,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the real element.
-  ! DIMENSION(NDIM2D,npoints,nelements)
+  ! DIMENSION(#space dimensions,npoints,nelements)
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -6251,9 +6308,10 @@ CONTAINS
   INTEGER(I32), INTENT(IN)  :: ieltyp
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
@@ -6298,7 +6356,7 @@ CONTAINS
 ! </subroutine>
 
   !auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D) :: Dhelp
   REAL(DP) :: dx,dy
 
   REAL(DP) :: dxj !auxiliary variable
@@ -6389,9 +6447,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
   ! Dcoords(2,.)=y-coordinates.
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
@@ -6418,7 +6477,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints).
+  ! DIMENSION(#space dimensions,npoints).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dpoints
@@ -6438,7 +6497,7 @@ CONTAINS
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D,npoints) :: Dhelp
 
   REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
   
@@ -6536,13 +6595,14 @@ CONTAINS
   INTEGER, INTENT(IN)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE,nelements)
   !  Dcoords(1,.,.)=x-coordinates,
   !  Dcoords(2,.,.)=y-coordinates.
   ! furthermore:
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  REAL(DP), DIMENSION(NDIM2D,EL_MAXNVE,nelements), INTENT(IN) :: Dcoords
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -6572,7 +6632,7 @@ CONTAINS
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
-  ! DIMENSION(NDIM2D,npoints,nelements).
+  ! DIMENSION(#space dimensions,npoints,nelements).
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -6597,7 +6657,7 @@ CONTAINS
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  REAL(DP), DIMENSION(EL_MAXNVE,NDIM2D,npoints) :: Dhelp
+  REAL(DP), DIMENSION(4,NDIM2D,npoints) :: Dhelp
 
   REAL(DP),DIMENSION(npoints) :: dxj !auxiliary variable
   

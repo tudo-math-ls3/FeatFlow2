@@ -1701,7 +1701,8 @@ CONTAINS
     csysTrial = elem_igetCoordSystem(p_relementDistribution%itrialElement)
 
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,csysTrial,NDIM2D)
+    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,csysTrial,&
+        p_rtriangulation%ndim,NVE)
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -1985,14 +1986,16 @@ CONTAINS
 !        p_Dcoords(:,:,IEL) = p_DcornerCoordinates(:, &
 !                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !      END DO
-      DO IEL=1,IELmax-IELset+1
-        DO J = 1,NVE
-          DO I = 1,NDIM2D
-            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
-                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
-          END DO
-        END DO
-      END DO
+!      DO IEL=1,IELmax-IELset+1
+!        DO J = 1,NVE
+!          DO I = 1,NDIM2D
+!            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
+!                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
+!          END DO
+!        END DO
+!      END DO
+      CALL trafo_getCoords_sim (elem_igetTrafoType(p_relementDistribution%itrialElement),&
+          p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
       
       ! Depending on the type of transformation, we must now choose
       ! the mapping between the reference and the real element.
@@ -3054,7 +3057,8 @@ CONTAINS
     csysTrial = elem_igetCoordSystem(p_relementDistribution%itrialElement)
 
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,csysTrial,NDIM2D)
+    CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,csysTrial,&
+        p_rtriangulation%ndim,NVE)
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -3437,14 +3441,16 @@ CONTAINS
 !        p_Dcoords(:,:,IEL) = p_DcornerCoordinates(:, &
 !                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !      END DO
-      DO IEL=1,IELmax-IELset+1
-        DO J = 1,NVE
-          DO I = 1,NDIM2D
-            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
-                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
-          END DO
-        END DO
-      END DO
+!      DO IEL=1,IELmax-IELset+1
+!        DO J = 1,NVE
+!          DO I = 1,NDIM2D
+!            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
+!                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
+!          END DO
+!        END DO
+!      END DO
+      CALL trafo_getCoords_sim (elem_igetTrafoType(p_relementDistribution%itrialElement),&
+          p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
       
       ! Depending on the type of transformation, we must now choose
       ! the mapping between the reference and the real element.
@@ -4592,7 +4598,7 @@ CONTAINS
   ! local variables
   INTEGER(PREC_DOFIDX) :: irow, jcol, idof
   INTEGER(PREC_EDGEIDX) :: IMT
-  INTEGER(PREC_POINTIDX) :: ivt,ivt1,ivt2,NVT
+  INTEGER(PREC_POINTIDX) :: ivt1,ivt2,NVT
   INTEGER(PREC_ELEMENTIDX) :: IEL
   LOGICAL :: bIdenticalTrialAndTest
   INTEGER :: IELcount,IDOFE, JDOFE, i, NVE, iedge
@@ -4763,7 +4769,7 @@ CONTAINS
     i = elem_igetCoordSystem(p_elementDistribution%itrialElement)
     
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,2,ncubp,i,NDIM2D)
+    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE)
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -5074,15 +5080,17 @@ CONTAINS
       ! For the transformation from the reference to the real element, get the 
       ! coordinates of the corners.
       
-      DO IEL=1,IELcount
-        DO ivt = 1,NVE
-          DO i = 1,NDIM2D
-            ! ... = DCORVG(i,KVERT(ivt,KMEL(iel,imt)))
-            p_Dcoords(i,ivt,IEL) = p_DcornerCoordinates(i, &
-                                p_IverticesAtElement(ivt,p_IelementsAtEdge(IEL,IMT)))
-          END DO
-        END DO
-      END DO
+!      DO IEL=1,IELcount
+!        DO ivt = 1,NVE
+!          DO i = 1,NDIM2D
+!            ! ... = DCORVG(i,KVERT(ivt,KMEL(iel,imt)))
+!            p_Dcoords(i,ivt,IEL) = p_DcornerCoordinates(i, &
+!                                p_IverticesAtElement(ivt,p_IelementsAtEdge(IEL,IMT)))
+!          END DO
+!        END DO
+!      END DO
+      CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement),&
+          p_rtriangulation,p_IelementsAtEdge(1:IELcount,IMT),p_Dcoords)
 
       ! Depending on the type of transformation, we must now choose
       ! the mapping between the reference and the real element.
@@ -5547,7 +5555,7 @@ CONTAINS
   ! local variables
   INTEGER(PREC_DOFIDX) :: irow, jcol, idof
   INTEGER(PREC_EDGEIDX) :: IMT
-  INTEGER(PREC_POINTIDX) :: ivt,ivt1,ivt2,NVT
+  INTEGER(PREC_POINTIDX) :: ivt1,ivt2,NVT
   INTEGER(PREC_ELEMENTIDX) :: IEL
   LOGICAL :: bIdenticalTrialAndTest
   INTEGER :: IELcount,IDOFE, JDOFE, i, NVE, iedge
@@ -5718,7 +5726,7 @@ CONTAINS
     i = elem_igetCoordSystem(p_elementDistribution%itrialElement)
     
     ! Allocate memory and get local references to it.
-    CALL domint_initIntegration (rintSubset,2,ncubp,i,NDIM2D)
+    CALL domint_initIntegration (rintSubset,2,ncubp,i,p_rtriangulation%ndim,NVE)
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -6029,15 +6037,17 @@ CONTAINS
       ! For the transformation from the reference to the real element, get the 
       ! coordinates of the corners.
       
-      DO IEL=1,IELcount
-        DO ivt = 1,NVE
-          DO i = 1,NDIM2D
-            ! ... = DCORVG(i,KVERT(ivt,KMEL(iel,imt)))
-            p_Dcoords(i,ivt,IEL) = p_DcornerCoordinates(i, &
-                                p_IverticesAtElement(ivt,p_IelementsAtEdge(IEL,IMT)))
-          END DO
-        END DO
-      END DO
+!      DO IEL=1,IELcount
+!        DO ivt = 1,NVE
+!          DO i = 1,NDIM2D
+!            ! ... = DCORVG(i,KVERT(ivt,KMEL(iel,imt)))
+!            p_Dcoords(i,ivt,IEL) = p_DcornerCoordinates(i, &
+!                                p_IverticesAtElement(ivt,p_IelementsAtEdge(IEL,IMT)))
+!          END DO
+!        END DO
+!      END DO
+      CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement),&
+          p_rtriangulation,p_IelementsAtEdge(1:IELcount,IMT),p_Dcoords)
 
       ! Depending on the type of transformation, we must now choose
       ! the mapping between the reference and the real element.

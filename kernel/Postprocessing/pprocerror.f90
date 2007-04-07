@@ -332,7 +332,8 @@ CONTAINS
       j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
       
       ! Allocate memory and get local references to it.
-      CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,NDIM2D)
+      CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,j,&
+          p_rtriangulation%ndim,NVE)
       p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
       p_DcubPtsReal => rintSubset%p_DcubPtsReal
       p_Djac =>        rintSubset%p_Djac
@@ -410,14 +411,16 @@ CONTAINS
 !          p_Dcoords(:,:,IEL) = p_DcornerCoordinates(:, &
 !                              p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !        END DO
-        DO IEL=1,IELmax-IELset+1
-          DO J = 1,NVE
-            DO I = 1,NDIM2D
-              p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
-                                 p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
-            END DO
-          END DO
-        END DO
+!        DO IEL=1,IELmax-IELset+1
+!          DO J = 1,NVE
+!            DO I = 1,NDIM2D
+!              p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
+!                                 p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
+!            END DO
+!          END DO
+!        END DO
+        CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement),&
+            p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
         
         ! Depending on the type of transformation, we must now choose
         ! the mapping between the reference and the real element.

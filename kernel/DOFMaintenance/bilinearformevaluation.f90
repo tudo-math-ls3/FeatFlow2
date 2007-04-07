@@ -2916,7 +2916,8 @@ CONTAINS
     indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
     indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
     
-    ! Get the number of corner vertices of the element
+    ! Get the number of vertices of the element, specifying the transformation
+    ! form the reference to the real element.
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'bilf_buildMatrix9d_conf2: element spaces incompatible!'
@@ -2933,7 +2934,7 @@ CONTAINS
     
     ! Allocate memory and get local references to it.
     CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,&
-        j,p_rtriangulation%ndim)
+        j,p_rtriangulation%ndim,NVE)
     p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
     p_DcubPtsReal => rintSubset%p_DcubPtsReal
     p_Djac =>        rintSubset%p_Djac
@@ -3220,14 +3221,18 @@ CONTAINS
 !        p_Dcoords(:,:,IEL) = p_DcornerCoordinates(:, &
 !                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !      END DO
-      DO IEL=1,IELmax-IELset+1
-        DO J = 1,NVE
-          DO I = 1,p_rtriangulation%ndim
-            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
-                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
-          END DO
-        END DO
-      END DO
+!      DO IEL=1,IELmax-IELset+1
+!        DO J = 1,NVE
+!          DO I = 1,p_rtriangulation%ndim
+!            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
+!                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
+!          END DO
+!        END DO
+!      END DO
+
+      CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement),&
+          p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
+
       !CALL ZTIME(DT(6))
       
       ! Depending on the type of transformation, we must now choose
@@ -3239,7 +3244,8 @@ CONTAINS
         CALL trafo_calctrafo_sim (&
              p_rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
              IELmax-IELset+1,ncubp,p_Dcoords,&
-             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),p_DcubPtsReal)
+             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
+             p_DcubPtsReal)
       
       ELSE
       

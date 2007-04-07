@@ -130,7 +130,7 @@ MODULE spatialdiscretisation
     ! The same transformation is used for both, the trial and the test
     ! space, during the evaluation of linear as well as bilinear forms
     ! (matrix/RHS generation).
-    INTEGER :: ctrafoType           = TRAFO_IDUNKNOWN
+    INTEGER(I32) :: ctrafoType      = TRAFO_ID_UNKNOWN
     
     ! Handle to list of element numbers that are discretised with this 
     ! combination of trial/test functions
