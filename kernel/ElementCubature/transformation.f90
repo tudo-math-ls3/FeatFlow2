@@ -23,13 +23,13 @@
 !#        specify the transformation from the reference to the real element
 !#        (=number of degrees of freedom of the transformation formula)
 !#
-!# 6.) trafo_calctrafo_sim
-!#     -> Calculate the transformation for multiple points on multiple
-!#        elements. Supports triangular and quadrilateral mapping.
-!#
-!# 7.) trafo_calctrafo_mult
+!# 6.) trafo_calctrafo_mult
 !#     -> Calculates the transformation for multiple points on one element.
 !#        Supports triangular and quadrilateral mapping.
+!#
+!# 7.) trafo_calctrafo_sim
+!#     -> Calculate the transformation for multiple points on multiple
+!#        elements. Supports triangular and quadrilateral mapping.
 !#
 !# 8.) trafo_calcJacPrepare
 !#     -> calculates auxiliary Jacobian factors for the transformation
@@ -418,14 +418,14 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 3D simplex -> linear tetrahedral transformation. 
         ! Transfer the corners of the element.
-        Dcoords (1:NDIM2D,1:4) = p_DcornerCoordinates(1:NDIM2D,&
+        Dcoords (1:NDIM3D,1:4) = p_DcornerCoordinates(1:NDIM3D,&
                                     p_IverticesAtElement(1:4,iel))
       
       CASE (TRAFO_ID_BILINCUBE)
         ! Trilinear transformation for cubic-shaped elements 
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
-        Dcoords (1:NDIM2D,1:8) = p_DcornerCoordinates(1:NDIM2D,&
+        Dcoords (1:NDIM3D,1:8) = p_DcornerCoordinates(1:NDIM3D,&
                                     p_IverticesAtElement(1:8,iel))
       
       END SELECT
