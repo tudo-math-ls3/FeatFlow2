@@ -135,7 +135,7 @@ MODULE transformation
   ! 3D-tethrahedrons)
   INTEGER, PARAMETER :: TRAFO_ID_LINSIMPLEX    = 1
 
-  ! Bilinear transformation for cubic-shaped elements (2D-quadrilaterals, 
+  ! Bilinear/Trilinear transformation for cubic-shaped elements (2D-quadrilaterals, 
   ! 3D-hexahedrals)
   INTEGER, PARAMETER :: TRAFO_ID_BILINCUBE     = 2
   
@@ -143,7 +143,7 @@ MODULE transformation
   ! 3D-tethrahedrons)
   INTEGER, PARAMETER :: TRAFO_ID_QUADSIMPLEX   = 3
 
-  ! Biquadratic quadrilateral transformation for cubic-shaped 
+  ! Biquadratic/Triquadratic quadrilateral transformation for cubic-shaped 
   ! elements (2D-quadrilaterals, 3D-hexahedrals)
   INTEGER, PARAMETER :: TRAFO_ID_BIQUADCUBE    = 4
 !</constantblock>
@@ -300,8 +300,8 @@ CONTAINS
       trafo_igetNVE = 4
     
     CASE (TRAFO_ID_BILINCUBE)
-      ! Bilinear transformation for cubic-shaped elements 
-      ! -> Bilinear hexahedral transformation.
+      ! Trilinear transformation for cubic-shaped elements 
+      ! -> Trilinear hexahedral transformation.
       ! 8 DOF's in the transformation (given by the corners of the element)
       trafo_igetNVE = 8
     
@@ -416,14 +416,14 @@ CONTAINS
       SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
       
       CASE (TRAFO_ID_LINSIMPLEX)
-        ! 2D simplex -> linear tetrahedral transformation. 
+        ! 3D simplex -> linear tetrahedral transformation. 
         ! Transfer the corners of the element.
         Dcoords (1:NDIM2D,1:4) = p_DcornerCoordinates(1:NDIM2D,&
                                     p_IverticesAtElement(1:4,iel))
       
       CASE (TRAFO_ID_BILINCUBE)
-        ! Bilinear transformation for cubic-shaped elements 
-        ! -> Bilinear hexahedral transformation.
+        ! Trilinear transformation for cubic-shaped elements 
+        ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
         Dcoords (1:NDIM2D,1:8) = p_DcornerCoordinates(1:NDIM2D,&
                                     p_IverticesAtElement(1:8,iel))
@@ -542,7 +542,7 @@ CONTAINS
       END SELECT
 
     CASE (NDIM3D)
-      ! 2D elements. Tetrahedrals, Hexahedrals.
+      ! 3D elements. Tetrahedrals, Hexahedrals.
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
       CALL storage_getbase_double2d (rtriangulation%h_DcornerCoordinates,&  
@@ -565,8 +565,8 @@ CONTAINS
         END DO
       
       CASE (TRAFO_ID_BILINCUBE)
-        ! Bilinear transformation for cubic-shaped elements 
-        ! -> Bilinear hexahedral transformation.
+        ! Trilinear transformation for cubic-shaped elements 
+        ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,8
