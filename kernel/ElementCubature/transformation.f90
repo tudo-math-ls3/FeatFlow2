@@ -320,7 +320,7 @@ CONTAINS
 !<description>
   ! This routine filld the Dcoords array with the coordinates (of corners,
   ! edge midpoints,...) of element iel in the triangulation rtriangulation.
-  ! Dcoords then defined the actual transformation from the reference
+  ! Dcoords then defines the actual transformation from the reference
   ! to the real element.
 !</description>
 
@@ -444,7 +444,7 @@ CONTAINS
   ! This routine fills the Dcoords array with the coordinates (of corners,
   ! edge midpoints,...) of all the elements given in the element
   ! list Ielements, based on the triangulation rtriangulation.
-  ! Dcoords then defined the actual transformation from the reference
+  ! Dcoords then defines the actual transformation from the reference
   ! to the real elements.
 !</description>
 
