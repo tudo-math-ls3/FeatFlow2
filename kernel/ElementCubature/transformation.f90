@@ -88,7 +88,7 @@
 !#                               Bit 18:=1 1st edge maps nonlinear
 !#                               Bit 19:=1 2nd edge maps nonlinear
 !#                               Bit 20:=1 3rd edge maps nonlinear
-!#               TRAFO_ID_BIQUADQUAD: 
+!#               TRAFO_ID_MQUADQUAD: 
 !#                    Bit 16/17: These three bits encode how many edges of the quad
 !#                               element are to be handled with an isoparametric mapping
 !#                               to the reference element. 
@@ -135,17 +135,17 @@ MODULE transformation
   ! 3D-tethrahedrons)
   INTEGER, PARAMETER :: TRAFO_ID_LINSIMPLEX    = 1
 
-  ! Bilinear/Trilinear transformation for cubic-shaped elements (2D-quadrilaterals, 
-  ! 3D-hexahedrals)
-  INTEGER, PARAMETER :: TRAFO_ID_BILINCUBE     = 2
+  ! Multilinear (Bilinear/Trilinear) transformation for cubic-shaped elements 
+  ! (2D-quadrilaterals, 3D-hexahedrals)
+  INTEGER, PARAMETER :: TRAFO_ID_MLINCUBE     = 2
   
   ! Quadratic transformation for simplex-type elements (1D-lines, 2D-triangles, 
   ! 3D-tethrahedrons)
   INTEGER, PARAMETER :: TRAFO_ID_QUADSIMPLEX   = 3
 
-  ! Biquadratic/Triquadratic quadrilateral transformation for cubic-shaped 
-  ! elements (2D-quadrilaterals, 3D-hexahedrals)
-  INTEGER, PARAMETER :: TRAFO_ID_BIQUADCUBE    = 4
+  ! Multiquadratic (Biquadratic/Triquadratic) quadrilateral transformation 
+  ! for cubic-shaped elements (2D-quadrilaterals, 3D-hexahedrals)
+  INTEGER, PARAMETER :: TRAFO_ID_MQUADCUBE    = 4
 !</constantblock>
 
 
@@ -280,7 +280,7 @@ CONTAINS
       ! 3 DOF's in the transformation (given by the corners of the element)
       trafo_igetNVE = 3
     
-    CASE (TRAFO_ID_BILINCUBE)
+    CASE (TRAFO_ID_MLINCUBE)
       ! Bilinear transformation for cubic-shaped elements 
       ! -> Bilinear quadrilateral transformation.
       ! 4 DOF's in the transformation (given by the corners of the element)
@@ -299,7 +299,7 @@ CONTAINS
       ! 4 DOF's in the transformation (given by the corners of the element)
       trafo_igetNVE = 4
     
-    CASE (TRAFO_ID_BILINCUBE)
+    CASE (TRAFO_ID_MLINCUBE)
       ! Trilinear transformation for cubic-shaped elements 
       ! -> Trilinear hexahedral transformation.
       ! 8 DOF's in the transformation (given by the corners of the element)
@@ -393,7 +393,7 @@ CONTAINS
         Dcoords (1:NDIM2D,1:3) = p_DcornerCoordinates(1:NDIM2D,&
                                     p_IverticesAtElement(1:3,iel))
       
-      CASE (TRAFO_ID_BILINCUBE)
+      CASE (TRAFO_ID_MLINCUBE)
         ! Bilinear transformation for cubic-shaped elements 
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
@@ -421,7 +421,7 @@ CONTAINS
         Dcoords (1:NDIM3D,1:4) = p_DcornerCoordinates(1:NDIM3D,&
                                     p_IverticesAtElement(1:4,iel))
       
-      CASE (TRAFO_ID_BILINCUBE)
+      CASE (TRAFO_ID_MLINCUBE)
         ! Trilinear transformation for cubic-shaped elements 
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
@@ -528,7 +528,7 @@ CONTAINS
           END DO
         END DO
       
-      CASE (TRAFO_ID_BILINCUBE)
+      CASE (TRAFO_ID_MLINCUBE)
         ! Bilinear transformation for cubic-shaped elements 
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
@@ -564,7 +564,7 @@ CONTAINS
           END DO
         END DO
       
-      CASE (TRAFO_ID_BILINCUBE)
+      CASE (TRAFO_ID_MLINCUBE)
         ! Trilinear transformation for cubic-shaped elements 
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
@@ -743,7 +743,7 @@ CONTAINS
           
       END IF
           
-    CASE (TRAFO_ID_BILINCUBE)
+    CASE (TRAFO_ID_MLINCUBE)
     
       ! Calculate with or without coordinates?
       IF (.NOT. PRESENT(DpointsReal)) THEN
@@ -966,7 +966,7 @@ CONTAINS
         
       END IF
     
-    CASE (TRAFO_ID_BILINCUBE)
+    CASE (TRAFO_ID_MLINCUBE)
     
       ! Bilinear transformation for cubic-shaped elements 
       ! -> Bilinear quadrilateral transformation.

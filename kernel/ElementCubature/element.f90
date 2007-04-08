@@ -675,7 +675,7 @@ CONTAINS
     
   CASE (EL_Q0,EL_Q1,EL_Q2,EL_Q3,EL_QP1,EL_Q1T)
     ! Bilinear quadrilateral transformation, 2D.
-    elem_igetTrafoType = TRAFO_ID_BILINCUBE + TRAFO_DIM_2D
+    elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
     
   CASE DEFAULT
     elem_igetTrafoType = TRAFO_ID_UNKNOWN
