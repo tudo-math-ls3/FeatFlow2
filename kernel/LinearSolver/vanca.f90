@@ -19,6 +19,9 @@
 !#
 !#  3.) vanca_doneConformal
 !#      -> Clean up the VANCA for conformal discretisations.
+!#
+!# The following list of routines are all used internally. There is no need to
+!# call them directly.
 !# 
 !#  4.) vanca_initGeneralVanca
 !#      -> Initialise the general Vanca solver
@@ -31,52 +34,57 @@
 !#
 !#  7.) vanca_init2DSPQ1TQ0simple
 !#      -> Initialise specialised VANCA solver for 2D saddle point problems
-!#         with $\tilde Q_1/Q_0$ discretisation
+!#         with $\tilde Q_1/Q_0$ discretisation.
+!#         Deprecated, ist not used.
 !#
-!#  8.) vanca_2DSPQ1TQ0simple
+!#  8.) vanca_init2DNavierStokes 
+!#      -> Initialise the VANCA solver for the problem class 
+!#         '2D Navier-Stokes equation'. 
+!#
+!#  9.) vanca_2DNavierStokes 
+!#      -> Apply the VANCA solver for the problem class 
+!#         '2D Navier-Stokes equation'. 
+!#
+!# 10.) vanca_2DSPQ1TQ0simple
 !#      -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#         problems with $\tilde Q_1/Q_0$ discretisation
 !#
-!#  9.) vanca_2DSPQ1TQ0simpleConf
+!# 11.) vanca_2DSPQ1TQ0simpleConf
 !#      -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#         problems with $\tilde Q_1/Q_0$ discretisation.
 !#         Applies VANCA only to a subset of all elements in the domain.
 !#
-!# 10.) vanca_2DSPQ1TQ0simpleCoupConf
+!# 12.) vanca_2DSPQ1TQ0simpleCoupConf
 !#      -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#         problems with $\tilde Q_1/Q_0$ discretisation.
 !#         Applies VANCA only to a subset of all elements in the domain.
 !#         This variant can handle fully coupled matrices.
 !#
-!# 11.) vanca_2DSPQ1TQ0fullConf
+!# 13.) vanca_2DSPQ1TQ0fullConf
 !#      -> Perform one step of the specialised 'full' VANCA solver for 2D saddle 
 !#         point problems with $\tilde Q_1/Q_0$ discretisation.
 !#         Applies VANCA only to a subset of all elements in the domain.
 !#
-!# 12.) vanca_2DSPQ1TQ0fullCoupConf
+!# 14.) vanca_2DSPQ1TQ0fullCoupConf
 !#      -> Perform one step of the specialised 'full' VANCA solver for 2D saddle 
 !#         point problems with $\tilde Q_1/Q_0$ discretisation.
 !#         Applies VANCA only to a subset of all elements in the domain.
 !#         This variant can handle fully coupled matrices.
 !#
-!# 13.) vanca_init2DSPQ2QP1
-!#      -> Initialise specialised VANCA solver for 2D saddle point problems
-!#         with $Q_2/QP_1$ discretisation
-!#
-!# 14.) vanca_2DSPQ2QP1simple
+!# 15.) vanca_2DSPQ2QP1simple
 !#      -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#         problems with $Q_2/QP_1$ discretisation. Diagonal VANCA approach.
 !#
-!# 15.) vanca_2DSPQ2QP1full
+!# 16.) vanca_2DSPQ2QP1full
 !#      -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#         problems with $Q_2/QP_1$ discretisation. Full VANCA approach.
 !#
-!# 16.) vanca_2DSPQ2QP1simpleConf
+!# 17.) vanca_2DSPQ2QP1simpleConf
 !#      -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#         problems with $Q_2/QP_1$ discretisation. Diagonal VANCA approach.
 !#         Applies VANCA only to a subset of all elements in the domain.
 !#
-!# 17.) vanca_2DSPQ2QP1fullConf
+!# 18.) vanca_2DSPQ2QP1fullConf
 !#      -> Perform one step of the specialised VANCA solver for 2D saddle point 
 !#         problems with $Q_2/QP_1$ discretisation. Full VANCA approach.
 !#         Applies VANCA only to a subset of all elements in the domain.
@@ -128,6 +136,7 @@ MODULE vanca
   USE fsystem
   USE linearsystemscalar
   USE linearsystemblock
+  USE genoutput
 
   IMPLICIT NONE
 
@@ -140,6 +149,9 @@ MODULE vanca
 
   ! 2D Navier Stokes problem
   INTEGER, PARAMETER :: VANCAPC_2DNAVIERSTOKES = 1
+
+  ! 2D Navier Stokes optimal control problem
+  INTEGER, PARAMETER :: VANCAPC_2DNAVIERSTOKESOPTC = 2
 
 !</constantblock>
 
@@ -239,7 +251,7 @@ MODULE vanca
 
 !<typeblock>
   
-  ! A structure that saves matrix pointers for the 2D-Saddle-Point
+  ! A structure that saves matrix pointers for the 2D-Navier-Stokes
   ! VANCA method for Navier-Stokes systems.
   
   TYPE t_vancaPointer2DNavSt
@@ -313,6 +325,123 @@ MODULE vanca
   
 !</typeblock>
 
+!<typeblock>
+  
+  ! A structure that saves matrix pointers for the 2D-Navier-Stokes
+  ! VANCA method for Navier-Stokes optimal control systems.
+  
+  TYPE t_vancaPointer2DNavStOptC
+    ! Pointer to the column structure of the velocity matrix A11 and A22
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA11 => NULL()
+    
+    ! Pointer to the row structure of the velocity matrix A11 and A22
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA11 => NULL()
+    
+    ! Pointer to diagonal entries in the velocity matrix A11 and A22
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA11 => NULL()
+
+    ! Pointer to the matrix entries of the velocity matrix A11
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA11 => NULL()
+
+    ! Pointer to the matrix entries of the velocity matrix A22 or NULL
+    ! if not present
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA22 => NULL()
+
+    ! Pointer to the column structure of the velocity matrix A11 and A22
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12 => NULL()
+    
+    ! Pointer to the row structure of the velocity matrix A11 and A22
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12 => NULL()
+    
+    ! Pointer to diagonal entries in the velocity matrix A11 and A22
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA12 => NULL()
+
+    ! Pointer to the matrix entries of the velocity matrix A12 or NULL
+    ! if not present
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA12 => NULL()
+
+    ! Pointer to the matrix entries of the velocity matrix A21 or NULL
+    ! if not present
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
+
+
+    ! Pointer to the matrix entries of the velocity matrix A44
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA44 => NULL()
+
+    ! Pointer to the matrix entries of the velocity matrix A55
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA55 => NULL()
+
+
+    ! Pointer to the column structure of the matrix A45 and A54
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45 => NULL()
+    
+    ! Pointer to the row structure of the matrix A45 and A54
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA45 => NULL()
+    
+    ! Pointer to diagonal entries in the matrix A45 and A54
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA45 => NULL()
+
+    ! Pointer to the matrix entries of the velocity matrix A45 or NULL
+    ! if not present
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA45 => NULL()
+
+    ! Pointer to the matrix entries of the velocity matrix A54 or NULL
+    ! if not present
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA54 => NULL()
+
+
+    ! Pointer to the column structure of the mass matrix
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolM => NULL()
+    
+    ! Pointer to the row structure of the mass matrix
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldM => NULL()
+    
+    ! Pointer to diagonal entries in the mass matrix
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalM => NULL()
+
+    ! Pointer to the matrix entries of the mass matrix or NULL
+    ! if not present
+    REAL(DP), DIMENSION(:), POINTER             :: p_DM => NULL()
+
+
+    ! Pointer to the column structure of the B/D-matrices.
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB => NULL()
+    
+    ! Pointer to the row structure of the B/D-matrices
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB => NULL()
+    
+    ! Pointer to the entries of the B1-matrix
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB1 => NULL()
+
+    ! Pointer to the entries of the B2-matrix
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB2 => NULL()
+    
+    ! Pointer to the entries of the D1-matrix
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD1 => NULL()
+
+    ! Pointer to the entries of the D2-matrix
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD2 => NULL()
+    
+
+    ! Spatial discretisation structure for X-velocity
+    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrU => NULL()
+    
+    ! Spatial discretisation structure for Y-velocity
+    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrV => NULL()
+    
+    ! Spatial discretisation structure for pressure
+    TYPE(t_spatialDiscretisation), POINTER :: p_rspatialDiscrP => NULL()
+    
+    ! Multiplication factors for the submatrices; taken from the system matrix.
+    ! (-> Not used in the current implementation! Although it's easy to include
+    ! that into VANCA, some further speed analysis has to be done to make
+    ! sure there's not too much speed impact when using these!)
+    REAL(DP), DIMENSION(6,6) :: Dmultipliers
+    
+  END TYPE
+  
+!</typeblock>
+
 
 !<typeblock>
   
@@ -337,6 +466,11 @@ MODULE vanca
     ! Configuration block with parameters for the 2D Navier-Stokes VANCA;
     ! only vaid if if cproblemClassVanca==VANCAPC_2DNAVIERSTOKES.
     TYPE(t_vancaPointer2DNavSt) :: rvanca2DNavSt
+    
+    ! Configuration block with parameters for the 2D Navier-Stokes VANCA
+    ! for optimal control problems;
+    ! only vaid if if cproblemClassVanca==VANCAPC_2DNAVIERSTOKESOPTC.
+    TYPE(t_vancaPointer2DNavStOptC) :: rvanca2DNavStOptC
     
   END TYPE
   
@@ -370,7 +504,7 @@ CONTAINS
   
 !<description>
   ! Initialises the VANCA for conformal discretisations.
-  ! Checks if the "2D-Saddle-Point" VANCA variant for conformal discretisations
+  ! Checks if the VANCA variant for conformal discretisations
   ! can be applied to the system given by rmatrix.
   ! If not, the program is stopped.
   !
@@ -399,186 +533,18 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER :: i,j
-    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
-    
     SELECT CASE (cproblemClass)
     CASE (VANCAPC_GENERAL)
       ! General VANCA
       CALL vanca_initGeneralVanca (rmatrix,rvanca%rvancaGeneral)    
     
     CASE (VANCAPC_2DNAVIERSTOKES)
+      ! Vanca for 2D Navier-Stokes problems
+      CALL vanca_init2DNavierStokes (rmatrix,rvanca)
 
-      ! Matrix must be 3x3.
-      IF (rmatrix%ndiagBlocks .NE. 3) THEN
-        PRINT *,'vanca_initConformal: System matrix is not 3x3.'
-        STOP
-      END IF
-      
-      ! A(1:2,1:3) must not be virtually transposed and of format 9.
-      ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
-      DO i=1,3
-        DO j=1,3
-        
-          IF (rmatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
-          
-            IF (i .LE. 2) THEN
-              IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                  .NE. 0) THEN
-                PRINT *,'vanca_check2DSPNavSt: Transposed submatrices not supported.'
-                STOP
-              END IF
-            ELSE
-              IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                  .EQ. 0) THEN
-                PRINT *,'vanca_initConformal: B1/B2 submatrices must be virtually'
-                PRINT *,'transposed (LSYSSC_MSPEC_TRANSPOSED)!'
-                STOP
-              END IF
-            END IF
-            
-            IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
-                (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-              PRINT *,'vanca_initConformal: Only format 7 and 9 matrices supported.'
-              STOP
-            END IF
-
-            IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-              PRINT *,'vanca_initConformal: Only double precision matrices supported.'
-              STOP
-            END IF
-
-            ! We support scaled matrices only to disable a submatrix like A12 or A21
-            ! on the off-diagonal!
-            IF ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) .AND. &
-                (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 0.0_DP)) THEN
-              PRINT *,'vanca_initConformal: Scaled matrices not supported.'
-              STOP
-            END IF
-            
-            IF ((i .eq. j) .AND. &
-                (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) ) THEN
-              PRINT *,'vanca_initConformal: Scaled matrices not supported.'
-              STOP
-            END IF
-            
-            
-          END IF ! neq != 0
-        END DO
-      END DO
-      
-      ! The structure of A(1,3) must be identical to A(3,1) and
-      ! that of A(2,3) must be identical to A(3,2).
-      IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
-          (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
-        PRINT *,'vanca_initConformal: Structure of B1 and B1^T different!'
-        STOP
-      END IF
-
-      IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
-          (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
-        PRINT *,'vanca_initConformal: Structure of B2 and B2^T different!'
-        STOP
-      END IF      
-    
-      ! Fill the output structure with data of the matrices.
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,1)%h_Da,&
-          rvanca%rvanca2DNavSt%p_DA )
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,3)%h_Da,&
-          rvanca%rvanca2DNavSt%p_DB1)
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(2,3)%h_Da,&
-          rvanca%rvanca2DNavSt%p_DB2)
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(3,1)%h_Da,&
-          rvanca%rvanca2DNavSt%p_DD1)
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(3,2)%h_Da,&
-          rvanca%rvanca2DNavSt%p_DD2)
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kcol,&
-          rvanca%rvanca2DNavSt%p_KcolB)
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kld, &
-          rvanca%rvanca2DNavSt%p_KldB )
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kcol,&
-          rvanca%rvanca2DNavSt%p_KcolA)
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kld, &
-          rvanca%rvanca2DNavSt%p_KldA )
-      IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kdiagonal, &
-                                rvanca%rvanca2DNavSt%p_KdiagonalA)
-      ELSE
-        rvanca%rvanca2DNavSt%p_KdiagonalA => rvanca%rvanca2DNavSt%p_KldA
-      END IF
-      
-      ! What is with A22? Is it the same as A11?
-      IF (.NOT. lsyssc_isMatrixContentShared (&
-          rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) ) THEN
-        CALL storage_getbase_double(rmatrix%RmatrixBlock(2,2)%h_Da,&
-            rvanca%rvanca2DNavSt%p_DA22 )
-      END IF
-      
-      ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
-      IF ((rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) .AND. &
-          (rmatrix%RmatrixBlock(1,2)%dscaleFactor .EQ. 1.0_DP)) THEN
-        CALL storage_getbase_double(rmatrix%RmatrixBlock(1,2)%h_Da,&
-            rvanca%rvanca2DNavSt%p_DA12 )
-            
-        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kcol,&
-            rvanca%rvanca2DNavSt%p_KcolA12)
-        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kld, &
-            rvanca%rvanca2DNavSt%p_KldA12 )
-            
-        ! Get the structure. It's assumed that A12 and A21 have the same!
-        IF (rmatrix%RmatrixBlock(1,12)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-          CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kdiagonal, &
-                                  rvanca%rvanca2DNavSt%p_KdiagonalA12)
-        ELSE
-          rvanca%rvanca2DNavSt%p_KdiagonalA12 => rvanca%rvanca2DNavSt%p_KldA12
-        END IF
-        
-        IF (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .EQ. LSYSSC_MATRIXUNDEFINED) THEN
-          PRINT *,'vanca_initConformal: If A12 is given, A21 must also be given!'
-          STOP
-        END IF
-        
-        CALL storage_getbase_double(rmatrix%RmatrixBlock(2,1)%h_Da,&
-            rvanca%rvanca2DNavSt%p_DA21 )
-      END IF
-
-      ! Get the multiplication factors of the submatrices.
-      ! (-> for a later implementation; currently, the multipliers are not used!)
-      rvanca%rvanca2DNavSt%Dmultipliers(1:3,1:3) = &
-          rmatrix%RmatrixBlock(1:3,1:3)%dscaleFactor
-
-      ! Get the block discretisation structure from the matrix.
-      p_rblockDiscr => rmatrix%p_rblockDiscretisation
-      
-      IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
-        PRINT *,'vanca_initConformal: No discretisation!'
-        STOP
-      END IF
-      
-      ! Get the discretisation structure of U,V and P from the block
-      ! discretisation structure.
-      rvanca%rvanca2DNavSt%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscretisation(1)
-      rvanca%rvanca2DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscretisation(2)
-      rvanca%rvanca2DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscretisation(3)
-      
-      IF (rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .NE. &
-          rvanca%rvanca2DNavSt%p_rspatialDiscrV%inumFESpaces) THEN
-        PRINT *,'vanca_initConformal: Discretisation structures of X- and'//&
-                'Y-velocity incompatible!'
-        STOP
-      END IF
-
-      IF ((rvanca%rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
-          (rvanca%rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .NE. &
-           rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces)) THEN
-        ! Either there must be only one element type for the pressure, or there one
-        ! pressure element distribution for every velocity element distribution!
-        ! If this is not the case, we cannot determine (at least not in reasonable time)
-        ! which element type the pressure represents on a cell!
-        PRINT *,'vanca_initConformal: Discretisation structures of velocity'//&
-                'and pressure incompatible!'
-        STOP
-      END IF
+    CASE (VANCAPC_2DNAVIERSTOKESOPTC)
+      ! Vanca for 2D Navier-Stokes optimal control problems
+      CALL vanca_init2DNavierStokesOptC (rmatrix,rvanca)
 
     END SELECT
     
@@ -659,13 +625,6 @@ CONTAINS
 
 !</subroutine>
 
-    ! local variables
-    INTEGER :: ielementdist
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrU
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
-    TYPE(t_elementDistribution), POINTER :: p_relementDistrP 
-    
     ! Which type of VANCA should be used?
     SELECT CASE (rvanca%cproblemClass)
     CASE (VANCAPC_GENERAL)
@@ -677,151 +636,14 @@ CONTAINS
       
     CASE (VANCAPC_2DNAVIERSTOKES)
       ! 2D Navier Stokes problem.
+      CALL vanca_2DNavierStokes (rvanca%rvanca2DNavSt, rvector, rrhs, domega,&
+          rvanca%csubtype)
 
-      ! Loop through the element distributions of the velocity.
-      DO ielementdist = 1,rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces
-      
-        ! Get the corresponding element distributions of U, V and P.
-        p_relementDistrU => &
-            rvanca%rvanca2DNavSt%p_rspatialDiscrU%RelementDistribution(ielementdist)
-        p_relementDistrV => &
-            rvanca%rvanca2DNavSt%p_rspatialDiscrV%RelementDistribution(ielementdist)
-        
-        ! Either the same element for P everywhere, or there must be given one
-        ! element distribution in the pressure for every velocity element distribution.
-        IF (rvanca%rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
-          p_relementDistrP => &
-              rvanca%rvanca2DNavSt%p_rspatialDiscrP%RelementDistribution(ielementdist)
-        ELSE
-          p_relementDistrP => &
-              rvanca%rvanca2DNavSt%p_rspatialDiscrP%RelementDistribution(1)
-        END IF
-        
-        ! Get the list of the elements to process.
-        ! We take the element list of the X-velocity as 'primary' element list
-        ! and assume that it coincides to that of the Y-velocity (and to that
-        ! of the pressure).
-        CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
-        
-        ! Which element combination do we have now?
-        IF ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q1T) .AND. &
-            (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q1T) .AND. &
-            (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_Q0)) THEN
-          ! Q1~/Q1~/Q0 discretisation
-          
-          ! Which VANCA subtype do we have? The diagonal VANCA of the full VANCA?
-          SELECT CASE (rvanca%csubtype)
-          CASE (VANCATP_DIAGONAL)
-            ! Diagonal VANCA; check if A12 exists.
-            IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavSt%p_DA12)) THEN
-              ! Call the VANCA subsolver to apply VANCA to our current element list.
-              IF (rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
-                ! Uniform discretisation
-                CALL vanca_2DSPQ1TQ0simple (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega)
-              ELSE
-                ! Conformal discretisation
-                CALL vanca_2DSPQ1TQ0simpleConf (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega,p_IelementList)
-              END IF
-            ELSE
-              ! Apply the conformal VANCA that allows different matrices
-              ! in A11, A12, A21 and A22!
-              CALL vanca_2DSPQ1TQ0simpleCoupConf (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega,p_IelementList)
-            END IF
-            
-          CASE (VANCATP_FULL)
-            ! Full VANCA; check if A12 exists.
-            IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavSt%p_DA12)) THEN
-              ! Call the VANCA subsolver to apply VANCA to our current element list.
-              ! Note: Up to now, there is no 'full' variant -- has to be implemented!
-              IF (rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
-                ! uniform discretisation;
-                ! here, use the same as for the general conformal discretisation.
-                ! Could be speeded up by introducing another variant...
-                CALL vanca_2DSPQ1TQ0fullConf (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega,p_IelementList)
-              ELSE
-                ! Conformal discretisation
-                CALL vanca_2DSPQ1TQ0fullConf (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega,p_IelementList)
-              END IF
-            ELSE
-              ! Apply the conformal VANCA that allows different matrices
-              ! in A11, A12, A21 and A22!
-              CALL vanca_2DSPQ1TQ0fullCoupConf (rvanca%rvanca2DNavSt, &
-                  rvector, rrhs, domega,p_IelementList)
-            END IF
-          
-          CASE DEFAULT
-            PRINT *,'Unknown VANCA subtype!'
-            STOP  
-          
-          END SELECT
-          
-        ELSE IF &
-          ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q2) .AND.&
-           (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q2) .AND.&
-           (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_QP1)) THEN
-          ! Q2/Q2/QP1 discretisation
-          
-          ! Which VANCA subtype do we have? The diagonal VANCA of the full VANCA?
-          SELECT CASE (rvanca%csubtype)
-          CASE (VANCATP_DIAGONAL)
-            ! Diagonal VANCA; check if A12 exists.
-            IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavSt%p_DA12)) THEN
-              ! Call the VANCA subsolver to apply VANCA to our current element list.
-              IF (rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
-                ! Uniform discretisation
-                CALL vanca_2DSPQ2QP1simple (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega)
-              ELSE
-                ! Conformal discretisation
-                CALL vanca_2DSPQ2QP1simpleConf (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega,p_IelementList)
-              END IF
-            ELSE
-              ! Apply the conformal VANCA that allows different matrices
-              ! in A11, A12, A21 and A22!
-              PRINT *,'VANCA has no support for A12 and A21!'
-              STOP
-            END IF
-            
-          CASE (VANCATP_FULL)
-            ! Full VANCA; check if A12 exists.
-            IF (.NOT. ASSOCIATED(rvanca%rvanca2DNavSt%p_DA12)) THEN
-              ! Call the VANCA subsolver to apply VANCA to our current element list.
-              IF (rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
-                ! Uniform discretisation
-                CALL vanca_2DSPQ2QP1full (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega)
-              ELSE
-                ! Conformal discretisation
-                CALL vanca_2DSPQ2QP1fullConf (rvanca%rvanca2DNavSt, &
-                    rvector, rrhs, domega,p_IelementList)
-              END IF
-            ELSE
-              ! Apply the conformal VANCA that allows different matrices
-              ! in A11, A12, A21 and A22!
-              PRINT *,'VANCA has no support for A12 and A21!'
-              STOP
-            END IF
-            
-          CASE DEFAULT
-            PRINT *,'Unknown VANCA subtype!'
-            STOP  
-            
-          END SELECT
-            
-        ELSE
-          PRINT *,'VANCA: Unsupported discretisation!'
-          STOP
-          
-        END IF
-        
-      END DO
-      
+    CASE (VANCAPC_2DNAVIERSTOKESOPTC)
+      ! 2D Navier Stokes problem.
+      CALL vanca_2DNavierStokesOptC (rvanca%rvanca2DNavStOptC, rvector, rrhs, domega,&
+          rvanca%csubtype)
+
     CASE DEFAULT
       PRINT *,'Unknown VANCA problem class!'
       STOP  
@@ -1483,8 +1305,428 @@ CONTAINS
 
   END SUBROUTINE
 
+! *****************************************************************************
+! Problem class: VANCA variants for 2D Navier-Stokes problems
+! *****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE vanca_init2DNavierStokes (rmatrix,rvanca)
+  
+!<description>
+  ! Initialises the VANCA variant for 2D Navier-Stokes problems 
+  ! for conformal discretisations.
+  ! Checks if the "2D-Navier-Stokes" VANCA variant 
+  ! for conformal discretisations can be applied to the system given by rmatrix.
+  ! If not, the program is stopped.
+  !
+  ! The substructure rvanca%rvanca2DNavSt is intitialised according
+  ! to the information provided in rmatrix.
+!</description>
+
+!<input>
+  ! The system matrix of the linear system.
+  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  !</input>
+
+!<inputoutput>
+  ! t_vancaPointer2DSPNavSt structure that saves algorithm-specific parameters.
+  TYPE(t_vanca), INTENT(INOUT) :: rvanca
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: i,j
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
+    
+    ! Matrix must be 3x3.
+    IF (rmatrix%ndiagBlocks .NE. 3) THEN
+      CALL output_line ('System matrix is not 3x3.',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+      STOP
+    END IF
+    
+    ! A(1:2,1:3) must not be virtually transposed and of format 9.
+    ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
+    DO i=1,3
+      DO j=1,3
+      
+        IF (rmatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+        
+          IF (i .LE. 2) THEN
+            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .NE. 0) THEN
+              CALL output_line ('Transposed submatrices not supported.',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+              STOP
+            END IF
+          ELSE
+            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .EQ. 0) THEN
+              CALL output_line ('B1/B2 submatrices must be virtually',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+              CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+              STOP
+            END IF
+          END IF
+          
+          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
+              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
+            CALL output_line ('Only format 7 and 9 matrices supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+            STOP
+          END IF
+
+          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
+            CALL output_line ('Only double precision matrices supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+            STOP
+          END IF
+
+          ! We support scaled matrices only to disable a submatrix like A12 or A21
+          ! on the off-diagonal!
+          IF ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) .AND. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 0.0_DP)) THEN
+            CALL output_line ('Scaled matrices not supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+            STOP
+          END IF
+          
+          IF ((i .eq. j) .AND. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) ) THEN
+            CALL output_line ('Scaled matrices not supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+            STOP
+          END IF
+          
+        END IF ! neq != 0
+      END DO
+    END DO
+    
+    ! The structure of A(1,3) must be identical to A(3,1) and
+    ! that of A(2,3) must be identical to A(3,2).
+    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
+        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
+      CALL output_line ('Structure of B1 and B1^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+      STOP
+    END IF
+
+    IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
+        (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
+      CALL output_line ('Structure of B2 and B2^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+      STOP
+    END IF      
+  
+    ! Fill the output structure with data of the matrices.
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,1)%h_Da,&
+        rvanca%rvanca2DNavSt%p_DA )
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,3)%h_Da,&
+        rvanca%rvanca2DNavSt%p_DB1)
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,3)%h_Da,&
+        rvanca%rvanca2DNavSt%p_DB2)
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,1)%h_Da,&
+        rvanca%rvanca2DNavSt%p_DD1)
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,2)%h_Da,&
+        rvanca%rvanca2DNavSt%p_DD2)
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kcol,&
+        rvanca%rvanca2DNavSt%p_KcolB)
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kld, &
+        rvanca%rvanca2DNavSt%p_KldB )
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kcol,&
+        rvanca%rvanca2DNavSt%p_KcolA)
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kld, &
+        rvanca%rvanca2DNavSt%p_KldA )
+    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kdiagonal, &
+                              rvanca%rvanca2DNavSt%p_KdiagonalA)
+    ELSE
+      rvanca%rvanca2DNavSt%p_KdiagonalA => rvanca%rvanca2DNavSt%p_KldA
+    END IF
+    
+    ! What is with A22? Is it the same as A11?
+    IF (.NOT. lsyssc_isMatrixContentShared (&
+        rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) ) THEN
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(2,2)%h_Da,&
+          rvanca%rvanca2DNavSt%p_DA22 )
+    END IF
+    
+    ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
+    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
+        (rmatrix%RmatrixBlock(1,2)%dscaleFactor .EQ. 1.0_DP)) THEN
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,2)%h_Da,&
+          rvanca%rvanca2DNavSt%p_DA12 )
+          
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kcol,&
+          rvanca%rvanca2DNavSt%p_KcolA12)
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kld, &
+          rvanca%rvanca2DNavSt%p_KldA12 )
+          
+      ! Get the structure. It's assumed that A12 and A21 have the same!
+      IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kdiagonal, &
+                                rvanca%rvanca2DNavSt%p_KdiagonalA12)
+      ELSE
+        rvanca%rvanca2DNavSt%p_KdiagonalA12 => rvanca%rvanca2DNavSt%p_KldA12
+      END IF
+      
+      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
+        CALL output_line ('If A12 is given, A21 must also be given!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesO')
+        STOP
+      END IF
+      
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(2,1)%h_Da,&
+          rvanca%rvanca2DNavSt%p_DA21 )
+    END IF
+
+    ! Get the multiplication factors of the submatrices.
+    ! (-> for a later implementation; currently, the multipliers are not used!)
+    rvanca%rvanca2DNavSt%Dmultipliers(1:3,1:3) = &
+        rmatrix%RmatrixBlock(1:3,1:3)%dscaleFactor
+
+    ! Get the block discretisation structure from the matrix.
+    p_rblockDiscr => rmatrix%p_rblockDiscretisation
+    
+    IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
+      CALL output_line ('No discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+      STOP
+    END IF
+    
+    ! Get the discretisation structure of U,V and P from the block
+    ! discretisation structure.
+    rvanca%rvanca2DNavSt%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscretisation(1)
+    rvanca%rvanca2DNavSt%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscretisation(2)
+    rvanca%rvanca2DNavSt%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscretisation(3)
+    
+    IF (rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .NE. &
+        rvanca%rvanca2DNavSt%p_rspatialDiscrV%inumFESpaces) THEN
+      CALL output_line (&
+          'Discretisation structures of X- and Y-velocity incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+      STOP
+    END IF
+
+    IF ((rvanca%rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
+        (rvanca%rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .NE. &
+          rvanca%rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces)) THEN
+      ! Either there must be only one element type for the pressure, or there one
+      ! pressure element distribution for every velocity element distribution!
+      ! If this is not the case, we cannot determine (at least not in reasonable time)
+      ! which element type the pressure represents on a cell!
+      CALL output_line (&
+          'Discretisation structures of velocity and pressure incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
+      STOP
+    END IF
+
+  END SUBROUTINE
+
   ! ***************************************************************************
-  ! 2D Saddle-Point VANCA, simple diagonal version.
+
+!<subroutine>
+  
+  SUBROUTINE vanca_2DNavierStokes (rvanca2DNavSt, rvector, rrhs, domega, csubtype)
+  
+!<description>
+  ! This routine applies the VANCA variant for 2D Navier-Stokes problems
+  ! to the system $Ax=b$.
+  ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
+  ! vector. The rvanca structure has to be initialised before calling
+  ! this routine, as this holds a reference to the system matrix.
+  !
+  ! The routine supports arbitrary conformal discretisations, but works
+  ! 'specialised'! That means, there must exist a specialised implementation
+  ! for every type of problem, which is called by this routine.
+  ! So, if the user has a special problem, this routine must tackled to
+  ! call the corresponding specialised VANCA variant for that problem!
+  ! If a matrix/problem structure is not supported, the routine will stop
+  ! the program!
+!</description>
+
+!<input>
+  ! The right-hand-side vector of the system
+  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  
+  ! Relaxation parameter. Standard=1.0_DP.
+  REAL(DP), INTENT(IN)                    :: domega
+
+  ! The initial solution vector. Is replaced by a new iterate.
+  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+
+  ! The subtype of VANCA that should handle the above problem class.
+  ! One of the VANCATP_xxxx constants, e.g. VANCATP_DIAGONAL.
+  INTEGER :: csubtype
+  
+!</input>
+
+!<inputoutput>
+  ! t_vanca structure that saves algorithm-specific parameters.
+  TYPE(t_vancaPointer2DNavSt), INTENT(INOUT) :: rvanca2DNavSt
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: ielementdist
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
+    TYPE(t_elementDistribution), POINTER :: p_relementDistrU
+    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
+    TYPE(t_elementDistribution), POINTER :: p_relementDistrP 
+    
+    ! 2D Navier Stokes problem.
+
+    ! Loop through the element distributions of the velocity.
+    DO ielementdist = 1,rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces
+    
+      ! Get the corresponding element distributions of U, V and P.
+      p_relementDistrU => &
+          rvanca2DNavSt%p_rspatialDiscrU%RelementDistribution(ielementdist)
+      p_relementDistrV => &
+          rvanca2DNavSt%p_rspatialDiscrV%RelementDistribution(ielementdist)
+      
+      ! Either the same element for P everywhere, or there must be given one
+      ! element distribution in the pressure for every velocity element distribution.
+      IF (rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+        p_relementDistrP => &
+            rvanca2DNavSt%p_rspatialDiscrP%RelementDistribution(ielementdist)
+      ELSE
+        p_relementDistrP => &
+            rvanca2DNavSt%p_rspatialDiscrP%RelementDistribution(1)
+      END IF
+      
+      ! Get the list of the elements to process.
+      ! We take the element list of the X-velocity as 'primary' element list
+      ! and assume that it coincides to that of the Y-velocity (and to that
+      ! of the pressure).
+      CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      
+      ! Which element combination do we have now?
+      IF ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_Q0)) THEN
+        ! Q1~/Q1~/Q0 discretisation
+        
+        ! Which VANCA subtype do we have? The diagonal VANCA of the full VANCA?
+        SELECT CASE (csubtype)
+        CASE (VANCATP_DIAGONAL)
+          ! Diagonal VANCA; check if A12 exists.
+          IF (.NOT. ASSOCIATED(rvanca2DNavSt%p_DA12)) THEN
+            ! Call the VANCA subsolver to apply VANCA to our current element list.
+            IF (rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+              ! Uniform discretisation
+              CALL vanca_2DSPQ1TQ0simple (rvanca2DNavSt, &
+                  rvector, rrhs, domega)
+            ELSE
+              ! Conformal discretisation
+              CALL vanca_2DSPQ1TQ0simpleConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+            END IF
+          ELSE
+            ! Apply the conformal VANCA that allows different matrices
+            ! in A11, A12, A21 and A22!
+            CALL vanca_2DSPQ1TQ0simpleCoupConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+          END IF
+          
+        CASE (VANCATP_FULL)
+          ! Full VANCA; check if A12 exists.
+          IF (.NOT. ASSOCIATED(rvanca2DNavSt%p_DA12)) THEN
+            ! Call the VANCA subsolver to apply VANCA to our current element list.
+            ! Note: Up to now, there is no 'full' variant -- has to be implemented!
+            IF (rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+              ! uniform discretisation;
+              ! here, use the same as for the general conformal discretisation.
+              ! Could be speeded up by introducing another variant...
+              CALL vanca_2DSPQ1TQ0fullConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+            ELSE
+              ! Conformal discretisation
+              CALL vanca_2DSPQ1TQ0fullConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+            END IF
+          ELSE
+            ! Apply the conformal VANCA that allows different matrices
+            ! in A11, A12, A21 and A22!
+            CALL vanca_2DSPQ1TQ0fullCoupConf (rvanca2DNavSt, &
+                rvector, rrhs, domega,p_IelementList)
+          END IF
+        
+        CASE DEFAULT
+          PRINT *,'Unknown VANCA subtype!'
+          STOP  
+        
+        END SELECT
+        
+      ELSE IF &
+        ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q2) .AND.&
+          (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q2) .AND.&
+          (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_QP1)) THEN
+        ! Q2/Q2/QP1 discretisation
+        
+        ! Which VANCA subtype do we have? The diagonal VANCA of the full VANCA?
+        SELECT CASE (csubtype)
+        CASE (VANCATP_DIAGONAL)
+          ! Diagonal VANCA; check if A12 exists.
+          IF (.NOT. ASSOCIATED(rvanca2DNavSt%p_DA12)) THEN
+            ! Call the VANCA subsolver to apply VANCA to our current element list.
+            IF (rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+              ! Uniform discretisation
+              CALL vanca_2DSPQ2QP1simple (rvanca2DNavSt, &
+                  rvector, rrhs, domega)
+            ELSE
+              ! Conformal discretisation
+              CALL vanca_2DSPQ2QP1simpleConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+            END IF
+          ELSE
+            ! Apply the conformal VANCA that allows different matrices
+            ! in A11, A12, A21 and A22!
+            PRINT *,'VANCA has no support for A12 and A21!'
+            STOP
+          END IF
+          
+        CASE (VANCATP_FULL)
+          ! Full VANCA; check if A12 exists.
+          IF (.NOT. ASSOCIATED(rvanca2DNavSt%p_DA12)) THEN
+            ! Call the VANCA subsolver to apply VANCA to our current element list.
+            IF (rvanca2DNavSt%p_rspatialDiscrU%inumFESpaces .EQ. 1) THEN
+              ! Uniform discretisation
+              CALL vanca_2DSPQ2QP1full (rvanca2DNavSt, &
+                  rvector, rrhs, domega)
+            ELSE
+              ! Conformal discretisation
+              CALL vanca_2DSPQ2QP1fullConf (rvanca2DNavSt, &
+                  rvector, rrhs, domega,p_IelementList)
+            END IF
+          ELSE
+            ! Apply the conformal VANCA that allows different matrices
+            ! in A11, A12, A21 and A22!
+            PRINT *,'VANCA has no support for A12 and A21!'
+            STOP
+          END IF
+          
+        CASE DEFAULT
+          PRINT *,'Unknown VANCA subtype!'
+          STOP  
+          
+        END SELECT
+          
+      ELSE
+        PRINT *,'VANCA: Unsupported discretisation!'
+        STOP
+        
+      END IF
+      
+    END DO
+      
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  ! 2D Navier-Stokes VANCA, simple diagonal version.
   ! Supports Q1~/Q0 discretisation only.
   ! Matrix must be of the form
   !
@@ -1504,7 +1746,7 @@ CONTAINS
   SUBROUTINE vanca_init2DSPQ1TQ0simple (rmatrix,rvanca)
   
 !<description>
-  ! Checks if the "2D-Saddle-Point-Q1T-Q0" VANCA variant can be applied to
+  ! Checks if the "2D-Navier-Stokes-Q1T-Q0" VANCA variant can be applied to
   ! the system given by rmatrix.
   ! If not, the program is stopped.
 !</description>
@@ -1615,7 +1857,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised diagonal VANCA algorithm for
-  ! 2D Saddle-Point problems with Q1~/Q0 discretisation
+  ! 2D Navier-Stokes problems with Q1~/Q0 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -2021,7 +2263,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised diagonal VANCA algorithm for
-  ! 2D Saddle-Point problems with Q1~/Q0 discretisation
+  ! 2D Navier-Stokes problems with Q1~/Q0 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -2588,7 +2830,7 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
-  ! 2D Saddle-Point VANCA, simple diagonal version for fully coupled
+  ! 2D Navier-Stokes VANCA, simple diagonal version for fully coupled
   ! velocity matrix.
   ! Supports Q1~/Q0 discretisation only.
   ! Matrix must be of the form
@@ -2610,7 +2852,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised diagonal VANCA algorithm for
-  ! 2D Saddle-Point problems with Q1~/Q0 discretisation
+  ! 2D Navier-Stokes problems with Q1~/Q0 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -2619,7 +2861,7 @@ CONTAINS
   ! vanca_2DSPQ1TQ0simpleCoupConf is the same as vanca_2DSPQ1TQ0simpleConf,
   ! but supports fully coupled velocity submatrices.
   ! The matrices A11 and A22 must have the same structure. The matrices A12
-  ! and A21 must also have the same structure. The structure of A11 and A22
+  ! and A21 must also have the same structure. The structure of A11 and A12
   ! may be different from each other.
 !</description>
 
@@ -3203,7 +3445,7 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
-  ! 2D Saddle-Point VANCA, 'full' version.
+  ! 2D Navier-Stokes VANCA, 'full' version.
   ! Supports Q1~/Q0 discretisation only.
   ! Matrix must be of the form
   !
@@ -3224,7 +3466,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised full local system VANCA algorithm for
-  ! 2D Saddle-Point problems with Q1~/Q0 discretisation
+  ! 2D Navier-Stokes problems with Q1~/Q0 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -3639,7 +3881,7 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
-  ! 2D Saddle-Point VANCA, 'full' version for fully coupled systems.
+  ! 2D Navier-Stokes VANCA, 'full' version for fully coupled systems.
   ! Supports Q1~/Q0 discretisation only.
   ! Matrix must be of the form
   !
@@ -3660,7 +3902,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised full local system VANCA algorithm for
-  ! 2D Saddle-Point problems with Q1~/Q0 discretisation
+  ! 2D Navier-Stokes problems with Q1~/Q0 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -3669,7 +3911,7 @@ CONTAINS
   ! vanca_2DSPQ1TQ0fullCoupConf is the same as vanca_2DSPQ1TQ0fullConf,
   ! but supports fully coupled velocity submatrices.
   ! The matrices A11 and A22 must have the same structure. The matrices A12
-  ! and A21 must also have the same structure. The structure of A11 and A22
+  ! and A21 must also have the same structure. The structure of A11 and A12
   ! may be different from each other.
 !</description>
 
@@ -4108,7 +4350,7 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
-  ! 2D Saddle-Point VANCA, simple diagonal and full version.
+  ! 2D Navier-Stokes VANCA, simple diagonal and full version.
   ! Supports only Q2/QP1 discretisation.
   ! Matrix must be of the form
   !
@@ -4125,118 +4367,11 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE vanca_init2DSPQ2QP1 (rmatrix,rvanca)
-  
-!<description>
-  ! Checks if the "2D-Saddle-Point-Q2-QP1" VANCA variant can be applied to
-  ! the system given by rmatrix.
-  ! If not, the program is stopped.
-!</description>
-
-!<input>
-  ! The system matrix of the linear system.
-  TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
-!</input>
-
-!<output>
-  ! t_vancaPointer2DNavSt structure that saves algorithm-specific parameters.
-  TYPE(t_vancaPointer2DNavSt), INTENT(OUT) :: rvanca
-!</output>
-
-!</subroutine>
-
-    INTEGER :: i,j
-
-    ! Matrix must be 3x3.
-    IF (rmatrix%ndiagBlocks .NE. 3) THEN
-      PRINT *,'vanca_check2DSPQ1TQ0: System matrix is not 3x3.'
-      STOP
-    END IF
-    
-    ! A(1:2,1:3) must not be virtually transposed and of format 9.
-    ! A(3,:) must be (virtually) transposed. All matrices must be double precision.
-    DO i=1,3
-      DO j=1,3
-      
-        IF (rmatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
-        
-          IF (i .LE. 2) THEN
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .NE. 0) THEN
-              PRINT *,'vanca_init2DSPQ2QP1simple: Transposed submatrices not supported.'
-              STOP
-            END IF
-          ELSE
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .EQ. 0) THEN
-              PRINT *,'vanca_init2DSPQ2QP1simple: B1/B2 submatrices must be virtually'
-              PRINT *,'transposed (LSYSSC_MSPEC_TRANSPOSED)!'
-              STOP
-            END IF
-          END IF
-          
-          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
-            PRINT *,'vanca_init2DSPQ2QP1simple: Only format 7 and 9 matrices supported.'
-            STOP
-          END IF
-
-          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
-            PRINT *,'vanca_init2DSPQ2QP1simple: Only double precision matrices supported.'
-            STOP
-          END IF
-
-          IF (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) THEN
-            PRINT *,'vanca_init2DSPQ2QP1simple: Scaled matrices not supported.'
-            STOP
-          END IF
-          
-        END IF ! neq != 0
-      END DO
-    END DO
-    
-    ! The structure of A(1,3) must be identical to A(3,1) and
-    ! that of A(2,3) must be identical to A(3,2).
-    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
-        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
-      PRINT *,'vanca_init2DSPQ2QP1simple: Structure of B1 and B1^T different!'
-      STOP
-    END IF
-
-    IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
-        (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
-      PRINT *,'vanca_init2DSPQ2QP1simple: Structure of B2 and B2^T different!'
-      STOP
-    END IF
-    
-    ! Fill the output structure with data of the matrices.
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,1)%h_Da,rvanca%p_DA )
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,3)%h_Da,rvanca%p_DB1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,3)%h_Da,rvanca%p_DB2)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,1)%h_Da,rvanca%p_DD1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,2)%h_Da,rvanca%p_DD2)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kcol,rvanca%p_KcolB)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kld, rvanca%p_KldB )
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kcol,rvanca%p_KcolA)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kld, rvanca%p_KldA )
-    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kdiagonal, &
-                               rvanca%p_KdiagonalA)
-    ELSE
-      rvanca%p_KdiagonalA => rvanca%p_KldA
-    END IF
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-  
   SUBROUTINE vanca_2DSPQ2QP1simple (rvanca, rvector, rrhs, domega)
   
 !<description>
   ! This routine applies the specialised diagonal VANCA algorithm for
-  ! 2D Saddle-Point problems with Q2/Q1 discretisation
+  ! 2D Navier-Stokes problems with Q2/Q1 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -4675,7 +4810,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised diagonal VANCA algorithm for
-  ! 2D Saddle-Point problems with Q2/Q1 discretisation
+  ! 2D Navier-Stokes problems with Q2/Q1 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -5125,7 +5260,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised full local system VANCA algorithm for
-  ! 2D Saddle-Point problems with Q2/Q1 discretisation
+  ! 2D Navier-Stokes problems with Q2/Q1 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -5569,7 +5704,7 @@ CONTAINS
   
 !<description>
   ! This routine applies the specialised full local system VANCA algorithm for
-  ! 2D Saddle-Point problems with Q2/Q1 discretisation
+  ! 2D Navier-Stokes problems with Q2/Q1 discretisation
   ! to the system $Ax=b$.
   ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
   ! vector. The rvanca structure has to be initialised before calling
@@ -6016,5 +6151,1077 @@ CONTAINS
 
   END SUBROUTINE
 
+! *****************************************************************************
+! Problem class: VANCA for STEADY OPTIMAL CONTROL PROBLEMS
+! *****************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE vanca_init2DNavierStokesOptC (rmatrix,rvanca)
+  
+!<description>
+  ! Initialises the VANCA variant for 2D Navier-Stokes problems 
+  ! for conformal discretisations.
+  ! Checks if the "2D-Navier-Stokes" VANCA variant 
+  ! for conformal discretisations can be applied to the system given by rmatrix.
+  ! If not, the program is stopped.
+  !
+  ! The substructure rvanca%rvanca2DNavSt is intitialised according
+  ! to the information provided in rmatrix.
+!</description>
+
+!<input>
+  ! The system matrix of the linear system.
+  TYPE(t_matrixBlock), INTENT(IN), TARGET :: rmatrix
+  !</input>
+
+!<inputoutput>
+  ! t_vancaPointer2DSPNavSt structure that saves algorithm-specific parameters.
+  TYPE(t_vanca), INTENT(INOUT) :: rvanca
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: i,j
+    TYPE(t_blockDiscretisation), POINTER :: p_rblockDiscr
+    
+    ! Matrix must be 6x6.
+    IF (rmatrix%ndiagBlocks .NE. 6) THEN
+      CALL output_line ('System matrix is not 6x6.',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF
+    
+    ! A(1:2,1:3), A(4:5,4:6) must not be virtually transposed and of format 9.
+    ! A(3,:),A(6,:) must be (virtually) transposed. All matrices must be double precision.
+    DO i=1,6
+      DO j=1,6
+      
+        IF (rmatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+        
+          IF ( ((i .GE. 1) .AND. (i .LE. 2)) .OR. &
+               ((i .GE. 4) .AND. (i .LE. 5)) ) THEN
+            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .NE. 0) THEN
+              CALL output_line ('Transposed submatrices not supported.',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+              STOP
+            END IF
+          ELSE
+            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                .EQ. 0) THEN
+              CALL output_line ('B1/B2 submatrices must be virtually',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+              CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+              STOP
+            END IF
+          END IF
+          
+          IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
+              (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
+            CALL output_line ('Only format 7 and 9 matrices supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+            STOP
+          END IF
+
+          IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
+            CALL output_line ('Only double precision matrices supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+            STOP
+          END IF
+
+          ! We support scaled matrices only in the mass matrices and to disable 
+          ! a submatrix like A12 or A21 on the off-diagonal!
+          IF ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) .AND. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 0.0_DP) .AND. &
+              (ABS(j-i) .LE. 2)) THEN
+            CALL output_line ('Scaled matrices not supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+            STOP
+          END IF
+          
+          IF ((i .eq. j) .AND. &
+              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) ) THEN
+            CALL output_line ('Scaled matrices not supported.',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+            STOP
+          END IF
+
+        END IF ! neq != 0
+      END DO
+    END DO
+    
+    ! The structure of A(1,3) must be identical to A(3,1) and
+    ! that of A(2,3) must be identical to A(3,2).
+    IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
+        (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
+      CALL output_line ('Structure of B1 and B1^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF
+
+    IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
+        (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
+      CALL output_line ('Structure of B2 and B2^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF      
+  
+    ! The structure of A(4,6) must be identical to A(6,4) and
+    ! that of A(5,6) must be identical to A(6,5).
+    IF ((rmatrix%RmatrixBlock(4,6)%NA .NE. rmatrix%RmatrixBlock(6,4)%NA) .OR. &
+        (rmatrix%RmatrixBlock(4,6)%NEQ .NE. rmatrix%RmatrixBlock(6,4)%NCOLS)) THEN
+      CALL output_line ('Structure of B1 and B1^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF
+
+    IF ((rmatrix%RmatrixBlock(5,6)%NA .NE. rmatrix%RmatrixBlock(6,5)%NA) .OR. &
+        (rmatrix%RmatrixBlock(5,6)%NEQ .NE. rmatrix%RmatrixBlock(6,5)%NCOLS)) THEN
+      CALL output_line ('Structure of B2 and B2^T different!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF      
+  
+    ! Fill the output structure with data of the matrices.
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,3)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DB1)
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,3)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DB2)
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,1)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DD1)
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,2)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DD2)
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kcol,&
+        rvanca%rvanca2DNavStOptC%p_KcolB)
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kld, &
+        rvanca%rvanca2DNavStOptC%p_KldB )
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kcol,&
+        rvanca%rvanca2DNavStOptC%p_KcolA11)
+    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kld, &
+        rvanca%rvanca2DNavStOptC%p_KldA11 )
+    IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kdiagonal, &
+                              rvanca%rvanca2DNavStOptC%p_KdiagonalA11)
+    ELSE
+      rvanca%rvanca2DNavStOptC%p_KdiagonalA11 => rvanca%rvanca2DNavStOptC%p_KldA11
+    END IF
+    
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,1)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DA11 )
+
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,2)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DA22 )
+    
+    ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
+    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,2)%h_Da,&
+          rvanca%rvanca2DNavStOptC%p_DA12 )
+          
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kcol,&
+          rvanca%rvanca2DNavStOptC%p_KcolA12)
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kld, &
+          rvanca%rvanca2DNavStOptC%p_KldA12 )
+          
+      ! Get the structure. It's assumed that A12 and A21 have the same!
+      IF (rmatrix%RmatrixBlock(1,12)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kdiagonal, &
+                                rvanca%rvanca2DNavStOptC%p_KdiagonalA12)
+      ELSE
+        rvanca%rvanca2DNavStOptC%p_KdiagonalA12 => rvanca%rvanca2DNavStOptC%p_KldA12
+      END IF
+      
+      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
+        CALL output_line ('If A12 is given, A21 must also be given!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+        STOP
+      END IF
+      
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(2,1)%h_Da,&
+          rvanca%rvanca2DNavStOptC%p_DA21 )
+    END IF
+    
+    ! Now we come to the dual equation -> A(4:6,4:6).
+    ! We assume that A44 and A55 has the same structure as A11 and A22.
+    
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(4,4)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DA44 )
+
+    ! What is with A55? Is it the same as A44?
+    CALL storage_getbase_double(rmatrix%RmatrixBlock(5,5)%h_Da,&
+        rvanca%rvanca2DNavStOptC%p_DA55 )
+  
+    ! What is with A12 and A21? Do they exist? With a scale factor != 0.0?
+    IF (lsysbl_isSubmatrixPresent(rmatrix,4,5)) THEN
+
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(4,5)%h_Da,&
+          rvanca%rvanca2DNavStOptC%p_DA45 )
+          
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(4,5)%h_Kcol,&
+          rvanca%rvanca2DNavStOptC%p_KcolA45)
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(4,5)%h_Kld, &
+          rvanca%rvanca2DNavStOptC%p_KldA45 )
+          
+      ! Get the structure. It's assumed that A12 and A21 have the same!
+      IF (rmatrix%RmatrixBlock(4,5)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+        CALL storage_getbase_int(rmatrix%RmatrixBlock(4,5)%h_Kdiagonal, &
+                                rvanca%rvanca2DNavStOptC%p_KdiagonalA45)
+      ELSE
+        rvanca%rvanca2DNavStOptC%p_KdiagonalA45 => rvanca%rvanca2DNavStOptC%p_KldA45
+      END IF
+      
+      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,5,4)) THEN
+        CALL output_line ('If A45 is given, A54 must also be given!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+        STOP
+      END IF
+      
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(5,4)%h_Da,&
+          rvanca%rvanca2DNavStOptC%p_DA54 )
+    END IF    
+    
+    ! Get the mass matrix/matrices -- if they are present.
+    ! It's assumed that all mass matrices are the same except for their
+    ! multiplication factors!
+    IF (lsysbl_isSubmatrixPresent (rmatrix,1,4)) THEN
+      IF (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .EQ. LSYSSC_MATRIXD) THEN
+        CALL output_line ('Lumped mass matrices not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+        STOP
+      END IF
+      
+      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,4)%h_Da,&
+          rvanca%rvanca2DNavStOptC%p_DM )
+          
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,4)%h_Kcol,&
+          rvanca%rvanca2DNavStOptC%p_KcolM)
+      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,4)%h_Kld, &
+          rvanca%rvanca2DNavStOptC%p_KldM )
+          
+      IF (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,4)%h_Kdiagonal, &
+                                rvanca%rvanca2DNavStOptC%p_KdiagonalM)
+      ELSE
+        rvanca%rvanca2DNavStOptC%p_KdiagonalM => rvanca%rvanca2DNavStOptC%p_KldM
+      END IF
+      
+    END IF
+
+    ! Get the multiplication factors of the submatrices.
+    ! (-> for a later implementation; currently, the multipliers are not used!)
+    rvanca%rvanca2DNavStOptC%Dmultipliers(1:6,1:6) = &
+        rmatrix%RmatrixBlock(1:6,1:6)%dscaleFactor
+
+    ! Get the block discretisation structure from the matrix.
+    p_rblockDiscr => rmatrix%p_rblockDiscretisation
+    
+    IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
+      CALL output_line ('No discretisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF
+    
+    ! Get the discretisation structure of U,V and P from the block
+    ! discretisation structure.
+    ! We assume that the discretisation of the dual equations are the same
+    ! as for the primal equations!
+    rvanca%rvanca2DNavStOptC%p_rspatialDiscrU => p_rblockDiscr%RspatialDiscretisation(1)
+    rvanca%rvanca2DNavStOptC%p_rspatialDiscrV => p_rblockDiscr%RspatialDiscretisation(2)
+    rvanca%rvanca2DNavStOptC%p_rspatialDiscrP => p_rblockDiscr%RspatialDiscretisation(3)
+    
+    IF (rvanca%rvanca2DNavStOptC%p_rspatialDiscrU%inumFESpaces .NE. &
+        rvanca%rvanca2DNavStOptC%p_rspatialDiscrV%inumFESpaces) THEN
+      CALL output_line (&
+          'Discretisation structures of X- and Y-velocity incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF
+
+    IF ((rvanca%rvanca2DNavStOptC%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
+        (rvanca%rvanca2DNavStOptC%p_rspatialDiscrP%inumFESpaces .NE. &
+          rvanca%rvanca2DNavStOptC%p_rspatialDiscrU%inumFESpaces)) THEN
+      ! Either there must be only one element type for the pressure, or there one
+      ! pressure element distribution for every velocity element distribution!
+      ! If this is not the case, we cannot determine (at least not in reasonable time)
+      ! which element type the pressure represents on a cell!
+      CALL output_line (&
+          'Discretisation structures of velocity and pressure incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      STOP
+    END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE vanca_2DNavierStokesOptC (rvanca2DNavStOptC, rvector, rrhs, domega, csubtype)
+  
+!<description>
+  ! This routine applies the VANCA variant for 2D Navier-Stokes 
+  ! optimal control problems to the system $Ax=b$.
+  ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
+  ! vector. The rvanca structure has to be initialised before calling
+  ! this routine, as this holds a reference to the system matrix.
+  !
+  ! The routine supports arbitrary conformal discretisations, but works
+  ! 'specialised'! That means, there must exist a specialised implementation
+  ! for every type of problem, which is called by this routine.
+  ! So, if the user has a special problem, this routine must tackled to
+  ! call the corresponding specialised VANCA variant for that problem!
+  ! If a matrix/problem structure is not supported, the routine will stop
+  ! the program!
+!</description>
+
+!<input>
+  ! The right-hand-side vector of the system
+  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  
+  ! Relaxation parameter. Standard=1.0_DP.
+  REAL(DP), INTENT(IN)                    :: domega
+
+  ! The initial solution vector. Is replaced by a new iterate.
+  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+
+  ! The subtype of VANCA that should handle the above problem class.
+  ! One of the VANCATP_xxxx constants, e.g. VANCATP_DIAGONAL.
+  INTEGER :: csubtype
+  
+!</input>
+
+!<inputoutput>
+  ! t_vanca structure that saves algorithm-specific parameters.
+  TYPE(t_vancaPointer2DNavStOptC), INTENT(INOUT) :: rvanca2DNavStOptC
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: ielementdist
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementList
+    TYPE(t_elementDistribution), POINTER :: p_relementDistrU
+    TYPE(t_elementDistribution), POINTER :: p_relementDistrV
+    TYPE(t_elementDistribution), POINTER :: p_relementDistrP 
+    
+    ! 2D Navier Stokes problem.
+
+    ! Loop through the element distributions of the velocity.
+    DO ielementdist = 1,rvanca2DNavStOptC%p_rspatialDiscrU%inumFESpaces
+    
+      ! Get the corresponding element distributions of U, V and P.
+      p_relementDistrU => &
+          rvanca2DNavStOptC%p_rspatialDiscrU%RelementDistribution(ielementdist)
+      p_relementDistrV => &
+          rvanca2DNavStOptC%p_rspatialDiscrV%RelementDistribution(ielementdist)
+      
+      ! Either the same element for P everywhere, or there must be given one
+      ! element distribution in the pressure for every velocity element distribution.
+      IF (rvanca2DNavStOptC%p_rspatialDiscrP%inumFESpaces .GT. 1) THEN
+        p_relementDistrP => &
+            rvanca2DNavStOptC%p_rspatialDiscrP%RelementDistribution(ielementdist)
+      ELSE
+        p_relementDistrP => &
+            rvanca2DNavStOptC%p_rspatialDiscrP%RelementDistribution(1)
+      END IF
+      
+      ! Get the list of the elements to process.
+      ! We take the element list of the X-velocity as 'primary' element list
+      ! and assume that it coincides to that of the Y-velocity (and to that
+      ! of the pressure).
+      CALL storage_getbase_int (p_relementDistrU%h_IelementList,p_IelementList)
+      
+      ! Which element combination do we have now?
+      IF ((elem_getPrimaryElement(p_relementDistrU%itrialElement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrV%itrialElement) .EQ. EL_Q1T) .AND. &
+          (elem_getPrimaryElement(p_relementDistrP%itrialElement) .EQ. EL_Q0)) THEN
+        
+        ! Q1~/Q1~/Q0 discretisation
+        
+        ! Apply the conformal VANCA that allows different matrices
+        ! in A11, A12, A21 and A22!
+        CALL vanca_2DNSSOCQ1TQ0fullCoupConf (rvanca2DNavStOptC, &
+            rvector, rrhs, domega,p_IelementList)
+          
+      ELSE
+        PRINT *,'VANCA: Unsupported discretisation!'
+        STOP
+        
+      END IF
+      
+    END DO
+      
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  ! 2D VANCA, 'full' version for fully coupled Navier-Stokes systems with
+  ! primal and dual equations.
+  ! Supports Q1~/Q0 discretisation only.
+  ! Matrix must be of the form
+  !
+  !    ( A11  A12  B1  aM           )
+  !    ( A21  A22  B2       aM      )
+  !    ( D1^T D2^T                  )
+  !    ( bM            A44  A45  B1 )
+  !    (      bM       A54  A55  B2 )
+  !    (               D1^T D2^T    )
+  !
+  ! with D1/D2 having the same structure as B1/B2 and the 'transposed'
+  ! flag set (LSYSSC_MSPEC_TRANSPOSED).
+  ! In general, B1 and B2 are the same matrices as D1 and D2. The only
+  ! difference: Some rows in B1/B2 may be replaced by zero lines to implement
+  ! Dirichlet boundary conditions.
+  ! The mass matrices must all be the same except for their scaling factors!
+  ! Here, a and b are arbitrary multiplication factors for the mass matrices.
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE vanca_2DNSSOCQ1TQ0fullCoupConf (rvanca, rvector, rrhs, domega, IelementList)
+  
+!<description>
+  ! This routine applies the specialised full local system VANCA algorithm for
+  ! 2D Navier Stokes optimal control problems with Q1~/Q0 discretisation
+  ! to the system $Ax=b$.
+  ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
+  ! vector. The rvanca structure has to be initialised before calling
+  ! this routine, as this holds a reference to the system matrix.
+  !
+  ! vanca_2DNSSOCQ1TQ0fullCoupConf supports fully coupled velocity submatrices.
+  ! The matrices A11, A22, A44 and A55 must have the same structure. 
+  ! The matrices A12 and A21 must have the same structure. 
+  ! The matrices A45 and A54 must have the same structure. 
+  ! The structure of A11 and A12 may be different from each other.
+!</description>
+
+!<input>
+  ! t_vancaPointer2DNavSt structure that saves algorithm-specific parameters.
+  TYPE(t_vancaPointer2DNavStOptC), INTENT(IN) :: rvanca
+
+  ! The right-hand-side vector of the system
+  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  
+  ! Relaxation parameter. Standard=1.0_DP.
+  REAL(DP), INTENT(IN)                    :: domega
+
+  ! A list of element numbers where VANCA should be applied to.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+!</input>
+
+!<inputoutput>
+  ! The initial solution vector. Is replaced by a new iterate.
+  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local vairables
+    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
+    INTEGER :: inode,idof
+    
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA11
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA11
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA11,p_DA12,p_DA21,p_DA22
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA45
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA44,p_DA45,p_DA54,p_DA55
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolM
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldM
+    REAL(DP), DIMENSION(:), POINTER             :: p_DM
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    
+    ! Triangulation information
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_EDGEIDX)    :: NMT
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    
+    ! Local arrays for informations about one element
+    INTEGER, PARAMETER :: nnvel = 4      ! Q1T = 4 DOF's per velocity
+    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    INTEGER, PARAMETER :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
+    INTEGER, PARAMETER :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
+    INTEGER, PARAMETER :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
+    INTEGER, PARAMETER :: nnld = 2*nnprimal
+    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
+    REAL(DP), DIMENSION(nnld,nnld) :: AA
+    REAL(DP), DIMENSION(nnld) :: FF
+    
+    ! Offsets of the 'local' solution parts in the 'local' solution vector
+    INTEGER, PARAMETER :: lofsu = 0
+    INTEGER, PARAMETER :: lofsv = nnvel
+    INTEGER, PARAMETER :: lofsp = 2*nnvel
+    INTEGER, PARAMETER :: lofsl1 = 2*nnvel+1
+    INTEGER, PARAMETER :: lofsl2 = 2*nnvel+1+nnvel
+    INTEGER, PARAMETER :: lofsxi = 2*nnvel+1+2*nnvel
+    
+    ! LAPACK temporary space
+    INTEGER :: Ipiv(nnld),ilapackInfo
+    
+    ! Offset information in arrays.
+    ! Primal variables
+    INTEGER(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    
+    ! Dual variables
+    INTEGER(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    
+    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
+    REAL(DP) :: daux,daux2
+    
+    ! Get pointers to the system matrix, so we don't have to write
+    ! so much - and it's probably faster.
+    
+    ! Structure of A11 is assumed to be the same as A22
+    p_KcolA11 => rvanca%p_KcolA11
+    p_KldA11 => rvanca%p_KldA11
+    p_DA11 => rvanca%p_DA11
+    p_DA22 => rvanca%p_DA22
+
+    ! Structure of A12 is assumed to be the same as A21
+    p_KcolA12 => rvanca%p_KcolA12
+    p_KldA12 => rvanca%p_KldA12
+    p_DA12 => rvanca%p_DA12
+    p_DA21 => rvanca%p_DA21
+    
+    p_KcolB => rvanca%p_KcolB
+    p_KldB => rvanca%p_KldB
+    p_DB1 => rvanca%p_DB1
+    p_DB2 => rvanca%p_DB2
+    p_DD1 => rvanca%p_DD1
+    p_DD2 => rvanca%p_DD2
+    
+    ! Structure of A44 is assumed to be the same as A55, A11 and A22
+    p_DA44 => rvanca%p_DA44
+    p_DA55 => rvanca%p_DA55
+
+    ! Structure of A45 is assumed to be the same as A54
+    p_KcolA45 => rvanca%p_KcolA45
+    p_KldA45 => rvanca%p_KldA45
+    p_DA45 => rvanca%p_DA45
+    p_DA54 => rvanca%p_DA54
+    
+    ! Mass matrix - if it's given, otherwise the pointers will be set to NULL
+    ! because of the initialisation of the structure!
+    p_KcolM => rvanca%p_KcolM
+    p_KldM => rvanca%p_KldM
+    p_DM => rvanca%p_DM
+
+    ! Get pointers to the vectors, RHS, get triangulation information
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+                                p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
+    CALL lsysbl_getbase_double (rvector,p_Dvector)
+    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    
+    ! Get the relative offsets of the 2nd and 3rd solution of the component
+    ioffsetu = 0
+    ioffsetv = rvector%RvectorBlock(1)%NEQ
+    ioffsetp = ioffsetv+rvector%RvectorBlock(2)%NEQ
+
+    ! Get the offsets of lambda1, lambda2 and xi, so the offsets
+    ! of the dual solution vectors.
+    ioffsetl1 = ioffsetp+rvector%RvectorBlock(3)%NEQ
+    ioffsetl2 = ioffsetl1+rvector%RvectorBlock(4)%NEQ
+    ioffsetxi = ioffsetl2+rvector%RvectorBlock(5)%NEQ
+    
+    !=======================================================================
+    !     Block Gauss-Seidel on Schur Complement
+    !=======================================================================
+
+    ! Basic algorithm:
+    !
+    ! What are we doing here? Well, we want to perform 
+    ! *preconditioning*, i.e. we have to solve the problem
+    !
+    !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
+    !
+    ! for a "special" preconditioner C which we define in a moment.
+    ! This is equivalent to solving the system
+    !
+    !   C (x_new)  = x_old
+    !
+    ! C should be some approximation to A. Imagine our global system:
+    !
+    !     [ A   B ] (u) = (f)
+    !     [ B^t 0 ] (p)   (g)
+    !
+    ! In the Navier-Stokes equations with (u,p) being the preconditioned
+    ! vector, there should be g=0 - but this cannot be assumed
+    ! as it does not happen in general.
+    ! Now the algorithm for generating a new (u,p) vector from the old
+    ! one reads roughly as follows:
+    !
+    ! a) Restrict to a small part of the domain, in our case to one cell.
+    ! b) Fetch all the data (velocity, pressure) on that cell. On the
+    !    first cell, we have only "old" velocity entries. These values
+    !    are updated and then the calculation proceeds with the 2nd cell.
+    !
+    !           old                      new     
+    !        +---X---+                +---X---+
+    !        |       |                |       |
+    !    old X       X       -->  new X   X   X new
+    !        |   1   |                |   1   |
+    !        +---X---+                +---X---+
+    !           old                      new     
+    !
+    !    From the second cell on, there might be "old" data and "new" 
+    !    data on that cell - the old data that has not been updated and
+    !    perhaps some already updated velocity data from a neighbor cell.
+    !    
+    !           new     old                   new       new    
+    !        +---X---+---X---+             +---X---+---X---+
+    !        |     1 |     2 |             |     1 |     2 |
+    !    new X       X       X old --> new X       X       X new
+    !        |       |new    |             |       |newer  |
+    !        +---X---+---X---+             +---X---+---X---+
+    !           new     old                   new       new    
+    !
+    !    These values are updated and then the calculation proceeds
+    !    with the next cell.
+    !    As can be seen in the above picture, the "new" node in the
+    !    middle is even going to be a "newer" node when handled again
+    !    for the 2nd cell. This is meant by "Gauss-Seldel" character:
+    !    Information is updated subsequently by using "old" data and
+    !    "new" data from a previous calculation.
+    !
+    ! So we start with a loop over all elements in the list
+
+    DO ielidx=1,SIZE(IelementList)
+    
+      ! Get the element number which is to be processed.
+      iel = IelementList(ielidx)
+    
+      ! Clear the 'local system matrix'.
+      AA(:,:) = 0.0_DP
+      
+      ! We now have the element
+      !                                               
+      ! +---------+                       +----3----+
+      ! |         |                       |         |
+      ! |   IEL   |   with DOF's          4    P    2      
+      ! |         |                       |    Q0   |
+      ! +---------+                       +----1----+
+      !                                               
+      !
+      ! Fetch the pressure P on the current element into FF.
+      ! The numbers of the DOF's coincide with the definition
+      ! in dofmapping.f90!
+    
+      ! Get the primal pressure
+      FF(1+lofsp) = p_Drhs(iel+ioffsetp)
+      
+      ! Get the dual pressure
+      FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
+      
+      ! Get the velocity DOF's on the current element.
+      ! We assume: DOF 1..4 = edge-NVT.
+      ! That's the same implementation as in dofmapping.f90!
+      IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+
+      ! Loop over all U-nodes of that element.
+      DO inode=1,nnvel
+      
+        ! Get the DOF we have to tackle:
+        idof = IdofGlobal(inode)
+        
+        ! Set FF initially to the value of the right hand
+        ! side vector that belongs to our current DOF corresponding
+        ! to inode.
+        
+        ! Primal equation
+        FF(inode+lofsu) = p_Drhs(idof+ioffsetu)
+        FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
+
+        ! dual equation
+        FF(inode+lofsl1) = p_Drhs(idof+ioffsetl1)
+        FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
+        
+        ! What do we have at this point?                           
+        ! FF     : "local" RHS vector belonging to the DOF's on the
+        !          current element                                 
+        ! AA     : Diagonal entries of A belonging to these DOF's  
+        !                                                          
+        ! And at the moment:                                       
+        ! idof      : number of current DOF on element IEL            
+        ! inode     : "local" number of DOF on element IEL, i.e.      
+        !              number of the edge         
+        !                     
+        ! Now comes the crucial point with the "update": How to         
+        ! subsequently update the vertex values, such that the whole    
+        ! thing still converges to the solution, even if a node         
+        ! is updated more than once? Here, we use a typical             
+        ! matrix-decomposition approach:                                
+        !                                                               
+        ! Again consider the problem:                                   
+        !                                                               
+        !    [ A   B  M     ] (u)  = (f  )                                        
+        !    [ B^t 0        ] (p)    (g  )                                        
+        !    [ M      A   B ] (l)    (fl )                                        
+        !    [        B^t 0 ] (xi)   (fxi)                                        
+        !                                                               
+        ! We assume, that all components in the vector (u,p) are        
+        ! given - except for the velocity and pressure unknowns 
+        ! on the current element; these 21 unknowns  
+        ! are located anywhere in the (u,p) vector. The idea is to      
+        ! shift "everything known" to the right hand side to obtain     
+        ! a system for only these unknowns!   
+        !
+        ! Extracting all the lines of the system that correspond to     
+        ! DOF's on our single element IEL results in rectangular
+        ! systems of the form                                            
+        !                                                               
+        !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )                                
+        !    [ B~^t       0                 ] (u )   (f2 )                                
+        !    [ === M^ ===     === A^ === B~ ] (| )   (g  )                                   
+        !    [                B~^t       0  ] (p )   (fl1)
+        !                                     (| )   (fl2)
+        !                                     (l )   (flg)
+        !                                     (| )
+        !                                     (xi)
+        !                                     
+        !                                                               
+        ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
+        ! 2*1 pressure elements on the adjacent cells, so we have       
+        ! 2 columns in the B-matrix.                                    
+        !                                                               
+        !        IEL                              IEL                   
+        !     |--------|             |--------|--------|                
+        !     |        |             |        |        |                
+        !     |   P    |      or     |   Q    X   P    |                
+        !     |   X    |             |        |        |                
+        !   --|--------|--           |--------|--------|                
+        !
+        !
+        ! Now, throw all summands to the RHS vector to build a local
+        ! 'defect' on our single element IEL.
+        !                                                               
+        !  (d1 ) = (f1 ) -  [ === A^ === B~  === M^ ====   ] (| )                                 
+        !  (d2 )   (f2 )    [ B~^t       0                 ] (u )                                 
+        !  (dg )   (g  )    [ === M^ ===     === A^ === B~ ] (| )                                    
+        !  (dl1)   (fl1)    [                B~^t       0  ] (p ) 
+        !  (dl2)   (fl2)                                     (| ) 
+        !  (dlg)   (flg)                                     (l ) 
+        !                                                    (| )
+        !                                                    (xi)
+        !
+        ! Extract those entries in the A-, B- and M-matrices to our local
+        ! matrix AA, which belong to DOF's in our current solution vector.
+        !
+        ! At first build: fi = fi-Aui
+        
+        ia1 = p_KldA11(idof)
+        ia2 = p_KldA11(idof+1)-1
+        DO ia = ia1,ia2
+          ! Calculate:
+          !
+          !   ( du  ) = ( du  ) - ( A11  .   .   .   .   .  ) ( u  )
+          !   ( dv  )   ( dv  )   (  .  A22  .   .   .   .  ) ( v  )
+          !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+          !   ( dl1 )   ( dl1 )   (  .   .   .  A44  .   .  ) ( l1 )
+          !   ( dl2 )   ( dl2 )   (  .   .   .   .  A55  .  ) ( l2 )
+          !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+          J = p_KcolA11(ia)
+          
+          ! Primal equation:
+          FF(inode+lofsu) = FF(inode+lofsu)-p_DA11(ia)*p_Dvector(J+ioffsetu)
+          FF(inode+lofsv) = FF(inode+lofsv)-p_DA22(ia)*p_Dvector(J+ioffsetv)
+
+          ! dual equation
+          FF(inode+lofsl1) = FF(inode+lofsl1)-p_DA44(ia)*p_Dvector(J+ioffsetl1)
+          FF(inode+lofsl2) = FF(inode+lofsl2)-p_DA55(ia)*p_Dvector(J+ioffsetl2)
+          
+          ! Whereever we find a DOF that couples to another DOF on the 
+          ! same element, we put that to both A-blocks of our local matrix.
+          DO k=1,nnvel
+            IF (j .EQ. IdofGlobal(k)) THEN
+              AA (inode+lofsu,k+lofsu) = p_DA11(ia)
+              AA (inode+lofsv,k+lofsv) = p_DA22(ia)
+              
+              AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)
+              AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)
+              EXIT
+            END IF
+          END DO          
+        END DO
+
+        ! Handle the 'off-diagonal' matrices A12 and A21
+        
+        IF (ASSOCIATED(p_KldA12)) THEN
+          ia1 = p_KldA12(idof)
+          ia2 = p_KldA12(idof+1)-1
+          DO ia = ia1,ia2
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .  A12  .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   ( A21  .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            J = p_KcolA12(ia)
+            FF(inode+lofsu) = FF(inode+lofsu)-p_DA12(ia)*p_Dvector(J+ioffsetv)
+            FF(inode+lofsv) = FF(inode+lofsv)-p_DA21(ia)*p_Dvector(J+ioffsetu)
+            
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode,k+nnvel) = p_DA12(ia)
+                AA (inode+nnvel,k) = p_DA21(ia)
+                EXIT
+              END IF
+            END DO          
+          END DO
+        END IF
+                
+        ! Handle the 'off-diagonal' matrices A45 and A54 if they exist
+        IF (ASSOCIATED(p_KldA45)) THEN
+          ia1 = p_KldA45(idof)
+          ia2 = p_KldA45(idof+1)-1
+          DO ia = ia1,ia2
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .   .   .   .  A45  .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .  A54  .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            J = p_KcolA45(ia)
+            FF(inode+lofsl1) = FF(inode+lofsl1)-p_DA45(ia)*p_Dvector(J+ioffsetl2)
+            FF(inode+lofsl2) = FF(inode+lofsl2)-p_DA54(ia)*p_Dvector(J+ioffsetl1)
+            
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)
+                AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)
+                EXIT
+              END IF
+            END DO          
+          END DO
+        END IF
+                
+        ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
+        
+        ib1=p_KldB(idof)
+        ib2=p_KldB(idof+1)-1
+        DO ib = ib1,ib2
+          ! Calculate:
+          !
+          !   ( du  ) = ( du  ) - (  .   .  B1   .   .   .  ) ( u  )
+          !   ( dv  )   ( dv  )   (  .   .  B2   .   .   .  ) ( v  )
+          !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+          !   ( dl1 )   ( dl1 )   (  .   .   .   .   .  B1  ) ( l1 )
+          !   ( dl2 )   ( dl2 )   (  .   .   .   .   .  B2  ) ( l2 )
+          !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+          J = p_KcolB(ib)
+          
+          ! primal equation
+          daux = p_Dvector(j+ioffsetp)
+          FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux
+          FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
+
+          ! dual equation
+          daux2 = p_Dvector(j+ioffsetxi)
+          FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2
+          FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2
+          
+          ! Don't incorporate the B-matrices into AA yet; this will come later!
+        END DO
+        
+        ! The mass matrix defect.
+        IF (ASSOCIATED(p_KldM)) THEN
+          ! We assume: multiplier of A(1,4) = multiplier of A(2,5)
+          daux = rvanca%Dmultipliers(1,4)
+          
+          ! We assume: multiplier of A(4,1) = multiplier of A(5,2)
+          daux2 = rvanca%Dmultipliers(4,1)
+          
+          ia1 = p_KldM(idof)
+          ia2 = p_KldM(idof+1)-1
+          DO ia = ia1,ia2
+
+            J = p_KcolM(ia)
+
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .  aM   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .  aM   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   ( bM   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .  bM   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            FF(inode+lofsu) = FF(inode+lofsu)-daux*p_DM(ia)*p_Dvector(J+ioffsetl1)
+            FF(inode+lofsv) = FF(inode+lofsv)-daux*p_DM(ia)*p_Dvector(J+ioffsetl2)
+
+            FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DM(ia)*p_Dvector(J+ioffsetu)
+            FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DM(ia)*p_Dvector(J+ioffsetv)
+            
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
+                AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
+                
+                AA (k+lofsl1,inode+lofsu) = daux2*p_DM(ia)
+                AA (k+lofsl2,inode+lofsv) = daux2*p_DM(ia)
+                EXIT
+              END IF
+            END DO          
+          END DO
+        END IF
+        
+        ! Ok, up to now, all loops are clean and vectoriseable. Now the only
+        ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
+        ! We have to find in the B-matrices the column that corresponds
+        ! to our element and pressure DOF IEL - which makes it necessary
+        ! to compare the column numbers in KcolB with IEL.
+        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! and so to element numbers. 
+        !
+        ! Btw: Each row of B has at most two entries:
+        !
+        !      IEL                              IEL
+        !   |--------|             |--------|--------|
+        !   |        |             |        |        |
+        !   |   P1   |      or     |   P2   X   P1   |
+        !   |        |             |        |        |
+        ! --|---X----|--           |--------|--------|
+        !
+        ! Either two (if the velocity DOF is an edge with two neighbouring
+        ! elements) or one (if the velocity DOF is at an edge on the boundary
+        ! and there is no neighbour).
+        DO ib = ib1,ib2
+        
+          ! Calculate:
+          !
+          !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+          !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+          !   ( dp  )   ( dp  )   ( D1  D2   .   .   .   .  ) ( p  )
+          !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+          !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+          !   ( dxi )   ( dxi )   (  .   .   .  D1  D2   .  ) ( xi )
+          !
+          ! In AA, we simultaneously set up (locally):
+          !
+          !   (  .   .  B1   .   .   .  ) 
+          !   (  .   .  B2   .   .   .  ) 
+          !   ( D1  D2   .   .   .   .  ) 
+          !   (  .   .   .   .   .  B1  ) 
+          !   (  .   .   .   .   .  B2  ) 
+          !   (  .   .   .  D1  D2   .  ) 
+
+          IF (p_KcolB(ib) .EQ. IEL) THEN
+          
+            J = p_KcolB(ib)
+            
+            ! Get the entries in the B-matrices.
+            ! Primal equation
+            AA(inode+lofsu,1+lofsp) = p_DB1(ib)
+            AA(inode+lofsv,1+lofsp) = p_DB2(ib)
+
+            ! The same way, get DD1 and DD2.
+            ! Note that DDi has exacty the same matrix structrure as BBi and is noted
+            ! as 'transposed matrix' only because of the transposed-flag.
+            ! So we can use "ib" as index here to access the entry of DDi:
+            AA(1+lofsp,inode+lofsu) = p_DD1(ib)
+            AA(1+lofsp,inode+lofsv) = p_DD2(ib)
+
+            ! The same for the dual equation
+            AA(inode+lofsl1,1+lofsxi) = p_DB1(ib)
+            AA(inode+lofsl2,1+lofsxi) = p_DB2(ib)
+
+            AA(1+lofsxi,inode+lofsl1) = p_DD1(ib)
+            AA(1+lofsxi,inode+lofsl2) = p_DD2(ib)
+
+            ! Build the pressure entry in the local defect vector:
+            !   f_i = (f_i-Aui) - D_i pi
+            ! or more precisely (as D is roughly B^T):
+            !   f_i = (f_i-Aui) - (B^T)_i pi
+            FF(1+lofsp) = FF(1+lofsp) &
+                        - AA(1+lofsp,inode+lofsu)*p_Dvector(idof+ioffsetu) &
+                        - AA(1+lofsp,inode+lofsv)*p_Dvector(idof+ioffsetv)
+          
+            ! The same for the dual pressure
+            FF(1+lofsxi) = FF(1+lofsxi) &
+                         - AA(1+lofsxi,inode+lofsl1)*p_Dvector(idof+ioffsetl1) &
+                         - AA(1+lofsxi,inode+lofsl2)*p_Dvector(idof+ioffsetl2)
+          
+            ! Quit the loop - the other possible entry belongs to another 
+            ! element, not to the current one
+            EXIT
+          END IF
+        END DO ! ib
+        
+      END DO ! inode
+    
+      ! Now we make a defect-correction approach for this system:
+      !
+      !    x_new  =  x  +  P( \omega C^{-1} (f~ - A~ x) )
+      !                                     -----------
+      !                                        =d~
+      !
+      ! Here the 'projection' operator simply converts the small
+      ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
+      ! of the same size as x - what is easy using the number of
+      ! the DOF's on the element.
+      !
+      ! For C, we use our local AA, i.e. applying C^{-1} means to
+      ! solve the local system AA dd = FF for dd. The local defect dd is then
+      ! added back to the global solution vector.
+      
+      CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
+      
+      ! Ok, we got the update vector in FF. Incorporate this now into our
+      ! solution vector with the update formula
+      !
+      !  x_{n+1} = x_n + domega * y!
+      
+      DO inode=1,nnvel
+        ! Update of the primal velocity vectors
+        p_Dvector(idofGlobal(inode)+ioffsetu) &
+          = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
+        p_Dvector(idofGlobal(inode)+ioffsetv) &
+          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+
+        ! Update of the dual velocity vectors
+        p_Dvector(idofGlobal(inode)+ioffsetl1) &
+          = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
+        p_Dvector(idofGlobal(inode)+ioffsetl2) &
+          = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
+      END DO
+      
+      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                domega * FF(1+lofsp)
+
+      p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
+                                 domega * FF(1+lofsxi)
+    
+    END DO ! iel
+
+  END SUBROUTINE
 
 END MODULE 

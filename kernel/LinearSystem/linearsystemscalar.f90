@@ -14297,4 +14297,46 @@ CONTAINS
 
   END FUNCTION
 
+  !****************************************************************************
+  
+!<function>
+  
+  ELEMENTAL LOGICAL FUNCTION lsyssc_isMatrixPresent (rmatrix, &
+      bignoreScaleFactor) RESULT (bispresent)
+  
+!<description>
+  ! This routine checks if the matrix is defined or empty.
+!</description>
+  
+!<input>
+  ! The matrix to be checked
+  TYPE(t_matrixScalar), INTENT(IN)               :: rmatrix
+  
+  ! OPTIONAL: Whether to check the scaling factor.
+  ! FALSE: A scaling factor of 0.0 disables a submatrix. 
+  !        This is the standard setting.
+  ! TRUE: The scaling factor is ignored.
+  LOGICAL, INTENT(IN), OPTIONAL :: bignoreScaleFactor
+!</input>
+
+!<function>
+  ! Whether the matrix structure realises an existing matrix exists or not.
+!</output>  
+
+!</function>
+    LOGICAL :: bscale
+
+    IF (PRESENT(bignoreScaleFactor)) THEN
+      bscale = bignoreScaleFactor
+    ELSE
+      bscale = .FALSE.
+    END IF
+
+    bispresent = &
+      (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) &
+      .AND. ((.NOT. bscale) .OR. &
+             (rmatrix%dscaleFactor .NE. 0.0_DP))
+
+  END FUNCTION
+    
 END MODULE

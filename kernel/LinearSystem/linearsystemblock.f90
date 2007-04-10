@@ -125,6 +125,9 @@
 !#
 !# 36.) lsysbl_deriveSubmatrix
 !#      -> Extracts a submatrix from a block matrix
+!#
+!# 37.) lsysbl_isSubmatrixPresent
+!#      -> Checks if a submatrix of a blockmatrix is present
 !# </purpose>
 !##############################################################################
 
@@ -1514,8 +1517,7 @@ CONTAINS
     DO x=1,rMatrix%ndiagBlocks
       
       ! Only call the MV when there is a scalar matrix that we can use!
-      IF ((rMatrix%RmatrixBlock(y,x)%NA .NE. 0) .AND. &
-          (rMatrix%RmatrixBlock(y,x)%dscaleFactor .NE. 0.0_DP)) THEN
+      IF (lsysbl_isSubmatrixPresent (rmatrix,y,x)) THEN
         CALL lsyssc_scalarMatVec (rMatrix%RmatrixBlock(y,x), rx%RvectorBlock(x), &
                                   ry%RvectorBlock(y), cx, cyact)
         cyact = 1.0_DP
@@ -3153,5 +3155,54 @@ CONTAINS
     CALL lsysbl_updateMatStrucInfo(rdestMatrix)
     
   END SUBROUTINE
+    
+  !****************************************************************************
+  
+!<function>
+  
+  ELEMENTAL LOGICAL FUNCTION lsysbl_isSubmatrixPresent (rmatrix, &
+      irow,icolumn,bignoreScaleFactor) RESULT (bispresent)
+  
+!<description>
+  ! This routine checks if the submatrix at position (irow,icolumn)
+  ! is present in the matrix rmatrix or not.
+!</description>
+  
+!<input>
+  ! The block matrix.
+  TYPE(t_matrixBlock), INTENT(IN)               :: rmatrix
+  
+  ! Submatrix row to be checked
+  INTEGER, INTENT(IN) :: irow
+  
+  ! Submatrix column to be checked
+  INTEGER, INTENT(IN) :: icolumn
+  
+  ! OPTIONAL: Whether to check the scaling factor.
+  ! FALSE: A scaling factor of 0.0 disables a submatrix. 
+  !        This is the standard setting.
+  ! TRUE: The scaling factor is ignored.
+  LOGICAL, INTENT(IN), OPTIONAL :: bignoreScaleFactor
+!</input>
+
+!<function>
+  ! Whether the submatrix at position (irow,icolumn) exists or not.
+!</output>  
+
+!</function>
+    LOGICAL :: bscale
+
+    IF (PRESENT(bignoreScaleFactor)) THEN
+      bscale = bignoreScaleFactor
+    ELSE
+      bscale = .FALSE.
+    END IF
+
+    bispresent = &
+      (rmatrix%RmatrixBlock(irow,icolumn)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) &
+      .AND. ((.NOT. bscale) .OR. &
+             (rmatrix%RmatrixBlock(irow,icolumn)%dscaleFactor .NE. 0.0_DP))
+
+  END FUNCTION
     
 END MODULE

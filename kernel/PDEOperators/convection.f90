@@ -2582,21 +2582,21 @@ CONTAINS
       STOP
     END IF
 
-    IF ((rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) .AND. &
+    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
       STOP
     END IF
 
-    IF ((rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) .AND. &
+    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
       STOP
     END IF
 
-    IF ((rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) .AND. &
+    IF (lsysbl_isSubmatrixPresent(rmatrix,2,1) .AND. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
@@ -2606,8 +2606,8 @@ CONTAINS
     ! If Newton must be calculated, make sure A12 and A21 exists and that
     ! all A11, A12, A21 and A22 are independent of each other!
     IF (rconfig%dnewton .NE. 0.0_DP) THEN
-      IF ((rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIXUNDEFINED) .OR. &
-          (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .EQ. LSYSSC_MATRIXUNDEFINED)) THEN
+      IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,2) .OR. &
+          .NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
         PRINT *,'SD: For the Newton matrix, A12 and A21 must be defined!'
         STOP
       END IF
@@ -3029,7 +3029,7 @@ CONTAINS
       CALL storage_getbase_double (rmatrix%RmatrixBlock(1,1)%h_Da,p_Da11)
       CALL storage_getbase_double (rmatrix%RmatrixBlock(2,2)%h_Da,p_Da22)
       
-      IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) THEN
+      IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
         CALL storage_getbase_double (rmatrix%RmatrixBlock(1,2)%h_Da,p_Da12)
         CALL storage_getbase_double (rmatrix%RmatrixBlock(2,1)%h_Da,p_Da21)
       ELSE
@@ -3041,7 +3041,7 @@ CONTAINS
     CALL storage_getbase_int (rmatrix%RmatrixBlock(1,1)%h_Kcol,p_Kcol)
     CALL storage_getbase_int (rmatrix%RmatrixBlock(1,1)%h_Kld,p_Kld)
     
-    IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) THEN
+    IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
       CALL storage_getbase_int (rmatrix%RmatrixBlock(1,2)%h_Kcol,p_Kcol12)
       CALL storage_getbase_int (rmatrix%RmatrixBlock(1,2)%h_Kld,p_Kld12)
     ELSE

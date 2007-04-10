@@ -588,11 +588,17 @@ MODULE linearsolver
   ! Full VANCA, 2D Navier-Stokes proble, general discretisation
   INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVST          = 4
 
-  ! Full VANCA, 2D Navier-Stokes proble, general discretisation.
+  ! Full VANCA, 2D Navier-Stokes problem, general discretisation.
   ! Specialised 'direct' version, i.e. when 
   ! used as a smoother in multigrid, this bypasses the usual defect
   ! correction approach to give an additional speedup. 
   INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTDIRECT    = 5
+
+  ! Full VANCA, 2D Navier-Stokes optimal control problem, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  INTEGER, PARAMETER :: LINSOL_VANCA_2DFNAVSTOCDIRECT  = 21
 
 !</constantblock>
 
@@ -4694,6 +4700,12 @@ CONTAINS
       CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANCA%rvanca,&
                                 VANCAPC_2DNAVIERSTOKES,VANCATP_FULL)
+
+    CASE (LINSOL_VANCA_2DFNAVSTOCDIRECT )
+      ! Full VANCA for Navier-Stokes optimal control
+      CALL vanca_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANCA%rvanca,&
+                                VANCAPC_2DNAVIERSTOKESOPTC,VANCATP_FULL)
                                 
     END SELECT
       
@@ -10504,7 +10516,8 @@ CONTAINS
     SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
     CASE (LINSOL_VANCA_GENERALDIRECT,&
           LINSOL_VANCA_2DNAVSTDIRECT,&
-          LINSOL_VANCA_2DFNAVSTDIRECT)
+          LINSOL_VANCA_2DFNAVSTDIRECT,&
+          LINSOL_VANCA_2DFNAVSTOCDIRECT)
       ! Yes, this solver can be applied to a given solution/rhs vector directly.
       ! Call it nmaxIterations times to perform the smoothing.
       DO i=1,rsolverNode%nmaxIterations
