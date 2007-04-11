@@ -1,0 +1,14 @@
+# ------------------------------------------------------------------------
+# Time discretization
+# 
+# This file contains parameters configuring the time discretization
+# of the problem.
+# ------------------------------------------------------------------------
+
+#####################
+[TIME-DISCRETISATION]
+#####################
+
+# Type of problem (ISTAT): 0=steady,1=nonsteady
+
+itimedependence = 0                       # ISTAT
