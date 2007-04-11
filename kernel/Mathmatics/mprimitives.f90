@@ -27,6 +27,9 @@
 !#
 !# 5.) mprim_invertMatrixPivotDble
 !#     -> Inverts a 4x4 matrix directly with pivoting.
+!#
+!# 6.) mprim_signum
+!#     -> Signum function
 !# 
 !# </purpose>
 !##############################################################################
@@ -36,6 +39,12 @@ MODULE mprimitives
   USE fsystem
   
   IMPLICIT NONE
+  
+  INTERFACE mprim_signum
+    MODULE PROCEDURE mprim_signum_dble
+    MODULE PROCEDURE mprim_signum_real
+    MODULE PROCEDURE mprim_signum_int32
+  END INTERFACE
 
 CONTAINS
 
@@ -72,6 +81,100 @@ CONTAINS
     ! Result: Value of the parbolic profile on position dpos on the line segment
     mprim_getParabolicProfile = 4.0_DP*dmaxvalue*dpos*(dlength-dpos)/(dlength*dlength)
     
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>
+  
+  ELEMENTAL REAL(DP) FUNCTION mprim_signum_dble (dval)
+  
+!<description>
+  ! Signum function
+!</description>
+  
+!<input>
+  ! Value to be checked
+  REAL(DP), INTENT(IN) :: dval
+!</input>
+
+!<result>
+  ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
+!</result>
+!</function>
+
+    ! Result: Value of the parbolic profile on position dpos on the line segment
+    IF (dval .LT. 0.0_DP) THEN
+      mprim_signum_dble = -1.0_DP
+    ELSE IF (dval .GT. 0.0_DP) THEN
+      mprim_signum_dble = 1.0_DP
+    ELSE 
+      mprim_signum_dble = 0.0_DP
+    END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>
+  
+  ELEMENTAL REAL(SP) FUNCTION mprim_signum_real (fval)
+  
+!<description>
+  ! Signum function.
+!</description>
+  
+!<input>
+  ! Value to be checked
+  REAL(SP), INTENT(IN) :: fval
+!</input>
+
+!<result>
+  ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
+!</result>
+!</function>
+
+    ! Result: Value of the parbolic profile on position dpos on the line segment
+    IF (fval .LT. 0.0_SP) THEN
+      mprim_signum_real = -1.0_SP
+    ELSE IF (fval .GT. 0.0_SP) THEN
+      mprim_signum_real = 1.0_SP
+    ELSE 
+      mprim_signum_real = 0.0_SP
+    END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>
+  
+  ELEMENTAL INTEGER(I32) FUNCTION mprim_signum_int32 (ival)
+  
+!<description>
+  ! Signum function.
+!</description>
+  
+!<input>
+  ! Value to be checked
+  INTEGER(I32), INTENT(IN) :: ival
+!</input>
+
+!<result>
+  ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
+!</result>
+!</function>
+
+    ! Result: Value of the parbolic profile on position dpos on the line segment
+    SELECT CASE (ival)
+      CASE (:-1)
+        mprim_signum_int32 = -1_I32
+      CASE (0)
+        mprim_signum_int32 = 0_I32
+      CASE DEFAULT
+        mprim_signum_int32 = 1_I32
+    END SELECT
+
   END FUNCTION
 
   ! ***************************************************************************
