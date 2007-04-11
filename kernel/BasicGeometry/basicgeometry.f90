@@ -9,13 +9,17 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) bgeom_transformPoint2D
-!#     -> Transforms a 2D point with coordinates relative to a given coordinate
-!#        system to world coordinates.
+!#  1.) bgeom_initCoordSys2D
+!#      -> Creates a 2D coordinate system from an optionally given origin,
+!#         rotation and scaling factor.
 !#
-!# 2.) bgeom_transformBackPoint2D
-!#     -> Transforms a 2D point with world coordinates to coordinates relative
-!#        to a given coordinate system.
+!#  2.) bgeom_transformPoint2D
+!#      -> Transforms a 2D point with coordinates relative to a given 
+!#         coordinate system to world coordinates.
+!#
+!#  3.) bgeom_transformBackPoint2D
+!#      -> Transforms a 2D point with world coordinates to coordinates relative
+!#         to a given coordinate system.
 !# </purpose>
 !##############################################################################
 
@@ -107,6 +111,79 @@ MODULE basicgeometry
   !</types>
 
 CONTAINS
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  PURE SUBROUTINE bgeom_initCoordSys2D(rcoordSys, Dorigin, drotation, &
+                                       dscalingFactor)
+
+!<description>
+  ! Creates a 2D coordinate system from an optionally given origin, rotation
+  ! and scaling factor.
+!</description>
+
+!<input>
+  ! OPTIONAL: The origin of the coordinate system.
+  ! Set to (/ 0.0_DP, 0.0_DP /) if not given.
+  REAL(DP), DIMENSION(:), OPTIONAL,    INTENT(IN)  :: Dorigin
+  
+  ! OPTIONAL: The rotation angle of the coordinate system.
+  ! Angle range: 0..2*PI
+  ! Set to 0.0_DP if not given.
+  REAL(DP), OPTIONAL,                  INTENT(IN)  :: drotation
+  
+  ! The scaling factor. Should be != 0.0_DP
+  ! Set to 1.0_DP if not given.
+  REAL(DP), OPTIONAL,                  INTENT(IN)  :: dscalingFactor
+
+!</input>
+
+!<output>
+  ! A t_coordinateSystem2D structure to be written.
+  TYPE(t_coordinateSystem2D),          INTENT(OUT) :: rcoordSys
+
+!</output>
+
+!</subroutine>
+
+    ! Set the origin, if given.
+    IF (PRESENT(Dorigin)) THEN
+      rcoordSys%Dorigin = (/ Dorigin(1), Dorigin(2) /)
+    ELSE
+      rcoordSys%Dorigin = (/ 0.0_DP, 0.0_DP /)
+    END IF
+      
+    ! Set the rotation, if given.
+    IF (PRESENT(drotation)) THEN
+      
+      rcoordSys%drotation = drotation
+        
+      ! Calculate SIN and COS of rotation angle
+      rcoordSys%dsin_rotation = SIN(drotation)
+      rcoordSys%dcos_rotation = COS(drotation)
+        
+    ELSE
+      
+      rcoordSys%drotation = 0.0_DP
+        
+      ! Set SIN and COS values
+      rcoordSys%dsin_rotation = 0.0_DP
+      rcoordSys%dcos_rotation = 1.0_DP
+        
+    END IF
+      
+    ! Set the scaling factor, if given.
+    IF (PRESENT(dscalingFactor)) THEN
+      rcoordSys%dscalingFactor = dscalingFactor
+    ELSE
+      rcoordSys%dscalingFactor = 1.0_DP
+    ENDIF
+  
+    ! That's it
+  
+  END SUBROUTINE
 
   ! ***************************************************************************
   
