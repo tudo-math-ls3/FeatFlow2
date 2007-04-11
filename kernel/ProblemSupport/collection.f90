@@ -22,6 +22,8 @@
 !# - a block discretisation structure
 !# - a parser structure
 !# - another collection
+!# - small, fixed-size integer arrays
+!# - small, fixed-size double precision arrays
 !#
 !# The list supports 'level tags' and 'section tags" to group values:
 !# 
@@ -138,7 +140,7 @@
 !#     -> Modifies a value in the list. Add a value if it does not exist.
 !#        xxx corresponds to the type of  the variable.
 !#
-!# 10.) collct_detelevalue
+!# 10.) collct_deletevalue
 !#      -> Deletes a value from the list.
 !#
 !# 11.) collct_printStatistics 
@@ -216,6 +218,13 @@
 !#      END IF
 !#      ...
 !#    END SUBROUTINE
+!#
+!# STORE ONLY SMALL-SIZE ARRAYS
+!#
+!#  It's possible to store integer / real arrays in the collection. These
+!#  should only be small and the application must keep track of the size
+!#  of these arrays. To store larger arrays, use the STORAGE module to
+!#  allocate memory and store the handle of the memory block in the collection!
 !# 
 !# </purpose>
 !##############################################################################
@@ -233,6 +242,7 @@ MODULE collection
   USE multilevelprojection
   USE filtersupport
   USE fparser
+  USE genoutput
   
   IMPLICIT NONE
 
@@ -333,8 +343,14 @@ MODULE collection
   ! A filter chain
   INTEGER, PARAMETER :: COLLCT_FILTERCHAIN  = 20
 
+  ! Integer value type array
+  INTEGER, PARAMETER :: COLLCT_INTEGERARR   = 21
+  
+  ! Double precision REAL value type array
+  INTEGER, PARAMETER :: COLLCT_REALARR      = 22
+
   ! The collection structure itself
-  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 21
+  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 23
 
 !</constantblock>
 
@@ -416,6 +432,12 @@ MODULE collection
 
     ! Pointer to a filter chain
     TYPE(t_filterChain), DIMENSION(:), POINTER  :: p_RfilterChain => NULL()
+
+    ! Pointer to an integer precision array
+    INTEGER(I32), DIMENSION(:), POINTER         :: p_Iarray => NULL()
+
+    ! Pointer to an real precision array
+    REAL(DP), DIMENSION(:), POINTER             :: p_Darray => NULL()
 
     ! Pointer to a collection structure
     TYPE(t_collection), POINTER                 :: p_rcollection => NULL()
@@ -1517,7 +1539,6 @@ CONTAINS
     ! to default values. Then the node is 'dead' and can be reused
     ! later.
 
-    p_rvalue%itype = COLLCT_UNDEFINED
     p_rvalue%sname = ''
     p_rvalue%csvalue = " "
     NULLIFY(p_rvalue%p_svalue)
@@ -1534,7 +1555,14 @@ CONTAINS
     NULLIFY(p_rvalue%p_rdiscreteBC)
     NULLIFY(p_rvalue%p_rboundary)
     NULLIFY(p_rvalue%p_rboundaryConditions)
+    NULLIFY(p_rvalue%p_rparser)
+    NULLIFY(p_rvalue%p_RfilterChain)
     NULLIFY(p_rvalue%p_rcollection)
+    
+    IF (ASSOCIATED(p_rvalue%p_Iarray)) DEALLOCATE(p_rvalue%p_Iarray)
+    IF (ASSOCIATED(p_rvalue%p_Darray)) DEALLOCATE(p_rvalue%p_Darray)
+
+    p_rvalue%itype = COLLCT_UNDEFINED
     
     ! Modify the level info:
     IF (PRESENT(ssectionName)) THEN
@@ -1850,6 +1878,7 @@ CONTAINS
   !
   ! If the value does not exists and badd=false, an error is thrown.
   ! If the value does not exists and badd=true, a new value is created.
+  ! However, no memory is allocated for array-type values.
   !
   ! If bexists is present, it's set to TRUE/FALSE to indicate whether
   ! the value exists at all. If bexists does not exist, an error is thrown.
@@ -2146,6 +2175,74 @@ CONTAINS
 
   ! ***************************************************************************
   
+!<subvroutine>
+
+  SUBROUTINE collct_getvalue_intarr (rcollection, sparameter, value, &
+                                     ilevel, ssectionName, bexists) 
+!<description>
+  ! Returns the the parameter sparameter as integer array.
+  ! An error is thrown if the value is of the wrong type.
+  !
+  ! The routine returns the actual array, not a reference to it. The previous
+  ! content of the destination array is overwritten.
+!</description>  
+  
+!<inputoutput>
+  ! The value of the parameter an array. The destination array must have the
+  ! same length as the array in the collection!
+  ! A standard value if the value does not exist.
+  INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: value
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGERARR,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    IF (SIZE(p_rvalue%p_Iarray) .NE. SIZE(value)) THEN
+      CALL output_line ('Destination array has the wrong length!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'collct_getvalue_intarr')
+      STOP
+    END IF
+    value = p_rvalue%p_Iarray
+  ELSE
+    value = 0
+  END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
 !<function>
 
   REAL(DP) FUNCTION collct_getvalue_real (rcollection, sparameter, &
@@ -2203,6 +2300,76 @@ CONTAINS
   END IF
 
   END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
+  SUBROUTINE collct_getvalue_realarr (rcollection, sparameter, value, &
+                                  ilevel, ssectionName, bexists) 
+!<description>
+  ! Returns the the parameter sparameter as real array.
+  ! An error is thrown if the value is of the wrong type.
+  !
+  ! The routine returns the actual array, not a reference to it. The previous
+  ! content of the destination array is overwritten.
+!</description>  
+  
+!<inputoutput>
+  ! The value of the parameter an array. The destination array must have the
+  ! same length as the array in the collection!
+  ! A standard value if the value does not exist.
+  REAL(DP), DIMENSION(:), INTENT(INOUT) :: value
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_REALARR,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    IF (SIZE(p_rvalue%p_Darray) .NE. SIZE(value)) THEN
+      CALL output_line ('Destination array has the wrong length!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'collct_getvalue_realarr')
+      STOP
+    END IF
+    value = p_rvalue%p_Darray
+  ELSE
+    value = 0
+  END IF
+
+  END SUBROUTINE
 
   ! ***************************************************************************
   
@@ -3458,6 +3625,78 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE collct_setvalue_intarr (rcollection, sparameter, value, badd, &
+                                     ilevel, ssectionName) 
+!<description>
+  ! Sets the value of the parameter: sparameter=value.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+  !
+  ! The routine creates a new memory block on the heap and copies the
+  ! data to there. There is no reference to the old array stored.
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  INTEGER(I32), DIMENSION(:), INTENT(IN) :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_INTEGERARR,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! (Re-)allocate memory for the value if necessary.
+  IF (.NOT. ASSOCIATED(p_rvalue%p_Iarray)) THEN
+    ALLOCATE(p_rvalue%p_Iarray(SIZE(value)))
+  ELSE IF (SIZE(p_rvalue%p_Iarray) .NE. SIZE(value)) THEN
+    DEALLOCATE(p_rvalue%p_Iarray)
+    ALLOCATE(p_rvalue%p_Iarray(SIZE(value)))
+  END IF
+  
+  ! Set the value
+  p_rvalue%p_Iarray = value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE collct_setvalue_real (rcollection, sparameter, value, badd, &
                                    ilevel, ssectionName) 
 !<description>
@@ -3512,6 +3751,78 @@ CONTAINS
 
   ! Set the value
   p_rvalue%dvalue = value
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_realarr (rcollection, sparameter, value, badd, &
+                                   ilevel, ssectionName) 
+!<description>
+  ! Sets the value of the parameter: sparameter=value
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+  !
+  ! The routine creates a new memory block on the heap and copies the
+  ! data to there. There is no reference to the old array stored.
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  REAL(DP), DIMENSION(:),INTENT(IN) :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_REALARR,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! (Re-)allocate memory for the value if necessary.
+  IF (.NOT. ASSOCIATED(p_rvalue%p_Darray)) THEN
+    ALLOCATE(p_rvalue%p_Darray(SIZE(value)))
+  ELSE IF (SIZE(p_rvalue%p_Darray) .NE. SIZE(value)) THEN
+    DEALLOCATE(p_rvalue%p_Darray)
+    ALLOCATE(p_rvalue%p_Darray(SIZE(value)))
+  END IF
+  
+  ! Set the value
+  p_rvalue%p_Darray = value
 
   END SUBROUTINE
 
