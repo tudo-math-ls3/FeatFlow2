@@ -89,6 +89,14 @@
 !#         problems with $Q_2/QP_1$ discretisation. Full VANCA approach.
 !#         Applies VANCA only to a subset of all elements in the domain.
 !#
+!# 19.) vanca_init2DNSSOCQ1TQ0fullCoupConf
+!#      -> Initialise the VANCA solver for 2D Navier-Stokes optimal control
+!#         problems. Specialised $\tilde Q1/Q0$ version, full VANCA approach.
+!#
+!# 20.) vanca_2DNSSOCQ1TQ0fullCoupConf
+!#      -> Perform one step of the VANCA solver for 2D Navier-Stokes optimal
+!#         control problems. Specialised $\tilde Q1/Q0$ version, full VANCA approach.
+!#
 !#  History
 !# ---------
 !# Originally, the following VANCA variants were implemented:
@@ -6687,11 +6695,20 @@ CONTAINS
     p_DA11 => rvanca%p_DA11
     p_DA22 => rvanca%p_DA22
 
-    ! Structure of A12 is assumed to be the same as A21
-    p_KcolA12 => rvanca%p_KcolA12
-    p_KldA12 => rvanca%p_KldA12
-    p_DA12 => rvanca%p_DA12
-    p_DA21 => rvanca%p_DA21
+    ! Structure of A12 is assumed to be the same as A21.
+    ! Get A12 and A21 -- except for if the multipliers are =0, then
+    ! we switch them off by nullifying the pointers.
+    IF (rvanca%Dmultipliers(1,2) .NE. 0.0_DP) THEN
+      p_KcolA12 => rvanca%p_KcolA12
+      p_KldA12 => rvanca%p_KldA12
+      p_DA12 => rvanca%p_DA12
+      p_DA21 => rvanca%p_DA21
+    ELSE
+      NULLIFY(p_KcolA12)
+      NULLIFY(p_KldA12) 
+      NULLIFY(p_DA12 )
+      NULLIFY(p_DA21 )
+    END IF
     
     p_KcolB => rvanca%p_KcolB
     p_KldB => rvanca%p_KldB
@@ -6982,8 +6999,8 @@ CONTAINS
             ! same element, we put that to both A-blocks of our local matrix.
             DO k=1,nnvel
               IF (j .EQ. IdofGlobal(k)) THEN
-                AA (inode,k+nnvel) = p_DA12(ia)
-                AA (inode+nnvel,k) = p_DA21(ia)
+                AA (inode+lofsu,k+lofsv) = p_DA12(ia)
+                AA (inode+lofsv,k+lofsu) = p_DA21(ia)
                 EXIT
               END IF
             END DO          
