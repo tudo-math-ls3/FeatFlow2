@@ -1880,7 +1880,7 @@ CONTAINS
                       p_IverticesAtElement,p_IedgesAtElement,&
                       p_DcornerCoordinates,Idofs(:,IEL),indof, &
                       dupsam,dre)
-          DlocalDelta(IEL) = ddelta*DlocalDelta(IEL)
+          DlocalDelta(IEL) = DlocalDelta(IEL)
         END DO ! IEL
       END IF
                                    
@@ -2270,7 +2270,7 @@ CONTAINS
                 ! contribution - see below for a more detailed
                 ! description what is added together here!
               
-                AH = HSUMI*(DlocalDelta(IEL)*HSUMI+HBASI1) &
+                AH = ddelta*HSUMI*(DlocalDelta(IEL)*HSUMI+HBASI1) &
                     + dny*(HBASI2**2+HBASI3**2) &
                     + dalpha*HBASI1**2
     
@@ -2333,7 +2333,7 @@ CONTAINS
                 ! plus the terms for the Stokes and Mass matrix,
                 ! if their coefficient is <> 0.
                 
-                AH = HSUMJ*(DlocalDelta(IEL)*HSUMI+HBASI1) &
+                AH = ddelta*HSUMJ*(DlocalDelta(IEL)*HSUMI+HBASI1) &
                     + dny*(HBASI2*HBASJ2+HBASI3*HBASJ3) &
                     + dalpha*HBASI1*HBASJ1
     
@@ -3263,7 +3263,6 @@ CONTAINS
                       p_IverticesAtElement,p_IedgesAtElement,&
                       p_DcornerCoordinates,Idofs(:,IEL),indof, &
                       dupsam,dre)
-          DlocalDelta(IEL) = ddelta*DlocalDelta(IEL)
         END DO ! IEL
       END IF
                                    
@@ -3909,7 +3908,7 @@ CONTAINS
                 ! plus the terms for the Stokes and Mass matrix,
                 ! if their coefficient is <> 0.
                 
-                AH = HSUMJ*(DlocalDelta(IEL)*HSUMI+HBASI1)
+                AH = ddelta * HSUMJ*(DlocalDelta(IEL)*HSUMI+HBASI1)
       
                 ! Weighten the calculated value AH by the cubature
                 ! weight OM and add it to the local matrix. After the
@@ -4012,7 +4011,7 @@ CONTAINS
             ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
 
-            OM = dnewton*Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+            OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
             ! Current velocity in this cubature point:
             du1locx = DvelocityUderiv (1,ICUBP,IEL)
@@ -4138,12 +4137,12 @@ CONTAINS
                 ! DentryA11 (:,:,:) -> Newton part of A11
                 p_Da11(Kentry(JDOFE,IDOFE,IEL)) = p_Da11(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * ( Dentry(JDOFE,IDOFE,IEL) + &
-                               DentryA11(JDOFE,IDOFE,IEL) )
+                               dnewton*DentryA11(JDOFE,IDOFE,IEL) )
 
                 ! DentryA22 (:,:,:) -> Newton part of A22
                 p_Da22(Kentry(JDOFE,IDOFE,IEL)) = p_Da22(Kentry(JDOFE,IDOFE,IEL)) + &
                     dtheta * ( Dentry(JDOFE,IDOFE,IEL) + &
-                               DentryA22(JDOFE,IDOFE,IEL) )
+                               dnewton*DentryA22(JDOFE,IDOFE,IEL) )
               END DO
             END DO
           END DO
@@ -4156,11 +4155,11 @@ CONTAINS
                 !
                 ! Dentry (:,:,:) -> Newton part of A12
                 p_Da12(Kentry12(JDOFE,IDOFE,IEL)) = p_Da12(Kentry12(JDOFE,IDOFE,IEL)) + &
-                    dtheta * DentryA12(JDOFE,IDOFE,IEL) 
+                    dtheta * dnewton * DentryA12(JDOFE,IDOFE,IEL) 
 
                 ! Dentry (:,:,:) -> Newton part of A21
                 p_Da21(Kentry12(JDOFE,IDOFE,IEL)) = p_Da21(Kentry12(JDOFE,IDOFE,IEL)) + &
-                    dtheta * DentryA21(JDOFE,IDOFE,IEL) 
+                    dtheta * dnewton * DentryA21(JDOFE,IDOFE,IEL) 
               END DO
             END DO
           END DO
@@ -4215,11 +4214,11 @@ CONTAINS
                 
                 ! Newton part
                 Ddef1(IDFG)= Ddef1(IDFG) &
-                           - dtheta*DentryA11(JDOFE,IDOFE,IEL)*Du1(JDFG) &
-                           - dtheta*DentryA12(JDOFE,IDOFE,IEL)*Du2(JDFG)
+                           - dtheta*dnewton*DentryA11(JDOFE,IDOFE,IEL)*Du1(JDFG) &
+                           - dtheta*dnewton*DentryA12(JDOFE,IDOFE,IEL)*Du2(JDFG)
                 Ddef2(IDFG)= Ddef2(IDFG) &
-                           - dtheta*DentryA21(JDOFE,IDOFE,IEL)*Du1(JDFG) &
-                           - dtheta*DentryA22(JDOFE,IDOFE,IEL)*Du2(JDFG)
+                           - dtheta*dnewton*DentryA21(JDOFE,IDOFE,IEL)*Du1(JDFG) &
+                           - dtheta*dnewton*DentryA22(JDOFE,IDOFE,IEL)*Du2(JDFG)
 
               END DO
             END DO
