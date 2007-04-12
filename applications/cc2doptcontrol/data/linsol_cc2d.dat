@@ -18,7 +18,7 @@
 # Type identifier of the solver.
 # 9=Multigrid, 11=UMFPACK
 
-isolverType = 11
+isolverType = 9
 
 # Minimum number of steps
 
@@ -46,7 +46,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 2
+ioutputLevel       = 0
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).

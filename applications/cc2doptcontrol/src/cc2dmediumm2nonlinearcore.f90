@@ -8,7 +8,7 @@
 !# of the problem with a nonlinear solver. The core equation aims to solve
 !# the coupled KKT system of the minimisation problem
 !#
-!#   $$J(y)  :=  1/2 ||y-z||_L2  +  \gamma/2 ||y(T)-z(T)||_L2  ->  min! $$
+!#   $$J(y)  :=  1/2 ||y-z||_{L_2}  +  \gamma/2 ||y(T)-z(T)||_{L_2}  +  \alpha_C||u||^2  ->  min! $$
 !#
 !# with $z$ being a given 'desired' flow field in the domain.
 !#
@@ -165,6 +165,8 @@ MODULE cc2dmediumm2nonlinearcore
   
   USE matrixio
   USE vectorio
+  
+  USE cc2dmediumm2optcanalysis
   
   IMPLICIT NONE
   
@@ -367,6 +369,10 @@ MODULE cc2dmediumm2nonlinearcore
     
     ! Maximum allowed damping parameter; OMGMAX
     REAL(DP) :: domegaMax = 2.0_DP
+    
+    ! Regularisation parameter of the optimal control problem. 
+    ! Only used for error analysis.
+    REAL(DP) :: dalphaC = 0.0_DP
     
     ! Output level of the nonlinear iteration
     INTEGER :: MT_OutputLevel = 2
@@ -644,6 +650,9 @@ CONTAINS
     CALL collct_setvalue_real(rcollection,'CCNL_RHOMG',&
         rnonlinearIteration%drhoLinearSolver,.TRUE.)
 
+    CALL collct_setvalue_real(rcollection,'CCNL_ALPHAC',&
+        rnonlinearIteration%dalphaC,.TRUE.)
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -794,6 +803,9 @@ CONTAINS
         collct_getvalue_real(rcollection,'CCNL_OMEGANL')
     rnonlinearIteration%drhoLinearSolver = &
         collct_getvalue_real(rcollection,'CCNL_RHOMG')
+
+    rnonlinearIteration%dalphaC = &
+        collct_getvalue_real(rcollection,'CCNL_ALPHAC')
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -823,6 +835,8 @@ CONTAINS
     ! Delete statistical data
     CALL collct_deletevalue(rcollection,'CCNL_OMEGANL')
     CALL collct_deletevalue(rcollection,'CCNL_RHOMG')
+
+    CALL collct_deletevalue (rcollection,'CCNL_ALPHAC')
 
     ! Delete min./max. damping parameters from the collection
     CALL collct_deletevalue (rcollection,'CCNL_OMEGAMAX')
@@ -2561,7 +2575,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(3) :: Dresiduals,Dresiduals2
       REAL(DP) :: dresOld,drhoNL,ddelP,ddelU,dtmp,dresINIT
-      REAL(DP) :: dresU,dresDIV,dres
+      REAL(DP) :: dresU,dresDIV,dres,dnormJ
       REAL(DP) :: ddualresU,ddualresDIV,ddualres
       REAL(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES
       INTEGER, DIMENSION(3) :: Cnorms
@@ -2591,6 +2605,10 @@ CONTAINS
 
       ! Replace the 'old' residual by the current one
       rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
+      
+      ! Calculate the norm of the error functional J(.,.) of the
+      ! optimal control problem.
+      CALL c2d2_optc_stationaryFunctional (rx,rnonlinearIteration%dalphaC,dnormJ)      
 
       ! In the first iteration (initial defect), print the norm of the defect
       ! and save the norm of the initial residuum to the structure
@@ -2600,6 +2618,7 @@ CONTAINS
         CALL output_line (' IT  RELU     RELP     '//&
                           'DEF-U    DEF-DIV  DEF-TOT  '// &
                           'DEFD-U   DEFD-DIV DEFD-TOT '// &
+                          'J(Y,U)   '//&
                           'RHONL    OMEGNL   RHOMG')
         CALL output_separator (OU_SEP_MINUS)     
         CALL output_line ('  0                   '// &
@@ -2608,7 +2627,8 @@ CONTAINS
             TRIM(sys_sdEP(Dresiduals(3),9,2))//&
             TRIM(sys_sdEP(Dresiduals2(1),9,2))//&
             TRIM(sys_sdEP(Dresiduals2(2),9,2))//&
-            TRIM(sys_sdEP(Dresiduals2(3),9,2))&
+            TRIM(sys_sdEP(Dresiduals2(3),9,2))//&
+            TRIM(sys_sdEP(dnormJ,9,2))&
             )
         CALL output_separator (OU_SEP_MINUS)     
 
@@ -2713,6 +2733,7 @@ CONTAINS
             TRIM(sys_sdEP(ddualresU,9,2))// &
             TRIM(sys_sdEP(ddualresDIV,9,2))// &
             TRIM(sys_sdEP(ddualres,9,2))// &
+            TRIM(sys_sdEP(dnormJ,9,2))// &
             TRIM(sys_sdEP(drhoNL,9,2))// &
             TRIM(sys_sdEP(rnonlinearIteration%domegaNL,9,2))// &
             TRIM(sys_sdEP(rnonlinearIteration%drhoLinearSolver,9,2)) &

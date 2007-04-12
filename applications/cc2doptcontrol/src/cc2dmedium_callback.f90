@@ -472,25 +472,20 @@ CONTAINS
   !</output>
     
   !</subroutine>
-  
-    ! Calculate the X-component of "-z", the desired flow field!
-  
-    Dcoefficients(:,:,:) = 0.0_DP
-!    Dcoefficients(1,:,:) = -&        
-!    !  mprim_getParabolicProfile (Dpoints(2,:,:),0.41_DP,0.3_DP)
-!      mprim_getParabolicProfile (Dpoints(2,:,:),1.0_DP,0.3_DP)
-    !  -1.0_DP*(Dpoints(1,:,:)/2.2_DP)
-    Dcoefficients(1,:,:) = -(&        
-!           -mprim_signum(Dpoints(2,:,:)-0.5_DP)*mprim_getParabolicProfile(&
-!           MIN(0.5_DP,ABS(Dpoints(2,:,:)-0.5_DP)), &
-!           !*( 0.5_DP - SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) ) ,&
-!           0.5_DP,1.0_DP) ) 
-    -(Dpoints(2,:,:)-0.5_DP)/SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) * &
-    mprim_getParabolicProfile( &
-      MIN(0.5_DP,SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2)),&
-      0.5_DP,1.0_DP) )
-    
 
+    Dcoefficients(:,:,:) = 0.0_DP
+
+    ! Call ffunction_TargetX to calculate the analytic function. Store the results
+    ! in  Dcoefficients(1,:,:).
+    CALL ffunction_TargetX (DER_FUNC,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dcoefficients(1,:,:))
+               
+    ! Switch the sign, since this routine has to calculate
+    ! the X-component of "-z", the desired flow field!
+    Dcoefficients(1,:,:) = -Dcoefficients(1,:,:)
+  
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -570,10 +565,186 @@ CONTAINS
     
   !</subroutine>
 
-    ! Calculate the Y-component of "-z", the desired flow field!
-
     Dcoefficients(:,:,:) = 0.0_DP
-    Dcoefficients(1,:,:) = -(&
+
+    ! Call ffunction_TargetX to calculate the analytic function. Store the results
+    ! in  Dcoefficients(1,:,:).
+    CALL ffunction_TargetY (DER_FUNC,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dcoefficients(1,:,:))
+               
+    ! Switch the sign, since this routine has to calculate
+    ! the X-component of "-z", the desired flow field!
+    Dcoefficients(1,:,:) = -Dcoefficients(1,:,:)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ffunction_TargetX (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dvalues)
+  
+  USE basicgeometry
+  USE triangulation
+  USE collection
+  USE scalarpde
+  USE domainintegration
+  
+!<description>
+  ! This routine calculates the X-contribution of the target function $z$
+  ! in the optimal control problem.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  INTEGER, INTENT(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  INTEGER, INTENT(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. May point to NULL() if not defined.
+  TYPE(t_collection), POINTER                      :: p_rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+!    Dcoefficients(1,:,:) = -&        
+!    !  mprim_getParabolicProfile (Dpoints(2,:,:),0.41_DP,0.3_DP)
+!      mprim_getParabolicProfile (Dpoints(2,:,:),1.0_DP,0.3_DP)
+    !  -1.0_DP*(Dpoints(1,:,:)/2.2_DP)
+    Dvalues(:,:) = &        
+!           -mprim_signum(Dpoints(2,:,:)-0.5_DP)*mprim_getParabolicProfile(&
+!           MIN(0.5_DP,ABS(Dpoints(2,:,:)-0.5_DP)), &
+!           !*( 0.5_DP - SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) ) ,&
+!           0.5_DP,1.0_DP) ) 
+    -(Dpoints(2,:,:)-0.5_DP)/SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) * &
+    mprim_getParabolicProfile( &
+      MIN(0.5_DP,SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2)),&
+      0.5_DP,1.0_DP)
+  
+    !Dvalues(:,:) = 1.0_DP
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ffunction_TargetY (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dvalues)
+  
+  USE basicgeometry
+  USE triangulation
+  USE collection
+  USE scalarpde
+  USE domainintegration
+  
+!<description>
+  ! This routine calculates the Y-contribution of the target function $z$
+  ! in the optimal control problem.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  INTEGER, INTENT(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  INTEGER, INTENT(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. May point to NULL() if not defined.
+  TYPE(t_collection), POINTER                      :: p_rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    Dvalues(:,:) = &
 !    !  0.0_DP
 !           mprim_signum(Dpoints(1,:,:)-0.5_DP)*&
 !           mprim_getParabolicProfile(&
@@ -583,8 +754,9 @@ CONTAINS
     (Dpoints(1,:,:)-0.5_DP)/SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) * &
     mprim_getParabolicProfile( &
       MIN(0.5_DP,SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2)),&
-      0.5_DP,1.0_DP) )
-
+      0.5_DP,1.0_DP) 
+      
+    !Dvalues(:,:) = 1.0_DP
 
   END SUBROUTINE
 

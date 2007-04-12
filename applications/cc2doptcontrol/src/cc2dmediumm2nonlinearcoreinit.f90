@@ -195,6 +195,10 @@ CONTAINS
 
     CALL parlst_getvalue_double (p_rsection, 'ddmpD', &
                                  rnonlinearIteration%DepsNL(5), 0.1_DP)
+                                 
+    ! Store the regularisation parameter of the optimal control problem.
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+                                'dalphaC',rnonlinearIteration%dalphaC,0.1_DP)
       
   END SUBROUTINE
 

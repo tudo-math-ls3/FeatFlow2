@@ -30,7 +30,7 @@
 
 # minimum mg-level; <=0: Use level (NLMAX-NLMIN) as coarse grid
 
-NLMIN              = 6
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
@@ -49,7 +49,7 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 1.0 1000.0 000.0
+RE                 = 100.0 1000.0 000.0
 
 # Type of right hand side. 
 # 0=zero, 1=steady inhomog., 2=nonsteady force

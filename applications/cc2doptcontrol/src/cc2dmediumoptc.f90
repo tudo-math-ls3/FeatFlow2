@@ -7,7 +7,7 @@
 !# This program is a simple test program for discretising a 
 !# stationary and nonstationary Navier-Stokes optimal control problem 
 !#
-!#  $$ min J(y,u) = 1/2||y-z||_{L^2} + \gamma/2||y(T)-z(T)||_{L^2} + \alphga/2||u||^2 $$
+!#  $$ min J(y,u) = 1/2||y-z||_{L^2} + \gamma/2||y(T)-z(T)||_{L^2} + \alpha/2||u||^2 $$
 !#
 !#  $$- \nu Delta(y) + y*\Nabla(y) + \Nabla p = f $$
 !#  $$ \Nabla \cdot y = 0$$
