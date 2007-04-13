@@ -161,6 +161,13 @@ MODULE linearsystemscalar
 
 !<constants>
 
+!<constantblock description="Global constants for scalar vectors/matrices">
+
+  ! Maximum number of tags that can be assigned to a scalar vector or matrix.
+  INTEGER, PARAMETER :: LSYSSC_MAXTAGS = 16
+  
+!</constantblock>
+
 !<constantblock description="Global format flags for matrices">
 
   ! Unidentified matrix format
@@ -372,7 +379,7 @@ MODULE linearsystemscalar
     ! interleaved, that is, each of the NEQ entries stores NVAR local
     ! variables. In this case, NEQ remains unmodified but NVAR>1 such
     ! that the physical length of the vector is NEQ*NVAR.
-    INTEGER :: NVAR                   = 1
+    INTEGER         :: NVAR      = 1
 
     ! Data type of the entries in the vector. Either ST_SINGLE or
     ! ST_DOUBLE.
@@ -414,6 +421,15 @@ MODULE linearsystemscalar
     ! in a larger memory block allocated on the heap.
     INTEGER(PREC_VECIDX) :: iidxFirstEntry = 1
     
+    ! Integer tags. This array of integer values can be used to store
+    ! auxiliary tags which depend on the application.
+    INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
+
+    ! Real tags. This array of real values can be used to store
+    ! auxiliary
+    ! tags which depend on the application.
+    REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
+
     ! Is set to true, if the handle h_Ddata belongs to another vector,
     ! i.e. when this vector shares data with another vector.
     ! This is usually used for block vectors containing a couple of
@@ -533,6 +549,15 @@ MODULE linearsystemscalar
     ! matrix, this points to the first element on the next line.
     !INTEGER, DIMENSION(:), POINTER            :: Kdiagonal  => NULL()
     INTEGER                    :: h_Kdiagonal = ST_NOHANDLE
+
+    ! Integer tags. This array of integer values can be used to store
+    ! auxiliary tags which depend on the application.
+    INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
+
+    ! Real tags. This array of real values can be used to store
+    ! auxiliary
+    ! tags which depend on the application.
+    REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
     
     ! A pointer to the spatial discretisation
     TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscretisation => NULL()
