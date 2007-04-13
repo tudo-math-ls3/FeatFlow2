@@ -284,6 +284,66 @@ MODULE storage
     MODULE PROCEDURE storage_realloc
     MODULE PROCEDURE storage_reallocFixed
   END INTERFACE
+  
+  INTERFACE storage_getbase_int
+    MODULE PROCEDURE storage_getbase_int
+    MODULE PROCEDURE storage_getbase_intUBound
+    MODULE PROCEDURE storage_getbase_intLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_single
+    MODULE PROCEDURE storage_getbase_single
+    MODULE PROCEDURE storage_getbase_singleUBound
+    MODULE PROCEDURE storage_getbase_singleLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_double
+    MODULE PROCEDURE storage_getbase_double
+    MODULE PROCEDURE storage_getbase_doubleUBound
+    MODULE PROCEDURE storage_getbase_doubleLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_logical
+    MODULE PROCEDURE storage_getbase_logical
+    MODULE PROCEDURE storage_getbase_logicalUBound
+    MODULE PROCEDURE storage_getbase_logicalLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_char
+    MODULE PROCEDURE storage_getbase_char
+    MODULE PROCEDURE storage_getbase_charUBound
+    MODULE PROCEDURE storage_getbase_charLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_int2D
+    MODULE PROCEDURE storage_getbase_int2D
+    MODULE PROCEDURE storage_getbase_int2DUBound
+    MODULE PROCEDURE storage_getbase_int2DLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_single2D
+    MODULE PROCEDURE storage_getbase_single2D
+    MODULE PROCEDURE storage_getbase_single2DUBound
+    MODULE PROCEDURE storage_getbase_single2DLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_double2D
+    MODULE PROCEDURE storage_getbase_double2D
+    MODULE PROCEDURE storage_getbase_double2DUBound
+    MODULE PROCEDURE storage_getbase_double2DLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_logical2D
+    MODULE PROCEDURE storage_getbase_logical2D
+    MODULE PROCEDURE storage_getbase_logical2DUBound
+    MODULE PROCEDURE storage_getbase_logical2DLUBound
+  END INTERFACE
+
+  INTERFACE storage_getbase_char2D
+    MODULE PROCEDURE storage_getbase_char2D
+    MODULE PROCEDURE storage_getbase_char2DUBound
+    MODULE PROCEDURE storage_getbase_char2DLUBound
+  END INTERFACE
 
   INTERFACE storage_getsize
     MODULE PROCEDURE storage_getsize1D
@@ -1631,12 +1691,144 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_single (ihandle, p_Sarray, rheap)
+  SUBROUTINE storage_getbase_intUBound (ihandle, p_Iarray, ubound, rheap)
 
 !<description>
 
   ! This routine returns the pointer to a handle associated to an
-  ! interger array.
+  ! interger array and adopts the given upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_int: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
+    PRINT *,'storage_getbase_int: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D(:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_intLUBound (ihandle, p_Iarray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! interger array and adopts the given lower and upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_int: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
+    PRINT *,'storage_getbase_int: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D(lbound:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_single (ihandle, p_Sarray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! single array.
 
 !</description>
 
@@ -1693,12 +1885,145 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE storage_getbase_singleUBound (ihandle, p_Sarray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! single array and adopts the given upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  REAL(SP), DIMENSION(:), POINTER :: p_Sarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_single: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
+    PRINT *,'storage_getbase_single: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D(:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_singleLUBound (ihandle, p_Sarray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! single array and adopts the given lower and upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  REAL(SP), DIMENSION(:), POINTER :: p_Sarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_single: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
+    PRINT *,'storage_getbase_single: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D(lbound:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE storage_getbase_double (ihandle, p_Darray, rheap)
 
 !<description>
 
-  ! This routine returns the pointer to a handle associated to an
-  ! interger array.
+  ! This routine returns the pointer to a handle associated to a
+  ! double array.
 
 !</description>
 
@@ -1749,6 +2074,139 @@ CONTAINS
   ! Get the pointer
 
   p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_doubleUBound (ihandle, p_Darray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! double array and adopts the given upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  REAL(DP), DIMENSION(:), POINTER :: p_Darray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_double: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
+
+    PRINT *,'storage_getbase_double: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D(:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_doubleLUBound (ihandle, p_Darray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! double array and adopts the given lower and upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  REAL(DP), DIMENSION(:), POINTER :: p_Darray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_double: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
+
+    PRINT *,'storage_getbase_double: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D(lbound:ubound)
 
   END SUBROUTINE
 
@@ -1818,6 +2276,139 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE storage_getbase_logicalUBound (ihandle, p_Larray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array and adopts the given upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  LOGICAL, DIMENSION(:), POINTER :: p_Larray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_logical: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_LOGICAL) THEN
+    PRINT *,'storage_getbase_logical: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D(:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_logicalLUBound (ihandle, p_Larray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array and adopts the given lower and upper bounds.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  LOGICAL, DIMENSION(:), POINTER :: p_Larray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_logical: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_LOGICAL) THEN
+    PRINT *,'storage_getbase_logical: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D(lbound:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE storage_getbase_char (ihandle, p_Carray, rheap)
 
 !<description>
@@ -1873,6 +2464,139 @@ CONTAINS
   ! Get the pointer
 
   p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_charUBound (ihandle, p_Carray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! character array and adopts the given upper bound.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+  
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  CHARACTER, DIMENSION(:), POINTER :: p_Carray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_char: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_CHAR) THEN
+    PRINT *,'storage_getbase_char: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D(:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_charLUBound (ihandle, p_Carray, lbound, ubound,rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! character array and adopts the given lower and upper bounds.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  CHARACTER, DIMENSION(:), POINTER :: p_Carray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_char: Wrong handle'
+    STOP
+  END IF
+
+  IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_CHAR) THEN
+    PRINT *,'storage_getbase_char: Wrong data format!'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D(lbound:ubound)
 
   END SUBROUTINE
 
@@ -1937,6 +2661,130 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE storage_getbase_int2DUBound (ihandle, p_Iarray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! interger array and adopts the given upper bound for the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  INTEGER(I32), DIMENSION(:,:), POINTER :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_int2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D(:,:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_int2DLUBound (ihandle, p_Iarray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to an
+  ! interger array and adopts the given lower and upper bounds for
+  ! the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  INTEGER(I32), DIMENSION(:,:), POINTER :: p_Iarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_int2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D(:,lbound:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE storage_getbase_single2D (ihandle, p_Sarray, rheap)
 
 !<description>
@@ -1994,11 +2842,135 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_double2D (ihandle, p_Darray, rheap)
+  SUBROUTINE storage_getbase_single2DUBound (ihandle, p_Sarray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! single precision array and adopt the given upper bound for the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  REAL(SP), DIMENSION(:,:), POINTER :: p_Sarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_single2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D(:,:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_single2DLUBound (ihandle, p_Sarray, lbound, ubound, rheap)
 
 !<description>
 
   ! This routine returns the pointer to a handle associated to an
+  ! single precision array and adopt the given lower and upper bounds
+  ! for the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+  
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  REAL(SP), DIMENSION(:,:), POINTER :: p_Sarray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_single2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D(:,lbound:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_double2D (ihandle, p_Darray, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
   ! double precision array.
 
 !</description>
@@ -2040,6 +3012,122 @@ CONTAINS
   ! Get the pointer
 
   p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_double2DUBound (ihandle, p_Darray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! double precision array and adopt the given upper bound for the second dimension.
+
+!</description>
+
+!<input>
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Darray
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_double2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D(:,:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_double2DLUBound (ihandle, p_Darray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! double precision array and adopt the given lower and upper bounds
+  ! for the second dimension.
+
+!</description>
+
+!<input>
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+!</input>
+
+!<output>
+  ! The pointer associated to the handle.
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Darray
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_double2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D(:,lbound:ubound)
 
   END SUBROUTINE
 
@@ -2104,6 +3192,130 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE storage_getbase_logical2DUBound (ihandle, p_Larray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array and adopt the given upper bound for the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  LOGICAL, DIMENSION(:,:), POINTER :: p_Larray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_logical2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D(:,:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_logical2DLUBound (ihandle, p_Larray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! logical array and adopt the given lower and upper bounds for
+  ! the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  LOGICAL, DIMENSION(:,:), POINTER :: p_Larray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_logical2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D(:,lbound:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE storage_getbase_char2D (ihandle, p_Carray, rheap)
 
 !<description>
@@ -2154,6 +3366,130 @@ CONTAINS
   ! Get the pointer
 
   p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_char2DUBound (ihandle, p_Carray, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! character array and adopt the given upper bound for the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  CHARACTER, DIMENSION(:,:), POINTER :: p_Carray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_char2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D(:,:ubound)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_getbase_char2DLUBound (ihandle, p_Carray, lbound, ubound, rheap)
+
+!<description>
+
+  ! This routine returns the pointer to a handle associated to a
+  ! character array and adopt the given lower and upper bounds for
+  ! the second dimension.
+
+!</description>
+
+!<input>
+
+  ! The handle
+  INTEGER, INTENT(IN) :: ihandle
+
+  ! The lower bound
+  INTEGER, INTENT(IN) :: lbound
+
+  ! The upper bound
+  INTEGER, INTENT(IN) :: ubound
+
+  ! OPTIONAL: local heap structure to initialise. If not given, the
+  ! global heap is used.
+  TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+
+!</input>
+
+!<output>
+
+  ! The pointer associated to the handle.
+  CHARACTER, DIMENSION(:,:), POINTER :: p_Carray
+
+!</output>
+
+!</subroutine>
+
+  ! local variables
+
+  ! Pointer to the heap
+  TYPE(t_storageBlock), POINTER :: p_rheap
+
+  ! Get the heap to use - local or global one.
+
+  IF(PRESENT(rheap)) THEN
+    p_rheap => rheap
+  ELSE
+    p_rheap => rbase
+  END IF
+
+  IF (ihandle .EQ. ST_NOHANDLE) THEN
+    PRINT *,'storage_getbase_char2D: Wrong handle'
+    STOP
+  END IF
+
+  ! Get the pointer
+
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D(:,lbound:ubound)
 
   END SUBROUTINE
 
