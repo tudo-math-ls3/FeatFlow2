@@ -183,23 +183,32 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) fparser_create
+!# 1.) fparser_init
+!#     -> Initialize the sub-system for function parsers
+!#
+!# 2.) fparser_done
+!#     -> Release the sub-system for function parsers
+!#
+!# 3.) fparser_defineConstant
+!#     -> Define special constants which are available for all function parsers
+!#
+!# 4.) fparser_create
 !#     -> Create function parser
 !#
-!# 2.) fparser_release
+!# 5.) fparser_release
 !#     -> Release function parser
 !#
-!# 3.) fparser_parseFunction
-!#     -> Parse function string and compile ot into bytecode
+!# 6.) fparser_parseFunction
+!#     -> Parse function string and compile it into bytecode
 !#
-!# 4.) fparser_evalFunction = fparser_evalFunctionScalar /
+!# 7.) fparser_evalFunction = fparser_evalFunctionScalar /
 !#                            fparser_evalFunctionArray
 !#     -> Evaluate bytecode
 !#
-!# 5.) fparser_ErrorMsg
+!# 8.) fparser_ErrorMsg
 !#     -> Get error message from function parser
 !#
-!# 6.) fparser_PrintByteCode
+!# 9.) fparser_PrintByteCode
 !#     -> Print the bytecode stack (very technical!)
 !#
 !# The following internal routines can be found in this module:
@@ -207,25 +216,22 @@
 !# 1.) CheckSyntax
 !#     -> Check syntax of function string before compiling bytecode
 !#
-!# 2.) ParseErrMsg
-!#     -> Print detailed error message and terminate
-!#
-!# 3.) isOperator
+!# 2.) isOperator
 !#     -> Return size of operator and 0 otherwise
 !#
-!# 4.) MathFunctionIndex
+!# 3.) MathFunctionIndex
 !#     -> Return index of mathematical function and 0 otherwise
 !#
-!# 5.) MathFunctionParameters
+!# 4.) MathFunctionParameters
 !#     -> Return number of required function parameters
 !#
-!# 6.) ConstantIndex
+!# 5.) ConstantIndex
 !#     -> Return index of predefined constant and 0 otherwise
 !#
-!# 7.) VariableIndex
+!# 6.) VariableIndex
 !#     -> Return index of variable
 !#
-!# 8.) RemoveSpaces
+!# 7.) RemoveSpaces
 !#     -> Remove spaces from string
 !#
 !# 8.) Replace
@@ -241,52 +247,52 @@
 !# 11.) AddCompiledByte
 !#     -> Add compiled byte to bytecode stack
 !#
-!# 11.) RemoveCompiledByte
+!# 12.) RemoveCompiledByte
 !#     -> Remove last compiled byte from bytecode stack
 !#
-!# 12.) AddImmediate
+!# 13.) AddImmediate
 !#     -> Add immediate to immediate stack
 !#
-!# 13.) AddFunctionOpcode
+!# 14.) AddFunctionOpcode
 !#     -> Add function opcode to bytecode stack
 !#
-!# 14.) RealNum
+!# 15.) RealNum
 !#     -> Get real number from string
 !#
-!# 15.) LowCase
+!# 16.) LowCase
 !#     -> Transform upper case letters to lower case letters
 !#
-!# 16.) CompileExpression
+!# 17.) CompileExpression
 !#      -> Compile ','
 !#
-!# 17.) CompileOr
+!# 18.) CompileOr
 !#      -> Compile '|'
 !#
-!# 18.) CompileAnd
+!# 19.) CompileAnd
 !#      -> Compile '&'
 !#
-!# 19.) CompileComparison
+!# 20.) CompileComparison
 !#      -> Compile '=', '<', and '>'
 !#
-!# 20.) CompileAddition
+!# 21.) CompileAddition
 !#      -> Compile '+' and '-'
 !#
-!# 21.) CompileMult
+!# 22.) CompileMult
 !#      -> Compile '*', '/', and '%'
 !#
-!# 22.) CompileUnaryMinus
+!# 23.) CompileUnaryMinus
 !#      -> Compile unary '-'
 !#
-!# 23.) CompilePow
+!# 24.) CompilePow
 !#      -> Compile '^'
 !#
-!# 24.) CompileElement
+!# 25.) CompileElement
 !#      -> Compile mathematical function, variable, constant and number
 !#
-!# 25.) CompileFunctionParameters
+!# 26.) CompileFunctionParameters
 !#      -> Compile function parameters
 !#
-!# 26.) CompileIf
+!# 27.) CompileIf
 !#      -> Compile if-then-else
 !#
 !# </purpose>
@@ -301,6 +307,9 @@ MODULE fparser
   
   PRIVATE
   PUBLIC :: t_fparser
+  PUBLIC :: fparser_init
+  PUBLIC :: fparser_done
+  PUBLIC :: fparser_defineConstant
   PUBLIC :: fparser_create
   PUBLIC :: fparser_release
   PUBLIC :: fparser_parseFunction
@@ -308,18 +317,38 @@ MODULE fparser
   PUBLIC :: fparser_ErrorMsg
   PUBLIC :: fparser_PrintByteCode
   public :: lowcase
-
+  
+  !****************************************************************************
+  !****************************************************************************
+  !****************************************************************************
+  
   INTERFACE fparser_evalFunction
     MODULE PROCEDURE fparser_evalFunctionScalar
-    MODULE PROCEDURE fparser_evalFunctionArray
+    MODULE PROCEDURE fparser_evalFunctionBlock
   END INTERFACE
 
+  !****************************************************************************
+  !****************************************************************************
+  !****************************************************************************
+
 !<constants>
+
+!<constantblock description="Global constants for parser">
+  ! Maximum stack size
+  ! The stack is used for all instances of function parsers. During initialization
+  ! a smaller size can be specified. This is only the maximum size of the stack.
+  INTEGER, PARAMETER :: FPAR_MAXSTACKSIZE  = 1024*1024 ! this is 8 MByte
+
+  ! Maximum number of user-defined constants.
+  INTEGER, PARAMETER :: FPAR_MAXCONSTS     = 128
+!</constantblock>
+
 
 !<constantblock description="data type for parser bytecode">
   ! Data type of bytecode
   INTEGER, PARAMETER :: is = SELECTED_INT_KIND(1)
 !</constantblock>
+
 
 !<constantblock description="keywords for parser">
   INTEGER(is), PARAMETER :: cImmed       =  1, &
@@ -360,18 +389,19 @@ MODULE fparser
                             cCos         = 36, &
                             cTan         = 37, & 
                             cCot         = 38, &
-                            cAsin        = 39, &
-                            cAcos        = 40
-  INTEGER(is), PARAMETER :: cAtan        = 41, &
-                            cAcosh       = 42, &
-                            cAsinh       = 43, &
-                            cAtanh       = 44, &
+                            cAsinh       = 39, &
+                            cAsin        = 40
+  INTEGER(is), PARAMETER :: cAcosh       = 41, &
+                            cAcos        = 42, &
+                            cAtanh       = 43, &
+                            cAtan        = 44, &
                             cCeil        = 45, &
                             cFloor       = 46, &
                             cCsc         = 47, &
                             cSec         = 48, & ! --> last monadic operator: .OP.(A)
                             VarBegin     = 49
 !</constantblock>
+
 
 !<constantblock description="symbols for parser operands">
   CHARACTER (LEN=2), DIMENSION(cAdd:cOr), PARAMETER :: Ops = (/ '+ ', &
@@ -390,6 +420,7 @@ MODULE fparser
                                                                 '& ', &
                                                                 '| ' /)
 !</constantblock>
+
 
 !<constantblock description="function names for parser">
   CHARACTER (LEN=5), DIMENSION(cIf:cSec), PARAMETER :: Funcs = (/ 'if   ', &
@@ -410,32 +441,29 @@ MODULE fparser
                                                                   'cos  ', &
                                                                   'tan  ', &
                                                                   'cot  ', &
+                                                                  'asinh', &
                                                                   'asin ', &
-                                                                  'acos ', &
-                                                                  'atan ', &
                                                                   'acosh', &
-                                                                  'acinh', &
+                                                                  'acos ', &
                                                                   'atanh', &
+                                                                  'atan ', &
                                                                   'ceil ', &
                                                                   'floor', &
                                                                   'csc  ', &
                                                                   'sec  ' /)
 !</constantblock>
 
-!<constantblock description="constants for parser">
-  INTEGER(is), PARAMETER :: C_PI   = 1, &
-                            C_EXP  = 2
+
+!<constantblock description="predefined constant names for parser">
+  CHARACTER(LEN=5), DIMENSION(2) :: PredefinedConsts = (/ 'pi   ', &
+                                                          'exp  ' /)
 !</constantblock>
 
-!<constantblock description="constant names for parser">
-  CHARACTER(LEN=3), DIMENSION(C_PI:C_EXP), PARAMETER :: Consts = (/ 'pi ', &
-                                                                    'exp' /)
-!</constantblock>
 
-!<constantblock description="constant values for parser">
-  REAL(DP), DIMENSION(C_PI:c_EXP), PARAMETER :: Constvals = (/&
-      & 3.141592653589793115997963468544185161590576171875_DP, &
-      & 2.718281828459045090795598298427648842334747314453125_DP /)
+!<constantblock description="predefined constant values for parser">
+  REAL(DP), DIMENSION(2), PARAMETER :: PredefinedConstvals = (/&
+      3.141592653589793115997963468544185161590576171875_DP, &
+      2.718281828459045090795598298427648842334747314453125_DP/)
 !</constantblock>
 
 !</constants>
@@ -446,8 +474,20 @@ MODULE fparser
 
 !<globals>
 
-  ! Associates function strings
-  INTEGER, PRIVATE, DIMENSION(:),  POINTER :: ipos => NULL()
+  ! Global handle to stack memory
+  INTEGER, SAVE                                        :: h_Stack = ST_NOHANDLE
+  
+  ! Global pointer to stack memory
+  REAL(DP), DIMENSION(:), POINTER, SAVE                :: p_Stack => NULL()
+
+  ! Global number of predefined/user-defined constants
+  INTEGER, SAVE                                        :: nConsts = 0 
+
+  ! Global constant names for parser
+  CHARACTER(LEN=5), DIMENSION(FPAR_MAXCONSTS), SAVE    :: Consts  = '     '
+
+  ! Global constant values for parser
+  REAL(DP), DIMENSION(FPAR_MAXCONSTS), SAVE            :: ConstVals = 0
 !</globals>
 
   !****************************************************************************
@@ -462,14 +502,15 @@ MODULE fparser
   TYPE t_fparser
     PRIVATE
     
-    ! Array of function parser components
+    ! Array of function parser components. Each component is used to
+    ! handle one function string at a time
     TYPE(t_fparserComponent), DIMENSION(:), POINTER :: Comp => NULL()
     
     ! Number of parser components
-    INTEGER :: nComp = 0
-    
+    INTEGER :: nComp                                        = 0
+
     ! Evaluation error code: =0: no error occured, >0
-    INTEGER :: EvalErrType = 0
+    INTEGER :: EvalErrType                                  = 0
   END TYPE t_fparser
 
 !</typeblock>
@@ -478,57 +519,169 @@ MODULE fparser
 
   ! Type block for storing the bytecode of the function parser for one component
   TYPE t_fparserComponent
+    PRIVATE
+
     ! Size of bytecode
-    INTEGER :: ByteCodeSize = 0
+    INTEGER :: ByteCodeSize                                 = 0
 
     ! Size of immediates
-    INTEGER :: ImmedSize = 0
+    INTEGER :: ImmedSize                                    = 0
 
     ! Stack size
-    INTEGER :: StackSize = 0
+    INTEGER :: StackSize                                    = 0
 
     ! Stack pointer
-    INTEGER :: StackPtr = 0
+    INTEGER :: StackPtr                                     = 0
 
-    ! Use degree conversion for some functions
-    LOGICAL :: useDegreeConversion = .FALSE.
+    ! Use degree conversion DEG <-> RAD for some functions
+    LOGICAL :: useDegreeConversion                          = .FALSE.
+
+    ! Is vectorizable
+    LOGICAL :: isVectorizable                               = .TRUE.
     
     ! Bytecode
-    INTEGER(is), DIMENSION(:), POINTER :: ByteCode => NULL()
+    INTEGER(is), DIMENSION(:), POINTER :: ByteCode          => NULL()
     
     ! Immediates
-    REAL(DP), DIMENSION(:), POINTER :: Immed => NULL()
+    REAL(DP), DIMENSION(:), POINTER :: Immed                => NULL()
   END TYPE t_fparserComponent
 !</typeblock>
 
 !</types>
 
-
 CONTAINS
+
+  ! *****************************************************************************
   
+!<subroutine>
+
+  SUBROUTINE fparser_init (iStackSize)
+
+!<description>
+    ! Initialize function parser
+!</description>
+
+!<input>
+    ! OPTIONAL: initial size of the stack memory
+    INTEGER, INTENT(IN), OPTIONAL :: iStackSize
+!</input>
+!</subroutine>
+
+    INTEGER :: iSize,iConst
+
+    IF (PRESENT(iStackSize)) THEN
+      iSize=MIN(iStackSize,FPAR_MAXSTACKSIZE)
+    ELSE
+      iSize=FPAR_MAXSTACKSIZE
+    END IF
+    
+    ! Allocate memory for global stack and set pointer
+    CALL storage_new('fparser_init','p_Stack',iSize,ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
+    CALL storage_getbase_double(h_Stack,p_Stack)
+    
+    ! Initialize predefined constants
+    DO iConst=LBOUND(PredefinedConsts,1),UBOUND(PredefinedConsts,1)
+      CALL fparser_defineConstant(PredefinedConsts(iConst),PredefinedConstvals(iConst))
+    END DO
+  END SUBROUTINE fparser_init
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE fparser_done
+
+!<description>
+    ! Release function parser
+!</description>
+!</subroutine>
+
+    ! Reset constants
+    nConsts   = 0
+    Consts    = '     '
+    ConstVals = 0._DP
+    
+    ! Free memory
+    IF (h_Stack  /= ST_NOHANDLE) CALL storage_free(h_Stack)
+    NULLIFY(p_Stack)
+  END SUBROUTINE fparser_done
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE fparser_defineConstant(const,constval)
+
+!<description>
+    ! Define a new constant for the function parser.
+    ! This subroutine checks if the given constant is already defined.
+!</description>
+
+!<input>
+    ! Name of the constant
+    CHARACTER(LEN=5), INTENT(IN) :: const
+
+    ! Value of the constant
+    REAL(DP), INTENT(IN) :: constval
+!</input>
+!</subroutine>
+
+    ! local variables
+    INTEGER :: iConst
+
+    ! Check if there is enough space
+    IF (nConsts < FPAR_MAXCONSTS) THEN
+      nConsts = nConsts+1
+    ELSE
+      PRINT *, "*** Parser error: no space left for definition of constant"
+      STOP
+    END IF
+
+    ! Check if constant is already defined
+    DO iConst=1,nConsts-1
+      IF (Consts(iConst) == const) THEN
+        ! If it is already defined, then it must not have a different value
+        IF(ConstVals(iConst) /= constval) THEN
+          PRINT *, "*** Parser error: constant is already defined with different value"
+          STOP
+        ELSE
+          nConsts = nConsts-1
+          RETURN
+        END IF
+      END IF
+    END DO
+
+    ! Apply constant value and constant name
+    Consts(nConsts)    = const
+    ConstVals(nConsts) = constval
+  END SUBROUTINE fparser_defineConstant
+
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE fparser_create (rparser,n)
+  SUBROUTINE fparser_create (rparser,nComp)
 
 !<description>
-    ! Initialize function parser for n functions
+    ! Initialize function parser for nComp functions
 !</description>
 
 !<input>
     ! Number of functions
-    INTEGER, INTENT(IN) :: n                                 
+    INTEGER, INTENT(IN) :: nComp
 !</input>
 
-!<output>
+!<inputoutput>
     ! Function parser object
-    TYPE(t_fparser) :: rparser
-!</output>
+    TYPE(t_fparser), INTENT(INOUT) :: rparser
+!</inputoutput>
 !</subroutine>
     
-    ALLOCATE (rparser%Comp(n))
-    rparser%nComp=n
+    ! Set number of components
+    rparser%nComp=nComp
+    
+    IF (ASSOCIATED(rparser%Comp)) DEALLOCATE(rparser%Comp)
+    ALLOCATE (rparser%Comp(nComp))
   END SUBROUTINE fparser_create
 
   ! *****************************************************************************
@@ -538,7 +691,7 @@ CONTAINS
   SUBROUTINE fparser_release (rparser)
 
 !<description>
-    ! Release function parser
+    ! Release function parser and all of its coponents
 !</description>
 
 !<inputoutput>
@@ -548,21 +701,21 @@ CONTAINS
 !</subroutine>
     
     ! local variables
-    INTEGER :: i
+    INTEGER :: iComp
     
-    DO i=1,rparser%nComp
-      IF (ASSOCIATED(rparser%Comp(i)%ByteCode)) DEALLOCATE(rparser%Comp(i)%ByteCode)
-      IF (ASSOCIATED(rparser%Comp(i)%Immed)) DEALLOCATE(rparser%Comp(i)%Immed)
+    DO iComp=1,rparser%nComp
+      IF (ASSOCIATED(rparser%Comp(iComp)%ByteCode)) DEALLOCATE(rparser%Comp(iComp)%ByteCode)
+      IF (ASSOCIATED(rparser%Comp(iComp)%Immed))    DEALLOCATE(rparser%Comp(iComp)%Immed)
     END DO
     DEALLOCATE(rparser%Comp)
     rparser%nComp=0
   END SUBROUTINE fparser_release
-  
+
   ! *****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE fparser_parseFunction (rparser, i, FuncStr, Var, useDegrees)
+  SUBROUTINE fparser_parseFunction (rparser, iComp, FuncStr, Var, useDegrees)
 
 !<description>
     ! Parse ith function string FuncStr and compile it into bytecode
@@ -570,7 +723,7 @@ CONTAINS
     
 !<input>
     ! Function identifier
-    INTEGER, INTENT(IN) :: i
+    INTEGER, INTENT(IN) :: iComp
 
     ! Function string
     CHARACTER (LEN=*), INTENT(IN) :: FuncStr
@@ -591,14 +744,11 @@ CONTAINS
     ! local variables
     CHARACTER (LEN=LEN(FuncStr)) :: Func
     
-    IF (i < 1 .OR. i > rparser%nComp) THEN
-      WRITE(*,*) '*** Parser error: Function number ',i,' out of range'
+    IF (iComp < 1 .OR. iComp > rparser%nComp) THEN
+      WRITE(*,*) '*** Parser error: Function number ',iComp,' out of range'
       STOP
     END IF
     
-    ! Char. positions in orig. string
-    ALLOCATE (ipos(LEN_TRIM(FuncStr)))
-
     ! Local copy of function string
     Func = FuncStr
 
@@ -612,31 +762,33 @@ CONTAINS
     ! Condense function string
     CALL RemoveSpaces (Func)
 
-    ! Check for valid syntax
-    CALL CheckSyntax (Func,FuncStr,Var)
+    ! Check for valid syntax; this prevents the bytecode compiler
+    ! from running into endless loops or other problems
+    CALL CheckSyntax (Func,Var)
     
-    ! Compile into bytecode
-    IF (PRESENT(useDegrees)) rparser%Comp(i)%useDegreeConversion&
-        &=useDegrees
-    CALL Compile (rparser%Comp(i),Func,Var)
+    ! If syntax is correct, then compile into bytecode
+    IF (PRESENT(useDegrees))&
+        rparser%Comp(iComp)%useDegreeConversion = useDegrees
 
-    DEALLOCATE (ipos)
+    CALL Compile (rparser%Comp(iComp),Func,Var)
   END SUBROUTINE fparser_parseFunction
 
   ! *****************************************************************************
 
-!<function>
-
-  FUNCTION fparser_evalFunctionScalar (rparser, i, Val, EvalErrType) RESULT (res)
+!<subroutine>
+  
+  SUBROUTINE fparser_evalFunctionScalar (rparser, iComp, Val, Res)
 
 !<description>
-    ! Evaluate bytecode of ith function for the values passed in
-    ! array Val(:)
+    ! Evaluate bytecode of component iComp for the values passed in array 
+    ! Val(:). Note that this function is a wrapper for the working routine
+    ! evalFunctionScalar. It is used to adjust the dimensions of the global
+    ! stack memory if required.
 !</description>
 
 !<input>
     ! Function identifier
-    INTEGER, INTENT(IN) :: i
+    INTEGER, INTENT(IN) :: iComp
 
     ! Variable values
     REAL(DP), DIMENSION(:), INTENT(IN) :: Val
@@ -648,40 +800,205 @@ CONTAINS
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL Error code for function evaluation
-    INTEGER, INTENT(OUT), OPTIONAL :: EvalErrType
-!</output>
-
-!<result>
     ! Evaluated function
-    REAL(DP) :: res
-!</result>
-!</function>
+    REAL(DP), INTENT(OUT)  :: Res
+!</output>
+!</subroutine>
+    
+    ! Check if memory of global stack is sufficient
+    IF (SIZE(p_Stack) < rparser%Comp(iComp)%StackSize+1) THEN
+      IF (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) THEN
+        CALL storage_realloc('fparser_evalFunctionScalar',&
+            rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.FALSE.)
+        CALL storage_getbase_double(h_Stack,p_Stack)
+      ELSE
+        PRINT *, "*** Parser error: stack size exceeds memory!"
+        STOP
+      END IF
+    END IF
+    
+    ! Invoke working routine
+    CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val,rparser%EvalErrType,Res)
+  END SUBROUTINE fparser_evalFunctionScalar
 
-    ! local parameters
-    REAL(DP), PARAMETER :: zero = 0._DP
+  ! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE fparser_evalFunctionBlock (rparser, iComp, iDim, Val, Res)
+
+!<description>
+    ! Evaluate bytecode of component iComp for the array of values passed in 
+    ! array Val(:,:). Note that this function is a wrapper for the working 
+    ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
+    ! global stack memory if required.
+!</description>
+
+!<input>
+    ! Function identifier
+    INTEGER, INTENT(IN) :: iComp
+
+    ! Orientation of the stored values
+    ! iDim =1 : Val is organized as (x1:xN),(y1:yN),...
+    ! iDim =2 : Val is organized as (x1,y1),(x2,y2),...,(xN,yN)
+    INTEGER, INTENT(IN) :: iDim
+
+    ! Variable values
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Val
+!</input>
+
+!<inputoutput>
+    ! Function parser
+    TYPE (t_fparser),  INTENT(INOUT) :: rparser
+!</inputoutput>
+
+!<output>
+    ! Evaluated function
+    REAL(DP), DIMENSION(:), INTENT(OUT) :: Res
+!</output>
+!</subroutine>
     
     ! local variables
-    TYPE(t_fparserComponent), POINTER :: Comp
-    INTEGER :: IP, DataPtr, StackPtr,jumpAddr,immedAddr,h_Stack
-    REAL(DP), DIMENSION(:), POINTER :: Stack
+    INTEGER :: iVal,jVal,nVal,iMemory,iBlockSize,iBlock
+
+    ! Get total number of variable sets
+    nVal=SIZE(Val,iDim)
+
+    ! Check if the compiled function is vectorizable
+    IF (rparser%Comp(iComp)%isVectorizable) THEN
+      ! ...ok, vectorization of the bytecode is admissible.
+
+      ! Guess required memory
+      iMemory=(rparser%Comp(iComp)%StackSize+1)*nVal
+      iMemory=MIN(iMemory,FPAR_MAXSTACKSIZE)
+      
+      ! Check if memory of global stack is sufficient for complete set of variables
+      IF (SIZE(p_Stack) < iMemory) THEN
+        IF (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) THEN
+          CALL storage_realloc('fparser_evalFunctionBlock',&
+              iMemory,h_Stack,ST_NEWBLOCK_NOINIT,.FALSE.)
+          CALL storage_getbase_double(h_Stack,p_Stack)
+        ELSE
+          PRINT *, "*** Parser error: stack size exceeds memory!"
+          STOP
+        END IF
+      END IF
+      
+      ! Compute size of blocks that can be vectorized
+      iBlockSize = FLOOR(REAL(iMemory)/REAL(rparser%Comp(iComp)%StackSize+1))
+      
+      ! What is the organization of Val(:,:)
+      IF (iDim == 1) THEN
+        DO iVal=1,nVal,iBlockSize
+          
+          ! Initialization
+          jVal     = MIN(iVal+iBlockSize,nVal)
+          iBlock   = jVal-iVal+1
+          
+          ! Invoke working routine
+          CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
+              Val(iVal:jVal,:),iDim,rparser%EvalErrType,Res(iVal:jVal))
+        END DO
+      ELSE
+        DO iVal=1,nVal,iBlockSize
+          
+          ! Initialization
+          jVal     = MIN(iVal+iBlockSize,nVal)
+          iBlock   = jVal-iVal+1
+          
+          ! Invoke working routine
+          CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
+              Val(:,iVal:jVal),iDim,rparser%EvalErrType,Res(iVal:jVal))
+        END DO
+      END IF
+      
+    ELSE
+      ! Check if memory of global stack is sufficient for one set of variables
+      IF (SIZE(p_Stack) < rparser%Comp(iComp)%StackSize+1) THEN
+        IF (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) THEN
+          CALL storage_realloc('fparser_evalFunctionBlock',&
+              rparser%Comp(iComp)%StackSize+1,h_Stack,ST_NEWBLOCK_NOINIT,.FALSE.)
+          CALL storage_getbase_double(h_Stack,p_Stack)
+        ELSE
+          PRINT *, "*** Parser error: stack size exceeds memory!"
+          STOP
+        END IF
+      END IF
+
+      ! The compiled bytecode cannot be vectorized. Hence, evaluate the function
+      ! separately for each set of variables. Here, the organization of the array
+      ! VAL(:,:) is important
+      IF (iDim == 1) THEN
+        DO iVal=1,nVal
+          
+          ! Invoke working routine
+          CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val(iVal,:),&
+              rparser%EvalErrType,Res(iVal))
+        END DO
+      ELSE
+        DO iVal=1,nVal
+
+          ! Invoke working routine
+          CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val(:,iVal),&
+              rparser%EvalErrType,Res(iVal))
+        END DO
+      END IF
+    END IF
+  END SUBROUTINE fparser_evalFunctionBlock
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE evalFunctionScalar (Stack, Comp, Val, EvalErrType, Res)
+
+!<description>
+    ! Evaluate bytecode for the values passed in array Val(:). Note, this subroutine
+    ! requires some working memory Stack(*) which is not checked. So be warned,
+    ! not to call this routine directly ;-)
+!</description>
+
+!<input>
+    ! Component of function parser
+    TYPE(t_fparserComponent), INTENT(IN) :: Comp
+
+    ! Variable values
+    REAL(DP), DIMENSION(:), INTENT(IN) :: Val
+!</input>
+
+!<inputoutput>
+    ! Stack memory
+    REAL(DP), DIMENSION(*), INTENT(INOUT) :: Stack
+!</inputoutput>
+
+!<output>
+    ! Error code for function evaluation
+    INTEGER, INTENT(OUT) :: EvalErrType
+
+    ! Evaluated function
+    REAL(DP) :: res
+!</output>
+!</subroutine>
+
+    ! local parameters
+    REAL(DP), PARAMETER :: Zero = 0._DP
+    
+    ! local variables
+    INTEGER  :: InstPtr,StackPtr,DataPtr
+    INTEGER  :: jumpAddr,immedAddr
     REAL(DP) :: daux
     
     ! Initialization
     DataPtr  = 1
     StackPtr = 0
-    IP       = 0
-    Comp => rparser%Comp(i)
+    InstPtr  = 0
+    
+    ! Repeat until complete bytecode has been processed
+    DO WHILE(InstPtr < Comp%ByteCodeSize)
+      InstPtr=InstPtr+1
 
-    ! Allocate stack
-    CALL storage_new('fparser_evalFunctionScalar','Stack',INT(Comp%StackSize+1,I32),&
-        ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_double(h_Stack,Stack)
-
-    DO WHILE(IP < Comp%ByteCodeSize)
-      IP=IP+1
-      
-      SELECT CASE (Comp%ByteCode(IP))
+      ! What kind of bytecode are we?
+      SELECT CASE (Comp%ByteCode(InstPtr))
         !------------------------------------------------------------
         ! Functions
         !------------------------------------------------------------
@@ -690,34 +1007,34 @@ CONTAINS
         
       CASE (cAcos)
         IF ((Stack(StackPtr) < -1._DP) .OR. &
-            (Stack(StackPtr) > 1._DP)) THEN
-          rparser%EvalErrType=4; res=zero
-          CALL storage_free(h_Stack)
+            (Stack(StackPtr) >  1._DP)) THEN
+          EvalErrType = 4
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr)=ACOS(Stack(StackPtr))
-
+        
       CASE (cAsin)
         IF ((Stack(StackPtr) < -1._DP) .OR. &
-            (Stack(StackPtr) > 1._DP)) THEN
-          rparser%EvalErrType=4; res=zero
-          CALL storage_free(h_Stack)
+            (Stack(StackPtr) >  1._DP)) THEN
+          EvalErrType = 4
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr)=ASIN(Stack(StackPtr))
-
+        
       CASE (cAtan)
         Stack(StackPtr)=ATAN(Stack(StackPtr))
 
-      CASE  (cAtan2)
+      CASE (cAtan2)
         Stack(StackPtr-1)=ATAN2(Stack(StackPtr -1),Stack(StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cAcosh)
         daux=Stack(StackPtr)+SQRT(Stack(StackPtr)**2-1)
         IF (daux <= 0._DP) THEN
-          rparser%EvalErrType=5; res=zero
-          CALL storage_free(h_Stack)
+          EvalErrType = 5
+          res         = zero
           RETURN
         END IF
         Stack(StackPtr)=LOG(daux)
@@ -729,28 +1046,28 @@ CONTAINS
         Stack(StackPtr)=AINT(Stack(StackPtr))
 
       CASE (cAsinh)
-        daux=Stack(StackPtr)+SQRT(Stack(StackPtr)+1)
+        daux=Stack(StackPtr)+SQRT(Stack(StackPtr)**2+1)
         IF (daux <= 0._DP) THEN
-          rparser%EvalErrType=5; res=zero
-          CALL storage_free(h_Stack)
+          EvalErrType = 5
+          res         = zero
           RETURN
         END IF
         Stack(StackPtr)=LOG(daux)
-
+        
       CASE (cAtanh)
         IF (Stack(StackPtr) == -1._DP) THEN
-          rparser%EvalErrType=6; res=zero
-          CALL storage_free(h_Stack)
+          EvalErrType = 6
+          res         = zero
           RETURN
         END IF
         daux=(1+Stack(StackPtr))/(1-Stack(StackPtr))
         IF (daux <= 0._DP) THEN
-          rparser%EvalErrType=3; res=zero
-          CALL storage_free(h_Stack)
+          EvalErrType = 3
+          res         = zero
           RETURN
         END IF
         Stack(StackPtr)=LOG(daux)/2._DP
-
+        
       CASE (cCeil)
         Stack(StackPtr)=CEILING(Stack(StackPtr))
         
@@ -762,22 +1079,22 @@ CONTAINS
 
       CASE (cCot)
         daux=TAN(Stack(StackPtr))
-        IF (daux == 0) THEN 
-          rparser%EvalErrType=1; res=zero
-          CALL storage_free(h_Stack)
+        IF (daux == 0._DP) THEN 
+          EvalErrType = 1
+          res         = zero
           RETURN
         END IF
         Stack(StackPtr)=1._DP/daux
 
       CASE (cCsc)
         daux=SIN(Stack(StackPtr))
-        IF (daux==0._DP) THEN
-          rparser%EvalErrType=1; res=zero
-          CALL storage_free(h_Stack)
+        IF (daux == 0._DP) THEN
+          EvalErrType = 1
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr)=1._DP/daux
-
+        
       CASE (cExp)
         Stack(StackPtr)=EXP(Stack(StackPtr))
 
@@ -785,30 +1102,30 @@ CONTAINS
         Stack(StackPtr)=FLOOR(Stack(StackPtr))
 
       CASE (cIf)
-        IP=IP+1; jumpAddr = Comp%ByteCode(IP)
-        IP=IP+1; immedAddr = Comp%ByteCode(IP)
+        InstPtr=InstPtr+1; jumpAddr  = Comp%ByteCode(InstPtr)
+        InstPtr=InstPtr+1; immedAddr = Comp%ByteCode(InstPtr)
         IF (.NOT.DbleToLogc(Stack(StackPtr))) THEN
-          IP      = jumpAddr
+          InstPtr = jumpAddr
           DataPtr = immedAddr
         END IF
         StackPtr=StackPtr-1
         
       CASE (cLog)
         IF (Stack(StackPtr) <= 0._DP) THEN
-          rparser%EvalErrType=3; res=zero
-          CALL storage_free(h_Stack)
+          EvalErrType = 3
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr)=LOG(Stack(StackPtr)) 
-
+        
       CASE (cLog10)
         IF (Stack(StackPtr) <= 0._DP) THEN
-          rparser%EvalErrType=3; res=zero
-          CALL storage_free(h_Stack)
+          EvalErrType = 3
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr)=LOG10(Stack(StackPtr))
-
+        
       CASE (cMax)
         Stack(StackPtr-1)=MAX(Stack(StackPtr-1),Stack(StackPtr))
         StackPtr=StackPtr-1
@@ -819,9 +1136,9 @@ CONTAINS
         
       CASE (cSec)
         daux=COS(Stack(StackPtr))
-        IF (daux==0._DP) THEN
-          rparser%EvalErrType=1; res=zero
-          CALL storage_free(h_Stack)
+        IF (daux == 0._DP) THEN
+          EvalErrType = 1
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr)=1._DP/daux
@@ -834,8 +1151,8 @@ CONTAINS
       
       CASE(cSqrt)
         IF (Stack(StackPtr) < 0._DP) THEN
-          rparser%EvalErrType=3; res=zero
-          CALL storage_free(h_Stack)
+          EvalErrType = 3
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr)=SQRT(Stack(StackPtr))
@@ -850,13 +1167,13 @@ CONTAINS
         ! Misc
         !------------------------------------------------------------
       CASE (cImmed)
-        StackPtr=StackPtr+1
-        Stack(StackPtr)=Comp%Immed(DataPtr)
-        DataPtr=DataPtr+1
-
+        StackPtr        = StackPtr+1
+        Stack(StackPtr) = Comp%Immed(DataPtr)
+        DataPtr         = DataPtr+1
+        
       CASE (cJump)
-        DataPtr=Comp%ByteCode(IP+2)
-        IP     =Comp%ByteCode(IP+1)
+        DataPtr=Comp%ByteCode(InstPtr+2)
+        InstPtr=Comp%ByteCode(InstPtr+1)
 
         !------------------------------------------------------------
         ! Operators
@@ -877,18 +1194,18 @@ CONTAINS
         StackPtr=StackPtr-1
         
       CASE (cDiv)
-        IF (Stack(StackPtr)==0._DP) THEN
-          rparser%EvalErrType=1; res=zero
-          CALL storage_free(h_Stack)
+        IF (Stack(StackPtr) == 0._DP) THEN
+          EvalErrType = 1
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr-1)=Stack(StackPtr-1)/Stack(StackPtr)
         StackPtr=StackPtr-1
         
       CASE (cMod)
-        IF (Stack(StackPtr)==0._DP) THEN
-          rparser%EvalErrType=1; res=zero
-          CALL storage_free(h_Stack)
+        IF (Stack(StackPtr) == 0._DP) THEN
+          EvalErrType = 1
+          res         = zero
           RETURN
         ENDIF
         Stack(StackPtr-1)=MOD(Stack(StackPtr-1),Stack(StackPtr))
@@ -946,103 +1263,75 @@ CONTAINS
         
       CASE DEFAULT
         StackPtr=StackPtr+1
-        Stack(StackPtr)=Val(Comp%ByteCode(IP)-VarBegin+1)
+        Stack(StackPtr)=Val(Comp%ByteCode(InstPtr)-VarBegin+1)
       END SELECT
     END DO
-    rparser%EvalErrType = 0
-    res = Stack(StackPtr)
-
-    ! Set error code (if required)
-    IF (PRESENT(EvalErrType)) EvalErrType = rparser%EvalErrType
-
-    ! Free memory
-    CALL storage_free(h_Stack)
-  END FUNCTION fparser_evalFunctionScalar
+    
+    EvalErrType = 0
+    Res = Stack(StackPtr)
+  END SUBROUTINE evalFunctionScalar
 
   ! *****************************************************************************
 
-!<function>
+!<subroutine>
 
-  FUNCTION fparser_evalFunctionArray (rparser, i, isize, Ishape, Val, EvalErrType) RESULT (Res)
+  SUBROUTINE evalFunctionBlock (BlockSize, Stack, Comp, Val, iDim, EvalErrType, Res)
 
 !<description>
-    ! Evaluate bytecode of ith function for an array of values passed
-    ! in Val(:,:)
+    ! Evaluate bytecode for an array of values passed in Val(:,:). The data in 
+    ! Val(:,:) is stored with leading first dimension, that is, the first set 
+    ! of data is stored in Val(:,1), the second set is stored in Val(:,2), etc.
+    ! Note, this subroutine requires some working memory Stack(iBlock,*) which is
+    ! not checked. So be warned, not to call this function directly ;-)
 !</description>
 
 !<input>
-    ! Function identifier
-    INTEGER, INTENT(IN) :: i
-
-    ! Size of the resulting array
-    INTEGER, INTENT(IN) :: isize
-
-    ! Shape of the value array
-    INTEGER, DIMENSION(2), INTENT(IN) :: Ishape
-
+    ! Component of function parser
+    TYPE(t_fparserComponent), INTENT(IN) :: Comp
+    
     ! Variable values
     REAL(DP), DIMENSION(:,:), INTENT(IN) :: Val
+
+    ! Size of the vector block
+    INTEGER, INTENT(IN) :: BlockSize
+
+    ! Orientation of the stored values
+    ! iDim =1 : Val is organized as (x1:xN),(y1:yN),...
+    ! iDim =2 : Val is organized as (x1,y1),(x2,y2),...,(xN,yN)
+    INTEGER, INTENT(IN) :: iDim
 !</input>
 
 !<inputoutput>
-    ! Function parser
-    TYPE (t_fparser),  INTENT(INOUT) :: rparser
+    ! Stack memory
+    REAL(DP), DIMENSION(BlockSize,*), INTENT(INOUT) :: Stack
 !</inputoutput>
 
 !<output>
-    ! OPTIONAL Error code for function evaluation
-    INTEGER, INTENT(OUT), OPTIONAL :: EvalErrType
-!</output>
+    ! Error code for function evaluation
+    INTEGER, INTENT(OUT) :: EvalErrType
 
-!<result>
     ! Evaluated function
-    REAL(DP), DIMENSION(isize) :: Res
-!</result>
-!</function>
+    REAL(DP), DIMENSION(:) :: Res
+!</output>
+!</subroutine>
 
     ! local parameters
-    REAL(DP), PARAMETER :: zero = 0._DP
+    REAL(DP), PARAMETER :: Zero = 0._DP
     
     ! local variables
-    TYPE(t_fparserComponent), POINTER :: Comp
-    INTEGER :: IP,DataPtr,StackPtr,h_Stack,j
-    REAL(DP), DIMENSION(:,:), POINTER :: Stack
+    INTEGER  :: InstPtr,DataPtr,StackPtr,iBlock
     REAL(DP) :: daux
-    LOGICAL :: bfirstdim
-    INTEGER(I32), DIMENSION(2) :: IsizeAlloc
-
-    ! Check if dimensions agree
-    IF (ANY(SHAPE(Val) /= Ishape)) THEN
-      PRINT *, 'fparser_evalFunctionArray: invalid dimensions!'
-      STOP
-    END IF
-    
-    IF (isize == Ishape(1)) THEN
-      bfirstdim=.TRUE.
-    ELSEIF (isize == Ishape(2)) THEN
-      bfirstdim=.FALSE.
-    ELSE
-      PRINT *, 'fparser_evalFunctionArray: invalid dimensions!'
-      STOP
-    END IF
     
     ! Initialization
     DataPtr  = 1
     StackPtr = 0
-    IP       = 0
-    Comp => rparser%Comp(i)
-    rparser%EvalErrType=0
-
-    ! Allocate stack
-    IsizeAlloc = (/INT(isize,I32),INT(Comp%StackSize+1,I32)/)
-    CALL storage_new('fparser_evalFunctionArray','Stack',&
-        IsizeAlloc,ST_DOUBLE,h_Stack,ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_double2D(h_Stack,Stack)
-
-    DO WHILE(IP < Comp%ByteCodeSize)
-      IP=IP+1
+    InstPtr  = 0
+    
+    ! Repeat until complete bytecode has been processed
+    DO WHILE(InstPtr < Comp%ByteCodeSize)
+      InstPtr=InstPtr+1
       
-      SELECT CASE (Comp%ByteCode(IP))
+      SELECT CASE (Comp%ByteCode(InstPtr))
         !------------------------------------------------------------
         ! Functions
         !------------------------------------------------------------
@@ -1050,25 +1339,27 @@ CONTAINS
         Stack(:,StackPtr)=ABS(Stack(:,StackPtr))
         
       CASE (cAcos)
-!$omp parallel do default(shared) private(j)
-        DO j=1,isize
-          IF ((Stack(j,StackPtr) < -1._DP) .OR.&
-              (Stack(j,StackPtr) > 1._DP)) THEN
-            rparser%EvalErrType=4; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+          IF ((Stack(iBlock,StackPtr) < -1._DP) .OR.&
+              (Stack(iBlock,StackPtr) >  1._DP)) THEN
+            EvalErrType=4
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr)=ACOS(Stack(j,StackPtr))
+            Stack(iBlock,StackPtr)=ACOS(Stack(iBlock,StackPtr))
           END IF
         END DO
 !$omp end parallel do
 
       CASE (cAsin)
-!$omp parallel do default(shared) private(j)
-        DO j=1,isize
-          IF ((Stack(j,StackPtr) < -1._DP) .OR.&
-              (Stack(j,StackPtr) > 1._DP)) THEN
-            rparser%EvalErrType=4; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+          IF ((Stack(iBlock,StackPtr) < -1._DP) .OR.&
+              (Stack(iBlock,StackPtr) >  1._DP)) THEN
+            EvalErrType=4
+            Res(iBlock)=zero
           ELSE
-            Stack(j,StackPtr)=ASIN(Stack(j,StackPtr))
+            Stack(iBlock,StackPtr)=ASIN(Stack(iBlock,StackPtr))
           END IF
         END DO
 !$omp end parallel do
@@ -1076,18 +1367,19 @@ CONTAINS
       CASE (cAtan)
         Stack(:,StackPtr)=ATAN(Stack(:,StackPtr))
 
-      CASE  (cAtan2)
+      CASE (cAtan2)
         Stack(:,StackPtr-1)=ATAN2(Stack(:,StackPtr -1),Stack(:,StackPtr))
         StackPtr=StackPtr-1
         
       CASE (cAcosh)
-!$omp parallel do default(shared) private(j,daux)
-        DO j=1,isize
-          daux=Stack(j,StackPtr)+SQRT(Stack(j,StackPtr)**2-1)
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+          daux=Stack(iBlock,StackPtr)+SQRT(Stack(iBlock,StackPtr)**2-1)
           IF (daux <= 0._DP) THEN
-            rparser%EvalErrType=5; Res(j)=zero
+            EvalErrType=5
+            Res(iBlock)=zero
           ELSE
-            Stack(j,StackPtr)=LOG(daux)
+            Stack(iBlock,StackPtr)=LOG(daux)
           END IF
         END DO
 !$omp end parallel do
@@ -1099,28 +1391,31 @@ CONTAINS
         Stack(:,StackPtr)=AINT(Stack(:,StackPtr))
 
       CASE (cAsinh)
-!$omp parallel do default(shared) private(j,daux)
-        DO j=1,isize
-          daux=Stack(j,StackPtr)+SQRT(Stack(j,StackPtr)+1)
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+          daux=Stack(iBlock,StackPtr)+SQRT(Stack(iBlock,StackPtr)**2+1)
           IF (daux <= 0._DP) THEN
-            rparser%EvalErrType=5; Res(j)=zero
+            EvalErrType=5
+            Res(iBlock)=zero
           ELSE
-            Stack(j,StackPtr)=LOG(daux)
+            Stack(iBlock,StackPtr)=LOG(daux)
           END IF
         END DO
 !$omp end parallel do
 
       CASE (cAtanh)
-!$omp parallel do default(shared) private(j,daux)
-        DO j=1,isize
-          IF (Stack(j,StackPtr) == -1._DP) THEN
-            rparser%EvalErrType=6; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+          IF (Stack(iBlock,StackPtr) == -1._DP) THEN
+            EvalErrType=6
+            Res(iBlock)=Zero
           END IF
-          daux=(1+Stack(j,StackPtr))/(1-Stack(j,StackPtr))
+          daux=(1+Stack(iBlock,StackPtr))/(1-Stack(iBlock,StackPtr))
           IF (daux <= 0._DP) THEN
-            rparser%EvalErrType=3; Res(j)=zero
+            EvalErrType=3
+            Res(iBlock)=zero
           ELSE
-            Stack(j,StackPtr) = LOG(daux)/2._DP
+            Stack(iBlock,StackPtr) = LOG(daux)/2._DP
           END IF
         END DO
 !$omp end parallel do
@@ -1135,25 +1430,27 @@ CONTAINS
         Stack(:,StackPtr)=COSH(Stack(:,StackPtr))
 
       CASE (cCot)
-!$omp parallel do default(shared) private(j,daux)
-        DO j=1,isize
-          daux=TAN(Stack(j,StackPtr))
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+          daux=TAN(Stack(iBlock,StackPtr))
           IF (daux == 0) THEN 
-            rparser%EvalErrType=1; Res(j)=zero
+            EvalErrType=1
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr)=1._DP/daux
+            Stack(iBlock,StackPtr)=1._DP/daux
           END IF
         END DO
 !$omp end parallel do
 
       CASE (cCsc)
-!$omp parallel do default(shared) private(j,daux)
-        DO j=1,isize
-          daux=SIN(Stack(j,StackPtr))
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+          daux=SIN(Stack(iBlock,StackPtr))
           IF (daux==0._DP) THEN
-            rparser%EvalErrType=1; Res(j)=zero
+            EvalErrType=1
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr)=1._DP/daux
+            Stack(iBlock,StackPtr)=1._DP/daux
           END IF
         END DO
 !$omp end parallel do
@@ -1165,39 +1462,32 @@ CONTAINS
         Stack(:,StackPtr)=FLOOR(Stack(:,StackPtr))
 
       CASE (cIf)
-        ! At the moment, IF-THEN-ELSE cannot be handled for multiple
-        ! values. Hence, stop this subroutine an process each item separately
-        CALL storage_free(h_Stack)
-        IF (bfirstdim) THEN
-          DO j=1,isize
-            Res(j)=fparser_evalFunction(rparser,i,Val(j,:),EvalErrType)
-          END DO
-        ELSE
-          DO j=1,isize
-            Res(j)=fparser_evalFunction(rparser,i,Val(:,j),EvalErrType)
-          END DO
-        END IF
-        CALL storage_free(h_Stack)
-        RETURN
+        ! IF-THEN-ELSE cannot be vectorized which should be noted during
+        ! bytecode compilation. If we reach this point, then something
+        ! went wrong before.
+        PRINT *, "*** Parser error: IF-THEN-ELSE cannot be vectorized!"
+        STOP
         
       CASE (cLog)
-!$omp parallel do default(shared) private(j)
-        DO j=1,isize
-          IF (Stack(j,StackPtr) <= 0._DP) THEN
-            rparser%EvalErrType=3; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+          IF (Stack(iBlock,StackPtr) <= 0._DP) THEN
+            EvalErrType=3
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr)=LOG(Stack(j,StackPtr)) 
+            Stack(iBlock,StackPtr)=LOG(Stack(iBlock,StackPtr)) 
           END IF
         END DO
 !$omp end parallel do
 
       CASE (cLog10)
-!$omp parallel do default(shared) private(j)
-        DO j=1,isize
-          IF (Stack(j,StackPtr) <= 0._DP) THEN
-            rparser%EvalErrType=3; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+          IF (Stack(iBlock,StackPtr) <= 0._DP) THEN
+            EvalErrType=3
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr)=LOG10(Stack(j,StackPtr))
+            Stack(iBlock,StackPtr)=LOG10(Stack(iBlock,StackPtr))
           END IF
         END DO
 !$omp end parallel do
@@ -1211,13 +1501,14 @@ CONTAINS
         StackPtr=StackPtr-1
         
       CASE (cSec)
-!$omp parallel do default(shared) private(j,daux)
-        DO j=1,isize
-          daux=COS(Stack(j,StackPtr))
-          IF (daux==0._DP) THEN
-            rparser%EvalErrType=1; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock,daux)
+        DO iBlock=1,BlockSize
+          daux=COS(Stack(iBlock,StackPtr))
+          IF (daux == 0._DP) THEN
+            EvalErrType=1
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr)=1._DP/daux
+            Stack(iBlock,StackPtr)=1._DP/daux
           END IF
         END DO
 !$omp end parallel do
@@ -1229,12 +1520,13 @@ CONTAINS
         Stack(:,StackPtr)=SINH(Stack(:,StackPtr))
       
       CASE(cSqrt)
-!$omp parallel do default(shared) private(j)
-        DO j=1,isize
-          IF (Stack(j,StackPtr) < 0._DP) THEN
-            rparser%EvalErrType=3; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+          IF (Stack(iBlock,StackPtr) < 0._DP) THEN
+            EvalErrType=3
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr)=SQRT(Stack(j,StackPtr))
+            Stack(iBlock,StackPtr)=SQRT(Stack(iBlock,StackPtr))
           END IF
         END DO
 !$omp end parallel do
@@ -1254,8 +1546,8 @@ CONTAINS
         DataPtr=DataPtr+1
 
       CASE (cJump)
-        DataPtr=Comp%ByteCode(IP+2)
-        IP     =Comp%ByteCode(IP+1)
+        DataPtr=Comp%ByteCode(InstPtr+2)
+        InstPtr=Comp%ByteCode(InstPtr+1)
 
         !------------------------------------------------------------
         ! Operators
@@ -1276,24 +1568,26 @@ CONTAINS
         StackPtr=StackPtr-1
         
       CASE (cDiv)
-!$omp parallel do default(shared) private(j)
-        DO j=1,isize
-          IF (Stack(j,StackPtr)==0._DP) THEN
-            rparser%EvalErrType=1; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+          IF (Stack(iBlock,StackPtr) == 0._DP) THEN
+            EvalErrType=1
+            Res(iBlock)=zero
           ELSE
-            Stack(j,StackPtr-1)=Stack(j,StackPtr-1)/Stack(j,StackPtr)
+            Stack(iBlock,StackPtr-1)=Stack(iBlock,StackPtr-1)/Stack(iBlock,StackPtr)
           END IF
         END DO
 !$omp end parallel do
         StackPtr=StackPtr-1
         
       CASE (cMod)
-!$omp parallel do default(shared) private(j)
-        DO j=1,isize
-          IF (Stack(j,StackPtr)==0._DP) THEN
-            rparser%EvalErrType=1; Res(j)=zero
+!$omp parallel do default(shared) private(iBlock)
+        DO iBlock=1,BlockSize
+          IF (Stack(iBlock,StackPtr) == 0._DP) THEN
+            EvalErrType=1
+            Res(iBlock)=Zero
           ELSE
-            Stack(j,StackPtr-1)=MOD(Stack(j,StackPtr-1),Stack(j,StackPtr))
+            Stack(iBlock,StackPtr-1)=MOD(Stack(iBlock,StackPtr-1),Stack(iBlock,StackPtr))
           END IF
         END DO
 !$omp end parallel do
@@ -1351,29 +1645,17 @@ CONTAINS
         
       CASE DEFAULT
         StackPtr=StackPtr+1
-        IF (bfirstdim) THEN
-          Stack(:,StackPtr)=Val(:,Comp%ByteCode(IP)-VarBegin+1)
+        IF (iDim == 1) THEN
+          Stack(:,StackPtr)=Val(:,Comp%ByteCode(InstPtr)-VarBegin+1)
         ELSE
-          Stack(:,StackPtr)=Val(Comp%ByteCode(IP)-VarBegin+1,:)
+          Stack(:,StackPtr)=Val(Comp%ByteCode(InstPtr)-VarBegin+1,:)
         END IF
       END SELECT
-
-      ! Check if an error occured
-      IF (rparser%EvalErrType /= 0) THEN
-        CALL storage_free(h_Stack)    
-        RETURN
-      END IF
-
     END DO
-    rparser%EvalErrType = 0
+    
+    EvalErrType = 0
     Res = Stack(:,StackPtr)
-
-    ! Set error code (if required)
-    IF (PRESENT(EvalErrType)) EvalErrType = rparser%EvalErrType
-
-    ! Free memory
-    CALL storage_free(h_Stack)    
-  END FUNCTION fparser_evalFunctionArray  
+  END SUBROUTINE evalFunctionBlock
   
   ! *****************************************************************************
 
@@ -1417,7 +1699,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE fparser_PrintByteCode(rparser, i)
+  SUBROUTINE fparser_PrintByteCode(rparser, iComp)
 
 !<description>
     ! Print the compiled bytecode stack
@@ -1428,40 +1710,40 @@ CONTAINS
     TYPE(t_fparser), INTENT(IN) :: rparser
 
     ! Function identifier
-    INTEGER, INTENT(IN) :: i
+    INTEGER, INTENT(IN) :: iComp
 !</input>
 !</subroutine>
 
     ! local variables
     TYPE(t_fparserComponent), POINTER :: Comp
     CHARACTER(LEN=5) :: n
-    INTEGER :: IP, DataPtr, StackPtr,nparams
+    INTEGER :: InstPtr, DataPtr, StackPtr,nparams
     INTEGER(is) :: opCode
     
-    nparams=1
+    nparams  = 1
     DataPtr  = 1
     StackPtr = 0
-    IP       = 0
-    Comp => rparser%Comp(i)
+    InstPtr  = 0
+    Comp     => rparser%Comp(iComp)
 
-    DO WHILE(IP < Comp%ByteCodeSize)
-      IP=IP+1
+    DO WHILE(InstPtr < Comp%ByteCodeSize)
+      InstPtr=InstPtr+1
       
-      WRITE(*,FMT='(I8.8,1X,":",1X)',ADVANCE="NO") IP
+      WRITE(*,FMT='(I8.8,1X,":",1X)',ADVANCE="NO") InstPtr
       
-      opCode=Comp%ByteCode(IP)
+      opCode=Comp%ByteCode(InstPtr)
       SELECT CASE(opCode)
         
       CASE(cIf)
-        WRITE(*,FMT='(A,1X,T10,I8.8)') "jz",Comp%ByteCode(IP+1)+1
-        IP=IP+2
+        WRITE(*,FMT='(A,1X,T10,I8.8)') "jz",Comp%ByteCode(InstPtr+1)+1
+        InstPtr=InstPtr+2
 
       CASE(cJump)
-        WRITE(*,FMT='(A,1X,T10,I8.8)') "jump",Comp%ByteCode(IP+1)+1
-        IP=IP+2
+        WRITE(*,FMT='(A,1X,T10,I8.8)') "jump",Comp%ByteCode(InstPtr+1)+1
+        InstPtr=InstPtr+2
 
       CASE(cImmed)
-        WRITE(*,FMT='(A,1X,T10,ES8.2)') "push",Comp%Immed(DataPtr)
+        WRITE(*,FMT='(A,1X,T10,G8.2)') "push",Comp%Immed(DataPtr)
         DataPtr=DataPtr+1
 
       CASE DEFAULT
@@ -1487,8 +1769,8 @@ CONTAINS
           CASE(cRAD); n="rad"
 
           CASE DEFAULT
-            n = Funcs(opCode)
-            nparams=MathFunctionParameters(opCode)
+            n       = Funcs(opCode)
+            nparams = MathFunctionParameters(opCode)
           END SELECT
           WRITE(*,FMT='(A,T10,A,"  (",I1,") ")') TRIM(n),"Par",nparams
           
@@ -1506,7 +1788,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE CheckSyntax (Func,FuncStr,Var)
+  SUBROUTINE CheckSyntax (Func,Var)
 
 !<description>
     ! Check syntax of function string, returns 0 if syntax is ok
@@ -1515,9 +1797,6 @@ CONTAINS
 !<input>
     ! Function string without spaces
     CHARACTER (LEN=*), INTENT(in) :: Func
-
-    ! Original function string
-    CHARACTER (LEN=*), INTENT(in) :: FuncStr
 
     ! Array with variable names
     CHARACTER (LEN=*), DIMENSION(:), INTENT(in) :: Var
@@ -1530,46 +1809,60 @@ CONTAINS
     CHARACTER (LEN=1) :: c
     REAL(DP) :: r
     LOGICAL :: err
-    INTEGER :: ParCnt,Ind,Ind2,ib,in,lFunc,idummy
+    INTEGER :: FuncIndex,FuncIndex2
+    INTEGER :: ParCnt,ib,in,FuncLength,idummy
     
-    Ind = 1
+    ! Initialization
+    FuncIndex = 1
     ParCnt = 0
-    lFunc = LEN_TRIM(Func)
-    CALL stack_create(functionParenthDepth,MAX(5,INT(lFunc/4._DP)),ST_INT)
+    FuncLength = LEN_TRIM(Func)
+    CALL stack_create(functionParenthDepth,MAX(5,INT(FuncLength/4._DP)),ST_INT)
 
     DO
-      IF (Ind > lFunc) CALL ParseErrMsg (Ind, FuncStr)
-      c = Func(Ind:Ind)
+      IF (FuncIndex > FuncLength) THEN
+        PRINT *, "CheckSyntax: invalid function string!"
+        STOP
+      END IF
+      c = Func(FuncIndex:FuncIndex)
 
       ! Check for valid operand (must appear)
 
       ! Check for leading - or !
       IF (c == '-' .OR. c == '!') THEN                      
-        Ind = Ind+1
-        IF (Ind > lFunc) CALL ParseErrMsg (Ind-1, FuncStr, 'Premature &
-            &end of string')
-        c = Func(Ind:Ind)
+        FuncIndex = FuncIndex+1
+        IF (FuncIndex > FuncLength) THEN
+          PRINT *, "CheckSyntax: Premature end of string!"
+          STOP
+        END IF
+        c = Func(FuncIndex:FuncIndex)
       END IF
             
       ! Check for math function
-      n = MathFunctionIndex (Func(Ind:))
+      n = MathFunctionIndex (Func(FuncIndex:))
       IF (n > 0) THEN
         ! Math function found
-        Ind = Ind+LEN_TRIM(Funcs(n))
-        IF (Ind > lFunc) CALL ParseErrMsg (Ind-1, FuncStr, 'Premature &
-            &end of string')
-        c = Func(Ind:Ind)
-        IF (c /= '(') CALL ParseErrMsg (Ind, FuncStr, 'Expecting ( aft&
-            &er function')
-
-        Ind2=Ind+1
-        IF (Ind2 > lFunc) CALL ParseErrMsg (Ind, FuncStr, 'Premature e&
-            &nd of string')
-        IF (Func(Ind2:Ind2) == ')') THEN
-          Ind=Ind2+1
-          IF (Ind > lFunc) CALL ParseErrMsg (Ind2, FuncStr, 'Premature&
-              & end of string')
-          c = Func(Ind:Ind)
+        FuncIndex = FuncIndex+LEN_TRIM(Funcs(n))
+        IF (FuncIndex > FuncLength) THEN
+          PRINT *, "CheckSyntax: Premature end of string!"
+          STOP
+        END IF
+        c = Func(FuncIndex:FuncIndex)
+        IF (c /= '(') THEN
+          PRINT *, "CheckSyntax: Expecting ( after function!",Func(FuncIndex:)
+          STOP
+        END IF
+        FuncIndex2=FuncIndex+1
+        IF (FuncIndex2 > FuncLength) THEN
+          PRINT *, "CheckSyntax: Premature end of string!"
+          STOP
+        END IF
+        IF (Func(FuncIndex2:FuncIndex2) == ')') THEN
+          FuncIndex=FuncIndex2+1
+          IF (FuncIndex > FuncLength) THEN
+            PRINT *, "CheckSyntax: Premature end of string!"
+            STOP
+          END IF
+          c = Func(FuncIndex:FuncIndex)
           
           ! Ugly, but other methods would just be uglier ...
           GOTO 999
@@ -1582,37 +1875,48 @@ CONTAINS
       ! Check for opening parenthesis
       IF (c == '(') THEN
         ParCnt = ParCnt+1
-        Ind = Ind+1
-        IF (Ind > lFunc) CALL ParseErrMsg (Ind-1, FuncStr, 'Premature &
-            &end of string')
-        IF (Func(Ind:Ind) == ')') CALL ParseErrMsg (Ind, FuncStr, 'Emp&
-            &ty parantheses')
+        FuncIndex = FuncIndex+1
+        IF (FuncIndex > FuncLength) THEN
+          PRINT *, "CheckSyntax: Premature end of string!"
+          STOP
+        END IF
+        IF (Func(FuncIndex:FuncIndex) == ')') THEN
+          PRINT *, "CheckSyntax: Empty parantheses!"
+          STOP
+        END IF
         CYCLE
       END IF
 
       ! Check for number
       IF (SCAN(c,'0123456789.') > 0) THEN
-        r = RealNum (Func(Ind:),ib,in,err)
-        IF (err) CALL ParseErrMsg (Ind, FuncStr, 'Invalid number forma&
-            &t:  '//Func(Ind+ib-1:Ind+in-2))
-        Ind = Ind+in-1
-        IF (Ind > lFunc) EXIT
-        c = Func(Ind:Ind)
+        r = RealNum (Func(FuncIndex:),ib,in,err)
+        IF (err) THEN
+          PRINT *, "CheckSyntax: Invalid number format!"
+          STOP
+        END IF
+        FuncIndex = FuncIndex+in-1
+        IF (FuncIndex > FuncLength) EXIT
+        c = Func(FuncIndex:FuncIndex)
       ELSEIF (c == '_') THEN
         ! Check for constant
-        n = ConstantIndex (Func(Ind:))
-        IF (n == 0) CALL ParseErrMsg (Ind, FuncStr, 'Invalid constant')
-        Ind = Ind+LEN_TRIM(Consts(n))+1
-        IF (Ind > lFunc) EXIT
-        c=Func(Ind:Ind)
+        n = ConstantIndex (Func(FuncIndex:))
+        IF (n == 0) THEN
+          PRINT *, "CheckSyntax: Invalid constant!"
+          STOP
+        END IF
+        FuncIndex = FuncIndex+LEN_TRIM(Consts(n))+1
+        IF (FuncIndex > FuncLength) EXIT
+        c=Func(FuncIndex:FuncIndex)
       ELSE
         ! Check for variable
-        n = VariableIndex (Func(Ind:),Var,ib,in)
-        IF (n == 0) CALL ParseErrMsg (Ind, FuncStr, 'Invalid element: &
-            &'//Func(Ind+ib-1:Ind+in-2))
-        Ind = Ind+in-1
-        IF (Ind > lFunc) EXIT
-        c = Func(Ind:Ind)
+        n = VariableIndex (Func(FuncIndex:),Var,ib,in)
+        IF (n == 0) THEN
+          PRINT *, "CheckSyntax: Invalid element!"
+          STOP
+        END IF
+        FuncIndex = FuncIndex+in-1
+        IF (FuncIndex > FuncLength) EXIT
+        c = Func(FuncIndex:FuncIndex)
       END IF
 
       ! Check for closing parenthesis
@@ -1622,17 +1926,21 @@ CONTAINS
               idummy=stack_popbackInt(functionParenthDepth)
         END IF
         ParCnt = ParCnt-1
-        IF (ParCnt < 0) CALL ParseErrMsg (Ind, FuncStr, 'Mismatched pa&
-            &renthesis')
-        IF (Func(Ind-1:Ind-1) == '(') CALL ParseErrMsg (Ind-1,&
-            & FuncStr, 'Empty parentheses')
-        Ind = Ind+1
-        IF (Ind > lFunc) EXIT
-        c = Func(Ind:Ind)
+        IF (ParCnt < 0) THEN
+          PRINT *, "CheckSyntax: Mismatched parenthesis!"
+          STOP
+        END IF
+        IF (Func(FuncIndex-1:FuncIndex-1) == '(') THEN
+          PRINT *, "CheckSyntax: Empty parentheses!"
+          STOP
+        END IF
+        FuncIndex = FuncIndex+1
+        IF (FuncIndex > FuncLength) EXIT
+        c = Func(FuncIndex:FuncIndex)
       END DO
 
       ! Now, we have a legal operand: A legal operator or end of string must follow
-999   IF (Ind > lFunc) EXIT
+999   IF (FuncIndex > FuncLength) EXIT
       
       ! Check operators
       opSize = 0
@@ -1641,62 +1949,26 @@ CONTAINS
             stack_backInt(functionParenthDepth) == parCnt) THEN
           opSize = 1
         ELSE
-          opSize = isOperator(Func(Ind:))
+          opSize = isOperator(Func(FuncIndex:))
         END IF
       ELSE
-        opSize = isOperator(Func(Ind:))
+        opSize = isOperator(Func(FuncIndex:))
       END IF
-      IF (opSize == 0) CALL ParseErrMsg (Ind+1, FuncStr, 'Operator exp&
-          &ected')
+      IF (opSize == 0) THEN
+        PRINT *, "CheckSyntax: Operator expected!"
+        STOP
+      END IF
       
       ! Now, we have an operand and an operator: the next loop will check for another 
       ! operand (must appear)
-      Ind = Ind+opSize
+      FuncIndex = FuncIndex+opSize
     END DO
-    IF (ParCnt > 0) CALL ParseErrMsg (Ind, FuncStr, 'Missing )')
+    IF (ParCnt > 0) THEN
+      PRINT *, "CheckSyntax: Missing )!"
+      STOP
+    END IF
     CALL stack_release(functionParenthDepth)
   END SUBROUTINE CheckSyntax
-
-  ! *****************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE ParseErrMsg (j, FuncStr, Msg)
-
-!<description>
-    ! Print error message and terminate program
-!</description>
-    
-!<input>
-    
-    ! Position in function string
-    INTEGER, INTENT(in) :: j
-    
-    ! Original function string
-    CHARACTER (LEN=*), INTENT(in) :: FuncStr
-
-    ! OPTIONAL: Error message
-    CHARACTER (LEN=*), OPTIONAL, INTENT(in) :: Msg
-!</input>
-!</subroutine>
-
-    ! local variables
-    INTEGER :: k
-    
-    IF (PRESENT(Msg)) THEN
-      WRITE(*,*) '*** Error in syntax of function string: '//Msg
-    ELSE
-      WRITE(*,*) '*** Error in syntax of function string:'
-    ENDIF
-    WRITE(*,*)
-    WRITE(*,'(A)') ' '//FuncStr
-    ! Advance to the jth position
-    DO k=1,ipos(j)
-      WRITE(*,'(A)',ADVANCE='NO') ' '
-    END DO
-    WRITE(*,'(A)') '?'
-    STOP
-  END SUBROUTINE ParseErrMsg
 
   ! *****************************************************************************
 
@@ -1836,7 +2108,7 @@ CONTAINS
     
     ! Check all math functions
     n = 0
-    DO j=C_PI,C_EXP
+    DO j=1,nConsts
       k = MIN(LEN_TRIM(Consts(j)), LEN(str(2:)))
       ! Compare lower case letters
       CALL LowCase (str(2:k+1), con)
@@ -1929,12 +2201,10 @@ CONTAINS
     INTEGER :: k,lstr
     
     lstr = LEN_TRIM(str)
-    ipos = (/ (k,k=1,lstr) /)
     k = 1
     DO WHILE (str(k:lstr) /= ' ')                             
       IF (str(k:k) == ' ') THEN
         str(k:lstr)  = str(k+1:lstr)//' '                  ! Move 1 character to left
-        ipos(k:lstr) = (/ ipos(k+1:lstr), 0 /)             ! Move 1 element to left
         k = k-1
       END IF
       k = k+1
@@ -1978,22 +2248,22 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE Compile (Comp, F, Var)
+  SUBROUTINE Compile (Comp, Func, Var)
 
 !<description>
-    ! Compile i-th function string F into bytecode
+    ! Compile i-th function string Func into bytecode
 !</description>
 
 !<input>
     ! Function string
-    CHARACTER (LEN=*), INTENT(in) :: F
+    CHARACTER (LEN=*), INTENT(in) :: Func
 
     ! Array with variable names
     CHARACTER (LEN=*), DIMENSION(:), INTENT(in) :: Var
 !</input>
 
 !<inputoutput>
-    ! Function parser
+    ! Function parser component
     TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
@@ -2001,29 +2271,40 @@ CONTAINS
     ! local variables
     INTEGER(is), DIMENSION(:), POINTER :: ByteCode
     REAL(DP), DIMENSION(:), POINTER :: Immed
-    INTEGER :: ind
+    INTEGER :: ind,isize
     
+    ! (Re-)initialize the bytecode structure (if required)
     IF (ASSOCIATED(Comp%ByteCode)) DEALLOCATE (Comp%ByteCode)
     IF (ASSOCIATED(Comp%Immed))    DEALLOCATE (Comp%Immed)
     Comp%ByteCodeSize = 0
     Comp%ImmedSize    = 0
     Comp%StackSize    = 0
     Comp%StackPtr     = 0
+    Comp%isVectorizable = .TRUE.
 
-    ! Allocate initial stacks
-    ALLOCATE(Comp%ByteCode(1024),Comp%Immed(1024))
+    ! Neither the stack for the bytecode nor the stack for the immediate expressions
+    ! can exceed the size of the function string. Hence, allocate some initial memory
+    isize=LEN_TRIM(Func)
+    ALLOCATE(Comp%ByteCode(isize),Comp%Immed(isize))
 
-    ! Compile string into bytecode
-    ind = CompileExpression(Comp,F,1,Var)
-
-    ! Adjust stack sizes
-    ALLOCATE(ByteCode(Comp%ByteCodeSize)); ByteCode=Comp%ByteCode
-    DEALLOCATE(Comp%ByteCode); ALLOCATE(Comp%ByteCode(Comp%ByteCodeSize))
-    Comp%ByteCode=ByteCode; DEALLOCATE(ByteCode)
+    ! Compile function string into bytecode
+    ind = CompileExpression(Comp,Func,1,Var)
     
-    ALLOCATE(Immed(Comp%ImmedSize)); Immed=Comp%Immed
-    DEALLOCATE(Comp%Immed); ALLOCATE(Comp%Immed(Comp%ImmedSize))
-    Comp%Immed=Immed; DEALLOCATE(Immed)
+    ! Adjust memory size of bytecode stack
+    ALLOCATE(ByteCode(Comp%ByteCodeSize))
+    ByteCode=Comp%ByteCode
+    DEALLOCATE(Comp%ByteCode)
+    ALLOCATE(Comp%ByteCode(Comp%ByteCodeSize))
+    Comp%ByteCode=ByteCode
+    DEALLOCATE(ByteCode)
+    
+    ! Adjust memory size of immediate stack
+    ALLOCATE(Immed(Comp%ImmedSize))
+    Immed=Comp%Immed
+    DEALLOCATE(Comp%Immed)
+    ALLOCATE(Comp%Immed(Comp%ImmedSize))
+    Comp%Immed=Immed
+    DEALLOCATE(Immed)
   END SUBROUTINE Compile
 
   ! *****************************************************************************
@@ -2042,8 +2323,7 @@ CONTAINS
 !</subroutine>
 
     Comp%StackPtr=Comp%StackPtr+1
-    IF (Comp%StackPtr > Comp%StackSize)&
-        Comp%StackSize=Comp%StackSize+1
+    IF (Comp%StackPtr > Comp%StackSize) Comp%StackSize=Comp%StackSize+1
   END SUBROUTINE incStackPtr
 
   ! *****************************************************************************
@@ -2067,20 +2347,419 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(is), DIMENSION(:), POINTER :: ByteCode
+    REAL(DP) :: daux
 
-    Comp%ByteCodeSize = Comp%ByteCodeSize + 1
-    IF (ASSOCIATED(Comp%ByteCode)) THEN
-      IF (Comp%ByteCodeSize > SIZE(Comp%ByteCode)) THEN
-        ALLOCATE(ByteCode(Comp%ByteCodeSize-1))
-        ByteCode=Comp%ByteCode
-        DEALLOCATE(Comp%ByteCode)
-        ALLOCATE(Comp%ByteCode(2*Comp%ByteCodeSize))
-        Comp%ByteCode(1:Comp%ByteCodeSize-1)=ByteCode
-        DEALLOCATE(ByteCode)
+    Comp%ByteCodeSize = Comp%ByteCodeSize + 1    
+    Comp%ByteCode(Comp%ByteCodeSize) = byte
+
+    ! Try to optimize the compiled bytecode. Check the bytecode instruction and
+    ! compute some values on-the-fly of this is possible
+    SELECT CASE(byte)
+      !------------------------------------------------------------
+      ! Functions
+      !------------------------------------------------------------
+    CASE (cAbs)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=ABS(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
       END IF
-      Comp%ByteCode(Comp%ByteCodeSize) = byte
-    END IF
+
+    CASE (cAcos)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) < -1._DP .OR. &
+            Comp%Immed(Comp%ImmedSize) >  1._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for ACOS!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=ACOS(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cAsin)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) < -1._DP .OR. &
+            Comp%Immed(Comp%ImmedSize) >  1._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for ACOS!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=ASIN(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cAtan)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=ATAN(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cAtan2)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=ATAN2(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cAcosh)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        daux=Comp%Immed(Comp%ImmedSize)+SQRT(Comp%Immed(Comp%ImmedSize)**2-1)
+        IF (daux <= 0) THEN
+          PRINT *, "*** Parser error: invalid argument for ACOSH!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=LOG(daux)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cAnint)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=ANINT(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cAint)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=AINT(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cAsinh)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        daux=Comp%Immed(Comp%ImmedSize)+SQRT(Comp%Immed(Comp%ImmedSize)**2-1)
+        IF (daux <= 0) THEN
+          PRINT *, "*** Parser error: invalid argument for ASINH!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=LOG(daux)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cAtanh)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) == -1._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for ATANH!"
+          STOP
+        END IF
+        daux=(1+Comp%Immed(Comp%ImmedSize))/(1-Comp%Immed(Comp%ImmedSize))
+        IF (daux <= 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for ATANH!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=LOG(daux)/2._DP
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cCeil)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=CEILING(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cCos)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=COS(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cCosh)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=COSH(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cCot)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        daux=TAN(Comp%Immed(Comp%ImmedSize))
+        IF (daux == 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for COT!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=1/daux
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cCsc)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        daux=SIN(Comp%Immed(Comp%ImmedSize))
+        IF (daux == 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for CSC!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=1/daux
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cExp)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=EXP(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cFloor)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=FLOOR(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cIf)
+      ! No optimization possible
+
+    CASE (cLog)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) <= 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for LOG!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=LOG(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cLog10)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) <= 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for LOG!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=LOG10(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cMax)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=MAX(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cMin)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=MIN(Comp%Immed(Comp%ImmedSize),Comp%Immed(Comp%ImmedSize-1))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cSec)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        daux=COS(Comp%Immed(Comp%ImmedSize))
+        IF (daux == 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for SEC!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=1/daux
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cSin)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=SIN(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cSinh)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=SINH(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cSqrt)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) < 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for SQRT!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize)=SQRT(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cTan)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=TAN(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cTanh)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=TANH(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+      !------------------------------------------------------------
+      ! Misc
+      !------------------------------------------------------------
+    CASE (cImmed,cJump)
+      ! No optimization needed
+
+      !------------------------------------------------------------
+      ! Operators
+      !------------------------------------------------------------
+    CASE (cNeg)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=-(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cAdd)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)+Comp%Immed(Comp%ImmedSize)
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cSub)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)-Comp%Immed(Comp%ImmedSize)
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cMul)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)*Comp%Immed(Comp%ImmedSize)
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cDiv)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) == 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for DIV!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)/Comp%Immed(Comp%ImmedSize)
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cMod)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        IF (Comp%Immed(Comp%ImmedSize) == 0._DP) THEN
+          PRINT *, "*** Parser error: invalid argument for MOD!"
+          STOP
+        END IF
+        Comp%Immed(Comp%ImmedSize-1)=MOD(Comp%Immed(Comp%ImmedSize-1),Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cPow)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)**Comp%Immed(Comp%ImmedSize)
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cEqual)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) == Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cNEqual)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) /= Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cLess)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) < Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cLessOrEq)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) <= Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cGreater)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) > Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cGreaterOrEq)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(Comp%Immed(Comp%ImmedSize-1) >= Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+      
+    CASE (cAnd)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(DbleToLogc(Comp%Immed(Comp%ImmedSize-1)) .AND.&
+            DbleToLogc(Comp%Immed(Comp%ImmedSize)))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cOr)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed .AND.&
+          Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize-1)=LogcToDble(DbleToLogc(Comp%Immed(Comp%ImmedSize-1)) .OR.&
+            DbleToLogc(Comp%Immed(Comp%ImmedSize)))
+        CALL RemoveCompiledImmediate(Comp)
+        CALL RemoveCompiledByte(Comp)
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cNot)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=LogcToDble(.NOT.DbleToLogc(Comp%Immed(Comp%ImmedSize)))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+      !------------------------------------------------------------
+      ! Degrees-radians conversion
+      !------------------------------------------------------------
+    CASE (cDeg)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=RadToDeg(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF
+
+    CASE (cRad)
+      IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
+        Comp%Immed(Comp%ImmedSize)=DegToRad(Comp%Immed(Comp%ImmedSize))
+        CALL RemoveCompiledByte(Comp)
+      END IF      
+    END SELECT
   END SUBROUTINE AddCompiledByte
 
   ! *****************************************************************************
@@ -2098,7 +2777,7 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
    
-    IF (ASSOCIATED(Comp%ByteCode)) Comp%ByteCode(Comp%ByteCodeSize) = 0
+    Comp%ByteCode(Comp%ByteCodeSize) = 0
     Comp%ByteCodeSize = Comp%ByteCodeSize - 1
   END SUBROUTINE RemoveCompiledByte
 
@@ -2121,24 +2800,29 @@ CONTAINS
     TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
 !</inputoutput>
 !</subroutine>
-   
-    ! local variables
-    REAL(DP), DIMENSION(:), POINTER :: Immed
-    
+       
     Comp%ImmedSize = Comp%ImmedSize + 1
-    IF (ASSOCIATED(Comp%Immed)) THEN
-      IF (Comp%ImmedSize > SIZE(Comp%Immed)) THEN
-        ALLOCATE(Immed(Comp%ImmedSize-1))
-        Immed=Comp%Immed
-        DEALLOCATE(Comp%Immed)
-        ALLOCATE(Comp%Immed(2*Comp%ImmedSize))
-        Comp%Immed(1:Comp%ImmedSize-1)=Immed
-        DEALLOCATE(Immed)
-      END IF
-      Comp%Immed(Comp%ImmedSize) = immediate
-
-    END IF
+    Comp%Immed(Comp%ImmedSize) = immediate
   END SUBROUTINE AddImmediate
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE RemoveCompiledImmediate (Comp)
+
+!<description>
+    ! Remove last compiled immediate from immediate stack
+!</description>
+
+!<inputoutput>
+    TYPE (t_fparserComponent), INTENT(INOUT) :: Comp
+!</inputoutput>
+!</subroutine>
+
+    Comp%Immed(Comp%ImmedSize) = 0
+    Comp%ImmedSize = Comp%ImmedSize - 1
+  END SUBROUTINE RemoveCompiledImmediate
 
   ! *****************************************************************************
 
@@ -2160,29 +2844,15 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
     
-    ! local variables
-    INTEGER(is), DIMENSION(:), POINTER :: ByteCode
-
     IF (Comp%useDegreeConversion) THEN
       SELECT CASE(opCode)
       CASE(cCos,Ccosh,cCot,cCsc,cSec,cSin,cSinh,cTan,cTanh)
         CALL AddCompiledByte(Comp,cRad)
       END SELECT
     END IF
-
-    Comp%ByteCodeSize = Comp%ByteCodeSize + 1
-    IF (ASSOCIATED(Comp%ByteCode)) THEN
-      IF (Comp%ByteCodeSize > SIZE(Comp%ByteCode)) THEN
-        ALLOCATE(ByteCode(Comp%ByteCodeSize-1))
-        ByteCode=Comp%ByteCode
-        DEALLOCATE(Comp%ByteCode)
-        ALLOCATE(Comp%ByteCode(2*Comp%ByteCodeSize))
-        Comp%ByteCode(1:Comp%ByteCodeSize-1)=ByteCode
-        DEALLOCATE(ByteCode)
-      END IF
-      Comp%ByteCode(Comp%ByteCodeSize) = opcode
-    END IF
-
+    
+    CALL AddCompiledByte(Comp,opcode)
+    
     IF (Comp%useDegreeConversion) THEN
       SELECT CASE(opCode)
       CASE(cAcos,cAcosh,cAsinh,cAtanh,cAsin,cAtan,cAtan2)
@@ -2332,8 +3002,7 @@ CONTAINS
 
 !<function>
 
-  RECURSIVE FUNCTION CompileExpression(Comp, Func, ind, Var,&
-      & stopAtComma) RESULT(ind2)
+  RECURSIVE FUNCTION CompileExpression(Comp, Func, ind, Var, stopAtComma) RESULT(ind2)
 
 !<description>
     ! Compiles ','
@@ -2364,12 +3033,12 @@ CONTAINS
 !</function>
 
     ! local variables
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
     
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
     
     ind2 = CompileOr(Comp,Func, ind, Var)
-    IF(ind2 > lFunc) RETURN
+    IF(ind2 > FuncLength) RETURN
 
     IF (PRESENT(stopAtComma)) THEN
       IF (stopAtComma) RETURN
@@ -2377,7 +3046,7 @@ CONTAINS
     
     DO WHILE (Func(ind2:ind2) == ',')
       ind2 = CompileOr(Comp, Func, ind2+1, Var)
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
     END DO
   END FUNCTION CompileExpression
 
@@ -2413,19 +3082,19 @@ CONTAINS
 !</function>
 
     ! local variables
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
 
     ind2 = CompileAnd(Comp, Func, ind, Var)
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
 
     DO WHILE(Func(ind2:ind2) == '|')
       ind2 = CompileAnd(Comp, Func, ind2+1, Var)
 
       CALL AddCompiledByte(Comp, cOr)
       Comp%StackPtr = Comp%StackPtr-1
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
     END DO
   END FUNCTION CompileOr
 
@@ -2461,19 +3130,19 @@ CONTAINS
 !</function>
 
     ! local variables
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
     
     ind2 = CompileComparison(Comp, Func, ind, Var)
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
     
     DO WHILE(Func(ind2:ind2) == '&')
       ind2 = CompileComparison(Comp, Func, ind2+1, Var)
 
       CALL AddCompiledByte(Comp, cAnd)
       Comp%StackPtr = Comp%StackPtr-1
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
     END DO
   END FUNCTION CompileAnd
 
@@ -2511,12 +3180,12 @@ CONTAINS
     ! local variables
     CHARACTER(LEN=1) :: c
     INTEGER(is) :: opSize
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
     
     ind2 = CompileAddition(Comp, Func, ind, Var)
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
     
     c=Func(ind2:ind2)
     DO WHILE(c == '=' .OR. c == '<' .OR. c == '>' .OR. c == '!')
@@ -2538,7 +3207,7 @@ CONTAINS
       END SELECT
       Comp%StackPtr = Comp%StackPtr-1
       
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
       c=Func(ind2:ind2)
     END DO
   END FUNCTION CompileComparison
@@ -2576,12 +3245,12 @@ CONTAINS
 
     ! local variables
     CHARACTER(LEN=1) :: c
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
     
     ind2 = CompileMult(Comp, Func, ind, Var)
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
     
     c=Func(ind2:ind2)
     DO WHILE(c == '+' .OR. c == '-')
@@ -2590,7 +3259,7 @@ CONTAINS
       CALL AddCompiledByte(Comp, MERGE(cAdd,cSub,c == '+'))
       Comp%StackPtr = Comp%StackPtr-1
       
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
       c=Func(ind2:ind2)
     END DO
   END FUNCTION CompileAddition
@@ -2628,12 +3297,12 @@ CONTAINS
 
     ! local variables
     CHARACTER(LEN=1) :: c
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
     
     ind2 = CompileUnaryMinus(Comp, Func, ind, Var)
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
     
     c=Func(ind2:ind2)
     DO WHILE(c == '*' .OR. c == '/' .OR. c == '%')
@@ -2652,7 +3321,7 @@ CONTAINS
       END SELECT
       Comp%StackPtr = Comp%StackPtr-1
 
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
       c=Func(ind2:ind2)
     END DO
   END FUNCTION CompileMult
@@ -2690,24 +3359,22 @@ CONTAINS
 
     ! local variables
     CHARACTER(LEN=1) :: c
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
 
     c = Func(ind:ind)
     IF (c == '-' .OR. c == '!') THEN
       ind2 = ind+1
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
       ind2 = CompilePow(Comp, Func, ind2, Var)
 
       ! If we are negating a constant, negate the constant itself
-      IF (c == '-' .AND. &
-          & Comp%ByteCode(Comp%ByteCodeSize) == cImmed) THEN
+      IF (c == '-' .AND. Comp%ByteCode(Comp%ByteCodeSize) == cImmed) THEN
         Comp%Immed(Comp%ImmedSize) = -Comp%Immed(Comp%ImmedSize)
         
         ! If we are negating a negation, we can remove both
-      ELSEIF (c == '-' .AND. &
-          & Comp%ByteCode(Comp%ByteCodeSize) == cNeg) THEN
+      ELSEIF (c == '-' .AND. Comp%ByteCode(Comp%ByteCodeSize) == cNeg) THEN
         CALL RemoveCompiledByte(Comp)
         
       ELSE
@@ -2752,20 +3419,20 @@ CONTAINS
 !</function>
 
     ! local variables
-    INTEGER :: lFunc
+    INTEGER :: FuncLength
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
 
     ind2 = CompileElement(Comp, Func, ind, Var)
 
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
 
     DO WHILE(Func(ind2:ind2) == '^')
       ind2 = CompileUnaryMinus(Comp, Func, ind2+1, Var)
 
       CALL AddCompiledByte(Comp, cPow)
       Comp%StackPtr = Comp%StackPtr-1
-      IF (ind2 > lFunc) RETURN
+      IF (ind2 > FuncLength) RETURN
     END DO
   END FUNCTION CompilePow
 
@@ -2802,7 +3469,7 @@ CONTAINS
 
     ! local variables
     CHARACTER(LEN=1) :: c
-    REAL(DP) :: r
+    REAL(DP) :: rnum
     INTEGER(is) :: n
     INTEGER :: ind1,ib,in,requiredParams
     LOGICAL :: err
@@ -2816,10 +3483,12 @@ CONTAINS
 
     ! Check for numbers
     IF (SCAN(c,'0123456789,') > 0) THEN
-      r = RealNum (Func(ind1:),ib,in,err)
-      IF (err) CALL ParseErrMsg (ind1, Func, 'Invalid number format: &
-          & '//Func(ind1+ib-1:ind1+in-2))
-      CALL AddImmediate(Comp, r)
+      rnum = RealNum (Func(ind1:),ib,in,err)
+      IF (err) THEN
+        PRINT *, "CompileElement: Invalid number format!"
+        STOP
+      END IF
+      CALL AddImmediate(Comp, rnum)
       CALL AddCompiledByte(Comp, cImmed)
       CALL incStackPtr(Comp)
       ind2 = ind1+in-1
@@ -2836,12 +3505,13 @@ CONTAINS
         ! Check for IF-THEN-ELSE
         IF (n == cIf) THEN
           ind2 = CompileIf(Comp, Func, ind2+1, Var)
+          ! IF-THEN-ELSE cannot be vectorized, note that!
+          Comp%isVectorizable = .FALSE.
           RETURN        
         END IF
 
         requiredParams=MathFunctionParameters(n)        
-        ind2 = CompileFunctionParameters(Comp, Func, ind2+1, Var, &
-            & requiredParams)
+        ind2 = CompileFunctionParameters(Comp, Func, ind2+1, Var, requiredParams)
         CALL AddFunctionOpcode(Comp, n)
         RETURN
       END IF
@@ -2865,8 +3535,8 @@ CONTAINS
       RETURN
     END IF
 
-    CALL ParseErrMsg (ind1, Func, 'An unexpected error occured. Please&
-        & make a full bug report to the author')
+    PRINT *, "CompileElement: An unexpected error occured."
+    STOP
   END FUNCTION CompileElement
 
   ! *****************************************************************************
@@ -2913,9 +3583,10 @@ CONTAINS
       curStackPtr = Comp%StackPtr
       ind2 = CompileExpression(Comp, Func, ind, Var, .FALSE.)
 
-      IF (Comp%StackPtr /= curStackPtr+requiredParams)&
-          &CALL ParseErrMsg (ind, Func, 'Illegal number of parameters &
-          &to function')
+      IF (Comp%StackPtr /= curStackPtr+requiredParams) THEN
+        PRINT *, "CompileFunctionParameters: Illegal number of parameters to function!"
+        STOP
+      END IF
 
       Comp%StackPtr = Comp%StackPtr-(requiredParams-1)
 
@@ -2959,15 +3630,17 @@ CONTAINS
 !</function>
 
     ! local variables
-    INTEGER :: lFunc,curByteCodeSize,curByteCodeSize2,curImmedSize2
+    INTEGER :: FuncLength,curByteCodeSize,curByteCodeSize2,curImmedSize2
 
-    lFunc=LEN_TRIM(Func)
+    FuncLength=LEN_TRIM(Func)
 
     ind2 = CompileExpression(Comp, Func, ind, Var, .TRUE.) ! Condition branch
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
 
-    IF (Func(ind2:ind2) /= ',') CALL ParseErrMsg (ind2, Func, 'Illegal&
-        & number of parameters to function')
+    IF (Func(ind2:ind2) /= ',') THEN
+      PRINT *, "CompileIf: Illegal number of parameters to function!"
+      STOP
+    END IF
     CALL AddCompiledByte(Comp, cIf)
     curByteCodeSize = Comp%ByteCodeSize
     CALL AddCompiledByte(Comp, 0_is) ! Jump index will be set below
@@ -2975,10 +3648,12 @@ CONTAINS
     Comp%StackPtr = Comp%StackPtr-1
 
     ind2 = CompileExpression(Comp, Func, ind2+1, Var, .TRUE.) ! Then branch
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
 
-    IF (Func(ind2:ind2) /= ',') CALL ParseErrMsg (ind2, Func, 'Illegal&
-        & number of parameters to function')
+    IF (Func(ind2:ind2) /= ',') THEN
+      PRINT *, "CompileIf: Illegal number of parameters to function!"
+      STOP
+    END IF
     CALL AddCompiledByte(Comp, cJump)
     curByteCodeSize2 = Comp%ByteCodeSize
     curImmedSize2 = Comp%ImmedSize
@@ -2987,10 +3662,12 @@ CONTAINS
     Comp%StackPtr = Comp%StackPtr-1
 
     ind2 = CompileExpression(Comp, Func, ind2+1, Var, .TRUE.) ! Else branch
-    IF (ind2 > lFunc) RETURN
+    IF (ind2 > FuncLength) RETURN
 
-    IF (Func(ind2:ind2) /= ')') CALL ParseErrMsg (ind2, Func, 'Illegal&
-        & number of parameters to function')
+    IF (Func(ind2:ind2) /= ')') THEN
+      PRINT *, "CompileIf: Illegal number of parameters to function!"
+      STOP
+    END IF
     
     ! Set jump indices
     IF (ASSOCIATED(Comp%ByteCode)) THEN
@@ -3072,7 +3749,7 @@ CONTAINS
 !</result>
 !</function>
       
-    r=d*(Constvals(C_PI)/180._DP)
+    r=d*(3.141592653589793115997963468544185161590576171875_DP/180._DP)
   END FUNCTION DegToRad
 
   ! *****************************************************************************
@@ -3096,6 +3773,6 @@ CONTAINS
 !</result>
 !</function>
     
-    d=r*(180._DP/Constvals(c_PI))
+    d=r*(180._DP/3.141592653589793115997963468544185161590576171875_DP)
   END FUNCTION RadToDeg
 END MODULE fparser
