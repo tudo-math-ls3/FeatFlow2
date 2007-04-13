@@ -989,7 +989,7 @@ CONTAINS
         
         ! Evaluate the expression. ivalue is the number of
         ! the expression to evaluate.
-        evalBoundary = fparser_evalFunction (p_rparser, ivalue, Rval)
+        CALL fparser_evalFunction (p_rparser, ivalue, Rval, evalBoundary)
         
       CASE (BDC_VALPARPROFILE)
         ! A parabolic profile. dvalue expresses the
