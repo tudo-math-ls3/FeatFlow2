@@ -23,20 +23,24 @@
 !#     -> Reads a .TRI file and creates a 'raw' mesh with only basic 
 !#        information.
 !#
-!# 3.) tria_done
+!# 3.) tria_initStandardMeshFromRaw
+!#     -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
+!#        (as set up by tria_readTriFile2D e.g.) to a standard mesh.
+!#
+!# 4.) tria_done
 !#     -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!# 4.) tria_rawQuadToTri
+!# 5.) tria_rawQuadToTri
 !#     -> Converts a raw mesh into a triangular mesh.
 !#
-!# 5.) tria_duplicate
+!# 6.) tria_duplicate
 !#     -> Creates a duplicate / backup of a triangulation.
 !#        Some information may be shared between two triangulation structures.
 !#
-!# 6.) tria_restore
+!# 7.) tria_restore
 !#     -> Restores a triangulation previously backed up with tria_backup.
 !#
-!# 7.) tria_recoverHandles
+!# 8.) tria_recoverHandles
 !#     -> Recovers destroyed handles of a triangulation structure from a 
 !#        backup.
 !#
@@ -57,20 +61,30 @@
 !# 5.) tria_genNeighboursAtElement2D
 !#     -> Generates the IneighboursAtElement array for a 2D triangulation
 !#
-!# 6.) tria_genElementsAtEdge2D
+!# 6.) tria_genEdgesAtElement2D
+!#     -> Generates the IedgesAtElement array for a 2D triangulation
+!#
+!# 7.) tria_genElementsAtEdge2D
 !#     -> Generates the IelementsAtEdge array for a 2D triangulation
 !#
-!# 7.) tria_genVerticesAtEdge2D
+!# 8.) tria_genVerticesAtEdge2D
 !#     -> Generates the IverticesAtEdge array for a 2D triangulation
-!#
-!# 8.) tria_genEdgesAtElement2D
-!#     -> Generates the IedgesAtElement array for a 2D triangulation
 !#
 !# 9.) tria_genEdgeNodalProperty2D
 !#     -> Generates the InodalProperty array part for all edges
 !#
 !# 10.) tria_genElementVolume2D
 !#      -> Generates the DelementVolume array for a 2D triangulation
+!#
+!# 11.) tria_genElementsAtBoundary2D
+!#      -> Generates the IelementsAtBoundary array for a 2D triangulation
+!#
+!# 12.) tria_genEdgesAtBoundary2D
+!#      -> Generates the IedgesAtBoundary array for a 2D triangulation
+!#
+!# 13.) tria_genEdgeParameterValue2D
+!#      -> Generates the DedgeParameterValue array for a 2D triangulatioon
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -94,16 +108,22 @@ MODULE triangulation
 !<constantblock description="Triangulation constants">
   
   ! Maximum number of corner-vertices in each element.
-  ! We set this to 4 to allow triangle and quadrilateral polygons.
+  ! We set this to 4 to allow triangle and quadrilateral element shapes.
   ! May be set to higher vales in the future for the support of
   ! isoparametric elements!
   ! This is the old NNVE.
   INTEGER, PARAMETER :: TRIA_MAXNVE2D = 4
 
   ! Maximum number of edges in each element.
-  ! We set this to 4 to allow triangle and quadrilateral polygons.
+  ! We set this to 4 to allow triangle and quadrilateral element shapes.
   ! This is the old NNVE, too.
   INTEGER, PARAMETER :: TRIA_MAXNME2D = TRIA_MAXNVE2D
+  
+  ! Number of vertices per element for triangular element shapes in 2D.
+  INTEGER, PARAMETER :: TRIA_NVETRIA2D = 3
+
+  ! Number of vertices per element for quadrilateral element shapes in 2D.
+  INTEGER, PARAMETER :: TRIA_NVEQUAD2D = 4
   
 !</constantblock>
 
@@ -1885,7 +1905,9 @@ CONTAINS
   ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
   ! The nodal property array InodalProperty contains only the data for the
   ! vertices of the triangulation.
-  ! The arrays IverticesAtBoundary and DvertexParameterValue are not sorted.
+  ! The arrays IverticesAtBoundary and DvertexParameterValue are sorted
+  ! for the boundary component (according to IboundaryCpIdx) but not 
+  ! for the parameter value.
   !
   ! The triangulation structure rtriangulation must be empty. All previous
   ! information in this structure (if there is any) is lost!
@@ -1968,6 +1990,9 @@ CONTAINS
     READ (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
         NVE,rtriangulation%NBCT    
 
+    ! Comment: 'DCORVG'
+    READ (iunit,*)
+
     ! Allocate memory for the basic arrays on the heap
     Isize = (/NDIM2D,INT(rtriangulation%NVT,I32)/)
     CALL storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
@@ -1980,6 +2005,9 @@ CONTAINS
     ! Read the data from the file, store it in the array.
     READ (iunit,*) ((p_Ddata2D(idim,ivt),idim=1,NDIM2D), ivt=1,rtriangulation%NVT)
 
+    ! Comment: 'KVERT'
+    READ (iunit,*)
+
     ! Allocate memory for IverticesAtElement
     Isize = (/nve,INT(rtriangulation%NEL,I32)/)
     CALL storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
@@ -1989,7 +2017,10 @@ CONTAINS
     CALL storage_getbase_int2D(&
         rtriangulation%h_IverticesAtElement,p_Idata2D)
 
-    READ (iunit,*) ((p_Idata2D(ive,ivt),ive=1,nve), iel=1,rtriangulation%NEL)
+    READ (iunit,*) ((p_Idata2D(ive,iel),ive=1,nve), iel=1,rtriangulation%NEL)
+
+    ! Comment: 'KNPR'
+    READ (iunit,*)
 
     ! Allocate memory for InodalProperty 
     CALL storage_new ('tria_read_tri2D', 'KNPR', &
@@ -2017,7 +2048,9 @@ CONTAINS
   ! a basic triangulation. That means:
   ! -> NVBD is calculated
   ! -> IboundaryCpIdx is created and generated
-  ! -> IverticesAtBoundary is created and generated (unsorted)
+  ! -> IverticesAtBoundary is created and generated.
+  !    The vertices are ordered for the boundary component according
+  !    to IboundaryCpIdx but not ordered for their parameter value.
   ! -> DvertexParameterValue is created and generated (unsorted)
   ! -> The parameter values of the boundary vertices are extracted
   !    from the first coordinate in DcornerCoordinates and put into
@@ -2046,17 +2079,17 @@ CONTAINS
     INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
     INTEGER(PREC_POINTIDX) :: ivbd,ivt
     INTEGER :: ibct
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
+    INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
 
     ! Get the pointer to the InodalProperty array
     CALL storage_getbase_int(&
-        rtriangulation%h_InodalProperty,p_Idata)
+        rtriangulation%h_InodalProperty,p_InodalProperty)
 
     ! Calculate NVBD by simply counting how many elements
-    ! in p_Idata are <> 0.
+    ! in p_InodalProperty are <> 0.
     rtriangulation%NVBD = 0
     DO ivt=1,rtriangulation%NVT
-      IF (p_Idata(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
+      IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
     END DO
 
     ! Allocate memory for IverticesAtBoundary and DvertexParameterValue.
@@ -2071,7 +2104,7 @@ CONTAINS
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
     CALL storage_new ('tria_generateBasicBoundary', &
-        'KBCT', INT(rtriangulation%NBCT,I32), &
+        'KBCT', INT(rtriangulation%NBCT+1,I32), &
         ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
     
     ! Get pointers to the arrays
@@ -2081,20 +2114,82 @@ CONTAINS
     CALL storage_getbase_double (&
         rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
         
+    CALL storage_getbase_double2D (&
+        rtriangulation%h_DcornerCoordinates,p_DcornerCoordinates)
+        
     CALL storage_getbase_int (&
         rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
     
+    ! The first element in p_IboundaryCpIdx is (as the head) always =1.
+    p_IboundaryCpIdx(1) = 1
+
+    ! Perform a first loop over all vertices to check which are on the
+    ! boundary. Count them. This way, we at first set up the boundary
+    ! component index vector p_IboundaryCpIdx.
+    ! In this first step, we save the number of vertices on each 
+    ! boundary component in p_IboundaryCpIdx(2:NBCT+1)!
+    DO ivt=1,rtriangulation%NVT
+      IF (p_InodalProperty(ivt) .NE. 0) THEN
+        ibct = p_InodalProperty(ivt)
+        
+        ! Increase the number of vertices in that boundary component by 1.
+        ! The number of vertices on boundary component i is saved here
+        ! at p_IboundaryCpIdx(i+1) for later.
+        ! Note that the array was initialised with zero during the creation
+        ! process!
+        p_IboundaryCpIdx(ibct+1) = p_IboundaryCpIdx(ibct+1)+1
+      END IF
+    END DO
+    
+    ! Sum up the number of vertices on each boundary component to get the
+    ! actual index vector.
+    DO ibct = 2,rtriangulation%NBCT+1
+      p_IboundaryCpIdx(ibct) = p_IboundaryCpIdx(ibct)+p_IboundaryCpIdx(ibct-1)
+    END DO
+    
+    ! Shift the p_IboundaryCpIdx array by one position. That's a little trick in
+    ! the use of p_IboundaryCpIdx!
+    ! Imagine, we have 3 boundary components with 8,6 and 4 edges. 
+    ! Before summing the entries up, p_IboundaryCpIdx may have looked like this:
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   8   6   4
+    !
+    ! Summing that up gave the actual indices:
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   9  15  19
+    !
+    ! which is already the correct index array.
+    ! Shifting p_IboundaryCpIdx by 1 will give:
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   1   9  15
+    
+    p_IboundaryCpIdx(2:rtriangulation%NBCT+1) = p_IboundaryCpIdx(1:rtriangulation%NBCT)
+    
+    ! Then, we again loop through all vertices and collect those on the
+    ! boundary. In that loop, we use p_IboundaryCpIdx(2:NBCT+1) as pointer and
+    ! increase them for every point we find. The loop will behave like
+    ! the first one, i.e. we'll again find 8,6 and 4 vertices on the boundary components
+    ! 1,2 and 3. Increasing the p_IboundaryCpIdx(2:NBCT+1) for boundary components
+    ! 1..NBCT the same way as done in the first loop will therefore again lead to
+    !
+    !         i            1   2   3   4
+    ! p_IboundaryCpIdx(i)  1   9  15  19
+    !
+    ! Ok, let's catch the actual vertices.
     ! Check all vertices to find out, which vertices are on the boundary.
     DO ivt=1,rtriangulation%NVT
-      IF (p_Idata(ivt) .NE. 0) THEN
-        ibct = p_Idata(ivt)
+      IF (p_InodalProperty(ivt) .NE. 0) THEN
+        ibct = p_InodalProperty(ivt)
         
         ! Create a new point on that boundary component 
         ! and get the number, the point will have.
         ! Note that the array was initialised with zero during the creation
         ! process!
-        ivbd = p_IboundaryCpIdx(ibct)+1
-        p_IboundaryCpIdx(ibct) = ivbd
+        ivbd = p_IboundaryCpIdx(ibct+1)
+        p_IboundaryCpIdx(ibct+1) = ivbd+1
         
         ! Store the vertex as boundary vertex
         p_IverticesAtBoundary (ivbd) = ivt
@@ -2110,6 +2205,65 @@ CONTAINS
       END IF
     END DO
     
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_initStandardMeshFromRaw(rtriangulation,rboundary)
+
+!<description>
+  ! This routine creates all 'standard' arrays based on a 'raw'
+  ! triangulation.
+  ! rtriangulation is a 'raw' triangulation as provided by preprocessing
+  ! routines like tria_readTriFile2D. Based on this raw triangulation,
+  ! all standard arrays will be created (adjacencies, edge information,...)
+  ! such that the application can work with the triangulation as usual.
+!</description>
+
+!<input>
+  ! OPTIONAL: Boundary structure that defines the domain.
+  ! Must be specified for 2D domains.
+  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+!</input>
+
+!<inputoutput>
+  ! Triangulation structure to be initialised
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    SELECT CASE (rtriangulation%ndim)
+    CASE (NDIM1D)
+    CASE (NDIM2D)
+      
+      IF (.NOT. PRESENT(rboundary)) THEN
+        CALL output_line ('rboundary not available!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'tria_initStandardMeshFromRaw')
+        STOP
+      END IF
+      
+      ! Generate all standard arrays for 2D meshes.
+      CALL tria_sortBoundaryVertices2D   (rtriangulation)
+      CALL tria_genElementsAtVertex2D    (rtriangulation)
+      CALL tria_genNeighboursAtElement2D (rtriangulation)
+      CALL tria_genEdgesAtElement2D      (rtriangulation)
+      CALL tria_genElementsAtEdge2D      (rtriangulation)
+      CALL tria_genVerticesAtEdge2D      (rtriangulation)
+      CALL tria_genEdgeNodalProperty2D   (rtriangulation)
+      CALL tria_genElementVolume2D       (rtriangulation)
+      CALL tria_genElementsAtBoundary2D  (rtriangulation)
+      CALL tria_genEdgesAtBoundary2D     (rtriangulation)
+      CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
+    CASE (NDIM3D)
+    CASE DEFAULT
+      CALL output_line ('Triangulation structure not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_generateStandardMeshFromRaw')
+      STOP
+    END SELECT
+
   END SUBROUTINE
 
 !************************************************************************
@@ -2136,7 +2290,7 @@ CONTAINS
     INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
     INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
     INTEGER(PREC_POINTIDX) :: istart,iend
-    INTEGER :: ibct
+    INTEGER :: ibct,ivbd
     INTEGER :: hresort
     INTEGER(I32), DIMENSION(:), POINTER :: p_Iresort
 
@@ -2157,22 +2311,28 @@ CONTAINS
         ST_INT, hresort, ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int (hresort,p_Iresort)
     
-    DO ibct = 1,rtriangulation%nbct
+    ! Fill p_Iresort with 1,2,3,...
+    DO ivbd=1,rtriangulation%NVBD
+      p_Iresort(ivbd) = ivbd
+    END DO
+    
+    ! For each boundary component, call the sorting routine and calculate the
+    ! mapping how the entries are sorted.
+    DO ibct = 1,rtriangulation%NBCT
       istart = p_IboundaryCpIdx(ibct)
       iend = p_IboundaryCpIdx(ibct+1)-1
       
       ! Sort the sub-array of boundary component ibct.
       ! Remember, how the parameter values are resorted when sorting the array.
-      CALL sort_dp(p_DvertexParameterValue(istart:iend),Imapping=p_Iresort)
-      
-      ! Resort the vertices according to that.
-      ! Afterwards, the vertices are ordered according to the increasing
-      ! parameter value.
-      p_Iresort(1:iend-istart+1) = &
-          p_IverticesAtBoundary(istart-1+p_Iresort(1:iend-istart+1))
-      p_IverticesAtBoundary(istart:iend) = p_Iresort(1:iend-istart+1)
+      CALL sort_dp(p_DvertexParameterValue(istart:iend),Imapping=p_Iresort(istart:iend))
       
     END DO
+
+    ! Resort the vertices according to the calculated mapping.
+    ! Afterwards, the vertices are ordered according to the increasing
+    ! parameter value.
+    p_Iresort(:) = p_IverticesAtBoundary(p_Iresort(:))
+    p_IverticesAtBoundary(:) = p_Iresort(:)
     
     CALL storage_free (hresort)
 
@@ -2231,7 +2391,7 @@ CONTAINS
 !</subroutine>
 
     ! Local variables
-    INTEGER :: ive,nve
+    INTEGER :: ive,nnve
     INTEGER(PREC_POINTIDX) :: ivt,isize
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
@@ -2268,14 +2428,20 @@ CONTAINS
     ! Fill the index array with zero.
     CALL storage_clear (rtriangulation%h_IelementsAtVertexIdx)
     
+    nnve = tria_getNNVE(rtriangulation)
+
     ! We create the index array in two steps. In the first step,
     ! we loop over the elements to find out, how many elements
     ! meet at each vertex. We store this information in the index
     ! array at position 2..NVT+1 (i.e. shifted by one) for later.
     
     DO iel = 1,rtriangulation%NEL
-      DO ive = 1,nve
+      DO ive = 1,nnve
         ivt = p_IverticesAtElement(ive,iel)
+        ! Cancel that element if we reached the end. Might happen if there
+        ! are triangles in a quad mesh e.g.
+        IF (ivt .EQ. 0) EXIT
+
         p_IelementsAtVertexIdx(ivt+1)=p_IelementsAtVertexIdx(ivt+1)+1
       END DO
     END DO
@@ -2310,12 +2476,10 @@ CONTAINS
     ! Get the array.
     CALL storage_getbase_int (rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
 
-    ! Allocate an auxiliary array. This one is used as an index for every
-    ! vertex inside of the p_IelementsAtVertex array and counts, how
-    ! many positions are occupied. Fill the array with zero.
-    CALL storage_new ('tria_genElementsAtVertex2D', 'aux1', &
-        INT(rtriangulation%NVT,I32), ST_INT, &
-        haux1, ST_NEWBLOCK_ZERO)
+    ! Duplicate the p_IelementsAtVertexIdx array. We use that as pointer and index
+    ! when new elements at a vertex are found.
+    haux1 = ST_NOHANDLE
+    CALL storage_copy (rtriangulation%h_IelementsAtVertexIdx,haux1)
     CALL storage_getbase_int (haux1,p_Iaux1)
 
     ! Now, we perform a second loop over the elements and the vertices.
@@ -2323,9 +2487,16 @@ CONTAINS
     ! p_IelementsAtVertex array.
     ! p_Iaux1 counts how many positions in p_IelementsAtVertex are occupied.
     DO iel = 1,rtriangulation%NEL
-      DO ive = 1,nve
+      DO ive = 1,nnve
+      
         ivt = p_IverticesAtElement(ive,iel)
-        p_IelementsAtVertex( p_IelementsAtVertexIdx(ivt)+p_Iaux1(ivt) ) = iel
+        ! Cancel that element if we reached the end. Might happen if there
+        ! are triangles in a quad mesh e.g.
+        IF (ivt .EQ. 0) EXIT
+        
+        ! Remembner the element number and increase the pointer in the
+        ! elements-adjacent-to-that-vertex list.
+        p_IelementsAtVertex( p_Iaux1(ivt) ) = iel
         p_Iaux1(ivt) = p_Iaux1(ivt)+1
       END DO
     END DO
@@ -2388,6 +2559,9 @@ CONTAINS
       END IF
     END IF
     
+    ! Fill the array with 0. We overwrite only those positions <> 0.
+    CALL storage_clear (rtriangulation%h_IneighboursAtElement)
+    
     ! Get the array which is to be filled with data.
     CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
         p_IneighboursAtElement)
@@ -2419,6 +2593,7 @@ CONTAINS
 
     ! Get the index array that tells us how many elements are adjacent to
     ! each vertex. Make a copy of that array.
+    haux2 = ST_NOHANDLE
     CALL storage_copy (rtriangulation%h_IelementsAtVertexIdx,haux2)
     CALL storage_getbase_int (haux2,p_IedgeIdx)
     
@@ -2428,8 +2603,8 @@ CONTAINS
     ! Actually, we need the entries 2..NVT+1 of Iaux2
     p_IedgeIdx => p_IedgeIdx(2:)
 
-    ! Create the auxiliary array for edge information
-    Isize = (/4,rtriangulation%NVT/)
+    ! Create the auxiliary array for edge information.
+    Isize = (/4,p_IedgeIdx(SIZE(p_IedgeIdx))-1/)
     CALL storage_new2D ('tria_genNeighboursAtElement2D', 'edgeAtVertex', &
         Isize, ST_INT, haux1, ST_NEWBLOCK_ZERO)
     CALL storage_getbase_int2d (haux1,p_IedgeAtVertex)
@@ -2475,7 +2650,7 @@ CONTAINS
     ! Next, we have to look at all edges to find neighbouring information.
     !
     ! Loop through all edges adjacent to all vertices.
-    DO iedge = 1,SIZE(p_IedgeAtVertex)
+    DO iedge = 1,UBOUND(p_IedgeAtVertex,2)
     
       ! Get the edge information
       ivt          = p_IedgeAtVertex(1,iedge) 
@@ -2485,7 +2660,10 @@ CONTAINS
       ! Now, loop through all edges adjacent to the neighbour vertex
       ! ivtneighbour to find possible adjacent elements at the current
       ! edge.
-      DO iedgeneighbour = p_IedgeIdx(ivtneighbour),p_IelementsAtVertexIdx(ivtneighbour)-1
+      ! p_IedgeIdx(ivtneighbour) is the number of the first entry
+      ! in p_IedgeAtVertex that's occupied!
+      DO iedgeneighbour = p_IedgeIdx(ivtneighbour), &
+                          p_IelementsAtVertexIdx(ivtneighbour+1)-1
         
         ! When the vertices of that edge coincide (i.e. if the counterclockwise
         ! neighbour of the neighbour vertex is the current vertex)
@@ -2525,10 +2703,11 @@ CONTAINS
   SUBROUTINE tria_genElementsAtEdge2D(rtriangulation)
 
 !<description>
-  ! This routine generates information about the adjacent to each element
-  ! IedgesAtElement (KMID). 
+  ! This routine generates information about the elements adjacent to each 
+  ! edge IelementsAtEdge (KMID). 
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement, IneighboursAtElement.
+  ! NMT must be set up correctly.
   ! If necessary, new memory is allocated.
 !</description>
 
@@ -2546,6 +2725,7 @@ CONTAINS
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive
     INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_POINTIDX) :: NVT
     INTEGER(PREC_EDGEIDX) :: iedge
     INTEGER(I32), DIMENSION(2) :: Isize
 
@@ -2568,6 +2748,12 @@ CONTAINS
       STOP
     END IF
 
+    IF (rtriangulation%NMT .EQ. 0) THEN
+      CALL output_line ('Edge information (NMT) not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
+      STOP
+    END IF
+
     ! Get the arrays.
     CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
@@ -2579,7 +2765,7 @@ CONTAINS
       Isize = (/2,rtriangulation%NMT/)
       CALL storage_new2D ('tria_genElementsAtEdge2D', 'KMID', &
           Isize, ST_INT, &
-          rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
+          rtriangulation%h_IelementsAtEdge, ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize2D (rtriangulation%h_IelementsAtEdge, Isize)
       IF (Isize(2) .NE. rtriangulation%NEL) THEN
@@ -2592,25 +2778,27 @@ CONTAINS
     
     CALL storage_getbase_int2D (rtriangulation%h_IelementsAtEdge,p_IelementsAtEdge)
     
+    NVT = rtriangulation%NVT
+    
     ! Loop through all elements and all edges on the elements
-    DO iel = 1,UBOUND(p_IelementsAtEdge,2)
+    DO iel = 1,UBOUND(p_IedgesAtElement,2)
       
-      DO ive = 1,UBOUND(p_IelementsAtEdge,1)
+      DO ive = 1,UBOUND(p_IedgesAtElement,1)
 
         ! Is there a neighbour?
         IF (p_IneighboursAtElement(ive,iel) .EQ. 0) THEN
           ! No. Store the element as only adjacent one to that edge.
 
-          iedge = p_IedgesAtElement (ive,iel)          
+          iedge = p_IedgesAtElement (ive,iel)-NVT
           p_IelementsAtEdge(1,iedge) = iel
           p_IelementsAtEdge(2,iedge) = 0
           
-        ELSE IF (p_IneighboursAtElement(ive,iel) .GT. iel) THEN
+        ELSE IF (p_IneighboursAtElement(ive,iel) .LT. iel) THEN
         
-          ! There is a neighbour and it has a greater number than the current element --
-          ! so we didn't have that edge! Store the two adjacent elements.
+          ! There is a neighbour and it has a smaller number than the current element --
+          ! so we haven't had that edge! Store the two adjacent elements.
         
-          iedge = p_IedgesAtElement (ive,iel)
+          iedge = p_IedgesAtElement (ive,iel)-NVT
           p_IelementsAtEdge(1,iedge) = iel
           p_IelementsAtEdge(2,iedge) = p_IneighboursAtElement(ive,iel)
         
@@ -2629,8 +2817,8 @@ CONTAINS
   SUBROUTINE tria_genVerticesAtEdge2D(rtriangulation)
 
 !<description>
-  ! This routine generates information about the adjacent to each element
-  ! IedgesAtElement (KMID). 
+  ! This routine generates information about the vertices adjacent to 
+  ! each edge IverticesAtEdge.
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement, IneighboursAtElement.
   ! If necessary, new memory is allocated.
@@ -2652,6 +2840,7 @@ CONTAINS
     INTEGER(PREC_POINTIDX) :: ivtneighbour
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(PREC_EDGEIDX) :: iedge
+    INTEGER(PREC_POINTIDX) :: NVT
     INTEGER(I32), DIMENSION(2) :: Isize
 
     ! Is everything here we need?
@@ -2698,6 +2887,7 @@ CONTAINS
     CALL storage_getbase_int2D (rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
     
     nnve = UBOUND(p_IedgesAtElement,1)
+    NVT = rtriangulation%NVT
     
     ! Loop through all elements and all edges on the elements
     DO iel = 1,UBOUND(p_IedgesAtElement,2)
@@ -2714,9 +2904,9 @@ CONTAINS
         IF (p_IneighboursAtElement(ive,iel) .LT. iel) THEN
 
           ! Save the numbers of the adjacent vertices.
-          iedge = p_IedgesAtElement (ive,iel)
+          iedge = p_IedgesAtElement (ive,iel)-NVT
           
-          p_IverticesAtEdge(1,iel) = p_IverticesAtElement(ive,iel)
+          p_IverticesAtEdge(1,iedge) = p_IverticesAtElement(ive,iel)
           
           ! Also save the neighbour. Note that we have to check the number of the
           ! neighbour against 0 because it may be that the p_IverticesAtElement(:,.)
@@ -2724,7 +2914,7 @@ CONTAINS
           ! mesh!
           ivtneighbour = p_IverticesAtElement(MOD(ive,nnve)+1,iel)
           IF (ivtneighbour .EQ. 0) ivtneighbour = p_IverticesAtElement(1,iel)
-          p_IverticesAtEdge(2,iel) = ivtneighbour
+          p_IverticesAtEdge(2,iedge) = ivtneighbour
         
         END IF
       
@@ -2741,10 +2931,11 @@ CONTAINS
   SUBROUTINE tria_genEdgesAtElement2D(rtriangulation)
 
 !<description>
-  ! This routine generates information about the elements adjacent to
-  ! each edge IelementsAtEdge (KMEL). 
+  ! This routine calculates the edge numbering. That means,
+  ! it generates information about the edges adjacent to
+  ! each element IedgesAtElement (KMID) and calculates the correct NMT.
   ! For this purpose, the following arrays are used:
-  ! IverticesAtElement, IneighboursAtElement, IedgesAtElement.
+  ! IverticesAtElement, IneighboursAtElement.
   ! If necessary, new memory is allocated.
 !</description>
 
@@ -2777,12 +2968,6 @@ CONTAINS
       STOP
     END IF
 
-    IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) THEN
-      CALL output_line ('h_IedgesAtElement not available!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement2D')
-      STOP
-    END IF
-
     ! Get the arrays.
     CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     CALL storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
@@ -2810,8 +2995,9 @@ CONTAINS
 
     CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     
-    ! iedge counts the edges and specifies the last given edge number
-    iedge = 0
+    ! iedge counts the edges and specifies the last given edge number.
+    ! The numbering starts with NVT, the first edge gets the number NVT+1.
+    iedge = rtriangulation%NVT
     
     ! Loop through all elements
     DO iel = 1,Isize(2)
@@ -2823,12 +3009,15 @@ CONTAINS
         ! in a quad mesh e.g.
         IF (p_IverticesAtElement(ive,iel) .EQ. 0) EXIT
         
-        ! Check the neighbour element. If the neighbour element has a number greater
-        ! than our current element number, we 'see' the edge the first time and so
+        ! Check the neighbour element. If the neighbour element has a number less
+        ! than our current element number (including 0 which is the case for
+        ! boundary edges), we 'see' the edge the first time and so
         ! we give it a number.
-        IF (p_IneighboursAtElement(ive,iel) .GT. iel) THEN
+        IF (p_IneighboursAtElement(ive,iel) .LT. iel) THEN
         
           iedge = iedge + 1
+          
+          ! Add NVT to iedge to get the edge number
           p_IedgesAtElement(ive,iel) = iedge
         
         END IF
@@ -2836,6 +3025,9 @@ CONTAINS
       END DO
     
     END DO
+    
+    ! Save the correct NMT.
+    rtriangulation%NMT = iedge-rtriangulation%NVT
     
   END SUBROUTINE
 
@@ -2926,7 +3118,7 @@ CONTAINS
         
           ! Get the number of the boundary component from the vertex preceeding
           ! the edge and store it as information for the edge.
-          p_InodalProperty(rtriangulation%NVT+p_IedgesAtElement(ive,iel)) = &
+          p_InodalProperty(p_IedgesAtElement(ive,iel)) = &
               p_InodalProperty(p_IverticesAtElement(ive,iel))
         
         END IF
@@ -2946,7 +3138,7 @@ CONTAINS
 !<description>
   ! This routine generates the element volume array DelementVolume (DAREA). 
   ! For this purpose, the following arrays are used:
-  ! DvertexCoordinates, DverticesAtElement.
+  ! DvertexCoordinates, IverticesAtElement.
   ! If necessary, new memory is allocated.
 !</description>
 
@@ -3005,12 +3197,13 @@ CONTAINS
     dtotalVolume = 0.0_DP
         
     ! Currently, we support triangules and quads.
-    IF (UBOUND(p_IverticesAtElement,1) .EQ. 3) THEN
+    IF (UBOUND(p_IverticesAtElement,1) .EQ. TRIA_NVETRIA2D) THEN
 
       ! Calculate the element volume for all elements
       DO iel=1,rtriangulation%NEL
         ! triangular element
-        Dpoints(1:NDIM2D,1:3) = p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:3,iel))
+        Dpoints(1:NDIM2D,1:TRIA_NVETRIA2D) = &
+            p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:TRIA_NVETRIA2D,iel))
         p_DelementVolume(iel) = gaux_getArea_tria2D(Dpoints)
         
         dtotalVolume = dtotalVolume+p_DelementVolume(iel)
@@ -3023,13 +3216,13 @@ CONTAINS
       
         IF (p_IverticesAtElement(4,iel) .EQ. 0) THEN
           ! triangular element
-          Dpoints(1:NDIM2D,1:3) = &
-              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:3,iel))
+          Dpoints(1:NDIM2D,1:TRIA_NVETRIA2D) = &
+              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:TRIA_NVETRIA2D,iel))
           p_DelementVolume(iel) = gaux_getArea_tria2D(Dpoints)
         ELSE
           ! quad element
-          Dpoints(1:NDIM2D,1:4) = &
-              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:4,iel))
+          Dpoints(1:NDIM2D,1:TRIA_NVEQUAD2D) = &
+              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel))
           p_DelementVolume(iel) = gaux_getArea_quad2D(Dpoints)
         END IF
         
@@ -3040,6 +3233,393 @@ CONTAINS
     
     ! Store the total volume in the last element of DelementVolume
     p_DelementVolume(rtriangulation%NEL+1) = dtotalVolume
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_genElementsAtBoundary2D(rtriangulation)
+
+!<description>
+  ! This routine generates information about the elements at the boundary
+  ! IelementsAtBoundary (KEBD). 
+  ! For this purpose, the following arrays are used:
+  ! IverticesAtElement, IneighboursAtElement, IverticesAtBoundary,
+  ! IboundaryCpIdx, IelementsAtVertexIdx, IelementsAtVertex.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtBoundary
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
+    INTEGER :: ive, ibct, ivbd, iadjElement, nnve
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_POINTIDX) :: isize, ivt
+
+    ! Is everything here we need?
+    IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IneighboursAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtBoundary not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IboundaryCpIdx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IelementsAtVertexIdx .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IelementsAtVertexIdx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IelementsAtVertex .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IelementsAtVertex not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
+      STOP
+    END IF
+
+    ! Get the arrays.
+    CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    CALL storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+    CALL storage_getbase_int (rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+    CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    CALL storage_getbase_int (rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+    CALL storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+    
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) THEN
+      ! We have as many elements on the boudary as vertices!
+      CALL storage_new ('tria_genElementsAtBoundary2D', 'KMID', &
+          rtriangulation%NVBD, ST_INT, &
+          rtriangulation%h_IelementsAtBoundary, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize (rtriangulation%h_IelementsAtBoundary, isize)
+      IF (isize .NE. rtriangulation%NVBD) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_genElementsAtBoundary2D', &
+            rtriangulation%NVBD, rtriangulation%h_IelementsAtBoundary, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    CALL storage_getbase_int (rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
+
+    nnve = tria_getNNVE(rtriangulation)
+
+    ! Loop through all boundary components
+    DO ibct = 1,rtriangulation%NBCT
+    
+      ! On each boundary component, loop through all vertices
+      DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
+      
+        !   +---+---+---+
+        !   |   |   |   |
+        !   +---+---+---+
+        !   |   | 1 | 2 |
+        !   +---+---X---+
+        !          ivt
+      
+        ! Get the current boundary vertex
+        ivt = p_IverticesAtBoundary(ivbd)
+      
+        ! Loop through all elements adjacent to the current vertex
+        DO iadjElement = p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
+        
+          ! Get the element number
+          iel = p_IelementsAtVertex(iadjElement)
+        
+          ! Find the local number of the vertex in the element
+          DO ive=1,nnve
+            IF (p_IverticesAtElement (ive,iel) .EQ. ivt) EXIT
+          END DO
+          
+          ! Test if the element has a neighbour at the edge that's starting
+          ! with our current vertex
+          IF (p_IneighboursAtElement(ive,iel) .EQ. 0) THEN
+          
+            ! Yes, that's the boundary edge we are searching for!
+            ! It starts with ivt and is present in the boundary component
+            ! we are currently processing.
+            ! So we can save the boundary element number and proceed with the next 
+            ! boundary vertex.
+            
+            p_IelementsAtBoundary (ivbd) = p_IelementsAtVertex(iadjElement)
+            
+            EXIT
+           
+          END IF
+        
+        END DO
+      
+      END DO
+    
+    END DO
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_genEdgesAtBoundary2D(rtriangulation)
+
+!<description>
+  ! This routine generates information about the edges at the boundary
+  ! IedgesAtBoundary (KEBD). 
+  ! For this purpose, the following arrays are used:
+  ! IverticesAtElement, IelementsAtBoundary, IverticesAtBoundary, 
+  ! IedgesAtElement, IboundaryCpIdx.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtBoundary
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER :: ive, ibct, ivbd, nnve
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_POINTIDX) :: isize, ivt
+
+    ! Is everything here we need?
+    IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IedgesAtElement not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtBoundary not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IelementsAtBoundary not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IboundaryCpIdx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    ! Get the arrays.
+    CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    CALL storage_getbase_int (rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+    CALL storage_getbase_int (rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
+    CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) THEN
+      ! We have as many elements on the boudary as vertices!
+      CALL storage_new ('tria_genEdgesAtBoundary2D', 'KMID', &
+          rtriangulation%NVBD, ST_INT, &
+          rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize (rtriangulation%h_IelementsAtBoundary, isize)
+      IF (isize .NE. rtriangulation%NVBD) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_genEdgesAtBoundary2D', &
+            rtriangulation%NVBD, rtriangulation%h_IedgesAtBoundary, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    CALL storage_getbase_int (rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+
+    nnve = tria_getNNVE(rtriangulation)
+
+    ! Loop through all boundary components
+    DO ibct = 1,rtriangulation%NBCT
+    
+      ! On each boundary component, loop through all elements
+      DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
+      
+        !   +---+---+
+        !   |   |   |
+        !   +---+---+
+        !   |   |IEL|
+        !   +---X===+
+        !      ivt
+      
+        ! Get the current boundary vertex and element number
+        ivt = p_IverticesAtBoundary(ivbd)
+        iel = p_IelementsAtBoundary(ivbd)
+        
+        ! Find the local number of the vertex in the element
+        DO ive=1,nnve
+          IF (p_IverticesAtElement (ive,iel) .EQ. ivt) EXIT
+        END DO
+        
+        ! Save the edge following the vertex on that element.
+        p_IedgesAtBoundary(ivbd) = p_IedgesAtElement(ive,iel)
+      
+      END DO
+    
+    END DO
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_genEdgeParameterValue2D(rtriangulation,rboundary)
+
+!<description>
+  ! This routine generates the parameter value of edge midpoints
+  ! on the boundary DedgeParameterValue (DMBDP). Initialises NMBD.
+  ! For this purpose, the following arrays are used:
+  ! DvertexParameterValue, IverticesAtBoundary, IboundaryCpIdx.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<input>
+  ! Boundary structure that defines the parametrisation of the boundary.
+  TYPE(t_boundary), INTENT(IN) :: rboundary
+!</input>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
+    REAL(DP), DIMENSION(:), POINTER :: p_DedgeParameterValue
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    
+    INTEGER :: ibct, ivbd
+    INTEGER(PREC_POINTIDX) :: isize
+    REAL(DP) :: dpar1,dpar2
+
+    ! Is everything here we need?
+    IF (rtriangulation%h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('DvertexParameterValue not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtBoundary not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IboundaryCpIdx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    ! Get the arrays.
+    CALL storage_getbase_double (rtriangulation%h_DvertexParameterValue,&
+        p_DvertexParameterValue)
+    CALL storage_getbase_int (rtriangulation%h_IverticesAtBoundary,&
+        p_IverticesAtBoundary)
+    CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_DedgeParameterValue .EQ. ST_NOHANDLE) THEN
+      ! We have as many elements on the boudary as vertices!
+      CALL storage_new ('tria_genEdgeParameterValue2D', 'KMID', &
+          rtriangulation%NVBD, ST_DOUBLE, &
+          rtriangulation%h_DedgeParameterValue, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize (rtriangulation%h_DedgeParameterValue, isize)
+      IF (isize .NE. rtriangulation%NVBD) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_genEdgeParameterValue2D', &
+            rtriangulation%NVBD, rtriangulation%h_DedgeParameterValue, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    CALL storage_getbase_double (rtriangulation%h_DedgeParameterValue,&
+        p_DedgeParameterValue)
+
+    ! Loop through all boundary components
+    DO ibct = 1,rtriangulation%NBCT
+    
+      ! On each boundary component, loop through all vertices
+      DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-2
+      
+        ! Get the parameter value of the current vertex and its neighbour.
+        dpar1 = p_DvertexParameterValue(ivbd)
+        dpar2 = p_DvertexParameterValue(ivbd)
+        
+        ! The edge parameter value is the mean.
+        p_DedgeParameterValue(ivbd) = 0.5_DP*(dpar1+dpar2)
+      
+      END DO
+      
+      ! The 'last' vertex is a special case as there is no real neighbour.
+      ! The parameter value of the 'neighbour' is the maximum parameter
+      ! value of the boundary component + the parameter value of the
+      ! first vertex of the boundary component.
+      !
+      ! Note that ivbd points to p_IboundaryCpIdx(ibct+1)-1 by
+      ! Fortran standard!
+      dpar1 = p_DvertexParameterValue(ivbd)
+      dpar2 = p_DvertexParameterValue(p_IboundaryCpIdx(ibct)) + &
+          boundary_dgetMaxParVal(rboundary, ibct)
+      p_DedgeParameterValue(ivbd) = 0.5_DP*(dpar1+dpar2)
+    
+    END DO
+    
+    rtriangulation%NMBD = rtriangulation%NVBD
     
   END SUBROUTINE
 

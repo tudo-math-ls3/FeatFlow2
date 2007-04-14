@@ -131,10 +131,15 @@ CONTAINS
   ! The area of the polygon.
 !</result>
 !</function>
+
+    ! local variables
+    INTEGER, DIMENSION(3), PARAMETER :: IpointSubset = (/1,3,4/)
+    REAL(DP), DIMENSION(2,3) :: Dpoints2
     
+    Dpoints2 = Dpoints(:,IpointSubset)
     gaux_getArea_quad2D = &
-        ABS(gaux_getArea_tria2D(Dpoints(1:2,1:3))) +&
-        ABS(gaux_getArea_tria2D(Dpoints(1:2,(/1,3,4/))))
+        ABS(gaux_getArea_tria2D(Dpoints(:,1:3))) +&
+        ABS(gaux_getArea_tria2D(Dpoints2))
 
   END FUNCTION gaux_getArea_quad2D
 END MODULE

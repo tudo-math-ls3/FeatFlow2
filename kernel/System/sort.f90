@@ -469,12 +469,8 @@ CONTAINS
       if (ilen .lt. 2) return
       ! Sort small fields with insertsort.(stable)
       if (ilen .lt. SORT_CUTOFF) then
-        if (present(Imapping)) then
-    call insertsort(Iarray,Imapping)
-  else
-    call insertsort(Iarray)
-  endif
-  return
+        call insertsort(Iarray,Imapping)
+        return
       endif
 
       ! Find midpoint of field
@@ -500,23 +496,23 @@ CONTAINS
           if (Iarray(ilo) .le. Iarray(istart_hi)) then
             ilo = ilo+1
           else
-      Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-      Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
-      ilo       = ilo+1
-      iend_lo   = iend_lo+1
-      istart_hi = istart_hi+1
-    endif
+            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
+            Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
+            ilo       = ilo+1
+            iend_lo   = iend_lo+1
+            istart_hi = istart_hi+1
+          endif
         enddo
       else
         do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
           if (Iarray(ilo) .le. Iarray(istart_hi)) then
             ilo = ilo+1
           else
-      Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-      ilo       = ilo+1
-      iend_lo   = iend_lo+1
-      istart_hi = istart_hi+1
-    endif
+            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
+            ilo       = ilo+1
+            iend_lo   = iend_lo+1
+            istart_hi = istart_hi+1
+          endif
         enddo
       endif
     end subroutine mergesort
@@ -865,12 +861,8 @@ CONTAINS
       if (ilen .lt. 2) return
       ! Sort small fields with insertsort.(stable)
       if (ilen .lt. SORT_CUTOFF) then
-        if (present(Imapping)) then
-    call insertsort(Iarray,Imapping)
-  else
-    call insertsort(Iarray)
-  endif
-  return
+        call insertsort(Iarray,Imapping)
+        return
       endif
 
       ! Find midpoint of field
@@ -896,23 +888,23 @@ CONTAINS
           if (Iarray(ilo) .le. Iarray(istart_hi)) then
             ilo = ilo+1
           else
-      Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-      Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
-      ilo       = ilo+1
-      iend_lo   = iend_lo+1
-      istart_hi = istart_hi+1
-    endif
+            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
+            Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
+            ilo       = ilo+1
+            iend_lo   = iend_lo+1
+            istart_hi = istart_hi+1
+          endif
         enddo
       else
         do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
           if (Iarray(ilo) .le. Iarray(istart_hi)) then
             ilo = ilo+1
           else
-      Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
-      ilo       = ilo+1
-      iend_lo   = iend_lo+1
-      istart_hi = istart_hi+1
-    endif
+            Iarray(ilo:istart_hi) = cshift(Iarray(ilo:istart_hi),-1)
+            ilo       = ilo+1
+            iend_lo   = iend_lo+1
+            istart_hi = istart_hi+1
+          endif
         enddo
       endif
     end subroutine mergesort
@@ -1193,11 +1185,7 @@ CONTAINS
       end select
     else
 
-      if (present(Imapping)) then
-        call heapsort(Darray, Imapping)
-      else
-        call heapsort(Darray)
-      endif
+      call heapsort(Darray, Imapping)
 
     endif
 
@@ -1483,12 +1471,8 @@ CONTAINS
       if (ilen .lt. 2) return
       ! Sort small fields with insertsort.(stable)
       if (ilen .lt. SORT_CUTOFF) then
-        if (present(Imapping)) then
-    call insertsort(Darray,Imapping)
-  else
-    call insertsort(Darray)
-  endif
-  return
+        call insertsort(Darray,Imapping)
+        return
       endif
 
       ! Find midpoint of field
@@ -1514,23 +1498,23 @@ CONTAINS
           if (Darray(ilo) .le. Darray(istart_hi)) then
             ilo = ilo+1
           else
-      Darray(ilo:istart_hi) = cshift(Darray(ilo:istart_hi),-1)
-      Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
-      ilo       = ilo+1
-      iend_lo   = iend_lo+1
-      istart_hi = istart_hi+1
-    endif
+            Darray(ilo:istart_hi) = cshift(Darray(ilo:istart_hi),-1)
+            Imapping(ilo:istart_hi) = cshift(Imapping(ilo:istart_hi),-1)
+            ilo       = ilo+1
+            iend_lo   = iend_lo+1
+            istart_hi = istart_hi+1
+          endif
         enddo
       else
         do while ((ilo .le. iend_lo) .and. (istart_hi .le. ilen))
           if (Darray(ilo) .le. Darray(istart_hi)) then
             ilo = ilo+1
           else
-      Darray(ilo:istart_hi) = cshift(Darray(ilo:istart_hi),-1)
-      ilo       = ilo+1
-      iend_lo   = iend_lo+1
-      istart_hi = istart_hi+1
-    endif
+            Darray(ilo:istart_hi) = cshift(Darray(ilo:istart_hi),-1)
+            ilo       = ilo+1
+            iend_lo   = iend_lo+1
+            istart_hi = istart_hi+1
+          endif
         enddo
       endif
     end subroutine mergesort

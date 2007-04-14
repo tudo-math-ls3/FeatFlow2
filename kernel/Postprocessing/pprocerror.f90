@@ -10,7 +10,7 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) pperr_scalar
-!#     -> Calculate $L_2$-erroror $H_1$-error to an analytic reference
+!#     -> Calculate $L_2$-error or $H_1$-error to an analytic reference
 !#        function, or the $L_2$-norm or $H_1$-norm of a FE function.
 !# </purpose>
 !#########################################################################
