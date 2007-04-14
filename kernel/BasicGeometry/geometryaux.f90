@@ -102,7 +102,7 @@ CONTAINS
 !</result>
 !</function>
 
-    gaux_GetArea_tria2D = 0.5*( &
+    gaux_getArea_tria2D = 0.5_DP*( &
         (Dpoints(1,2)-Dpoints(1,1))*(Dpoints(2,3)-Dpoints(2,1))-&
         (Dpoints(1,3)-Dpoints(1,1))*(Dpoints(2,2)-Dpoints(2,1)) )
   END FUNCTION gaux_getArea_tria2D
@@ -132,7 +132,7 @@ CONTAINS
 !</result>
 !</function>
     
-    gaux_GetArea_quad2D = &
+    gaux_getArea_quad2D = &
         ABS(gaux_getArea_tria2D(Dpoints(1:2,1:3))) +&
         ABS(gaux_getArea_tria2D(Dpoints(1:2,(/1,3,4/))))
 

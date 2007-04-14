@@ -423,12 +423,12 @@ MODULE linearsystemscalar
     
     ! Integer tags. This array of integer values can be used to store
     ! auxiliary tags which depend on the application.
-    INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
+    !INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
 
     ! Real tags. This array of real values can be used to store
     ! auxiliary
     ! tags which depend on the application.
-    REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
+    !REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
 
     ! Is set to true, if the handle h_Ddata belongs to another vector,
     ! i.e. when this vector shares data with another vector.
@@ -552,12 +552,12 @@ MODULE linearsystemscalar
 
     ! Integer tags. This array of integer values can be used to store
     ! auxiliary tags which depend on the application.
-    INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
+    !INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
 
     ! Real tags. This array of real values can be used to store
     ! auxiliary
     ! tags which depend on the application.
-    REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
+    !REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
     
     ! A pointer to the spatial discretisation
     TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscretisation => NULL()

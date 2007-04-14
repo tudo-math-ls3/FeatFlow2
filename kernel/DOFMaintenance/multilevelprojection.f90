@@ -1015,7 +1015,7 @@ CONTAINS
                                        p_IverticesAtElementCoarse)
             CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
                                           p_DcornerCoordinatesCoarse)
-            CALL storage_getbase_double(p_rtriaCoarse%h_DelementArea, &
+            CALL storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
                                         p_DelementAreaCoarse)
             ! (what a nasty call...)                                       
             IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
@@ -1258,7 +1258,7 @@ CONTAINS
                                        p_IverticesAtElementCoarse)
             CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
                                           p_DcornerCoordinatesCoarse)
-            CALL storage_getbase_double(p_rtriaCoarse%h_DelementArea, &
+            CALL storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
                                         p_DelementAreaCoarse)
             ! (what a nasty call...)                                       
             IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN

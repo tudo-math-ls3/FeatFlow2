@@ -287,62 +287,62 @@ MODULE storage
   
   INTERFACE storage_getbase_int
     MODULE PROCEDURE storage_getbase_int
-    MODULE PROCEDURE storage_getbase_intUBound
-    MODULE PROCEDURE storage_getbase_intLUBound
+    MODULE PROCEDURE storage_getbase_intUBnd
+    MODULE PROCEDURE storage_getbase_intLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_single
     MODULE PROCEDURE storage_getbase_single
-    MODULE PROCEDURE storage_getbase_singleUBound
-    MODULE PROCEDURE storage_getbase_singleLUBound
+    MODULE PROCEDURE storage_getbase_singleUBnd
+    MODULE PROCEDURE storage_getbase_singleLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_double
     MODULE PROCEDURE storage_getbase_double
-    MODULE PROCEDURE storage_getbase_doubleUBound
-    MODULE PROCEDURE storage_getbase_doubleLUBound
+    MODULE PROCEDURE storage_getbase_doubleUBnd
+    MODULE PROCEDURE storage_getbase_doubleLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_logical
     MODULE PROCEDURE storage_getbase_logical
-    MODULE PROCEDURE storage_getbase_logicalUBound
-    MODULE PROCEDURE storage_getbase_logicalLUBound
+    MODULE PROCEDURE storage_getbase_logicalUBnd
+    MODULE PROCEDURE storage_getbase_logicalLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_char
     MODULE PROCEDURE storage_getbase_char
-    MODULE PROCEDURE storage_getbase_charUBound
-    MODULE PROCEDURE storage_getbase_charLUBound
+    MODULE PROCEDURE storage_getbase_charUBnd
+    MODULE PROCEDURE storage_getbase_charLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_int2D
     MODULE PROCEDURE storage_getbase_int2D
-    MODULE PROCEDURE storage_getbase_int2DUBound
-    MODULE PROCEDURE storage_getbase_int2DLUBound
+    MODULE PROCEDURE storage_getbase_int2DUBnd
+    MODULE PROCEDURE storage_getbase_int2DLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_single2D
     MODULE PROCEDURE storage_getbase_single2D
-    MODULE PROCEDURE storage_getbase_single2DUBound
-    MODULE PROCEDURE storage_getbase_single2DLUBound
+    MODULE PROCEDURE storage_getbase_single2DUBnd
+    MODULE PROCEDURE storage_getbase_single2DLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_double2D
     MODULE PROCEDURE storage_getbase_double2D
-    MODULE PROCEDURE storage_getbase_double2DUBound
-    MODULE PROCEDURE storage_getbase_double2DLUBound
+    MODULE PROCEDURE storage_getbase_double2DUBnd
+    MODULE PROCEDURE storage_getbase_double2DLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_logical2D
     MODULE PROCEDURE storage_getbase_logical2D
-    MODULE PROCEDURE storage_getbase_logical2DUBound
-    MODULE PROCEDURE storage_getbase_logical2DLUBound
+    MODULE PROCEDURE storage_getbase_logical2DUBnd
+    MODULE PROCEDURE storage_getbase_logical2DLUBnd
   END INTERFACE
 
   INTERFACE storage_getbase_char2D
     MODULE PROCEDURE storage_getbase_char2D
-    MODULE PROCEDURE storage_getbase_char2DUBound
-    MODULE PROCEDURE storage_getbase_char2DLUBound
+    MODULE PROCEDURE storage_getbase_char2DUBnd
+    MODULE PROCEDURE storage_getbase_char2DLUBnd
   END INTERFACE
 
   INTERFACE storage_getsize
@@ -1691,7 +1691,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_intUBound (ihandle, p_Iarray, ubound, rheap)
+  SUBROUTINE storage_getbase_intUBnd (ihandle, p_Iarray, ubound, rheap)
 
 !<description>
 
@@ -1755,7 +1755,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_intLUBound (ihandle, p_Iarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_intLUBnd (ihandle, p_Iarray, lbound, ubound, rheap)
 
 !<description>
 
@@ -1885,7 +1885,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_singleUBound (ihandle, p_Sarray, ubound, rheap)
+  SUBROUTINE storage_getbase_singleUBnd (ihandle, p_Sarray, ubound, rheap)
 
 !<description>
 
@@ -1950,7 +1950,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_singleLUBound (ihandle, p_Sarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_singleLUBnd (ihandle, p_Sarray, lbound, ubound, rheap)
 
 !<description>
 
@@ -2081,7 +2081,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_doubleUBound (ihandle, p_Darray, ubound, rheap)
+  SUBROUTINE storage_getbase_doubleUBnd (ihandle, p_Darray, ubound, rheap)
 
 !<description>
 
@@ -2146,7 +2146,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_doubleLUBound (ihandle, p_Darray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_doubleLUBnd (ihandle, p_Darray, lbound, ubound, rheap)
 
 !<description>
 
@@ -2276,7 +2276,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logicalUBound (ihandle, p_Larray, ubound, rheap)
+  SUBROUTINE storage_getbase_logicalUBnd (ihandle, p_Larray, ubound, rheap)
 
 !<description>
 
@@ -2341,7 +2341,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logicalLUBound (ihandle, p_Larray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_logicalLUBnd (ihandle, p_Larray, lbound, ubound, rheap)
 
 !<description>
 
@@ -2471,7 +2471,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_charUBound (ihandle, p_Carray, ubound, rheap)
+  SUBROUTINE storage_getbase_charUBnd (ihandle, p_Carray, ubound, rheap)
 
 !<description>
 
@@ -2536,7 +2536,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_charLUBound (ihandle, p_Carray, lbound, ubound,rheap)
+  SUBROUTINE storage_getbase_charLUBnd (ihandle, p_Carray, lbound, ubound,rheap)
 
 !<description>
 
@@ -2661,7 +2661,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_int2DUBound (ihandle, p_Iarray, ubound, rheap)
+  SUBROUTINE storage_getbase_int2DUBnd (ihandle, p_Iarray, ubound, rheap)
 
 !<description>
 
@@ -2721,7 +2721,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_int2DLUBound (ihandle, p_Iarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_int2DLUBnd (ihandle, p_Iarray, lbound, ubound, rheap)
 
 !<description>
 
@@ -2842,7 +2842,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_single2DUBound (ihandle, p_Sarray, ubound, rheap)
+  SUBROUTINE storage_getbase_single2DUBnd (ihandle, p_Sarray, ubound, rheap)
 
 !<description>
 
@@ -2902,7 +2902,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_single2DLUBound (ihandle, p_Sarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_single2DLUBnd (ihandle, p_Sarray, lbound, ubound, rheap)
 
 !<description>
 
@@ -3019,7 +3019,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_double2DUBound (ihandle, p_Darray, ubound, rheap)
+  SUBROUTINE storage_getbase_double2DUBnd (ihandle, p_Darray, ubound, rheap)
 
 !<description>
 
@@ -3075,7 +3075,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_double2DLUBound (ihandle, p_Darray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_double2DLUBnd (ihandle, p_Darray, lbound, ubound, rheap)
 
 !<description>
 
@@ -3192,7 +3192,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logical2DUBound (ihandle, p_Larray, ubound, rheap)
+  SUBROUTINE storage_getbase_logical2DUBnd (ihandle, p_Larray, ubound, rheap)
 
 !<description>
 
@@ -3252,7 +3252,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logical2DLUBound (ihandle, p_Larray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_logical2DLUBnd (ihandle, p_Larray, lbound, ubound, rheap)
 
 !<description>
 
@@ -3373,7 +3373,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_char2DUBound (ihandle, p_Carray, ubound, rheap)
+  SUBROUTINE storage_getbase_char2DUBnd (ihandle, p_Carray, ubound, rheap)
 
 !<description>
 
@@ -3433,7 +3433,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_char2DLUBound (ihandle, p_Carray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_char2DLUBnd (ihandle, p_Carray, lbound, ubound, rheap)
 
 !<description>
 

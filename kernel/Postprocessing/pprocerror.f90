@@ -1,17 +1,17 @@
 !#########################################################################
 !# ***********************************************************************
-!# <name> pprocerrror </name>
+!# <name> pprocerror </name>
 !# ***********************************************************************
 !#
 !# <purpose>
-!# This module contains various routines for calculating errors of
-!# finite element functions.
+!# This module contains various routines for calculating errors and norms
+!# of finite element functions.
 !#
 !# The following routines can be found in this module:
 !#
 !# 1.) pperr_scalar
-!#     -> Calculate $L_2$-error or $H_1$ error to an analytic reference
-!#        function.
+!#     -> Calculate $L_2$-erroror $H_1$-error to an analytic reference
+!#        function, or the $L_2$-norm or $H_1$-norm of a FE function.
 !# </purpose>
 !#########################################################################
 
@@ -35,10 +35,10 @@ MODULE pprocerror
 
 !<constantblock description = "Identifiers for the type of error to be computed.">
 
-  ! $L_2$-error
+  ! $L_2$-error/norm
   INTEGER, PARAMETER :: PPERR_L2ERROR = 1
   
-  ! $H_1$-error
+  ! $H_1$-error/norm
   INTEGER, PARAMETER :: PPERR_H1ERROR = 2
   
 !</constantblock>
@@ -62,8 +62,16 @@ CONTAINS
                            ffunctionReference,rcollection,rdiscretisation)
 
 !<description>
-  ! This routine calculates the error of a given finite element function
-  ! in rvector to a given analytical callback function ffunctionReference.
+  ! This routine calculates the error or the norm, respectively, of a given 
+  ! finite element function in rvector to a given analytical 
+  ! callback function ffunctionReference.
+  !
+  ! If ffunctionReference is specified, the routine calculates
+  !   $$ ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1}$$
+  ! with $y$=rvectorScalar and $z$=ffunctionReference.
+  !
+  ! If ffunctionReference is not specified, the routine calculates
+  !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}.$$
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the cubature
@@ -79,9 +87,11 @@ CONTAINS
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
   INTEGER, INTENT(IN)                      :: cerrortype
   
-  ! A callback function that provides the analytical reference function
-  ! to which the error shouold be computed.
+  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! function to which the error should be computed.
+  ! If not specified, the reference function is assumed to be zero!
   INCLUDE 'intf_refFunctionSc.inc'
+  OPTIONAL :: ffunctionReference
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
@@ -144,7 +154,7 @@ CONTAINS
     
       IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
         CALL pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                           ffunctionReference,p_rcollection,p_rdiscretisation)
+                           p_rcollection,p_rdiscretisation,ffunctionReference)
       ELSE
         PRINT *,'pperr_scalar: Single precision vectors currently not supported!'
       END IF
@@ -154,7 +164,7 @@ CONTAINS
     
       IF (rvectorScalar%cdataType .EQ. ST_DOUBLE) THEN
         CALL pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                           ffunctionReference,p_rcollection,p_rdiscretisation)
+                           p_rcollection,p_rdiscretisation,ffunctionReference)
       ELSE
         PRINT *,'pperr_scalar: Single precision vectors currently not supported!'
       END IF
@@ -170,8 +180,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,ffunctionReference,&
-                                  p_rcollection,rdiscretisation)
+  SUBROUTINE pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
+                                  p_rcollection,rdiscretisation,ffunctionReference)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -188,16 +198,18 @@ CONTAINS
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
   INTEGER, INTENT(IN)                      :: cerrortype
   
-  ! A callback function that provides the analytical reference function
-  ! to which the error shouold be computed.
-  INCLUDE 'intf_refFunctionSc.inc'
-
   ! A discretisation structure specifying how to compute the error.
   TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
   
   ! A pointer to the collection structure to pass to the callback routine;
   ! or NULL, if none such a structure exists.
   TYPE(t_collection), POINTER            :: p_rcollection
+
+  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! function to which the error should be computed.
+  ! If not specified, the reference function is assumed to be zero!
+  INCLUDE 'intf_refFunctionSc.inc'
+  OPTIONAL :: ffunctionReference
 !</input>
 
 !<output>
@@ -308,7 +320,7 @@ CONTAINS
                                p_IverticesAtElement)
     CALL storage_getbase_double2D(p_rtriangulation%h_DcornerCoordinates, &
                                p_DcornerCoordinates)
-
+                               
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
 
@@ -447,16 +459,19 @@ CONTAINS
         CASE (PPERR_L2ERROR)
         
           ! L2-error uses only the values of the function.
-          !
-          ! It's time to call our coefficient function to calculate the
-          ! function values in the cubature points:  u(x,y)
-          ! The result is saved in Dcoefficients(:,:,1)
           
-          CALL ffunctionReference (DER_FUNC,rdiscretisation, &
-                      INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                      IdofsTrial,rintSubset,p_rcollection, &
-                      Dcoefficients(:,1:IELmax-IELset+1_I32,1))
-          
+          IF (PRESENT(ffunctionReference)) THEN
+            ! It's time to call our coefficient function to calculate the
+            ! function values in the cubature points:  u(x,y)
+            ! The result is saved in Dcoefficients(:,:,1)
+            CALL ffunctionReference (DER_FUNC,rdiscretisation, &
+                        INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
+                        IdofsTrial,rintSubset,p_rcollection, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+          ELSE
+            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+          END IF
+
           ! Calculate the values of the FE function in the
           ! cubature points: u_h(x,y).
           ! Save the result to Dcoefficients(:,:,2)
@@ -496,22 +511,25 @@ CONTAINS
         CASE (PPERR_H1ERROR)
 
           ! H1-error uses only 1st derivative of the function.
-          !
-          ! It's time to call our coefficient function to calculate the
-          ! X-derivative values in the cubature points:  u(x,y)
-          ! The result is saved in Dcoefficients(:,:,1)
-          
-          CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
-                      INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                      IdofsTrial,rintSubset,p_rcollection, &
-                      Dcoefficients(:,1:IELmax-IELset+1_I32,1))
-                      
-          ! Calculate the Y-derivative to Dcoefficients(:,:,2)
 
-          CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
-                      INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
-                      IdofsTrial,rintSubset,p_rcollection, &
-                      Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+          IF (PRESENT(ffunctionReference)) THEN          
+            ! It's time to call our coefficient function to calculate the
+            ! X-derivative values in the cubature points:  u(x,y)
+            ! The result is saved in Dcoefficients(:,:,1)
+            CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
+                        INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
+                        IdofsTrial,rintSubset,p_rcollection, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1))
+                        
+            ! Calculate the Y-derivative to Dcoefficients(:,:,2)
+
+            CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
+                        INT(IELmax-IELset+1),ncubp,p_DcubPtsReal, &
+                        IdofsTrial,rintSubset,p_rcollection, &
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+          ELSE
+            Dcoefficients(:,1:IELmax-IELset+1_I32,1:2) = 0.0_DP
+          END IF
           
           ! Calculate the X/Y-derivative of the FE function in the
           ! cubature points: u_h(x,y).
