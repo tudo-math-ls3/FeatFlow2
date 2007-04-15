@@ -523,7 +523,7 @@ CONTAINS
       ! KLD(1) = 0, 
       ! KLD(2) = Number of entries in row 1,
       ! KLD(3) = Number of entries in row 2, etc.
-      ! Add the values together to get the actual KLD.
+      ! Sum up the values to get the actual KLD.
       p_KldDest(1) = 1
       DO irow = 1,rsourceMatrix%NEQ
         p_KldDest(irow+1) = p_KldDest(irow+1) + p_KldDest(irow)

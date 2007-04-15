@@ -845,6 +845,8 @@ CONTAINS
   
   REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
   
+  REAL(DP) :: dpar
+  
   ! Which component is to be discretised?
   icomponent = rbcRegion%Iequations(1)
   p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(icomponent)
@@ -854,14 +856,24 @@ CONTAINS
   CALL storage_getbase_int(p_rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+  CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+
+  ! The parameter value arrays may not be initialised.
   IF (p_rtriangulation%h_DedgeParameterValue .NE. ST_NOHANDLE) THEN
-    CALL storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,p_DedgeParameterValue)
+    CALL storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
+        p_DedgeParameterValue)
   ELSE
     NULLIFY(p_DedgeParameterValue)
   END IF
-  CALL storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
-  CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
-  CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+
+  IF (p_rtriangulation%h_DedgeParameterValue .NE. ST_NOHANDLE) THEN
+    CALL storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
+        p_DvertexParameterValue)
+  ELSE
+    NULLIFY(p_DvertexParameterValue)
+  END IF
+
   NVT = p_rtriangulation%NVT
 
   IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
@@ -965,14 +977,16 @@ CONTAINS
   END IF
                  
   isubsetstart = 0
-                               
+  
   ! Loop through the index sets
   DO ipart = 1,icountmax
   
     ! Now the element-dependent part. For each element type, we have to
     ! figure out which DOF's are on the boundary!
     DO i=Iminidx(ipart),Imaxidx(ipart)
-    
+
+      dpar = -1.0_DP
+
       ! We proceed as follows: We figure out, which DOF is on the
       ! boundary. Then, we ask our computation routine to calculate
       ! the necessary value and translate them into a DOF value.
@@ -1018,11 +1032,17 @@ CONTAINS
         ! Either the edge or an adjacent vertex is on the boundary.
         
         IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+        
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          IF (ASSOCIATED(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(I)
+        
           ! Get the value at the corner point and accept it as
           ! Dirichlet value.
           CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                   rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                  ipoint1,p_DvertexParameterValue(I), &
+                                  ipoint1,dpar, &
                                   p_rcollection, Dvalues)
                                  
           ! Dvalues(1) gives us the function value in the point. Save it
@@ -1039,10 +1059,16 @@ CONTAINS
         ! Left point inside? -> Corresponding DOF must be computed
         IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
         
-          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN          
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN  
+          
+            ! If parameter values are available, get the parameter value.
+            ! Otherwise, take the standard value from above!
+            IF (ASSOCIATED(p_DvertexParameterValue)) &
+              dpar = p_DvertexParameterValue(I)
+                  
             CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                     rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                    ipoint1,p_DvertexParameterValue(I), &
+                                    ipoint1,dpar, &
                                     p_rcollection, Dvalues)
                                     
             ! Save the computed function value
@@ -1070,10 +1096,16 @@ CONTAINS
         ! Left point inside? -> Corresponding DOF must be computed
         IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
         
-          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN          
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN   
+                 
+            ! If parameter values are available, get the parameter value.
+            ! Otherwise, take the standard value from above!
+            IF (ASSOCIATED(p_DvertexParameterValue)) &
+              dpar = p_DvertexParameterValue(I)
+                  
             CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                     rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                    ipoint1,p_DvertexParameterValue(I), &
+                                    ipoint1,dpar, &
                                     p_rcollection, Dvalues)
                                     
             ! Save the computed function value of the corner.
@@ -1099,9 +1131,15 @@ CONTAINS
         ! Edge inside? -> Calculate point value on midpoint of edge iedge
         IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
           IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+          
+            ! If parameter values are available, get the parameter value.
+            ! Otherwise, take the standard value from above!
+            IF (ASSOCIATED(p_DedgeParameterValue)) &
+              dpar = p_DedgeParameterValue(I)
+                  
             CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                     rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
-                                    iedge,p_DedgeParameterValue(I), &
+                                    iedge,dpar, &
                                     p_rcollection, Dvalues)
                                     
             ! Save the computed function value of the edge midpoint.
@@ -1127,11 +1165,17 @@ CONTAINS
         ! Either the edge or an adjacent vertex is on the boundary.
         
         IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          IF (ASSOCIATED(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(I)
+                
           ! Get the value at the corner point and accept it as
           ! Dirichlet value.
           CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                   rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                  ipoint1,p_DvertexParameterValue(I), &
+                                  ipoint1,dpar, &
                                   p_rcollection, Dvalues)
                                  
           ! Dvalues(1) gives us the function value in the point. Save it
@@ -1159,9 +1203,15 @@ CONTAINS
           ! Edge inside? -> Calculate integral mean value over the edge
           IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
             IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+
+              ! If parameter values are available, get the parameter value.
+              ! Otherwise, take the standard value from above!
+              IF (ASSOCIATED(p_DedgeParameterValue)) &
+                dpar = p_DedgeParameterValue(I)
+
               CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                       rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
-                                      iedge,p_DedgeParameterValue(I), &
+                                      iedge,dpar, &
                                       p_rcollection, Dvalues)
                                       
               ! Save the computed function value
@@ -1180,9 +1230,15 @@ CONTAINS
           ! Edge inside? -> Calculate point value on midpoint of edge iedge
           IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
             IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+
+              ! If parameter values are available, get the parameter value.
+              ! Otherwise, take the standard value from above!
+              IF (ASSOCIATED(p_DedgeParameterValue)) &
+                dpar = p_DedgeParameterValue(I)
+
               CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
                                       rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
-                                      iedge,p_DedgeParameterValue(I), &
+                                      iedge,dpar, &
                                       p_rcollection, Dvalues)
                                       
               ! Save the computed function value

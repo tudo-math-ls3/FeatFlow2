@@ -27,20 +27,24 @@
 !#     -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
 !#        (as set up by tria_readTriFile2D e.g.) to a standard mesh.
 !#
-!# 4.) tria_done
+!# 4.) tria_refine2LevelOrdering
+!#     -> Refines a mesh according to the 2-level ordering algorithm.
+!#        Creates a 'raw' fine mesh from a 'standard' coarse mesh.
+!#
+!# 5.) tria_done
 !#     -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!# 5.) tria_rawQuadToTri
+!# 6.) tria_rawQuadToTri
 !#     -> Converts a raw mesh into a triangular mesh.
 !#
-!# 6.) tria_duplicate
+!# 7.) tria_duplicate
 !#     -> Creates a duplicate / backup of a triangulation.
 !#        Some information may be shared between two triangulation structures.
 !#
-!# 7.) tria_restore
+!# 8.) tria_restore
 !#     -> Restores a triangulation previously backed up with tria_backup.
 !#
-!# 8.) tria_recoverHandles
+!# 9.) tria_recoverHandles
 !#     -> Recovers destroyed handles of a triangulation structure from a 
 !#        backup.
 !#
@@ -107,7 +111,11 @@ MODULE triangulation
 
 !<constantblock description="Triangulation constants">
   
-  ! Maximum number of corner-vertices in each element.
+  ! Maximum number of vertices per element supported by the triangulation
+  ! module. Currently, this is 8 which is the case for 3D hexahedral meshes.
+  INTEGER, PARAMETER :: TRIA_MAXNVE   = 8
+
+  ! Maximum number of corner-vertices in each 2D element.
   ! We set this to 4 to allow triangle and quadrilateral element shapes.
   ! May be set to higher vales in the future for the support of
   ! isoparametric elements!
@@ -267,6 +275,11 @@ MODULE triangulation
     ! Number of edges on the boundary; coincides with NVBD
     ! for 2D domains.
     INTEGER             :: NMBD = 0
+    
+    ! Number of elements with a defined number of vertices per element.
+    ! InelOfType(TRIA_NVETRIA2D) = number of triangles in the mesh (2D).
+    ! InelOfType(TRIA_NVEQUAD2D) = number of quads in the mesh (2D).
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE) :: InelOfType = 0
   
     ! Number of vertices per edge; normally = 0.
     ! If a regular distribution of vertices on edges is given,
@@ -1796,7 +1809,7 @@ CONTAINS
     END DO
     
     ! Create a new p_IverticesAtElement array for the triangular mesh.
-    Isize = (/TRIA_MAXNVE2D,icount+rtriangulation%NEL/)
+    Isize = (/TRIA_NVETRIA2D,icount+rtriangulation%NEL/)
     CALL storage_new2D ('tria_quadToTri', 'KVERTTRI', Isize, ST_INT, &
                         h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
@@ -1808,6 +1821,10 @@ CONTAINS
     ! Replace the old array by the new, release the old one.
     CALL storage_free (rtriangulation%h_IverticesAtElement)
     rtriangulation%h_IverticesAtElement = h_IverticesAtElementTri
+    
+    ! Finally, set up InelOfType.
+    rtriangulation%InelOfType(:) = 0
+    rtriangulation%InelOfType(TRIA_NVETRIA2D) = rtriangulation%NEL
     
     ! That's it.
 
@@ -1884,7 +1901,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_readTriFile2D(rboundary, rtriangulation, sfilename)
+  SUBROUTINE tria_readTriFile2D(rtriangulation, sfilename, rboundary)
 
 !<description>
   ! This routine reads a .TRI file of a 2D triangulation into memory
@@ -1900,7 +1917,7 @@ CONTAINS
   ! or whatever is created.
   ! The following arrays / information tags will be initialised:
   !
-  ! NEL,NVT,NMT,NBCT,NVBD,
+  ! NEL,NVT,NMT,NBCT,NVBD,InelOfType,
   ! DcornerCoordinates, IverticesAtElement, InodalProperty, 
   ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
   ! The nodal property array InodalProperty contains only the data for the
@@ -1914,11 +1931,15 @@ CONTAINS
 !</description>
 
 !<input>
-  ! An rboundary object specifying the underlying domain.
-  TYPE(t_boundary), INTENT(IN) :: rboundary
-
   ! The name of the .prm file to read.
   CHARACTER(LEN=*), INTENT(IN) :: sfilename
+
+  ! OPTIONAL: An rboundary object specifying the underlying domain.
+  ! If not specified, the routine assumes that the TRI file does not specify
+  ! boundary parameter values, i.e. the point coordinates in the TRI file
+  ! are all real coordinates. The array DvertexParameterValue is not
+  ! generated in this case.
+  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
 ! </input>
   
 !<output>
@@ -1941,7 +1962,7 @@ CONTAINS
     CALL tria_readRawTriangulation2D (iunit,rtriangulation)
 
     ! Create the basic boundary information
-    CALL tria_genRawBoundary2D (rboundary,rtriangulation)
+    CALL tria_genRawBoundary2D (rtriangulation,rboundary)
 
     ! Close the file, finish
     CLOSE(iunit)
@@ -1958,7 +1979,7 @@ CONTAINS
   ! Auxiliary routine of tria_readTriFile2D.
   ! Reads basic information from a triangulation file into rtriangulation.
   ! That means, the following information arrays / tags are initialised:
-  ! NEL,NVT,NMT,NBCT,
+  ! NEL,NVT,NMT,NBCT,InelOfType,
   ! DcornerCoordinates, IverticesAtElement and InodalProperty.
   ! The data is read from the file without being changed!
 !</description>
@@ -2019,6 +2040,17 @@ CONTAINS
 
     READ (iunit,*) ((p_Idata2D(ive,iel),ive=1,nve), iel=1,rtriangulation%NEL)
 
+    ! Loop through the elements and determine how many elements
+    ! of each element type we have.
+    rtriangulation%InelOfType(:) = 0
+    DO iel=1,rtriangulation%nel
+      DO ive=nve,1,-1
+        IF (p_Idata2D(ive,iel) .NE. 0) THEN
+          rtriangulation%InelOfType(ive) = rtriangulation%InelOfType(ive)+1
+        END IF
+      END DO
+    END DO
+
     ! Comment: 'KNPR'
     READ (iunit,*)
 
@@ -2040,7 +2072,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_genRawBoundary2D (rboundary,rtriangulation)
+  SUBROUTINE tria_genRawBoundary2D (rtriangulation,rboundary)
 
 !<description>  
   ! Auxiliary routine of tria_readTriFile2D.
@@ -2051,18 +2083,29 @@ CONTAINS
   ! -> IverticesAtBoundary is created and generated.
   !    The vertices are ordered for the boundary component according
   !    to IboundaryCpIdx but not ordered for their parameter value.
-  ! -> DvertexParameterValue is created and generated (unsorted)
-  ! -> The parameter values of the boundary vertices are extracted
+  ! -> If rboundary is specified,
+  !    DvertexParameterValue is created and generated.
+  !    The parameter values are ordered for the boundary component 
+  !    according to IboundaryCpIdx but not ordered for the parameter value.
+  ! -> If rboundary is specified,
+  !    the parameter values of the boundary vertices are extracted
   !    from the first coordinate in DcornerCoordinates and put into
   !    the DvertexParameterValue array.
-  ! -> Based on the parameter value of each boundary vertex, the 
+  ! -> If rboundary is specified,
+  !    based on the parameter value of each boundary vertex, the 
   !    DcornerCoordinates array receives the actual coordinates of 
   !    the boundary vertices.
+  !    If not specified, the routine assumes that DcornerCoordinates
+  !    already contains the real point coordinates.
 !</description>
   
 !<input>
-  ! The parametrisation that specifies the coordinates of the boundary points
-  TYPE(t_boundary), INTENT(IN) :: rboundary
+  ! OPTIONAL: The parametrisation that specifies the coordinates of the 
+  ! boundary points.
+  ! If specified, DvertexParameterValue is generated from DcornerCoordinates
+  ! and the coordinates of boundary vertices are (re-)generated
+  ! by DvertexParameterValue.
+  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
 !</input>
   
 !<inputoutput>
@@ -2092,15 +2135,11 @@ CONTAINS
       IF (p_InodalProperty(ivt) .NE. 0) rtriangulation%NVBD = rtriangulation%NVBD+1
     END DO
 
-    ! Allocate memory for IverticesAtBoundary and DvertexParameterValue.
+    ! Allocate memory for IverticesAtBoundary.
     CALL storage_new ('tria_generateBasicBoundary', &
         'KVBD', INT(rtriangulation%NVBD,I32), &
         ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
         
-    CALL storage_new ('tria_generateBasicBoundary', &
-        'DVBD', INT(rtriangulation%NVBD,I32), &
-        ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
-    
     ! Allocate memory for the boundary component index vector.
     ! Initialise that with zero!
     CALL storage_new ('tria_generateBasicBoundary', &
@@ -2110,9 +2149,6 @@ CONTAINS
     ! Get pointers to the arrays
     CALL storage_getbase_int (&
         rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
-        
-    CALL storage_getbase_double (&
-        rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
         
     CALL storage_getbase_double2D (&
         rtriangulation%h_DcornerCoordinates,p_DcornerCoordinates)
@@ -2179,31 +2215,68 @@ CONTAINS
     ! p_IboundaryCpIdx(i)  1   9  15  19
     !
     ! Ok, let's catch the actual vertices.
-    ! Check all vertices to find out, which vertices are on the boundary.
-    DO ivt=1,rtriangulation%NVT
-      IF (p_InodalProperty(ivt) .NE. 0) THEN
-        ibct = p_InodalProperty(ivt)
-        
-        ! Create a new point on that boundary component 
-        ! and get the number, the point will have.
-        ! Note that the array was initialised with zero during the creation
-        ! process!
-        ivbd = p_IboundaryCpIdx(ibct+1)
-        p_IboundaryCpIdx(ibct+1) = ivbd+1
-        
-        ! Store the vertex as boundary vertex
-        p_IverticesAtBoundary (ivbd) = ivt
-        
-        ! Store the parameter value; it's saved in DcornerCoordinates(1,.)
-        p_DvertexParameterValue (ivbd) = p_DcornerCoordinates(1,ivt)
-        
-        ! Replace the coordinates in DcornerCoordinates by those
-        ! given by the parametrisation.
-        CALL boundary_getCoords(rboundary, ibct, p_DvertexParameterValue (ivbd), &
-            p_DcornerCoordinates(1,ivt), p_DcornerCoordinates(2,ivt))
-        
-      END IF
-    END DO
+    !
+    ! The loop must be slightly modified if rboundary is not present!
+    IF (PRESENT(rboundary)) THEN
+
+      ! Allocate memory for  and DvertexParameterValue
+      CALL storage_new ('tria_generateBasicBoundary', &
+          'DVBDP', INT(rtriangulation%NVBD,I32), &
+          ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
+      
+      ! Get the array where to store boundary parameter values.
+      CALL storage_getbase_double (&
+          rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+          
+      ! Check all vertices to find out, which vertices are on the boundary.
+      DO ivt=1,rtriangulation%NVT
+        IF (p_InodalProperty(ivt) .NE. 0) THEN
+          ibct = p_InodalProperty(ivt)
+          
+          ! Create a new point on that boundary component 
+          ! and get the number, the point will have.
+          ! Note that the array was initialised with zero during the creation
+          ! process!
+          ivbd = p_IboundaryCpIdx(ibct+1)
+          p_IboundaryCpIdx(ibct+1) = ivbd+1
+          
+          ! Store the vertex as boundary vertex
+          p_IverticesAtBoundary (ivbd) = ivt
+          
+          ! Store the parameter value; it's saved in DcornerCoordinates(1,.)
+          p_DvertexParameterValue (ivbd) = p_DcornerCoordinates(1,ivt)
+          
+          ! Replace the coordinates in DcornerCoordinates by those
+          ! given by the parametrisation.
+          CALL boundary_getCoords(rboundary, ibct, p_DvertexParameterValue (ivbd), &
+              p_DcornerCoordinates(1,ivt), p_DcornerCoordinates(2,ivt))
+          
+        END IF
+      END DO
+      
+    ELSE
+    
+      ! No parametrisation available, the array with boundary parameter values 
+      ! is not generaterd.
+      !
+      ! Check all vertices to find out, which vertices are on the boundary.
+      DO ivt=1,rtriangulation%NVT
+        IF (p_InodalProperty(ivt) .NE. 0) THEN
+          ibct = p_InodalProperty(ivt)
+          
+          ! Create a new point on that boundary component 
+          ! and get the number, the point will have.
+          ! Note that the array was initialised with zero during the creation
+          ! process!
+          ivbd = p_IboundaryCpIdx(ibct+1)
+          p_IboundaryCpIdx(ibct+1) = ivbd+1
+          
+          ! Store the vertex as boundary vertex
+          p_IverticesAtBoundary (ivbd) = ivt
+        END IF
+      END DO
+      
+    END IF
     
   END SUBROUTINE
 
@@ -2224,7 +2297,8 @@ CONTAINS
 
 !<input>
   ! OPTIONAL: Boundary structure that defines the domain.
-  ! Must be specified for 2D domains.
+  ! If not specified, information about boundary vertices (e.g. 
+  ! parameter values of edge midpoints in 2D) are not initialised.
   TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
 !</input>
 
@@ -2237,16 +2311,9 @@ CONTAINS
 
     SELECT CASE (rtriangulation%ndim)
     CASE (NDIM1D)
+    
     CASE (NDIM2D)
-      
-      IF (.NOT. PRESENT(rboundary)) THEN
-        CALL output_line ('rboundary not available!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'tria_initStandardMeshFromRaw')
-        STOP
-      END IF
-      
       ! Generate all standard arrays for 2D meshes.
-      CALL tria_sortBoundaryVertices2D   (rtriangulation)
       CALL tria_genElementsAtVertex2D    (rtriangulation)
       CALL tria_genNeighboursAtElement2D (rtriangulation)
       CALL tria_genEdgesAtElement2D      (rtriangulation)
@@ -2254,10 +2321,16 @@ CONTAINS
       CALL tria_genVerticesAtEdge2D      (rtriangulation)
       CALL tria_genEdgeNodalProperty2D   (rtriangulation)
       CALL tria_genElementVolume2D       (rtriangulation)
+
+      CALL tria_sortBoundaryVertices2D   (rtriangulation)
       CALL tria_genElementsAtBoundary2D  (rtriangulation)
       CALL tria_genEdgesAtBoundary2D     (rtriangulation)
-      CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
+      IF (PRESENT(rboundary)) THEN
+        CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
+      END IF
+      
     CASE (NDIM3D)
+    
     CASE DEFAULT
       CALL output_line ('Triangulation structure not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_generateStandardMeshFromRaw')
@@ -2294,6 +2367,11 @@ CONTAINS
     INTEGER :: hresort
     INTEGER(I32), DIMENSION(:), POINTER :: p_Iresort
 
+    IF (rtriangulation%h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
+      ! We cannot sort the boundary vertices without parameter values!
+      RETURN
+    END IF
+
     ! Get pointers to the arrays
     CALL storage_getbase_int (&
         rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
@@ -2324,15 +2402,21 @@ CONTAINS
       
       ! Sort the sub-array of boundary component ibct.
       ! Remember, how the parameter values are resorted when sorting the array.
-      CALL sort_dp(p_DvertexParameterValue(istart:iend),Imapping=p_Iresort(istart:iend))
+      CALL sort_dp(p_DvertexParameterValue(istart:iend),SORT_QUICK,&
+          p_Iresort(istart:iend))
       
     END DO
 
     ! Resort the vertices according to the calculated mapping.
     ! Afterwards, the vertices are ordered according to the increasing
     ! parameter value.
-    p_Iresort(:) = p_IverticesAtBoundary(p_Iresort(:))
-    p_IverticesAtBoundary(:) = p_Iresort(:)
+    DO ivbd=1,SIZE(p_IverticesAtBoundary)
+      p_Iresort(ivbd) = p_IverticesAtBoundary(p_Iresort(ivbd))
+    END DO
+    
+    DO ivbd=1,SIZE(p_IverticesAtBoundary)
+      p_IverticesAtBoundary(ivbd) = p_Iresort(ivbd)
+    END DO
     
     CALL storage_free (hresort)
 
@@ -2351,7 +2435,7 @@ CONTAINS
 
 !<inputoutput>
   ! The triangulation structure.
-  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
 !</inputoutput>
   
 !<result>
@@ -2446,8 +2530,8 @@ CONTAINS
       END DO
     END DO
     
-    ! Set the first element in p_IverticesAtElement to 1. Then, add
-    ! all the length information together to get the index array.
+    ! Set the first element in p_IverticesAtElement to 1. Then, sum up
+    ! all the length information to get the index array.
     p_IelementsAtVertexIdx(1) = 1
     DO ivt = 2,rtriangulation%nvt+1
       p_IelementsAtVertexIdx(ivt) = &
@@ -2950,8 +3034,8 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER :: ive
-    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER :: ive, iveneighbour
+    INTEGER(PREC_ELEMENTIDX) :: iel, ielneighbour
     INTEGER(PREC_EDGEIDX) :: iedge
     INTEGER(I32), DIMENSION(2) :: Isize
 
@@ -3009,19 +3093,34 @@ CONTAINS
         ! in a quad mesh e.g.
         IF (p_IverticesAtElement(ive,iel) .EQ. 0) EXIT
         
-        ! Check the neighbour element. If the neighbour element has a number less
-        ! than our current element number (including 0 which is the case for
-        ! boundary edges), we 'see' the edge the first time and so
-        ! we give it a number.
-        IF (p_IneighboursAtElement(ive,iel) .LT. iel) THEN
+        ! Check the neighbour element.
+        ! If the neightbour element has number =0 (no neighbour) or a number
+        ! greater than IEL, we found the edge the first time and give it a number.
+        IF ((p_IneighboursAtElement(ive,iel) .EQ. 0) .OR. &
+            (p_IneighboursAtElement(ive,iel) .GT. iel)) THEN
         
           iedge = iedge + 1
           
           ! Add NVT to iedge to get the edge number
           p_IedgesAtElement(ive,iel) = iedge
         
+        ELSE
+        
+          ! Otherweise, we had that edge already. Look into the neighbour element
+          ! (which definitely exists, p_IneighboursAtElement cannot be =0 there!)
+          ! to find the edge number.
+          ielneighbour = p_IneighboursAtElement(ive,iel)
+          
+          DO iveneighbour = 1,Isize(1)
+            IF (p_IneighboursAtElement(iveneighbour,ielneighbour) .EQ. iel) THEN
+              p_IedgesAtElement(ive,iel) = &
+                  p_IedgesAtElement(iveneighbour,ielneighbour)
+              EXIT
+            END IF
+          END DO
+        
         END IF
-      
+        
       END DO
     
     END DO
@@ -3157,6 +3256,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: isize
     REAL(DP) :: dtotalVolume
     REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D) :: Dpoints
+    INTEGER :: ive
 
     ! Is everything here we need?
     IF (rtriangulation%h_DcornerCoordinates .EQ. ST_NOHANDLE) THEN
@@ -3202,8 +3302,10 @@ CONTAINS
       ! Calculate the element volume for all elements
       DO iel=1,rtriangulation%NEL
         ! triangular element
-        Dpoints(1:NDIM2D,1:TRIA_NVETRIA2D) = &
-            p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:TRIA_NVETRIA2D,iel))
+        DO ive=1,TRIA_NVETRIA2D
+          Dpoints(1,ive) = p_DcornerCoordinates(1,p_IverticesAtElement(ive,iel))
+          Dpoints(2,ive) = p_DcornerCoordinates(2,p_IverticesAtElement(ive,iel))
+        END DO
         p_DelementVolume(iel) = gaux_getArea_tria2D(Dpoints)
         
         dtotalVolume = dtotalVolume+p_DelementVolume(iel)
@@ -3216,13 +3318,17 @@ CONTAINS
       
         IF (p_IverticesAtElement(4,iel) .EQ. 0) THEN
           ! triangular element
-          Dpoints(1:NDIM2D,1:TRIA_NVETRIA2D) = &
-              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:TRIA_NVETRIA2D,iel))
+          DO ive=1,TRIA_NVETRIA2D
+            Dpoints(1,ive) = p_DcornerCoordinates(1,p_IverticesAtElement(ive,iel))
+            Dpoints(2,ive) = p_DcornerCoordinates(2,p_IverticesAtElement(ive,iel))
+          END DO
           p_DelementVolume(iel) = gaux_getArea_tria2D(Dpoints)
         ELSE
           ! quad element
-          Dpoints(1:NDIM2D,1:TRIA_NVEQUAD2D) = &
-              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel))
+          DO ive=1,TRIA_NVEQUAD2D
+            Dpoints(1,ive) = p_DcornerCoordinates(1,p_IverticesAtElement(ive,iel))
+            Dpoints(2,ive) = p_DcornerCoordinates(2,p_IverticesAtElement(ive,iel))
+          END DO
           p_DelementVolume(iel) = gaux_getArea_quad2D(Dpoints)
         END IF
         
@@ -3542,7 +3648,7 @@ CONTAINS
     
     INTEGER :: ibct, ivbd
     INTEGER(PREC_POINTIDX) :: isize
-    REAL(DP) :: dpar1,dpar2
+    REAL(DP) :: dpar1,dpar2,dmaxPar
 
     ! Is everything here we need?
     IF (rtriangulation%h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
@@ -3593,15 +3699,19 @@ CONTAINS
     ! Loop through all boundary components
     DO ibct = 1,rtriangulation%NBCT
     
+      ! Get the maximum parameter value of that BC.
+      dmaxPar = boundary_dgetMaxParVal(rboundary, ibct)
+    
       ! On each boundary component, loop through all vertices
       DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-2
       
         ! Get the parameter value of the current vertex and its neighbour.
         dpar1 = p_DvertexParameterValue(ivbd)
-        dpar2 = p_DvertexParameterValue(ivbd)
+        dpar2 = p_DvertexParameterValue(ivbd+1)
         
         ! The edge parameter value is the mean.
-        p_DedgeParameterValue(ivbd) = 0.5_DP*(dpar1+dpar2)
+        ! If the parameter value is > TMAX of the boundary component, reduce it.
+        p_DedgeParameterValue(ivbd) = MOD(0.5_DP*(dpar1+dpar2),dmaxPar)
       
       END DO
       
@@ -3611,16 +3721,501 @@ CONTAINS
       ! first vertex of the boundary component.
       !
       ! Note that ivbd points to p_IboundaryCpIdx(ibct+1)-1 by
-      ! Fortran standard!
+      ! Fortran standard of DO-loops!
       dpar1 = p_DvertexParameterValue(ivbd)
       dpar2 = p_DvertexParameterValue(p_IboundaryCpIdx(ibct)) + &
           boundary_dgetMaxParVal(rboundary, ibct)
-      p_DedgeParameterValue(ivbd) = 0.5_DP*(dpar1+dpar2)
+      p_DedgeParameterValue(ivbd) = MOD(0.5_DP*(dpar1+dpar2),dmaxPar)
     
     END DO
     
     rtriangulation%NMBD = rtriangulation%NVBD
     
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_refine2LevelOrdering(&
+      rsourceTriangulation,rdestTriangulation,rboundary)
+
+!<description>
+  ! This routine refines the given mesh rsourceTriangulation according to
+  ! the 2-level ordering algorithm. The refined mesh is saved in 
+  ! rdestTriangulation.
+  !
+  ! rsourceTriangulation must be a 'standard' mesh. The resulting refined
+  ! mesh in rdestTriangulation will be a 'raw' mesh (like as being read 
+  ! from a .TRI file), i.e. the caller must add further information 
+  ! to it with routines like tria_initStandardMeshFromRaw!
+!</description>
+
+!<input>
+  ! Boundary structure that defines the parametrisation of the boundary.
+  TYPE(t_boundary), INTENT(IN) :: rboundary
+
+  ! The source triangulation to be refined; must be a 'standard' mesh.
+  TYPE(t_triangulation), INTENT(INOUT) :: rsourceTriangulation
+!</input>
+
+!<output>
+  ! OPTIONAL: Destination triangulation structure that receives the refined mesh.
+  ! The refined mesh will be a 'raw' mesh as being read from a .TRI file e.g..
+  ! If not specified, the source triangulation rsourceTriangulation is replaced
+  ! by the refined mesh.
+  TYPE(t_triangulation), INTENT(OUT), OPTIONAL :: rdestTriangulation
+!</output>
+  
+!</subroutine>
+ 
+    TYPE(t_triangulation) :: rdestTria
+
+    ! Call the correct submethod depending on the dimension.
+    SELECT CASE (rsourceTriangulation%ndim)
+    CASE (NDIM1D)
+    
+    CASE (NDIM2D)
+      ! Refine the basic mesh
+      CALL tria_refineMesh2lv2D(rsourceTriangulation,rdestTria)
+      
+      ! Refine the boundary
+      CALL tria_refineBdry2lv2D(rsourceTriangulation,rdestTria,rboundary)
+      
+    CASE (NDIM3D)
+    
+    CASE DEFAULT
+      CALL output_line ('Triangulation structure not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_generateStandardMeshFromRaw')
+      STOP
+    END SELECT
+    
+    ! Either copy rdestTria to rdestTriangulation or overwrite the source
+    ! triangulation.
+    IF (PRESENT(rdestTriangulation)) THEN
+      rdestTriangulation = rdestTria
+    ELSE
+      CALL tria_done (rsourceTriangulation)
+      rsourceTriangulation = rdestTria
+    END IF
+
+  CONTAINS
+
+    ! ---------------------------------------------------------------
+  
+    SUBROUTINE tria_refineMesh2lv2D(rsourceTriangulation,rdestTriangulation)
+
+    ! This routine refines the given 2D mesh rsourceTriangulation according to
+    ! the 2-level ordering algorithm. The refined mesh is saved in 
+    ! rdestTriangulation. There will be no correction of boundary
+    ! vertices. Boundary parameter values are not handled here!
+
+    ! The source triangulation to be refined
+    TYPE(t_triangulation), INTENT(IN) :: rsourceTriangulation
+
+    ! Destination triangulation structure that receives the refined mesg. 
+    TYPE(t_triangulation), INTENT(OUT) :: rdestTriangulation
+    
+      ! local variables
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DcoordSource
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DcoordDest
+      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementSource
+      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementDest
+      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementSource
+      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IvertAtEdgeSource
+      INTEGER(PREC_ELEMENTIDX) :: nquads,iel,iel1,iel2,iel3
+      INTEGER(PREC_EDGEIDX) :: imt
+      INTEGER(PREC_POINTIDX) :: ivt1,ivt2, ivtoffset, ivt
+      INTEGER(I32), DIMENSION(2) :: Isize
+      INTEGER :: nnve, ive
+      REAL(DP) :: x,y
+      
+      ! Get the arrays with information of the source mesh.
+      CALL storage_getbase_double2D (rsourceTriangulation%h_DcornerCoordinates,&
+          p_DcoordSource)
+      CALL storage_getbase_int2D (rsourceTriangulation%h_IverticesAtElement,&
+          p_IvertAtElementSource)
+      CALL storage_getbase_int2D (rsourceTriangulation%h_IedgesAtElement,&
+          p_IedgesAtElementSource)
+      CALL storage_getbase_int2D (rsourceTriangulation%h_IverticesAtEdge,&
+          p_IvertAtEdgeSource)
+      
+      ! The 2-level ordering has the following properties:
+      !
+      ! - Vertices in the coarse mesh are vertices in the fine mesh 
+      !   with the same number.
+      ! - Edges in the coarse mesh produce vertices in the fine mesh
+      !   at the midpoints of the edges in the coarse mesh.
+      !   Edge numbers in the coarse mesh get vertex numbers in
+      !   the fine mesh.
+      ! - For quad meshes: Element midpoints in the coarse mesh
+      !   get vertices in the fine mesh. They are appended to the
+      !   vertices generated by the edges.
+      !
+      ! So at first, get the number of quads in the mesh (may be =0 which is ok).
+      
+      nquads = rsourceTriangulation%InelOfType (TRIA_NVEQUAD2D)
+      nnve = tria_getNNVE(rsourceTriangulation)
+      
+      IF ((nnve .LT. TRIA_NVETRIA2D) .OR. (nnve .GT. TRIA_NVEQUAD2D)) THEN
+      
+        CALL output_line (&
+            '2-level refinement supports only triangular and quad meshes!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'tria_refineMesh2lv2D')
+        STOP
+        
+      END IF
+      
+      ! Initialise the basic mesh data in rdestTriangulation:
+      
+      ! 2D mesh
+      rdestTriangulation%ndim = NDIM2D
+      
+      ! Every element is divided into 4 subelements
+      rdestTriangulation%NEL = 4 * rsourceTriangulation%NEL
+      rdestTriangulation%InelOfType = 4 * rsourceTriangulation%InelOfType
+
+      ! We excect NVT+NMT+nquads new points.
+      rdestTriangulation%NVT = &
+          rsourceTriangulation%NVT + rsourceTriangulation%NMT + nquads
+      
+      ! Allocate memory for the new vertex coordinates and
+      ! get the pointers to the coordinate array
+      Isize = (/NDIM2D,INT(rdestTriangulation%NVT,I32)/)
+      CALL storage_new2D ('tria_refineMesh2lv2D', 'DCORVG', Isize, ST_DOUBLE, &
+          rdestTriangulation%h_DcornerCoordinates, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_double2D(&
+          rdestTriangulation%h_DcornerCoordinates,p_DcoordDest)
+      
+      ! Allocate memory for IverticesAtElement and get a pointer to it.
+      ! Fill the array with zero, so we won't have problems when mixing
+      ! triangles into a quad mesh.
+      Isize = (/nnve,INT(rdestTriangulation%NEL,I32)/)
+      CALL storage_new2D ('tria_refineMesh2lv2D', 'KVERT', Isize, ST_INT, &
+          rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int2D(&
+          rdestTriangulation%h_IverticesAtElement,p_IvertAtElementDest)
+    
+      ! Ok, let's start the refinement. In the first step, we copy the
+      ! corner coordinates of the coarse mesh to the fine mesh; they
+      ! don't change during the refinement.
+      DO ivt=1,rsourceTriangulation%NVT
+        p_DcoordDest(1,ivt) = p_DcoordSource(1,ivt)
+        p_DcoordDest(2,ivt) = p_DcoordSource(2,ivt)
+      END DO
+      
+      ! Each edge produces an edge midpoint which is stored as new
+      ! point in the fine mesh. To calculate the coordinates, take
+      ! the mean of the coordinates in the coarse mesh.
+      ivtoffset = rsourceTriangulation%NVT
+      DO imt=1,rsourceTriangulation%NMT
+        ivt1 = p_IvertAtEdgeSource (1,imt)
+        ivt2 = p_IvertAtEdgeSource (2,imt)
+        p_DcoordDest(1,ivtoffset+imt) = &
+            0.5_DP * ( p_DcoordSource (1,ivt1) + p_DcoordSource (1,ivt2) )
+        p_DcoordDest(2,ivtoffset+imt) = &
+            0.5_DP * ( p_DcoordSource (2,ivt1) + p_DcoordSource (2,ivt2) )
+      END DO
+      
+      ! Are there quads in the mesh? They produce additional element midpoints
+      ! which get numbers NVT+NMT+1..*
+      IF (nnve .GT. TRIA_NVETRIA2D) THEN
+      
+        ! Loop over the elements to find the quads.
+        ivtoffset = rsourceTriangulation%NVT + rsourceTriangulation%NMT
+        DO iel = 1,rsourceTriangulation%NEL
+        
+          IF (p_IvertAtElementSource (TRIA_NVEQUAD2D,iel) .NE. 0) THEN
+          
+            ! New element midpoint
+            ivtoffset = ivtoffset+1
+            
+            ! Sum up the coordinates of the corners to get the midpoint.
+            x = 0.0_DP
+            y = 0.0_DP
+            DO ive = 1,TRIA_NVEQUAD2D
+              x = x + p_DcoordSource (1,p_IvertAtElementSource(ive,iel))
+              y = y + p_DcoordSource (2,p_IvertAtElementSource(ive,iel))
+            END DO
+
+            ! Store the midpoint
+            p_DcoordDest(1,ivtoffset) = 0.25_DP*x
+            p_DcoordDest(2,ivtoffset) = 0.25_DP*y
+          
+          END IF
+        
+        END DO
+      
+      END IF
+      
+      ! Ok, that was easy up to here. Now the interesting part: 
+      ! the two-level ordeting.
+      !
+      ! Look at the following triangular and quad element with local
+      ! and global vertex and edge numbers:
+      !
+      !    102                               104           203           103
+      !       X__                               X-----------------------X
+      !       |2 \__                            |4                     3|
+      !       |     \__                         |                       |
+      !       |        \__201                   |                       |
+      !    202|           \__                204|          IEL          |202
+      !       |     IEL      \__                |                       |
+      !       |                 \__             |                       |
+      !       | 3                 1\_           |1                     2|
+      !       X----------------------+X         X-----------------------X
+      !    103          203           101    101           201           102
+      !
+      ! The two-level ordering refinement strategy says now:
+      !  - Every edge produces an edge midpoint. Connect opposite midpoints to get
+      !    the fine grid.
+      !  - The vertex numbers in the coars grid are transferred to the fine grid
+      !    without change.
+      !  - The edge numbers in the coarse grid define the vertex numbers of the
+      !    edge midpoints in the fine grid.
+      !  - For triangles: The element number IEL in the coarse grid is transferred
+      !    to the inner element of the three subelements in the fine grid.
+      !    The midpoint of edge 1 gets local vertex 1 of the inner triangle.
+      !    The other three elements get the numbers NEL+3*(iel-1)+1, +2 and +3
+      !    with the first vertex of each subtriangle being the vertex with
+      !    local number 1, 2 or 3, respectively, in the coarse grid.
+      !  - For quads: The element number IEL in the coarse grid is transferred
+      !    to the subelement at local vertex 1. The other elements
+      !    get element numbers NEL+3*(iel-1)+1, +2 and +3 in counterclockwise
+      !    order. The first vertex on every subelement is the old (corner) vertex
+      !    in the coarse mesh.
+      !
+      ! In the above picture, we therefore have:
+      !
+      !    102                               104           203           103
+      !       X__                               X-----------X-----------X
+      !       |1 \__                            |1          |          1|
+      !       | IEL2\__                         |    IEL3   |   IEL2    |
+      !       |        \_ 201                   |           |           |
+      !    202X----------X___                204X-----------X-----------X202
+      !       | \__ IEL 1|   \__                |           |           |
+      !       |    \__   |      \__             |    IEL    |   IEL1    |
+      !       |1 IEL3 \__|  IEL1  1\_           |1          |          1|
+      !       X----------X-----------X          X-----------X-----------X
+      !    103          203           101    101           201           102
+      !
+      ! IEL1 = NEL+3*(IEL-1)+1
+      ! IEL2 = NEL+3*(IEL-1)+2
+      ! IEL3 = NEL+3*(IEL-1)+3
+      !
+      ! Ok, to produce all that, we have to set up IverticesOnElement correctly!
+      ! Let's loop over the vertices on the coarse grid. Everyone produces
+      ! four elements on the fine grid:
+      !
+      ! In nquads we count the number of quads +NVT+NMT we reach.
+      ! That's the number of the midpoint of that element!
+      nquads = rsourceTriangulation%NVT+rsourceTriangulation%NMT
+      
+      DO iel = 1,rsourceTriangulation%NEL
+    
+        ! Is that a triangle or a quad?  
+        IF (p_IvertAtElementSource(TRIA_NVEQUAD2D,iel) .EQ. 0) THEN
+        
+          ! Triangular element.
+          
+          iel1 = rsourceTriangulation%NEL+3*(iel-1)+1
+          iel2 = iel1+1
+          iel3 = iel1+2
+          
+          ! Step 1: Initialise IverticesOnElement for element IEL
+          p_IvertAtElementDest(1:3,iel) = p_IedgesAtElementSource (1:3,iel)
+          
+          ! Step 2: Initialise IverticesOnElement for element IEL1
+          p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (1,iel)
+          p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (1,iel)
+          p_IvertAtElementDest(3,iel1) = p_IedgesAtElementSource (3,iel)
+        
+          ! Step 3: Initialise IverticesOnElement for element IEL2
+          p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (2,iel)
+          p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (2,iel)
+          p_IvertAtElementDest(3,iel2) = p_IedgesAtElementSource (1,iel)
+
+          ! Step 4: Initialise IverticesOnElement for element IEL3
+          p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (3,iel)
+          p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (3,iel)
+          p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)
+        
+        ELSE
+        
+          ! Quadrilateral element
+          iel1 = rsourceTriangulation%NEL+3*(iel-1)+1
+          iel2 = iel1+1
+          iel3 = iel1+2
+          
+          ! In nquads we count the number of the quad +NVT+NMT we process.
+          ! That's the number of the midpoint of that element!
+          ! As we reached a new quad, we increase nquads
+          nquads = nquads+1
+          
+          ! Step 1: Initialise IverticesOnElement for element IEL
+          p_IvertAtElementDest(1,iel) = p_IvertAtElementSource (1,iel)
+          p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)
+          p_IvertAtElementDest(3,iel) = nquads
+          p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)
+          
+          ! Step 2: Initialise IverticesOnElement for element IEL1
+          p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (2,iel)
+          p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)
+          p_IvertAtElementDest(3,iel1) = nquads
+          p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)
+        
+          ! Step 3: Initialise IverticesOnElement for element IEL2
+          p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (3,iel)
+          p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)
+          p_IvertAtElementDest(3,iel2) = nquads
+          p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)
+
+          ! Step 4: Initialise IverticesOnElement for element IEL3
+          p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (4,iel)
+          p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)
+          p_IvertAtElementDest(3,iel3) = nquads
+          p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)
+        
+        END IF
+      
+      END DO ! iel
+      
+      ! The last step of setting up the raw mesh on the finer level:
+      ! Set up InodalProperty. But that's the most easiest thing: Simply
+      ! copy the nodal property array from the coarse mesh to the fine mesh.
+      ! The nodal information of the edges (number NVT+1..NVT+NMT)
+      ! that way converts into the nodal information about the new vertices
+      ! on the fine mesh!
+      CALL storage_copy (rsourceTriangulation%h_InodalProperty,&
+          rdestTriangulation%h_InodalProperty)
+    
+    END SUBROUTINE
+
+    ! ---------------------------------------------------------------
+  
+    SUBROUTINE tria_refineBdry2lv2D(rsourceTriangulation,rdestTriangulation,rboundary)
+
+    ! This routine refines the boundary definition of rsourceTriangulation
+    ! according to the 2-level ordering algorithm to generate a new 
+    ! IverticesAtBoundary. 
+    ! If rboundary is specified, the parameter values of the boundary vertices are 
+    ! updated and the coordinates of the boundary points are corrected according 
+    ! to the analytic boundarty. the boundary vertices are not sorted for their
+    ! parameter value!
+
+    ! The source triangulation to be refined
+    TYPE(t_triangulation), INTENT(IN) :: rsourceTriangulation
+
+    ! Destination triangulation structure that receives the refined mesg. 
+    TYPE(t_triangulation), INTENT(INOUT) :: rdestTriangulation
+    
+    ! OPTIONAL: Defintion of analytic boundary.
+    TYPE(t_boundary), INTENT(IN) :: rboundary
+
+      ! local variables
+      REAL(DP), DIMENSION(:), POINTER :: p_DvertParamsSource
+      REAL(DP), DIMENSION(:), POINTER :: p_DedgeParamsSource
+      REAL(DP), DIMENSION(:), POINTER :: p_DvertParamsDest
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordDest
+      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IvertAtBoundartySource
+      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundartySource
+      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IvertAtBoundartyDest
+      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdxSource
+      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdxDest
+      INTEGER :: ivbd,ibct
+      
+      ! Get the definition of the boundary vertices and -edges.
+      CALL storage_getbase_double (rsourceTriangulation%h_DvertexParameterValue,&
+          p_DvertParamsSource)
+      CALL storage_getbase_int (rsourceTriangulation%h_IverticesAtBoundary,&
+          p_IvertAtBoundartySource)
+      CALL storage_getbase_int (rsourceTriangulation%h_IedgesAtBoundary,&
+          p_IedgesAtBoundartySource)
+      CALL storage_getbase_int (rsourceTriangulation%h_IboundaryCpIdx,&
+          p_IboundaryCpIdxSource)
+
+      ! The number of boundary vertices is doubled.
+      rdestTriangulation%NVBD = 2*rsourceTriangulation%NVBD
+      rdestTriangulation%NBCT = rsourceTriangulation%NBCT 
+          
+      ! Create new arrays in the fine grid for the vertices and indices.
+      CALL storage_new ('tria_refineBdry2lv2D', &
+          'KVBD', INT(rdestTriangulation%NVBD,I32), &
+          ST_INT, rdestTriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+
+      CALL storage_new ('tria_generateBasicBoundary', &
+          'KBCT', INT(rdestTriangulation%NBCT+1,I32), &
+          ST_INT, rdestTriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_NOINIT)
+
+      CALL storage_getbase_int (rdestTriangulation%h_IverticesAtBoundary,&
+          p_IvertAtBoundartyDest)
+      CALL storage_getbase_int (rdestTriangulation%h_IboundaryCpIdx,&
+          p_IboundaryCpIdxDest)
+
+      ! The 2-level ordering algorithm says:
+      !  - Every edge produces an edge midpoint. Connect opposite midpoints to get
+      !    the fine grid.
+      !  - The vertex numbers in the coars grid are transferred to the fine grid
+      !    without change.
+      !  - The edge numbers in the coarse grid define the vertex numbers of the
+      !    edge midpoints in the fine grid.
+      ! Therefore, we have to interleave the vertex and edge numbers to get the
+      ! new IverticesAtBoundary. The IboundaryCpIdx can be transferred, but we have
+      ! to multiply each index by 2 as we have twice as many vertices per boundary
+      ! component now.
+      
+      DO ibct = 1,SIZE(p_IboundaryCpIdxDest)
+        p_IboundaryCpIdxDest(ibct) = 2*(p_IboundaryCpIdxSource(ibct)-1) + 1
+      END DO
+      
+      DO ivbd = 0,SIZE(p_IvertAtBoundartySource)-1
+        p_IvertAtBoundartyDest(1+2*ivbd) = p_IvertAtBoundartySource(1+ivbd)
+        p_IvertAtBoundartyDest(2+2*ivbd) = p_IedgesAtBoundartySource(1+ivbd)
+      END DO
+      
+      ! Let's see if parameter values of boundary vertices are available.
+      IF ((rsourceTriangulation%h_DvertexParameterValue .NE. ST_NOHANDLE) .AND. &
+          (rsourceTriangulation%h_DedgeParameterValue .NE. ST_NOHANDLE)) THEN
+
+        ! Also interleave the parameter values of the vertices and edge midpoints.
+        CALL storage_getbase_double (rsourceTriangulation%h_DvertexParameterValue,&
+            p_DvertParamsSource)
+        CALL storage_getbase_double (rsourceTriangulation%h_DedgeParameterValue,&
+            p_DedgeParamsSource)
+        
+        ! Create a new array for the boundary vertex parameter values
+        ! and fill it with the data from the coarse grid.
+        CALL storage_new ('tria_refineBdry2lv2D', &
+            'KVBD', INT(rdestTriangulation%NVBD,I32), &
+            ST_DOUBLE, rdestTriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
+        CALL storage_getbase_double (rdestTriangulation%h_DvertexParameterValue,&
+            p_DvertParamsDest)
+            
+        DO ivbd = 0,SIZE(p_IvertAtBoundartySource)-1
+          p_DvertParamsDest(1+2*ivbd) = p_DvertParamsSource(1+ivbd)
+          p_DvertParamsDest(2+2*ivbd) = p_DedgeParamsSource(1+ivbd)
+        END DO
+        
+        ! Get the array with the vertex coordinates.
+        ! We want to correct the coordinates of the boundary points
+        ! according to the analytic boundary.
+        CALL storage_getbase_double2d (rdestTriangulation%h_DcornerCoordinates,&
+            p_DcornerCoordDest)
+            
+        ! Loop through the boundary points and canculate the correct
+        ! coordinates.
+        DO ibct = 1,rdestTriangulation%NBCT
+          DO ivbd = p_IboundaryCpIdxDest(ibct),p_IboundaryCpIdxDest(ibct+1)-1
+            CALL boundary_getCoords(rboundary,ibct,p_DvertParamsDest(ivbd),&
+                p_DcornerCoordDest(1,p_IvertAtBoundartyDest(ivbd)),&
+                p_DcornerCoordDest(2,p_IvertAtBoundartyDest(ivbd)))
+          END DO
+        END DO
+        
+      END IF
+    
+    END SUBROUTINE
+
   END SUBROUTINE
 
 END MODULE

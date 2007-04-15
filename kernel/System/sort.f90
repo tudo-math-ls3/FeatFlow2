@@ -1333,6 +1333,8 @@ CONTAINS
           Imapping(l)=t2
 
           ! 2.) partitioning and positioning of the pivot to position j
+          i=l
+          j=u
           do
             i=i+1
             do while ((i.lt.u).and.(Darray(i).lt.t))

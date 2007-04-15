@@ -1955,7 +1955,7 @@ CONTAINS
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
       
-      ! Add the values in these nodes together to get the
+      ! Sum up the values in these nodes to get the
       ! value in the coarse grid element
       DuCoarse(iel)= DuFine(IELH1)+DuFine(IELH2)+DuFine(IELH3)+DuFine(IELH4)
       

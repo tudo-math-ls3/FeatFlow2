@@ -255,10 +255,16 @@ CONTAINS
         p_IelementsAtBoundary)
     CALL storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
-    CALL storage_getbase_double (p_rtriangulation%h_DvertexParameterValue, &
-                                 p_DvertexParameterValue)
     CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates, &
                                    p_DvertexCoordinates)
+                                   
+    IF (p_rtriangulation%h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
+      PRINT *,'No boundary parameters available!'
+      STOP
+    END IF
+    
+    CALL storage_getbase_double (p_rtriangulation%h_DvertexParameterValue, &
+                                 p_DvertexParameterValue)
 
     ! Is one of the elements nonparametric
     bnonparU = elem_isnonparametric(ielemU) 
