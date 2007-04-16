@@ -23,40 +23,6 @@
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<Filter Name="f77">
-		<Filter Name="geometry">
-		<File RelativePath="..\src\geometry\qtrafo.f"/></Filter>
-		<Filter Name="Misc">
-		<File RelativePath="..\src\misc\condoutput.f"/>
-		<File RelativePath="..\src\misc\dstrings1.f"/>
-		<File RelativePath="..\src\misc\dstrings2.f"/>
-		<File RelativePath="..\src\misc\dstrings3.f"/>
-		<File RelativePath="..\src\misc\dstringsaux.f"/>
-		<File RelativePath="..\src\misc\heapsort.f"/></Filter>
-		<Filter Name="Parametrization">
-		<File RelativePath="..\src\parametrization\inipar.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\parq2d.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\parq2domega.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\parq2dwrap.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\rdparm.f"/></Filter>
-		<Filter Name="Triangulation">
-		<File RelativePath="..\src\triangulation\initria.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\triangulation\inmtri.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\triangulation\quad2tri.f"/>
-		<File RelativePath="..\src\triangulation\structria.f"/>
-		<File RelativePath="..\src\triangulation\triutil2d.f"/></Filter></Filter>
 		<Filter Name="f90">
 		<File RelativePath="..\src\poisson.f90">
 			<FileConfiguration Name="Debug|Win32">

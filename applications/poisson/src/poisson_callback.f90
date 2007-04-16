@@ -298,23 +298,20 @@ CONTAINS
   SELECT CASE (cderivative)
   CASE (DER_FUNC)
     ! u(x,y) = 16*x*(1-x)*y*(1-y)
-    !Dvalues (:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
-    !                          Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-    Dvalues (:,:) = -Dpoints(2,:,:)
+    Dvalues (:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
+                              Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
   CASE (DER_DERIV_X)
     !    u(x,y)   = 16*x*(1-x)*y*(1-y)
     ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
-    !Dvalues (:,:) = 16.0_DP * ( &
-    !    Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-    !    Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
-    Dvalues(:,:) = 0.0_DP
+    Dvalues (:,:) = 16.0_DP * ( &
+        Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
   CASE (DER_DERIV_Y)
     !    u(x,y)   = 16*x*(1-x)*y*(1-y)
     ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
-    !Dvalues (:,:) = 16.0_DP * ( &
-    !    Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-    !    Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
-    Dvalues(:,:) = -1.0_DP
+    Dvalues (:,:) = 16.0_DP * ( &
+        Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
+        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
   CASE DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP

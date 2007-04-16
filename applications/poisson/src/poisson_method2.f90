@@ -37,10 +37,6 @@ MODULE poisson_method2
   
   IMPLICIT NONE
 
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NNLEV = 9
-
 CONTAINS
 
   ! ***************************************************************************
@@ -49,11 +45,6 @@ CONTAINS
 
   SUBROUTINE pm2_initParamTriang (ilv,rcollection)
   
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
-
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
   ! domain. The corresponding .prm/.tri files are read from disc and
@@ -78,35 +69,22 @@ CONTAINS
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation), POINTER :: p_rtriangulation
 
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
-    ! Variable for a filename:  
-    CHARACTER(LEN=60) :: CFILE
-    
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     ! Set p_rboundary to NULL() to create a new structure.
     NULLIFY(p_rboundary)
     CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
-        
-    ! Remark that this does not read in the parametrisation for FEAT 1.x.
-    ! Unfortunately we still need it for creating the initial triangulation!
-    ! Therefore, read the file again wihh FEAT 1.x routines.
-    IMESH = 1
-    CFILE = './pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
 
-    ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level NLMAX...
-    CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,ilv,ilv,0,0,CFILE)
-    
-    ! ... and create a FEAT 2.0 triangulation for that. Until the point where
-    ! we recreate the triangulation routines, this method has to be used
-    ! to get a triangulation.
+    ! Now read in the basic triangulation.
     ALLOCATE(p_rtriangulation)
-    CALL tria_wrp_tria2Structure(TRIAS(:,ilv),p_rtriangulation)
+    CALL tria_readTriFile2D (p_rtriangulation, './pre/QUAD.tri', p_rboundary)
+    
+    ! Refine it.
+    CALL tria_quickRefine2LevelOrdering (ilv-1,p_rtriangulation,p_rboundary)
+    
+    ! And create information about adjacencies and everything one needs from
+    ! a triangulation.
+    CALL tria_initStandardMeshFromRaw (p_rtriangulation,p_rboundary)
     
     ! The TRIAS(,)-array is now part pf the triangulation structure,
     ! we don't need it anymore.
@@ -782,7 +760,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE pm2_doneParamTriang (ilv,rcollection)
+  SUBROUTINE pm2_doneParamTriang (rcollection)
   
 !<description>
   ! Releases the triangulation and parametrisation from the heap.
@@ -794,15 +772,7 @@ CONTAINS
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
-!<input>
-  ! The refinement level of the triangulation.
-  INTEGER :: ilv
-!</input>
-
 !</subroutine>
-
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
 
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
@@ -815,22 +785,13 @@ CONTAINS
     p_rboundary => collct_getvalue_domain(rcollection,'DOMAIN')
     p_rtriangulation => collct_getvalue_tria(rcollection,'TRIA')
     
-    ! Release the old FEAT 1.x handles.
-    ! Get the old triangulation structure of level ilv from the
-    ! FEAT2.0 triangulation:
-    TRIAS(:,ilv) = p_rtriangulation%Itria
-    CALL DNMTRI (ilv,ilv,TRIAS)
-    
-    ! then the FEAT 2.0 stuff...
+    ! Release the triangulation.
     CALL tria_done (p_rtriangulation)
     DEALLOCATE(p_rtriangulation)
     
     ! Finally release the domain.
     CALL boundary_release (p_rboundary)
     
-    ! Don't forget to throw away the old FEAT 1.0 boundary definition!
-    CALL DISPAR
-
     ! Remove everything from the collection.
     CALL collct_deletevalue (rcollection,'TRIA')
     CALL collct_deletevalue (rcollection,'DOMAIN')
@@ -902,7 +863,7 @@ CONTAINS
     CALL pm2_doneMatVec (rcollection)
     CALL pm2_doneBC (rcollection)
     CALL pm2_doneDiscretisation (rcollection)
-    CALL pm2_doneParamTriang (NLMAX,rcollection)
+    CALL pm2_doneParamTriang (rcollection)
     
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *

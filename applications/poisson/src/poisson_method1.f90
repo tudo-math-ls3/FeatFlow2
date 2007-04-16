@@ -30,10 +30,6 @@ MODULE poisson_method1
   
   IMPLICIT NONE
 
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NNLEV = 9
-
 CONTAINS
 
   ! ***************************************************************************
@@ -42,11 +38,6 @@ CONTAINS
 
   SUBROUTINE poisson1
   
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
-
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
   ! problem without making use of special features like collections
@@ -74,9 +65,6 @@ CONTAINS
     ! An object for saving the triangulation on the domain
     TYPE(t_triangulation) :: rtriangulation
 
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-    
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
     TYPE(t_blockDiscretisation) :: rdiscretisation
@@ -127,10 +115,6 @@ CONTAINS
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    REAL(8) :: TTT0,TTT1
-
-    ! We need some more variables for pre/postprocessing.
-    CHARACTER(LEN=60) :: CFILE
 
     ! Ok, let's start. 
     !
@@ -143,22 +127,15 @@ CONTAINS
     NULLIFY(p_rboundary)
     CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
         
-    ! Remark that this does not read in the parametrisation for FEAT 1.x.
-    ! Unfortunately we still need it for creating the initial triangulation!
-    ! Therefore, read the file again wihh FEAT 1.x routines.
-    IMESH = 1
-    CFILE = './pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
-
-    ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level NLMAX...
-    CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,NLMAX,NLMAX,0,0,CFILE)
+    ! Now read in the basic triangulation.
+    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', p_rboundary)
     
-    ! ... and create a FEAT 2.0 triangulation for that. Until the point where
-    ! we recreate the triangulation routines, this method has to be used
-    ! to get a triangulation.
-    CALL tria_wrp_tria2Structure(TRIAS(:,NLMAX),rtriangulation)
+    ! Refine it.
+    CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,p_rboundary)
+    
+    ! And create information about adjacencies and everything one needs from
+    ! a triangulation.
+    CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -414,17 +391,11 @@ CONTAINS
     ! structures in it.
     CALL spdiscr_releaseBlockDiscr(rdiscretisation, .TRUE.)
     
-    ! Release the triangulation. First the FEAT 2.0 stuff...
+    ! Release the triangulation. 
     CALL tria_done (rtriangulation)
-    
-    ! and then the old FEAT 1.x handles.
-    CALL DNMTRI (NLMAX,NLMAX,TRIAS)
     
     ! Finally release the domain, that's it.
     CALL boundary_release (p_rboundary)
-    
-    ! Don't forget to throw away the old FEAT 1.0 boundary definition!
-    CALL DISPAR
     
   END SUBROUTINE
 
