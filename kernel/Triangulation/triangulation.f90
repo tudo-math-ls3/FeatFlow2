@@ -31,6 +31,11 @@
 !#     -> Refines a mesh according to the 2-level ordering algorithm.
 !#        Creates a 'raw' fine mesh from a 'standard' coarse mesh.
 !#
+!# 5.) tria_quickRefine2LevelOrdering
+!#     -> Refines a mesh multiple times according to the 2-level ordering 
+!#        algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
+!#        coarse mesh.
+!#
 !# 5.) tria_done
 !#     -> Cleans up a triangulation structure, releases memory from the heap.
 !#
@@ -47,6 +52,9 @@
 !# 9.) tria_recoverHandles
 !#     -> Recovers destroyed handles of a triangulation structure from a 
 !#        backup.
+!#
+!# 10.) tria_searchBoundaryNode
+!#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
 !# Auxiliary routines:
 !#
@@ -89,6 +97,12 @@
 !# 13.) tria_genEdgeParameterValue2D
 !#      -> Generates the DedgeParameterValue array for a 2D triangulatioon
 !# 
+!# 14.) tria_genBoundaryVertexPos2D
+!#      -> Generates the IboundaryVertexPos2D array for a 2D triangulatioon
+!#
+!# 15.) tria_genBoundaryEdgePos2D
+!#      -> Generates the IboundaryEdgePos2D array for a 2D triangulatioon
+!#
 !# </purpose>
 !##############################################################################
 
@@ -473,9 +487,11 @@ MODULE triangulation
     ! p_IboundaryVertexPos(1,.) contains a vertex number on the 
     ! boundary and p_IboundaryVertexPos(2,.) the appropriate index
     ! of this vertex inside of the p_IverticesAtBoundary-array. 
-    ! Number on the  is sorted for the vertex number, 
-    ! thus allowing quick access to the index of a vertex
-    ! in p_IverticesAtBoundary.
+    ! The array is first sorted for the boundary component and therefore
+    ! has a layout as defined by IboundaryCpIdx.
+    ! Inside of each boundary component, the entries are sorted for
+    ! the vertex number, thus allowing quick access to the index of a 
+    ! vertex in p_IverticesAtBoundary.
     INTEGER          :: h_IboundaryVertexPos = ST_NOHANDLE
 
     ! Inverse index array to p_IedgesAtBoundary. 
@@ -484,10 +500,12 @@ MODULE triangulation
     ! p_IboundaryEdgePos(1,.) contains a vertex number on the 
     ! boundary and p_IboundaryEdgePos(2,.) the appropriate index
     ! of this vertex inside of the p_IedgesAtBoundary-array. 
-    ! Number on the  is sorted for the vertex number, 
-    ! thus allowing quick access to the index of a vertex
-    ! in p_IedgesAtBoundary.
-    INTEGER          :: p_IboundaryEdgePos = ST_NOHANDLE
+    ! The array is first sorted for the boundary component and therefore
+    ! has a layout as defined by IboundaryCpIdx.
+    ! Inside of each boundary component, the entries are sorted for
+    ! the edge number, thus allowing quick access to the index of an
+    ! edge in p_IedgesAtBoundary.
+    INTEGER          :: h_IboundaryEdgePos = ST_NOHANDLE
     
     ! Handle to 
     !       p_DfreeVertexCoordinates = array [1..NDIM2D,1..NVT] of double
@@ -1250,8 +1268,8 @@ CONTAINS
 
     ! Bit 18: KMBDI  
     CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
-          rtriangulation%p_IboundaryEdgePos, &
-          rbackupTriangulation%p_IboundaryEdgePos)
+          rtriangulation%h_IboundaryEdgePos, &
+          rbackupTriangulation%h_IboundaryEdgePos)
     
     ! Bit  1: DCORMG 
     CALL checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
@@ -1403,8 +1421,8 @@ CONTAINS
 
     ! Bit 18: KMBDI  
     CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
-          rtriangulation%p_IboundaryEdgePos, &
-          rbackupTriangulation%p_IboundaryEdgePos)
+          rtriangulation%h_IboundaryEdgePos, &
+          rbackupTriangulation%h_IboundaryEdgePos)
     
     ! Bit  1: DCORMG 
     CALL checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
@@ -1585,8 +1603,8 @@ CONTAINS
 
     ! Bit 18: KMBDI  
     CALL checkAndCopy(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
-          rtriangulation%p_IboundaryEdgePos, &
-          rbackupTriangulation%p_IboundaryEdgePos)
+          rtriangulation%h_IboundaryEdgePos, &
+          rbackupTriangulation%h_IboundaryEdgePos)
     
     ! Bit  1: DCORMG 
     CALL checkAndCopy(idupflag, TR_SHARE_DFREEVERTEXCOORDINATES,&
@@ -1714,7 +1732,7 @@ CONTAINS
 
     ! Bit 18: KMBDI  is a copy of another structure
     CALL checkAndRelease(idupflag,TR_SHARE_IBOUNDARYEDGEPOS,&
-          rtriangulation%p_IboundaryEdgePos)
+          rtriangulation%h_IboundaryEdgePos)
     
     ! Bit  1: DCORMG is a copy of another structure
     CALL checkAndRelease(idupflag, TR_SHARE_INODALPROPERTY,&
@@ -2293,6 +2311,9 @@ CONTAINS
   ! routines like tria_readTriFile2D. Based on this raw triangulation,
   ! all standard arrays will be created (adjacencies, edge information,...)
   ! such that the application can work with the triangulation as usual.
+  !
+  ! If rtriangulation is already a 'standard' triangulation, all
+  ! information in the mesh is regenerated. Missing information is added.
 !</description>
 
 !<input>
@@ -2303,7 +2324,7 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-  ! Triangulation structure to be initialised
+  ! Triangulation structure to be initialised.
   TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
 !</inputoutput>
   
@@ -2328,6 +2349,8 @@ CONTAINS
       IF (PRESENT(rboundary)) THEN
         CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
       END IF
+      CALL tria_genBoundaryVertexPos2D   (rtriangulation)
+      CALL tria_genBoundaryEdgePos2D     (rtriangulation)
       
     CASE (NDIM3D)
     
@@ -3424,7 +3447,7 @@ CONTAINS
     ! Do we have (enough) memory for that array?
     IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) THEN
       ! We have as many elements on the boudary as vertices!
-      CALL storage_new ('tria_genElementsAtBoundary2D', 'KMID', &
+      CALL storage_new ('tria_genElementsAtBoundary2D', 'KEBD', &
           rtriangulation%NVBD, ST_INT, &
           rtriangulation%h_IelementsAtBoundary, ST_NEWBLOCK_NOINIT)
     ELSE
@@ -3500,7 +3523,7 @@ CONTAINS
 
 !<description>
   ! This routine generates information about the edges at the boundary
-  ! IedgesAtBoundary (KEBD). 
+  ! IedgesAtBoundary (KMBD). 
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement, IelementsAtBoundary, IverticesAtBoundary, 
   ! IedgesAtElement, IboundaryCpIdx.
@@ -3566,7 +3589,7 @@ CONTAINS
     ! Do we have (enough) memory for that array?
     IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) THEN
       ! We have as many elements on the boudary as vertices!
-      CALL storage_new ('tria_genEdgesAtBoundary2D', 'KMID', &
+      CALL storage_new ('tria_genEdgesAtBoundary2D', 'KMBD', &
           rtriangulation%NVBD, ST_INT, &
           rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
     ELSE
@@ -3618,6 +3641,168 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE tria_genBoundaryVertexPos2D(rtriangulation)
+
+!<description>
+  ! This routine generates the array IboundaryVertexPos which is used
+  ! to search for the position of a boundary vertex.
+  ! For this purpose, the following arrays are used:
+  ! IverticesAtBoundary, IboundaryCpIdx.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IboundaryVertexPos
+    INTEGER :: ivbd, ibct
+    INTEGER(I32), DIMENSION(2) :: Isize
+
+    ! Is everything here we need?
+    IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtBoundary not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genBoundaryVertexPos2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IboundaryCpIdx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
+      STOP
+    END IF
+
+    ! Get the arrays.
+    CALL storage_getbase_int (rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+    CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_IboundaryVertexPos .EQ. ST_NOHANDLE) THEN
+      ! We have as many elements on the boudary as vertices!
+      Isize = (/2_I32,INT(rtriangulation%NVBD,I32)/)
+      CALL storage_new2D ('tria_genBoundaryVertexPos2D', 'KVBDI', &
+          Isize, ST_INT, &
+          rtriangulation%h_IboundaryVertexPos, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize2D (rtriangulation%h_IboundaryVertexPos, Isize)
+      IF (Isize(2) .NE. rtriangulation%NVBD) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_genBoundaryVertexPos2D', &
+            rtriangulation%NVBD, rtriangulation%h_IboundaryVertexPos, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    CALL storage_getbase_int2D (rtriangulation%h_IboundaryVertexPos,p_IboundaryVertexPos)
+
+    ! Fill the array.
+    ! Store the IverticesAtBoundary in the first entry and the index in the 2nd.
+    DO ivbd = 1,rtriangulation%NVBD
+      p_IboundaryVertexPos(1,ivbd) = p_IverticesAtBoundary(ivbd)
+      p_IboundaryVertexPos(2,ivbd) = ivbd
+    END DO
+    
+    ! Sort the array -- inside of each boundary component.
+    ! Use the vertex number as key.
+    DO ibct = 1,rtriangulation%NBCT
+      CALL arraySort_sortByIndex (&
+          p_IboundaryVertexPos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1), &
+          1_I32, rtriangulation%NVBD, 2_I32)
+    END DO
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_genBoundaryEdgePos2D(rtriangulation)
+
+!<description>
+  ! This routine generates the array IboundaryEdgePos which is used
+  ! to search for the position of a boundary edges.
+  ! For this purpose, the following arrays are used:
+  ! IedgesAtBoundary, IboundaryCpIdx.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IboundaryEdgePos
+    INTEGER :: ivbd, ibct
+    INTEGER(I32), DIMENSION(2) :: Isize
+
+    ! Is everything here we need?
+    IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IedgesAtBoundary not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genBoundaryEdgePos2D')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IboundaryCpIdx not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genBoundaryEdgePos2D')
+      STOP
+    END IF
+
+    ! Get the arrays.
+    CALL storage_getbase_int (rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
+    CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_IboundaryEdgePos .EQ. ST_NOHANDLE) THEN
+      ! We have as many elements on the boudary as vertices!
+      Isize = (/2_I32,INT(rtriangulation%NMBD,I32)/)
+      CALL storage_new2D ('tria_genBoundaryVertexPos2D', 'KEBDI', &
+          Isize, ST_INT, &
+          rtriangulation%h_IboundaryEdgePos, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize2D (rtriangulation%h_IboundaryEdgePos, Isize)
+      IF (Isize(2) .NE. rtriangulation%NMBD) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_genBoundaryEdgePos2D', &
+            rtriangulation%NMBD, rtriangulation%h_IboundaryEdgePos, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    CALL storage_getbase_int2D (rtriangulation%h_IboundaryEdgePos,p_IboundaryEdgePos)
+
+    ! Fill the array.
+    ! Store the IverticesAtBoundary in the first entry and the index in the 2nd.
+    DO ivbd = 1,rtriangulation%NMBD
+      p_IboundaryEdgePos(1,ivbd) = p_IedgesAtBoundary(ivbd)
+      p_IboundaryEdgePos(2,ivbd) = ivbd
+    END DO
+    
+    ! Sort the array -- inside of each boundary component.
+    ! Use the vertex number as key.
+    DO ibct = 1,rtriangulation%NBCT
+      CALL arraySort_sortByIndex (&
+          p_IboundaryEdgePos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1), &
+          1_I32, rtriangulation%NMBD, 2_I32)
+    END DO
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE tria_genEdgeParameterValue2D(rtriangulation,rboundary)
 
 !<description>
@@ -3646,7 +3831,7 @@ CONTAINS
     INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
     INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
     
-    INTEGER :: ibct, ivbd
+    INTEGER :: ibct, ivbd, hvertAtBd
     INTEGER(PREC_POINTIDX) :: isize
     REAL(DP) :: dpar1,dpar2,dmaxPar
 
@@ -3670,12 +3855,25 @@ CONTAINS
     END IF
 
     ! Get the arrays.
-    CALL storage_getbase_double (rtriangulation%h_DvertexParameterValue,&
-        p_DvertexParameterValue)
     CALL storage_getbase_int (rtriangulation%h_IverticesAtBoundary,&
         p_IverticesAtBoundary)
     CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
         p_IboundaryCpIdx)
+        
+    ! Allocate an auxiliary array containing a copy of the parameter values 
+    ! of the vertices.
+    CALL storage_copy (rtriangulation%h_DvertexParameterValue,hvertAtBd)
+    CALL storage_getbase_double (hvertAtBd,p_DvertexParameterValue)
+    
+    ! Convert the parameter values of the vertices from 0-1 into length
+    ! parametrisation. We need this later to get the correct parameter
+    ! values of the edge mitpoints.
+    DO ibct=1,rtriangulation%NBCT
+      CALL boundary_convertParameterList (rboundary,ibct,&
+        p_DvertexParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
+        p_DvertexParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
+        BDR_PAR_01,BDR_PAR_LENGTH)
+    END DO
     
     ! Do we have (enough) memory for that array?
     IF (rtriangulation%h_DedgeParameterValue .EQ. ST_NOHANDLE) THEN
@@ -3700,7 +3898,7 @@ CONTAINS
     DO ibct = 1,rtriangulation%NBCT
     
       ! Get the maximum parameter value of that BC.
-      dmaxPar = boundary_dgetMaxParVal(rboundary, ibct)
+      dmaxPar = boundary_dgetMaxParVal(rboundary, ibct, BDR_PAR_LENGTH)
     
       ! On each boundary component, loop through all vertices
       DO ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-2
@@ -3710,8 +3908,7 @@ CONTAINS
         dpar2 = p_DvertexParameterValue(ivbd+1)
         
         ! The edge parameter value is the mean.
-        ! If the parameter value is > TMAX of the boundary component, reduce it.
-        p_DedgeParameterValue(ivbd) = MOD(0.5_DP*(dpar1+dpar2),dmaxPar)
+        p_DedgeParameterValue(ivbd) = 0.5_DP*(dpar1+dpar2)
       
       END DO
       
@@ -3723,13 +3920,93 @@ CONTAINS
       ! Note that ivbd points to p_IboundaryCpIdx(ibct+1)-1 by
       ! Fortran standard of DO-loops!
       dpar1 = p_DvertexParameterValue(ivbd)
-      dpar2 = p_DvertexParameterValue(p_IboundaryCpIdx(ibct)) + &
-          boundary_dgetMaxParVal(rboundary, ibct)
-      p_DedgeParameterValue(ivbd) = MOD(0.5_DP*(dpar1+dpar2),dmaxPar)
-    
+      dpar2 = p_DvertexParameterValue(p_IboundaryCpIdx(ibct)) + dmaxPar
+      p_DedgeParameterValue(ivbd) = 0.5_DP*(dpar1+dpar2)
+
+      ! Convert the parameter values of the edge midpoints back from
+      ! length parametrisation to 0-1 parametrisation. 
+      ! This automatically 'rounds down' parameter values that are > dmaxPar!   
+      CALL boundary_convertParameterList (rboundary,ibct,&
+        p_DedgeParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
+        p_DedgeParameterValue(p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),&
+        BDR_PAR_LENGTH,BDR_PAR_01)
+        
     END DO
-    
+
     rtriangulation%NMBD = rtriangulation%NVBD
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_quickRefine2LevelOrdering(nfine,rtriangulation,rboundary)
+
+!<description>
+  ! This routine refines the given mesh rsourceTriangulation according to
+  ! the 2-level ordering algorithm nfine times. The refined mesh is saved in 
+  ! rdestTriangulation.
+  !
+  ! rtriangulation can be either a 'raw' mesh (as read from a .TRI
+  ! file) or a 'standard' mesh. The mesh is overwritten by the refined
+  ! one. The resulting mesh will be a 'raw' mesh), i.e. the caller must 
+  ! add further information to it with routines like 
+  ! tria_initStandardMeshFromRaw!
+!</description>
+
+!<input>
+  ! Number of refinements that should be applied to rtriangulation. > 0.
+  ! For a value <= 0, nothing will happen.
+  INTEGER, INTENT(IN) :: nfine
+
+  ! OPTIONAL: Boundary structure that defines the parametrisation of the boundary.
+  ! If specified, the coordinates of the new boundary vertices are
+  ! recomputed according to the analytic boundary.
+  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+!</input>
+
+!<inputoutput>
+  ! The triangulation to be refined; can be a 'raw' or a 'standard' mesh.
+  ! Is overwritten by the refined mesh.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutpout>
+
+!</subroutine>
+ 
+    INTEGER :: ifine
+
+    ! Refine nfine times:
+    DO ifine = 1,nfine
+    
+      ! Create missing arrays in the source mesh.
+      ! Create only those arrays we need to make the refinement process
+      ! as fast as possible.
+      IF (rtriangulation%h_IelementsAtVertex .EQ. ST_NOHANDLE) &
+        CALL tria_genElementsAtVertex2D    (rtriangulation)
+      IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) &
+        CALL tria_genNeighboursAtElement2D (rtriangulation)
+      IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) &
+        CALL tria_genEdgesAtElement2D      (rtriangulation)
+      IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) &
+        CALL tria_genVerticesAtEdge2D      (rtriangulation)
+      IF (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) &
+        CALL tria_genEdgeNodalProperty2D   (rtriangulation)
+
+      CALL tria_sortBoundaryVertices2D   (rtriangulation)
+      IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) &
+        CALL tria_genElementsAtBoundary2D  (rtriangulation)
+      IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) &
+        CALL tria_genEdgesAtBoundary2D     (rtriangulation)
+      IF (PRESENT(rboundary) .AND. &
+          (rtriangulation%h_DedgeParameterValue .EQ. ST_NOHANDLE)) THEN
+        CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
+      END IF
+     
+      ! Refine the mesh, replace the source mesh.
+      CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary)
+          
+    END DO
     
   END SUBROUTINE
 
@@ -3752,11 +4029,13 @@ CONTAINS
 !</description>
 
 !<input>
-  ! Boundary structure that defines the parametrisation of the boundary.
-  TYPE(t_boundary), INTENT(IN) :: rboundary
-
   ! The source triangulation to be refined; must be a 'standard' mesh.
   TYPE(t_triangulation), INTENT(INOUT) :: rsourceTriangulation
+
+  ! OPTIONAL: Boundary structure that defines the parametrisation of the boundary.
+  ! If specified, the coordinates of the new boundary vertices are
+  ! recomputed according to the analytic boundary.
+  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
 !</input>
 
 !<output>
@@ -4110,7 +4389,9 @@ CONTAINS
     TYPE(t_triangulation), INTENT(INOUT) :: rdestTriangulation
     
     ! OPTIONAL: Defintion of analytic boundary.
-    TYPE(t_boundary), INTENT(IN) :: rboundary
+    ! If specified, the coordinates of the new boundary vertices are
+    ! recomputed according to the analytic boundary.
+    TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
 
       ! local variables
       REAL(DP), DIMENSION(:), POINTER :: p_DvertParamsSource
@@ -4125,8 +4406,6 @@ CONTAINS
       INTEGER :: ivbd,ibct
       
       ! Get the definition of the boundary vertices and -edges.
-      CALL storage_getbase_double (rsourceTriangulation%h_DvertexParameterValue,&
-          p_DvertParamsSource)
       CALL storage_getbase_int (rsourceTriangulation%h_IverticesAtBoundary,&
           p_IvertAtBoundartySource)
       CALL storage_getbase_int (rsourceTriangulation%h_IedgesAtBoundary,&
@@ -4196,26 +4475,118 @@ CONTAINS
           p_DvertParamsDest(2+2*ivbd) = p_DedgeParamsSource(1+ivbd)
         END DO
         
-        ! Get the array with the vertex coordinates.
-        ! We want to correct the coordinates of the boundary points
-        ! according to the analytic boundary.
-        CALL storage_getbase_double2d (rdestTriangulation%h_DcornerCoordinates,&
-            p_DcornerCoordDest)
+        ! If the analytic boundary is given, compute the coordinates of the
+        ! boundary vertices from that.
+        IF (PRESENT(rboundary)) THEN
+          
+          ! Get the array with the vertex coordinates.
+          ! We want to correct the coordinates of the boundary points
+          ! according to the analytic boundary.
+          CALL storage_getbase_double2d (rdestTriangulation%h_DcornerCoordinates,&
+              p_DcornerCoordDest)
             
-        ! Loop through the boundary points and canculate the correct
-        ! coordinates.
-        DO ibct = 1,rdestTriangulation%NBCT
-          DO ivbd = p_IboundaryCpIdxDest(ibct),p_IboundaryCpIdxDest(ibct+1)-1
-            CALL boundary_getCoords(rboundary,ibct,p_DvertParamsDest(ivbd),&
-                p_DcornerCoordDest(1,p_IvertAtBoundartyDest(ivbd)),&
-                p_DcornerCoordDest(2,p_IvertAtBoundartyDest(ivbd)))
+          ! Loop through the boundary points and canculate the correct
+          ! coordinates. 
+          DO ibct = 1,rdestTriangulation%NBCT
+            DO ivbd = p_IboundaryCpIdxDest(ibct),p_IboundaryCpIdxDest(ibct+1)-1
+              CALL boundary_getCoords(rboundary,ibct,p_DvertParamsDest(ivbd),&
+                  p_DcornerCoordDest(1,p_IvertAtBoundartyDest(ivbd)),&
+                  p_DcornerCoordDest(2,p_IvertAtBoundartyDest(ivbd)))
+            END DO
           END DO
-        END DO
+          
+        END IF
         
       END IF
     
     END SUBROUTINE
 
   END SUBROUTINE
+
+!************************************************************************
+
+!<functino>
+
+  INTEGER FUNCTION tria_searchBoundaryNode(inode,rtriangulation)
+
+!<description>
+  ! This routine accepts as inode a vertex or an edge number of a boundary 
+  ! vertex/edge (1..NVT=vertex, NVT+1..NVT+NMT=edge) and determines the 
+  ! appropriate index of that vertex in the IverticesAtBoundary/
+  ! IedgesAtBoundary-array.
+!</description>
+
+!<input>
+  ! The boundary node to search for. A node number 1..NVT will search for
+  ! a boundary vertex. A boundary node number NVT+1..NVT+NMT will search
+  ! for boundary edges.
+  INTEGER(PREC_POINTIDX), INTENT(IN) :: inode
+
+  ! The triangulation structure where to search the boundary node.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</input>
+
+!<result>
+  ! If inode is a boundary vertex: The index of the inode in IboundaryVertexPos.
+  ! If inode is a boundary edge: The index of the inode in IboundaryEdgePos.
+  ! =0 if inode was not found (e.g. because inode is not on the boundary e.g.).
+!</result>
+
+!</function>
+
+    ! local variables
+    INTEGER :: ibct
+    INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_InodePos
+    INTEGER :: ipos,ileft,iright
+    
+    ! Get the boundary component of the vertex
+    CALL storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
+    ibct = p_InodalProperty(inode)
+
+    ! We can quit if ibct=0: The node is not on the boundary.
+    IF (ibct .EQ. 0) THEN
+      tria_searchBoundaryNode = 0
+      RETURN
+    END IF
+    
+    ! Do we have a vertex or an edge number?
+    IF (inode .LE. rtriangulation%NVT) THEN
+      ! Search in the IboundaryVertexPos array
+      CALL storage_getbase_int2d (rtriangulation%h_IboundaryVertexPos,p_InodePos)
+    ELSE
+      ! Search in the IboundaryEdgePos array
+      CALL storage_getbase_int2d (rtriangulation%h_IboundaryEdgePos,p_InodePos)
+    END IF
+
+    CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+    ! Use bisection search to find the node in the array.
+    ileft = p_IboundaryCpIdx(ibct)
+    iright = p_IboundaryCpIdx(ibct+1)-1
+    
+    IF (p_InodePos(1,ileft) .EQ. inode) THEN
+      ! Return the index in the node array.
+      tria_searchBoundaryNode = p_InodePos(2,ileft)
+    ELSE IF (p_InodePos(1,iright) .EQ. inode) THEN
+      ! Return the index in the node array.
+      tria_searchBoundaryNode = p_InodePos(2,iright)
+    ELSE
+      DO WHILE (ileft .LT. iright)
+        ipos = (ileft+iright)/2
+        IF (p_InodePos(1,ipos) .GT. inode) THEN
+          iright = ipos
+        ELSE IF (p_InodePos(1,ipos) .LT. inode) THEN
+          ileft = ipos
+        ELSE
+          ! We found the node. Return the index in the node array.
+          tria_searchBoundaryNode = p_InodePos(2,ipos)
+          EXIT
+        END IF
+      END DO
+    END IF
+    
+  END FUNCTION
 
 END MODULE
