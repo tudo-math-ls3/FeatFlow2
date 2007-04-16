@@ -134,22 +134,24 @@
 !#
 !#     Well, to read a mesh and prepare it to be used as single mesh, use:
 !#
-!#       CALL tria_readTriFile2D (rtria, 'somemesh.tri', rboundary)
+!#       CALL tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
 !#       CALL tria_initStandardMeshFromRaw (rtria,rboundary)
 !#
 !#     If you want to refine a mesh let's say 4 times after reading it, use:
 !#
-!#       CALL tria_readTriFile2D (rtria, 'somemesh.tri', rboundary)
-!#       CALL tria_quickRefine2LevelOrdering(4,rtria,rboundary)
-!#       CALL tria_initStandardMeshFromRaw (rtria,rboundary)
+!#       CALL tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
+!#       CALL tria_quickRefine2LevelOrdering(4,rtriangulation,rboundary)
+!#       CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 !# 
 !#     If you want to generate level 1..4 for a multiple-grid structure, use
 !#
-!#       CALL tria_readTriFile2D (rtria(1), 'somemesh.tri', rboundary)
-!#       CALL tria_initStandardMeshFromRaw (rtria,rboundary)
+!#       TYPE(t_triangulation), DIMENSION(4) :: rtriangulation
+!#
+!#       CALL tria_readTriFile2D (rtriangulation(1), 'somemesh.tri', rboundary)
+!#       CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 !#       DO ilev=2,4
 !#         CALL tria_refine2LevelOrdering (rtria(ilev-1),rtria(ilev), rboundary)
-!#         CALL tria_initStandardMeshFromRaw (rtria(ilev),rboundary
+!#         CALL tria_initStandardMeshFromRaw (rtriangulation(ilev),rboundary
 !#       END DO
 !# 
 !# </purpose>
@@ -3911,6 +3913,7 @@ CONTAINS
         
     ! Allocate an auxiliary array containing a copy of the parameter values 
     ! of the vertices.
+    hvertAtBd = ST_NOHANDLE
     CALL storage_copy (rtriangulation%h_DvertexParameterValue,hvertAtBd)
     CALL storage_getbase_double (hvertAtBd,p_DvertexParameterValue)
     
