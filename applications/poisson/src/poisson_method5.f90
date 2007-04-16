@@ -1043,9 +1043,13 @@ CONTAINS
     INTEGER :: NLMIN,NLMAX
     
     ! A problem structure for our problem
-    TYPE(t_problem), TARGET :: rproblem
+    TYPE(t_problem), POINTER :: p_rproblem
     
     INTEGER :: i
+    
+    ! Allocate the problem structure on the heap -- it's rather large...
+    ! too large for the stack!
+    ALLOCATE(p_rproblem)
     
     ! Ok, let's start. 
     ! We want to solve our Laplace problem on level...
@@ -1054,44 +1058,45 @@ CONTAINS
     NLMAX = 7
     
     ! Initialise the collection
-    CALL collct_init (rproblem%rcollection)
+    CALL collct_init (p_rproblem%rcollection)
     DO i=1,NLMAX
-      CALL collct_addlevel_all (rproblem%rcollection)
+      CALL collct_addlevel_all (p_rproblem%rcollection)
     END DO
 
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL pm5_initParamTriang (NLMIN,NLMAX,rproblem)
-    CALL pm5_initDiscretisation (rproblem)    
-    CALL pm5_initMatVec (rproblem)    
-    CALL pm5_initAnalyticBC (rproblem)   
-    CALL pm5_initDiscreteBC (rproblem)
+    CALL pm5_initParamTriang (NLMIN,NLMAX,p_rproblem)
+    CALL pm5_initDiscretisation (p_rproblem)    
+    CALL pm5_initMatVec (p_rproblem)    
+    CALL pm5_initAnalyticBC (p_rproblem)   
+    CALL pm5_initDiscreteBC (p_rproblem)
     
     ! Implementation of boundary conditions
-    CALL pm5_implementBC (rproblem)
+    CALL pm5_implementBC (p_rproblem)
     
     ! Solve the problem
-    CALL pm5_solve (rproblem)
+    CALL pm5_solve (p_rproblem)
     
     ! Postprocessing
-    CALL pm5_postprocessing (rproblem)
+    CALL pm5_postprocessing (p_rproblem)
     
     ! Cleanup
-    CALL pm5_doneMatVec (rproblem)
-    CALL pm5_doneBC (rproblem)
-    CALL pm5_doneDiscretisation (rproblem)
-    CALL pm5_doneParamTriang (rproblem)
+    CALL pm5_doneMatVec (p_rproblem)
+    CALL pm5_doneBC (p_rproblem)
+    CALL pm5_doneDiscretisation (p_rproblem)
+    CALL pm5_doneParamTriang (p_rproblem)
 
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *
     PRINT *,'Remaining collection statistics:'
     PRINT *,'--------------------------------'
     PRINT *
-    CALL collct_printStatistics (rproblem%rcollection)
+    CALL collct_printStatistics (p_rproblem%rcollection)
     
-    ! Finally release the collection.
-    CALL collct_done (rproblem%rcollection)
+    ! Finally release the collection and the problem structure.
+    CALL collct_done (p_rproblem%rcollection)
+    DEALLOCATE(p_rproblem)
     
   END SUBROUTINE
 
