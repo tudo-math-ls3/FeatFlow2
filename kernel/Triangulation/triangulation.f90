@@ -142,7 +142,7 @@ MODULE triangulation
   INTEGER, PARAMETER :: TRIA_MAXNME2D = TRIA_MAXNVE2D
   
   ! Number of vertices per element for triangular element shapes in 2D.
-  INTEGER, PARAMETER :: TRIA_NVETRIA2D = 3
+  INTEGER, PARAMETER :: TRIA_NVETRI2D  = 3
 
   ! Number of vertices per element for quadrilateral element shapes in 2D.
   INTEGER, PARAMETER :: TRIA_NVEQUAD2D = 4
@@ -291,7 +291,7 @@ MODULE triangulation
     INTEGER             :: NMBD = 0
     
     ! Number of elements with a defined number of vertices per element.
-    ! InelOfType(TRIA_NVETRIA2D) = number of triangles in the mesh (2D).
+    ! InelOfType(TRIA_NVETRI2D)  = number of triangles in the mesh (2D).
     ! InelOfType(TRIA_NVEQUAD2D) = number of quads in the mesh (2D).
     INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE) :: InelOfType = 0
   
@@ -1827,7 +1827,7 @@ CONTAINS
     END DO
     
     ! Create a new p_IverticesAtElement array for the triangular mesh.
-    Isize = (/TRIA_NVETRIA2D,icount+rtriangulation%NEL/)
+    Isize = (/TRIA_NVETRI2D,icount+rtriangulation%NEL/)
     CALL storage_new2D ('tria_quadToTri', 'KVERTTRI', Isize, ST_INT, &
                         h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
@@ -1842,7 +1842,7 @@ CONTAINS
     
     ! Finally, set up InelOfType.
     rtriangulation%InelOfType(:) = 0
-    rtriangulation%InelOfType(TRIA_NVETRIA2D) = rtriangulation%NEL
+    rtriangulation%InelOfType(TRIA_NVETRI2D) = rtriangulation%NEL
     
     ! That's it.
 
@@ -3320,12 +3320,12 @@ CONTAINS
     dtotalVolume = 0.0_DP
         
     ! Currently, we support triangules and quads.
-    IF (UBOUND(p_IverticesAtElement,1) .EQ. TRIA_NVETRIA2D) THEN
+    IF (UBOUND(p_IverticesAtElement,1) .EQ. TRIA_NVETRI2D) THEN
 
       ! Calculate the element volume for all elements
       DO iel=1,rtriangulation%NEL
         ! triangular element
-        DO ive=1,TRIA_NVETRIA2D
+        DO ive=1,TRIA_NVETRI2D
           Dpoints(1,ive) = p_DcornerCoordinates(1,p_IverticesAtElement(ive,iel))
           Dpoints(2,ive) = p_DcornerCoordinates(2,p_IverticesAtElement(ive,iel))
         END DO
@@ -3341,7 +3341,7 @@ CONTAINS
       
         IF (p_IverticesAtElement(4,iel) .EQ. 0) THEN
           ! triangular element
-          DO ive=1,TRIA_NVETRIA2D
+          DO ive=1,TRIA_NVETRI2D
             Dpoints(1,ive) = p_DcornerCoordinates(1,p_IverticesAtElement(ive,iel))
             Dpoints(2,ive) = p_DcornerCoordinates(2,p_IverticesAtElement(ive,iel))
           END DO
@@ -4136,7 +4136,7 @@ CONTAINS
       nquads = rsourceTriangulation%InelOfType (TRIA_NVEQUAD2D)
       nnve = tria_getNNVE(rsourceTriangulation)
       
-      IF ((nnve .LT. TRIA_NVETRIA2D) .OR. (nnve .GT. TRIA_NVEQUAD2D)) THEN
+      IF ((nnve .LT. TRIA_NVETRI2D) .OR. (nnve .GT. TRIA_NVEQUAD2D)) THEN
       
         CALL output_line (&
             '2-level refinement supports only triangular and quad meshes!', &
@@ -4198,7 +4198,7 @@ CONTAINS
       
       ! Are there quads in the mesh? They produce additional element midpoints
       ! which get numbers NVT+NMT+1..*
-      IF (nnve .GT. TRIA_NVETRIA2D) THEN
+      IF (nnve .GT. TRIA_NVETRI2D) THEN
       
         ! Loop over the elements to find the quads.
         ivtoffset = rsourceTriangulation%NVT + rsourceTriangulation%NMT
