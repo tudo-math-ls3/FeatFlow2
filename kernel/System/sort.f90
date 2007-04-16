@@ -1550,7 +1550,7 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex (Ielem, iindex, nnode, nindex, cmethod)
+  SUBROUTINE arraySort_sortByIndex (Ielem, iindex, cmethod)
     
     IMPLICIT NONE
     
@@ -1561,24 +1561,24 @@ CONTAINS
   !</description>
     
   !<input>
-    ! Number of nodes
-    INTEGER(I32), INTENT(IN) :: nnode
-    
-    ! Number of indices per node
-    INTEGER(I32), INTENT(IN) :: nindex
-    
-    ! Index number by which to sort the nodes
-    INTEGER(I32), INTENT(IN) :: iindex
+    ! Index number of the entry in Ielem that should be used as
+    ! a key for sorting.
+    INTEGER, INTENT(IN) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
     INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
   !</input>
-        
+    
   !<inputoutput>
     ! 2D array containing the n nodes Ielem(1..nindex,inode)
-    INTEGER(I32), DIMENSION(nindex,nnode), INTENT(INOUT) :: Ielem
+    INTEGER(I32), DIMENSION(:,:), INTENT(INOUT) :: Ielem
   !</inputoutput>
 !</subroutine>
+
+    INTEGER(I32) :: nindex,nnode
+        
+    nindex = UBOUND(Ielem,1)
+    nnode = UBOUND(Ielem,2)
         
     IF (PRESENT(cmethod)) THEN
       SELECT CASE (cmethod)
@@ -1756,13 +1756,13 @@ CONTAINS
       iend_lo = imid
       DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
         IF (Ielem(iindex,ilo) .le. Ielem(iindex,istart_hi)) THEN
-	  ilo = ilo+1
-	ELSE
-	  CALL circShiftRight(ilo, istart_hi)
-	  ilo = ilo+1
-	  iend_lo = iend_lo+1
-	  istart_hi = istart_hi+1
-	ENDIF
+          ilo = ilo+1
+        ELSE
+          CALL circShiftRight(ilo, istart_hi)
+          ilo = ilo+1
+          iend_lo = iend_lo+1
+          istart_hi = istart_hi+1
+        ENDIF
       END DO
     
     END SUBROUTINE mergesort

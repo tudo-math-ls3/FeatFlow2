@@ -3763,8 +3763,7 @@ CONTAINS
     ! Use the vertex number as key.
     DO ibct = 1,rtriangulation%NBCT
       CALL arraySort_sortByIndex (&
-          p_IboundaryVertexPos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1), &
-          1_I32, rtriangulation%NVBD, 2_I32)
+          p_IboundaryVertexPos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),1)
     END DO
     
   END SUBROUTINE
@@ -3844,8 +3843,7 @@ CONTAINS
     ! Use the vertex number as key.
     DO ibct = 1,rtriangulation%NBCT
       CALL arraySort_sortByIndex (&
-          p_IboundaryEdgePos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1), &
-          1_I32, rtriangulation%NMBD, 2_I32)
+          p_IboundaryEdgePos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),1)
     END DO
     
   END SUBROUTINE
