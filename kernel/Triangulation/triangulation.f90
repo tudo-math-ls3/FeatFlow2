@@ -4519,7 +4519,7 @@ CONTAINS
         ! Create a new array for the boundary vertex parameter values
         ! and fill it with the data from the coarse grid.
         CALL storage_new ('tria_refineBdry2lv2D', &
-            'KVBD', INT(rdestTriangulation%NVBD,I32), &
+            'DVBDP', INT(rdestTriangulation%NVBD,I32), &
             ST_DOUBLE, rdestTriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_double (rdestTriangulation%h_DvertexParameterValue,&
             p_DvertParamsDest)
