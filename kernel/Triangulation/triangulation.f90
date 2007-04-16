@@ -103,6 +103,55 @@
 !# 15.) tria_genBoundaryEdgePos2D
 !#      -> Generates the IboundaryEdgePos2D array for a 2D triangulatioon
 !#
+!#
+!#  FAQ - Some explainations
+!# --------------------------
+!# 1.) When reading the refinement routine, there's written something about
+!#     'raw' meshes and 'standard' meshes. What does that mean?
+!#
+!#     A 'raw' mesh is a very basic form of a mesh with most information
+!#     missing. E.g. there is no information about adjacencies.
+!#     Such meshes come e.g. from .TRI files when reading them with
+!#     tria_readTriFile2D or similar routines. These basic meshes can normally
+!#     not be used for any computations; all the missing informationhas first
+!#     to be 'extracted' or 'generated' based on them. They can only be used
+!#     for very low-level modifications; e.g. the routine tria_rawQuadToTri
+!#     allowes to convert a quad mesh in a triangular mesh, which would
+!#     be much harder if all adjacency information is already computed.
+!#     Another possibile thing what can be done with such a 'raw' mesh is to
+!#     do quicker pre-refinement with routines like 
+!#     tria_quickRefine2LevelOrdering. This routine refines the mesh without
+!#     computing everything and is therefore a little bit faster than a
+!#     subsequent application of tria_refine2LevelOrdering onto a 'standard'
+!#     mesh.
+!#
+!#     If you have a 'raw' mesh, simply use tria_initStandardMeshFromRaw
+!#     to convert it to a 'standard' mesh. A 'standard' mesh contains all
+!#     neighbouring information and is usually the mesh you want to use
+!#     for computations.
+!#
+!# 2.) And what does that mean if I want to read e.g. a 2D mesh and to refine it?
+!#
+!#     Well, to read a mesh and prepare it to be used as single mesh, use:
+!#
+!#       CALL tria_readTriFile2D (rtria, 'somemesh.tri', rboundary)
+!#       CALL tria_initStandardMeshFromRaw (rtria,rboundary)
+!#
+!#     If you want to refine a mesh let's say 4 times after reading it, use:
+!#
+!#       CALL tria_readTriFile2D (rtria, 'somemesh.tri', rboundary)
+!#       CALL tria_quickRefine2LevelOrdering(4,rtria,rboundary)
+!#       CALL tria_initStandardMeshFromRaw (rtria,rboundary)
+!# 
+!#     If you want to generate level 1..4 for a multiple-grid structure, use
+!#
+!#       CALL tria_readTriFile2D (rtria(1), 'somemesh.tri', rboundary)
+!#       CALL tria_initStandardMeshFromRaw (rtria,rboundary)
+!#       DO ilev=2,4
+!#         CALL tria_refine2LevelOrdering (rtria(ilev-1),rtria(ilev), rboundary)
+!#         CALL tria_initStandardMeshFromRaw (rtria(ilev),rboundary
+!#       END DO
+!# 
 !# </purpose>
 !##############################################################################
 
