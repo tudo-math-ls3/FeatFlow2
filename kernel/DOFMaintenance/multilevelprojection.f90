@@ -309,7 +309,6 @@ CONTAINS
 
     ! local variables
     TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
-    INTEGER :: i
 
     IF (rdiscretisation%ncomponents .EQ. 0) THEN
       PRINT *,'mlprj_initProjectionDiscr: No discretisation!'
@@ -939,6 +938,24 @@ CONTAINS
                p_IverticesAtElementCoarse,p_IverticesAtElementFine,&
                p_IneighboursAtElementCoarse,p_rtriaCoarse%NEL)
                
+        CASE (EL_P2)
+          ! P2 prolongation
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                               p_IverticesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                               p_IedgesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                               p_IedgesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                               p_IneighboursAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
+          CALL mlprj_prolUniformP2_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementCoarse,&
+               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+               p_rtriaCoarse%NEL)
+
         CASE (EL_Q0)
           ! Q0 prolongation
           CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
@@ -1182,7 +1199,25 @@ CONTAINS
           CALL mlprj_restUniformP1_double (p_DuCoarse,p_DuFine, &
                p_IverticesAtElementFine,p_IneighboursAtElementFine, &
                p_rtriaCoarse%NEL,p_rtriaFine%NEL)
-               
+
+        CASE (EL_P2)
+          ! P2 restriction
+          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                               p_IverticesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
+                               p_IedgesAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
+                               p_IedgesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
+                               p_IneighboursAtElementCoarse)
+          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                               p_IneighboursAtElementFine)
+          CALL mlprj_restUniformP2_double (p_DuCoarse,p_DuFine, &
+               p_IverticesAtElementFine,&
+               p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
+               p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
+               p_rtriaCoarse%NEL)
+          
         CASE (EL_Q0)
           ! Q0 restriction
           CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
@@ -1346,8 +1381,6 @@ CONTAINS
   TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtriaFine
   
   ! Pointers into the triangulation
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
@@ -1757,26 +1790,280 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE mlprj_prolUniformP2_double ()
+  SUBROUTINE mlprj_prolUniformP2_double (DuCoarse,DuFine, &
+               IverticesAtElementCoarse,&
+               IedgesAtElementCoarse,IedgesAtElementFine,&
+               IneighboursAtElementCoarse,IneighboursAtElementFine,&
+               NELcoarse)
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
   ! $P_2$, uniform triangulation, double precision vector.
 !</description>
   
-!<input>
+!<input>  
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
   
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+
+  ! IedgesAtElement array (KMID) on the coarse grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
+  
+  ! IedgesAtElement array (KMID) on the fine grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
+  
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+
+  ! IneighboursAtElement array on the fine grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
 !</input>
   
-!<inputoutput>
-!</inputoutput>
+!<output>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuFine
+!</output>
   
 !</subroutine>
   
   ! local variables
 
-  PRINT *,'not implemented!'
-  STOP
+  ! local variables
+  INTEGER(PREC_ELEMENTIDX) :: IEL,IEL1,IEL2
+  REAL(DP) :: duc1,duc2,duc3,dum1,dum2,dum3
+  REAL(DP), PARAMETER :: Q8 = 0.125_DP
+  REAL(DP), PARAMETER :: Q4 = 0.25_DP
+  REAL(DP), PARAMETER :: Q2 = 0.5_DP
+
+    ! First, we remember the refinement scheme to clarify the
+    ! local numbering of the vertices in the coarse- and fine-
+    ! grid triangles.
+    ! Let a coarse grid triangle be locally numbered as:
+    !
+    !   2 
+    !   |  \
+    !   |    \
+    !   | IEL  \
+    !   |        \
+    !   3----------1
+    ! 
+    ! Then the refinement process assigns the following numbers:
+    !
+    !   2
+    !   |  \
+    !   |     \
+    !   |        \
+    !   2*-------- 1* 
+    !   | \   IEL  |   \
+    !   |    \     |      \
+    !   |       \  |         \
+    !   3----------3*----------1
+    !
+    ! i.e. the element number "IEL" is put into the middle with
+    ! the corner vertices numbered according to the local edge
+    ! numbers of the coarse grid element.
+    !
+    ! To access information on the edges of the fine grid element,
+    ! we have to work with adjacencies!
+    !  
+    ! First copy DuCoarse to DuFine. This will transfer the corner values
+    ! from the coarse grid to the fine grid. More precisely, this
+    ! will map:
+    !   Coarse grid vertices 1..NVTC  -> Fine grid vertices 1..NVTC
+    !   Coarse grid midpoints 1..NMTC -> Fine grid vertices NVTC+1..NVTC+NMTC = NVTF
+    ! Afterwards, we only have to create the missing midpoint values!
+
+    CALL lalg_copyVectorDble (DuCoarse,DuFine(1:SIZE(DuCoarse)))
+    
+    ! loop over the elements
+
+    DO IEL = 1,nelCoarse
+    
+      ! We fetch the function values of the coarse grid element
+      ! into variables following the following scheme:
+      !
+      !     DUC2
+      !     |   \
+      !     |      \
+      !     |         \
+      !     DUM2         DUM1
+      !     |                \
+      !     |                   \
+      !     |                      \
+      !     DUC3 --------DUM3-------  DUC1
+
+      DUC1 = DuCoarse(IverticesAtElementCoarse(1,IEL))
+      DUC2 = DuCoarse(IverticesAtElementCoarse(2,IEL))
+      DUC3 = DuCoarse(IverticesAtElementCoarse(3,IEL))
+      DUM1 = DuCoarse(IedgesAtElementCoarse(1,IEL))
+      DUM2 = DuCoarse(IedgesAtElementCoarse(2,IEL))
+      DUM3 = DuCoarse(IedgesAtElementCoarse(3,IEL))
+
+      ! We have to calculate the function values in the new DOF's on the
+      ! fine grid, which are located here:
+      !
+      !     DUC2
+      !     |   \
+      !     X     X
+      !     |        \
+      !     DUM2 --X-- DUM1
+      !     |   \      |   \
+      !     X     X    X     X
+      !     |       \  |        \
+      !     DUC3---X---DUM3---X---DUC1
+      !
+      ! On this trangle, the function is a quadratic polynomial:
+      !
+      !   P(X,Y) = c1 + c2*x + c3*y + c4*x^2 + c5*x*y + c6*y^2
+      !
+      ! Solving for the coefficients such that the polynomial takes
+      ! the DUxy-values in the corners/midpoints, we obtain the 
+      ! polynomial as:
+      !
+      !   P(X,Y) = DUC3 + 
+      !             (-3*DUC3-DUC1+4*DUM3)*x + 
+      !             (-3*DUC3-DUC2+4*DUM2)*y + 
+      !             (4*DUC3-4*DUM3+4*DUM1-4*DUM2)*x*y + 
+      !             (2*DUC3+2*DUC1-4*DUM3)*x^2 + 
+      !             (2*DUC3+2*DUC2-4*DUM2)*y^2
+      !
+      ! This has to be evaluated in the new points, marked as "X"
+      ! in the above sketch.
+      !
+      ! Remember, that the coarse grid element IEL is moved
+      ! to the inner fine-grid element. The corners of the coars
+      ! grid element are always the first vertices of the triangles
+      ! on the fine grid elements.
+      !
+      ! First calculate the edge mitpoint values of that one!
+      !
+      !   |        \
+      !   DUM2---X---DUM1
+      !   | \   IEL  |   \
+      !         X     X        
+      !           \  |           
+      !           --DUM3--        
+      !
+      ! DUF(IedgesAtElementFine(1,IEL)) = P(1/4,1/2)
+      !                   = -1/8*DUC3-1/8*DUC1+1/4*DUM3+1/2*DUM2+1/2*DUM1
+      ! DUF(IedgesAtElementFine(2,IEL)) = P(1/4,1/2)
+      !                   = -1/8*DUC1+1/2*DUM3-1/8*DUC2+1/2*DUM2+1/4*DUM1
+      ! DUF(IedgesAtElementFine(3,IEL)) = P(1/2,1/4)
+      !                   = -1/8*DUC3+1/2*DUM3-1/8*DUC2+1/4*DUM2+1/2*DUM1
+
+      DuFine(IedgesAtElementFine(1,IEL)) = -Q8*DUC3-Q8*DUC1+Q4*DUM3+Q2*DUM2+Q2*DUM1
+      DuFine(IedgesAtElementFine(2,IEL)) = -Q8*DUC1+Q2*DUM3-Q8*DUC2+Q2*DUM2+Q4*DUM1
+      DuFine(IedgesAtElementFine(3,IEL)) = -Q8*DUC3+Q2*DUM3-Q8*DUC2+Q4*DUM2+Q2*DUM1
+
+      ! Now to the values on the other edges.
+      ! Only calculate information on edges that are adjacent to
+      ! an element with lower element number. This prevents
+      ! information from being computed twice.
+      !
+      ! Check the first edge:
+
+      IF (IneighboursAtElementCoarse(1,IEL).LT.IEL) THEN
+      
+        ! Neighbor element has a smaller number than our element.
+        ! Calculate the information on the current edge.
+        ! This is the edge corresponding to the edge midpoint DUM1!
+        ! We have to calculate the values in the new edge midpoints.
+        !
+        ! DUC2
+        !  |   \
+        !  |     X
+        !  |  IEL1  \
+        ! DUM2 ----- DUM1
+        !      \ IEL  |   \
+        !        \    |     X
+        !          \  |  IEL2  \
+        !            DUM3-------DUC1
+        !
+        ! Use adjacencies to get the fine-grid elements IEL1 and IEL2.
+
+        IEL1 = IneighboursAtElementFine(1,IEL)
+        IEL2 = IneighboursAtElementFine(3,IEL)
+        
+        ! Calculate the new edge midpoints:
+        !
+        !  DUF(IedgesAtElementFine(3,IEL1)) = P(1/4,3/4)
+        !                     = -1/8*DUC1+3/8*DUC2+3/4*DUM1
+        !  DUF(IedgesAtElementFine(1,IEL2)) = P(3/4,1/4)
+        !                     = 3/8*DUC1-1/8*DUC2+3/4*DUM1
+        
+        DuFine(IedgesAtElementFine(3,IEL1)) = -Q8*DUC1+3.0_DP*Q8*DUC2+3.0_DP*Q4*DUM1
+        DuFine(IedgesAtElementFine(1,IEL2)) = 3.0_DP*Q8*DUC1-Q8*DUC2+3.0_DP*Q4*DUM1
+      
+      END IF
+    
+      ! Check the next edge:
+
+      IF (IneighboursAtElementCoarse(2,IEL).LT.IEL) THEN
+      
+        ! DUC2
+        !  |   \
+        !  X     \
+        !  |   IEL1 \
+        ! DUM2 ----- DUM1
+        !  |   \      |     
+        !  X     \IEL |       
+        !  |  IEL2 \  |          
+        ! DUC3-------DUM3               
+        ! 
+        ! Use adjacencies to get the fine-grid elements IEL1 and IEL2.
+
+        IEL1 = IneighboursAtElementFine(1,IEL)
+        IEL2 = IneighboursAtElementFine(2,IEL)
+        
+        ! Calculate the new edge midpoints:
+        !  
+        !  DUF(IedgesAtElementFine(1,IEL1)) = P(0,3/4)
+        !                     = -1/8*DUC3+3/8*DUC2+3/4*DUM2
+        !  DUF(IedgesAtElementFine(3,IEL2)) = P(0,1/4)
+        !                     = 3/8*DUC3-1/8*DUC2+3/4*DUM2
+        
+        DuFine(IedgesAtElementFine(1,IEL1)) = &
+            -Q8*DUC3+3.0_DP*Q8*DUC2+3.0_DP*Q4*DUM2
+        DuFine(IedgesAtElementFine(3,IEL2)) = &
+            3.0_DP*Q8*DUC3-1.0_DP*Q8*DUC2+3.0_DP*Q4*DUM2
+      
+      END IF
+
+      ! Check the last edge
+
+      IF (IneighboursAtElementCoarse(3,IEL).LT.IEL) THEN
+      
+        ! DUM2 ----- DUM1
+        !  |   \  IEL |   \
+        !  | IEL2\    | IEL1\
+        !  |       \  |        \
+        ! DUC3---X---DUM3---X---DUC1
+        !
+        ! Use adjacencies to get the fine-grid elements IEL1 and IEL2.
+
+        IEL1 = IneighboursAtElementFine(3,IEL)
+        IEL2 = IneighboursAtElementFine(2,IEL)
+        
+        ! Calculate the new edge midpoints:
+        !
+        !  DUF(IedgesAtElementFine(3,IEL1)) = P(3/4,0)
+        !                     = -1/8*DUC3+3/8*DUC1+3/4*DUM3
+        !  DUF(IedgesAtElementFine(1,IEL2)) = P(1/4,0)
+        !                     = 3/8*DUC3-1/8*DUC1+3/4*DUM3
+        
+        DuFine(IedgesAtElementFine(3,IEL1)) = -Q8*DUC3+3.0_DP*Q8*DUC1+3.0_DP*Q4*DUM3
+        DuFine(IedgesAtElementFine(1,IEL2)) = 3.0_DP*Q8*DUC3-Q8*DUC1+3.0_DP*Q4*DUM3
+      
+      END IF
+      
+      !  That's it - next element.
+      
+    END DO ! IEL
 
   END SUBROUTINE
   
@@ -1784,26 +2071,263 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE mlprj_restUniformP2_double ()
+  SUBROUTINE mlprj_restUniformP2_double (DuCoarse,DuFine, &
+               IverticesAtElementCoarse,&
+               IedgesAtElementCoarse,IedgesAtElementFine,&
+               IneighboursAtElementCoarse,IneighboursAtElementFine,&
+               NELcoarse)
   
 !<description>
   ! Restricts a RHS vector from a fine grid to a coarse grid.
   ! $P_2$, uniform triangulation, double precision vector.
 !</description>
   
-!<input>
+!<input>  
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
+  ! IverticesAtElement array (KVERT) on the coarse grid
+  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+
+  ! IedgesAtElement array (KMID) on the coarse grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
+  
+  ! IedgesAtElement array (KMID) on the fine grid
+  INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
+  
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+
+  ! IneighboursAtElement array on the fine grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+
+  ! Number of elements in the coarse grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELcoarse
 !</input>
   
-!<inputoutput>
-!</inputoutput>
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
   
 !</subroutine>
   
-  ! local variables
+    ! local variables
+    INTEGER(PREC_ELEMENTIDX) :: IEL,IEL2,IEL3,IEL4
+    REAL(DP) :: dn1,dn2,dn3
+    REAL(DP) :: duf11,duf12,duf13,duf21,duf23,duf31,duf33
+    REAL(DP) :: duf41,DUF43
+    REAL(DP), PARAMETER :: Q8 = 0.125_DP
+    REAL(DP), PARAMETER :: Q4 = 0.25_DP
+    REAL(DP), PARAMETER :: Q2 = 0.5_DP
 
-  PRINT *,'not implemented!'
-  STOP
+    ! First we remember the refinement scheme to clarify the
+    ! local numbering of the vertices in the coarse- and fine-
+    ! grid triangles.
+    ! Let a coarse grid triangle be locally numbered as:
+    !
+    !   2 
+    !   |  \
+    !   |    \
+    !   | IEL  \
+    !   |        \
+    !   3----------1
+    ! 
+    ! Then the refinement process assigns the following numbers:
+    !
+    !   2
+    !   |  \
+    !   |     \
+    !   |        \
+    !   2*-------- 1* 
+    !   | \   IEL  |   \
+    !   |    \     |      \
+    !   |       \  |         \
+    !   3----------3*----------1
+    !
+    ! i.e. the element number "IEL" is put into the middle with
+    ! the corner vertices numbered according to the local edge
+    ! numbers of the coarse grid element.
+    !
+    ! To access information on the edges of the fine grid element,
+    ! we have to work with adjacencies!
+    !
+    ! Copy the first NVTC+NMTC values from DUF to DUC. This will
+    ! transfer the contribution of the values from the 
+    ! fine-grid vertices that are coarse-grid vertices or midpoints
+    ! as well. More precisely, this will transfer:
+    !
+    !   Fine grid vertices 1..NVTC -> Coarse grid vertices 1..NVTC  
+    !   Fine grid vertices NVTC+1..NVTC+NMTC = NVTF -> Coarse grid midpoints 1..NMTC
+    !
+    ! Afterwards, we have to add only the contribution of the fine grid
+    ! edge midpoints to the coarse grid vertices/midpoints.
+
+    CALL lalg_copyVectorDble (DuFine(1:SIZE(DuCoarse)),DuCoarse)
+      
+    ! loop over the elements
+
+    DO IEL = 1,nelCoarse
+    
+      ! The prolongation created from DUC1-3 and DUM1-3 in the 
+      ! following sketch the fine grid values DUFxy:
+      !
+      !    DUC2
+      !     |  \
+      !     |    \
+      !   DUF21  DUF23
+      !     |        \
+      !     |          \
+      !    DUM2--DUF11--DUM1
+      !     |  \         |  \
+      !     |    \       |    \
+      !   DUF33  DUF12 DUF13  DUF41
+      !     |        \   |        \
+      !     |          \ |          \
+      !    DUC3--DUF31--DUM3--DUF43--DUC1
+      !
+      ! This was done by a weighted averaging. The restriction now
+      ! builds the DUC1-3 and DUM1-3 values as a weighted sum
+      ! of themselves (DUM1-3, DUC1-3) and the new midpoints
+      ! DUFxy using the same weights.
+      !
+      ! We had 
+      !   DUCx(fine grid) := 1*DUCx(coarse grid)
+      !   DUMy(fine grid) := 1*DUCy(coarse grid)
+      ! Therefore:
+      !   DUCx(coarse grid) := 1*DUCx(fine grid) + ...
+      !   DUCy(coarse grid) := 1*DUMy(fine grid) + ...
+      !
+      ! This part of the sum is already written to DUC with the
+      ! above LCP1 command! now comes the rest of the sum.
+      !
+      ! The prolongation used the following formulas to calculate
+      ! the fine grid vertices:
+      !
+      !  DUF11 = P(1/4,1/2)
+      !        = -1/8*DUC3-1/8*DUC1+1/4*DUM3+1/2*DUM2+1/2*DUM1
+      !  DUF12 = P(1/4,1/4)
+      !        = -1/8*DUC1+1/2*DUM3-1/8*DUC2+1/2*DUM2+1/4*DUM1
+      !  DUF13 = P(1/2,1/4)
+      !        = -1/8*DUC3+1/2*DUM3-1/8*DUC2+1/4*DUM2+1/2*DUM1
+      !
+      !  DUF23 = P(1/4,3/4)
+      !        = -1/8*DUC1+3/8*DUC2+3/4*DUM1
+      !  DUF41 = P(3/4,1/4)
+      !        = 3/8*DUC1-1/8*DUC2+3/4*DUM1
+      !
+      !  DUF21 = P(0,3/4)
+      !        = -1/8*DUC3+3/8*DUC2+3/4*DUM2
+      !  DUF33 = P(0,1/4)
+      !        = 3/8*DUC3-1/8*DUC2+3/4*DUM2
+      !
+      !  DUF43 = P(3/4,0)
+      !        = -1/8*DUC3+3/8*DUC1+3/4*DUM3
+      !  DUF31 = P(1/4,0)
+      !        = 3/8*DUC3-1/8*DUC1+3/4*DUM3
+      !
+      ! This is equivalent to the system
+      !
+      !  DUF11    [-1/8,    0, -1/8, 1/2,  1/2,  1/4]   DUC1
+      !  DUF12    [-1/8, -1/8 ,   0, 1/4,  1/2,  1/2]   DUC2
+      !  DUF13    [   0, -1/8, -1/8, 1/2,  1/4,  1/2]   DUC3
+      !  DUF21    [   0,  3/8, -1/8,   0,  3/4,    0]   DUM1
+      !  DUF23 =  [-1/8,  3/8,    0, 3/4,    0,    0] * DUM2
+      !  DUF31    [-1/8,    0,  3/8,   0,    0,  3/4]   DUM3
+      !  DUF33    [   0, -1/8,  3/8,   0,  3/4,    0]
+      !  DUF41    [ 3/8, -1/8 ,   0, 3/4,    0,    0]
+      !  DUF43    [ 3/8,    0, -1/8,   0,    0,  3/4]
+      !
+      ! Transposing it says what is left to add to DUC1-3/DUM1-3:
+      !
+      !   DUC1    [-1/8, -1/8,    0,    0, -1/8, -1/8,    0,  3/8,  3/8]   DUF11
+      !   DUC2    [   0, -1/8, -1/8,  3/8,  3/8,    0, -1/8, -1/8,    0]   DUF12
+      !   DUC3 += [-1/8,    0, -1/8, -1/8,    0,  3/8,  3/8,    0, -1/8] * DUF13
+      !   DUM1    [ 1/2,  1/4,  1/2,    0,  3/4,    0,    0,  3/4,    0]   DUF21
+      !   DUM2    [ 1/2,  1/2,  1/4, 3/4,     0,    0,  3/4,    0,    0]   DUF23
+      !   DUM3    [ 1/4,  1/2,  1/2,    0,    0,  3/4,    0,    0,  3/4]   DUF31
+      !                                                                    DUF33
+      !                                                                    DUF41
+      !                                                                    DUF43
+      !
+      ! Fetch the fine grid values into local variables:
+
+      IEL2 = IneighboursAtElementFine(1,IEL)
+      IEL3 = IneighboursAtElementFine(2,IEL)
+      IEL4 = IneighboursAtElementFine(3,IEL)
+      DUF11 = DuFine(IedgesAtElementFine(1,IEL))
+      DUF12 = DuFine(IedgesAtElementFine(2,IEL))
+      DUF13 = DuFine(IedgesAtElementFine(3,IEL))
+      DUF21 = DuFine(IedgesAtElementFine(1,IEL2))
+      DUF23 = DuFine(IedgesAtElementFine(3,IEL2))
+      DUF31 = DuFine(IedgesAtElementFine(1,IEL3))
+      DUF33 = DuFine(IedgesAtElementFine(3,IEL3))
+      DUF41 = DuFine(IedgesAtElementFine(1,IEL4))
+      DUF43 = DuFine(IedgesAtElementFine(3,IEL4))
+
+      ! When we add the information to DUC1-3/DUM1-3 we have to take
+      ! into account whether there is a neighbor element or not!
+      ! If there is a neighbor, we only add half of the information
+      ! of the edge with the neighbor to DUC1-3/DUM1-3. 
+      ! In the loop over the elements here, we will
+      ! later reach the neighbor and add another time half of the
+      ! information, which that way completes that edge.
+      !
+      ! Set Nx=0.5 if there is a neighbor on edge x on the
+      ! coarse grid or =1.0 if there is no neighbor
+
+      dn1 = 0.5_DP
+      dn2 = 0.5_DP
+      dn3 = 0.5_DP
+      
+      IF (IneighboursAtElementCoarse(1,IEL) .EQ. 0) dn1 = 1.0_DP
+      IF (IneighboursAtElementCoarse(2,IEL) .EQ. 0) dn2 = 1.0_DP
+      IF (IneighboursAtElementCoarse(3,IEL) .EQ. 0) dn3 = 1.0_DP
+      
+      ! Now sum the restriction together.
+
+      ! DUC1:
+
+      DuCoarse(IverticesAtElementCoarse(1,IEL)) = DuCoarse(IverticesAtElementCoarse(1,IEL)) &
+             -Q8*DUF11 -Q8*DUF12                        &
+        +dn1*(-Q8*DUF23 +3.0_DP*Q8*DUF41)               &
+        +dn3*(-Q8*DUF31 +3.0_DP*Q8*DUF43)               
+        
+      ! DUC2:
+
+      DuCoarse(IverticesAtElementCoarse(2,IEL)) = DuCoarse(IverticesAtElementCoarse(2,IEL)) &
+             -Q8*DUF12 -Q8*DUF13                        &
+        +dn2*(3.0_DP*Q8*DUF21-Q8*DUF33)                 &
+        +dn1*(3.0_DP*Q8*DUF23-Q8*DUF41)                    
+    
+      ! DUC3:
+
+      DuCoarse(IverticesAtElementCoarse(3,IEL)) = DuCoarse(IverticesAtElementCoarse(3,IEL)) &
+             -Q8*DUF11 -Q8*DUF13                        &
+        +dn2*(-Q8*DUF21 +3.0_DP*Q8*DUF33)               &
+        +dn3*(-Q8*DUF43 +3.0_DP*Q8*DUF31)                  
+    
+      ! DUM1:
+
+      DuCoarse(IedgesAtElementCoarse(1,IEL)) = DuCoarse(IedgesAtElementCoarse(1,IEL)) &
+       +     Q2*DUF11 +Q4*DUF12 +Q2*DUF13                                             &
+       + dn1*(3.0_DP*Q4*DUF23 +3*Q4*DUF41)
+
+      ! DUM2:
+
+      DuCoarse(IedgesAtElementCoarse(2,IEL)) = DuCoarse(IedgesAtElementCoarse(2,IEL)) &
+       +     Q2*DUF11 +Q2*DUF12 +Q4*DUF13                                             &
+       + dn2*(3.0_DP*Q4*DUF21+3.0_DP*Q4*DUF33)
+
+      ! DUM3:
+
+      DuCoarse(IedgesAtElementCoarse(3,IEL)) = DuCoarse(IedgesAtElementCoarse(3,IEL)) &
+       +     Q4*DUF11 +Q2*DUF12 +Q2*DUF13                                             &
+       +dn3*(3.0_DP*Q4*DUF43 +3.0_DP*Q4*DUF31)
+
+      ! That's it - next element.
+      
+    END DO ! IEL
 
   END SUBROUTINE
   
