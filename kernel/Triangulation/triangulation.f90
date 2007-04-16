@@ -150,8 +150,9 @@
 !#       CALL tria_readTriFile2D (rtriangulation(1), 'somemesh.tri', rboundary)
 !#       CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
 !#       DO ilev=2,4
-!#         CALL tria_refine2LevelOrdering (rtria(ilev-1),rtria(ilev), rboundary)
-!#         CALL tria_initStandardMeshFromRaw (rtriangulation(ilev),rboundary
+!#         CALL tria_refine2LevelOrdering (rtriangulation(ilev-1),&
+!#             rtriangulation(ilev), rboundary)
+!#         CALL tria_initStandardMeshFromRaw (rtriangulation(ilev),rboundary)
 !#       END DO
 !# 
 !# </purpose>
