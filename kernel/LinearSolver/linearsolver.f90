@@ -11063,7 +11063,6 @@ CONTAINS
                   p_rcurrentLevel%ncyclesRemaining = 1
                 ELSE
                   p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
-                  CYCLE cycleloop
                 END IF
               ELSE
                 ! Next cycle; go down starting from the current level
