@@ -218,7 +218,6 @@ CONTAINS
     Dcoefficients (1,:,:) = 32.0_DP * &
                     ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
                       Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
-    Dcoefficients (1,:,:) = 0.0_DP
 
   END SUBROUTINE
 
@@ -412,12 +411,8 @@ CONTAINS
   REAL(DP) :: dx,dy
 
   ! Return zero Dirichlet boundary values for all situations.
-  !Dvalues(1) = 0.0_DP
+  Dvalues(1) = 0.0_DP
   
-  CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-    rbcRegion%rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-  Dvalues(1) = -dy
-
   END SUBROUTINE
 
   ! ***************************************************************************
