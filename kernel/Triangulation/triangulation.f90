@@ -3986,6 +3986,9 @@ CONTAINS
 
     rtriangulation%NMBD = rtriangulation%NVBD
     
+    ! Release temporary array, finish.
+    CALL storage_free(hvertAtBd)
+    
   END SUBROUTINE
 
 !************************************************************************
