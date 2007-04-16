@@ -846,6 +846,7 @@ CONTAINS
   REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
   
   REAL(DP) :: dpar
+  INTEGER :: nve,nnve
   
   ! Which component is to be discretised?
   icomponent = rbcRegion%Iequations(1)
@@ -875,6 +876,7 @@ CONTAINS
   END IF
 
   NVT = p_rtriangulation%NVT
+  nnve = tria_getNNVE(p_rtriangulation)
 
   IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
     ! Every element can be of different type.
@@ -882,6 +884,7 @@ CONTAINS
   ELSE
     ! All elements are of the samne type. Get it in advance.
     ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    nve = elem_igetNVE (ieltype)
   END IF
   
   ! We have Dirichlet boundary conditions
@@ -1007,11 +1010,11 @@ CONTAINS
 
       ! Which DOF's are on the current boundary segment? Find out where in 
       ! the element the edge on the boundary is oriented.
-      DO ilocalEdge = 1,TRIA_MAXNME2D
+      DO ilocalEdge = 1,nnve
         IF (p_IedgesAtElement(ilocalEdge,ielement) .EQ. iedge) EXIT
       END DO
       
-      IF (ilocalEdge .GT. TRIA_MAXNME2D) THEN
+      IF (ilocalEdge .GT. nnve) THEN
         PRINT *,'Error in bcasm_discrBCDirichlet: Edge not found!'
         STOP
       END IF
@@ -1023,6 +1026,7 @@ CONTAINS
       ! Otherwise, ieltype was set to the trial element type above.
       IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
         ieltype = p_ItrialElements(p_IelementsAtBoundary(I))
+        nve = elem_igetNVE (ieltype)
       END IF
       
       SELECT CASE (elem_getPrimaryElement(ieltype))
@@ -1145,15 +1149,15 @@ CONTAINS
             ! Save the computed function value of the edge midpoint.
             ! This is found at position ilocalEdge+4, as the first four
             ! elements in DdofValue correspond to the corners!
-            DdofValue(ilocalEdge+4,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
+            DdofValue(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
           ! Set the DOF number < 0 to indicate that it is Dirichlet
           ! ilocalEdge is the number of the local edge, corresponding
           ! to the local DOF ilocalEdge+4, as the first four elements
           ! in this array correspond to the values in the corners.
-          Idofs(ilocalEdge+4,isubsetstart+I-Iminidx(ipart)+1) = &
-              -ABS(Idofs(ilocalEdge+4,isubsetstart+I-Iminidx(ipart)+1))
+          Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1))
               
           ! The element midpoint does not have to be considered, as it cannot
           ! be on the boundary.
@@ -1189,7 +1193,7 @@ CONTAINS
         
         ! Set the DOF numbers < 0 to indicate that it is Dirichlet
         Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1) = &
-            -ABS(Idofs(1,isubsetstart+I-Iminidx(ipart)+1))
+            -ABS(Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1))
         
       CASE (EL_Q1T)
       

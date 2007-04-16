@@ -389,15 +389,12 @@ CONTAINS
   ! Get the number of local DOF's - usually either 3 or 4, depending on
   ! the element. The first dimension of IdofGlob indicates the number of 
   ! DOF's.
-  j = MIN(TRIA_MAXNVE2D,SIZE(IdofGlob,1))
+  j = MIN(UBOUND(IverticesAtElement,1),UBOUND(IdofGlob,1))
   
   ! Loop through the elements to handle
   DO i=1,SIZE(IelIdx)
     ! Calculate the global DOF's - which are simply the vertex numbers of the 
     ! corners.
-    ! We always copy all elements of IverticesAtElement (:,.).
-    ! There's no harm and the compiler can optimise better.
-    
     IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
   END DO
 
@@ -627,7 +624,7 @@ CONTAINS
     ! We always copy all elements of IedgesAtElement (:,.).
     ! There's no harm and the compiler can optimise better.
     
-    IdofGlob(1:TRIA_MAXNME2D,i) = IedgesAtElement(1:TRIA_MAXNME2D,IelIdx(i))-iNVT
+    IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT
   END DO
 
   END SUBROUTINE

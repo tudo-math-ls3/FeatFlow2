@@ -39,7 +39,7 @@
 !# 5.) tria_done
 !#     -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!# 6.) tria_rawQuadToTri
+!# 6.) tria_rawGridToTri
 !#     -> Converts a raw mesh into a triangular mesh.
 !#
 !# 7.) tria_duplicate
@@ -115,7 +115,7 @@
 !#     tria_readTriFile2D or similar routines. These basic meshes can normally
 !#     not be used for any computations; all the missing informationhas first
 !#     to be 'extracted' or 'generated' based on them. They can only be used
-!#     for very low-level modifications; e.g. the routine tria_rawQuadToTri
+!#     for very low-level modifications; e.g. the routine tria_rawGridToTri
 !#     allowes to convert a quad mesh in a triangular mesh, which would
 !#     be much harder if all adjacency information is already computed.
 !#     Another possibile thing what can be done with such a 'raw' mesh is to
@@ -1833,16 +1833,19 @@ CONTAINS
 
 !<subroutine>    
 
-  SUBROUTINE tria_rawQuadToTri (rtriangulation)
+  SUBROUTINE tria_rawGridToTri (rtriangulation)
   
 !<description>
-  ! This routine converts a 2D mesh into a triangular 2D mesh. All quads are 
+  ! This routine converts a 2D 'raw' mesh into a triangular 2D mesh. All elements are 
   ! converted to triangles.
   ! Warning: This routine can only applied to a 'raw' mesh, e.g. a mesh which 
   !  comes directly from a .TRI file. It's not advisable to apply this routine to
   !  a 'standard' mesh that contains already further mesh information 
   !  (adjacencies,...), as any information about possible two-level ordering
   !  is lost!
+  !  However, when applied to a 'standard' mesh, the mesh information can be
+  !  updated using tria_initStandardMeshFromRaw to form a valid standard mesh
+  !  again.
 !</description>
 
 !<inputoutput>
@@ -1853,16 +1856,11 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER(PREC_ELEMENTIDX) :: i
-    INTEGER :: icount
+    INTEGER(PREC_ELEMENTIDX) :: icount
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER :: h_IverticesAtElementTri
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementTri
     INTEGER(I32), DIMENSION(2) :: Isize
-   
-    ! There are some things missing... i.e. the calculation of adjacencies
-    PRINT *,'Conversion to triangular mesh not yet fully implemented!'
-    STOP
    
     ! For this routine we currently assume that there are only triangles
     ! and quads in the triangulation. Might be a matter of change in 
@@ -1871,12 +1869,7 @@ CONTAINS
     ! Get the points-at-element array
     CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     
-    ! Count the quads; they are recogniseable by having the 4th corner vertex
-    ! number nonzero.
-    icount = 0
-    DO i=1,rtriangulation%NEL
-      IF (p_IverticesAtElement(4,i) .NE. 0) icount = icount+1
-    END DO
+    icount = rtriangulation%InelOfType(TRIA_NVEQUAD2D)
     
     ! Create a new p_IverticesAtElement array for the triangular mesh.
     Isize = (/TRIA_NVETRI2D,icount+rtriangulation%NEL/)
@@ -1885,14 +1878,18 @@ CONTAINS
     CALL storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
     
     ! Convert the array
-    CALL quadToTriang_aux1 (rtriangulation%NEL, icount,&
-                            p_IverticesAtElement, p_IverticesAtElementTri)
+    CALL quadToTriang_aux1 (&
+        rtriangulation%NEL, icount,&
+        p_IverticesAtElement, p_IverticesAtElementTri)
     
     ! Replace the old array by the new, release the old one.
     CALL storage_free (rtriangulation%h_IverticesAtElement)
     rtriangulation%h_IverticesAtElement = h_IverticesAtElementTri
     
-    ! Finally, set up InelOfType.
+    ! Finally, set up NEL and InelOfType.
+    ! Every quad got two triangles, so the number of elements increases by the number
+    ! of quads!
+    rtriangulation%NEL = rtriangulation%NEL + icount
     rtriangulation%InelOfType(:) = 0
     rtriangulation%InelOfType(TRIA_NVETRI2D) = rtriangulation%NEL
     
@@ -1903,7 +1900,7 @@ CONTAINS
     SUBROUTINE quadToTriang_aux1 (nel, nelquad, IverticesAtElement, Kvert_triang)
 
   !<description>
-    ! Purpose: Convert quad mesh to triangular mesh
+    ! Purpose: Convert mixed quad/tri mesh to triangular mesh
     !
     ! This routine creates a triangular KVERT structure from a 
     ! quadrilateral KVERT structure.
@@ -1930,37 +1927,29 @@ CONTAINS
       ! local variables
       INTEGER(PREC_ELEMENTIDX) :: i,j
         
-      ! Copy the old IverticesAtElement two times, once to the first half and
-      ! once the quads in it to the second half of Kvert_triang:
+      j = nel
       DO i=1,nel
-        Kvert_triang(:,i) = IverticesAtElement(:,i)
-      END DO
-      
-      j = 0
-      DO i=1,nel
+        ! Copy the first three entries of each IverticesAtElement subarray
+        ! to the first half of Kvert_triang. They form NEL quads.
+        Kvert_triang(1,i) = IverticesAtElement(1,i)
+        Kvert_triang(2,i) = IverticesAtElement(2,i)
+        Kvert_triang(3,i) = IverticesAtElement(3,i)
+        
+        ! For every quad we find, we produce a second triangle with triangle
+        ! number NEL+1,...
         IF (IverticesAtElement(4,i) .NE. 0) THEN
-          j=j+1
-          Kvert_triang(:,nel+j) = IverticesAtElement(:,i)
+        
+          ! Get the next free element number behind the first set of triangles
+          j = j+1
+          
+          ! The second triangle in each quad consists of vertices 1,3,4.
+          Kvert_triang(1,j) = IverticesAtElement(1,i)
+          Kvert_triang(2,j) = IverticesAtElement(3,i)
+          Kvert_triang(3,j) = IverticesAtElement(4,i)
+        
         END IF
       END DO
-
-      ! Correct Kvert_triang:
-      DO i=1,nel
-        ! Set the 4th entry in the first half of Kvert_triang to 0.
-        ! So the first triangle in each QUAD element consists of the
-        ! first three vertices 1..3.
-        Kvert_triang(4,i) = 0
-      END DO
-
-      DO i=1,nelquad
-        ! The second triangle in each quad consists of vertices 1,3,4.
-        ! So in the 2nd half, shift entry 3->2 and 4->3 and set the 4th
-        ! entry to 0.
-        Kvert_triang(2,nel+i) = Kvert_triang(3,nel+i)
-        Kvert_triang(3,nel+i) = Kvert_triang(4,nel+i)
-        Kvert_triang(4,nel+i) = 0
-      END DO
-
+      
       ! That's it.
       
     END SUBROUTINE  
@@ -4310,7 +4299,8 @@ CONTAINS
       !    to the inner element of the three subelements in the fine grid.
       !    The midpoint of edge 1 gets local vertex 1 of the inner triangle.
       !    The other three elements get the numbers NEL+3*(iel-1)+1, +2 and +3
-      !    with the first vertex of each subtriangle being the vertex with
+      !    according to which edge of the inner triangle they touch.
+      !    The first vertex of each subtriangle is the vertex with
       !    local number 1, 2 or 3, respectively, in the coarse grid.
       !  - For quads: The element number IEL in the coarse grid is transferred
       !    to the subelement at local vertex 1. The other elements
@@ -4344,25 +4334,25 @@ CONTAINS
       ! That's the number of the midpoint of that element!
       nquads = rsourceTriangulation%NVT+rsourceTriangulation%NMT
       
-      DO iel = 1,rsourceTriangulation%NEL
-    
-        ! Is that a triangle or a quad?  
-        IF (p_IvertAtElementSource(TRIA_NVEQUAD2D,iel) .EQ. 0) THEN
-        
-          ! Triangular element.
-          
+      IF (nnve .EQ. TRIA_NVETRI2D) THEN
+        ! Pure triangle mesh
+        DO iel = 1,rsourceTriangulation%NEL
+      
+          ! Determine number of subelements.
           iel1 = rsourceTriangulation%NEL+3*(iel-1)+1
           iel2 = iel1+1
           iel3 = iel1+2
           
           ! Step 1: Initialise IverticesOnElement for element IEL
-          p_IvertAtElementDest(1:3,iel) = p_IedgesAtElementSource (1:3,iel)
+          p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)
+          p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)
+          p_IvertAtElementDest(3,iel) = p_IedgesAtElementSource (3,iel)
           
           ! Step 2: Initialise IverticesOnElement for element IEL1
           p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (1,iel)
           p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (1,iel)
           p_IvertAtElementDest(3,iel1) = p_IedgesAtElementSource (3,iel)
-        
+
           ! Step 3: Initialise IverticesOnElement for element IEL2
           p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (2,iel)
           p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (2,iel)
@@ -4373,9 +4363,14 @@ CONTAINS
           p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (3,iel)
           p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)
         
-        ELSE
+        END DO
+      
+      ELSE IF (nquads .EQ. rsourceTriangulation%NEL) THEN
         
-          ! Quadrilateral element
+        ! Pure QUAD mesh
+        DO iel = 1,rsourceTriangulation%NEL
+      
+          ! Determine number of subelements.
           iel1 = rsourceTriangulation%NEL+3*(iel-1)+1
           iel2 = iel1+1
           iel3 = iel1+2
@@ -4409,9 +4404,87 @@ CONTAINS
           p_IvertAtElementDest(3,iel3) = nquads
           p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)
         
-        END IF
+        END DO ! iel
+        
+      ELSE
       
-      END DO ! iel
+        ! Triangles and quads mixed.
+      
+        DO iel = 1,rsourceTriangulation%NEL
+      
+          ! Is that a triangle or a quad?  
+          IF (p_IvertAtElementSource(TRIA_NVEQUAD2D,iel) .EQ. 0) THEN
+          
+            ! Triangular element.
+            !
+            ! Determine number of subelements.
+            iel1 = rsourceTriangulation%NEL+3*(iel-1)+1
+            iel2 = iel1+1
+            iel3 = iel1+2
+            
+            ! Step 1: Initialise IverticesOnElement for element IEL
+            p_IvertAtElementDest(1,iel) = p_IedgesAtElementSource (1,iel)
+            p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (2,iel)
+            p_IvertAtElementDest(3,iel) = p_IedgesAtElementSource (3,iel)
+            
+            ! Step 2: Initialise IverticesOnElement for element IEL1
+            p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (1,iel)
+            p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (1,iel)
+            p_IvertAtElementDest(3,iel1) = p_IedgesAtElementSource (3,iel)
+
+            ! Step 3: Initialise IverticesOnElement for element IEL2
+            p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (2,iel)
+            p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (2,iel)
+            p_IvertAtElementDest(3,iel2) = p_IedgesAtElementSource (1,iel)
+
+            ! Step 4: Initialise IverticesOnElement for element IEL3
+            p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (3,iel)
+            p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (3,iel)
+            p_IvertAtElementDest(3,iel3) = p_IedgesAtElementSource (2,iel)
+          
+          ELSE
+          
+            ! Quadrilateral element
+            !
+            ! Determine number of subelements.
+            iel1 = rsourceTriangulation%NEL+3*(iel-1)+1
+            iel2 = iel1+1
+            iel3 = iel1+2
+            
+            ! In nquads we count the number of the quad +NVT+NMT we process.
+            ! That's the number of the midpoint of that element!
+            ! As we reached a new quad, we increase nquads
+            nquads = nquads+1
+            
+            ! Step 1: Initialise IverticesOnElement for element IEL
+            p_IvertAtElementDest(1,iel) = p_IvertAtElementSource (1,iel)
+            p_IvertAtElementDest(2,iel) = p_IedgesAtElementSource (1,iel)
+            p_IvertAtElementDest(3,iel) = nquads
+            p_IvertAtElementDest(4,iel) = p_IedgesAtElementSource (4,iel)
+            
+            ! Step 2: Initialise IverticesOnElement for element IEL1
+            p_IvertAtElementDest(1,iel1) = p_IvertAtElementSource (2,iel)
+            p_IvertAtElementDest(2,iel1) = p_IedgesAtElementSource (2,iel)
+            p_IvertAtElementDest(3,iel1) = nquads
+            p_IvertAtElementDest(4,iel1) = p_IedgesAtElementSource (1,iel)
+          
+            ! Step 3: Initialise IverticesOnElement for element IEL2
+            p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource (3,iel)
+            p_IvertAtElementDest(2,iel2) = p_IedgesAtElementSource (3,iel)
+            p_IvertAtElementDest(3,iel2) = nquads
+            p_IvertAtElementDest(4,iel2) = p_IedgesAtElementSource (2,iel)
+
+            ! Step 4: Initialise IverticesOnElement for element IEL3
+            p_IvertAtElementDest(1,iel3) = p_IvertAtElementSource (4,iel)
+            p_IvertAtElementDest(2,iel3) = p_IedgesAtElementSource (4,iel)
+            p_IvertAtElementDest(3,iel3) = nquads
+            p_IvertAtElementDest(4,iel3) = p_IedgesAtElementSource (3,iel)
+          
+          END IF
+        
+        END DO ! iel
+        
+      END IF
       
       ! The last step of setting up the raw mesh on the finer level:
       ! Set up InodalProperty. But that's the most easiest thing: Simply

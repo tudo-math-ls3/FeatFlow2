@@ -1202,8 +1202,8 @@ CONTAINS
 
         CASE (EL_P2)
           ! P2 restriction
-          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
+          CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
+                               p_IverticesAtElementCoarse)
           CALL storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
                                p_IedgesAtElementCoarse)
           CALL storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
@@ -1213,7 +1213,7 @@ CONTAINS
           CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
                                p_IneighboursAtElementFine)
           CALL mlprj_restUniformP2_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementFine,&
+               p_IverticesAtElementCoarse,&
                p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                p_rtriaCoarse%NEL)
@@ -2284,7 +2284,7 @@ CONTAINS
       IF (IneighboursAtElementCoarse(2,IEL) .EQ. 0) dn2 = 1.0_DP
       IF (IneighboursAtElementCoarse(3,IEL) .EQ. 0) dn3 = 1.0_DP
       
-      ! Now sum the restriction together.
+      ! Now sum up the restriction.
 
       ! DUC1:
 
