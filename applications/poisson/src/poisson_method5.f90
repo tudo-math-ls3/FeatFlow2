@@ -45,8 +45,7 @@ MODULE poisson_method5
   
   IMPLICIT NONE
   
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
+  ! Maximum allowed level in this application.
   INTEGER, PARAMETER :: NNLEV = 9
   
 !<types>
