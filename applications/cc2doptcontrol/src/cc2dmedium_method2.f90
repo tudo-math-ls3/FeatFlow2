@@ -73,8 +73,6 @@ CONTAINS
 
   SUBROUTINE cc2dmedium2optc
   
-  include 'cmem.inc'
-  
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
   ! problem. The different tasks of the problem are separated into

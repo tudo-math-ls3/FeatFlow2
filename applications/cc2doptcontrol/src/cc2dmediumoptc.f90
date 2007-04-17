@@ -35,19 +35,6 @@ PROGRAM cc2dmediumoptc
   
   IMPLICIT NONE
   
-  INCLUDE 'cmem.inc'
-  INCLUDE 'cout.inc'
-  INCLUDE 'cerr.inc'
-  INCLUDE 'cfileout.inc'
-
-  ! As we still use some FEAT 1.x routines, we have to initialise some
-  ! output variables.
-  M = 0
-  MT = 2
-  MTERM = 6
-  MFILE = 0
-  ICHECK = 0
-
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
@@ -58,13 +45,7 @@ PROGRAM cc2dmediumoptc
   
   ! The very second thing in every program: 
   ! Initialise the storage management: 
-  !
-  ! 2.) Initialise FEAT 2.0 storage management:
   CALL storage_init(999, 100)
-  
-  ! 3.) Initialise old FEAT 1.x storage management for compatibility.
-  CALL ZINIT(NNWORK,'feat.msg','log/feat1.err','log/feat1.prt',&
-             'log/feat1.sys','log/feat1.trc') 
   
   ! Call the problem to solve. 
   CALL output_lbrk ()
