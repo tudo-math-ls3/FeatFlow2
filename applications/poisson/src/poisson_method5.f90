@@ -749,7 +749,12 @@ CONTAINS
       CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
           Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     END DO
+    
     CALL linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
+    
+    DO i=ilvmin,ilvmax
+      CALL lsysbl_releaseMatrix (Rmatrices(i))
+    END DO
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
