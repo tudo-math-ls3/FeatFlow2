@@ -665,6 +665,50 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_getbase_int (rvector,p_Idata)
+  
+!<description>
+  ! Returns a pointer to the integer data array of the vector.
+  ! An error is thrown if the vector is not integer.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+
+!<output>
+  ! Pointer to the integer data array of the vector.
+  ! NULL() if the vector has no data array.
+  INTEGER, DIMENSION(:), POINTER :: p_Idata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+ IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+   NULLIFY(p_Idata)
+   RETURN
+ END IF
+
+  ! Check that the vector is really integer
+  IF (rvector%cdataType .NE. ST_INT) THEN
+    PRINT *,'lsysbl_getbase_int: Vector is of wrong precision!'
+    STOP
+  END IF
+
+  ! Get the data array
+  CALL storage_getbase_int (rvector%h_Ddata,p_Idata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Idata => p_Idata(rvector%iidxFirstEntry:rvector%iidxFirstEntry+rvector%NEQ-1)
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
 
 !<subroutine>
 

@@ -76,68 +76,76 @@
 !# 18.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 19.) lsyssc_addIndex
+!# 19.) lsyssc_getbase_int
+!#      -> Get a pointer to the integer data array of the vector
+!#
+!# 20.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
 !#         array.
 !#
-!# 20.) lsyssc_vectorNorm
+!# 21.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 21.) lsyssc_invertedDiagMatVec
+!# 22.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 22.) lsyssc_clearMatrix
+!# 23.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !#
-!# 23.) lsyssc_initialiseIdentityMatrix
+!# 24.) lsyssc_initialiseIdentityMatrix
 !#      -> Initialises the content of a matrix to an identity matrix
 !#
-!# 24.) lsyssc_convertMatrix
+!# 25.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 25.) lsyssc_copyVector
+!# 26.) lsyssc_copyVector
 !#       -> Copy a vector over to another one
 !#
-!# 26.) lsyssc_scaleVector
+!# 27.) lsyssc_scaleVector
 !#      -> Scale a vector by a constant
 !#
-!# 27.) lsyssc_clearVector
+!# 28.) lsyssc_clearVector
 !#      -> Clear a vector
 !#
-!# 28.) lsyssc_vectorLinearComb
+!# 29.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
 !#
-!# 29.) lsyssc_copyMatrix
+!# 30.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 30.) lsyssc_transposeMatrix
+!# 31.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
-!# 31.) lsyssc_createEmptyMatrixScalar
+!# 32.) lsyssc_createEmptyMatrixScalar
 !#      -> Allocates memory for an empty matrix
 !#
-!# 32.) lsyssc_lumpMatrixScalar
+!# 33.) lsyssc_lumpMatrixScalar
 !#      -> Performs lumping of a given matrix
 !#
-!# 33.) lsyssc_scaleMatrix
+!# 34.) lsyssc_scaleMatrix
 !#      -> Scale a matrix by a constant
 !#
-!# 34.) lsyssc_multMatMat
+!# 35.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 35.) lsyssc_matrixLinearComb
+!# 36.) lsyssc_matrixLinearComb
 !#      -> Adds two matrices
 !#
-!# 36.) lsyssc_swapVectors
+!# 37.) lsyssc_swapVectors
 !#      -> Swap two vectors
 !#
-!# 37.) lsyssc_isMatrixStructureShared
+!# 38.) lsyssc_isMatrixStructureShared
 !#      -> Tests if the structure of a matrix is shared with another matrix
 !#
-!# 38.) lsyssc_isMatrixContentShared
+!# 39.) lsyssc_isMatrixContentShared
 !#      -> Tests if the content of a matrix is shared with another matrix
+!#
+!# 40.) lsyssc_resizeVector
+!#      -> Resize the vector and reallocate memory of necessary.
+!#
+!# 41.) lsyssc_resizeMatrix
 !#
 !# Sometimes useful auxiliary routines:
 !#
@@ -571,6 +579,21 @@ MODULE linearsystemscalar
 
 !</types>
 
+  INTERFACE lsyssc_getbase_double
+    MODULE PROCEDURE lsyssc_getbase_doubleVectorScalar
+    MODULE PROCEDURE lsyssc_getbase_doubleMatrixScalar
+  END INTERFACE
+
+  INTERFACE lsyssc_getbase_single
+    MODULE PROCEDURE lsyssc_getbase_singleVectorScalar
+    MODULE PROCEDURE lsyssc_getbase_singleMatrixScalar
+  END INTERFACE
+
+  INTERFACE lsyssc_getbase_int
+    MODULE PROCEDURE lsyssc_getbase_intVectorScalar
+    MODULE PROCEDURE lsyssc_getbase_intMatrixScalar
+  END INTERFACE
+
   INTERFACE lsyssc_isMatrixCompatible
     MODULE PROCEDURE lsyssc_isMatrixVectorCompatible
     MODULE PROCEDURE lsyssc_isMatrixMatrixCompatible
@@ -579,6 +602,11 @@ MODULE linearsystemscalar
   INTERFACE lsyssc_createVector
     MODULE PROCEDURE lsyssc_createVector
     MODULE PROCEDURE lsyssc_createVectorIntl
+  END INTERFACE
+
+  INTERFACE lsyssc_resizeVector
+    MODULE PROCEDURE lsyssc_resizeVectorDirect
+    MODULE PROCEDURE lsyssc_resizeVectorIndirect
   END INTERFACE
 
 CONTAINS
@@ -894,7 +922,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_double (rvector,p_Ddata)
+  SUBROUTINE lsyssc_getbase_doubleVectorScalar (rvector,p_Ddata)
   
 !<description>
   ! Returns a pointer to the double precision data array of the vector.
@@ -915,11 +943,11 @@ CONTAINS
 !</subroutine>
 
   ! Do we have data at all?
- IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
-   CALL output_line('Trying to access empty vector!', &
-      OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
-   STOP
- END IF
+  IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+    CALL output_line('Trying to access empty vector!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
+    STOP
+  END IF
 
   ! Check that the vector is really double precision
   IF (rvector%cdataType .NE. ST_DOUBLE) THEN
@@ -941,7 +969,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_single (rvector,p_Fdata)
+  SUBROUTINE lsyssc_getbase_singleVectorScalar (rvector,p_Fdata)
   
 !<description>
   ! Returns a pointer to the single precision data array of the vector.
@@ -962,10 +990,10 @@ CONTAINS
 !</subroutine>
 
   ! Do we have data at all?
- IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
-   NULLIFY(p_Fdata)
-   RETURN
- END IF
+  IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+    NULLIFY(p_Fdata)
+    RETURN
+  END IF
 
   ! Check that the vector is really double precision
   IF (rvector%cdataType .NE. ST_SINGLE) THEN
@@ -982,15 +1010,316 @@ CONTAINS
   
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_intVectorScalar (rvector,p_Idata)
+  
+!<description>
+  ! Returns a pointer to the integer data array of the vector.
+  ! An error is thrown if the vector is not integer.
+!</description>
+
+!<input>
+  ! The vector
+  TYPE(t_vectorScalar), INTENT(IN) :: rvector
+!</input>
+
+!<output>
+  ! Pointer to the integer data array of the vector.
+  ! NULL() if the vector has no data array.
+  INTEGER, DIMENSION(:), POINTER :: p_Idata
+!</output>
+
+!</subroutine>
+
+  ! Do we have data at all?
+  IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
+    NULLIFY(p_Idata)
+    RETURN
+  END IF
+
+  ! Check that the vector is really integer
+  IF (rvector%cdataType .NE. ST_INT) THEN
+    PRINT *,'lsyssc_getbase_int: Vector is of wrong precision!'
+    STOP
+  END IF
+
+  ! Get the data array
+  CALL storage_getbase_int (rvector%h_Ddata,p_Idata)
+  
+  ! Modify the starting address/length to get the real array.
+  p_Idata => p_Idata(rvector%iidxFirstEntry:&
+      rvector%iidxFirstEntry+rvector%NEQ*rvector%NVAR-1)
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_doubleMatrixScalar (rmatrix, p_Ddata)
+
+!<description>
+    ! Returns a pointer to the double precision data array of the matrix.
+    ! An error is thrown if the matrix is not double precision.
+!</description>
+
+!<input>
+    ! The matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+    ! Pointer to the double precision data array of the matrix.
+    ! NULL() if the matrix has no data array.
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+!</output>
+
+!</subroutine>
+
+    ! Do we have data at all?
+    IF ((rmatrix%NA .EQ. 0) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
+      NULLIFY(p_Ddata)
+      RETURN
+    END IF
+
+    ! Check that the matrix is really double precision
+    IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
+      PRINT *,'lsyssc_getbase_doubleMatrixScalar: Matrix is of wrong precision!'
+      STOP
+    END IF
+
+    ! Get the data array
+    CALL storage_getbase_double (rmatrix%h_DA,p_Ddata,rmatrix%NA)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_singleMatrixScalar (rmatrix, p_Fdata)
+
+!<description>
+    ! Returns a pointer to the single precision data array of the matrix.
+    ! An error is thrown if the matrix is not single precision.
+!</description>
+
+!<input>
+    ! The matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+    ! Pointer to the single precision data array of the matrix.
+    ! NULL() if the matrix has no data array.
+    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+!</output>
+
+!</subroutine>
+
+    ! Do we have data at all?
+    IF ((rmatrix%NA .EQ. 0) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
+      NULLIFY(p_Fdata)
+      RETURN
+    END IF
+
+    ! Check that the matrix is really single precision
+    IF (rmatrix%cdataType .NE. ST_SINGLE) THEN
+      PRINT *,'lsyssc_getbase_singleMatrixScalar: Matrix is of wrong precision!'
+      STOP
+    END IF
+
+    ! Get the data array
+    CALL storage_getbase_single (rmatrix%h_DA,p_Fdata,rmatrix%NA)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_intMatrixScalar (rmatrix, p_Idata)
+
+!<description>
+    ! Returns a pointer to the integer data array of the matrix.
+    ! An error is thrown if the matrix is not integer.
+!</description>
+
+!<input>
+    ! The matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+    ! Pointer to the integer data array of the matrix.
+    ! NULL() if the matrix has no data array.
+    INTEGER, DIMENSION(:), POINTER :: p_Idata
+!</output>
+
+!</subroutine>
+
+    ! Do we have data at all?
+    IF ((rmatrix%NA .EQ. 0) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
+      NULLIFY(p_Idata)
+      RETURN
+    END IF
+
+    ! Check that the matrix is really integer
+    IF (rmatrix%cdataType .NE. ST_INT) THEN
+      PRINT *,'lsyssc_getbase_intMatrixScalar: Matrix is of wrong precision!'
+      STOP
+    END IF
+
+    ! Get the data array
+    CALL storage_getbase_int (rmatrix%h_DA,p_Idata,rmatrix%NA)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+
+!<description>
+    ! Returns a pointer to the column data array of the matrix.
+    ! An error is thrown if the matrix does not provide column array.
+!</description>
+
+!<input>
+    ! The matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+    ! Pointer to the column array of the matrix.
+    ! NULL() if the matrix has no column array.
+    INTEGER, DIMENSION(:), POINTER :: p_Kcol
+!</output>
+
+!</subroutine>
+
+    ! Is matrix in correct format?
+    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .AND.&
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
+      PRINT *,'lsyssc_getbase_Kcol: matrix format does not provide KCOL!'
+      STOP
+    END IF
+
+    ! Do we have a column array at all?
+    IF ((rmatrix%NA .EQ. 0) .OR. (rmatrix%h_Kcol .EQ. ST_NOHANDLE)) THEN
+      NULLIFY(p_Kcol)
+      RETURN
+    END IF
+
+    ! Get the column array
+    CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol,rmatrix%NA)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_Kld (rmatrix,p_Kld)
+
+!<description>
+    ! Returns a pointer to the column offset data array of the matrix.
+    ! An error is thrown if the matrix does not provide column offset array.
+!</description>
+
+!<input>
+    ! The matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+    ! Pointer to the column offset array of the matrix.
+    ! NULL() if the matrix has no column offset array.
+    INTEGER, DIMENSION(:), POINTER :: p_Kld
+!</output>
+
+!</subroutine>
+
+    ! Is matrix in correct format?
+    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .AND.&
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
+      PRINT *,'lsyssc_getbase_Kld: matrix format does not provide KLD!'
+      STOP
+    END IF
+
+    ! Do we have a column offset array at all?
+    IF ((rmatrix%NEQ .EQ. 0) .OR. (rmatrix%h_Kld .EQ. ST_NOHANDLE)) THEN
+      NULLIFY(p_Kld)
+      RETURN
+    END IF
+
+    ! Get the column offset array
+    CALL storage_getbase_int (rmatrix%h_Kld,p_Kld,rmatrix%NEQ+1)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+
+!<description>
+    ! Returns a pointer to the diagonal data array of the matrix.
+    ! An error is thrown if the matrix does not provide diagonal array.
+!</description>
+
+!<input>
+    ! The matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<output>
+    ! Pointer to the diagonal array of the matrix.
+    ! NULL() if the matrix has no diagonal array.
+    INTEGER, DIMENSION(:), POINTER :: p_Kdiagonal
+!</output>
+
+!</subroutine>
+
+    ! Is matrix in correct format?
+    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
+      PRINT *,'lsyssc_getbase_Kdiagonal: matrix format does not provide KDIAGONAL!'
+      STOP
+    END IF
+
+    ! Do we have a column offset array at all?
+    IF ((rmatrix%NEQ .EQ. 0) .OR. (rmatrix%h_Kdiagonal .EQ. ST_NOHANDLE)) THEN
+      NULLIFY(p_Kdiagonal)
+      RETURN
+    END IF
+
+    ! Get the column offset array
+    CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal,rmatrix%NEQ)
+
+  END SUBROUTINE
+
   !****************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE lsyssc_createVector (rvector,NEQ,bclear,cdataType)
+  SUBROUTINE lsyssc_createVector (rvector,NEQ,bclear,cdataType,NEQMAX)
   
 !<description>
   ! This creates a simple scalar vector of length NEQ. Memory is 
   ! allocated on the heap and can be released by lsyssc_releaseVector.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
   
 !<input>
@@ -1004,6 +1333,9 @@ CONTAINS
   ! OPTIONAL: Data type of the vector.
   ! If not specified, ST_DOUBLE is assumed.
   INTEGER, INTENT(IN), OPTIONAL                     :: cdataType  
+
+  ! OPTIONAL: Maximum length of the vector
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL        :: NEQMAX
   
 !</input>
 
@@ -1015,9 +1347,12 @@ CONTAINS
 !</subroutine>
 
   INTEGER ::cdata
+  INTEGER(PREC_VECIDX) :: isize
 
     cdata = ST_DOUBLE
     IF (PRESENT(cdataType)) cdata=cdataType
+    isize = MAX(0,NEQ)
+    IF (PRESENT(NEQMAX)) isize=MAX(isize,NEQMAX)
 
     ! The INTENT(OUT) already initialises rvector with the most important
     ! information. The rest comes now:
@@ -1028,10 +1363,10 @@ CONTAINS
     ! Handle - if NEQ > 0
     IF (rvector%NEQ .GT. 0) THEN
       IF (bclear) THEN
-        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', rvector%NEQ, &
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
       ELSE
-        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', rvector%NEQ, &
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
       END IF
     END IF
@@ -1042,12 +1377,20 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE lsyssc_createVectorIntl (rvector,NEQ,NVAR,bclear,cdataType)
+  SUBROUTINE lsyssc_createVectorIntl (rvector,NEQ,NVAR,bclear,cdataType,NEQMAX)
   
 !<description>
   ! This creates an interleaved scalar vector of length NEQ with NVAR
   ! local variables. Memory is allocated on the heap and can be
   ! released by lsyssc_releaseVector.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
   
 !<input>
@@ -1064,6 +1407,9 @@ CONTAINS
   ! OPTIONAL: Data type of the vector.
   ! If not specified, ST_DOUBLE is assumed.
   INTEGER, INTENT(IN), OPTIONAL                     :: cdataType  
+
+  ! OPTIONAL: Maximum length of the vector
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL        :: NEQMAX
   
 !</input>
 
@@ -1075,9 +1421,13 @@ CONTAINS
 !</subroutine>
 
   INTEGER ::cdata
+  INTEGER(PREC_VECIDX) :: isize
 
     cdata = ST_DOUBLE
     IF (PRESENT(cdataType)) cdata=cdataType
+    isize = MAX(0,NEQ)
+    IF (PRESENT(NEQMAX)) isize=MAX(isize,NEQMAX)
+    isize = isize*MAX(0,NVAR)
 
     ! The INTENT(OUT) already initialises rvector with the most important
     ! information. The rest comes now:
@@ -1089,11 +1439,11 @@ CONTAINS
     ! Handle - if NEQ > 0
     IF (rvector%NEQ*rvector%NVAR .GT. 0) THEN
       IF (bclear) THEN
-        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector',&
-            & INT(rvector%NEQ*rvector%NVAR,I32), cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
+                            cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
       ELSE
-        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector',&
-            & INT(rvector%NEQ*rvector%NVAR,I32), cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
+        CALL storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
+                            cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
       END IF
     END IF
   
@@ -1103,7 +1453,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_createVecByDiscr (rdiscretisation,rx,bclear,cdataType)
+  SUBROUTINE lsyssc_createVecByDiscr (rdiscretisation,rx,bclear,cdataType,NEQMAX)
   
 !<description>
   ! Initialises the vector structure rx based on a discretisation
@@ -1111,7 +1461,15 @@ CONTAINS
   !
   ! Memory is allocated on the heap for rx accordint to the number of 
   ! DOF's indicated by the spatial discretisation structures in 
-  ! rdiscretisation. 
+  ! rdiscretisation.
+  !
+  ! Note, if the optional parameter NEQMAX is given, then memory is
+  ! allocated for a vector of length NEQMAX but only length NEQ is
+  ! assigned to the vector. The vector can be resized arbitrarily.
+  ! Note that no memory reallocation is required if NEQ < NEQMAX.
+  ! In order to keep the actual size of the memory transparent from
+  ! the user, NEQMAX is not stored directly. It can only be obtained,
+  ! by getting the size of the associated storage block.
 !</description>
   
 !<input>
@@ -1126,6 +1484,9 @@ CONTAINS
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
   INTEGER, INTENT(IN),OPTIONAL              :: cdataType
+
+  ! OPTIONAL: Maximum length of the vector
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: NEQMAX
 !</input>
 
 !<output>
@@ -1150,14 +1511,201 @@ CONTAINS
   NEQ = dof_igetNDofGlob(rdiscretisation)
   
   ! Create a new vector with that block structure
-  CALL lsyssc_createVector (rx, NEQ, bcl, cdataType)
+  CALL lsyssc_createVector (rx, NEQ, bcl, cdataType, NEQMAX)
   
   ! Initialise further data of the block vector
   rx%p_rspatialDiscretisation => rdiscretisation
   
   END SUBROUTINE
-  
+
   !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_resizeVectorDirect (rvector, NEQ, bclear, bcopy, NEQMAX)
+
+!<description>
+  ! Resizes the vector structure to the new size NEQ which is given explicitely.
+  !
+  ! If NEQ is smaller than the real memory allocated for the vector, then
+  ! only NEQ is reset. Otherwise, the memory is physically reallocated.
+  !
+  ! If the parameter bclear=.TRUE. the complete vector is clear.
+  ! This is done both on case the vector is reallocated physically or not.
+  !
+  ! If the parameter bcopy=.TRUE. the content of the existing vector is 
+  ! copied. This is only required, if the vector needs to be reallocated
+  ! physically. Otherwise, the data still exists in the memory.
+  !
+  ! If the optional parameter NEQMAX is specified, then memory of size
+  ! NEQMAX is allocated if reallocate is required. Otherwise, no reallocation
+  ! is performed an NEQMAX is just neglected.
+!</description>
+
+!<input>
+
+    ! Desired length of the vector
+    INTEGER(PREC_VECIDX), INTENT(IN)           :: NEQ  
+
+    ! Whether to fill the vector with zero initially
+    LOGICAL, INTENT(IN)                        :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL              :: bcopy
+
+    ! OPTIONAL: Maximum length of the vector
+    INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: NEQMAX
+
+!</input>
+
+!<inputoutput>
+    ! Scalar vector structure
+    TYPE(t_vectorScalar), INTENT(INOUT)         :: rvector
+!</inputoutput>
+
+    INTEGER(PREC_VECIDX) :: isize
+
+    ! Check, if vector has been initialized before.
+    IF (rvector%NEQ == 0 .OR. rvector%h_Ddata == ST_NOHANDLE) THEN
+      PRINT *, "lsyssc_resizeVectorDirect: A vector can only be resized &
+          if it has been created correctly!"
+      STOP
+    END IF
+
+    ! Get current size of vector memory
+    CALL storage_getsize(rvector%h_Ddata, isize)
+
+    ! Update NEQ. Note that NVAR cannot be modified.
+    rvector%NEQ = NEQ
+
+    ! Do we really have to reallocate the vector physically?
+    IF (rvector%NVAR*rvector%NEQ > isize) THEN
+      
+      ! Yes, so adopt the new size.
+      isize = NEQ
+      
+      ! Should we reserve some extra memory?
+      IF (PRESENT(NEQMAX)) isize = MAX(isize,NEQMAX)
+      isize = isize*rvector%NVAR
+      
+      ! Reallocate the memory
+      CALL storage_realloc('lsyssc_resizeVectorDirect', isize, rvector%h_Ddata, &
+          ST_NEWBLOCK_NOINIT, bcopy)
+
+    ELSEIF (PRESENT(NEQMAX)) THEN
+      
+      ! The available memory suffices for the vector but the user supplied
+      ! a new upper limit for the maximum memeroy
+      IF (isize > rvector%NVAR*NEQMAX) THEN
+        
+        ! Compute new size
+        isize = rvector%NVAR*MAX(0,NEQMAX)
+
+        IF (isize == 0) THEN
+          CALL lsyssc_releaseVector(rvector)
+          RETURN
+        ELSE
+          CALL storage_realloc('lsyssc_resizeVectorDirect', isize, rvector%h_Ddata, &
+              ST_NEWBLOCK_NOINIT, bcopy)
+        END IF
+      END IF
+    END IF
+    
+    ! Should the vector be cleared?
+    IF (bclear) CALL storage_clear(rvector%h_Ddata)
+
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_resizeVectorIndirect (rvector, rvectorTemplate, bclear, bcopy)
+
+!<description>
+  ! Resizes the vector structure so that it exhibits the same memory layout 
+  ! as the template vector. Note that this subroutine can only by used
+  ! if the template vector has the same internal structure, e.g., data type, NVAR
+  ! as the vector to be resized.
+  !
+  ! If NEQ is smaller than the real memory allocated for the vector, then
+  ! only NEQ is reset. Otherwise, the memory is physically reallocated.
+  !
+  ! If the parameter bclear=.TRUE. the complete vector is clear.
+  ! This is done both on case the vector is reallocated physically or not.
+  !
+  ! If the parameter bcopy=.TRUE. the content of the existing vector is 
+  ! copied. This is only required, if the vector needs to be reallocated
+  ! physically. Otherwise, the data still exists in the memory.
+!</description>
+
+!<input>
+
+    ! Template vector
+    TYPE(t_vectorScalar), INTENT(IN)           :: rvectorTemplate
+
+    ! Whether to fill the vector with zero initially
+    LOGICAL, INTENT(IN)                        :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL              :: bcopy
+
+!</input>
+
+!<inputoutput>
+    ! Scalar vector structure
+    TYPE(t_vectorScalar), INTENT(INOUT)         :: rvector
+!</inputoutput>
+
+    INTEGER(PREC_VECIDX) :: isize
+
+    ! Check, if vector has been initialized before. If this is not
+    ! the case, then create a new vector by duplicating the template vector
+    IF (rvector%NEQ == 0 .OR. rvector%h_Ddata == ST_NOHANDLE) THEN
+      
+      ! At first, copy all 'local' data.
+      rvector = rvectorTemplate
+
+      ! Then allocate a new array for the content in the same data
+      ! format as the template vector.
+      CALL storage_getsize(rvectorTemplate%h_Ddata, isize)
+            
+      IF (bclear) THEN
+        CALL storage_new ('lsyssc_resizeVectorIndirect','ScalarVector',isize,&
+            rvectorTemplate%cdataType, rvector%h_Ddata, ST_NEWBLOCK_ZERO)
+      ELSE
+        CALL storage_new ('lsyssc_resizeVectorIndirect','ScalarVector',isize,&
+            rvectorTemplate%cdataType, rvector%h_Ddata, ST_NEWBLOCK_NOINIT)
+      END IF
+
+      ! Since the vector is newly created, there is nothing to copy
+      RETURN
+    END IF
+
+    ! Get current size of vector memory
+    CALL storage_getsize(rvector%h_Ddata, isize)
+
+    ! Update NEQ from template vector.
+    rvector%NEQ = rvectorTemplate%NEQ
+
+    ! Do we really have to reallocate the vector physically?
+    IF (rvector%NVAR*rvector%NEQ > isize) THEN
+      
+      ! Yes, so adopt the new size.
+      isize = rvector%NEQ*rvector%NVAR
+      
+      ! Reallocate the memory
+      CALL storage_realloc('lsyssc_resizeVectorIndirect', isize, rvector%h_Ddata, &
+          ST_NEWBLOCK_NOINIT, bcopy)
+    END IF
+    
+    ! Should the vector be cleared?
+    IF (bclear) CALL storage_clear(rvector%h_Ddata)
+    
+  END SUBROUTINE
+
+  !****************************************************************************
+
 !<subroutine>
   
   REAL(DP) FUNCTION lsyssc_scalarProduct (rx, ry)
@@ -14308,21 +14856,21 @@ CONTAINS
 !</subroutine>
 
     WRITE(*,FMT='(A)')       '-------------------------'
-    WRITE(*,FMT='(A,1X,I2)') 'cmatrixFormat           =',rmatrix%cmatrixFormat
-    WRITE(*,FMT='(A,1X,I2)') 'cinterleavematrixFormat =',rmatrix%cinterleavematrixFormat
-    WRITE(*,FMT='(A,1X,I4)') 'imatrixSpec             =',rmatrix%imatrixSpec
-    WRITE(*,FMT='(A,1X,I8)') 'NA                      =',rmatrix%NA
-    WRITE(*,FMT='(A,1X,I8)') 'NEQ                     =',rmatrix%NEQ
-    WRITE(*,FMT='(A,1X,I8)') 'NCOLS                   =',rmatrix%NCOLS
-    WRITE(*,FMT='(A,1X,I4)') 'NVAR                    =',rmatrix%NVAR
-    WRITE(*,FMT='(A,1X,F8.3)') 'dscaleFactor            =',rmatrix%dscaleFactor
-    WRITE(*,FMT='(A,1X,I2)') 'isortStrategy           =',rmatrix%isortStrategy
-    WRITE(*,FMT='(A,1X,I4)') 'h_IsortPermutation      =',rmatrix%h_IsortPermutation
-    WRITE(*,FMT='(A,1X,I2)') 'cdataType               =',rmatrix%cdataType
-    WRITE(*,FMT='(A,1X,I4)') 'h_DA                    =',rmatrix%h_DA
-    WRITE(*,FMT='(A,1X,I4)') 'h_Kcol                  =',rmatrix%h_Kcol
-    WRITE(*,FMT='(A,1X,I4)') 'h_Kld                   =',rmatrix%h_Kld
-    WRITE(*,FMT='(A,1X,I4)') 'h_Kdiagonal             =',rmatrix%h_Kdiagonal
+    CALL output_line ('cmatrixFormat:           '//TRIM(sys_siL(rmatrix%cmatrixFormat,15)))
+    CALL output_line ('cinterleavematrixFormat: '//TRIM(sys_siL(rmatrix%cinterleaveMatrixFormat,15)))
+    CALL output_line ('cdataType:               '//TRIM(sys_siL(rmatrix%cdataType,15)))
+    CALL output_line ('imatrixSpec:             '//TRIM(sys_siL(rmatrix%imatrixSpec,15)))
+    CALL output_line ('NA:                      '//TRIM(sys_siL(rmatrix%NA,0)))
+    CALL output_line ('NEQ:                     '//TRIM(sys_siL(rmatrix%NEQ,0)))
+    CALL output_line ('NCOLS:                   '//TRIM(sys_siL(rmatrix%NCOLS,0)))
+    CALL output_line ('NVAR:                    '//TRIM(sys_siL(rmatrix%NVAR,0)))
+    CALL output_line ('dscaleFactor:            '//TRIM(sys_sdL(rmatrix%dscaleFactor,0)))
+    CALL output_line ('isortStrategy:           '//TRIM(sys_siL(rmatrix%isortStrategy,15)))
+    CALL output_line ('h_IsortPermutation:      '//TRIM(sys_siL(rmatrix%h_IsortPermutation,15)))
+    CALL output_line ('h_DA:                    '//TRIM(sys_siL(rmatrix%h_DA,15)))
+    CALL output_line ('h_Kcol:                  '//TRIM(sys_siL(rmatrix%h_Kcol,15)))
+    CALL output_line ('h_Kld:                   '//TRIM(sys_siL(rmatrix%h_Kld,15)))
+    CALL output_line ('h_Kdiagonal:             '//TRIM(sys_siL(rmatrix%h_Kdiagonal,15)))
     WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoMatrix
 
@@ -14342,15 +14890,21 @@ CONTAINS
 !</input>
 !</subroutine>
 
+    ! local variables
+    INTEGER(PREC_VECIDX) :: isize
+
+    isize = 0
+    IF (rvector%h_Ddata /= ST_NOHANDLE) CALL storage_getsize(rvector%h_Ddata,isize)
+
     WRITE(*,FMT='(A)')       '-------------------------'
-    WRITE(*,FMT='(A,1X,I2)') 'cdataType               =',rvector%cdataType
-    WRITE(*,FMT='(A,1X,I8)') 'NEQ                     =',rvector%NEQ
-    WRITE(*,FMT='(A,1X,I4)') 'NVAR                    =',rvector%NVAR
-    WRITE(*,FMT='(A,1X,I2)') 'isortStrategy           =',rvector%isortStrategy
-    WRITE(*,FMT='(A,1X,I4)') 'h_IsortPermutation      =',rvector%h_IsortPermutation
-    WRITE(*,FMT='(A,1X,I2)') 'cdataType               =',rvector%cdataType
-    WRITE(*,FMT='(A,1X,I4)') 'h_Ddata                 =',rvector%h_Ddata
-    WRITE(*,FMT='(A,1X,I8)') 'iidxFirstEntry          =',rvector%iidxFirstEntry
+    CALL output_line ('cdataType:              '//TRIM(sys_siL(rvector%cdataType,15)))
+    CALL output_line ('NEQ:                    '//TRIM(sys_siL(rvector%NEQ,0)))
+    CALL output_line ('NVAR:                   '//TRIM(sys_siL(rvector%NVAR,0)))
+    CALL output_line ('isortStrategy:          '//TRIM(sys_siL(rvector%isortStrategy,15)))
+    CALL output_line ('h_IsortPermutation:     '//TRIM(sys_siL(rvector%h_IsortPermutation,15)))
+    CALL output_line ('h_Ddata:                '//TRIM(sys_siL(rvector%h_Ddata,15)))
+    CALL output_line ('memory usage:           '//TRIM(sys_siL(INT(100/REAL(isize,DP)*rvector%NEQ*rvector%NVAR,I32),15))//'%')
+    CALL output_line ('iidxFirstEntry:         '//TRIM(sys_siL(rvector%iidxFirstEntry,0)))
     WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoVector
 
