@@ -307,9 +307,6 @@ CONTAINS
   
 !</subroutine>
 
-    ! local variables
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
-
     IF (rdiscretisation%ncomponents .EQ. 0) THEN
       PRINT *,'mlprj_initProjectionDiscr: No discretisation!'
       STOP

@@ -1348,15 +1348,8 @@ CONTAINS
 
   ! Copy the matrix structure on the finest level to the rsolverNode
   ! structure. This corresponds to the system we want to solve.
-  rsolverNode%rsystemMatrix = Rmatrices(UBOUND(Rmatrices,1))
-  
-  ! Note in the system matrix structure that this matrix actually belongs to
-  ! the application and not to the solver.
-  ! (Don't care about empty sub-matrices here...)
-  nblocks = rsolverNode%rsystemMatrix%ndiagBlocks
-  rsolverNode%rsystemMatrix%RmatrixBlock(1:nblocks,1:nblocks)%imatrixSpec = &
-    IOR(rsolverNode%rsystemMatrix%RmatrixBlock(1:nblocks,1:nblocks)%imatrixSpec,&
-        LSYSSC_MSPEC_ISCOPY)
+  CALL lsysbl_duplicateMatrix (Rmatrices(UBOUND(Rmatrices,1)), &
+      rsolverNode%rsystemMatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
   
   ! Depending on the solver type, call the corresponding initialisation
   ! routine. For all single-grid solvers, pass the matrix on the highest
@@ -1975,6 +1968,12 @@ CONTAINS
       CALL linsol_doneJinWeiTam (p_rsolverNode)
     CASE DEFAULT
     END SELECT
+    
+    ! Clean up the associated matrix structure.
+    ! Of course, the memory of the matrix is not released from memory, because
+    ! if there's a matrix attached, it belongs to the application, not to the
+    ! solver!
+    CALL lsysbl_releaseMatrix(p_rsolverNode%rsystemMatrix)
     
     ! Finally release the node itself (if we are allowed to).
     ! Deallocate the structure (if we are allowed to), finish.
@@ -9567,6 +9566,11 @@ CONTAINS
     IF (ASSOCIATED(p_rlevelInfo%p_rcoarseGridSolver)) THEN
       CALL linsol_releaseSolver(p_rlevelInfo%p_rcoarseGridSolver)
     END IF
+    
+    ! Clean up the associated matrix if there is one.
+    ! Of course, the memory of the matrices will not be deallocated
+    ! because the matrices belong to the application, not to the solver!
+    CALL lsysbl_releaseMatrix(p_rlevelInfo%rsystemMatrix)
 
     ! Remove the structure
     DEALLOCATE(p_rlevelInfo)
@@ -9814,8 +9818,13 @@ CONTAINS
       CALL linsol_setMatrices (p_rcurrentLevel%p_rcoarseGridSolver, &
                                 Rmatrices(nlmin:ilevel))
     END IF
-    p_rcurrentLevel%rsystemMatrix = Rmatrices(ilevel)
-    p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
+    
+    ! Write a link to the matrix into the level-structure.
+    CALL lsysbl_duplicateMatrix (Rmatrices(ilevel-nlmin+1), &
+        p_rcurrentLevel%rsystemMatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+    ! Next level -- if there is one.    
+    p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel        
     ilevel = ilevel + 1
   END DO
   
