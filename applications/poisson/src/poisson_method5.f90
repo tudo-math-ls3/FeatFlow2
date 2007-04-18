@@ -742,8 +742,13 @@ CONTAINS
     !
     ! We copy our matrices to a big matrix array and transfer that
     ! to the setMatrices routines. This intitialises then the matrices
-    ! on all levels according to that array.
-    Rmatrices(ilvmin:ilvmax) = rproblem%RlevelInfo(ilvmin:ilvmax)%rmatrix
+    ! on all levels according to that array. Note that this does not
+    ! allocate new memory, we create only 'links' to existing matrices
+    ! into Rmatrices(:)!
+    DO i=ilvmin,ilvmax
+      CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    END DO
     CALL linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
     
     ! Initialise structure/data of the solver. This allows the
