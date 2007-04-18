@@ -143,9 +143,10 @@
 !#      -> Tests if the content of a matrix is shared with another matrix
 !#
 !# 40.) lsyssc_resizeVector
-!#      -> Resize the vector and reallocate memory of necessary.
+!#      -> Resize the vector and reallocate memory if necessary.
 !#
 !# 41.) lsyssc_resizeMatrix
+!#      -> Resize the matrix and reallocate memory if necessary.
 !#
 !# Sometimes useful auxiliary routines:
 !#
@@ -434,12 +435,12 @@ MODULE linearsystemscalar
     
     ! Integer tags. This array of integer values can be used to store
     ! auxiliary tags which depend on the application.
-    !INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
+    INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
 
     ! Real tags. This array of real values can be used to store
     ! auxiliary
     ! tags which depend on the application.
-    !REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
+    REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
 
     ! Is set to true, if the handle h_Ddata belongs to another vector,
     ! i.e. when this vector shares data with another vector.
@@ -563,12 +564,12 @@ MODULE linearsystemscalar
 
     ! Integer tags. This array of integer values can be used to store
     ! auxiliary tags which depend on the application.
-    !INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
+    INTEGER, DIMENSION(LSYSSC_MAXTAGS) :: ITags = 0
 
     ! Real tags. This array of real values can be used to store
     ! auxiliary
     ! tags which depend on the application.
-    !REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
+    REAL(DP), DIMENSION(LSYSSC_MAXTAGS) :: DTags = 0._DP
     
     ! A pointer to the spatial discretisation
     TYPE(t_spatialDiscretisation), POINTER     :: p_rspatialDiscretisation => NULL()
@@ -608,6 +609,11 @@ MODULE linearsystemscalar
     MODULE PROCEDURE lsyssc_resizeVectorDirect
     MODULE PROCEDURE lsyssc_resizeVectorIndirect
   END INTERFACE
+
+!!$  INTERFACE lsyssc_resizeMatrix
+!!$    MODULE PROCEDURE lsyssc_resizeMatrixDirect
+!!$    MODULE PROCEDURE lsyssc_resizeMatrixIndirect
+!!$  END INTERFACE
 
 CONTAINS
 
@@ -1565,12 +1571,32 @@ CONTAINS
 
     INTEGER(PREC_VECIDX) :: isize
 
+    ! Check, if vector is not a copy of another (possible larger) vector
+    IF (rvector%bisCopy) THEN
+      PRINT *, "lsyssc_resizeVectorDirect: A copied vector cannot be resized!"
+      STOP
+    END IF
+    
     ! Check, if vector has been initialized before.
     IF (rvector%NEQ == 0 .OR. rvector%h_Ddata == ST_NOHANDLE) THEN
       PRINT *, "lsyssc_resizeVectorDirect: A vector can only be resized &
           if it has been created correctly!"
       STOP
     END IF
+
+    ! If the vector should be cleared, then the sorting strategy (if any)
+    ! can be ignored and reset. Otherwise, the vector needs to be unsorted
+    ! prior to copying some part of it. Afterwards, no sorting strategy is
+    ! available in any case.
+    IF (.NOT. bclear .AND. PRESENT(bcopy)) THEN
+      IF (bcopy .AND. rvector%isortStrategy > 0) THEN
+        CALL lsyssc_vectorActivateSorting(rvector,.FALSE.)
+      END IF
+    END IF
+    
+    ! Reset sorting strategy, there is none
+    rvector%isortStrategy      = 0
+    rvector%h_iSortPermutation = ST_NOHANDLE
 
     ! Get current size of vector memory
     CALL storage_getsize(rvector%h_Ddata, isize)
@@ -1658,6 +1684,12 @@ CONTAINS
 !</inputoutput>
 
     INTEGER(PREC_VECIDX) :: isize
+
+    ! Check, if vector is a copy of another (possibly larger) vector
+    IF (rvector%bisCopy) THEN
+      PRINT *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
+      STOP
+    END IF
 
     ! Check, if vector has been initialized before. If this is not
     ! the case, then create a new vector by duplicating the template vector
