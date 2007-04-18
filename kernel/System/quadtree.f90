@@ -8,34 +8,34 @@
 !#
 !# The following routines are available:
 !#
-!# 1.) t_quadtree_createQuadtree
+!# 1.) qtree_createQuadtree
 !#     -> Create a new quadtree structure
 !#
-!# 2.) t_quadtree_releaseQuadtree
+!# 2.) qtree_releaseQuadtree
 !#     -> Release an existing quadtree
 !#
-!# 3.) t_quadtree_resizeQuadtree
+!# 3.) qtree_resizeQuadtree
 !#     -> Resize an existing quadtree
 !#
-!# 4.) t_quadtree_copyQuadtree
+!# 4.) qtree_copyQuadtree
 !#     -> Copy data to/from a quadtree
 !#
-!# 5.) t_quadtree_insertIntoQuadtree
+!# 5.) qtree_insertIntoQuadtree
 !#     -> Insert data into quadtree
 !#
-!# 6.) t_quadtree_deleteFromQuadtree
+!# 6.) qtree_deleteFromQuadtree
 !#     -> Delete data from quadtree
 !#
-!# 7.) t_quadtree_t_quadtree_searchInQuadtree
+!# 7.) qtree_searchInQuadtree
 !#     -> Search data in quadtree
 !#
-!# 8.) t_quadtree_printQuadtree
+!# 8.) qtree_printQuadtree
 !#     -> Write quadtree to file
 !#
-!# 9.) t_quadtree_infoQuadtree
+!# 9.) qtree_infoQuadtree
 !#     -> Output info about quadtree
 !#
-!# 10.) t_quadtree_getBoundingBox
+!# 10.) qtree_getBoundingBox
 !#      -> Return the outer bounding box
 !# </purpose>
 !##############################################################################
