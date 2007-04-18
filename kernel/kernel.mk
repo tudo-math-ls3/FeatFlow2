@@ -38,7 +38,7 @@ vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
 	$(KERNEL)/TimeDependence \
 	$(KERNEL) $(INCOMING)
 
@@ -49,7 +49,7 @@ vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
 	$(KERNEL)/TimeDependence \
 	$(KERNEL) $(INCOMING)
 
@@ -60,7 +60,7 @@ vpath %.c $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
 	$(KERNEL)/TimeDependence \
 	$(KERNEL) $(INCOMING)
 
@@ -71,7 +71,7 @@ vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
 	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathmatics $(KERNEL)/PDEOperators\
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
 	$(KERNEL)/TimeDependence \
 	$(KERNEL) $(INCOMING)
 
