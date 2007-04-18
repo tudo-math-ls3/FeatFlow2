@@ -90,50 +90,53 @@
 !# 22.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !#
-!# 23.) lsyssc_convertMatrix
+!# 23.) lsyssc_initialiseIdentityMatrix
+!#      -> Initialises the content of a matrix to an identity matrix
+!#
+!# 24.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 24.) lsyssc_copyVector
+!# 25.) lsyssc_copyVector
 !#       -> Copy a vector over to another one
 !#
-!# 25.) lsyssc_scaleVector
+!# 26.) lsyssc_scaleVector
 !#      -> Scale a vector by a constant
 !#
-!# 26.) lsyssc_clearVector
+!# 27.) lsyssc_clearVector
 !#      -> Clear a vector
 !#
-!# 27.) lsyssc_vectorLinearComb
+!# 28.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
 !#
-!# 28.) lsyssc_copyMatrix
+!# 29.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 29.) lsyssc_transposeMatrix
+!# 30.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
-!# 30.) lsyssc_createEmptyMatrixScalar
+!# 31.) lsyssc_createEmptyMatrixScalar
 !#      -> Allocates memory for an empty matrix
 !#
-!# 31.) lsyssc_lumpMatrixScalar
+!# 32.) lsyssc_lumpMatrixScalar
 !#      -> Performs lumping of a given matrix
 !#
-!# 32.) lsyssc_scaleMatrix
+!# 33.) lsyssc_scaleMatrix
 !#      -> Scale a matrix by a constant
 !#
-!# 33.) lsyssc_multMatMat
+!# 34.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 34.) lsyssc_matrixLinearComb
+!# 35.) lsyssc_matrixLinearComb
 !#      -> Adds two matrices
 !#
-!# 35.) lsyssc_swapVectors
+!# 36.) lsyssc_swapVectors
 !#      -> Swap two vectors
 !#
-!# 36.) lsyssc_isMatrixStructureShared
+!# 37.) lsyssc_isMatrixStructureShared
 !#      -> Tests if the structure of a matrix is shared with another matrix
 !#
-!# 37.) lsyssc_isMatrixContentShared
+!# 38.) lsyssc_isMatrixContentShared
 !#      -> Tests if the content of a matrix is shared with another matrix
 !#
 !# Sometimes useful auxiliary routines:
@@ -3382,6 +3385,143 @@ CONTAINS
     END IF
   END SELECT
   
+  END SUBROUTINE
+
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsyssc_initialiseIdentityMatrix (rmatrix)
+  
+!<description>
+  ! Initialises the matrix rmatrix to an identity matrix.
+  ! The matrix structure must already have been set up. If necessary, new data
+  ! for the matrix is allocated on the heap. 
+  ! The scaling factor of the matrix remains unchanged!
+!</description>
+  
+!<inputoutput>
+  
+  ! Matrix to release.
+  TYPE(t_matrixScalar), INTENT(INOUT)               :: rmatrix
+  
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal
+    INTEGER(PREC_VECIDX) :: i
+
+    IF (rmatrix%NEQ .LE. 0) RETURN ! Empty matrix
+
+    ! Which matrix type do we have?
+    SELECT CASE (rmatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
+        LSYSSC_MATRIXD,LSYSSC_MATRIX1)
+      ! If necessary, allocate memory.
+      IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
+        CALL lsyssc_createEmptyMatrixScalar (rmatrix,LSYSSC_SETM_UNDEFINED)
+      END IF
+    END SELECT
+
+    ! Now choose -- depending on the matrix format -- how to initialise the
+    ! matrix data.
+    SELECT CASE (rmatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX9)
+      ! Clear the old content
+      CALL storage_clear (rmatrix%h_Da)
+      
+      ! Get the structure and the data.
+      ! Put the diagonal elements to 1.
+      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+      
+      SELECT CASE (rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        DO i=1,rmatrix%NEQ
+          p_Ddata(p_Kdiagonal(i)) = 1.0_DP
+        END DO
+      CASE (ST_SINGLE)
+        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        DO i=1,rmatrix%NEQ
+          p_Fdata(p_Kdiagonal(i)) = 1.0_SP
+        END DO
+      CASE DEFAULT
+        PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
+        STOP
+      END SELECT
+
+    CASE (LSYSSC_MATRIX7)
+      ! Clear the old content
+      CALL storage_clear (rmatrix%h_Da)
+      
+      ! Get the structure and the data.
+      ! Put the diagonal elements to 1.
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kdiagonal)
+      
+      SELECT CASE (rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        DO i=1,rmatrix%NEQ
+          p_Ddata(p_Kdiagonal(i)) = 1.0_DP
+        END DO
+      CASE (ST_SINGLE)
+        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        DO i=1,rmatrix%NEQ
+          p_Fdata(p_Kdiagonal(i)) = 1.0_SP
+        END DO
+      CASE DEFAULT
+        PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
+        STOP
+      END SELECT
+
+    CASE (LSYSSC_MATRIX1)
+      ! Clear the old content
+      CALL storage_clear (rmatrix%h_Da)
+      
+      ! Get the structure and the data.
+      ! Put the diagonal elements to 1.
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kdiagonal)
+      
+      SELECT CASE (rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        DO i=1,rmatrix%NEQ
+          p_Ddata(i*(rmatrix%NEQ-1)+i) = 1.0_DP
+        END DO
+      CASE (ST_SINGLE)
+        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        DO i=1,rmatrix%NEQ
+          p_Fdata(i*(rmatrix%NEQ-1)+i) = 1.0_SP
+        END DO
+      CASE DEFAULT
+        PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
+        STOP
+      END SELECT
+
+    CASE (LSYSSC_MATRIXD)
+      ! Put all elements to 1.0
+      SELECT CASE (rmatrix%cdataType)
+      CASE (ST_DOUBLE)
+        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        p_Ddata(:) = 1.0_DP
+      CASE (ST_SINGLE)
+        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        p_Fdata(:) = 1.0_SP
+      CASE DEFAULT
+        PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
+        STOP
+      END SELECT
+    
+    CASE DEFAULT
+      PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported matrix format!'
+      STOP
+    
+    END SELECT
+    
   END SUBROUTINE
 
   !****************************************************************************
