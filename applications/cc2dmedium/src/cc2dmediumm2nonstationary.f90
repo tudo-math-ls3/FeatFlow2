@@ -137,7 +137,7 @@ CONTAINS
         rproblem%itimedependence, 0)
     CALL parlst_getvalue_int (rparams,ssection,'niterations',     &
         rproblem%rtimedependence%niterations, 1000)
-    CALL parlst_getvalue_double (rparams,ssection,'dtimestart',   &
+    CALL parlst_getvalue_double (rparams,ssection,'dtimeInit',   &
         rproblem%rtimedependence%dtimeInit, 0.0_DP)
     CALL parlst_getvalue_double (rparams,ssection,'dtimemax',     &
         rproblem%rtimedependence%dtimeMax, 20.0_DP)
