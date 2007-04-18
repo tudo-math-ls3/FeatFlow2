@@ -752,6 +752,8 @@ CONTAINS
     
     CALL linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
     
+    ! We can release Rmatrices immediately -- as long as we don't
+    ! release rproblem%RlevelInfo(i)%rmatrix!
     DO i=ilvmin,ilvmax
       CALL lsysbl_releaseMatrix (Rmatrices(i))
     END DO
