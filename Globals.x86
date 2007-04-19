@@ -204,8 +204,8 @@ endif
 
 ifeq ($(CPU),core2)
 OPTFLAGS  += -mmmx -msse -msse2 -msse3
-FCFLAGS   += -march=pentium-m
-CCFLAGS   += -march=pentium-m
+FCFLAGS   += -march=nocona
+CCFLAGS   += -march=nocona
 endif
 endif
 

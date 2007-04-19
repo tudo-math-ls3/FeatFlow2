@@ -610,10 +610,10 @@ MODULE linearsystemscalar
     MODULE PROCEDURE lsyssc_resizeVectorIndirect
   END INTERFACE
 
-!!$  INTERFACE lsyssc_resizeMatrix
-!!$    MODULE PROCEDURE lsyssc_resizeMatrixDirect
-!!$    MODULE PROCEDURE lsyssc_resizeMatrixIndirect
-!!$  END INTERFACE
+  INTERFACE lsyssc_resizeMatrix
+    MODULE PROCEDURE lsyssc_resizeMatrixDirect
+    MODULE PROCEDURE lsyssc_resizeMatrixIndirect
+  END INTERFACE
 
 CONTAINS
 
@@ -1537,11 +1537,15 @@ CONTAINS
   ! only NEQ is reset. Otherwise, the memory is physically reallocated.
   !
   ! If the parameter bclear=.TRUE. the complete vector is clear.
-  ! This is done both on case the vector is reallocated physically or not.
+  ! This is done both in case the vector is reallocated physically or not.
   !
   ! If the parameter bcopy=.TRUE. the content of the existing vector is 
   ! copied. This is only required, if the vector needs to be reallocated
   ! physically. Otherwise, the data still exists in the memory.
+  !
+  ! Remark: The parameter bclear has higher priority than the parameter bcopy.
+  ! That is, if both parameters are given, then no data is copied if the
+  ! vector shoud be cleared afterwards ;-)
   !
   ! If the optional parameter NEQMAX is specified, then memory of size
   ! NEQMAX is allocated if reallocate is required. Otherwise, no reallocation
@@ -1565,11 +1569,16 @@ CONTAINS
 !</input>
 
 !<inputoutput>
+
     ! Scalar vector structure
     TYPE(t_vectorScalar), INTENT(INOUT)         :: rvector
+
 !</inputoutput>
 
-    INTEGER(PREC_VECIDX) :: isize
+!</subroutine>
+
+    INTEGER(PREC_VECIDX) :: iNEQ,isize
+    LOGICAL :: bdocopy
 
     ! Check, if vector is not a copy of another (possible larger) vector
     IF (rvector%bisCopy) THEN
@@ -1580,18 +1589,24 @@ CONTAINS
     ! Check, if vector has been initialized before.
     IF (rvector%NEQ == 0 .OR. rvector%h_Ddata == ST_NOHANDLE) THEN
       PRINT *, "lsyssc_resizeVectorDirect: A vector can only be resized &
-          if it has been created correctly!"
+          & if it has been created correctly!"
       STOP
     END IF
+    
+    ! Set working dimensions
+    iNEQ = MAX(0,NEQ)
+    IF (PRESENT(NEQMAX)) iNEQ = MAX(iNEQ,NEQMAX)
 
+    ! Set copy/clear attributes
+    bdocopy = (.NOT.bclear)
+    IF (PRESENT(bcopy)) bdocopy = (bdocopy .AND. bcopy)
+    
     ! If the vector should be cleared, then the sorting strategy (if any)
     ! can be ignored and reset. Otherwise, the vector needs to be unsorted
     ! prior to copying some part of it. Afterwards, no sorting strategy is
     ! available in any case.
-    IF (.NOT. bclear .AND. PRESENT(bcopy)) THEN
-      IF (bcopy .AND. rvector%isortStrategy > 0) THEN
-        CALL lsyssc_vectorActivateSorting(rvector,.FALSE.)
-      END IF
+    IF (bdocopy .AND. rvector%isortStrategy > 0) THEN
+      CALL lsyssc_vectorActivateSorting(rvector,.FALSE.)
     END IF
     
     ! Reset sorting strategy, there is none
@@ -1607,32 +1622,32 @@ CONTAINS
     ! Do we really have to reallocate the vector physically?
     IF (rvector%NVAR*rvector%NEQ > isize) THEN
       
-      ! Yes, so adopt the new size.
-      isize = NEQ
+      ! Yes, so adopt the new size. Note that some extra memory is
+      ! allocated if the optional argument NEQMAX is specified
+      isize = iNEQ*rvector%NVAR
       
-      ! Should we reserve some extra memory?
-      IF (PRESENT(NEQMAX)) isize = MAX(isize,NEQMAX)
-      isize = isize*rvector%NVAR
-      
-      ! Reallocate the memory
+      ! Reallocate the memory for handle h_Ddata
       CALL storage_realloc('lsyssc_resizeVectorDirect', isize, rvector%h_Ddata, &
-          ST_NEWBLOCK_NOINIT, bcopy)
+          ST_NEWBLOCK_NOINIT, bdocopy)
 
     ELSEIF (PRESENT(NEQMAX)) THEN
       
-      ! The available memory suffices for the vector but the user supplied
-      ! a new upper limit for the maximum memeroy
-      IF (isize > rvector%NVAR*NEQMAX) THEN
+      ! The available memory suffices for the vector, i.e. isize <= NVAR*NEQ.
+      ! Let's check if the user supplied a new upper limit which makes it 
+      ! mandatory to "shrink" the allocated memory. Note that memory for
+      ! at least NEQ vector intries is allocated.
+      IF (isize > rvector%NVAR*iNEQ) THEN
         
-        ! Compute new size
-        isize = rvector%NVAR*MAX(0,NEQMAX)
+        ! Compute new size, i.e. MAX(0,NEQ,NEQMAX)
+        isize = rvector%NVAR*iNEQ
 
         IF (isize == 0) THEN
+          ! If nothing is left, then the vector can also be released.
           CALL lsyssc_releaseVector(rvector)
           RETURN
         ELSE
           CALL storage_realloc('lsyssc_resizeVectorDirect', isize, rvector%h_Ddata, &
-              ST_NEWBLOCK_NOINIT, bcopy)
+              ST_NEWBLOCK_NOINIT, bdocopy)
         END IF
       END IF
     END IF
@@ -1650,24 +1665,28 @@ CONTAINS
 
 !<description>
   ! Resizes the vector structure so that it exhibits the same memory layout 
-  ! as the template vector. Note that this subroutine can only by used
+  ! as the template vector. Note that this subroutine can only be used
   ! if the template vector has the same internal structure, e.g., data type, NVAR
   ! as the vector to be resized.
   !
   ! If NEQ is smaller than the real memory allocated for the vector, then
   ! only NEQ is reset. Otherwise, the memory is physically reallocated.
   !
-  ! If the parameter bclear=.TRUE. the complete vector is clear.
-  ! This is done both on case the vector is reallocated physically or not.
+  ! If the parameter bclear=.TRUE. the complete vector is cleared.
+  ! This is done both in case the vector is reallocated physically or not.
   !
   ! If the parameter bcopy=.TRUE. the content of the existing vector is 
   ! copied. This is only required, if the vector needs to be reallocated
   ! physically. Otherwise, the data still exists in the memory.
+  !
+  ! Remark: The parameter bclear has higher priority than the parameter bcopy.
+  ! That is, if both parameters are given, then no data is copied if the
+  ! vector shoud be cleared afterwards ;-)
 !</description>
 
 !<input>
 
-    ! Template vector
+    ! Scalar template vector
     TYPE(t_vectorScalar), INTENT(IN)           :: rvectorTemplate
 
     ! Whether to fill the vector with zero initially
@@ -1679,11 +1698,16 @@ CONTAINS
 !</input>
 
 !<inputoutput>
+
     ! Scalar vector structure
     TYPE(t_vectorScalar), INTENT(INOUT)         :: rvector
+
 !</inputoutput>
 
-    INTEGER(PREC_VECIDX) :: isize
+!</subroutine>
+
+    INTEGER(PREC_VECIDX) :: isize,iNEQMAX
+    LOGICAL :: bdocopy
 
     ! Check, if vector is a copy of another (possibly larger) vector
     IF (rvector%bisCopy) THEN
@@ -1692,8 +1716,10 @@ CONTAINS
     END IF
 
     ! Check, if vector has been initialized before. If this is not
-    ! the case, then create a new vector by duplicating the template vector
-    IF (rvector%NEQ == 0 .OR. rvector%h_Ddata == ST_NOHANDLE) THEN
+    ! the case, then create a new vector by duplicating the template vector.
+    ! Moreover, no data is copied and the vector is cleared if bclear=.TRUE.
+    IF ((rvector%NEQ == 0) .OR.&
+        (rvector%h_Ddata == ST_NOHANDLE)) THEN
       
       ! At first, copy all 'local' data.
       rvector = rvectorTemplate
@@ -1710,30 +1736,761 @@ CONTAINS
             rvectorTemplate%cdataType, rvector%h_Ddata, ST_NEWBLOCK_NOINIT)
       END IF
 
-      ! Since the vector is newly created, there is nothing to copy
-      RETURN
-    END IF
-
-    ! Get current size of vector memory
-    CALL storage_getsize(rvector%h_Ddata, isize)
-
-    ! Update NEQ from template vector.
-    rvector%NEQ = rvectorTemplate%NEQ
-
-    ! Do we really have to reallocate the vector physically?
-    IF (rvector%NVAR*rvector%NEQ > isize) THEN
+    ELSE
       
-      ! Yes, so adopt the new size.
-      isize = rvector%NEQ*rvector%NVAR
-      
-      ! Reallocate the memory
-      CALL storage_realloc('lsyssc_resizeVectorIndirect', isize, rvector%h_Ddata, &
-          ST_NEWBLOCK_NOINIT, bcopy)
+      ! Check if vectors are compatible
+      IF ((rvector%cdataType /= rvectorTemplate%cdataType) .OR.&
+          (rvector%NVAR /= rvectorTemplate%NVAR)) THEN
+        PRINT *, "lsyssc_resizeVectorIndirect: Vectors are incompatible!"
+        STOP
+      END IF
+
+      ! Get NEQMAX from template vector
+      CALL storage_getsize(rvectorTemplate%h_Ddata, iNEQMAX)
+
+      ! Resize vector directly
+      CALL lsyssc_resizeVectorDirect(rvector, rvectorTemplate%NEQ, bclear, bcopy, iNEQMAX)
+
     END IF
     
-    ! Should the vector be cleared?
-    IF (bclear) CALL storage_clear(rvector%h_Ddata)
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_resizeMatrixDirect (rmatrix, NEQ, NCOLS, NA, bclear, bcopy, &
+      NEQMAX, NCOLSMAX, NAMAX)
+
+!<description>
+  ! Resizes the matrix structure to the new values NEQ, NCOLS and NA which are
+  ! given explicitely.
+  !
+  ! IF NEQ, NCOLS, NA is smaller than the real memory allocated for the 
+  ! specific handle, then only the values are adjusted and no reallocation
+  ! takes place. Otherwise, the handles are reallocated accordingly.
+  !
+  ! If the parameter bclear=.TRUE. the complete matrix is cleared.
+  ! This is done both in case the matrix is reallocated physically or not.
+  !
+  ! If the parameter bcopy=.TRUE. the content of the existing matrix is 
+  ! copied. This is only required, if the matrix needs to be reallocated
+  ! physically. Otherwise, the data still exists in the memory.
+  !
+  ! Remark: The parameter bclear has higher priority than the parameter bcopy.
+  ! That is, if both parameters are given, then no data is copied if the
+  ! matrix shoud be cleared afterwards ;-)
+  !
+  ! If the optional parameters NEQMAX, NCOLSMAX or NAMAX are specified, then 
+  ! memory is allocated for these values rather than NEQ, NCOLS or NA.
+!</description>
+
+!<input>
+
+    ! Desired number of equations
+    INTEGER(PREC_VECIDX), INTENT(IN)           :: NEQ
+
+    ! Desired number of columns
+    INTEGER(PREC_VECIDX), INTENT(IN)           :: NCOLS
+
+    ! Desired number of elements
+    INTEGER(PREC_MATIDX), INTENT(IN)           :: NA
+
+    ! Whether to fill the matrix with zero initially
+    LOGICAL, INTENT(IN)                        :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the matrix to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL              :: bcopy
+
+    ! OPTIONAL: Maximum number of equations
+    INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: NEQMAX
+
+    ! OPTIONAL: Maximum number of columns
+    INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: NCOLSMAX
+
+    ! OPTIONAL: Maximum number of elements
+    INTEGER(PREC_MATIDX), INTENT(IN), OPTIONAL :: NAMAX
+
+!</input>
+
+!<inputoutput>
+
+    ! Scalar matrix structure
+    TYPE(t_matrixScalar), INTENT(INOUT)        :: rmatrix
+
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_MATIDX) :: iNA,isize
+    INTEGER(PREC_VECIDX) :: iNEQ,iNCOLS
+    LOGICAL :: bdocopy
+
+    ! Check, if matrix is not a copy of another matrix
+    IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) /= 0 .OR.&
+        IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   /= 0) THEN
+      PRINT *, "lsyssc_resizeMatrixDirect: A copied matrix cannot be resized!"
+      STOP
+    END IF
+
+    ! Check, if matrix has been initialized before.
+    IF (rmatrix%NEQ == 0 .OR. rmatrix%NCOLS == 0 .OR. rmatrix%NA == 0) THEN
+      PRINT *, "lsyssc_resizeMatrixDirect: A matrix can only be resized &
+          & if it has been created correctly!"
+      STOP
+    END IF
+
+    ! Set working dimensions
+    iNA    = MAX(0,NA)
+    IF (PRESENT(NAMAX))    iNA    = MAX(iNA,NAMAX)
+    iNEQ   = MAX(0,NEQ)
+    IF (PRESENT(NEQMAX))   iNEQ   = MAX(iNEQ,NEQMAX)
+    iNCOLS = MAX(0,NCOLS)
+    IF (PRESENT(NCOLSMAX)) iNCOLS = MAX(iNCOLS,NCOLSMAX)  
+
+    ! Set copy/clear attributes
+    bdocopy = (.NOT.bclear)
+    IF (PRESENT(bcopy)) bdocopy = (bdocopy .AND. bcopy)
+
+    ! If the matrix should be cleared, then the sorting strategy (if any)
+    ! can be ignored and reset. Otherwise, the matrix needs to be unsorted
+    ! prior to copying some part of it. Afterwards, no sorting strategy is
+    ! available in any case.
+    IF (bdocopy .AND. rmatrix%isortStrategy > 0) THEN
+      CALL lsyssc_unsortMatrix(rmatrix,.TRUE.)
+    END IF
+
+    ! Reset sorting strategy, there is none
+    rmatrix%isortStrategy      = 0
+    rmatrix%h_isortPermutation = ST_NOHANDLE
+
+    ! Update NEQ, NCOLS and NA. If the matrix is transposed, 
+    ! then the dimensions of NEQ and NCOLS must be swapped.
+    rmatrix%NA      = NA
+    IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) THEN
+      rmatrix%NEQ   = NEQ
+      rmatrix%NCOLS = NCOLS
+    ELSE
+      rmatrix%NEQ   = NCOLS
+      rmatrix%NCOLS = NEQ
+    END IF
     
+    ! What kind of matrix are we?
+    SELECT CASE(rmatrix%cmatrixFormat)
+      
+    CASE (LSYSSC_MATRIX1,LSYSSC_MATRIXD)
+      
+      ! For these matrices, only the data array needs to be resized since
+      ! there is no actual matrix structure.
+      ! So, do we really have to reallocate the matrix data physically?
+      CALL storage_getsize(rmatrix%h_DA,isize)
+      IF (rmatrix%NA > isize) THEN
+
+        ! Yes, so adopt the new size or reserve some extra memory if required.
+        isize = iNA
+
+        ! Reallocate the memory
+        CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+            ST_NEWBLOCK_NOINIT, bdocopy)
+        
+      ELSEIF (PRESENT(NAMAX)) THEN
+
+        ! The available memory suffices for the matrix. Let's check if the user
+        ! suplied a new upper limit which makes it mandatory to "shrink" the
+        ! allocated memory. Note that memory for at least NA matrix entries
+        ! is allocated.
+        IF (isize > iNA) THEN
+
+          ! Set new size
+          isize = iNA
+
+          IF (isize == 0) THEN
+            ! If nothing is left, then the matrix can also be released.
+            CALL lsyssc_releaseMatrix(rmatrix)
+            RETURN
+          ELSE
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+          END IF
+        END IF
+      END IF
+
+      ! Should the matrix be cleared?
+      IF (bclear) CALL storage_clear(rmatrix%h_DA)
+
+      
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      
+      ! First, resize the structure of the matrix, i.e., KLD, KCOL and 
+      ! possibly KDIAGONAL for matrices stored in matrix format 9
+      
+      ! Do we have a transposed matrix? Then NEQ and NCOLS must be swapped.
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /= 0) THEN
+
+        ! Do we really have to reallocate the array KLD?
+        CALL storage_getsize(rmatrix%h_Kld,isize)
+        IF (rmatrix%NCOLS+1 > isize) THEN
+
+          ! Yes, so adopt the new size or reserve some extra memory if required.
+          isize = iNCOLS+1
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+
+        ELSEIF (PRESENT(NCOLSMAX)) THEN
+
+          ! The available memory suffices for the matrix. Let's check if the user
+          ! suplied a new upper limit which makes it mandatory to "shrink" the
+          ! allocated memory.
+          IF (isize > iNCOLS) THEN
+            
+            ! Set new size
+            isize = iNCOLS
+            
+            IF (isize == 0) THEN
+              ! If nothing is left, then the matrix can also be released.
+              CALL lsyssc_releaseMatrix(rmatrix)
+              RETURN
+            ELSE
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+
+        ! Do we really have to reallocate the array KCOL?
+        CALL storage_getsize(rmatrix%h_Kcol,isize)
+        IF (rmatrix%NEQ > isize) THEN
+
+          ! Yes, so adopt the new size or reserve some extra memory if required.
+          isize = iNEQ
+
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+          
+        ELSEIF (PRESENT(NEQMAX)) THEN
+
+          ! The available memory suffices for the matrix. Let's check if the user
+          ! suplied a new upper limit which makes it mandatory to "shrink" the
+          ! allocated memory.
+          IF (isize > iNEQ) THEN
+            
+            ! Set new size
+            isize = iNEQ
+            
+            IF (isize == 0) THEN
+              ! If nothing is left, then the matrix can also be released.
+              CALL lsyssc_releaseMatrix(rmatrix)
+              RETURN
+            ELSE
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+
+        ! If the matrix is stored in format 9, then the diagonal array must be resized.
+        IF ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .OR.&
+            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) THEN
+
+          ! Do we really have to reallocate the array KCOL?
+          CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
+          IF (rmatrix%NEQ > isize) THEN
+            
+            ! Yes, so adopt the new size or reserve some extra memory if required.
+            isize = iNEQ
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NEQMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory.
+            IF (isize > iNEQ) THEN
+              
+              ! Set new size
+              isize = iNEQ
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
+            END IF
+          END IF
+          
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_Kdiagonal)
+        END IF
+
+      ELSE
+
+        ! Do we really have to reallocate the array KLD?
+        CALL storage_getsize(rmatrix%h_Kld,isize)
+        IF (rmatrix%NEQ+1 > isize) THEN
+
+          ! Yes, so adopt the new size or reserve some extra memory if required.
+          isize = iNEQ+1
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+
+        ELSEIF (PRESENT(NEQMAX)) THEN
+
+          ! The available memory suffices for the matrix. Let's check if the user
+          ! suplied a new upper limit which makes it mandatory to "shrink" the
+          ! allocated memory.
+          IF (isize > iNEQ) THEN
+            
+            ! Set new size
+            isize = iNEQ
+            
+            IF (isize == 0) THEN
+              ! If nothing is left, then the matrix can also be released.
+              CALL lsyssc_releaseMatrix(rmatrix)
+              RETURN
+            ELSE
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+
+        ! Do we really have to reallocate the array KCOL?
+        CALL storage_getsize(rmatrix%h_Kcol,isize)
+        IF (rmatrix%NCOLS > isize) THEN
+
+          ! Yes, so adopt the new size or reserve some extra memory if required.
+          isize = iNCOLS
+
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+          
+        ELSEIF (PRESENT(NCOLSMAX)) THEN
+
+          ! The available memory suffices for the matrix. Let's check if the user
+          ! suplied a new upper limit which makes it mandatory to "shrink" the
+          ! allocated memory.
+          IF (isize > iNCOLS) THEN
+            
+            ! Set new size
+            isize = iNCOLS
+            
+            IF (isize == 0) THEN
+              ! If nothing is left, then the matrix can also be released.
+              CALL lsyssc_releaseMatrix(rmatrix)
+              RETURN
+            ELSE
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+
+        ! If the matrix is stored in format 9, then the diagonal array must be resized.
+        IF ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .OR.&
+            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) THEN
+
+          ! Do we really have to reallocate the array KCOL?
+          CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
+          IF (rmatrix%NCOLS > isize) THEN
+            
+            ! Yes, so adopt the new size or reserve some extra memory if required.
+            isize = iNCOLS
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NCOLSMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory.
+            IF (isize > iNCOLS) THEN
+              
+              ! Set new size
+              isize = iNCOLS
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
+            END IF
+          END IF
+          
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_Kdiagonal)
+        END IF
+      END IF
+      
+      ! Ok, the matrix structure has been resized according to the prescribed dimensions.
+      ! Now, let us resize the data array of the matrix.
+
+      ! What kind of interleave matrix are we (if any)?
+      SELECT CASE(rmatrix%cinterleavematrixFormat)
+      CASE (LSYSSC_MATRIXUNDEFINED)
+        
+        ! Do we really have to reallocate the matrix physically?
+        IF (rmatrix%NA > isize) THEN
+
+          ! Yes, so adopt the new size or reserve some extra memory if required.
+          isize = iNA
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+          
+        ELSEIF (PRESENT(NAMAX)) THEN
+          
+          ! The available memory suffices for the matrix. Let's check if the user
+          ! suplied a new upper limit which makes it mandatory to "shrink" the
+          ! allocated memory. Note that memory for at least NA matrix entries
+          ! is allocated.
+          IF (isize > iNA) THEN
+            
+            ! Set new size
+            isize = iNA
+            
+            IF (isize == 0) THEN
+              ! If nothing is left, then the matrix can also be released.
+              CALL lsyssc_releaseMatrix(rmatrix)
+              RETURN
+            ELSE
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+        
+      CASE (LSYSSC_MATRIX1)
+
+        ! Do we really have to reallocate the matrix physically?
+        IF (rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR > isize) THEN
+
+          ! Yes, so adopt the new size or reserve some extra memory if required.
+          isize = iNA*rmatrix%NVAR*rmatrix%NVAR
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+          
+        ELSEIF (PRESENT(NAMAX)) THEN
+          
+          ! The available memory suffices for the matrix. Let's check if the user
+          ! suplied a new upper limit which makes it mandatory to "shrink" the
+          ! allocated memory. Note that memory for at least NA matrix entries
+          ! is allocated.
+          IF (isize > iNA*rmatrix%NVAR*rmatrix%NVAR) THEN
+            
+            ! Set new size
+            isize = iNA*rmatrix%NVAR*rmatrix%NVAR
+            
+            IF (isize == 0) THEN
+              ! If nothing is left, then the matrix can also be released.
+              CALL lsyssc_releaseMatrix(rmatrix)
+              RETURN
+            ELSE
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+
+      CASE (LSYSSC_MATRIXD)
+
+        ! Do we really have to reallocate the matrix physically?
+        IF (rmatrix%NA*rmatrix%NVAR > isize) THEN
+
+          ! Yes, so adopt the new size or reserve some extra memory if required.
+          isize = iNA*rmatrix%NVAR
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+          
+        ELSEIF (PRESENT(NAMAX)) THEN
+          
+          ! The available memory suffices for the matrix. Let's check if the user
+          ! suplied a new upper limit which makes it mandatory to "shrink" the
+          ! allocated memory. Note that memory for at least NA matrix entries
+          ! is allocated.
+          IF (isize > iNA*rmatrix%NVAR) THEN
+            
+            ! Set new size
+            isize = iNA*rmatrix%NVAR
+            
+            IF (isize == 0) THEN
+              ! If nothing is left, then the matrix can also be released.
+              CALL lsyssc_releaseMatrix(rmatrix)
+              RETURN
+            ELSE
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+        
+      CASE DEFAULT
+        PRINT *, "lsyssc_resizeMatrixDirect: Unsupported interleave matrix format!"
+        STOP
+      END SELECT
+      
+      ! Should the matrix be cleared? Note that the array Kdiagonal has
+      ! already been cleared before if required.
+      IF (bclear) THEN
+        CALL storage_clear(rmatrix%h_DA)
+        CALL storage_clear(rmatrix%h_Kcol)
+        CALL storage_clear(rmatrix%h_Kld)
+      END IF
+
+    CASE DEFAULT
+      PRINT *, "lsyssc_resizeMatrixDirect: Unsupported matrix format!"
+      STOP
+    END SELECT
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_resizeMatrixIndirect (rmatrix, rmatrixTemplate, bclear, bcopy)
+
+!<description>
+  ! Resizes the matrix so that it exhibits the same memory layout as the
+  ! template matrix. Note that this subroutine can only be used if the
+  ! template matrix has the same internal structure, e.g., data type, NVAR
+  ! as the matrix to be resized.
+  !
+  ! If the parameter bclear=.TRUE. the complete matrix is cleared.
+  ! This is done both in case the matrix is reallocated physically or not.
+  !
+  ! If the parameter bcopy=.TRUE. the content of the existing matrix is 
+  ! copied. This is only required, if the matrix needs to be reallocated
+  ! physically. Otherwise, the data still exists in the memory.
+  !
+  ! Remark: The parameter bclear has higher priority than the parameter bcopy.
+  ! That is, if both parameters are given, then no data is copied if the
+  ! matrix shoud be cleared afterwards ;-)
+!</description>
+
+!<input>
+
+    ! Scalar template matrix
+    TYPE(t_matrixScalar), INTENT(IN)           :: rmatrixTemplate
+
+    ! Whether to fill the vector with zero initially
+    LOGICAL, INTENT(IN)                        :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL              :: bcopy
+
+!</input>
+
+!<inputoutput>
+
+    ! Scalar matrix structure
+    TYPE(t_matrixScalar), INTENT(INOUT)        :: rmatrix
+
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_MATIDX) :: iNA,isize
+    INTEGER(PREC_VECIDX) :: iNEQ,iNCOLS
+    LOGICAL :: bdocopy
+
+    ! Check, if matrix is not a copy of another matrix
+    IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) /= 0 .OR.&
+        IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   /= 0) THEN
+      PRINT *, "lsyssc_resizeMatrixDirect: A copied matrix cannot be resized!"
+      STOP
+    END IF
+
+    ! Check, if matrix has been initialized before.
+    IF (rmatrix%cmatrixFormat == LSYSSC_MATRIXUNDEFINED) THEN
+
+      ! At first, copy all 'local' data.
+      rmatrix = rmatrixTemplate
+
+      ! Then allocate memory for the matrix structure and matrix data.
+      IF (bclear) THEN
+        IF (rmatrixTemplate%h_Kld /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kld', isize,&
+              ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ZERO)
+        END IF
+        IF (rmatrixTemplate%h_Kcol /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_Kcol, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kcol', isize,&
+              ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ZERO)
+        END IF
+        IF (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kdiagonal', isize,&
+              ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ZERO)
+        END IF
+        IF (rmatrixTemplate%h_DA /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_DA, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_DA', isize,&
+              rmatrixTemplate%cdataType, rmatrix%h_DA, ST_NEWBLOCK_ZERO)
+        END IF
+      ELSE
+        IF (rmatrixTemplate%h_Kld /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kld', isize,&
+              ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_NOINIT)
+        END IF
+        IF (rmatrixTemplate%h_Kcol /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_Kcol, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kcol', isize,&
+              ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
+        END IF
+        IF (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kdiagonal', isize,&
+              ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
+        END IF
+        IF (rmatrixTemplate%h_DA /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrixTemplate%h_DA, isize)
+          CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_DA', isize,&
+              rmatrixTemplate%cdataType, rmatrix%h_DA, ST_NEWBLOCK_NOINIT)
+        END IF
+      END IF
+      
+    ELSE
+
+      ! The matrix has been initialized before.
+
+      ! Check if matrices are compatible except for the dimensions
+      IF ((rmatrix%cmatrixFormat /= rmatrixTemplate%cmatrixFormat) .OR.&
+          (rmatrix%cinterleavematrixFormat /= rmatrixTemplate%cinterleavematrixFormat) .OR.&
+          (rmatrix%NVAR /= rmatrixTemplate%NVAR) .OR.&
+          (rmatrix%cdataType /= rmatrixTemplate%cdataType)) THEN
+        PRINT *, "lsyssc_resizeMatrixDirect: Matrices are incompatible!"
+        STOP
+      END IF
+      
+      ! Set copy/clear attributes
+      bdocopy = (.NOT.bclear)
+      IF (PRESENT(bcopy)) bdocopy = (bdocopy .AND. bcopy)
+
+      ! If the matrix should be cleared, then the sorting strategy (if any)
+      ! can be ignored and reset. Otherwise, the matrix needs to be unsorted
+      ! prior to copying some part of it. Afterwards, no sorting strategy is
+      ! available in any case.
+      IF (bdocopy .AND. rmatrix%isortStrategy > 0) THEN
+        CALL lsyssc_unsortMatrix(rmatrix,.TRUE.)
+      END IF
+      
+      ! Reset sorting strategy, there is none
+      rmatrix%isortStrategy      = 0
+      rmatrix%h_isortPermutation = ST_NOHANDLE
+      
+      ! Update NA
+      rmatrix%NA = rmatrixTemplate%NA
+      IF ((rmatrix%h_DA /= ST_NOHANDLE) .AND.&
+          (rmatrixTemplate%h_DA /= ST_NOHANDLE)) THEN
+        
+        ! Do we have to reallocate the handle?
+        CALL storage_getsize(rmatrix%h_DA, iNA)
+        IF (rmatrix%NA > iNA) THEN
+
+          ! Yes, we have to reallocate the handle. 
+          ! Also consider the size of the template matrix.
+          CALL storage_getsize(rmatrixTemplate%h_DA, isize)
+          isize = MAX(0,isize,iNA)
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_DA,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+        END IF
+      END IF
+
+      ! Update NEQ and NCOLS. Actually, is is not impoerted if the matrix
+      ! is transposed or not. What is importat is whether both matrices
+      ! are transposed/not transposed or if only one matrix is.
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /= &
+          IAND(rmatrixTemplate%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)) THEN
+        rmatrix%NEQ   = rmatrixTemplate%NCOLS
+        rmatrix%NCOLS = rmatrixTemplate%NEQ
+      ELSE
+        rmatrix%NEQ   = rmatrixTemplate%NEQ
+        rmatrix%NCOLS = rmatrixTemplate%NCOLS
+      END IF
+        
+      ! Now, we no longer have to treat transposed matrices separately.
+      IF ((rmatrix%h_Kld /= ST_NOHANDLE) .AND.&
+          (rmatrixTemplate%h_Kld /= ST_NOHANDLE)) THEN
+        
+        ! Do we have to reallocate the handle?
+        CALL storage_getsize(rmatrix%h_Kld, iNEQ)
+        IF (rmatrix%NEQ+1 > iNEQ) THEN
+          
+          ! Yes, we have to reallocate the handle. 
+          ! Also consider the size of the template matrix.
+          CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
+          isize = MAX(0,isize,iNEQ)
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kld,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+        END IF
+      END IF
+      
+      IF ((rmatrix%h_Kcol /= ST_NOHANDLE) .AND.&
+          (rmatrixTemplate%h_Kcol /= ST_NOHANDLE)) THEN
+        
+        ! Do we have to reallocate the handle?
+        CALL storage_getsize(rmatrix%h_Kcol, iNA)
+        IF (rmatrix%NA > iNA) THEN
+          
+          ! Yes, we have to reallocate the handle. 
+          ! Also consider the size of the template matrix.
+          CALL storage_getsize(rmatrixTemplate%h_Kcol, isize)
+          isize = MAX(0,isize,iNA)
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kcol,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+        END IF
+      END IF
+      
+      IF ((rmatrix%h_Kdiagonal /= ST_NOHANDLE) .AND.&
+          (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE)) THEN
+        
+        ! Do we have to reallocate the handle?
+        CALL storage_getsize(rmatrix%h_Kdiagonal, iNEQ)
+        IF (rmatrix%NEQ > iNEQ) THEN
+          
+          ! Yes, we have to reallocate the handle. 
+          ! Also consider the size of the template matrix.
+          CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
+          isize = MAX(0,isize,iNEQ)
+          
+          ! Reallocate the memory
+          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kdiagonal,&
+              ST_NEWBLOCK_NOINIT, bdocopy)
+        END IF
+      END IF
+    END IF
+
   END SUBROUTINE
 
   !****************************************************************************
@@ -14887,6 +15644,9 @@ CONTAINS
 !</input>
 !</subroutine>
 
+    ! local variables
+    INTEGER(PREC_MATIDX) :: isize
+
     WRITE(*,FMT='(A)')       '-------------------------'
     CALL output_line ('cmatrixFormat:           '//TRIM(sys_siL(rmatrix%cmatrixFormat,15)))
     CALL output_line ('cinterleavematrixFormat: '//TRIM(sys_siL(rmatrix%cinterleaveMatrixFormat,15)))
@@ -14896,13 +15656,41 @@ CONTAINS
     CALL output_line ('NEQ:                     '//TRIM(sys_siL(rmatrix%NEQ,0)))
     CALL output_line ('NCOLS:                   '//TRIM(sys_siL(rmatrix%NCOLS,0)))
     CALL output_line ('NVAR:                    '//TRIM(sys_siL(rmatrix%NVAR,0)))
-    CALL output_line ('dscaleFactor:            '//TRIM(sys_sdL(rmatrix%dscaleFactor,0)))
+    CALL output_line ('dscaleFactor:            '//TRIM(sys_sdL(rmatrix%dscaleFactor,2)))
     CALL output_line ('isortStrategy:           '//TRIM(sys_siL(rmatrix%isortStrategy,15)))
     CALL output_line ('h_IsortPermutation:      '//TRIM(sys_siL(rmatrix%h_IsortPermutation,15)))
     CALL output_line ('h_DA:                    '//TRIM(sys_siL(rmatrix%h_DA,15)))
+    IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
+      CALL storage_getsize(rmatrix%h_DA,isize)
+      CALL output_line ('DA memory usage:         '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NA,2))//'%')
+    END IF
     CALL output_line ('h_Kcol:                  '//TRIM(sys_siL(rmatrix%h_Kcol,15)))
+    IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
+      CALL storage_getsize(rmatrix%h_Kcol,isize)
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) THEN
+        CALL output_line ('Kcol memory usage:       '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NEQ,2))//'%')
+      ELSE
+        CALL output_line ('Kcol memory usage:       '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NCOLS,2))//'%')
+      END IF
+    END IF
     CALL output_line ('h_Kld:                   '//TRIM(sys_siL(rmatrix%h_Kld,15)))
+    IF (rmatrix%h_Kld /= ST_NOHANDLE) THEN
+      CALL storage_getsize(rmatrix%h_Kld,isize)
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) THEN
+        CALL output_line ('Kld memory usage:        '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NEQ+1),2))//'%')
+      ELSE
+        CALL output_line ('Kld memory usage:        '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NCOLS+1),2))//'%')
+      END IF
+    END IF
     CALL output_line ('h_Kdiagonal:             '//TRIM(sys_siL(rmatrix%h_Kdiagonal,15)))
+    IF (rmatrix%h_Kdiagonal /= ST_NOHANDLE) THEN
+      CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) THEN
+        CALL output_line ('Kdiagonal memory usage:  '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NEQ+1),2))//'%')
+      ELSE
+        CALL output_line ('Kdiagonl memory usage:   '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NCOLS+1),2))//'%')
+      END IF
+    END IF
     WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoMatrix
 
@@ -14925,9 +15713,6 @@ CONTAINS
     ! local variables
     INTEGER(PREC_VECIDX) :: isize
 
-    isize = 0
-    IF (rvector%h_Ddata /= ST_NOHANDLE) CALL storage_getsize(rvector%h_Ddata,isize)
-
     WRITE(*,FMT='(A)')       '-------------------------'
     CALL output_line ('cdataType:              '//TRIM(sys_siL(rvector%cdataType,15)))
     CALL output_line ('NEQ:                    '//TRIM(sys_siL(rvector%NEQ,0)))
@@ -14935,7 +15720,10 @@ CONTAINS
     CALL output_line ('isortStrategy:          '//TRIM(sys_siL(rvector%isortStrategy,15)))
     CALL output_line ('h_IsortPermutation:     '//TRIM(sys_siL(rvector%h_IsortPermutation,15)))
     CALL output_line ('h_Ddata:                '//TRIM(sys_siL(rvector%h_Ddata,15)))
-    CALL output_line ('memory usage:           '//TRIM(sys_siL(INT(100/REAL(isize,DP)*rvector%NEQ*rvector%NVAR,I32),15))//'%')
+    IF (rvector%h_Ddata /= ST_NOHANDLE) THEN
+      CALL storage_getsize(rvector%h_Ddata,isize)
+      CALL output_line ('Ddata memory usage:     '//TRIM(sys_sdL(100/REAL(isize,DP)*rvector%NEQ*rvector%NVAR,2))//'%')
+    END IF
     CALL output_line ('iidxFirstEntry:         '//TRIM(sys_siL(rvector%iidxFirstEntry,0)))
     WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoVector

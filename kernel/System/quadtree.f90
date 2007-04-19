@@ -37,6 +37,21 @@
 !#
 !# 10.) qtree_getBoundingBox
 !#      -> Return the outer bounding box
+!#
+!# 11.) qtree_getX
+!#      -> Return the X-value at a given position
+!#
+!# 12.) qtree_getY
+!#      -> Return the Y-value at a given position
+!#
+!# For the internal use the following routines are available:
+!#
+!# 1.) resizeNVT
+!#     -> Resize the number of stored values
+!#
+!# 2.) resizeNQUAD
+!#     -> Resize the number of stored quads
+!#
 !# </purpose>
 !##############################################################################
 
@@ -56,6 +71,8 @@ MODULE quadtree
   PUBLIC :: qtree_printQuadtree
   PUBLIC :: qtree_infoQuadtree
   PUBLIC :: qtree_getBoundingBox
+  PUBLIC :: qtree_getX
+  PUBLIC :: qtree_getY
 
 !<constants>
 
@@ -135,7 +152,6 @@ MODULE quadtree
   ! A linear quadtree implemented as array
 
   TYPE t_quadtree
-    PRIVATE
 
     ! Handle to data vector
     INTEGER :: h_Ddata             = ST_NOHANDLE
@@ -238,9 +254,17 @@ MODULE quadtree
   INTERFACE qtree_infoQuadtree
     MODULE PROCEDURE t_quadtree_info
   END INTERFACE
-
+  
   INTERFACE qtree_getBoundingBox
     MODULE PROCEDURE t_quadtree_getboundingbox
+  END INTERFACE
+
+  INTERFACE qtree_getX
+    MODULE PROCEDURE t_quadtree_getxvalue
+  END INTERFACE
+
+  INTERFACE qtree_getY
+    MODULE PROCEDURE t_quadtree_getyvalue
   END INTERFACE
 
   INTERFACE resizeNVT
@@ -427,7 +451,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dcorvg,p_DcorvgTmp
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata,p_DdataTmp
     
     ! Transform the content of the quadtree to h_Ddata
     IF (h_Ddata /= ST_NOHANDLE) THEN
@@ -435,9 +459,9 @@ CONTAINS
     ELSE
       CALL storage_new('t_quadtree_copy','p_Ddata',(/2,rquadtree%NVT/),ST_DOUBLE,h_Ddata,ST_NEWBLOCK_NOINIT)
     END IF
-    CALL storage_getbase_double2D(h_Ddata,p_Dcorvg)
-    CALL storage_getbase_double2D(rquadtree%h_Ddata,p_DcorvgTmp)
-    CALL DCOPY(2*rquadtree%NVT,p_DcorvgTmp,1,p_Dcorvg,1)
+    CALL storage_getbase_double2D(h_Ddata,p_Ddata)
+    CALL storage_getbase_double2D(rquadtree%h_Ddata,p_DdataTmp)
+    CALL DCOPY(2*rquadtree%NVT,p_DdataTmp,1,p_Ddata,1)
   END SUBROUTINE t_quadtree_copyfrom
 
   !************************************************************************
@@ -478,7 +502,7 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE t_quadtree_insert(rquadtree,ivt,dcorvg,iquad)
+  SUBROUTINE t_quadtree_insert(rquadtree,ivt,Ddata,iquad)
 
 !<description>
     ! This subroutine inserts a new coordinate item to the quadtree
@@ -492,7 +516,7 @@ CONTAINS
     INTEGER(PREC_QTIDX), INTENT(IN) :: iquad
     
     ! Coordinates of the new vertex
-    REAL(DP), DIMENSION(2), INTENT(IN) :: dcorvg
+    REAL(DP), DIMENSION(2), INTENT(IN) :: Ddata
 !</input>
 
 !<inputoutput>
@@ -505,8 +529,8 @@ CONTAINS
     IF (rquadtree%NVT == rquadtree%NNVT) CALL resizeNVT(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNVT))
     
     ! Update values and add new entry recursively
-    rquadtree%NVT           = rquadtree%NVT+1
-    rquadtree%p_Ddata(:,ivt) = dcorvg
+    rquadtree%NVT            = rquadtree%NVT+1
+    rquadtree%p_Ddata(:,ivt) = Ddata
     CALL insert(ivt,iquad)
     
   CONTAINS  
@@ -587,7 +611,7 @@ CONTAINS
   
 !<function>
   
-  FUNCTION t_quadtree_delete(rquadtree,dcorvg,ivt) RESULT(f)
+  FUNCTION t_quadtree_delete(rquadtree,Ddata,ivt) RESULT(f)
 
 !<description>
     ! This function deletes an item from the quadtree
@@ -595,7 +619,7 @@ CONTAINS
 
 !<input>
     ! Coordinates of the vertex that should be deleted
-    REAL(DP), DIMENSION(2), INTENT(IN) :: dcorvg
+    REAL(DP), DIMENSION(2), INTENT(IN) :: Ddata
 !</input>
 
 !<inputoutput>
@@ -618,7 +642,7 @@ CONTAINS
     INTEGER :: iquad,ipos,jpos,jvt
     
     ! Search for the given coordinates
-    f=search(rquadtree,dcorvg,iquad,ipos,ivt)
+    f=search(rquadtree,Ddata,iquad,ipos,ivt)
     
     ! What can we do from the searching
     IF (f == QFOUND) THEN
@@ -646,7 +670,7 @@ CONTAINS
 
 !<function>
   
-  FUNCTION t_quadtree_search(rquadtree,dcorvg,iquad,ipos,ivt) RESULT(f)
+  FUNCTION t_quadtree_search(rquadtree,Ddata,iquad,ipos,ivt) RESULT(f)
 
 !<description>
     ! This subroutine searches for given coordinates in the quadtree
@@ -657,7 +681,7 @@ CONTAINS
     TYPE(t_quadtree), INTENT(IN) :: rquadtree
     
     ! coordinates that should be searched
-    REAL(DP), DIMENSION(2), INTENT(IN) :: dcorvg
+    REAL(DP), DIMENSION(2), INTENT(IN) :: Ddata
 !</input>
 
 !<output>
@@ -693,7 +717,7 @@ CONTAINS
       IF (rquadtree%p_Kquad(QSTATUS,iquad) == QSUBDIV) THEN
         
         ! Quad is subdivided. Compute child IQUAD which to look recursively.
-        iquad = rquadtree%p_Kquad(direction(rquadtree,dcorvg,iquad),iquad)
+        iquad = rquadtree%p_Kquad(direction(rquadtree,Ddata,iquad),iquad)
         f=search(iquad,ipos,ivt)
         
       ELSE
@@ -701,7 +725,7 @@ CONTAINS
         ! Quad is not subdivided. Search for (x,y) in current quad
         DO ipos=1,rquadtree%p_Kquad(QSTATUS,iquad)
           ivt = rquadtree%p_Kquad(ipos,iquad)
-          IF (MAXVAL(ABS(rquadtree%p_Ddata(:,ivt)-dcorvg)) <= SYS_EPSREAL) THEN
+          IF (MAXVAL(ABS(rquadtree%p_Ddata(:,ivt)-Ddata)) <= SYS_EPSREAL) THEN
             f=QFOUND; RETURN
           END IF
         END DO
@@ -714,10 +738,10 @@ CONTAINS
   
 !<function>
   
-  PURE FUNCTION t_quadtree_direction(rquadtree,dcorvg,iquad) RESULT(d)
+  PURE FUNCTION t_quadtree_direction(rquadtree,Ddata,iquad) RESULT(d)
 
 !<description>
-    ! This subroutine determines the direction to preceed w.r.t. dcorvg
+    ! This subroutine determines the direction to preceed w.r.t. Ddata
 !</description>
 
 !<input>
@@ -725,7 +749,7 @@ CONTAINS
     TYPE(t_quadtree), INTENT(IN) :: rquadtree
     
     ! Coordinates
-    REAL(DP), DIMENSION(2), INTENT(IN) :: dcorvg
+    REAL(DP), DIMENSION(2), INTENT(IN) :: Ddata
 
     ! Number of quad
     INTEGER(PREC_QTIDX), INTENT(IN) :: iquad
@@ -744,14 +768,14 @@ CONTAINS
     xmid=(rquadtree%p_Dbbox(QXMIN,iquad)+rquadtree%p_Dbbox(QXMAX,iquad))/2._DP
     ymid=(rquadtree%p_Dbbox(QYMIN,iquad)+rquadtree%p_Dbbox(QYMAX,iquad))/2._DP
     
-    IF (dcorvg(1) > xmid) THEN
-      IF (dcorvg(2) > ymid) THEN
+    IF (Ddata(1) > xmid) THEN
+      IF (Ddata(2) > ymid) THEN
         d=QNE; RETURN
       ELSE
         d=QSE; RETURN
       END IF
     ELSE
-      IF (dcorvg(2) > ymid) THEN
+      IF (Ddata(2) > ymid) THEN
         d=QNW; RETURN
       ELSE
         d=QSW; RETURN
@@ -896,4 +920,56 @@ CONTAINS
       bbox=rquadtree%p_Dbbox(QXMIN:QYMAX,1)
     END IF
   END FUNCTION t_quadtree_getboundingbox
+
+  !************************************************************************
+
+!<function>
+
+  FUNCTION t_quadtree_getXvalue(rquadtree,ivt) RESULT(x)
+
+!<description>
+    ! This function returns the X-value at the given position.
+!</description>
+
+!<input>
+    ! quadtree
+    TYPE(t_quadtree), INTENT(IN) :: rquadtree
+
+    ! position in the quadtree
+    INTEGER(PREC_QTIDX), INTENT(IN) :: ivt
+!</input>
+
+!<result>
+    REAL(DP) :: x
+!</result>
+!</function>
+
+    x=rquadtree%p_Ddata(1,ivt)
+  END FUNCTION t_quadtree_getXvalue
+
+  !************************************************************************
+
+!<function>
+
+  ELEMENTAL FUNCTION t_quadtree_getYvalue(rquadtree,ivt) RESULT(y)
+
+!<description>
+    ! This function returns the Y-value at the given position.
+!</description>
+
+!<input>
+    ! quadtree
+    TYPE(t_quadtree), INTENT(IN) :: rquadtree
+
+    ! position in the quadtree
+    INTEGER(PREC_QTIDX), INTENT(IN) :: ivt
+!</input>
+
+!<result>
+    REAL(DP) :: y
+!</result>
+!</function>
+
+    y=rquadtree%p_Ddata(2,ivt)
+  END FUNCTION t_quadtree_getYvalue
 END MODULE quadtree
