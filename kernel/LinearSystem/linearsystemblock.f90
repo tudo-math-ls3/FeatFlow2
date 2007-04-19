@@ -128,6 +128,9 @@
 !#
 !# 37.) lsysbl_isSubmatrixPresent
 !#      -> Checks if a submatrix of a blockmatrix is present
+!#
+!# 38.) lsyssc_resizeVector
+!#      -> Resize a blockvector
 !# </purpose>
 !##############################################################################
 
@@ -303,6 +306,12 @@ MODULE linearsystemblock
     MODULE PROCEDURE lsysbl_createVecBlockDirectDims
     MODULE PROCEDURE lsysbl_createVecBlockIndirect 
     MODULE PROCEDURE lsysbl_createVecBlockByDiscr
+  END INTERFACE
+
+  INTERFACE lsysbl_resizeVectorBlock
+    MODULE PROCEDURE lsysbl_resizeVecBlockDirect
+    MODULE PROCEDURE lsysbl_resizeVecBlockDirectDims
+    MODULE PROCEDURE lsysbl_resizeVecBlockIndirect
   END INTERFACE
 
 CONTAINS
@@ -3248,5 +3257,272 @@ CONTAINS
              (rmatrix%RmatrixBlock(irow,icolumn)%dscaleFactor .NE. 0.0_DP))
 
   END FUNCTION
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_resizeVecBlockDirect (rx, Isize, bclear, NEQMAX)
+
+!<description>
+  ! Resize the vector block structure rx. Isize is an array
+  ! of integers containing the length of the individual blocks.
+  ! 
+  ! Remark: If the vector structure rx is not initialized, then
+  ! it cannot be resized and the routine stops with an error.
+  ! If it exists already, then the total memory on the heap is
+  ! reallocated if "SUM(Isize) > SIZE(rx)", that is, the new
+  ! dimension of rx exceeds that of the old vectors. If the old
+  ! vector is larger than the new one, then the dimensions of the
+  ! subvectors are only adjusted without reallocation.
+  ! If the optional parameter NEQMAX is specified, then this value
+  ! is taken as upper bound for the total memory.
+  !
+  ! If the parameter bclear=.TRUE., then the resized vector is cleared.
+  ! Otherwise it is left 'as is'.
+  !
+  ! Remark: In contrast to scalar vectors where the content of the vector
+  ! can be copied upon resize this is not possible for block vectors.
+  ! Theoretically, this would be possible. However, some subvectors may
+  ! have increased whereas other may have decreased, so that an additional
+  ! vector is mandatory to reorganize the global array. This is not efficient.
+!</description>
+
+!<input>
     
+    ! An array with desired length-tags for the different blocks
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Isize
+
+    ! Whether to fill the vector with zero initially
+    LOGICAL, INTENT(IN)                            :: bclear
+
+    ! OPTIONAL: Maximum length of the vector
+    INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL     :: NEQMAX
+
+!</input>
+
+!<inputoutput>
+
+    ! Block vector structure
+    TYPE(t_vectorBlock), INTENT(INOUT)             :: rx
+
+!</inputoutpu>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_VECIDX) :: iNEQ,iisize,i,n
+
+    ! Check, that the vector is not a copy of another (possibly larger) vector
+    IF (rx%bisCopy) THEN
+      PRINT *, "lsysbl_resizeVecBlockDirect: A copied vector cannot be resized!"
+      STOP
+    END IF
+    
+    ! Check, if vector has been initialized before
+    IF (rx%NEQ == 0 .OR. rx%h_Ddata == ST_NOHANDLE) THEN
+      PRINT *, "lsysbl_resizeVecBlockDirect: A vector can only be resized &
+          & uf it has been created correctly!"
+      STOP
+    END IF
+
+    ! Update the global NEQ and set working dimensions
+    rx%NEQ = MAX (0,SUM(Isize))
+    iNEQ   = rx%NEQ
+    IF (PRESENT(NEQMAX)) iNEQ = MAX(iNEQ,NEQMAX)
+
+    ! Get current size of vector memory
+    CALL storage_getsize(rx%h_Ddata, iisize)
+
+    ! Do we really have to reallocate the vector physically?
+    IF (rx%NEQ > iisize) THEN
+
+      ! Yes, so adopt the new size. Note that some extra memory is
+      ! allocated if the optional argument NEQMAX is specified
+      iisize = iNEQ
+
+      ! Reallocate the memory for handle h_Ddata
+      CALL storage_realloc('lsysbl_resizeVecBlockDirect', iisize, rx%h_Ddata, &
+          ST_NEWBLOCK_NOINIT, .FALSE.)  
+      
+    ELSEIF (PRESENT(NEQMAX)) THEN
+
+      ! The available memory suffices for all componenets of the block vector.
+      ! Let's check if the user supplied a new upper limit which makes it
+      ! mandatory to "shrink" the allocated memory. Note that memory for at
+      ! least NEQ=SUM(Isize) vector entries as allocated in any case.
+      IF (iisize > iNEQ) THEN
+        
+        ! Compute new size, i.e. MAX(0,NEQ,NEQMAX)
+        iisize = iNEQ
+
+        IF (iisize == 0) THEN
+          ! If nothing is left, then the vector can also be release
+          CALL lsysbl_releaseVector(rx)
+          RETURN
+        ELSE
+          ! Otherwise, 
+          CALL storage_realloc('lsysbl_resizeVecBlockDirect', iisize, rx%h_Ddata, &
+              ST_NEWBLOCK_NOINIT, .FALSE.)
+        END IF
+      END IF
+    END IF
+    
+    ! Should the vector be cleared?
+    IF (bclear) CALL storage_clear(rx%h_Ddata)
+        
+    ! Restore the structure of the scalar subvectors
+    n=1
+    DO i=1,rx%nblocks
+      rx%RvectorBlock(i)%NEQ = Isize(i)
+      rx%RvectorBlock(i)%iidxFirstEntry = n
+      n = n + rx%RvectorBlock(i)%NEQ
+
+      ! Remove any sorting strategy 
+      rx%RvectorBlock(i)%isortStrategy      = 0
+      rx%RvectorBlock(i)%h_iSortPermutation = ST_NOHANDLE
+    END DO
+
+  END SUBROUTINE lsysbl_resizeVecBlockDirect
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_resizeVecBlockDirectDims (rx, isize, bclear, NEQMAX)
+
+!<description>
+  ! Resize the vector block structure rx. Isize is an integer value
+  ! which denotes the new length of all blocks of the global block vector.
+  !
+  ! Remark: If the vector structure rx is not initialized, then
+  ! it cannot be resized and the routine stops with an error.
+  ! If it exists already, then the total memory on the heap is
+  ! reallocated if "(rx%nblocks*isize) > SIZE(rx)", that is, 
+  ! the new dimension of rx exceeds that of the old vectors. If the old
+  ! vector is larger than the new one, then the dimensions of the
+  ! subvectors are only adjusted without reallocation.
+  ! If the optional parameter NEQMAX is specified, then this value
+  ! is taken as upper bound for the total memory.
+  !
+  ! If the parameter bclear=.TRUE., then the resized vector is cleared.
+  ! Otherwise it is left 'as is'.
+  !
+  ! Remark: In contrast to scalar vectors where the content of the vector
+  ! can be copied upon resize this is not possible for block vectors.
+  ! Theoretically, this would be possible. However, some subvectors may
+  ! have increased whereas other may have decreased, so that an additional
+  ! vector is mandatory to reorganize the global array. This is not efficient.
+!</description>
+
+!<input>
+    
+    ! Integer with desired length of all vector blocks
+    INTEGER(PREC_VECIDX), INTENT(IN) :: isize
+
+    ! Whether to fill the vector with zero initially
+    LOGICAL, INTENT(IN)                            :: bclear
+
+    ! OPTIONAL: Maximum length of the vector
+    INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL     :: NEQMAX
+
+!</input>
+
+!<inputoutput>
+
+    ! Block vector structure
+    TYPE(t_vectorBlock), INTENT(INOUT)             :: rx
+
+!</inputoutpu>
+
+!</subroutine>
+    
+    ! local variabls
+    INTEGER(PREC_VECIDX), DIMENSION(LSYSBL_MAXBLOCKS) :: Iisize
+
+    ! Fill auxiliary vector Iisize
+    Iisize(1:rx%nblocks) = isize
+
+    ! Call the direct resize routine
+    CALL lsysbl_resizeVecBlockDirect(rx, Iisize(1:rx%nblocks), bclear, NEQMAX)
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_resizeVecBlockIndirect (rx, rTemplate, bclear)
+
+!<description>
+  ! Resize the vector block structure rx so that is resembles that of
+  ! the template vector. If rx has not been initialized, than it is
+  ! initialized adopting the same memory layout as the template vector.
+  !
+  ! Remark: If the vector exists already, then the total memory on 
+  ! the heap is reallocated if "SIZE(rTemplate) > SIZE(rx)", that is, 
+  ! the new dimension of rx exceeds that of the old vectors. If the old
+  ! vector is larger than the new one, then the dimensions of the
+  ! subvectors are only adjusted without reallocation.
+  !
+  ! If the parameter bclear=.TRUE., then the resized vector is cleared.
+  ! Otherwise it is left 'as is'.
+  !
+  ! Remark: In contrast to scalar vectors where the content of the vector
+  ! can be copied upon resize this is not possible for block vectors.
+  ! Theoretically, this would be possible. However, some subvectors may
+  ! have increased whereas other may have decreased, so that an additional
+  ! vector is mandatory to reorganize the global array. This is not efficient.
+!</description>
+
+!<input>
+
+    ! Template block vector structure
+    TYPE(t_vectorBlock), INTENT(IN)                :: rTemplate
+
+    ! Whether to fill the vector with zero initially
+    LOGICAL, INTENT(IN)                            :: bclear
+
+!</input>
+
+!<inputoutput>
+
+    ! Block vector structure
+    TYPE(t_vectorBlock), INTENT(INOUT)             :: rx
+
+!</inputoutpu>
+
+!</subroutine>
+
+    ! local variabls
+    INTEGER(PREC_VECIDX), DIMENSION(LSYSBL_MAXBLOCKS) :: Iisize
+    INTEGER(PREC_VECIDX) :: NEQMAX
+    INTEGER :: i
+
+    ! Check if vector is initialized
+    IF (rx%NEQ == 0 .OR. rx%h_Ddata == ST_NOHANDLE) THEN
+      CALL lsysbl_createVectorBlock(rTemplate, rx, bclear)
+      
+    ELSE
+      
+      ! Check if vectors are compatible
+      IF ((rx%cdataType /= rTemplate%cdataType) .OR. &
+          (rx%nblocks /= rTemplate%nblocks)) THEN
+        PRINT *, "lsysbl_resizeVecBlockIndirect: Vectors are incompatible!"
+        STOP
+      END IF
+
+      ! Fill auxiliary vector Iisize
+      DO i=1,rTemplate%nblocks
+        Iisize(i) = rTemplate%RvectorBlock(i)%NEQ
+      END DO
+
+      ! Get current size of global vector
+      CALL storage_getsize(rTemplate%h_Ddata,NEQMAX)
+      
+      ! Resize vector directly
+      CALL lsysbl_resizeVecBlockDirect(rx, Iisize(1:rx%nblocks), bclear, NEQMAX)
+    END IF
+
+  END SUBROUTINE
+
 END MODULE
