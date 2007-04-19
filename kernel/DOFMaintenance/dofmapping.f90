@@ -11,13 +11,16 @@
 !# The following functions provide support for global DOF's:
 !#
 !# 1.) dof_igetNDofGlob
-!#     -> Get number of global DOF's to a given discretisation
+!#     -> Get number of global DOF's described by a given discretisation
 !#
-!# 2.) dof_locGlobMapping
+!# 2.) dof_igetNDofGlobBlock
+!#     -> Get number of global DOF's described by a given block discretisation
+!#
+!# 3.) dof_locGlobMapping
 !#     -> Map the 'local' degrees of freedom 1..n on one element to the global 
 !#        degrees of freedom according to a discretisaion
 !#
-!# 3.) dof_locGlobMapping_mult
+!# 4.) dof_locGlobMapping_mult
 !#     -> Map the 'local' degrees of freedom 1..n on a set of elements to 
 !#        the global degrees of freedom according to a discretisaion. 
 !#
@@ -72,7 +75,7 @@ CONTAINS
 !</input>
 
 !<result>
-  !global number of equations on current grid
+  ! global number of equations on current grid
 !</result>
 
 !</function>
@@ -150,6 +153,50 @@ CONTAINS
   END FUNCTION 
 
   ! ***************************************************************************
+
+!<function>  
+
+  INTEGER(PREC_DOFIDX) FUNCTION dof_igetNDofGlobBlock(rdiscretisation,btestSpace)
+
+!<description>
+  ! This function returns for a given block discretisation the number of global
+  ! degrees of freedom in the corresponding block DOF vector.
+!</description>
+
+!<input>    
+  ! The discretisation structure that specifies the (block) discretisation.
+  TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+
+  ! OPTIONAL: Use test space.
+  ! Normally, dof_igetNDofGlobBlock returns the number of DOF's in the trial
+  ! space of the discretisation. If btestSpace is present and set to TRUE,
+  ! dof_igetNDofGlob will determine the number of DOF's in the test space
+  ! of the discretisation instead of the trial space.
+  LOGICAL, OPTIONAL, INTENT(IN)             :: btestSpace
+!</input>
+
+!<result>
+  ! global number of equations on current grid
+!</result>
+
+!</function>
+
+    ! Sum up the DOF's of every scalar sub-discretisation structure
+    INTEGER :: i
+    INTEGER(PREC_DOFIDX) :: icount
+    
+    icount = 0
+    DO i=1,rdiscretisation%ncomponents
+      icount = icount + &
+          dof_igetNDofGlob(rdiscretisation%RspatialDiscretisation(i),btestSpace)
+    END DO
+    
+    dof_igetNDofGlobBlock = icount
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
 !<subroutine>
 
   SUBROUTINE dof_locGlobMapping(rdiscretisation, ielIdx, btestFct, IdofGlob)
