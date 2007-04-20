@@ -103,6 +103,7 @@ case ${id} in
 		    case "$model" in
 			0|1|2) cpu="pentium4" core="northwood";;
 			3) cpu="pentium4" core="prescott";;
+			4) cpu="pentium4" core="nocona";;
 			*) cpu="itanium";;
 		    esac
 		    ;;
