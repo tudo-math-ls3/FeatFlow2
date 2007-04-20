@@ -35,13 +35,16 @@
 !# 9.) qtree_infoQuadtree
 !#     -> Output info about quadtree
 !#
-!# 10.) qtree_getBoundingBox
+!# 10.) qtree_getNVT
+!#      -> Return number of vertices in quadtree
+!#
+!# 11.) qtree_getBoundingBox
 !#      -> Return the outer bounding box
 !#
-!# 11.) qtree_getX
+!# 12.) qtree_getX
 !#      -> Return the X-value at a given position
 !#
-!# 12.) qtree_getY
+!# 13.) qtree_getY
 !#      -> Return the Y-value at a given position
 !#
 !# For the internal use the following routines are available:
@@ -70,6 +73,7 @@ MODULE quadtree
   PUBLIC :: qtree_searchInQuadtree
   PUBLIC :: qtree_printQuadtree
   PUBLIC :: qtree_infoQuadtree
+  PUBLIC :: qtree_getNVT
   PUBLIC :: qtree_getBoundingBox
   PUBLIC :: qtree_getX
   PUBLIC :: qtree_getY
@@ -152,6 +156,13 @@ MODULE quadtree
   ! A linear quadtree implemented as array
 
   TYPE t_quadtree
+
+    ! Remark: The content of this derived data type is declared private.
+    ! Hence, it cannot be accessed outside of this module. This allows us
+    ! to use techniques such as the pointers which are used to increase
+    ! the performace. These pointers cannot be modified externally so that
+    ! data consistency is guaranteed.
+    PRIVATE
 
     ! Handle to data vector
     INTEGER :: h_Ddata             = ST_NOHANDLE
@@ -255,6 +266,10 @@ MODULE quadtree
     MODULE PROCEDURE t_quadtree_info
   END INTERFACE
   
+  INTERFACE qtree_getNVT
+    MODULE PROCEDURE t_quadtree_get_nvt
+  END INTERFACE
+
   INTERFACE qtree_getBoundingBox
     MODULE PROCEDURE t_quadtree_getboundingbox
   END INTERFACE
@@ -887,6 +902,30 @@ CONTAINS
 
 !<function>
 
+  PURE FUNCTION t_quadtree_get_nvt(rquadtree) RESULT(nvt)
+
+!<description>
+    ! This function returns the number of vertices stored in the quadtree
+!</description>
+
+!<input>
+    ! quadtree
+    TYPE(t_quadtree), INTENT(IN) :: rquadtree
+!</input>
+
+!<result>
+    ! number of vertices in quadtree
+    INTEGER(PREC_QTIDX) :: nvt
+!</result>
+!</function>
+
+    nvt=rquadtree%NVT
+  END FUNCTION t_quadtree_get_nvt
+
+  !************************************************************************
+
+!<function>
+
   FUNCTION t_quadtree_getboundingbox(rquadtree,iquad) RESULT(bbox)
     
 !<description>
@@ -925,7 +964,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION t_quadtree_getXvalue(rquadtree,ivt) RESULT(x)
+  ELEMENTAL FUNCTION t_quadtree_getXvalue(rquadtree,ivt) RESULT(x)
 
 !<description>
     ! This function returns the X-value at the given position.
