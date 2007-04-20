@@ -1580,7 +1580,7 @@ CONTAINS
     INTEGER(PREC_VECIDX) :: iNEQ,isize
     LOGICAL :: bdocopy
 
-    ! Check, if vector is not a copy of another (possible larger) vector
+    ! Check, that vector is not a copy of another (possibly larger) vector
     IF (rvector%bisCopy) THEN
       PRINT *, "lsyssc_resizeVectorDirect: A copied vector cannot be resized!"
       STOP
@@ -1707,7 +1707,6 @@ CONTAINS
 !</subroutine>
 
     INTEGER(PREC_VECIDX) :: isize,iNEQMAX
-    LOGICAL :: bdocopy
 
     ! Check, if vector is a copy of another (possibly larger) vector
     IF (rvector%bisCopy) THEN
@@ -2313,7 +2312,7 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_MATIDX) :: iNA,isize
-    INTEGER(PREC_VECIDX) :: iNEQ,iNCOLS
+    INTEGER(PREC_VECIDX) :: iNEQ
     LOGICAL :: bdocopy
 
     ! Check, if matrix is not a copy of another matrix
