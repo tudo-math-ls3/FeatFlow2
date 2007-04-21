@@ -130,7 +130,7 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
 !</inputoutput>
 
-!</subtroutine>
+!</subroutine>
 
   ! local variables
   INTEGER :: i
@@ -254,6 +254,8 @@ CONTAINS
   ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
     ! local variables
     INTEGER :: i

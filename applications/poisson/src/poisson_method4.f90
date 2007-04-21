@@ -127,6 +127,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! Initialise the level in the problem structure
@@ -168,6 +170,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -224,6 +228,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -375,6 +381,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
     ! A set of variables describing the analytic boundary conditions.    
     TYPE(t_boundaryRegion) :: rboundaryRegion
     TYPE(t_bcRegion), POINTER :: p_rbcRegion
@@ -466,6 +474,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
 
     ! A pointer to the system matrix and the RHS vector as well as 
@@ -527,6 +537,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! A pointer to the system matrix and the RHS vector as well as 
@@ -565,6 +577,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
 
@@ -695,6 +709,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   

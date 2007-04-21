@@ -167,6 +167,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i
   
@@ -232,6 +234,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: I
@@ -311,6 +315,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i
@@ -588,6 +594,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
 
     ! A set of variables describing the analytic boundary conditions.    
@@ -736,6 +744,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i
 
@@ -828,6 +838,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i,ilvmax
@@ -1454,6 +1466,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
     ! local variables
     INTEGER :: ilvmin,ilvmax
     INTEGER :: i
@@ -1667,6 +1681,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   

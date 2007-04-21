@@ -824,6 +824,8 @@ CONTAINS
   TYPE(t_interlevelProjectionBlock), INTENT(INOUT) :: rprojection
 !</output>
 
+!</subroutine>
+
     ! local variables
     TYPE(t_parlstSection), POINTER :: p_rsection
     INTEGER :: i1
@@ -913,6 +915,8 @@ CONTAINS
   ! with data.
   TYPE(t_ccPreconditioner), INTENT(OUT), TARGET :: rpreconditioner
 !</output>
+
+!</subroutine>
 
     ! local variables
     INTEGER :: NLMIN,NLMAX
@@ -1108,6 +1112,8 @@ CONTAINS
   TYPE(t_ccPreconditioner), INTENT(INOUT), TARGET :: rpreconditioner
 !</inputoutput>
 
+!</subroutine>
+
     ! Which preconditioner do we have?    
     SELECT CASE (rpreconditioner%itypePreconditioning)
     CASE (1)
@@ -1174,6 +1180,8 @@ CONTAINS
   TYPE(t_nlsolNode) :: rnlSolver
 !</output>
 
+!</subroutine>
+
     ! local variables
     TYPE(t_parlstSection), POINTER :: p_rsection
 
@@ -1235,6 +1243,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
     ! local variables
     TYPE(t_ccPreconditioner) :: rpreconditioner    

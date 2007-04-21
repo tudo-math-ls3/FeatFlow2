@@ -2053,6 +2053,8 @@ CONTAINS
   TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
 !</inputoutput>
 
+!</subroutine>
+
     ! Local variables
     REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata2D
     INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
@@ -4013,7 +4015,7 @@ CONTAINS
   ! The triangulation to be refined; can be a 'raw' or a 'standard' mesh.
   ! Is overwritten by the refined mesh.
   TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
-!</inputoutpout>
+!</inputoutput>
 
 !</subroutine>
  
@@ -4632,7 +4634,7 @@ CONTAINS
 
 !************************************************************************
 
-!<functino>
+!<function>
 
   INTEGER FUNCTION tria_searchBoundaryNode(inode,rtriangulation)
 

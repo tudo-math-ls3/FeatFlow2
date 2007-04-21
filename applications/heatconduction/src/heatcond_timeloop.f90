@@ -331,6 +331,8 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! We need some more variables for postprocessing

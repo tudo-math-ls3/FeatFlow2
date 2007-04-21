@@ -71,6 +71,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: I,ielementType,icubA,icubB,icubF
   
@@ -225,6 +227,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i

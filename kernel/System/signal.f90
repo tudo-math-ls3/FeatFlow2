@@ -9,6 +9,7 @@
 !# that is registered as a signal handler is later called by value 
 !# rather than by reference), so this module provides functions which
 !# are used as wrapper for the underlying C routines.
+!# </purpose>
 !##############################################################################
 MODULE signal
   IMPLICIT NONE

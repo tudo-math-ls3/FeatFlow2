@@ -144,6 +144,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i
   
@@ -207,6 +209,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: I
   
@@ -269,6 +273,8 @@ CONTAINS
   ! A parameter list with informations from the DAT file.
   TYPE(t_parlist), INTENT(IN) :: rparams
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i
@@ -468,6 +474,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i
 
@@ -569,6 +577,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i
 
@@ -642,6 +652,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i,ilvmax
   
@@ -689,6 +701,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
     INTEGER :: ilvmin,ilvmax
@@ -867,6 +881,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   

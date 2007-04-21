@@ -662,6 +662,8 @@ CONTAINS
   TYPE(t_interlevelProjectionBlock), INTENT(INOUT) :: rprojection
 !</output>
 
+!</subroutine>
+
     ! local variables
     TYPE(t_parlstSection), POINTER :: p_rsection
     INTEGER :: i1

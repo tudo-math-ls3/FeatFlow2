@@ -179,6 +179,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i,ilvmin,ilvmax
   

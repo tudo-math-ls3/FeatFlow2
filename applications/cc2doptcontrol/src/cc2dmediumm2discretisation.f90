@@ -83,6 +83,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: I,j,k,ielementType,icubA,icubB,icubF, icubM
   CHARACTER(LEN=SYS_NAMELEN) :: sstr
@@ -1104,6 +1106,8 @@ CONTAINS
   ! The RHS vector which is to be filled with data.
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   

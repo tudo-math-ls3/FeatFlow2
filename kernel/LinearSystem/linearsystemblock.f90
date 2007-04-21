@@ -3238,7 +3238,7 @@ CONTAINS
   LOGICAL, INTENT(IN), OPTIONAL :: bignoreScaleFactor
 !</input>
 
-!<function>
+!<output>
   ! Whether the submatrix at position (irow,icolumn) exists or not.
 !</output>  
 
@@ -3306,7 +3306,7 @@ CONTAINS
     ! Block vector structure
     TYPE(t_vectorBlock), INTENT(INOUT)             :: rx
 
-!</inputoutpu>
+!</inputoutput>
 
 !</subroutine>
 
@@ -3433,7 +3433,7 @@ CONTAINS
     ! Block vector structure
     TYPE(t_vectorBlock), INTENT(INOUT)             :: rx
 
-!</inputoutpu>
+!</inputoutput>
 
 !</subroutine>
     
@@ -3489,7 +3489,7 @@ CONTAINS
     ! Block vector structure
     TYPE(t_vectorBlock), INTENT(INOUT)             :: rx
 
-!</inputoutpu>
+!</inputoutput>
 
 !</subroutine>
 

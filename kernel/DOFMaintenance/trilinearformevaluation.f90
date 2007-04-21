@@ -42,6 +42,8 @@ MODULE trilinearformevaluation
   
   IMPLICIT NONE
 
+!<constants>
+
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices

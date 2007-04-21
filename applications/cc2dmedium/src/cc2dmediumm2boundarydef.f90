@@ -75,6 +75,7 @@ MODULE cc2dmediumm2boundarydef
 
   ! Parabolic profile with prescribed maximum value
   INTEGER, PARAMETER :: BDC_VALPARPROFILE = 2
+!</constantblock>
 
 !<constantblock description="Variables in expressions">
 
@@ -99,6 +100,8 @@ MODULE cc2dmediumm2boundarydef
 CONTAINS
   
   ! ***************************************************************************
+
+!<subroutine>
 
   SUBROUTINE c2d2_parseBDconditions (rproblem)
 
@@ -456,6 +459,8 @@ CONTAINS
   END SUBROUTINE  
   
   ! ***************************************************************************
+
+!<subroutine>
 
   SUBROUTINE c2d2_parseFBDconditions (rproblem)
 

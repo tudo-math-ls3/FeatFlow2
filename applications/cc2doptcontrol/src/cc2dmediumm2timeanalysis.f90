@@ -167,7 +167,7 @@ CONTAINS
 !<output>
   ! OPTIONAL: Time error analysis block. Returns values of different time error functionals.
   TYPE(t_timeError), INTENT(OUT), TARGET, OPTIONAL :: rtimeError
-!/output>
+!</output>
 
 !<result>
   ! Value of the error functional.
@@ -292,7 +292,7 @@ CONTAINS
   ! OPTIONAL: Time norm analysis block. Returns different norms of the 
   ! time derivative.
   TYPE(t_timeDerivatives), INTENT(INOUT), TARGET, OPTIONAL :: rtimeDerivNorms
-!/output>
+!</output>
 
 !<result>
   ! Norm of the time derivative: $|| u{n+1} - u_n ||$ / dtstep.

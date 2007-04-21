@@ -70,6 +70,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i
 
@@ -178,6 +180,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: i
 
@@ -269,6 +273,8 @@ CONTAINS
   ! A pointer to the RHS vector.
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   INTEGER :: i,ilvmax

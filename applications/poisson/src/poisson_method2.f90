@@ -61,6 +61,8 @@ CONTAINS
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! An object for saving the domain:
@@ -112,6 +114,8 @@ CONTAINS
   ! information.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -168,6 +172,8 @@ CONTAINS
   ! information.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -282,6 +288,8 @@ CONTAINS
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
 
     ! A set of variables describing the analytic boundary conditions.    
@@ -380,6 +388,8 @@ CONTAINS
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
 
     ! A pointer to the system matrix and the RHS vector as well as 
@@ -442,6 +452,8 @@ CONTAINS
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! A pointer to the system matrix and the RHS vector as well as 
@@ -481,6 +493,8 @@ CONTAINS
   ! information.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -586,6 +600,8 @@ CONTAINS
   ! information.
   TYPE(t_collection), INTENT(INOUT) :: rcollection
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   

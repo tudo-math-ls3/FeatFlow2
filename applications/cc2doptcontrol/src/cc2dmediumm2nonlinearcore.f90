@@ -2848,6 +2848,8 @@ CONTAINS
   TYPE(t_nlsolNode) :: rnlSolver
 !</output>
 
+!</subroutine>
+
     ! local variables
     TYPE(t_parlstSection), POINTER :: p_rsection
 

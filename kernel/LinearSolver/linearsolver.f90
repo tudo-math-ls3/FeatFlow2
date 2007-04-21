@@ -8704,6 +8704,8 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+
+!<subroutine>
   
   RECURSIVE SUBROUTINE linsol_precGMRES (rsolverNode,rd)
   

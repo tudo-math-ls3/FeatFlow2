@@ -129,6 +129,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! For compatibility to old F77: an array accepting a set of triangulations
@@ -184,6 +186,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -243,6 +247,8 @@ CONTAINS
   ! A parameter list with informations from the DAT file.
   TYPE(t_parlist), INTENT(IN) :: rparams
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -411,6 +417,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
 
     ! A set of variables describing the analytic boundary conditions.    
@@ -504,6 +512,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
 
     ! A pointer to the system matrix and the RHS vector as well as 
@@ -565,6 +575,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! A pointer to the system matrix and the RHS vector as well as 
@@ -603,6 +615,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   
@@ -707,6 +721,8 @@ CONTAINS
   ! A problem astructure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
+
+!</subroutine>
 
   ! local variables
   

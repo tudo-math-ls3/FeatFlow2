@@ -1218,7 +1218,7 @@ CONTAINS
 !<inputoutput>
   ! Data array to be modified.
   REAL(DP), DIMENSION(:), INTENT(INOUT) :: Dx
-!<inputoutput>
+!</inputoutput>
 
 !</subroutine>
     
@@ -1250,7 +1250,7 @@ CONTAINS
 !<inputoutput>
   ! Data array to be modified.
   REAL(SP), DIMENSION(:), INTENT(INOUT) :: Fx
-!<inputoutput>
+!</inputoutput>
 
 !</subroutine>
     
@@ -1282,7 +1282,7 @@ CONTAINS
 !<inputoutput>
   ! Data array to be modified.
   INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Ix
-!<inputoutput>
+!</inputoutput>
 
 !</subroutine>
     

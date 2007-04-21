@@ -2175,7 +2175,7 @@ CONTAINS
 
   ! ***************************************************************************
   
-!<subvroutine>
+!<subroutine>
 
   SUBROUTINE collct_getvalue_intarr (rcollection, sparameter, value, &
                                      ilevel, ssectionName, bexists) 

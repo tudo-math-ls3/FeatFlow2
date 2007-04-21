@@ -15857,7 +15857,7 @@ CONTAINS
   LOGICAL, INTENT(IN), OPTIONAL :: bignoreScaleFactor
 !</input>
 
-!<function>
+!<output>
   ! Whether the matrix structure realises an existing matrix exists or not.
 !</output>  
 

@@ -87,6 +87,8 @@ CONTAINS
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   INTEGER :: I,j,k,ielementType,icubA,icubB,icubF, icubM
   CHARACTER(LEN=SYS_NAMELEN) :: sstr
@@ -1166,6 +1168,8 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
 !</inputoutput>
 
+!</subroutine>
+
   ! local variables
   
     ! A bilinear and linear form describing the analytic problem to solve
@@ -1214,23 +1218,23 @@ CONTAINS
 
   ! ***************************************************************************
 
-!!<subroutine>
+!!subroutine>
 !
 !  SUBROUTINE c2d2_initMatVec (rproblem)
 !  
-!!<description>
+!!description>
 !  ! Calculates entries of all static matrices (Stokes, B-matrices,...)
 !  ! of the problem. 
 !  ! Calculates the system matrix and RHS vector of the linear system
 !  ! by discretising the problem with the default discretisation structure
 !  ! in the problem structure.
 !  ! Sets up a solution vector for the linear system.
-!!</description>
+!!/description>
 !
-!!<inputoutput>
+!!inputoutput>
 !  ! A problem structure saving problem-dependent information.
 !  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-!!</inputoutput>
+!!/inputoutput>
 !
 !  ! local variables
 !  INTEGER :: i

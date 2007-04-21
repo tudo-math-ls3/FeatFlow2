@@ -207,7 +207,7 @@ MODULE cc2dmediumm2basic
 
 !<constants>
 
-  !<constantblock description="Names of entities in the problem-specific collection structure"
+  !<constantblock description="Names of entities in the problem-specific collection structure">
   
   ! Name of the RHS vector in the collection
   CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_RHS          = 'RHS'
