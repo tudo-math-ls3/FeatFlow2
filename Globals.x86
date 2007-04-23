@@ -25,6 +25,7 @@ ifeq ($(call match,$(ID),pc-(k.|athlon.?.?|opteron)-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
+OPTFLAGSDEBUG = -g -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 BLASLIB   = 
@@ -146,6 +147,7 @@ ifeq ($(call match,$(ID),pc-(pentium?.?|core?.?)-(linux|cygwin_nt?.?)),yes)
 CC=gcc
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
+OPTFLAGSDEBUG = -g -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
 BLASLIB   = 
@@ -178,7 +180,7 @@ CCFLAGS   += -march=pentium3
 endif
 
 ifeq ($(CPU),pentiumm)
-OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2
+OPTFLAGS  += -mfpmath=mmx -mfpmath=sse #-mfpmath=sse2
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
 endif

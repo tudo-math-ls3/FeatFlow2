@@ -26,25 +26,25 @@ FFVER:=2.0ALPHA
 ########################################################################
 
 #ID:=$(shell $(FEATFLOW)/bin/guess_id)
-HOST:=$(shell uname -n)
+FFHOST:=$(shell uname -n)
 match= $(shell $(FEATFLOW)/bin/match_id $(1) '$(2)')
 
-ifndef ARCH
-ARCH:=$(shell $(FEATFLOW)/bin/guess_id 1)
+ifndef FFARCH
+FFARCH:=$(shell $(FEATFLOW)/bin/guess_id 1)
 endif
 
-ifndef CPU
-CPU:=$(shell $(FEATFLOW)/bin/guess_id 2)
+ifndef FFCPU
+FFCPU:=$(shell $(FEATFLOW)/bin/guess_id 2)
 endif
 
-ifndef CORE
-CORE:=$(shell $(FEATFLOW)/bin/guess_id 3)
+ifndef FFCORE
+FFCORE:=$(shell $(FEATFLOW)/bin/guess_id 3)
 endif
 
-OS:=$(shell $(FEATFLOW)/bin/guess_id 4)
+FFOS:=$(shell $(FEATFLOW)/bin/guess_id 4)
 
 ifndef ID
-ID:=${ARCH}-${CPU}-${OS}
+ID:=${FFARCH}-${FFCPU}-${FFOS}
 endif
 
 ########################################################################
@@ -124,6 +124,10 @@ ARC=       # for C libraries, if undifined AR is used
 # special compiler optimization flags:
 
 OPTFLAGS=
+
+# standard flags applied when 'make debug' is executed
+
+OPTFLAGSDEBUG= -g
 
 # general compiler options for Fortran compiler:
 
@@ -244,10 +248,10 @@ ARC := $(AR)
 endif
 
 ########################################################################
-# hacked debug cflags
+# hacked debug flags if 'make debug' is applied
 ########################################################################
 
-debug: OPTFLAGS= -g
+debug: OPTFLAGS= $(OPTFLAGSDEBUG)
 
 ########################################################################
 # hack to have this target in all Makefiles, the dot is to not
@@ -269,13 +273,14 @@ ARC:=$(shell (which $(ARC) 2>/dev/null || echo "$(ARC) not found !!"))
 	@echo '  C-Library archiver:' $(ARC)
 	@echo
 	@echo 'Flags to be used:'
-	@echo '  OPTFLAGS =' $(OPTFLAGS)
-	@echo '  FCFLAGS  =' $(FCFLAGS)
-	@echo '  CCFLAGS  =' $(CCFLAGS)
-	@echo '  BUILDLIB =' $(BUILDLIB)
-	@echo '  BLASLIB  =' $(if $(BLASLIB),$(BLASLIB),"(standard BLAS, included in installation package)")
+	@echo '  OPTFLAGS      =' $(OPTFLAGS)
+	@echo '  OPTFLAGSDEBUG =' $(OPTFLAGSDEBUG)
+	@echo '  FCFLAGS       =' $(FCFLAGS)
+	@echo '  CCFLAGS       =' $(CCFLAGS)
+	@echo '  BUILDLIB      =' $(BUILDLIB)
+	@echo '  BLASLIB       =' $(if $(BLASLIB),$(BLASLIB),"(standard BLAS, included in installation package)")
 ifeq "$(LAPACKLIB)" ""
-	@echo '  LAPACKLIB= (standard LAPACK, included in installation package)'
+	@echo '  LAPACKLIB     = (standard LAPACK, included in installation package)'
 else
 ifeq "$(LAPACKLIB)" "$(BLASLIB)"
 			@echo '  LAPACKLIB= (Shared BLAS/LAPACK)'
@@ -283,8 +288,8 @@ else
 			@echo '  LAPACKLIB= ' $(LAPACKLIB)
 endif
 endif
-	@echo '  LDLIBS   =' $(LDLIBS)
-	@echo '  LDFLAGS  =' $(LDFLAGS)
+	@echo '  LDLIBS        =' $(LDLIBS)
+	@echo '  LDFLAGS       =' $(LDFLAGS)
 	@echo 
 	@(if [ ! -x "$(FCC)" ] ; then echo 'Please edit Globals.mk to specify your C compiler' ; exit 1; fi)
 	@(if [ ! -x "$(FFC)" ] ; then echo 'Please edit Globals.mk to specify your Fortran compiler' ; exit 1; fi)
