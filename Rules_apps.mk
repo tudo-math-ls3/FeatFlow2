@@ -23,9 +23,9 @@ OBJ=$(filter %.o,$(SRC:%.f=$(OBJDIR)/%.o))
 OBJ+=$(filter %.o,$(SRC:%.f90=$(OBJDIR)/%.o))
 OBJ+=$(filter %.o,$(SRC:%.c=$(OBJDIR)/%.o))
 
-CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
-FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
-F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
+CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(OPTFLAGSC) $(INCDIR) $(DEFS)
+FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
+F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 
 
 # If the BLASLIB is not defined add the included blas to the libs.

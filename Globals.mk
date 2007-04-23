@@ -121,13 +121,32 @@ ARC=       # for C libraries, if undifined AR is used
 
 # default values for general arch 
 
-# special compiler optimization flags:
+# special compiler optimization flags for both, Fortran and C compiler:
 
 OPTFLAGS=
 
-# standard flags applied when 'make debug' is executed
+# special compiler optimization flags for Fortran compiler
+
+OPTFLAGSF=
+
+# special compiler optimization flags for C compiler
+
+OPTFLAGSC=
+
+# standard flags applied when 'make debug' is executed,
+# for both, Fortran and C compiler
 
 OPTFLAGSDEBUG= -g
+
+# standard flags applied when 'make debug' is executed,
+# for Fortran compiler; additionally to OPTFLAGSDEBUG!
+
+OPTFLAGSFDEBUG= 
+
+# standard flags applied when 'make debug' is executed,
+# for C compiler; additionally to OPTFLAGSDEBUG!
+
+OPTFLAGSCDEBUG= 
 
 # general compiler options for Fortran compiler:
 
@@ -248,10 +267,12 @@ ARC := $(AR)
 endif
 
 ########################################################################
-# hacked debug flags if 'make debug' is applied
+# hack debug flags if 'make debug' is applied
 ########################################################################
 
-debug: OPTFLAGS= $(OPTFLAGSDEBUG)
+debug: OPTFLAGS=$(OPTFLAGSDEBUG)
+debug: OPTFLAGSC=$(OPTFLAGSCDEBUG)
+debug: OPTFLAGSF=$(OPTFLAGSFDEBUG)
 
 ########################################################################
 # hack to have this target in all Makefiles, the dot is to not
@@ -274,7 +295,11 @@ ARC:=$(shell (which $(ARC) 2>/dev/null || echo "$(ARC) not found !!"))
 	@echo
 	@echo 'Flags to be used:'
 	@echo '  OPTFLAGS      =' $(OPTFLAGS)
+	@echo '  OPTFLAGSC     =' $(OPTFLAGSC)
+	@echo '  OPTFLAGSF     =' $(OPTFLAGSC)
 	@echo '  OPTFLAGSDEBUG =' $(OPTFLAGSDEBUG)
+	@echo '  OPTFLAGSCDEBUG=' $(OPTFLAGSCDEBUG)
+	@echo '  OPTFLAGSFDEBUG=' $(OPTFLAGSFDEBUG)
 	@echo '  FCFLAGS       =' $(FCFLAGS)
 	@echo '  CCFLAGS       =' $(CCFLAGS)
 	@echo '  BUILDLIB      =' $(BUILDLIB)

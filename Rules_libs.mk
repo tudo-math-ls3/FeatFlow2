@@ -24,9 +24,9 @@ OBJ=$(filter %.o,$(SRCLIST:%.f=$(OBJDIR)/%.o))
 OBJ+=$(filter %.o,$(SRCLIST:%.f90=$(OBJDIR)/%.o))
 OBJ+=$(filter %.o,$(SRCLIST:%.c=$(OBJDIR)/%.o))
 
-CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
-FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
-F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(INCDIR) $(DEFS)
+CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(OPTFLAGSC) $(INCDIR) $(DEFS)
+FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
+F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 
 all: greet lib
 	@echo "Done," $(LIBNAME) "is ready."
