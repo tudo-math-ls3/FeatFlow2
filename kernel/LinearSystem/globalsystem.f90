@@ -137,12 +137,11 @@ CONTAINS
   ! but the algorithms here can only handle un-transposed matrices.
   ! So at first, we create an un-transposed global matrix.
   
-  rlocalMatrix = rsourceMatrix
+  CALL lsysbl_duplicateMatrix (rsourceMatrix,rlocalMatrix, &
+      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      
   DO j=1,rlocalMatrix%ndiagBlocks
     DO i=1,rlocalMatrix%ndiagBlocks
-      ! Indicate that the submatrix is a copy
-      rlocalMatrix%RmatrixBlock(i,j)%imatrixSpec = &
-        IOR(rlocalMatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
         
       ! Transpose the submatrix if necessary
       IF (IAND(rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec, &
@@ -192,7 +191,12 @@ CONTAINS
           (rdestMatrix%RmatrixBlock(1,1)%h_Kld .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kld,isize)
         ! Matrix is for sure not transposed!
-        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NEQ) balloc = .FALSE.
+        IF (isize .EQ. rlocalMatrix%NEQ+1) THEN
+          balloc = .FALSE.
+        ELSE
+          ! Release the previous memory before allocating a new block.
+          CALL storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Kld)
+        END IF
       END IF
       
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Kld',  &
@@ -210,7 +214,12 @@ CONTAINS
           (rdestMatrix%RmatrixBlock(1,1)%h_Kcol .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kcol,isize)
         ! Matrix is for sure not transposed!
-        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) balloc = .FALSE.
+        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) THEN
+          balloc = .FALSE.
+        ELSE
+          ! Release the previous memory before allocating a new block.
+          CALL storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Kcol)
+        END IF
       END IF
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Kcol', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
@@ -223,7 +232,12 @@ CONTAINS
       IF ((.NOT. lsyssc_isMatrixContentShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Da .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Da,isize)
-        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) balloc = .FALSE.
+        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) THEN
+          balloc = .FALSE.
+        ELSE
+          ! Release the previous memory before allocating a new block.
+          CALL storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Da)
+        END IF
       END IF
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Da', & 
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
@@ -235,15 +249,31 @@ CONTAINS
       CALL glmatasm_KcolDa99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
                                   Icolumns, Irows)      
       
+      ! Allocate a Kdiagonal in the destination matrix if we don't have a previous
+      ! array in the correct size.
+      balloc = .TRUE.
+      IF ((.NOT. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
+          (rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal .NE. ST_NOHANDLE)) THEN
+        CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,isize)
+        ! Matrix is for sure not transposed!
+        IF (isize .EQ. rlocalMatrix%NEQ) THEN
+          balloc = .FALSE.
+        ELSE
+          ! Release the previous memory before allocating a new block.
+          CALL storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal)
+        END IF
+      END IF
+
       ! Allocate a Kdiagonal in the destination matrix      
-      CALL storage_new ('glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
+      IF (balloc) CALL storage_new (&
+                        'glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
                         ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,&
                         ST_NEWBLOCK_NOINIT)
 
       ! Rebuild Kdiagonal
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,p_Kdiagonal)
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kcol,p_Kcol)
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kld,p_Kld)
+      CALL lsyssc_getbase_Kdiagonal(rdestMatrix%RmatrixBlock(1,1),p_Kdiagonal)
+      CALL lsyssc_getbase_Kcol(rdestMatrix%RmatrixBlock(1,1),p_Kcol)
+      CALL lsyssc_getbase_Kld(rdestMatrix%RmatrixBlock(1,1),p_Kld)
       CALL lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, rdestMatrix%NEQ)
       
     END SELECT
@@ -270,7 +300,12 @@ CONTAINS
           (rdestMatrix%RmatrixBlock(1,1)%h_Kld .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kld,isize)
         ! Matrix is for sure not transposed!
-        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NEQ) balloc = .FALSE.
+        IF (isize .EQ. rlocalMatrix%NEQ+1) THEN
+          balloc = .FALSE.
+        ELSE
+          ! Release the previous memory before allocating a new block.
+          CALL storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Kld)
+        END IF
       END IF
       
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Kld',  &
@@ -288,7 +323,12 @@ CONTAINS
           (rdestMatrix%RmatrixBlock(1,1)%h_Kcol .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kcol,isize)
         ! Matrix is for sure not transposed!
-        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) balloc = .FALSE.
+        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) THEN
+          balloc = .FALSE.
+        ELSE
+          ! Release the previous memory before allocating a new block.
+          CALL storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Kcol)
+        END IF
       END IF
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Kcol', &
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
@@ -305,9 +345,9 @@ CONTAINS
                         ST_NEWBLOCK_NOINIT)
 
       ! Rebuild Kdiagonal
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,p_Kdiagonal)
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kcol,p_Kcol)
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kld,p_Kld)
+      CALL lsyssc_getbase_Kdiagonal(rdestMatrix%RmatrixBlock(1,1),p_Kdiagonal)
+      CALL lsyssc_getbase_Kcol(rdestMatrix%RmatrixBlock(1,1),p_Kcol)
+      CALL lsyssc_getbase_Kld(rdestMatrix%RmatrixBlock(1,1),p_Kld)
       CALL lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, rdestMatrix%NEQ)
       
     END SELECT
@@ -335,7 +375,12 @@ CONTAINS
       IF ((.NOT. lsyssc_isMatrixContentShared (rdestMatrix%RmatrixBlock(1,1))) .AND. &
           (rdestMatrix%RmatrixBlock(1,1)%h_Da .NE. ST_NOHANDLE)) THEN
         CALL storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Da,isize)
-        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) balloc = .FALSE.
+        IF (isize .EQ. rdestMatrix%RmatrixBlock(1,1)%NA) THEN
+          balloc = .FALSE.
+        ELSE
+          ! Release the previous memory before allocating a new block.
+          CALL storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Da)
+        END IF
       END IF
       IF (balloc) CALL storage_new ('glsys_assembleGlobal', 'Da', & 
                                     rdestMatrix%RmatrixBlock(1,1)%NA, &
@@ -353,9 +398,9 @@ CONTAINS
                         ST_NEWBLOCK_NOINIT)
 
       ! Rebuild Kdiagonal
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,p_Kdiagonal)
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kcol,p_Kcol)
-      CALL storage_getbase_int(rdestMatrix%RmatrixBlock(1,1)%h_Kld,p_Kld)
+      CALL lsyssc_getbase_Kdiagonal(rdestMatrix%RmatrixBlock(1,1),p_Kdiagonal)
+      CALL lsyssc_getbase_Kcol(rdestMatrix%RmatrixBlock(1,1),p_Kcol)
+      CALL lsyssc_getbase_Kld(rdestMatrix%RmatrixBlock(1,1),p_Kld)
       CALL lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, rdestMatrix%NEQ)
       
     END SELECT
@@ -485,7 +530,7 @@ CONTAINS
       TYPE(t_matrixScalar), POINTER :: p_rmatrix
       
       ! Create a new, empty KLD.
-      CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+      CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
                         
       ! Loop through all matrix blocks.
       DO i=1,rsourceMatrix%ndiagBlocks
@@ -499,7 +544,7 @@ CONTAINS
           IF (rsourceMatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
             
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
-            CALL storage_getbase_int (p_rmatrix%h_Kld,p_Kld)
+            CALL lsyssc_getbase_Kld (p_rmatrix,p_Kld)
             
             ! Loop through all lines in the matrix and add the number of
             ! entries per row to get KLD:
@@ -571,8 +616,8 @@ CONTAINS
       CALL storage_getbase_int (h_KldTmp,p_KldTmp)
                         
       ! Get KCol,Kld
-      CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
-      CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+      CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
+      CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
       
       ! Loop through all matrix subblocks
       DO i=1,rsourceMatrix%ndiagBlocks
@@ -588,8 +633,8 @@ CONTAINS
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
             
             ! Get the local matrix pointers / column structure
-            CALL storage_getbase_int (p_rmatrix%h_Kcol,p_Kcol)
-            CALL storage_getbase_int (p_rmatrix%h_Kld,p_Kld)
+            CALL lsyssc_getbase_Kcol (p_rmatrix,p_Kcol)
+            CALL lsyssc_getbase_Kld (p_rmatrix,p_Kld)
             
             ! Loop through all rows to append them to the current rows.
             DO irow = 1,p_rmatrix%NEQ
@@ -666,10 +711,10 @@ CONTAINS
       CALL storage_getbase_int (h_KldTmp,p_KldTmp)
                         
       ! Get Kld
-      CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+      CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
       
       ! Get destination data arrays
-      CALL storage_getbase_double (rdestMatrix%h_Da,p_DaDest)
+      CALL lsyssc_getbase_double (rdestMatrix,p_DaDest)
     
       ! Loop through all matrix subblocks
       DO i=1,rsourceMatrix%ndiagBlocks
@@ -685,8 +730,8 @@ CONTAINS
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
             
             ! Get the local matrix pointers structure
-            CALL storage_getbase_int (p_rmatrix%h_Kld,p_Kld)
-            CALL storage_getbase_double (p_rmatrix%h_Da,p_Da)
+            CALL lsyssc_getbase_Kld (p_rmatrix,p_Kld)
+            CALL lsyssc_getbase_double (p_rmatrix,p_Da)
             dscale = p_rmatrix%dscaleFactor
             
             ! Loop through all rows to append them to the current rows.
@@ -761,11 +806,11 @@ CONTAINS
       CALL storage_getbase_int (h_KldTmp,p_KldTmp)
                         
       ! Get KCol,Kld
-      CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
+      CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
       CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
       
       ! Get destination data arrays
-      CALL storage_getbase_double (rdestMatrix%h_Da,p_DaDest)
+      CALL lsyssc_getbase_double (rdestMatrix,p_DaDest)
     
       ! Loop through all matrix subblocks
       DO i=1,rsourceMatrix%ndiagBlocks
@@ -781,9 +826,9 @@ CONTAINS
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
             
             ! Get the local matrix pointers / column structure
-            CALL storage_getbase_int (p_rmatrix%h_Kcol,p_Kcol)
-            CALL storage_getbase_int (p_rmatrix%h_Kld,p_Kld)
-            CALL storage_getbase_double (p_rmatrix%h_Da,p_Da)
+            CALL lsyssc_getbase_Kcol (p_rmatrix,p_Kcol)
+            CALL lsyssc_getbase_Kld (p_rmatrix,p_Kld)
+            CALL lsyssc_getbase_double (p_rmatrix,p_Da)
             dscale = p_rmatrix%dscaleFactor
             
             ! Loop through all rows to append them to the current rows.

@@ -633,10 +633,10 @@ CONTAINS
     ! Get a pointer to the matrix entries and the matrix structure
     IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
       ! The entries may be undefined - allowed if cdef=CONV_MODDEFECT!
-      CALL storage_getbase_double (rmatrix%h_DA,p_Da)
+      CALL lsyssc_getbase_double (rmatrix,p_Da)
     END IF
-    CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-    CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+    CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
     
     ! Get a pointer to triangulation arrays.
     CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_Kvert)
@@ -1687,10 +1687,10 @@ CONTAINS
     
     IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
       ! Get matrix arrays
-      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
+      CALL lsyssc_getbase_double (rmatrix,p_Da)
     END IF
-    CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-    CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+    CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
     
     ! Initialise the cubature formula,
     ! get cubature weights and point coordinates on the reference element
@@ -3026,24 +3026,24 @@ CONTAINS
     ! Get pointers to the matrix content (if necessary)
     IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
       ! Get matrix arrays
-      CALL storage_getbase_double (rmatrix%RmatrixBlock(1,1)%h_Da,p_Da11)
-      CALL storage_getbase_double (rmatrix%RmatrixBlock(2,2)%h_Da,p_Da22)
+      CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
+      CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
       
       IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
-        CALL storage_getbase_double (rmatrix%RmatrixBlock(1,2)%h_Da,p_Da12)
-        CALL storage_getbase_double (rmatrix%RmatrixBlock(2,1)%h_Da,p_Da21)
+        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
+        CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(2,1),p_Da21)
       ELSE
         NULLIFY(p_Da12,p_Da21)
       END IF
     END IF
     
     ! Get pointers to the matrix structure(s).
-    CALL storage_getbase_int (rmatrix%RmatrixBlock(1,1)%h_Kcol,p_Kcol)
-    CALL storage_getbase_int (rmatrix%RmatrixBlock(1,1)%h_Kld,p_Kld)
+    CALL lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,1),p_Kcol)
+    CALL lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1),p_Kld)
     
     IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
-      CALL storage_getbase_int (rmatrix%RmatrixBlock(1,2)%h_Kcol,p_Kcol12)
-      CALL storage_getbase_int (rmatrix%RmatrixBlock(1,2)%h_Kld,p_Kld12)
+      CALL lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,2),p_Kcol12)
+      CALL lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,2),p_Kld12)
     ELSE
       NULLIFY(p_Kcol12,p_Kld12)
     END IF
@@ -4722,9 +4722,9 @@ CONTAINS
     NVT = p_rtriangulation%NVT
     
     ! Get KLD, KCol...
-    CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
-    CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_Kcol)
-    CALL storage_getbase_double (rmatrixScalar%h_Da,p_Da)
+    CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+    CALL lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
     
     ! Activate the one and only element distribution
     p_elementDistribution => p_rdiscretisation%RelementDistribution(1)
@@ -5679,9 +5679,9 @@ CONTAINS
     NVT = p_rtriangulation%NVT
     
     ! Get KLD, KCol...
-    CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
-    CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_Kcol)
-    CALL storage_getbase_double (rmatrixScalar%h_Da,p_Da)
+    CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
+    CALL lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
     
     ! Activate the one and only element distribution
     p_elementDistribution => p_rdiscretisation%RelementDistribution(1)

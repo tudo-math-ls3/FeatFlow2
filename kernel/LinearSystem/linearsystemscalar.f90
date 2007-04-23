@@ -71,81 +71,93 @@
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
 !# 17.) lsyssc_getbase_double
-!#      -> Get a pointer to the double precision data array of the vector
+!#      -> Get a pointer to the double precision data array of a vector or a matrix
 !#
 !# 18.) lsyssc_getbase_single
-!#      -> Get a pointer to the single precision data array of the vector
+!#      -> Get a pointer to the single precision data array of a vector or a matrix
 !#
 !# 19.) lsyssc_getbase_int
-!#      -> Get a pointer to the integer data array of the vector
+!#      -> Get a pointer to the integer data array of a vector
 !#
-!# 20.) lsyssc_addIndex
+!# 20.) lsyssc_getbase_Kcol
+!#      -> Get a pointer to the integer data array Kcol of a matrix
+!#         (if the matrix has one)
+!#
+!# 21.) lsyssc_getbase_Kld
+!#      -> Get a pointer to the integer data array Kld of a matrix
+!#         (if the matrix has one)
+!#
+!# 22.) lsyssc_getbase_Kdiagonal
+!#      -> Get a pointer to the integer data array Kdiagonal of a matrix
+!#         (if the matrix has one)
+!#
+!# 23.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
 !#         array.
 !#
-!# 21.) lsyssc_vectorNorm
+!# 24.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 22.) lsyssc_invertedDiagMatVec
+!# 25.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 23.) lsyssc_clearMatrix
+!# 26.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !#
-!# 24.) lsyssc_initialiseIdentityMatrix
+!# 27.) lsyssc_initialiseIdentityMatrix
 !#      -> Initialises the content of a matrix to an identity matrix
 !#
-!# 25.) lsyssc_convertMatrix
+!# 28.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 26.) lsyssc_copyVector
+!# 29.) lsyssc_copyVector
 !#       -> Copy a vector over to another one
 !#
-!# 27.) lsyssc_scaleVector
+!# 30.) lsyssc_scaleVector
 !#      -> Scale a vector by a constant
 !#
-!# 28.) lsyssc_clearVector
+!# 31.) lsyssc_clearVector
 !#      -> Clear a vector
 !#
-!# 29.) lsyssc_vectorLinearComb
+!# 32.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
 !#
-!# 30.) lsyssc_copyMatrix
+!# 33.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 31.) lsyssc_transposeMatrix
+!# 34.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
-!# 32.) lsyssc_createEmptyMatrixScalar
+!# 35.) lsyssc_createEmptyMatrixScalar
 !#      -> Allocates memory for an empty matrix
 !#
-!# 33.) lsyssc_lumpMatrixScalar
+!# 36.) lsyssc_lumpMatrixScalar
 !#      -> Performs lumping of a given matrix
 !#
-!# 34.) lsyssc_scaleMatrix
+!# 37.) lsyssc_scaleMatrix
 !#      -> Scale a matrix by a constant
 !#
-!# 35.) lsyssc_multMatMat
+!# 38.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 36.) lsyssc_matrixLinearComb
+!# 39.) lsyssc_matrixLinearComb
 !#      -> Adds two matrices
 !#
-!# 37.) lsyssc_swapVectors
+!# 40.) lsyssc_swapVectors
 !#      -> Swap two vectors
 !#
-!# 38.) lsyssc_isMatrixStructureShared
+!# 41.) lsyssc_isMatrixStructureShared
 !#      -> Tests if the structure of a matrix is shared with another matrix
 !#
-!# 39.) lsyssc_isMatrixContentShared
+!# 42.) lsyssc_isMatrixContentShared
 !#      -> Tests if the content of a matrix is shared with another matrix
 !#
-!# 40.) lsyssc_resizeVector
+!# 43.) lsyssc_resizeVector
 !#      -> Resize the vector and reallocate memory if necessary.
 !#
-!# 41.) lsyssc_resizeMatrix
+!# 44.) lsyssc_resizeMatrix
 !#      -> Resize the matrix and reallocate memory if necessary.
 !#
 !# Sometimes useful auxiliary routines:
@@ -158,6 +170,22 @@
 !#
 !# 3.) lsyssc_infoVector
 !#     -> Outputs information about the vector (mostly used for debugging)
+!#
+!# 4.) lsyssc_auxcopy_da
+!#     -> Copies the data vector DA of a matrix to another without checks.
+!#        If the destination array does not exist, it's created.
+!#
+!# 5.) lsyssc_auxcopy_Kcol
+!#     -> Copies the data vector Kcol of a matrix to another without checks
+!#        If the destination array does not exist, it's created.
+!#
+!# 6.) lsyssc_auxcopy_Kld
+!#     -> Copies the data vector Kld of a matrix to another without checks
+!#        If the destination array does not exist, it's created.
+!#
+!# 7.) lsyssc_auxcopy_Kdiagonal
+!#     -> Copies the data vector Kdiagonal of a matrix to another without checks
+!#        If the destination array does not exist, it's created.
 !# </purpose>
 !##############################################################################
 
@@ -581,18 +609,18 @@ MODULE linearsystemscalar
 !</types>
 
   INTERFACE lsyssc_getbase_double
-    MODULE PROCEDURE lsyssc_getbase_doubleVectorScalar
-    MODULE PROCEDURE lsyssc_getbase_doubleMatrixScalar
+    MODULE PROCEDURE lsyssc_getbaseVector_double
+    MODULE PROCEDURE lsyssc_getbaseMatrixDA_double
   END INTERFACE
 
   INTERFACE lsyssc_getbase_single
-    MODULE PROCEDURE lsyssc_getbase_singleVectorScalar
-    MODULE PROCEDURE lsyssc_getbase_singleMatrixScalar
+    MODULE PROCEDURE lsyssc_getbaseVector_single
+    MODULE PROCEDURE lsyssc_getbaseMatrixDA_single
   END INTERFACE
 
   INTERFACE lsyssc_getbase_int
-    MODULE PROCEDURE lsyssc_getbase_intVectorScalar
-    MODULE PROCEDURE lsyssc_getbase_intMatrixScalar
+    MODULE PROCEDURE lsyssc_getbaseVector_int
+    MODULE PROCEDURE lsyssc_getbaseMatrixDA_int
   END INTERFACE
 
   INTERFACE lsyssc_isMatrixCompatible
@@ -928,7 +956,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_doubleVectorScalar (rvector,p_Ddata)
+  SUBROUTINE lsyssc_getbaseVector_double (rvector,p_Ddata)
   
 !<description>
   ! Returns a pointer to the double precision data array of the vector.
@@ -975,7 +1003,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_singleVectorScalar (rvector,p_Fdata)
+  SUBROUTINE lsyssc_getbaseVector_single (rvector,p_Fdata)
   
 !<description>
   ! Returns a pointer to the single precision data array of the vector.
@@ -1020,7 +1048,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_intVectorScalar (rvector,p_Idata)
+  SUBROUTINE lsyssc_getbaseVector_int (rvector,p_Idata)
   
 !<description>
   ! Returns a pointer to the integer data array of the vector.
@@ -1063,9 +1091,50 @@ CONTAINS
 
   ! ***************************************************************************
 
+!<function>
+
+  LOGICAL FUNCTION lsyssc_isExplicitMatrix1D (rmatrix)
+
+!<description>
+  ! Checks whether a given matrix explicitly exists in memory as 1D array,
+  ! which can be accessed via lsyssc_getbase_double. This is the usual case
+  ! for most of the matrices (format-7, format-9,...) but might be different
+  ! for special-type matrices that do not exist in memory, i.e. where it's
+  ! only known how to apply them to a vector.
+!</description>
+
+!<input>
+    ! The matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+!</input>
+
+!<result>
+    ! TRUE if the matrix is an explicit matrix that can be accessed with
+    ! lsyssc_getbase_double.
+    ! FALSE if the matrix is not accessible in that way.
+!</output>
+
+!</function>
+
+    ! Check the matrix type. If we have a matrix that is known to be in memory,
+    ! we can return TRUE.
+    SELECT CASE (rmatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX1, LSYSSC_MATRIX9,     LSYSSC_MATRIX7, &
+          LSYSSC_MATRIXD, LSYSSC_MATRIX7INTL, LSYSSC_MATRIX9INTL)
+      lsyssc_isExplicitMatrix1D = .TRUE.
+      
+    CASE DEFAULT
+      lsyssc_isExplicitMatrix1D = .FALSE.
+      
+    END SELECT
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_doubleMatrixScalar (rmatrix, p_Ddata)
+  SUBROUTINE lsyssc_getbaseMatrixDA_double (rmatrix, p_Ddata)
 
 !<description>
     ! Returns a pointer to the double precision data array of the matrix.
@@ -1085,6 +1154,12 @@ CONTAINS
 
 !</subroutine>
 
+    ! Check if the matrix format allows to access DA
+    IF (.NOT. lsyssc_isExplicitMatrix1D(rmatrix)) THEN
+      PRINT *,'lsyssc_getbaseMatrixDA_double: Matrix does not exist explicitely!'
+      STOP
+    END IF
+
     ! Do we have data at all?
     IF ((rmatrix%NA .EQ. 0) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       NULLIFY(p_Ddata)
@@ -1093,10 +1168,10 @@ CONTAINS
 
     ! Check that the matrix is really double precision
     IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
-      PRINT *,'lsyssc_getbase_doubleMatrixScalar: Matrix is of wrong precision!'
+      PRINT *,'lsyssc_getbaseMatrixDA_double: Matrix is of wrong precision!'
       STOP
     END IF
-
+    
     ! Get the data array
     CALL storage_getbase_double (rmatrix%h_DA,p_Ddata,rmatrix%NA)
 
@@ -1106,7 +1181,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_singleMatrixScalar (rmatrix, p_Fdata)
+  SUBROUTINE lsyssc_getbaseMatrixDA_single (rmatrix, p_Fdata)
 
 !<description>
     ! Returns a pointer to the single precision data array of the matrix.
@@ -1126,6 +1201,12 @@ CONTAINS
 
 !</subroutine>
 
+    ! Check if the matrix format allows to access DA
+    IF (.NOT. lsyssc_isExplicitMatrix1D(rmatrix)) THEN
+      PRINT *,'lsyssc_getbaseMatrixDA_single: Matrix does not exist explicitely!'
+      STOP
+    END IF
+
     ! Do we have data at all?
     IF ((rmatrix%NA .EQ. 0) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       NULLIFY(p_Fdata)
@@ -1134,7 +1215,7 @@ CONTAINS
 
     ! Check that the matrix is really single precision
     IF (rmatrix%cdataType .NE. ST_SINGLE) THEN
-      PRINT *,'lsyssc_getbase_singleMatrixScalar: Matrix is of wrong precision!'
+      PRINT *,'lsyssc_getbaseMatrix_single: Matrix is of wrong precision!'
       STOP
     END IF
 
@@ -1147,7 +1228,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_getbase_intMatrixScalar (rmatrix, p_Idata)
+  SUBROUTINE lsyssc_getbaseMatrixDA_int (rmatrix, p_Idata)
 
 !<description>
     ! Returns a pointer to the integer data array of the matrix.
@@ -1167,6 +1248,12 @@ CONTAINS
 
 !</subroutine>
 
+    ! Check if the matrix format allows to access DA
+    IF (.NOT. lsyssc_isExplicitMatrix1D(rmatrix)) THEN
+      PRINT *,'lsyssc_getbaseMatrixDA_int: Matrix does not exist explicitely!'
+      STOP
+    END IF
+
     ! Do we have data at all?
     IF ((rmatrix%NA .EQ. 0) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       NULLIFY(p_Idata)
@@ -1175,7 +1262,7 @@ CONTAINS
 
     ! Check that the matrix is really integer
     IF (rmatrix%cdataType .NE. ST_INT) THEN
-      PRINT *,'lsyssc_getbase_intMatrixScalar: Matrix is of wrong precision!'
+      PRINT *,'lsyssc_getbaseMatrix_int: Matrix is of wrong precision!'
       STOP
     END IF
 
@@ -1209,8 +1296,10 @@ CONTAINS
 !</subroutine>
 
     ! Is matrix in correct format?
-    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .AND.&
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
+    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .AND. &
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .AND.&
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. &
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
       PRINT *,'lsyssc_getbase_Kcol: matrix format does not provide KCOL!'
       STOP
     END IF
@@ -1251,8 +1340,10 @@ CONTAINS
 !</subroutine>
 
     ! Is matrix in correct format?
-    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .AND.&
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
+    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .AND. &
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .AND.&
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. &
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
       PRINT *,'lsyssc_getbase_Kld: matrix format does not provide KLD!'
       STOP
     END IF
@@ -1263,8 +1354,14 @@ CONTAINS
       RETURN
     END IF
 
-    ! Get the column offset array
-    CALL storage_getbase_int (rmatrix%h_Kld,p_Kld,rmatrix%NEQ+1)
+    ! Get the column offset array.
+    ! Take care: If the matrix is virtually transposed, NCOLS and NEQ are
+    ! exchanged!
+    IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld,rmatrix%NEQ+1)
+    ELSE
+      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld,rmatrix%NCOLS+1)
+    END IF
 
   END SUBROUTINE
 
@@ -1653,7 +1750,7 @@ CONTAINS
     END IF
     
     ! Should the vector be cleared?
-    IF (bclear) CALL storage_clear(rvector%h_Ddata)
+    IF (bclear) CALL lsyssc_clearVector(rvector)
 
   END SUBROUTINE
 
@@ -2635,7 +2732,7 @@ CONTAINS
   CASE (ST_DOUBLE)
      
     ! Get the data arrays
-    CALL storage_getbase_double (rx%h_Da,p_Ddata1dp)
+    CALL lsyssc_getbase_double (rx,p_Ddata1dp)
     CALL lsyssc_getbase_double (ry,p_Ddata2dp)
     
     ! Perform the scalar product
@@ -2644,7 +2741,7 @@ CONTAINS
   CASE (ST_SINGLE)
 
     ! Get the data arrays
-    CALL storage_getbase_single (rx%h_Da,p_Fdata1dp)
+    CALL lsyssc_getbase_single (rx,p_Fdata1dp)
     CALL lsyssc_getbase_single (ry,p_Fdata2dp)
     
     ! Perform the scalar product
@@ -2917,9 +3014,9 @@ CONTAINS
     INTEGER(PREC_VECIDX) :: NEQ
 
       ! Get the matrix
-      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_double (rmatrix,p_DA)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       
       ! Get NEQ - from the matrix, not from the vector!
       NEQ = rmatrix%NEQ
@@ -3028,9 +3125,9 @@ CONTAINS
     INTEGER :: NVAR
 
       ! Get the matrix
-      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_double (rmatrix,p_DA)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       
       ! Get NEQ - from the matrix, not from the vector!
       NEQ = rmatrix%NEQ
@@ -3174,9 +3271,9 @@ CONTAINS
     INTEGER :: NVAR
 
       ! Get the matrix
-      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_double (rmatrix,p_DA)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       
       ! Get NEQ - from the matrix, not from the vector!
       NEQ = rmatrix%NEQ
@@ -3302,7 +3399,7 @@ CONTAINS
     INTEGER :: ivar,NVAR
 
       ! Get the matrix - it's an 1D array
-      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
+      CALL lsyssc_getbase_double (rmatrix,p_DA)
       
       ! Get NEQ - from the matrix, not from the vector!
       NEQ = rmatrix%NEQ
@@ -3422,9 +3519,9 @@ CONTAINS
     INTEGER(PREC_VECIDX) :: NEQ
 
       ! Get the matrix
-      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_double (rmatrix,p_DA)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       
       ! NCOLS(real matrix) = NEQ(saved matrix structure) !
       NEQ = rmatrix%NCOLS
@@ -3530,9 +3627,9 @@ CONTAINS
     INTEGER(PREC_VECIDX) :: NEQ
 
       ! Get the matrix
-      CALL storage_getbase_double (rmatrix%h_DA,p_DA)
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_double (rmatrix,p_DA)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       
       ! NCOLS(real matrix) = NEQ(saved matrix structure) !
       NEQ = rmatrix%NCOLS
@@ -3959,18 +4056,18 @@ CONTAINS
         CALL storage_getsize (rdestMatrix%h_DA,isize)
         SELECT CASE(rdestMatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR * rdestMatrix%NVAR) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR * rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
             STOP
           END IF
         CASE (LSYSSC_MATRIXD)
-          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
             STOP
           END IF
         CASE DEFAULT
-          IF (isize .NE. rdestMatrix%NA) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          IF (isize .LT. rdestMatrix%NA) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
             STOP
           END IF
         END SELECT
@@ -3979,8 +4076,8 @@ CONTAINS
       ! Check length of KCOL
       IF (rdestMatrix%h_Kcol .NE. ST_NOHANDLE) THEN
         CALL storage_getsize (rdestMatrix%h_Kcol,isize)
-        IF (isize .NE. rdestMatrix%NA) THEN
-          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(KCOL)!'
+        IF (isize .LT. rdestMatrix%NA) THEN
+          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(KCOL)!'
           STOP
         END IF
       END IF
@@ -3991,13 +4088,13 @@ CONTAINS
         
         ! Be careful, matrix may be transposed.
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
-          IF (isize .NE. rdestMatrix%NEQ+1) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+          IF (isize .LT. rdestMatrix%NEQ+1) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
             STOP
           END IF
         ELSE
-          IF (isize .NE. rdestMatrix%NCOLS+1) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+          IF (isize .LT. rdestMatrix%NCOLS+1) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
             STOP
           END IF
         END IF
@@ -4009,13 +4106,13 @@ CONTAINS
         
         ! Be careful, matrix may be transposed.
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
-          IF (isize .NE. rdestMatrix%NEQ) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(Kdiag)!'
+          IF (isize .LT. rdestMatrix%NEQ) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(Kdiag)!'
             STOP
           END IF
         ELSE
-          IF (isize .NE. rdestMatrix%NCOLS) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(Kdiag)!'
+          IF (isize .LT. rdestMatrix%NCOLS) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(Kdiag)!'
             STOP
           END IF
         END IF
@@ -4028,18 +4125,18 @@ CONTAINS
         CALL storage_getsize (rdestMatrix%h_DA,isize)
         SELECT CASE(rdestMatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
             STOP
           END IF
         CASE (LSYSSC_MATRIXD)
-          IF (isize .NE. rdestMatrix%NA * rdestMatrix%NVAR) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
             STOP
           END IF
         CASE DEFAULT
-          IF (isize .NE. rdestMatrix%NA) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
+          IF (isize .LT. rdestMatrix%NA) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
             STOP
           END IF
         END SELECT
@@ -4048,8 +4145,8 @@ CONTAINS
       ! Check length of KCOL
       IF (rdestMatrix%h_Kcol .NE. ST_NOHANDLE) THEN
         CALL storage_getsize (rdestMatrix%h_Kcol,isize)
-        IF (isize .NE. rdestMatrix%NA) THEN
-          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(KCOL)!'
+        IF (isize .LT. rdestMatrix%NA) THEN
+          PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(KCOL)!'
           STOP
         END IF
       END IF
@@ -4060,13 +4157,13 @@ CONTAINS
         
         ! Be careful, matrix may be transposed.
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
-          IF (isize .NE. rdestMatrix%NEQ+1) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+          IF (isize .LT. rdestMatrix%NEQ+1) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
             STOP
           END IF
         ELSE
-          IF (isize .NE. rdestMatrix%NCOLS+1) THEN
-            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 != length(KLD)!'
+          IF (isize .LT. rdestMatrix%NCOLS+1) THEN
+            PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
             STOP
           END IF
         END IF
@@ -4293,13 +4390,13 @@ CONTAINS
               (rdestMatrix%h_Kdiagonal .NE. ST_NOHANDLE)) THEN
         
             CALL storage_getsize (rdestMatrix%h_Kcol,isize)
-            bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
+            bremove = bremove .OR. (isize .LT. rdestMatrix%NA)
             
             CALL storage_getsize (rsourceMatrix%h_Kld,isize)
-            bremove = bremove .OR. (isize .NE. NEQ+1)
+            bremove = bremove .OR. (isize .LT. NEQ+1)
             
             CALL storage_getsize (rsourceMatrix%h_Kdiagonal,isize)
-            bremove = bremove .OR. (isize .NE. NEQ)
+            bremove = bremove .OR. (isize .LT. NEQ)
           
           ELSE
 
@@ -4314,10 +4411,10 @@ CONTAINS
               (rdestMatrix%h_Kld .NE. ST_NOHANDLE)) THEN
  
             CALL storage_getsize (rdestMatrix%h_Kcol,isize)
-            bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
+            bremove = bremove .OR. (isize .LT. rdestMatrix%NA)
             
             CALL storage_getsize (rsourceMatrix%h_Kld,isize)
-            bremove = bremove .OR. (isize .NE. NEQ+1)
+            bremove = bremove .OR. (isize .LT. NEQ+1)
 
           ELSE
 
@@ -4345,13 +4442,13 @@ CONTAINS
       ! Which source matrix do we have?  
       SELECT CASE (rsourceMatrix%cmatrixFormat)
       CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-        CALL storage_copy (rsourceMatrix%h_Kcol,rdestMatrix%h_Kcol)
-        CALL storage_copy (rsourceMatrix%h_Kld,rdestMatrix%h_Kld)
-        CALL storage_copy (rsourceMatrix%h_Kdiagonal,rdestMatrix%h_Kdiagonal)
+        CALL lsyssc_auxcopy_Kcol (rsourceMatrix,rdestMatrix)
+        CALL lsyssc_auxcopy_Kld (rsourceMatrix,rdestMatrix)
+        CALL lsyssc_auxcopy_Kdiagonal (rsourceMatrix,rdestMatrix)
         
       CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
-        CALL storage_copy (rsourceMatrix%h_Kcol,rdestMatrix%h_Kcol)
-        CALL storage_copy (rsourceMatrix%h_Kld,rdestMatrix%h_Kld)
+        CALL lsyssc_auxcopy_Kcol (rsourceMatrix,rdestMatrix)
+        CALL lsyssc_auxcopy_Kld (rsourceMatrix,rdestMatrix)
       
       CASE (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
         ! Nothing to do
@@ -4469,6 +4566,8 @@ CONTAINS
     
       ! local variables
       LOGICAL :: bremove
+      REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+      REAL(SP), DIMENSION(:), POINTER :: p_Fdata,p_Fdata2
       
       ! Overwrite structural data
       CALL copyStaticContent(rsourceMatrix, rdestMatrix)
@@ -4500,7 +4599,7 @@ CONTAINS
           IF (rdestMatrix%h_Da .NE. ST_NOHANDLE) THEN
         
             CALL storage_getsize (rdestMatrix%h_Da,isize)
-            bremove = bremove .OR. (isize .NE. rdestMatrix%NA)
+            bremove = bremove .OR. (isize .LT. rdestMatrix%NA)
           
             ! Check the data type
             bremove = bremove .OR. (rdestMatrix%cdataType .NE. rsourceMatrix%cdataType)
@@ -4519,9 +4618,10 @@ CONTAINS
             CALL storage_getsize (rdestMatrix%h_Da,isize)
             SELECT CASE(rdestMatrix%cinterleavematrixFormat)
             CASE (LSYSSC_MATRIX1)
-              bremove = bremove .OR. (isize .NE. rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR)
+              bremove = bremove .OR. &
+                        (isize .LT. rdestMatrix%NA*rdestMatrix%NVAR*rdestMatrix%NVAR)
             CASE (LSYSSC_MATRIXD)
-              bremove = bremove .OR. (isize .NE. rdestMatrix%NA*rdestMatrix%NVAR)
+              bremove = bremove .OR. (isize .LT. rdestMatrix%NA*rdestMatrix%NVAR)
             CASE DEFAULT
               PRINT *, 'copyContent: wrong interleave matrix format'
               STOP
@@ -4554,7 +4654,9 @@ CONTAINS
       SELECT CASE (rsourceMatrix%cmatrixFormat)
       CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7,&
           LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
-        CALL storage_copy (rsourceMatrix%h_Da,rdestMatrix%h_Da)
+        
+        CALL lsyssc_auxcopy_da (rsourceMatrix,rdestMatrix)
+      
       END SELECT
       
       IF (.NOT. bignoreOwner) THEN
@@ -4709,18 +4811,28 @@ CONTAINS
 
 !</subroutine>
 
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+
   IF (rmatrix%NEQ .LE. 0) RETURN ! Empty matrix
 
-  ! Which matrix type do we have?
-  SELECT CASE (rmatrix%cmatrixFormat)
-  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7&
-      &,LSYSSC_MATRIX7INTL,LSYSSC_MATRIXD)
-    ! Get the handle, the associated memory and clear that.
-    IF (rmatrix%h_DA .NE. ST_NOHANDLE) THEN
-      CALL storage_clear(rmatrix%h_DA)
-    END IF
-  END SELECT
+  IF (lsyssc_isExplicitMatrix1D(rmatrix)) THEN
+    
+    ! Get the data array and clear it -- depending on the data type.
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+      CALL lalg_clearVectorDble (p_Ddata)
+    CASE (ST_SINGLE)
+      CALL lsyssc_getbase_single (rmatrix,p_Fdata)
+      CALL lalg_clearVectorSngl (p_Fdata)
+    CASE DEFAULT
+      PRINT *,'lsyssc_clearMatrix: Unsupported Data type!'
+      STOP
+    END SELECT
   
+  END IF
+
   END SUBROUTINE
 
   !****************************************************************************
@@ -4768,20 +4880,20 @@ CONTAINS
     SELECT CASE (rmatrix%cmatrixFormat)
     CASE (LSYSSC_MATRIX9)
       ! Clear the old content
-      CALL storage_clear (rmatrix%h_Da)
+      CALL lsyssc_clearMatrix (rmatrix)
       
       ! Get the structure and the data.
       ! Put the diagonal elements to 1.
-      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+      CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
       
       SELECT CASE (rmatrix%cdataType)
       CASE (ST_DOUBLE)
-        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        CALL lsyssc_getbase_double (rmatrix,p_Ddata)
         DO i=1,rmatrix%NEQ
           p_Ddata(p_Kdiagonal(i)) = 1.0_DP
         END DO
       CASE (ST_SINGLE)
-        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        CALL lsyssc_getbase_single (rmatrix,p_Fdata)
         DO i=1,rmatrix%NEQ
           p_Fdata(p_Kdiagonal(i)) = 1.0_SP
         END DO
@@ -4792,20 +4904,20 @@ CONTAINS
 
     CASE (LSYSSC_MATRIX7)
       ! Clear the old content
-      CALL storage_clear (rmatrix%h_Da)
+      CALL lsyssc_clearMatrix (rmatrix)
       
       ! Get the structure and the data.
       ! Put the diagonal elements to 1.
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kdiagonal)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kdiagonal)
       
       SELECT CASE (rmatrix%cdataType)
       CASE (ST_DOUBLE)
-        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        CALL lsyssc_getbase_double (rmatrix,p_Ddata)
         DO i=1,rmatrix%NEQ
           p_Ddata(p_Kdiagonal(i)) = 1.0_DP
         END DO
       CASE (ST_SINGLE)
-        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        CALL lsyssc_getbase_single (rmatrix,p_Fdata)
         DO i=1,rmatrix%NEQ
           p_Fdata(p_Kdiagonal(i)) = 1.0_SP
         END DO
@@ -4816,20 +4928,20 @@ CONTAINS
 
     CASE (LSYSSC_MATRIX1)
       ! Clear the old content
-      CALL storage_clear (rmatrix%h_Da)
+      CALL lsyssc_clearMatrix (rmatrix)
       
       ! Get the structure and the data.
       ! Put the diagonal elements to 1.
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kdiagonal)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kdiagonal)
       
       SELECT CASE (rmatrix%cdataType)
       CASE (ST_DOUBLE)
-        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        CALL lsyssc_getbase_double (rmatrix,p_Ddata)
         DO i=1,rmatrix%NEQ
           p_Ddata(i*(rmatrix%NEQ-1)+i) = 1.0_DP
         END DO
       CASE (ST_SINGLE)
-        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        CALL lsyssc_getbase_single (rmatrix,p_Fdata)
         DO i=1,rmatrix%NEQ
           p_Fdata(i*(rmatrix%NEQ-1)+i) = 1.0_SP
         END DO
@@ -4842,10 +4954,10 @@ CONTAINS
       ! Put all elements to 1.0
       SELECT CASE (rmatrix%cdataType)
       CASE (ST_DOUBLE)
-        CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
+        CALL lsyssc_getbase_double (rmatrix,p_Ddata)
         p_Ddata(:) = 1.0_DP
       CASE (ST_SINGLE)
-        CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
+        CALL lsyssc_getbase_single (rmatrix,p_Fdata)
         p_Fdata(:) = 1.0_SP
       CASE DEFAULT
         PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
@@ -4916,9 +5028,9 @@ CONTAINS
     SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX7)
     
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
 
       ! Check that the matrix can be converted. There's a format error
       ! if there's no diagonal element.
@@ -4946,7 +5058,7 @@ CONTAINS
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
         
-          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL lsyssc_getbase_double (rmatrix,p_Ddata)
           CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
           ! Release diagonal
           IF (brelStruc) CALL storage_free (rmatrix%h_Kdiagonal)
@@ -4969,8 +5081,8 @@ CONTAINS
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
         
-          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
-          CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+          CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+          CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
           DO i=1,rmatrix%NEQ
             p_Ddata(i) = p_Ddata(p_Kdiagonal(i))
           END DO
@@ -5007,13 +5119,13 @@ CONTAINS
 
       ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
       ! routine below.
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
 
       ! Create a pointer to the diagonal
       CALL storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
             rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+      CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
 
       IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       
@@ -5026,7 +5138,7 @@ CONTAINS
 
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
-          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL lsyssc_getbase_double (rmatrix,p_Ddata)
           CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
           
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9
@@ -5047,8 +5159,8 @@ CONTAINS
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
         
-          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
-          CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+          CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+          CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
           DO i=1,rmatrix%NEQ
             p_Ddata(i) = p_Ddata(p_Kld(i))
           END DO
@@ -5082,9 +5194,9 @@ CONTAINS
     SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX7INTL)
 
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
 
       ! Check that the matrix can be converted. There's a format error
       ! if there's no diagonal element.
@@ -5112,7 +5224,7 @@ CONTAINS
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
         
-          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL lsyssc_getbase_double (rmatrix,p_Ddata)
           SELECT CASE(rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIX1)
             CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
@@ -5149,13 +5261,13 @@ CONTAINS
       
       ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
       ! routine below.
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       
       ! Create a pointer to the diagonal
       CALL storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
           rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal)
+      CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
 
       IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
         
@@ -5168,7 +5280,7 @@ CONTAINS
 
         SELECT CASE (rmatrix%cdataType)
         CASE (ST_DOUBLE)
-          CALL storage_getbase_double (rmatrix%h_DA,p_Ddata)
+          CALL lsyssc_getbase_double (rmatrix,p_Ddata)
           SELECT CASE(rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIX1)
             CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
@@ -6180,11 +6292,11 @@ CONTAINS
                                         LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
                                         
             ! Get the structure of the original and the temporary matrix
-            CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-            CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-            CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiag)
-            CALL storage_getbase_int (rtempMatrix%h_Kcol,p_KcolTmp)
-            CALL storage_getbase_int (rtempMatrix%h_Kld,p_KldTmp)
+            CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+            CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+            CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiag)
+            CALL lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
+            CALL lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
             
             ! Sort
             CALL lsyssc_sortMat9Struc (p_Kcol, p_KcolTmp, p_Kld, p_KldTmp, &
@@ -6207,9 +6319,9 @@ CONTAINS
           IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0) THEN
 
             ! Get the structure of the matrix
-            CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-            CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-            CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiag)
+            CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+            CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+            CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiag)
 
             ! Create a copy of the matrix entries
             CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
@@ -6218,14 +6330,14 @@ CONTAINS
             SELECT CASE (rmatrix%cdataType)
             CASE (ST_DOUBLE)
               ! Double precision version
-              CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
-              CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
+              CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+              CALL lsyssc_getbase_double (rtempMatrix,p_DdataTmp)
               CALL lsyssc_sortMat9Ent_double (p_Ddata,p_DdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)        
             CASE (ST_SINGLE)
               ! Single precision version
-              CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
-              CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+              CALL lsyssc_getbase_single (rmatrix,p_Fdata)
+              CALL lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
               CALL lsyssc_sortMat9Ent_single (p_Fdata,p_FdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)        
             CASE DEFAULT
@@ -6244,24 +6356,24 @@ CONTAINS
                                          LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
             
             ! Get the structure of the original and the temporary matrix
-            CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-            CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-            CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiag)
-            CALL storage_getbase_int (rtempMatrix%h_Kcol,p_KcolTmp)
-            CALL storage_getbase_int (rtempMatrix%h_Kld,p_KldTmp)
+            CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+            CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+            CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiag)
+            CALL lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
+            CALL lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
           
             SELECT CASE (rmatrix%cdataType)
             CASE (ST_DOUBLE)
               ! Double precision version
-              CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
-              CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
+              CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+              CALL lsyssc_getbase_double (rtempMatrix,p_DdataTmp)
               CALL lsyssc_sortMat9_double (p_Ddata,p_DdataTmp,p_Kcol, p_KcolTmp, &
                                            p_Kld, p_KldTmp, p_Kdiag, &
                                            Itr1, Itr2, NEQ)        
             CASE (ST_SINGLE)
               ! Single precision version
-              CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
-              CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+              CALL lsyssc_getbase_single (rmatrix,p_Fdata)
+              CALL lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
               CALL lsyssc_sortMat9_single (p_Fdata,p_FdataTmp,p_Kcol, p_KcolTmp, &
                                            p_Kld, p_KldTmp, p_Kdiag, &
                                            Itr1, Itr2, NEQ)        
@@ -6286,10 +6398,10 @@ CONTAINS
                                        LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
         
           ! Get the structure of the original and the temporary matrix
-          CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-          CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-          CALL storage_getbase_int (rtempMatrix%h_Kcol,p_KcolTmp)
-          CALL storage_getbase_int (rtempMatrix%h_Kld,p_KldTmp)
+          CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+          CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+          CALL lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
+          CALL lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
         
           ! Sort only the structure of the matrix, keep the entries
           ! unchanged.
@@ -6311,8 +6423,8 @@ CONTAINS
           IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .NE. 0) THEN
 
             ! Get the structure of the matrix
-            CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-            CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+            CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+            CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
         
             ! Create a copy of the matrix entries
             CALL lsyssc_duplicateMatrix (rmatrix,rtempMatrix,&
@@ -6322,14 +6434,14 @@ CONTAINS
             SELECT CASE (rmatrix%cdataType)
             CASE (ST_DOUBLE)
               ! Double precision version
-              CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
-              CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
+              CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+              CALL lsyssc_getbase_double (rtempMatrix,p_DdataTmp)
               CALL lsyssc_sortMat7Ent_double (p_Ddata,p_DdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)        
             CASE (ST_SINGLE)
               ! Single precision version
-              CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
-              CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+              CALL lsyssc_getbase_single (rmatrix,p_Fdata)
+              CALL lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
               CALL lsyssc_sortMat7Ent_single (p_Fdata,p_FdataTmp,p_Kcol, &
                                               p_Kld, Itr1, Itr2, NEQ)        
             CASE DEFAULT
@@ -6347,24 +6459,24 @@ CONTAINS
                                          LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
         
             ! Get the structure of the original and the temporary matrix
-            CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-            CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
-            CALL storage_getbase_int (rtempMatrix%h_Kcol,p_KcolTmp)
-            CALL storage_getbase_int (rtempMatrix%h_Kld,p_KldTmp)
+            CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+            CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+            CALL lsyssc_getbase_Kcol (rtempMatrix,p_KcolTmp)
+            CALL lsyssc_getbase_Kld (rtempMatrix,p_KldTmp)
         
             ! Sort structure + entries
             SELECT CASE (rmatrix%cdataType)
             CASE (ST_DOUBLE)
               ! Double precision version
-              CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
-              CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
+              CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+              CALL lsyssc_getbase_double (rtempMatrix,p_DdataTmp)
               CALL lsyssc_sortMat7_double (p_Ddata,p_DdataTmp,p_Kcol, p_KcolTmp, &
                                           p_Kld, p_KldTmp, &
                                           Itr1, Itr2, NEQ)        
             CASE (ST_SINGLE)
               ! Single precision version
-              CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
-              CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+              CALL lsyssc_getbase_single (rmatrix,p_Fdata)
+              CALL lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
               CALL lsyssc_sortMat7_single (p_Fdata,p_FdataTmp,p_Kcol, p_KcolTmp, &
                                           p_Kld, p_KldTmp, &
                                           Itr1, Itr2, NEQ)        
@@ -6396,13 +6508,13 @@ CONTAINS
           SELECT CASE (rmatrix%cdataType)
           CASE (ST_DOUBLE)
             ! Double precision version
-            CALL storage_getbase_double (rmatrix%h_Da,p_Ddata)
-            CALL storage_getbase_double (rtempMatrix%h_Da,p_DdataTmp)
+            CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+            CALL lsyssc_getbase_double (rtempMatrix,p_DdataTmp)
             CALL lalg_vectorSortDble (p_DdataTmp, p_Ddata, Itr1)
           CASE (ST_SINGLE)
             ! Single precision version
-            CALL storage_getbase_single (rmatrix%h_Da,p_Fdata)
-            CALL storage_getbase_single (rtempMatrix%h_Da,p_FdataTmp)
+            CALL lsyssc_getbase_single (rmatrix,p_Fdata)
+            CALL lsyssc_getbase_single (rtempMatrix,p_FdataTmp)
             CALL lalg_vectorSortSngl (p_FdataTmp, p_Fdata, Itr1)
           CASE DEFAULT
             PRINT *,'lsyssc_sortMatrix: Unsupported data type.'
@@ -8423,7 +8535,7 @@ CONTAINS
     ! Data type?
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
+      CALL lsyssc_getbase_double (rmatrix,p_Da)
       dmyscale = dscale * rmatrix%dscaleFactor
 
       ! And the vector(s)?
@@ -8458,7 +8570,7 @@ CONTAINS
       END SELECT
       
     CASE (ST_SINGLE)
-      CALL storage_getbase_single (rmatrix%h_Da,p_Fa)
+      CALL lsyssc_getbase_single (rmatrix,p_Fa)
       fmyscale = REAL(dscale * rmatrix%dscaleFactor,SP)
 
       ! And the vector(s)?
@@ -8511,7 +8623,7 @@ CONTAINS
     ! Data type?
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
+      CALL lsyssc_getbase_double (rmatrix,p_Da)
       dmyscale = dscale * rmatrix%dscaleFactor
 
       ! And the vector(s)?
@@ -8592,7 +8704,7 @@ CONTAINS
       END SELECT
       
     CASE (ST_SINGLE)
-      CALL storage_getbase_single (rmatrix%h_Da,p_Fa)
+      CALL lsyssc_getbase_single (rmatrix,p_Fa)
       fmyscale = REAL(dscale * rmatrix%dscaleFactor,SP)
 
       ! And the vector(s)?
@@ -8682,7 +8794,7 @@ CONTAINS
     ! Data type?
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
+      CALL lsyssc_getbase_double (rmatrix,p_Da)
       dmyscale = dscale * rmatrix%dscaleFactor
 
       ! And the vector(s)?
@@ -8717,7 +8829,7 @@ CONTAINS
       END SELECT
       
     CASE (ST_SINGLE)
-      CALL storage_getbase_single (rmatrix%h_Da,p_Fa)
+      CALL lsyssc_getbase_single (rmatrix,p_Fa)
       fmyscale = REAL(dscale * rmatrix%dscaleFactor,SP)
 
       ! And the vector(s)?
@@ -9089,13 +9201,13 @@ CONTAINS
     SELECT CASE (rsourceMatrix%cdataType)
     
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
-      CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
+      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
+      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
       CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
 
     CASE (ST_SINGLE)
-      CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
-      CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
+      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
+      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
       CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
     CASE DEFAULT
@@ -9103,16 +9215,16 @@ CONTAINS
       STOP
     END SELECT
     
-    CALL storage_getbase_int (rsourceMatrix%h_Kcol,p_KcolSource)
-    CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
+    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
+    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
     CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
 
-    CALL storage_getbase_int (rsourceMatrix%h_Kld,p_KldSource)
-    CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
+    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
     CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
     
-    CALL storage_getbase_int (rsourceMatrix%h_Kdiagonal,p_KdiagonalSource)
-    CALL storage_getbase_int (rdestMatrix%h_Kdiagonal,p_KdiagonalDest)
+    CALL lsyssc_getbase_Kdiagonal (rsourceMatrix,p_KdiagonalSource)
+    CALL lsyssc_getbase_Kdiagonal (rdestMatrix,p_KdiagonalDest)
     CALL lalg_copyVectorInt (p_KdiagonalSource,p_KdiagonalDest)
       
   CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
@@ -9125,13 +9237,13 @@ CONTAINS
     ! And finally copy the data. 
     SELECT CASE (rsourceMatrix%cdataType)
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
-      CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
+      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
+      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
       CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
 
     CASE (ST_SINGLE)
-      CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
-      CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
+      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
+      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
       CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
     CASE DEFAULT
@@ -9139,12 +9251,12 @@ CONTAINS
       STOP
     END SELECT
 
-    CALL storage_getbase_int (rsourceMatrix%h_Kcol,p_KcolSource)
-    CALL storage_getbase_int (rdestMatrix%h_Kcol,p_KcolDest)
+    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
+    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
     CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
 
-    CALL storage_getbase_int (rsourceMatrix%h_Kld,p_KldSource)
-    CALL storage_getbase_int (rdestMatrix%h_Kld,p_KldDest)
+    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
+    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
     CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
 
   CASE (LSYSSC_MATRIXD)
@@ -9155,13 +9267,13 @@ CONTAINS
     ! And finally copy the data. 
     SELECT CASE (rsourceMatrix%cdataType)
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double (rsourceMatrix%h_DA,p_Dsource)
-      CALL storage_getbase_double (rdestMatrix%h_DA,p_Ddest)
+      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
+      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
       CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
 
     CASE (ST_SINGLE)
-      CALL storage_getbase_single (rsourceMatrix%h_DA,p_Fsource)
-      CALL storage_getbase_single (rdestMatrix%h_DA,p_Fdest)
+      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
+      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
       CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
 
     CASE DEFAULT
@@ -9661,9 +9773,10 @@ CONTAINS
         ! the data arrays, this results in the transposed matrix :)
         IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
         
-          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
-          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
-          CALL storage_copy (rmatrix%h_Kdiagonal,rtransposedMatrix%h_Kdiagonal)
+          CALL lsyssc_auxcopy_Kcol (rmatrix,rtransposedMatrix)
+          CALL lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
+          CALL lsyssc_auxcopy_Kdiagonal (rmatrix,rtransposedMatrix)
+          
           rtransposedMatrix%imatrixSpec = &
             IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
@@ -9677,7 +9790,8 @@ CONTAINS
           CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           
-          ! Get Kcol/Kld
+          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! the arrays for a matrix which is not yet valid!
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
 
@@ -9710,8 +9824,8 @@ CONTAINS
         ! Is the source matrix saved tranposed? In that case simply copy
         ! the data arrays, this results in the transposed matrix :)
         IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
-          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
-          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
+          CALL lsyssc_auxcopy_Kcol (rmatrix,rtransposedMatrix)
+          CALL lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
@@ -9725,7 +9839,8 @@ CONTAINS
           CALL storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1_I32, &
                             ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
 
-          ! Get Kcol/Kld
+          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! the arrays for a matrix which is not yet valid!
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
 
@@ -9766,12 +9881,11 @@ CONTAINS
         IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
         
           IF (rmatrix%h_Da .NE. ST_NOHANDLE) THEN
-            CALL storage_copy (rmatrix%h_Da,rtransposedMatrix%h_Da)
+            CALL lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
           END IF
-        
-          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
-          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
-          CALL storage_copy (rmatrix%h_Kdiagonal,rtransposedMatrix%h_Kdiagonal)
+          CALL lsyssc_auxcopy_Kcol (rmatrix,rtransposedMatrix)
+          CALL lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
+          CALL lsyssc_auxcopy_Kdiagonal (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
@@ -9788,7 +9902,8 @@ CONTAINS
                             rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
                             ST_NEWBLOCK_NOINIT)
 
-          ! Get Kcol/Kld
+          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! the arrays for a matrix which is not yet valid!
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
 
@@ -9796,7 +9911,7 @@ CONTAINS
           CALL storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
           
           ! Get the data array(s)
-          CALL storage_getbase_double(rMatrix%h_Da,p_DaSource)
+          CALL lsyssc_getbase_double(rMatrix,p_DaSource)
           CALL storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
           
           ! We need a temporary array
@@ -9827,11 +9942,11 @@ CONTAINS
         IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
         
           IF (rmatrix%h_Da .NE. ST_NOHANDLE) THEN
-            CALL storage_copy (rmatrix%h_Da,rtransposedMatrix%h_Da)
+            CALL lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
           END IF
 
-          CALL storage_copy (rmatrix%h_Kcol,rtransposedMatrix%h_Kcol)
-          CALL storage_copy (rmatrix%h_Kld,rtransposedMatrix%h_Kld)
+          CALL lsyssc_auxcopy_Kcol (rmatrix,rtransposedMatrix)
+          CALL lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             IAND(rtransposedMatrix%imatrixSpec,NOT(LSYSSC_MSPEC_TRANSPOSED))
           
@@ -9848,7 +9963,8 @@ CONTAINS
                             rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
                             ST_NEWBLOCK_NOINIT)
 
-          ! Get Kcol/Kld
+          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! the arrays for a matrix which is not yet valid!
           CALL storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           CALL storage_getbase_int(rmatrix%h_Kld,p_KldSource)
 
@@ -9856,7 +9972,7 @@ CONTAINS
           CALL storage_getbase_int(rtransposedMatrix%h_Kld,p_KldDest)
           
           ! Get the data array(s)
-          CALL storage_getbase_double(rMatrix%h_Da,p_DaSource)
+          CALL lsyssc_getbase_double(rMatrix,p_DaSource)
           CALL storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
 
           ! We need a temporary array
@@ -9898,6 +10014,178 @@ CONTAINS
   
   END SUBROUTINE
 
+  !****************************************************************************
+  
+!<subroutine>
+      
+  SUBROUTINE lsyssc_auxcopy_DA (rsourceMatrix,rdestMatrix)
+  
+!<description>
+  ! Auxiliary routine: 
+  ! Copies the content of rsourceMatrix%DA to rdestMatrix%DA
+  ! without additional checks.
+  ! If the destination array does not exist, it's created.
+!</description>
+
+!<input>
+  ! Source matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+!</input>
+ 
+!<inputoutput>
+  ! Destination matrix
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    REAL(DP), DIMENSION(:), POINTER :: p_Da1,p_Da2
+    REAL(SP), DIMENSION(:), POINTER :: p_Fa1,p_Fa2
+  
+    IF (rdestMatrix%h_Da .EQ. ST_NOHANDLE) THEN
+      CALL storage_new ('lsyssc_auxcopy_DA', 'DA', rsourceMatrix%NA, &
+          rsourceMatrix%cdataType, rdestMatrix%h_Da,ST_NEWBLOCK_NOINIT)
+    END IF
+
+    SELECT CASE (rsourceMatrix%cdataType)
+    CASE (ST_DOUBLE)
+      CALL lsyssc_getbase_double(rsourceMatrix,p_Da1)
+      CALL lsyssc_getbase_double(rdestMatrix,p_Da2)
+      CALL lalg_copyVectorDble (p_Da1,p_Da2)
+      
+    CASE (ST_SINGLE)
+      CALL lsyssc_getbase_single(rsourceMatrix,p_Fa1)
+      CALL lsyssc_getbase_single(rdestMatrix,p_Fa2)
+      CALL lalg_copyVectorSngl (p_Fa1,p_Fa2)
+
+    CASE DEFAULT
+      PRINT *,'lsyssc_transposeMatrix: Unsupported data type!'
+      STOP
+      
+    END SELECT
+
+  END SUBROUTINE
+  
+  !****************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_auxcopy_Kcol (rsourceMatrix,rdestMatrix)
+  
+!<description>
+  ! Auxiliary routine: 
+  ! Copies the content of rsourceMatrix%Kcol to rdestMatrix%Kcol
+  ! without additional checks.
+  ! If the destination array does not exist, it's created.
+!</description>
+  
+!<input>
+  ! Source matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+!</input>
+ 
+!<inputoutput>
+  ! Destination matrix
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kcol1,p_Kcol2
+  
+    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_Kcol1)
+    IF (rdestMatrix%h_Kcol .EQ. ST_NOHANDLE) THEN
+      CALL storage_new ('lsyssc_auxcopy_Kcol', 'Kcol', rsourceMatrix%NA, &
+          ST_INT, rdestMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+    END IF
+    CALL lsyssc_getbase_Kcol (rdestMatrix,p_Kcol2)
+    
+    CALL lalg_copyVectorInt (p_Kcol1,p_Kcol2)
+    
+  END SUBROUTINE
+    
+  !****************************************************************************
+    
+!<subroutine>
+
+  SUBROUTINE lsyssc_auxcopy_Kld (rsourceMatrix,rdestMatrix)
+  
+!<description>
+  ! Auxiliary routine: 
+  ! Copies the content of rsourceMatrix%Kld to rdestMatrix%Kld
+  ! without additional checks.
+  ! If the destination array does not exist, it's created.
+!</description>
+  
+!<input>
+  ! Source matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+!</input>
+ 
+!<inputoutput>
+  ! Destination matrix
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld1,p_Kld2
+  
+    CALL lsyssc_getbase_Kld (rsourceMatrix,p_Kld1)
+    IF (rdestMatrix%h_Kld .EQ. ST_NOHANDLE) THEN
+      CALL storage_new ('lsyssc_auxcopy_Kld', 'Kld', &
+          rsourceMatrix%NEQ+1_PREC_VECIDX, &
+          ST_INT, rdestMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+    END IF
+    CALL lsyssc_getbase_Kld (rdestMatrix,p_Kld2)
+    
+    CALL lalg_copyVectorInt (p_Kld1,p_Kld2)
+    
+  END SUBROUTINE
+    
+  !****************************************************************************
+    
+!<subroutine>
+
+  SUBROUTINE lsyssc_auxcopy_Kdiagonal (rsourceMatrix,rdestMatrix)
+  
+!<description>
+  ! Auxiliary routine: 
+  ! Copies the content of rsourceMatrix%Kdiagonal to rdestMatrix%Kdiagonal
+  ! without additional checks.
+  ! If the destination array does not exist, it's created.
+!</description>
+  
+!<input>
+  ! Source matrix
+  TYPE(t_matrixScalar), INTENT(IN) :: rsourceMatrix
+!</input>
+ 
+!<inputoutput>
+  ! Destination matrix
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rdestMatrix
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! local variables
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kdiag1,p_Kdiag2
+  
+    CALL lsyssc_getbase_Kdiagonal (rsourceMatrix,p_Kdiag1)
+    IF (rdestMatrix%h_Kdiagonal .EQ. ST_NOHANDLE) THEN
+      CALL storage_new ('lsyssc_auxcopy_Kdiagonal', 'Kdiagonal', &
+          rsourceMatrix%NEQ, &
+          ST_INT, rdestMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
+    END IF
+    CALL lsyssc_getbase_Kdiagonal (rdestMatrix,p_Kdiag2)
+    
+    CALL lalg_copyVectorInt (p_Kdiag1,p_Kdiag2)
+    
+  END SUBROUTINE
+      
   !****************************************************************************
 
 !<subroutine>
@@ -9976,10 +10264,10 @@ CONTAINS
       IF (iclear .GE. LSYSSC_SETM_ONE) THEN
         SELECT CASE (cdType)
         CASE (ST_DOUBLE)
-          CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+          CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
           CALL lalg_setVectorDble (p_Da,1.0_DP)
         CASE (ST_SINGLE)
-          CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+          CALL lsyssc_getbase_single (rmatrixScalar,p_Fa)
           CALL lalg_setVectorSngl (p_Fa,1.0_SP)
         CASE DEFAULT
           PRINT *,'lsyssc_createEmptyMatrixScalar: Unknown data type!'
@@ -10027,10 +10315,10 @@ CONTAINS
       IF (iclear .GE. LSYSSC_SETM_ONE) THEN
         SELECT CASE (cdType)
         CASE (ST_DOUBLE)
-          CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+          CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
           CALL lalg_setVectorDble (p_Da,1.0_DP)
         CASE (ST_SINGLE)
-          CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+          CALL lsyssc_getbase_single (rmatrixScalar,p_Fa)
           CALL lalg_setVectorSngl (p_Fa,1.0_SP)
         CASE DEFAULT
           PRINT *,'lsyssc_createEmptyMatrixScalar: Unknown data type!'
@@ -10103,14 +10391,14 @@ CONTAINS
     
     CASE (LSYSSC_MATRIX7)
       ! Get the structure
-      CALL storage_getbase_int (rmatrixScalar%h_Kld,p_Kld)
-      CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrixScalar,p_Kld)
+      CALL lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
       
       ! Get the data and perform the lumping
       SELECT CASE (rmatrixScalar%cdataType)
       
       CASE (ST_DOUBLE)
-        CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+        CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
         
         ! Add all off-diagonals to the diagonal
         DO irow=1,rmatrixScalar%NEQ
@@ -10121,7 +10409,7 @@ CONTAINS
         END DO
       
       CASE (ST_SINGLE)
-        CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+        CALL lsyssc_getbase_single (rmatrixScalar,p_Fa)
 
         ! Add all off-diagonals to the diagonal
         DO irow=1,rmatrixScalar%NEQ
@@ -10138,15 +10426,15 @@ CONTAINS
       
     CASE (LSYSSC_MATRIX9)
       ! Get the structure
-      CALL storage_getbase_int (rmatrixScalar%h_Kld,p_Kld)
-      CALL storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
-      CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrixScalar,p_Kld)
+      CALL lsyssc_getbase_Kdiagonal (rmatrixScalar,p_Kdiagonal)
+      CALL lsyssc_getbase_Kcol (rmatrixScalar,p_Kcol)
       
       ! Get the data and perform the lumping
       SELECT CASE (rmatrixScalar%cdataType)
       
       CASE (ST_DOUBLE)
-        CALL storage_getbase_double (rmatrixScalar%h_DA,p_Da)
+        CALL lsyssc_getbase_double (rmatrixScalar,p_Da)
         
         ! Add all off-diagonals to the diagonal
         DO irow=1,rmatrixScalar%NEQ
@@ -10160,7 +10448,7 @@ CONTAINS
         END DO
       
       CASE (ST_SINGLE)
-        CALL storage_getbase_single (rmatrixScalar%h_DA,p_Fa)
+        CALL lsyssc_getbase_single (rmatrixScalar,p_Fa)
 
         ! Add all off-diagonals to the diagonal
         DO irow=1,rmatrixScalar%NEQ
@@ -10221,12 +10509,12 @@ CONTAINS
   SELECT CASE (rmatrix%cdataType)
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
-    CALL storage_getbase_double(rmatrix%h_Da,p_Ddata)
+    CALL lsyssc_getbase_double(rmatrix,p_Ddata)
     CALL lalg_scaleVectorDble (p_Ddata,c)  
 
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
-    CALL storage_getbase_single(rmatrix%h_Da,p_Fdata)
+    CALL lsyssc_getbase_single(rmatrix,p_Fdata)
     CALL lalg_scaleVectorSngl (p_Fdata,REAL(c,SP))  
 
   CASE DEFAULT
@@ -10386,16 +10674,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1mat1mul_doubledouble(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,DaA,DaB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1mat1mul_doublesingle(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,DaA,FaB,DaC)
               
@@ -10409,16 +10697,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1mat1mul_singledouble(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,FaA,DaB,DaC)
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               CALL do_mat1mat1mul_singlesingle(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,rmatrixB%NCOLS,FaA,FaB,FaC)
               
@@ -10470,16 +10758,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDmul_doubledouble(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,DaA,DaB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDmul_doublesingle(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,DaA,FaB,DaC)
 
@@ -10493,16 +10781,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDmul_singledouble(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,FaA,DaB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               CALL do_mat1matDmul_singlesingle(rmatrixA%NEQ,rmatrixA&
                   &%NCOLS,FaA,FaB,FaC)
               
@@ -10565,15 +10853,15 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               DaC=DaA*DaB
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               DaC=DaA*FaB
 
             CASE DEFAULT
@@ -10586,15 +10874,15 @@ CONTAINS
             SELECT CASE(rmatrixC%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               DaC=FaA*DaB
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               FaC=FaA*FaB
 
             CASE DEFAULT
@@ -10645,16 +10933,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_matDmat1mul_doubledouble(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,DaA,DaB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_matDmat1mul_doublesingle(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,DaA,FaB,DaC)
 
@@ -10668,16 +10956,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_matDmat1mul_singledouble(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,FaA,DaB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               CALL do_matDmat1mul_singlesingle(rmatrixB%NEQ,rmatrixB&
                   &%NCOLS,FaA,FaB,FaC)
               
@@ -10734,33 +11022,33 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 CALL do_matDmat79mul_doubledouble(DaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_matDmat79mul_doubledouble(DaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kld(rmatrixB,KcolB)
               IF (bfast) THEN
                 CALL do_matDmat79mul_doublesingle(DaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_matDmat79mul_doublesingle(DaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               END IF
@@ -10775,33 +11063,33 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 CALL do_matDmat79mul_singledouble(FaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_matDmat79mul_singledouble(FaA,DaB,KldB,KcolB&
                     &,rmatrixB%NEQ,DaC,KldC,KcolC)
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 CALL do_matDmat79mul_singlesingle(FaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,FaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_matDmat79mul_singlesingle(FaA,FaB,KldB,KcolB&
                     &,rmatrixB%NEQ,FaC,KldC,KcolC)
               END IF
@@ -10870,33 +11158,33 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 CALL do_mat79matDmul_doubledouble(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDmul_doubledouble(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC,KldC,KcolC)
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 CALL do_mat79matDmul_doublesingle(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,DaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDmul_doublesingle(DaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,DaC,KldC,KcolC)
               END IF
@@ -10911,33 +11199,33 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 CALL do_mat79matDmul_singledouble(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDmul_singledouble(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,DaB,DaC,KldC,KcolC)
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 CALL do_mat79matDmul_singlesingle(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,FaC)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDmul_singlesingle(FaA,KldA,KcolA&
                     &,rmatrixA%NEQ,FaB,FaC,KldC,KcolC)
               END IF
@@ -10956,10 +11244,10 @@ CONTAINS
       CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - 
         
         ! Set pointers
-        CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-        CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-        CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-        CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+        CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+        CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
+        CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+        CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
 
         ! memory allocation?
         IF (bmemory) THEN
@@ -10999,8 +11287,8 @@ CONTAINS
         IF (bsymb) THEN
 
           ! Set pointers
-          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+          CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
           IF (h_Kaux == ST_NOHANDLE) THEN
             CALL storage_new('lsyssc_multMatMat','Kaux',MAX(rmatrixA&
                 &%NEQ,MAX(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_INT&
@@ -11013,7 +11301,7 @@ CONTAINS
           CALL storage_getbase_int(h_Kaux,Kaux)
 
           IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
-            CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+            CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
             CALL do_mat79mat79mul_symb(rmatrixA%NEQ,rmatrixA%NCOLS&
                 &,rmatrixB%NCOLS,KldA,KcolA,KldB,KcolB,KldC,KcolC&
                 &,Kaux,KdiagonalC)
@@ -11028,8 +11316,8 @@ CONTAINS
         IF (bnumb) THEN
 
           ! Set pointers
-          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+          CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
           IF (h_Daux == ST_NOHANDLE) THEN
             CALL storage_new('lsyssc_multMatMat','Daux',MAX(rmatrixA&
                 &%NEQ,MAX(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_DOUBLE&
@@ -11052,17 +11340,17 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE) 
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat79mat79mul_numb_dbledble(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,DaB,KldC,KcolC,DaC,Daux)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat79mat79mul_numb_dblesngl(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,DaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,DaC,Daux)
@@ -11077,9 +11365,9 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE) 
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat79mat79mul_numb_sngldble(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
                   &,KcolB,DaB,KldC,KcolC,DaC,Daux)
@@ -11091,9 +11379,9 @@ CONTAINS
                   &,h_Faux,ST_NEWBLOCK_NOINIT)
               CALL storage_getbase_single(h_Faux,Faux)
               
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               CALL do_mat79mat79mul_numb_snglsngl(rmatrixA%NEQ&
                   &,rmatrixA%NCOLS,rmatrixB%NCOLS,KldA,KcolA,FaA,KldB&
                   &,KcolB,FaB,KldC,KcolC,FaC,Faux)
@@ -12328,16 +12616,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL lalg_copyVectorDble(DaA,DaC)
               CALL lalg_vectorLinearCombDble(DaB,DaC,cB,cA)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL lalg_copyVectorDble(DaA,DaC)
               CALL lalg_vectorLinearCombDble(REAL(FaB,DP),DaC,cB,cA)
 
@@ -12351,16 +12639,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL lalg_copyVectorDble(REAL(FaA,DP),DaC)
               CALL lalg_vectorLinearCombDble(DaB,DaC,cB,cA)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               CALL lalg_copyVectorSngl(FaA,FaC)
               CALL lalg_vectorLinearCombSngl(FaB,FaC,REAL(cB,SP),REAL(cA,SP))
 
@@ -12411,15 +12699,15 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDadd_doubledouble(rmatrixA%NEQ,rmatrixA%NCOLS,DaA,cA,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,DaA,cA,FaB,cB,DaC)
 
             CASE DEFAULT
@@ -12432,15 +12720,15 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDadd_singledouble(rmatrixA%NEQ,rmatrixA%NCOLS,FaA,cA,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               CALL do_mat1matDadd_singlesingle(rmatrixA%NEQ,rmatrixA%NCOLS,FaA,cA,FaB,cB,FaC)
 
             CASE DEFAULT
@@ -12490,20 +12778,20 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               CALL do_mat1mat79add_doubledouble(rmatrixA%NEQ,rmatrixA%NCOLS,&
                   DaA,cA,KldB,KcolB,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               CALL do_mat1mat79add_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,&
                   DaA,cA,KldB,KcolB,FaB,cB,DaC)
 
@@ -12517,20 +12805,20 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               CALL do_mat1mat79add_singledouble(rmatrixA%NEQ,rmatrixA%NCOLS,&
                   FaA,cA,KldB,KcolB,DaB,cB,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               CALL do_mat1mat79add_singlesingle(rmatrixA%NEQ,rmatrixA%NCOLS,&
                   FaA,cA,KldB,KcolB,FaB,cB,FaC)
 
@@ -12592,15 +12880,15 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               DaC=cA*DaA+cb*DaB
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               DaC=cA*DaA+cb*FaB
               
             CASE DEFAULT
@@ -12613,15 +12901,15 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               DaC=cA*FaA+cb*DaB
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               FaC=cA*FaA+cb*FaB
 
             CASE DEFAULT
@@ -12671,15 +12959,15 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDadd_doubledouble(rmatrixB%NEQ,rmatrixB%NCOLS,DaB,cB,DaA,cA,DaC)
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDadd_singledouble(rmatrixB%NEQ,rmatrixB%NCOLS,FaB,cB,DaA,cA,DaC)
 
             CASE DEFAULT
@@ -12692,15 +12980,15 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               CALL do_mat1matDadd_doublesingle(rmatrixA%NEQ,rmatrixA%NCOLS,DaB,cB,FaA,cA,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               CALL do_mat1matDadd_singlesingle(rmatrixB%NEQ,rmatrixB%NCOLS,FaB,cB,FaA,cA,FaC)
 
             CASE DEFAULT
@@ -12749,43 +13037,43 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_doubledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_doubledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     DaB,cB,DaA,cA,DaC,KldC,KcolC)
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_singledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_singledouble(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     FaB,cB,DaA,cA,DaC,KldC,KcolC)
               END IF
@@ -12800,43 +13088,43 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_doublesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_doublesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     DaB,cB,FaA,cA,DaC,KldC,KcolC)
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_singlesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_singlesingle(KldB,KcolB,1,1,rmatrixB%NEQ,&
                     FaB,cB,FaA,cA,FaC,KldC,KcolC)
               END IF
@@ -12894,16 +13182,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -12914,8 +13202,8 @@ CONTAINS
                 END IF
 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,KldC,KcolC)
@@ -12926,16 +13214,16 @@ CONTAINS
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -12946,8 +13234,8 @@ CONTAINS
                 END IF
 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,KldC,KcolC)
@@ -12967,16 +13255,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -12987,8 +13275,8 @@ CONTAINS
                 END IF
 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,KldC,KcolC)
@@ -12999,16 +13287,16 @@ CONTAINS
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-              CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+              CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -13019,8 +13307,8 @@ CONTAINS
                 END IF
 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,KldC,KcolC)
@@ -13088,20 +13376,20 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               CALL do_mat1mat79add_doubledouble(rmatrixB%NEQ,rmatrixB%NCOLS,&
                   DaB,cB,KldA,KcolA,DaA,cA,DaC)
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               CALL do_mat1mat79add_singledouble(rmatrixB%NEQ,rmatrixB%NCOLS,&
                   FaB,cB,KldA,KcolA,DaA,cA,DaC)
               
@@ -13115,20 +13403,20 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               CALL do_mat1mat79add_doublesingle(rmatrixB%NEQ,rmatrixB%NCOLS,&
                   DaB,cB,KldA,KcolA,FaA,cA,DaC)
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               CALL do_mat1mat79add_singlesingle(rmatrixB%NEQ,rmatrixB%NCOLS,&
                   FaB,cB,KldA,KcolA,FaA,cA,FaC)
               
@@ -13178,43 +13466,43 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_doubledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_doubledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     DaA,cA,DaB,cB,DaC,KldC,KcolC)
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_doublesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_doublesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     DaA,cA,FaB,cB,DaC,KldC,KcolC)
               END IF
@@ -13229,43 +13517,43 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_singledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_singledouble(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     FaA,cA,DaB,cB,DaC,KldC,KcolC)
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 CALL do_mat79matDadd_singlesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 CALL do_mat79matDadd_singlesingle(KldA,KcolA,1,1,rmatrixA%NEQ,&
                     FaA,cA,FaB,cB,FaC,KldC,KcolC)
               END IF
@@ -13284,10 +13572,10 @@ CONTAINS
       CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9) ! B is CSR matrix - - - - - - - - - -
                 
         ! Set pointers
-        CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-        CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-        CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-        CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+        CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+        CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
+        CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+        CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
         
         ! memory allocation?
         IF (bmemory) THEN
@@ -13322,11 +13610,11 @@ CONTAINS
         IF (bsymb) THEN
           
           ! Set pointers
-          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+          CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                     
           IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
-            CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+            CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
             CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
                 rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
           ELSE
@@ -13339,8 +13627,8 @@ CONTAINS
         IF (bnumb) THEN
           
           ! Set pointers
-          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+          CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -13353,9 +13641,9 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               
               IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
                   (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
@@ -13375,7 +13663,7 @@ CONTAINS
                 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_dbledble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
                 
@@ -13387,13 +13675,13 @@ CONTAINS
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_dblesngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,DaC)
                 
@@ -13414,13 +13702,13 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE) 
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
 
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_sngldble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
 
@@ -13432,9 +13720,9 @@ CONTAINS
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
               
               IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
                   (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
@@ -13454,7 +13742,7 @@ CONTAINS
 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_snglsngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,FaC)
 
@@ -13529,16 +13817,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kcol(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -13549,8 +13837,8 @@ CONTAINS
                 END IF
 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,KldC,KcolC)
@@ -13561,16 +13849,16 @@ CONTAINS
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -13581,8 +13869,8 @@ CONTAINS
                 END IF
                 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,KldC,KcolC)
@@ -13602,16 +13890,16 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -13622,8 +13910,8 @@ CONTAINS
                 END IF
 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,KldC,KcolC)
@@ -13634,16 +13922,16 @@ CONTAINS
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
-              CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-              CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
+              CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+              CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
               IF (bfast) THEN
                 IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) THEN
-                  CALL storage_getbase_int(rmatrixC%h_Kld,KdiagonalC)
+                  CALL lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 ELSE
-                  CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                  CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 END IF
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
@@ -13654,8 +13942,8 @@ CONTAINS
                 END IF
 
               ELSE
-                CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-                CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+                CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+                CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
                 IF (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) THEN
                   CALL do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,KldC,KcolC)
@@ -13690,10 +13978,10 @@ CONTAINS
         IF (rmatrixA%cinterleavematrixFormat == LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
         
         ! Set pointers
-        CALL storage_getbase_int(rmatrixA%h_Kld,KldA)
-        CALL storage_getbase_int(rmatrixA%h_Kcol,KcolA)
-        CALL storage_getbase_int(rmatrixB%h_Kld,KldB)
-        CALL storage_getbase_int(rmatrixB%h_Kcol,KcolB)
+        CALL lsyssc_getbase_Kld(rmatrixA,KldA)
+        CALL lsyssc_getbase_Kcol(rmatrixA,KcolA)
+        CALL lsyssc_getbase_Kld(rmatrixB,KldB)
+        CALL lsyssc_getbase_Kcol(rmatrixB,KcolB)
         
         ! memory allocation?
         IF (bmemory) THEN
@@ -13729,11 +14017,11 @@ CONTAINS
         IF (bsymb) THEN
           
           ! Set pointers
-          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+          CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
           
           IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
-            CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+            CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
             CALL do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
                 rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
           ELSE
@@ -13746,8 +14034,8 @@ CONTAINS
         IF (bnumb) THEN
           
           ! Set pointers
-          CALL storage_getbase_int(rmatrixC%h_Kld,KldC)
-          CALL storage_getbase_int(rmatrixC%h_Kcol,KcolC)
+          CALL lsyssc_getbase_Kld(rmatrixC,KldC)
+          CALL lsyssc_getbase_Kcol(rmatrixC,KcolC)
           
           ! Find the correct internal subroutine for the specified
           ! data types. Note that the resulting matrix C will be
@@ -13760,9 +14048,9 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
 
             CASE (ST_DOUBLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
 
               IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
                   (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
@@ -13782,7 +14070,7 @@ CONTAINS
                 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_dbledble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
                 
@@ -13794,13 +14082,13 @@ CONTAINS
               END IF
 
             CASE (ST_SINGLE)
-              CALL storage_getbase_double(rmatrixA%h_Da,DaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_double(rmatrixA,DaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_dblesngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,DaC)
                 
@@ -13821,13 +14109,13 @@ CONTAINS
             SELECT CASE(rmatrixB%cdataType)
               
             CASE (ST_DOUBLE) 
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_double(rmatrixB%h_Da,DaB)
-              CALL storage_getbase_double(rmatrixC%h_Da,DaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_double(rmatrixB,DaB)
+              CALL lsyssc_getbase_double(rmatrixC,DaC)
               
               IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_sngldble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagonalC,DaC)
 
@@ -13839,9 +14127,9 @@ CONTAINS
               END IF
               
             CASE (ST_SINGLE)
-              CALL storage_getbase_single(rmatrixA%h_Da,FaA)
-              CALL storage_getbase_single(rmatrixB%h_Da,FaB)
-              CALL storage_getbase_single(rmatrixC%h_Da,FaC)
+              CALL lsyssc_getbase_single(rmatrixA,FaA)
+              CALL lsyssc_getbase_single(rmatrixB,FaB)
+              CALL lsyssc_getbase_single(rmatrixC,FaC)
 
               IF ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .AND. &
                   (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .AND. (bfast)) THEN
@@ -13861,7 +14149,7 @@ CONTAINS
                 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
                 
-                CALL storage_getbase_int(rmatrixC%h_Kdiagonal,KdiagonalC)
+                CALL lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 CALL do_mat79mat79add_numb_snglsngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
                     KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagonalC,FaC)
 

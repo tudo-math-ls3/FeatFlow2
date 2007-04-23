@@ -1691,7 +1691,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_intUBnd (ihandle, p_Iarray, ubound, rheap)
+  SUBROUTINE storage_getbase_intUBnd (ihandle, p_Iarray, ubnd, rheap)
 
 !<description>
 
@@ -1706,7 +1706,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -1746,8 +1746,14 @@ CONTAINS
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D))) THEN
+    PRINT *,'storage_getbase_intUBnd: Upper bound invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
-  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D(:ubound)
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D(:ubnd)
 
   END SUBROUTINE
 
@@ -1755,7 +1761,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_intLUBnd (ihandle, p_Iarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_intLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -1770,10 +1776,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
   
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -1813,9 +1819,18 @@ CONTAINS
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_intLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D(lbound:ubound)
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D(lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -1885,7 +1900,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_singleUBnd (ihandle, p_Sarray, ubound, rheap)
+  SUBROUTINE storage_getbase_singleUBnd (ihandle, p_Sarray, ubnd, rheap)
 
 !<description>
 
@@ -1900,7 +1915,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -1940,9 +1955,15 @@ CONTAINS
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D))) THEN
+    PRINT *,'storage_getbase_singleUBnd: Upper bound invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D(:ubound)
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D(:ubnd)
 
   END SUBROUTINE
 
@@ -1950,7 +1971,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_singleLUBnd (ihandle, p_Sarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_singleLUBnd (ihandle, p_Sarray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -1965,10 +1986,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2008,9 +2029,18 @@ CONTAINS
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_singleLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D(lbound:ubound)
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D(lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -2081,7 +2111,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_doubleUBnd (ihandle, p_Darray, ubound, rheap)
+  SUBROUTINE storage_getbase_doubleUBnd (ihandle, p_Darray, ubnd, rheap)
 
 !<description>
 
@@ -2096,7 +2126,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2132,13 +2162,18 @@ CONTAINS
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
-
     PRINT *,'storage_getbase_double: Wrong data format!'
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D))) THEN
+    PRINT *,'storage_getbase_doubleUBnd: Upper bound invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
-  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D(:ubound)
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D(:ubnd)
 
   END SUBROUTINE
 
@@ -2146,7 +2181,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_doubleLUBnd (ihandle, p_Darray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_doubleLUBnd (ihandle, p_Darray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -2161,10 +2196,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2200,13 +2235,21 @@ CONTAINS
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
-
     PRINT *,'storage_getbase_double: Wrong data format!'
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_doubleLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
-  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D(lbound:ubound)
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D(lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -2276,7 +2319,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logicalUBnd (ihandle, p_Larray, ubound, rheap)
+  SUBROUTINE storage_getbase_logicalUBnd (ihandle, p_Larray, ubnd, rheap)
 
 !<description>
 
@@ -2291,7 +2334,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2331,9 +2374,15 @@ CONTAINS
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D))) THEN
+    PRINT *,'storage_getbase_logicalUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D(:ubound)
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D(:ubnd)
 
   END SUBROUTINE
 
@@ -2341,7 +2390,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logicalLUBnd (ihandle, p_Larray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_logicalLUBnd (ihandle, p_Larray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -2356,10 +2405,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2399,9 +2448,18 @@ CONTAINS
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_logicalUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D(lbound:ubound)
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D(lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -2471,7 +2529,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_charUBnd (ihandle, p_Carray, ubound, rheap)
+  SUBROUTINE storage_getbase_charUBnd (ihandle, p_Carray, ubnd, rheap)
 
 !<description>
 
@@ -2486,7 +2544,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
   
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2526,9 +2584,15 @@ CONTAINS
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D))) THEN
+    PRINT *,'storage_getbase_charLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D(:ubound)
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D(:ubnd)
 
   END SUBROUTINE
 
@@ -2536,7 +2600,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_charLUBnd (ihandle, p_Carray, lbound, ubound,rheap)
+  SUBROUTINE storage_getbase_charLUBnd (ihandle, p_Carray, lbnd, ubnd,rheap)
 
 !<description>
 
@@ -2551,10 +2615,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2594,9 +2658,18 @@ CONTAINS
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_charLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D(lbound:ubound)
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar1D(lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -2661,7 +2734,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_int2DUBnd (ihandle, p_Iarray, ubound, rheap)
+  SUBROUTINE storage_getbase_int2DUBnd (ihandle, p_Iarray, ubnd, rheap)
 
 !<description>
 
@@ -2676,7 +2749,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2711,9 +2784,15 @@ CONTAINS
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2))) THEN
+    PRINT *,'storage_getbase_int2DUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D(:,:ubound)
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D(:,:ubnd)
 
   END SUBROUTINE
 
@@ -2721,7 +2800,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_int2DLUBnd (ihandle, p_Iarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_int2DLUBnd (ihandle, p_Iarray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -2737,10 +2816,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2775,9 +2854,18 @@ CONTAINS
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_int2DLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D(:,lbound:ubound)
+  p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D(:,lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -2842,7 +2930,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_single2DUBnd (ihandle, p_Sarray, ubound, rheap)
+  SUBROUTINE storage_getbase_single2DUBnd (ihandle, p_Sarray, ubnd, rheap)
 
 !<description>
 
@@ -2857,7 +2945,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2892,9 +2980,15 @@ CONTAINS
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2))) THEN
+    PRINT *,'storage_getbase_single2DUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D(:,:ubound)
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D(:,:ubnd)
 
   END SUBROUTINE
 
@@ -2902,7 +2996,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_single2DLUBnd (ihandle, p_Sarray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_single2DLUBnd (ihandle, p_Sarray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -2918,10 +3012,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
   
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -2956,9 +3050,18 @@ CONTAINS
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_single2DLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D(:,lbound:ubound)
+  p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D(:,lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -3019,7 +3122,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_double2DUBnd (ihandle, p_Darray, ubound, rheap)
+  SUBROUTINE storage_getbase_double2DUBnd (ihandle, p_Darray, ubnd, rheap)
 
 !<description>
 
@@ -3033,7 +3136,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -3065,9 +3168,15 @@ CONTAINS
     STOP
   END IF
 
+  IF ((ubnd .LT. 1) .OR. &
+      (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2))) THEN
+    PRINT *,'storage_getbase_double2DUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D(:,:ubound)
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D(:,:ubnd)
 
   END SUBROUTINE
 
@@ -3075,7 +3184,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_double2DLUBnd (ihandle, p_Darray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_double2DLUBnd (ihandle, p_Darray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -3090,10 +3199,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -3125,9 +3234,18 @@ CONTAINS
     STOP
   END IF
 
+  IF ((lbnd .LT. 1) .OR. &
+      (lbnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)) .OR. &
+      (ubnd .LT. 1) .OR. &
+      (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)) .OR. &
+      (lbnd .GT. ubnd)) THEN
+    PRINT *,'storage_getbase_double2DLUBnd: Bounds invalid invalid!'
+    STOP
+  END IF
+
   ! Get the pointer
 
-  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D(:,lbound:ubound)
+  p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D(:,lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -3192,7 +3310,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logical2DUBnd (ihandle, p_Larray, ubound, rheap)
+  SUBROUTINE storage_getbase_logical2DUBnd (ihandle, p_Larray, ubnd, rheap)
 
 !<description>
 
@@ -3207,7 +3325,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -3244,7 +3362,7 @@ CONTAINS
 
   ! Get the pointer
 
-  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D(:,:ubound)
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D(:,:ubnd)
 
   END SUBROUTINE
 
@@ -3252,7 +3370,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_logical2DLUBnd (ihandle, p_Larray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_logical2DLUBnd (ihandle, p_Larray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -3268,10 +3386,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -3308,7 +3426,7 @@ CONTAINS
 
   ! Get the pointer
 
-  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D(:,lbound:ubound)
+  p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D(:,lbnd:ubnd)
 
   END SUBROUTINE
 
@@ -3373,7 +3491,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_char2DUBnd (ihandle, p_Carray, ubound, rheap)
+  SUBROUTINE storage_getbase_char2DUBnd (ihandle, p_Carray, ubnd, rheap)
 
 !<description>
 
@@ -3388,7 +3506,7 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -3425,7 +3543,7 @@ CONTAINS
 
   ! Get the pointer
 
-  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D(:,:ubound)
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D(:,:ubnd)
 
   END SUBROUTINE
 
@@ -3433,7 +3551,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_getbase_char2DLUBnd (ihandle, p_Carray, lbound, ubound, rheap)
+  SUBROUTINE storage_getbase_char2DLUBnd (ihandle, p_Carray, lbnd, ubnd, rheap)
 
 !<description>
 
@@ -3449,10 +3567,10 @@ CONTAINS
   INTEGER, INTENT(IN) :: ihandle
 
   ! The lower bound
-  INTEGER, INTENT(IN) :: lbound
+  INTEGER, INTENT(IN) :: lbnd
 
   ! The upper bound
-  INTEGER, INTENT(IN) :: ubound
+  INTEGER, INTENT(IN) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
@@ -3489,7 +3607,7 @@ CONTAINS
 
   ! Get the pointer
 
-  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D(:,lbound:ubound)
+  p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D(:,lbnd:ubnd)
 
   END SUBROUTINE
 

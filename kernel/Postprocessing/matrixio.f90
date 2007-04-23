@@ -98,7 +98,7 @@ MODULE matrixio
     dthres = 1E-12_DP
     IF (PRESENT(dthreshold)) dthres = dthreshold
     IF (ABS(dthres) .GT. 0.0_DP) THEN
-      CALL storage_getbase_double (rtempMatrix%RmatrixBlock(1,1)%h_DA,p_DA)
+      CALL lsyssc_getbase_double (rtempMatrix%RmatrixBlock(1,1),p_DA)
       WHERE (abs(p_Da) .LT. dthres) p_Da = 0.0_DP
     END IF
     
@@ -160,9 +160,9 @@ MODULE matrixio
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data arrays and write the matrix
-      CALL storage_getbase_double (rmatrix%h_Da,p_Da)
-      CALL storage_getbase_int (rmatrix%h_Kcol,p_Kcol)
-      CALL storage_getbase_int (rmatrix%h_Kld,p_Kld)
+      CALL lsyssc_getbase_double (rmatrix,p_Da)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       CALL matio_writeMatrix79_Dble (p_Da, p_Kcol, p_Kld, &
                                       rmatrix%NEQ, rmatrix%NEQ, sarray, &
                                       bnoZero, ifile, sfile, sformat)
@@ -470,15 +470,15 @@ MODULE matrixio
       
     CASE (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
       
-      CALL storage_getbase_int(rmatrix%h_Kld,Kld)
-      CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
+      CALL lsyssc_getbase_Kld(rmatrix,Kld)
+      CALL lsyssc_getbase_Kcol(rmatrix,Kcol)
       
       IF (bdata) THEN
         ! Which matrix type are we?
         SELECT CASE(rmatrix%cdataType)
         CASE (ST_DOUBLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          CALL lsyssc_getbase_double(rmatrix,Da)
           SELECT CASE(rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIXD)
             CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,Kld,Kcol,Da)
@@ -492,7 +492,7 @@ MODULE matrixio
           
         CASE (ST_SINGLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          CALL lsyssc_getbase_single(rmatrix,Fa)
           SELECT CASE(rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIXD)
             CALL do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,Kld,Kcol,Fa)
@@ -527,21 +527,21 @@ MODULE matrixio
 
     CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
       
-      CALL storage_getbase_int(rmatrix%h_Kld,Kld)
-      CALL storage_getbase_int(rmatrix%h_Kcol,Kcol)
+      CALL lsyssc_getbase_Kld(rmatrix,Kld)
+      CALL lsyssc_getbase_Kcol(rmatrix,Kcol)
       
       IF (bdata) THEN
         ! Which matrix type are we?
         SELECT CASE(rmatrix%cdataType)
         CASE (ST_DOUBLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          CALL lsyssc_getbase_double(rmatrix,Da)
           CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Da)
           WRITE(UNIT=iunit,FMT=30)
 
         CASE (ST_SINGLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          CALL lsyssc_getbase_single(rmatrix,Fa)
           CALL do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Fa)
           WRITE(UNIT=iunit,FMT=30)
           
@@ -565,7 +565,7 @@ MODULE matrixio
         SELECT CASE(rmatrix%cdataType)
         CASE (ST_DOUBLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          CALL lsyssc_getbase_double(rmatrix,Da)
           DO ieq=1,rmatrix%NEQ
             WRITE(UNIT=iunit,FMT=20) ieq,ieq,Da(ieq)
           END DO
@@ -573,7 +573,7 @@ MODULE matrixio
 
         CASE (ST_SINGLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          CALL lsyssc_getbase_single(rmatrix,Fa)
           DO ieq=1,rmatrix%NEQ
             WRITE(UNIT=iunit,FMT=20) ieq,ieq,Fa(ieq)
           END DO
@@ -602,13 +602,13 @@ MODULE matrixio
         SELECT CASE(rmatrix%cdataType)
         CASE (ST_DOUBLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_double(rmatrix%h_Da,Da)
+          CALL lsyssc_getbase_double(rmatrix,Da)
           CALL do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS,Da)
           WRITE(UNIT=iunit,FMT=30)
 
         CASE (ST_SINGLE)
           WRITE(UNIT=iunit,FMT=10)
-          CALL storage_getbase_single(rmatrix%h_Da,Fa)
+          CALL lsyssc_getbase_single(rmatrix,Fa)
           CALL do_spy_mat1_single(rmatrix%NEQ,rmatrix%NCOLS,Fa)
           WRITE(UNIT=iunit,FMT=30)
 

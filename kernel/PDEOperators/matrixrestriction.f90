@@ -191,14 +191,14 @@ CONTAINS
     CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
                                   p_DcornerCoordinatesCoarse)
 
-    CALL storage_getbase_int (rcoarseMatrix%h_Kld,p_KldCoarse)
-    CALL storage_getbase_int (rcoarseMatrix%h_Kcol,p_KcolCoarse)
-    CALL storage_getbase_int (rcoarseMatrix%h_Kdiagonal,p_KdiagonalCoarse)
-    CALL storage_getbase_double (rcoarseMatrix%h_Da,p_DaCoarse)
-    CALL storage_getbase_int (rfineMatrix%h_Kld,p_KldFine)
-    CALL storage_getbase_int (rfineMatrix%h_Kcol,p_KcolFine)
-    CALL storage_getbase_int (rfineMatrix%h_Kdiagonal,p_KdiagonalFine)
-    CALL storage_getbase_double (rfineMatrix%h_Da,p_DaFine)
+    CALL lsyssc_getbase_Kld (rcoarseMatrix,p_KldCoarse)
+    CALL lsyssc_getbase_Kcol (rcoarseMatrix,p_KcolCoarse)
+    CALL lsyssc_getbase_Kdiagonal (rcoarseMatrix,p_KdiagonalCoarse)
+    CALL lsyssc_getbase_double (rcoarseMatrix,p_DaCoarse)
+    CALL lsyssc_getbase_Kld (rfineMatrix,p_KldFine)
+    CALL lsyssc_getbase_Kcol (rfineMatrix,p_KcolFine)
+    CALL lsyssc_getbase_Kdiagonal (rfineMatrix,p_KdiagonalFine)
+    CALL lsyssc_getbase_double (rfineMatrix,p_DaFine)
     
     nvt1 = p_rtriaCoarse%NVT
     nvt2 = p_rtriaFine%NVT

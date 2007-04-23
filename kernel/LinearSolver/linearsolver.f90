@@ -1344,8 +1344,6 @@ CONTAINS
   
 !</subroutine>
 
-  INTEGER :: nblocks
-
   ! Copy the matrix structure on the finest level to the rsolverNode
   ! structure. This corresponds to the system we want to solve.
   CALL lsysbl_duplicateMatrix (Rmatrices(UBOUND(Rmatrices,1)), &
@@ -3228,9 +3226,9 @@ CONTAINS
         ! In case of structure 9, Kdiagonal points to the diagonal elements.
         ! In case of structure 7, Kld points to the diagonal elements
         IF (p_rmatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-          CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiag)
+          CALL lsyssc_getbase_Kdiagonal(p_rmatrix,p_Kdiag)
         ELSE
-          CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kdiag)
+          CALL lsyssc_getbase_Kld(p_rmatrix,p_Kdiag)
         END IF
       
         ! Get the omega parameter for the matrix. Don't forget the scaling 
@@ -3241,7 +3239,7 @@ CONTAINS
         SELECT CASE (p_rmatrix%cdataType)
         CASE (ST_DOUBLE)
           ! Get the matrix data arrays
-          CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+          CALL lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
           
           ! Take care of the accuracy of the vector
           SELECT CASE (rd%cdataType)
@@ -3289,7 +3287,7 @@ CONTAINS
         CASE (ST_SINGLE)
 
           ! Get the matrix data arrays
-          CALL storage_getbase_single (p_rmatrix%h_Da,p_Fmatrix)
+          CALL lsyssc_getbase_single (p_rmatrix,p_Fmatrix)
           
           ! Take care of the accuracy of the vector
           SELECT CASE (rd%cdataType)
@@ -3562,7 +3560,7 @@ CONTAINS
         SELECT CASE(p_rmatrix%cdataType)
         CASE(ST_DOUBLE)
           ! now get the matrix' data
-          CALL storage_getbase_double (p_rmatrix%h_DA, p_Dmatrix)
+          CALL lsyssc_getbase_double (p_rmatrix, p_Dmatrix)
         
           ! go through all data entries of the matrix and sum them up
           DO ientry=1, p_rmatrix%NA
@@ -3571,7 +3569,7 @@ CONTAINS
           
         CASE(ST_SINGLE)
           ! now get the matrix' data
-          CALL storage_getbase_single(p_rmatrix%h_DA, p_Fmatrix)
+          CALL lsyssc_getbase_single(p_rmatrix, p_Fmatrix)
 
           ! go through all data entries of the matrix and sum them up
           DO ientry=1, p_rmatrix%NA
@@ -3705,9 +3703,9 @@ CONTAINS
         ! In case of structure 9, Kdiagonal points to the diagonal elements.
         ! In case of structure 7, Kld points to the diagonal elements
         IF (p_rmatrix%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-          CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiag)
+          CALL lsyssc_getbase_Kdiagonal(p_rmatrix,p_Kdiag)
         ELSE
-          CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kdiag)
+          CALL lsyssc_getbase_Kld(p_rmatrix,p_Kdiag)
         END IF
       
         ! Get the omega parameter for the matrix. Don't forget the scaling 
@@ -3718,7 +3716,7 @@ CONTAINS
         SELECT CASE (p_rmatrix%cdataType)
         CASE (ST_DOUBLE)
           ! Get the matrix data arrays
-          CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+          CALL lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
           
           ! Take care of the accuracy of the vector
           SELECT CASE (rd%cdataType)
@@ -3752,7 +3750,7 @@ CONTAINS
         CASE (ST_SINGLE)
 
           ! Get the matrix data arrays
-          CALL storage_getbase_single (p_rmatrix%h_Da,p_Fmatrix)
+          CALL lsyssc_getbase_single (p_rmatrix,p_Fmatrix)
           
           ! Take care of the accuracy of the vector
           SELECT CASE (rd%cdataType)
@@ -3950,15 +3948,15 @@ CONTAINS
       SELECT CASE (p_rmatrix%cmatrixFormat)
       CASE (LSYSSC_MATRIX9)
 
-        CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiagonal)
-        CALL storage_getbase_int(p_rmatrix%h_Kcol,p_Kcol)
-        CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kld)
+        CALL lsyssc_getbase_Kdiagonal(p_rmatrix,p_Kdiagonal)
+        CALL lsyssc_getbase_Kcol(p_rmatrix,p_Kcol)
+        CALL lsyssc_getbase_Kld(p_rmatrix,p_Kld)
       
         ! Now, which data format do we have? Single or double?
         SELECT CASE (p_rmatrix%cdataType)
         CASE (ST_DOUBLE)
           ! Get the matrix data arrays
-          CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+          CALL lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
           
           ! Take care of the accuracy of the vector
           SELECT CASE (rd%cdataType)
@@ -4244,15 +4242,15 @@ CONTAINS
       SELECT CASE (p_rmatrix%cmatrixFormat)
       CASE (LSYSSC_MATRIX9)
 
-        CALL storage_getbase_int(p_rmatrix%h_Kdiagonal,p_Kdiagonal)
-        CALL storage_getbase_int(p_rmatrix%h_Kcol,p_Kcol)
-        CALL storage_getbase_int(p_rmatrix%h_Kld,p_Kld)
+        CALL lsyssc_getbase_Kdiagonal(p_rmatrix,p_Kdiagonal)
+        CALL lsyssc_getbase_Kcol(p_rmatrix,p_Kcol)
+        CALL lsyssc_getbase_Kld(p_rmatrix,p_Kld)
       
         ! Now, which data format do we have? Single or double?
         SELECT CASE (p_rmatrix%cdataType)
         CASE (ST_DOUBLE)
           ! Get the matrix data arrays
-          CALL storage_getbase_double (p_rmatrix%h_DA,p_Dmatrix)
+          CALL lsyssc_getbase_double (p_rmatrix,p_Dmatrix)
           
           ! Take care of the accuracy of the vector
           SELECT CASE (rd%cdataType)
@@ -5086,9 +5084,9 @@ CONTAINS
   CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
   
   ! Get the data arrays.
-  CALL storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
-  CALL storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
-  CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
+  CALL lsyssc_getbase_Kcol (rtempMatrix,p_Kcol)
+  CALL lsyssc_getbase_Kld (rtempMatrix,p_Kld)
+  CALL lsyssc_getbase_double (rtempMatrix,p_DA)
   
   ! Perform a symbolic factorization...
   CALL UMF4SYM(rtempMatrix%NEQ,rtempMatrix%NEQ,p_Kld,p_Kcol,p_Da, &
@@ -5237,7 +5235,7 @@ CONTAINS
   END IF
 
   !!! DEBUG
-  !CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
+  !CALL lsyssc_getbase_double (rtempMatrix,p_DA)
   !WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
   !CALL matio_writeMatrixHR (p_rmatrix, 'matrix',&
   !                          .TRUE., 0, 'matrix.txt', '(D20.10)')
@@ -5248,9 +5246,9 @@ CONTAINS
   CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
   
   ! Get the data arrays.
-  CALL storage_getbase_int (rtempMatrix%h_Kcol,p_Kcol)
-  CALL storage_getbase_int (rtempMatrix%h_Kld,p_Kld)
-  CALL storage_getbase_double (rtempMatrix%h_DA,p_DA)
+  CALL lsyssc_getbase_Kcol (rtempMatrix,p_Kcol)
+  CALL lsyssc_getbase_Kld (rtempMatrix,p_Kld)
+  CALL lsyssc_getbase_double (rtempMatrix,p_DA)
   
   ! Perform a numeric factorization...
   CALL UMF4NUM(p_Kld,p_Kcol,p_Da, &
@@ -5716,9 +5714,9 @@ CONTAINS
     END IF
     
     ! Get the matrix description
-    CALL storage_getbase_int (p_rmatrixSc%h_Kld,p_Kld)
-    CALL storage_getbase_int (p_rmatrixSc%h_Kcol,p_Kcol)
-    CALL storage_getbase_double (p_rmatrixSc%h_DA,p_DA)
+    CALL lsyssc_getbase_Kld (p_rmatrixSc,p_Kld)
+    CALL lsyssc_getbase_Kcol (p_rmatrixSc,p_Kcol)
+    CALL lsyssc_getbase_double (p_rmatrixSc,p_DA)
 
     ! Calculate a memory guess for how much memory the matrix needs.
     NULLIFY(p_Iwork)

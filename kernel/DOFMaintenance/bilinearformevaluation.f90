@@ -486,12 +486,16 @@ CONTAINS
   CALL storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
                       NEQ+1_I32, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
+  ! This must be a storage_getbase, no lsyssc_getbase, since this is the
+  ! matrix construction routine!
+  CALL storage_getbase_int(rmatrixScalar%h_Kld,p_KLD)
   
   ! Allocate h_Kdiagonal
   CALL storage_new1D ('bilf_createMatStructure9_conf', 'Kdiagonal', &
                       NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
+  ! This must be a storage_getbase, no lsyssc_getbase, since this is the
+  ! matrix construction routine!
   CALL storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
   
   ! For saving some memory in smaller discretisations, we calculate
@@ -928,7 +932,9 @@ CONTAINS
   CALL storage_new1D ('bilf_createMatStructure9_conf', 'KCOL', &
                       NA, ST_INT, rmatrixScalar%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rmatrixScalar%h_KCOL,p_KCOL)
+  ! This must be a storage_getbase, no lsyssc_getbase, since this is the
+  ! matrix construction routine!
+  CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_KCOL)
   
   ! Save NA in the matrix structure
   rmatrixScalar%NA = NA
@@ -1197,12 +1203,16 @@ CONTAINS
   CALL storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
                       NEQ+1_I32, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
+  ! This must be a storage_getbase, no lsyssc_getbase, since this is the
+  ! matrix construction routine!
+  CALL storage_getbase_int (rmatrixScalar%h_Kld,p_KLD)
   
   ! Allocate h_Kdiagonal
   CALL storage_new1D ('bilf_createMatStructure9_conf', 'Kdiagonal', &
                       NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
+  ! This must be a storage_getbase, no lsyssc_getbase, since this is the
+  ! matrix construction routine!
   CALL storage_getbase_int (rmatrixScalar%h_Kdiagonal,p_Kdiagonal)
   
   ! For saving some memory in smaller discretisations, we calculate
@@ -1689,15 +1699,15 @@ CONTAINS
   ! Now build KCOL by collecting the entries in the linear lists of 
   ! each row.
   !
-  ! At first, as we now NA, we can allocate the real KCOL now!
+  ! Save NA in the matrix structure
+  rmatrixScalar%NA = NA
+  
+  ! As we now NA, we can allocate the real KCOL now!
   
   CALL storage_new1D ('bilf_createMatStructure9_conf', 'KCOL', &
                       NA, ST_INT, rmatrixScalar%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rmatrixScalar%h_KCOL,p_KCOL)
-  
-  ! Save NA in the matrix structure
-  rmatrixScalar%NA = NA
+  CALL storage_getbase_int (rmatrixScalar%h_Kcol,p_KCOL)
   
   ! Set back NA to 0 at first.
 
@@ -2024,9 +2034,9 @@ CONTAINS
   NA = rmatrixScalar%NA
   NEQ = rmatrixScalar%NEQ
   
-  ! We need KCOL/KLD of our matric
-  CALL storage_getbase_int (rmatrixScalar%h_KCOL,p_KCOL)
-  CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
+  ! We need KCOL/KLD of our matrix
+  CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
+  CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
   
   ! Check if the matrix entries exist. If not, allocate the matrix.
   IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
@@ -2036,11 +2046,11 @@ CONTAINS
     CALL storage_new1D ('bilf_buildMatrix9d_conf', 'DA', &
                         NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                         ST_NEWBLOCK_ZERO)
-    CALL storage_getbase_double (rmatrixScalar%h_DA,p_DA)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
 
   ELSE
   
-    CALL storage_getbase_double (rmatrixScalar%h_DA,p_DA)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
 
     ! If desired, clear the matrix before assembling.
     IF (bclear) THEN
@@ -2848,8 +2858,8 @@ CONTAINS
     STOP
   END IF
   
-  CALL storage_getbase_int (rmatrixScalar%h_KCOL,p_KCOL)
-  CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
+  CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
+  CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
   
   ! Check if the matrix entries exist. If not, allocate the matrix.
   IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
@@ -2859,11 +2869,11 @@ CONTAINS
     CALL storage_new1D ('bilf_buildMatrix9d_conf', 'DA', &
                         NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                         ST_NEWBLOCK_ZERO)
-    CALL storage_getbase_double (rmatrixScalar%h_DA,p_DA)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
 
   ELSE
   
-    CALL storage_getbase_double (rmatrixScalar%h_DA,p_DA)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
 
     ! If desired, clear the matrix before assembling.
     IF (bclear) THEN

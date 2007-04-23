@@ -96,10 +96,10 @@ CONTAINS
     CALL storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
                      ST_INT, h_Ideg, ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(h_IcolTmp, p_IcolTmp)
-    CALL storage_getbase_int(rmatrix%h_Kcol, p_Kcol)
+    CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
     CALL storage_getbase_int(h_Ideg, p_Ideg)
-    CALL storage_getbase_int(rmatrix%h_Kld, p_Kld)
-    CALL storage_getbase_int(rmatrix%h_Kdiagonal, p_Kdiag)
+    CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
+    CALL lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiag)
     
     ! Calculate the strategy, calculate p_IcolTmp
     ! BETA STATUS, ROUTINE NOT TESTED!!!
@@ -124,9 +124,9 @@ CONTAINS
     CALL storage_new('sstrat_calcCuthillMcKee', 'KDEG', rmatrix%NEQ, &
                      ST_INT, h_Ideg, ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(h_IcolTmp, p_IcolTmp)
-    CALL storage_getbase_int(rmatrix%h_Kcol, p_Kcol)
+    CALL lsyssc_getbase_Kcol(rmatrix, p_Kcol)
     CALL storage_getbase_int(h_Ideg, p_Ideg)
-    CALL storage_getbase_int(rmatrix%h_Kld, p_Kld)
+    CALL lsyssc_getbase_Kld(rmatrix, p_Kld)
     
     ! Calculate the strategy, calculate p_IcolTmp
     CALL sstrat_calcColNumberingCM7 (p_Kld, p_Kcol, p_IcolTmp, p_Ideg, NEQ, NEQ)

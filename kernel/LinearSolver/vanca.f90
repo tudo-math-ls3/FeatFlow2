@@ -743,12 +743,12 @@ CONTAINS
           rvancaGeneral%p_Rmatrices(j,i)%btransposed = &
             IAND(rmatrix%RmatrixBlock(j,i)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0
             
-          CALL storage_getbase_double (rmatrix%RmatrixBlock(j,i)%h_Da,&
-                                       rvancaGeneral%p_Rmatrices(j,i)%p_DA)
-          CALL storage_getbase_int (rmatrix%RmatrixBlock(j,i)%h_Kcol,&
+          CALL lsyssc_getbase_double (rmatrix%RmatrixBlock(j,i),&
+                                      rvancaGeneral%p_Rmatrices(j,i)%p_DA)
+          CALL lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(j,i),&
                                     rvancaGeneral%p_Rmatrices(j,i)%p_Kcol)
-          CALL storage_getbase_int (rmatrix%RmatrixBlock(j,i)%h_Kld,&
-                                    rvancaGeneral%p_Rmatrices(j,i)%p_Kld)
+          CALL lsyssc_getbase_Kld (rmatrix%RmatrixBlock(j,i),&
+                                   rvancaGeneral%p_Rmatrices(j,i)%p_Kld)
                                     
           IF (bfirst) THEN
             ! This block has not yet been processed.
@@ -1429,26 +1429,26 @@ CONTAINS
     END IF      
   
     ! Fill the output structure with data of the matrices.
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,1)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
         rvanca%rvanca2DNavSt%p_DA )
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,3)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
         rvanca%rvanca2DNavSt%p_DB1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,3)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
         rvanca%rvanca2DNavSt%p_DB2)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,1)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
         rvanca%rvanca2DNavSt%p_DD1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,2)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
         rvanca%rvanca2DNavSt%p_DD2)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kcol,&
+    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
         rvanca%rvanca2DNavSt%p_KcolB)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kld, &
+    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
         rvanca%rvanca2DNavSt%p_KldB )
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kcol,&
+    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
         rvanca%rvanca2DNavSt%p_KcolA)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kld, &
+    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
         rvanca%rvanca2DNavSt%p_KldA )
     IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kdiagonal, &
+      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                               rvanca%rvanca2DNavSt%p_KdiagonalA)
     ELSE
       rvanca%rvanca2DNavSt%p_KdiagonalA => rvanca%rvanca2DNavSt%p_KldA
@@ -1457,24 +1457,24 @@ CONTAINS
     ! What is with A22? Is it the same as A11?
     IF (.NOT. lsyssc_isMatrixContentShared (&
         rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) ) THEN
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(2,2)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
           rvanca%rvanca2DNavSt%p_DA22 )
     END IF
     
     ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
     IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%dscaleFactor .EQ. 1.0_DP)) THEN
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,2)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
           rvanca%rvanca2DNavSt%p_DA12 )
           
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kcol,&
+      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
           rvanca%rvanca2DNavSt%p_KcolA12)
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kld, &
+      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
           rvanca%rvanca2DNavSt%p_KldA12 )
           
       ! Get the structure. It's assumed that A12 and A21 have the same!
       IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kdiagonal, &
+        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
                                 rvanca%rvanca2DNavSt%p_KdiagonalA12)
       ELSE
         rvanca%rvanca2DNavSt%p_KdiagonalA12 => rvanca%rvanca2DNavSt%p_KldA12
@@ -1486,7 +1486,7 @@ CONTAINS
         STOP
       END IF
       
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(2,1)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
           rvanca%rvanca2DNavSt%p_DA21 )
     END IF
 
@@ -1836,17 +1836,17 @@ CONTAINS
     END IF
     
     ! Fill the output structure with data of the matrices.
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,1)%h_Da,rvanca%p_DA )
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,3)%h_Da,rvanca%p_DB1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,3)%h_Da,rvanca%p_DB2)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,1)%h_Da,rvanca%p_DD1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,2)%h_Da,rvanca%p_DD2)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kcol,rvanca%p_KcolB)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kld, rvanca%p_KldB )
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kcol,rvanca%p_KcolA)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kld, rvanca%p_KldA )
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),rvanca%p_DA )
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),rvanca%p_DB1)
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),rvanca%p_DB2)
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),rvanca%p_DD1)
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),rvanca%p_DD2)
+    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),rvanca%p_KcolB)
+    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), rvanca%p_KldB )
+    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),rvanca%p_KcolA)
+    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), rvanca%p_KldA )
     IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kdiagonal, &
+      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                                rvanca%p_KdiagonalA)
     ELSE
       rvanca%p_KdiagonalA => rvanca%p_KldA
@@ -6293,48 +6293,48 @@ CONTAINS
     END IF      
   
     ! Fill the output structure with data of the matrices.
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,3)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
         rvanca%rvanca2DNavStOptC%p_DB1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,3)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,3),&
         rvanca%rvanca2DNavStOptC%p_DB2)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,1)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,1),&
         rvanca%rvanca2DNavStOptC%p_DD1)
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(3,2)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,2),&
         rvanca%rvanca2DNavStOptC%p_DD2)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kcol,&
+    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,3),&
         rvanca%rvanca2DNavStOptC%p_KcolB)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,3)%h_Kld, &
+    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,3), &
         rvanca%rvanca2DNavStOptC%p_KldB )
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kcol,&
+    CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1),&
         rvanca%rvanca2DNavStOptC%p_KcolA11)
-    CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kld, &
+    CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), &
         rvanca%rvanca2DNavStOptC%p_KldA11 )
     IF (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,1)%h_Kdiagonal, &
+      CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), &
                               rvanca%rvanca2DNavStOptC%p_KdiagonalA11)
     ELSE
       rvanca%rvanca2DNavStOptC%p_KdiagonalA11 => rvanca%rvanca2DNavStOptC%p_KldA11
     END IF
     
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(1,1)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,1),&
         rvanca%rvanca2DNavStOptC%p_DA11 )
 
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(2,2)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,2),&
         rvanca%rvanca2DNavStOptC%p_DA22 )
     
     ! What is with A12 and A21? Do they exist? With a scale factor = 1.0?
     IF (lsysbl_isSubmatrixPresent(rmatrix,1,2)) THEN
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,2)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,2),&
           rvanca%rvanca2DNavStOptC%p_DA12 )
           
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kcol,&
+      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,2),&
           rvanca%rvanca2DNavStOptC%p_KcolA12)
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kld, &
+      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
           rvanca%rvanca2DNavStOptC%p_KldA12 )
           
       ! Get the structure. It's assumed that A12 and A21 have the same!
       IF (rmatrix%RmatrixBlock(1,12)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,2)%h_Kdiagonal, &
+        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
                                 rvanca%rvanca2DNavStOptC%p_KdiagonalA12)
       ELSE
         rvanca%rvanca2DNavStOptC%p_KdiagonalA12 => rvanca%rvanca2DNavStOptC%p_KldA12
@@ -6346,34 +6346,34 @@ CONTAINS
         STOP
       END IF
       
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(2,1)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
           rvanca%rvanca2DNavStOptC%p_DA21 )
     END IF
     
     ! Now we come to the dual equation -> A(4:6,4:6).
     ! We assume that A44 and A55 has the same structure as A11 and A22.
     
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(4,4)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,4),&
         rvanca%rvanca2DNavStOptC%p_DA44 )
 
     ! What is with A55? Is it the same as A44?
-    CALL storage_getbase_double(rmatrix%RmatrixBlock(5,5)%h_Da,&
+    CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,5),&
         rvanca%rvanca2DNavStOptC%p_DA55 )
   
     ! What is with A12 and A21? Do they exist? With a scale factor != 0.0?
     IF (lsysbl_isSubmatrixPresent(rmatrix,4,5)) THEN
 
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(4,5)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(4,5),&
           rvanca%rvanca2DNavStOptC%p_DA45 )
           
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(4,5)%h_Kcol,&
+      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(4,5),&
           rvanca%rvanca2DNavStOptC%p_KcolA45)
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(4,5)%h_Kld, &
+      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,5), &
           rvanca%rvanca2DNavStOptC%p_KldA45 )
           
       ! Get the structure. It's assumed that A12 and A21 have the same!
       IF (rmatrix%RmatrixBlock(4,5)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL storage_getbase_int(rmatrix%RmatrixBlock(4,5)%h_Kdiagonal, &
+        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,5), &
                                 rvanca%rvanca2DNavStOptC%p_KdiagonalA45)
       ELSE
         rvanca%rvanca2DNavStOptC%p_KdiagonalA45 => rvanca%rvanca2DNavStOptC%p_KldA45
@@ -6385,7 +6385,7 @@ CONTAINS
         STOP
       END IF
       
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(5,4)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,4),&
           rvanca%rvanca2DNavStOptC%p_DA54 )
     END IF    
     
@@ -6399,16 +6399,16 @@ CONTAINS
         STOP
       END IF
       
-      CALL storage_getbase_double(rmatrix%RmatrixBlock(1,4)%h_Da,&
+      CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
           rvanca%rvanca2DNavStOptC%p_DM )
           
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,4)%h_Kcol,&
+      CALL lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
           rvanca%rvanca2DNavStOptC%p_KcolM)
-      CALL storage_getbase_int(rmatrix%RmatrixBlock(1,4)%h_Kld, &
+      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,4), &
           rvanca%rvanca2DNavStOptC%p_KldM )
           
       IF (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
-        CALL storage_getbase_int(rmatrix%RmatrixBlock(1,4)%h_Kdiagonal, &
+        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,4), &
                                 rvanca%rvanca2DNavStOptC%p_KdiagonalM)
       ELSE
         rvanca%rvanca2DNavStOptC%p_KdiagonalM => rvanca%rvanca2DNavStOptC%p_KldM

@@ -79,14 +79,14 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
     
     ! Get Kld and Kdiagonal
-    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
-    CALL storage_getbase_int(rmatrix%h_Kdiagonal,p_Kdiagonal)
+    CALL lsyssc_getbase_Kld(rmatrix,p_Kld)
+    CALL lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
     
     ! Take care of the format of the entries
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data array
-      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
       
       ! loop through the rows
       DO irow = 1,SIZE(Irows)
@@ -120,13 +120,13 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_DA
 
     ! Get Kld:
-    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
+    CALL lsyssc_getbase_Kld(rmatrix,p_Kld)
 
     ! Take care of the format of the entries
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data array
-      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
       
       ! loop through the rows
       DO irow = 1,SIZE(Irows)
@@ -198,14 +198,14 @@ CONTAINS
     REAL(DP) :: ddiag
     
     ! Get Kld and Kdiagonal
-    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
-    CALL storage_getbase_int(rmatrix%h_Kdiagonal,p_Kdiagonal)
+    CALL lsyssc_getbase_Kld(rmatrix,p_Kld)
+    CALL lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
     
     ! Take care of the format of the entries
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data array
-      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
       
       ! loop through the rows
       DO irow = 1,SIZE(Irows)
@@ -242,13 +242,13 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_DA
 
     ! Get Kld:
-    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
+    CALL lsyssc_getbase_Kld(rmatrix,p_Kld)
 
     ! Take care of the format of the entries
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data array
-      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
       
       ! loop through the rows
       DO irow = 1,SIZE(Irows)
@@ -312,14 +312,14 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
     
     ! Get Kld and Kdiagonal
-    CALL storage_getbase_int(rmatrix%h_Kld,p_Kld)
-    CALL storage_getbase_int(rmatrix%h_Kdiagonal,p_Kdiagonal)
+    CALL lsyssc_getbase_Kld(rmatrix,p_Kld)
+    CALL lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
     
     ! Take care of the format of the entries
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data array
-      CALL storage_getbase_double(rmatrix%h_DA,p_DA)
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
       
       ! loop through the rows
       DO irow = 1,SIZE(Irows)

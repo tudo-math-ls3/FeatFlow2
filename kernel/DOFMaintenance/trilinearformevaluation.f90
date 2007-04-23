@@ -444,8 +444,8 @@ CONTAINS
   NEQ = rmatrixScalar%NEQ
   
   ! We need KCOL/KLD of our matric
-  CALL storage_getbase_int (rmatrixScalar%h_KCOL,p_KCOL)
-  CALL storage_getbase_int (rmatrixScalar%h_KLD,p_KLD)
+  CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
+  CALL lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
   
   ! Check if the matrix entries exist. If not, allocate the matrix.
   IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
@@ -455,11 +455,11 @@ CONTAINS
     CALL storage_new1D ('trilf_buildMatrix9d_conf2', 'DA', &
                         NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                         ST_NEWBLOCK_ZERO)
-    CALL storage_getbase_double (rmatrixScalar%h_DA,p_DA)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
 
   ELSE
   
-    CALL storage_getbase_double (rmatrixScalar%h_DA,p_DA)
+    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
 
     ! If desired, clear the matrix before assembling.
     IF (bclear) THEN
