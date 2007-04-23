@@ -58,7 +58,7 @@ PROGRAM stokes
   PRINT *
   PRINT *,'Calculating cc2dmini-Problem with method 1'
   PRINT *,'------------------------------------------'
-  !CALL cc2dmini1
+  CALL cc2dmini1
 
   ! Call the problem to solve. cc2d method 2:
   PRINT *

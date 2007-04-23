@@ -2016,12 +2016,15 @@ CONTAINS
     REAL(DP) :: dnu
     
     ! A problem structure for our problem
-    TYPE(t_problem), TARGET :: rproblem
+    TYPE(t_problem), POINTER :: p_rproblem
     
     INTEGER :: i
     
     ! Ok, let's start. 
     !
+    ! Allocate the problem structure on the heap -- it's rather large.
+    ALLOCATE(p_rproblem)
+    
     ! NLMIN receives the minimal level where to discretise for supporting
     ! the solution process.
     ! NLMAX receives the level where we want to solve.
@@ -2031,52 +2034,54 @@ CONTAINS
     ! Viscosity parameter:
     dnu = 1E0_DP/1000E0
     
-    rproblem%dnu = dnu
+    p_rproblem%dnu = dnu
     
     ! Initialise the collection
-    CALL collct_init (rproblem%rcollection)
+    CALL collct_init (p_rproblem%rcollection)
     DO i=1,NNLEV
-      CALL collct_addlevel_all (rproblem%rcollection)
+      CALL collct_addlevel_all (p_rproblem%rcollection)
     END DO
 
     ! Add the (global) viscosity parameter
-    CALL collct_setvalue_real(rproblem%rcollection,'NU',dnu,.TRUE.)
+    CALL collct_setvalue_real(p_rproblem%rcollection,'NU',dnu,.TRUE.)
 
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL c2d1_initParamTriang (NLMIN,NLMAX,rproblem)
-    CALL c2d1_initDiscretisation (rproblem)    
-    CALL c2d1_initMatVec (rproblem)    
-    CALL c2d1_initAnalyticBC (rproblem)   
-    CALL c2d1_initDiscreteBC (rproblem)
+    CALL c2d1_initParamTriang (NLMIN,NLMAX,p_rproblem)
+    CALL c2d1_initDiscretisation (p_rproblem)    
+    CALL c2d1_initMatVec (p_rproblem)    
+    CALL c2d1_initAnalyticBC (p_rproblem)   
+    CALL c2d1_initDiscreteBC (p_rproblem)
     
     ! Implementation of boundary conditions
-    CALL c2d1_implementBC (rproblem)
+    CALL c2d1_implementBC (p_rproblem)
     
     ! Solve the problem
-    CALL c2d1_solve (rproblem)
+    CALL c2d1_solve (p_rproblem)
     
     ! Postprocessing
-    CALL c2d1_postprocessing (rproblem)
+    CALL c2d1_postprocessing (p_rproblem)
     
     ! Cleanup
-    CALL c2d1_doneMatVec (rproblem)
-    CALL c2d1_doneBC (rproblem)
-    CALL c2d1_doneDiscretisation (rproblem)
-    CALL c2d1_doneParamTriang (rproblem)
+    CALL c2d1_doneMatVec (p_rproblem)
+    CALL c2d1_doneBC (p_rproblem)
+    CALL c2d1_doneDiscretisation (p_rproblem)
+    CALL c2d1_doneParamTriang (p_rproblem)
 
-    CALL collct_deletevalue(rproblem%rcollection,'NU')
+    CALL collct_deletevalue(p_rproblem%rcollection,'NU')
 
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *
     PRINT *,'Remaining collection statistics:'
     PRINT *,'--------------------------------'
     PRINT *
-    CALL collct_printStatistics (rproblem%rcollection)
+    CALL collct_printStatistics (p_rproblem%rcollection)
     
-    ! Finally release the collection.
-    CALL collct_done (rproblem%rcollection)
+    ! Finally release the collection and the problem structure.
+    CALL collct_done (p_rproblem%rcollection)
+    
+    DEALLOCATE(p_rproblem)
     
   END SUBROUTINE
 
