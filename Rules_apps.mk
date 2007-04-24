@@ -27,6 +27,9 @@ CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(OPTFLAGSC) $(INCDIR) $(DEFS)
 FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 
+ETAGS=$(filter %.o,$(SRC:%.f=$(OBJDIR)/%.o))
+ETAGS+=$(filter %.o,$(SRC:%.f90=$(OBJDIR)/%.o))
+ETAGS+=$(filter %.o,$(SRC:%.c=$(OBJDIR)/%.o))
 
 # If the BLASLIB is not defined add the included blas to the libs.
 # If the LAPACKLIB is not defined add the included lapack to the libs.
@@ -213,3 +216,14 @@ $(HTMLDIR)/%.html: %.xml $(PARSER).class
 	@echo "Parsing $< to create module documentation...";
 	@mkdir -p $(HTMLDIR)
 	@$(JAVA) -classpath . $(PARSER) html $< $(HTMLDIR);
+
+##############################################################################
+# Etags
+##############################################################################
+
+.PHONY: tags
+tags: $(SRC)
+	@(rm -f TAGS)
+	@(etags $(filter %.c,$^))
+	@(etags -a $(filter %.f,$^))
+	@(etags -a $(filter %.f90,$^))
