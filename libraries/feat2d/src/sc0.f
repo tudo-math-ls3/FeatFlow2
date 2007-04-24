@@ -15,7 +15,7 @@
 *                                                                      *
 * Subroutines/functions called  SC0, ZLEN, ZDISP, ZNEW, ZCPY           *
 *                                                                      *
-* Version from  27/01/07 (M.MÃ¶ller)                                    *
+* Version from  27/01/07 (M.Möller)                                    *
 *                                                                      *
 * INPUT    TYPE                                                        *
 * -----    ----                                                        *
@@ -35,7 +35,7 @@
 *                                                                      *
 * Subroutines/functions called   none                                  *
 *                                                                      *
-* Version from  27/01/07 (M.MÃ¶ller)                                    *
+* Version from  27/01/07 (M.Möller)                                    *
 *                                                                      *
 * INPUT    TYPE                                                        *
 * -----    ----                                                        *
@@ -218,10 +218,18 @@ C
       NNVT=NVT
       NNMT=NNEL+NNVT+NBCT-2
 C
+C *** Determine number of quadrilaterals
+C
+      NQUAD=0
+      DO 10 IEL=1,NEL
+      IF (KVERT(4,IEL).NE.0) THEN
+       NQUAD=NQUAD+1
+10    ENDIF
+      PRINT *, "NQUAD=",NQUAD
       IF (NFINE.GT.0) THEN
        DO 1 IFINE=1,NFINE
        NNEL=4*NNEL
-       NNVT=NNVT+NNMT
+       NNVT=NNVT+NNMT+NQUAD
 1      NNMT=NNVT+NNEL+NBCT-2
       ENDIF
 C
