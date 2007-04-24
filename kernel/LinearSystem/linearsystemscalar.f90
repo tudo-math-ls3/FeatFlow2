@@ -15954,11 +15954,7 @@ CONTAINS
     CALL output_line ('h_Kcol:                  '//TRIM(sys_siL(rmatrix%h_Kcol,15)))
     IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
       CALL storage_getsize(rmatrix%h_Kcol,isize)
-      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) THEN
-        CALL output_line ('Kcol memory usage:       '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NEQ,2))//'%')
-      ELSE
-        CALL output_line ('Kcol memory usage:       '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NCOLS,2))//'%')
-      END IF
+      CALL output_line ('Kcol memory usage:       '//TRIM(sys_sdL(100/REAL(isize,DP)*rmatrix%NA,2))//'%')
     END IF
     CALL output_line ('h_Kld:                   '//TRIM(sys_siL(rmatrix%h_Kld,15)))
     IF (rmatrix%h_Kld /= ST_NOHANDLE) THEN
