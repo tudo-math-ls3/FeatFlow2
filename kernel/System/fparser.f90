@@ -825,13 +825,30 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE fparser_evalFunctionBlock (rparser, iComp, iDim, Val, Res)
+  SUBROUTINE fparser_evalFunctionBlock (rparser, iComp, iDim, ValBlock, Res, ValScalar)
 
 !<description>
     ! Evaluate bytecode of component iComp for the array of values passed in 
-    ! array Val(:,:). Note that this function is a wrapper for the working 
+    ! array ValBlock(:,:). Note that this function is a wrapper for the working 
     ! routine evalFunctionBlock. It is used to adjust the dimensions of the 
-    ! global stack memory if required.
+    ! global stack memory if required. In some situations, there a variables,
+    ! such as nodal coordinates, which are different for each component of 
+    ! the resulting vector and those which are the same, e.g., time variable.
+    ! The latter ones can be passed to the ValScalar argument which is used
+    ! uniformly for each component of Res.
+    !
+    ! WARNING: The ordering of the variables must be identical to that given
+    ! during the byte-code compilation. Care must be taken by the user since
+    ! this cannot be checked be the function parser. Hence, if both ValBlock
+    ! and ValScalar should be used, then the first variables must stored as
+    ! blocks whereas the last variables can be scalar. This sound slightly
+    ! complicated but here is an example:
+    !
+    ! Suppuse you want to evaluate a function f=f(x,y,t). You know that x,y
+    ! corresponds to the coordinate vector and t denotes the time. Then
+    ! you should order your variables according to [x,y,t]. If the function
+    ! should be evaluated for a set of variables then ValBlock=[x,y] and
+    ! ValScalar=[t] works fine.
 !</description>
 
 !<input>
@@ -839,17 +856,21 @@ CONTAINS
     INTEGER, INTENT(IN) :: iComp
 
     ! Orientation of the stored values
-    ! iDim =1 : Val is organized as (x1:xN),(y1:yN),...
-    ! iDim =2 : Val is organized as (x1,y1),(x2,y2),...,(xN,yN)
+    ! iDim =1 : ValBlock is organized as (x1:xN),(y1:yN),...
+    ! iDim =2 : ValBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
     INTEGER, INTENT(IN) :: iDim
 
-    ! Variable values
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Val
+    ! Variable values (must have the same dimension as Res)
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: ValBlock
 !</input>
 
 !<inputoutput>
     ! Function parser
     TYPE (t_fparser),  INTENT(INOUT) :: rparser
+
+    ! Variable values. This is a vector of scalar variables
+    ! which is the same for all components of Res, e.g. the time variable.
+    REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: ValScalar
 !</inputoutput>
 
 !<output>
@@ -859,10 +880,11 @@ CONTAINS
 !</subroutine>
     
     ! local variables
-    INTEGER :: iVal,jVal,nVal,iMemory,iBlockSize,iBlock
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: ValTemp
+    INTEGER :: iVal,jVal,nVal,iMemory,iBlockSize,iBlock,sizeValBlock,sizeValScalar
 
     ! Get total number of variable sets
-    nVal=SIZE(Val,iDim)
+    nVal=SIZE(ValBlock,iDim)
 
     ! Check if the compiled function is vectorizable
     IF (rparser%Comp(iComp)%isVectorizable) THEN
@@ -887,7 +909,7 @@ CONTAINS
       ! Compute size of blocks that can be vectorized
       iBlockSize = FLOOR(REAL(iMemory)/REAL(rparser%Comp(iComp)%StackSize+1))
       
-      ! What is the organization of Val(:,:)
+      ! What is the organization of ValBlock(:,:)
       IF (iDim == 1) THEN
         DO iVal=1,nVal,iBlockSize
           
@@ -897,7 +919,7 @@ CONTAINS
           
           ! Invoke working routine
           CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
-              Val(iVal:jVal,:),iDim,rparser%EvalErrType,Res(iVal:jVal))
+              ValBlock(iVal:jVal,:),iDim,rparser%EvalErrType,Res(iVal:jVal),ValScalar)
         END DO
       ELSE
         DO iVal=1,nVal,iBlockSize
@@ -908,11 +930,12 @@ CONTAINS
           
           ! Invoke working routine
           CALL evalFunctionBlock(iBlock,p_Stack,rparser%Comp(iComp),&
-              Val(:,iVal:jVal),iDim,rparser%EvalErrType,Res(iVal:jVal))
+              ValBlock(:,iVal:jVal),iDim,rparser%EvalErrType,Res(iVal:jVal),ValScalar)
         END DO
       END IF
       
-    ELSE
+    ELSE   ! The compiled function cannot be vectorized
+
       ! Check if memory of global stack is sufficient for one set of variables
       IF (SIZE(p_Stack) < rparser%Comp(iComp)%StackSize+1) THEN
         IF (rparser%Comp(iComp)%StackSize+1 < FPAR_MAXSTACKSIZE) THEN
@@ -927,21 +950,59 @@ CONTAINS
 
       ! The compiled bytecode cannot be vectorized. Hence, evaluate the function
       ! separately for each set of variables. Here, the organization of the array
-      ! VAL(:,:) is important
-      IF (iDim == 1) THEN
-        DO iVal=1,nVal
-          
-          ! Invoke working routine
-          CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val(iVal,:),&
-              rparser%EvalErrType,Res(iVal))
-        END DO
-      ELSE
-        DO iVal=1,nVal
+      ! VAL(:,:) is important. Moreover, if the optional parameter ValScalar is
+      ! given, then we have to combine those variables from ValBlock and ValScalar.
 
-          ! Invoke working routine
-          CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),Val(:,iVal),&
-              rparser%EvalErrType,Res(iVal))
-        END DO
+      IF (PRESENT(ValScalar)) THEN
+
+        ! Allocate auxiliary array
+        sizeValBlock = SIZE(ValBlock,3-iDim)
+        sizeValScalar= SIZE(ValScalar)
+        ALLOCATE(ValTemp(sizeValBlock+sizeValScalar))
+
+        IF (iDim == 1) THEN
+          DO iVal=1,nVal
+            
+            ValTemp(1:sizeValBlock) = ValBlock(iVal,:)
+            ValTemp(sizeValBlock+1:)= ValScalar
+
+            ! Invoke working routine
+            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
+                rparser%EvalErrType,Res(iVal))
+          END DO
+        ELSE
+          DO iVal=1,nVal
+            
+            ValTemp(1:sizeValBlock) = ValBlock(:,iVal)
+            ValTemp(sizeValBlock+1:)= ValScalar
+            
+            ! Invoke working routine
+            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValTemp,&
+                rparser%EvalErrType,Res(iVal))
+          END DO
+        END IF
+
+        ! Deallocate auxiliary array
+        DEALLOCATE(ValTemp)
+
+      ELSE
+        
+        IF (iDim == 1) THEN
+          DO iVal=1,nVal
+            
+            ! Invoke working routine
+            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(iVal,:),&
+                rparser%EvalErrType,Res(iVal))
+          END DO
+        ELSE
+          DO iVal=1,nVal
+            
+            ! Invoke working routine
+            CALL evalFunctionScalar(p_Stack,rparser%Comp(iComp),ValBlock(:,iVal),&
+                rparser%EvalErrType,Res(iVal))
+          END DO
+        END IF
+
       END IF
     END IF
   END SUBROUTINE fparser_evalFunctionBlock
@@ -1275,12 +1336,10 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE evalFunctionBlock (BlockSize, Stack, Comp, Val, iDim, EvalErrType, Res)
+  SUBROUTINE evalFunctionBlock (BlockSize, Stack, Comp, ValBlock, iDim, EvalErrType, Res, ValScalar)
 
 !<description>
-    ! Evaluate bytecode for an array of values passed in Val(:,:). The data in 
-    ! Val(:,:) is stored with leading first dimension, that is, the first set 
-    ! of data is stored in Val(:,1), the second set is stored in Val(:,2), etc.
+    ! Evaluate bytecode for an array of values passed in ValBlock(:,:).
     ! Note, this subroutine requires some working memory Stack(iBlock,*) which is
     ! not checked. So be warned, not to call this function directly ;-)
 !</description>
@@ -1290,15 +1349,18 @@ CONTAINS
     TYPE(t_fparserComponent), INTENT(IN) :: Comp
     
     ! Variable values
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Val
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: ValBlock
 
     ! Size of the vector block
     INTEGER, INTENT(IN) :: BlockSize
 
     ! Orientation of the stored values
-    ! iDim =1 : Val is organized as (x1:xN),(y1:yN),...
-    ! iDim =2 : Val is organized as (x1,y1),(x2,y2),...,(xN,yN)
+    ! iDim =1 : ValBlock is organized as (x1:xN),(y1:yN),...
+    ! iDim =2 : ValBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
     INTEGER, INTENT(IN) :: iDim
+
+    ! Vector of scalar variable values
+    REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: ValScalar
 !</input>
 
 !<inputoutput>
@@ -1319,13 +1381,19 @@ CONTAINS
     REAL(DP), PARAMETER :: Zero = 0._DP
     
     ! local variables
-    INTEGER  :: InstPtr,DataPtr,StackPtr,iBlock
+    INTEGER  :: InstPtr,DataPtr,StackPtr,iBlock,istartValScalar,iVariable
     REAL(DP) :: daux
     
     ! Initialization
     DataPtr  = 1
     StackPtr = 0
     InstPtr  = 0
+
+    ! This is tricky. istartValScalar indicates the number of the first
+    ! variable which is passed as scalar. Hence, if the optional parameter
+    ! ValScalar is missing, then istartValScalar pointers to SIZE(ValBlock)+1.
+    ! Obviously, no variable beyond this value is addressed.
+    istartValScalar=SIZE(ValBlock,3-iDim)+1
     
     ! Repeat until complete bytecode has been processed
     DO WHILE(InstPtr < Comp%ByteCodeSize)
@@ -1644,11 +1712,18 @@ CONTAINS
         Stack(:,StackPtr)=DegToRad(Stack(:,StackPtr))
         
       CASE DEFAULT
-        StackPtr=StackPtr+1
-        IF (iDim == 1) THEN
-          Stack(:,StackPtr)=Val(:,Comp%ByteCode(InstPtr)-VarBegin+1)
+        StackPtr  = StackPtr+1
+        iVariable = Comp%ByteCode(InstPtr)-VarBegin+1
+
+        ! Do we have to process one of the scalar variables of one of the block variables
+        IF (iVariable >= istartValScalar) THEN
+          Stack(:,StackPtr)=ValScalar(iVariable-istartValScalar+1)
         ELSE
-          Stack(:,StackPtr)=Val(Comp%ByteCode(InstPtr)-VarBegin+1,:)
+          IF (iDim == 1) THEN
+            Stack(:,StackPtr)=ValBlock(:,iVariable)
+          ELSE
+            Stack(:,StackPtr)=ValBlock(iVariable,:)
+          END IF
         END IF
       END SELECT
     END DO
