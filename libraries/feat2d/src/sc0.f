@@ -224,7 +224,8 @@ C
       DO 10 IEL=1,NEL
       IF (KVERT(4,IEL).NE.0) THEN
        NQUAD=NQUAD+1
-10    ENDIF
+      ENDIF
+10    CONTINUE
       PRINT *, "NQUAD=",NQUAD
       IF (NFINE.GT.0) THEN
        DO 1 IFINE=1,NFINE
