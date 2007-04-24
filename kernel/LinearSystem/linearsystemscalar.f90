@@ -1980,271 +1980,10 @@ CONTAINS
       ! For these matrices, only the data array needs to be resized since
       ! there is no actual matrix structure.
       ! So, do we really have to reallocate the matrix data physically?
-      CALL storage_getsize(rmatrix%h_DA,isize)
-      IF (rmatrix%NA > isize) THEN
-
-        ! Yes, so adopt the new size or reserve some extra memory if required.
-        isize = iNA
-
-        ! Reallocate the memory
-        CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
-            ST_NEWBLOCK_NOINIT, bdocopy)
-        
-      ELSEIF (PRESENT(NAMAX)) THEN
-
-        ! The available memory suffices for the matrix. Let's check if the user
-        ! suplied a new upper limit which makes it mandatory to "shrink" the
-        ! allocated memory. Note that memory for at least NA matrix entries
-        ! is allocated.
-        IF (isize > iNA) THEN
-
-          ! Set new size
-          isize = iNA
-
-          IF (isize == 0) THEN
-            ! If nothing is left, then the matrix can also be released.
-            CALL lsyssc_releaseMatrix(rmatrix)
-            RETURN
-          ELSE
-            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
-                ST_NEWBLOCK_NOINIT, bdocopy)
-          END IF
-        END IF
-      END IF
-
-      ! Should the matrix be cleared?
-      IF (bclear) CALL storage_clear(rmatrix%h_DA)
-
-      
-    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-      
-      ! First, resize the structure of the matrix, i.e., KLD, KCOL and 
-      ! possibly KDIAGONAL for matrices stored in matrix format 9
-      
-      ! Do we have a transposed matrix? Then NEQ and NCOLS must be swapped.
-      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /= 0) THEN
-
-        ! Do we really have to reallocate the array KLD?
-        CALL storage_getsize(rmatrix%h_Kld,isize)
-        IF (rmatrix%NCOLS+1 > isize) THEN
-
-          ! Yes, so adopt the new size or reserve some extra memory if required.
-          isize = iNCOLS+1
-          
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
-
-        ELSEIF (PRESENT(NCOLSMAX)) THEN
-
-          ! The available memory suffices for the matrix. Let's check if the user
-          ! suplied a new upper limit which makes it mandatory to "shrink" the
-          ! allocated memory.
-          IF (isize > iNCOLS) THEN
-            
-            ! Set new size
-            isize = iNCOLS
-            
-            IF (isize == 0) THEN
-              ! If nothing is left, then the matrix can also be released.
-              CALL lsyssc_releaseMatrix(rmatrix)
-              RETURN
-            ELSE
-              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
-                  ST_NEWBLOCK_NOINIT, bdocopy)
-            END IF
-          END IF
-        END IF
-
-        ! Do we really have to reallocate the array KCOL?
-        CALL storage_getsize(rmatrix%h_Kcol,isize)
-        IF (rmatrix%NEQ > isize) THEN
-
-          ! Yes, so adopt the new size or reserve some extra memory if required.
-          isize = iNEQ
-
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
-          
-        ELSEIF (PRESENT(NEQMAX)) THEN
-
-          ! The available memory suffices for the matrix. Let's check if the user
-          ! suplied a new upper limit which makes it mandatory to "shrink" the
-          ! allocated memory.
-          IF (isize > iNEQ) THEN
-            
-            ! Set new size
-            isize = iNEQ
-            
-            IF (isize == 0) THEN
-              ! If nothing is left, then the matrix can also be released.
-              CALL lsyssc_releaseMatrix(rmatrix)
-              RETURN
-            ELSE
-              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
-                  ST_NEWBLOCK_NOINIT, bdocopy)
-            END IF
-          END IF
-        END IF
-
-        ! If the matrix is stored in format 9, then the diagonal array must be resized.
-        IF ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .OR.&
-            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) THEN
-
-          ! Do we really have to reallocate the array KCOL?
-          CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
-          IF (rmatrix%NEQ > isize) THEN
-            
-            ! Yes, so adopt the new size or reserve some extra memory if required.
-            isize = iNEQ
-            
-            ! Reallocate the memory
-            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
-                ST_NEWBLOCK_NOINIT, bdocopy)
-            
-          ELSEIF (PRESENT(NEQMAX)) THEN
-            
-            ! The available memory suffices for the matrix. Let's check if the user
-            ! suplied a new upper limit which makes it mandatory to "shrink" the
-            ! allocated memory.
-            IF (isize > iNEQ) THEN
-              
-              ! Set new size
-              isize = iNEQ
-              
-              IF (isize == 0) THEN
-                ! If nothing is left, then the matrix can also be released.
-                CALL lsyssc_releaseMatrix(rmatrix)
-                RETURN
-              ELSE
-                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
-                    ST_NEWBLOCK_NOINIT, bdocopy)
-              END IF
-            END IF
-          END IF
-          
-          ! Should the matrix be cleared?
-          IF (bclear) CALL storage_clear(rmatrix%h_Kdiagonal)
-        END IF
-
-      ELSE
-
-        ! Do we really have to reallocate the array KLD?
-        CALL storage_getsize(rmatrix%h_Kld,isize)
-        IF (rmatrix%NEQ+1 > isize) THEN
-
-          ! Yes, so adopt the new size or reserve some extra memory if required.
-          isize = iNEQ+1
-          
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
-
-        ELSEIF (PRESENT(NEQMAX)) THEN
-
-          ! The available memory suffices for the matrix. Let's check if the user
-          ! suplied a new upper limit which makes it mandatory to "shrink" the
-          ! allocated memory.
-          IF (isize > iNEQ) THEN
-            
-            ! Set new size
-            isize = iNEQ
-            
-            IF (isize == 0) THEN
-              ! If nothing is left, then the matrix can also be released.
-              CALL lsyssc_releaseMatrix(rmatrix)
-              RETURN
-            ELSE
-              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
-                  ST_NEWBLOCK_NOINIT, bdocopy)
-            END IF
-          END IF
-        END IF
-
-        ! Do we really have to reallocate the array KCOL?
-        CALL storage_getsize(rmatrix%h_Kcol,isize)
-        IF (rmatrix%NCOLS > isize) THEN
-
-          ! Yes, so adopt the new size or reserve some extra memory if required.
-          isize = iNCOLS
-
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
-          
-        ELSEIF (PRESENT(NCOLSMAX)) THEN
-
-          ! The available memory suffices for the matrix. Let's check if the user
-          ! suplied a new upper limit which makes it mandatory to "shrink" the
-          ! allocated memory.
-          IF (isize > iNCOLS) THEN
-            
-            ! Set new size
-            isize = iNCOLS
-            
-            IF (isize == 0) THEN
-              ! If nothing is left, then the matrix can also be released.
-              CALL lsyssc_releaseMatrix(rmatrix)
-              RETURN
-            ELSE
-              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
-                  ST_NEWBLOCK_NOINIT, bdocopy)
-            END IF
-          END IF
-        END IF
-
-        ! If the matrix is stored in format 9, then the diagonal array must be resized.
-        IF ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .OR.&
-            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) THEN
-
-          ! Do we really have to reallocate the array KCOL?
-          CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
-          IF (rmatrix%NCOLS > isize) THEN
-            
-            ! Yes, so adopt the new size or reserve some extra memory if required.
-            isize = iNCOLS
-            
-            ! Reallocate the memory
-            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
-                ST_NEWBLOCK_NOINIT, bdocopy)
-            
-          ELSEIF (PRESENT(NCOLSMAX)) THEN
-            
-            ! The available memory suffices for the matrix. Let's check if the user
-            ! suplied a new upper limit which makes it mandatory to "shrink" the
-            ! allocated memory.
-            IF (isize > iNCOLS) THEN
-              
-              ! Set new size
-              isize = iNCOLS
-              
-              IF (isize == 0) THEN
-                ! If nothing is left, then the matrix can also be released.
-                CALL lsyssc_releaseMatrix(rmatrix)
-                RETURN
-              ELSE
-                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
-                    ST_NEWBLOCK_NOINIT, bdocopy)
-              END IF
-            END IF
-          END IF
-          
-          ! Should the matrix be cleared?
-          IF (bclear) CALL storage_clear(rmatrix%h_Kdiagonal)
-        END IF
-      END IF
-      
-      ! Ok, the matrix structure has been resized according to the prescribed dimensions.
-      ! Now, let us resize the data array of the matrix.
-
-      ! What kind of interleave matrix are we (if any)?
-      SELECT CASE(rmatrix%cinterleavematrixFormat)
-      CASE (LSYSSC_MATRIXUNDEFINED)
-        
-        ! Do we really have to reallocate the matrix physically?
+      IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
+        CALL storage_getsize(rmatrix%h_DA,isize)
         IF (rmatrix%NA > isize) THEN
-
+          
           ! Yes, so adopt the new size or reserve some extra memory if required.
           isize = iNA
           
@@ -2273,73 +2012,378 @@ CONTAINS
             END IF
           END IF
         END IF
+
+        ! Should the matrix be cleared?
+        IF (bclear) CALL storage_clear(rmatrix%h_DA)
+      END IF
+
+      
+    CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+      
+      ! First, resize the structure of the matrix, i.e., KLD, KCOL and 
+      ! possibly KDIAGONAL for matrices stored in matrix format 9
+      
+      ! Do we have a transposed matrix? Then NEQ and NCOLS must be swapped.
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /= 0) THEN
+
+        ! Do we really have to reallocate the array KLD?
+        IF (rmatrix%h_Kld /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kld,isize)
+          IF (rmatrix%NCOLS+1 > isize) THEN
+            
+            ! Yes, so adopt the new size or reserve some extra memory if required.
+            isize = iNCOLS+1
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NCOLSMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory.
+            IF (isize > iNCOLS) THEN
+              
+              ! Set new size
+              isize = iNCOLS
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
+            END IF
+          END IF
+
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_Kld)
+        END IF
+        
+        ! Do we really have to reallocate the array KCOL?
+        IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kcol,isize)
+          IF (rmatrix%NEQ > isize) THEN
+            
+            ! Yes, so adopt the new size or reserve some extra memory if required.
+            isize = iNEQ
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NEQMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory.
+            IF (isize > iNEQ) THEN
+              
+              ! Set new size
+              isize = iNEQ
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
+            END IF
+          END IF
+
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_Kcol)
+        END IF
+
+        ! If the matrix is stored in format 9, then the diagonal array must be resized.
+        IF ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .OR.&
+            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) THEN
+
+          ! Do we really have to reallocate the array KCOL?
+          IF (rmatrix%h_Kdiagonal /= ST_NOHANDLE) THEN
+            CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
+            IF (rmatrix%NEQ > isize) THEN
+              
+              ! Yes, so adopt the new size or reserve some extra memory if required.
+              isize = iNEQ
+              
+              ! Reallocate the memory
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+              
+            ELSEIF (PRESENT(NEQMAX)) THEN
+              
+              ! The available memory suffices for the matrix. Let's check if the user
+              ! suplied a new upper limit which makes it mandatory to "shrink" the
+              ! allocated memory.
+              IF (isize > iNEQ) THEN
+                
+                ! Set new size
+                isize = iNEQ
+                
+                IF (isize == 0) THEN
+                  ! If nothing is left, then the matrix can also be released.
+                  CALL lsyssc_releaseMatrix(rmatrix)
+                  RETURN
+                ELSE
+                  CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                      ST_NEWBLOCK_NOINIT, bdocopy)
+                END IF
+              END IF
+            END IF
+            
+            ! Should the matrix be cleared?
+            IF (bclear) CALL storage_clear(rmatrix%h_Kdiagonal)
+          END IF
+        END IF
+        
+      ELSE
+        
+        ! Do we really have to reallocate the array KLD?
+        IF (rmatrix%h_Kld /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kld,isize)
+          IF (rmatrix%NEQ+1 > isize) THEN
+            
+            ! Yes, so adopt the new size or reserve some extra memory if required.
+            isize = iNEQ+1
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NEQMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory.
+            IF (isize > iNEQ) THEN
+              
+              ! Set new size
+              isize = iNEQ
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kld,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
+            END IF
+          END IF
+
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_Kld)
+        END IF
+
+        ! Do we really have to reallocate the array KCOL?
+        IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kcol,isize)
+          IF (rmatrix%NCOLS > isize) THEN
+            
+            ! Yes, so adopt the new size or reserve some extra memory if required.
+            isize = iNCOLS
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NCOLSMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory.
+            IF (isize > iNCOLS) THEN
+              
+              ! Set new size
+              isize = iNCOLS
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kcol,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
+            END IF
+          END IF
+
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_Kcol)
+        END IF
+
+        ! If the matrix is stored in format 9, then the diagonal array must be resized.
+        IF ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .OR.&
+            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) THEN
+
+          ! Do we really have to reallocate the array KCOL?
+          IF (rmatrix%h_Kdiagonal /= ST_NOHANDLE) THEN
+            CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
+            IF (rmatrix%NCOLS > isize) THEN
+              
+              ! Yes, so adopt the new size or reserve some extra memory if required.
+              isize = iNCOLS
+              
+              ! Reallocate the memory
+              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+              
+            ELSEIF (PRESENT(NCOLSMAX)) THEN
+              
+              ! The available memory suffices for the matrix. Let's check if the user
+              ! suplied a new upper limit which makes it mandatory to "shrink" the
+              ! allocated memory.
+              IF (isize > iNCOLS) THEN
+                
+                ! Set new size
+                isize = iNCOLS
+                
+                IF (isize == 0) THEN
+                  ! If nothing is left, then the matrix can also be released.
+                  CALL lsyssc_releaseMatrix(rmatrix)
+                  RETURN
+                ELSE
+                  CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_Kdiagonal,&
+                      ST_NEWBLOCK_NOINIT, bdocopy)
+                END IF
+              END IF
+            END IF
+            
+            ! Should the matrix be cleared?
+            IF (bclear) CALL storage_clear(rmatrix%h_Kdiagonal)
+          END IF
+        END IF
+      END IF
+      
+      ! Ok, the matrix structure has been resized according to the prescribed dimensions.
+      ! Now, let us resize the data array of the matrix.
+
+      ! What kind of interleave matrix are we (if any)?
+      SELECT CASE(rmatrix%cinterleavematrixFormat)
+      CASE (LSYSSC_MATRIXUNDEFINED)
+        
+        ! Do we really have to reallocate the matrix physically?
+        IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_DA,isize)
+          IF (rmatrix%NA > isize) THEN
+
+            ! Yes, so adopt the new size or reserve some extra memory if required.
+            isize = iNA
+          
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NAMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory. Note that memory for at least NA matrix entries
+            ! is allocated.
+            IF (isize > iNA) THEN
+              
+              ! Set new size
+              isize = iNA
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
+            END IF
+          END IF
+
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_DA)
+        END IF
         
       CASE (LSYSSC_MATRIX1)
 
         ! Do we really have to reallocate the matrix physically?
-        IF (rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR > isize) THEN
-
-          ! Yes, so adopt the new size or reserve some extra memory if required.
-          isize = iNA*rmatrix%NVAR*rmatrix%NVAR
-          
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
-          
-        ELSEIF (PRESENT(NAMAX)) THEN
-          
-          ! The available memory suffices for the matrix. Let's check if the user
-          ! suplied a new upper limit which makes it mandatory to "shrink" the
-          ! allocated memory. Note that memory for at least NA matrix entries
-          ! is allocated.
-          IF (isize > iNA*rmatrix%NVAR*rmatrix%NVAR) THEN
+        IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_DA,isize)
+          IF (rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR > isize) THEN
             
-            ! Set new size
+            ! Yes, so adopt the new size or reserve some extra memory if required.
             isize = iNA*rmatrix%NVAR*rmatrix%NVAR
             
-            IF (isize == 0) THEN
-              ! If nothing is left, then the matrix can also be released.
-              CALL lsyssc_releaseMatrix(rmatrix)
-              RETURN
-            ELSE
-              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
-                  ST_NEWBLOCK_NOINIT, bdocopy)
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NAMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory. Note that memory for at least NA matrix entries
+            ! is allocated.
+            IF (isize > iNA*rmatrix%NVAR*rmatrix%NVAR) THEN
+              
+              ! Set new size
+              isize = iNA*rmatrix%NVAR*rmatrix%NVAR
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
             END IF
           END IF
+          
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_DA)
         END IF
 
       CASE (LSYSSC_MATRIXD)
-
+        
         ! Do we really have to reallocate the matrix physically?
-        IF (rmatrix%NA*rmatrix%NVAR > isize) THEN
-
-          ! Yes, so adopt the new size or reserve some extra memory if required.
-          isize = iNA*rmatrix%NVAR
-          
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
-          
-        ELSEIF (PRESENT(NAMAX)) THEN
-          
-          ! The available memory suffices for the matrix. Let's check if the user
-          ! suplied a new upper limit which makes it mandatory to "shrink" the
-          ! allocated memory. Note that memory for at least NA matrix entries
-          ! is allocated.
-          IF (isize > iNA*rmatrix%NVAR) THEN
+        IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_DA,isize)
+          IF (rmatrix%NA*rmatrix%NVAR > isize) THEN
             
-            ! Set new size
+            ! Yes, so adopt the new size or reserve some extra memory if required.
             isize = iNA*rmatrix%NVAR
             
-            IF (isize == 0) THEN
-              ! If nothing is left, then the matrix can also be released.
-              CALL lsyssc_releaseMatrix(rmatrix)
-              RETURN
-            ELSE
-              CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
-                  ST_NEWBLOCK_NOINIT, bdocopy)
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+            
+          ELSEIF (PRESENT(NAMAX)) THEN
+            
+            ! The available memory suffices for the matrix. Let's check if the user
+            ! suplied a new upper limit which makes it mandatory to "shrink" the
+            ! allocated memory. Note that memory for at least NA matrix entries
+            ! is allocated.
+            IF (isize > iNA*rmatrix%NVAR) THEN
+              
+              ! Set new size
+              isize = iNA*rmatrix%NVAR
+              
+              IF (isize == 0) THEN
+                ! If nothing is left, then the matrix can also be released.
+                CALL lsyssc_releaseMatrix(rmatrix)
+                RETURN
+              ELSE
+                CALL storage_realloc('lsyssc_resizeMatrixDirect', isize, rmatrix%h_DA,&
+                    ST_NEWBLOCK_NOINIT, bdocopy)
+              END IF
             END IF
           END IF
+          
+          ! Should the matrix be cleared?
+          IF (bclear) CALL storage_clear(rmatrix%h_DA)
         END IF
         
       CASE DEFAULT
@@ -2347,14 +2391,6 @@ CONTAINS
         STOP
       END SELECT
       
-      ! Should the matrix be cleared? Note that the array Kdiagonal has
-      ! already been cleared before if required.
-      IF (bclear) THEN
-        CALL storage_clear(rmatrix%h_DA)
-        CALL storage_clear(rmatrix%h_Kcol)
-        CALL storage_clear(rmatrix%h_Kld)
-      END IF
-
     CASE DEFAULT
       PRINT *, "lsyssc_resizeMatrixDirect: Unsupported matrix format!"
       STOP
