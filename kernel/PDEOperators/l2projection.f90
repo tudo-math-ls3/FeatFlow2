@@ -54,7 +54,7 @@ MODULE l2projection
     INTEGER :: cnorm = LINALG_NORML2
     
     ! Damping parameter for the iteration. Standard = 1.0.
-    REAL(DP) :: domega = 1.0_DP
+    REAL(DP) :: domega = 0.7_DP
     
     ! Output: Returns the initial residuum.
     ! This value is only set if depsRel > 0; otherwise, the relative error is
@@ -178,6 +178,7 @@ CONTAINS
     ! Probably calculate the initial residuum.
     IF (rconfig%depsRel .NE. 0.0_DP) THEN
       dresInit = lsyssc_vectorNorm (rvectorTemp2,rconfig%cnorm)
+      IF (dresInit .EQ. 0.0_DP) dresInit = 1.0_DP
       rconfig%dinitResiduum = dresInit
     ELSE
       ! Set dinitResiduum=1 and dEpsRel = depsAbs, so the relative
@@ -198,12 +199,13 @@ CONTAINS
       
       ! Set up the defect: d := b-Mx
       CALL lsyssc_copyVector (rvectorTemp1,rvectorTemp2)
-      CALL lsyssc_scalarMatVec (rmatrixMass, rvector, rvectorTemp2, 1.0_DP, -1.0_DP)
+      CALL lsyssc_scalarMatVec (rmatrixMass, rvector, rvectorTemp2, -1.0_DP, 1.0_DP)
       
       ! Check norms?
       IF ((rconfig%depsAbs .NE. 0.0_DP) .OR. (rconfig%depsRel .NE. 0.0_DP)) THEN
       
-        rconfig%dabsError = lsyssc_vectorNorm (rvector,rconfig%cnorm)
+        rconfig%dabsError = lsyssc_vectorNorm (rvectorTemp2,rconfig%cnorm)
+        rconfig%drelError = rconfig%dabsError / dresInit
       
         IF ((rconfig%dabsError .LE. depsAbs) .AND. &
             (rconfig%dabsError .LE. depsRel*dresInit)) THEN
@@ -216,7 +218,7 @@ CONTAINS
     END DO
 
     ! There is iiterations = niterations+1 if the loop is carried out completely!
-    rconfig%iiterations = MAX(iiteration,rconfig%nmaxIterations)
+    rconfig%iiterations = MIN(iiteration,rconfig%nmaxIterations)
     
     ! Return the configuration block
     IF (PRESENT(rL2ProjectionConfig)) rL2ProjectionConfig = rconfig
