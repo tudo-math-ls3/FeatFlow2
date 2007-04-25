@@ -6,7 +6,8 @@
 KERNEL=$(FEATFLOW)/kernel
 INCOMING=$(FEATFLOW)/incoming
 
-INCDIR:= $(INCDIR) -I$(KERNEL)/System -I$(KERNEL)/Triangulation
+INCDIR:= $(INCDIR) -I$(KERNEL)/System -I$(KERNEL)/Triangulation \
+	-I$(KERNEL)/DOFMaintenance
 
 KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
 	mprimitives.f90\
@@ -27,7 +28,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
 	nonlinearsolver.f90 matrixrestriction.f90 fparser.f90 \
 	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90 signal_ccode.c \
 	timestepping.f90 pprocerror.f90 trilinearformevaluation.f90 \
-	stdoperators.f90 sort.f90 quadtree.f90
+	stdoperators.f90 sort.f90 quadtree.f90 l2projection.f90
 
 # path for the make where to look for which files
 
