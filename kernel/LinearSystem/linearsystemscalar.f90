@@ -5049,10 +5049,10 @@ CONTAINS
   ! local variables
   INTEGER(PREC_VECIDX) :: i
   INTEGER :: ihandle
-  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+  REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
-  LOGICAL :: bentries,brelStruc
+  LOGICAL :: bentries,bstrucOwner,bentryOwner
 
   ! Matrix is already in that format.
   IF (rmatrix%cmatrixFormat .EQ. cmatrixFormat) RETURN
@@ -5065,7 +5065,10 @@ CONTAINS
   
   ! Be careful with the structure during conversion: If the structure belongs
   ! to another matrix, we must not deallocate it!
-  brelStruc = IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0
+  bstrucOwner = IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .EQ. 0
+  
+  ! The same for the entries!
+  bentryOwner = IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .EQ. 0
 
   ! Which matrix type do we have?
   SELECT CASE (rmatrix%cmatrixFormat)
@@ -5074,7 +5077,7 @@ CONTAINS
     SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX7)
     
-      IF (.NOT. brelStruc) THEN
+      IF (.NOT. bstrucOwner) THEN
       
         ! Copy the structure so we are allowed to modify it.
         ihandle = ST_NOHANDLE
@@ -5088,6 +5091,17 @@ CONTAINS
         ! Kdiagonal is thrown away later, we don't need to copy it.
         
         rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_STRUCTUREISCOPY))
+        
+      END IF
+    
+      IF ((.NOT. bentryOwner) .AND. bentries .AND. (rmatrix%h_DA .NE. ST_NOHANDLE)) THEN
+      
+        ! Copy the entries so we are allowed to modify them.
+        ihandle = ST_NOHANDLE
+        CALL storage_copy(rmatrix%h_Da,ihandle)
+        rmatrix%h_Da = ihandle
+        
+        rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_CONTENTISCOPY))
         
       END IF
     
@@ -5110,7 +5124,7 @@ CONTAINS
         CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
         
         ! Release diagonal pointer if it belongs to us
-        IF (brelStruc) THEN
+        IF (bstrucOwner) THEN
           CALL storage_free (rmatrix%h_Kdiagonal)
         ELSE
           rmatrix%h_Kdiagonal = ST_NOHANDLE
@@ -5129,7 +5143,7 @@ CONTAINS
           CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ, p_Ddata)
           
           ! Release diagonal pointer if it belongs to us
-          IF (brelStruc) THEN
+          IF (bstrucOwner) THEN
             CALL storage_free (rmatrix%h_Kdiagonal)
           ELSE
             rmatrix%h_Kdiagonal = ST_NOHANDLE
@@ -5154,9 +5168,25 @@ CONTAINS
         CASE (ST_DOUBLE)
         
           CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+
+          IF (.NOT. bentryOwner) THEN
+            ! Allocate new memory for the entries
+            rmatrix%h_Da = ST_NOHANDLE
+            CALL storage_new ('lsyssc_convertMatrix', 'Da', &
+                  rmatrix%NEQ, ST_DOUBLE, rmatrix%h_Da, ST_NEWBLOCK_NOINIT)
+            CALL storage_getbase_double (rmatrix%h_Da,p_Ddata2)
+            rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+          ELSE
+            ! Destinatinon pointer points to source matrix.
+            ! This overwrites the original entries which is no problem as
+            ! extracting the diagonal is always a 'compression' overwriting
+            ! information that is not used anymore.
+            p_Ddata2 => p_Ddata
+          END IF
+          
           CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
           DO i=1,rmatrix%NEQ
-            p_Ddata(i) = p_Ddata(p_Kdiagonal(i))
+            p_Ddata2(i) = p_Ddata(p_Kdiagonal(i))
           END DO
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
@@ -5166,10 +5196,20 @@ CONTAINS
           STOP
         END SELECT
 
+        ! Reallocate the entries-array to have only the diagonal entries.
+        ! In case we are not the owner, we have allocated new memory and thus
+        ! don't need to resize it again.
+        IF (.NOT. bentryOwner) THEN
+          CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
+                                rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
+        END IF
+      
+        rmatrix%NA = rmatrix%NEQ
+
       END IF
     
       ! Release unused information
-      IF (brelStruc) THEN
+      IF (bstrucOwner) THEN
         CALL storage_free (rmatrix%h_Kdiagonal)
         CALL storage_free (rmatrix%h_Kcol)
         CALL storage_free (rmatrix%h_Kld)
@@ -5179,12 +5219,6 @@ CONTAINS
         rmatrix%h_Kld = ST_NOHANDLE
       END IF
       
-      ! Reallocate entry-array to have only the diagonal entries.
-      CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
-                            rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
-    
-      rmatrix%NA = rmatrix%NEQ
-
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
       STOP
@@ -5195,7 +5229,7 @@ CONTAINS
     SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX9)
     
-      IF (.NOT. brelStruc) THEN
+      IF (.NOT. bstrucOwner) THEN
       
         ! Duplicate the structure in memory so we are allowed to modify it.
         ihandle = ST_NOHANDLE
@@ -5210,6 +5244,17 @@ CONTAINS
         
       END IF
 
+      IF ((.NOT. bentryOwner) .AND. bentries .AND. (rmatrix%h_DA .NE. ST_NOHANDLE)) THEN
+      
+        ! Copy the entries so we are allowed to modify them.
+        ihandle = ST_NOHANDLE
+        CALL storage_copy(rmatrix%h_Da,ihandle)
+        rmatrix%h_Da = ihandle
+        
+        rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+        
+      END IF
+    
       ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
       ! routine below.
       CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
@@ -5253,9 +5298,25 @@ CONTAINS
         CASE (ST_DOUBLE)
         
           CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+
+          IF (.NOT. bentryOwner) THEN
+            ! Allocate new memory for the entries
+            rmatrix%h_Da = ST_NOHANDLE
+            CALL storage_new ('lsyssc_convertMatrix', 'Da', &
+                  rmatrix%NEQ, ST_DOUBLE, rmatrix%h_Da, ST_NEWBLOCK_NOINIT)
+            CALL storage_getbase_double (rmatrix%h_Da,p_Ddata2)
+            rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+          ELSE
+            ! Destinatinon pointer points to source matrix.
+            ! This overwrites the original entries which is no problem as
+            ! extracting the diagonal is always a 'compression' overwriting
+            ! information that is not used anymore.
+            p_Ddata2 => p_Ddata
+          END IF
+          
           CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
           DO i=1,rmatrix%NEQ
-            p_Ddata(i) = p_Ddata(p_Kld(i))
+            p_Ddata2(i) = p_Ddata(p_Kld(i))
           END DO
 
           rmatrix%cmatrixFormat = LSYSSC_MATRIXD
@@ -5265,10 +5326,20 @@ CONTAINS
           STOP
         END SELECT
 
+        ! Reallocate the entries-array to have only the diagonal entries.
+        ! In case we are not the owner, we have allocated new memory and thus
+        ! don't need to resize it again.
+        IF (.NOT. bentryOwner) THEN
+          CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
+                                rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
+        END IF
+      
+        rmatrix%NA = rmatrix%NEQ
+
       END IF
     
       ! Release unused information
-      IF (brelStruc) THEN
+      IF (bstrucOwner) THEN
         CALL storage_free (rmatrix%h_Kcol)
         CALL storage_free (rmatrix%h_Kld)
       ELSE
@@ -5276,12 +5347,6 @@ CONTAINS
         rmatrix%h_Kld = ST_NOHANDLE
       END IF
       
-      ! Reallocate entry-array to have only the diagonal entries.
-      CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
-                            rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
-                            
-      rmatrix%NA = rmatrix%NEQ
-    
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
       STOP
@@ -5292,7 +5357,7 @@ CONTAINS
     SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX7INTL)
 
-      IF (.NOT. brelStruc) THEN
+      IF (.NOT. bstrucOwner) THEN
       
         ! Duplicate the structure in memory so we are allowed to modify it.
         ihandle = ST_NOHANDLE
@@ -5309,6 +5374,17 @@ CONTAINS
         
       END IF
 
+      IF ((.NOT. bentryOwner) .AND. bentries .AND. (rmatrix%h_DA .NE. ST_NOHANDLE)) THEN
+      
+        ! Copy the entries so we are allowed to modify them.
+        ihandle = ST_NOHANDLE
+        CALL storage_copy(rmatrix%h_Da,ihandle)
+        rmatrix%h_Da = ihandle
+        
+        rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+        
+      END IF
+    
       CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
       CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
@@ -5328,7 +5404,7 @@ CONTAINS
         CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal, rmatrix%NEQ)
         
         ! Release diagonal pointer if it belongs to us
-        IF (brelStruc) THEN
+        IF (bstrucOwner) THEN
           CALL storage_free (rmatrix%h_Kdiagonal)
         ELSE
           rmatrix%h_Kdiagonal = ST_NOHANDLE
@@ -5348,16 +5424,18 @@ CONTAINS
           CASE (LSYSSC_MATRIX1)
             CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR*rmatrix%NVAR)
+                
           CASE (LSYSSC_MATRIXD)
             CALL lsyssc_unsortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
+                
           CASE DEFAULT
             PRINT *, 'lsyssc_convertMatrix: Unsupported interleave matrix!'
             STOP
           END SELECT
 
           ! Release diagonal pointer if it belongs to us
-          IF (brelStruc) THEN
+          IF (bstrucOwner) THEN
             CALL storage_free (rmatrix%h_Kdiagonal)
           ELSE
             rmatrix%h_Kdiagonal = ST_NOHANDLE
@@ -5382,7 +5460,7 @@ CONTAINS
     SELECT CASE (cmatrixFormat)
     CASE (LSYSSC_MATRIX9INTL)
       
-      IF (.NOT. brelStruc) THEN
+      IF (.NOT. bstrucOwner) THEN
       
         ! Duplicate the structure in memory so we are allowed to modify it.
         ihandle = ST_NOHANDLE
@@ -5397,6 +5475,17 @@ CONTAINS
         
       END IF
 
+      IF ((.NOT. bentryOwner) .AND. bentries .AND. (rmatrix%h_DA .NE. ST_NOHANDLE)) THEN
+      
+        ! Copy the entries so we are allowed to modify them.
+        ihandle = ST_NOHANDLE
+        CALL storage_copy(rmatrix%h_Da,ihandle)
+        rmatrix%h_Da = ihandle
+        
+        rmatrix%imatrixSpec = IAND(rmatrix%imatrixSpec,NOT(LSYSSC_MSPEC_CONTENTISCOPY))
+        
+      END IF
+    
       ! Convert from structure 7 to structure 9. Use the sortCSRxxxx 
       ! routine below.
       CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
@@ -5423,9 +5512,11 @@ CONTAINS
           CASE (LSYSSC_MATRIX1)
             CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR*rmatrix%NVAR)
+                
           CASE (LSYSSC_MATRIXD)
             CALL lsyssc_sortCSRdouble (p_Kcol, p_Kld, p_Kdiagonal,&
                 & rmatrix%NEQ, p_Ddata, rmatrix%NVAR)
+                
           CASE DEFAULT
             PRINT *, 'lsyssc_convertMatrix: Unsupported interleave matrix format!'
             STOP
