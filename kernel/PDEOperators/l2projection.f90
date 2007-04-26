@@ -10,7 +10,7 @@
 !#
 !# One can find the following subroutines here:
 !#
-!# 1.) l2prj_L2projectionByMass
+!# 1.) l2prj_analytL2projectionByMass
 !#     -> Performs defect correction with the consistent and lumped mass 
 !#        matrix of a FE space to calculate the consistent $L_2$ projection
 !#        of an analytically given function.
@@ -54,7 +54,7 @@ MODULE l2projection
     INTEGER :: cnorm = LINALG_NORML2
     
     ! Damping parameter for the iteration. Standard = 1.0.
-    REAL(DP) :: domega = 0.7_DP
+    REAL(DP) :: domega = 1.0_DP
     
     ! Output: Returns the initial residuum.
     ! This value is only set if depsRel > 0; otherwise, the relative error is
@@ -70,7 +70,7 @@ MODULE l2projection
     REAL(DP) :: dabsError = 0.0_DP
 
     ! Output: Returns the number of performed iterations
-    INTEGER :: iiterations = 0.0_DP
+    INTEGER :: iiterations = 0
   END TYPE
   
 !</typeblock>
@@ -83,7 +83,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE l2prj_L2projectionByMass (rvector,rmatrixMass,rmatrixMassLumped,&
+  SUBROUTINE l2prj_analytL2projectionByMass (rvector,rmatrixMass,rmatrixMassLumped,&
       rvectorTemp1,rvectorTemp2,fcoeff_buildVectorSc_sim,rcollection,&
       rL2ProjectionConfig)
       
@@ -207,7 +207,7 @@ CONTAINS
         rconfig%dabsError = lsyssc_vectorNorm (rvectorTemp2,rconfig%cnorm)
         rconfig%drelError = rconfig%dabsError / dresInit
       
-        IF ((rconfig%dabsError .LE. depsAbs) .AND. &
+        IF (((rconfig%dabsError .LE. depsAbs) .OR. (depsAbs .EQ. 0.0_DP)) .AND. &
             (rconfig%dabsError .LE. depsRel*dresInit)) THEN
           ! Quit the loop
           EXIT
