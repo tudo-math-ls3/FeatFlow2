@@ -963,7 +963,7 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForCallback (rproblem,rproblem%rcollection)
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
     
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
@@ -1077,7 +1077,7 @@ CONTAINS
     END DO
 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL c2d2_doneCollectForCallback (rproblem,rproblem%rcollection)
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   END SUBROUTINE
 
@@ -1199,7 +1199,7 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForCallback (rproblem,rproblem%rcollection)
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the 
@@ -1228,7 +1228,7 @@ CONTAINS
     CALL lsyssc_clearVector(rrhs%RvectorBlock(3))
                                 
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL c2d2_doneCollectForCallback (rproblem,rproblem%rcollection)
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   END SUBROUTINE
 

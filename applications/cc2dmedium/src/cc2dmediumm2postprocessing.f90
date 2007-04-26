@@ -484,7 +484,7 @@ CONTAINS
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    CALL c2d2_initCollectForCallback (rproblem,rproblem%rcollection)
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
@@ -511,7 +511,7 @@ CONTAINS
     CALL vecfil_discreteFBCsol (rprjVector)
     
     ! Clean up the collection (as we are done with the assembly, that's it.
-    CALL c2d2_doneCollectForCallback (rproblem,rproblem%rcollection)
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     !
