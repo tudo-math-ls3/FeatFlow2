@@ -224,6 +224,4 @@ $(HTMLDIR)/%.html: %.xml $(PARSER).class
 .PHONY: tags
 tags: $(SRC)
 	@(rm -f TAGS)
-	@(etags $(filter %.c,$^))
-	@(etags -a $(filter %.f,$^))
-	@(etags -a $(filter %.f90,$^))
+	@(etags $(filter %.c %.f %.f90,$^))
