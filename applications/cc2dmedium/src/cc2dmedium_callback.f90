@@ -110,7 +110,7 @@ CONTAINS
   !
   ! The subroutine prepares the collection rcollection to be passed to callback
   ! routines for assembling boundary conditions or RHS vectors. It is
-  ! called directly prior to the assembly to store crucial information
+  ! called directly prior to the assembly to store problem-specific information
   ! in the quick-access arrays of the collection.
   ! Basically speaking, the routine stores information about whether thw problem
   ! is stationary, nonstationary or about the current simulation time.
