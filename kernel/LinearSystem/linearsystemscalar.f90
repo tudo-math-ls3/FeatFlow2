@@ -10684,7 +10684,7 @@ CONTAINS
     
     ! Depending on the format, choose the initialisation routine.
     SELECT CASE (cmatrixFormat)
-    CASE (LSYSSC_MATRIXD)
+    CASE (LSYSSC_MATRIXD,LSYSSC_MATRIX1)
       ! Nothing to do, there is no structure.
       
     CASE (LSYSSC_MATRIX9)
