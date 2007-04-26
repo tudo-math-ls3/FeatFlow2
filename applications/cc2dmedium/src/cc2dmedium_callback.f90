@@ -47,6 +47,33 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
 !#
+!# 6.) c2d2_initCollectForCallback
+!#     -> Is called prior to the assembly process.
+!#     -> Stores some information from the problem structure to a collection
+!#        such that it can be accessed in callback routines
+!#
+!# 7.) c2d2_doneCollectForCallback
+!#     -> Is called after the assembly process.
+!#     -> Releases information stored in the collection by 
+!#        c2d2_initCollectForCallback.
+!#
+!# For nonstationary simulation, it might be neccessary in these routines
+!# to access the current simulation time. Before the assembly process, the cc2d
+!# framework calls c2d2_initCollectForCallback to stores the current point 
+!# in time (and probably other necessary information) to the quickaccess-array
+!# in the collection which is passed to the callback routines. The callback
+!# routines can access this as follows:
+!#
+!# -> p_rcollection%IquickAccess(1)   = 0: stationary, 
+!#                                      1: nonstationary with explicit time stepping
+!# -> p_rcollection%DquickAccess(1)   = current simulation time
+!# -> p_rcollection%DquickAccess(2)   = minimum simulation time
+!# -> p_rcollection%DquickAccess(3)   = maximum simulation time
+!#
+!# After the assembly, c2d2_doneCollectForCallback is called to clean up.
+!# Note: Information stored in the quick-access array are of temporary
+!# nature and does not have to be cleaned up.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -64,12 +91,95 @@ MODULE cc2dmedium_callback
   USE bcassembly
   USE mprimitives
   
+  USE cc2dmediumm2basic
   USE cc2dmediumm2boundarydef
   
   IMPLICIT NONE
 
 CONTAINS
 
+! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_initCollectForCallback (rproblem,rcollection)
+  
+!<description>
+  ! This subroutine is an auxiliary subroutine called by the CC2D framework
+  ! and has usually not to be changed by the user.
+  !
+  ! The subroutine prepares the collection rcollection to be passed to callback
+  ! routines for assembling boundary conditions or RHS vectors. It is
+  ! called directly prior to the assembly to store crucial information
+  ! in the quick-access arrays of the collection.
+  ! Basically speaking, the routine stores information about whether thw problem
+  ! is stationary, nonstationary or about the current simulation time.
+!</description>
+
+!<input>
+  ! Problem structure with all problem relevant data.
+  TYPE(t_problem), INTENT(IN) :: rproblem
+!</input>
+
+!<inputoutput>
+  ! Collection structure to be initialised.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+!</inputoutput>
+  
+!</subroutine>
+
+    ! In a nonstationary simulation, save the simulation time as well as the
+    ! minimum and maximum time to the quick-access array of the collection,
+    ! so it can be accessed in the callback routines!
+    rcollection%Iquickaccess(1) = rproblem%itimedependence
+    SELECT CASE (rproblem%itimedependence)
+    CASE (0)
+      ! Stationary simulation
+      rcollection%Dquickaccess(1) = 0.0_DP
+      rcollection%Dquickaccess(2) = 0.0_DP
+      rcollection%Dquickaccess(3) = 0.0_DP
+    CASE (1)
+      rcollection%Dquickaccess(1) = rproblem%rtimedependence%dtime
+      rcollection%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
+      rcollection%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
+    END SELECT
+
+  END SUBROUTINE
+  
+! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE c2d2_doneCollectForCallback (rproblem,rcollection)
+  
+!<description>
+  ! This subroutine is an auxiliary subroutine called by the CC2D framework
+  ! and has usually not to be changed by the user.
+  !
+  ! After the assembly process, this subroutine is called to release temporary
+  ! information from the collection which was stored there by 
+  ! c2d2_initCollectForCallback.
+!</description>
+  
+!<input>
+  ! Problem structure with all problem relevant data.
+  TYPE(t_problem), INTENT(IN) :: rproblem
+!</input>
+
+!<inputoutput>
+  ! Collection structure to be cleaned up.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Currently, this subroutine is empty as all information stored in
+    ! the collection in c2d2_initCollectForCallback is put to the quick-access
+    ! arrays -- which do not have to be cleaned up. 
+    ! This might change in future...
+
+  END SUBROUTINE
+  
 ! ***************************************************************************
   !<subroutine>
 
@@ -300,6 +410,16 @@ CONTAINS
     
   !</subroutine>
   
+    REAL(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
+    
     Dcoefficients(:,:,:) = 0.0_DP
     !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
     !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
@@ -379,6 +499,16 @@ CONTAINS
     
   !</subroutine>
 
+    REAL(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
+    
     Dcoefficients(:,:,:) = 0.0_DP
     !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
     !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
@@ -472,6 +602,16 @@ CONTAINS
 !</subroutine>
 
     INTEGER :: icomponent,iexprtyp
+    
+    REAL(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
     
     ! Use boundary conditions from DAT files.
     SELECT CASE (cinfoNeeded)

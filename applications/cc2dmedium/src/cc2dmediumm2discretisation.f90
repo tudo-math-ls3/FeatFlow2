@@ -960,6 +960,11 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForCallback (rproblem,rproblem%rcollection)
+    
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
       ! -----------------------------------------------------------------------
@@ -1070,6 +1075,9 @@ CONTAINS
       END IF
 
     END DO
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForCallback (rproblem,rproblem%rcollection)
 
   END SUBROUTINE
 
@@ -1188,6 +1196,11 @@ CONTAINS
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForCallback (rproblem,rproblem%rcollection)
+
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the 
     ! first block.
@@ -1214,6 +1227,9 @@ CONTAINS
     ! the equation "div(u) = 0".
     CALL lsyssc_clearVector(rrhs%RvectorBlock(3))
                                 
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForCallback (rproblem,rproblem%rcollection)
+
   END SUBROUTINE
 
   ! ***************************************************************************

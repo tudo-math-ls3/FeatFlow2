@@ -265,7 +265,7 @@ MODULE cc2dmediumm2basic
 ! The collection structure collects all information that is necessary to be
 ! passed to callback routines. This e.g. allows to pass matrices/vectors/
 ! constants from the main problem.
-! This structure contains the following informaion, which is added by the
+! This structure contains the following information, which is added by the
 ! initialisation routines to the collection:
 !
 ! Global, level independent data:
@@ -327,5 +327,14 @@ MODULE cc2dmediumm2basic
 ! Section [BDEXPRESSIONS]:
 ! ------------------------
 ! Saves the expressions that are to be evaluated on the boundary.
-  
+!
+! During the assembly of RHS vectors and boundary conditions, the following
+! additional information is valid in the collection:
+!
+!   collection%IquickAccess(1)   = 0: stationary, 
+!                                  1: nonstationary with explicit time stepping
+!   collection%DquickAccess(1)   = current simulation time
+!   collection%DquickAccess(2)   = minimum simulation time
+!   collection%DquickAccess(3)   = maximum simulation time
+
 END MODULE

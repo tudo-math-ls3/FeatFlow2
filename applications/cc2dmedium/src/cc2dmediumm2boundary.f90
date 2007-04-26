@@ -144,6 +144,11 @@ CONTAINS
   TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
   TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
     
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForCallback (rproblem,rproblem%rcollection)
+
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
       ! Get our velocity matrix from the problem structure.
@@ -228,6 +233,9 @@ CONTAINS
     p_rdiscreteFBC => rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscreteFBC
     rrhs%p_rdiscreteBCfict => p_rdiscreteFBC
     rvector%p_rdiscreteBCfict => p_rdiscreteFBC
+    
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForCallback (rproblem,rproblem%rcollection)
                 
   END SUBROUTINE
 
@@ -265,6 +273,11 @@ CONTAINS
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForCallback (rproblem,rproblem%rcollection)
+
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
       ! Get our velocity matrix from the problem structure.
@@ -298,13 +311,13 @@ CONTAINS
       IF (i .EQ. rproblem%NLMAX) THEN
         CALL bcasm_discretiseBC (p_rdiscretisation, &
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                bforce,getBoundaryValues, &
-                                rproblem%rcollection)
+                                 bforce,getBoundaryValues, &
+                                 rproblem%rcollection)
       ELSE
         CALL bcasm_discretiseBC (p_rdiscretisation, &
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                bforce,getBoundaryValues, &
-                                rproblem%rcollection,BCASM_DISCFORDEFMAT)
+                                 bforce,getBoundaryValues, &
+                                 rproblem%rcollection,BCASM_DISCFORDEFMAT)
       END IF
                 
       ! The same way, discretise the fictitious boundary conditions and hang
@@ -321,6 +334,9 @@ CONTAINS
       END IF
 
     END DO
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForCallback (rproblem,rproblem%rcollection)
 
   END SUBROUTINE
 
