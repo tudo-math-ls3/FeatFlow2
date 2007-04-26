@@ -81,7 +81,10 @@
 !#         or increasing number.
 !#
 !# 15.) storage_convert
-!#      -> Convert 1D to 2D array and vice versa
+!#      -> Convert 1D to 2D array
+!#
+!# 16.) storage_convert2D
+!#      -> Convert 2D array to 1D array
 !#
 !# </purpose>
 !##############################################################################
@@ -5376,7 +5379,254 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_convert(ihandle, rheap)
+  SUBROUTINE storage_convert(ihandle, rheap, bflat)
+
+!<description>
+    ! This subroutine converts an existing 1D array to a 2D array (in situ).
+    ! That is, the handle remains the same and only the underlying memory 
+    ! block is modified. The ordering is adopted from Fortran, i.e. 
+    ! leading dimension comes first.
+    !
+    ! By default the 1D array if size N is converted to a 2D array
+    ! of size (N,1). If the optional parameter bflat=.TRUE. then
+    ! the converted 2D array has size (1,N).
+    !
+    ! Warning: Conversion of an array destroys all pointers associated with
+    ! the corresponding handle!
+!<description>
+
+!<input>
+
+    ! OPTIONAL: use flat ordering of memory
+    LOGICAL, INTENT(IN), OPTIONAL :: bflat
+
+!</input>
+
+!<inputoutput>
+
+    ! OPTIONAL: local heap structure to initialise. If not given, the
+    ! global heap is used.
+    TYPE(t_storageBlock), INTENT(INOUT), TARGET, OPTIONAL :: rheap
+    
+    ! Handle of the memory block.
+    INTEGER, INTENT(INOUT) :: ihandle
+
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+
+    ! Pointer to the heap
+    TYPE(t_storageBlock), POINTER :: p_rheap
+    TYPE(t_storageNode), POINTER :: p_rnode
+    INTEGER(I32) :: isize
+    LOGICAL :: bdoflat
+
+    ! Get the heap to use - local or global one.
+
+    IF(PRESENT(rheap)) THEN
+      p_rheap => rheap
+    ELSE
+      p_rheap => rbase
+    END IF
+
+    ! Where is the descriptor of the handle?
+    p_rnode => p_rheap%p_Rdescriptors(ihandle)
+
+    ! Set ordering
+    bdoflat = .FALSE.
+    IF (PRESENT(bflat)) bdoflat=bflat
+
+    ! Are we 1D?
+    SELECT CASE(p_rnode%idimension)
+
+    CASE (1)
+
+      ! Set new dimension
+      p_rnode%idimension = 2
+
+      SELECT CASE(p_rnode%idataType)
+      CASE (ST_DOUBLE)
+        isize = SIZE(p_rnode%p_Ddouble1D)
+        IF (bdoflat) THEN
+          CALL convert_Double1Dflat(isize,p_rnode%p_Ddouble1D,p_rnode%p_Ddouble2D)
+        ELSE
+          CALL convert_Double1D(isize,p_rnode%p_Ddouble1D,p_rnode%p_Ddouble2D)
+        END IF
+
+      CASE (ST_SINGLE)
+        isize = SIZE(p_rnode%p_Fsingle1D)
+        IF (bdoflat) THEN
+          CALL convert_Single1Dflat(isize,p_rnode%p_Fsingle1D,p_rnode%p_Fsingle2D)
+        ELSE
+          CALL convert_Single1D(isize,p_rnode%p_Fsingle1D,p_rnode%p_Fsingle2D)
+        END IF
+
+      CASE (ST_INT)
+        isize = SIZE(p_rnode%p_Iinteger1D)
+        IF (bdoflat) THEN
+          CALL convert_Integer1Dflat(isize,p_rnode%p_Iinteger1D,p_rnode%p_Iinteger2D)
+        ELSE
+          CALL convert_Integer1D(isize,p_rnode%p_Iinteger1D,p_rnode%p_Iinteger2D)
+        END IF
+
+      CASE (ST_LOGICAL)
+        isize = SIZE(p_rnode%p_Blogical1D)
+        IF (bdoflat) THEN
+          CALL convert_Logical1Dflat(isize,p_rnode%p_Blogical1D,p_rnode%p_Blogical2D)
+        ELSE
+          CALL convert_Logical1D(isize,p_rnode%p_Blogical1D,p_rnode%p_Blogical2D)
+        END IF
+        
+      CASE (ST_CHAR)
+        isize = SIZE(p_rnode%p_Schar1D)
+        IF (bdoflat) THEN
+          CALL convert_Char1Dflat(isize,p_rnode%p_Schar1D,p_rnode%p_Schar2D)
+        ELSE
+          CALL convert_Char1D(isize,p_rnode%p_Schar1D,p_rnode%p_Schar2D)
+        END IF
+      END SELECT
+
+    CASE (2)
+
+      PRINT *, 'Error: handle does not store 1D array!'
+      STOP
+      
+    CASE DEFAULT
+      PRINT *,'Error: unknown mem type'
+      STOP
+    END SELECT
+
+  CONTAINS
+
+    ! Here, the real working routines follow.
+
+    !**************************************************************
+    ! Convert Double 1D -> 2D
+
+    SUBROUTINE convert_Double1D(n,p_Ddouble1D,p_Ddouble2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      REAL(DP), DIMENSION(n,1), INTENT(IN), TARGET   :: p_Ddouble1D
+      REAL(DP), DIMENSION(:,:), INTENT(OUT), POINTER :: p_Ddouble2D
+    
+      p_Ddouble2D => p_Ddouble1D
+    END SUBROUTINE convert_Double1D
+
+    !**************************************************************
+    ! Convert Double 1D -> 2D
+
+    SUBROUTINE convert_Double1Dflat(n,p_Ddouble1D,p_Ddouble2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      REAL(DP), DIMENSION(1,n), INTENT(IN), TARGET   :: p_Ddouble1D
+      REAL(DP), DIMENSION(:,:), INTENT(OUT), POINTER :: p_Ddouble2D
+    
+      p_Ddouble2D => p_Ddouble1D
+    END SUBROUTINE convert_Double1Dflat
+
+    !**************************************************************
+    ! Convert Single 1D -> 2D
+
+    SUBROUTINE convert_Single1D(n,p_Fsingle1D,p_Fsingle2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      REAL(SP), DIMENSION(n,1), INTENT(IN), TARGET   :: p_Fsingle1D
+      REAL(SP), DIMENSION(:,:), INTENT(OUT), POINTER :: p_Fsingle2D
+    
+      p_Fsingle2D => p_Fsingle1D
+    END SUBROUTINE convert_Single1D
+
+    !**************************************************************
+    ! Convert Single 1D -> 2D
+
+    SUBROUTINE convert_Single1Dflat(n,p_Fsingle1D,p_Fsingle2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      REAL(SP), DIMENSION(1,n), INTENT(IN), TARGET   :: p_Fsingle1D
+      REAL(SP), DIMENSION(:,:), INTENT(OUT), POINTER :: p_Fsingle2D
+    
+      p_Fsingle2D => p_Fsingle1D
+    END SUBROUTINE convert_Single1Dflat
+
+    !**************************************************************
+    ! Convert Integer 1D -> 2D
+
+    SUBROUTINE convert_Integer1D(n,p_Iinteger1D,p_Iinteger2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      INTEGER(I32), DIMENSION(n,1), INTENT(IN), TARGET   :: p_Iinteger1D
+      INTEGER(I32), DIMENSION(:,:), INTENT(OUT), POINTER :: p_Iinteger2D
+
+      p_Iinteger2D => p_Iinteger1D
+    END SUBROUTINE convert_Integer1D
+
+    !**************************************************************
+    ! Convert Integer 1D -> 2D
+
+    SUBROUTINE convert_Integer1Dflat(n,p_Iinteger1D,p_Iinteger2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      INTEGER(I32), DIMENSION(1,n), INTENT(IN), TARGET   :: p_Iinteger1D
+      INTEGER(I32), DIMENSION(:,:), INTENT(OUT), POINTER :: p_Iinteger2D
+
+      p_Iinteger2D => p_Iinteger1D
+    END SUBROUTINE convert_Integer1Dflat
+
+    !**************************************************************
+    ! Convert Logical 1D -> 2D
+
+    SUBROUTINE convert_Logical1D(n,p_Blogical1D,p_Blogical2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      LOGICAL, DIMENSION(n,1), INTENT(IN), TARGET   :: p_Blogical1D
+      LOGICAL, DIMENSION(:,:), INTENT(OUT), POINTER :: p_Blogical2D
+
+      p_Blogical2D => p_Blogical1D
+    END SUBROUTINE convert_Logical1D
+
+    !**************************************************************
+    ! Convert Logical 1D -> 2D
+
+    SUBROUTINE convert_Logical1Dflat(n,p_Blogical1D,p_Blogical2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      LOGICAL, DIMENSION(1,n), INTENT(IN), TARGET   :: p_Blogical1D
+      LOGICAL, DIMENSION(:,:), INTENT(OUT), POINTER :: p_Blogical2D
+
+      p_Blogical2D => p_Blogical1D
+    END SUBROUTINE convert_Logical1Dflat
+
+    !**************************************************************
+    ! Convert Char 1D -> 2D
+
+    SUBROUTINE convert_Char1D(n,p_Schar1D,p_Schar2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      CHARACTER, DIMENSION(n,1), INTENT(IN), TARGET   :: p_Schar1D
+      CHARACTER, DIMENSION(:,:), INTENT(OUT), POINTER :: p_Schar2D
+
+      p_Schar2D => p_Schar1D
+    END SUBROUTINE convert_Char1D
+
+    !**************************************************************
+    ! Convert Char 1D -> 2D
+
+    SUBROUTINE convert_Char1Dflat(n,p_Schar1D,p_Schar2D)
+      
+      INTEGER(I32), INTENT(IN) :: n
+      CHARACTER, DIMENSION(1,n), INTENT(IN), TARGET   :: p_Schar1D
+      CHARACTER, DIMENSION(:,:), INTENT(OUT), POINTER :: p_Schar2D
+
+      p_Schar2D => p_Schar1D
+    END SUBROUTINE convert_Char1Dflat
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE storage_convert2D(ihandle, rheap)
 
 !<description>
     ! This subroutine converts an existing 2D array to a 1D array (in situ).
@@ -5421,47 +5671,37 @@ CONTAINS
     ! Are we 2D?
     SELECT CASE(p_rnode%idimension)
 
+    CASE (1)
+      
+      PRINT *, 'Error: handle does not store 2D array!'
+      STOP
+
     CASE (2)
       
-      ! Set memory description
+      ! Set new dimension
       p_rnode%idimension = 1
 
       SELECT CASE(p_rnode%idataType)
       CASE (ST_DOUBLE)
         isize = SIZE(p_rnode%p_Ddouble2D)
-!        ALLOCATE(p_rnode%p_Ddouble1D(isize))
-        CALL convert_Double(isize,p_rnode%p_Ddouble2D,p_rnode%p_Ddouble1D)
-!        DEALLOCATE(p_rnode%p_Ddouble2D)
+        CALL convert_Double2D(isize,p_rnode%p_Ddouble2D,p_rnode%p_Ddouble1D)
         
       CASE (ST_SINGLE)
         isize = SIZE(p_rnode%p_Fsingle2D)
-        ALLOCATE(p_rnode%p_Fsingle1D(isize))
-        CALL convert_Single(isize,p_rnode%p_Fsingle2D,p_rnode%p_Fsingle1D)
-        DEALLOCATE(p_rnode%p_Fsingle2D)
+        CALL convert_Single2D(isize,p_rnode%p_Fsingle2D,p_rnode%p_Fsingle1D)
 
       CASE (ST_INT)
         isize = SIZE(p_rnode%p_Iinteger2D)
-        ALLOCATE(p_rnode%p_Iinteger1D(isize))
-        CALL convert_Integer(isize,p_rnode%p_Iinteger2D,p_rnode%p_Iinteger1D)
-        DEALLOCATE(p_rnode%p_Iinteger2D)
+        CALL convert_Integer2D(isize,p_rnode%p_Iinteger2D,p_rnode%p_Iinteger1D)
 
       CASE (ST_LOGICAL)
         isize = SIZE(p_rnode%p_Blogical2D)
-        ALLOCATE(p_rnode%p_Blogical1D(isize))
-        CALL convert_Logical(isize,p_rnode%p_Blogical2D,p_rnode%p_Blogical1D)
-        DEALLOCATE(p_rnode%p_Blogical2D)
+        CALL convert_Logical2D(isize,p_rnode%p_Blogical2D,p_rnode%p_Blogical1D)
 
       CASE (ST_CHAR)
         isize = SIZE(p_rnode%p_Schar2D)
-        ALLOCATE(p_rnode%p_Schar1D(isize))
-        CALL convert_Char(isize,p_rnode%p_Schar2D,p_rnode%p_Schar1D)
-        DEALLOCATE(p_rnode%p_Schar2D)
-
+        CALL convert_Char2D(isize,p_rnode%p_Schar2D,p_rnode%p_Schar1D)
       END SELECT
-
-    CASE (1)
-      PRINT *, 'Error: only 2D blocks can be converted to 1D blocks'
-      STOP
 
     CASE DEFAULT
       PRINT *,'Error: unknown mem type'
@@ -5473,65 +5713,64 @@ CONTAINS
     ! Here, the real working routines follow.
 
     !**************************************************************
-    ! Convert Double
+    ! Convert Double 2D -> 1D
 
-    SUBROUTINE convert_Double(n,p_Ddouble2D,p_Ddouble1D)
+    SUBROUTINE convert_Double2D(n,p_Ddouble2D,p_Ddouble1D)
       
       INTEGER(I32), INTENT(IN) :: n
       REAL(DP), DIMENSION(n), INTENT(IN), TARGET   :: p_Ddouble2D
       REAL(DP), DIMENSION(:), INTENT(OUT), POINTER :: p_Ddouble1D
     
       p_Ddouble1D => p_Ddouble2D
-    END SUBROUTINE convert_Double
+    END SUBROUTINE convert_Double2D
 
     !**************************************************************
-    ! Convert Single
+    ! Convert Single 2D -> 1D
 
-    SUBROUTINE convert_Single(n,p_Fsingle2D,p_Fsingle1D)
+    SUBROUTINE convert_Single2D(n,p_Fsingle2D,p_Fsingle1D)
       
       INTEGER(I32), INTENT(IN) :: n
       REAL(SP), DIMENSION(n), INTENT(IN), TARGET   :: p_Fsingle2D
       REAL(SP), DIMENSION(:), INTENT(OUT), POINTER :: p_Fsingle1D
     
       p_Fsingle1D => p_Fsingle2D
-    END SUBROUTINE convert_Single
+    END SUBROUTINE convert_Single2D
 
     !**************************************************************
-    ! Convert Integer
+    ! Convert Integer 2D -> 1D
 
-    SUBROUTINE convert_Integer(n,p_Iinteger2D,p_Iinteger1D)
+    SUBROUTINE convert_Integer2D(n,p_Iinteger2D,p_Iinteger1D)
       
       INTEGER(I32), INTENT(IN) :: n
       INTEGER(I32), DIMENSION(n), INTENT(IN), TARGET   :: p_Iinteger2D
       INTEGER(I32), DIMENSION(:), INTENT(OUT), POINTER :: p_Iinteger1D
 
       p_Iinteger1D => p_Iinteger2D
-    END SUBROUTINE convert_Integer
+    END SUBROUTINE convert_Integer2D
 
     !**************************************************************
-    ! Convert Logical
+    ! Convert Logical 2D -> 1D
 
-    SUBROUTINE convert_Logical(n,p_Blogical2D,p_Blogical1D)
+    SUBROUTINE convert_Logical2D(n,p_Blogical2D,p_Blogical1D)
       
       INTEGER(I32), INTENT(IN) :: n
       LOGICAL, DIMENSION(n), INTENT(IN), TARGET   :: p_Blogical2D
       LOGICAL, DIMENSION(:), INTENT(OUT), POINTER :: p_Blogical1D
 
       p_Blogical1D => p_Blogical2D
-    END SUBROUTINE convert_Logical
+    END SUBROUTINE convert_Logical2D
 
     !**************************************************************
-    ! Convert Char
+    ! Convert Char 2D -> 1D
 
-    SUBROUTINE convert_Char(n,p_Schar2D,p_Schar1D)
+    SUBROUTINE convert_Char2D(n,p_Schar2D,p_Schar1D)
       
       INTEGER(I32), INTENT(IN) :: n
       CHARACTER, DIMENSION(n), INTENT(IN), TARGET   :: p_Schar2D
       CHARACTER, DIMENSION(:), INTENT(OUT), POINTER :: p_Schar1D
 
       p_Schar1D => p_Schar2D
-    END SUBROUTINE convert_Char
-
+    END SUBROUTINE convert_Char2D
   END SUBROUTINE
     
 END MODULE
