@@ -17,34 +17,37 @@
 !# 3.) qtree_resizeQuadtree
 !#     -> Resize an existing quadtree
 !#
-!# 4.) qtree_copyQuadtree
-!#     -> Copy data to/from a quadtree
+!# 4.) qtree_copyToQuadtree
+!#     -> Copy data to a quadtree
 !#
-!# 5.) qtree_insertIntoQuadtree
+!# 5.) qtree_copyFromQuadtree
+!#     -> Copy data from the quadtree
+!#
+!# 6.) qtree_insertIntoQuadtree
 !#     -> Insert data into quadtree
 !#
-!# 6.) qtree_deleteFromQuadtree
+!# 7.) qtree_deleteFromQuadtree
 !#     -> Delete data from quadtree
 !#
-!# 7.) qtree_searchInQuadtree
+!# 8.) qtree_searchInQuadtree
 !#     -> Search data in quadtree
 !#
-!# 8.) qtree_printQuadtree
+!# 9.) qtree_printQuadtree
 !#     -> Write quadtree to file
 !#
-!# 9.) qtree_infoQuadtree
-!#     -> Output info about quadtree
+!# 10.) qtree_infoQuadtree
+!#      -> Output info about quadtree
 !#
-!# 10.) qtree_getsize
+!# 11.) qtree_getsize
 !#      -> Return number of vertices in quadtree
 !#
-!# 11.) qtree_getBoundingBox
+!# 12.) qtree_getBoundingBox
 !#      -> Return the outer bounding box
 !#
-!# 12.) qtree_getX
+!# 13.) qtree_getX
 !#      -> Return the X-value at a given position
 !#
-!# 13.) qtree_getY
+!# 14.) qtree_getY
 !#      -> Return the Y-value at a given position
 !#
 !# For the internal use the following routines are available:
@@ -67,7 +70,8 @@ MODULE quadtree
   PUBLIC :: t_quadtree
   PUBLIC :: qtree_createQuadtree
   PUBLIC :: qtree_releaseQuadtree
-  PUBLIC :: qtree_copyQuadtree
+  PUBLIC :: qtree_copyToQuadtree
+  PUBLIC :: qtree_copyFromQuadtree
   PUBLIC :: qtree_insertIntoQuadtree
   PUBLIC :: qtree_deleteFromQuadtree
   PUBLIC :: qtree_searchInQuadtree
@@ -228,9 +232,12 @@ MODULE quadtree
     MODULE PROCEDURE t_quadtree_release
   END INTERFACE
   
-  INTERFACE qtree_copyQuadtree
+  INTERFACE qtree_copyToQuadtree
     MODULE PROCEDURE t_quadtree_copyto_handle
     MODULE PROCEDURE t_quadtree_copyto_array
+  END INTERFACE
+
+  INTERFACE qtree_copyFromQuadtree
     MODULE PROCEDURE t_quadtree_copyfrom_handle
     MODULE PROCEDURE t_quadtree_copyfrom_array
   END INTERFACE
@@ -338,12 +345,15 @@ CONTAINS
     rquadtree%NRESIZE= 0
     
     ! Allocate memory and associate pointers
-    CALL storage_new('t_quadtree_init','p_Ddata',(/2,nnvt/),ST_DOUBLE,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO)
-    CALL storage_new('t_quadtree_init','p_Dbbox',(/4,nnquad/),ST_DOUBLE,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO)
-    CALL storage_new('t_quadtree_init','p_Kquad',(/7,nnquad/),ST_INT,rquadtree%h_Kquad,ST_NEWBLOCK_ZERO)
+    CALL storage_new('t_quadtree_create','p_Ddata',&
+        (/2,nnvt/),ST_DOUBLE,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO)
+    CALL storage_new('t_quadtree_create','p_Dbbox',&
+        (/4,nnquad/),ST_DOUBLE,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO)
+    CALL storage_new('t_quadtree_create','p_Kquad',&
+        (/7,nnquad/),ST_INT,rquadtree%h_Kquad,ST_NEWBLOCK_ZERO)
     CALL storage_getbase_double2D(rquadtree%h_Ddata,rquadtree%p_Ddata)
-    CALL storage_getbase_double2D(rquadtree%h_Dbbox, rquadtree%p_Dbbox)
-    CALL storage_getbase_int2D(rquadtree%h_Kquad,rquadtree%p_Kquad)
+    CALL storage_getbase_double2D(rquadtree%h_Dbbox,rquadtree%p_Dbbox)
+    CALL storage_getbase_int2D(rquadtree%h_Kquad,   rquadtree%p_Kquad)
 
     ! Initialize first quad
     rquadtree%nquad=1
@@ -376,8 +386,8 @@ CONTAINS
     
     ! Free memory
     IF (rquadtree%h_Ddata /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Ddata)
-    IF (rquadtree%h_Dbbox  /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Dbbox)
-    IF (rquadtree%h_Kquad  /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Kquad)
+    IF (rquadtree%h_Dbbox /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Dbbox)
+    IF (rquadtree%h_Kquad /= ST_NOHANDLE) CALL storage_free(rquadtree%h_Kquad)
     NULLIFY(rquadtree%p_Kquad,rquadtree%p_Dbbox,rquadtree%p_Ddata)
 
     ! Reset values
@@ -409,7 +419,8 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    CALL storage_realloc('t_quadtree_resize',nnvt,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_realloc('t_quadtree_resize_nvt',&
+        nnvt,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO,.TRUE.)
     CALL storage_getbase_double2D(rquadtree%h_Ddata,rquadtree%p_Ddata)
     
     rquadtree%NNVT   = nnvt
@@ -437,10 +448,12 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    CALL storage_realloc('t_quadtree_resize',nnquad,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_realloc('t_quadtree_resize',nnquad,rquadtree%h_Kquad,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_realloc('t_quadtree_resize_nquad',&
+        nnquad,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_realloc('t_quadtree_resize_nquad',&
+        nnquad,rquadtree%h_Kquad,ST_NEWBLOCK_ZERO,.TRUE.)
     CALL storage_getbase_double2D(rquadtree%h_Dbbox,rquadtree%p_Dbbox)
-    CALL storage_getbase_int2D(rquadtree%h_Kquad,rquadtree%p_Kquad)
+    CALL storage_getbase_int2D(rquadtree%h_Kquad,   rquadtree%p_Kquad)
     
     rquadtree%NNQUAD = nnquad
     rquadtree%NRESIZE=rquadtree%NRESIZE+1
@@ -477,11 +490,13 @@ CONTAINS
     ! Check if handle is associated
     IF (h_Ddata == ST_NOHANDLE) THEN
       Isize = (/2,rquadtree%NVT/)
-      CALL storage_new('t_quadtree_copy','p_Ddata',Isize,ST_DOUBLE,h_Ddata,ST_NEWBLOCK_NOINIT)
+      CALL storage_new('t_quadtree_copyfrom_handle','p_Ddata',&
+          Isize,ST_DOUBLE,h_Ddata,ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize(h_Ddata,Isize)
       IF (Isize(2) < rquadtree%NVT) THEN
-        CALL storage_realloc('t_quadtree_copy',rquadtree%NVT,h_Ddata,ST_NEWBLOCK_NOINIT,.FALSE.)
+        CALL storage_realloc('t_quadtree_copyfrom_handle',&
+            rquadtree%NVT,h_Ddata,ST_NEWBLOCK_NOINIT,.FALSE.)
       END IF
     END IF
     
@@ -520,7 +535,7 @@ CONTAINS
     INTEGER(PREC_QTIDX), DIMENSION(2) :: Isize
 
     ! Check size of array
-    Isize = SIZE(p_Ddata)
+    Isize = SHAPE(p_Ddata)
     IF (Isize(1) /= 2 .OR. Isize(2) < rquadtree%NVT) THEN
       PRINT *, "(EE) t_quadtree_copyfrom_array: Array too small!"
       STOP
@@ -538,7 +553,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE t_quadtree_copyto_handle(h_DdataSrc,rquadtree)
+  SUBROUTINE t_quadtree_copyto_handle(h_Ddata,rquadtree)
 
 !<description>
     ! This subroutine copies the content of a handle to the quadtree.
@@ -546,7 +561,7 @@ CONTAINS
 
 !<input>
     ! Handle to the coordinate vector
-    INTEGER, INTENT(IN) :: h_DdataSrc
+    INTEGER, INTENT(IN) :: h_Ddata
 !</input>
 
 !<inputoutput>
@@ -556,18 +571,19 @@ CONTAINS
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DdataSrc
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata
     INTEGER(PREC_QTIDX) :: ivt,jvt,iquad,ipos
     
-    CALL storage_getbase_double2D(h_DdataSrc,p_DdataSrc)
-    IF (SIZE(p_DdataSrc,1) /= 2) THEN
+    ! Set pointer and check its shape
+    CALL storage_getbase_double2D(h_Ddata,p_Ddata)
+    IF (SIZE(p_Ddata,1) /= 2) THEN
       PRINT *, "(EE) t_quadtree_copyto_handle: First dimension of array must be 2!"
       STOP
     END IF
     
-    DO ivt=1,SIZE(p_DdataSrc,2)
-      IF (search(rquadtree,p_DdataSrc(:,ivt),iquad,ipos,jvt) == QNOT_FOUND)&
-          CALL insert(rquadtree,ivt,p_DdataSrc(:,ivt),iquad)
+    DO ivt=1,SIZE(p_Ddata,2)
+      IF (search(rquadtree,p_Ddata(:,ivt),iquad,ipos,jvt) == QNOT_FOUND)&
+          CALL insert(rquadtree,ivt,p_Ddata(:,ivt),iquad)
     END DO
   END SUBROUTINE t_quadtree_copyto_handle
 
@@ -575,7 +591,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE t_quadtree_copyto_array(p_DdataSrc,rquadtree)
+  SUBROUTINE t_quadtree_copyto_array(p_Ddata,rquadtree)
 
 !<description>
     ! This subroutine copies the content of an array to the quadtree.
@@ -583,7 +599,7 @@ CONTAINS
 
 !<input>
     ! Coordinate vector
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: p_DdataSrc
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: p_Ddata
 !</input>
 
 !<inputoutput>
@@ -595,14 +611,14 @@ CONTAINS
     ! local variables
     INTEGER(PREC_QTIDX) :: ivt,jvt,iquad,ipos
     
-    IF (SIZE(p_DdataSrc,1) /= 2) THEN
+    IF (SIZE(p_Ddata,1) /= 2) THEN
       PRINT *, "(EE) t_quadtree_copyto_handle: First dimension of array must be 2!"
       STOP
     END IF
 
-    DO ivt=1,SIZE(p_DdataSrc,2)
-      IF (search(rquadtree,p_DdataSrc(:,ivt),iquad,ipos,jvt) == QNOT_FOUND)&
-          CALL insert(rquadtree,ivt,p_DdataSrc(:,ivt),iquad)
+    DO ivt=1,SIZE(p_Ddata,2)
+      IF (search(rquadtree,p_Ddata(:,ivt),iquad,ipos,jvt) == QNOT_FOUND)&
+          CALL insert(rquadtree,ivt,p_Ddata(:,ivt),iquad)
     END DO
   END SUBROUTINE t_quadtree_copyto_array
 
@@ -634,7 +650,8 @@ CONTAINS
 !</subroutine>
     
     ! Check if there is enough space left in the nodal component of the quadtree
-    IF (rquadtree%NVT == rquadtree%NNVT) CALL resizeNVT(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNVT))
+    IF (rquadtree%NVT == rquadtree%NNVT)&
+        CALL resizeNVT(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNVT))
     
     ! Update values and add new entry recursively
     rquadtree%NVT            = rquadtree%NVT+1
@@ -653,7 +670,8 @@ CONTAINS
       
       IF (rquadtree%p_Kquad(QSTATUS,iquad) == QMAX) THEN
         
-        IF (rquadtree%nquad+4 > rquadtree%nnquad) CALL resizeNQUAD(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNQUAD))
+        IF (rquadtree%nquad+4 > rquadtree%nnquad)&
+            CALL resizeNQUAD(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNQUAD))
         
         ! Quad is full and needs to be refined into four new quads
         xmin = rquadtree%p_Dbbox(QXMIN,iquad)
