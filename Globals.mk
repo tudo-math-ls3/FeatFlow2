@@ -210,27 +210,27 @@ LDLIBS=
 
 GENERIC = 1
 
-ifeq ($(call match,$(ARCH),pc),yes)
+ifeq ($(call match,$(FFARCH),pc),yes)
 include $(FEATFLOW)/Globals.x86
 endif
 
-ifeq ($(call match,$(ARCH),pc64),yes)
+ifeq ($(call match,$(FFARCH),pc64),yes)
 include $(FEATFLOW)/Globals.x86_64
 endif
 
-ifeq ($(call match,$(ARCH),(ia64|hp*)),yes)
+ifeq ($(call match,$(FFARCH),(ia64|hp*)),yes)
 include $(FEATFLOW)/Globals.x86_64
 endif
 
-ifeq ($(call match,$(ARCH),sun),yes)
+ifeq ($(call match,$(FFARCH),sun),yes)
 include $(FEATFLOW)/Globals.sparc
 endif
 
-ifeq ($(call match,$(ARCH),alpha),yes)
+ifeq ($(call match,$(FFARCH),alpha),yes)
 include $(FEATFLOW)/Globals.alpha
 endif
 
-ifeq ($(call match,$(ARCH),(power|ppc)),yes)
+ifeq ($(call match,$(FFARCH),(power|ppc)),yes)
 include $(FEATFLOW)/Globals.power
 endif
 
@@ -333,10 +333,10 @@ endif
 	@echo '                 (See Globals.mk for examples)'
 	@echo ' ID=xxx        - overides the autodetected architecture ID by xxx'
 	@echo '                 (See Globals.mk for details)'
-	@echo ' ARCH=xxx      - overwrites the autodetected value for ARCH by xxx'
+	@echo ' FFARCH=xxx    - overwrites the autodetected value for FFARCH by xxx'
 	@echo '                 (See Globals.mk for details)'
-	@echo ' CPU=xxx       - overwrites the autodetected value for CPU by xxx'
+	@echo ' FFCPU=xxx     - overwrites the autodetected value for FFCPU by xxx'
 	@echo '                 (See Globals.mk for details)'
-	@echo ' CORE=xxx      - overwrites the autodetected value for CORE by xxx'
+	@echo ' FFCORE=xxx    - overwrites the autodetected value for FFCORE by xxx'
 	@echo '                 (See Globals.mk for details)'
 

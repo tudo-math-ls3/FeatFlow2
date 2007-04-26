@@ -34,35 +34,35 @@ GENERIC   = 0
 
 # Try to find more sophisticated compiler settings
 
-ifeq ($(CPU),k6)
+ifeq ($(FFCPU),k6)
 OPTFLAGS  += -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
-ifeq ($(CORE),k6)
+ifeq ($(FFCORE),k6)
 FCFLAGS   += -march=k6
 FCFLAGS   += -march=k6
 endif
-ifeq ($(CORE),k6-2)
+ifeq ($(FFCORE),k6-2)
 FCFLAGS   += -march=k6-2
 FCFLAGS   += -march=k6-2
 endif
-ifeq ($(CORE),k6-3)
+ifeq ($(FFCORE),k6-3)
 FCFLAGS   += -march=k6-3
 FCFLAGS   += -march=k6-3
 endif
 endif
 
-ifeq ($(CPU),athlon)
+ifeq ($(FFCPU),athlon)
 OPTFLAGS  += -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   += -march=athlon
 FCFLAGS   += -march=athlon
 endif
 
-ifeq ($(CPU),athlonxp)
+ifeq ($(FFCPU),athlonxp)
 OPTFLAGS  += -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   += -march=athlon-xp
 FCFLAGS   += -march=athlon-xp
 endif
 
-ifeq ($(CPU),athlon64)
+ifeq ($(FFCPU),athlon64)
 OPTFLAGS  += -mmmx -msse -msse2 -m3dnow -ffinite-math-only -fgcse \
 -floop-optimize -fmove-all-movables -foptimize-register-move \
 -foptimize-sibling-calls -frename-registers -freorder-blocks \
@@ -73,7 +73,7 @@ FCFLAGS   += -march=athlon64
 FCFLAGS   += -march=athlon64
 endif
 
-ifeq ($(CPU),opteron)
+ifeq ($(FFCPU),opteron)
 OPTFLAGS  += -mmmx -msse -msse2 -m3dnow -mfpmath=sse  -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays -ffinite-math-only -fgcse -floop-optimize \
 -foptimize-register-move -foptimize-sibling-calls -frename-registers -freorder-blocks \
@@ -101,19 +101,19 @@ LAPACKLIB =
 GENERIC   = 0
 
 # Try to find more sophisticated compiler settings
-ifeq ($(CPU),athlon)
+ifeq ($(FFCPU),athlon)
 OPTFLAGS  += -tpp6
 endif
 
-ifeq ($(CPU),athlonxp)
+ifeq ($(FFCPU),athlonxp)
 OPTFLAGS  += -tpp6 -arch=sse
 endif
 
-ifeq ($(CPU),athlon64)
+ifeq ($(FFCPU),athlon64)
 OPTFLAGS  += -tpp7 -xW -us -pad -funroll-loops
 endif
 
-ifeq ($(CPU),opteron)
+ifeq ($(FFCPU),opteron)
 OPTFLAGS  += -mtune=pentiumpro -march=pentium4
 FCFLAGS   += 
 endif
@@ -133,7 +133,7 @@ LAPACKLIB =
 GENERIC   = 0
 
 # Try to find more sophisticated compiler settings
-ifeq ($(CPU),athlonxp)
+ifeq ($(FFCPU),athlonxp)
 FCFLAGS   += -tp athlonxp
 endif
 endif
@@ -155,56 +155,56 @@ LAPACKLIB =
 GENERIC   = 0
 
 # Try to find more sophisticated compiler settings
-ifeq ($(CPU),pentium)
+ifeq ($(FFCPU),pentium)
 OPTFLAGS  += -mfpmath=sse
 FCFLAGS   += -march=pentium
 CCFLAGS   += -march=pentium
 endif
 
-ifeq ($(CPU),pentiumpro)
+ifeq ($(FFCPU),pentiumpro)
 OPTFLAGS  += -mfpmath=sse
 FCFLAGS   += -march=pentiumpro
 CCFLAGS   += -march=pentiumpro
 endif
 
-ifeq ($(CPU),pentium2)
+ifeq ($(FFCPU),pentium2)
 OPTFLAGS  += -mfpmath=sse
 FCFLAGS   += -march=pentium2
 CCFLAGS   += -march=pentium2
 endif
 
-ifeq ($(CPU),pentium3)
+ifeq ($(FFCPU),pentium3)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse
 FCFLAGS   += -march=pentium3
 CCFLAGS   += -march=pentium3
 endif
 
-ifeq ($(CPU),pentiumm)
+ifeq ($(FFCPU),pentiumm)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse #-mfpmath=sse2
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
 endif
 
-ifeq ($(CPU),pentium4)
-ifeq ($(CORE),northwood)
+ifeq ($(FFCPU),pentium4)
+ifeq ($(FFCORE),northwood)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2
 FCFLAGS   += -march=pentium4
 CCFLAGS   += -march=pentium4
 endif
-ifeq ($(CORE),prescott)
+ifeq ($(FFCORE),prescott)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2 -mfpmath=sse3
 FCFLAGS   += -march=prescott
 CCFLAGS   += -march=prescott
 endif
 endif
 
-ifeq ($(CPU),core)
+ifeq ($(FFCPU),core)
 OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
 endif
 
-ifeq ($(CPU),core2)
+ifeq ($(FFCPU),core2)
 OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=nocona
 CCFLAGS   += -march=nocona
@@ -229,28 +229,28 @@ LAPACKLIB =
 GENERIC   = 0
 
 # Try to find more sophisticated compiler settings
-ifeq ($(CPU),pentium3)
+ifeq ($(FFCPU),pentium3)
 OPTFLAGS  += -xK
 endif
 
-ifeq ($(CPU),pentium4)
-ifeq ($(CORE),northwood)
+ifeq ($(FFCPU),pentium4)
+ifeq ($(FFCORE),northwood)
 OPTFLAGS  += -xN
 endif
-ifeq ($(CORE),prescott)
+ifeq ($(FFCORE),prescott)
 OPTFLAGS  += -xP
 endif
 endif
 
-ifeq ($(CPU),pentiumm)
+ifeq ($(FFCPU),pentiumm)
 OPTFLAGS  += -xB
 endif
 
-ifeq ($(CPU),core)
+ifeq ($(FFCPU),core)
 OPTFLAGS  += -xP
 endif
 
-ifeq ($(CPU),core2)
+ifeq ($(FFCPU),core2)
 OPTFLAGS  += -xT
 endif
 endif
