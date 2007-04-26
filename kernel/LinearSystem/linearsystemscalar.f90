@@ -10651,6 +10651,71 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE lsyssc_createDiagMatrix (rmatrix,NEQ,cmatrixFormat)
+  
+!<description>
+  ! Creates a diagonal matrix in matrix format cmatrixType. Initialises
+  ! the structure but does not allocate any memory for the entries (if the
+  ! matrix has any).
+  !
+  ! The matrix is created 'directly' without any discretisation structure
+  ! in the background. NEQ specifies the size of the matrix.
+!</description>
+
+!<input>
+  ! Matrix type, e.g. LSYSSC_MATRIXD or LSYSSC_MATRIX9,...
+  INTEGER, INTENT(IN) :: cmatrixFormat
+  
+  ! Number of equations, the matrix should hold.
+  INTEGER(PREC_MATIDX), INTENT(IN) :: NEQ
+!</input>
+
+!<inputoutput>
+  ! The FE matrix to be initialised.
+  TYPE(t_matrixScalar), INTENT(OUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    rmatrix%NEQ = NEQ
+    rmatrix%NCOLS = NEQ
+    rmatrix%NA = NEQ
+    rmatrix%cmatrixFormat = cmatrixFormat
+    
+    ! Depending on the format, choose the initialisation routine.
+    SELECT CASE (cmatrixFormat)
+    CASE (LSYSSC_MATRIXD)
+      ! Nothing to do, there is no structure.
+      
+    CASE (LSYSSC_MATRIX9)
+      ! Create KCOL, KLD, KDiagonal
+      CALL storage_new1D ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
+          ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
+      CALL storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1_PREC_MATIDX, &
+          ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
+      CALL storage_new1D ('lsyssc_createDiagMatrix', 'KDiagonal', NEQ, &
+          ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ORDERED)
+          
+    CASE (LSYSSC_MATRIX7)
+      ! Create KCOL, KLD.
+      CALL storage_new1D ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
+          ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
+      CALL storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1_PREC_MATIDX, &
+          ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
+          
+    CASE DEFAULT
+    
+      PRINT *,'lsyssc_createDiagMatrix: unsupported matrix format!'
+      STOP
+      
+    END SELECT
+  
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
   SUBROUTINE lsyssc_lumpMatrixScalar (rmatrixScalar,clumpType)
   
 !<description>
