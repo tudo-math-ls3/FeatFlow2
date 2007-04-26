@@ -160,6 +160,9 @@
 !# 44.) lsyssc_resizeMatrix
 !#      -> Resize the matrix and reallocate memory if necessary.
 !#
+!# 45.) lsyssc_createDiagMatrix
+!#      -> Creates a diagonal matrix, does not allocate memory for the entries.
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
