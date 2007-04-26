@@ -2386,7 +2386,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_resizeMatrixIndirect (rmatrix, rmatrixTemplate, bclear, bcopy, bforce)
+  SUBROUTINE lsyssc_resizeMatrixIndirect(rmatrix, rmatrixTemplate, bclear, bcopy, bforce)
 
 !<description>
   ! Resizes the matrix so that it exhibits the same memory layout as the
@@ -2446,7 +2446,7 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_MATIDX) :: iNA,isize
-    INTEGER(PREC_VECIDX) :: iNEQ
+    INTEGER(PREC_VECIDX) :: iNEQ,iNCOLS
     LOGICAL :: bdocopy,bdoresize
 
     ! Check if resize should be forced
@@ -2490,7 +2490,9 @@ CONTAINS
           CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_DA', isize,&
               rmatrixTemplate%cdataType, rmatrix%h_DA, ST_NEWBLOCK_ZERO)
         END IF
-      ELSE
+
+      ELSE   ! Matrix should not be cleared
+
         IF (rmatrixTemplate%h_Kld /= ST_NOHANDLE) THEN
           CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
           CALL storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kld', isize,&
@@ -2518,10 +2520,12 @@ CONTAINS
       ! The matrix has been initialized before.
 
       ! Check if matrices are compatible except for the dimensions
-      IF ((rmatrix%cmatrixFormat /= rmatrixTemplate%cmatrixFormat) .OR.&
+      IF ((rmatrix%cmatrixFormat           /= rmatrixTemplate%cmatrixFormat) .OR.&
           (rmatrix%cinterleavematrixFormat /= rmatrixTemplate%cinterleavematrixFormat) .OR.&
-          (rmatrix%NVAR /= rmatrixTemplate%NVAR) .OR.&
-          (rmatrix%cdataType /= rmatrixTemplate%cdataType)) THEN
+          (rmatrix%NVAR                    /= rmatrixTemplate%NVAR) .OR.&
+          (rmatrix%cdataType               /= rmatrixTemplate%cdataType) .OR.&
+          IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /=&
+          IAND(rmatrixTemplate%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)) THEN
         PRINT *, "lsyssc_resizeMatrixDirect: Matrices are incompatible!"
         STOP
       END IF
@@ -2544,88 +2548,167 @@ CONTAINS
       
       ! Update NA
       rmatrix%NA = rmatrixTemplate%NA
-      IF ((rmatrix%h_DA /= ST_NOHANDLE) .AND.&
-          (rmatrixTemplate%h_DA /= ST_NOHANDLE)) THEN
-        
-        ! Do we have to reallocate the handle?
-        CALL storage_getsize(rmatrix%h_DA, iNA)
-        IF (rmatrix%NA > iNA) THEN
 
-          ! Yes, we have to reallocate the handle. 
-          ! Also consider the size of the template matrix.
-          CALL storage_getsize(rmatrixTemplate%h_DA, isize)
-          isize = MAX(0,isize,iNA)
-          
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_DA,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
+      ! Are we copy or not?
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) == 1) THEN
+
+        ! Check if handle coincides with matrix dimensions
+        CALL storage_getsize(rmatrix%h_DA,isize)
+        IF (rmatrix%NA > isize) THEN
+          PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
+          STOP
         END IF
-      END IF
 
-      ! Update NEQ and NCOLS. Actually, is is not impoerted if the matrix
-      ! is transposed or not. What is importat is whether both matrices
-      ! are transposed/not transposed or if only one matrix is.
-      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /= &
-          IAND(rmatrixTemplate%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)) THEN
-        rmatrix%NEQ   = rmatrixTemplate%NCOLS
-        rmatrix%NCOLS = rmatrixTemplate%NEQ
       ELSE
-        rmatrix%NEQ   = rmatrixTemplate%NEQ
-        rmatrix%NCOLS = rmatrixTemplate%NCOLS
-      END IF
-        
-      ! Now, we no longer have to treat transposed matrices separately.
-      IF ((rmatrix%h_Kld /= ST_NOHANDLE) .AND.&
-          (rmatrixTemplate%h_Kld /= ST_NOHANDLE)) THEN
         
         ! Do we have to reallocate the handle?
-        CALL storage_getsize(rmatrix%h_Kld, iNEQ)
-        IF (rmatrix%NEQ+1 > iNEQ) THEN
-          
-          ! Yes, we have to reallocate the handle. 
-          ! Also consider the size of the template matrix.
-          CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
-          isize = MAX(0,isize,iNEQ)
-          
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kld,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
+        IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_DA, iNA)
+          IF (rmatrix%NA > iNA) THEN
+            
+            ! Yes, we have to reallocate the handle. 
+            ! Also consider the size of the template matrix.
+            IF (rmatrixTemplate%h_DA /= ST_NOHANDLE) THEN
+              CALL storage_getsize(rmatrixTemplate%h_DA, isize)
+              isize = MAX(0,isize,iNA)
+            END IF
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_DA,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+          END IF
         END IF
       END IF
       
-      IF ((rmatrix%h_Kcol /= ST_NOHANDLE) .AND.&
-          (rmatrixTemplate%h_Kcol /= ST_NOHANDLE)) THEN
+      ! Update NEQ and NCOLS.
+      rmatrix%NEQ   = rmatrixTemplate%NEQ
+      rmatrix%NCOLS = rmatrixTemplate%NCOLS
+
+      ! Are we copy or not?
+      IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) == 1) THEN
         
-        ! Do we have to reallocate the handle?
-        CALL storage_getsize(rmatrix%h_Kcol, iNA)
-        IF (rmatrix%NA > iNA) THEN
-          
-          ! Yes, we have to reallocate the handle. 
-          ! Also consider the size of the template matrix.
-          CALL storage_getsize(rmatrixTemplate%h_Kcol, isize)
-          isize = MAX(0,isize,iNA)
-          
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kcol,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
+        ! Check if handle coincides with matrix simensions
+        IF (rmatrix%h_Kld /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kld,isize)
+          IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1 .AND.&
+              rmatrix%NCOLS+1 > isize .OR. rmatrix%NEQ+1 > isize) THEN
+            PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
+            STOP
+          END IF
         END IF
-      END IF
-      
-      IF ((rmatrix%h_Kdiagonal /= ST_NOHANDLE) .AND.&
-          (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE)) THEN
+
+        ! Check if handle coincides with matrix simensions
+        IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kcol, isize)
+          IF (rmatrix%NA > isize) THEN
+            PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
+            STOP
+          END IF
+        END IF
+
+        ! Check if handle coincides with matrix simensions
+        IF (rmatrix%h_Kdiagonal /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kdiagonal, isize)
+          IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1 .AND.&
+              rmatrix%NCOLS > isize .OR. rmatrix%NEQ > isize) THEN
+            PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
+            STOP
+          END IF
+        END IF
+        
+      ELSE  ! Matrix is no copy
         
         ! Do we have to reallocate the handle?
-        CALL storage_getsize(rmatrix%h_Kdiagonal, iNEQ)
-        IF (rmatrix%NEQ > iNEQ) THEN
+        IF (rmatrix%h_Kld /= ST_NOHANDLE) THEN
           
-          ! Yes, we have to reallocate the handle. 
-          ! Also consider the size of the template matrix.
-          CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
-          isize = MAX(0,isize,iNEQ)
+          ! Do we process a virtually transposed matrix?
+          IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) THEN
+            CALL storage_getsize(rmatrix%h_Kld, iNCOLS)
+            IF (rmatrix%NCOLS+1 > iNCOLS) THEN
+              
+              ! Yes, we have to reallocate the handle. 
+              ! Also consider the size of the template matrix.
+              IF (rmatrixTemplate%h_Kld /= ST_NOHANDLE) THEN
+                CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
+                isize = MAX(0,isize,iNCOLS)
+              END IF
+              
+              ! Reallocate the memory
+              CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kld,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          ELSE
+            CALL storage_getsize(rmatrix%h_Kld, iNEQ)
+            IF (rmatrix%NEQ+1 > iNEQ) THEN
+              
+              ! Yes, we have to reallocate the handle. 
+              ! Also consider the size of the template matrix.
+              IF (rmatrixTemplate%h_Kld /= ST_NOHANDLE) THEN
+                CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
+                isize = MAX(0,isize,iNEQ)
+              END IF
+
+              ! Reallocate the memory
+              CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kld,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
+        END IF
+
+        ! Do we have to reallocate the handle?
+        IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
+          CALL storage_getsize(rmatrix%h_Kcol, iNA)
+          IF (rmatrix%NA > iNA) THEN
+            
+            ! Yes, we have to reallocate the handle. 
+            ! Also consider the size of the template matrix.
+            IF (rmatrixTemplate%h_Kcol /= ST_NOHANDLE) THEN
+              CALL storage_getsize(rmatrixTemplate%h_Kcol, isize)
+              isize = MAX(0,isize,iNA)
+            END IF
+            
+            ! Reallocate the memory
+            CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kcol,&
+                ST_NEWBLOCK_NOINIT, bdocopy)
+          END IF
+        END IF
+
+        ! Do we have to reallocate the handle?
+        IF (rmatrix%h_Kdiagonal /= ST_NOHANDLE) THEN
+
+          ! Do we process a virtually transposed matrix?
+          IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) THEN
+            CALL storage_getsize(rmatrix%h_Kdiagonal, iNCOLS)
+            IF (rmatrix%NCOLS > iNCOLS) THEN
+              
+              ! Yes, we have to reallocate the handle. 
+              ! Also consider the size of the template matrix.
+              IF (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) THEN
+                CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
+                isize = MAX(0,isize,iNCOLS)
+              END IF
+              
+              ! Reallocate the memory
+              CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kdiagonal,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          ELSE
+            CALL storage_getsize(rmatrix%h_Kdiagonal, iNEQ)
+            IF (rmatrix%NEQ > iNEQ) THEN
+              
+              ! Yes, we have to reallocate the handle. 
+              ! Also consider the size of the template matrix.
+              IF (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) THEN
+                CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
+                isize = MAX(0,isize,iNEQ)
+              END IF
+              
+              ! Reallocate the memory
+              CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kdiagonal,&
+                  ST_NEWBLOCK_NOINIT, bdocopy)
+            END IF
+          END IF
           
-          ! Reallocate the memory
-          CALL storage_realloc('lsyssc_resizeMatrixIndirect', isize, rmatrix%h_Kdiagonal,&
-              ST_NEWBLOCK_NOINIT, bdocopy)
         END IF
       END IF
     END IF
