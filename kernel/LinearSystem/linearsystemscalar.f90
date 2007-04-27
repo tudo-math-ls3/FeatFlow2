@@ -1393,7 +1393,8 @@ CONTAINS
 !</subroutine>
 
     ! Is matrix in correct format?
-    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
+    IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND.&
+        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
       PRINT *,'lsyssc_getbase_Kdiagonal: matrix format does not provide KDIAGONAL!'
       STOP
     END IF
@@ -5360,7 +5361,11 @@ CONTAINS
       ! Create a pointer to the diagonal
       CALL storage_new ('lsyssc_convertMatrix', 'Kdiagonal', &
             rmatrix%NEQ, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
-      CALL lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+
+      ! WARNING: lsyssc_getbase_Kdiagonal does not(!) work here, because
+      ! rmatrix is still in format LSYSSC_MATRIX7 and hence does not provide
+      ! the array Kdiagonal ;-)
+      CALL storage_getbase_int (rmatrix%h_Kdiagonal,p_Kdiagonal,rmatrix%NEQ)
 
       IF ((.NOT. bentries) .OR. (rmatrix%h_DA .EQ. ST_NOHANDLE)) THEN
       
