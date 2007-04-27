@@ -131,6 +131,12 @@
 !#
 !# 38.) lsyssc_resizeVector
 !#      -> Resize a blockvector
+!#
+!# 39.) lsysbl_infoVector
+!#      -> Outputs information about the vector (mostly used for debugging)
+!#
+!# 40.) lsysbl_infoMatrix
+!#      -> Outputs information about the matrix (mostly used for debugging)
 !# </purpose>
 !##############################################################################
 
@@ -3525,4 +3531,60 @@ CONTAINS
 
   END SUBROUTINE
 
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_infoVector(rvector)
+
+!<description>
+    ! This subroutine outputs information about the block vector
+!</description>
+
+!<input>
+    ! block vector
+    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+!</subroutine>
+
+    ! local variables
+    INTEGER :: iblock
+
+    DO iblock=1,rvector%nblocks
+      CALL output_line ('Vector-block #'//TRIM(sys_siL(iblock,0)))
+      CALL lsyssc_infoVector(rvector%RvectorBlock(iblock))
+    END DO
+
+  END SUBROUTINE lsysbl_infoVector
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_infoMatrix(rmatrix)
+
+!<description>
+    ! This subroutine outputs information about the block matrix
+!</description>
+
+!<input>
+    ! block matrix
+    TYPE(t_matrixBlock) :: rmatrix
+!</input>
+!</subroutine>
+
+    ! local variables
+    INTEGER :: iblock,jblock
+    
+    DO jblock=1,LSYSBL_MAXBLOCKS
+      DO iblock=1,LSYSBL_MAXBLOCKS
+        IF ((rmatrix%RmatrixBlock(iblock,jblock)%NEQ /= 0) .AND.&
+            (rmatrix%RmatrixBlock(iblock,jblock)%NCOLS /= 0)) THEN
+          CALL output_line ('Matrix-block #('//TRIM(sys_siL(iblock,2))//','//&
+              TRIM(sys_siL(jblock,2))//')')
+          CALL lsyssc_infoMatrix(rmatrix%RmatrixBlock(iblock,jblock))
+        END IF
+      END DO
+    END DO
+  END SUBROUTINE lsysbl_infoMatrix
 END MODULE
