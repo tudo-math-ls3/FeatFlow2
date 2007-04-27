@@ -1939,7 +1939,7 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_MATIDX) :: iNA,isize,isizeNew
-    INTEGER(PREC_VECIDX) :: iNEQ,iNCOLS,itemp
+    INTEGER(PREC_VECIDX) :: iNEQ,iNCOLS
     LOGICAL :: bdocopy,bdoresize,btransposed
 
     ! Check if resize should be forced
@@ -2448,8 +2448,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_MATIDX) :: iNA,isize
-    INTEGER(PREC_VECIDX) :: iNEQ,iNCOLS
+    INTEGER(PREC_MATIDX) :: isize,isizeTmp
     LOGICAL :: bdocopy,bdoresize
 
     ! Check if resize should be forced
@@ -2566,14 +2565,16 @@ CONTAINS
         
         ! Do we have to reallocate the handle?
         IF (rmatrix%h_DA /= ST_NOHANDLE) THEN
-          CALL storage_getsize(rmatrix%h_DA, iNA)
-          IF (rmatrix%NA > iNA) THEN
+          CALL storage_getsize(rmatrix%h_DA, isize)
+          IF (rmatrix%NA > isize) THEN
             
             ! Yes, we have to reallocate the handle. 
+            isize = rmatrix%NA
+
             ! Also consider the size of the template matrix.
             IF (rmatrixTemplate%h_DA /= ST_NOHANDLE) THEN
-              CALL storage_getsize(rmatrixTemplate%h_DA, isize)
-              isize = MAX(0,isize,iNA)
+              CALL storage_getsize(rmatrixTemplate%h_DA, isizeTmp)
+              isize = MAX(0,isize,isizeTmp)
             END IF
             
             ! Reallocate the memory
@@ -2626,14 +2627,16 @@ CONTAINS
           
           ! Do we process a virtually transposed matrix?
           IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) THEN
-            CALL storage_getsize(rmatrix%h_Kld, iNCOLS)
-            IF (rmatrix%NCOLS+1 > iNCOLS) THEN
+            CALL storage_getsize(rmatrix%h_Kld, isize)
+            IF (rmatrix%NCOLS+1 > isize) THEN
               
               ! Yes, we have to reallocate the handle. 
+              isize = rmatrix%NCOLS+1
+
               ! Also consider the size of the template matrix.
               IF (rmatrixTemplate%h_Kld /= ST_NOHANDLE) THEN
-                CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
-                isize = MAX(0,isize,iNCOLS)
+                CALL storage_getsize(rmatrixTemplate%h_Kld, isizeTmp)
+                isize = MAX(0,isize,isizeTmp)
               END IF
               
               ! Reallocate the memory
@@ -2641,14 +2644,16 @@ CONTAINS
                   ST_NEWBLOCK_NOINIT, bdocopy)
             END IF
           ELSE
-            CALL storage_getsize(rmatrix%h_Kld, iNEQ)
-            IF (rmatrix%NEQ+1 > iNEQ) THEN
+            CALL storage_getsize(rmatrix%h_Kld, isize)
+            IF (rmatrix%NEQ+1 > isize) THEN
               
               ! Yes, we have to reallocate the handle. 
+              isize = rmatrix%NEQ+1
+
               ! Also consider the size of the template matrix.
               IF (rmatrixTemplate%h_Kld /= ST_NOHANDLE) THEN
-                CALL storage_getsize(rmatrixTemplate%h_Kld, isize)
-                isize = MAX(0,isize,iNEQ)
+                CALL storage_getsize(rmatrixTemplate%h_Kld, isizeTmp)
+                isize = MAX(0,isize,isizeTmp)
               END IF
 
               ! Reallocate the memory
@@ -2660,14 +2665,16 @@ CONTAINS
 
         ! Do we have to reallocate the handle?
         IF (rmatrix%h_Kcol /= ST_NOHANDLE) THEN
-          CALL storage_getsize(rmatrix%h_Kcol, iNA)
-          IF (rmatrix%NA > iNA) THEN
+          CALL storage_getsize(rmatrix%h_Kcol, isize)
+          IF (rmatrix%NA > isize) THEN
             
             ! Yes, we have to reallocate the handle. 
+            isize = rmatrix%NA
+
             ! Also consider the size of the template matrix.
             IF (rmatrixTemplate%h_Kcol /= ST_NOHANDLE) THEN
-              CALL storage_getsize(rmatrixTemplate%h_Kcol, isize)
-              isize = MAX(0,isize,iNA)
+              CALL storage_getsize(rmatrixTemplate%h_Kcol, isizeTmp)
+              isize = MAX(0,isize,isizeTmp)
             END IF
             
             ! Reallocate the memory
@@ -2681,14 +2688,16 @@ CONTAINS
 
           ! Do we process a virtually transposed matrix?
           IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1) THEN
-            CALL storage_getsize(rmatrix%h_Kdiagonal, iNCOLS)
-            IF (rmatrix%NCOLS > iNCOLS) THEN
+            CALL storage_getsize(rmatrix%h_Kdiagonal, isize)
+            IF (rmatrix%NCOLS > isize) THEN
               
               ! Yes, we have to reallocate the handle. 
+              isize = rmatrix%NCOLS
+
               ! Also consider the size of the template matrix.
               IF (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) THEN
-                CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
-                isize = MAX(0,isize,iNCOLS)
+                CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isizeTmp)
+                isize = MAX(0,isize,isizeTmp)
               END IF
               
               ! Reallocate the memory
@@ -2696,14 +2705,16 @@ CONTAINS
                   ST_NEWBLOCK_NOINIT, bdocopy)
             END IF
           ELSE
-            CALL storage_getsize(rmatrix%h_Kdiagonal, iNEQ)
-            IF (rmatrix%NEQ > iNEQ) THEN
+            CALL storage_getsize(rmatrix%h_Kdiagonal, isize)
+            IF (rmatrix%NEQ > isize) THEN
               
               ! Yes, we have to reallocate the handle. 
+              isize = rmatrix%NEQ
+
               ! Also consider the size of the template matrix.
               IF (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) THEN
-                CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
-                isize = MAX(0,isize,iNEQ)
+                CALL storage_getsize(rmatrixTemplate%h_Kdiagonal, isizeTmp)
+                isize = MAX(0,isize,isizeTmp)
               END IF
               
               ! Reallocate the memory
@@ -5285,7 +5296,7 @@ CONTAINS
         ! Reallocate the entries-array to have only the diagonal entries.
         ! In case we are not the owner, we have allocated new memory and thus
         ! don't need to resize it again.
-        IF (.NOT. bentryOwner) THEN
+        IF (bentryOwner) THEN
           CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
                                 rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
         END IF
@@ -5415,7 +5426,7 @@ CONTAINS
         ! Reallocate the entries-array to have only the diagonal entries.
         ! In case we are not the owner, we have allocated new memory and thus
         ! don't need to resize it again.
-        IF (.NOT. bentryOwner) THEN
+        IF (bentryOwner) THEN
           CALL storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
                                 rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
         END IF
@@ -13812,7 +13823,7 @@ CONTAINS
         END IF
 
       CASE (LSYSSC_MATRIXD) ! B is diagonal matrix - - - - - - - - - - - - - - -
-        
+      
         ! memory allocation?
         IF (bmemory) THEN
           rmatrixC%cmatrixFormat = rmatrixA%cmatrixFormat
