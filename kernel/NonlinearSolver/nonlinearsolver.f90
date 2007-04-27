@@ -72,6 +72,7 @@ MODULE nonlinearsolver
   USE fsystem
   USE storage
   USE linearsolver
+  USE spatialdiscretisation
   USE linearsystemscalar
   USE linearsystemblock
   USE collection
@@ -156,13 +157,13 @@ MODULE nonlinearsolver
     ! Norm of initial residuum for each subvector of the given block vector.
     ! Only valid, if the fcb_resNormCheck callback procedure is not specified
     ! in the call to the solver, otherwise undefined!
-    REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS)  :: DinitialDefect
+    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS)  :: DinitialDefect
 
     ! OUTPUT PARAMETER:
     ! Norm of final residuum for each subvector of the given block vector.
     ! Only valid, if the fcb_resNormCheck callback procedure is not specified
     ! in the call to the solver, otherwise undefined!
-    REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS)  :: DfinalDefect
+    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS)  :: DfinalDefect
 
     ! OUTPUT PARAMETER:
     ! Total time for nonlinear solver
@@ -189,7 +190,7 @@ MODULE nonlinearsolver
     !   !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion; standard = 1E-5
     ! Remark: don't set depsAbs=depsRel=0!
-    REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS) :: DepsRel = 1E-5_DP
+    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DepsRel = 1E-5_DP
 
     ! INPUT PARAMETER:
     ! Standard absolute stopping criterion for each subvector of a block vector. 
@@ -199,7 +200,7 @@ MODULE nonlinearsolver
     !   !!defect!! < EPSREL.
     ! =0: ignore, use relative stopping criterion; standard = 1E-5
     ! Remark: don't set depsAbs=depsRel=0!
-    REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS) :: DepsAbs = 1E-5_DP
+    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DepsAbs = 1E-5_DP
 
     ! INPUT PARAMETER:
     ! Standard relative divergence criterion for each subvector of a block vector. 
@@ -209,7 +210,7 @@ MODULE nonlinearsolver
     !   !!defect!! >= DIVREL * !!initial defect!!
     ! A value of SYS_INFINITY disables the relative divergence check.
     ! standard = 1E3
-    REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS) :: DdivRel = 1E3_DP
+    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DdivRel = 1E3_DP
 
     ! INPUT PARAMETER:
     ! Standard absolute divergence criterion for each subvector of a block vector. 
@@ -219,7 +220,7 @@ MODULE nonlinearsolver
     !   !!defect!! >= DIVREL
     ! A value of SYS_INFINITY disables the absolute divergence check.
     ! standard = SYS_INFINITY
-    REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS) :: DdivAbs = SYS_INFINITY
+    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DdivAbs = SYS_INFINITY
 
     ! INPUT PARAMETER: 
     ! Type of stopping criterion to use. One of the
@@ -238,7 +239,7 @@ MODULE nonlinearsolver
     ! For every subvector: Type of norm to use in the residual checking 
     ! (cf. linearalgebra.f90).
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
-    INTEGER, DIMENSION(LSYSBL_MAXBLOCKS) :: IresNorm = 2
+    INTEGER, DIMENSION(SPDISC_MAXEQUATIONS) :: IresNorm = 2
     
     ! INPUT PARAMETER: Output level
     ! This determines the output level of the solver.
@@ -766,7 +767,7 @@ CONTAINS
   ! local variables
   TYPE(t_collection), POINTER :: p_rcollection
   INTEGER :: ite,i
-  REAL(DP), DIMENSION(LSYSBL_MAXBLOCKS) :: DvecNorm
+  REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DvecNorm
   TYPE(t_vectorBlock) :: rtemp
   REAL(DP) :: domega
   LOGICAL :: bconvergence,bdivergence,bsuccess

@@ -2336,8 +2336,8 @@ CONTAINS
   
   ! At first, recalculate the number of diagonal blocks in the
   ! block matrix
-  outer: DO i=LSYSBL_MAXBLOCKS,1,-1
-    DO j=LSYSBL_MAXBLOCKS,1,-1
+  outer: DO i=UBOUND(rmatrix%RmatrixBlock,2),1,-1
+    DO j=UBOUND(rmatrix%RmatrixBlock,1),1,-1
       IF (rmatrix%RmatrixBlock(j,i)%NEQ .NE. 0) EXIT outer
     END DO
   END DO outer
@@ -2954,7 +2954,7 @@ CONTAINS
     INTEGER :: ifirst, ilast, ncount, i
     INTEGER(PREC_VECIDX) :: n
     LOGICAL :: bshareContent
-    INTEGER(PREC_VECIDX), DIMENSION(LSYSBL_MAXBLOCKS) :: Isize
+    INTEGER(PREC_VECIDX), DIMENSION(MAX(rvectorSrc%nblocks,1)) :: Isize
     
     ! Evaluate the optional parameters
     ifirst = 1
@@ -3438,13 +3438,13 @@ CONTAINS
 !</subroutine>
     
     ! local variabls
-    INTEGER(PREC_VECIDX), DIMENSION(LSYSBL_MAXBLOCKS) :: Iisize
+    INTEGER(PREC_VECIDX), DIMENSION(MAX(rx%nblocks,1)) :: Isubsize
 
     ! Fill auxiliary vector Iisize
-    Iisize(1:rx%nblocks) = isize
+    Isubsize(1:rx%nblocks) = isize
 
     ! Call the direct resize routine
-    CALL lsysbl_resizeVecBlockDirect(rx, Iisize(1:rx%nblocks), bclear, NEQMAX)
+    CALL lsysbl_resizeVecBlockDirect(rx, Isubsize(1:rx%nblocks), bclear, NEQMAX)
   END SUBROUTINE
 
   !****************************************************************************
@@ -3494,7 +3494,7 @@ CONTAINS
 !</subroutine>
 
     ! local variabls
-    INTEGER(PREC_VECIDX), DIMENSION(LSYSBL_MAXBLOCKS) :: Iisize
+    INTEGER(PREC_VECIDX), DIMENSION(MAX(rx%nblocks,1)) :: Isize
     INTEGER(PREC_VECIDX) :: NEQMAX
     INTEGER :: i
 
@@ -3513,14 +3513,14 @@ CONTAINS
 
       ! Fill auxiliary vector Iisize
       DO i=1,rTemplate%nblocks
-        Iisize(i) = rTemplate%RvectorBlock(i)%NEQ
+        Isize(i) = rTemplate%RvectorBlock(i)%NEQ
       END DO
 
       ! Get current size of global vector
       CALL storage_getsize(rTemplate%h_Ddata,NEQMAX)
       
       ! Resize vector directly
-      CALL lsysbl_resizeVecBlockDirect(rx, Iisize(1:rx%nblocks), bclear, NEQMAX)
+      CALL lsysbl_resizeVecBlockDirect(rx, Isize(1:rx%nblocks), bclear, NEQMAX)
     END IF
 
   END SUBROUTINE

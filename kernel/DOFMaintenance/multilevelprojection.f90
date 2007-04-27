@@ -225,7 +225,7 @@ MODULE multilevelprojection
     ! A list of t_interlevelProjectionScalar structures for every
     ! equation and every element distribution in the discretisation.
     TYPE(t_interlevelProjectionScalar), &
-      DIMENSION(SPDISC_MAXFESPACES,LSYSBL_MAXBLOCKS) :: RscalarProjection
+      DIMENSION(SPDISC_MAXFESPACES,SPDISC_MAXEQUATIONS) :: RscalarProjection
   
   END TYPE
   
@@ -353,7 +353,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
+    TYPE(t_spatialDiscretisation), DIMENSION(rvector%nblocks) :: Rdiscr
     INTEGER :: i
 
     IF (rvector%nblocks .EQ. 0) THEN
@@ -406,8 +406,8 @@ CONTAINS
   
 !</subroutine>
 
-    ! local variables
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: Rdiscr
+    ! local variables;
+    TYPE(t_spatialDiscretisation), DIMENSION(MAX(rmatrix%ndiagBlocks,1)) :: Rdiscr
     INTEGER :: i,j
 
     IF (rmatrix%ndiagBlocks .EQ. 0) THEN
@@ -705,8 +705,8 @@ CONTAINS
 !</function>
 
     ! local variables
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrCoarse
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrFine
+    TYPE(t_spatialDiscretisation), DIMENSION(rvectorCoarse%nblocks) :: RdiscrCoarse
+    TYPE(t_spatialDiscretisation), DIMENSION(rvectorFine%nblocks) :: RdiscrFine
     INTEGER :: i
 
     IF ((rvectorCoarse%nblocks .EQ. 0) .OR. (rvectorFine%nblocks .EQ. 0)) THEN
@@ -768,9 +768,9 @@ CONTAINS
 
 !</function>
 
-    ! local variables
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrCoarse
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: RdiscrFine
+    ! local variables; 
+    TYPE(t_spatialDiscretisation), DIMENSION(MAX(rmatrixCoarse%ndiagBlocks,1)) :: RdiscrCoarse
+    TYPE(t_spatialDiscretisation), DIMENSION(MAX(rmatrixFine%ndiagBlocks,1)) :: RdiscrFine
     INTEGER :: i,j
 
     IF ((rmatrixCoarse%ndiagBlocks .EQ. 0) .OR. (rmatrixFine%ndiagBlocks .EQ. 0)) THEN

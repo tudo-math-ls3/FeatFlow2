@@ -130,8 +130,8 @@
 !# 34.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
-!# 35.) lsyssc_createEmptyMatrixScalar
-!#      -> Allocates memory for an empty matrix
+!# 35.) lsyssc_allocEmptyMatrix
+!#      -> Allocates memory for the entries of a matrix.
 !#
 !# 36.) lsyssc_lumpMatrixScalar
 !#      -> Performs lumping of a given matrix
@@ -160,7 +160,7 @@
 !# 44.) lsyssc_resizeMatrix
 !#      -> Resize the matrix and reallocate memory if necessary.
 !#
-!# 45.) lsyssc_createDiagMatrix
+!# 45.) lsyssc_createDiagMatrixStruc
 !#      -> Creates a diagonal matrix, does not allocate memory for the entries.
 !#
 !# Sometimes useful auxiliary routines:
@@ -5000,7 +5000,7 @@ CONTAINS
         LSYSSC_MATRIXD,LSYSSC_MATRIX1)
       ! If necessary, allocate memory.
       IF (rmatrix%h_DA .EQ. ST_NOHANDLE) THEN
-        CALL lsyssc_createEmptyMatrixScalar (rmatrix,LSYSSC_SETM_UNDEFINED)
+        CALL lsyssc_allocEmptyMatrix (rmatrix,LSYSSC_SETM_UNDEFINED)
       END IF
     END SELECT
 
@@ -10505,7 +10505,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_createEmptyMatrixScalar (rmatrixScalar,iclear,cdataType)
+  SUBROUTINE lsyssc_allocEmptyMatrix (rmatrixScalar,iclear,cdataType)
   
 !<description>
   ! This routine allocates memory for the matrix entries without computing
@@ -10544,7 +10544,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: p_Da
   
   IF (rmatrixScalar%h_DA .NE. ST_NOHANDLE) THEN
-    PRINT *,'lsyssc_createEmptyMatrixScalar: Cannot create empty matrix; exists already!'
+    PRINT *,'lsyssc_allocEmptyMatrix: Cannot create empty matrix; exists already!'
     STOP
   END IF
   
@@ -10567,11 +10567,11 @@ CONTAINS
     IF (rmatrixScalar%h_DA .EQ. ST_NOHANDLE) THEN
     
       IF (iclear .GE. LSYSSC_SETM_ZERO) THEN
-        CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+        CALL storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
                             NA, cdType, rmatrixScalar%h_DA, &
                             ST_NEWBLOCK_ZERO)
       ELSE
-        CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+        CALL storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
                             NA, cdType, rmatrixScalar%h_DA, &
                             ST_NEWBLOCK_NOINIT)
       END IF
@@ -10585,7 +10585,7 @@ CONTAINS
           CALL lsyssc_getbase_single (rmatrixScalar,p_Fa)
           CALL lalg_setVectorSngl (p_Fa,1.0_SP)
         CASE DEFAULT
-          PRINT *,'lsyssc_createEmptyMatrixScalar: Unknown data type!'
+          PRINT *,'lsyssc_allocEmptyMatrix: Unknown data type!'
           STOP
         END SELECT
       END IF
@@ -10600,13 +10600,13 @@ CONTAINS
       IF (iclear .GE. LSYSSC_SETM_ZERO) THEN
         SELECT CASE (rmatrixScalar%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+          CALL storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
               INT(NA*NVAR*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         CASE (LSYSSC_MATRIXD)
-          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+          CALL storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
               INT(NA*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         CASE DEFAULT
-          PRINT *, 'lsyssc_createEmptyMatrixScalar: Unsupported interl&
+          PRINT *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
               &eave matrix format'
           STOP
         END SELECT
@@ -10614,13 +10614,13 @@ CONTAINS
       ELSE
         SELECT CASE (rmatrixScalar%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIX1)
-          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+          CALL storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
               INT(NA*NVAR*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         CASE (LSYSSC_MATRIXD)
-          CALL storage_new1D ('lsyssc_createEmptyMatrixScalar', 'DA', &
+          CALL storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
               INT(NA*NVAR,I32), cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         CASE DEFAULT
-          PRINT *, 'lsyssc_createEmptyMatrixScalar: Unsupported interl&
+          PRINT *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
               &eave matrix format'
           STOP
         END SELECT
@@ -10636,7 +10636,7 @@ CONTAINS
           CALL lsyssc_getbase_single (rmatrixScalar,p_Fa)
           CALL lalg_setVectorSngl (p_Fa,1.0_SP)
         CASE DEFAULT
-          PRINT *,'lsyssc_createEmptyMatrixScalar: Unknown data type!'
+          PRINT *,'lsyssc_allocEmptyMatrix: Unknown data type!'
           STOP
         END SELECT
       END IF
@@ -10644,7 +10644,7 @@ CONTAINS
     END IF
     
   CASE DEFAULT
-    PRINT *,'lsyssc_createEmptyMatrixScalar: Not supported matrix structure!'
+    PRINT *,'lsyssc_allocEmptyMatrix: Not supported matrix structure!'
     STOP
   END SELECT
     
@@ -10654,7 +10654,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_createDiagMatrix (rmatrix,NEQ,cmatrixFormat)
+  SUBROUTINE lsyssc_createDiagMatrixStruc (rmatrix,NEQ,cmatrixFormat)
   
 !<description>
   ! Creates a diagonal matrix in matrix format cmatrixType. Initialises

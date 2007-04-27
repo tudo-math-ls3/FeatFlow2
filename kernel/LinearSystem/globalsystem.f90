@@ -77,7 +77,7 @@ CONTAINS
     LOGICAL :: balloc
     TYPE(t_matrixBlock) :: rlocalMatrix
     TYPE(t_matrixScalar) :: rlocalMatrixScalar
-    INTEGER(PREC_VECIDX), DIMENSION(LSYSBL_MAXBLOCKS+1) :: Icolumns,Irows
+    INTEGER(PREC_VECIDX), DIMENSION(MAX(rsourceMatrix%ndiagBlocks,1)+1) :: Icolumns,Irows
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal,p_Kld
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_MATIDX) :: isize

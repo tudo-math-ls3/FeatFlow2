@@ -239,19 +239,16 @@ MODULE vanca
     ! Number of local DOF's in the element distributions of all blocks.
     ! Note that this VANCA supports only uniform discretisations, so
     ! each entry corresponds to one block in the solution vector.
-    INTEGER(PREC_DOFIDX), DIMENSION(LSYSBL_MAXBLOCKS) :: InDofsLocal
-    
-    ! Pointers to the spatial discretisation of all the blocks
-    TYPE(t_spatialDiscretisation), DIMENSION(LSYSBL_MAXBLOCKS) :: p_Rdiscretisation
+    INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_InDofsLocal => NULL()
     
     ! Offset indices of the blocks in the solution vector. IblockOffset(i)
     ! points to the beginning of the i'th block of the solution vector.
-    INTEGER(PREC_DOFIDX), DIMENSION(LSYSBL_MAXBLOCKS+1) :: IblockOffset
+    INTEGER(PREC_DOFIDX), DIMENSION(:), POINTER :: p_IblockOffset => NULL()
     
     ! Temporary array that saves the DOF's that are in processing when
     ! looping over an element set.
     ! DIMENSION(nmaxLocalDOFs,VANCA_NELEMSIM,nblocks)
-    INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), POINTER     :: IelementDOFs
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:,:), POINTER :: p_IelementDOFs => NULL()
 
   END TYPE
   
@@ -712,7 +709,7 @@ CONTAINS
     ! Loop through the columns of the block matrix.
     !
     ! Offset position of the first block is = 0.
-    rvancaGeneral%IblockOffset(1) = 0
+    rvancaGeneral%p_IblockOffset(1) = 0
     
     DO i=1,nblocks
     
@@ -755,20 +752,20 @@ CONTAINS
             !
             ! Get the NEQ of the current block and save it as offset position
             ! in the global vector for the next block.
-            rvancaGeneral%IblockOffset(i+1) = &
-              rvancaGeneral%IblockOffset(i) + rmatrix%RmatrixBlock(j,i)%NCOLS
+            rvancaGeneral%p_IblockOffset(i+1) = &
+              rvancaGeneral%p_IblockOffset(i) + rmatrix%RmatrixBlock(j,i)%NCOLS
 
             ! We need some information for calculating DOF's later.
             ! Get the number of local DOF's in the current block.
             ! Note that we restrict to uniform discretisations!
-            rvancaGeneral%InDofsLocal(i) = elem_igetNDofLoc(p_rdiscretisation% &
+            rvancaGeneral%p_InDofsLocal(i) = elem_igetNDofLoc(p_rdiscretisation% &
                                                 RelementDistribution(1)%itrialElement)
             
             ! Calculate the maximum number of local DOF's
-            nmaxLocalDOFs = MAX(nmaxLocalDOFs,rvancaGeneral%InDofsLocal(i))
+            nmaxLocalDOFs = MAX(nmaxLocalDOFs,rvancaGeneral%p_InDofsLocal(i))
             
             ! Calculate the total number of local DOF's
-            ndofsPerElement = ndofsPerElement + rvancaGeneral%InDofsLocal(i)
+            ndofsPerElement = ndofsPerElement + rvancaGeneral%p_InDofsLocal(i)
             
             bfirst = .FALSE.
           
@@ -787,7 +784,10 @@ CONTAINS
     
     ! We know the maximum number of DOF's now. For the later loop over the 
     ! elements, allocate memory for storing the DOF's of an element set.
-    ALLOCATE(rvancaGeneral%IelementDOFs(nmaxLocalDOFs,VANCA_NELEMSIM,nblocks))
+    ALLOCATE(rvancaGeneral%p_IelementDOFs(nmaxLocalDOFs,VANCA_NELEMSIM,nblocks))
+    
+    ALLOCATE(rvancaGeneral%p_InDofsLocal(rmatrix%ndiagBlocks))
+    ALLOCATE(rvancaGeneral%p_IblockOffset(rmatrix%ndiagBlocks+1))
     
     ! Remember the matrix
     rvancaGeneral%p_rmatrix => rmatrix
@@ -814,8 +814,15 @@ CONTAINS
 
     ! Release memory allocated in the init-routine
     
-    IF (ASSOCIATED(rvancaGeneral%IelementDOFs)) &
-      DEALLOCATE(rvancaGeneral%IelementDOFs)
+    IF (ASSOCIATED(rvancaGeneral%p_IelementDOFs)) &
+      DEALLOCATE(rvancaGeneral%p_IelementDOFs)
+    
+    IF (ASSOCIATED(rvancaGeneral%p_InDofsLocal)) &
+      DEALLOCATE(rvancaGeneral%p_InDofsLocal)
+      
+    IF (ASSOCIATED(rvancaGeneral%p_IblockOffset)) &
+      DEALLOCATE(rvancaGeneral%p_IblockOffset)
+
     IF (ASSOCIATED(rvancaGeneral%p_Rmatrices)) &
       DEALLOCATE(rvancaGeneral%p_Rmatrices)
     
@@ -902,7 +909,7 @@ CONTAINS
         ! global DOF's of our VANCA_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscretisation,&
                                      p_IelementList(IELset:IELmax), &
-                                     .FALSE.,rvancaGeneral%IelementDOFs(:,:,i))
+                                     .FALSE.,rvancaGeneral%p_IelementDOFs(:,:,i))
 
         ! If the vector is sorted, push the DOF's through the permutation to get
         ! the actual DOF's.
@@ -912,11 +919,11 @@ CONTAINS
                                   p_Ipermutation)
 
           DO iel=1,IELmax-IELset+1
-            DO j=1,rvancaGeneral%InDofsLocal(i)
+            DO j=1,rvancaGeneral%p_InDofsLocal(i)
               ! We are not resorting the vector but determining the 'sorted'
               ! DOF's - this needs the 2nd half of the permutation.
-              rvancaGeneral%IelementDOFs(j,iel,i) = &
-                 p_Ipermutation(rvancaGeneral%IelementDOFs(j,iel,i) &
+              rvancaGeneral%p_IelementDOFs(j,iel,i) = &
+                 p_Ipermutation(rvancaGeneral%p_IelementDOFs(j,iel,i) &
                 +rvector%RvectorBlock(i)%NEQ)
             END DO
           END DO
@@ -929,9 +936,9 @@ CONTAINS
       ! Call the actual VANCA to process the DOF's on each element.
       CALL vanca_general_double_mat79 (p_Dvector, p_Drhs, domega, &
           rvancaGeneral%p_Rmatrices,IELmax-IELset+1_PREC_ELEMENTIDX,&
-          rvancaGeneral%IblockOffset,rvancaGeneral%nblocks,&
-          rvancaGeneral%InDofsLocal,rvancaGeneral%ndofsPerElement,&
-          rvancaGeneral%IelementDOFs)
+          rvancaGeneral%p_IblockOffset,rvancaGeneral%nblocks,&
+          rvancaGeneral%p_InDofsLocal,rvancaGeneral%ndofsPerElement,&
+          rvancaGeneral%p_IelementDOFs)
                    
     END DO
     
@@ -975,7 +982,7 @@ CONTAINS
   ! Offset position of the blocks in the vector.
   ! Block i starts at position IblockOffset(i)+1 in Dvector / Drhs.
   ! IblockOffset(nblocks+1) gives the number of equations in Dvector/Drhs.
-  INTEGER(PREC_DOFIDX), DIMENSION(nblocks+1), INTENT(IN) :: IblockOffset
+  INTEGER(PREC_DOFIDX), DIMENSION(MAX(nblocks,1)+1), INTENT(IN) :: IblockOffset
   
   ! Number of local DOF's in each block.
   INTEGER(PREC_DOFIDX), DIMENSION(nblocks), INTENT(IN)   :: InDofsLocal
@@ -1122,7 +1129,7 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER, DIMENSION(nblocks+1) :: IlocalIndex
+    INTEGER, DIMENSION(MAX(nblocks,1)+1) :: IlocalIndex
     INTEGER(PREC_DOFIDX), DIMENSION(ndofsPerElement) :: IlocalDOF,IglobalDOF
     INTEGER :: i,j,k,iidx,iminiDOF
     INTEGER(PREC_VECIDX) :: irow,idof
