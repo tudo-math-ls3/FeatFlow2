@@ -33,109 +33,112 @@
 !#  7.) lsysbl_createMatBlockByDiscr
 !#      -> Create an empty block matrix using a block discretisation structure
 !#
-!#  8.) lsysbl_duplicateMatrix
+!#  8.) lsysbl_createEmptyMatrix
+!#      -> Creates an empty block matrix
+!#
+!#  9.) lsysbl_duplicateMatrix
 !#      -> Duplicates a block matrix by duplicating all sub-matrices
 !#
-!#  9.) lsysbl_enforceStructure
+!# 10.) lsysbl_enforceStructure
 !#      -> Enforces the structure of a given block vector in another
 !#         block vector
 !#
-!# 10.) lsysbl_assignDiscretIndirect
+!# 11.) lsysbl_assignDiscretIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!# 11.) lsysbl_assignDiscretIndirectMat
+!# 12.) lsysbl_assignDiscretIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector to make it compatible.
 !#
-!# 12.) lsysbl_updateMatStrucInfo
+!# 13.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!# 13.) lsysbl_releaseVector
+!# 14.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 14.) lsysbl_releaseMatrix
+!# 15.) lsysbl_releaseMatrix
 !#      -> Releases a block matrix and all submatrices
 !#
-!# 15.) lsysbl_releaseMatrixRow
+!# 16.) lsysbl_releaseMatrixRow
 !#      -> Releases a row of submatrices from a block matrix
 !#
-!# 16.) lsysbl_releaseMatrixColumn
+!# 17.) lsysbl_releaseMatrixColumn
 !#      -> Releases a column of submatrices from a block matrix
 !#
-!# 17.) lsysbl_blockMatVec
+!# 18.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 18.) lsysbl_copyVector
+!# 19.) lsysbl_copyVector
 !#       -> Copy a block vector over to another one
 !#
-!# 19.) lsysbl_scaleVector
+!# 20.) lsysbl_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 20.) lsysbl_clearVector
+!# 21.) lsysbl_clearVector
 !#      -> Clear a block vector
 !#
-!# 21.) lsysbl_vectorLinearComb
+!# 22.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 22.) lsysbl_scalarProduct
+!# 23.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 23.) lsysbl_setSortStrategy
+!# 24.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 24.) lsysbl_sortVectorInSitu
+!# 25.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 25.) lsysbl_isVectorCompatible
+!# 26.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 26.) lsysbl_isMatrixCompatible
+!# 27.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 27.) lsysbl_isMatrixSorted
+!# 28.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 28.) lsysbl_isVectorSorted
+!# 29.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 29.) lsysbl_getbase_double
+!# 30.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 30.) lsysbl_getbase_single
+!# 31.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 31.) lsysbl_vectorNorm
+!# 32.) lsysbl_vectorNorm
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 32.) lsysbl_vectorNormBlock
+!# 33.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 33.) lsysbl_invertedDiagMatVec
+!# 34.) lsysbl_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !#
-!# 34.) lsysbl_swapVectors
+!# 35.) lsysbl_swapVectors
 !#      -> Swap two vectors
 !#
-!# 35.) lsysbl_deriveSubvector
+!# 36.) lsysbl_deriveSubvector
 !#      -> Derives a blockvector as a subset of another blockvector
 !#
-!# 36.) lsysbl_deriveSubmatrix
+!# 37.) lsysbl_deriveSubmatrix
 !#      -> Extracts a submatrix from a block matrix
 !#
-!# 37.) lsysbl_isSubmatrixPresent
+!# 38.) lsysbl_isSubmatrixPresent
 !#      -> Checks if a submatrix of a blockmatrix is present
 !#
-!# 38.) lsyssc_resizeVector
+!# 39.) lsyssc_resizeVector
 !#      -> Resize a blockvector
 !#
-!# 39.) lsysbl_infoVector
+!# 40.) lsysbl_infoVector
 !#      -> Outputs information about the vector (mostly used for debugging)
 !#
-!# 40.) lsysbl_infoMatrix
+!# 41.) lsysbl_infoMatrix
 !#      -> Outputs information about the matrix (mostly used for debugging)
 !# </purpose>
 !##############################################################################
@@ -154,14 +157,6 @@ MODULE linearsystemblock
   IMPLICIT NONE
 
 !<constants>
-
-!<constantblock description="Global constants for block matrices">
-
-  ! Maximum number of blocks that is allowed in 'usual' block matrices,
-  ! supported by the routines in this file.
-  INTEGER, PARAMETER :: LSYSBL_MAXBLOCKS = SPDISC_MAXEQUATIONS
-  
-!</constantblock>
 
 !<constantblock description="Flags for the matrix specification bitfield">
 
@@ -244,7 +239,7 @@ MODULE linearsystemblock
     ! The handle identifier inside of these blocks are set to h_Ddata.
     ! The iidxFirstEntry index pointer in each subblock is set according
     ! to the position inside of the large vector.
-    TYPE(t_vectorScalar), DIMENSION(LSYSBL_MAXBLOCKS) :: RvectorBlock
+    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: RvectorBlock => NULL()
     
   END TYPE
   
@@ -298,8 +293,7 @@ MODULE linearsystemblock
     ! A 2D array with scalar matrices for all the blocks.
     ! A submatrix is assumed to be empty (zero-block) if the corresponding
     ! NEQ=NCOLS=0.
-    TYPE(t_matrixScalar), &
-      DIMENSION(LSYSBL_MAXBLOCKS,LSYSBL_MAXBLOCKS) :: RmatrixBlock
+    TYPE(t_matrixScalar), DIMENSION(:,:), POINTER :: RmatrixBlock => NULL()
     
   END TYPE
   
@@ -778,6 +772,7 @@ CONTAINS
   ! each sub-block.
   ! Denote in the subvector that the handle belongs to us - not to
   ! the subvector.
+  ALLOCATE(rx%RvectorBlock(SIZE(Isize)))
   
   n=1
   DO i = 1,SIZE(Isize)
@@ -872,6 +867,7 @@ CONTAINS
   ! each sub-block.
   ! Denote in the subvector that the handle belongs to us - not to
   ! the subvector.
+  ALLOCATE(rx%RvectorBlock(iblocks))
   
   n=1
   DO i = 1,iblocks
@@ -952,6 +948,9 @@ CONTAINS
   ! Copy the vector structure with all pointers.
   ! The handle identifying the vector data on the heap will be overwritten later.
   rx = rtemplate
+  NULLIFY(rx%RvectorBlock)
+  ALLOCATE(rx%RvectorBlock(rx%nblocks))
+  rx%RvectorBlock = rtemplate%RvectorBlock
   
   ! Allocate one large new vector holding all data.
   CALL storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplate%NEQ, cdata, &
@@ -1111,12 +1110,54 @@ CONTAINS
   rmatrix%NCOLS = NEQ
   rmatrix%ndiagBlocks = rblockDiscretisation%ncomponents
   
+  ALLOCATE(rmatrix%RmatrixBlock(rmatrix%ndiagBlocks,rmatrix%ndiagBlocks))
+  
   IF (rmatrix%ndiagBlocks .EQ. 1) THEN
     rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
   END IF
   
   END SUBROUTINE
   
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_createEmptyMatrix (rmatrix,nblocks)
+  
+!<description>
+  ! Creates a basic (nblocks x nblocks) block matrix. Reserves memory for
+  ! all the submatrices but does not initialise any submatrix.
+  !
+  ! This routine can be used to create a totally empty matrix without any
+  ! discretisation structure in the background.
+  !
+  ! The caller can manually fill in scalar matrices in rmatrix%RmatrixBlock
+  ! as necessary. Afterwards, lsysbl_updateMatrixStruc can be used to
+  ! calculate the actual matrix dimensions (NEQ,NCOLS,...).
+!</description>
+
+!<input>
+  ! Number of diagonal blocks in the matrix
+  INTEGER, INTENT(IN) :: nblocks
+!</input>
+
+!<output>
+  ! Block matrix structure to be initialised.
+  TYPE(t_matrixBlock), INTENT(OUT) :: rmatrix
+!</output>
+
+!</subroutine>
+
+    ! Allocate memory for the blocks, that's it.
+    ALLOCATE(rmatrix%RmatrixBlock(nblocks,nblocks))
+    rmatrix%ndiagBlocks = nblocks
+
+    IF (rmatrix%ndiagBlocks .EQ. 1) THEN
+      rmatrix%imatrixSpec = LSYSBS_MSPEC_SCALAR
+    END IF
+
+  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -1169,6 +1210,7 @@ CONTAINS
   
   ! Initialise the sub-blocks. Save a pointer to the starting address of
   ! each sub-block.
+  ALLOCATE(rx%RvectorBlock(rtemplateMat%ndiagBlocks))
   
   n=1
   DO i = 1,rtemplateMat%ndiagBlocks
@@ -1400,6 +1442,7 @@ CONTAINS
   NULLIFY(rx%p_rblockDiscretisation)
   NULLIFY(rx%p_rdiscreteBC)
   NULLIFY(rx%p_rdiscreteBCfict)
+  IF (ASSOCIATED(rx%RvectorBlock)) DEALLOCATE(rx%RvectorBlock)
   
   END SUBROUTINE
   
@@ -1442,6 +1485,7 @@ CONTAINS
   NULLIFY(rmatrix%p_rblockDiscretisation)
   NULLIFY(rmatrix%p_rdiscreteBC)
   NULLIFY(rmatrix%p_rdiscreteBCfict)
+  IF (ASSOCIATED(rmatrix%RmatrixBlock)) DEALLOCATE(rmatrix%RmatrixBlock)
   
   END SUBROUTINE
 
@@ -1683,6 +1727,7 @@ CONTAINS
   LOGICAL :: bisCopy
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
   REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
+  TYPE(t_vectorScalar), DIMENSION(:), POINTER :: p_rblocks
   
   ! If the destination vector does not exist, create a new one
   ! based on rx.
@@ -1708,6 +1753,7 @@ CONTAINS
   h_Ddata = ry%h_Ddata
   cdataType = ry%cdataType
   bisCopy = ry%bisCopy
+  p_rblocks => ry%RvectorBlock
   
   ! Then transfer all structural information of rx to ry.
   ! This automatically makes both vectors compatible to each other.
@@ -1716,6 +1762,13 @@ CONTAINS
   ! Restore crucial data
   ry%h_Ddata = h_Ddata
   ry%bisCopy = bisCopy
+  ry%RvectorBlock => p_rblocks
+  
+  ! If necessary, allocate new memory for the blocks.
+  IF (.NOT. ASSOCIATED(ry%RvectorBlock)) THEN
+    ALLOCATE(ry%RvectorBlock(ry%nblocks))
+  END IF
+  ry%RvectorBlock = rx%RvectorBlock
   
   ! Restore the handle in all subvectors
   ry%RvectorBlock(1:ry%nblocks)%h_Ddata = h_Ddata
@@ -2153,6 +2206,7 @@ CONTAINS
     
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block matrix
+    ALLOCATE(rmatrix%RmatrixBlock(1,1))
     rmatrix%RmatrixBlock(1,1)             = rscalarMat
 
     ! The matrix is a copy of another one. Note this!
@@ -2174,7 +2228,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE lsysbl_createVecFromScalar (rscalarVec,rvector,&
-                                         rblockDiscretisation)
+                                         rblockDiscretisation,nblocks)
   
 !<description>
   ! This routine creates a 1-block vector rvector from a scalar vector
@@ -2191,6 +2245,12 @@ CONTAINS
   ! OPTIONAL: A block discretisation structure.
   ! A pointer to this will be saved to the vector.
   TYPE(t_blockDiscretisation), INTENT(IN), OPTIONAL, TARGET :: rblockDiscretisation
+  
+  ! OPTIONAL: Number of blocks to reserve.
+  ! Normally, the created scalar vector has only one block. If nblocks
+  ! is specified, the resulting vector will have more blocks while only
+  ! the first block vector is used.
+  INTEGER, INTENT(IN), OPTIONAL :: nblocks
 !</input>
 
 !<output>
@@ -2200,14 +2260,22 @@ CONTAINS
   
 !</subroutine>
 
+    INTEGER :: nactblocks
+    
+    nactblocks = 1
+    IF (PRESENT(nblocks)) nactblocks = MAX(nblocks,nactblocks)
+    IF (PRESENT(rblockDiscretisation)) &
+      nactblocks = MAX(rblockDiscretisation%ncomponents,nactblocks)
+
     ! Fill the rvector structure with data.
     rvector%NEQ         = rscalarVec%NEQ * rscalarVec%NVAR
     rvector%cdataType   = rscalarVec%cdataType
     rvector%h_Ddata     = rscalarVec%h_Ddata
-    rvector%nblocks     = 1
+    rvector%nblocks     = nactblocks
     
     ! Copy the content of the scalar matrix structure into the
     ! first block of the block vector
+    ALLOCATE(rvector%RvectorBlock(nactblocks))
     rvector%RvectorBlock(1) = rscalarVec
     
     ! Copy the starting address of the scalar vector to our block vector.
@@ -2267,6 +2335,7 @@ CONTAINS
   INTEGER :: cdata,h_Ddata,i
   LOGICAL :: biscopy
   INTEGER(PREC_VECIDX) :: istart,n !,length
+  TYPE(t_vectorScalar), DIMENSION(:), POINTER :: p_Rblocks
 
 !  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 !  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
@@ -2296,6 +2365,7 @@ CONTAINS
     h_Ddata = rvector%h_Ddata
     istart = rvector%iidxFirstEntry
     biscopy = rvector%bisCopy
+    p_Rblocks => rvector%RvectorBlock
     
     ! Overwrite rvector
     rvector = rtemplateVec
@@ -2305,6 +2375,16 @@ CONTAINS
     rvector%h_Ddata = h_Ddata
     rvector%iidxFirstEntry = istart
     rvector%bisCopy = biscopy
+    rvector%RvectorBlock => p_Rblocks
+    
+    ! If RvectorBlock is too small, reallocate
+    IF (SIZE(rvector%RvectorBlock) .LT. rtemplateVec%nblocks) THEN
+      DEALLOCATE(rvector%RvectorBlock)
+      ALLOCATE(rvector%RvectorBlock(rtemplateVec%nblocks))
+    END IF
+    
+    ! Copy the subvector data
+    rvector%RvectorBlock = rtemplateVec%RvectorBlock
     
     ! Relocate the starting indices of the subvectors.
     n = istart
@@ -2523,10 +2603,17 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_MATIDX) :: i,j
+    TYPE(t_matrixScalar), DIMENSION(:,:), POINTER :: p_rblocks
     
     ! Copy the matrix structure of rsourceMatrix to rdestMatrix. This will also
     ! copy the structures of the submatrices, what we have to correct later.
+    p_rblocks => rdestMatrix%RmatrixBlock
     rdestMatrix = rsourceMatrix
+    rdestMatrix%RmatrixBlock => p_rblocks
+    IF (.NOT. ASSOCIATED(rdestMatrix%RmatrixBlock)) THEN
+      ALLOCATE(rdestMatrix%RmatrixBlock(rdestMatrix%ndiagBlocks,rdestMatrix%ndiagBlocks))
+    END IF
+    rdestMatrix%RmatrixBlock = rsourceMatrix%RmatrixBlock
     
     ! For every submatrix in the source matrix, call the 'scalar' variant
     ! of duplicateMatrix. Dismiss all old information and replace it by
@@ -3587,4 +3674,5 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE lsysbl_infoMatrix
+  
 END MODULE

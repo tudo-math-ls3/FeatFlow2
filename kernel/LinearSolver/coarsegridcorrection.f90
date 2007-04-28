@@ -119,10 +119,11 @@ CONTAINS
 !</input>
   
 !<inputoutput>
-  ! A scalar temporary vector. Must be at least as large as rvector.
+  ! A block temporary vector. Must have the same size and structure as
+  ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rtempVector
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
 !</inputoutput>
 
 !<output>
@@ -160,7 +161,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE cgcor_calcCorrEnergyMin (rmatrix,rvector,rrhs,rcorrVector,&
-                                      rtempVector,p_RfilterChain,dalpha)
+                                      rtempVecBlock,p_RfilterChain,dalpha)
                                           
 !<description>
   ! This routine calculates the optimal coarse grid correction parameter
@@ -189,10 +190,11 @@ CONTAINS
 !</input>
   
 !<inputoutput>
-  ! A scalar temporary vector. Must be at least as large as rvector.
+  ! A block temporary vector. Must have the same size and structure as
+  ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rtempVector
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
@@ -204,7 +206,6 @@ CONTAINS
 
     ! local variables
     
-    TYPE(t_vectorBlock) :: rtempVecBlock
     REAL(DP) :: a,b
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
@@ -214,17 +215,7 @@ CONTAINS
     ! alpha_k := -------------------------------------
     !             ( A_k corr_k     ,  corr_k )
     !
-    ! For this purpose, we need a temporary vector.
-    ! Ok, the above vector is scalar, but long enough. For simplicity,
-    ! we enforce the structure of rvector (=x_k) to the scalar vector and
-    ! use its memory as block vector:
-    
-    CALL lsysbl_createVecFromScalar (rtempVector,rtempVecBlock)
-    CALL lsysbl_enforceStructure (rvector,rtempVecBlock)
-    
-    ! Now, rtempVecBlock uses the memory of rtempVector but has the
-    ! structure of rvector. Be careful not to release it :-)
-    ! (as the caller is the owner of the vector)
+    ! For this purpose, we need the temporary vector.
     !
     ! Calculate nominator of the fraction
       
@@ -260,7 +251,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE cgcor_calcCorrDefMin (rmatrix,rvector,rrhs,rcorrVector,&
-                                   rtempVector,p_RfilterChain,dalpha)
+                                   rtempVecBlock,p_RfilterChain,dalpha)
                                           
 !<description>
   ! This routine calculates the optimal coarse grid correction parameter
@@ -289,10 +280,11 @@ CONTAINS
 !</input>
   
 !<inputoutput>
-  ! A scalar temporary vector. Must be at least as large as rvector.
+  ! A block temporary vector. Must have the same size and structure as
+  ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rtempVector
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
@@ -304,7 +296,7 @@ CONTAINS
 
     ! local variables
     
-    TYPE(t_vectorBlock) :: rtempVecBlock, rtempBlock2
+    TYPE(t_vectorBlock) :: rtempBlock2
     REAL(DP) :: a,b
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
@@ -314,23 +306,8 @@ CONTAINS
     ! alpha_k := -------------------------------------
     !             ( A_k corr_k     ,  A_k corr_k )
     !
-    ! For this purpose, we need a temporary vector.
-    ! Ok, the above vector is scalar, but long enough. For simplicity,
-    ! we enforce the structure of rvector (=x_k) to the scalar vector and
-    ! use its memory as block vector:
-    
-    CALL lsysbl_createVecFromScalar (rtempVector,rtempVecBlock)
-    CALL lsysbl_enforceStructure (rvector,rtempVecBlock)
-    
-    ! We need a second temp vector which is to be released afterwards.
-    ! (Perhaps in a later implementation, we could describe rtempVecBlock
-    ! to have double the size?)
-    CALL lsysbl_createVecBlockIndirect (rtempVecBlock,rtempBlock2,.FALSE.)
-    
-    ! Now, rtempVecBlock uses the memory of rtempVector but has the
-    ! structure of rvector. Be careful not to release it :-)
-    ! (as the caller is the owner of the vector)
-    !
+    ! For this purpose, we need the temporary vector.
+    !    
     ! Calculate nominator of the fraction
       
     CALL lsysbl_copyVector(rrhs,rtempVecBlock)
@@ -339,6 +316,11 @@ CONTAINS
     IF (ASSOCIATED(p_RfilterChain)) THEN
       CALL filter_applyFilterChainVec (rtempVecBlock,p_RfilterChain)
     END IF
+    
+    ! We need a second temp vector which is to be released afterwards.
+    ! (Perhaps in a later implementation, we could describe rtempVecBlock
+    ! to have double the size?)
+    CALL lsysbl_createVecBlockIndirect (rtempVecBlock,rtempBlock2,.FALSE.)
     
     CALL lsysbl_blockMatVec(rmatrix, rcorrVector, rtempBlock2, 1.0_DP,0.0_DP)
     ! Apply the filter
@@ -359,8 +341,8 @@ CONTAINS
       dalpha = 1.0_DP
     END IF
     
-    ! Release the 2nd vector
-    CALL lsysbl_releaseVector(rtempBlock2)
+    ! Release the 2nd temp vector
+    CALL lsysbl_releaseVector (rtempBlock2)
     
   END SUBROUTINE  
 

@@ -1200,6 +1200,14 @@ MODULE linearsolver
     ! A temporary vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
     TYPE(t_vectorBlock)                 :: rtempVector
+    
+    ! A temporary vector that is used for the calculation of the 
+    ! coarse grid correction. This vector shares its data with the
+    ! rprjTempVector vector in the multigrid solver structure 
+    ! t_linsolSubnodeMultigrid, but has the shape of the RHS vector.
+    ! The structure is initialised in initStructure and cleaned up
+    ! in doneStructure.
+    TYPE(t_vectorBlock)                 :: rcgcorrTempVector
 
     ! A RHS vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
@@ -10042,7 +10050,7 @@ CONTAINS
     IF (ASSOCIATED(p_rtemplVect)) THEN
       imemmax = MAX(imemmax,p_rtemplVect%NEQ)
     END IF
-          
+       
     ! Ask the prolongation/restriction routines how much memory is necessary
     ! for prolongation/restriction on that level.
     IF (ASSOCIATED(p_rcurrentLevel%p_rprevLevel)) THEN ! otherwise coarse grid
@@ -10058,12 +10066,20 @@ CONTAINS
     ! All temporary vectors are marked as 'unsorted'. We can set the
     ! sorting flag directly here without using the resorting routines
     ! as the vectors have just been created.
-    p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy = &
-      -ABS(p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy)
-    p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
-      -ABS(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
-    p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
-      -ABS(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
+    !
+    ! Don't do anything to the RHS/temp vectors on the coarse grid
+    ! and the solution vector on the fine grid -- they don't exist!
+    IF (ASSOCIATED(p_rcurrentLevel%p_rprevLevel)) THEN
+      p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy = &
+        -ABS(p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy)
+      p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
+        -ABS(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
+    END IF
+    
+    IF (ASSOCIATED(p_rcurrentLevel%p_rnextLevel)) THEN
+      p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
+        -ABS(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
+    END IF
     
     ! And the next level...
     p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
@@ -10073,6 +10089,24 @@ CONTAINS
   IF (imemmax .GT. 0) THEN
     CALL lsyssc_createVector (rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
                               imemmax,.FALSE.,rsolverNode%cdefaultDataType)
+                              
+    ! Use this vector also for the coarse grid correction.
+    ! Create a block vector on every level with the structure of the 
+    ! RHS that shares the memory with rprjTempVector. 
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
+    DO WHILE(ASSOCIATED(p_rcurrentLevel))
+    
+      IF (ASSOCIATED(p_rcurrentLevel%p_rprevLevel)) THEN
+        CALL lsysbl_createVecFromScalar (&
+            rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
+            p_rcurrentLevel%rcgcorrTempVector)
+      
+        CALL lsysbl_enforceStructure (&
+            p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rcgcorrTempVector)
+      END IF
+    
+      p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
+    END DO
   ELSE
     rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ = 0
   END IF
@@ -10150,12 +10184,14 @@ CONTAINS
     IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
       CALL linsol_initData(p_rcurrentLevel%p_rpreSmoother,isubgroup,ierror)
     END IF
+    
     ! Pre- and postsmoother may be identical!
     IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
         (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
                           p_rcurrentLevel%p_rpostSmoother))) THEN
       CALL linsol_initData(p_rcurrentLevel%p_rpostSmoother,isubgroup,ierror)
     END IF
+    
     IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
       CALL linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup,ierror)
     END IF
@@ -10309,18 +10345,25 @@ CONTAINS
   
   p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail
   DO WHILE(ASSOCIATED(p_rcurrentLevel))
+  
+    ! Release the coarse grid solver
     IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
       CALL linsol_doneStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
     END IF
-    ! Pre- and postsmoother may be identical!
+    
+    ! Pre- and postsmoother may be identical! If not, first release the 
+    ! postsmoother.
     IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
         (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
                           p_rcurrentLevel%p_rpostSmoother))) THEN
       CALL linsol_doneStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
     END IF
+    
+    ! Release the presmoother
     IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
       CALL linsol_doneStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
     END IF
+    
     p_rcurrentLevel => p_rcurrentLevel%p_rprevLevel
   END DO
 
@@ -10330,13 +10373,22 @@ CONTAINS
   ! Release temporary memory.
   p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoTail
   DO WHILE(ASSOCIATED(p_rcurrentLevel))
+  
     IF (ASSOCIATED(p_rcurrentLevel%p_rprevLevel)) THEN
+    
       IF (p_rcurrentLevel%rtempVector%NEQ .NE. 0) THEN
         CALL lsysbl_releaseVector (p_rcurrentLevel%rtempVector)
       END IF
       
       IF (p_rcurrentLevel%rrhsVector%NEQ .NE. 0) THEN
         CALL lsysbl_releaseVector (p_rcurrentLevel%rrhsVector)
+      END IF
+
+      ! Release the temp vector for the coarse grid correction.
+      ! The vector shares its memory with the 'global' projection
+      ! vector, so only release it if the other vector exists.
+      IF (rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ .GT. 0) THEN
+        CALL lsysbl_releaseVector (p_rcurrentLevel%rcgcorrTempVector)
       END IF
 
     END IF
@@ -11003,12 +11055,17 @@ CONTAINS
                 ! resorting routine.
                 ! This prepares these vectors for the next sweep, when an unsorted
                 ! vector comes 'from above'.
-                p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
-                  -ABS(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)% &
-                  isortStrategy) 
-                p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)% &
-                  isortStrategy = -ABS(p_rlowerLevel%rrhsVector% &
-                  RvectorBlock(1:nblocks)%isortStrategy) 
+                !
+                ! Note that this shall not be done on the coarse grid as there is
+                ! no temp/rhs vector!
+                IF (ASSOCIATED(p_rlowerLevel%p_rprevLevel)) THEN
+                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
+                    -ABS(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)% &
+                    isortStrategy) 
+                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)% &
+                    isortStrategy = -ABS(p_rlowerLevel%rrhsVector% &
+                    RvectorBlock(1:nblocks)%isortStrategy) 
+                END IF
               END IF
               CALL mlprj_performProlongation (p_rcurrentLevel%rinterlevelProjection,&
                     p_rlowerLevel%rsolutionVector, &
@@ -11035,7 +11092,7 @@ CONTAINS
                                           p_rcurrentLevel%rsolutionVector,&
                                           p_rcurrentLevel%rrhsVector,&
                                           p_rcurrentLevel%rtempVector,&
-                                          p_rsubnode%rprjTempVector,&
+                                          p_rcurrentLevel%rcgcorrTempVector,&
                                           p_RfilterChain,&
                                           dstep)
               

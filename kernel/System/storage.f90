@@ -3795,8 +3795,8 @@ CONTAINS
     CASE (2)
       SELECT CASE (p_rsource%idataType)
       CASE (ST_DOUBLE)
-        IF ((SIZE(p_rsource%p_Ddouble2D,1) .NE. SIZE(p_rdest%p_Ddouble2D,1)) .OR.&
-            (SIZE(p_rsource%p_Ddouble2D,2) .NE. SIZE(p_rdest%p_Ddouble2D,2))) THEN
+        IF ((UBOUND(p_rsource%p_Ddouble2D,1) .NE. UBOUND(p_rdest%p_Ddouble2D,1)) .OR.&
+            (UBOUND(p_rsource%p_Ddouble2D,2) .NE. UBOUND(p_rdest%p_Ddouble2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
@@ -3804,24 +3804,24 @@ CONTAINS
         SELECT CASE (p_rdest%idataType)
         CASE (ST_DOUBLE)
           ! Copy by hand
-          DO j=1,SIZE(p_rsource%p_Ddouble2D,2)
-            DO i=1,SIZE(p_rsource%p_Ddouble2D,1)
+          DO j=1,UBOUND(p_rsource%p_Ddouble2D,2)
+            DO i=1,UBOUND(p_rsource%p_Ddouble2D,1)
               p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Ddouble2D(i,j)
             END DO
           END DO
 
         CASE (ST_SINGLE)
           ! Copy by hand
-          DO j=1,SIZE(p_rsource%p_Fsingle2D,2)
-            DO i=1,SIZE(p_rsource%p_Fsingle2D,1)
+          DO j=1,UBOUND(p_rsource%p_Fsingle2D,2)
+            DO i=1,UBOUND(p_rsource%p_Fsingle2D,1)
               p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Ddouble2D(i,j)
             END DO
           END DO
 
         CASE (ST_INT)
           ! Copy by hand
-          DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
-            DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
+          DO j=1,UBOUND(p_rsource%p_Iinteger2D,2)
+            DO i=1,UBOUND(p_rsource%p_Iinteger2D,1)
               p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Ddouble2D(i,j)
             END DO
           END DO
@@ -3833,8 +3833,8 @@ CONTAINS
         END SELECT
 
       CASE (ST_SINGLE)
-        IF ((SIZE(p_rsource%p_Fsingle2D,1) .NE. SIZE(p_rdest%p_Fsingle2D,1)) .OR.&
-            (SIZE(p_rsource%p_Fsingle2D,2) .NE. SIZE(p_rdest%p_Fsingle2D,2))) THEN
+        IF ((UBOUND(p_rsource%p_Fsingle2D,1) .NE. UBOUND(p_rdest%p_Fsingle2D,1)) .OR.&
+            (UBOUND(p_rsource%p_Fsingle2D,2) .NE. UBOUND(p_rdest%p_Fsingle2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
@@ -3842,24 +3842,24 @@ CONTAINS
         SELECT CASE (p_rdest%idataType)
         CASE (ST_DOUBLE)
           ! Copy by hand
-          DO j=1,SIZE(p_rsource%p_Ddouble2D,2)
-            DO i=1,SIZE(p_rsource%p_Ddouble2D,1)
+          DO j=1,UBOUND(p_rsource%p_Ddouble2D,2)
+            DO i=1,UBOUND(p_rsource%p_Ddouble2D,1)
               p_rdest%p_Ddouble2D(i,j) = p_rsource%p_Fsingle2D(i,j)
             END DO
           END DO
 
         CASE (ST_SINGLE)
           ! Copy by hand
-          DO j=1,SIZE(p_rsource%p_Fsingle2D,2)
-            DO i=1,SIZE(p_rsource%p_Fsingle2D,1)
+          DO j=1,UBOUND(p_rsource%p_Fsingle2D,2)
+            DO i=1,UBOUND(p_rsource%p_Fsingle2D,1)
               p_rdest%p_Fsingle2D(i,j) = p_rsource%p_Fsingle2D(i,j)
             END DO
           END DO
 
         CASE (ST_INT)
           ! Copy by hand
-          DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
-            DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
+          DO j=1,UBOUND(p_rsource%p_Iinteger2D,2)
+            DO i=1,UBOUND(p_rsource%p_Iinteger2D,1)
               p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Fsingle2D(i,j)
             END DO
           END DO
@@ -3872,8 +3872,8 @@ CONTAINS
         END SELECT
 
       CASE (ST_INT)
-        IF ((SIZE(p_rsource%p_Iinteger2D,1) .NE. SIZE(p_rdest%p_Iinteger2D,1)) .OR.&
-            (SIZE(p_rsource%p_Iinteger2D,2) .NE. SIZE(p_rdest%p_Iinteger2D,2))) THEN
+        IF ((UBOUND(p_rsource%p_Iinteger2D,1) .NE. UBOUND(p_rdest%p_Iinteger2D,1)) .OR.&
+            (UBOUND(p_rsource%p_Iinteger2D,2) .NE. UBOUND(p_rdest%p_Iinteger2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
@@ -3883,15 +3883,15 @@ CONTAINS
         END IF
 
         ! Copy by hand
-        DO j=1,SIZE(p_rsource%p_Iinteger2D,2)
-          DO i=1,SIZE(p_rsource%p_Iinteger2D,1)
+        DO j=1,UBOUND(p_rsource%p_Iinteger2D,2)
+          DO i=1,UBOUND(p_rsource%p_Iinteger2D,1)
             p_rdest%p_Iinteger2D(i,j) = p_rsource%p_Iinteger2D(i,j)
           END DO
         END DO
 
       CASE (ST_LOGICAL)
-        IF ((SIZE(p_rsource%p_Blogical2D,1) .NE. SIZE(p_rdest%p_Blogical2D,1)) .OR.&
-            (SIZE(p_rsource%p_Blogical2D,2) .NE. SIZE(p_rdest%p_Blogical2D,2))) THEN
+        IF ((UBOUND(p_rsource%p_Blogical2D,1) .NE. UBOUND(p_rdest%p_Blogical2D,1)) .OR.&
+            (UBOUND(p_rsource%p_Blogical2D,2) .NE. UBOUND(p_rdest%p_Blogical2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
@@ -3901,15 +3901,15 @@ CONTAINS
         END IF
 
         ! Copy by hand
-        DO j=1,SIZE(p_rsource%p_Blogical2D,2)
-          DO i=1,SIZE(p_rsource%p_Blogical2D,1)
+        DO j=1,UBOUND(p_rsource%p_Blogical2D,2)
+          DO i=1,UBOUND(p_rsource%p_Blogical2D,1)
             p_rdest%p_Blogical2D(i,j) = p_rsource%p_Blogical2D(i,j)
           END DO
         END DO
 
       CASE (ST_CHAR)
-        IF ((SIZE(p_rsource%p_Schar2D,1) .NE. SIZE(p_rdest%p_Schar2D,1)) .OR.&
-            (SIZE(p_rsource%p_Schar2D,2) .NE. SIZE(p_rdest%p_Schar2D,2))) THEN
+        IF ((UBOUND(p_rsource%p_Schar2D,1) .NE. UBOUND(p_rdest%p_Schar2D,1)) .OR.&
+            (UBOUND(p_rsource%p_Schar2D,2) .NE. UBOUND(p_rdest%p_Schar2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
           STOP
         END IF
@@ -3919,8 +3919,8 @@ CONTAINS
         END IF
 
         ! Copy by hand
-        DO j=1,SIZE(p_rsource%p_Schar2D,2)
-          DO i=1,SIZE(p_rsource%p_Schar2D,1)
+        DO j=1,UBOUND(p_rsource%p_Schar2D,2)
+          DO i=1,UBOUND(p_rsource%p_Schar2D,1)
             p_rdest%p_Schar2D(i,j) = p_rsource%p_Schar2D(i,j)
           END DO
         END DO
@@ -4169,7 +4169,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE storage_copy_explicit2D(h_source, h_dest, Istart_source, Istart_dest, Ilength, rheap)
+  SUBROUTINE storage_copy_explicit2D(h_source, h_dest, Istart_source, &
+      Istart_dest, Ilength, rheap)
 
 !<description>
   ! This routine copies the information of one array to another.
@@ -4287,10 +4288,10 @@ CONTAINS
     CASE (ST_DOUBLE)
        SELECT CASE (p_rdest%idataType)
        CASE (ST_DOUBLE)
-          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
-               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
-               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Ddouble2D,1) .OR. &
-               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Ddouble2D,2)) THEN
+          IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Ddouble2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Ddouble2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Ddouble2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Ddouble2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
              STOP
           END IF
@@ -4303,10 +4304,10 @@ CONTAINS
           END DO
 
        CASE (ST_SINGLE)
-          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
-               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
-               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Fsingle2D,1) .OR. &
-               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Fsingle2D,2)) THEN
+          IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Ddouble2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Ddouble2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Fsingle2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Fsingle2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
              STOP
           END IF
@@ -4319,10 +4320,10 @@ CONTAINS
           END DO
 
        CASE (ST_INT)
-          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Ddouble2D,1) .OR. &
-               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Ddouble2D,2) .OR. &
-               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Iinteger2D,1) .OR. &
-               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Iinteger2D,2)) THEN
+          IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Ddouble2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Ddouble2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Iinteger2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Iinteger2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
              STOP
           END IF
@@ -4343,10 +4344,10 @@ CONTAINS
     CASE (ST_SINGLE)
        SELECT CASE (p_rdest%idataType)
        CASE (ST_DOUBLE)
-          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
-               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
-               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Ddouble2D,1) .OR. &
-               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Ddouble2D,2)) THEN
+          IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Fsingle2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Fsingle2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Ddouble2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Ddouble2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
              STOP
           END IF
@@ -4359,10 +4360,10 @@ CONTAINS
           END DO
 
        CASE (ST_SINGLE)
-          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
-               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
-               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Fsingle2D,1) .OR. &
-               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Fsingle2D,2)) THEN
+          IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Fsingle2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Fsingle2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Fsingle2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Fsingle2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
              STOP
           END IF
@@ -4375,10 +4376,10 @@ CONTAINS
           END DO
 
        CASE (ST_INT)
-          IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Fsingle2D,1) .OR. &
-               Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Fsingle2D,2) .OR. &
-               Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Iinteger2D,1) .OR. &
-               Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Iinteger2D,2)) THEN
+          IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Fsingle2D,1) .OR. &
+               Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Fsingle2D,2) .OR. &
+               Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Iinteger2D,1) .OR. &
+               Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Iinteger2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
              STOP
           END IF
@@ -4401,10 +4402,10 @@ CONTAINS
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
           STOP
        END IF
-       IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Iinteger2D,1) .OR. &
-            Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Iinteger2D,2) .OR. &
-            Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Iinteger2D,1) .OR. &
-            Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Iinteger2D,2)) THEN
+       IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Iinteger2D,1) .OR. &
+            Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Iinteger2D,2) .OR. &
+            Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Iinteger2D,1) .OR. &
+            Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Iinteger2D,2)) THEN
           PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
           STOP
        END IF
@@ -4422,10 +4423,10 @@ CONTAINS
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
           STOP
        END IF
-       IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Blogical2D,1) .OR. &
-            Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Blogical2D,2) .OR. &
-            Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Blogical2D,1) .OR. &
-            Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Blogical2D,2)) THEN
+       IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Blogical2D,1) .OR. &
+            Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Blogical2D,2) .OR. &
+            Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Blogical2D,1) .OR. &
+            Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Blogical2D,2)) THEN
           PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
           STOP
        END IF
@@ -4443,10 +4444,10 @@ CONTAINS
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
           STOP
        END IF
-       IF (Istart_source(1)+Ilength(1)-1 > SIZE(p_rsource%p_Schar2D,1) .OR. &
-            Istart_source(2)+Ilength(2)-1 > SIZE(p_rsource%p_Schar2D,2) .OR. &
-            Istart_dest(1)+Ilength(1)-1 > SIZE(p_rdest%p_Schar2D,1) .OR. &
-            Istart_dest(2)+Ilength(2)-1 > SIZE(p_rdest%p_Schar2D,2)) THEN
+       IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Schar2D,1) .OR. &
+            Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Schar2D,2) .OR. &
+            Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Schar2D,1) .OR. &
+            Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Schar2D,2)) THEN
           PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
           STOP
        END IF

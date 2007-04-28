@@ -698,6 +698,9 @@ CONTAINS
     rvancaGeneral%nblocks = nblocks
     ALLOCATE(rvancaGeneral%p_Rmatrices(nblocks,nblocks))
     
+    ALLOCATE(rvancaGeneral%p_InDofsLocal(rmatrix%ndiagBlocks))
+    ALLOCATE(rvancaGeneral%p_IblockOffset(rmatrix%ndiagBlocks+1))
+    
     ! This type of VANCA only supports a uniform discretisation
     ! and matrix format 7 or 9. Transposed matrices are not allowed.
     !
@@ -785,9 +788,6 @@ CONTAINS
     ! We know the maximum number of DOF's now. For the later loop over the 
     ! elements, allocate memory for storing the DOF's of an element set.
     ALLOCATE(rvancaGeneral%p_IelementDOFs(nmaxLocalDOFs,VANCA_NELEMSIM,nblocks))
-    
-    ALLOCATE(rvancaGeneral%p_InDofsLocal(rmatrix%ndiagBlocks))
-    ALLOCATE(rvancaGeneral%p_IblockOffset(rmatrix%ndiagBlocks+1))
     
     ! Remember the matrix
     rvancaGeneral%p_rmatrix => rmatrix

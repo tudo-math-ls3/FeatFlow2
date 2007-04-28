@@ -1030,20 +1030,24 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  TYPE(t_vectorBlock) :: rxBlock,rbBlock,rdBlock
-  
-  ! Convert the vectors on-the-fly to block vectors.
-  ! The new vectors share the same memory as the old, so the solver will use
-  ! and overwrite the old input vectors.
-  CALL lsysbl_createVecFromScalar (rx,rxBlock)
-  CALL lsysbl_createVecFromScalar (rb,rbBlock)
-  CALL lsysbl_createVecFromScalar (rd,rdBlock)
-  
-  ! Invoke the solver - that's all. 
-  CALL nlsol_performSolve (rsolverNode,rxBlock,rbBlock,rdBlock,&
-                          fcb_getDefect,fcb_precondDefect,fcb_resNormCheck,&
-                          rcollection)
+    ! local variables
+    TYPE(t_vectorBlock) :: rxBlock,rbBlock,rdBlock
+    
+    ! Convert the vectors on-the-fly to block vectors.
+    ! The new vectors share the same memory as the old, so the solver will use
+    ! and overwrite the old input vectors.
+    CALL lsysbl_createVecFromScalar (rx,rxBlock)
+    CALL lsysbl_createVecFromScalar (rb,rbBlock)
+    CALL lsysbl_createVecFromScalar (rd,rdBlock)
+    
+    ! Invoke the solver - that's all. 
+    CALL nlsol_performSolve (rsolverNode,rxBlock,rbBlock,rdBlock,&
+                            fcb_getDefect,fcb_precondDefect,fcb_resNormCheck,&
+                            rcollection)
+                          
+    CALL lsysbl_releaseVector (rdBlock)
+    CALL lsysbl_releaseVector (rbBlock)
+    CALL lsysbl_releaseVector (rxBlock)
                         
   END SUBROUTINE
   

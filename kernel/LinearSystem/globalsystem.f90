@@ -433,9 +433,13 @@ CONTAINS
     ! Standard is double precision.
     INTEGER, INTENT(IN) :: cdataType
 
+      IF (rdestMatrix%ndiagBlocks .LT. 1) THEN
+        ! Create a new 1x1 matrix if necessary.
+        CALL lsysbl_releaseMatrix (rdestMatrix)
+        CALL lsysbl_createEmptyMatrix (rdestMatrix,1)
+      END IF
       rdestMatrix%NEQ = rsourceMatrix%NEQ
       rdestMatrix%NCOLS = rsourceMatrix%NCOLS
-      rdestMatrix%ndiagBlocks = 1
       rdestMatrix%imatrixSpec = rsourceMatrix%imatrixSpec
       
       ! There's no appropriate discretisation or boundary condition
