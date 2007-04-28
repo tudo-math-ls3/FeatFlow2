@@ -345,7 +345,7 @@ CONTAINS
       ! in evey step of the nonlinear iteration!
       ! We fill the matrix with 1. This is necessary, as the UMFPACK solver
       ! needs nonzero matrix entries for the symbolic factorisation!
-      CALL lsyssc_createEmptyMatrixScalar(p_rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_ONE)
+      CALL lsyssc_allocEmptyMatrix(p_rmatrix%RmatrixBlock(1,1),LSYSSC_SETM_ONE)
       
       ! Allocate an array for holding the resorting strategy.
       CALL storage_new ('b1d6_initMatVec', 'Iresort', &

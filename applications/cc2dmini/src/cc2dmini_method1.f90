@@ -143,11 +143,6 @@ CONTAINS
 
   SUBROUTINE c2d1_initParamTriang (ilvmin,ilvmax,rproblem)
   
-    INCLUDE 'cout.inc'
-    INCLUDE 'cerr.inc'
-    INCLUDE 'cmem.inc'
-    INCLUDE 'cparametrization.inc'
-
 !<description>
   ! This routine initialises the parametrisation and triangulation of the
   ! domain. The corresponding .prm/.tri files are read from disc and
@@ -172,11 +167,8 @@ CONTAINS
   ! local variables
   INTEGER :: i
   
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
     ! Variable for a filename:  
-    CHARACTER(LEN=60) :: CFILE
+    CHARACTER(LEN=SYS_STRLEN) :: sString
 
     ! Initialise the level in the problem structure
     rproblem%NLMIN = ilvmin
@@ -191,32 +183,28 @@ CONTAINS
     NULLIFY(rproblem%p_rboundary)
     CALL boundary_read_prm(rproblem%p_rboundary, './pre/bench1.prm')
         
-    ! Remark that this does not read in the parametrisation for FEAT 1.x.
-    ! Unfortunately we still need it for creating the initial triangulation!
-    ! Therefore, read the file again wihh FEAT 1.x routines.
-    IMESH = 1
-    CFILE = './pre/bench1.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
+    ! Now read in the basic triangulation.
+    CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
+                                                 './pre/bench1.tri', &
+        rproblem%p_rboundary)
 
-    ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level ilvmin/ilvmax.
-    ! This will probably modify ilvmin/ilvmax in case of a level
-    ! shift, i.e. if ilvmax > ilvmin+9 !
-    ! After this routine, we have to rely on ilvmin/ilvmax in the
-    ! problem structure rather than those in the parameters.
-    CFILE = './pre/bench1.tri'
-    CALL INMTRI (2,TRIAS,rproblem%NLMIN,rproblem%NLMAX,0,0,CFILE)
+    ! Refine the mesh up to the minimum level
+    CALL tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
+        rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%p_rboundary)
+
+    ! Create information about adjacencies and everything one needs from
+    ! a triangulation. Afterwards, we have the coarse mesh.
+    CALL tria_initStandardMeshFromRaw (&
+        rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation,rproblem%p_rboundary)
     
-    ! ... and create a FEAT 2.0 triangulation for that. Until the point where
-    ! we recreate the triangulation routines, this method has to be used
-    ! to get a triangulation.
-    DO i=rproblem%NLMIN,rproblem%NLMAX
-      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%rtriangulation)
+    ! Now, refine to level up to nlmax.
+    DO i=rproblem%NLMIN+1,rproblem%NLMAX
+      CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
+          rproblem%RlevelInfo(i)%rtriangulation, rproblem%p_rboundary)
+      CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
+          rproblem%p_rboundary)
     END DO
-    
-    ! The TRIAS(,)-array is now part pf the triangulation structure,
-    ! we don't need it anymore.
-    
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -938,17 +926,24 @@ CONTAINS
       ! (  0    L   B2 )
       ! ( B1^T B2^T 0  )
       !
-      ! This is just for building the defect, so we make a simple copy,
-      ! overwrite submatrices as we need and do not care about releasing 
-      ! any memory!
-      rmatrixLaplaceBlock = p_rmatrix
-      rmatrixLaplaceBlock%RmatrixBlock(1,1) = p_rmatrixLaplace
-      rmatrixLaplaceBlock%RmatrixBlock(2,2) = p_rmatrixLaplace
+      CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixLaplaceBlock,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          
+      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+          rmatrixLaplaceBlock%RmatrixBlock(1,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+          rmatrixLaplaceBlock%RmatrixBlock(2,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
       ! Now, in the first step, we build the linear part of the nonlinear defect:
       !     d_lin = rhs - (-nu * Laplace(.))*solution
       CALL lsysbl_copyVector (rb,rd)
       CALL lsysbl_blockMatVec (rmatrixLaplaceBlock, rx, rd, -1.0_DP, 1.0_DP)
+      
+      ! Release the temporary matrix again.
+      CALL lsysbl_releaseMatrix (rmatrixLaplaceBlock)
       
       ! For the final defect
       !
@@ -1048,7 +1043,6 @@ CONTAINS
     REAL(DP) :: domegaMin, domegaMax,dskv1,dskv2
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixLaplace
-    TYPE(t_matrixBlock) :: rmatrixLaplaceBlock
     TYPE(t_convUpwind) :: rupwind
 
     ! A filter chain to pre-filter the vectors and the matrix.
@@ -1954,25 +1948,13 @@ CONTAINS
   ! local variables
   INTEGER :: i
 
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
+    ! Release the triangulation on all levels
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Release the old FEAT 1.x handles.
-      ! Get the old triangulation structure of level ilv from the
-      ! FEAT2.0 triangulation:
-      TRIAS(:,i) = rproblem%RlevelInfo(i)%rtriangulation%Itria
-      CALL DNMTRI (i,i,TRIAS)
-      
-      ! then the FEAT 2.0 stuff...
       CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)
-    
-    ! Don't forget to throw away the old FEAT 1.0 boundary definition!
-    CALL DISPAR
 
     CALL collct_deleteValue(rproblem%rcollection,'NLMAX')
     CALL collct_deleteValue(rproblem%rcollection,'NLMIN')
@@ -1984,8 +1966,6 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE cc2dmini1
-  
-  include 'cmem.inc'
   
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
@@ -2032,7 +2012,7 @@ CONTAINS
     NLMAX = 4
     
     ! Viscosity parameter:
-    dnu = 1E0_DP/1000E0
+    dnu = 1.0E0_DP/1000.0E0
     
     p_rproblem%dnu = dnu
     

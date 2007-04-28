@@ -171,17 +171,25 @@ CONTAINS
       ! (  0    L   B2 )
       ! ( B1^T B2^T 0  )
       !
-      ! This is just for building the defect, so we make a simple copy,
-      ! overwrite submatrices as we need and do not care about releasing 
-      ! any memory!
-      rmatrixLaplaceBlock = p_rmatrix
-      rmatrixLaplaceBlock%RmatrixBlock(1,1) = p_rmatrixLaplace
-      rmatrixLaplaceBlock%RmatrixBlock(2,2) = p_rmatrixLaplace
+      !
+      CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixLaplaceBlock,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          
+      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+          rmatrixLaplaceBlock%RmatrixBlock(1,1),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      CALL lsyssc_duplicateMatrix (p_rmatrixLaplace,&
+          rmatrixLaplaceBlock%RmatrixBlock(2,2),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
       ! Now, in the first step, we build the linear part of the nonlinear defect:
       !     d_lin = rhs - (-nu * Laplace(.))*solution
       CALL lsysbl_copyVector (rb,rd)
       CALL lsysbl_blockMatVec (rmatrixLaplaceBlock, rx, rd, -1.0_DP, 1.0_DP)
+      
+      ! Release the temporary matrix again.
+      CALL lsysbl_releaseMatrix (rmatrixLaplaceBlock)
       
       ! For the final defect
       !

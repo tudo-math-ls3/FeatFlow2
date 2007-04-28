@@ -236,8 +236,8 @@ CONTAINS
   INTEGER :: i,ilvmin,ilvmax
   
     ! Variable for a filename:  
-    CHARACTER(LEN=256) :: sString
-    CHARACTER(LEN=60) :: sPRMFile, sTRIFile
+    CHARACTER(LEN=SYS_STRLEN) :: sString
+    CHARACTER(LEN=SYS_STRLEN) :: sPRMFile, sTRIFile
 
     ! Get min/max level from the parameter file.
     !

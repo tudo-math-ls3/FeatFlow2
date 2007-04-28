@@ -415,7 +415,7 @@ CONTAINS
               LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
               
             ! Allocate memory for the entries; don't initialise the memory.
-            CALL lsyssc_createEmptyMatrixScalar (&
+            CALL lsyssc_allocEmptyMatrix (&
                 p_rmatrixPreconditioner%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
               
           END IF
@@ -430,7 +430,7 @@ CONTAINS
               LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
               
             ! Allocate memory for the entries; don't initialise the memory.
-            CALL lsyssc_createEmptyMatrixScalar (&
+            CALL lsyssc_allocEmptyMatrix (&
                 p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
              
           ELSE
@@ -455,7 +455,7 @@ CONTAINS
                 
               ! ... then allocate memory for the entries; 
               ! don't initialise the memory.
-              CALL lsyssc_createEmptyMatrixScalar (&
+              CALL lsyssc_allocEmptyMatrix (&
                   p_rmatrixPreconditioner%RmatrixBlock(2,1),&
                   LSYSSC_SETM_UNDEFINED)
                 
@@ -484,7 +484,7 @@ CONTAINS
               
             ! ... then allocate memory for the entries; 
             ! don't initialise the memory.
-            CALL lsyssc_createEmptyMatrixScalar (&
+            CALL lsyssc_allocEmptyMatrix (&
                 p_rmatrixPreconditioner%RmatrixBlock(2,2),&
                 LSYSSC_SETM_UNDEFINED)
           END IF

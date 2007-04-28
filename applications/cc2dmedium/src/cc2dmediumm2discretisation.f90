@@ -667,7 +667,7 @@ CONTAINS
                   p_rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       
       ! Allocate memory for the entries; don't initialise the memory.
-      CALL lsyssc_createEmptyMatrixScalar (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
+      CALL lsyssc_allocEmptyMatrix (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
       
       ! In the global system, there are two coupling matrices B1 and B2.
       ! Both have the structure of the template gradient matrix.
@@ -686,9 +686,9 @@ CONTAINS
                   rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
       ! Allocate memory for the entries; don't initialise the memory.
-      CALL lsyssc_createEmptyMatrixScalar (rproblem%RlevelInfo(i)%rmatrixB1,&
+      CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
                                            LSYSSC_SETM_UNDEFINED)
-      CALL lsyssc_createEmptyMatrixScalar (rproblem%RlevelInfo(i)%rmatrixB2,&
+      CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
                                            LSYSSC_SETM_UNDEFINED)
 
       ! Now let's come to the main system matrix, which is a block matrix.
@@ -886,7 +886,7 @@ CONTAINS
                     p_rmatrixA12,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
         
         ! Allocate memory for the entries; don't initialise the memory.
-        CALL lsyssc_createEmptyMatrixScalar (p_rmatrixA12,LSYSSC_SETM_UNDEFINED)
+        CALL lsyssc_allocEmptyMatrix (p_rmatrixA12,LSYSSC_SETM_UNDEFINED)
       END IF
       
       ! Now turn to the matrix A21. Do we have to exploit symmetry?
@@ -908,7 +908,7 @@ CONTAINS
                       p_rmatrixA21,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
           
           ! Allocate memory for the entries; don't initialise the memory.
-          CALL lsyssc_createEmptyMatrixScalar (p_rmatrixA21,LSYSSC_SETM_UNDEFINED)
+          CALL lsyssc_allocEmptyMatrix (p_rmatrixA21,LSYSSC_SETM_UNDEFINED)
         END IF
       END IF
       
