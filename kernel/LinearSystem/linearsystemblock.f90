@@ -43,6 +43,10 @@
 !#      -> Enforces the structure of a given block vector in another
 !#         block vector
 !#
+!#      lsysbl_enforceStructureDirect
+!#      -> Enforces a subvector structure according to a length definition
+!#         to a block vector
+!#
 !# 11.) lsysbl_assignDiscretIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
@@ -2399,6 +2403,77 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE lsysbl_enforceStructureDirect (Isize,rvector)
+  
+!<description>
+  ! This routine enforces the structure of the vector rtemplate
+  ! in the vector rvector. 
+  !
+  ! WARNING: This routine should be used with care if you know
+  !          what you are doing !!!
+  ! 
+  ! The routine enforces SIZE(Isize) subvectors in rvector and
+  ! sets the size of the i'thg subvector to Isize(i).
+  !
+  ! The only check in this routine is that rvector%NEQ is
+  ! at least as large as SUM(Isize); otherwise an error
+  ! is thrown. The data type of rvector is also not changed.
+!</description>
+  
+!<input>
+  ! An array with size definitions. Isize(j) specifies the length of the j'th
+  ! subvector.
+  INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN) :: Isize
+!</input>
+
+!<inputoutput>
+  ! The vector which structural data should be overwritten
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i
+  INTEGER(PREC_VECIDX) :: n !,length
+
+!  REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+!  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
+!
+    ! Only basic check: there must be enough memory.
+    IF (rvector%NEQ .LT. SUM(Isize)) THEN
+      PRINT *,'lsysbl_enforceStructureDirect: Destination vector too small!'
+      STOP
+    END IF
+  
+    ! Set the attributes of the vector
+    rvector%nblocks = SIZE(Isize)
+   
+    ! If RvectorBlock is wrong, reallocate
+    IF (SIZE(rvector%RvectorBlock) .NE. rvector%nblocks) THEN
+      DEALLOCATE(rvector%RvectorBlock)
+      ALLOCATE(rvector%RvectorBlock(rvector%nblocks))
+    END IF
+
+    rvector%RvectorBlock(1:rvector%nblocks)%h_Ddata = rvector%h_Ddata
+    rvector%RvectorBlock(1:rvector%nblocks)%bisCopy = .TRUE.
+    rvector%RvectorBlock(1:rvector%nblocks)%cdataType = rvector%cdataType
+    
+    ! Relocate the starting indices of the subvectors.
+    n = rvector%iidxFirstEntry
+    DO i=1,rvector%nblocks
+      rvector%RvectorBlock(i)%iidxFirstEntry = n
+      rvector%RvectorBlock(i)%NEQ = Isize(i)
+      n = n + Isize(i)
+    END DO
+    
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE lsysbl_updateMatStrucInfo (rmatrix)
   
 !<description>
@@ -3078,6 +3153,7 @@ CONTAINS
     ! each sub-block.
     ! Denote in the subvector that the handle belongs to us - not to
     ! the subvector.
+    ALLOCATE(rvectorDest%RvectorBlock(ncount))
     
     n=1
     DO i = 1,ncount
@@ -3127,7 +3203,7 @@ CONTAINS
 
     ! Everything is prepared, just copy -- either only the structure or
     ! the structure as well as the content.
-    DO n=1,ncount
+    DO i=1,ncount
       CALL lsyssc_copyVector (rvectorSrc%RvectorBlock(i),rvectorDest%RvectorBlock(i),&
           .TRUE.,.NOT. bshareContent)
     END DO
