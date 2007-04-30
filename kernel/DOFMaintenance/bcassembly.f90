@@ -1419,7 +1419,7 @@ CONTAINS
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IedgesAtBoundary,p_IverticesAtBoundary
   REAL(DP), DIMENSION(:), POINTER             :: p_DedgeParameterValue
-  REAL(DP), DIMENSION(:,:), POINTER           :: p_DcornerCoordinates
+  REAL(DP), DIMENSION(:,:), POINTER           :: p_DvertexCoords
   INTEGER(I32), DIMENSION(:,:), POINTER       :: p_IverticesAtEdge
   
   TYPE(t_discreteBCpressureDrop), POINTER     :: p_rpressureDropBCs
@@ -1520,7 +1520,7 @@ CONTAINS
   CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
   CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
-  CALL storage_getbase_double2D(p_rtriangulation%h_DcornerCoordinates,p_DcornerCoordinates)
+  CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
   CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
   NVT = p_rtriangulation%NVT
 
@@ -1559,8 +1559,8 @@ CONTAINS
       
       ! Get the coordinates of the endpoints to build the tangential
       ! vector of the edge:
-      Dtangential(1:NDIM2D) = p_DcornerCoordinates(1:NDIM2D,ipoint2) &
-                            - p_DcornerCoordinates(1:NDIM2D,ipoint1)
+      Dtangential(1:NDIM2D) = p_DvertexCoords(1:NDIM2D,ipoint2) &
+                            - p_DvertexCoords(1:NDIM2D,ipoint1)
                             
       ! Get the inner normal vector. This compensates the '-' sign in front of
       ! the RHS in the formula on poage 269 in Turek's book where the outer
@@ -1680,7 +1680,7 @@ CONTAINS
   TYPE(t_triangulation), POINTER              :: p_rtriangulation
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IedgesAtBoundary,p_IverticesAtBoundary
-  REAL(DP), DIMENSION(:,:), POINTER           :: p_DcornerCoordinates
+  REAL(DP), DIMENSION(:,:), POINTER           :: p_DvertexCoords
   INTEGER(I32), DIMENSION(:,:), POINTER       :: p_IverticesAtEdge
   
   TYPE(t_discreteBCSlip), POINTER             :: p_rslipBCs
@@ -1783,7 +1783,7 @@ CONTAINS
   CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
   CALL storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,p_IedgesAtBoundary)
   CALL storage_getbase_int(p_rtriangulation%h_IelementsAtBoundary,p_IelementsAtBoundary)
-  CALL storage_getbase_double2D(p_rtriangulation%h_DcornerCoordinates,p_DcornerCoordinates)
+  CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
   CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
   NVT = p_rtriangulation%NVT
 
@@ -1822,8 +1822,8 @@ CONTAINS
       
       ! Get the coordinates of the endpoints to build the tangential
       ! vector of the edge:
-      Dtangential(1:NDIM2D) = p_DcornerCoordinates(1:NDIM2D,ipoint2) &
-                            - p_DcornerCoordinates(1:NDIM2D,ipoint1)
+      Dtangential(1:NDIM2D) = p_DvertexCoords(1:NDIM2D,ipoint2) &
+                            - p_DvertexCoords(1:NDIM2D,ipoint1)
                             
       ! Get the outer normal vector.
       Dnormal(1) =  Dtangential(2)

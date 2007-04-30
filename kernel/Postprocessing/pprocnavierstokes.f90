@@ -255,7 +255,7 @@ CONTAINS
         p_IelementsAtBoundary)
     CALL storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
-    CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates, &
+    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords, &
                                    p_DvertexCoordinates)
                                    
     IF (p_rtriangulation%h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
@@ -528,7 +528,7 @@ CONTAINS
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 
     IF (rvector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'ppns2D_streamfct_uniform: Unsupported vector precision.'
@@ -609,8 +609,8 @@ CONTAINS
         p_IedgesAtElement)
     CALL storage_getbase_int2d (p_rtriangulation%h_IneighboursAtElement,&
         p_IneighboursAtElement)
-    CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
-        p_DcornerCoordinates)
+    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+        p_DvertexCoords)
     
     ! Clear the solution. The auxiliary array is already = 0.
     CALL lsyssc_clearVector (rdestVector)
@@ -657,8 +657,9 @@ CONTAINS
         ! marked and some not. Here we can calculate a part of the
         ! streamfunction.
         
-        CALL calcSFC_Q1TQ1 (p_DcornerCoordinates,p_IverticesAtElement,p_IedgesAtElement,&
-                            iel,ilastMarked,p_Iind,p_DdataUX,p_DdataUY,p_Dx)
+        CALL calcSFC_Q1TQ1 (p_DvertexCoords(:,1:p_rtriangulation%NVT),&
+            p_IverticesAtElement,p_IedgesAtElement,&
+            iel,ilastMarked,p_Iind,p_DdataUX,p_DdataUY,p_Dx)
 
         ! Now on the current element iel, on all (corner) vertices the
         ! streamfunction is calculated. We go on looking to the adjacent
@@ -706,7 +707,7 @@ CONTAINS
               iel = ielaux
               ilastMarked = imarktmp
 
-              CALL calcSFC_Q1TQ1 (p_DcornerCoordinates,p_IverticesAtElement,&
+              CALL calcSFC_Q1TQ1 (p_DvertexCoords,p_IverticesAtElement,&
                                   p_IedgesAtElement,&
                                   iel,ilastMarked,p_Iind,p_DdataUX,p_DdataUY,p_Dx)
                                   
@@ -739,7 +740,7 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE calcSFC_Q1TQ1 (DcornerCoordinates,IverticesAtElement,IedgesAtElement,&
+    SUBROUTINE calcSFC_Q1TQ1 (DvertexCoords,IverticesAtElement,IedgesAtElement,&
                               iel,ibaseIdx,Imarkers,Du,Dv,Dx)
     
     ! Calculates the value of the streamfunction in all vertices of
@@ -747,7 +748,7 @@ CONTAINS
     ! Dx is the destination vector and is creatd as Q1-vector.
     
     ! Point coordinates
-    REAL(DP), DIMENSION(:,:), INTENT(IN)               :: DcornerCoordinates
+    REAL(DP), DIMENSION(:,:), INTENT(IN)               :: DvertexCoords
     
     ! Vertices at the element
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
@@ -782,7 +783,7 @@ CONTAINS
     INTEGER :: ilastMarked
   
       ilastmarked = ibaseIdx
-      NVT = UBOUND(DcornerCoordinates,2)
+      NVT = UBOUND(DvertexCoords,2)
   
       ! Loop over the vertices on the element. We can skip the one
       ! where the SF-value is already calculated.
@@ -826,10 +827,10 @@ CONTAINS
           !     |       |
           !     x-------O ivt
 
-          dpx1=DcornerCoordinates(1,ivt)
-          dpy1=DcornerCoordinates(2,ivt)
-          dpx2=DcornerCoordinates(1,inextvertex)
-          dpy2=DcornerCoordinates(2,inextvertex)
+          dpx1=DvertexCoords(1,ivt)
+          dpy1=DvertexCoords(2,ivt)
+          dpx2=DvertexCoords(1,inextvertex)
+          dpy2=DvertexCoords(2,inextvertex)
           dn1 = dpy2-dpy1
           dn2 =-dpx2+dpx1
           

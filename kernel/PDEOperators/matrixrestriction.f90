@@ -105,7 +105,7 @@ CONTAINS
     REAL(DP) :: dval1,dval2,dval3,dval4,dval5
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
-    REAL(DP), DIMENSION(:,:), POINTER                 :: p_DcornerCoordinatesCoarse
+    REAL(DP), DIMENSION(:,:), POINTER                 :: p_DvertexCoordsCoarse
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER    :: p_IedgesAtElementCoarse
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER    :: p_IedgesAtElementFine
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER   :: p_IverticesAtElementCoarse
@@ -188,8 +188,8 @@ CONTAINS
     CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                                p_IverticesAtElementCoarse)
                                
-    CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
-                                  p_DcornerCoordinatesCoarse)
+    CALL storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+                                  p_DvertexCoordsCoarse)
 
     CALL lsyssc_getbase_Kld (rcoarseMatrix,p_KldCoarse)
     CALL lsyssc_getbase_Kcol (rcoarseMatrix,p_KcolCoarse)
@@ -231,7 +231,7 @@ CONTAINS
 
       ! Get the aspect ratio of the current element.
 
-      dcoords = p_DcornerCoordinatesCoarse(:, &
+      dcoords = p_DvertexCoordsCoarse(:, &
                   p_IverticesAtElementCoarse(:,ielAdjacent(0)))
       daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
       IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
@@ -242,7 +242,7 @@ CONTAINS
         IF (ielAdjacent(iedge) .NE. 0) THEN
           ! Get the aspect ratio of the current coarse grid element;
           ! if necessary, calculate the reciprocal.
-          dcoords = p_DcornerCoordinatesCoarse(:, &
+          dcoords = p_DvertexCoordsCoarse(:, &
                       p_IverticesAtElementCoarse(:,ielAdjacent(iedge)))
           daspectRatio(iedge) = gaux_getAspectRatio_quad2D (dcoords)
           IF (daspectRatio(iedge) .LT. 1.0_DP) daspectRatio(iedge) = 1.0_DP/daspectRatio(iedge)

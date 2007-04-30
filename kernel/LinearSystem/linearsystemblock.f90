@@ -3663,8 +3663,11 @@ CONTAINS
     ! local variables
     INTEGER :: iblock,jblock
     
-    DO jblock=1,LSYSBL_MAXBLOCKS
-      DO iblock=1,LSYSBL_MAXBLOCKS
+    CALL output_line ('Matrix is a ('&
+        //TRIM(sys_siL(rmatrix%ndiagBlocks,3))//','&
+        //TRIM(sys_siL(rmatrix%ndiagBlocks,3))//') matrix.')
+    DO jblock=1,rmatrix%ndiagBlocks
+      DO iblock=1,rmatrix%ndiagBlocks
         IF ((rmatrix%RmatrixBlock(iblock,jblock)%NEQ /= 0) .AND.&
             (rmatrix%RmatrixBlock(iblock,jblock)%NCOLS /= 0)) THEN
           CALL output_line ('Matrix-block #('//TRIM(sys_siL(iblock,2))//','//&

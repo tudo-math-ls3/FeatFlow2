@@ -787,7 +787,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates,p_Ddata2D
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords,p_Ddata2D
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge 
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
@@ -795,8 +795,8 @@ CONTAINS
     
       mfile = rexport%iunit
 
-      CALL storage_getbase_double2d (rexport%p_Rtriangulation%h_DcornerCoordinates,&
-          p_DcornerCoordinates)
+      CALL storage_getbase_double2d (rexport%p_Rtriangulation%h_DvertexCoords,&
+          p_DvertexCoords)
       CALL storage_getbase_int2d (rexport%p_Rtriangulation%h_IverticesAtElement,&
           p_IverticesAtElement)
       
@@ -862,10 +862,10 @@ CONTAINS
         
         ! Loop through the X/Y/Z coordinates
         
-        DO icoor = 1,MIN(UBOUND(p_DcornerCoordinates,1),3)
+        DO icoor = 1,MIN(UBOUND(p_DvertexCoords,1),3)
         
           DO ivt=1,rexport%p_Rtriangulation%NVT
-            WRITE(mfile,rexport%sdataFormat) p_DcornerCoordinates(icoor,ivt)
+            WRITE(mfile,rexport%sdataFormat) p_DvertexCoords(icoor,ivt)
           END DO
 
           ! Write coordinates of edge midpoints?
@@ -882,8 +882,8 @@ CONTAINS
             DO imt=1,rexport%p_Rtriangulation%NMT
               ivt1 = p_IverticesAtEdge(1,imt)
               ivt2 = p_IverticesAtEdge(2,imt)
-              dx = 0.5_DP*(p_DcornerCoordinates(icoor,ivt1) + &
-                           p_DcornerCoordinates(icoor,ivt2))
+              dx = 0.5_DP*(p_DvertexCoords(icoor,ivt1) + &
+                           p_DvertexCoords(icoor,ivt2))
               WRITE(mfile,rexport%sdataFormat) dx
             END DO
               
@@ -906,7 +906,7 @@ CONTAINS
               DO i=1,UBOUND(p_IverticesAtElement,1)
                 ivt = p_IverticesAtElement(i,iel)
                 IF (ivt .NE. 0) THEN
-                  dx = dx + p_DcornerCoordinates(icoor,ivt)
+                  dx = dx + p_DvertexCoords(icoor,ivt)
                 ELSE
                   ! We have only (i-1) vertices in that element; 
                   ! happens e.g. in triangles that are mixed into a quad mesh.
@@ -930,7 +930,7 @@ CONTAINS
         ! If there are not enough coordinates, we must add 0's -- as
         ! GMV always expects 3D data.
 
-        DO icoor = UBOUND(p_DcornerCoordinates,1)+1 , 3
+        DO icoor = UBOUND(p_DvertexCoords,1)+1 , 3
         
           DO ivt=1,rexport%p_Rtriangulation%NVT
             WRITE(mfile,rexport%sdataFormat) 0.0_DP

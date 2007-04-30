@@ -860,7 +860,7 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementFine
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinatesCoarse
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsCoarse
   REAL(DP), DIMENSION(:), POINTER   :: p_DelementAreaCoarse
   
   ! Data arrays
@@ -1027,15 +1027,15 @@ CONTAINS
                     ! to constant prolongation
             CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                                        p_IverticesAtElementCoarse)
-            CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
-                                          p_DcornerCoordinatesCoarse)
+            CALL storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+                                          p_DvertexCoordsCoarse)
             CALL storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
                                         p_DelementAreaCoarse)
             ! (what a nasty call...)                                       
             IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
-                      p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
+                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                       p_DelementAreaCoarse,&
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -1046,7 +1046,7 @@ CONTAINS
             ELSE
               ! DOF's = edge midpoint based
               CALL mlprj_prolUniformEx31ext_double (p_DuCoarse,p_DuFine, &
-                      p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
+                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                       p_DelementAreaCoarse,&
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -1122,7 +1122,7 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementFine
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinatesCoarse
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsCoarse
   REAL(DP), DIMENSION(:), POINTER   :: p_DelementAreaCoarse
   
   ! Data arrays
@@ -1288,15 +1288,15 @@ CONTAINS
                     ! to constant prolongation
             CALL storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                                        p_IverticesAtElementCoarse)
-            CALL storage_getbase_double2d(p_rtriaCoarse%h_DcornerCoordinates, &
-                                          p_DcornerCoordinatesCoarse)
+            CALL storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
+                                          p_DvertexCoordsCoarse)
             CALL storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
                                         p_DelementAreaCoarse)
             ! (what a nasty call...)                                       
             IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
-                      p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
+                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                       p_DelementAreaCoarse,&
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -1307,7 +1307,7 @@ CONTAINS
             ELSE
               ! DOF's = edge midpoint based
               CALL mlprj_restUniformEx31ext_double (p_DuCoarse,p_DuFine, &
-                      p_DcornerCoordinatesCoarse,p_IverticesAtElementCoarse, &
+                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                       p_DelementAreaCoarse,&
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -3457,7 +3457,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_prolUniformEx30ext_double (DuCoarse,DuFine, &
-               DcornerCoordinatesCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
+               DvertexCoordsCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
                IedgesAtElementCoarse,IedgesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
                NVTcoarse,NVTfine,NELcoarse, &
@@ -3475,8 +3475,8 @@ CONTAINS
   ! Coarse grid vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
 
-  ! DcornerCoordinates array on the coarse grid
-  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DcornerCoordinatesCoarse
+  ! DvertexCoords array on the coarse grid
+  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
@@ -3587,7 +3587,7 @@ CONTAINS
       !
       ! Get the aspect ratio of the current coarse grid element;
       ! if necessary, calculate the reciprocal.
-      dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
+      dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
       daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
       IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
       
@@ -3599,7 +3599,7 @@ CONTAINS
         IF (IELA(i) .NE. 0) THEN
           ! Get the aspect ratio of the current coarse grid element;
           ! if necessary, calculate the reciprocal.
-          dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
+          dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
           daspectRatio(i) = gaux_getAspectRatio_quad2D (dcoords)
           IF (daspectRatio(i) .LT. 1.0_DP) daspectRatio(i) = 1.0_DP/daspectRatio(i)
           
@@ -3985,7 +3985,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_restUniformEx30ext_double (DuCoarse,DuFine, &
-               DcornerCoordinatesCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
+               DvertexCoordsCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
                IedgesAtElementCoarse,IedgesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
                NVTcoarse,NVTfine,NELcoarse, &
@@ -4003,8 +4003,8 @@ CONTAINS
   ! Fine grid vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
-  ! DcornerCoordinates array on the coarse grid
-  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DcornerCoordinatesCoarse
+  ! DvertexCoords array on the coarse grid
+  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
@@ -4116,7 +4116,7 @@ CONTAINS
       !
       ! Get the aspect ratio of the current coarse grid element;
       ! if necessary, calculate the reciprocal.
-      dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
+      dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
       daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
       IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
       
@@ -4128,7 +4128,7 @@ CONTAINS
         IF (IELA(i) .NE. 0) THEN
           ! Get the aspect ratio of the current coarse grid element;
           ! if necessary, calculate the reciprocal.
-          dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
+          dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
           daspectRatio(i) = gaux_getAspectRatio_quad2D (dcoords)
           IF (daspectRatio(i) .LT. 1.0_DP) daspectRatio(i) = 1.0_DP/daspectRatio(i)
           
@@ -4644,7 +4644,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_prolUniformEx31ext_double (DuCoarse,DuFine, &
-               DcornerCoordinatesCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
+               DvertexCoordsCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
                IedgesAtElementCoarse,IedgesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
                NVTcoarse,NVTfine,NELcoarse, &
@@ -4662,8 +4662,8 @@ CONTAINS
   ! Coarse grid vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
 
-  ! DcornerCoordinates array on the coarse grid
-  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DcornerCoordinatesCoarse
+  ! DvertexCoords array on the coarse grid
+  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
@@ -4774,7 +4774,7 @@ CONTAINS
       !
       ! Get the aspect ratio of the current coarse grid element;
       ! if necessary, calculate the reciprocal.
-      dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
+      dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
       daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
       IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
       
@@ -4786,7 +4786,7 @@ CONTAINS
         IF (IELA(i) .NE. 0) THEN
           ! Get the aspect ratio of the current coarse grid element;
           ! if necessary, calculate the reciprocal.
-          dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
+          dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
           daspectRatio(i) = gaux_getAspectRatio_quad2D (dcoords)
           IF (daspectRatio(i) .LT. 1.0_DP) daspectRatio(i) = 1.0_DP/daspectRatio(i)
           
@@ -5172,7 +5172,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE mlprj_restUniformEx31ext_double (DuCoarse,DuFine, &
-               DcornerCoordinatesCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
+               DvertexCoordsCoarse,IverticesAtElementCoarse,DelementAreaCoarse,&
                IedgesAtElementCoarse,IedgesAtElementFine,&
                IneighboursAtElementCoarse,IneighboursAtElementFine,&
                NVTcoarse,NVTfine,NELcoarse, &
@@ -5190,8 +5190,8 @@ CONTAINS
   ! Fine grid vector
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
-  ! DcornerCoordinates array on the coarse grid
-  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DcornerCoordinatesCoarse
+  ! DvertexCoords array on the coarse grid
+  REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
@@ -5303,7 +5303,7 @@ CONTAINS
       !
       ! Get the aspect ratio of the current coarse grid element;
       ! if necessary, calculate the reciprocal.
-      dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
+      dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(0)))
       daspectRatio(0) = gaux_getAspectRatio_quad2D (dcoords)
       IF (daspectRatio(0) .LT. 1.0_DP) daspectRatio(0) = 1.0_DP/daspectRatio(0)
       
@@ -5315,7 +5315,7 @@ CONTAINS
         IF (IELA(i) .NE. 0) THEN
           ! Get the aspect ratio of the current coarse grid element;
           ! if necessary, calculate the reciprocal.
-          dcoords = DcornerCoordinatesCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
+          dcoords = DvertexCoordsCoarse(:,IverticesAtElementCoarse(:,IELA(i)))
           daspectRatio(i) = gaux_getAspectRatio_quad2D (dcoords)
           IF (daspectRatio(i) .LT. 1.0_DP) daspectRatio(i) = 1.0_DP/daspectRatio(i)
           

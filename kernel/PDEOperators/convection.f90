@@ -641,7 +641,7 @@ CONTAINS
     ! Get a pointer to triangulation arrays.
     CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_Kvert)
     CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_Kmid)
-    CALL storage_getbase_double2D (rtriangulation%h_DcornerCoordinates,p_Dcorvg)
+    CALL storage_getbase_double2D (rtriangulation%h_DvertexCoords,p_Dcorvg)
     NVT = rtriangulation%NVT
 
     !********************************************************************
@@ -1575,7 +1575,7 @@ CONTAINS
   
   ! Triangulation
   TYPE(t_triangulation), POINTER :: p_rtriangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
@@ -1650,8 +1650,8 @@ CONTAINS
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
-    CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
-                                   p_DcornerCoordinates)
+    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+                                   p_DvertexCoords)
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
     CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
@@ -1878,7 +1878,7 @@ CONTAINS
           CALL getLocalDelta (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
                       p_IverticesAtElement,p_IedgesAtElement,&
-                      p_DcornerCoordinates,Idofs(:,IEL),indof, &
+                      p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
           DlocalDelta(IEL) = DlocalDelta(IEL)
         END DO ! IEL
@@ -1983,13 +1983,13 @@ CONTAINS
       ! elements in the current set. 
       
 !      DO IEL=1,IELmax-IELset+1
-!        p_Dcoords(:,:,IEL) = p_DcornerCoordinates(:, &
+!        p_Dcoords(:,:,IEL) = p_DvertexCoords(:, &
 !                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !      END DO
 !      DO IEL=1,IELmax-IELset+1
 !        DO J = 1,NVE
 !          DO I = 1,NDIM2D
-!            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
+!            p_Dcoords(I,J,IEL) = p_DvertexCoords(I, &
 !                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
 !          END DO
 !        END DO
@@ -2899,7 +2899,7 @@ CONTAINS
   
   ! Triangulation
   TYPE(t_triangulation), POINTER :: p_rtriangulation
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
@@ -2988,8 +2988,8 @@ CONTAINS
     
     ! Get some information about the triangulation
     p_rtriangulation => p_rdiscretisation%p_rtriangulation
-    CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
-                                   p_DcornerCoordinates)
+    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+                                   p_DvertexCoords)
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                 p_IverticesAtElement)
     CALL storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
@@ -3261,7 +3261,7 @@ CONTAINS
           CALL getLocalDelta (u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2, &
                       INT(IEL+IELset-1,PREC_ELEMENTIDX),DUMAXR,DlocalDelta(IEL), &
                       p_IverticesAtElement,p_IedgesAtElement,&
-                      p_DcornerCoordinates,Idofs(:,IEL),indof, &
+                      p_DvertexCoords,Idofs(:,IEL),indof, &
                       dupsam,dre)
         END DO ! IEL
       END IF
@@ -3437,13 +3437,13 @@ CONTAINS
       ! elements in the current set. 
       
 !      DO IEL=1,IELmax-IELset+1
-!        p_Dcoords(:,:,IEL) = p_DcornerCoordinates(:, &
+!        p_Dcoords(:,:,IEL) = p_DvertexCoords(:, &
 !                            p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !      END DO
 !      DO IEL=1,IELmax-IELset+1
 !        DO J = 1,NVE
 !          DO I = 1,NDIM2D
-!            p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
+!            p_Dcoords(I,J,IEL) = p_DvertexCoords(I, &
 !                               p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
 !          END DO
 !        END DO
@@ -4639,7 +4639,7 @@ CONTAINS
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   
   ! Current element distribution
   TYPE(t_elementDistribution), POINTER :: p_elementDistribution
@@ -4716,8 +4716,8 @@ CONTAINS
                                 p_IelementsAtEdge)
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
                                 p_IverticesAtEdge)
-    CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
-                                  p_DcornerCoordinates)
+    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+                                  p_DvertexCoords)
                                 
     NVT = p_rtriangulation%NVT
     
@@ -5083,7 +5083,7 @@ CONTAINS
 !        DO ivt = 1,NVE
 !          DO i = 1,NDIM2D
 !            ! ... = DCORVG(i,KVERT(ivt,KMEL(iel,imt)))
-!            p_Dcoords(i,ivt,IEL) = p_DcornerCoordinates(i, &
+!            p_Dcoords(i,ivt,IEL) = p_DvertexCoords(i, &
 !                                p_IverticesAtElement(ivt,p_IelementsAtEdge(IEL,IMT)))
 !          END DO
 !        END DO
@@ -5188,8 +5188,8 @@ CONTAINS
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
       dedgelength = &
-        SQRT ((p_DcornerCoordinates(1,ivt2)-p_DcornerCoordinates(1,ivt1))**2 &
-            + (p_DcornerCoordinates(2,ivt2)-p_DcornerCoordinates(2,ivt1))**2 )
+        SQRT ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
+            + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
       dedgeweight = 0.5_DP * dedgelength
       
       ! Compute the coefficient in front of the integral:
@@ -5596,7 +5596,7 @@ CONTAINS
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
   INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   
   ! Current element distribution
   TYPE(t_elementDistribution), POINTER :: p_elementDistribution
@@ -5673,8 +5673,8 @@ CONTAINS
                                 p_IelementsAtEdge)
     CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
                                 p_IverticesAtEdge)
-    CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
-                                  p_DcornerCoordinates)
+    CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+                                  p_DvertexCoords)
                                 
     NVT = p_rtriangulation%NVT
     
@@ -6040,7 +6040,7 @@ CONTAINS
 !        DO ivt = 1,NVE
 !          DO i = 1,NDIM2D
 !            ! ... = DCORVG(i,KVERT(ivt,KMEL(iel,imt)))
-!            p_Dcoords(i,ivt,IEL) = p_DcornerCoordinates(i, &
+!            p_Dcoords(i,ivt,IEL) = p_DvertexCoords(i, &
 !                                p_IverticesAtElement(ivt,p_IelementsAtEdge(IEL,IMT)))
 !          END DO
 !        END DO
@@ -6145,8 +6145,8 @@ CONTAINS
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
       dedgelength = &
-        SQRT ((p_DcornerCoordinates(1,ivt2)-p_DcornerCoordinates(1,ivt1))**2 &
-            + (p_DcornerCoordinates(2,ivt2)-p_DcornerCoordinates(2,ivt1))**2 )
+        SQRT ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
+            + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
       dedgeweight = 0.5_DP * dedgelength
       
       ! Compute the coefficient in front of the integral:

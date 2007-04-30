@@ -346,7 +346,7 @@ CONTAINS
 
 !</subroutine>
 
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
 
     ! What type of transformation do we have? First decide on the dimension,
@@ -357,8 +357,8 @@ CONTAINS
       ! 1D elements. Lines
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
-      CALL storage_getbase_double2d (rtriangulation%h_DcornerCoordinates,&  
-                                     p_DcornerCoordinates)
+      CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+                                     p_DvertexCoords)
       CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
                                   p_IverticesAtElement)
       
@@ -369,7 +369,7 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
-        Dcoords (1,1:3) = p_DcornerCoordinates(1,&
+        Dcoords (1,1:3) = p_DvertexCoords(1,&
                                 p_IverticesAtElement(1:3,iel))
                                 
       END SELECT
@@ -378,8 +378,8 @@ CONTAINS
       ! 2D elements. Triangles, Quadrilaterals. 
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
-      CALL storage_getbase_double2d (rtriangulation%h_DcornerCoordinates,&  
-                                     p_DcornerCoordinates)
+      CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+                                     p_DvertexCoords)
       CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
                                   p_IverticesAtElement)
       
@@ -390,14 +390,14 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 2D simplex -> linear triangular transformation. 
         ! Transfer the corners of the element.
-        Dcoords (1:NDIM2D,1:3) = p_DcornerCoordinates(1:NDIM2D,&
+        Dcoords (1:NDIM2D,1:3) = p_DvertexCoords(1:NDIM2D,&
                                     p_IverticesAtElement(1:3,iel))
       
       CASE (TRAFO_ID_MLINCUBE)
         ! Bilinear transformation for cubic-shaped elements 
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
-        Dcoords (1:NDIM2D,1:4) = p_DcornerCoordinates(1:NDIM2D,&
+        Dcoords (1:NDIM2D,1:4) = p_DvertexCoords(1:NDIM2D,&
                                     p_IverticesAtElement(1:4,iel))
       
       END SELECT
@@ -406,8 +406,8 @@ CONTAINS
       ! 3D elements. Tetrahedrals, Hexahedrals.
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
-      CALL storage_getbase_double2d (rtriangulation%h_DcornerCoordinates,&  
-                                     p_DcornerCoordinates)
+      CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+                                     p_DvertexCoords)
       CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
                                   p_IverticesAtElement)
       
@@ -418,14 +418,14 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 3D simplex -> linear tetrahedral transformation. 
         ! Transfer the corners of the element.
-        Dcoords (1:NDIM3D,1:4) = p_DcornerCoordinates(1:NDIM3D,&
+        Dcoords (1:NDIM3D,1:4) = p_DvertexCoords(1:NDIM3D,&
                                     p_IverticesAtElement(1:4,iel))
       
       CASE (TRAFO_ID_MLINCUBE)
         ! Trilinear transformation for cubic-shaped elements 
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
-        Dcoords (1:NDIM3D,1:8) = p_DcornerCoordinates(1:NDIM3D,&
+        Dcoords (1:NDIM3D,1:8) = p_DvertexCoords(1:NDIM3D,&
                                     p_IverticesAtElement(1:8,iel))
       
       END SELECT
@@ -471,7 +471,7 @@ CONTAINS
 
 !</subroutine>
 
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER :: ipoint
     INTEGER(PREC_ELEMENTIDX) :: iel
@@ -484,8 +484,8 @@ CONTAINS
       ! 2D elements. Lines.
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
-      CALL storage_getbase_double2d (rtriangulation%h_DcornerCoordinates,&  
-                                     p_DcornerCoordinates)
+      CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+                                     p_DvertexCoords)
       CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
                                   p_IverticesAtElement)
       
@@ -499,7 +499,7 @@ CONTAINS
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,2
             Dcoords (1,ipoint,iel) = &
-              p_DcornerCoordinates(1,p_IverticesAtElement(ipoint,Ielements(iel)))
+              p_DvertexCoords(1,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
       
@@ -509,8 +509,8 @@ CONTAINS
       ! 2D elements. Triangles, Quadrilaterals. 
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
-      CALL storage_getbase_double2d (rtriangulation%h_DcornerCoordinates,&  
-                                     p_DcornerCoordinates)
+      CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+                                     p_DvertexCoords)
       CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
                                   p_IverticesAtElement)
       
@@ -524,7 +524,7 @@ CONTAINS
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,3
             Dcoords (1:NDIM2D,ipoint,iel) = &
-              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
+              p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
       
@@ -535,7 +535,7 @@ CONTAINS
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,4
             Dcoords (1:NDIM2D,ipoint,iel) = &
-              p_DcornerCoordinates(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
+              p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
       
@@ -545,8 +545,8 @@ CONTAINS
       ! 3D elements. Tetrahedrals, Hexahedrals.
       ! We always need the corner-coordinate array, so get it 
       ! from the triangulation.
-      CALL storage_getbase_double2d (rtriangulation%h_DcornerCoordinates,&  
-                                     p_DcornerCoordinates)
+      CALL storage_getbase_double2d (rtriangulation%h_DvertexCoords,&  
+                                     p_DvertexCoords)
       CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&  
                                   p_IverticesAtElement)
       
@@ -560,7 +560,7 @@ CONTAINS
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,4
             Dcoords (1:NDIM3D,ipoint,iel) = &
-              p_DcornerCoordinates(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
+              p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
       
@@ -571,7 +571,7 @@ CONTAINS
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,8
             Dcoords (1:NDIM3D,ipoint,iel) = &
-              p_DcornerCoordinates(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
+              p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
       

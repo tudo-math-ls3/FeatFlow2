@@ -271,7 +271,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     
     ! Pointer to DCORVG of the triangulation
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
     
     ! Current element distribution
     TYPE(t_elementDistribution), POINTER :: p_elementDistribution
@@ -318,8 +318,8 @@ CONTAINS
     ! Get a pointer to the KVERT and DCORVG array
     CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
                                p_IverticesAtElement)
-    CALL storage_getbase_double2D(p_rtriangulation%h_DcornerCoordinates, &
-                               p_DcornerCoordinates)
+    CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
+                               p_DvertexCoords)
                                
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
@@ -420,13 +420,13 @@ CONTAINS
         ! elements in the current set. 
         
 !        DO IEL=1,IELmax-IELset+1
-!          p_Dcoords(:,:,IEL) = p_DcornerCoordinates(:, &
+!          p_Dcoords(:,:,IEL) = p_DvertexCoords(:, &
 !                              p_IverticesAtElement(:,p_IelementList(IELset+IEL-1)))
 !        END DO
 !        DO IEL=1,IELmax-IELset+1
 !          DO J = 1,NVE
 !            DO I = 1,NDIM2D
-!              p_Dcoords(I,J,IEL) = p_DcornerCoordinates(I, &
+!              p_Dcoords(I,J,IEL) = p_DvertexCoords(I, &
 !                                 p_IverticesAtElement(J,p_IelementList(IELset+IEL-1)))
 !            END DO
 !          END DO
