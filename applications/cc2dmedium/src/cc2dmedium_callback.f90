@@ -873,7 +873,7 @@ CONTAINS
     
       ! Get the triangulation array for the point coordinates
       p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
-      CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
+      CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoordinates)
       CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
@@ -963,7 +963,7 @@ CONTAINS
     ! This is either the X/Y coordinate of a corner point or
     ! of an edge-midpoint, depending of cinfoNeeded.
     
-    SUBROUTINE getXYcoord (cinfoNeeded,iwhere,DcornerCoordinates,&
+    SUBROUTINE getXYcoord (cinfoNeeded,iwhere,DvertexCoords,&
                            IverticesAtElement,IverticesAtEdge,NVT,&
                            dx,dy)
     
@@ -980,7 +980,7 @@ CONTAINS
     INTEGER(I32), INTENT(IN) :: iwhere
     
     ! Array with coordinates of all corner vertices (DCORVG)
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DcornerCoordinates
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DvertexCoords
     
     ! Array with numbers of corner coordinates for all elements (KVERT)
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
@@ -1006,16 +1006,16 @@ CONTAINS
       SELECT CASE (cinfoNeeded)
       CASE (DISCFBC_NEEDFUNC)
         ! That's easy
-        dx = DcornerCoordinates(1,iwhere)
-        dy = DcornerCoordinates(2,iwhere)
+        dx = DvertexCoords(1,iwhere)
+        dy = DvertexCoords(2,iwhere)
       
       CASE (DISCFBC_NEEDFUNCMID,DISCFBC_NEEDINTMEAN)
         ! Not much harder; get the two points on the edge and calculate
         ! the mean coordinates.
         iv1 = IverticesAtEdge(1,iwhere)
         iv2 = IverticesAtEdge(2,iwhere)
-        dx = 0.5_DP*(DcornerCoordinates(1,iv1)+DcornerCoordinates(1,iv2))
-        dy = 0.5_DP*(DcornerCoordinates(2,iv1)+DcornerCoordinates(2,iv2))
+        dx = 0.5_DP*(DvertexCoords(1,iv1)+DvertexCoords(1,iv2))
+        dy = 0.5_DP*(DvertexCoords(2,iv1)+DvertexCoords(2,iv2))
       
       CASE (DISCFBC_NEEDFUNCELMID)
         ! A little bit more to do; we have three or four corners
@@ -1024,8 +1024,8 @@ CONTAINS
         DO i=1,SIZE(IverticesAtElement,1)
           iv1 = IverticesAtElement(i,iwhere)
           IF (iv1 .NE. 0) THEN
-            dx = dx + DcornerCoordinates(1,iv1)
-            dy = dy + DcornerCoordinates(2,iv1)
+            dx = dx + DvertexCoords(1,iv1)
+            dy = dy + DvertexCoords(2,iv1)
             j = i
           END IF
         END DO
