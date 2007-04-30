@@ -906,6 +906,7 @@ CONTAINS
   ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
+  CHARACTER(LEN=SYS_NAMELEN) :: snameBackup
 
   IF (isize .EQ. 0) THEN
     PRINT *,'storage_new1D Warning: isize=0'
@@ -920,8 +921,15 @@ CONTAINS
   ELSE
     p_rheap => rbase
   END IF
+  
+  ! Back up the array name. This is important for a very crual situation:
+  ! The storage_newhandle below may reallocate the p_Rdescriptors array.
+  ! If sname points to one of the old arrays, the pointer gets invalid
+  ! and the name cannot be accessed anymore. So make a backup of that 
+  ! before creating a new handle!
+  snameBackup = sname
 
-  ! Get a new handle
+  ! Get a new handle.
   ihandle = storage_newhandle (p_rheap)
 
   ! Where is the descriptor of the handle?
@@ -931,7 +939,7 @@ CONTAINS
 
   p_rnode%idataType = ctype
   p_rnode%idimension = 1
-  p_rnode%sname = sname
+  p_rnode%sname = snameBackup
 
   ! Allocate memory according to isize:
 
@@ -1019,6 +1027,7 @@ CONTAINS
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
   INTEGER(I32) :: isize
+  CHARACTER(LEN=SYS_NAMELEN) :: snameBackup
 
   isize=iubound-ilbound+1
   IF (isize .EQ. 0) THEN
@@ -1035,6 +1044,13 @@ CONTAINS
     p_rheap => rbase
   END IF
 
+  ! Back up the array name. This is important for a very crual situation:
+  ! The storage_newhandle below may reallocate the p_Rdescriptors array.
+  ! If sname points to one of the old arrays, the pointer gets invalid
+  ! and the name cannot be accessed anymore. So make a backup of that 
+  ! before creating a new handle!
+  snameBackup = sname
+
   ! Get a new handle
   ihandle = storage_newhandle (p_rheap)
 
@@ -1045,7 +1061,7 @@ CONTAINS
 
   p_rnode%idataType = ctype
   p_rnode%idimension = 1
-  p_rnode%sname = sname
+  p_rnode%sname = snameBackup
 
   ! Allocate memory according to isize:
 
@@ -1129,6 +1145,7 @@ CONTAINS
   ! Pointer to the heap
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
+  CHARACTER(LEN=SYS_NAMELEN) :: snameBackup
 
   IF ((Isize(1) .EQ. 0) .OR. (Isize(2) .EQ. 0)) THEN
     PRINT *,'storage_new2D Warning: Isize=0'
@@ -1144,6 +1161,13 @@ CONTAINS
     p_rheap => rbase
   END IF
 
+  ! Back up the array name. This is important for a very crual situation:
+  ! The storage_newhandle below may reallocate the p_Rdescriptors array.
+  ! If sname points to one of the old arrays, the pointer gets invalid
+  ! and the name cannot be accessed anymore. So make a backup of that 
+  ! before creating a new handle!
+  snameBackup = sname
+
   ! Get a new handle
   ihandle = storage_newhandle (p_rheap)
 
@@ -1154,7 +1178,7 @@ CONTAINS
 
   p_rnode%idataType = ctype
   p_rnode%idimension = 2
-  p_rnode%sname = sname
+  p_rnode%sname = snameBackup
 
   ! Allocate memory according to Isize:
 
@@ -1242,6 +1266,7 @@ CONTAINS
   TYPE(t_storageBlock), POINTER :: p_rheap
   TYPE(t_storageNode), POINTER :: p_rnode
   INTEGER(I32), DIMENSION(2) :: Isize
+  CHARACTER(LEN=SYS_NAMELEN) :: snameBackup
 
   Isize=Iubound-Ilbound+1
   IF ((Isize(1) .EQ. 0) .OR. (Isize(2) .EQ. 0)) THEN
@@ -1258,6 +1283,13 @@ CONTAINS
     p_rheap => rbase
   END IF
 
+  ! Back up the array name. This is important for a very crual situation:
+  ! The storage_newhandle below may reallocate the p_Rdescriptors array.
+  ! If sname points to one of the old arrays, the pointer gets invalid
+  ! and the name cannot be accessed anymore. So make a backup of that 
+  ! before creating a new handle!
+  snameBackup = sname
+
   ! Get a new handle
   ihandle = storage_newhandle (p_rheap)
 
@@ -1268,7 +1300,7 @@ CONTAINS
 
   p_rnode%idataType = ctype
   p_rnode%idimension = 2
-  p_rnode%sname = sname
+  p_rnode%sname = snameBackup
 
   ! Allocate memory according to Isize:
 
@@ -3721,6 +3753,10 @@ CONTAINS
         END SELECT
       END SELECT
 
+      ! The storage_new may reallocate the p_Rdescriptors array, so get the
+      ! pointer again to be sure it's correct and not pointing to nowhere!
+      p_rsource => p_rheap%p_Rdescriptors(h_source)
+      
     END IF
 
     p_rdest => p_rheap%p_Rdescriptors(h_dest)
@@ -3982,6 +4018,7 @@ CONTAINS
     TYPE(t_storageBlock), POINTER :: p_rheap
     TYPE(t_storageNode), POINTER :: p_rsource, p_rdest
     INTEGER(I32) :: i
+    CHARACTER(LEN=SYS_NAMELEN) :: sname = ''
 
     ! Check if the start address is positive
     IF (istart_source <= 0 .OR. istart_dest <= 0) THEN
@@ -4040,7 +4077,11 @@ CONTAINS
               ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       END SELECT
 
-   END IF
+      ! The storage_new may reallocate the p_Rdescriptors array, so get the
+      ! pointer again to be sure it's correct and not pointing to nowhere!
+      p_rsource => p_rheap%p_Rdescriptors(h_source)
+      
+    END IF
 
     p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
@@ -4273,7 +4314,11 @@ CONTAINS
               ST_CHAR, h_dest, ST_NEWBLOCK_NOINIT, p_rheap)
       END SELECT
 
-   END IF
+      ! The storage_new may reallocate the p_Rdescriptors array, so get the
+      ! pointer again to be sure it's correct and not pointing to nowhere!
+      p_rsource => p_rheap%p_Rdescriptors(h_source)
+      
+    END IF
 
     p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
