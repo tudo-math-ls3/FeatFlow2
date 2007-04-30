@@ -793,7 +793,7 @@ CONTAINS
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
 !  
 !  ! Pointer to DCORVG of the triangulation
-!  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+!  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 !  
 !  ! Current element distribution
 !  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
@@ -936,7 +936,7 @@ CONTAINS
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
 !  
 !  ! Pointer to DCORVG of the triangulation
-!  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+!  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 !  
 !
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,

@@ -287,6 +287,17 @@ CONTAINS
       CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
           rproblem%p_rboundary)
     END DO
+    
+    ! Compress the level hierarchy.
+    ! Share the vertex coordinates of all levels, so the coarse grid coordinates
+    ! are 'contained' in the fine grid coordinates. The effect is:
+    ! 1.) Save some memory
+    ! 2.) Every change in the fine grid coordinates also affects the coarse
+    !     grid coordinates and vice versa.
+    DO i=rproblem%NLMAX-1,rproblem%NLMIN
+      CALL tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
+          rproblem%RlevelInfo(i)%rtriangulation)
+    END DO
 
   END SUBROUTINE
 
