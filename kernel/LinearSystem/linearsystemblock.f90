@@ -3367,6 +3367,7 @@ CONTAINS
     
     ! For every submatrix in the source matrix, call the 'scalar' variant
     ! of duplicateMatrix. 
+    ALLOCATE(rdestMatrix%RmatrixBlock((ilast-ifirst+1),(ilast-ifirst+1)))
     DO j=ifirst,ilast
       DO i=ifirst,ilast
         IF (rsourceMatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) THEN
