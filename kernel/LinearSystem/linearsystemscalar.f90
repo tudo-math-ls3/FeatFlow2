@@ -11071,7 +11071,7 @@ CONTAINS
         ddata = p_Da((icol-1)*rmatrix%NEQ+icol)
         
         ! Fill the column with zero
-        p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ-1) = 0.0_DP
+        p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
         
         ! Restore the diagonal
         p_Da((icol-1)*rmatrix%NEQ+icol) = ddata
@@ -11087,7 +11087,7 @@ CONTAINS
         fdata = p_Fa((icol-1)*rmatrix%NEQ+icol)
         
         ! Fill the column with zero
-        p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ-1) = 0.0_DP
+        p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
         
         ! Restore the diagonal
         p_Fa((icol-1)*rmatrix%NEQ+icol) = fdata
