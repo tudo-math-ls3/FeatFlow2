@@ -466,6 +466,7 @@ CONTAINS
 !</subroutine>
 
     INTEGER :: iblock,jblock,i !,icp
+    LOGICAL :: boffdiagSubmatrix
     TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
     
     ! Imposing boundary conditions normally changes the whole matrix!
@@ -483,6 +484,9 @@ CONTAINS
     END IF
     
     IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
+    
+    ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
+    boffdiagSubmatrix = rmatrix%imatrixSpec .EQ. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
     
     ! Now loop through all entries in this list:
     DO i=1,SIZE(p_RdiscreteBC)
@@ -502,11 +506,15 @@ CONTAINS
         ! into the scalar submatrices.
         ! For now, this implements unit vectors into the diagonal matrices
         ! and zero-vectors into the offdiagonal matrices.
+        ! Only exception: If the matrix is a submatrix of another matrix
+        ! and not on the diagonal of its parent, we must replace the rows
+        ! by zero vectors!
         DO jblock = 1,rmatrix%ndiagBlocks
           IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
             CALL matfil_imposeDirichletBC (&
                         rmatrix%RmatrixBlock(iblock,jblock), &
-                        iblock .NE. jblock,p_RdiscreteBC(i)%rdirichletBCs)
+                        (iblock .NE. jblock) .OR. boffdiagSubmatrix,&
+                        p_RdiscreteBC(i)%rdirichletBCs)
           END IF
         END DO
         
@@ -573,6 +581,7 @@ CONTAINS
 !</subroutine>
 
     INTEGER :: iblock,jblock,i,icp
+    LOGICAL :: boffdiagSubmatrix
     TYPE(t_discreteBCEntry), DIMENSION(:), POINTER :: p_RdiscreteBC
     
     ! Imposing boundary conditions normally changes the whole matrix!
@@ -582,6 +591,9 @@ CONTAINS
     
     IF (.NOT. ASSOCIATED(p_RdiscreteBC)) RETURN
     
+    ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
+    boffdiagSubmatrix = rmatrix%imatrixSpec .EQ. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
+
     ! Now loop through all entries in this list:
     DO i=1,SIZE(p_RdiscreteBC)
     
@@ -598,7 +610,7 @@ CONTAINS
             IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
               CALL matfil_imposeNLSlipBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &
-                          iblock .NE. jblock,bforprec,&
+                          (iblock .NE. jblock) .OR. boffdiagSubmatrix,bforprec,&
                           p_RdiscreteBC(i)%rslipBCs)
             END IF
           END DO
@@ -642,6 +654,7 @@ CONTAINS
 !</subroutine>
 
     INTEGER :: iblock,jblock,i,j
+    LOGICAL :: boffdiagSubmatrix
     TYPE(t_discreteFBCEntry), DIMENSION(:), POINTER :: p_RdiscreteFBC
     
     ! Imposing boundary conditions normally changes the whole matrix!
@@ -651,6 +664,9 @@ CONTAINS
     
     IF (.NOT. ASSOCIATED(p_RdiscreteFBC)) RETURN
     
+    ! Is the matrix a 'primal' matrix or is it a submatrix of another block matrix?
+    boffdiagSubmatrix = rmatrix%imatrixSpec .EQ. LSYSBS_MSPEC_OFFDIAGSUBMATRIX
+
     ! Now loop through all entries in this list:
     DO i=1,SIZE(p_RdiscreteFBC)
     
@@ -671,11 +687,15 @@ CONTAINS
           ! into the scalar submatrices.
           ! For now, this implements unit vectors into the diagonal matrices
           ! and zero-vectors into the offdiagonal matrices.
+          ! Only exception: If the matrix is a submatrix of another matrix
+          ! and not on the diagonal of its parent, we must replace the rows
+          ! by zero vectors!
           DO jblock = 1,rmatrix%ndiagBlocks
             IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
               CALL matfil_imposeDirichletFBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &
-                          iblock .NE. jblock,p_RdiscreteFBC(i)%rdirichletFBCs)
+                          (iblock .NE. jblock) .OR. boffdiagSubmatrix,&
+                          p_RdiscreteFBC(i)%rdirichletFBCs)
             END IF
           END DO
           

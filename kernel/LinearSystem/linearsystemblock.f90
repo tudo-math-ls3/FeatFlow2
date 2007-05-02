@@ -165,21 +165,28 @@ MODULE linearsystemblock
 !<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
-  INTEGER, PARAMETER :: LSYSBS_MSPEC_GENERAL           =        0
+  INTEGER(I32), PARAMETER :: LSYSBS_MSPEC_GENERAL           =        0
   
   ! Block matrix is a scalar (i.e. 1x1) matrix.
-  INTEGER, PARAMETER :: LSYSBS_MSPEC_SCALAR            =        1
+  INTEGER(I32), PARAMETER :: LSYSBS_MSPEC_SCALAR            =        1
 
   ! Block matrix is of saddle-point type:
   !  (A  B1)
   !  (B2 0 )
-  INTEGER, PARAMETER :: LSYSBS_MSPEC_SADDLEPOINT       =        2
+  INTEGER(I32), PARAMETER :: LSYSBS_MSPEC_SADDLEPOINT       =        2
 
   ! Block matrix is nearly of saddle-point type 
   !  (A  B1)
   !  (B2 C )
   ! with C~0 being a stabilisation matrix
-  INTEGER, PARAMETER :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3
+  INTEGER(I32), PARAMETER :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3
+
+  ! The block matrix is a submatrix of another block matrix and not
+  ! located at the diagonal of its parent. 
+  ! This e.g. modifies the way, boundary conditions are implemented
+  ! into a matrix; see in the boundary condition implementation
+  ! routines for details.
+  INTEGER(I32), PARAMETER :: LSYSBS_MSPEC_OFFDIAGSUBMATRIX  =        4
 
 !</constantblock>
 
