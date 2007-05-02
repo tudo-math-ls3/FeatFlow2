@@ -804,6 +804,11 @@ CONTAINS
     REAL(DP), INTENT(OUT)  :: Res
 !</output>
 !</subroutine>
+
+    IF (h_Stack .EQ. ST_NOHANDLE) THEN
+      PRINT *, "*** Parser error: Parser not initialised!"
+      STOP
+    END IF
     
     ! Check if memory of global stack is sufficient
     IF (SIZE(p_Stack) < rparser%Comp(iComp)%StackSize+1) THEN

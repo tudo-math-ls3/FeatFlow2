@@ -163,6 +163,9 @@
 !# 45.) lsyssc_createDiagMatrixStruc
 !#      -> Creates a diagonal matrix, does not allocate memory for the entries.
 !#
+!# 46.) lsyssc_clearOffdiags
+!#      -> Clear all offdiagonal entries in a matrix.
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -10735,18 +10738,22 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_lumpMatrixScalar (rmatrixScalar,clumpType)
+  SUBROUTINE lsyssc_lumpMatrixScalar (rmatrixScalar,clumpType,bconvertToDiag)
   
 !<description>
   ! This routine performs (mass) lumping with a scalar matrix. Lumping
   ! is in this sense a (more or less) algebraic operation to convert a given
   ! matrix into a diagonal matrix. There are different types of lumping
   ! supported:\\
-  ! 'Simple lumping' simply takes the diagonal from a given matrix, assuming
+  ! 'Simple lumping' simply takes the diagonal from a given matrix, forcing
   !   all off-diagonal entries to be zero.\\
   ! 'Diagonal lumping' adds all off-diagonal entries to the main diagonal and
   !   extracts the diagonal entries of the resulting matrix to form a
-  !   diagonal matrix.
+  !   diagonal matrix.\\
+  !
+  ! If bconvertToDiag=TRUE, the matrix structure will be changed into a
+  ! diagonal matrix, which is the standard case. When setting this parameter
+  ! to FALSE, the matrix structure stays unchanged.
 !</description>
 
 !<input>
@@ -10754,6 +10761,12 @@ CONTAINS
   ! LSYSSC_LUMP_STD:  Perform standard lumping.
   ! LSYSSC_LUMP_DIAG: Perform diagonal lumping.
   INTEGER, INTENT(IN) :: clumpType
+  
+  ! OPTIONAL: Whether to convert the matrix structure to a diagonal matrix.
+  ! TRUE:  Convert the matrix to a diagonal matrix. This is the default case
+  !        if the parameter is not present.
+  ! FALSE: Matrix structure stays unchanged.
+  LOGICAL, INTENT(IN), OPTIONAL :: bconvertToDiag
 !</input>
 
 !<inputoutput>
@@ -10769,8 +10782,12 @@ CONTAINS
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kdiagonal, p_Kld
   REAL(DP), DIMENSION(:), POINTER :: p_Da
   REAL(SP), DIMENSION(:), POINTER :: p_Fa
+  LOGICAL :: bconvert
 
   IF (rmatrixScalar%NEQ .EQ. 0) RETURN
+  
+  bconvert = .TRUE.
+  IF (PRESENT(bconvertToDiag)) bconvert = bconvertToDiag
 
   ! Which type of lumping do we have to do?
   
@@ -10869,9 +10886,219 @@ CONTAINS
   
   END SELECT
 
-  ! Convert the given matrix into a diagonal matrix by extracting 
-  ! the diagonal entries.
-  CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIXD)
+  IF (bconvert) THEN
+    ! Convert the given matrix into a diagonal matrix by extracting 
+    ! the diagonal entries.
+    CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIXD)
+  ELSE
+    ! Clear all off-diagonal entries, so the matrix will be a diagonal
+    ! matrix in the original structure. 
+    CALL lsyssc_clearOffdiags (rmatrixScalar)
+  END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_clearOffdiags (rmatrix)
+  
+!<description>
+  ! Sets all off-diagonal entries in the matrix rmatrix to zero.
+!</description>
+
+!<inputoutput>
+  ! The matrix which is to be modified.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+  ! At first we must take care of the matrix type.
+  SELECT CASE (rmatrix%cmatrixFormat)
+  CASE (LSYSSC_MATRIX9)
+    CALL removeOffdiags_format9 (rmatrix)
+  CASE (LSYSSC_MATRIX7)
+    CALL removeOffdiags_format7 (rmatrix)
+  CASE (LSYSSC_MATRIXD)
+    ! Nothing to do
+  CASE (LSYSSC_MATRIX1)
+    CALL removeOffdiags_format1 (rmatrix) 
+  CASE DEFAULT
+    PRINT *,'lsyssc_clearOffdiags: Unsupported matrix format'
+    STOP
+  END SELECT
+  
+  CONTAINS
+   
+    ! ****************************************
+    ! The replacement routine for format 9
+    
+    SUBROUTINE removeOffdiags_format9 (rmatrix)
+    
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    
+    ! local variables
+    INTEGER(PREC_MATIDX) :: irow
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    REAL(SP), DIMENSION(:), POINTER :: p_FA
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
+    REAL(DP) :: ddiag,fdiag
+    
+    ! Get Kld and Kdiagonal
+    CALL lsyssc_getbase_Kld(rmatrix,p_Kld)
+    CALL lsyssc_getbase_Kdiagonal(rmatrix,p_Kdiagonal)
+    
+    ! Take care of the format of the entries
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data array
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
+      
+      ! loop through the rows
+      DO irow = 1,rmatrix%NEQ
+      
+        ! Get the diagonal
+        ddiag = p_DA(p_Kdiagonal(irow))
+      
+        ! Clear the row
+        p_DA(p_Kld(irow):p_Kld(irow+1)-1) = 0.0_DP
+        
+        ! restore the diagonal
+        p_DA(p_Kdiagonal(irow)) = ddiag
+      
+      END DO
+      
+    CASE (ST_SINGLE)
+      ! Get the data array
+      CALL lsyssc_getbase_single(rmatrix,p_FA)
+      
+      ! loop through the rows
+      DO irow = 1,rmatrix%NEQ
+      
+        ! Get the diagonal
+        fdiag = p_FA(p_Kdiagonal(irow))
+      
+        ! Clear the row
+        p_FA(p_Kld(irow):p_Kld(irow+1)-1) = 0.0_SP
+        
+        ! restore the diagonal
+        p_FA(p_Kdiagonal(irow)) = Fdiag
+      
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'removeOffdiags_format9: Unsupported matrix precision!'
+      STOP
+      
+    END SELECT
+    
+    END SUBROUTINE
+
+    ! ****************************************
+    ! The replacement routine for format 7
+    
+    SUBROUTINE removeOffdiags_format7 (rmatrix)
+    
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    
+    ! local variables
+    INTEGER(PREC_MATIDX) :: irow
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    REAL(SP), DIMENSION(:), POINTER :: p_FA
+
+    ! Get Kld:
+    CALL lsyssc_getbase_Kld(rmatrix,p_Kld)
+
+    ! Take care of the format of the entries
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data array
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
+      
+      ! loop through the rows
+      DO irow = 1,rmatrix%NEQ
+      
+        ! Clear the row except for the diagonal
+        p_DA(p_Kld(irow)+1:p_Kld(irow+1)-1) = 0.0_DP
+      
+      END DO
+      
+    CASE (ST_SINGLE)
+      ! Get the data array
+      CALL lsyssc_getbase_single(rmatrix,p_FA)
+      
+      ! loop through the rows
+      DO irow = 1,rmatrix%NEQ
+      
+        ! Clear the row except for the diagonal
+        p_FA(p_Kld(irow)+1:p_Kld(irow+1)-1) = 0.0_SP
+      
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'removeOffdiags_format7: Unsupported matrix precision!'
+      STOP
+    END SELECT
+
+    END SUBROUTINE
+  
+    ! ****************************************
+    ! The replacement routine for format 1
+    
+    SUBROUTINE removeOffdiags_format1 (rmatrix)
+    
+    TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+    
+    ! local variables
+    INTEGER(PREC_MATIDX) :: irow,icol
+    REAL(DP), DIMENSION(:), POINTER :: p_DA
+    REAL(SP), DIMENSION(:), POINTER :: p_FA
+    REAL(DP) :: ddata
+    REAL(SP) :: fdata
+
+    ! Take care of the format of the entries
+    SELECT CASE (rmatrix%cdataType)
+    CASE (ST_DOUBLE)
+      ! Get the data array
+      CALL lsyssc_getbase_double(rmatrix,p_DA)
+      
+      ! loop through the rows ald colums, set off-diagonal entries to zero.
+      DO icol = 1,rmatrix%NCOLS
+        ! Remember the diagonal
+        ddata = p_Da((icol-1)*rmatrix%NEQ+icol)
+        
+        ! Fill the column with zero
+        p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ-1) = 0.0_DP
+        
+        ! Restore the diagonal
+        p_Da((icol-1)*rmatrix%NEQ+icol) = ddata
+      END DO
+      
+    CASE (ST_SINGLE)
+      ! Get the data array
+      CALL lsyssc_getbase_single(rmatrix,p_FA)
+      
+      ! loop through the rows ald colums, set off-diagonal entries to zero.
+      DO icol = 1,rmatrix%NCOLS
+        ! Remember the diagonal
+        fdata = p_Fa((icol-1)*rmatrix%NEQ+icol)
+        
+        ! Fill the column with zero
+        p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ-1) = 0.0_DP
+        
+        ! Restore the diagonal
+        p_Fa((icol-1)*rmatrix%NEQ+icol) = fdata
+      END DO
+      
+    CASE DEFAULT
+      PRINT *,'removeOffdiags_format7: Unsupported matrix precision!'
+      STOP
+    END SELECT
+    
+    END SUBROUTINE
 
   END SUBROUTINE
 
