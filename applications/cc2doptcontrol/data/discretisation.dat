@@ -30,18 +30,18 @@
 
 # minimum mg-level; <=0: Use level (NLMAX-NLMIN) as coarse grid
 
-NLMIN              = 3
+NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 6
+NLMAX              = 4
 
 
 # ------------------------------------------------------------------------
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
-iequation    = 0
+iequation    = 1
 
 # Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
 
@@ -49,7 +49,7 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 100.0 1000.0 000.0
+RE                 = 1.0 1000.0 000.0
 
 # Type of right hand side. 
 # 0=zero, 1=steady inhomog., 2=nonsteady force
@@ -95,12 +95,6 @@ iUpwind            = 0
 dUpsam             = 0.0 1.0 0.1
 
 # ------------------------------------------------------------------------
-
-# Generation of mass matrix. 0=lumped mass,1=real mass matrix
-iMass              = 1
-
-# Type of lumping of the mass matrix. 0=usual lumping,1=diagonal lumping
-iMassLumpType      = 0
 
 # cubature formula for Mass matrix
 
@@ -195,4 +189,6 @@ dintARboundEX3YVel       = 20.0
 
 # Penalty parameter ALPHA for the ||u||-term in the optimal-control problem.
 
-dalphaC = 0.01
+dalphaC = 0.001
+
+dgammaC = 100.0

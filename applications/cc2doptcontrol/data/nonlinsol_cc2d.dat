@@ -20,7 +20,7 @@ nminIterations     = 1
 # in nonstationary simulations: per time step.
 # Former NLMAX
 
-nmaxIterations     = 10 #0
+nmaxIterations     = 1 #0
 
 # (absolute) limit for U-defects, standard = 1.0E-5
 
@@ -65,7 +65,7 @@ ioutputLevel       = 2
 #     the name of a section that specifies the parameters for the dynamic
 #     switching.
 
-itypePreconditioning = 2
+itypePreconditioning = 1
 
 # If itypePreconditioning = 1 or = 2 or =3: Name of the section in the file 
 # "linsol_cc2d.ini" that configures the linear solver to use for
@@ -85,12 +85,12 @@ spreconditionerAdaptiveNewton = 'CC-ADAPTIVENEWTONITERATION'
 # lower limit for opt. OMEGA in nonlinear defect correction, 
 # <0: no rel. changes
 
-domegaMin          = 0.0
+domegaMin          = 1.0
 
 # upper limit for opt. OMEGA in nonlinear defect correction,
 # <0: no rel. changes
 
-domegaMax          = 2.0
+domegaMax          = 1.0
 
 # initial value limit for opt. OMEGA in nonlinear defect correction
 

@@ -36,26 +36,53 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 2.) coeff_RHS_TARGET_x
+!# 4.) coeff_TARGET_x
 !#     -> Returns analytical values for the desired flow field in X-direction.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) coeff_RHS_TARGET_y
+!# 5.) coeff_TARGET_y
 !#     -> Returns analytical values for the desired flow field in Y-direction.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) getBoundaryValues
+!# 6.) getBoundaryValues
 !#     -> Returns analitical values on the boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
-!# 5.) getBoundaryValuesFBC
+!# 7.) getBoundaryValuesFBC
 !#     -> Returns analytical values on the fictitious boundary components
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
+!#
+!# 8.) c2d2_initCollectForAssembly
+!#     -> Is called prior to the assembly process.
+!#     -> Stores some information from the problem structure to a collection
+!#        such that it can be accessed in callback routines
+!#
+!# 9.) c2d2_doneCollectForAssembly
+!#     -> Is called after the assembly process.
+!#     -> Releases information stored in the collection by 
+!#        c2d2_initCollectForAssembly.
+!#
+!# For nonstationary simulation, it might be neccessary in these routines
+!# to access the current simulation time. Before the assembly process, the cc2d
+!# framework calls c2d2_initCollectForAssembly to stores the current point 
+!# in time (and probably other necessary information) to the quickaccess-array
+!# in the collection which is passed to the callback routines. The callback
+!# routines can access this as follows:
+!#
+!# -> p_rcollection%IquickAccess(1)   = 0: stationary, 
+!#                                      1: nonstationary with explicit time stepping
+!# -> p_rcollection%DquickAccess(1)   = current simulation time
+!# -> p_rcollection%DquickAccess(2)   = minimum simulation time
+!# -> p_rcollection%DquickAccess(3)   = maximum simulation time
+!#
+!# After the assembly, c2d2_doneCollectForAssembly is called to clean up.
+!# Note: Information stored in the quick-access array are of temporary
+!# nature and does not have to be cleaned up.
 !#
 !# </purpose>
 !##############################################################################
@@ -74,12 +101,95 @@ MODULE cc2dmedium_callback
   USE bcassembly
   USE mprimitives
   
+  USE cc2dmediumm2basic
   USE cc2dmediumm2boundarydef
   
   IMPLICIT NONE
 
 CONTAINS
 
+! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_initCollectForAssembly (rproblem,rcollection)
+  
+!<description>
+  ! This subroutine is an auxiliary subroutine called by the CC2D framework
+  ! and has usually not to be changed by the user.
+  !
+  ! The subroutine prepares the collection rcollection to be passed to callback
+  ! routines for assembling boundary conditions or RHS vectors. It is
+  ! called directly prior to the assembly to store problem-specific information
+  ! in the quick-access arrays of the collection.
+  ! Basically speaking, the routine stores information about whether thw problem
+  ! is stationary, nonstationary or about the current simulation time.
+!</description>
+
+!<input>
+  ! Problem structure with all problem relevant data.
+  TYPE(t_problem), INTENT(IN) :: rproblem
+!</input>
+
+!<inputoutput>
+  ! Collection structure to be initialised.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+!</inputoutput>
+  
+!</subroutine>
+
+    ! In a nonstationary simulation, save the simulation time as well as the
+    ! minimum and maximum time to the quick-access array of the collection,
+    ! so it can be accessed in the callback routines!
+    rcollection%Iquickaccess(1) = rproblem%itimedependence
+    SELECT CASE (rproblem%itimedependence)
+    CASE (0)
+      ! Stationary simulation
+      rcollection%Dquickaccess(1) = 0.0_DP
+      rcollection%Dquickaccess(2) = 0.0_DP
+      rcollection%Dquickaccess(3) = 0.0_DP
+    CASE (1)
+      rcollection%Dquickaccess(1) = rproblem%rtimedependence%dtime
+      rcollection%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
+      rcollection%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
+    END SELECT
+
+  END SUBROUTINE
+  
+! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE c2d2_doneCollectForAssembly (rproblem,rcollection)
+  
+!<description>
+  ! This subroutine is an auxiliary subroutine called by the CC2D framework
+  ! and has usually not to be changed by the user.
+  !
+  ! After the assembly process, this subroutine is called to release temporary
+  ! information from the collection which was stored there by 
+  ! c2d2_initCollectForAssembly.
+!</description>
+  
+!<input>
+  ! Problem structure with all problem relevant data.
+  TYPE(t_problem), INTENT(IN) :: rproblem
+!</input>
+
+!<inputoutput>
+  ! Collection structure to be cleaned up.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Currently, this subroutine is empty as all information stored in
+    ! the collection in c2d2_initCollectForAssembly is put to the quick-access
+    ! arrays -- which do not have to be cleaned up. 
+    ! This might change in future...
+
+  END SUBROUTINE
+  
 ! ***************************************************************************
   !<subroutine>
 
@@ -310,6 +420,16 @@ CONTAINS
     
   !</subroutine>
   
+    REAL(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
+    
     Dcoefficients(:,:,:) = 0.0_DP
     !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
     !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
@@ -414,12 +534,8 @@ CONTAINS
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form of the
-    ! target X-velocity, i.e. the desired flow field, which enters the dual
+    ! target X-velocity, i.e. the desired flow field z, which enters the dual
     ! equation.
-    !
-    ! Let z be the desired flow field such that $J(y) = ||y-z|| -> min$.
-    ! Then, this routine has to calculate the X-component of "-z", which is the
-    ! RHS of the dual equation!
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
@@ -472,7 +588,7 @@ CONTAINS
   !</output>
     
   !</subroutine>
-
+  
     Dcoefficients(:,:,:) = 0.0_DP
 
     ! Call ffunction_TargetX to calculate the analytic function. Store the results
@@ -482,10 +598,6 @@ CONTAINS
                 IdofsTest,rdomainIntSubset,p_rcollection, &
                 Dcoefficients(1,:,:))
                
-    ! Switch the sign, since this routine has to calculate
-    ! the X-component of "-z", the desired flow field!
-    Dcoefficients(1,:,:) = -Dcoefficients(1,:,:)
-  
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -506,12 +618,8 @@ CONTAINS
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form of the
-    ! target X-velocity, i.e. the desired flow field, which enters the dual
+    ! target X-velocity, i.e. the desired flow field z, which enters the dual
     ! equation.
-    !
-    ! Let z be the desired flow field such that $J(y) = ||y-z|| -> min$.
-    ! Then, this routine has to calculate the X-component of "-z", which is the
-    ! RHS of the dual equation!
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
@@ -574,10 +682,6 @@ CONTAINS
                 IdofsTest,rdomainIntSubset,p_rcollection, &
                 Dcoefficients(1,:,:))
                
-    ! Switch the sign, since this routine has to calculate
-    ! the X-component of "-z", the desired flow field!
-    Dcoefficients(1,:,:) = -Dcoefficients(1,:,:)
-
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -653,21 +757,45 @@ CONTAINS
   
 !</subroutine>
 
-!    Dcoefficients(1,:,:) = -&        
-!    !  mprim_getParabolicProfile (Dpoints(2,:,:),0.41_DP,0.3_DP)
-!      mprim_getParabolicProfile (Dpoints(2,:,:),1.0_DP,0.3_DP)
-    !  -1.0_DP*(Dpoints(1,:,:)/2.2_DP)
-    Dvalues(:,:) = &        
-!           -mprim_signum(Dpoints(2,:,:)-0.5_DP)*mprim_getParabolicProfile(&
-!           MIN(0.5_DP,ABS(Dpoints(2,:,:)-0.5_DP)), &
-!           !*( 0.5_DP - SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) ) ,&
-!           0.5_DP,1.0_DP) ) 
-    -(Dpoints(2,:,:)-0.5_DP)/SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) * &
-    mprim_getParabolicProfile( &
-      MIN(0.5_DP,SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2)),&
-      0.5_DP,1.0_DP)
-  
-    !Dvalues(:,:) = 1.0_DP
+    REAL(DP) :: dtime,dtimeMax
+    INTEGER :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+      dtimeMax = p_rcollection%Dquickaccess(3)
+      itimedependence = p_rcollection%Iquickaccess(1)
+    ELSE
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    END IF
+
+!!    Dcoefficients(1,:,:) = -&        
+!!    !  mprim_getParabolicProfile (Dpoints(2,:,:),0.41_DP,0.3_DP)
+!!      mprim_getParabolicProfile (Dpoints(2,:,:),1.0_DP,0.3_DP)
+!    !  -1.0_DP*(Dpoints(1,:,:)/2.2_DP)
+!    Dvalues(:,:) = &        
+!!           -mprim_signum(Dpoints(2,:,:)-0.5_DP)*mprim_getParabolicProfile(&
+!!           MIN(0.5_DP,ABS(Dpoints(2,:,:)-0.5_DP)), &
+!!           !*( 0.5_DP - SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) ) ,&
+!!           0.5_DP,1.0_DP) ) 
+!    -(Dpoints(2,:,:)-0.5_DP)/SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) * &
+!    mprim_getParabolicProfile( &
+!      MIN(0.5_DP,SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2)),&
+!      0.5_DP,1.0_DP)
+!  
+!    IF (ASSOCIATED(p_rcollection)) THEN
+!      Dvalues(:,:) = Dvalues(:,:)*mprim_getParabolicProfile(dtime,10.0_DP,1.0_DP)
+!    END IF
+!    !Dvalues(:,:) = 1.0_DP
+
+    Dvalues(:,:) = Dpoints(1,:,:)
+
+    IF (itimedependence .NE. 0) THEN  
+      Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+    END IF
 
   END SUBROUTINE
 
@@ -744,19 +872,44 @@ CONTAINS
   
 !</subroutine>
 
-    Dvalues(:,:) = &
-!    !  0.0_DP
-!           mprim_signum(Dpoints(1,:,:)-0.5_DP)*&
-!           mprim_getParabolicProfile(&
-!           MIN(0.5_DP,ABS(Dpoints(1,:,:)-0.5_DP)), &
-!           !*( 0.5_DP - SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) ),&
-!           0.5_DP,1.0_DP)
-    (Dpoints(1,:,:)-0.5_DP)/SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) * &
-    mprim_getParabolicProfile( &
-      MIN(0.5_DP,SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2)),&
-      0.5_DP,1.0_DP) 
-      
-    !Dvalues(:,:) = 1.0_DP
+    REAL(DP) :: dtime,dtimeMax
+    INTEGER :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+      dtimeMax = p_rcollection%Dquickaccess(3)
+      itimedependence = p_rcollection%Iquickaccess(1)
+    ELSE
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    END IF
+
+!    Dvalues(:,:) = &
+!!    !  0.0_DP
+!!           mprim_signum(Dpoints(1,:,:)-0.5_DP)*&
+!!           mprim_getParabolicProfile(&
+!!           MIN(0.5_DP,ABS(Dpoints(1,:,:)-0.5_DP)), &
+!!           !*( 0.5_DP - SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) ),&
+!!           0.5_DP,1.0_DP)
+!!
+!    (Dpoints(1,:,:)-0.5_DP)/SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) * &
+!    mprim_getParabolicProfile( &
+!      MIN(0.5_DP,SQRT((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2)),&
+!      0.5_DP,1.0_DP) 
+!      
+!    IF (ASSOCIATED(p_rcollection)) THEN  
+!      Dvalues(:,:) = Dvalues(:,:)*mprim_getParabolicProfile(dtime,10.0_DP,1.0_DP)
+!    END IF
+!    !Dvalues(:,:) = 1.0_DP
+
+    Dvalues(:,:) = -Dpoints(2,:,:)
+
+    IF (itimedependence .NE. 0) THEN  
+      Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+    END IF
 
   END SUBROUTINE
 
@@ -846,6 +999,16 @@ CONTAINS
 !</subroutine>
 
     INTEGER :: icomponent,iexprtyp
+    
+    REAL(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
     
     ! Use boundary conditions from DAT files.
     SELECT CASE (cinfoNeeded)
@@ -1107,7 +1270,7 @@ CONTAINS
     
       ! Get the triangulation array for the point coordinates
       p_rtriangulation => rdiscretisation%RspatialDiscretisation(1)%p_rtriangulation
-      CALL storage_getbase_double2d (p_rtriangulation%h_DcornerCoordinates,&
+      CALL storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
                                      p_DvertexCoordinates)
       CALL storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
                                   p_IverticesAtElement)
@@ -1197,7 +1360,7 @@ CONTAINS
     ! This is either the X/Y coordinate of a corner point or
     ! of an edge-midpoint, depending of cinfoNeeded.
     
-    SUBROUTINE getXYcoord (cinfoNeeded,iwhere,DcornerCoordinates,&
+    SUBROUTINE getXYcoord (cinfoNeeded,iwhere,DvertexCoords,&
                            IverticesAtElement,IverticesAtEdge,NVT,&
                            dx,dy)
     
@@ -1214,7 +1377,7 @@ CONTAINS
     INTEGER(I32), INTENT(IN) :: iwhere
     
     ! Array with coordinates of all corner vertices (DCORVG)
-    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DcornerCoordinates
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: DvertexCoords
     
     ! Array with numbers of corner coordinates for all elements (KVERT)
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
@@ -1240,16 +1403,16 @@ CONTAINS
       SELECT CASE (cinfoNeeded)
       CASE (DISCFBC_NEEDFUNC)
         ! That's easy
-        dx = DcornerCoordinates(1,iwhere)
-        dy = DcornerCoordinates(2,iwhere)
+        dx = DvertexCoords(1,iwhere)
+        dy = DvertexCoords(2,iwhere)
       
       CASE (DISCFBC_NEEDFUNCMID,DISCFBC_NEEDINTMEAN)
         ! Not much harder; get the two points on the edge and calculate
         ! the mean coordinates.
         iv1 = IverticesAtEdge(1,iwhere)
         iv2 = IverticesAtEdge(2,iwhere)
-        dx = 0.5_DP*(DcornerCoordinates(1,iv1)+DcornerCoordinates(1,iv2))
-        dy = 0.5_DP*(DcornerCoordinates(2,iv1)+DcornerCoordinates(2,iv2))
+        dx = 0.5_DP*(DvertexCoords(1,iv1)+DvertexCoords(1,iv2))
+        dy = 0.5_DP*(DvertexCoords(2,iv1)+DvertexCoords(2,iv2))
       
       CASE (DISCFBC_NEEDFUNCELMID)
         ! A little bit more to do; we have three or four corners
@@ -1258,8 +1421,8 @@ CONTAINS
         DO i=1,SIZE(IverticesAtElement,1)
           iv1 = IverticesAtElement(i,iwhere)
           IF (iv1 .NE. 0) THEN
-            dx = dx + DcornerCoordinates(1,iv1)
-            dy = dy + DcornerCoordinates(2,iv1)
+            dx = dx + DvertexCoords(1,iv1)
+            dy = dy + DvertexCoords(2,iv1)
             j = i
           END IF
         END DO

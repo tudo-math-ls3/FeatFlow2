@@ -32,8 +32,6 @@ MODULE cc2dmediumm2basic
   
   USE collection
   
-  USE adaptivetimestep
-    
   IMPLICIT NONE
   
   ! Maximum allowed level in this application; must be =9 for 
@@ -61,7 +59,8 @@ MODULE cc2dmediumm2basic
     ! matrices (B1/B2) matrices. The matrix contains only a stucture, no content.
     TYPE(t_matrixScalar) :: rmatrixTemplateGradient
     
-    ! A system matrix for that specific level. 
+    ! A template matrix for the system matrix for that specific level.
+    ! Provides memory for all sub-matrices.
     TYPE(t_matrixBlock) :: rmatrix
     
     ! Stokes matrix for that specific level (=nu*Laplace)
@@ -89,7 +88,6 @@ MODULE cc2dmediumm2basic
     ! specifies how to generate the mass matrix.
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
     
-
   END TYPE
   
 !</typeblock>
@@ -105,24 +103,22 @@ MODULE cc2dmediumm2basic
     ! Current simulation time; changes during the simulation.
     REAL(DP) :: dtime              = 0.0_DP
   
-    ! Maximum number of time steps; former NITNS
+    ! Number of time steps; former NITNS
     INTEGER :: niterations         = 0
     
     ! Absolute start time of the simulation
     REAL(DP) :: dtimeInit          = 0.0_DP     
     
-    ! Time step size; former TSTEP
-    REAL(DP) :: dtimeStep          = 0.0_DP       
-    
     ! Maximum time of the simulation
     REAL(DP) :: dtimeMax           = 0.0_DP
-  
-    ! Lower limit for the time derivative to be treated as zero. Former EPSNS.
-    ! Simulation stops if time derivative drops below this value.
-    REAL(DP) :: dminTimeDerivative = 0.00001_DP
     
-    ! Configuration block for the adaptive time stepping.
-    TYPE(t_adaptimeTimeStepping) :: radaptiveTimeStepping
+    ! Time-stepping scheme (IFRSTP);
+    ! 0=one step scheme, 1=fractional step
+    INTEGER :: ctimeStepScheme     = 0
+    
+    ! Parameter for one step scheme (THETA) if ctimeStepScheme=0;
+    ! =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
+    REAL(DP) :: dtimeStepTheta     = 1.0_DP
     
   END TYPE
 

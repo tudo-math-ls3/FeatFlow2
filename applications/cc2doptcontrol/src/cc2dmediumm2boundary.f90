@@ -144,6 +144,11 @@ CONTAINS
   TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
   TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
     
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
       ! Get our velocity matrix from the problem structure.
@@ -229,6 +234,9 @@ CONTAINS
     rrhs%p_rdiscreteBCfict => p_rdiscreteFBC
     rvector%p_rdiscreteBCfict => p_rdiscreteFBC
                 
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -264,6 +272,11 @@ CONTAINS
     ! the discretisation
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
 
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
@@ -321,6 +334,9 @@ CONTAINS
       END IF
 
     END DO
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   END SUBROUTINE
 

@@ -97,7 +97,8 @@ CONTAINS
     ! or callback routines that are called from the nonlinear solver.
     ! The preconditioner in that structure is initialised later.
     CALL c2d2_initNonlinearLoop (&
-        rproblem,rvector,rrhs,rnonlinearIteration,'CC2D-NONLINEAR')
+        rproblem,rproblem%NLMIN,rproblem%NLMAX,rvector,rrhs,&
+        rnonlinearIteration,'CC2D-NONLINEAR')
         
     ! Initialise the core equation to the stationary (Navier)-Stokes
     ! optimal control.
@@ -113,7 +114,8 @@ CONTAINS
     ! and compatibity to the preconditioner.
     ! The c2d2_checkAssembly routine below uses this information to perform
     ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration%rfinalAssembly)
+    CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
+        rnonlinearIteration%rfinalAssembly)
     
     ! Using rfinalAssembly as computed above, make the matrices compatible 
     ! to our preconditioner if they are not.

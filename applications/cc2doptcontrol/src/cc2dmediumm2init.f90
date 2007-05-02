@@ -171,8 +171,8 @@ CONTAINS
     CALL collct_setvalue_int( rproblem%rcollection,'IBOUNDARY',i1,.TRUE.)
 
     ! Time dependence
-    !CALL c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
-    !    rproblem%rparamList)
+    CALL c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
+        rproblem%rparamList)
 
   END SUBROUTINE
 

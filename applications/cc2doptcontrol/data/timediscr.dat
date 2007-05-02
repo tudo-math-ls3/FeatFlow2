@@ -11,4 +11,31 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 0                       # ISTAT
+itimedependence = 1                       # ISTAT
+
+# ----------------------------------------------------------------------
+
+# Maximum number of time steps.
+
+niterations = 10                          # NITNS
+
+# Absolute start time of the simulation (TIMENS)
+
+dtimeInit = 0.0                           # TIMENS
+
+# Max. absolute time of the simulation (TIMEMX); simulation stops if 
+# time > dtimemax or #iterations > niterations
+
+dtimeMax = 10.0                           # TIMEMX
+
+# ----------------------------------------------------------------------
+
+# Time-stepping scheme (IFRSTP);
+# 0=one step scheme, 1=fractional step
+
+itimeStepScheme = 0                       # IFRSTP
+
+# parameter for one step scheme (THETA) if itimeStepScheme=0;
+# =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
+
+dtimeStepTheta = 1.0                      # THETA

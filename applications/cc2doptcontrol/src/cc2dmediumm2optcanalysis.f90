@@ -89,4 +89,76 @@ CONTAINS
     
   END SUBROUTINE
 
+!******************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_optc_nonstatFunctional (rproblem,rsolution,dalpha,derror)
+
+!<description>
+  ! This function calculates the value of the functional which is to be
+  ! minimised in the stationary optimal control problem.
+  ! The functional is defined as
+  !   $$ J(y,u) = 1/2||y-z||_{L^2}  + \alpha/2||u||^2 $$
+  ! over a spatial domain $\Omega$.
+  !
+  ! For this purpose, the routine evaluates the user-defined callback functions 
+  ! coeff_TARGET_x and coeff_TARGET_y.
+!</description>
+  
+!<inputoutput>
+  ! Problem structure. Defines the current point in time and provides a collection
+  ! to be used for the callback routines
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+!</inputoutput>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  TYPE(t_vectorBlock), INTENT(IN) :: rsolution
+  
+  ! Regularisation parameter $\alpha$.
+  REAL(DP), INTENT(IN) :: dalpha
+!</input>
+
+!<output>
+  ! Norm of the error functional.
+  REAL(DP), INTENT(OUT) :: derror
+!</output>
+  
+!</subroutine>
+    
+    ! local variables
+    REAL(DP),DIMENSION(2) :: Derr
+
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+
+    ! Perform error analysis to calculate and add 1/2||y-z||_{L^2}.
+    CALL pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+                       ffunction_TargetX)
+
+    CALL pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+                       ffunction_TargetY)
+                       
+    derror = 0.5_DP * (0.5_DP*(Derr(1)**2+Derr(2)**2))
+    
+    ! Calculate \alpha/2||u||^2.
+    IF (dalpha .NE. 0.0_DP) THEN
+      CALL pperr_scalar (rsolution%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
+
+      CALL pperr_scalar (rsolution%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
+                         
+      derror = derror + (0.5_DP/dalpha) * (0.5_DP*(Derr(1)**2+Derr(2)**2))
+      
+      ! Because of u=-lambda/alpha we have:
+      !    alpha/2 ||u||^2 = alpha/2 ||lambda/alpha||^2 = 1/(2*alpha) ||lambda||^2
+    END IF
+    
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    
+  END SUBROUTINE
+
 END MODULE

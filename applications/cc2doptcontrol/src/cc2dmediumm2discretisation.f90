@@ -86,7 +86,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: I,j,k,ielementType,icubA,icubB,icubF, icubM
+  INTEGER :: I,k,ielementType,icubA,icubB,icubF, icubM
   CHARACTER(LEN=SYS_NAMELEN) :: sstr
   
   ! Number of equations in our problem. 
@@ -451,44 +451,6 @@ CONTAINS
         p_rdiscretisationMass%RelementDistribution(k)%ccubTypeBilForm = icubM
       END DO
 
-      ! Should we do mass lumping?
-      CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASS', j, 0)
-                                      
-      IF (j .EQ. 0) THEN
-      
-        ! How to do lumping?
-        CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASSLUMPTYPE', j, 0)
-                                        
-        ! Set cubature formula for lumping. The constant from the DAT file corresponds
-        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
-        ! When to do simple mass lumping, replace the cubature formula by one
-        ! that is compatible with the corresponding element to generate
-        ! a diagonal mass matrix.
-        IF (j .EQ. LSYSSC_LUMP_STD) THEN
-          
-          DO k = 1,p_rdiscretisationMass%inumFESpaces
-            
-            j = spdiscr_getLumpCubature (&
-                p_rdiscretisationMass%RelementDistribution(k)%itrialElement)
-            IF (j .NE. 0) THEN
-              icubM = j
-            ELSE
-              PRINT *,'c2d2_initDiscretisation: Unknown cubature formula for &
-                      &mass lumping!'
-              STOP
-            END IF
-            
-            ! Set the cubature formula appropriately
-            p_rdiscretisationMass%RelementDistribution(k)%ccubTypeBilForm = icubM
-
-          END DO
-        
-        END IF
-      
-      END IF
-      
       rproblem%RlevelInfo(i)%p_rdiscretisationMass => p_rdiscretisationMass
         
     END DO
@@ -678,7 +640,7 @@ CONTAINS
                   p_rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       
       ! Allocate memory for the entries; don't initialise the memory.
-      CALL lsyssc_createEmptyMatrixScalar (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
+      CALL lsyssc_allocEmptyMatrix (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
       
       ! In the global system, there are two coupling matrices B1 and B2.
       ! Both have the structure of the template gradient matrix.
@@ -697,9 +659,9 @@ CONTAINS
                   rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
       ! Allocate memory for the entries; don't initialise the memory.
-      CALL lsyssc_createEmptyMatrixScalar (rproblem%RlevelInfo(i)%rmatrixB1,&
+      CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
                                            LSYSSC_SETM_UNDEFINED)
-      CALL lsyssc_createEmptyMatrixScalar (rproblem%RlevelInfo(i)%rmatrixB2,&
+      CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
                                            LSYSSC_SETM_UNDEFINED)
 
       ! -----------------------------------------------------------------------
@@ -710,11 +672,6 @@ CONTAINS
       ! the discretisation.
       CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
       
-      ! Inform the matrix that we build a saddle-point problem.
-      ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
-      ! but probably some solvers can use the special structure later.
-      ! p_rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
-      
       ! Let's consider the global system in detail:
       !
       !    ( A11       B1  M/a          ) = ( A11  A12  A13 A14           )
@@ -723,6 +680,7 @@ CONTAINS
       !    ( -M            A44  A45  B1 )   ( A41           A44  A45  A46 )
       !    (      -M       A54  A55  B2 )   (      A52      A54  A55  A56 )
       !    (               B1^T B2^T    )   (               A64  A65  A66 )
+      !
 
       ! The matrices A11 and A22 of the global system matrix have exactly
       ! the same structure as the original Stokes matrix from above!
@@ -771,6 +729,8 @@ CONTAINS
                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       
       ! Furthermore, put B1^T and B2^T to the block matrix.
+      ! These matrices will not change during the whole computation,
+      ! so we can put refereces to the original ones to the system matrix.
       CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
                                    p_rmatrix%RmatrixBlock(3,1),&
                                    LSYSSC_TR_VIRTUAL)
@@ -816,11 +776,22 @@ CONTAINS
       CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
                                    p_rmatrix%RmatrixBlock(6,5),&
                                    LSYSSC_TR_VIRTUAL)
+                                   
+      ! Add space for the mass matrices to the system matrix.
+      !
+      ! They share their structure with the main mass matrix but provide
+      ! empty space for the entries. (The entries miht be changed due to
+      ! boundary conditions!)
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                  p_rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                  p_rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
-      ! The mass matrices will be added to the system matrix later when they
-      ! are calculated. The reason is that they may be lumped, wherefrom the
-      ! structure may be change during the calculation.
-
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                  p_rmatrix%RmatrixBlock(4,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                  p_rmatrix%RmatrixBlock(5,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      
       ! That's it, all submatrices are basically set up.
       !
       ! Update the structural information of the block matrix, as we manually
@@ -878,7 +849,7 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,j
+  INTEGER :: i
   
     ! A bilinear and linear form describing the analytic problem to solve
     !TYPE(t_bilinearForm) :: rform
@@ -889,6 +860,11 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
     
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
       ! -----------------------------------------------------------------------
@@ -936,23 +912,150 @@ CONTAINS
       ! Call the standard matrix setup routine to build the matrix.                    
       CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
                   
-      ! Should we do mass lumping?
-      CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASS', j, 0)
-                                      
-      IF (j .EQ. 0) THEN
-      
-        ! How to do lumping?
-        CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASSLUMPTYPE', j, 0)
-                                        
-        ! Lump the mass matrix. The constant from the DAT file corresponds
-        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
-        CALL lsyssc_lumpMatrixScalar (p_rmatrixMass,j)
-      
-      END IF
-        
+
     END DO
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_generateBasicSystemMatrix (rproblem,ilev,rmatrix)
+  
+!<description>
+  ! Generates the basic system matrix of level ilev into the matrix rmatrix.
+  ! For this purpose, rmatrix is connected to the basic underlying
+  ! system matrix in the problem structure, and the entries of the
+  ! static submatrices are copied to rmatrix.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  
+  ! Number of the level that should be initialised.
+  INTEGER, INTENT(IN) :: ilev
+  
+  ! OPTIONAL: A block matrix structure that receives the basic system matrix.
+  ! If not present, the routine will initialise only the basic system
+  ! matrix in the problem structure.
+  TYPE(t_matrixBlock), INTENT(INOUT), OPTIONAL :: rmatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! A pointer to the system matrix and the RHS/solution vectors.
+    TYPE(t_matrixBlock), POINTER :: p_rmatrix
+    
+    REAL(DP) :: dalphaC
+    
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+                                'dalphaC',dalphaC,0.1_DP)
+  
+    ! -----------------------------------------------------------------------
+    ! Basic (Navier-) Stokes problem
+    ! -----------------------------------------------------------------------
+
+    ! Get the main system matrix, which is a block matrix.
+    p_rmatrix => rproblem%RlevelInfo(ilev)%rmatrix
+    
+    ! Let's consider the global system in detail:
+    !
+    !    ( A11       B1  M/a          ) = ( A11  A12  A13 A14           )
+    !    (      A22  B2       M/a     )   ( A21  A22  A23      A25      )
+    !    ( B1^T B2^T                  )   ( A31  A32  A33               )
+    !    ( -M            A44  A45  B1 )   ( A41           A44  A45  A46 )
+    !    (      -M       A54  A55  B2 )   (      A52      A54  A55  A56 )
+    !    (               B1^T B2^T    )   (               A64  A65  A66 )
+
+    ! The purpose of this routine is to initialise the static parts of this
+    ! matrix. The two A-blocks are nonlinear, ilev.e. dynamic, so we don't
+    ! have to deal with them. What we do here is to initialise the
+    ! B-matrices and the mass matrices of this system according to given
+    ! templates!
+    !
+    ! The B1/B2 matrices exist up to now only in our local problem structure
+    ! as scalar 'template' matrices. Put a copy of them into the block matrix.
+    !
+    ! Note that we share the structure of B1/B2 with those B1/B2 of the
+    ! block matrix, while we create copies of the entries. The B-blocks
+    ! are already prepared and memory for the entries is already allocated;
+    ! so we only have to copy the entries.
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixB1, &
+                                  p_rmatrix%RmatrixBlock(1,3),&
+                                  LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
+
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixB2, &
+                                  p_rmatrix%RmatrixBlock(2,3),&
+                                  LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
+    
+    ! Furthermore, put B1^T and B2^T to the block matrix.
+    CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(ilev)%rmatrixB1, &
+                                  p_rmatrix%RmatrixBlock(3,1),&
+                                  LSYSSC_TR_VIRTUAL)
+
+    CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(ilev)%rmatrixB2, &
+                                  p_rmatrix%RmatrixBlock(3,2),&
+                                  LSYSSC_TR_VIRTUAL)
+
+    ! Include B1, B1^T, B2, B2^T also to the appropriate blocks for the
+    ! dual system
+
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixB1, &
+                                  p_rmatrix%RmatrixBlock(4,6),&
+                                  LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
+
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixB2, &
+                                  p_rmatrix%RmatrixBlock(5,6),&
+                                  LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
+    
+    ! Furthermore, put B1^T and B2^T to the block matrix.
+    CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(ilev)%rmatrixB1, &
+                                  p_rmatrix%RmatrixBlock(6,4),&
+                                  LSYSSC_TR_VIRTUAL)
+
+    CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(ilev)%rmatrixB2, &
+                                  p_rmatrix%RmatrixBlock(6,5),&
+                                  LSYSSC_TR_VIRTUAL)
+                                
+    ! Include the mass matrices into the global system. Share the structure,
+    ! duplicate the content. It's important not to share the content as
+    ! boundary implementation routines might overwrite the content!
+    !
+    ! The mass matrices on the upper right of the system are weighted 
+    ! by 1/dalphaC.
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixMass, &
+                                  p_rmatrix%RmatrixBlock(1,4),&
+                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = 1.0_DP/dalphaC
+                                  
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixMass, &
+                                  p_rmatrix%RmatrixBlock(2,5),&
+                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = 1.0_DP/dalphaC
+    
+
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixMass, &
+                                  p_rmatrix%RmatrixBlock(4,1),&
+                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = -1.0_DP
+                                  
+    CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(ilev)%rmatrixMass, &
+                                  p_rmatrix%RmatrixBlock(5,2),&
+                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
+    p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = -1.0_DP
+
+    ! Make a copy of the system matrix to rmatrix --
+    ! or to be more concrete: link rmatrix to the system matrix without
+    ! copying and memory.
+    IF (PRESENT(rmatrix)) THEN
+      CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrix,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    END IF
 
   END SUBROUTINE
 
@@ -967,6 +1070,10 @@ CONTAINS
   ! global system matrix. More precisely, this copies the entries of
   ! previously calculated B- and mass matrices into the global system matrix, 
   ! so that they can be modified for boundary conditions.
+  !
+  ! For the optimal control problem, the mass matrices will be copied into the
+  ! system matrix and be scaled according to the definition of the stationary
+  ! problem.
 !</description>
 
 !<inputoutput>
@@ -979,109 +1086,9 @@ CONTAINS
   ! local variables
   INTEGER :: i
   
-    ! A pointer to the system matrix and the RHS/solution vectors.
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    
-    REAL(DP) :: dalphaC
-    
-    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
-                                'dalphaC',dalphaC,0.1_DP)
-    
+    ! For each level, call the generation routine.
     DO i=rproblem%NLMIN,rproblem%NLMAX
-      
-      ! -----------------------------------------------------------------------
-      ! Basic (Navier-) Stokes problem
-      ! -----------------------------------------------------------------------
-
-      ! Get the main system matrix, which is a block matrix.
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      
-      ! Let's consider the global system in detail:
-      !
-      !    ( A11       B1  M/a          ) = ( A11  A12  A13 A14           )
-      !    (      A22  B2       M/a     )   ( A21  A22  A23      A25      )
-      !    ( B1^T B2^T                  )   ( A31  A32  A33               )
-      !    ( -M            A44  A45  B1 )   ( A41           A44  A45  A46 )
-      !    (      -M       A54  A55  B2 )   (      A52      A54  A55  A56 )
-      !    (               B1^T B2^T    )   (               A64  A65  A66 )
-
-      ! The purpose of this routine is to initialise the static parts of this
-      ! matrix. The two A-blocks are nonlinear, i.e. dynamic, so we don't
-      ! have to deal with them. What we do here is to initialise the
-      ! B-matrices and the mass matrices of this system according to given
-      ! templates!
-      !
-      ! The B1/B2 matrices exist up to now only in our local problem structure
-      ! as scalar 'template' matrices. Put a copy of them into the block matrix.
-      !
-      ! Note that we share the structure of B1/B2 with those B1/B2 of the
-      ! block matrix, while we create copies of the entries. The B-blocks
-      ! are already prepared and memory for the entries is already allocated;
-      ! so we only have to copy the entries.
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(1,3),&
-                                   LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
-
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(2,3),&
-                                   LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
-      
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(3,1),&
-                                   LSYSSC_TR_VIRTUAL)
-
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(3,2),&
-                                   LSYSSC_TR_VIRTUAL)
-
-      ! Include B1, B1^T, B2, B2^T also to the appropriate blocks for the
-      ! dual system
-
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(4,6),&
-                                   LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
-
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(5,6),&
-                                   LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
-      
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(6,4),&
-                                   LSYSSC_TR_VIRTUAL)
-
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(6,5),&
-                                   LSYSSC_TR_VIRTUAL)
-                                  
-      ! Include the mass matrices into the global system. Share the structure,
-      ! duplicate the content. It's important not to share the content as
-      ! boundary implementation routines might overwrite the content!
-      !
-      ! The mass matrices on the upper right of the system are weighted 
-      ! by 1/dalphaC.
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixMass, &
-                                   p_rmatrix%RmatrixBlock(1,4),&
-                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = 1.0_DP/dalphaC
-                                   
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixMass, &
-                                   p_rmatrix%RmatrixBlock(2,5),&
-                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = 1.0_DP/dalphaC
-      
-
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixMass, &
-                                   p_rmatrix%RmatrixBlock(4,1),&
-                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = -1.0_DP
-                                   
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixMass, &
-                                   p_rmatrix%RmatrixBlock(5,2),&
-                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
-      p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = -1.0_DP
-
+      CALL c2d2_generateBasicSystemMatrix (rproblem,i)
     END DO
 
   END SUBROUTINE
@@ -1116,6 +1123,12 @@ CONTAINS
     
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Drhs
+    
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rrhs,p_Drhs)
 
     ! Get a pointer to the RHS on the finest level as well as to the
     ! block discretisation structure:
@@ -1137,6 +1150,11 @@ CONTAINS
     !
     ! Note that the vector is unsorted after calling this routine!
     !
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
@@ -1167,10 +1185,18 @@ CONTAINS
               p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
               rrhs%RvectorBlock(5),coeff_TARGET_y,&
               rproblem%rcollection)
+              
+    ! Switch the sign of the target velocity field because the RHS of the
+    ! dual equation is '-z'!
+    CALL lsyssc_scaleVector (rrhs%RvectorBlock(4),-1.0_DP)
+    CALL lsyssc_scaleVector (rrhs%RvectorBlock(5),-1.0_DP)
 
     ! Dual pressure RHS is =0.
     CALL lsyssc_clearVector(rrhs%RvectorBlock(6))
                                 
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
   END SUBROUTINE
 
   ! ***************************************************************************

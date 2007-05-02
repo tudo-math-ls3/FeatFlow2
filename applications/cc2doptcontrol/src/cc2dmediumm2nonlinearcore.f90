@@ -374,6 +374,11 @@ MODULE cc2dmediumm2nonlinearcore
     ! Only used for error analysis.
     REAL(DP) :: dalphaC = 0.0_DP
     
+    ! Regularisation parameter for the terminal condition 
+    ! $\gamma/2*||y(T)-z(T)||$.
+    ! A value of 0.0 disables the terminal condition.
+    REAL(DP) :: dgammaC = 0.0_DP
+    
     ! Output level of the nonlinear iteration
     INTEGER :: MT_OutputLevel = 2
     
@@ -382,6 +387,12 @@ MODULE cc2dmediumm2nonlinearcore
     
     ! Maximum discretisation level
     INTEGER :: NLMAX = 1
+    
+    ! If TRUE, the primal system consists just of identity matrices.
+    LOGICAL :: bprimalIdentity = .FALSE.
+
+    ! If FALSE, the dual system consists just of identity matrices.
+    LOGICAL :: bdualIdentity = .FALSE.
     
     ! Pointer to the solution vector that is changed during the iteration
     TYPE(t_vectorBlock), POINTER :: p_rsolution => NULL()
@@ -419,6 +430,7 @@ MODULE cc2dmediumm2nonlinearcore
     ! Auxiliary variable: Convergence rate of linear solver (if this is
     ! applied as preconditioner).
     REAL(DP) :: drhoLinearSolver = 0.0_DP
+    
   END TYPE
 
 !</typeblock>
@@ -653,6 +665,9 @@ CONTAINS
     CALL collct_setvalue_real(rcollection,'CCNL_ALPHAC',&
         rnonlinearIteration%dalphaC,.TRUE.)
 
+    CALL collct_setvalue_real(rcollection,'CCNL_GAMMAC',&
+        rnonlinearIteration%dgammaC,.TRUE.)
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -806,6 +821,8 @@ CONTAINS
 
     rnonlinearIteration%dalphaC = &
         collct_getvalue_real(rcollection,'CCNL_ALPHAC')
+    rnonlinearIteration%dgammaC = &
+        collct_getvalue_real(rcollection,'CCNL_GAMMAC')
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -837,6 +854,7 @@ CONTAINS
     CALL collct_deletevalue(rcollection,'CCNL_RHOMG')
 
     CALL collct_deletevalue (rcollection,'CCNL_ALPHAC')
+    CALL collct_deletevalue (rcollection,'CCNL_GAMMAC')
 
     ! Delete min./max. damping parameters from the collection
     CALL collct_deletevalue (rcollection,'CCNL_OMEGAMAX')
@@ -1539,6 +1557,20 @@ CONTAINS
                                       
       END IF
 
+      ! Is there a weight in front of the mass matrix?
+      ! If yes, put that weight in front of the mass matrices that couple
+      ! primal and dual velocity.
+      IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
+        p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = -rnonlinearIteration%dalpha
+        p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = -rnonlinearIteration%dalpha
+
+        p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = &
+            rnonlinearIteration%dalpha / rnonlinearIteration%dalphaC
+
+        p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = &
+            rnonlinearIteration%dalpha / rnonlinearIteration%dalphaC
+      END IF
+
       ! For the construction of matrices on lower levels, call the matrix
       ! restriction. In case we have a uniform discretisation with Q1~,
       ! iadaptivematrix may be <> 0 and so this will rebuild some matrix entries
@@ -1674,62 +1706,128 @@ CONTAINS
       ! Build a temporary 3x3 block matrix rmatrixStokes with Stokes matrices 
       ! on the main diagonal.
       !
+      ! We have three cases!
+      !
+      ! Case 1: Full matrix.
+      !
       !    ( L         B1  M/a          ) 
       !    (      L    B2       M/a     ) 
       !    ( B1^T B2^T                  ) 
       !    ( -M            L         B1 ) 
       !    (      -M            L    B2 ) 
       !    (               B1^T B2^T    ) 
-      
-      CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixTmpBlock, &
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsyssc_duplicateMatrix (p_rmatrixStokes,rmatrixTmpBlock%RmatrixBlock(1,1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsyssc_duplicateMatrix (p_rmatrixStokes,rmatrixTmpBlock%RmatrixBlock(2,2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-
-      CALL lsyssc_duplicateMatrix (&
-          p_rmatrixStokes,rmatrixTmpBlock%RmatrixBlock(NDIM2D+1+1,NDIM2D+1+1),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      CALL lsyssc_duplicateMatrix (&
-          p_rmatrixStokes,rmatrixTmpBlock%RmatrixBlock(NDIM2D+1+2,NDIM2D+1+2),&
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      !
+      ! Case 2: Primal equation is an identity:
+      !
+      !    ( I                          ) 
+      !    (      I                     ) 
+      !    (           I                ) 
+      !    ( -M            L         B1 ) 
+      !    (      -M            L    B2 ) 
+      !    (               B1^T B2^T    ) 
+      !
+      ! Case 3: Dual euqation is an identity:
+      !
+      !    ( L         B1  M/a          ) 
+      !    (      L    B2       M/a     ) 
+      !    ( B1^T B2^T                  ) 
+      !    (               I            ) 
+      !    (                    I       ) 
+      !    (                         I  ) 
+      !      
+      ! Create an empty 6x6 block matrix at first, based on the solution vector.
+      CALL lsysbl_createMatBlockByDiscr (rx%p_rblockDiscretisation,rmatrixTmpBlock)
           
-      ! Remove all rows and columns in the 3rd and 6th row. For setting up the defect, we
-      ! will treat these separately. For stationary simulations, this is the same as
-      ! setting up the defect with the complete matrix as above. For nonstationary
-      ! simulations, there is a difference, as the divergence part of the equation
-      ! is not scaled with the time step! (see below).
-      !
-      ! (  L    0   0              )
-      ! (  0    L   0              )
-      ! (  0    0   0              )
-      ! (              L    0   0  )
-      ! (              0    L   0  )
-      ! (              0    0   0  )
-      !
-      CALL lsysbl_releaseMatrixRow (rmatrixTmpBlock,NDIM2D+1)
-      CALL lsysbl_releaseMatrixColumn (rmatrixTmpBlock,NDIM2D+1)
-      CALL lsysbl_releaseMatrixRow (rmatrixTmpBlock,2*(NDIM2D+1))
-      CALL lsysbl_releaseMatrixColumn (rmatrixTmpBlock,2*(NDIM2D+1))
-      DO j=1,NDIM2D+1
-        DO i=1,NDIM2D+1
-          CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(i+NDIM2D+1,j))
-          CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(i,j+NDIM2D+1))
-        END DO
-      END DO
-      CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(NDIM2D+1+1,NDIM2D+1+2))
-      CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(NDIM2D+1+2,NDIM2D+1+1))
-    
+      ! Primal equation an identity or not?
+      IF (.NOT. rnonlinearIteration%bprimalIdentity) THEN
+        
+        ! Set up the primal equation. Only set up the Laplace- and 
+        ! mass-matrix part.
+        !    ( L    .    .   M/a   .    . ) 
+        !    ( .    L    .    .   M/a   . ) 
+        !    ( .    .    .    .    .    . ) 
+        !    ( .    .    .    .    .    . ) 
+        !    ( .    .    .    .    .    . ) 
+        !    ( .    .    .    .    .    . ) 
+
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
+            rmatrixTmpBlock%RmatrixBlock(1,1), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
+            rmatrixTmpBlock%RmatrixBlock(2,2), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,&
+            rmatrixTmpBlock%RmatrixBlock(1,4), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrixTmpBlock%RmatrixBlock(1,4)%dscaleFactor = 1.0_DP/rnonlinearIteration%dalphaC
+
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,&
+            rmatrixTmpBlock%RmatrixBlock(2,5), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrixTmpBlock%RmatrixBlock(2,5)%dscaleFactor = 1.0_DP/rnonlinearIteration%dalphaC
+      
+      END IF
+          
+      ! Dual equation an identity or not?
+      IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+        
+        ! Set up the primal equation. Only set up the Laplace- and 
+        ! mass-matrix part.
+        !    ( .    .    .    .    .    . ) 
+        !    ( .    .    .    .    .    . ) 
+        !    ( .    .    .    .    .    . ) 
+        !    ( -M   .    .    L    .    . ) 
+        !    ( .    -M   .    .    L    . ) 
+        !    ( .    .    .    .    .    . ) 
+
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
+            rmatrixTmpBlock%RmatrixBlock(4,4), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
+            rmatrixTmpBlock%RmatrixBlock(5,5), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,&
+            rmatrixTmpBlock%RmatrixBlock(4,1), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrixTmpBlock%RmatrixBlock(4,1)%dscaleFactor = -1.0_DP
+
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,&
+            rmatrixTmpBlock%RmatrixBlock(5,2), &
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrixTmpBlock%RmatrixBlock(5,2)%dscaleFactor = -1.0_DP
+      
+      END IF
+          
       ! DEBUG!!!
       !CALL matio_writeBlockMatrixHR (rmatrixTmpBlock, 'matrix',&
       !                               .TRUE., 0, 'matrix.txt', '(E20.10)')
           
-      ! Build the defect in the velocity equations
+      ! Build the defect in the velocity equations:
+      !   b = b - dt*Ax
       CALL lsysbl_blockMatVec (rmatrixTmpBlock, rx, rd, &
           -1.0_DP*rnonlinearIteration%dtheta, 1.0_DP)
           
       CALL lsysbl_releaseMatrix (rmatrixTmpBlock)
+      
+      ! If the primal equation is an identity, subtract the primal velocity.
+      IF (rnonlinearIteration%bprimalIdentity) THEN
+        CALL lsyssc_vectorLinearComb (rx%RvectorBlock(1),rd%RvectorBlock(1),&
+            -1.0_DP,1.0_DP)
+        CALL lsyssc_vectorLinearComb (rx%RvectorBlock(2),rd%RvectorBlock(2),&
+            -1.0_DP,1.0_DP)
+      END IF
+      
+      ! The same for the dual velocity.
+      IF (rnonlinearIteration%bdualIdentity) THEN
+        CALL lsyssc_vectorLinearComb (rx%RvectorBlock(4),rd%RvectorBlock(4),&
+            -1.0_DP,1.0_DP)
+        CALL lsyssc_vectorLinearComb (rx%RvectorBlock(5),rd%RvectorBlock(5),&
+            -1.0_DP,1.0_DP)
+      END IF
       
     END IF
       
@@ -1739,16 +1837,27 @@ CONTAINS
     IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
       ! Set up a new block mass matrix that is completely zero.
       ! Copy references to our scalar mass matrices to the diagonal blocks (1,1)
-      ! and (2,2).
+      ! and (2,2) and a reference to '-mass' to (4,4) and (5,5).
       ! Multiply with the mass matrix and release the block matrix again, as we
       ! don't need it afterwards.
       ! Note that no matrix entries will be copied, so this is a quick operation!
     
       CALL lsysbl_createMatBlockByDiscr (rx%p_rblockDiscretisation,rmatrixTmpBlock)
-      CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(1,1),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-      CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(2,2),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+      IF (.NOT. rnonlinearIteration%bprimalIdentity) THEN
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(1,1),&
+                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(2,2),&
+                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+      END IF
+
+      IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(4,4),&
+                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(5,5),&
+                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+      END IF
+      !rmatrixTmpBlock%RmatrixBlock(4,4)%dscaleFactor = -1.0_DP
+      !rmatrixTmpBlock%RmatrixBlock(5,5)%dscaleFactor = -1.0_DP
                                     
       CALL lsysbl_blockMatVec (rmatrixTmpBlock, rx, rd, &
           -1.0_DP*rnonlinearIteration%dalpha, 1.0_DP)
@@ -1776,49 +1885,54 @@ CONTAINS
 
         ! Call the SD method to calculate the nonlinear defect of the primal system.
         ! As we calculate only the defect, the matrix is ignored!
-        CALL conv_streamlinediffusion2d ( &
-                          rx, rx, 1.0_DP, 0.0_DP,&
-                          rstreamlineDiffusion, CONV_MODDEFECT, &
-                          p_rmatrix%RmatrixBlock(1,1), rx, rd)
-            
-        ! Quickly set up a block discretisation structure for the dual equation
-        ! by deriving block 4..6 from the main discretisation structure
-        CALL spdiscr_deriveBlockDiscr (p_rmatrix%p_rblockDiscretisation, &
-          rdiscretisation, 4,6)
-                                       
-        ! Create a subvector of rx and rd containing only the dual variables (block 4..6)
-        CALL lsysbl_deriveSubvector(rx,rsubvector, NDIM2D+1+1,2*(NDIM2D+1), .TRUE.)
-        rsubvector%p_rblockDiscretisation => rdiscretisation
-        CALL lsysbl_deriveSubvector(rd,rsubdefect, NDIM2D+1+1,2*(NDIM2D+1), .TRUE.)
-        rsubdefect%p_rblockDiscretisation => rdiscretisation
-        
-        ! Create a submatrix of the main block matrix that contains only the
-        ! dual system.
-        CALL lsysbl_deriveSubmatrix (p_rmatrix,rsubmatrix,&
-                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
-                                     NDIM2D+1+1,2*(NDIM2D+1))
-        rsubmatrix%p_rblockDiscretisation => rdiscretisation
-
-        ! Call SD to calculate the nonlinear defect of the dual variables.
-        ! This involves calculating a Newton part with the velocity specified
-        ! by rx.
-        ! Configure SD to calculate Newton. Note that in the dual equation,
-        ! the SD term has a "-" while the Newton term has a '+'. To cover that,
-        ! we include '-' signs in front of Newton as well as in front of the velocity
-        ! field.
-        rstreamlineDiffusion%dnewton = -1.0_DP
-        rstreamlineDiffusion%ddelta = 1.0_DP        
-        CALL conv_streamlineDiffusionBlk2d (&
-                            rx, rx, &
-                            -1.0_DP, 0.0_DP,&
+        IF (.NOT. rnonlinearIteration%bprimalIdentity) THEN
+          CALL conv_streamlinediffusion2d ( &
+                            rx, rx, 1.0_DP, 0.0_DP,&
                             rstreamlineDiffusion, CONV_MODDEFECT, &
-                            rsubmatrix,rsubvector,rsubdefect)
+                            p_rmatrix%RmatrixBlock(1,1), rx, rd)
+        END IF
         
-        ! Clean up the structures, finish
-        CALL lsysbl_releaseMatrix (rsubmatrix)
-        CALL lsysbl_releaseVector (rsubdefect)
-        CALL lsysbl_releaseVector (rsubvector)
-        CALL spdiscr_releaseBlockDiscr (rdiscretisation,.TRUE.)
+        IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+            
+          ! Quickly set up a block discretisation structure for the dual equation
+          ! by deriving block 4..6 from the main discretisation structure
+          CALL spdiscr_deriveBlockDiscr (p_rmatrix%p_rblockDiscretisation, &
+            rdiscretisation, 4,6)
+                                         
+          ! Create a subvector of rx and rd containing only the dual variables (block 4..6)
+          CALL lsysbl_deriveSubvector(rx,rsubvector, 4,6, .TRUE.)
+          rsubvector%p_rblockDiscretisation => rdiscretisation
+          CALL lsysbl_deriveSubvector(rd,rsubdefect, 4,6, .TRUE.)
+          rsubdefect%p_rblockDiscretisation => rdiscretisation
+          
+          ! Create a submatrix of the main block matrix that contains only the
+          ! dual system.
+          CALL lsysbl_deriveSubmatrix (p_rmatrix,rsubmatrix,&
+                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
+                                      4,6)
+          rsubmatrix%p_rblockDiscretisation => rdiscretisation
+
+          ! Call SD to calculate the nonlinear defect of the dual variables.
+          ! This involves calculating a Newton part with the velocity specified
+          ! by rx.
+          ! Configure SD to calculate Newton. Note that in the dual equation,
+          ! the SD term has a "-" while the Newton term has a '+'. To cover that,
+          ! we include '-' signs in front of Newton as well as in front of the velocity
+          ! field.
+          rstreamlineDiffusion%dnewton = -1.0_DP
+          rstreamlineDiffusion%ddelta = 1.0_DP        
+          CALL conv_streamlineDiffusionBlk2d (&
+                              rx, rx, &
+                              -1.0_DP, 0.0_DP,&
+                              rstreamlineDiffusion, CONV_MODDEFECT, &
+                              rsubmatrix,rsubvector,rsubdefect)
+          
+          ! Clean up the structures, finish
+          CALL lsysbl_releaseMatrix (rsubmatrix)
+          CALL lsysbl_releaseVector (rsubdefect)
+          CALL lsysbl_releaseVector (rsubvector)
+          CALL spdiscr_releaseBlockDiscr (rdiscretisation,.TRUE.)
+        END IF
                                        
       CASE (1)
     
@@ -1935,29 +2049,83 @@ CONTAINS
     ! and pressure-parts.
     IF (rnonlinearIteration%dtheta .NE. 0.0_DP) THEN
       ! Set up a block system for the divergence and pressure by duplicating 
-      ! the system matrix and removing the Convection/Diffusion parts:
+      ! the system matrix and removing the Convection/Diffusion parts.
       !
-      ! (  0    0   B1 M/a          )
-      ! (  0    0   B2      M/a     )
+      ! We have three different cases:
+      !
+      ! Case 1: full matrix
+      !
+      ! (  0    0   B1              )
+      ! (  0    0   B2              )
       ! ( B1^T B2^T 0               )
-      ! ( -M            0    0   B1 )
-      ! (     -M        0    0   B2 )
+      ! (               0    0   B1 )
+      ! (               0    0   B2 )
       ! (              B1^T B2^T 0  )
       !
-      CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixTmpBlock, &
-          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      DO j=1,NDIM2D
-        DO i=1,NDIM2D
-          CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(i,j))
-          CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(NDIM2D+1+i,NDIM2D+1+j))
-        END DO
-      END DO
+      ! Case 2: Primal equation is an identity:
+      !
+      ! (  0    0   .   .    .   .  )
+      ! (  0    0   .   .    .   .  )
+      ! (  .    .   I   .    .   .  )
+      ! (  .    .   .   0    0   B1 )
+      ! (  .    .   .   0    0   B2 )
+      ! (  .    .   .  B1^T B2^T 0  )
+      !
+      ! Case 3: Dual equation is an identity:
+      !
+      ! (  0    0   B1              )
+      ! (  0    0   B2              )
+      ! ( B1^T B2^T 0               )
+      ! (               0    0   .  )
+      ! (               0    0   .  )
+      ! (               .    .   I  )
+      !
+      ! Create an empty 6x6 block matrix at first, based on the solution vector.
+      CALL lsysbl_createMatBlockByDiscr (rx%p_rblockDiscretisation,rmatrixTmpBlock)
+      
+      ! Fill the matrix
+      IF (.NOT. rnonlinearIteration%bprimalIdentity) THEN
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,3),&
+            rmatrixTmpBlock%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(2,3),&
+            rmatrixTmpBlock%RmatrixBlock(2,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,1),&
+            rmatrixTmpBlock%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(3,2),&
+            rmatrixTmpBlock%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      END IF
 
+      IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(4,6),&
+            rmatrixTmpBlock%RmatrixBlock(4,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(5,6),&
+            rmatrixTmpBlock%RmatrixBlock(5,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(6,4),&
+            rmatrixTmpBlock%RmatrixBlock(6,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(6,5),&
+            rmatrixTmpBlock%RmatrixBlock(6,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      END IF
+      
       ! Build the rest of the defect. Here, no time step is involved!
       CALL lsysbl_blockMatVec (rmatrixTmpBlock, rx, rd, &
           -1.0_DP, 1.0_DP)
           
       CALL lsysbl_releaseMatrix (rmatrixTmpBlock)
+      
+      ! Subtract the pressure (primal / dual) if the corresponding
+      ! matrix part consists of identity matrices.
+      IF (rnonlinearIteration%bprimalIdentity) THEN
+        CALL lsyssc_vectorLinearComb (rx%RvectorBlock(3),rd%RvectorBlock(3),&
+            -1.0_DP,1.0_DP)
+      END IF
+
+      IF (rnonlinearIteration%bdualIdentity) THEN
+        CALL lsyssc_vectorLinearComb (rx%RvectorBlock(6),rd%RvectorBlock(6),&
+            -1.0_DP,1.0_DP)
+      END IF
+      
     END IF
       
     ! Apply the filter chain to the defect vector -- if this is desired.
@@ -2433,7 +2601,7 @@ CONTAINS
         
         ! DEBUG!!!
         !CALL matio_writeBlockMatrixHR (Rmatrices(rnonlinearIteration%NLMAX), 'matrix',&
-        !                              .TRUE., 0, 'matrix.txt','(1X,E20.10)')
+        !                              .TRUE., 0, 'matrixstat.txt','(E10.2)')
         
         CALL linsol_setMatrices(&
             rnonlinearIteration%rpreconditioner%p_rsolverNode,Rmatrices(:))
@@ -2645,6 +2813,9 @@ CONTAINS
         ! Old defect:
         dresOld = SQRT(rnonlinearIteration%DresidualOld(1)**2 + &
                        rnonlinearIteration%DresidualOld(2)**2)
+                       
+        ! Trick to avoid div/0.
+        IF (dresOld .EQ. 0.0_DP) dresOld = 1.0_DP
         
         ! Nonlinear convergence rate
         drhoNL = (Dresiduals(3)/dresOld) ** (1.0_DP/REAL(ite,DP))

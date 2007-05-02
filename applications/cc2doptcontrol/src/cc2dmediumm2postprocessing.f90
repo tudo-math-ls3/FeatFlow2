@@ -255,6 +255,11 @@ CONTAINS
     ! new discretisation:
     CALL spdp_projectSolution (rvector,rprjVector)
     
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     NULLIFY(p_rdiscreteBC)
@@ -279,6 +284,9 @@ CONTAINS
     ! boundary components.
     CALL vecfil_discreteFBCsol (rprjVector)
     
+    ! Clean up the collection (as we are done with the assembly.
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     !
     ! From the attached discretisation, get the underlying triangulation
@@ -492,6 +500,17 @@ CONTAINS
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscretisation(2))
                  
+    ! Also use Q1 for the dual velocity field.
+    CALL spdiscr_deriveSimpleDiscrSc (&
+                 rvector%p_rblockDiscretisation%RspatialDiscretisation(4), &
+                 EL_Q1, CUB_G2X2, &
+                 rprjDiscretisation%RspatialDiscretisation(4))
+
+    CALL spdiscr_deriveSimpleDiscrSc (&
+                 rvector%p_rblockDiscretisation%RspatialDiscretisation(5), &
+                 EL_Q1, CUB_G2X2, &
+                 rprjDiscretisation%RspatialDiscretisation(5))
+                 
     ! The pressure discretisation substructure stays the old.
     !
     ! Now set up a new solution vector based on this discretisation,
@@ -557,6 +576,16 @@ CONTAINS
     ! Write pressure
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     CALL ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+    
+    ! Dual velocity field
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+    CALL ucd_addVariableVertexBased (rexport,'X-vel-dual',UCD_VAR_STANDARD, p_Ddata)
+    CALL ucd_addVariableVertexBased (rexport,'Y-vel-dual',UCD_VAR_STANDARD, p_Ddata2)
+    
+    ! Dual pressure
+    CALL lsyssc_getbase_double (rprjVector%RvectorBlock(6),p_Ddata)
+    CALL ucd_addVariableElementBased (rexport,'pressure-dual',UCD_VAR_STANDARD, p_Ddata)
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
@@ -806,7 +835,7 @@ CONTAINS
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
 !  
 !  ! Pointer to DCORVG of the triangulation
-!  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+!  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 !  
 !  ! Current element distribution
 !  TYPE(t_elementDistribution), POINTER :: p_elementDistribution
@@ -949,7 +978,7 @@ CONTAINS
 !  INTEGER(I32), DIMENSION(:,:), POINTER :: p_IverticesAtElement
 !  
 !  ! Pointer to DCORVG of the triangulation
-!  REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordinates
+!  REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
 !  
 !
 !  ! Number of elements in a block. Normally =BILF_NELEMSIM,

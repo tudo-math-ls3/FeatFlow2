@@ -98,7 +98,7 @@ CONTAINS
 !</subroutine>
 
     ! A problem structure for our problem
-    TYPE(t_problem), TARGET :: rproblem
+    TYPE(t_problem), POINTER :: p_rproblem
     
     ! A structure for the solution vector and the RHS vector of the problem.
     TYPE(t_vectorBlock) :: rvector,rrhs
@@ -107,117 +107,117 @@ CONTAINS
     
     ! Ok, let's start. 
     !
+    ! Allocate memory for the problem; it's rather large.
+    ALLOCATE (p_rproblem)
+    
     ! Initialise the collection
-    CALL collct_init (rproblem%rcollection)
+    CALL collct_init (p_rproblem%rcollection)
     DO i=1,NNLEV
-      CALL collct_addlevel_all (rproblem%rcollection)
+      CALL collct_addlevel_all (p_rproblem%rcollection)
     END DO
     
     ! Initialise the parameter list object. This creates an empty parameter list.
-    CALL parlst_init (rproblem%rparamList)
+    CALL parlst_init (p_rproblem%rparamList)
     
     ! Add the parameter list to the collection so that the parameters
     ! from the DAT/INI files are available everywhere where we have the 
     ! collection.
-    CALL collct_setvalue_parlst(rproblem%rcollection,'INI',&
-                                rproblem%rparamList,.TRUE.)
+    CALL collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
+                                p_rproblem%rparamList,.TRUE.)
 
     ! Read parameters from the INI/DAT files into the parameter list. 
     ! Each 'readfromfile' command adds the parameter of the specified file 
     ! to the parameter list.
-    CALL parlst_readfromfile (rproblem%rparamList, './data/discretisation.dat')
-    CALL parlst_readfromfile (rproblem%rparamList, './data/linsol_cc2d.dat')
-    CALL parlst_readfromfile (rproblem%rparamList, './data/nonlinsol_cc2d.dat')
-    CALL parlst_readfromfile (rproblem%rparamList, './data/output.dat')
-    CALL parlst_readfromfile (rproblem%rparamList, './data/paramtriang.dat')
-    CALL parlst_readfromfile (rproblem%rparamList, './data/bdconditions.dat')
-    CALL parlst_readfromfile (rproblem%rparamList, './data/timediscr.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/discretisation.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/linsol_cc2d.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/nonlinsol_cc2d.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/output.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/paramtriang.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/bdconditions.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/timediscr.dat')
     
     ! Ok, parameters are read in.
     ! Get the output levels during the initialisation phase and during the program.
-    CALL c2d2_initOutput (rproblem)
+    CALL c2d2_initOutput (p_rproblem)
     OU_LINE_LENGTH = 132
     
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
-    CALL c2d2_initParameters (rproblem)
+    CALL c2d2_initParameters (p_rproblem)
     
     ! So now the different steps - one after the other.
     !
     ! Initialisation
-    CALL c2d2_initParamTriang (rproblem)
-    CALL c2d2_initDiscretisation (rproblem)    
-    CALL c2d2_allocMatVec (rproblem,rvector,rrhs)    
-    CALL c2d2_initAnalyticBC (rproblem)   
+    CALL c2d2_initParamTriang (p_rproblem)
+    CALL c2d2_initDiscretisation (p_rproblem)    
+    CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
+    CALL c2d2_initAnalyticBC (p_rproblem)   
 
     ! Now choose the algorithm. Stationary or time-dependent simulation?
-    IF (rproblem%itimedependence .EQ. 0) THEN
+    IF (p_rproblem%itimedependence .EQ. 0) THEN
     
       ! Stationary simulation
       !
       ! Generate matrices
-      CALL c2d2_generateStaticMatrices (rproblem)
-      CALL c2d2_generateStaticSystemParts (rproblem)
+      CALL c2d2_generateStaticMatrices (p_rproblem)
+      CALL c2d2_generateStaticSystemParts (p_rproblem)
 
       ! Generate the RHS vector.
-      CALL c2d2_generateBasicRHS (rproblem,rrhs)
+      CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
       
       ! Generate discrete boundary conditions
-      CALL c2d2_initDiscreteBC (rproblem,rvector,rrhs)
+      CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
-      CALL c2d2_implementBC (rproblem,rvector,rrhs,.TRUE.,.TRUE.,.TRUE.)
+      CALL c2d2_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.,.TRUE.)
     
       ! Solve the problem
-      CALL c2d2_solve (rproblem,rvector,rrhs)
+      CALL c2d2_solve (p_rproblem,rvector,rrhs)
     
       ! Postprocessing
-      CALL c2d2_postprocessingStationary (rproblem,rvector)
+      CALL c2d2_postprocessingStationary (p_rproblem,rvector)
       
     ELSE
     
       ! Time dependent simulation with explicit time stepping.
       !
       ! Generate matrices
-      CALL c2d2_generateStaticMatrices (rproblem)
-      CALL c2d2_generateStaticSystemParts (rproblem)
+      CALL c2d2_generateStaticMatrices (p_rproblem)
       
-      ! Generate the RHS vector for the first time step.
-      CALL c2d2_generateBasicRHS (rproblem,rrhs)
-      
-      ! Initialise the boundary conditions, but 
+      ! Initialise the boundary conditions for the 0th time step, but 
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
-      CALL c2d2_initDiscreteBC (rproblem,rvector,rrhs)
-      
+      CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
+
       ! Call the nonstationary solver to solve the problem.
-      !CALL c2d2_solveNonstationary (rproblem,rvector,rrhs)
-      PRINT *,'Nonstationary optimal control not implemented!'
+      CALL c2d2_solveNonstationaryDirect (p_rproblem,rvector,rrhs)
       
     END IF
     
     ! Cleanup
-    CALL c2d2_doneMatVec (rproblem,rvector,rrhs)
-    CALL c2d2_doneBC (rproblem)
-    CALL c2d2_doneDiscretisation (rproblem)
-    CALL c2d2_doneParamTriang (rproblem)
+    CALL c2d2_doneMatVec (p_rproblem,rvector,rrhs)
+    CALL c2d2_doneBC (p_rproblem)
+    CALL c2d2_doneDiscretisation (p_rproblem)
+    CALL c2d2_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.
-    CALL c2d2_doneParameters (rproblem)
+    CALL c2d2_doneParameters (p_rproblem)
 
     ! Release the parameter list
-    CALL collct_deleteValue (rproblem%rcollection,'INI')
-    CALL parlst_done (rproblem%rparamList)
+    CALL collct_deleteValue (p_rproblem%rcollection,'INI')
+    CALL parlst_done (p_rproblem%rparamList)
     
     ! Print some statistical data about the collection - anything forgotten?
     CALL output_lbrk ()
     CALL output_line ('Remaining collection statistics:')
     CALL output_line ('--------------------------------')
     CALL output_lbrk ()
-    CALL collct_printStatistics (rproblem%rcollection)
+    CALL collct_printStatistics (p_rproblem%rcollection)
     
-    ! Finally release the collection.
-    CALL collct_done (rproblem%rcollection)
+    ! Finally release the collection and the problem structure.
+    CALL collct_done (p_rproblem%rcollection)
+    
+    DEALLOCATE(p_rproblem)
     
   END SUBROUTINE
 

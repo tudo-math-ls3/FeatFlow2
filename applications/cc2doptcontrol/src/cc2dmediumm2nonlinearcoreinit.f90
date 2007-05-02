@@ -87,8 +87,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initNonlinearLoop (rproblem,rvector,rrhs,rnonlinearIteration,&
-      sname)
+  SUBROUTINE c2d2_initNonlinearLoop (rproblem,nlmin,nlmax,rvector,rrhs,&
+      rnonlinearIteration,sname)
   
 !<description>
   ! Initialises the given nonlinear iteration structure rnonlinearIteration.
@@ -100,6 +100,14 @@ CONTAINS
 !<input>
   ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(IN), TARGET :: rproblem
+  
+  ! Minimum refinement level in the rproblem structure that is allowed to be used
+  ! by the preconditioners.
+  INTEGER, INTENT(IN) :: nlmin
+  
+  ! Maximum refinement level in the rproblem structure that is allowed to be used
+  ! by the preconditioners. This level must correspond to rvector and rrhs.
+  INTEGER, INTENT(IN) :: nlmax
 
   ! The solution vector which is modified later during the nonlinear iteration.
   TYPE(t_vectorBlock), INTENT(IN), TARGET :: rvector
@@ -125,7 +133,7 @@ CONTAINS
     TYPE(t_parlstSection), POINTER :: p_rsection
 
     ! Basic initialisation of the nonlinenar iteration structure.
-    CALL c2d2_createNonlinearLoop (rnonlinearIteration,rproblem%NLMIN,rproblem%NLMAX)    
+    CALL c2d2_createNonlinearLoop (rnonlinearIteration,nlmin,nlmax)    
     
     rnonlinearIteration%MT_OutputLevel = rproblem%MT_OutputLevel
     
@@ -150,7 +158,7 @@ CONTAINS
     
     ! Assign the matrix pointers in the nonlinear iteration structure to
     ! all our matrices that we want to use.
-    DO ilevel = rproblem%NLMIN,rproblem%NLMAX
+    DO ilevel = nlmin,nlmax
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrix => &
         rproblem%RlevelInfo(ilevel)%rmatrix
         
@@ -199,6 +207,8 @@ CONTAINS
     ! Store the regularisation parameter of the optimal control problem.
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dalphaC',rnonlinearIteration%dalphaC,0.1_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+                                'dgammaC',rnonlinearIteration%dgammaC,0.0_DP)
       
   END SUBROUTINE
 
@@ -279,8 +289,8 @@ CONTAINS
       ! problem.
       !
       ! Which levels have we to take care of during the solution process?
-      NLMIN = rproblem%NLMIN
-      NLMAX = rproblem%NLMAX
+      NLMIN = rnonlinearIteration%NLMIN
+      NLMAX = rnonlinearIteration%NLMAX
       
       ! Get our right hand side / solution / matrix on the finest
       ! level from the problem structure.
@@ -401,7 +411,7 @@ CONTAINS
             CCPREC_NEWTON) .OR. &
             (rnonlinearIteration%rpreconditioner%ctypePreconditioning .EQ. &
             CCPREC_NEWTONDYNAMIC)) THEN
-          ! That mens, our preconditioner matrix must look like
+          ! That means, our preconditioner matrix must look like
           !
           !  A11  A12  B1
           !  A21  A22  B2
@@ -423,7 +433,7 @@ CONTAINS
                 LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
               ! Allocate memory for the entries; don't initialise the memory.
-              CALL lsyssc_createEmptyMatrixScalar (&
+              CALL lsyssc_allocEmptyMatrix (&
                   p_rmatrixPreconditioner%RmatrixBlock(1,2),LSYSSC_SETM_UNDEFINED)
                 
             END IF
@@ -438,7 +448,7 @@ CONTAINS
                 LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
               ! Allocate memory for the entries; don't initialise the memory.
-              CALL lsyssc_createEmptyMatrixScalar (&
+              CALL lsyssc_allocEmptyMatrix (&
                   p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
                
             ELSE
@@ -463,7 +473,7 @@ CONTAINS
                   
                 ! ... then allocate memory for the entries; 
                 ! don't initialise the memory.
-                CALL lsyssc_createEmptyMatrixScalar (&
+                CALL lsyssc_allocEmptyMatrix (&
                     p_rmatrixPreconditioner%RmatrixBlock(2,1),&
                     LSYSSC_SETM_UNDEFINED)
                   
@@ -494,7 +504,7 @@ CONTAINS
               
             ! ... then allocate memory for the entries; 
             ! don't initialise the memory.
-            CALL lsyssc_createEmptyMatrixScalar (&
+            CALL lsyssc_allocEmptyMatrix (&
                 p_rmatrixPreconditioner%RmatrixBlock(2,2),&
                 LSYSSC_SETM_UNDEFINED)
           END IF
@@ -746,7 +756,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_checkAssembly (rproblem,rrhs,rfinalAssembly)
+  SUBROUTINE c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,rfinalAssembly)
   
 !<description>
   ! This routine checks the matrices against an existing preconditioner.
@@ -759,6 +769,10 @@ CONTAINS
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! Nonlinar iteration structure saving data about the actual configuration
+  ! of the core equation.
+  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
 !</inputoutput>
 
 !<input>
@@ -799,8 +813,8 @@ CONTAINS
       ! That preconditioner is a solver for a linear system.
       !
       ! Which levels have we to take care of during the solution process?
-      NLMIN = rproblem%NLMIN
-      NLMAX = rproblem%NLMAX
+      NLMIN = rnonlinearIteration%NLMIN
+      NLMAX = rnonlinearIteration%NLMAX
 
       ! Temporarily set up the solver node for the linear subsolver.
       !

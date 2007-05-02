@@ -47,12 +47,18 @@ PROGRAM cc2dmediumoptc
   ! Initialise the storage management: 
   CALL storage_init(999, 100)
   
+  ! Initialise the parser
+  CALL fparser_init ()
+  
   ! Call the problem to solve. 
   CALL output_lbrk ()
   CALL output_line ('Calculating cc2dmedium-Problem')
   CALL output_separator (OU_SEP_MINUS)
   
   CALL cc2dmedium2optc ()
+
+  ! Release the parser
+  CALL fparser_done ()
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
