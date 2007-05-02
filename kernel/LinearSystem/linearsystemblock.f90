@@ -136,7 +136,7 @@
 !# 38.) lsysbl_isSubmatrixPresent
 !#      -> Checks if a submatrix of a blockmatrix is present
 !#
-!# 39.) lsyssc_resizeVector
+!# 39.) lsysbl_resizeVector
 !#      -> Resize a blockvector
 !#
 !# 40.) lsysbl_infoVector
