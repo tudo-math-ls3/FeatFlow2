@@ -748,8 +748,18 @@ CONTAINS
       
       CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                   p_rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  p_rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      IF (.NOT. rproblem%bdecoupledXY) THEN          
+        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
+        ! A55 is identical to A11! So mirror A44 to A55 sharing the
+        ! structure and the content.
+        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(4,4),&
+                    p_rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ELSE
+        ! Otherwise, create another copy of the template matrix.
+        CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                    p_rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      END IF
 
       ! For a simple Stokes control equation, we don't need the matrices
       ! (4,5) and (5,4) -- they only appear if the convective operator is present.

@@ -42,6 +42,7 @@ MODULE cc2dmediumm2stationary
   
   USE cc2dmediumm2nonlinearcore
   USE cc2dmediumm2nonlinearcoreinit
+  USE cc2dmediumm2postprocessing
   
   IMPLICIT NONE
 
@@ -124,6 +125,10 @@ CONTAINS
     ! Initialise the preconditioner for the nonlinear iteration
     CALL c2d2_preparePreconditioner (rproblem,&
         rnonlinearIteration,rvector,rrhs)
+        
+    ! Print out the value of the optimal control functional for the
+    ! initial solution vector directly prior to the solution process.
+    CALL c2d2_printControlFunctionalStat (rproblem,rvector)
 
     ! Call the nonlinear solver to solve the core equation.
     CALL c2d2_solveCoreEquation (rnlSol,rnonlinearIteration,&

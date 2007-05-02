@@ -2778,7 +2778,7 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(3) :: Dresiduals,Dresiduals2
       REAL(DP) :: dresOld,drhoNL,ddelP,ddelU,dtmp,dresINIT
-      REAL(DP) :: dresU,dresDIV,dres,dnormJ
+      REAL(DP) :: dresU,dresDIV,dres
       REAL(DP) :: ddualresU,ddualresDIV,ddualres
       REAL(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES
       INTEGER, DIMENSION(3) :: Cnorms
@@ -2809,10 +2809,6 @@ CONTAINS
       ! Replace the 'old' residual by the current one
       rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
       
-      ! Calculate the norm of the error functional J(.,.) of the
-      ! optimal control problem.
-      CALL c2d2_optc_stationaryFunctional (rx,rnonlinearIteration%dalphaC,dnormJ)      
-
       ! In the first iteration (initial defect), print the norm of the defect
       ! and save the norm of the initial residuum to the structure
       IF (ite .EQ. 0) THEN
@@ -2821,7 +2817,6 @@ CONTAINS
         CALL output_line (' IT  RELU     RELP     '//&
                           'DEF-U    DEF-DIV  DEF-TOT  '// &
                           'DEFD-U   DEFD-DIV DEFD-TOT '// &
-                          'J(Y,U)   '//&
                           'RHONL    OMEGNL   RHOMG')
         CALL output_separator (OU_SEP_MINUS)     
         CALL output_line ('  0                   '// &
@@ -2830,8 +2825,7 @@ CONTAINS
             TRIM(sys_sdEP(Dresiduals(3),9,2))//&
             TRIM(sys_sdEP(Dresiduals2(1),9,2))//&
             TRIM(sys_sdEP(Dresiduals2(2),9,2))//&
-            TRIM(sys_sdEP(Dresiduals2(3),9,2))//&
-            TRIM(sys_sdEP(dnormJ,9,2))&
+            TRIM(sys_sdEP(Dresiduals2(3),9,2))&
             )
         CALL output_separator (OU_SEP_MINUS)     
 
@@ -2939,7 +2933,6 @@ CONTAINS
             TRIM(sys_sdEP(ddualresU,9,2))// &
             TRIM(sys_sdEP(ddualresDIV,9,2))// &
             TRIM(sys_sdEP(ddualres,9,2))// &
-            TRIM(sys_sdEP(dnormJ,9,2))// &
             TRIM(sys_sdEP(drhoNL,9,2))// &
             TRIM(sys_sdEP(rnonlinearIteration%domegaNL,9,2))// &
             TRIM(sys_sdEP(rnonlinearIteration%drhoLinearSolver,9,2)) &

@@ -32,6 +32,7 @@ MODULE cc2dmediumm2postprocessing
   USE spdiscprojection
   USE nonlinearsolver
   USE paramlist
+  USE pprocerror
   
   USE collection
   USE convection
@@ -41,6 +42,7 @@ MODULE cc2dmediumm2postprocessing
   USE pprocnavierstokes
   
   USE cc2dmediumm2basic
+  USE cc2dmediumm2optcanalysis
   USE cc2dmedium_callback
   
   IMPLICIT NONE
@@ -171,9 +173,12 @@ CONTAINS
       CALL output_line (' 2 / ' &
           //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
           //TRIM(sys_sdEP(Dforces(2),15,6)) )
-          
       
     ENDIF
+    
+    ! Print out the value of the optimal control functional.
+    CALL output_lbrk ()
+    CALL c2d2_printControlFunctionalStat (rproblem,rvector)
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
@@ -744,6 +749,52 @@ CONTAINS
   
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_printControlFunctionalStat (rproblem,rvector)
+  
+!<description>
+  ! Calculates and prints the value of the optimal control functional J(y,u) 
+  ! in the stationary case.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!<input>
+  ! The solution vector which is to be evaluated by the postprocessing routines.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+
+!</subroutine>
+    
+    ! local variables
+    REAL(DP), DIMENSION(3) :: Derror
+    REAL(DP) :: dalphaC
+
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+
+    ! Analyse the deviation from the target velocity field.
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+                                'dalphaC',dalphaC,0.1_DP)
+    CALL c2d2_optc_stationaryFunctional (rvector,dalphaC,Derror,&
+        rproblem%rcollection)
+
+    CALL output_line ('||y-z||_L2: '//TRIM(sys_sdEL(Derror(1),2)))
+    CALL output_line ('||u||_L2  : '//TRIM(sys_sdEL(Derror(2),2)))
+    CALL output_line ('J(y,u)    : '//TRIM(sys_sdEL(Derror(3),2)))
+    
+    ! Release assembly-stuff from the collection
+    CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    
+  END SUBROUTINE
 
 !  !****************************************************************************
 !
