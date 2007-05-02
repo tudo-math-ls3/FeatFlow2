@@ -642,7 +642,7 @@ CONTAINS
         ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
                                     iexprtyp, rbcRegion%itag, rbcRegion%dtag, &
-                                    dwhere, rbcRegion%stag,&
+                                    dwhere, rbcRegion%stag,dtime,&
                                     p_rcollection)
     
       CASE (BC_PRESSUREDROP)
@@ -650,7 +650,7 @@ CONTAINS
         ! expression iexprtyp.
         Dvalues(1) = evalBoundary (rdiscretisation, rbcRegion%rboundaryRegion, &
                                     iexprtyp, rbcRegion%itag, rbcRegion%dtag, &
-                                    dwhere, rbcRegion%stag,&
+                                    dwhere, rbcRegion%stag,dtime,&
                                     p_rcollection)
       END SELECT
       
@@ -661,7 +661,7 @@ CONTAINS
     ! Auxiliary function: Evaluate a scalar expression on the boundary.
     
     REAL(DP) FUNCTION evalBoundary (rdiscretisation, rboundaryRegion, &
-                                    ityp, ivalue, dvalue, dpar, stag, p_rcollection)
+                                    ityp, ivalue, dvalue, dpar, stag, dtime, p_rcollection)
     
     ! Discretisation structure of the underlying discretisation
     TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
@@ -687,6 +687,10 @@ CONTAINS
 
     ! String tag that defines more complicated BC's.
     CHARACTER(LEN=*), INTENT(IN) :: stag
+    
+    ! For nonstationary simulation: Simulation time.
+    ! =0 for stationary simulations.
+    REAL(DP), INTENT(IN) :: dtime
     
     ! A compiled expression for evaluation at runtime
     TYPE(t_fparser), POINTER :: p_rparser
@@ -751,7 +755,7 @@ CONTAINS
         Rval(6) = boundary_convertParameter(rdiscretisation%p_rboundary, &
                                             rboundaryRegion%iboundCompIdx, dpar, &
                                             BDR_PAR_01, BDR_PAR_LENGTH) 
-        Rval(7) = 0.0_DP
+        Rval(7) = dtime
         
         ! Evaluate the expression. ivalue is the number of
         ! the expression to evaluate.

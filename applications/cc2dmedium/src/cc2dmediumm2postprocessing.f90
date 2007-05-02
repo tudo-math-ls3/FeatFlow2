@@ -240,6 +240,9 @@ CONTAINS
     ! allocate memory.
     CALL lsysbl_createVecBlockByDiscr (rprjDiscretisation,rprjVector,.FALSE.)
     
+    ! Initialise the collection for discretisation of the boundary conditions.
+    CALL c2d2_initCollectForAssembly(rproblem,rproblem%rcollection)
+    
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
     CALL spdp_projectSolution (rvector,rprjVector)
@@ -253,6 +256,9 @@ CONTAINS
                             
     ! Connect the vector to the BC's
     rprjVector%p_rdiscreteBC => p_rdiscreteBC
+    
+    ! Assembly of the boundary conditions finished.
+    CALL c2d2_doneCollectForAssembly(rproblem,rproblem%rcollection)
     
     ! The same way, discretise boundary conditions of fictitious boundary components.
     NULLIFY(p_rdiscreteFBC)
