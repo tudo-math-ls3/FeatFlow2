@@ -11067,14 +11067,19 @@ CONTAINS
       
       ! loop through the rows ald colums, set off-diagonal entries to zero.
       DO icol = 1,rmatrix%NCOLS
-        ! Remember the diagonal
-        ddata = p_Da((icol-1)*rmatrix%NEQ+icol)
-        
-        ! Fill the column with zero
-        p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
-        
-        ! Restore the diagonal
-        p_Da((icol-1)*rmatrix%NEQ+icol) = ddata
+        IF (icol .LE. rmatrix%NEQ) THEN
+          ! Remember the diagonal
+          ddata = p_Da((icol-1)*rmatrix%NEQ+icol)
+          
+          ! Fill the column with zero
+          p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
+          
+          ! Restore the diagonal
+          p_Da((icol-1)*rmatrix%NEQ+icol) = ddata
+        ELSE
+          ! Fill the column with zero
+          p_Da ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
+        END IF
       END DO
       
     CASE (ST_SINGLE)
@@ -11083,14 +11088,19 @@ CONTAINS
       
       ! loop through the rows ald colums, set off-diagonal entries to zero.
       DO icol = 1,rmatrix%NCOLS
-        ! Remember the diagonal
-        fdata = p_Fa((icol-1)*rmatrix%NEQ+icol)
-        
-        ! Fill the column with zero
-        p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
-        
-        ! Restore the diagonal
-        p_Fa((icol-1)*rmatrix%NEQ+icol) = fdata
+        IF (icol .LE. rmatrix%NEQ) THEN
+          ! Remember the diagonal
+          fdata = p_Fa((icol-1)*rmatrix%NEQ+icol)
+          
+          ! Fill the column with zero
+          p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
+          
+          ! Restore the diagonal
+          p_Fa((icol-1)*rmatrix%NEQ+icol) = fdata
+        ELSE
+          ! Fill the column with zero
+          p_Fa ((icol-1)*rmatrix%NEQ+1 : icol*rmatrix%NEQ) = 0.0_DP
+        END IF
       END DO
       
     CASE DEFAULT
