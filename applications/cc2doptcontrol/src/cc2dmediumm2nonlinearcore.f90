@@ -1535,20 +1535,55 @@ CONTAINS
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
         END IF
 
+        ! -----------------------------------------------------------
         ! Assemble the dual equation.
-        ! This is completely very similar to the standard equation, it just
+        ! This is similar to the standard equation, it just
         ! introduces two more Stokes matrices on the diagonal.
 
-        ! Copy the Stokes matrix to A44 and A55, overwrite whatever there is.
-        CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(4,4),&
+        IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
+            (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
+          ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
+          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(4,4),&
                                       LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+          ! Mass matrix?
+          IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
+            CALL lsyssc_matrixLinearComb (&
+                p_rmatrixMass,rnonlinearIteration%dalpha,&
+                p_rmatrix%RmatrixBlock(4,4),rnonlinearIteration%dtheta,&
+                p_rmatrix%RmatrixBlock(4,4),&
+                .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+          ELSE
+            ! In this case, we may have to scale the Stokes matrix according to 
+            ! theta; note that if the mass matrix is involved, this is done
+            ! implicitely.
+            IF (rnonlinearIteration%dtheta .NE. 1.0_DP) THEN
+              CALL lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(4,4),&
+                  rnonlinearIteration%dtheta)
+            END IF
+          END IF
 
-        IF (.NOT. lsyssc_isMatrixContentShared (p_rmatrix%RmatrixBlock(4,4), &
-                                          p_rmatrix%RmatrixBlock(5,5))) THEN
-          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(5,5),&
-                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+          SELECT CASE (iupwind)
+          CASE (2)
+            ! Jump stabilisation; can also be used with Stokes.
+            !
+            ! Call the jump stabilisation technique to stabilise that stuff.   
+            CALL conv_jumpStabilisation2d (&
+                                p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+                                rjumpStabil, CONV_MODMATRIX, &
+                                p_rmatrix%RmatrixBlock(4,4))   
+          END SELECT
+          
         END IF
-        
+
+        ! If A22=A11, that's all.
+        ! If A22 has a separate content in memory, we copy the content
+        ! of A11 to A22 so that they are the same.
+        IF (.NOT. lsyssc_isMatrixContentShared(p_rmatrix%RmatrixBlock(5,5))) THEN
+          CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(4,4),&
+                                      p_rmatrix%RmatrixBlock(5,5),&
+                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+        END IF
+
         ! Switch off the 'offdiagonal' matrices -- if they exist.
         p_rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
         p_rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP

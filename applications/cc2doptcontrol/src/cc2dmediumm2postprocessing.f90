@@ -521,6 +521,8 @@ CONTAINS
     ! new discretisation:
     CALL spdp_projectSolution (rvector,rprjVector)
     
+    CALL c2d2_initCollectForAssembly(rproblem,rproblem%rcollection)
+    
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     NULLIFY(p_rdiscreteBC)
@@ -537,6 +539,8 @@ CONTAINS
                               .FALSE.,getBoundaryValuesFBC,rproblem%rcollection,&
                               BCASM_DISCFORSOL)
     rprjVector%p_rdiscreteBCfict => p_rdiscreteFBC
+    
+    CALL c2d2_doneCollectForAssembly(rproblem,rproblem%rcollection)
     
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
