@@ -256,7 +256,7 @@ MODULE storage
     ! of this structure.
     INTEGER :: nhandlesInUseMax = 0
 
-    ! Maximum amount of memory that was in use ofer the whole lifetime
+    ! Maximum amount of memory that was in use over the whole lifetime
     ! of this structure.
     REAL(DP) :: dtotalMemMax = 0.0_DP
 
