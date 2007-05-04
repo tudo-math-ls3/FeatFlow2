@@ -137,12 +137,15 @@
 !#      -> Checks if a submatrix of a blockmatrix is present
 !#
 !# 39.) lsysbl_resizeVector
-!#      -> Resize a blockvector
+!#      -> Resize a block vector
 !#
-!# 40.) lsysbl_infoVector
+!# 40.) lsysbl_resizeVecBlockIndMat
+!#      -> Resize a block vector according to a block matrix
+!#
+!# 41.) lsysbl_infoVector
 !#      -> Outputs information about the vector (mostly used for debugging)
 !#
-!# 41.) lsysbl_infoMatrix
+!# 42.) lsysbl_infoMatrix
 !#      -> Outputs information about the matrix (mostly used for debugging)
 !# </purpose>
 !##############################################################################
@@ -3700,6 +3703,151 @@ CONTAINS
       CALL lsysbl_resizeVecBlockDirect(rx, Isize(1:rx%nblocks), bclear, NEQMAX)
     END IF
 
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_resizeVecBlockIndMat (rtemplateMat, rx, bclear)
+
+!<description>
+    ! Resize the vector block structure rx so that it is compatible with
+    ! the template matrix. If rx has not been initialized, than it is
+    ! initialized adopting the same memory layout as the template matrix.
+    !
+    ! Remark: If the vector exists already, then the total memory on 
+    ! the heap is reallocated if "rtemplateMat%NCOLS > SIZE(rx)", that is, 
+    ! the new dimension of rx exceeds that of the old vector. If the old
+    ! vector is larger than the new one, then the dimensions of the
+    ! subvectors are only adjusted without reallocation.
+    !
+    ! If the parameter bclear=.TRUE., then the resized vector is cleared.
+    ! Otherwise it is left 'as is'.
+    !
+    ! Remark: In contrast to scalar vectors where the content of the vector
+    ! can be copied upon resize this is not possible for block vectors.
+    ! Theoretically, this would be possible. However, some subvectors may
+    ! have increased whereas other may have decreased, so that an additional
+    ! vector is mandatory to reorganize the global array. This is not efficient.
+!</description>
+
+!<input>
+    ! A template matrix structure
+    TYPE(t_matrixBlock), INTENT(IN) :: rtemplateMat
+
+    ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
+    ! Otherwise the content of rx is undefined.
+    LOGICAL, INTENT(IN), OPTIONAL   :: bclear
+!</input>
+
+!<inputoutput>
+    ! Block vector structure
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_VECIDX) :: isize,i,j,n
+
+    ! Check, that the vector is not a copy of another (possibly larger) vector
+    IF (rx%bisCopy) THEN
+      PRINT *, "lsysbl_resizeVecBlockIndMat: A copied vector cannot be resized!"
+      STOP
+    END IF
+
+    ! Check if vector exists?
+    IF (rx%NEQ == 0 .OR.&
+        rx%h_DData == ST_NOHANDLE) THEN
+
+      CALL lsysbl_createVecBlockIndMat(rtemplateMat,rx,bclear)
+
+    ELSE
+      
+      ! Check if vector/matrix are compatible
+      IF (rx%nblocks /= rtemplateMat%ndiagblocks) THEN
+        PRINT *, "lsysbl_resizeVecBlockIndMat: Matrix/Vector incompatible!"
+        STOP
+      END IF
+
+      ! Update the global NEQ
+      rx%NEQ = rtemplateMat%NCOLS
+      CALL storage_getsize(rx%h_Ddata, isize)
+
+      ! Do we really have to reallocate the vector physically?
+      IF (rx%NEQ > isize) THEN
+
+        ! Yes, reallocate memory for handle h_Ddata
+        CALL storage_realloc('lsysbl_resizeVecBlockIndMat', rx%NEQ, rx%h_Ddata, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+
+      n=1
+      DO i = 1,rtemplateMat%ndiagBlocks
+        ! Search for the first matrix in column i of the block matrix -
+        ! this will give us information about the vector. Note that the
+        ! diagonal blocks does not necessarily have to exist!
+        DO j=1,rtemplateMat%ndiagBlocks
+          
+          ! Check if the matrix is not empty
+          IF (rtemplateMat%RmatrixBlock(j,i)%NCOLS .GT. 0) THEN
+            
+            ! Found a template matrix we can use :-)
+            rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(j,i)%NCOLS
+            
+            ! Take the handle of the complete-solution vector, but set the index of
+            ! the first entry to a value >= 1 - so that it points to the first
+            ! entry in the global solution vector!
+            rx%RvectorBlock(i)%h_Ddata = rx%h_Ddata
+            rx%RvectorBlock(i)%iidxFirstEntry = n
+            
+            ! Give the vector the discretisation of the matrix
+            rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+                rtemplateMat%RmatrixBlock(j,i)%p_rspatialDiscretisation
+            
+            ! Give the vector the same sorting strategy as the matrix, so that
+            ! the matrix and vector get compatible. Otherwise, things
+            ! like matrix vector multiplication won't work...
+            rx%RvectorBlock(i)%isortStrategy = &
+                rtemplateMat%RmatrixBlock(j,i)%isortStrategy
+            rx%RvectorBlock(i)%h_IsortPermutation = &
+                rtemplateMat%RmatrixBlock(j,i)%h_IsortPermutation
+            
+            ! Denote in the subvector that the handle belongs to us - not to
+            ! the subvector.
+            rx%RvectorBlock(i)%bisCopy = .TRUE.
+            
+            n = n+rtemplateMat%RmatrixBlock(j,i)%NCOLS
+            
+            ! Finish this loop, continue with the next column
+            EXIT
+            
+          END IF
+          
+        END DO
+
+        IF (j .GT. rtemplateMat%ndiagBlocks) THEN
+          ! Let's hope this situation (an empty equation) never occurs - 
+          ! might produce some errors elsewhere :)
+          rx%RvectorBlock(i)%NEQ = 0
+          rx%RvectorBlock(i)%iidxFirstEntry = 0
+        END IF
+
+      END DO
+    END IF
+
+    ! Transfer the boundary conditions and block discretisation pointers
+    ! from the matrix to the vector.
+    rx%p_rblockDiscretisation => rtemplateMat%p_rblockDiscretisation
+    rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
+    rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
+    
+    ! Should the vector be cleared?
+    IF (bclear) THEN
+      CALL lsysbl_clearVector (rx)
+    END IF
+    
   END SUBROUTINE
 
   !****************************************************************************

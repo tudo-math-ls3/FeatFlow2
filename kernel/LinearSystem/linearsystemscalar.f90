@@ -25,145 +25,148 @@
 !#  2.) lsyssc_createVecByDiscr
 !#      -> Create a vector based on a scalar discretisation structure
 !#
-!#  3.) lsyssc_scalarProduct
+!#  3.) lsyssc_createVecIndMat
+!#      -> Create a vector according to the matrix
+!#
+!#  4.) lsyssc_scalarProduct
 !#      -> Calculate the scalar product of two vectors
 !#
-!#  4.) lsyssc_scalarMatVec
+!#  5.) lsyssc_scalarMatVec
 !#      -> Multiply a scalar matrix with a scalar vector
 !#
-!#  5.) lsyssc_releaseMatrix
+!#  6.) lsyssc_releaseMatrix
 !#      -> Release a scalar matrix from memory.
 !#
-!#  6.) lsyssc_releaseVector
+!#  7.) lsyssc_releaseVector
 !#      -> Release a scalar vector from memory.
 !#
-!#  7.) lsyssc_duplicateMatrix
+!#  8.) lsyssc_duplicateMatrix
 !#      -> Create a duplicate of a given matrix or matrix-structure
 !#
-!#  8.) lsyssc_duplicateVector
+!#  9.) lsyssc_duplicateVector
 !#      -> Create a duplicate of a given vector
 !#
-!#  9.) lsyssc_sortVectorInSitu
+!# 10.) lsyssc_sortVectorInSitu
 !#      -> Resort the entries of a vector or unsort them
 !#
-!# 10.) lsyssc_vectorActivateSorting
+!# 11.) lsyssc_vectorActivateSorting
 !#      -> Resort the entries of a vector or unsort them according to
 !#         a previously attached sorting strategy
 !#
-!# 11.) lsyssc_synchroniseSortVecVec
+!# 12.) lsyssc_synchroniseSortVecVec
 !#      -> Synchronises the sorting strategy of a vector according to another
 !#         vector.
 !#
-!# 12.) lsyssc_synchroniseSortMatVec
+!# 13.) lsyssc_synchroniseSortMatVec
 !#      -> Synchronises the sorting strategy of a vector according to a matrix.
 !#
-!# 13.) lsyssc_sortMatrix
+!# 14.) lsyssc_sortMatrix
 !#      -> Resort the entries of a matrix or unsort them.
 !#
-!# 14.) lsyssc_unsortMatrix
+!# 15.) lsyssc_unsortMatrix
 !#      -> Unsorts a matrix.
 !#
-!# 15.) lsyssc_isVectorCompatible
+!# 16.) lsyssc_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 16.) lsyssc_isMatrixCompatible = lsyssc_isMatrixVectorCompatible /
+!# 17.) lsyssc_isMatrixCompatible = lsyssc_isMatrixVectorCompatible /
 !#                                  lsyssc_isMatrixMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 17.) lsyssc_getbase_double
+!# 18.) lsyssc_getbase_double
 !#      -> Get a pointer to the double precision data array of a vector or a matrix
 !#
-!# 18.) lsyssc_getbase_single
+!# 19.) lsyssc_getbase_single
 !#      -> Get a pointer to the single precision data array of a vector or a matrix
 !#
-!# 19.) lsyssc_getbase_int
+!# 20.) lsyssc_getbase_int
 !#      -> Get a pointer to the integer data array of a vector
 !#
-!# 20.) lsyssc_getbase_Kcol
+!# 21.) lsyssc_getbase_Kcol
 !#      -> Get a pointer to the integer data array Kcol of a matrix
 !#         (if the matrix has one)
 !#
-!# 21.) lsyssc_getbase_Kld
+!# 22.) lsyssc_getbase_Kld
 !#      -> Get a pointer to the integer data array Kld of a matrix
 !#         (if the matrix has one)
 !#
-!# 22.) lsyssc_getbase_Kdiagonal
+!# 23.) lsyssc_getbase_Kdiagonal
 !#      -> Get a pointer to the integer data array Kdiagonal of a matrix
 !#         (if the matrix has one)
 !#
-!# 23.) lsyssc_addIndex
+!# 24.) lsyssc_addIndex
 !#      -> Auxiliary routine. Adds an integer to each elememt of an integer 
 !#         array.
 !#
-!# 24.) lsyssc_vectorNorm
+!# 25.) lsyssc_vectorNorm
 !#      -> Calculate the norm of a vector.
 !#
-!# 25.) lsyssc_invertedDiagMatVec
+!# 26.) lsyssc_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a scalar
 !#         matrix
 !#
-!# 26.) lsyssc_clearMatrix
+!# 27.) lsyssc_clearMatrix
 !#      -> Clears a matrix, i.e. overwrites all entries with 0.0
 !#
-!# 27.) lsyssc_initialiseIdentityMatrix
+!# 28.) lsyssc_initialiseIdentityMatrix
 !#      -> Initialises the content of a matrix to an identity matrix
 !#
-!# 28.) lsyssc_convertMatrix
+!# 29.) lsyssc_convertMatrix
 !#      -> Allows to convert a matrix to another matrix structure.
 !#
-!# 29.) lsyssc_copyVector
+!# 30.) lsyssc_copyVector
 !#       -> Copy a vector over to another one
 !#
-!# 30.) lsyssc_scaleVector
+!# 31.) lsyssc_scaleVector
 !#      -> Scale a vector by a constant
 !#
-!# 31.) lsyssc_clearVector
+!# 32.) lsyssc_clearVector
 !#      -> Clear a vector
 !#
-!# 32.) lsyssc_vectorLinearComb
+!# 33.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
 !#
-!# 33.) lsyssc_copyMatrix
+!# 34.) lsyssc_copyMatrix
 !#      -> Copies a matrix to another one provided that they have the same 
 !#         structure.
 !#
-!# 34.) lsyssc_transposeMatrix
+!# 35.) lsyssc_transposeMatrix
 !#      -> Transposes a scalar matrix.
 !#
-!# 35.) lsyssc_allocEmptyMatrix
+!# 36.) lsyssc_allocEmptyMatrix
 !#      -> Allocates memory for the entries of a matrix.
 !#
-!# 36.) lsyssc_lumpMatrixScalar
+!# 37.) lsyssc_lumpMatrixScalar
 !#      -> Performs lumping of a given matrix
 !#
-!# 37.) lsyssc_scaleMatrix
+!# 38.) lsyssc_scaleMatrix
 !#      -> Scale a matrix by a constant
 !#
-!# 38.) lsyssc_multMatMat
+!# 39.) lsyssc_multMatMat
 !#      -> Multiplies two matrices
 !#
-!# 39.) lsyssc_matrixLinearComb
+!# 40.) lsyssc_matrixLinearComb
 !#      -> Adds two matrices
 !#
-!# 40.) lsyssc_swapVectors
+!# 41.) lsyssc_swapVectors
 !#      -> Swap two vectors
 !#
-!# 41.) lsyssc_isMatrixStructureShared
+!# 42.) lsyssc_isMatrixStructureShared
 !#      -> Tests if the structure of a matrix is shared with another matrix
 !#
-!# 42.) lsyssc_isMatrixContentShared
+!# 43.) lsyssc_isMatrixContentShared
 !#      -> Tests if the content of a matrix is shared with another matrix
 !#
-!# 43.) lsyssc_resizeVector
+!# 44.) lsyssc_resizeVector
 !#      -> Resize the vector and reallocate memory if necessary.
 !#
-!# 44.) lsyssc_resizeMatrix
+!# 45.) lsyssc_resizeMatrix
 !#      -> Resize the matrix and reallocate memory if necessary.
 !#
-!# 45.) lsyssc_createDiagMatrixStruc
+!# 46.) lsyssc_createDiagMatrixStruc
 !#      -> Creates a diagonal matrix, does not allocate memory for the entries.
 !#
-!# 46.) lsyssc_clearOffdiags
+!# 47.) lsyssc_clearOffdiags
 !#      -> Clear all offdiagonal entries in a matrix.
 !#
 !# Sometimes useful auxiliary routines:
@@ -642,6 +645,7 @@ MODULE linearsystemscalar
   INTERFACE lsyssc_resizeVector
     MODULE PROCEDURE lsyssc_resizeVectorDirect
     MODULE PROCEDURE lsyssc_resizeVectorIndirect
+    MODULE PROCEDURE lsyssc_resizeVectorIndMat
   END INTERFACE
 
   INTERFACE lsyssc_resizeMatrix
@@ -1629,6 +1633,74 @@ CONTAINS
   END SUBROUTINE
 
   !****************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsyssc_createVecIndMat (rtemplateMat,rx,bclear,cdataType)
+
+!<description>
+    ! Initializes the scalar vector structure rx. rtemplateMat is an 
+    ! existing scalar matrix structure. The vector rx will be created
+    ! according to the size of the template matrix.
+    !
+    ! Memory is allocated on the heap for rx. The vector rx will have
+    ! the same size as the number of matrix columns.
+    ! The sorting strategy of the vector is initialized with the 
+    ! sorting strategy of the template matrix rtemplateMat.
+!</description>
+
+!<input>
+    ! A template matrix structure
+    TYPE(t_matrixScalar), INTENT(IN) :: rtemplateMat
+
+    ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
+    ! Otherwise the content of rx is undefined.
+    LOGICAL, INTENT(IN), OPTIONAL   :: bclear
+    
+    ! OPTIONAL: Data type identifier for the entries in the vector. 
+    ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
+    INTEGER, INTENT(IN),OPTIONAL              :: cdataType
+!</input>
+    
+!<output>
+    ! Destination structure. Memory is allocated for each of the blocks.
+    TYPE(t_vectorScalar),INTENT(OUT) :: rx
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: cdata
+
+    cdata = ST_DOUBLE
+    IF (PRESENT(cdataType)) cdata = cdataType
+    
+    ! Allocate memory for vector
+    CALL storage_new1D ('lsyssc_createVecIndMat', 'Vector', &
+        rtemplateMat%NCOLS*rtemplateMat%NVAR, &
+        cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
+
+    ! Set structure
+    rx%NEQ       = rtemplateMat%NCOLS
+    rx%NVAR      = rtemplateMat%NVAR
+    rx%cdataType = cdata
+
+    ! Transfer discretization pointers from the matrix to the vector
+    rx%p_rspatialDiscretisation => rtemplateMat%p_rspatialDiscretisation
+
+    ! Transfer sorting strategy from the matrix to the vector
+    rx%isortStrategy      = rtemplateMat%isortStrategy
+    rx%h_IsortPermutation = rtemplateMat%h_IsortPermutation
+
+    IF (PRESENT(bclear)) THEN
+      IF (bclear) THEN
+        CALL lsyssc_clearVector (rx)
+      END IF
+    END IF
+
+  END SUBROUTINE
+
+  !****************************************************************************
 
 !<subroutine>
 
@@ -1854,6 +1926,71 @@ CONTAINS
       ! Resize vector directly
       CALL lsyssc_resizeVectorDirect(rvector, rvectorTemplate%NEQ, bclear, bcopy, iNEQMAX)
 
+    END IF
+    
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsyssc_resizeVectorIndMat (rmatrix, rvector, bclear, bcopy)
+
+!<description>
+    ! Resizes the vector structure so that it is compatible with the 
+    ! scalar template matrix. If the vector does not exist, then it
+    ! is created according to the matrix structure.
+    !
+    ! If it already exists, then it is resized accordingly so that
+    ! its size coincides with the number of columns of the matrix.
+!</description>
+
+!<input>
+
+    ! Scalar template matrix
+    TYPE(t_matrixScalar), INTENT(IN) :: rmatrix
+
+    ! Whether to fill the vector with zero initially
+    LOGICAL, INTENT(IN)                        :: bclear
+
+    ! OPTIONAL: Whether to copy the content of the vector to the resized one
+    LOGICAL, INTENT(IN), OPTIONAL              :: bcopy
+
+!</input>
+
+!<inputoutput>
+
+    ! Scalar vector structure
+    TYPE(t_vectorScalar), INTENT(INOUT)         :: rvector
+
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check, if vector is a copy of another (possibly larger) vector
+    IF (rvector%bisCopy) THEN
+      PRINT *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
+      STOP
+    END IF
+    
+    ! Does the vector exist?
+    IF (rvector%NEQ == 0 .OR.&
+        rvector%h_Ddata == ST_NOHANDLE) THEN
+
+      ! Create new vector
+      CALL lsyssc_createVecIndMat(rmatrix, rvector, bclear)
+
+    ELSE
+      
+      ! Check if vector/matrix are compatible
+      IF (rvector%NVAR /= rmatrix%NVAR) THEN
+        PRINT *, "lsyssc_resizeVectorIndMat: Vector/Matrix incompatible!"
+        STOP
+      END IF
+
+      ! Resize vector directly
+      CALL lsyssc_resizeVectorDirect(rvector, rmatrix%NCOLS, bclear, bcopy)
+      
     END IF
     
   END SUBROUTINE
