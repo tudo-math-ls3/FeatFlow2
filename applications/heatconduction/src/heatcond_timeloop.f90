@@ -73,7 +73,7 @@ CONTAINS
   ! A parameter list structure accepting the parameters from the DAT file.
   TYPE(t_parlist), INTENT(INOUT) :: rparams
 
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 !</inputoutput>
 
@@ -324,7 +324,7 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
   
   ! The current solution vector.
@@ -376,7 +376,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-  ! A problem astructure saving problem-dependent information.
+  ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT) :: rproblem
 
   ! The initial solution vector. Is replaced by the final solution vector.
