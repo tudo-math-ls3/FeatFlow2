@@ -330,7 +330,7 @@ CONTAINS
       p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
     
       ! Get the number of local DOF's for trial functions
-      indofTrial = elem_igetNDofLoc(p_elementDistribution%itestElement)
+      indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
       
       ! Get the number of corner vertices of the element
       NVE = elem_igetNVE(p_elementDistribution%itrialElement)

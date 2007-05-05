@@ -87,6 +87,10 @@ CONTAINS
     CASE (ST_DOUBLE)
       ! Get the data array
       CALL lsyssc_getbase_double(rmatrix,p_DA)
+      IF (.NOT. ASSOCIATED(p_DA)) THEN
+        PRINT *,'replaceLines_format9: Matrix has no data!'
+        STOP
+      END IF
       
       ! loop through the rows
       DO irow = 1,SIZE(Irows)
@@ -127,6 +131,10 @@ CONTAINS
     CASE (ST_DOUBLE)
       ! Get the data array
       CALL lsyssc_getbase_double(rmatrix,p_DA)
+      IF (.NOT. ASSOCIATED(p_DA)) THEN
+        PRINT *,'replaceLines_format7: Matrix has no data!'
+        STOP
+      END IF
       
       ! loop through the rows
       DO irow = 1,SIZE(Irows)
