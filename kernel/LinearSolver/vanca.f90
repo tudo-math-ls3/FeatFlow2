@@ -3874,22 +3874,31 @@ CONTAINS
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
       
-      ! Ok, we got the update vector in FF. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
+      IF (ilapackInfo .EQ. 0) THEN
       
-      DO inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-      END DO
-      
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * FF(1+lofsp)
+        ! Ok, we got the update vector in FF. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        DO inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+        END DO
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * FF(1+lofsp)
+      ELSE IF (ilapackInfo .LT. 0) THEN
+
+        PRINT *,'ERROR: LAPACK(DGESV) solver'      
+
+      END IF
+      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+      ! coarse grid with all boundaries = Dirichlet.
+      ! In this case, nothing must be changed in the vector!
     
     END DO ! iel
 
@@ -4343,22 +4352,33 @@ CONTAINS
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
       
-      ! Ok, we got the update vector in FF. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
+      IF (ilapackInfo .EQ. 0) THEN
       
-      DO inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-      END DO
+        ! Ok, we got the update vector in FF. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        DO inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+        END DO
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * FF(1+lofsp)
+                                 
+      ELSE IF (ilapackInfo .LT. 0) THEN
       
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * FF(1+lofsp)
+        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        
+      END IF
+
+      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+      ! coarse grid with all boundaries = Dirichlet.
+      ! In this case, nothing must be changed in the vector!
     
     END DO ! iel
 
@@ -4792,26 +4812,36 @@ CONTAINS
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
       
-      ! Ok, we got the update vector in FF. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
+      IF (ilapackInfo .EQ. 0) THEN
       
-      DO inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-      END DO
-      
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * FF(1+lofsp)
-      p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
-                                    domega * FF(2+lofsp)
-      p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
-                                      domega * FF(3+lofsp)
+        ! Ok, we got the update vector in FF. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        DO inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+        END DO
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * FF(1+lofsp)
+        p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
+                                      domega * FF(2+lofsp)
+        p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
+                                        domega * FF(3+lofsp)
+      ELSE IF (ilapackInfo .LT. 0) THEN
+        
+        PRINT *,'ERROR: LAPACK(DGESV) solver'      
+        
+      END IF
+
+      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+      ! coarse grid with all boundaries = Dirichlet.
+      ! In this case, nothing must be changed in the vector!
     
     END DO ! iel
 
@@ -5242,26 +5272,37 @@ CONTAINS
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
       
-      ! Ok, we got the update vector in FF. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
+      IF (ilapackInfo .EQ. 0) THEN
       
-      DO inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-      END DO
-      
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * FF(1+lofsp)
-      p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
-                                    domega * FF(2+lofsp)
-      p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
-                                      domega * FF(3+lofsp)
+        ! Ok, we got the update vector in FF. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        DO inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+        END DO
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * FF(1+lofsp)
+        p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
+                                      domega * FF(2+lofsp)
+        p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
+                                        domega * FF(3+lofsp)
+                                        
+      ELSE IF (ilapackInfo .LT. 0) THEN
+        
+        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        
+      END IF
+
+      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+      ! coarse grid with all boundaries = Dirichlet.
+      ! In this case, nothing must be changed in the vector!
     
     END DO ! iel
 
@@ -5686,26 +5727,36 @@ CONTAINS
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
+
+      IF (ilapackInfo .EQ. 0) THEN
       
-      ! Ok, we got the update vector in FF. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
-      
-      DO inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-      END DO
-      
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * FF(1+lofsp)
-      p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
-                                    domega * FF(2+lofsp)
-      p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
-                                      domega * FF(3+lofsp)
+        ! Ok, we got the update vector in FF. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        DO inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+        END DO
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * FF(1+lofsp)
+        p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
+                                      domega * FF(2+lofsp)
+        p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
+                                        domega * FF(3+lofsp)
+      ELSE IF (ilapackInfo .LT. 0) THEN
+        
+        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        
+      END IF
+
+      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+      ! coarse grid with all boundaries = Dirichlet.
+      ! In this case, nothing must be changed in the vector!
     
     END DO ! iel
 
@@ -6141,27 +6192,37 @@ CONTAINS
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
       
-      ! Ok, we got the update vector in FF. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
+      IF (ilapackInfo .EQ. 0) THEN
       
-      DO inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-      END DO
-      
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * FF(1+lofsp)
-      p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
-                                    domega * FF(2+lofsp)
-      p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
-                                      domega * FF(3+lofsp)
-    
+        ! Ok, we got the update vector in FF. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        DO inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+        END DO
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * FF(1+lofsp)
+        p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
+                                      domega * FF(2+lofsp)
+        p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
+                                        domega * FF(3+lofsp)
+      ELSE IF (ilapackInfo .LT. 0) THEN
+        
+        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        
+      END IF
+
+      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+      ! coarse grid with all boundaries = Dirichlet.
+      ! In this case, nothing must be changed in the vector!
+
     END DO ! iel
 
   END SUBROUTINE
@@ -7217,32 +7278,43 @@ CONTAINS
       ! added back to the global solution vector.
       
       CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      IF (ilapackInfo .NE. 0) PRINT *,'ERROR: LAPACK(DGESV) solver'
       
-      ! Ok, we got the update vector in FF. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
-      
-      DO inode=1,nnvel
-        ! Update of the primal velocity vectors
-        p_Dvector(idofGlobal(inode)+ioffsetu) &
-          = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+      IF (ilapackInfo .EQ. 0) THEN
+        
+        ! Ok, we got the update vector in FF. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        DO inode=1,nnvel
+          ! Update of the primal velocity vectors
+          p_Dvector(idofGlobal(inode)+ioffsetu) &
+            = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
 
-        ! Update of the dual velocity vectors
-        p_Dvector(idofGlobal(inode)+ioffsetl1) &
-          = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
-        p_Dvector(idofGlobal(inode)+ioffsetl2) &
-          = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
-      END DO
-      
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * FF(1+lofsp)
+          ! Update of the dual velocity vectors
+          p_Dvector(idofGlobal(inode)+ioffsetl1) &
+            = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
+          p_Dvector(idofGlobal(inode)+ioffsetl2) &
+            = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
+        END DO
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * FF(1+lofsp)
 
-      p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
-                                 domega * FF(1+lofsxi)
+        p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
+                                  domega * FF(1+lofsxi)
+      
+      ELSE IF (ilapackInfo .LT. 0) THEN
+        
+        PRINT *,'ERROR: LAPACK(DGESV) solver'
+        
+      END IF
+
+      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+      ! coarse grid with all boundaries = Dirichlet.
+      ! In this case, nothing must be changed in the vector!
     
     END DO ! iel
 
