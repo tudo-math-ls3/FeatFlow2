@@ -33,6 +33,7 @@ MODULE cc2dmediumm2postprocessing
   USE nonlinearsolver
   USE paramlist
   USE pprocerror
+  USE pprocgradients
   
   USE collection
   USE convection
@@ -343,9 +344,58 @@ CONTAINS
         CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
         CALL ucd_addVariableVertexBased (rexport,'streamfunction',&
             UCD_VAR_STANDARD, p_Ddata)
-            
+
       END IF
       
+    END IF
+    
+    ! Calculate the derivative of the pressure.
+    ! First, project the pressure from Q0 to Q1 (if it's Q0).
+    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(3)% &
+        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+        
+      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(3)% &
+                RelementDistribution(1)%itrialElement
+                
+      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q0) THEN
+        ! rprjVector%RvectorBlock(4) is already prepared to accept Q1 solutions
+        CALL spdp_projectSolutionScalar (rvector%RvectorBlock(3),rprjVector%RvectorBlock(4))
+
+        ! Calculate the derivative of the pressure into the first two
+        ! subvectors -- overwriting the projected velocity field, which we don't need
+        ! anymore.
+        CALL ppgrd_calcGradient (rprjVector%RvectorBlock(4),rprjVector)
+        
+        ! Write pressure derivative field
+        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+        
+        CALL ucd_addVariableVertexBased (rexport,'X-deriv-pres',UCD_VAR_STANDARD, p_Ddata)
+        CALL ucd_addVariableVertexBased (rexport,'Y-deriv-pres',UCD_VAR_STANDARD, p_Ddata2)
+            
+      END IF
+          
+      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(6)% &
+                RelementDistribution(1)%itrialElement
+                
+      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q0) THEN
+        ! rprjVector%RvectorBlock(4) is already prepared to accept Q1 solutions
+        CALL spdp_projectSolutionScalar (rvector%RvectorBlock(6),rprjVector%RvectorBlock(4))
+
+        ! Calculate the derivative of the dual pressure into the first two
+        ! subvectors -- overwriting the projected velocity field, which we don't need
+        ! anymore.
+        CALL ppgrd_calcGradient (rprjVector%RvectorBlock(4),rprjVector)
+        
+        ! Write pressure derivative field
+        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
+        CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
+        
+        CALL ucd_addVariableVertexBased (rexport,'X-deriv-dpres',UCD_VAR_STANDARD, p_Ddata)
+        CALL ucd_addVariableVertexBased (rexport,'Y-deriv-dpres',UCD_VAR_STANDARD, p_Ddata2)
+            
+      END IF
+          
     END IF
     
     ! Write the file to disc, that's it.

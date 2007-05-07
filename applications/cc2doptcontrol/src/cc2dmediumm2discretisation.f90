@@ -763,7 +763,11 @@ CONTAINS
 
       ! For a simple Stokes control equation, we don't need the matrices
       ! (4,5) and (5,4) -- they only appear if the convective operator is present.
+      ! Furthermore, the presence of the convective operator forces A(5,5) to be
+      ! independent of A(4,4), so overwrite the definition of A(5,5) from above.
       IF (rproblem%iequation .EQ. 0) THEN
+        CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+                    p_rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                     p_rmatrix%RmatrixBlock(4,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&

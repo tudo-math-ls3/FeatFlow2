@@ -350,7 +350,7 @@ CONTAINS
         rnonlinearIteration%rpreconditioner%p_RfilterChain(4)%ifilterType = &
             FILTER_TOL20
         rnonlinearIteration%rpreconditioner%p_RfilterChain(4)%itoL20component = &
-            NDIM2D+1
+            2*(NDIM2D+1)
       END IF
       
       ! Initialise the linear subsolver using the parameters from the INI/DAT
