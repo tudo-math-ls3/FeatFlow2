@@ -1227,16 +1227,20 @@ CONTAINS
 
     ! The first thing we have to do is to move our point into the positive
     ! quadrant.
-    IF (DcoordsRef(1) .LT. 0.0) THEN
+    IF (DcoordsRef(1) .LT. 0.0_DP) THEN
       ! X-coord of point is negative, so multiply with -1
       Dmirror(1) = -1.0_DP
       DcoordsRef(1) = -DcoordsRef(1)
+    ELSE 
+      Dmirror(1) = 1.0_DP
     END IF
     
-    IF (DcoordsRef(2) .LT. 0.0) THEN
+    IF (DcoordsRef(2) .LT. 0.0_DP) THEN
       ! Y-coord of point is negative, so multiply with -1
       Dmirror(2) = -1.0_DP
       DcoordsRef(2) = -DcoordsRef(2)
+    ELSE
+      Dmirror(2) = 1.0_DP
     END IF
     
     ! Now maybe we need to transpose the ellipse?
@@ -1292,21 +1296,21 @@ CONTAINS
             EXIT
           END IF
 
-          dT = dT + dRatio        
+          dT = dT + dRatio
         END DO
-    
+
         DcoordsRef(1) = dXDivA * dradX
         DcoordsRef(2) = dYDivB * dradY
         
       ELSE
         
-        dradXSqr = dradX**2
+        dradYSqr = dradY**2
         IF (DcoordsRef(1) .LT. dradX - (dradYSqr / dradX)) THEN
         
-          dradYSqr = dradY**2
+          dradXSqr = dradX**2
           DcoordsRef(1) = dradXSqr * DcoordsRef(1) / (dradXSqr - dradYSqr)
           dXDivA = DcoordsRef(1) / dradX
-          DcoordsRef(2) = SQRT(ABS(1.0 - dXDivA**2))
+          DcoordsRef(2) = dradY * SQRT(ABS(1.0 - dXDivA**2))
           
         ELSE
           DcoordsRef(1) = dradX
@@ -1366,7 +1370,7 @@ CONTAINS
 !</subroutine>
 
   ! We need one local variable for temporary distance calculation
-  REAL(DP) :: dreldist
+  INTEGER :: iInside
   
   ! And an array for the transformed X- and Y-coordinates of our point
   REAL(DP), DIMENSION(2) :: DrelCoords
@@ -1374,56 +1378,22 @@ CONTAINS
   ! And one array for the projection of our point onto the ellipses boundary
   REAL(DP), DIMENSION(2) :: Dprojection
 
-    ! First transfrom the point's coordinates into the ellipse's local
-    ! coordinate system
-    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
     
-    ! Calculate the distance to the ellipse's middle point
-    dreldist = SQRT(DrelCoords(1)**2 + DrelCoords(2)**2)
+    ! Project the point onto the ellipse's boundary.
+    CALL geom_ellipse_prjToBoundary(rgeomObject, DCoords, Dprojection)
     
-    ! SPECIAL CASE: The point we are measuring distance is the middle point
-    !               of our ellipse.
-    IF (dreldist .EQ. 0.0_DP) THEN
-      ! In this case we're inside the ellipse and the shortest distance
-      ! to the boundary is the minumum of the X- and Y-radius
-      ddistance = -MIN(rgeomObject%rellipse%Dradius(1), &
-                       rgeomObject%rellipse%Dradius(1)) * &
-                       rgeomObject%rcoord2D%dscalingFactor
-      
-      ! Maybe the ellipse is inverted?
-      IF (rgeomObject%binverted) THEN
-        ddistance = -ddistance
-      END IF
-      
-      ! That's it for this special case
-      RETURN
-      
-    END IF
-    
-    ! The point we are checking is not the middle point of our ellipse.
-    ! That means that it has got an unique projection onto the ellipse's
-    ! boundary. 
-        
-    ! Normalize the transformed point and scale it by the radiuses of our 
-    ! ellipse - here's our projection.
-    Dprojection(1) = (DrelCoords(1) * rgeomObject%rellipse%Dradius(1)) &
-                     / dreldist
-    Dprojection(2) = (DrelCoords(2) * rgeomObject%rellipse%Dradius(2)) &
-                     / dreldist
-    
-    ! Now subtract the projection from our relative point
-    DrelCoords(1) = DrelCoords(1) - Dprojection(1)
-    DrelCoords(2) = DrelCoords(2) - Dprojection(2)
+    ! Now subtract the projection from our point
+    DrelCoords = Dcoords - Dprojection
     
     ! Caluclate the new length
     ddistance = SQRT(DrelCoords(1)**2 + DrelCoords(2)**2)
-    
-    ! And scale by the ellipse's coordinate system's scaling factor
-    ddistance = ddistance * rgeomObject%rcoord2D%dscalingFactor
 
+    ! Is the point inside or outside our ellipse?
+    CALL geom_ellipse_isInGeometry(rgeomObject, Dcoords, iInside)
+    
     ! Now we still need to know whether we are inside the ellipse or not.
     ! This information is implicitly given by dreldist
-    IF ((dreldist .LE. 1.0_DP) .XOR. (rgeomObject%binverted)) THEN
+    IF (iInside .EQ. 1) THEN
       ddistance = -ddistance
     END IF
 
