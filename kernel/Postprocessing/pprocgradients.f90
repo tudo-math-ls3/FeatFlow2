@@ -162,10 +162,13 @@ CONTAINS
       bisQ2 = .FALSE.
       bisP2 = .FALSE.
       bisDifferent = .FALSE.
-      DO i=1,rvectorGradient%nblocks
+      ! We only check the first two subvectors which we overwrite.
+      ! Any additional subvectors are ignored!
+      DO i=1,MIN(2,rvectorGradient%nblocks)
         p_rdiscr => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(i)
         DO j=1,p_rdiscr%inumFESpaces
-          SELECT CASE (p_rdiscr%RelementDistribution(j)%itrialElement)
+          SELECT CASE (&
+              elem_getPrimaryElement (p_rdiscr%RelementDistribution(j)%itrialElement))
           CASE (EL_Q1)
             bisQ1 = .TRUE.
           CASE (EL_P1)
@@ -395,7 +398,7 @@ CONTAINS
       !
       ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
       ! on each element indofDest!
-      SELECT CASE (p_elementDistrDest%itrialElement)
+      SELECT CASE (elem_getPrimaryElement(p_elementDistrDest%itrialElement))
       CASE (EL_P1)
         CALL cub_getCubPoints(CUB_TRZ_T, nlocalDOFsDest, Dxi, Domega)
       CASE (EL_Q1)
@@ -557,10 +560,8 @@ CONTAINS
         
         ! Depending on the type of transformation, we must now choose
         ! the mapping between the reference and the real element.
-        ! In case we use a nonparametric element as test function, we need the 
+        ! In case we use a nonparametric element, we need the 
         ! coordinates of the points on the real element, too.
-        ! Unfortunately, we need the real coordinates of the cubature points
-        ! anyway for the function - so calculate them all.
         CALL trafo_calctrafo_sim (&
               p_rdiscrSource%RelementDistribution(icurrentElementDistr)%ctrafoType,&
               IELmax-IELset+1,nlocalDOFsDest,p_Dcoords,&
@@ -595,7 +596,7 @@ CONTAINS
          ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
          ! local DOF's in the destination space -- in that order!
                     
-         DO i=1,IELmax-IELset+1_I32
+         DO i=1,IELmax-IELset+1
            DO j=1,nlocalDOFsDest
              p_DxDeriv(IdofsDest(j,i)) = p_DxDeriv(IdofsDest(j,i)) + Dderivatives(j,i,1)
              p_DyDeriv(IdofsDest(j,i)) = p_DyDeriv(IdofsDest(j,i)) + Dderivatives(j,i,2)

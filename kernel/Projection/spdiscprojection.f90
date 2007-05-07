@@ -64,6 +64,7 @@ CONTAINS
     TYPE(t_triangulation), POINTER :: p_rtriangulation
     REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
     INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx 
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
     INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
 
@@ -133,6 +134,9 @@ CONTAINS
       STOP
     END IF
     
+    ! Clear the destination vector
+    CALL lsyssc_clearVector (rdestVector)
+    
     ! What is the destination space?
     ! Remark: Currently only Q1 supported...
     SELECT CASE (elem_getPrimaryElement(p_rdestDiscr%RelementDistribution(1)%&
@@ -142,6 +146,24 @@ CONTAINS
       ! Which element is used in the trial space?
       SELECT CASE (elem_getPrimaryElement(p_rsourceDiscr%RelementDistribution(1)%&
                                           itrialElement))
+      CASE (EL_Q0)
+        ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
+        !
+        !
+        ! Get geometric information from the triangulation.
+        p_rtriangulation => p_rsourceDiscr%p_rtriangulation
+        CALL storage_getbase_int (p_rtriangulation%h_IelementsAtVertexIdx,&
+                                                   p_IelementsAtVertexIdx)
+        CALL storage_getbase_int (p_rtriangulation%h_IelementsAtVertex,&
+                                                   p_IelementsAtVertex)
+                                                     
+        ! Get the vector data
+        CALL lsyssc_getbase_double (rsourceVector,p_Dsource)
+        CALL lsyssc_getbase_double (rdestVector,p_Ddest)
+        
+        ! Call the conversion routine
+        CALL spdp_Q0toQ1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
+                               p_IelementsAtVertexIdx,p_IelementsAtVertex)
       CASE (EL_Q1T)
         ! That's a little bit harder. We have to convert an FE space with DOF's
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
@@ -206,6 +228,61 @@ CONTAINS
     
   END SUBROUTINE
   
+  ! ***************************************************************************
+  
+!<subroutine>
+  SUBROUTINE spdp_Q0toQ1_dble (Dsource, Ddest, NVT, &
+                               IelementsAtVertexIdx,IelementsAtVertex)
+  
+!<description>
+  ! AUXILIARY ROUTINE.
+  ! Convert a solution vector based on a uniform discretisation with Q0
+  ! to a solution vector based on the Q1 element.
+!</description>
+
+!<input>
+  ! Source vector to be converted
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dsource
+  
+  ! Number of vertices in the triangulation
+  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVT
+  
+  ! IelementsAtVertexIdx array of the triangulation
+  INTEGER(PREC_POINTIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
+
+  ! IelementsAtVertex array of the triangulation
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertex
+!</input>
+  
+!<output>
+  ! Destination vector of size NVT; receives the interpolated solution
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddest
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_POINTIDX) :: iv
+    INTEGER :: nadj
+    INTEGER(PREC_ELEMENTIDX) :: ielidx
+
+    ! Loop through the vertices   
+    DO iv=1,NVT
+    
+      ! On each vertex, loop through the adjacent elements
+      DO ielidx = IelementsAtVertexIdx(iv),IelementsAtVertexIdx(iv+1)-1
+        ! Sum up the element contributions into the vertex
+        Ddest(iv) = Ddest(iv) + Dsource(IelementsAtVertex(ielidx))
+      END DO
+
+      ! Divide by the number of adjacent elements, this results
+      ! in the interpolated solution.
+      nadj = IelementsAtVertexIdx(iv+1) - IelementsAtVertexIdx(iv)
+      Ddest(iv) = Ddest(iv) / REAL(nadj,DP)
+    END DO
+
+  END SUBROUTINE
+
   ! ***************************************************************************
   
 !<subroutine>
