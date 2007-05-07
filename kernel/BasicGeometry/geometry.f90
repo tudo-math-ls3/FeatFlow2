@@ -65,7 +65,7 @@ MODULE geometry
   INTEGER, PARAMETER :: GEOM_ELLIPSE   = 3
 
   ! Rectangle object
-  INTEGER, PARAMETER :: GEOM_RECTANGLE = 4
+  INTEGER, PARAMETER :: geom_rect = 4
 
 !</constantblock>
 
@@ -1441,7 +1441,7 @@ CONTAINS
     rgeomObject%ndimension = NDIM2D
     
     ! We want a rectangle.
-    rgeomObject%ctype = GEOM_RECTANGLE
+    rgeomObject%ctype = geom_rect
     
     ! Store the coordinate system.
     rgeomObject%rcoord2D = rcoordSys
@@ -1502,7 +1502,7 @@ CONTAINS
     rgeomObject%ndimension = NDIM2D
     
     ! We want a rectangle.
-    rgeomObject%ctype = GEOM_RECTANGLE
+    rgeomObject%ctype = geom_rect
     
     ! Now we need to create the coordinate system.
     CALL bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
@@ -1526,7 +1526,7 @@ CONTAINS
       
 !<subroutine>
 
-  SUBROUTINE geom_rectangle_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  SUBROUTINE geom_rect_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine checks whether a given point is inside the rectangle or not.
@@ -1592,7 +1592,7 @@ CONTAINS
       
 !<subroutine>
   
-  SUBROUTINE geom_rectangle_prjToBoundary (rgeomObject, Dcoords, Dproj)
+  SUBROUTINE geom_rect_prjToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
   ! This routine calculates the projection of a point onto a 2D rectangle's
@@ -1694,7 +1694,7 @@ CONTAINS
       
 !<subroutine>
 
-  SUBROUTINE geom_rectangle_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+  SUBROUTINE geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
   
 !<description>
   ! This routine calculates the shortest signed distance between a point and
@@ -1893,8 +1893,8 @@ CONTAINS
       CALL geom_square_isInGeometry(rgeomObject, Dcoords, iisInObject)
     CASE (GEOM_ELLIPSE)
       CALL geom_ellipse_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE (GEOM_RECTANGLE)
-      CALL geom_rectangle_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    CASE (geom_rect)
+      CALL geom_rect_isInGeometry(rgeomObject, Dcoords, iisInObject)
     CASE DEFAULT
       iisInObject = 0
     END SELECT
@@ -1945,8 +1945,8 @@ CONTAINS
      CALL geom_square_prjToBoundary(rgeomObject, Dcoords, Dproj)
    CASE (GEOM_ELLIPSE)
      CALL geom_ellipse_prjToBoundary(rgeomObject, Dcoords, Dproj)
-   CASE (GEOM_RECTANGLE)
-     CALL geom_rectangle_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   CASE (geom_rect)
+     CALL geom_rect_prjToBoundary(rgeomObject, Dcoords, Dproj)
    END SELECT
    
    ! That's it!
@@ -1998,8 +1998,8 @@ CONTAINS
      CALL geom_square_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    CASE (GEOM_ELLIPSE)
      CALL geom_ellipse_calcSignedDistance(rgeomObject, Dcoords, ddistance)
-   CASE (GEOM_RECTANGLE)
-     CALL geom_rectangle_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   CASE (geom_rect)
+     CALL geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    CASE DEFAULT
      ddistance = 0.0_DP
    END SELECT
