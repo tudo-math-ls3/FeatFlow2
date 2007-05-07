@@ -18,7 +18,7 @@
 # Type identifier of the solver.
 # 9=Multigrid, 11=UMFPACK
 
-isolverType = 11
+isolverType = 11 9
 
 # Minimum number of steps
 
@@ -46,7 +46,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 0
+ioutputLevel       = 2
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
@@ -89,8 +89,8 @@ spostSmootherName  = 'CC-VANCA2DQ1TP0'
 # Name of the coarse grid solver. This is the name of another 
 # subsection in this file which describes the actual smoother.
 
-scoarseGridSolver  = 'CC-UMFPACK'
-#scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
+#scoarseGridSolver  = 'CC-UMFPACK'
+scoarseGridSolver  = 'CC-VANCA2DQ1TP0-COARSE'
 
 # ========================================================================
 # The following section describes the parameters of the VANCA smoother.
@@ -191,11 +191,11 @@ isolverType        = 54
 # 1=3=Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
 # discretisation
 
-isolverSubtype     = 1
+isolverSubtype     = 21
 
 # Relaxation parameter
 
-domega             = 0.7
+domega             = 0.8
 
 
 # ========================================================================

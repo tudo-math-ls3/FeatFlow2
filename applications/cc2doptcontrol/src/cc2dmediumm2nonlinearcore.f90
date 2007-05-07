@@ -1053,7 +1053,7 @@ CONTAINS
     p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
 
     ! If we discretise Navier-Stokes, we have to set up a stabilisation
-    ! structure dor upwind / streamline diffusion / ...
+    ! structure or upwind / streamline diffusion / ...
     
     IF (rnonlinearIteration%dgamma .NE. 0.0_DP) THEN
     
@@ -1460,7 +1460,6 @@ CONTAINS
           ! structure again.
           CALL lsysbl_releaseMatrix (rsubmatrix)
           
-        CASE (1)
         
           PRINT *,'Upwind not implemented!'
           STOP
@@ -1593,17 +1592,17 @@ CONTAINS
       END IF
 
       ! Is there a weight in front of the mass matrix?
-      ! If yes, put that weight in front of the mass matrices that couple
+      ! If yes, put the theta weight in front of the mass matrices that couple
       ! primal and dual velocity.
       IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
-        p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = -rnonlinearIteration%dalpha
-        p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = -rnonlinearIteration%dalpha
+        p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = -rnonlinearIteration%dtheta
+        p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = -rnonlinearIteration%dtheta
 
         p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = &
-            rnonlinearIteration%dalpha / rnonlinearIteration%dalphaC
+            rnonlinearIteration%dtheta / rnonlinearIteration%dalphaC
 
         p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = &
-            rnonlinearIteration%dalpha / rnonlinearIteration%dalphaC
+            rnonlinearIteration%dtheta / rnonlinearIteration%dalphaC
       END IF
 
       ! For the construction of matrices on lower levels, call the matrix
@@ -1635,7 +1634,9 @@ CONTAINS
         !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
         !    .TRUE., 0, 'matrix'//TRIM(sys_siL(ilev,10))//'.txt', '(E20.10)')
       
-        CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
+        IF (ASSOCIATED(p_RfilterChain)) THEN
+          CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
+        END IF
 
         !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
         !    .TRUE., 0, 'matrixbd'//TRIM(sys_siL(ilev,10))//'.txt', '(E20.10)')
@@ -2164,8 +2165,11 @@ CONTAINS
     END IF
       
     ! Apply the filter chain to the defect vector -- if this is desired.
-    IF (bboundaryConditions) &
-      CALL filter_applyFilterChainVec (rd, p_RfilterChain)
+    IF (bboundaryConditions) THEN
+      IF (ASSOCIATED(p_RfilterChain)) THEN    
+        CALL filter_applyFilterChainVec (rd, p_RfilterChain)
+      END IF
+    END IF
     
     ! Filter the resulting defect vector through the slip-boundary-
     ! condition vector filter for implementing nonlinear slip boundary
@@ -2415,7 +2419,9 @@ CONTAINS
       
       ! This is a defect vector - filter it! This e.g. implements boundary
       ! conditions.
-      CALL filter_applyFilterChainVec (rtemp2, p_RfilterChain)
+      IF (ASSOCIATED(p_RfilterChain)) THEN
+        CALL filter_applyFilterChainVec (rtemp2, p_RfilterChain)
+      END IF
       
       ! Filter the resulting defect vector through the slip-boundary-
       ! condition vector filter for implementing nonlinear slip boundary
@@ -2434,7 +2440,9 @@ CONTAINS
       
       ! This is a defect vector against 0 - filter it! This e.g. 
       ! implements boundary conditions.
-      CALL filter_applyFilterChainVec (rtemp1, p_RfilterChain)
+      IF (ASSOCIATED(p_RfilterChain)) THEN
+        CALL filter_applyFilterChainVec (rtemp1, p_RfilterChain)
+      END IF
       
       ! Filter the resulting defect vector through the slip-boundary-
       ! condition vector filter for implementing nonlinear slip boundary

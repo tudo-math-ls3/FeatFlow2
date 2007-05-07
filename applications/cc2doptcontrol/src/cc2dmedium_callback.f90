@@ -794,7 +794,8 @@ CONTAINS
     Dvalues(:,:) = Dpoints(1,:,:)
 
     IF (itimedependence .NE. 0) THEN  
-      Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+      Dvalues(:,:) = Dvalues(:,:)*(-(dtime**2)/100. + dtime/5.)
     END IF
 
   END SUBROUTINE
@@ -908,7 +909,8 @@ CONTAINS
     Dvalues(:,:) = -Dpoints(2,:,:)
 
     IF (itimedependence .NE. 0) THEN  
-      Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+      Dvalues(:,:) = Dvalues(:,:)*(-(dtime**2)/100. + dtime/5.)
     END IF
 
   END SUBROUTINE

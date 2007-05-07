@@ -30,11 +30,11 @@
 
 # minimum mg-level; <=0: Use level (NLMAX-NLMIN) as coarse grid
 
-NLMIN              = 1
+NLMIN              = 5
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 4
+NLMAX              = 5
 
 
 # ------------------------------------------------------------------------
@@ -189,6 +189,6 @@ dintARboundEX3YVel       = 20.0
 
 # Penalty parameter ALPHA for the ||u||-term in the optimal-control problem.
 
-dalphaC = 0.001
+dalphaC = 1.0
 
-dgammaC = 100.0
+dgammaC = 1.0

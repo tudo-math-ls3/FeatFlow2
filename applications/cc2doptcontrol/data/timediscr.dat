@@ -15,9 +15,9 @@ itimedependence = 1                       # ISTAT
 
 # ----------------------------------------------------------------------
 
-# Maximum number of time steps.
+# Number of time steps.
 
-niterations = 10                          # NITNS
+niterations = 2                          # NITNS
 
 # Absolute start time of the simulation (TIMENS)
 
