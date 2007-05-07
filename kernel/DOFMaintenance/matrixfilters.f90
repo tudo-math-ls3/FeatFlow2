@@ -660,6 +660,8 @@ CONTAINS
     ! Imposing boundary conditions normally changes the whole matrix!
     ! Grab the boundary condition entry list from the matrix. This
     ! is a list of all discretised boundary conditions in the system.
+    IF (.NOT. ASSOCIATED(rmatrix%p_rdiscreteBCfict)) RETURN
+
     p_RdiscreteFBC => rmatrix%p_rdiscreteBCfict%p_RdiscFBCList  
     
     IF (.NOT. ASSOCIATED(p_RdiscreteFBC)) RETURN
