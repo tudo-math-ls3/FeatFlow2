@@ -377,6 +377,21 @@ MODULE vanca
     REAL(DP), DIMENSION(:), POINTER             :: p_DA55 => NULL()
 
 
+    ! Pointer to the matrix entries of the pressure identity matrix A33
+    ! (if it exists).
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA33 => NULL()
+
+    ! Pointer to diagonal entries of A33
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33 => NULL()
+
+    ! Pointer to the matrix entries of the pressure identity matrix A66
+    ! (if it exists).
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA66 => NULL()
+
+    ! Pointer to diagonal entries of A66
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA66 => NULL()
+
+
     ! Pointer to the column structure of the matrix A45 and A54
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45 => NULL()
     
@@ -6273,7 +6288,7 @@ CONTAINS
     DO i=1,6
       DO j=1,6
       
-        IF (rmatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+        IF (lsysbl_isSubmatrixPresent (rmatrix,i,j)) THEN
         
           IF ( ((i .GE. 1) .AND. (i .LE. 2)) .OR. &
                ((i .GE. 4) .AND. (i .LE. 5)) ) THEN
@@ -6457,6 +6472,39 @@ CONTAINS
           rvanca%rvanca2DNavStOptC%p_DA54 )
     END IF    
     
+    ! Is there an identity matrix present at A(3,3) and/or A(6,6)?
+    IF (lsysbl_isSubmatrixPresent(rmatrix,3,3)) THEN
+      ! The matrix must be of format 9.
+      IF (rmatrix%RmatrixBlock(3,3)%dscaleFactor .NE. 0.0_DP) THEN
+        CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(3,3),&
+            rvanca%rvanca2DNavStOptC%p_DA33 )
+
+        IF (rmatrix%RmatrixBlock(3,3)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+          CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(3,3), &
+                                  rvanca%rvanca2DNavStOptC%p_KdiagonalA33)
+        ELSE
+          CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(3,3), &
+                                  rvanca%rvanca2DNavStOptC%p_KdiagonalA33)
+        END IF
+
+      END IF
+    END IF
+
+    IF (lsysbl_isSubmatrixPresent(rmatrix,6,6)) THEN
+      IF (rmatrix%RmatrixBlock(6,6)%dscaleFactor .NE. 0.0_DP) THEN
+        CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(6,6),&
+            rvanca%rvanca2DNavStOptC%p_DA66 )
+
+        IF (rmatrix%RmatrixBlock(6,6)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+          CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(6,6), &
+                                  rvanca%rvanca2DNavStOptC%p_KdiagonalA66)
+        ELSE
+          CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(6,6), &
+                                  rvanca%rvanca2DNavStOptC%p_KdiagonalA66)
+        END IF
+      END IF
+    END IF
+    
     ! Get the mass matrix/matrices -- if they are present.
     ! It's assumed that all mass matrices are the same except for their
     ! multiplication factors!
@@ -6638,10 +6686,10 @@ CONTAINS
   !
   !    ( A11  A12  B1  aM           )
   !    ( A21  A22  B2       aM      )
-  !    ( D1^T D2^T                  )
+  !    ( D1^T D2^T I1               )
   !    ( bM            A44  A45  B1 )
   !    (      bM       A54  A55  B2 )
-  !    (               D1^T D2^T    )
+  !    (               D1^T D2^T I2 )
   !
   ! with D1/D2 having the same structure as B1/B2 and the 'transposed'
   ! flag set (LSYSSC_MSPEC_TRANSPOSED).
@@ -6650,6 +6698,10 @@ CONTAINS
   ! Dirichlet boundary conditions.
   ! The mass matrices must all be the same except for their scaling factors!
   ! Here, a and b are arbitrary multiplication factors for the mass matrices.
+  !
+  ! I1 and I2 are two diagonal matrices in format 9, which may or may not
+  ! exist in the system. For usual saddle point problems, these matrices
+  ! don't exist, what results in a '0' block in these positions.
   ! ***************************************************************************
 
 !<subroutine>
@@ -6713,6 +6765,8 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER             :: p_DB2
     REAL(DP), DIMENSION(:), POINTER             :: p_DD1
     REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    REAL(DP), DIMENSION(:), POINTER             :: p_Da33,p_Da66
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33,p_KdiagonalA66
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
@@ -6800,6 +6854,23 @@ CONTAINS
     p_KcolM => rvanca%p_KcolM
     p_KldM => rvanca%p_KldM
     p_DM => rvanca%p_DM
+    
+    ! Diagonal submatrices A33 and A66 (if they exist)
+    IF (rvanca%Dmultipliers(6,6) .NE. 0.0_DP) THEN
+      p_Da33 => rvanca%p_DA33
+      p_KdiagonalA33 => rvanca%p_KdiagonalA33
+    ELSE
+      NULLIFY(p_Da33)
+      NULLIFY(p_KdiagonalA33)
+    END IF
+    
+    IF (rvanca%Dmultipliers(6,6) .NE. 0.0_DP) THEN
+      p_Da66 => rvanca%p_DA66
+      p_KdiagonalA66 => rvanca%p_KdiagonalA66
+    ELSE
+      NULLIFY(p_Da66)
+      NULLIFY(p_KdiagonalA66)
+    END IF
 
     ! Get pointers to the vectors, RHS, get triangulation information
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
@@ -6970,9 +7041,9 @@ CONTAINS
         ! systems of the form                                            
         !                                                               
         !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )                                
-        !    [ B~^t       0                 ] (u )   (f2 )                                
+        !    [ B~^t       I1~               ] (u )   (f2 )                                
         !    [ === M^ ===     === A^ === B~ ] (| )   (g  )                                   
-        !    [                B~^t       0  ] (p )   (fl1)
+        !    [                B~^t       I2~] (p )   (fl1)
         !                                     (| )   (fl2)
         !                                     (l )   (flg)
         !                                     (| )
@@ -6995,9 +7066,9 @@ CONTAINS
         ! 'defect' on our single element IEL.
         !                                                               
         !  (d1 ) = (f1 ) -  [ === A^ === B~  === M^ ====   ] (| )                                 
-        !  (d2 )   (f2 )    [ B~^t       0                 ] (u )                                 
+        !  (d2 )   (f2 )    [ B~^t       I1~               ] (u )                                 
         !  (dg )   (g  )    [ === M^ ===     === A^ === B~ ] (| )                                    
-        !  (dl1)   (fl1)    [                B~^t       0  ] (p ) 
+        !  (dl1)   (fl1)    [                B~^t       I2~] (p ) 
         !  (dl2)   (fl2)                                     (| ) 
         !  (dlg)   (flg)                                     (l ) 
         !                                                    (| )
@@ -7074,7 +7145,7 @@ CONTAINS
             END DO          
           END DO
         END IF
-                
+        
         ! Handle the 'off-diagonal' matrices A45 and A54 if they exist
         IF (ASSOCIATED(p_KldA45)) THEN
           ia1 = p_KldA45(idof)
@@ -7103,6 +7174,50 @@ CONTAINS
               END IF
             END DO          
           END DO
+        END IF
+                
+        ! Process A33 if it exists
+                
+        IF (ASSOCIATED(p_KdiagonalA33)) THEN
+
+          ! Calculate:
+          !
+          !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+          !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+          !   ( dp  )   ( dp  )   (  .   .   I1  .   .   .  ) ( p  )
+          !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+          !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+          !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+          !
+          ! IEL is the pressure DOF which we have to tackle.
+          
+          daux = rvanca%Dmultipliers(6,6)
+          FF(1+lofsp) = FF(1+lofsp) &
+                      - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
+          AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
+
+        END IF
+                
+        ! Process A66 if it exists
+                
+        IF (ASSOCIATED(p_KdiagonalA66)) THEN
+
+          ! Calculate:
+          !
+          !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+          !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+          !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+          !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+          !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+          !   ( dxi )   ( dxi )   (  .   .   .   .   .   I2 ) ( xi )
+          !
+          ! IEL is the pressure DOF which we have to tackle.
+          
+          daux = rvanca%Dmultipliers(6,6)
+          FF(1+lofsxi) = FF(1+lofsxi) &
+                       - daux*p_DA66(p_KdiagonalA66(IEL))*p_Dvector(IEL+ioffsetxi)
+          AA(1+lofsxi,1+lofsxi) = daux*p_DA66(p_KdiagonalA66(IEL))
+
         END IF
                 
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -7284,7 +7399,7 @@ CONTAINS
         ! Ok, we got the update vector in FF. Incorporate this now into our
         ! solution vector with the update formula
         !
-        !  x_{n+1} = x_n + domega * y!
+        !  x_{n+1} = x_n + domega * y
         
         DO inode=1,nnvel
           ! Update of the primal velocity vectors

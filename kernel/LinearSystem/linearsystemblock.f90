@@ -484,7 +484,6 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vector/Matrix not compatible, different size!'
-      CALL sys_throwFPE()
       STOP
     END IF
   END IF
@@ -2519,8 +2518,8 @@ CONTAINS
   ! Calculate the new NEQ and NCOLS. Go through all 'columns' and 'rows
   ! of the block matrix and sum up their dimensions.
   NCOLS = 0
-  DO j=1,i
-    DO k=1,i
+  DO j=1,UBOUND(rmatrix%RmatrixBlock,2)
+    DO k=1,UBOUND(rmatrix%RmatrixBlock,1)
       IF (rmatrix%RmatrixBlock(k,j)%NCOLS .NE. 0) THEN
         NCOLS = NCOLS + rmatrix%RmatrixBlock(k,j)%NCOLS
         EXIT
@@ -2530,9 +2529,9 @@ CONTAINS
 
   ! Loop in the transposed way to calculate NEQ.
   NEQ = 0
-  DO j=1,i
-    DO k=1,i
-      IF (rmatrix%RmatrixBlock(j,k)%NCOLS .NE. 0) THEN
+  DO j=1,UBOUND(rmatrix%RmatrixBlock,1)
+    DO k=1,UBOUND(rmatrix%RmatrixBlock,2)
+      IF (rmatrix%RmatrixBlock(j,k)%NEQ .NE. 0) THEN
         NEQ = NEQ + rmatrix%RmatrixBlock(j,k)%NEQ
         EXIT
       END IF
