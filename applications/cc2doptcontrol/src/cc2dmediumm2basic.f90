@@ -34,8 +34,7 @@ MODULE cc2dmediumm2basic
   
   IMPLICIT NONE
   
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
+  ! Maximum allowed level in this application.
   INTEGER, PARAMETER :: NNLEV = 9
   
 !<types>
@@ -65,6 +64,9 @@ MODULE cc2dmediumm2basic
     
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
+    
+    ! An identity matrix in the size of the pressure
+    TYPE(t_matrixScalar) :: rmatrixIdentityPressure
     
     ! B1-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB1

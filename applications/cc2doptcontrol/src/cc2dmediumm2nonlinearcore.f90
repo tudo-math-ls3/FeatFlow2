@@ -14,10 +14,10 @@
 !#
 !# The discretised core equation reads at the moment:
 !#
-!#   alpha*M*y + theta*Stokes*y + gamma*N(y)y + B*p + lambda/alphaC = f1
-!#                                                            B^T*y = f2
-!#  -alpha*M*lambda - theta*Stokes*lambda + gamma*N(u)*lambda + (grad u)*lambda + grad(xi) - My = -z
-!#                                                                                   B^T lambda = 0
+!#   alpha*M*y + theta*Stokes*y + gamma*N(y)y + B*p + theta/alphaC*M*lambda = f1
+!#                                                                    B^T*y = f2
+!#  -theta*M*lambda - theta*Stokes*lambda + gamma*N(u)*lambda + (grad u)*lambda + grad(xi) - My = f3
+!#                                                                                   B^T lambda = f4
 !#
 !# with:
 !#   alpha = 0/1    - for time dependence; 
@@ -388,11 +388,13 @@ MODULE cc2dmediumm2nonlinearcore
     ! Maximum discretisation level
     INTEGER :: NLMAX = 1
     
-    ! If TRUE, the primal system consists just of identity matrices.
+    ! If TRUE, the primal system is trivial, i.e. it consists 
+    ! just of identity matrices.
     LOGICAL :: bprimalIdentity = .FALSE.
 
-    ! If FALSE, the dual system consists just of identity matrices.
-    LOGICAL :: bdualIdentity = .FALSE.
+    ! If TRUE, the dual equation represents the teminal condition a 
+    ! nonstationary simulation.
+    LOGICAL :: bdualTerminal = .FALSE.
     
     ! Pointer to the solution vector that is changed during the iteration
     TYPE(t_vectorBlock), POINTER :: p_rsolution => NULL()
@@ -945,7 +947,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE c2d2_assembleLinearisedMatrices (rnonlinearIteration,rcollection,&
-      blevelHirarchy,bboundaryConditions,bboundaryConditionsNonlin,&
+      blevelHierarchy,bboundaryConditions,bboundaryConditionsNonlin,&
       bassemblePreconditioner,bassembleNewton,rx)
 
   USE linearsystemblock
@@ -956,8 +958,11 @@ CONTAINS
   ! Pointers to these matrices must have been attached the rnonlinearIteration
   ! by a previous c2d2_setupCoreEquation.
   !
-  ! The system matrices are assembled into the p_rmatrix variable in the
-  ! nonlinear iteration structure.
+  ! The system matrices are assembled into 
+  ! -> the p_rmatrix variable in the nonlinear iteration structure if 
+  !    bassemblePreconditioner=FALSE
+  ! -> the p_rmatrixPreconditioner variable in the nonlinear iteration structure 
+  !    if bassemblePreconditioner=TRUE.
 !</description>
 
 !<inputoutput>
@@ -974,7 +979,7 @@ CONTAINS
   ! TRUE  = calculate the system matrices on all levels.
   ! FALSE = calculate the system matrix only on the maximum level where to solve
   !         the problem
-  LOGICAL, INTENT(IN) :: blevelHirarchy
+  LOGICAL, INTENT(IN) :: blevelHierarchy
   
   ! TRUE  = include (linear) boundary conditions into the system 
   !   matrix/matrices after assembly
@@ -987,9 +992,7 @@ CONTAINS
   LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
 
   ! TRUE  = Assemble the preconditioner matrices p_rmatrixPreconditioner
-  !         on every level in rnonlinearIteration.
   ! FALSE = Assemble the linearised system matrices p_rmatrix
-  !         on every level in rnonlinearIteration.
   LOGICAL, INTENT(IN) :: bassemblePreconditioner
   
   ! Applies only if bassemblePreconditioner=TRUE:
@@ -999,7 +1002,7 @@ CONTAINS
   LOGICAL, INTENT(IN) :: bassembleNewton
   
   ! OPTIONAL: Current iteration vector. Must be specified if the nonlinearity
-  ! should be discretised.
+  ! is to be discretised.
   TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL       :: rx
  
 !</input>
@@ -1038,19 +1041,21 @@ CONTAINS
     NLMIN = rnonlinearIteration%NLMIN
     NLMAX = rnonlinearIteration%NLMAX
     
-    IF (.NOT. blevelHirarchy) THEN
+    IF (.NOT. blevelHierarchy) THEN
       ! Discretise only maximum level
       NLMIN = NLMAX
     END IF
     
-    ! Get the interlevel projection structure and the temporary vector
-    ! from the collection.
-    ! Our 'parent' prepared there how to interpolate the solution on the
-    ! fine grid to coarser grids.
-    p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
-    p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
+    if (blevelHierarchy) THEN
+      ! Get the interlevel projection structure and the temporary vector
+      ! from the collection.
+      ! Our 'parent' prepared there how to interpolate the solution on the
+      ! fine grid to coarser grids.
+      p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
+      p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
 
-    p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
+      p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
+    END IF
 
     ! If we discretise Navier-Stokes, we have to set up a stabilisation
     ! structure or upwind / streamline diffusion / ...
@@ -1153,8 +1158,12 @@ CONTAINS
       ! on that level from a fine-grid solution before we can use
       ! it to build the matrix!
       IF (ilev .EQ. NLMAX) THEN
+      
         p_rvectorCoarse => rx
+        
       ELSE
+        ! We have to discretise a level hierarchy and are on a level < NLMAX.
+      
         ! Get the temporary vector on level i. Will receive the solution
         ! vector on that level. 
         p_rvectorCoarse => collct_getvalue_vec (rcollection,PAR_TEMPVEC,ilev)
@@ -1205,7 +1214,7 @@ CONTAINS
           !    (               B1^T B2^T    ) 
           !
           ! The A-matrix consists of Mass+Stokes+Convection.
-          ! We build them separately and add together.
+          ! We build them separately and sum up.
           !
           ! So at first, initialise the A-matrix with the Mass+Stokes contribution.
           ! We ignore the structure and simply overwrite the content of the
@@ -1269,7 +1278,7 @@ CONTAINS
             p_rmatrix%RmatrixBlock(2,1)%dscaleFactor = 0.0_DP
                                 
             ! Alternative iplementation with the scalar version of SD:
-            !$
+            !
             ! Call the SD method to calculate the nonlinear matrix.
             !CALL conv_streamlineDiffusion2d (&
             !                    p_rvectorCoarse, p_rvectorCoarse, &
@@ -1287,7 +1296,7 @@ CONTAINS
             !      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
             !END IF
             
-          ELSE
+          ELSE ! Assemble Newton as preconditioner
           
             IF (rnonlinearIteration%MT_OutputLevel .GE. 3) THEN
               CALL output_line ('Assembling Newton matrix on level '&
@@ -1460,6 +1469,7 @@ CONTAINS
           ! structure again.
           CALL lsysbl_releaseMatrix (rsubmatrix)
           
+        CASE (1)
         
           PRINT *,'Upwind not implemented!'
           STOP
@@ -1491,37 +1501,65 @@ CONTAINS
 
         IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
             (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
+            
+          ! Primal equation
+          ! ---------------
+          ! If the primal system is an identity, create identity matrices.
+          !    ( I    .    .    .    .    . ) 
+          !    ( .    I    .    .    .    . ) 
+          !    ( .    .    I    .    .    . ) 
+          !
+          ! Otherwise, assemble the primal equation.
+          !    ( A11       X    X           ) 
+          !    (      A22  X         X      ) 
+          !    ( X    X                     ) 
+          
+          IF (.NOT. rnonlinearIteration%bprimalIdentity) THEN
 
-          ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
-          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
-                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
-          ! Mass matrix?
-          IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
-            CALL lsyssc_matrixLinearComb (&
-                p_rmatrixMass,rnonlinearIteration%dalpha,&
-                p_rmatrix%RmatrixBlock(1,1),rnonlinearIteration%dtheta,&
-                p_rmatrix%RmatrixBlock(1,1),&
-                .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-          ELSE
-            ! In this case, we may have to scale the Stokes matrix according to 
-            ! theta; note that if the mass matrix is involved, this is done
-            ! implicitely.
-            IF (rnonlinearIteration%dtheta .NE. 1.0_DP) THEN
-              CALL lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(1,1),&
-                  rnonlinearIteration%dtheta)
+            ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
+            CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(1,1),&
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            ! Mass matrix?
+            IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
+              CALL lsyssc_matrixLinearComb (&
+                  p_rmatrixMass,rnonlinearIteration%dalpha,&
+                  p_rmatrix%RmatrixBlock(1,1),rnonlinearIteration%dtheta,&
+                  p_rmatrix%RmatrixBlock(1,1),&
+                  .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+            ELSE
+              ! In this case, we may have to scale the Stokes matrix according to 
+              ! theta; note that if the mass matrix is involved, this is done
+              ! implicitely.
+              IF (rnonlinearIteration%dtheta .NE. 1.0_DP) THEN
+                CALL lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(1,1),&
+                    rnonlinearIteration%dtheta)
+              END IF
             END IF
-          END IF
 
-          SELECT CASE (iupwind)
-          CASE (2)
-            ! Jump stabilisation; can also be used with Stokes.
-            !
-            ! Call the jump stabilisation technique to stabilise that stuff.   
-            CALL conv_jumpStabilisation2d (&
-                                p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
-                                rjumpStabil, CONV_MODMATRIX, &
-                                p_rmatrix%RmatrixBlock(1,1))   
-          END SELECT
+            SELECT CASE (iupwind)
+            CASE (2)
+              ! Jump stabilisation; can also be used with Stokes.
+              !
+              ! Call the jump stabilisation technique to stabilise that stuff.   
+              CALL conv_jumpStabilisation2d (&
+                                  p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+                                  rjumpStabil, CONV_MODMATRIX, &
+                                  p_rmatrix%RmatrixBlock(1,1))   
+            END SELECT
+          
+            ! Switch off any identity matrix for the pressure.
+            ! So we get a saddle point problem.
+            p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
+
+          ELSE
+            
+            ! Just put the identity matrix to the velocity submatrices.
+            CALL lsyssc_initialiseIdentityMatrix (p_rmatrix%RmatrixBlock(1,1))
+            
+            ! Switch on the identity matrix for the pressure.
+            p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
+          
+          END IF
           
         END IF
 
@@ -1541,36 +1579,62 @@ CONTAINS
 
         IF ((rnonlinearIteration%dalpha .NE. 0.0_DP) .OR. &
             (rnonlinearIteration%dtheta .NE. 0.0_DP)) THEN
-          ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
-          CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(4,4),&
-                                      LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
-          ! Mass matrix?
-          IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
-            CALL lsyssc_matrixLinearComb (&
-                p_rmatrixMass,rnonlinearIteration%dalpha,&
-                p_rmatrix%RmatrixBlock(4,4),rnonlinearIteration%dtheta,&
-                p_rmatrix%RmatrixBlock(4,4),&
-                .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-          ELSE
-            ! In this case, we may have to scale the Stokes matrix according to 
-            ! theta; note that if the mass matrix is involved, this is done
-            ! implicitely.
-            IF (rnonlinearIteration%dtheta .NE. 1.0_DP) THEN
-              CALL lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(4,4),&
-                  rnonlinearIteration%dtheta)
+            
+          ! Dual equation
+          ! -------------
+          ! If the dual system is the 'terminal condition', the matrix simplifies:
+          !
+          !    ( -M   .    .    M    .    . ) 
+          !    ( .    -M   .    .    M    . ) 
+          !    ( .    .    .    .    .    I ) 
+          !
+          ! Otherwise, assemble the dual equation.
+          !    ( -M   .    .    A44   .   X ) 
+          !    ( .    -M   .     .   A55  X ) 
+          !    ( .    .    .     X    X   . ) 
+          
+          IF (.NOT. rnonlinearIteration%bdualTerminal) THEN
+          
+            ! Copy the Stokes matrix, overwrite p_rmatrix in any case.
+            CALL lsyssc_duplicateMatrix (p_rmatrixStokes,p_rmatrix%RmatrixBlock(4,4),&
+                                        LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPYOVERWRITE)
+            ! Mass matrix?
+            IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
+              CALL lsyssc_matrixLinearComb (&
+                  p_rmatrixMass,rnonlinearIteration%dalpha,&
+                  p_rmatrix%RmatrixBlock(4,4),rnonlinearIteration%dtheta,&
+                  p_rmatrix%RmatrixBlock(4,4),&
+                  .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+            ELSE
+              ! In this case, we may have to scale the Stokes matrix according to 
+              ! theta; note that if the mass matrix is involved, this is done
+              ! implicitely.
+              IF (rnonlinearIteration%dtheta .NE. 1.0_DP) THEN
+                CALL lsyssc_scaleMatrix (p_rmatrix%RmatrixBlock(4,4),&
+                    rnonlinearIteration%dtheta)
+              END IF
             END IF
-          END IF
 
-          SELECT CASE (iupwind)
-          CASE (2)
-            ! Jump stabilisation; can also be used with Stokes.
-            !
-            ! Call the jump stabilisation technique to stabilise that stuff.   
-            CALL conv_jumpStabilisation2d (&
-                                p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
-                                rjumpStabil, CONV_MODMATRIX, &
-                                p_rmatrix%RmatrixBlock(4,4))   
-          END SELECT
+            SELECT CASE (iupwind)
+            CASE (2)
+              ! Jump stabilisation; can also be used with Stokes.
+              !
+              ! Call the jump stabilisation technique to stabilise that stuff.   
+              CALL conv_jumpStabilisation2d (&
+                                  p_rvectorCoarse, p_rvectorCoarse, 1.0_DP, 0.0_DP,&
+                                  rjumpStabil, CONV_MODMATRIX, &
+                                  p_rmatrix%RmatrixBlock(4,4))   
+            END SELECT
+            
+          ELSE
+          
+            ! Just put the identity matrix to the velocity submatrices.
+            CALL lsyssc_initialiseIdentityMatrix (p_rmatrix%RmatrixBlock(4,4))
+            
+            ! Switch on the identity matrix for the pressure.
+            p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
+          
+          END IF
           
         END IF
 
@@ -1591,19 +1655,20 @@ CONTAINS
                                       
       END IF
 
-      ! Is there a weight in front of the mass matrix?
-      ! If yes, put the theta weight in front of the mass matrices that couple
-      ! primal and dual velocity.
-      IF (rnonlinearIteration%dalpha .NE. 0.0_DP) THEN
-        p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = -rnonlinearIteration%dtheta
-        p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = -rnonlinearIteration%dtheta
+      ! Initialise the weights of the submatrices in the system matrix.
+      p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = -rnonlinearIteration%dtheta
+      p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = -rnonlinearIteration%dtheta
 
-        p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = &
-            rnonlinearIteration%dtheta / rnonlinearIteration%dalphaC
-
-        p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = &
-            rnonlinearIteration%dtheta / rnonlinearIteration%dalphaC
+      IF (rnonlinearIteration%dalphaC .EQ. 0.0_DP) THEN
+        PRINT *,'Error: Regulrisation parameter dalphaC must not be zero!'
+        STOP
       END IF
+
+      p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = &
+          rnonlinearIteration%dtheta / rnonlinearIteration%dalphaC
+
+      p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = &
+          rnonlinearIteration%dtheta / rnonlinearIteration%dalphaC
 
       ! For the construction of matrices on lower levels, call the matrix
       ! restriction. In case we have a uniform discretisation with Q1~,
@@ -1634,6 +1699,8 @@ CONTAINS
         !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
         !    .TRUE., 0, 'matrix'//TRIM(sys_siL(ilev,10))//'.txt', '(E20.10)')
       
+        p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
+        
         IF (ASSOCIATED(p_RfilterChain)) THEN
           CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
         END IF
@@ -1793,6 +1860,9 @@ CONTAINS
         CALL lsyssc_duplicateMatrix (p_rmatrixStokes,&
             rmatrixTmpBlock%RmatrixBlock(2,2), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            
+        ! Don't incorporate THETA here; this is done later in the matrix-vector
+        ! multiplication!
       
         CALL lsyssc_duplicateMatrix (p_rmatrixMass,&
             rmatrixTmpBlock%RmatrixBlock(1,4), &
@@ -1807,7 +1877,7 @@ CONTAINS
       END IF
           
       ! Dual equation an identity or not?
-      IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+      IF (.NOT. rnonlinearIteration%bdualTerminal) THEN
         
         ! Set up the primal equation. Only set up the Laplace- and 
         ! mass-matrix part.
@@ -1826,6 +1896,9 @@ CONTAINS
             rmatrixTmpBlock%RmatrixBlock(5,5), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
+        ! Don't incorporate THETA here; this is done later in the matrix-vector
+        ! multiplication!
+
         CALL lsyssc_duplicateMatrix (p_rmatrixMass,&
             rmatrixTmpBlock%RmatrixBlock(4,1), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -1858,7 +1931,7 @@ CONTAINS
       END IF
       
       ! The same for the dual velocity.
-      IF (rnonlinearIteration%bdualIdentity) THEN
+      IF (rnonlinearIteration%bdualTerminal) THEN
         CALL lsyssc_vectorLinearComb (rx%RvectorBlock(4),rd%RvectorBlock(4),&
             -1.0_DP,1.0_DP)
         CALL lsyssc_vectorLinearComb (rx%RvectorBlock(5),rd%RvectorBlock(5),&
@@ -1886,7 +1959,7 @@ CONTAINS
                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
       END IF
 
-      IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+      IF (.NOT. rnonlinearIteration%bdualTerminal) THEN
         CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(4,4),&
                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
         CALL lsyssc_duplicateMatrix (p_rmatrixMass,rmatrixTmpBlock%RmatrixBlock(5,5),&
@@ -1928,7 +2001,7 @@ CONTAINS
                             p_rmatrix%RmatrixBlock(1,1), rx, rd)
         END IF
         
-        IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+        IF (.NOT. rnonlinearIteration%bdualTerminal) THEN
             
           ! Quickly set up a block discretisation structure for the dual equation
           ! by deriving block 4..6 from the main discretisation structure
@@ -2132,7 +2205,7 @@ CONTAINS
             rmatrixTmpBlock%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       END IF
 
-      IF (.NOT. rnonlinearIteration%bdualIdentity) THEN
+      IF (.NOT. rnonlinearIteration%bdualTerminal) THEN
         CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(4,6),&
             rmatrixTmpBlock%RmatrixBlock(4,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(5,6),&
@@ -2157,7 +2230,7 @@ CONTAINS
             -1.0_DP,1.0_DP)
       END IF
 
-      IF (rnonlinearIteration%bdualIdentity) THEN
+      IF (rnonlinearIteration%bdualTerminal) THEN
         CALL lsyssc_vectorLinearComb (rx%RvectorBlock(6),rd%RvectorBlock(6),&
             -1.0_DP,1.0_DP)
       END IF

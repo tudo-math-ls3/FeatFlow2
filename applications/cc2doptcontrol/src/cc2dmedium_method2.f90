@@ -158,9 +158,14 @@ CONTAINS
     
       ! Stationary simulation
       !
-      ! Generate matrices
-      CALL c2d2_generateStaticMatrices (p_rproblem)
-      CALL c2d2_generateStaticSystemParts (p_rproblem)
+      ! On all levels, generate the static matrices and the basic
+      ! system matrix.
+      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        CALL c2d2_generateStaticMatrices (&
+            p_rproblem,p_rproblem%RlevelInfo(i))
+        CALL c2d2_generateStaticSystemMatrix (&
+            p_rproblem%RlevelInfo(i),p_rproblem%RlevelInfo(i)%rmatrix)
+      END DO
 
       ! Generate the RHS vector.
       CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
@@ -181,8 +186,11 @@ CONTAINS
     
       ! Time dependent simulation with explicit time stepping.
       !
-      ! Generate matrices
-      CALL c2d2_generateStaticMatrices (p_rproblem)
+      ! On all levels, generate the static matrices.
+      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        CALL c2d2_generateStaticMatrices (&
+            p_rproblem,p_rproblem%RlevelInfo(i))
+      END DO
       
       ! Initialise the boundary conditions for the 0th time step, but 
       ! don't implement any boundary conditions as the nonstationary solver
