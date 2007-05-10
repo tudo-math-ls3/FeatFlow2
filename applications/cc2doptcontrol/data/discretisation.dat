@@ -30,7 +30,7 @@
 
 # minimum mg-level; <=0: Use level (NLMAX-NLMIN) as coarse grid
 
-NLMIN              = 5
+NLMIN              = 2
 
 # maximum mg-level = level of computation of nonlinear iteration
 

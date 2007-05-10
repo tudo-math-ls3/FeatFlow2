@@ -85,6 +85,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    REAL(DP) :: dalphaC
     TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
 
     ! The nonlinear solver configuration
@@ -101,10 +102,26 @@ CONTAINS
         rproblem,rproblem%NLMIN,rproblem%NLMAX,rvector,rrhs,&
         rnonlinearIteration,'CC2D-NONLINEAR')
         
-    ! Initialise the core equation to the stationary (Navier)-Stokes
-    ! optimal control.
-    CALL c2d2_setupCoreEquation (rnonlinearIteration,&
-        0.0_DP,1.0_DP,REAL(1-rproblem%iequation,DP))
+    ! Set up all the weights in the core equation according to the current timestep.
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+                                'dalphaC',dalphaC,0.1_DP)
+    rnonlinearIteration%diota1  = 0.0_DP
+    rnonlinearIteration%dkappa1 = 0.0_DP
+    rnonlinearIteration%dalpha1 = 0.0_DP
+    rnonlinearIteration%dtheta1 = 1.0_DP
+    rnonlinearIteration%dgamma1 = REAL(1-rproblem%iequation,DP)
+    rnonlinearIteration%deta1   = 1.0_DP
+    rnonlinearIteration%dtau1   = 1.0_DP
+    rnonlinearIteration%dmu1    = dalphaC
+
+    rnonlinearIteration%diota2  = 0.0_DP
+    rnonlinearIteration%dkappa2 = 0.0_DP
+    rnonlinearIteration%dalpha2 = 0.0_DP
+    rnonlinearIteration%dtheta2 = 1.0_DP
+    rnonlinearIteration%dgamma2 = REAL(1-rproblem%iequation,DP)
+    rnonlinearIteration%deta2   = 1.0_DP
+    rnonlinearIteration%dtau2   = 1.0_DP
+    rnonlinearIteration%dmu2    = -1.0_DP
     
     ! Check the matrices if they are compatible to our
     ! preconditioner. If not, we later have to modify the matrices a little

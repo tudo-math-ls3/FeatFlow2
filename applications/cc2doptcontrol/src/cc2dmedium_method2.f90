@@ -164,7 +164,7 @@ CONTAINS
         CALL c2d2_generateStaticMatrices (&
             p_rproblem,p_rproblem%RlevelInfo(i))
         CALL c2d2_generateStaticSystemMatrix (&
-            p_rproblem%RlevelInfo(i),p_rproblem%RlevelInfo(i)%rmatrix)
+            p_rproblem%RlevelInfo(i),p_rproblem%RlevelInfo(i)%rmatrix,.FALSE.)
       END DO
 
       ! Generate the RHS vector.

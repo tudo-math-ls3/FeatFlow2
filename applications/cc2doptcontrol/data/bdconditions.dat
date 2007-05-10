@@ -42,7 +42,7 @@ bdExpressions(19) =
   'DirichletY'    -1    'Y'
   'DirichletMY'   -1    '-Y'
   'DirichletMX'   -1    '-X'
-  'DirichletDMY'  -1    '-0.0001*Y'
+  'DirichletDY'   -1    '0.0001*Y'
   'DirichletDMX'  -1    '-0.0001*X'
   'DirichletDTMX' -1    'X*(TIME/50-1/5)'
   'DirichletDTY'  -1    '(-Y)*(TIME/50-1/5)'
@@ -114,7 +114,7 @@ bdExpressions(19) =
 #          = 3 : Slip boundary conditions. Like Neumann BC's this
 #                does not use an expression.
 
-bdComponent1(1)=
+#bdComponent1(1)=
 #  0  4.0  3  1  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  # [0.0,1.0] : Dirichlet-0 boundary
 #  0  1.0  3  1  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  # [0.0,1.0] : Dirichlet-0 boundary
 #  0  4.0  3  1  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'  # [0.0,1.0] : Dirichlet-0 boundary
@@ -122,9 +122,24 @@ bdComponent1(1)=
 #  0  3.0  3  1  'Dirichlet0'  'Dirichlet0' 'Dirichlet0'  'Dirichlet0'  # [2.0,3.0] : Dirichlet-0 boundary
 #  0  4.0  0  0                                                          # ]1.0,2.0[ : Neumann boundary = do-nothing
 #  0  4.0  3  1   'DirichletX'  'DirichletMY' 'DirichletDMX' 'DirichletDY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
-  0  4.0  3  1   'DirichletTX'  'DirichletTMY' 'DirichletDTMX' 'DirichletDTY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+#  0  4.0  3  1   'DirichletX'  'DirichletMY' 'Dirichlet0' 'Dirichlet0'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+#  0  4.0  3  1   'DirichletTX'  'DirichletTMY' 'DirichletDTMX' 'DirichletDTY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
 #  0  4.0  0  0                                                          # ]1.0,2.0[ : Neumann boundary = do-nothing
 #  0  4.0  3  1  'ParProfile'  'Dirichlet0' 'Dirichlet0'  'Dirichlet0'  # [3.0,4.0] : parabolic profile in X, 0.0 in Y
+
+
+# For stationary Stokes reference:
+bdComponent1(1)=
+  0  4.0  3  1   'DirichletX'  'DirichletMY' 'Dirichlet0' 'Dirichlet0'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+
+# For stationary Navier-Stokes reference:
+#bdComponent1(1)=
+#  0  4.0  3  1   'DirichletX'  'DirichletMY' 'DirichletDMX' 'DirichletDY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+
+# For nonstationary Stokes reference:
+#bdComponent1(1)=
+#  0  4.0  3  1   'DirichletTX'  'DirichletTMY' 'DirichletDTMX' 'DirichletDTY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+
 
 #bdComponent1(4)=
 #  0  1.0  3  1  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary

@@ -11,7 +11,7 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 1                       # ISTAT
+itimedependence = 0                       # ISTAT
 
 # ----------------------------------------------------------------------
 
