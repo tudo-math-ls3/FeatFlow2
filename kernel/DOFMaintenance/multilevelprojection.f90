@@ -781,7 +781,13 @@ CONTAINS
     ! Set up an array of discretisation structures for all the equations
     DO i=1,rmatrixCoarse%ndiagBlocks
       DO j=1,rmatrixCoarse%ndiagBlocks
-        IF (rmatrixCoarse%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+        IF (lsysbl_isSubmatrixPresent(rmatrixCoarse,j,i)) THEN
+          IF (.NOT. &
+              ASSOCIATED(rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscretisation)) THEN
+            PRINT *,'mlprj_getTempMemoryMat: No discretisation structure in coarse &
+                  &matrix at ',i,',',j
+            STOP
+          END IF
           RdiscrCoarse(i) = &
             rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscretisation
           EXIT
@@ -791,7 +797,13 @@ CONTAINS
 
     DO i=1,rmatrixFine%ndiagBlocks
       DO j=1,rmatrixFine%ndiagBlocks
-        IF (rmatrixFine%RmatrixBlock(j,i)%NEQ .NE. 0) THEN
+        IF (lsysbl_isSubmatrixPresent(rmatrixFine,j,i)) THEN
+          IF (.NOT. &
+              ASSOCIATED(rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscretisation)) THEN
+            PRINT *,'mlprj_getTempMemoryMat: No discretisation structure in fine matrix&
+                  & at ',i,',',j
+            STOP
+          END IF
           RdiscrFine(i) = &
             rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscretisation
         END IF

@@ -3432,7 +3432,7 @@ CONTAINS
 
     bispresent = &
       (rmatrix%RmatrixBlock(irow,icolumn)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) &
-      .AND. ((.NOT. bscale) .OR. &
+      .AND. (bscale .OR. &
              (rmatrix%RmatrixBlock(irow,icolumn)%dscaleFactor .NE. 0.0_DP))
 
   END FUNCTION
