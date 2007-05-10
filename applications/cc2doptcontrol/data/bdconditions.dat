@@ -42,8 +42,8 @@ bdExpressions(19) =
   'DirichletY'    -1    'Y'
   'DirichletMY'   -1    '-Y'
   'DirichletMX'   -1    '-X'
-  'DirichletDY'   -1    '0.0001*Y'
-  'DirichletDMX'  -1    '-0.0001*X'
+  'DirichletDMY'  -1    '-Y'
+  'DirichletDMX'  -1    '-X'
   'DirichletDTMX' -1    'X*(TIME/50-1/5)'
   'DirichletDTY'  -1    '(-Y)*(TIME/50-1/5)'
   'DirichletTX'   -1    'X*(-(TIME^2/100)+TIME/5)'
@@ -134,7 +134,7 @@ bdComponent1(1)=
 
 # For stationary Navier-Stokes reference:
 #bdComponent1(1)=
-#  0  4.0  3  1   'DirichletX'  'DirichletMY' 'DirichletDMX' 'DirichletDY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+#  0  4.0  3  1   'DirichletX'  'DirichletMY' 'DirichletDMX' 'DirichletDMY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
 
 # For nonstationary Stokes reference:
 #bdComponent1(1)=
