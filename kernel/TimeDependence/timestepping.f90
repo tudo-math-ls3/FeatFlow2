@@ -293,7 +293,7 @@ CONTAINS
   ! (Theoretical) Time step length of the simulation / 'base' step length of the
   ! time stepping scheme.
   ! Might vary from the real time step size by the type of the
-  ! scheme. THe real time step site is found in rtstepScheme%dtstep.
+  ! scheme. The real time step size is found in rtstepScheme%dtstep.
   REAL(DP), INTENT(IN)   :: dtstep
 
   ! OPTIONAL: Theta scheme identifier. 
