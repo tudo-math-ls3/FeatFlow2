@@ -11035,7 +11035,7 @@ CONTAINS
                   ! We are in 'unsorted' state; applying the filter here is
                   ! supposed to be a bit faster...
                   CALL filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
-                                                  p_RfilterChain)
+                                                   p_RfilterChain)
                 END IF
 
                 IF (bsort) THEN
@@ -11057,6 +11057,19 @@ CONTAINS
                 ! Choose zero as initial vector on lower level. 
                 CALL lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
                 
+                ! Extended output
+                IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                    (MOD(ite,niteResOutput).EQ.0)) THEN
+                    
+                  dres = lsysbl_vectorNorm (p_rlowerLevel%rrhsVector,&
+                      rsolverNode%iresNorm)
+                  IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                            (dres .LE. 1E99_DP))) dres = 0.0_DP
+                            
+                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
+                      ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+                END IF
+
               ELSE
               
                 ! The vector is to be restricted to the coarse grid.
@@ -11073,7 +11086,7 @@ CONTAINS
                   ! We are in 'unsorted' state; applying the filter here is
                   ! supposed to be a bit faster...
                   CALL filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
-                                                  p_RfilterChain)
+                                                   p_RfilterChain)
                 END IF
 
                 IF (bsort) THEN
@@ -11082,6 +11095,19 @@ CONTAINS
                         p_rsubnode%rprjTempVector,.TRUE.)
 
                   ! Temp-vector and RHS can be ignored on the coarse grid.
+                END IF
+
+                ! Extended output
+                IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                    (MOD(ite,niteResOutput).EQ.0)) THEN
+                    
+                  dres = lsysbl_vectorNorm (p_rlowerLevel%rsolutionVector,&
+                      rsolverNode%iresNorm)
+                  IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                            (dres .LE. 1E99_DP))) dres = 0.0_DP
+                            
+                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
+                      ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
                 END IF
 
               END IF              
