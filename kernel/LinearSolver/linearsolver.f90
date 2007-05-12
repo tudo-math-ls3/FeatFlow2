@@ -10552,103 +10552,150 @@ CONTAINS
   
 !</subroutine>
 
-  INTEGER :: i
-  LOGICAL :: bfilter
-  INTEGER :: iiterations
-  !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
-  
-  ! Cancel if nmaxIterations = number of smoothing steps is =0.
-  IF (rsolverNode%nmaxIterations .LE. 0) RETURN
-  
-  ! Some solvers can be used without the usual preconditioner approach to gain speed.
-  ! First check if we have such a solver; these won't need the additional matrix
-  ! vector multiplication below!
-  
-  SELECT CASE (rsolverNode%calgorithm)
-    ! We are in a case where we can apply an adaptive 1-step defect-correction
-    ! type preconditioner as smoother. This is a very special case and applies
-    ! only to some special algorithms, which work directly with a solution-
-    ! and RHS vector, like special VANCA variants. 
-    !
-    ! The nice thing: This saves one matrix-vector multiplication and 
-    ! a lot of time (about 30-40%)!!!
-    !
-    ! The disadvantage: We cannot use any filtering with this approach,
-    ! since the filters only apply to defect vectors and not solution vectors!
-    !
-    ! But in most situations, this disadvantage does not have such a large
-    ! impact, as the MG solver applies filtering frequently to all the defect
-    ! vectors that pop up during its iteration. 
-    ! Or the algorithm filters internally, so we don't have to take into
-    ! account the filtering at all.
-  
-  CASE (LINSOL_ALG_VANCA) 
-    ! The basic proceeding is like below: Apply the corresponding solver multiple
-    ! times to the solution- and RHS-vector to improve the solution. Let's see
-    ! which solver we have. 
-    ! If the previous IF-guess was wrong, we will leave this IF-clause and
-    ! fall back to use the preconditioner approach.
+    INTEGER :: i
+    LOGICAL :: bfilter
+    INTEGER :: iiterations
+    REAL(DP) :: dres
+    !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+    
+    ! Cancel if nmaxIterations = number of smoothing steps is =0.
+    IF (rsolverNode%nmaxIterations .LE. 0) RETURN
+    
+    ! Some solvers can be used without the usual preconditioner approach to gain speed.
+    ! First check if we have such a solver; these won't need the additional matrix
+    ! vector multiplication below!
+    
+    SELECT CASE (rsolverNode%calgorithm)
+      ! We are in a case where we can apply an adaptive 1-step defect-correction
+      ! type preconditioner as smoother. This is a very special case and applies
+      ! only to some special algorithms, which work directly with a solution-
+      ! and RHS vector, like special VANCA variants. 
+      !
+      ! The nice thing: This saves one matrix-vector multiplication and 
+      ! a lot of time (about 30-40%)!!!
+      !
+      ! The disadvantage: We cannot use any filtering with this approach,
+      ! since the filters only apply to defect vectors and not solution vectors!
+      !
+      ! But in most situations, this disadvantage does not have such a large
+      ! impact, as the MG solver applies filtering frequently to all the defect
+      ! vectors that pop up during its iteration. 
+      ! Or the algorithm filters internally, so we don't have to take into
+      ! account the filtering at all.
+    
+    CASE (LINSOL_ALG_VANCA) 
+      ! The basic proceeding is like below: Apply the corresponding solver multiple
+      ! times to the solution- and RHS-vector to improve the solution. Let's see
+      ! which solver we have. 
+      ! If the previous IF-guess was wrong, we will leave this IF-clause and
+      ! fall back to use the preconditioner approach.
+      
+      !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
+      !DEBUG: CALL lsysbl_getbase_double (rb,p_Ddata2)
+          
+      SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
+      CASE (LINSOL_VANCA_GENERALDIRECT,&
+            LINSOL_VANCA_2DNAVSTDIRECT,&
+            LINSOL_VANCA_2DFNAVSTDIRECT,&
+            LINSOL_VANCA_2DFNAVSTOCDIRECT)
+        ! Yes, this solver can be applied to a given solution/rhs vector directly.
+        ! Call it nmaxIterations times to perform the smoothing.
+        DO i=1,rsolverNode%nmaxIterations
+        
+          ! Probably print the residuum
+          IF (rsolverNode%ioutputLevel .GE. 2) THEN
+            CALL lsysbl_copyVector(rb,rtemp)
+            CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+            
+            dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
+            IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
+                      
+            CALL output_line ('Smoother: Step '//TRIM(sys_siL(i-1,10))//&
+                ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+          END IF
+        
+          ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
+          ! without explicitly calculating (b-Ax_n) like below.
+          CALL vanca_conformal (rsolverNode%p_rsubnodeVANCA%rvanca, &
+                                rx, rb, rsolverNode%domega)
+                                
+        END DO
+
+        ! Probably print the residuum
+        IF (rsolverNode%ioutputLevel .GE. 2) THEN
+          CALL lsysbl_copyVector(rb,rtemp)
+          CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+          
+          dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
+          IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
+                    
+          CALL output_line ('Smoother: Step '//TRIM(sys_siL(i-1,10))//&
+              ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+        END IF
+
+        ! That's it.
+        RETURN
+      
+      END SELECT
+      
+    END SELECT
+      
+    ! This is a 1-step solver, we have to emulate the smoothing
+    ! iterations. Perform rsolverNode%nmaxIterations steps of the
+    ! form
+    !     $$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$
+    ! with $x_0 = 0$.
+    
+    bfilter = ASSOCIATED(p_RfilterChain)
     
     !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
-    !DEBUG: CALL lsysbl_getbase_double (rb,p_Ddata2)
-        
-    SELECT CASE (rsolverNode%p_rsubnodeVANCA%csubtypeVANCA)
-    CASE (LINSOL_VANCA_GENERALDIRECT,&
-          LINSOL_VANCA_2DNAVSTDIRECT,&
-          LINSOL_VANCA_2DFNAVSTDIRECT,&
-          LINSOL_VANCA_2DFNAVSTOCDIRECT)
-      ! Yes, this solver can be applied to a given solution/rhs vector directly.
-      ! Call it nmaxIterations times to perform the smoothing.
-      DO i=1,rsolverNode%nmaxIterations
-        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
-        ! without explicitly calculating (b-Ax_n) like below.
-        CALL vanca_conformal (rsolverNode%p_rsubnodeVANCA%rvanca, &
-                              rx, rb, rsolverNode%domega)
-      END DO
-
-      ! That's it.
-      RETURN
+    !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
     
-    END SELECT
-    
-  END SELECT
-    
-  ! This is a 1-step solver, we have to emulate the smoothing
-  ! iterations. Perform rsolverNode%nmaxIterations steps of the
-  ! form
-  !     $$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$
-  ! with $x_0 = 0$.
-  
-  bfilter = ASSOCIATED(p_RfilterChain)
-  
-  !DEBUG: CALL lsysbl_getbase_double (rx,p_Ddata)
-  !DEBUG: CALL lsysbl_getbase_double (rtemp,p_Ddata2)
-  
-  ! Do we have an iterative or one-step solver given?
-  ! A 1-step solver performs the following loop nmaxIterations times, while an iterative
-  ! solver is called only once and performs nmaxIterations steps internally.
-  ! (This is a convention. Calling an iterative solver i times with j internal steps
-  ! would also be possible, but we don't implement that here.)
-  IF (IAND(rsolverNode%ccapability,LINSOL_ABIL_DIRECT) .NE. 0) THEN
-    iiterations = rsolverNode%nmaxIterations
-  ELSE
-    iiterations = 1
-  END IF
-  
-  DO i=1,iiterations
-  
-    CALL lsysbl_copyVector(rb,rtemp)
-    CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-    
-    ! Apply the filter to this defect before preconditioning
-    IF (bfilter) THEN
-      CALL filter_applyFilterChainVec (rtemp, p_RfilterChain)
+    ! Do we have an iterative or one-step solver given?
+    ! A 1-step solver performs the following loop nmaxIterations times, while an iterative
+    ! solver is called only once and performs nmaxIterations steps internally.
+    ! (This is a convention. Calling an iterative solver i times with j internal steps
+    ! would also be possible, but we don't implement that here.)
+    IF (IAND(rsolverNode%ccapability,LINSOL_ABIL_DIRECT) .NE. 0) THEN
+      iiterations = rsolverNode%nmaxIterations
+    ELSE
+      iiterations = 1
     END IF
     
-    CALL linsol_precondDefect(rsolverNode,rtemp)
-    CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
+    DO i=1,iiterations
     
-  END DO
+      CALL lsysbl_copyVector(rb,rtemp)
+      CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+      
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
+        IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
+                  
+        CALL output_line ('Smoother: Step '//TRIM(sys_siL(i-1,10))//&
+            ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+      END IF
+      
+      ! Apply the filter to this defect before preconditioning
+      IF (bfilter) THEN
+        CALL filter_applyFilterChainVec (rtemp, p_RfilterChain)
+      END IF
+      
+      CALL linsol_precondDefect(rsolverNode,rtemp)
+      CALL lsysbl_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
+      
+    END DO
+
+    ! Probably print the final residuum
+    IF (rsolverNode%ioutputLevel .GE. 2) THEN
+      CALL lsysbl_copyVector(rb,rtemp)
+      CALL lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+      
+      dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
+      IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
+                
+      CALL output_line ('Smoother: Step '//TRIM(sys_siL(i-1,10))//&
+          ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+    END IF
     
   END SUBROUTINE
 
@@ -10943,7 +10990,8 @@ CONTAINS
                   (rsolverNode%ioutputLevel .GE. 3) .AND. &
                   (MOD(ite,niteResOutput).EQ.0)) THEN
                   
-                dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
+                dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                    rsolverNode%iresNorm)
                 IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                           (dres .LE. 1E99_DP))) dres = 0.0_DP
                           
