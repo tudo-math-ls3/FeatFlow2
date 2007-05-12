@@ -109,6 +109,10 @@
 !#     -> Adds (nonlinear) slip boundary conditions on the real boundary
 !#        to a boundary-condition object
 !#
+!# 7.) bcond_newFeastMirrorBConRealBD
+!#     -> Adds a Dirichlet boundary condition the real boundary to a 
+!#        boundary-condition object
+!#
 !# </purpose>
 !##############################################################################
 
@@ -122,7 +126,7 @@ MODULE boundarycondition
 
 !<constants>
 
-!<constantblock description="The type identifier for (linar) boundary conditions">
+!<constantblock description="The type identifier for (linear) boundary conditions">
 
   ! Do-nothing boundary conditions (Neumann)
   INTEGER, PARAMETER :: BC_DONOTHING      = 0
@@ -141,6 +145,9 @@ MODULE boundarycondition
   
   ! Flux boundary conditions
   INTEGER, PARAMETER :: BC_FLUX           = 4
+  
+  ! FEAST mirror boundary for domain decomposition
+  INTEGER, PARAMETER :: BC_FEASTMIRROR    = 5
 
 !</constantblock>
 
@@ -625,6 +632,74 @@ CONTAINS
                       p_rbcReg,rboundaryRegion)
   ELSE
     CALL bcond_newBC (BC_DIRICHLET,BC_RTYPE_FREE,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
+  END IF
+
+  ! Modify the structure, impose additionally needed information
+  ! for Dirichlet boundary - in detail, set the equation where the BC
+  ! applies to.
+  p_rbcReg%nequations = 1
+  p_rbcReg%Iequations(1) = iequation
+
+  ! Eventually, return the pointer
+  IF (PRESENT(p_rbcRegion)) p_rbcRegion => p_rbcReg
+
+  END SUBROUTINE
+      
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE bcond_newFeastMirrorBConRealBD (rboundaryConditions,iequation,&
+                                             rboundaryRegion,p_rbcRegion)
+  
+!<description>
+  ! Adds a FEAST mirror boundary condition region to the boundary condition 
+  ! structure. A pointer to the region is returned in p_rbcRegion, the caller 
+  ! can add some user-defined information there if necessary 
+  ! (e.g. the name, a tag or something else).
+  ! The boundary conditions are assumed to be on the 'real' boundary -
+  ! fictitious-boundary boundary conditions are supported by another routine.
+!</description>
+
+!<input>
+  ! An identifier for the equation, this boundary condition refers to.
+  ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
+  ! Y-velocity), etc.
+  INTEGER, INTENT(IN) :: iequation
+
+  ! A boundary-condition-region object, describing the position on the
+  ! boundary where boundary conditions should be imposed.
+  ! A copy of this is added to the rboundaryConditions structure.
+  TYPE(t_boundaryRegion), INTENT(IN) :: rboundaryRegion
+!</input>
+
+!<inputoutput>
+  ! The structure where the boundary condition region is to be added.
+  TYPE(t_boundaryConditions), INTENT(INOUT), TARGET :: rboundaryConditions
+!</inputoutput>
+
+!<output>
+  ! OPTIONAL: A pointer to the added boundary region. The caller can make 
+  ! more specific modifications to this if necessary.
+  TYPE(t_bcRegion), OPTIONAL, POINTER :: p_rbcRegion
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_bcRegion), POINTER :: p_rbcReg
+
+  ! Add a general boundary condition region.
+  ! Add a 'real' boundary condition region if rboundaryRegion%iboundSegIdx
+  ! identifies that the boundary region belongs to a real boundary segment.
+  ! Add a 'free' boundary condition region if the rboundaryRegion does not belong
+  ! to any real segment (rboundaryRegion%iboundSegIdx=0).
+  IF (rboundaryRegion%iboundSegIdx .NE. 0) THEN
+    CALL bcond_newBC (BC_FEASTMIRROR,BC_RTYPE_REAL,rboundaryConditions,&
+                      p_rbcReg,rboundaryRegion)
+  ELSE
+    CALL bcond_newBC (BC_FEASTMIRROR,BC_RTYPE_FREE,rboundaryConditions,&
                       p_rbcReg,rboundaryRegion)
   END IF
 

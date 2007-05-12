@@ -863,6 +863,9 @@ CONTAINS
       CASE (DISCBC_TPSLIP)  
         ! Nothing to do
         
+      CASE (DISCBC_TPFEASTMIRROR)
+        ! Nothing to do
+        
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
@@ -953,6 +956,9 @@ CONTAINS
         
       CASE (DISCBC_TPSLIP)
         ! Nothing to do.
+        
+      CASE (DISCBC_TPFEASTMIRROR)
+        ! Nothing to do
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCrhs: unknown boundary condition: ',&
@@ -1121,6 +1127,9 @@ CONTAINS
         ! Slip boundary conditions in the linear case are implemented
         ! in a nonlinear loop - so there's nothing to do here.
                 
+      CASE (DISCBC_TPFEASTMIRROR)
+        ! Nothing to do
+        
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCdef: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
@@ -1292,6 +1301,9 @@ CONTAINS
       CASE (DISCBC_TPSLIP)
         ! Nothing to do.
         
+      CASE (DISCBC_TPFEASTMIRROR)
+        ! Nothing to do
+        
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
                 p_RdiscreteFBC(i)%itype
@@ -1382,6 +1394,9 @@ CONTAINS
       
       CASE (DISCBC_TPSLIP)
         ! Nothing to do.
+        
+      CASE (DISCBC_TPFEASTMIRROR)
+        ! Nothing to do
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteFBCrhs: unknown boundary condition: ',&
@@ -1477,6 +1492,9 @@ CONTAINS
         
       CASE (DISCBC_TPSLIP)
         ! Nothing to do.
+        
+      CASE (DISCBC_TPFEASTMIRROR)
+        ! Nothing to do
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteFBCdef: unknown boundary condition: ',&

@@ -5446,7 +5446,8 @@ CONTAINS
 !</subroutine>
  
   ! local variables
-  INTEGER KSYS
+  INTEGER :: KSYS
+  REAL(DP) :: dres
   REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Db
   TYPE(t_vectorBlock), POINTER :: p_rb
   TYPE(t_linsolSubnodeUMFPACK4), POINTER :: p_rsubnode
@@ -5482,6 +5483,14 @@ CONTAINS
     CALL lsysbl_getbase_double(rd,p_Dx)
     CALL lsysbl_getbase_double(p_rb,p_Db)
 
+    IF (rsolverNode%ioutputLevel .GE. 2) THEN
+      dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
+      IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                (dres .LE. 1E99_DP))) dres = 0.0_DP
+
+      CALL output_line ('UMFPACK: !!Initial RES!! = '//TRIM(sys_sdEL(dres,15)) )
+    END IF
+
     ! Solve the system
     ! Solve the system. Note that UMFPACK expects the matrix in
     ! CSR format, which is transposed to our matrix format 9 --
@@ -5489,6 +5498,15 @@ CONTAINS
     KSYS = 1
     CALL UMF4SOL(KSYS,p_Dx,p_Db,rsolverNode%p_rsubnodeUMFPACK4%inumeric,&
                  rsolverNode%p_rsubnodeUMFPACK4%Dcontrol,Dinfo)
+                
+    IF (rsolverNode%ioutputLevel .GE. 1) THEN
+      dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
+      IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                (dres .LE. 1E99_DP))) dres = 0.0_DP
+
+      CALL output_line ('UMFPACK: !!solution!!    = '//TRIM(sys_sdEL(dres,15))//&
+          ' Status = '//TRIM(sys_siL(INT(Dinfo(1)),10)) )
+    END IF
                 
     ! Check the solver status
     SELECT CASE (INT(Dinfo(1)))
@@ -10920,6 +10938,19 @@ CONTAINS
                                                 p_RfilterChain)
               END IF
               
+              ! Extended output
+              IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother) .AND. &
+                  (rsolverNode%ioutputLevel .GE. 3) .AND. &
+                  (MOD(ite,niteResOutput).EQ.0)) THEN
+                  
+                dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
+                IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                          (dres .LE. 1E99_DP))) dres = 0.0_DP
+                          
+                CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                    ' after presm.:     !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+              END IF
+
               ! Restriction of the defect. The restricted defect is placed
               ! in the right hand side vector of the lower level.
               ! The projection parameters from level ilev to level
@@ -10980,7 +11011,7 @@ CONTAINS
                 
               ELSE
               
-                ! THe vector is to be restricted to the coarse grid.
+                ! The vector is to be restricted to the coarse grid.
                 CALL mlprj_performRestriction (p_rcurrentLevel%rinterlevelProjection,&
                       p_rlowerLevel%rsolutionVector, &
                       p_rcurrentLevel%rtempVector, &
@@ -11103,6 +11134,26 @@ CONTAINS
               CALL lsysbl_vectorLinearComb (p_rcurrentLevel%rtempVector,&
                                             p_rcurrentLevel%rsolutionVector,&
                                             dstep,1.0_DP)
+                            
+              ! Extended output
+              IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                  (MOD(ite,niteResOutput).EQ.0)) THEN
+                  
+                CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
+                                        p_rcurrentLevel%rtempVector)
+                CALL lsysbl_blockMatVec (&
+                    p_rcurrentLevel%rsystemMatrix, &
+                    p_rcurrentLevel%rsolutionVector,&
+                    p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+
+                dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                    rsolverNode%iresNorm)
+                IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                          (dres .LE. 1E99_DP))) dres = 0.0_DP
+                          
+                CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                    ' after c.g.corr.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+              END IF
                                             
               ! Perform the post-smoothing with the current solution vector
               IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother)) THEN
@@ -11111,6 +11162,27 @@ CONTAINS
                           p_rcurrentLevel%rsolutionVector,&
                           p_rcurrentLevel%rrhsVector,&
                           p_rcurrentLevel%rtempVector,p_RfilterChain)
+
+                ! Extended output
+                IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                    (MOD(ite,niteResOutput).EQ.0)) THEN
+                    
+                  CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
+                                          p_rcurrentLevel%rtempVector)
+                  CALL lsysbl_blockMatVec (&
+                      p_rcurrentLevel%rsystemMatrix, &
+                      p_rcurrentLevel%rsolutionVector,&
+                      p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+
+                  dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                      rsolverNode%iresNorm)
+                  IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                            (dres .LE. 1E99_DP))) dres = 0.0_DP
+                            
+                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                      ' after postsm.:    !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+                END IF
+                                              
               END IF
 
               ! Update the iteration counter(s) for realising the MG-cycle(s).

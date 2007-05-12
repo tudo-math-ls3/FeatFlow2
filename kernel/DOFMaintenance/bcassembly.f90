@@ -294,6 +294,7 @@ CONTAINS
       SELECT CASE (p_rbcRegion%ctype)
       
       CASE (BC_DIRICHLET)
+      
         CALL bcasm_discrBCDirichlet (rblockDiscretisation, &
                    p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
                    ccompl,fgetBoundaryValues,p_rcoll)
@@ -310,6 +311,12 @@ CONTAINS
                    p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
                    ccompl)
         
+      CASE (BC_FEASTMIRROR)
+      
+        CALL bcasm_discrBCFeastMirror (rblockDiscretisation, &
+                   p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
+                   ccompl)
+                   
       END SELECT
         
     END IF
@@ -376,6 +383,11 @@ CONTAINS
         ! Discrete Slip boundary conditions. Release the old structure.
         CALL bcasm_releaseSlip( &
               p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rslipBCs)
+
+      CASE (DISCBC_TPFEASTMIRROR)
+        ! Discrete FEAST mirror boundary conditions. Release the old structure.
+        CALL bcasm_releaseFeastMirror(&
+          p_rdiscreteBC%p_RdiscBCList(icurrentRegion)%rfeastMirrorBCs)
 
       END SELECT
 
@@ -868,7 +880,7 @@ CONTAINS
     NULLIFY(p_DedgeParameterValue)
   END IF
 
-  IF (p_rtriangulation%h_DedgeParameterValue .NE. ST_NOHANDLE) THEN
+  IF (p_rtriangulation%h_DvertexParameterValue .NE. ST_NOHANDLE) THEN
     CALL storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
         p_DvertexParameterValue)
   ELSE
@@ -1350,6 +1362,184 @@ CONTAINS
     CALL storage_free(rdiscreteBCDirichlet%h_DdirichletValues)
   IF (rdiscreteBCDirichlet%h_IdirichletDOFs .NE. ST_NOHANDLE) &
     CALL storage_free(rdiscreteBCDirichlet%h_IdirichletDOFs)
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_discrBCFeastMirror (rblockDiscretisation, &
+                                       rbcRegion, rdiscreteBC, casmComplexity)
+  
+!<description>
+  ! Creates a discrete version of FEAST mirror boundary conditions.
+  ! rbcRegion describes the region which is to be discretised. The discretised
+  ! boundary conditions are created in rdiscreteBC, which is assumed
+  ! to be undefined when entering this routine.
+!</description>
+
+!<input>
+  ! The discretisation structure of the underlying discretisation. The boundary
+  ! conditions inside of this structure are discretised.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscretisation
+
+  ! The BC region which is to be discrised
+  TYPE(t_bcRegion), INTENT(IN) :: rbcRegion
+
+  ! A callback function that calculates values on the boundary.
+  ! Is declared in the interface include file 'intf_bcassembly.inc'.
+  INCLUDE 'intf_bcassembly.inc'
+  
+  ! A collection structure to inform the callback function with
+  ! additional information. Can be NULL() if there is no information to pass.
+  TYPE(t_collection), POINTER :: p_rcollection
+
+  ! A combination of BCASM_DISCFORxxx constants that specify
+  ! the complexity of the discretisation that is to perform. This allows to
+  ! discretise only parts of the BC's, e.g. only setting up those
+  ! information that are necessary for filtering defect vectors.
+  ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
+  ! boundary conditions can be used for everything.
+  INTEGER(I32), INTENT(IN) :: casmComplexity
+!</input>  
+
+!<output>
+  ! This structure receives the result of the discretisation of rbcRegion.
+  ! When entering the routine, the content of this structure is undefined,
+  ! all pointers are invalid. The routine fills everything with appropriate
+  ! data.
+  TYPE(t_discreteBCEntry), INTENT(OUT), TARGET :: rdiscreteBC
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex
+  INTEGER :: i,ipart,j,k,icount
+  INTEGER(PREC_POINTIDX) :: NVT
+  TYPE(t_discreteBCFeastMirror),POINTER       :: p_rfeastMirrorBCs
+  TYPE(t_triangulation), POINTER              :: p_rtriangulation
+  TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
+  INTEGER(I32), DIMENSION(:), POINTER         :: p_IverticesAtBoundary
+  
+  INTEGER(I32), DIMENSION(:), POINTER         :: p_ImirrorBCs
+  
+  INTEGER :: icomponent,ieltype
+  
+  ! NOTE:
+  ! The routine is definitively buggy!
+  ! It was build to find a bug in FEAST. E.g. it works only if there are
+  ! 'enough' points in the boundary region and if the discretisation is
+  ! done with Q1!
+  
+  ! The BC's only exist as modification of the matrix.
+  ! If we should not compute them for the matrix/defect, we don't 
+  ! have to do anything.
+  IF (IAND(casmComplexity,BCASM_DISCFORMAT) .EQ. 0) RETURN
+
+  ! Get the discretisation structures from one of the components of the solution
+  ! vector that is to be modified.
+  icomponent = rbcRegion%Iequations(1)
+  p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(icomponent)
+
+  IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+    PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
+    PRINT *,'for uniform discretisations!'
+    STOP
+  END IF
+  
+  ! For easier access:
+  p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+  CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+
+  IF (p_rtriangulation%ndim .NE. NDIM2D) THEN
+    PRINT *,'FEAST mirror boundary only support 2D!'
+    STOP
+  END IF
+  
+  ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+  IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1) THEN
+    PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
+    PRINT *,'for Q1 element!'
+    STOP
+  END IF
+
+  ! All elements are of the samne type. Get information about the shape in advance.
+  NVT = p_rtriangulation%NVT
+
+  ! We have FEAST mirror boundary conditions
+  rdiscreteBC%itype = DISCBC_TPFEASTMIRROR
+  
+  ! Connect to the boundary condition structure
+  rdiscreteBC%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
+  
+  ! Fill the structure for discrete Dirichlet BC's in the
+  ! t_discreteBCEntry structure
+  p_rfeastMirrorBCs => rdiscreteBC%rfeastMirrorBCs
+  
+  p_rfeastMirrorBCs%icomponent = icomponent
+  
+  ! We have to deal with all DOF's on the boundary. This is highly element
+  ! dependent and therefore a little bit tricky :(
+  !
+  ! As we are in 2D, we can use parameter values at first to figure out,
+  ! which points and which edges are on the boundary.
+  ! What we have is a boundary segment. Now ask the boundary-index routine
+  ! to give us the minimum and maximum index of the vertices and edges on the
+  ! bondary that belong to this boundary segment.
+  
+  CALL bcasm_getVertInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
+                                rbcRegion%rboundaryRegion, &
+                                IminVertex,ImaxVertex,icount)
+                                 
+  ! Cancel if the set is empty!
+  IF (icount .EQ. 0) THEN
+    RETURN
+  END IF
+  
+  ! Allocate a KNPR-like array that decides for every vertex if it's in the
+  ! region or not. That's a bitfield!
+  CALL storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorBCs', &
+                  INT((NVT+31)/32,I32), ST_INT, &
+                  p_rfeastMirrorBCs%h_ImirrorBCs, ST_NEWBLOCK_ZERO)
+  CALL storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorBCs,p_ImirrorBCs)
+  
+  ! The vertices in this region are at the same time the DOF's, and when
+  ! setting up the matrix, all corresponding matrix entries are doubled.
+  ! Set the corresponding bit of every DOF in this region to 1.
+  DO ipart=1,icount
+    DO i=IminVertex(ipart),ImaxVertex(ipart)
+      j = 1+ISHFT(p_IverticesAtBoundary(i)-1_I32,-5_I32)
+      k = IAND(p_IverticesAtBoundary(i)-1_I32,INT(2**6-1,I32))
+      p_ImirrorBCs(j) = IBSET(p_ImirrorBCs(j),k)
+    END DO
+  END DO
+                                 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_releaseFeastMirror (rdiscreteBCFeastMirror)
+  
+!<description>
+  ! This routine cleans up the discrete FEAST mirror boundary conditions
+  ! rdiscreteBCFeastMirror.
+!</description>
+
+!<inputoutput>
+  ! The discrete-BC structure which is to be cleaned up
+  TYPE(t_discreteBCFeastMirror), INTENT(INOUT) :: rdiscreteBCFeastMirror
+!</inputoutput>
+
+!</subroutine>
+
+  ! Release what is associated
+  
+  IF (rdiscreteBCFeastMirror%h_ImirrorBCs .NE. ST_NOHANDLE) &
+    CALL storage_free(rdiscreteBCFeastMirror%h_ImirrorBCs)
 
   END SUBROUTINE
   

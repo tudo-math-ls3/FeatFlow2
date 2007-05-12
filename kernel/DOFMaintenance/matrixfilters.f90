@@ -35,6 +35,18 @@
 !#         They must be implemented separately, as they are a special type
 !#         of boundary conditions.
 !#
+!# Auxiliary routines:
+!#
+!#  1.) matfil_imposeDirichletBC
+!#      -> Imposes Dirichlet BC's into a scalar matrix
+!#
+!#  2.) matfil_imposeNLSlipBC
+!#      -> Imposes nonlinear slip boundary conditions into a scalar matrix
+!#
+!#  3.) matfil_imposeDirichletFBC
+!#      -> Imposes Difichlet BC's for fictitious boundary components
+!#         into a scalar matrix
+!#
 !# </purpose>
 !##############################################################################
 
@@ -431,6 +443,129 @@ CONTAINS
   
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE matfil_imposeFeastMirrorBC (rmatrix,boffDiag,rfmbcStructure)
+  
+!<description>
+  ! Implements discrete Feast mirror BC's into a scalar matrix.
+  ! The FEAST mirror boundary condition is basically a Neumann boundary
+  ! condition which is used for domain decomposition.
+  ! One assumes that there is an additional 'virtual' layer of cells added to
+  ! a boundary edge. This leads to a slight matrix modification for all
+  ! DOF's on that boundary edge. 
+  ! Example: For a 5-point stencil with $Q_1$, boundary DOF's get matrix
+  ! weights "2, 1, -1/2, -1/2" (center, left, top, bottom), while inner 
+  ! points get matrix weights "4, -1, -1, -1, -1" (center and all surroundings).
+  ! To make bondary DOF's behave like inner DOF's, the entries in 
+  ! the matrices belonging to such an edge have to be doubled,
+  ! leading to "4, -1, -1".
+  ! So this filter loops through the matrix and doubles all matrix entries
+  ! that belong to DOF's on FEAST mirror boundary edges.
+!</description>
+
+!<input>
+  
+  ! The t_discreteBCfeastMirror that describes the discrete FEAST mirror BC's
+  TYPE(t_discreteBCfeastMirror), INTENT(IN), TARGET  :: rfmbcStructure
+  
+  ! Off-diagonal matrix.
+  ! If this is present and set to TRUE, it's assumed that the matrix is not
+  ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
+  ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
+  ! or somewhere else in a block system). This modifies the way,
+  ! boundary conditions are implemented into the matrix.
+  LOGICAL :: boffDiag
+
+!</input>
+
+!<inputoutput>
+
+  ! The scalar matrix where the boundary conditions should be imposed.
+  TYPE(t_matrixScalar), INTENT(INOUT), TARGET :: rmatrix
+  
+!</inputoutput>
+  
+!</subroutine>
+    
+  ! local variables
+  INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorBCs
+  INTEGER :: j,k
+  REAL(DP), DIMENSION(:), POINTER :: p_Da
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol,p_Iperm
+  INTEGER(PREC_MATIDX) :: ia
+
+  ! Offdiagonal matrices are not processed by this routine up to now.
+  IF (boffDiag) RETURN
+
+  ! Impose the DOF value directly into the vector - more precisely, into the
+  ! components of the subvector that is indexed by icomponent.
+  
+  IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
+      (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
+    PRINT *,'matfil_imposeFeastMirrorBC: Only support matrix format 7 and 9'
+    STOP
+  END IF
+  
+  IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'matfil_imposeFeastMirrorBC: Matrix must be double precision'
+    STOP
+  END IF
+  
+  ! Get the matrix data
+  CALL lsyssc_getbase_double (rmatrix,p_Da)
+  CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+  
+  ! Get pointers to the bitfield which decides for every DOF if the
+  ! corresponding matrix entry has to be changed or not. 
+  
+  CALL storage_getbase_int(rfmbcStructure%h_ImirrorBCs,p_ImirrorBCs)
+
+  IF (.NOT.ASSOCIATED(p_ImirrorBCs)) THEN
+    PRINT *,'Error: FMBC not configured'
+    STOP
+  END IF
+  
+  ! The matrix column corresponds to the DOF. For every DOF decide on
+  ! whether it's on the FEAST mirror boundary component or not.
+  ! If yes, double the matrix entry.
+  
+  ! Is the matrix sorted?
+  IF (rmatrix%isortStrategy .LE. 0) THEN
+    
+    ! Unsorted matrix
+    DO ia=1,rmatrix%NA
+      j = 1+ISHFT(p_Kcol(ia)-1_I32,-5_I32)
+      k = IAND(p_Kcol(ia)-1_I32,INT(2**6-1,I32))
+      IF (BTEST(p_ImirrorBCs(j),k)) THEN
+        p_Da(ia) = 2.0_DP*p_Da(ia) 
+      END IF
+    END DO
+  
+  ELSE
+  
+    ! Ok, matrix is sorted, so we have to filter all the DOF's through the
+    ! permutation before using them for implementing boundary conditions.
+    !
+    ! Get the permutation from the matrix to renumber the columns into
+    ! the actual DOF numbers.
+    CALL storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
+    p_Iperm => p_Iperm(1:rmatrix%NEQ)
+    
+    DO ia=1,rmatrix%NA
+      j = 1+ISHFT(p_Iperm(p_Kcol(ia))-1_I32,-5_I32)
+      k = IAND(p_Iperm(p_Kcol(ia))-1_I32,INT(2**6-1,I32))
+      IF (BTEST(p_ImirrorBCs(j),k)) THEN
+        p_Da(ia) = 2.0_DP*p_Da(ia) 
+      END IF
+    END DO
+
+  END IF
+  
+  END SUBROUTINE
+  
 ! ***************************************************************************
 ! Block matrix filters
 ! ***************************************************************************
@@ -527,6 +662,28 @@ CONTAINS
         ! This is a separate filter must be called manually.
         ! Therefore, there's nothing to do here.
         
+      CASE (DISCBC_TPFEASTMIRROR)  
+        ! FEAST mirror boundary conditions.
+        ! On which component are they defined? The component specifies
+        ! the row of the block matrix that is to be altered.
+        iblock = p_RdiscreteBC(i)%rfeastMirrorBCs%icomponent
+
+        ! Loop through this matrix row and implement the boundary conditions
+        ! into the scalar submatrices.
+        ! For now, this implements unit vectors into the diagonal matrices
+        ! and zero-vectors into the offdiagonal matrices.
+        ! Only exception: If the matrix is a submatrix of another matrix
+        ! and not on the diagonal of its parent, we must replace the rows
+        ! by zero vectors!
+        DO jblock = 1,rmatrix%ndiagBlocks
+          IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
+            CALL matfil_imposeFeastMirrorBC (&
+                        rmatrix%RmatrixBlock(iblock,jblock), &
+                        (iblock .NE. jblock) .OR. boffdiagSubmatrix,&
+                        p_RdiscreteBC(i)%rfeastMirrorBCs)
+          END IF
+        END DO
+
       CASE DEFAULT
         PRINT *,'matfil_discreteBC: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype

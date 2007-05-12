@@ -41,13 +41,6 @@ MODULE discretebc
 
 !<constants>
 
-!<constantblock description="General constants concerning filters">
-
-  ! A standard length for arrays holding a set of discretised BC's
-  INTEGER, PARAMETER :: DISCBC_MAXDISCBC         =  32
-
-!</constantblock>
-
 !<constantblock description="The type identifier for discrete (linear) boundary conditions">
 
   ! undefined discrete BC's
@@ -55,6 +48,9 @@ MODULE discretebc
 
   ! Discrete Dirichlet boundary conditions
   INTEGER, PARAMETER :: DISCBC_TPDIRICHLET    = 1
+  
+  ! Discrete FEAST mirror boundary conditions
+  INTEGER, PARAMETER :: DISCBC_TPFEASTMIRROR  = 2
   
 !</constantblock>
 
@@ -208,6 +204,32 @@ MODULE discretebc
   
 !<typeblock>
   
+  ! This structure describes the way, FEAST mirror boundary conditions
+  ! can be discretised. This is done by two arrays: one array is a list of all
+  ! DOF's that refer do Dirichlet nodes. The second array refers to the value
+  ! that must be imposed in this DOF.
+  ! The variable icomponent describes the number of the component/equation
+  ! in the PDE that must be treated that way.
+  
+  TYPE t_discreteBCFeastMirror
+    
+    ! The component of the equation, this discrete BC is specified for
+    ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
+    INTEGER                            :: icomponent        = 0
+    
+    ! Handle to a bitfield. Fir every vertex, the corresponding bit is set to 1
+    ! if the vertex is in a boundary region that is declared as FEAST mirror
+    ! boundary.
+    !   array [1..*] of integer
+    INTEGER :: h_ImirrorBCs   = ST_NOHANDLE
+    
+  END TYPE
+  
+!</typeblock>
+
+  
+!<typeblock>
+  
   ! This describes the basic structure for discrete boundary conditions.
   ! A type identifier decides on which boundary conditions this structure
   ! describes. Depending on the type, one of the information blocks
@@ -235,6 +257,10 @@ MODULE discretebc
     ! Structure for discrete Slip BC's.
     ! Only valid if itype=DISCBC_TPSLIP.
     TYPE(t_discreteBCSlip)              :: rslipBCs
+    
+    ! Structure for discrete FEAST mirror BC's.
+    ! Only valid if itype=DISCBC_TPFEASTMIRROR.
+    TYPE(t_discreteBCFeastMirror)         :: rfeastMirrorBCs
     
   END TYPE
   

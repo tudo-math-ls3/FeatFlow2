@@ -250,18 +250,6 @@ MODULE nonlinearsolver
     ! Type of preconditioner to use. One of the NLSOL_PREC_xxxx constants.
     INTEGER                    :: cpreconditioner = NLSOL_PREC_USERDEF
     
-    ! INPUT PARAMETER: Output save.
-    ! If = 0, autosave is deactivated.
-    ! If > 0, the current iteration vector is saved every iautosave iterations
-    !  to disc. The basic filename is given by sautosaveName.
-    INTEGER                    :: iautosave    = 0
-    
-    ! INPUT PARAMETER
-    ! Basic filename if autosave is activated (iautosave > 0). The number of the
-    ! current iteration is appended to this filename, so the filename
-    ! for writing a solution in iteration ite will be '[sautosaveName].[ite]'.
-    CHARACTER(LEN=SYS_STRLEN)  :: sautosaveName = 'solution'
-    
     ! INPUT PARAMETER: 
     ! If cpreconditioner=NLSOL_PREC_MATRIX block matrix that is multiplied 
     ! to the defect vector.
@@ -890,16 +878,6 @@ CONTAINS
           ! damped by the damping parameter:           x := x + domega u
           CALL lsysbl_vectorLinearComb (rd,rx,domega,1.0_DP)
           
-          ! Autosave: Save the current iteration vector to disc if desired.
-          IF (rsolverNode%iautosave .NE. 0) THEN
-            ! Don't change the order of these if's - produces DIVISION BY ZERO on
-            ! some compilers with optimisation!
-            IF (MOD(ite,rsolverNode%iautosave) .EQ. 0) THEN
-              CALL output_line ('Iteration: '//&
-                  TRIM(sys_siL(ITE,10))//': Autosave not yet implemented.')
-            END IF
-          END IF
-
           ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
           CALL fcb_getDefect (ite,rx,rb,rd,p_rcollection)
 
