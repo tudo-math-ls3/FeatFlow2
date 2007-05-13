@@ -23,9 +23,17 @@
 !# 4.) sort_dp
 !#     -> Sorts a double precision array
 !#
-!# 5.) arraySort_sortByIndex
+!# 5.) arraySort_sortByIndex_int
 !#     -> Sorts an array of integer arrays. One of the positions in the
 !#        arrays os chosen as a key for the sorting process.
+!#
+!# 6.) arraySort_sortByIndex_dp
+!#     -> Sorts an array of double precision arrays. One of the positions in
+!#        the arrays os chosen as a key for the sorting process.
+!#
+!# 6.) arraySort_sortByIndex_sp
+!#     -> Sorts an array of single precision arrays. One of the positions in
+!#        the arrays os chosen as a key for the sorting process.
 !#
 !# Auxiliary subroutines:
 !#
@@ -1550,7 +1558,7 @@ CONTAINS
 !************************************************************************
 
 !<subroutine>
-  SUBROUTINE arraySort_sortByIndex (Ielem, iindex, cmethod)
+  SUBROUTINE arraySort_sortByIndex_int (Ielem, iindex, cmethod)
     
     IMPLICIT NONE
     
@@ -1798,7 +1806,521 @@ CONTAINS
       
     END SUBROUTINE circShiftRight
 
-  END SUBROUTINE arraySort_sortByIndex
+  END SUBROUTINE arraySort_sortByIndex_int
+
+!************************************************************************
+
+!<subroutine>
+  SUBROUTINE arraySort_sortByIndex_dp (Delem, iindex, cmethod)
+    
+    IMPLICIT NONE
+    
+  !<description>
+    ! Sorting routine for a 2D array Delem(1..nindex,1..nnode) by
+    ! the subarray Delem(iindex,1..nnode) using the method given in
+    ! cmethod.
+  !</description>
+    
+  !<input>
+    ! Index number of the entry in Ielem that should be used as
+    ! a key for sorting.
+    INTEGER, INTENT(IN) :: iindex
+    
+    ! Method to use for sorting (optional). Defaults to Heapsort
+    INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+  !</input>
+    
+  !<inputoutput>
+    ! 2D array containing the n nodes Delem(1..nindex,inode)
+    REAL(DP), DIMENSION(:,:), INTENT(INOUT) :: Delem
+  !</inputoutput>
+!</subroutine>
+
+    INTEGER(I32) :: nindex,nnode
+        
+    nindex = UBOUND(Delem,1)
+    nnode = UBOUND(Delem,2)
+        
+    IF (PRESENT(cmethod)) THEN
+      SELECT CASE (cmethod)
+        CASE (SORT_HEAP)
+          CALL heapSort
+        CASE (SORT_QUICK)
+          CALL RANDOM_SEED
+          CALL quickSort(1,nnode)
+          CALL insertSort(1,nnode)
+        CASE (SORT_INSERT)
+          CALL insertSort(1,nnode)
+        CASE (SORT_MERGE,SORT_STABLE)
+          CALL mergeSort(1,nnode)
+        CASE DEFAULT
+          CALL output_line('unknown Method:' // sys_i6(cmethod),&
+              OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
+          STOP 
+      END SELECT
+    ELSE
+      CALL heapSort
+    END IF
+    
+    CONTAINS
+
+    SUBROUTINE reheap(istart, istop)
+      INTEGER(I32), INTENT(IN) :: istart, istop
+      REAL(DP) :: delem1, delem2
+      INTEGER(I32) :: i,j, k, idx
+
+      if(istop.eq.istart) return
+      ! Follow patho of bigger children
+      i=istart
+      j=ishft(i,1)
+      ! While there is a child...
+      DO WHILE ((j .LE. istop) .AND. (j .GT. 0))
+        ! Go one level up
+        i = j
+        ! Sole child => exit loop
+        IF(i .EQ. istop) EXIT
+        ! Path of bigger child
+        if(Delem(iindex,i+1) .GT. Delem(iindex,i)) i=i+1
+        j=ishft(i,1)
+      END DO
+      ! Search for the correct position along the path
+      DO WHILE ((i .GT. istart) .AND. &
+                (Delem(iindex,i) .LT. Delem(iindex,istart)))
+        i=ishft(i,-1)
+      END DO
+      ! Move the nodes
+      k=i
+      DO idx=1, nindex
+        delem1=Delem(idx,istart)
+        DO WHILE (i .GE. istart)
+          delem2=Delem(idx,i)
+          Delem(idx,i)=delem1
+          delem1=delem2
+          i=ishft(i,-1)
+        END DO
+        i=k
+      END DO
+    END SUBROUTINE reheap
+
+    SUBROUTINE heapsort()
+    
+      INTEGER(I32) :: i, t
+      
+      ! Heap creation phase (Maxheap)
+      DO i=ishft(nnode,-1), 1, -1
+         CALL reheap(i,nnode)
+      END DO
+      ! Selection phase
+      DO i=nnode, 2, -1
+        CALL swapNode(1,i)
+        call reheap(1,i-1)
+      END DO
+    
+    END SUBROUTINE heapsort
+    
+    RECURSIVE SUBROUTINE quicksort (ilower, iupper)
+      INTEGER(I32), INTENT(IN) :: ilower, iupper
+      
+      INTEGER(I32) :: l, u, i, j
+      REAL(DP) :: t
+      REAL(DP) :: r
+      
+      l = ilower
+      u = iupper
+      
+      DO WHILE ((u-l) .GE. SORT_CUTOFF)
+        ! 1.) Choose pivot
+        CALL RANDOM_NUMBER(r)
+        i = l+FLOOR(r*(u-l+1))
+        t = Delem(iindex,i)
+        CALL swapNode(l,i)
+        ! 2.) Partition the field and reposition pivot at index j
+        i = l
+        j = u
+        DO
+          i = i+1
+          DO WHILE ((i .LT. u) .AND. (Delem(iindex,i) .LT. t))
+            i = i+1
+          END DO
+          DO WHILE (Delem(iindex,j) .GT. t)
+            j = j-1
+          END DO
+          IF (i .GE. j) EXIT
+          CALL swapNode(i,j)
+          j = j-1
+        END DO
+        CALL swapNode(l,j)
+        ! 3.) Rekursion (intelligent)
+        IF ((j-l) .GT. (u-j)) THEN
+          CALL quicksort(j+1,u)
+          u = j-1
+        ELSE
+          CALL quicksort(l,j-1)
+          l = j+1
+        END IF
+      END DO
+      
+    END SUBROUTINE quicksort
+    
+    SUBROUTINE insertSort(ilower, iupper)
+      INTEGER(I32), INTENT(IN) :: ilower, iupper
+      
+      INTEGER(I32) :: i, j, k, idx, istop
+      REAL(DP) :: t
+      
+      istop = ilower-1
+      DO i=ilower+1, iupper
+        t = Delem(iindex,i)
+        j = i-1
+        DO WHILE (Delem(iindex,j) .GT. t)
+          j = j-1
+          IF (j .EQ. istop) EXIT
+        END DO
+        j = j+1
+        ! Ringshift of Delem(:,j:i) to the right
+        CALL circShiftRight(j,i)
+        
+      END DO
+    
+    END SUBROUTINE insertSort
+    
+    RECURSIVE SUBROUTINE mergesort(ilow, ihigh)
+    
+      ! A modification of an algorithm by
+      ! Jason Harrison, University of
+      ! British Columbia.
+      ! Porting to F90 by J-P Moreau, Paris.
+    
+      INTEGER(I32), INTENT(IN) :: ilow, ihigh
+      
+      INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
+      
+      
+      ! Nothing to sort
+      IF (ilow .GE. ihigh) RETURN
+      
+      IF ((ihigh-ilow) .LT. SORT_CUTOFF) THEN
+        call insertsort(ilow, ihigh)
+        RETURN
+      ENDIF
+      
+      ilo = ilow
+      ihi = ihigh
+      
+      ! Find midpoint of field
+      imid = (ilo+ihi)/2
+      
+      ! Recursive sorting with mergesort
+      CALL mergesort(ilow,      imid)
+      CALL mergesort(imid+1, ihigh )
+      
+      ! Merge the two sorted lists in a stable way
+      istart_hi = imid+1
+      iend_lo = imid
+      DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
+        IF (Delem(iindex,ilo) .le. Delem(iindex,istart_hi)) THEN
+          ilo = ilo+1
+        ELSE
+          CALL circShiftRight(ilo, istart_hi)
+          ilo = ilo+1
+          iend_lo = iend_lo+1
+          istart_hi = istart_hi+1
+        ENDIF
+      END DO
+    
+    END SUBROUTINE mergesort
+
+    SUBROUTINE swapNode(i,j)
+      ! Swaps node Delem(:,i) and Delem(:,j)
+      
+      INTEGER(I32), INTENT(IN) :: i, j
+      
+      INTEGER(I32) :: idx
+      REAL(DP) :: t
+      
+      DO idx=1, nindex
+        t            = Delem(idx,i)
+        Delem(idx,i) = Delem(idx,j)
+        Delem(idx,j) = t
+      END DO
+      
+    END SUBROUTINE swapNode
+
+    SUBROUTINE circShiftRight(j,i)
+      ! Circular shift of Delem(:,j:i) one to the right
+      INTEGER(I32), INTENT(IN) :: i, j
+      
+      INTEGER(I32) :: k, idx
+      REAL(DP) :: t
+      
+      DO idx=1, nindex
+        t = Delem(idx,i)
+        DO k=i, j+1, -1
+          Delem(idx,k) = Delem(idx,k-1)
+        END DO
+        Delem(idx,j) = t
+      END DO 
+      
+    END SUBROUTINE circShiftRight
+
+  END SUBROUTINE arraySort_sortByIndex_dp
+
+!************************************************************************
+
+!<subroutine>
+  SUBROUTINE arraySort_sortByIndex_sp (Selem, iindex, cmethod)
+    
+    IMPLICIT NONE
+    
+  !<description>
+    ! Sorting routine for a 2D array Selem(1..nindex,1..nnode) by
+    ! the subarray Selem(iindex,1..nnode) using the method given in
+    ! cmethod.
+  !</description>
+    
+  !<input>
+    ! Index number of the entry in Ielem that should be used as
+    ! a key for sorting.
+    INTEGER, INTENT(IN) :: iindex
+    
+    ! Method to use for sorting (optional). Defaults to Heapsort
+    INTEGER(I32), OPTIONAL, INTENT(IN) :: cmethod
+  !</input>
+    
+  !<inputoutput>
+    ! 2D array containing the n nodes Selem(1..nindex,inode)
+    REAL(SP), DIMENSION(:,:), INTENT(INOUT) :: Selem
+  !</inputoutput>
+!</subroutine>
+
+    INTEGER(I32) :: nindex,nnode
+        
+    nindex = UBOUND(Selem,1)
+    nnode = UBOUND(Selem,2)
+        
+    IF (PRESENT(cmethod)) THEN
+      SELECT CASE (cmethod)
+        CASE (SORT_HEAP)
+          CALL heapSort
+        CASE (SORT_QUICK)
+          CALL RANDOM_SEED
+          CALL quickSort(1,nnode)
+          CALL insertSort(1,nnode)
+        CASE (SORT_INSERT)
+          CALL insertSort(1,nnode)
+        CASE (SORT_MERGE,SORT_STABLE)
+          CALL mergeSort(1,nnode)
+        CASE DEFAULT
+          CALL output_line('unknown Method:' // sys_i6(cmethod),&
+              OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
+          STOP 
+      END SELECT
+    ELSE
+      CALL heapSort
+    END IF
+    
+    CONTAINS
+
+    SUBROUTINE reheap(istart, istop)
+      INTEGER(I32), INTENT(IN) :: istart, istop
+      REAL(SP) :: selem1, selem2
+      INTEGER(I32) :: i,j, k, idx
+
+      if(istop.eq.istart) return
+      ! Follow patho of bigger children
+      i=istart
+      j=ishft(i,1)
+      ! While there is a child...
+      DO WHILE ((j .LE. istop) .AND. (j .GT. 0))
+        ! Go one level up
+        i = j
+        ! Sole child => exit loop
+        IF(i .EQ. istop) EXIT
+        ! Path of bigger child
+        if(Selem(iindex,i+1) .GT. Selem(iindex,i)) i=i+1
+        j=ishft(i,1)
+      END DO
+      ! Search for the correct position along the path
+      DO WHILE ((i .GT. istart) .AND. &
+                (Selem(iindex,i) .LT. Selem(iindex,istart)))
+        i=ishft(i,-1)
+      END DO
+      ! Move the nodes
+      k=i
+      DO idx=1, nindex
+        selem1=Selem(idx,istart)
+        DO WHILE (i .GE. istart)
+          selem2=Selem(idx,i)
+          Selem(idx,i)=selem1
+          selem1=selem2
+          i=ishft(i,-1)
+        END DO
+        i=k
+      END DO
+    END SUBROUTINE reheap
+
+    SUBROUTINE heapsort()
+    
+      INTEGER(I32) :: i, t
+      
+      ! Heap creation phase (Maxheap)
+      DO i=ishft(nnode,-1), 1, -1
+         CALL reheap(i,nnode)
+      END DO
+      ! Selection phase
+      DO i=nnode, 2, -1
+        CALL swapNode(1,i)
+        call reheap(1,i-1)
+      END DO
+    
+    END SUBROUTINE heapsort
+    
+    RECURSIVE SUBROUTINE quicksort (ilower, iupper)
+      INTEGER(I32), INTENT(IN) :: ilower, iupper
+      
+      INTEGER(I32) :: l, u, i, j
+      REAL(SP) :: t
+      REAL(DP) :: r
+      
+      l = ilower
+      u = iupper
+      
+      DO WHILE ((u-l) .GE. SORT_CUTOFF)
+        ! 1.) Choose pivot
+        CALL RANDOM_NUMBER(r)
+        i = l+FLOOR(r*(u-l+1))
+        t = Selem(iindex,i)
+        CALL swapNode(l,i)
+        ! 2.) Partition the field and reposition pivot at index j
+        i = l
+        j = u
+        DO
+          i = i+1
+          DO WHILE ((i .LT. u) .AND. (Selem(iindex,i) .LT. t))
+            i = i+1
+          END DO
+          DO WHILE (Selem(iindex,j) .GT. t)
+            j = j-1
+          END DO
+          IF (i .GE. j) EXIT
+          CALL swapNode(i,j)
+          j = j-1
+        END DO
+        CALL swapNode(l,j)
+        ! 3.) Rekursion (intelligent)
+        IF ((j-l) .GT. (u-j)) THEN
+          CALL quicksort(j+1,u)
+          u = j-1
+        ELSE
+          CALL quicksort(l,j-1)
+          l = j+1
+        END IF
+      END DO
+      
+    END SUBROUTINE quicksort
+    
+    SUBROUTINE insertSort(ilower, iupper)
+      INTEGER(I32), INTENT(IN) :: ilower, iupper
+      
+      INTEGER(I32) :: i, j, k, idx, istop
+      REAL(SP) :: t
+      
+      istop = ilower-1
+      DO i=ilower+1, iupper
+        t = Selem(iindex,i)
+        j = i-1
+        DO WHILE (Selem(iindex,j) .GT. t)
+          j = j-1
+          IF (j .EQ. istop) EXIT
+        END DO
+        j = j+1
+        ! Ringshift of Selem(:,j:i) to the right
+        CALL circShiftRight(j,i)
+        
+      END DO
+    
+    END SUBROUTINE insertSort
+    
+    RECURSIVE SUBROUTINE mergesort(ilow, ihigh)
+    
+      ! A modification of an algorithm by
+      ! Jason Harrison, University of
+      ! British Columbia.
+      ! Porting to F90 by J-P Moreau, Paris.
+    
+      INTEGER(I32), INTENT(IN) :: ilow, ihigh
+      
+      INTEGER(I32) :: imid, iend_lo, istart_hi, ilo, ihi
+      
+      
+      ! Nothing to sort
+      IF (ilow .GE. ihigh) RETURN
+      
+      IF ((ihigh-ilow) .LT. SORT_CUTOFF) THEN
+        call insertsort(ilow, ihigh)
+        RETURN
+      ENDIF
+      
+      ilo = ilow
+      ihi = ihigh
+      
+      ! Find midpoint of field
+      imid = (ilo+ihi)/2
+      
+      ! Recursive sorting with mergesort
+      CALL mergesort(ilow,      imid)
+      CALL mergesort(imid+1, ihigh )
+      
+      ! Merge the two sorted lists in a stable way
+      istart_hi = imid+1
+      iend_lo = imid
+      DO WHILE ((ilo .le. iend_lo) .and. (istart_hi .le. ihi))
+        IF (Selem(iindex,ilo) .le. Selem(iindex,istart_hi)) THEN
+          ilo = ilo+1
+        ELSE
+          CALL circShiftRight(ilo, istart_hi)
+          ilo = ilo+1
+          iend_lo = iend_lo+1
+          istart_hi = istart_hi+1
+        ENDIF
+      END DO
+    
+    END SUBROUTINE mergesort
+
+    SUBROUTINE swapNode(i,j)
+      ! Swaps node Selem(:,i) and Selem(:,j)
+      
+      INTEGER(I32), INTENT(IN) :: i, j
+      
+      INTEGER(I32) :: idx
+      REAL(SP) :: t
+      
+      DO idx=1, nindex
+        t            = Selem(idx,i)
+        Selem(idx,i) = Selem(idx,j)
+        Selem(idx,j) = t
+      END DO
+      
+    END SUBROUTINE swapNode
+
+    SUBROUTINE circShiftRight(j,i)
+      ! Circular shift of Selem(:,j:i) one to the right
+      INTEGER(I32), INTENT(IN) :: i, j
+      
+      INTEGER(I32) :: k, idx
+      REAL(SP) :: t
+      
+      DO idx=1, nindex
+        t = Selem(idx,i)
+        DO k=i, j+1, -1
+          Selem(idx,k) = Selem(idx,k-1)
+        END DO
+        Selem(idx,j) = t
+      END DO 
+      
+    END SUBROUTINE circShiftRight
+
+  END SUBROUTINE arraySort_sortByIndex_sp
 
 END MODULE sort
 

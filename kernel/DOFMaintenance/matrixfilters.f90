@@ -514,6 +514,17 @@ CONTAINS
     STOP
   END IF
   
+  IF (rfmbcStructure%icomponent .EQ. 0) THEN
+    PRINT *,'Error: FMBC not configured'
+    STOP
+  END IF
+  
+  IF (rfmbcStructure%h_ImirrorBCs .EQ. ST_NOHANDLE) THEN
+    ! No data inside of this structure.
+    ! May happen if the region is not large enough to cover at least one DOF.
+    RETURN
+  END IF
+  
   ! Get the matrix data
   CALL lsyssc_getbase_double (rmatrix,p_Da)
   CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
@@ -523,11 +534,6 @@ CONTAINS
   
   CALL storage_getbase_int(rfmbcStructure%h_ImirrorBCs,p_ImirrorBCs)
 
-  IF (.NOT.ASSOCIATED(p_ImirrorBCs)) THEN
-    PRINT *,'Error: FMBC not configured'
-    STOP
-  END IF
-  
   ! The matrix column corresponds to the DOF. For every DOF decide on
   ! whether it's on the FEAST mirror boundary component or not.
   ! If yes, double the matrix entry.

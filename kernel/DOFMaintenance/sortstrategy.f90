@@ -22,13 +22,38 @@
 !# 1.) sstrat_calcCuthillMcKee
 !#     -> Calculate column numbering using the Cuthill McKee algorithm
 !#
+!# 2.) sstrat_calcXYZsorting
+!#     -> Calculates rowwise renumbering based on Cartesian coordinates
+!#
+!# Auxiliary routines:
+!#
+!# 1.) sstrat_calcColNumberingCM7
+!#     -> Calculate Cuthill-Mc-Kee resorting strategy for a structure-7
+!#        matrix
+!#
+!# 2.) sstrat_calcColNumberingCM9
+!#     -> Calculate Cuthill-Mc-Kee resorting strategy for a structure-9
+!#        matrix
+!#
+!# 3.) sstrat_calcPermutationCM
+!#     -> Auxiliary routine to calculate a permutation from the output
+!#        of sstrat_calcColNumberingCM7 or sstrat_calcColNumberingCM9.
+!#
+!# 4.) sstrat_calcInversePermutation
+!#     -> Calculates an inverse permutation
+!#
 !# </purpose>
 !#########################################################################
 
 MODULE sortstrategy
 
   USE fsystem
+  USE storage
+  USE genoutput
   USE linearalgebra
+  USE spatialdiscretisation
+  USE element
+  USE triangulation
   USE linearsystemscalar
 
   IMPLICIT NONE
@@ -45,6 +70,20 @@ MODULE sortstrategy
 
   ! Reverse Cuthill-McKee sort strategy
   INTEGER, PARAMETER :: SSTRAT_RCM          = 2
+  
+  ! Row-wise sorting for point coordinate. 
+  ! (As calculated by sstrat_calcXYZsorting with idirection=0.)
+  ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
+  ! the DOF's can be identified with X/Y/Z coordinates.
+  ! Coincides with the sorting strategy of FEAST for simple-type domains
+  ! like the unit square.
+  INTEGER, PARAMETER :: SSTRAT_XYZCOORD     = 3
+  
+  ! Column-wise sorting for point coordinate. 
+  ! (As calculated by sstrat_calcXYZsorting with idirection=1.)
+  ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
+  ! the DOF's can be identified with X/Y/Z coordinates.
+  INTEGER, PARAMETER :: SSTRAT_ZYXCOORD     = 4
   
 !</constantblock>
 
@@ -674,5 +713,219 @@ CONTAINS
     END DO
 
   END SUBROUTINE     
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE sstrat_calcXYZsorting (rdiscretisation,Ipermutation,idirection)
+  
+  !<description>
+    ! Computes a column renumbering strategy based on the coordinates of
+    ! DOF's. The routine supports 2D and 3D triangulations; in a 2D
+    ! triangulation, the Z-coordinate is ignored.
+    !
+    ! idirection specifies the sorting direction.
+    ! The standard sorting direction is idirection=0. In this case, 
+    ! the DOF's are sorted rowwise, i.e. first for the X-coordinate,
+    ! then for the Y-coordinate. This sorting strategy coincides with the 
+    ! FEAST sorting strategy in simple situations like a unit square.
+    !
+    ! This sorting strategy can only applied for special type discretisations
+    ! where the DOF's of the finite elements coincides with some sort of
+    ! point coordinates in the domain (like $Q_1$, edge midpoint based
+    ! $\tilde Q_1$). If this is not the case, the routine will stop the 
+    ! program.
+    !
+    ! The algorithm acceps a scalar discretisation structure rdiscretisation and
+    ! uses its structure to calculate the renumbering. The result
+    ! Ipermutation then receives the permutation and its inverse.
+  !</description>
+    
+  !<input>
+    ! Spatial discretisation structure that specifies the DOF's and the
+    ! triangulation
+    TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
+    
+    ! OPTIONAL: Specifies the sorting direction.
+    ! =0: Sort first for X-, then for Y-, then for Z-coordinate.
+    !     In 2D this is rowwise sorting.
+    ! =1: Sort first for Z-, then for Y-, then for X-coordinate.
+    !     In 2D this is columnwise sorting.
+    ! If not specified, idirection=0 is assumed.
+    INTEGER, INTENT(IN),OPTIONAL :: idirection
+  !</input>
+    
+  !<output>
+    ! The permutation vector for sorting and its inverse.
+    ! With NEQ=NEQ(matrix):
+    !   Ipermutation(1:NEQ)       = permutation,
+    !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+  !</output>    
+
+  !</subroutine>
+  
+    ! local variables
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords
+    INTEGER(PREC_EDGEIDX), DIMENSION(2) :: Isize
+    INTEGER :: hhandle
+    INTEGER :: idir
+    
+    IF (rdiscretisation%ndimension .EQ. 0) THEN
+      CALL output_line ('Discretisation not initialised.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
+      STOP
+    END IF
+    
+    idir = 0
+    IF (PRESENT(idirection)) idir=idirection
+
+    ! Depending on the discrisation, choose the correct implementation.
+    SELECT CASE (rdiscretisation%ccomplexity)
+    CASE (SPDISC_UNIFORM)
+    
+      ! FE-space?
+      SELECT CASE (elem_getPrimaryElement(&
+                       rdiscretisation%RelementDistribution(1)%itrialElement))
+      CASE (EL_Q1,EL_P1)
+      
+        ! $Q_1$-element. Take the vertex coordinates as DOF's and sort for that.
+        CALL storage_getbase_double2d (&
+            rdiscretisation%p_rtriangulation%h_DvertexCoords,p_Dcoords)
+            
+        CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
+      
+      CASE (EL_Q1T)
+      
+        ! $\tilde Q_1$-element. Take the edge midpoint coordinates as DOF's
+        ! and sort for that. We have to calculate the midpoints for that...
+        Isize(1) = rdiscretisation%p_rtriangulation%ndim
+        Isize(2) = rdiscretisation%p_rtriangulation%NMT
+        CALL storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+                            hhandle, ST_NEWBLOCK_NOINIT)
+        CALL storage_getbase_double2d (hhandle,p_Dcoords)
+        
+        ! Call tria_getPointsOnEdge with npointsPerEdge=1; this calculates
+        ! the midpoint coordinates.
+        CALL tria_getPointsOnEdge (rdiscretisation%p_rtriangulation,p_Dcoords,1)
+        
+        ! Sort for the midpoint coordinates
+        CALL sortCoords (p_Dcoords, Ipermutation(1:UBOUND(p_Dcoords,2)), idir)
+        
+        ! Release temp array, finish
+        CALL storage_free (hhandle)
+      
+      CASE DEFAULT
+        CALL output_line ('Element type not supported.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
+        STOP
+      END SELECT
+    
+    CASE DEFAULT
+      CALL output_line ('Discretisation too complex.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
+      STOP
+    END SELECT
+  
+    ! Calculate the inverse permutation, that's it.
+    CALL sstrat_calcInversePermutation (Ipermutation(1:UBOUND(p_Dcoords,2)), &
+                                        Ipermutation(UBOUND(p_Dcoords,2)+1:) )
+    
+  CONTAINS
+  
+    SUBROUTINE sortCoords (Dcoords, Ipermutation,idirection)
+
+    ! Calculates the rowwise sorting. Dcoords must contain a 2D or 3D
+    ! array of point coordinates. In Ipermutation, the routine returns
+    ! the permutation of these points.
+    ! idirection specifies the sorting direction.
+    ! =0: points are first ordered for X-, then for Y- and at 
+    !     the end for the Z-coordinate (in 3D).
+    ! =1: points are first ordered for Z- (in 3D), then for Y- and at 
+    !     the end for the X-coordinate.
+    
+    REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Ipermutation
+    INTEGER, INTENT(IN) :: idirection
+    
+      ! local variables
+      INTEGER(I32), DIMENSION(2) :: Isize
+      INTEGER :: h_Dsort
+      INTEGER :: i
+      REAL(DP), DIMENSION(:,:), POINTER :: p_Dsort
+      
+      ! Allocate a 2D array with (dim(Dcoords)+1,#coords) elements.
+      Isize(1) = UBOUND(Dcoords,1)+1
+      Isize(2) = UBOUND(Dcoords,2)
+      CALL storage_new2D ('rowwiseSorting', 'Dsort', Isize, ST_DOUBLE, &
+                          h_Dsort, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_double2d (h_Dsort,p_Dsort)
+      
+      ! In the first element of each ndim+1-tupel, store the number of
+      ! the point. In the 2nd/3rd,... element, store the coordinate.
+      DO i=1,Isize(2)
+        p_Dsort(1,i) = REAL(i,DP)
+        p_Dsort(2:,i) = Dcoords(:,i)
+      END DO
+      
+      ! Sort the array. First for the last coordinate, then for the
+      ! last but one, etc.
+      ! Use a stable sorting algorithm to prevent the previous sorting
+      ! from getting destroyed.
+      SELECT CASE (idirection)
+      CASE (0)
+        DO i=1,UBOUND(Dcoords,1)
+          CALL arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
+        END DO
+        
+      CASE (1)
+        DO i=UBOUND(Dcoords,1),1,-1
+          CALL arraySort_sortByIndex_dp(p_Dsort,1+i,SORT_STABLE)
+        END DO
+      
+      END SELECT
+      
+      ! The first element in each ndim+2-tupel is now the permutation.
+      ! Do a type conversion to int to get it.
+      DO i=1,Isize(2)
+        Ipermutation(i) = INT(p_Dsort(1,i),I32)
+      END DO
+      
+      ! Release the temp array, that's it.
+      CALL storage_free (h_Dsort)
+      
+    END SUBROUTINE
+
+  END SUBROUTINE     
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE sstrat_calcInversePermutation (IpermutationSource, IpermutationDest)
+  
+  !<description>
+    ! Computes the inverse of a permutation. IpermutationSource is a given
+    ! permutation. IpermutationDest will receive the inverse permutation.
+  !</description>
+    
+  !<input>
+    ! A permutation.
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IpermutationSource
+  !</input>
+    
+  !<output>
+    ! An array of the same size as IpermutationSource. Receives the inverse
+    ! permutation.
+    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: IpermutationDest
+  !</output>    
+
+  !</subroutine>
+  
+    INTEGER :: i
+    DO i=1,SIZE(IpermutationSource)
+      IpermutationDest(IpermutationSource(i)) = i
+    END DO
+  
+  END SUBROUTINE
 
 END MODULE

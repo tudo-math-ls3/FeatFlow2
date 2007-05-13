@@ -205,11 +205,11 @@ MODULE discretebc
 !<typeblock>
   
   ! This structure describes the way, FEAST mirror boundary conditions
-  ! can be discretised. This is done by two arrays: one array is a list of all
-  ! DOF's that refer do Dirichlet nodes. The second array refers to the value
-  ! that must be imposed in this DOF.
+  ! can be discretised. 
   ! The variable icomponent describes the number of the component/equation
   ! in the PDE that must be treated that way.
+  ! h_ImirrorBCs specifies a bitfield that defines for every DOF if it is
+  ! a FEAST mirror BC DOF or not.
   
   TYPE t_discreteBCFeastMirror
     
@@ -217,10 +217,12 @@ MODULE discretebc
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
     INTEGER                            :: icomponent        = 0
     
-    ! Handle to a bitfield. Fir every vertex, the corresponding bit is set to 1
+    ! Handle to a bitfield. For every vertex, the corresponding bit is set to 1
     ! if the vertex is in a boundary region that is declared as FEAST mirror
     ! boundary.
     !   array [1..*] of integer
+    ! A value of ST_NOHANDLE specifies that there is nothing to do as there are
+    ! no DOF's in the analytic boundary region.
     INTEGER :: h_ImirrorBCs   = ST_NOHANDLE
     
   END TYPE

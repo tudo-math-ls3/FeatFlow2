@@ -1495,6 +1495,9 @@ CONTAINS
                                  
   ! Cancel if the set is empty!
   IF (icount .EQ. 0) THEN
+    ! Assign ST_NOHANDLE to the h_ImirrorBCs handle to instruct the BC filter
+    ! to do nothing.
+    p_rfeastMirrorBCs%h_ImirrorBCs = ST_NOHANDLE
     RETURN
   END IF
   

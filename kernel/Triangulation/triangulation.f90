@@ -57,6 +57,10 @@
 !# 11.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
+!# 12.) tria_getPointsOnEdge
+!#      -> For all edges in a triangulation, calculate the coordinates 
+!#         of a number of points on each edge
+!#
 !# Auxiliary routines:
 !#
 !# 1.) tria_readRawTriangulation2D
@@ -3620,7 +3624,7 @@ CONTAINS
     ! Sort the array -- inside of each boundary component.
     ! Use the vertex number as key.
     DO ibct = 1,rtriangulation%NBCT
-      CALL arraySort_sortByIndex (&
+      CALL arraySort_sortByIndex_int (&
           p_IboundaryVertexPos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),1)
     END DO
     
@@ -3700,7 +3704,7 @@ CONTAINS
     ! Sort the array -- inside of each boundary component.
     ! Use the vertex number as key.
     DO ibct = 1,rtriangulation%NBCT
-      CALL arraySort_sortByIndex (&
+      CALL arraySort_sortByIndex_int (&
           p_IboundaryEdgePos(:,p_IboundaryCpIdx(ibct):p_IboundaryCpIdx(ibct+1)-1),1)
     END DO
     
@@ -4652,6 +4656,191 @@ CONTAINS
     rtriangulationCoarse%iduplicationFlag = &
       IOR(rtriangulationCoarse%iduplicationFlag,TR_SHARE_DVERTEXCOORDS)
 
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_getPointsOnEdge (rtriangulation,Dcoords,npointsPerEdge, &
+      DparValue,rboundary)
+  
+!<description>
+  ! This routine can be used to calculate the coordinates of a fixed number
+  ! of regularly distributed (inner-edge) points per edge.
+  !
+  ! npointsPerEdge specifies how many points per edge should be calculated.
+  ! E.g. if npointsPerEdge=3, the routine will place 3 points
+  ! on each edge and calculate their coordinates. By default, the points will
+  ! be distributed regularly, so in this example at the 'relative position'
+  ! {0.25, 0.5, 0.75) of the edge. If the caller wants to specify a different
+  ! position of the points manually, the DparValue array can be specified.
+  !
+  ! Another example: By calling this routine with npointsPerEdge=1, the 
+  ! routine will calculate the midpoints of all edges.
+!</description>
+
+!<input>
+  ! Triangulation structure.
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  
+  ! Number of points per edge to generate
+  INTEGER, INTENT(IN) :: npointsPerEdge
+  
+  ! OPTIONAL: Array with parameter values of the points on the edge.
+  ! DIMENSION(npointsPerEdge). DparValue is a value in the range [0,1]
+  ! and specifies the 'relative position' or 'parameter value' of each 
+  ! point on the edge. If not specified, tria_getPointsOnEdge assumes a regular
+  ! distribution of points, defined by the number of points on the edge.
+  ! E.g. if npointsPerEdge=2 and DparValue is not specified, 
+  ! the routine assumes 3 inner points on the edge corresponding to 
+  ! DparValue=/(0.333333,0.666666)/.
+  ! If specified, the caller can specify the exact parameter values of
+  ! the three points on the edge, e.g. DparValue=/(0.25,0.75)/.
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DparValue
+  
+  ! OPTIONAL: Definition of the domain.
+  ! If specified, the routine will calculate the points on the boundary
+  ! edges using the definition on the boundary. If not specified, the routine
+  ! calculates the points on the edges based only on the triangulation.
+  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+!</input>
+
+!<output>
+  ! Coordinates of the regularly distributed points on all the edges
+  ! of the triangulation.
+  !   DIMENSION(space-dimension, npointsPerEdge * #edges)
+  ! Here, Dcoords(:,1..npointsPerEdge) receives the coordinates of the 
+  ! points on the first edge, Dcoords(:,npointsPerEdge+1:2*npointsPerEdge)
+  ! the coordinates on edge number 2 etc.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dcoords
+!</output>
+
+!</subroutine>
+
+    ! local variables      
+    REAL(DP), DIMENSION(npointsPerEdge) :: Dparameters
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords
+    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+    INTEGER(PREC_EDGEIDX) :: iedge
+    INTEGER(PREC_POINTIDX) :: ipointpos,ipoint1,ipoint2
+    INTEGER :: idim,ipoint
+    INTEGER :: ibdc,ibdedge
+    REAL(DP) :: dpar1,dpar2
+    
+    REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
+    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_EDGEIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    
+    ! If DparValue is specified, take that. Otherwise, create the parameter
+    ! values of the (inner-edge) points manually.
+    IF (PRESENT(DparValue)) THEN
+      IF (SIZE(DparValue) .LT. npointsPerEdge) THEN
+        CALL output_line ('DparValue not large enough!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'tria_getPointsOnEdge')
+        STOP
+      END IF
+      Dparameters(:) = DparValue(1:npointsPerEdge)
+    END IF
+    
+    ! Get the triangulation stuff
+    IF (rtriangulation%ndim .EQ. 0) THEN
+      CALL output_line ('Triangulation not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_getPointsOnEdge')
+      STOP
+    END IF
+
+    IF (rtriangulation%h_IverticesAtEdge .EQ. 0) THEN
+      CALL output_line ('IverticesAtEdge not initialised!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_getPointsOnEdge')
+      STOP
+    END IF
+    
+    CALL storage_getbase_double2d(rtriangulation%h_DvertexCoords,p_Dcoords)
+    CALL storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+  
+    ! Loop through all edges
+    DO iedge = 0,rtriangulation%NMT-1
+    
+      ! Where do the set of points start in Dcoords?
+      ipointpos = iedge*npointsPerEdge
+      
+      ! Endpoints of that edge?
+      ipoint1 = p_IverticesAtEdge(1,iedge)
+      ipoint2 = p_IverticesAtEdge(2,iedge)
+    
+      ! Calculate the points on the edge
+      DO ipoint = 1,npointsPerEdge
+    
+        ! Calculate the point coordinates
+        DO idim = 1,UBOUND(Dcoords,1)
+          
+          Dcoords(idim,ipoint+ipointpos) = &
+            p_Dcoords(idim,ipoint1) * Dparameters(ipoint) + &
+            p_Dcoords(idim,ipoint2) * (1.0_DP-Dparameters(ipoint))
+        
+        END DO
+      
+      END DO
+      
+    END DO
+    
+    ! Is the boundary structure given?
+    IF (PRESENT(rboundary)) THEN
+    
+      ! 2D?
+      IF (rtriangulation%ndim .EQ. NDIM2D) THEN
+      
+        ! Ok, we can calculate the correct position of the points on the boundary!
+        ! Get the array with the boundary vertices and their parameter values.
+        CALL storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
+            p_IboundaryCpIdx)
+        CALL storage_getbase_int (rtriangulation%h_IverticesAtBoundary,&
+            p_IverticesAtBoundary)
+        CALL storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
+            p_IedgesAtBoundary)
+        CALL storage_getbase_double (rtriangulation%h_DvertexParameterValue,&
+            p_DvertexParameterValue)
+            
+        ! Loop through the boundary components and the points in each component
+        DO ibdc = 1,rtriangulation%NBCT
+        
+          DO ibdedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
+          
+            ! Get the boundary edge
+            iedge = p_IedgesAtBoundary(ibdedge)
+            
+            ! Get the parameter value of the points adjacent to that edge.
+            dpar1 = p_DvertexParameterValue(ibdedge)
+            IF (ibdedge .NE. p_IboundaryCpIdx(ibdc+1)-1) THEN
+              dpar2 = p_DvertexParameterValue(ibdedge+1)
+            ELSE
+              ! Last edge ends with maximum parameter value on that boundary component
+              dpar2 = boundary_dgetMaxParVal(rboundary,ibdc)
+            END IF
+            
+            ! Where do the set of points start in Dcoords?
+            ipointpos = iedge*npointsPerEdge
+            
+            ! Calculate the points on the edge
+            DO ipoint = 1,npointsPerEdge
+          
+              ! Calculate the point coordinates
+              CALL boundary_getCoords(rboundary, ibdc, &
+                  dpar1 * Dparameters(ipoint) + dpar2 * (1.0_DP-Dparameters(ipoint)),  &
+                  Dcoords(1,ipoint+ipointpos), Dcoords(2,ipoint+ipointpos))
+                  
+            END DO
+          
+          END DO
+        
+        END DO
+      
+      END IF
+    
+    END IF
+  
   END SUBROUTINE
 
 END MODULE
