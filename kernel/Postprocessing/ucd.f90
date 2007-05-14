@@ -661,7 +661,7 @@ CONTAINS
   INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
   INTEGER(PREC_ELEMENTIDX) :: NEL
   INTEGER(PREC_EDGEIDX) :: NMT
-  INTEGER(PREC_POINTIDX) :: NVT
+  INTEGER(PREC_VERTEXIDX) :: NVT
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_setVertexMaterial: Export structure not initialised!'
@@ -782,14 +782,14 @@ CONTAINS
     
     ! local variables
     INTEGER :: mfile,i,j,k,icoor
-    INTEGER(PREC_POINTIDX) :: ivt,ivt1,ivt2,nnodes
+    INTEGER(PREC_VERTEXIDX) :: ivt,ivt1,ivt2,nnodes
     INTEGER(PREC_EDGEIDX) :: imt
     INTEGER(PREC_ELEMENTIDX) :: iel
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords,p_Ddata2D
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge 
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge 
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP) :: dx
     

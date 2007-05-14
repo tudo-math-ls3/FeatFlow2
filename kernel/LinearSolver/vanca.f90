@@ -1928,7 +1928,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -2342,7 +2342,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -2934,7 +2934,7 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
@@ -3545,10 +3545,10 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -3993,10 +3993,10 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -4462,10 +4462,10 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -4919,10 +4919,10 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -5372,10 +5372,10 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -5834,10 +5834,10 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
@@ -6770,10 +6770,10 @@ CONTAINS
     
     ! Triangulation information
     INTEGER(PREC_ELEMENTIDX) :: NEL
-    INTEGER(PREC_POINTIDX)   :: NVT
+    INTEGER(PREC_VERTEXIDX)   :: NVT
     INTEGER(PREC_EDGEIDX)    :: NMT
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element

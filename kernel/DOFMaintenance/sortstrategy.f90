@@ -25,6 +25,9 @@
 !# 2.) sstrat_calcXYZsorting
 !#     -> Calculates rowwise renumbering based on Cartesian coordinates
 !#
+!# 2.) sstrat_calcFEASTsorting
+!#     -> Calculates FEAST rowwise renumbering based cell adjacencies
+!#
 !# Auxiliary routines:
 !#
 !# 1.) sstrat_calcColNumberingCM7
@@ -84,6 +87,12 @@ MODULE sortstrategy
   ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
   ! the DOF's can be identified with X/Y/Z coordinates.
   INTEGER, PARAMETER :: SSTRAT_ZYXCOORD     = 4
+  
+  ! General FEAST renumbering.
+  ! The DOF's are numbered rowwise, independent of the geometrical
+  ! structure of the domain.
+  ! Only for special type of discretisations ($Q_1$) and tensor product meshes.
+  INTEGER, PARAMETER :: SSTRAT_FEAST        = 5
   
 !</constantblock>
 
@@ -894,6 +903,372 @@ CONTAINS
       ! Release the temp array, that's it.
       CALL storage_free (h_Dsort)
       
+    END SUBROUTINE
+
+  END SUBROUTINE     
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE sstrat_calcFEASTsorting (rdiscretisation,Ipermutation,ifirstVertex)
+  
+  !<description>
+    ! Computes a column renumbering strategy based on the tensor product
+    ! structure of the domain. The DOF's are numbered rowwise.
+    ! ifirstVertex must specify the first vertex (in the lower left corner)
+    ! of the domain. From here, a geometrical search is started to find
+    ! all DOF's.
+    !
+    ! The renumbering strategy is only applicable to special-type 
+    ! discretisations (like $Q_1$) and tensor product meshes (FEAST macros).
+    ! If this is not the case, the routine will stop the program.
+    !
+    ! The algorithm acceps a scalar discretisation structure rdiscretisation and
+    ! uses its structure to calculate the renumbering. The result
+    ! Ipermutation then receives the permutation and its inverse.
+  !</description>
+    
+  !<input>
+    ! Spatial discretisation structure that specifies the DOF's and the
+    ! triangulation
+    TYPE(t_spatialDiscretisation), INTENT(IN) :: rdiscretisation
+    
+    ! OPTIONAL: First vertex (lower left corner) of the domain.
+    ! If not specified, ifirstVertex=1 is assumed.
+    INTEGER, INTENT(IN), OPTIONAL :: ifirstVertex
+  !</input>
+    
+  !<output>
+    ! The permutation vector for sorting and its inverse.
+    ! With NEQ=NEQ(matrix):
+    !   Ipermutation(1:NEQ)       = permutation,
+    !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
+    INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(OUT) :: Ipermutation
+  !</output>    
+
+  !</subroutine>
+  
+    ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_VERTEXIDX) :: ivt
+    
+    IF (rdiscretisation%ndimension .EQ. 0) THEN
+      CALL output_line ('Discretisation not initialised.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
+      STOP
+    END IF
+    
+    ! Depending on the discrisation, choose the correct implementation.
+    SELECT CASE (rdiscretisation%ccomplexity)
+    CASE (SPDISC_UNIFORM)
+    
+      ! FE-space?
+      SELECT CASE (elem_getPrimaryElement(&
+                       rdiscretisation%RelementDistribution(1)%itrialElement))
+      CASE (EL_Q1)
+      
+        ! Get geometrical data
+        CALL storage_getbase_int2d (rdiscretisation%p_rtriangulation%h_IelementsAtEdge,&
+            p_IelementsAtEdge)
+        CALL storage_getbase_int2d (&
+            rdiscretisation%p_rtriangulation%h_IverticesAtElement,&
+            p_IverticesAtElement)
+        CALL storage_getbase_int2d (&
+            rdiscretisation%p_rtriangulation%h_IedgesAtElement,&
+            p_IedgesAtElement)
+            
+        ! Get the first element on vertex ifirstVertex
+        ivt = 1
+        IF (PRESENT(ifirstVertex)) ivt = ifirstVertex
+        CALL storage_getbase_int (rdiscretisation%p_rtriangulation%h_IelementsAtVertex,&
+            p_IelementsAtVertex)
+        CALL storage_getbase_int (&
+            rdiscretisation%p_rtriangulation%h_IelementsAtVertexIdx,&
+            p_IelementsAtVertexIdx)
+        iel = p_IelementsAtVertex(p_IelementsAtVertexIdx(ivt))
+      
+        CALL sortForFeastQ1 (p_IelementsAtEdge, p_IverticesAtElement, p_IedgesAtElement,&
+            Ipermutation(1: rdiscretisation%p_rtriangulation%NVT), ivt, iel, &
+            rdiscretisation%p_rtriangulation%NVT)
+      
+      CASE DEFAULT
+        CALL output_line ('Element type not supported.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
+        STOP
+      END SELECT
+    
+    CASE DEFAULT
+      CALL output_line ('Discretisation too complex.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
+      STOP
+    END SELECT
+  
+    ! Calculate the inverse permutation, that's it.
+    CALL sstrat_calcInversePermutation (Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), &
+                                        Ipermutation(rdiscretisation%p_rtriangulation%NVT+1:) )
+    
+  CONTAINS
+  
+    SUBROUTINE sortForFeastQ1 (IelementsAtEdge,IverticesAtElement,IedgesAtElement,&
+                               Ipermutation,ivt,iel,NVT)
+
+    ! Calculates the rowwise sorting in a FEAST like style. 
+    ! IelementsAtEdge, IverticesAtElement and IedgesAtElement specify the 
+    ! adjacencies in the macro.
+    ! In Ipermutation, the routine returns the permutation of these points.
+    ! ivt specifies the lower left corner of the macro. iel specifies
+    ! the element in the lower left corner that contains ivt.
+    
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IelementsAtEdge
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
+    INTEGER(I32), DIMENSION(:), INTENT(OUT) :: Ipermutation
+    INTEGER(PREC_VERTEXIDX), INTENT(IN) :: ivt
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+    INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
+
+      ! local variables
+      INTEGER(PREC_VERTEXIDX) :: icornervertex,icornerelement,ipermidx
+      INTEGER(PREC_VERTEXIDX) :: icurrentvertex,icurrentelement
+      INTEGER(PREC_EDGEIDX) :: iedgeright,iedgetop
+      INTEGER :: ilocalvertex
+      INTEGER, PARAMETER :: NVE = 4
+      
+      ! Current position in the mesh
+      icurrentvertex = ivt
+      icurrentelement = iel
+      
+      ! ipermidx counts how many vertices we found.
+      ipermidx = 0
+      
+      ! Loop through the columns until we find the macro border at the top
+      DO
+        
+        ! icornervertex remembers the current lower left corner. icornerelement
+        ! the corresponding element.
+        icornervertex = icurrentvertex
+        icornerelement = icurrentelement
+        
+        ! We are here:
+        !
+        !    |   |
+        !    +---+---
+        !    |IEL|
+        !  IVT---+---
+        !
+        ! Add the first vertex to the permutation
+        ipermidx = ipermidx+1
+        Ipermutation(ipermidx) = icurrentvertex
+        
+        ! Get the local number of the vertex in the element
+        DO ilocalvertex = 1,NVE
+          IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
+        END DO
+        
+        ! Get the edges to the neighbour elements
+        !
+        !    |   |     
+        !    +---+---
+        !    |   X iedgeright
+        !  IVT---+---
+        
+        iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)-NVT
+      
+        ! Loop through the macro row until we find the right border of the macro
+        DO WHILE (IelementsAtEdge(2,iedgeright) .NE. 0) 
+        
+          ! Step right to the next element 
+          !
+          !    |   |     
+          !    +---+---+
+          !    |   |   |           
+          !    +--IVT--+
+          
+          icurrentvertex = IverticesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)
+          
+          IF (IelementsAtEdge(2,iedgeright) .NE. icurrentElement) THEN
+            icurrentElement = IelementsAtEdge(2,iedgeright)
+          ELSE
+            icurrentElement = IelementsAtEdge(1,iedgeright)
+          END IF
+          
+          ! Add the vertex to the permutation
+          ipermidx = ipermidx+1
+          Ipermutation(ipermidx) = icurrentvertex
+          
+          ! Get the local number of the vertex in the element
+          DO ilocalvertex = 1,NVE
+            IF (IverticesAtElement(ilocalvertex,icurrentelement) &
+                .EQ. icurrentvertex) EXIT
+          END DO
+        
+          ! Get the edges to the neighbour elements
+          !
+          !    |   |   |  
+          !    +---+---+--
+          !    |   |   X iedgeright
+          !    +--IVT--+--
+          
+          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)-NVT
+          
+        END DO
+        
+        ! We have reached the end of the row
+        !
+        !        |   |   |
+        !     ---+---+---+
+        !        |   |   X iedgeright
+        !     ---+--IVT--IVT2
+        !
+        ! Remember the last vertex IVT2 in the row
+        
+        icurrentvertex = IverticesAtElement(MOD(ilocalvertex,NVE)+1,icurrentelement)
+        ipermidx = ipermidx+1
+        Ipermutation(ipermidx) = icurrentvertex
+        
+        ! Hop back to the first element and find the local number of the first
+        ! vertex in the row again.
+        !
+        !    |   |
+        !    +---+---
+        !    |IEL|
+        !  IVT---+---
+
+        icurrentvertex = icornervertex
+        icurrentelement = icornerelement
+        
+        DO ilocalvertex = 1,NVE
+          IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
+        END DO
+        
+        ! Get the edge that leads to the element row above us.
+        !
+        !    | iedgetop
+        !    +-X-+---
+        !    |IEL|
+        !  IVT---+---
+        
+        iedgetop = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)-NVT
+        
+        ! Get the vertex and the element there. Note: If there is no neighbour
+        ! element, the current element number gets =0 which is the terminal criterion.
+        !
+        !    |IEL|     
+        !  IVT---+---
+        !    |   |
+        !    +---+---
+      
+        icurrentvertex = IverticesAtElement(MOD(ilocalvertex+2,NVE)+1,icurrentElement)
+      
+        IF (IelementsAtEdge(2,iedgetop) .NE. icurrentElement) THEN
+          icurrentElement = IelementsAtEdge(2,iedgetop)
+        ELSE
+          icurrentElement = IelementsAtEdge(1,iedgetop)
+        END IF
+      
+        IF (icurrentelement .EQ. 0) THEN
+          EXIT
+        ELSE
+          ! There is a neighbour element on top.
+          ! Get the edge that leads to the right and continue in the new
+          ! element row.
+          DO ilocalvertex = 1,NVE
+            IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
+          END DO
+
+          iedgeright = IedgesAtElement(MOD(ilocalvertex,NVE)+1,icurrentElement)-NVT
+        END IF
+      END DO
+      
+      ! Ok, we have done all element rows now.
+      !
+      !   |   |   |   |   |
+      !   +---+---+---+---+
+      !   |   |   |   |   |           
+      !   +---+---+---+---+
+      !
+      ! What's still missing is the final edge-row on top! This is another loop.
+      ! Switch the element number back to the last remembered one, then we have: 
+      !
+      !  IVT--+---+---+---+
+      !   |IEL|   |   |   |           
+      !   +---+---+---+---+
+      !   |   |   |   |   |
+      
+      icurrentelement = icornerelement
+      
+      ! Add the vertex to the permutation
+      ipermidx = ipermidx+1
+      Ipermutation(ipermidx) = icurrentvertex
+      
+      ! Local number and edge to the right? 
+      !
+      !  IVT--+--           
+      !   |   X iedgeright             
+      !   +---+-            
+      !   |   |            
+
+      DO ilocalvertex = 1,NVE
+        IF (IverticesAtElement(ilocalvertex,icurrentelement) .EQ. icurrentvertex) EXIT
+      END DO
+      
+      iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)-NVT
+    
+      ! Loop through the macro row until we find the right border of the macro
+      DO WHILE (IelementsAtEdge(2,iedgeright) .NE. 0) 
+      
+        ! Step right to the next element 
+        !
+        !    +--IVT--+
+        !    |   |IEL|           
+        !    +---+---+
+        !    |   |     
+        
+        icurrentvertex = IverticesAtElement(MOD(ilocalvertex+2,NVE)+1,icurrentElement)
+        
+        IF (IelementsAtEdge(2,iedgeright) .NE. icurrentElement) THEN
+          icurrentElement = IelementsAtEdge(2,iedgeright)
+        ELSE
+          icurrentElement = IelementsAtEdge(1,iedgeright)
+        END IF
+        
+        ! Add the vertex to the permutation
+        ipermidx = ipermidx+1
+        Ipermutation(ipermidx) = icurrentvertex
+        
+        ! Get the local number of the vertex in the element
+        DO ilocalvertex = 1,NVE
+          IF (IverticesAtElement(ilocalvertex,icurrentelement) &
+              .EQ. icurrentvertex) EXIT
+        END DO
+      
+        ! Get the edges to the neighbour elements
+        !
+        !    +--IVT--+--
+        !    |   |   X iedgeright
+        !    +---+---+--
+        !    |   |   |  
+        
+        iedgeright = IedgesAtElement(MOD(ilocalvertex+1,NVE)+1,icurrentElement)-NVT
+        
+      END DO    
+      
+      ! Remember the last vertex IVT2 in the row
+      !
+      !     --IVT--IVT2
+      !        |   |           
+      !     ---+---+  
+      !        |   |  
+      
+      icurrentvertex = IverticesAtElement(MOD(ilocalvertex+2,NVE)+1,icurrentelement)
+      ipermidx = ipermidx+1
+      Ipermutation(ipermidx) = icurrentvertex
+
     END SUBROUTINE
 
   END SUBROUTINE     

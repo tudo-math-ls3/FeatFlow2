@@ -240,8 +240,11 @@ MODULE triangulation
 
 !<constantblock description="KIND values for triangulation data">
   
-  ! kind value for indexing the points in a triangulation
-  INTEGER, PARAMETER :: PREC_POINTIDX   = I32
+  ! kind value for indexing the vertices in a triangulation
+  INTEGER, PARAMETER :: PREC_VERTEXIDX  = I32
+
+  ! Alternative name for PREC_VERTEXIDX
+  INTEGER, PARAMETER :: PREC_POINTIDX   = PREC_VERTEXIDX
 
   ! kind value for indexing the edges in a triangulation
   INTEGER, PARAMETER :: PREC_EDGEIDX    = I32
@@ -290,7 +293,7 @@ MODULE triangulation
   ! Each point has a number, which is usually an integer value.
   
   TYPE t_elementCorners2D
-    INTEGER(PREC_POINTIDX), DIMENSION(TRIA_MAXNVE2D) :: Icorners
+    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: Icorners
   END TYPE
 
   ! Each element contains at most TRIA_MAXNME2D edges.
@@ -357,7 +360,7 @@ MODULE triangulation
   
     ! Number of points in the domain corresponding to corners of elements;
     ! coincides with SIZE(RcornerCoordinates)
-    INTEGER(PREC_POINTIDX)   :: NVT = 0
+    INTEGER(PREC_VERTEXIDX)   :: NVT = 0
     
     ! Number of edges in the domain belonging to elements
     INTEGER(PREC_EDGEIDX)    :: NMT = 0
@@ -393,7 +396,7 @@ MODULE triangulation
     ! Total number of vertices on edges; normally = 0.
     ! Total number of vertices on all edges, realized in p_DfreeVertexCoordinates. 
     ! E.g. if midpoints on edges exist, there is NVEDT=NMT.
-    INTEGER(PREC_POINTIDX)   :: nVerticesOnAllEdges = 0
+    INTEGER(PREC_VERTEXIDX)   :: nVerticesOnAllEdges = 0
     
     ! Number of inner-element vertices; normally = 0.
     ! If a regular distribution of vertices in the inner of 
@@ -405,13 +408,13 @@ MODULE triangulation
     ! Total number of vertices in elements; normally = 0.
     ! Total number of vertices on all elements, realized in p_DfreeVertexCoordinates. 
     ! E.g. if element-midpoints exist in DCORMG, there is NIEVT=NEL.
-    INTEGER(PREC_POINTIDX)   :: nverticesInAllElements = 0
+    INTEGER(PREC_VERTEXIDX)   :: nverticesInAllElements = 0
     
     ! Number of additional vertices; normally = 0.
     ! Can be set <> 0 if there are any additional vertices 
     ! realized in p_DfreeVertexCoordinates, that don't belong to a regular 
     ! distribution of vertices in corners, on edges or on elements.
-    INTEGER(PREC_POINTIDX)    :: nadditionalVertices = 0
+    INTEGER(PREC_VERTEXIDX)    :: nadditionalVertices = 0
   
     ! A list of all corner(!)-vertices of the elements in the triangulation.
     ! Handle to 
@@ -1727,9 +1730,9 @@ CONTAINS
 !</subroutine>
 
     INTEGER(PREC_ELEMENTIDX) :: icount
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER :: h_IverticesAtElementTri
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementTri
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementTri
     INTEGER(I32), DIMENSION(2) :: Isize
    
     ! For this routine we currently assume that there are only triangles
@@ -2049,9 +2052,9 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
     REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-    INTEGER(PREC_POINTIDX) :: ivbd,ivt
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_VERTEXIDX) :: ivbd,ivt
     INTEGER :: ibct
     INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
 
@@ -2296,9 +2299,9 @@ CONTAINS
   
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-    INTEGER(PREC_POINTIDX) :: istart,iend
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_VERTEXIDX) :: istart,iend
     INTEGER :: ibct,ivbd
     INTEGER :: hresort
     INTEGER(I32), DIMENSION(:), POINTER :: p_Iresort
@@ -2380,7 +2383,7 @@ CONTAINS
   
 !</function>
 
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_Idata2D
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_Idata2D
     
     ! NNVE is given by the first dimension of KVERT
     CALL storage_getbase_int2D(&
@@ -2412,10 +2415,10 @@ CONTAINS
 
     ! Local variables
     INTEGER :: ive,nnve
-    INTEGER(PREC_POINTIDX) :: ivt,isize
+    INTEGER(PREC_VERTEXIDX) :: ivt,isize
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     
     INTEGER(PREC_ELEMENTIDX) :: iel
     
@@ -2551,10 +2554,10 @@ CONTAINS
     INTEGER(I32), DIMENSION(2) :: Isize
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_POINTIDX) :: ivt,ivtneighbour
+    INTEGER(PREC_VERTEXIDX) :: ivt,ivtneighbour
     
     INTEGER :: haux1, haux2
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgeAtVertex
@@ -2741,11 +2744,11 @@ CONTAINS
     ! Local variables
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_POINTIDX) :: NVT
+    INTEGER(PREC_VERTEXIDX) :: NVT
     INTEGER(PREC_EDGEIDX) :: iedge
     INTEGER(I32), DIMENSION(2) :: Isize
 
@@ -2854,13 +2857,13 @@ CONTAINS
     ! Local variables
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive,nnve
-    INTEGER(PREC_POINTIDX) :: ivtneighbour
+    INTEGER(PREC_VERTEXIDX) :: ivtneighbour
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(PREC_EDGEIDX) :: iedge
-    INTEGER(PREC_POINTIDX) :: NVT
+    INTEGER(PREC_VERTEXIDX) :: NVT
     INTEGER(I32), DIMENSION(2) :: Isize
 
     ! Is everything here we need?
@@ -2968,7 +2971,7 @@ CONTAINS
 
     ! Local variables
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive, iveneighbour
     INTEGER(PREC_ELEMENTIDX) :: iel, ielneighbour
@@ -3090,11 +3093,11 @@ CONTAINS
     ! Local variables
     INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_POINTIDX) :: Isize
+    INTEGER(PREC_VERTEXIDX) :: Isize
 
     ! Is everything here we need?
     IF (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) THEN
@@ -3185,7 +3188,7 @@ CONTAINS
 !</subroutine>
 
     ! Local variables
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
     REAL(DP), DIMENSION(:), POINTER :: p_DelementVolume
     INTEGER(PREC_ELEMENTIDX) :: iel
@@ -3303,14 +3306,14 @@ CONTAINS
     ! Local variables
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtBoundary
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
     INTEGER :: ive, ibct, ivbd, iadjElement, nnve
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_POINTIDX) :: isize, ivt
+    INTEGER(PREC_VERTEXIDX) :: isize, ivt
 
     ! Is everything here we need?
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
@@ -3453,13 +3456,13 @@ CONTAINS
     ! Local variables
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtBoundary
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
     INTEGER :: ive, ibct, ivbd, nnve
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_POINTIDX) :: isize, ivt
+    INTEGER(PREC_VERTEXIDX) :: isize, ivt
 
     ! Is everything here we need?
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
@@ -3572,9 +3575,9 @@ CONTAINS
 !</subroutine>
 
     ! Local variables
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
     INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IboundaryVertexPos
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IboundaryVertexPos
     INTEGER :: ivbd, ibct
     INTEGER(I32), DIMENSION(2) :: Isize
 
@@ -3652,9 +3655,9 @@ CONTAINS
 !</subroutine>
 
     ! Local variables
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
     INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IboundaryEdgePos
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IboundaryEdgePos
     INTEGER :: ivbd, ibct
     INTEGER(I32), DIMENSION(2) :: Isize
 
@@ -3739,11 +3742,11 @@ CONTAINS
     ! Local variables
     REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
     REAL(DP), DIMENSION(:), POINTER :: p_DedgeParameterValue
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdx
     
     INTEGER :: ibct, ivbd, hvertAtBd
-    INTEGER(PREC_POINTIDX) :: isize
+    INTEGER(PREC_VERTEXIDX) :: isize
     REAL(DP) :: dpar1,dpar2,dmaxPar
 
     ! Is everything here we need?
@@ -4015,13 +4018,13 @@ CONTAINS
       ! local variables
       REAL(DP), DIMENSION(:,:), POINTER :: p_DcoordSource
       REAL(DP), DIMENSION(:,:), POINTER :: p_DcoordDest
-      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementSource
-      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementDest
-      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementSource
-      INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IvertAtEdgeSource
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementSource
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementDest
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementSource
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtEdgeSource
       INTEGER(PREC_ELEMENTIDX) :: nquads,iel,iel1,iel2,iel3
       INTEGER(PREC_EDGEIDX) :: imt
-      INTEGER(PREC_POINTIDX) :: ivt1,ivt2, ivtoffset, ivt
+      INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2, ivtoffset, ivt
       INTEGER(I32), DIMENSION(2) :: Isize
       INTEGER :: nnve, ive
       REAL(DP) :: x,y
@@ -4400,11 +4403,11 @@ CONTAINS
       REAL(DP), DIMENSION(:), POINTER :: p_DedgeParamsSource
       REAL(DP), DIMENSION(:), POINTER :: p_DvertParamsDest
       REAL(DP), DIMENSION(:,:), POINTER :: p_DcornerCoordDest
-      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IvertAtBoundartySource
-      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundartySource
-      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IvertAtBoundartyDest
-      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdxSource
-      INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdxDest
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IvertAtBoundartySource
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundartySource
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IvertAtBoundartyDest
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdxSource
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IboundaryCpIdxDest
       INTEGER :: ivbd,ibct
       
       ! Get the definition of the boundary vertices and -edges.
@@ -4522,7 +4525,7 @@ CONTAINS
   ! The boundary node to search for. A node number 1..NVT will search for
   ! a boundary vertex. A boundary node number NVT+1..NVT+NMT will search
   ! for boundary edges.
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: inode
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: inode
 
   ! The triangulation structure where to search the boundary node.
   TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
@@ -4721,15 +4724,15 @@ CONTAINS
     ! local variables      
     REAL(DP), DIMENSION(npointsPerEdge) :: Dparameters
     REAL(DP), DIMENSION(:,:), POINTER :: p_Dcoords
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
     INTEGER(PREC_EDGEIDX) :: iedge
-    INTEGER(PREC_POINTIDX) :: ipointpos,ipoint1,ipoint2
+    INTEGER(PREC_VERTEXIDX) :: ipointpos,ipoint1,ipoint2
     INTEGER :: idim,ipoint
     INTEGER :: ibdc,ibdedge
     REAL(DP) :: dpar1,dpar2
     
     REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
     INTEGER(PREC_EDGEIDX), DIMENSION(:), POINTER :: p_IedgesAtBoundary
     INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
     

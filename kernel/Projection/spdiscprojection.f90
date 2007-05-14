@@ -63,9 +63,9 @@ CONTAINS
     TYPE(t_spatialDiscretisation), POINTER :: p_rsourceDiscr,p_rdestDiscr
     TYPE(t_triangulation), POINTER :: p_rtriangulation
     REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
-    INTEGER(PREC_POINTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx 
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx 
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
 
     ! Up to now, this routine is rather rudimentary.
@@ -245,10 +245,10 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVT
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
   
   ! IelementsAtVertexIdx array of the triangulation
-  INTEGER(PREC_POINTIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
 
   ! IelementsAtVertex array of the triangulation
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertex
@@ -262,7 +262,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_POINTIDX) :: iv
+    INTEGER(PREC_VERTEXIDX) :: iv
     INTEGER :: nadj
     INTEGER(PREC_ELEMENTIDX) :: ielidx
 
@@ -301,16 +301,16 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVT
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
   
   ! Number of elements in the triangulation
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  INTEGER(PREC_POINTIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
 
   ! IedgesAtElement array of the triangulation (old KMID)
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
@@ -324,10 +324,10 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_POINTIDX) :: iv
+    INTEGER(PREC_VERTEXIDX) :: iv
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(PREC_EDGEIDX) :: IM1,IM2,IM3,IM4
-    INTEGER(PREC_POINTIDX) :: IV1,IV2,IV3,IV4
+    INTEGER(PREC_VERTEXIDX) :: IV1,IV2,IV3,IV4
     REAL(DP) :: DUH1,DUH2,DUH3,DUH4
     INTEGER :: nadj
     
@@ -393,16 +393,16 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: Dsource
   
   ! Number of vertices in the triangulation
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVT
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
   
   ! Number of elements in the triangulation
   INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  INTEGER(PREC_POINTIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:), INTENT(IN) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
 
 !</input>
   
@@ -414,9 +414,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_POINTIDX) :: iv
+    INTEGER(PREC_VERTEXIDX) :: iv
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_POINTIDX) :: IV1,IV2,IV3,IV4
+    INTEGER(PREC_VERTEXIDX) :: IV1,IV2,IV3,IV4
     INTEGER :: nadj
     
     ! Clear the output array

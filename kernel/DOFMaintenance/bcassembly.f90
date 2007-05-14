@@ -1417,7 +1417,7 @@ CONTAINS
   ! local variables
   INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex
   INTEGER :: i,ipart,j,k,icount
-  INTEGER(PREC_POINTIDX) :: NVT
+  INTEGER(PREC_VERTEXIDX) :: NVT
   TYPE(t_discreteBCFeastMirror),POINTER       :: p_rfeastMirrorBCs
   TYPE(t_triangulation), POINTER              :: p_rtriangulation
   TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
@@ -1602,7 +1602,7 @@ CONTAINS
   INTEGER, DIMENSION(2) :: IminEdge,ImaxEdge,Iminidx,Imaxidx
   REAL(DP), DIMENSION(DER_MAXNDER)            :: Dvalues
   REAL(DP),DIMENSION(NDIM2D)                  :: Dtangential,Dnormal
-  INTEGER(PREC_POINTIDX)                      :: NVT,ipoint1,ipoint2
+  INTEGER(PREC_VERTEXIDX)                      :: NVT,ipoint1,ipoint2
   INTEGER(PREC_ELEMENTIDX)                    :: ielement
   INTEGER(PREC_EDGEIDX)                       :: ndofs,idof,iedge
   INTEGER(I32), DIMENSION(2)                  :: ImodifierSize
@@ -1864,7 +1864,7 @@ CONTAINS
   INTEGER(I32) :: ieltype
   INTEGER, DIMENSION(2) :: IminEdge,ImaxEdge,Iminidx,Imaxidx
   REAL(DP),DIMENSION(NDIM2D)                  :: Dtangential,Dnormal
-  INTEGER(PREC_POINTIDX)                      :: NVT,ipoint1,ipoint2
+  INTEGER(PREC_VERTEXIDX)                      :: NVT,ipoint1,ipoint2
   INTEGER(PREC_ELEMENTIDX)                    :: ielement
   INTEGER(PREC_EDGEIDX)                       :: ndofs,idof,iedge
   INTEGER(I32), DIMENSION(2)                  :: InormalsSize

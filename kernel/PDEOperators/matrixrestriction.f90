@@ -95,7 +95,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel,iadj1,iadj2,iadj4,iel1,iel2,jadj2,jadj4,jel1,jel2
     INTEGER(PREC_EDGEIDX) :: imid1,imid2,imid3,imid4,imid5
     INTEGER(PREC_EDGEIDX) :: im1,im2,im3,im4,im5,im6,im7,im8,im9,im10,im11,im12
-    INTEGER(PREC_POINTIDX) :: nvt1,nvt2
+    INTEGER(PREC_VERTEXIDX) :: nvt1,nvt2
     INTEGER(PREC_MATIDX) :: ild
     TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtriaFine
     REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE2D) :: dcoords
@@ -108,7 +108,7 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), POINTER                 :: p_DvertexCoordsCoarse
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER    :: p_IedgesAtElementCoarse
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER    :: p_IedgesAtElementFine
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER   :: p_IverticesAtElementCoarse
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER   :: p_IverticesAtElementCoarse
     
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER       :: p_KldCoarse,p_KldFine
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER       :: p_KdiagonalCoarse,p_KdiagonalFine

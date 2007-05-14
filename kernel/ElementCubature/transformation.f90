@@ -347,7 +347,7 @@ CONTAINS
 !</subroutine>
 
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
 
     ! What type of transformation do we have? First decide on the dimension,
     ! then on the actual ID.
@@ -472,7 +472,7 @@ CONTAINS
 !</subroutine>
 
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER :: ipoint
     INTEGER(PREC_ELEMENTIDX) :: iel
 

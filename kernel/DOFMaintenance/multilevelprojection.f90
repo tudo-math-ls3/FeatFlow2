@@ -866,8 +866,8 @@ CONTAINS
   TYPE(t_interlevelProjectionScalar) :: ractProjection
   
   ! Pointers into the triangulation
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
@@ -1128,8 +1128,8 @@ CONTAINS
   TYPE(t_triangulation), POINTER :: p_rtriaCoarse,p_rtriaFine
   
   ! Pointers into the triangulation
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementCoarse
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElementFine
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
@@ -1644,10 +1644,10 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
 
   ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
@@ -1713,7 +1713,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
@@ -1735,7 +1735,7 @@ CONTAINS
   ! local variables
   REAL(DP), PARAMETER :: Q2 = .5_DP
   INTEGER(PREC_ELEMENTIDX) :: iel
-  INTEGER(PREC_POINTIDX) :: ih1
+  INTEGER(PREC_VERTEXIDX) :: ih1
   
     ! The information that was 'distributed' in the prolongation has to
     ! be 'collected'.
@@ -1775,7 +1775,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
   ! Number of vertices in the coarse grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVTcoarse
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
 !</input>
   
 !<output>
@@ -1815,7 +1815,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
 
   ! IedgesAtElement array (KMID) on the coarse grid
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
@@ -2096,7 +2096,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
 
   ! IedgesAtElement array (KMID) on the coarse grid
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
@@ -2357,10 +2357,10 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
   ! Number of vertices in the coarse grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVTcoarse
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NMTcoarse
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NMTcoarse
 !</input>
   
 !<output>
@@ -2417,7 +2417,7 @@ CONTAINS
   REAL(DP), PARAMETER :: Q4 = .25_DP
   
   INTEGER(PREC_ELEMENTIDX) :: iel
-  INTEGER(PREC_POINTIDX) :: IELH1,IELH2,IELH3,IELH4
+  INTEGER(PREC_VERTEXIDX) :: IELH1,IELH2,IELH3,IELH4
   REAL(DP) :: duh
 
     ! Loop over the elements
@@ -2573,10 +2573,10 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
 
   ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
@@ -2659,7 +2659,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
@@ -2680,7 +2680,7 @@ CONTAINS
   REAL(DP), PARAMETER :: Q4 = .25_DP
   
   INTEGER(PREC_ELEMENTIDX) :: iel
-  INTEGER(PREC_POINTIDX) :: i1,i2,i3,i4
+  INTEGER(PREC_VERTEXIDX) :: i1,i2,i3,i4
   
     ! The information that was 'distributed' in the prolongation has to
     ! be 'collected'.
@@ -2723,7 +2723,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
   ! Number of vertices in the coarse grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVTcoarse
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
 !</input>
   
 !<output>
@@ -2760,7 +2760,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
 
   ! IedgesAtElement array (KMID) on the fine grid
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
@@ -2769,7 +2769,7 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
 
   ! Number of vertices on the fine grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVTfine
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTfine
 
   ! Number of edges in the fine grid
   INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMTfine
@@ -2865,13 +2865,13 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
 
   ! IverticesAtElement array (KVERT) on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
   
   ! IedgesAtElement array (KMID) on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array (KMID) on the fine grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
@@ -3022,13 +3022,13 @@ CONTAINS
   REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
   
   ! Number of vertices in the coarse grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVTcoarse
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NMTcoarse
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NMTcoarse
 
   ! Number of elements in the coarse grid
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NELcoarse
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NELcoarse
 !</input>
   
 !<output>
@@ -3491,7 +3491,7 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
   REAL(DP), DIMENSION(:), INTENT(IN)                  :: DelementAreaCoarse
@@ -4019,7 +4019,7 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
   REAL(DP), DIMENSION(:), INTENT(IN)                  :: DelementAreaCoarse
@@ -4678,7 +4678,7 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
   REAL(DP), DIMENSION(:), INTENT(IN)                  :: DelementAreaCoarse
@@ -5206,7 +5206,7 @@ CONTAINS
   REAL(DP), DIMENSION(:,:), INTENT(IN)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
   REAL(DP), DIMENSION(:), INTENT(IN)                  :: DelementAreaCoarse

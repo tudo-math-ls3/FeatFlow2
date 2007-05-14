@@ -616,7 +616,7 @@ CONTAINS
     REAL(DP) :: dcenterX, dcenterY, XN, YN, G1, G2, dupsre, ELMH
     REAL(DP) :: DL0, DL2, H00, H22, dflux0, dflux2
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_POINTIDX) :: iv, ivt1,ivt2
+    INTEGER(PREC_VERTEXIDX) :: iv, ivt1,ivt2
     INTEGER(PREC_EDGEIDX) :: im1, im0, im2
     INTEGER I,II
     INTEGER ia1, ia2, J, JJ, ia
@@ -626,9 +626,9 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
     INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
     
-    INTEGER(PREC_POINTIDX) :: NVT
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_Kvert
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_Kmid
+    INTEGER(PREC_VERTEXIDX) :: NVT
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_Kvert
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_Kmid
     REAL(DP), DIMENSION(:,:), POINTER :: p_Dcorvg
     
     ! There is no additional type/completeness check in the parameters here. 
@@ -1581,7 +1581,7 @@ CONTAINS
   ! Triangulation
   TYPE(t_triangulation), POINTER :: p_rtriangulation
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -2905,7 +2905,7 @@ CONTAINS
   ! Triangulation
   TYPE(t_triangulation), POINTER :: p_rtriangulation
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement,p_IverticesAtElement
 
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
@@ -4313,8 +4313,8 @@ CONTAINS
   ! local degrees of freedom 1..IDFL on element IEL.
   INTEGER(PREC_DOFIDX), DIMENSION(*), INTENT(IN) :: KDFG
   
-  INTEGER(PREC_POINTIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
-  INTEGER(PREC_POINTIDX), DIMENSION(TRIA_MAXNME2D,*), INTENT(IN) :: Kmid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
+  INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNME2D,*), INTENT(IN) :: Kmid
   REAL(DP), DIMENSION(NDIM2D,*), INTENT(IN) :: Dcorvg
 
   ! local ddelta
@@ -4401,7 +4401,7 @@ CONTAINS
   ! Element where the local h should be calculated
   INTEGER(PREC_ELEMENTIDX), INTENT(IN)               :: JEL
   
-  INTEGER(PREC_POINTIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
+  INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN) :: Kvert
   INTEGER(PREC_EDGEIDX), DIMENSION(TRIA_MAXNVE2D,*), INTENT(IN)  :: Kmid
   REAL(DP), DIMENSION(NDIM2D,*), INTENT(IN)          :: Dcorvg
   
@@ -4416,7 +4416,7 @@ CONTAINS
   
   ! local variables
   REAL(DP) :: dlambda
-  INTEGER(PREC_POINTIDX) :: NECK1,NECK2,NECK3,NECK4
+  INTEGER(PREC_VERTEXIDX) :: NECK1,NECK2,NECK3,NECK4
   REAL(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
   REAL(DP) :: dalphaMax, dalpha
 
@@ -4602,7 +4602,7 @@ CONTAINS
   ! local variables
   INTEGER(PREC_DOFIDX) :: irow, jcol, idof
   INTEGER(PREC_EDGEIDX) :: IMT
-  INTEGER(PREC_POINTIDX) :: ivt1,ivt2,NVT
+  INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
   INTEGER(PREC_ELEMENTIDX) :: IEL
   LOGICAL :: bIdenticalTrialAndTest
   INTEGER :: IELcount,IDOFE, JDOFE, i, NVE, iedge
@@ -4642,8 +4642,8 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   
   ! Current element distribution
@@ -5559,7 +5559,7 @@ CONTAINS
   ! local variables
   INTEGER(PREC_DOFIDX) :: irow, jcol, idof
   INTEGER(PREC_EDGEIDX) :: IMT
-  INTEGER(PREC_POINTIDX) :: ivt1,ivt2,NVT
+  INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2,NVT
   INTEGER(PREC_ELEMENTIDX) :: IEL
   LOGICAL :: bIdenticalTrialAndTest
   INTEGER :: IELcount,IDOFE, JDOFE, i, NVE, iedge
@@ -5599,8 +5599,8 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IelementsAtEdge
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
   REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
   
   ! Current element distribution

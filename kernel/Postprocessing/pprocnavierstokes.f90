@@ -158,8 +158,8 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtBoundary
   INTEGER(PREC_EDGEIDX), DIMENSION(:), POINTER    :: p_IedgesAtBoundary
   INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER  :: p_IedgesAtElement
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
-  INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtEdge
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
   REAL(DP), DIMENSION(:), POINTER                 :: p_DvertexParameterValue
   INTEGER(I32), DIMENSION(:), POINTER             :: p_IboundaryCpIdx
   REAL(DP), DIMENSION(:,:), POINTER               :: p_DvertexCoordinates
@@ -514,7 +514,7 @@ CONTAINS
     INTEGER, PARAMETER :: NVE = 4
 
     INTEGER(PREC_ELEMENTIDX) :: iel,ielaux,icurrentelement
-    INTEGER(PREC_POINTIDX) :: jve
+    INTEGER(PREC_VERTEXIDX) :: jve
     INTEGER(I32) :: ieltype1,ieltype2,ieltypeDest
     INTEGER :: haux,ive,iadj
     INTEGER :: ilastMarked,imarkCounter,imarktmp
@@ -525,7 +525,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(:), POINTER :: p_Iind
     
     ! Stuff from the triangulation
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
@@ -751,10 +751,10 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), INTENT(IN)               :: DvertexCoords
     
     ! Vertices at the element
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
 
     ! Edges at the element
-    INTEGER(PREC_POINTIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
     
     ! Element number where to calculate the streamfunction
     INTEGER(PREC_ELEMENTIDX), INTENT(IN)               :: iel
@@ -777,7 +777,7 @@ CONTAINS
     ! local variables
     INTEGER, PARAMETER :: NVE = 4
     INTEGER :: ive,inextidx,inextvertex,imarked
-    INTEGER(PREC_POINTIDX) :: ivt,NVT
+    INTEGER(PREC_VERTEXIDX) :: ivt,NVT
     INTEGER(PREC_EDGEIDX) :: imid
     REAL(DP) :: dpx1,dpx2,dpy1,dpy2,dn1,dn2
     INTEGER :: ilastMarked

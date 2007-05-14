@@ -534,7 +534,7 @@ CONTAINS
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
   
   ! Number of corner vertices in the triangulation
-  INTEGER(PREC_POINTIDX), INTENT(IN) :: NVT
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
   
   ! Number of edes in the triangulation
   INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMT
