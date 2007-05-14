@@ -112,7 +112,7 @@ CONTAINS
     rnonlinearIteration%dgamma1 = REAL(1-rproblem%iequation,DP)
     rnonlinearIteration%deta1   = 1.0_DP
     rnonlinearIteration%dtau1   = 1.0_DP
-    rnonlinearIteration%dmu1    = dalphaC
+    rnonlinearIteration%dmu1    = 1.0_DP/dalphaC
 
     rnonlinearIteration%diota2  = 0.0_DP
     rnonlinearIteration%dkappa2 = 0.0_DP

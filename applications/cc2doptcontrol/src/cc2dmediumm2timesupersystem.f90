@@ -530,7 +530,7 @@ CONTAINS
         rnonlinearIterationTmp%dtau1 = 1.0_DP
         rnonlinearIterationTmp%dtau2 = 0.0_DP
         
-        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep * rsupermatrix%dalphaC
+        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep / rsupermatrix%dalphaC
         rnonlinearIterationTmp%dmu2 = -rsupermatrix%dgammaC
         
         ! Assemble the system matrix on level rsupermatrix%NLMAX.
@@ -640,7 +640,7 @@ CONTAINS
         rnonlinearIterationTmp%dtau1 = 1.0_DP
         rnonlinearIterationTmp%dtau2 = 1.0_DP
         
-        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep * rsupermatrix%dalphaC
+        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep / rsupermatrix%dalphaC
         rnonlinearIterationTmp%dmu2 = -rsupermatrix%dtstep
       
         ! Assemble the system matrix on level rsupermatrix%NLMAX.
@@ -1095,7 +1095,7 @@ CONTAINS
         rnonlinearIterationTmp%dgamma1 = rsupermatrix%dtstep * REAL(1-rproblem%iequation,DP)
         rnonlinearIterationTmp%deta1 = 1.0_DP
         rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep * rsupermatrix%dalphaC
+        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep / rsupermatrix%dalphaC
 
         rnonlinearIterationTmp%diota2 = 0.0_DP
         rnonlinearIterationTmp%dkappa2 = 1.0_DP
@@ -1208,7 +1208,7 @@ CONTAINS
         rnonlinearIterationTmp%dgamma1 = rsupermatrix%dtstep * REAL(1-rproblem%iequation,DP)
         rnonlinearIterationTmp%deta1 = rsupermatrix%dtstep
         rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep * rsupermatrix%dalphaC
+        rnonlinearIterationTmp%dmu1 = rsupermatrix%dtstep / rsupermatrix%dalphaC
 
         rnonlinearIterationTmp%diota2 = 0.0_DP
         rnonlinearIterationTmp%dkappa2 = 0.0_DP
