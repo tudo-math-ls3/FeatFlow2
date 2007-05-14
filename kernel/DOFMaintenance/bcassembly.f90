@@ -1414,111 +1414,151 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex
-  INTEGER :: i,ipart,j,k,icount
-  INTEGER(PREC_VERTEXIDX) :: NVT
-  TYPE(t_discreteBCFeastMirror),POINTER       :: p_rfeastMirrorBCs
-  TYPE(t_triangulation), POINTER              :: p_rtriangulation
-  TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
-  INTEGER(I32), DIMENSION(:), POINTER         :: p_IverticesAtBoundary
-  
-  INTEGER(I32), DIMENSION(:), POINTER         :: p_ImirrorBCs
-  
-  INTEGER :: icomponent,ieltype
-  
-  ! NOTE:
-  ! The routine is definitively buggy!
-  ! It was build to find a bug in FEAST. E.g. it works only if there are
-  ! 'enough' points in the boundary region and if the discretisation is
-  ! done with Q1!
-  
-  ! The BC's only exist as modification of the matrix.
-  ! If we should not compute them for the matrix/defect, we don't 
-  ! have to do anything.
-  IF (IAND(casmComplexity,BCASM_DISCFORMAT) .EQ. 0) RETURN
+    ! local variables
+    INTEGER, DIMENSION(2) :: IminVertex,ImaxVertex
+    INTEGER :: i,ipart,icount,ipos,ndofsInRegion
+    INTEGER(PREC_VERTEXIDX) :: NVT
+    TYPE(t_discreteBCFeastMirror),POINTER       :: p_rfeastMirrorBCs
+    TYPE(t_triangulation), POINTER              :: p_rtriangulation
+    TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
+    INTEGER(I32), DIMENSION(:), POINTER         :: p_IverticesAtBoundary
+    
+    INTEGER(I32), DIMENSION(:), POINTER         :: p_ImirrorDOFs
+    
+    INTEGER :: icomponent,ieltype
+    
+    TYPE (t_boundaryregion) :: rboundaryRegionClosed
+    
+    ! NOTE:
+    ! The routine is definitively buggy!
+    ! It was build to find a bug in FEAST. E.g. it works only if there are
+    ! 'enough' points in the boundary region and if the discretisation is
+    ! done with Q1!
+    
+    ! The BC's only exist as modification of the matrix.
+    ! If we should not compute them for the matrix/defect, we don't 
+    ! have to do anything.
+    IF (IAND(casmComplexity,BCASM_DISCFORMAT) .EQ. 0) RETURN
 
-  ! Get the discretisation structures from one of the components of the solution
-  ! vector that is to be modified.
-  icomponent = rbcRegion%Iequations(1)
-  p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(icomponent)
+    ! Get the discretisation structures from one of the components of the solution
+    ! vector that is to be modified.
+    icomponent = rbcRegion%Iequations(1)
+    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscretisation(icomponent)
 
-  IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
-    PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
-    PRINT *,'for uniform discretisations!'
-    STOP
-  END IF
-  
-  ! For easier access:
-  p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
-  CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+    IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
+      PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
+      PRINT *,'for uniform discretisations!'
+      STOP
+    END IF
+    
+    ! For easier access:
+    p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+    CALL storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
 
-  IF (p_rtriangulation%ndim .NE. NDIM2D) THEN
-    PRINT *,'FEAST mirror boundary only support 2D!'
-    STOP
-  END IF
-  
-  ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
-  IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1) THEN
-    PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
-    PRINT *,'for Q1 element!'
-    STOP
-  END IF
+    IF (p_rtriangulation%ndim .NE. NDIM2D) THEN
+      PRINT *,'FEAST mirror boundary only support 2D!'
+      STOP
+    END IF
+    
+    ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
+    IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1) THEN
+      PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
+      PRINT *,'for Q1 element!'
+      STOP
+    END IF
 
-  ! All elements are of the samne type. Get information about the shape in advance.
-  NVT = p_rtriangulation%NVT
+    ! All elements are of the samne type. Get information about the shape in advance.
+    NVT = p_rtriangulation%NVT
 
-  ! We have FEAST mirror boundary conditions
-  rdiscreteBC%itype = DISCBC_TPFEASTMIRROR
-  
-  ! Connect to the boundary condition structure
-  rdiscreteBC%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
-  
-  ! Fill the structure for discrete Dirichlet BC's in the
-  ! t_discreteBCEntry structure
-  p_rfeastMirrorBCs => rdiscreteBC%rfeastMirrorBCs
-  
-  p_rfeastMirrorBCs%icomponent = icomponent
-  
-  ! We have to deal with all DOF's on the boundary. This is highly element
-  ! dependent and therefore a little bit tricky :(
-  !
-  ! As we are in 2D, we can use parameter values at first to figure out,
-  ! which points and which edges are on the boundary.
-  ! What we have is a boundary segment. Now ask the boundary-index routine
-  ! to give us the minimum and maximum index of the vertices and edges on the
-  ! bondary that belong to this boundary segment.
-  
-  CALL bcasm_getVertInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
-                                rbcRegion%rboundaryRegion, &
-                                IminVertex,ImaxVertex,icount)
-                                 
-  ! Cancel if the set is empty!
-  IF (icount .EQ. 0) THEN
-    ! Assign ST_NOHANDLE to the h_ImirrorBCs handle to instruct the BC filter
-    ! to do nothing.
-    p_rfeastMirrorBCs%h_ImirrorBCs = ST_NOHANDLE
-    RETURN
-  END IF
-  
-  ! Allocate a KNPR-like array that decides for every vertex if it's in the
-  ! region or not. That's a bitfield!
-  CALL storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorBCs', &
-                  INT((NVT+31)/32,I32), ST_INT, &
-                  p_rfeastMirrorBCs%h_ImirrorBCs, ST_NEWBLOCK_ZERO)
-  CALL storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorBCs,p_ImirrorBCs)
-  
-  ! The vertices in this region are at the same time the DOF's, and when
-  ! setting up the matrix, all corresponding matrix entries are doubled.
-  ! Set the corresponding bit of every DOF in this region to 1.
-  DO ipart=1,icount
-    DO i=IminVertex(ipart),ImaxVertex(ipart)
-      j = 1+ISHFT(p_IverticesAtBoundary(i)-1_I32,-5_I32)
-      k = IAND(p_IverticesAtBoundary(i)-1_I32,INT(2**6-1,I32))
-      p_ImirrorBCs(j) = IBSET(p_ImirrorBCs(j),k)
+    ! We have FEAST mirror boundary conditions
+    rdiscreteBC%itype = DISCBC_TPFEASTMIRROR
+    
+    ! Connect to the boundary condition structure
+    rdiscreteBC%p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
+    
+    ! Fill the structure for discrete Dirichlet BC's in the
+    ! t_discreteBCEntry structure
+    p_rfeastMirrorBCs => rdiscreteBC%rfeastMirrorBCs
+    
+    p_rfeastMirrorBCs%icomponent = icomponent
+    
+    ! We have to deal with all DOF's on the boundary. This is highly element
+    ! dependent and therefore a little bit tricky :(
+    !
+    ! As we are in 2D, we can use parameter values at first to figure out,
+    ! which points and which edges are on the boundary.
+    ! What we have is a boundary segment. Now ask the boundary-index routine
+    ! to give us the minimum and maximum index of the vertices and edges on the
+    ! bondary that belong to this boundary segment.
+    
+    CALL bcasm_getVertInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
+                                  rbcRegion%rboundaryRegion, &
+                                  IminVertex,ImaxVertex,icount)
+                                   
+    ! Cancel if the set is empty!
+    IF (icount .EQ. 0) THEN
+      ! Assign ST_NOHANDLE to the h_ImirrorBCs handle to instruct the BC filter
+      ! to do nothing.
+      p_rfeastMirrorBCs%h_ImirrorDOFs = ST_NOHANDLE
+      RETURN
+    END IF
+    
+    ! Total number of DOF's in the region
+    ndofsInRegion = ImaxVertex(1)-IminVertex(1)+1 + &
+                    ImaxVertex(2)-IminVertex(2)+1
+                    
+    ! Allocate an array for all the DOF's
+    CALL storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFs', &
+                    ndofsInRegion, ST_INT, &
+                    p_rfeastMirrorBCs%h_ImirrorDOFs, ST_NEWBLOCK_ZERO)
+    CALL storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFs,p_ImirrorDOFs)
+    
+    ! Put all DOF's in that array.
+    ipos = 0
+    DO ipart=1,icount
+      DO i=IminVertex(ipart),ImaxVertex(ipart)
+        ipos = ipos+1
+        p_ImirrorDOFs(ipos) = p_IverticesAtBoundary(i)
+      END DO
     END DO
-  END DO
-                                 
+    
+    ! Sort the array for quicker access.
+    CALL sort_i32(p_ImirrorDOFs)
+    
+    ! p_ImirrorDOFs contains all BC's that have to be processed.
+    ! But it does not contain all DOF's that are to be doubled in the matrix.
+    !
+    ! Duplicate the boundary region and include start- and endpoint
+    rboundaryRegionClosed = rbcRegion%rboundaryRegion
+    rboundaryRegionClosed%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+    
+    ! Then collect all DOF's inside of that like above.
+    CALL bcasm_getVertInBCregion (p_rtriangulation,p_rspatialDiscretisation%p_rboundary, &
+                                  rboundaryRegionClosed, &
+                                  IminVertex,ImaxVertex,icount)
+                                   
+    ! Total number of DOF's in the closed region
+    ndofsInRegion = ImaxVertex(1)-IminVertex(1)+1 + &
+                    ImaxVertex(2)-IminVertex(2)+1
+                    
+    ! Allocate an array for all the DOF's
+    CALL storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFsClosed', &
+                    ndofsInRegion, ST_INT, &
+                    p_rfeastMirrorBCs%h_ImirrorDOFsClosed, ST_NEWBLOCK_ZERO)
+    CALL storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFsClosed,p_ImirrorDOFs)
+    
+    ! Put all DOF's in that array.
+    ipos = 0
+    DO ipart=1,icount
+      DO i=IminVertex(ipart),ImaxVertex(ipart)
+        ipos = ipos+1
+        p_ImirrorDOFs(ipos) = p_IverticesAtBoundary(i)
+      END DO
+    END DO
+    
+    ! Sort the array for quicker access.
+    CALL sort_i32(p_ImirrorDOFs)
+                                     
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -1541,8 +1581,10 @@ CONTAINS
 
   ! Release what is associated
   
-  IF (rdiscreteBCFeastMirror%h_ImirrorBCs .NE. ST_NOHANDLE) &
-    CALL storage_free(rdiscreteBCFeastMirror%h_ImirrorBCs)
+  IF (rdiscreteBCFeastMirror%h_ImirrorDOFsClosed .NE. ST_NOHANDLE) &
+    CALL storage_free(rdiscreteBCFeastMirror%h_ImirrorDOFsClosed)
+  IF (rdiscreteBCFeastMirror%h_ImirrorDOFs .NE. ST_NOHANDLE) &
+    CALL storage_free(rdiscreteBCFeastMirror%h_ImirrorDOFs)
 
   END SUBROUTINE
   

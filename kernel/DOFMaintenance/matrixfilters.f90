@@ -491,11 +491,13 @@ CONTAINS
 !</subroutine>
     
   ! local variables
-  INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorBCs
-  INTEGER :: j,k
+  INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorDOFs,p_ImirrorDOFsClosed
+  INTEGER :: i,j
   REAL(DP), DIMENSION(:), POINTER :: p_Da
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol,p_Iperm
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol,p_Iperm,p_IpermInverse
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
   INTEGER(PREC_MATIDX) :: ia
+  INTEGER(PREC_DOFIDX) :: idof
 
   ! Offdiagonal matrices are not processed by this routine up to now.
   IF (boffDiag) RETURN
@@ -519,7 +521,7 @@ CONTAINS
     STOP
   END IF
   
-  IF (rfmbcStructure%h_ImirrorBCs .EQ. ST_NOHANDLE) THEN
+  IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
     ! No data inside of this structure.
     ! May happen if the region is not large enough to cover at least one DOF.
     RETURN
@@ -528,11 +530,17 @@ CONTAINS
   ! Get the matrix data
   CALL lsyssc_getbase_double (rmatrix,p_Da)
   CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+  CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
   
-  ! Get pointers to the bitfield which decides for every DOF if the
-  ! corresponding matrix entry has to be changed or not. 
+  ! Get pointers to the list of DOF's that belong to that region and have
+  ! to be tackled.
+  ! p_ImirrorDOFs is a list of all DOF's in the region.
+  ! p_ImirrorDOFsClosed is a list of all DOF's in the closure of the region.
+  ! For every DOF in the region, it's neighbours have to be found in the
+  ! clusure. If that's the case, the corresponding matrix entry has to be doubled.
   
-  CALL storage_getbase_int(rfmbcStructure%h_ImirrorBCs,p_ImirrorBCs)
+  CALL storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
+  CALL storage_getbase_int(rfmbcStructure%h_ImirrorDOFsClosed,p_ImirrorDOFsClosed)
 
   ! The matrix column corresponds to the DOF. For every DOF decide on
   ! whether it's on the FEAST mirror boundary component or not.
@@ -541,31 +549,63 @@ CONTAINS
   ! Is the matrix sorted?
   IF (rmatrix%isortStrategy .LE. 0) THEN
     
-    ! Unsorted matrix
-    DO ia=1,rmatrix%NA
-      j = 1+ISHFT(p_Kcol(ia)-1_I32,-5_I32)
-      k = IAND(p_Kcol(ia)-1_I32,INT(2**6-1,I32))
-      IF (BTEST(p_ImirrorBCs(j),k)) THEN
-        p_Da(ia) = 2.0_DP*p_Da(ia) 
-      END IF
+    ! Loop through the DOF's. Each DOF gives us a matrix row to change.
+    DO i=1,SIZE(p_ImirrorDOFs)
+    
+      ! Loop through the matrix row. All DOF's in that matrix row that
+      ! belong to the closed region have to be changed.
+      DO ia=p_Kld(p_ImirrorDOFs(i)),p_Kld(p_ImirrorDOFs(i)+1)-1
+        ! Get the DOF.
+        idof = p_Kcol(ia)
+        
+        ! Search the DOF in our list. Ok, that's an n^2 algorithm.
+        ! It could easily replaced by an n log n algorithm using binary
+        ! search since the list of DOF's is sorted!
+        ! Probably in a later implementation...
+        DO j=1,SIZE(p_ImirrorDOFsClosed)
+          IF (p_ImirrorDOFsClosed(j) .EQ. idof) THEN
+            p_Da(ia) = 2.0_DP * p_Da(ia)
+            EXIT
+          END IF
+        END DO
+        
+      END DO
+      
     END DO
-  
+    
   ELSE
   
     ! Ok, matrix is sorted, so we have to filter all the DOF's through the
     ! permutation before using them for implementing boundary conditions.
     !
-    ! Get the permutation from the matrix to renumber the columns into
+    ! Get the permutation/inverse permutation from the matrix to renumber the columns into
     ! the actual DOF numbers.
     CALL storage_getbase_int (rmatrix%h_IsortPermutation,p_Iperm)
-    p_Iperm => p_Iperm(1:rmatrix%NEQ)
+    p_IpermInverse => p_Iperm(1:rmatrix%NEQ)
+    p_Iperm => p_Iperm(rmatrix%NEQ+1:)
     
-    DO ia=1,rmatrix%NA
-      j = 1+ISHFT(p_Iperm(p_Kcol(ia))-1_I32,-5_I32)
-      k = IAND(p_Iperm(p_Kcol(ia))-1_I32,INT(2**6-1,I32))
-      IF (BTEST(p_ImirrorBCs(j),k)) THEN
-        p_Da(ia) = 2.0_DP*p_Da(ia) 
-      END IF
+    ! Loop through the DOF's. Each DOF gives us a matrix row to change.
+    DO i=1,SIZE(p_ImirrorDOFs)
+    
+      ! Loop through the matrix row. All DOF's in that matrix row that
+      ! belong to our region have to be changed.
+      DO ia=p_Kld(p_Iperm(p_ImirrorDOFs(i))),&
+            p_Kld(p_Iperm(p_ImirrorDOFs(i))+1)-1
+        ! Get the DOF.
+        idof = p_IpermInverse(p_Kcol(ia))
+        
+        ! Search the DOF in our list. Ok, that's an n^2 algorithm.
+        ! It could easily replaced by an n log n algorithm since the list
+        ! of DOF's is sorted!
+        DO j=1,SIZE(p_ImirrorDOFsClosed)
+          IF (p_ImirrorDOFsClosed(j) .EQ. idof) THEN
+            p_Da(ia) = 2.0_DP * p_Da(ia)
+            EXIT
+          END IF
+        END DO
+        
+      END DO
+      
     END DO
 
   END IF

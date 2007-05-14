@@ -14,7 +14,7 @@
 !# 1.) sort_int
 !#     -> Sort an integer array
 !#
-!# 2.) sort_int32
+!# 2.) sort_i32
 !#     -> Sort an integer(I32) array
 !#
 !# 3.) sort_sp

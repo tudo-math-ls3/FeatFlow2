@@ -775,6 +775,98 @@ CONTAINS
   
   END SUBROUTINE
 
+! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE vecfil_imposeFeastMirrorBC (rx,rfmbcStructure)
+  
+!<description>
+  ! Implements discrete Feast Mirror BC's into a scalar vector.
+!</description>
+
+!<input>
+  ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
+  TYPE(t_discreteBCFeastMirror), INTENT(IN), TARGET  :: rfmbcStructure
+!</input>
+
+!<inputoutput>
+  ! The scalar vector where the boundary conditions should be imposed.
+  TYPE(t_vectorBlock), INTENT(INOUT), TARGET :: rx
+!</inputoutput>
+  
+!</subroutine>
+    
+  ! local variables
+  INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorDOFs
+  INTEGER :: i,j,k
+  REAL(DP), DIMENSION(:), POINTER    :: p_Ivec
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
+  INTEGER(PREC_MATIDX) :: ia
+  INTEGER(PREC_DOFIDX) :: idof
+
+  ! Impose the DOF value directly into the vector - more precisely, into the
+  ! components of the subvector that is indexed by icomponent.
+  
+  IF (rx%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'matfil_imposeFeastMirrorBC: Matrix must be double precision'
+    STOP
+  END IF
+  
+  IF (rfmbcStructure%icomponent .EQ. 0) THEN
+    PRINT *,'Error: FMBC not configured'
+    STOP
+  END IF
+  
+  IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
+    ! No data inside of this structure.
+    ! May happen if the region is not large enough to cover at least one DOF.
+    RETURN
+  END IF
+  
+  ! Get the vector data
+  CALL lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Ivec)
+  
+  ! Get pointers to the list of DOF's that belong to that region and have
+  ! to be tackled.
+  CALL storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
+
+  ! The vector entry corresponds to the DOF. For every DOF decide on
+  ! whether it's on the FEAST mirror boundary component or not.
+  ! If yes, double the entry entry.
+  
+  ! Is the vector sorted?
+  IF (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .LE. 0) THEN
+    
+    ! Loop through the DOF's. Each DOF gives us the number of an entry
+    ! which is to be doubled.
+    DO i=1,SIZE(p_ImirrorDOFs)
+      p_Ivec(p_ImirrorDOFs(i)) = 2.0_DP * p_Ivec(p_ImirrorDOFs(i))
+    END DO
+    
+  ELSE
+  
+    ! Ok, vector is sorted, so we have to filter all the DOF's through the
+    ! permutation before using them for implementing boundary conditions.
+    !
+    ! Get the permutation (or more precisely, the inverse permutation)
+    ! from the vector to renumber the columns into
+    ! the actual DOF numbers.
+    CALL storage_getbase_int (&
+        rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
+    p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
+    
+    ! Loop through the DOF's. Each DOF gives us the number of an entry
+    ! which is to be doubled.
+    DO i=1,SIZE(p_ImirrorDOFs)
+      p_Ivec(p_Iperm(p_ImirrorDOFs(i))) = 2.0_DP * p_Ivec(p_Iperm(p_ImirrorDOFs(i)))
+    END DO
+
+  END IF
+  
+  END SUBROUTINE
+  
   ! ***************************************************************************
   ! Implementation of discrete boundary conditions into block solution vectors
   ! ***************************************************************************
@@ -958,7 +1050,7 @@ CONTAINS
         ! Nothing to do.
         
       CASE (DISCBC_TPFEASTMIRROR)
-        ! Nothing to do
+        CALL vecfil_imposeFeastMirrorBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCrhs: unknown boundary condition: ',&

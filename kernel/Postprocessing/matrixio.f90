@@ -382,7 +382,7 @@ MODULE matrixio
         dval = p_DrowVec(j)
         IF ((.NOT. bnoZero) .OR. (dval .NE. 0.0_DP)) THEN
           IF (dval .EQ. SYS_MAXREAL) THEN
-            WRITE (cf,sformatChar, ADVANCE='NO') '0'
+            WRITE (cf,sformat, ADVANCE='NO') 0.0_DP
           ELSE
             WRITE (cf,sformat,ADVANCE='NO') dval
           END IF
@@ -393,7 +393,7 @@ MODULE matrixio
       dval = p_DrowVec(ncol)
       IF ((.NOT. bnoZero) .OR. (dval .NE. 0.0_DP)) THEN
         IF (dval .EQ. SYS_MAXREAL) THEN
-          WRITE (cf,sformatChar) '0'
+          WRITE (cf,sformat) 0.0_DP
         ELSE
           WRITE (cf,sformat) dval
         END IF

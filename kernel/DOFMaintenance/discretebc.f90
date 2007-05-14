@@ -217,13 +217,14 @@ MODULE discretebc
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
     INTEGER                            :: icomponent        = 0
     
-    ! Handle to a bitfield. For every vertex, the corresponding bit is set to 1
-    ! if the vertex is in a boundary region that is declared as FEAST mirror
-    ! boundary.
-    !   array [1..*] of integer
-    ! A value of ST_NOHANDLE specifies that there is nothing to do as there are
-    ! no DOF's in the analytic boundary region.
-    INTEGER :: h_ImirrorBCs   = ST_NOHANDLE
+    ! Handle to a list of all DOF's in the FEAST mirror boundary region.
+    ! The list is sorted for increasing DOF numbers.
+    INTEGER :: h_ImirrorDOFs   = ST_NOHANDLE
+
+    ! Handle to a list of all DOF's in the FEAST mirror boundary region
+    ! plus the start- and endpoint
+    ! The list is sorted for increasing DOF numbers.
+    INTEGER :: h_ImirrorDOFsClosed   = ST_NOHANDLE
     
   END TYPE
   

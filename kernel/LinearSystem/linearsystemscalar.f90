@@ -461,6 +461,10 @@ MODULE linearsystemscalar
     ! The first NEQ entries (1..NEQ) represent the permutation how to
     ! sort an unsorted vector. The second NEQ entries (NEQ+1..2*NEQ)
     ! represent the inverse permutation.
+    ! Looking from another viewpoint with the background of how a vector
+    ! is renumbered, one can say:
+    !  p_IsortPermutation (position in sorted vector) = position in unsorted vector.
+    !  p_IsortPermutation (NVT+position in unsorted vector) = position in sorted vector.
     ! Whether or not the vector is actually sorted depends on the
     ! flag isortStrategy!
     INTEGER         :: h_IsortPermutation = ST_NOHANDLE
@@ -568,6 +572,10 @@ MODULE linearsystemscalar
     ! The first NEQ entries (1..NEQ) represent the permutation how to
     ! sort an unsorted matrix. The second NEQ entries (NEQ+1..2*NEQ)
     ! represent the inverse permutation.
+    ! Looking from another viewpoint with the background of how a matrix
+    ! is renumbered, one can say:
+    !  p_IsortPermutation (column in sorted matrix) = column in unsorted matrix.
+    !  p_IsortPermutation (NVT+column in unsorted matrix) = column in sorted matrix.
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
     INTEGER         :: h_IsortPermutation = ST_NOHANDLE
