@@ -101,19 +101,20 @@ MODULE multilevelprojection
     INTEGER                     :: iprolongationOrder = -1
     
     ! Prolongation variant for nonconforming elements.
-    ! Allows for the elements E030/EM30/E031/EM31 to switch to a special-type 
-    ! prolongation.
-    ! = 0: Use default prolongation,
+    ! Allows to switch to a special-type prolongation. Whether or not this
+    ! has an effect depends on the discretisation.
+    ! = 0: Use default prolongation.
+    ! Uniform discretisation with E030/E031/EM30/EM31:
     ! = 1: Use standard prolongation, equally weighted (1/2 from left, 1/2 from right),
     ! = 2: Use extended prolongation, equally weighted (1/2 from left, 1/2 from right),
     ! = 3: Use extended prolongation, weighted by element size (L2 projection),
     ! = 4: Use extended prolongation, weighted by element size of neighbour element
     ! To activate extended prolongation, set this to >= 2 after initialising the
     ! interlevel projection structure!
-    INTEGER                     :: iprolEX3Yvariant = 0
+    INTEGER                     :: iprolVariant = 0
     
     ! Configuration parameter for extended prolongation of E030/EM30/E031/EM31
-    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! element. Only valid if iprolVariant >= 2.
     ! Aspect-ratio indicator; controls switching to constant prolongation.
     ! <=1: switch depending on aspect ratio of current element (standard),
     !  =2: switch depending on aspect ratio of current element and
@@ -121,7 +122,7 @@ MODULE multilevelprojection
     INTEGER                     :: iprolARIndicatorEX3Y = 1
     
     ! Configuration parameter for extended prolongation of E030/EM30/E031/EM31
-    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! element. Only valid if iprolVariant >= 2.
     ! Upper bound aspect ratio; for all elements with higher AR
     ! the prolongation is switched to constant prolongation .
     ! This is set to 20.0 by default according to the analysis in
@@ -152,19 +153,20 @@ MODULE multilevelprojection
     INTEGER                     :: irestrictionOrder = -1
 
     ! Restriction variant for nonconforming elements.
-    ! Allows for the elements E030/EM30/E031/EM31 to switch to a special-type 
-    ! prolongation.
-    ! = 0: Use default restriction,
+    ! Allows to switch to a special-type restriction. Whether or not this
+    ! has an effect depends on the discretisation.
+    ! = 0: Use default restriction.
+    ! Uniform discretisation with E030/E031/EM30/EM31:
     ! = 1: Use standard restriction, equally weighted (1/2 from left, 1/2 from right),
     ! = 2: Use extended restriction, equally weighted (1/2 from left, 1/2 from right),
     ! = 3: Use extended restriction, weighted by element size (L2 projection),
     ! = 4: Use extended restriction, weighted by element size of neighbour element
     ! To activate extended prolongation, set this to >= 2 after initialising the
     ! interlevel projection structure!
-    INTEGER                     :: irestEX3Yvariant = 0
+    INTEGER                     :: irestVariant = 0
     
     ! Configuration parameter for extended restriction of E030/EM30/E031/EM31
-    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! element. Only valid if irestVariant >= 2.
     ! Aspect-ratio indicator; controls switching to constant prolongation.
     ! <=1: switch depending on aspect ratio of current element (standard),
     !  =2: switch depending on aspect ratio of current element and
@@ -172,7 +174,7 @@ MODULE multilevelprojection
     INTEGER                     :: irestARIndicatorEX3Y = 1
     
     ! Configuration parameter for extended restriction of E030/EM30/E031/EM31
-    ! element. Only valid if iprolEX3Yvariant >= 2.
+    ! element. Only valid if irestVariant >= 2.
     ! Upper bound aspect ratio; for all elements with higher AR
     ! the prolongation is switched to constant prolongation .
     ! This is set to 20.0 by default according to the analysis in
@@ -521,12 +523,12 @@ CONTAINS
 
   ! Set default prolongation/restriction for Ex3y-type elements 
   ! if not specified
-  IF (ractProjection%iprolEX3Yvariant .EQ. 0) THEN
-    ractProjection%iprolEX3Yvariant = 1
+  IF (ractProjection%iprolVariant .EQ. 0) THEN
+    ractProjection%iprolVariant = 1
   END IF
 
-  IF (ractProjection%irestEX3Yvariant .EQ. 0) THEN
-    ractProjection%irestEX3Yvariant = 1
+  IF (ractProjection%irestVariant .EQ. 0) THEN
+    ractProjection%irestVariant = 1
   END IF
 
   ! Check to see if the discretisation structures fit to the projection structure
@@ -1019,9 +1021,9 @@ CONTAINS
                                p_IneighboursAtElementCoarse)
           
           ! Type of prolongation? Extended or not?
-          SELECT CASE (ractProjection%iprolEX3Yvariant)
+          SELECT CASE (ractProjection%iprolVariant)
           CASE (:1) ! Standard prolongation
-            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
+            IF (IAND(ractProjection%ielementTypeProlongation,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
                   p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
@@ -1044,7 +1046,7 @@ CONTAINS
             CALL storage_getbase_double(p_rtriaCoarse%h_DelementVolume, &
                                         p_DelementAreaCoarse)
             ! (what a nasty call...)                                       
-            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
+            IF (IAND(ractProjection%ielementTypeProlongation,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
               CALL mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
                       p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
@@ -1052,7 +1054,7 @@ CONTAINS
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                       p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
-                      MIN(4,ractProjection%iprolEX3Yvariant)-2, &
+                      MIN(4,ractProjection%iprolVariant)-2, &
                       ractProjection%dprolARboundEX3Y, &
                       ractProjection%iprolARIndicatorEX3Y)
             ELSE
@@ -1063,7 +1065,7 @@ CONTAINS
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                       p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
-                      MIN(4,ractProjection%iprolEX3Yvariant)-2, &
+                      MIN(4,ractProjection%iprolVariant)-2, &
                       ractProjection%dprolARboundEX3Y, &
                       ractProjection%iprolARIndicatorEX3Y)
             END IF
@@ -1280,7 +1282,7 @@ CONTAINS
                                p_IneighboursAtElementCoarse)
 
           ! Type of restriction? Extended or not?
-          SELECT CASE (ractProjection%iprolEX3Yvariant)
+          SELECT CASE (ractProjection%irestVariant)
           CASE (:1) ! Standard prolongation
             IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
               ! DOF's = integral mean values
@@ -1313,7 +1315,7 @@ CONTAINS
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                       p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
-                      MIN(4,ractProjection%iprolEX3Yvariant)-2, &
+                      MIN(4,ractProjection%irestVariant)-2, &
                       ractProjection%dprolARboundEX3Y, &
                       ractProjection%iprolARIndicatorEX3Y)
             ELSE
@@ -1324,7 +1326,7 @@ CONTAINS
                       p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                       p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                       p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL, &
-                      MIN(4,ractProjection%iprolEX3Yvariant)-2, &
+                      MIN(4,ractProjection%irestVariant)-2, &
                       ractProjection%dprolARboundEX3Y, &
                       ractProjection%iprolARIndicatorEX3Y)
             END IF
