@@ -706,8 +706,8 @@ CONTAINS
     CALL parlst_getvalue_int (p_rsection,'iinterpolationVariantVel',i1,0)
     
     IF (i1 .NE. -1) THEN
-      rprojection%RscalarProjection(:,1:NDIM2D)%iprolEX3Yvariant  = i1
-      rprojection%RscalarProjection(:,1:NDIM2D)%irestEX3Yvariant  = i1
+      rprojection%RscalarProjection(:,1:NDIM2D)%iprolVariant  = i1
+      rprojection%RscalarProjection(:,1:NDIM2D)%irestVariant  = i1
     END IF
     
     ! Aspect-ratio indicator in case of Q1~ discretisation
