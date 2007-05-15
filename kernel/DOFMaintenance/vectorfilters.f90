@@ -810,7 +810,7 @@ CONTAINS
   ! components of the subvector that is indexed by icomponent.
   
   IF (rx%cdataType .NE. ST_DOUBLE) THEN
-    PRINT *,'matfil_imposeFeastMirrorBC: Matrix must be double precision'
+    PRINT *,'vecfil_imposeFeastMirrorBC: Matrix must be double precision'
     STOP
   END IF
   
