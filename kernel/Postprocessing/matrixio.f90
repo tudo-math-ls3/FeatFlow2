@@ -368,39 +368,42 @@ MODULE matrixio
                      ST_DOUBLE, h_DrowVec, ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_double(h_DrowVec, p_DrowVec)
     DO i=1, nrow
+      
       ! Extract row i
-      DO j=1, ncol
-        p_DrowVec(j) = 0.0_DP
-      END DO
+      IF (bnoZero) THEN
+        ! SYS_MAXREAL is written out as '.'
+        DO j=1, ncol
+          p_DrowVec(j) = SYS_MAXREAL
+        END DO
+      ELSE
+        DO j=1, ncol
+          p_DrowVec(j) = 0.0_DP
+        END DO
+      END IF
+      
       DO j=0, Irow(i+1)-Irow(i)-1
         k = Irow(i)+j
         p_DrowVec(Icol(k)) = Da(k)
-        IF (Da(k) .EQ. 0.0_DP) p_DrowVec(Icol(k)) = SYS_MAXREAL
       END DO
+      
       ! Write row i
       DO j=1, ncol-1
         dval = p_DrowVec(j)
-        IF ((.NOT. bnoZero) .OR. (dval .NE. 0.0_DP)) THEN
-          IF (dval .EQ. SYS_MAXREAL) THEN
-            WRITE (cf,sformat, ADVANCE='NO') 0.0_DP
-          ELSE
-            WRITE (cf,sformat,ADVANCE='NO') dval
-          END IF
-        ELSE
+        IF (bnoZero .AND. (dval .EQ. SYS_MAXREAL)) THEN
           WRITE (cf,sformatChar, ADVANCE='NO') '.'
+        ELSE
+          WRITE (cf,sformat,ADVANCE='NO') dval
         END IF
       END DO
+      
       dval = p_DrowVec(ncol)
-      IF ((.NOT. bnoZero) .OR. (dval .NE. 0.0_DP)) THEN
-        IF (dval .EQ. SYS_MAXREAL) THEN
-          WRITE (cf,sformat) 0.0_DP
-        ELSE
-          WRITE (cf,sformat) dval
-        END IF
+      IF (bnoZero .AND. (dval .EQ. SYS_MAXREAL)) THEN
+        WRITE (cf,sformatChar, ADVANCE='YES') '.'
       ELSE
-        WRITE (cf,sformatChar) '.'
+        WRITE (cf,sformat,ADVANCE='YES') dval
       END IF
     END DO
+    
     CALL storage_free(h_DrowVec)
     
     ! Close the file if necessary

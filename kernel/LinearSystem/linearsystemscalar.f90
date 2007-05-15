@@ -464,7 +464,7 @@ MODULE linearsystemscalar
     ! Looking from another viewpoint with the background of how a vector
     ! is renumbered, one can say:
     !  p_IsortPermutation (position in sorted vector) = position in unsorted vector.
-    !  p_IsortPermutation (NVT+position in unsorted vector) = position in sorted vector.
+    !  p_IsortPermutation (NEQ+position in unsorted vector) = position in sorted vector.
     ! Whether or not the vector is actually sorted depends on the
     ! flag isortStrategy!
     INTEGER         :: h_IsortPermutation = ST_NOHANDLE
@@ -575,7 +575,7 @@ MODULE linearsystemscalar
     ! Looking from another viewpoint with the background of how a matrix
     ! is renumbered, one can say:
     !  p_IsortPermutation (column in sorted matrix) = column in unsorted matrix.
-    !  p_IsortPermutation (NVT+column in unsorted matrix) = column in sorted matrix.
+    !  p_IsortPermutation (NEQ+column in unsorted matrix) = column in sorted matrix.
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
     INTEGER         :: h_IsortPermutation = ST_NOHANDLE
