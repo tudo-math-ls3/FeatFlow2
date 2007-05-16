@@ -2695,6 +2695,8 @@ CONTAINS
     rdestMatrix = rsourceMatrix
     rdestMatrix%RmatrixBlock => p_rblocks
     IF (.NOT. ASSOCIATED(rdestMatrix%RmatrixBlock)) THEN
+      ! Check if number of diagonal blocks is nonzero, otherwise exit
+      IF (rdestMatrix%ndiagblocks == 0) RETURN
       ALLOCATE(rdestMatrix%RmatrixBlock(rdestMatrix%ndiagBlocks,rdestMatrix%ndiagBlocks))
     END IF
     rdestMatrix%RmatrixBlock = rsourceMatrix%RmatrixBlock
