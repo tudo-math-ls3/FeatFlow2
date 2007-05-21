@@ -1155,32 +1155,59 @@ CONTAINS
         ! GMV only supports <= 1000 materials!
         WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),0
         DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
-          ! GMV supports <= 8 characters only and does not allow spaces
+          ! GMV supports only <= 8 characters and does not allow spaces
           ! in the material name. We replace all invalid spaces by "_".
           WRITE(mfile,'(A8)') &
               sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_')
         END DO
+
+        IF (rexport%hIcellMaterial .NE. ST_NOHANDLE) THEN
+          ! Write a list of material id's. For every cell, we specify its
+          ! material by the material number.
+          CALL storage_getbase_int (rexport%hIcellMaterial,p_Idata)
+          DO i=1,SIZE(p_Idata)
+            WRITE(mfile,'(I4)') p_Idata(i)
+          END DO
+        END IF
       END IF
 
       ! Vertex materials; coincide with cell materials if not specified.
       IF (ASSOCIATED(rexport%SvertexMaterials)) THEN
         ! GMV only supports <= 1000 materials!
-        WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%SvertexMaterials)),0
+        WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%SvertexMaterials)),1
         DO i=1,MIN(1000,SIZE(rexport%SvertexMaterials))
-          ! GMV supports <= 8 characters only and does not allow spaces
+          ! GMV supports only <= 8 characters and does not allow spaces
           ! in the material name. We replace all invalid spaces by "_".
           WRITE(mfile,'(A8)') &
               sys_charreplace(TRIM(rexport%SvertexMaterials(i)),' ','_')
         END DO
+        
+        IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+          ! Write a list of material id's. For every vertex, we specify its
+          ! material by the material number.
+          CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+          DO i=1,SIZE(p_Idata)
+            WRITE(mfile,'(I4)') p_Idata(i)
+          END DO
+        END IF
       ELSE
         IF (ASSOCIATED(rexport%ScellMaterials)) THEN
           ! GMV only supports <= 1000 materials!
           WRITE(mfile,'(A,I10)') 'material ',MIN(1000,SIZE(rexport%ScellMaterials)),1
           DO i=1,MIN(1000,SIZE(rexport%ScellMaterials))
-            ! GMV supports <= 8 characters only and does not allow spaces
+            ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
             WRITE(mfile,'(A8)') &
                 sys_charreplace(TRIM(rexport%ScellMaterials(i)),' ','_')
+          END DO
+        END IF
+
+        IF (rexport%hIvertexMaterial .NE. ST_NOHANDLE) THEN
+          ! Write a list of material id's. For every vertex, we specify its
+          ! material by the material number.
+          CALL storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
+          DO i=1,SIZE(p_Idata)
+            WRITE(mfile,'(I4)') p_Idata(i)
           END DO
         END IF
       END IF
