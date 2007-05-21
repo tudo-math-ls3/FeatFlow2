@@ -6416,7 +6416,7 @@ CONTAINS
           rvanca%rvanca2DNavStOptC%p_KldA12 )
           
       ! Get the structure. It's assumed that A12 and A21 have the same!
-      IF (rmatrix%RmatrixBlock(1,12)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
+      IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
         CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
                                 rvanca%rvanca2DNavStOptC%p_KdiagonalA12)
       ELSE
