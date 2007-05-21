@@ -5931,7 +5931,7 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: p_Dd
     INTEGER(PREC_MATIDX) :: lu,jlu,ilup
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Iwork
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Iwork,p_lu,p_jlu,p_ilup
     INTEGER :: h_Iwork
 
     ! Declare SPLIB-routine as interface to make sure, procedure interfaces
@@ -5970,7 +5970,7 @@ CONTAINS
     jlu = rsolverNode%p_rsubnodeMILUs1x1%jlu 
     ilup = rsolverNode%p_rsubnodeMILUs1x1%ilup 
     CALL storage_getbase_int (h_Iwork,p_Iwork)
-
+    
     ! When the scaling factor is not = 1, scale the vector before
     ! preconditioning. This emulates: d = (cA)^-1 d = A^-1 (x/c)!
     ! (The value saved in the structure is 1/c!)
@@ -5978,8 +5978,16 @@ CONTAINS
 
     ! Solve the system. Call SPLIB, this overwrites the defect vector
     ! with the preconditioned one.
-    CALL lusolt (INT(SIZE(p_Dd),I32),p_Dd, p_Iwork(lu:), &
-                 p_Iwork(jlu:), p_Iwork(ilup:))
+    !CALL lusolt (INT(SIZE(p_Dd),I32),p_Dd, p_Iwork(lu:), &
+    !             p_Iwork(jlu:), p_Iwork(ilup:))
+
+    ! Without the following pointers, the INTEL compiler would create temporary
+    ! arrays which may lead to a SEGFAULT because of a full stack!
+    p_lu   => p_Iwork(lu:)
+    p_jlu  => p_Iwork(jlu:)
+    p_ilup => p_Iwork(ilup:)
+
+    CALL lusolt (INT(SIZE(p_Dd),I32),p_Dd,p_lu,p_jlu,p_ilup)
                  
   END SUBROUTINE
   
