@@ -2389,6 +2389,7 @@ CONTAINS
     LOGICAL :: bassembleNewton
     TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
     TYPE(t_ccDynamicNewtonControl), POINTER :: p_rnewton
+    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 
     ! The nonlinear iteration structure
     TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
@@ -2553,6 +2554,12 @@ CONTAINS
         ! The preconditioner did actually not work, but the solution is not
         ! 'too bad'. So we accept it all the same.
         bsuccess = .TRUE.
+      END IF
+      
+      IF (bsuccess) THEN
+        ! Filter the final defect
+        p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
+        CALL filter_applyFilterChainVec (rd, p_RfilterChain)
       END IF
 
       ! Release the nonlinear-iteration structure, that's it.
