@@ -39,6 +39,9 @@
 !#  9.) lsysbl_duplicateMatrix
 !#      -> Duplicates a block matrix by duplicating all sub-matrices
 !#
+!# 10.) lsysbl_duplicateVector
+!#      -> Duplicates a block vector by duplicating all sub-vectors
+!#
 !# 10.) lsysbl_enforceStructure
 !#      -> Enforces the structure of a given block vector in another
 !#         block vector
@@ -962,6 +965,9 @@ CONTAINS
   ! The handle identifying the vector data on the heap will be overwritten later.
   rx = rtemplate
   NULLIFY(rx%RvectorBlock)
+  
+  ! Check if number of diagonal blocks is nonzero, otherwise exit
+  IF (rx%nblocks <= 0) RETURN
   ALLOCATE(rx%RvectorBlock(rx%nblocks))
   rx%RvectorBlock = rtemplate%RvectorBlock
   
@@ -1123,6 +1129,8 @@ CONTAINS
   rmatrix%NCOLS = NEQ
   rmatrix%ndiagBlocks = rblockDiscretisation%ncomponents
   
+  ! Check if number of diagonal blocks is nonzeri, otherwise exit
+  IF (rmatrix%ndiagblocks <= 0) RETURN
   ALLOCATE(rmatrix%RmatrixBlock(rmatrix%ndiagBlocks,rmatrix%ndiagBlocks))
   
   IF (rmatrix%ndiagBlocks .EQ. 1) THEN
@@ -1160,6 +1168,9 @@ CONTAINS
 !</output>
 
 !</subroutine>
+  
+    ! Check if number of giagonal blocks is nonzero, otherwise exit
+    IF (nblocks <= 0) RETURN
 
     ! Allocate memory for the blocks, that's it.
     ALLOCATE(rmatrix%RmatrixBlock(nblocks,nblocks))
@@ -1221,6 +1232,9 @@ CONTAINS
                       rtemplateMat%NCOLS, &
                       cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   
+  ! Check if number of diagonal bocks is nonzero, otherwise exit
+  IF (rtemplateMat%ndiagBlocks <= 0) RETURN
+
   ! Initialise the sub-blocks. Save a pointer to the starting address of
   ! each sub-block.
   ALLOCATE(rx%RvectorBlock(rtemplateMat%ndiagBlocks))
@@ -2696,7 +2710,7 @@ CONTAINS
     rdestMatrix%RmatrixBlock => p_rblocks
     IF (.NOT. ASSOCIATED(rdestMatrix%RmatrixBlock)) THEN
       ! Check if number of diagonal blocks is nonzero, otherwise exit
-      IF (rdestMatrix%ndiagblocks == 0) RETURN
+      IF (rdestMatrix%ndiagblocks <= 0) RETURN
       ALLOCATE(rdestMatrix%RmatrixBlock(rdestMatrix%ndiagBlocks,rdestMatrix%ndiagBlocks))
     END IF
     rdestMatrix%RmatrixBlock = rsourceMatrix%RmatrixBlock
@@ -2727,6 +2741,49 @@ CONTAINS
     
   END SUBROUTINE
     
+  !****************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE lsysbl_duplicateVector (rsourceVector,rdestVector,&
+                                     idupStructure, idupContent)
+  
+!<description>
+  ! Duplicates an existing vector, creates a new vector rdestVector based
+  ! on a template vector rsourceVector. To duplicate a block vector means here
+  ! to copy all the existing subvectors in the block vector in the same way.
+  !
+  ! Duplicating a vector does not necessarily mean that new memory is
+  ! allocated and the vector entries are copied to that. The two flags
+  ! idupStructure and idupContent decide on how to set up rdestVector.
+  ! Depending on their setting, it's possible to copy only then handles
+  ! of such dynamic information, so that both vectors share the same
+  ! information.
+!</description>
+
+!<input>
+  ! Source vector.
+  TYPE(t_vectorBlock), INTENT(IN) :: rsourceVector
+
+  ! Duplication flag that decides on how to set up the structure
+  ! of rdestVector. This duplication flag is applied to all subvectors
+  ! of rsourceVector.
+  INTEGER, INTENT(IN) :: idupStructure
+
+  ! Duplication flag that decides on how to set up the content
+  ! of rdestVector. This duplication flag is applied to all subvectors
+  ! of rsourceVector.
+  INTEGER, INTENT(IN) :: idupContent
+!</input>
+
+!<output>
+  ! Destination vector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rdestVector
+!</output>
+!</subroutine>
+
+  END SUBROUTINE
+
   ! ***************************************************************************
   
 !<subroutine>
