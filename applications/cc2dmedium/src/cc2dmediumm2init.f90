@@ -294,7 +294,7 @@ CONTAINS
     ! 1.) Save some memory
     ! 2.) Every change in the fine grid coordinates also affects the coarse
     !     grid coordinates and vice versa.
-    DO i=rproblem%NLMAX-1,rproblem%NLMIN
+    DO i=rproblem%NLMAX-1,rproblem%NLMIN,-1
       CALL tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation)
     END DO
