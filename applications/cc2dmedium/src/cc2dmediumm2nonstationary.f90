@@ -400,19 +400,22 @@ CONTAINS
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
     ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds 
     ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
+    ! Switch off the B-matrices as we don't need them for this defect.
     !
     ! Don't implement any boundary conditions when assembling this -- it's not
     ! a defect vector!
     ! The BC's are implemented at the end when the full RHS is finished...
     
     rnonlinearIterationTmp = rnonlinearIteration
-    CALL c2d2_setupCoreEquation (rnonlinearIterationTmp, &
-      -1.0_DP, &
-      -rtimestepping%dweightMatrixRHS, &
-      -rtimestepping%dweightMatrixRHS * REAL(1-rproblem%iequation,DP))
 
-    CALL c2d2_assembleConvDiffDefect (rnonlinearIterationTmp,rvector,rtempVectorRhs,&
-        rproblem%rcollection)    
+    rnonlinearIterationTmp%dalpha = -1.0_DP
+    rnonlinearIterationTmp%dtheta = -rtimestepping%dweightMatrixRHS
+    rnonlinearIterationTmp%dgamma = -rtimestepping%dweightMatrixRHS * REAL(1-rproblem%iequation,DP)
+    rnonlinearIterationTmp%deta   = 0.0_DP
+    rnonlinearIterationTmp%dtau   = 0.0_DP
+    
+    CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,rvector,rtempVectorRhs,&
+        .FALSE.,.FALSE.,rproblem%rcollection)    
 
     ! -------------------------------------------    
     ! Switch to the next point in time.
@@ -445,11 +448,13 @@ CONTAINS
     ! structure.
 
     rnonlinearIterationTmp = rnonlinearIteration
-    CALL c2d2_setupCoreEquation (rnonlinearIterationTmp, &
-      1.0_DP, &
-      rtimestepping%dweightMatrixLHS, &
-      rtimestepping%dweightMatrixLHS * REAL(1-rproblem%iequation,DP))
     
+    rnonlinearIterationTmp%dalpha = 1.0_DP
+    rnonlinearIterationTmp%dtheta = rtimestepping%dweightMatrixLHS
+    rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * REAL(1-rproblem%iequation,DP)
+    rnonlinearIterationTmp%deta   = 1.0_DP
+    rnonlinearIterationTmp%dtau   = 1.0_DP
+
     ! Using rfinalAssembly, make the matrices compatible 
     ! to our preconditioner if they are not. So we switch again to the matrix
     ! representation that is compatible to our preconditioner.
@@ -549,8 +554,8 @@ CONTAINS
     ! Initialise the nonlinear loop. This is to prepare everything for
     ! or callback routines that are called from the nonlinear solver.
     ! The preconditioner in that structure is initialised later.
-    CALL c2d2_initNonlinearLoop (rproblem,rvector,rrhs,rnonlinearIteration,&
-        'CC2D-NONLINEAR')
+    CALL c2d2_initNonlinearLoop (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
+        rvector,rrhs,rnonlinearIteration,'CC2D-NONLINEAR')
     
     ! Initialise the time stepping scheme according to the problem configuration
     CALL c2d2_initTimeSteppingScheme (rproblem%rparamList,rtimestepping)
@@ -564,7 +569,8 @@ CONTAINS
     ! and compatibity to the preconditioner.
     ! The c2d2_checkAssembly routine below uses this information to perform
     ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration%rfinalAssembly)
+    CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
+        rnonlinearIteration%rfinalAssembly)
     
     ! Using rfinalAssembly as computed above, make the matrices compatible 
     ! to our preconditioner if they are not.

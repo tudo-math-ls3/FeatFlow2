@@ -15,18 +15,15 @@
 !#        structure using the parameters from the INI/DAT files.
 !#
 !# 2.) c2d2_allocMatVec
-!#     -> Allocates memory for vectors/matrices
-!#
-!# 3.) c2d2_allocVelCouplingMatrices
-!#     -> Allocate memory for the velocity coupling matrices in the global
-!#        system matrix.
+!#     -> Allocates memory for vectors/matrices on all levels.
 !#
 !# 4.) c2d2_generateStaticMatrices
 !#     -> Assembles matrix entries of static matrices (Stokes, B)
+!#        on one level
 !#
-!# 5.) c2d2_generateStaticSystemParts
-!#     -> Initialises static parts of the global system matrix with
-!#        entries of template (B-) matrices
+!# 5.) c2d2_generateBasicMatrices
+!#     -> Assembles the matrix entries of all static matrices on all levels.
+!#     -> Initialises the static parts of the system matrices on all levels.
 !#
 !# 6.) c2d2_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
@@ -66,6 +63,7 @@ MODULE cc2dmediumm2discretisation
     
   USE cc2dmediumm2basic
   USE cc2dmedium_callback
+  USE cc2dmediumm2nonlinearcoreinit
   
   IMPLICIT NONE
   
@@ -591,7 +589,6 @@ CONTAINS
   INTEGER :: i,cmatBuildType
   
     ! A pointer to the system matrix and the RHS/solution vectors.
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
     TYPE(t_vectorBlock), POINTER :: p_rtempVector
@@ -691,109 +688,34 @@ CONTAINS
       CALL lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
                                            LSYSSC_SETM_UNDEFINED)
 
+      ! -----------------------------------------------------------------------
       ! Now let's come to the main system matrix, which is a block matrix.
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
       
-      ! Initialise the block matrix with default values based on
-      ! the discretisation.
-      CALL lsysbl_createMatBlockByDiscr (p_rdiscretisation,p_rmatrix)    
-      
-      ! Inform the matrix that we build a saddle-point problem.
-      ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
-      ! but probably some solvers can use the special structure later.
-      p_rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
-      
-      ! Let's consider the global system in detail:
-      !
-      !    ( A         B1 ) = ( A11  A12  A13 )
-      !    (      A    B2 )   ( A21  A22  A23 )
-      !    ( B1^T B2^T    )   ( A31  A32  A33 )
-      !
-      ! The matrices A11 and A22 of the global system matrix have exactly
-      ! the same structure as the original Stokes matrix from above!
-      ! Initialise them with the same structure, i.e. A11, A22 and the
-      ! Stokes matrix L share(!) the same structure.
-      !
-      ! For this purpose, use the "duplicate matrix" routine.
-      ! The structure of the matrix is shared with the template FEM matrix.
-      ! For the content, a new empty array is allocated which will later receive
-      ! the entries.
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  p_rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        
-      IF (.NOT. rproblem%bdecoupledXY) THEN          
-        ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
-        ! A22 is identical to A11! So mirror A11 to A22 sharing the
-        ! structure and the content.
-        CALL lsyssc_duplicateMatrix (p_rmatrix%RmatrixBlock(1,1),&
-                    p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      ELSE
-        ! Otherwise, create another copy of the template matrix.
-        CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                    p_rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      END IF
+      ! Allocate memory for that matrix with the appropriate construction routine.
+      ! The modules "nonlinearcoreinit" and "nonlinearcore" are actually the
+      ! only modules that 'know' the structure of the system matrix!
+      CALL c2d2_allocSystemMatrix (rproblem,rproblem%RlevelInfo(i),&
+          rproblem%RlevelInfo(i)%rmatrix)
 
-      ! Manually change the discretisation structure of the Y-velocity 
-      ! matrix to the Y-discretisation structure.
-      ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
-      ! so this is not really necessary - we do this for sure...
-      p_rmatrix%RmatrixBlock(2,2)%p_rspatialDiscretisation => &
-        p_rdiscretisation%RspatialDiscretisation(2)
-                                  
-      ! The B1/B2 matrices exist up to now only in our local problem structure.
-      ! Put a copy of them into the block matrix.
+      ! -----------------------------------------------------------------------
+      ! Temporary vectors
       !
-      ! Note that we share the structure of B1/B2 with those B1/B2 of the
-      ! block matrix, while we create empty space for the entries. 
-      ! Later, the B-matrices are copied into here and modified for boundary
-      ! conditions.
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(1,3),&
-                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(2,3),&
-                                   LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(3,1),&
-                                   LSYSSC_TR_VIRTUAL)
-
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(3,2),&
-                                   LSYSSC_TR_VIRTUAL)
-
-      ! Update the structural information of the block matrix, as we manually
-      ! changed the submatrices:
-      CALL lsysbl_updateMatStrucInfo (p_rmatrix)
-      
-      
       ! Now on all levels except for the maximum one, create a temporary 
       ! vector on that level, based on the matrix template.
       ! It's used for building the matrices on lower levels.
       IF (i .LT. rproblem%NLMAX) THEN
         p_rtempVector => rproblem%RlevelInfo(i)%rtempVector
-        CALL lsysbl_createVecBlockIndMat (p_rmatrix,p_rtempVector,.FALSE.)
+        CALL lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,&
+            p_rtempVector,.FALSE.)
         
         ! Add the temp vector to the collection on level i
         ! for use in the callback routine
         CALL collct_setvalue_vec(rproblem%rcollection,PAR_TEMPVEC,p_rtempVector,&
                                 .TRUE.,i)
       END IF
-      
 
     END DO
     
-    ! If we discretise (Navier-)Stokes with deformation tensor, allocate
-    ! memory for the velocity coupling matrices.
-    SELECT CASE (rproblem%isubEquation)
-    CASE (1) 
-      ! Deformation tensor. Allocate memory for the additional matrices 
-      ! and include them into the global system.
-      CALL c2d2_allocVelCouplingMatrices (rproblem,.TRUE.,.TRUE.)
-    END SELECT
-
     ! (Only) on the finest level, we need to have to allocate a RHS vector
     ! and a solution vector.
     !
@@ -801,8 +723,10 @@ CONTAINS
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template.
     ! Initialise the vectors with 0.
-    CALL lsysbl_createVecBlockIndMat (p_rmatrix,rrhs, .TRUE.)
-    CALL lsysbl_createVecBlockIndMat (p_rmatrix,rvector, .TRUE.)
+    CALL lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(rproblem%NLMAX)%rmatrix,&
+        rrhs, .TRUE.)
+    CALL lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(rproblem%NLMAX)%rmatrix,&
+        rvector, .TRUE.)
 
   END SUBROUTINE
 
@@ -810,132 +734,13 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_allocVelCouplingMatrices (rproblem,&
-      bsymmetry,bincludeToGlobalSystem)
-  
-!<description>
-  ! Allocates memory for additional velocity coupling matrices. This is
-  ! a separate allocation routine that c2d2_allocMatVec, since memory for
-  ! these matrices does not always have to be reserved.
-  !
-  ! Note that this routine must (if used at all) be called *after*
-  ! c2d2_allocMatVec! Depending on the type of problem to discretise,
-  ! this routine automatically called in c2d2_allocMatVec. 
-  !
-  ! The routine works 'incrementally', i.e. it can be multiple times
-  ! to 'extend' the current matrix configuration.
-  ! (I.e. in a first call with bsymmetry=TRUE, it will allocate memory only
-  ! for $A_{12}$. In a second call with bsymmetry=TRUE, it will allocate
-  ! additional memory for $A_{21}$ etc.).
-!</description>
-
-!<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! Whether to exploit symmetry.
-  ! =FALSE: The velocity coupling matrices A12 and A21 are different from 
-  !         each other. Memory is allocated for each of them.
-  ! =TRUE:  There is A12 = A21, so memory is allocated only for A12 of
-  !         the matrices. The other matrix A21 is initialised as 'copy'
-  !         of A12, sharing both, data and structure.
-  !         (This is the case e.g. for Navier-Stokes with deformation tensor).
-  LOGICAL, INTENT(IN) :: bsymmetry
-  
-  ! Whether to include the velocity coupling matrices into the global system.
-  ! Typically used in the case of Navier-Stokes with deformation tensor.
-  ! =FALSE: Don't include, just allocate memory.
-  ! =TRUE:  Include the velocity coupling matrices into the global system.
-  LOGICAL, INTENT(IN) :: bincludeToGlobalSystem
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER :: i
-  
-    ! A pointer to the system matrix and the RHS/solution vectors.
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateFEM,p_rmatrixA12,p_rmatrixA21
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-
-    ! Initialise all levels...
-    DO i=rproblem%NLMIN,rproblem%NLMAX
-
-      ! The global system looks as follows:
-      !
-      !    ( A    A12  B1 )
-      !    ( A21  A    B2 )
-      !    ( B1^T B2^T    )
-      !
-      ! Get a pointer to the template FEM matrix. This is used for the
-      ! Laplace/Stokes matrix and probably for the mass matrix.
-      
-      p_rmatrixTemplateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
-      p_rmatrixA12 => rproblem%RlevelInfo(i)%rmatrixVelocityCoupling12
-      p_rmatrixA21 => rproblem%RlevelInfo(i)%rmatrixVelocityCoupling21
-
-      ! We turn to our matrix A12. Does it already exist?
-      IF (p_rmatrixA12%cmatrixFormat .EQ. &
-          LSYSSC_MATRIXUNDEFINED) THEN
-        ! Connect the matrix to the template FEM matrix such that they
-        ! use the same structure.
-        !
-        ! Don't create a content array yet, it will be created by 
-        ! the assembly routines later.
-        CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                    p_rmatrixA12,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-        
-        ! Allocate memory for the entries; don't initialise the memory.
-        CALL lsyssc_allocEmptyMatrix (p_rmatrixA12,LSYSSC_SETM_UNDEFINED)
-      END IF
-      
-      ! Now turn to the matrix A21. Do we have to exploit symmetry?
-      IF (bsymmetry) THEN
-        ! Does the matrix exist? If yes, there's nothing to do (-> if the matrix
-        ! exists as separate matrix, it will stay that way!). If not, create it
-        ! as copy of A12.
-        IF (p_rmatrixA21%cmatrixFormat .EQ. LSYSSC_MATRIXUNDEFINED) THEN
-          CALL lsyssc_duplicateMatrix (p_rmatrixA12,&
-              p_rmatrixA21,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        END IF
-      ELSE
-        ! No symmetry. Does the matrix already exist? As separate matrix?
-        IF ((p_rmatrixA21%cmatrixFormat .EQ. LSYSSC_MATRIXUNDEFINED) .OR. &
-            lsyssc_isMatrixContentShared(p_rmatrixA21) ) THEN
-          ! Release the old matrix (usually, this does nothing, just in case) and
-          ! create a new, empty matrix in memory based on A12.
-          CALL lsyssc_duplicateMatrix (p_rmatrixA12,&
-                      p_rmatrixA21,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-          
-          ! Allocate memory for the entries; don't initialise the memory.
-          CALL lsyssc_allocEmptyMatrix (p_rmatrixA21,LSYSSC_SETM_UNDEFINED)
-        END IF
-      END IF
-      
-      ! Should we include the two matrices into the global system?
-      IF (bincludeToGlobalSystem) THEN
-        p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-        
-        CALL lsyssc_duplicateMatrix (p_rmatrixA12,&
-                    p_rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (p_rmatrixA21,&
-                    p_rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      END IF
-      
-    END DO
-      
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE c2d2_generateStaticMatrices (rproblem)
+  SUBROUTINE c2d2_generateStaticMatrices (rproblem,rlevelInfo)
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
-  ! of the problem, i.e. of all matrices that do not change during the 
-  ! computation or which serve as template for generating other matrices.
+  ! in the specified problem structure, i.e. the entries of all matrices 
+  ! that do not change during the computation or which serve as a template for
+  ! generating other matrices.
   !
   ! Memory for those matrices must have been allocated before with 
   ! allocMatVec!
@@ -943,17 +748,17 @@ CONTAINS
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+
+  ! A level-info structure. The static matrices in this structure are generated.
+  TYPE(t_problem_lvl), INTENT(INOUT),TARGET :: rlevelInfo
 !</inputoutput>
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i,j
-  
-    ! A bilinear and linear form describing the analytic problem to solve
-    !TYPE(t_bilinearForm) :: rform
-    
+    ! local variables
+    INTEGER :: j
+
     ! A pointer to the Stokes and mass matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
 
@@ -965,116 +770,111 @@ CONTAINS
     ! simulation is nonstationary.
     CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
     
-    DO i=rproblem%NLMIN,rproblem%NLMAX
+    ! -----------------------------------------------------------------------
+    ! Basic (Navier-) Stokes problem
+    ! -----------------------------------------------------------------------
     
-      ! -----------------------------------------------------------------------
-      ! Basic (Navier-) Stokes problem
-      ! -----------------------------------------------------------------------
+    ! Ask the problem structure to give us the discretisation structure
+    p_rdiscretisation => rlevelInfo%p_rdiscretisation
     
-      ! Ask the problem structure to give us the discretisation structure
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-      
-      ! The global system looks as follows:
-      !
-      !    ( A         B1 )
-      !    (      A    B2 )
-      !    ( B1^T B2^T    )
-      !
-      ! with A = L + nonlinear Convection. We compute in advance
-      ! a standard Stokes matrix L which can be added later to the
-      ! convection matrix, resulting in the nonlinear system matrix,
-      ! as well as both B-matrices.
-      !
-      ! Get a pointer to the (scalar) Stokes matrix:
-      p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
-      
-!      ! For assembling of the entries, we need a bilinear form, 
-!      ! which first has to be set up manually.
-!      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-!      ! scalar system matrix in 2D.
-!      
-!      rform%itermCount = 2
-!      rform%Idescriptors(1,1) = DER_DERIV_X
-!      rform%Idescriptors(2,1) = DER_DERIV_X
-!      rform%Idescriptors(1,2) = DER_DERIV_Y
-!      rform%Idescriptors(2,2) = DER_DERIV_Y
+    ! Get a pointer to the (scalar) Stokes matrix:
+    p_rmatrixStokes => rlevelInfo%rmatrixStokes
+    
+    ! The global system looks as follows:
+    !
+    !    ( A         B1 )
+    !    (      A    B2 )
+    !    ( B1^T B2^T    )
+    !
+    ! with A = L + nonlinear Convection. We compute in advance
+    ! a standard Stokes matrix L which can be added later to the
+    ! convection matrix, resulting in the nonlinear system matrix,
+    ! as well as both B-matrices.
+    
+!    ! For assembling of the entries, we need a bilinear form, 
+!    ! which first has to be set up manually.
+!    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+!    ! scalar system matrix in 2D.
+!    
+!    rform%itermCount = 2
+!    rform%Idescriptors(1,1) = DER_DERIV_X
+!    rform%Idescriptors(2,1) = DER_DERIV_X
+!    rform%Idescriptors(1,2) = DER_DERIV_Y
+!    rform%Idescriptors(2,2) = DER_DERIV_Y
 !
-!      ! In the standard case, we have constant coefficients:
-!      rform%ballCoeffConstant = .TRUE.
-!      rform%BconstantCoeff = .TRUE.
-!      rform%Dcoefficients(1)  = rproblem%dnu
-!      rform%Dcoefficients(2)  = rproblem%dnu
+!    ! In the standard case, we have constant coefficients:
+!    rform%ballCoeffConstant = .TRUE.
+!    rform%BconstantCoeff = .TRUE.
+!    rform%Dcoefficients(1)  = rproblem%dnu
+!    rform%Dcoefficients(2)  = rproblem%dnu
 !
-!      ! Now we can build the matrix entries.
-!      ! We specify the callback function coeff_Stokes for the coefficients.
-!      ! As long as we use constant coefficients, this routine is not used.
-!      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-!      ! the framework will call the callback routine to get analytical data.
-!      !
-!      ! We pass our collection structure as well to this routine, 
-!      ! so the callback routine has access to everything what is
-!      ! in the collection.
-!      CALL bilf_buildMatrixScalar (rform,.TRUE.,&
-!                                   p_rmatrixStokes,coeff_Stokes,&
-!                                   rproblem%rcollection)
-      CALL stdop_assembleLaplaceMatrix (p_rmatrixStokes,.TRUE.,rproblem%dnu)
+!    ! Now we can build the matrix entries.
+!    ! We specify the callback function coeff_Stokes for the coefficients.
+!    ! As long as we use constant coefficients, this routine is not used.
+!    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+!    ! the framework will call the callback routine to get analytical data.
+!    !
+!    ! We pass our collection structure as well to this routine, 
+!    ! so the callback routine has access to everything what is
+!    ! in the collection.
+!    CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+!                                 p_rmatrixStokes,coeff_Stokes,&
+!                                 rproblem%rcollection)
+    CALL stdop_assembleLaplaceMatrix (p_rmatrixStokes,.TRUE.,rproblem%dnu)
+    
+    ! In the global system, there are two coupling matrices B1 and B2.
+    !
+    ! Build the first pressure matrix B1.
+    CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
+        DER_FUNC,DER_DERIV_X,-1.0_DP)
+
+    ! Build the second pressure matrix B2.
+    CALL stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
+        DER_FUNC,DER_DERIV_Y,-1.0_DP)
+                                
+    ! -----------------------------------------------------------------------
+    ! Time-dependent problem
+    ! -----------------------------------------------------------------------
+
+    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
+                                     'ITIMEDEPENDENCE', j, 0)
+    IF (j .NE. 0) THEN
+    
+      p_rmatrixMass => rlevelInfo%rmatrixMass
+
+      ! If there is an existing mass matrix, release it.
+      CALL lsyssc_releaseMatrix (rlevelInfo%rmatrixMass)
+
+      ! Generate mass matrix. The matrix has basically the same structure as
+      ! our template FEM matrix, so we can take that.
+      CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
+                  p_rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                  
+      ! Change the discretisation structure of the mass matrix to the
+      ! correct one; at the moment it points to the discretisation structure
+      ! of the Stokes matrix...
+      p_rmatrixMass%p_rspatialDiscretisation => rlevelInfo%p_rdiscretisationMass
+
+      ! Call the standard matrix setup routine to build the matrix.                    
+      CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
+                  
+      ! Should we do mass lumping?
+      CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                      'IMASS', j, 0)
+                                      
+      IF (j .EQ. 0) THEN
       
-      ! In the global system, there are two coupling matrices B1 and B2.
-      !
-      ! Build the first pressure matrix B1.
-      CALL stdop_assembleSimpleMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
-          DER_FUNC,DER_DERIV_X,-1.0_DP)
-
-      ! Build the second pressure matrix B2.
-      CALL stdop_assembleSimpleMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
-          DER_FUNC,DER_DERIV_Y,-1.0_DP)
-                                  
-      ! -----------------------------------------------------------------------
-      ! Time-dependent problem
-      ! -----------------------------------------------------------------------
-
-      CALL parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'ITIMEDEPENDENCE', j, 0)
-      IF (j .NE. 0) THEN
-      
-        p_rmatrixMass => rproblem%RlevelInfo(i)%rmatrixMass
-
-        ! If there is an existing mass matrix, release it.
-        CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
-
-        ! Generate mass matrix. The matrix has basically the same structure as
-        ! our template FEM matrix, so we can take that.
-        CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEM,&
-                    p_rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                    
-        ! Change the discretisation structure of the mass matrix to the
-        ! correct one; at the moment it points to the discretisation structure
-        ! of the Stokes matrix...
-        p_rmatrixMass%p_rspatialDiscretisation => &
-          rproblem%RlevelInfo(i)%p_rdiscretisationMass
-
-        ! Call the standard matrix setup routine to build the matrix.                    
-        CALL stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
-                    
-        ! Should we do mass lumping?
+        ! How to do lumping?
         CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASS', j, 0)
+                                        'IMASSLUMPTYPE', j, 0)
                                         
-        IF (j .EQ. 0) THEN
-        
-          ! How to do lumping?
-          CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                          'IMASSLUMPTYPE', j, 0)
-                                          
-          ! Lump the mass matrix. The constant from the DAT file corresponds
-          ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
-          CALL lsyssc_lumpMatrixScalar (p_rmatrixMass,j)
-        
-        END IF
-        
+        ! Lump the mass matrix. The constant from the DAT file corresponds
+        ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
+        CALL lsyssc_lumpMatrixScalar (p_rmatrixMass,j)
+      
       END IF
-
-    END DO
+      
+    END IF
 
     ! Clean up the collection (as we are done with the assembly, that's it.
     CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
@@ -1085,72 +885,31 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_generateStaticSystemParts (rproblem)
+  SUBROUTINE c2d2_generateBasicMatrices (rproblem)
   
 !<description>
-  ! Generates the static parts of the main system matrix of the coupled
-  ! global system matrix. More precisely, this copies the entries of
-  ! previously calculated B-matrices into the global system matrix, so
-  ! that they can be modified for boundary conditions.
+  ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
+  ! Initialises the system matrices on all levels. 
+  !
+  ! Memory for those matrices must have been allocated before with 
+  ! allocMatVec!
 !</description>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i
-  
-    ! A pointer to the system matrix and the RHS/solution vectors.
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
+    ! local variables
+    INTEGER :: i
 
     DO i=rproblem%NLMIN,rproblem%NLMAX
-      
-      ! -----------------------------------------------------------------------
-      ! Basic (Navier-) Stokes problem
-      ! -----------------------------------------------------------------------
-
-      ! Get the main system matrix, which is a block matrix.
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      
-      ! Let's consider the global system in detail:
-      !
-      !    ( A         B1 ) = ( A11  A12  A13 )
-      !    (      A    B2 )   ( A21  A22  A23 )
-      !    ( B1^T B2^T    )   ( A31  A32  A33 )
-
-      ! The purpose of this routine is to initialise the static parts of this
-      ! matrix. The two A-blocks are nonlinear, i.e. dynamic, so we don't
-      ! have to deal with them. What we do here is to initialise the
-      ! B-matrices of this system according to given templates!
-      !
-      ! The B1/B2 matrices exist up to now only in our local problem structure
-      ! as scalar 'template' matrices. Put a copy of them into the block matrix.
-      !
-      ! Note that we share the structure of B1/B2 with those B1/B2 of the
-      ! block matrix, while we create copies of the entries. The B-blocks
-      ! are already prepared and memory for the entries is already allocated;
-      ! so we only have to copy the entries.
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(1,3),&
-                                   LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
-
-      CALL lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(2,3),&
-                                   LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
-      
-      ! Furthermore, put B1^T and B2^T to the block matrix.
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB1, &
-                                   p_rmatrix%RmatrixBlock(3,1),&
-                                   LSYSSC_TR_VIRTUAL)
-
-      CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(i)%rmatrixB2, &
-                                   p_rmatrix%RmatrixBlock(3,2),&
-                                   LSYSSC_TR_VIRTUAL)
-
+      CALL c2d2_generateStaticMatrices (&
+          rproblem,rproblem%RlevelInfo(i))
+      CALL c2d2_generateStaticSystemMatrix (&
+          rproblem%RlevelInfo(i),rproblem%RlevelInfo(i)%rmatrix,.FALSE.)
     END DO
 
   END SUBROUTINE
@@ -1196,11 +955,6 @@ CONTAINS
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
-
     ! ... and then discretise the RHS to the first subvector of
     ! the block vector using the discretisation structure of the 
     ! first block.
@@ -1211,6 +965,11 @@ CONTAINS
     !
     ! Note that the vector is unsorted after calling this routine!
     !
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+
     ! Discretise the X-velocity part:
     CALL linf_buildVectorScalar (&
               p_rdiscretisation%RspatialDiscretisation(1),rlinform,.TRUE.,&
@@ -1538,10 +1297,6 @@ CONTAINS
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
       ! Delete the system matrix.
       CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
-
-      ! If there are velocity coupling matrices, release them.
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixVelocityCoupling12)
-      CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixVelocityCoupling21)
 
       ! If there is an existing mass matrix, release it.
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)

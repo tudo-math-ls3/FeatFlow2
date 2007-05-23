@@ -96,12 +96,16 @@ CONTAINS
     ! or callback routines that are called from the nonlinear solver.
     ! The preconditioner in that structure is initialised later.
     CALL c2d2_initNonlinearLoop (&
-        rproblem,rvector,rrhs,rnonlinearIteration,'CC2D-NONLINEAR')
+        rproblem,rproblem%NLMIN,rproblem%NLMAX,rvector,rrhs,&
+        rnonlinearIteration,'CC2D-NONLINEAR')
         
-    ! Initialise the core equation to the stationary (Navier)-Stokes.
-    CALL c2d2_setupCoreEquation (rnonlinearIteration,&
-        0.0_DP,1.0_DP,REAL(1-rproblem%iequation,DP))
-    
+    ! Set up all the weights in the core equation according to the current timestep.
+    rnonlinearIteration%dalpha = 0.0_DP
+    rnonlinearIteration%dtheta = 1.0_DP
+    rnonlinearIteration%dgamma = REAL(1-rproblem%iequation,DP)
+    rnonlinearIteration%deta   = 1.0_DP
+    rnonlinearIteration%dtau   = 1.0_DP
+
     ! Check the matrices if they are compatible to our
     ! preconditioner. If not, we later have to modify the matrices a little
     ! bit to make it compatible. 
@@ -111,7 +115,8 @@ CONTAINS
     ! and compatibity to the preconditioner.
     ! The c2d2_checkAssembly routine below uses this information to perform
     ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rrhs,rnonlinearIteration%rfinalAssembly)
+    CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
+        rnonlinearIteration%rfinalAssembly)
     
     ! Using rfinalAssembly as computed above, make the matrices compatible 
     ! to our preconditioner if they are not.

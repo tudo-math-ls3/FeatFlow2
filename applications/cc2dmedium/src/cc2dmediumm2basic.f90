@@ -61,7 +61,8 @@ MODULE cc2dmediumm2basic
     ! matrices (B1/B2) matrices. The matrix contains only a stucture, no content.
     TYPE(t_matrixScalar) :: rmatrixTemplateGradient
     
-    ! A system matrix for that specific level. 
+    ! A template matrix for the system matrix for that specific level.
+    ! Provides memory for all sub-matrices.
     TYPE(t_matrixBlock) :: rmatrix
     
     ! Stokes matrix for that specific level (=nu*Laplace)
@@ -72,16 +73,6 @@ MODULE cc2dmediumm2basic
 
     ! B2-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB2
-
-    ! Coupling velocity matrix $A_{12}$ for that specific level.
-    ! Exists only of deformation tensor or Newton iteration is used in the
-    ! nonlinear iteration.
-    TYPE(t_matrixScalar) :: rmatrixVelocityCoupling12
-
-    ! Coupling velocity matrix $A_{21}$ for that specific level.
-    ! Exists only of deformation tensor or Newton iteration is used in the
-    ! nonlinear iteration.
-    TYPE(t_matrixScalar) :: rmatrixVelocityCoupling21
 
     ! matrix on lower levels.
     TYPE(t_vectorBlock) :: rtempVector
@@ -98,7 +89,6 @@ MODULE cc2dmediumm2basic
     ! Nonstationary simulation: A scalar discretisation structure that 
     ! specifies how to generate the mass matrix.
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationMass
-    
 
   END TYPE
   

@@ -145,15 +145,15 @@ CONTAINS
     CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
     CALL c2d2_initAnalyticBC (p_rproblem)   
 
+    ! On all levels, generate the static matrices and the basic
+    ! system matrix.
+    CALL c2d2_generateBasicMatrices (p_rproblem)
+
     ! Now choose the algorithm. Stationary or time-dependent simulation?
     IF (p_rproblem%itimedependence .EQ. 0) THEN
     
       ! Stationary simulation
       !
-      ! Generate matrices
-      CALL c2d2_generateStaticMatrices (p_rproblem)
-      CALL c2d2_generateStaticSystemParts (p_rproblem)
-
       ! Generate the RHS vector.
       CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
       
@@ -173,10 +173,6 @@ CONTAINS
     
       ! Time dependent simulation with explicit time stepping.
       !
-      ! Generate matrices
-      CALL c2d2_generateStaticMatrices (p_rproblem)
-      CALL c2d2_generateStaticSystemParts (p_rproblem)
-      
       ! Generate the RHS vector for the first time step.
       CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
       
