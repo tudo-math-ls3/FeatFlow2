@@ -552,7 +552,7 @@ CONTAINS
     CALL c2d2_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
 
     ! Initialise the nonlinear loop. This is to prepare everything for
-    ! or callback routines that are called from the nonlinear solver.
+    ! our callback routines that are called from the nonlinear solver.
     ! The preconditioner in that structure is initialised later.
     CALL c2d2_initNonlinearLoop (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
         rvector,rrhs,rnonlinearIteration,'CC2D-NONLINEAR')
