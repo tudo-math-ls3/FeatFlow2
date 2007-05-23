@@ -329,7 +329,7 @@ CONTAINS
       rtstepScheme%ctimestepType    = TSCHM_ONESTEP
       
       ! Standard time stepping. Here the parameters are a little bit  
-      ! easier to initialize.
+      ! easier to initialise.
       rtstepScheme%nsubsteps        = 1
       
       rtstepScheme%dtstep           = dtstep
@@ -418,7 +418,7 @@ CONTAINS
       rtstepScheme%dtstep           = dtstep
       rtstepScheme%dthStep          = dtstep * dtheta1
       
-      ! Initialize weights for matrices and RHS:   
+      ! Initialise weights for matrices and RHS:   
       rtstepScheme%dweightMatrixLHS = dtstep * dtheta1
       rtstepScheme%dweightMatrixRHS = dtstep * (dtheta1 - 1.0_DP)
       rtstepScheme%dweightNewRHS    = dtstep * dtheta1
