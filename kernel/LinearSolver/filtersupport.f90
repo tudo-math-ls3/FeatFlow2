@@ -174,7 +174,7 @@ MODULE filtersupport
     ! One of the FILTER_XXXX constants
     INTEGER                            :: ifilterType = FILTER_ABORT
     
-    ! Information tag for the TOL20 filterif ifilterType=FILTER_TOL20:
+    ! Information tag for the TOL20 filter if ifilterType=FILTER_TOL20:
     ! Number of the subvector that should be filtered to be in the
     ! space $L^2_0$.
     INTEGER                            :: itoL20component = 0
@@ -343,7 +343,7 @@ CONTAINS
       ! These filters have no effect for matrices.
     
     CASE DEFAULT
-      PRINT *,'filter_applyFilterChainMat: Unknown filter.'
+      PRINT *,'filter_applyFilterChainMat: Unknown filter: ',ifilterType
       EXIT
     
     END SELECT
