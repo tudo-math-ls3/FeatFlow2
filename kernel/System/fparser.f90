@@ -703,6 +703,10 @@ CONTAINS
     ! local variables
     INTEGER :: iComp
     
+    ! Check that pointer is associated and return otherwise
+    IF (.NOT.ASSOCIATED(rparser%Comp)) RETURN
+
+    ! Loop over all components
     DO iComp=1,rparser%nComp
       IF (ASSOCIATED(rparser%Comp(iComp)%ByteCode)) DEALLOCATE(rparser%Comp(iComp)%ByteCode)
       IF (ASSOCIATED(rparser%Comp(iComp)%Immed))    DEALLOCATE(rparser%Comp(iComp)%Immed)
