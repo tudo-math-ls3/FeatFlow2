@@ -1269,6 +1269,7 @@ CONTAINS
       rbackupTriangulation%nverticesInEachElement = rtriangulation%nverticesInEachElement
       rbackupTriangulation%nverticesInAllElements = rtriangulation%nverticesInAllElements
       rbackupTriangulation%nadditionalVertices    = rtriangulation%nadditionalVertices   
+      rbackupTriangulation%InelOfType(:)          = rtriangulation%InelOfType(:)
       
       ! Decide on IDPFLG which arrays to copy
       rbackupTriangulation%iduplicationFlag = iduplicationFlag
@@ -1678,6 +1679,7 @@ CONTAINS
     rtriangulation%nverticesInEachElement = 0
     rtriangulation%nverticesInAllElements = 0
     rtriangulation%nadditionalVertices = 0
+    rtriangulation%InelOfType(:) = 0
 
     ! That's it...
 
