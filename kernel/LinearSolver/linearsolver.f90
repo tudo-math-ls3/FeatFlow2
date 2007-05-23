@@ -413,7 +413,7 @@ MODULE linearsolver
   USE globalsystem
   USE genoutput
   
-  !USE matrixio
+  USE matrixio
   
   IMPLICIT NONE
 
@@ -561,6 +561,9 @@ MODULE linearsolver
 
   ! General error during the initialisation
   INTEGER, PARAMETER :: LINSOL_ERR_INITERROR     = 2
+
+  ! Matrix-structure has changed between initStructure and initData
+  INTEGER, PARAMETER :: LINSOL_ERR_MATRIXHASCHANGED = 3
   
 !</constantblock>
 
@@ -5275,6 +5278,9 @@ CONTAINS
   CASE (-1)
     ! no memory
     ierror = LINSOL_ERR_NOMEMORY
+  CASE (-11)
+    ! no memory
+    ierror = LINSOL_ERR_MATRIXHASCHANGED
   CASE DEFAULT
     ! don't know what went wrong
     ierror = LINSOL_ERR_INITERROR
