@@ -111,7 +111,7 @@ CONTAINS
     DO j=1,rsourceMatrix%ndiagBlocks
       DO i=1,rsourceMatrix%ndiagBlocks
       
-        IF (rsourceMatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+        IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
         
           IF (rsourceMatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
             PRINT *,'glsys_assembleGlobal: Only double precision source matrices &
@@ -143,26 +143,28 @@ CONTAINS
   DO j=1,rlocalMatrix%ndiagBlocks
     DO i=1,rlocalMatrix%ndiagBlocks
         
-      ! Transpose the submatrix if necessary
-      IF (IAND(rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec, &
-               LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
-        ! Untranspose the source-submatrix to a local matrix
-        CALL lsyssc_transposeMatrix (rsourceMatrix%RmatrixBlock(i,j),&
-                    rlocalMatrixScalar,LSYSSC_TR_VIRTUAL)
-        
-        ! Retranspose it - not vitually, but create a real transposed copy.
-        IF (bcontent) THEN
-          ! Transpose everything
-          CALL lsyssc_releaseMatrix(rlocalMatrix%RmatrixBlock(i,j))
-          CALL lsyssc_transposeMatrix (rlocalMatrixScalar,&
-                      rlocalMatrix%RmatrixBlock(i,j),LSYSSC_TR_ALL)
-        ELSE
-          ! Transpose only the structure, ignore the content
-          CALL lsyssc_releaseMatrix(rlocalMatrix%RmatrixBlock(i,j))
-          CALL lsyssc_transposeMatrix (rlocalMatrixScalar,&
-                      rlocalMatrix%RmatrixBlock(i,j),LSYSSC_TR_STRUCTURE)
+      IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
+        ! Transpose the submatrix if necessary
+        IF (IAND(rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec, &
+                LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+          ! Untranspose the source-submatrix to a local matrix
+          CALL lsyssc_transposeMatrix (rsourceMatrix%RmatrixBlock(i,j),&
+                      rlocalMatrixScalar,LSYSSC_TR_VIRTUAL)
+          
+          ! Retranspose it - not vitually, but create a real transposed copy.
+          IF (bcontent) THEN
+            ! Transpose everything
+            CALL lsyssc_releaseMatrix(rlocalMatrix%RmatrixBlock(i,j))
+            CALL lsyssc_transposeMatrix (rlocalMatrixScalar,&
+                        rlocalMatrix%RmatrixBlock(i,j),LSYSSC_TR_ALL)
+          ELSE
+            ! Transpose only the structure, ignore the content
+            CALL lsyssc_releaseMatrix(rlocalMatrix%RmatrixBlock(i,j))
+            CALL lsyssc_transposeMatrix (rlocalMatrixScalar,&
+                        rlocalMatrix%RmatrixBlock(i,j),LSYSSC_TR_STRUCTURE)
+          END IF
+                
         END IF
-              
       END IF
     END DO
   END DO
@@ -490,7 +492,7 @@ CONTAINS
         narow = 0
         
         DO j=1,rsourceMatrix%ndiagBlocks
-          IF (rsourceMatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+          IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
             
             ! Calculate the number of entries in this matrix-row-block
             narow = narow + rsourceMatrix%RmatrixBlock(i,j)%NA
@@ -545,7 +547,7 @@ CONTAINS
         narow = 0
         
         DO j=1,rsourceMatrix%ndiagBlocks
-          IF (rsourceMatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+          IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
             
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
             CALL lsyssc_getbase_Kld (p_rmatrix,p_Kld)
@@ -631,7 +633,7 @@ CONTAINS
         
         DO j=1,rsourceMatrix%ndiagBlocks
         
-          IF (rsourceMatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+          IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
     
             ! Get the submatrix
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
@@ -728,7 +730,7 @@ CONTAINS
         
         DO j=1,rsourceMatrix%ndiagBlocks
         
-          IF (rsourceMatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+          IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
     
             ! Get the submatrix
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)
@@ -824,7 +826,7 @@ CONTAINS
         
         DO j=1,rsourceMatrix%ndiagBlocks
         
-          IF (rsourceMatrix%RmatrixBlock(i,j)%NEQ .NE. 0) THEN
+          IF (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j)) THEN
     
             ! Get the submatrix
             p_rmatrix => rsourceMatrix%RmatrixBlock(i,j)

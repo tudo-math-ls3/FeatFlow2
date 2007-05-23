@@ -9542,10 +9542,10 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_vectorLinearComb (rx,ry,cx,cy)
+  SUBROUTINE lsyssc_vectorLinearComb (rx,ry,cx,cy,rdest)
   
 !<description>
-  ! Performs a linear combination: ry = cx * rx  +  cy * ry
+  ! Performs a linear combination: rdest or ry = cx * rx  +  cy * ry
   ! Both vectors must be compatible to each other (same size, sorting 
   ! strategy,...).
 !</description>  
@@ -9562,8 +9562,11 @@ CONTAINS
 !</input>
 
 !<inputoutput>
-  ! Second source vector; also receives the result
-  TYPE(t_vectorScalar), INTENT(INOUT) :: ry
+  ! Second source vector; also receives the result if rdest is not specified.
+  TYPE(t_vectorScalar), INTENT(INOUT), TARGET :: ry
+
+  ! OPTIONAL: Destination vector. If not specified, ry will be overwritten.
+  TYPE(t_vectorScalar), INTENT(INOUT), OPTIONAL, TARGET :: rdest
 !</inputoutput>
   
 !</subroutine>
@@ -9571,6 +9574,7 @@ CONTAINS
   ! local variables
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource, p_Ddest
   REAL(SP), DIMENSION(:), POINTER :: p_Ssource, p_Sdest
+  TYPE(t_vectorScalar), POINTER :: p_rdest
   
   ! The vectors must be compatible to each other.
   CALL lsyssc_isVectorCompatible (rx,ry)
@@ -9580,18 +9584,39 @@ CONTAINS
     STOP
   END IF
   
+  p_rdest => ry
+  IF (PRESENT(rdest)) THEN
+    
+    p_rdest => rdest
+    
+    ! The vectors must be compatible to each other or rdest must be a clean
+    ! vector.
+    IF (rdest%NEQ .NE. 0) THEN
+      CALL lsyssc_isVectorCompatible (rx,rdest)
+
+      IF (rx%cdataType .NE. rdest%cdataType) THEN
+        PRINT *,'lsyssc_vectorLinearComb: different data types not supported!'
+        STOP
+      END IF
+    END IF
+    
+    ! Copy ry to rdest. Change rdest afterwards.
+    CALL lsyssc_copyVector (ry,rdest)
+    
+  END IF
+  
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
     ! Get the pointers and copy the whole data array.
     CALL lsyssc_getbase_double(rx,p_Dsource)
-    CALL lsyssc_getbase_double(ry,p_Ddest)
+    CALL lsyssc_getbase_double(p_rdest,p_Ddest)
     
     CALL lalg_vectorLinearCombDble (p_Dsource,p_Ddest,cx,cy)
 
   CASE (ST_SINGLE)
     ! Get the pointers and copy the whole data array.
     CALL lsyssc_getbase_single(rx,p_Ssource)
-    CALL lsyssc_getbase_single(ry,p_Sdest)
+    CALL lsyssc_getbase_single(p_rdest,p_Sdest)
     
     CALL lalg_vectorLinearCombSngl (p_Ssource,p_Sdest,REAL(cx,SP),REAL(cy,SP))
   
