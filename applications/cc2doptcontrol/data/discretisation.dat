@@ -9,22 +9,36 @@
 [CC-DISCRETISATION]
 ###################
 
-# Start vector of the iteration. 
-# =0: ZERO, <>0: read from CSTART; 
-# =1: sStart is start vector on level NLMAX,
-# =2: sStart is start vector on level NLMAX-1.
-# <0: sStart is formatted file
-# iStart             = 0
+# Creation of start vector of the (stationary and nonstationary) simulation.
+# |.|=0: ZERO, <>0: read from CSTART; 
+# |.|=1: read start vector from sStart vector on level NLMAX,
+# |.|=2: read start vector from sStart  on level NLMAX-1.
+# etc...
+# <0: sStart is unformatted file 
+#     (smaller, but processor dependent and not human readable)
+
+isolutionStart     = 0
 
 # Name of file with the initial solution
-# sStart             = 'ns/DX4'
 
-# write file CSOL with solution on maximum level. 
-# 0=don't write, 1=unformatted, 2=formatted
-# iSolutionWrite     = 0
+ssolutionStart     = 'ns/DX4'
 
-# name of file for writing the final solution
-# sSolutionWrite     = 'ns/DX4'
+# Write final solution vector to a file. After a stationary simulation,
+# the stationary solution is written out. After a nonstationary simulation,
+# the solution after the last timestep is written out.
+# 0=don't write
+# |.|=1: write start vector to sSolutionWrite vector on level NLMAX,
+# |.|=2: write start vector to sSolutionWrite on level NLMAX-1.
+# etc...
+# <0: sSolutionWrite is unformatted file 
+#     (smaller, but processor dependent and not human readable)
+
+iSolutionWrite     = 0
+
+# Name of file for writing the final solution
+
+sSolutionWrite     = 'ns/DX4'
+
 
 # ------------------------------------------------------------------------
 
