@@ -169,6 +169,12 @@
 !# 47.) lsyssc_clearOffdiags
 !#      -> Clear all offdiagonal entries in a matrix.
 !#
+!# 48.) lsyssc_isMatrixSorted
+!#      -> Checks if a matrix is currently sorted.
+!#
+!# 49.) lsyssc_isVectorSorted
+!#      -> Checks if a vector is currently sorted.
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -16964,4 +16970,54 @@ CONTAINS
 
   END FUNCTION
     
+  !****************************************************************************
+
+!<function>
+  
+  PURE LOGICAL FUNCTION lsyssc_isMatrixSorted (rmatrix)
+  
+!<description>
+  ! Returns whether a matrix is sorted or not.
+!</description>
+  
+!<input>
+  ! Matrix to check
+  TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
+!</input>
+
+!<result>
+  ! Whether the matrix is sorted or not.
+!</result>
+
+!</function>
+
+    lsyssc_isMatrixSorted = rmatrix%isortStrategy .GT. 0
+
+  END FUNCTION
+
+  !****************************************************************************
+
+!<function>
+  
+  PURE LOGICAL FUNCTION lsyssc_isVectorSorted (rvector)
+  
+!<description>
+  ! Returns whether a vector is sorted or not.
+!</description>
+  
+!<input>
+  ! Vector to check
+  TYPE(t_vectorScalar), INTENT(IN)                  :: rvector
+!</input>
+
+!<result>
+  ! Whether the vector is sorted or not.
+!</result>
+
+!</function>
+
+    lsyssc_isVectorSorted = rvector%isortStrategy .GT. 0
+
+  END FUNCTION
+
 END MODULE

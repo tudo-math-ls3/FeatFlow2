@@ -3047,7 +3047,7 @@ CONTAINS
 !</description>
   
 !<input>
-  ! Block matrix to check
+  ! Block vector to check
   TYPE(t_vectorBlock), INTENT(IN)                  :: rvector
 !</input>
 
@@ -3118,7 +3118,7 @@ CONTAINS
     END DO
 
     ! Vector -> Vector2
-    rvector2 = rvector2
+    rvector2 = rvector
     rvector2%p_rblockDiscretisation => rvector%p_rblockDiscretisation
     rvector2%p_rdiscreteBC          => rvector%p_rdiscreteBC
     rvector2%p_rdiscreteBCfict      => rvector%p_rdiscreteBCfict
