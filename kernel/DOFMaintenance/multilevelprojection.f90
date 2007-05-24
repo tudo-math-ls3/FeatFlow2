@@ -163,6 +163,8 @@ MODULE multilevelprojection
     ! = 4: Use extended restriction, weighted by element size of neighbour element
     ! To activate extended prolongation, set this to >= 2 after initialising the
     ! interlevel projection structure!
+    ! Uniform discretisation with Q1:
+    ! = 1: Element-wise FEAST mirror boundary restriction (experimentally)
     INTEGER                     :: irestVariant = 0
     
     ! Configuration parameter for extended restriction of E030/EM30/E031/EM31
@@ -640,7 +642,7 @@ CONTAINS
 !</function>
 
   ! local variables
-  INTEGER i
+  INTEGER :: i
   INTEGER(PREC_VECIDX) :: imemmax,imemact
 
   IF (SIZE(RdiscrCoarse) .NE. SIZE(RdiscrFine)) THEN
@@ -1239,13 +1241,27 @@ CONTAINS
                
         CASE (EL_Q1)
           ! Q1 restriction
-          CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
-                               p_IverticesAtElementFine)
-          CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
-                               p_IneighboursAtElementFine)
-          CALL mlprj_restUniformQ1_double (p_DuCoarse,p_DuFine, &
-               p_IverticesAtElementFine,p_IneighboursAtElementFine,&
-               p_rtriaFine%NEL)
+          
+          ! Type of restriction? 
+          SELECT CASE (ractProjection%irestVariant)
+          CASE (:0) ! Standard restriction
+            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                                p_IverticesAtElementFine)
+            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                                p_IneighboursAtElementFine)
+            CALL mlprj_restUniformQ1_double (p_DuCoarse,p_DuFine, &
+                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
+                p_rtriaFine%NEL)
+          CASE (1:) ! All boundaries are FEAST mirror boundaries
+            CALL storage_getbase_int2d(p_rtriaFine%h_IverticesAtElement, &
+                                p_IverticesAtElementFine)
+            CALL storage_getbase_int2d(p_rtriaFine%h_IneighboursAtElement, &
+                                p_IneighboursAtElementFine)
+            CALL mlprj_restUniformQ1FM_double (p_DuCoarse,p_DuFine, &
+                p_IverticesAtElementFine,p_IneighboursAtElementFine,&
+                p_rtriaFine%NEL)
+            
+          END SELECT
                
         CASE (EL_Q2)
           ! Q2 restriction
@@ -2700,11 +2716,80 @@ CONTAINS
       ! Additive contribution of the midpoint
       DuCoarse(i1) = DuCoarse(i1)+Q4*(DuFine(i2)+DuFine(i3)+DuFine(i4))
 
-      ! Treat every edge only once:
+      ! Additional contribution on the boundary:
       IF (IneighboursAtElementFine(1,iel) .EQ. 0) &
         DuCoarse(i1) = DuCoarse(i1)+Q4*DuFine(i2)
       IF (IneighboursAtElementFine(4,iel) .EQ. 0) &
         DuCoarse(i1) = DuCoarse(i1)+Q4*DuFine(i4)
+    END DO
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE mlprj_restUniformQ1FM_double (DuCoarse,DuFine, &
+               IverticesAtElementFine,IneighboursAtElementFine,&
+               NELfine)
+  
+!<description>
+  ! Restricts a RHS vector from a fine grid to a coarse grid.
+  ! Q1, uniform triangulation, double precision vector.
+  ! Cellwise approach for FEAST mirror boundary.
+!</description>
+  
+!<input>
+  ! Fine grid vector
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DuFine
+  
+  ! IverticesAtElement array (KVERT) on the fine grid
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+  
+  ! IneighboursAtElement array on the coarse grid
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+  
+  ! Number of elements in the fine grid
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: NELfine
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DuCoarse
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  REAL(DP), PARAMETER :: Q2 = .5_DP
+  REAL(DP), PARAMETER :: Q4 = .25_DP
+  
+  INTEGER(PREC_ELEMENTIDX) :: iel
+  INTEGER(PREC_VERTEXIDX) :: i1,i2,i3,i4
+  
+    ! The information that was 'distributed' in the prolongation has to
+    ! be 'collected'.
+    CALL lalg_clearVectorDble (DuCoarse)
+    
+    ! Loop over the elements to collect the missing additive contributions:
+    DO iel=1,NELfine
+      i1=IverticesAtElementFine(1,iel)
+      i2=IverticesAtElementFine(2,iel)
+      i3=IverticesAtElementFine(3,iel)
+      i4=IverticesAtElementFine(4,iel)
+
+      ! Additive contribution of all vertices to the coarse grid vertex
+      DuCoarse(i1) = DuCoarse(i1)+Q4*(DUfine(i1)+DuFine(i2)+DuFine(i3)+DuFine(i4))
+
+      ! Additional contribution on the boundary:
+      IF (IneighboursAtElementFine(1,iel) .EQ. 0) THEN
+        DuCoarse(i1) = DuCoarse(i1)+2.0_DP*Q4*DuFine(i2)
+        DuCoarse(i1) = DuCoarse(i1)+2.0_DP*Q4*DuFine(i1)
+      END IF
+      IF (IneighboursAtElementFine(4,iel) .EQ. 0) THEN
+        DuCoarse(i1) = DuCoarse(i1)+2.0_DP*Q4*DuFine(i4)
+        DuCoarse(i1) = DuCoarse(i1)+2.0_DP*Q4*DuFine(i1)
+      END IF
     END DO
     
   END SUBROUTINE

@@ -29,13 +29,17 @@
 !#     -> Cleans up a structure with discrete boundary conditions and
 !#        releases all memory allocated by it.
 !#
-!# 1.) bcasm_discretiseFBC
+!# 3.) bcasm_discretiseFBC
 !#     -> Discretises the analytic boundary definitions of fictitious boundary
 !#        objects in a discretisation structure
 !#
-!# 2.) bcasm_releaseDiscreteFBC
+!# 4.) bcasm_releaseDiscreteFBC
 !#     -> Cleans up a structure with discrete boundary conditions of fictitious
 !#        boundary objects and releases all memory allocated by it.
+!#
+!# 5.) bcasm_discretiseLevelDepBC
+!#     -> Discretises special, probably level-dependent boundary conditions.
+!#        Can (but normally need not to) be called after bcasm_discretiseBC.
 !#
 !# The actual worker routines called by the above general ones are:
 !#
@@ -105,6 +109,40 @@ MODULE bcassembly
 !</constantblock>
 
 !</constants>
+
+
+!<types>
+
+!<typeblock>
+  ! Configuration block for FEAST mirror boundary  conditions. This type of
+  ! boundary condition is very special since it's level dependent and needs
+  ! special parameters which are not known by the analytical definition.
+  TYPE t_configDiscreteFeastMirrorBC
+  
+    ! Coarsening level. Used when adding additional contributions to the 
+    ! matrix/vector. Usually = 0. Must be increased for every level coarser
+    ! than the maximum one in a mesh hierarchy.
+    REAL(DP) :: icoarseningLevel = 0
+    
+  END TYPE
+!</typeblock>
+
+!<typeblock>
+
+  ! Parameter block for level-dependent boundary conditions. This block collects
+  ! different parameters for those boundary conditions, which cannot be
+  ! represented purely analytically and are discretised by a call to
+  ! bcasm_discretiseLevelDepBC.
+  TYPE t_levelDependentBC
+  
+    ! Parameter block for discretising the FEAST mirror boundary conditions.
+    TYPE(t_configDiscreteFeastMirrorBC) :: rconfigFeastMirrorBC
+  
+  END TYPE
+
+!</typeblock>
+
+!</types>
 
 CONTAINS
 
@@ -311,11 +349,152 @@ CONTAINS
                    p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
                    ccompl)
         
+      END SELECT
+        
+    END IF
+  
+  END DO  
+
+  END SUBROUTINE
+      
+! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE bcasm_discretiseLevelDepBC (&
+      rblockDiscretisation,rdiscreteBC,bforceRebuild, &
+      rlevelDependentBC,casmComplexity)
+  
+!<description>
+  ! This routine discretises boundary conditions which need a special, probably
+  ! level dependent configuration (e.g. FEAST mirror boundary conditions).
+  ! If the main application uses such boundary conditions, this routine must
+  ! be called after bcasm_discretiseBC to information to rdiscreteBC
+  ! since bcasm_discretiseBC leaves some 'empty space' in the rdiscreteBC
+  ! structure for the level dependent BC.
+  ! If the application does not use level dependent BC's, the routine
+  ! can be ignored.
+  ! The definition of the boundary conditions is taken from the discretisation
+  ! structure rspatialDiscretisation. The discrete version is build up in
+  ! rdiscreteBC.
+!</description>
+
+!<input>
+  
+  ! The block discretisation structure of the underlying PDE. The boundary
+  ! conditions inside of this structure are discretised.
+  TYPE(t_blockDiscretisation), INTENT(IN) :: rblockDiscretisation
+  
+  ! Can be set to TRUE to force a complete rebuild of all
+  ! level dependent boundary conditions in the rdiscreteBC structure.
+  ! Normally, the structure is completely set up only in the first call
+  ! or is there is a massive change in the boundary conditions (e.g. the
+  ! number change)
+  ! In later calls, the structure is recomputed only in those parts of the boundary,
+  ! which have the t_bcRegion\%bisstatic flag set FALSE (the standard value) -
+  ! except there , in which case the whole structure is rebuild.
+  ! By setting bforceRebuild to TRUE, one can enforce a complete
+  ! rebuild of the structure, independent of which regions are marked
+  ! as static.
+  LOGICAL                                   :: bforceRebuild
+  
+  ! A configuration block with information for level-dependent boundary
+  ! conditions. Must be set up by the caller prior to calling
+  ! this routine.
+  TYPE(t_levelDependentBC), INTENT(IN)     :: rlevelDependentBC
+  
+  ! OPTIONAL: A combination of BCASM_DISCFORxxx constants that specify
+  ! the complexity of the discretisation that is to perform. This allows to
+  ! discretise only parts of the BC's, e.g. only setting up those
+  ! information that are necessary for filtering defect vectors.
+  ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
+  ! boundary conditions can be used for everything.
+  INTEGER(I32), INTENT(IN), OPTIONAL :: casmComplexity
+!</input>
+
+!<inputoutput>
+  ! A discretised version of the analytic boundary conditions.
+  TYPE(t_discreteBC) :: rdiscreteBC
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  INTEGER :: icurrentRegion
+  INTEGER(I32) :: ccompl
+  TYPE(t_bcRegion), POINTER :: p_rbcRegion
+  LOGICAL :: bbuildAll
+  TYPE(t_collection), POINTER :: p_rcoll
+  
+  ! Pointer to the boundary condition object
+  TYPE(t_boundaryConditions), POINTER :: p_rboundaryConditions
+  
+  ! For quicker access:
+  p_rboundaryConditions => rblockDiscretisation%p_rboundaryConditions
+  
+  IF (.NOT. ASSOCIATED(p_rboundaryConditions)) THEN
+    PRINT *,'Warning in bcasm_discretiseLevelDepBC: Boundary conditions &
+            &not associated!'
+    RETURN
+  END IF
+  
+  IF (.NOT. ASSOCIATED(rdiscreteBC%p_RdiscBCList)) THEN
+    PRINT *,'Warning in bcasm_discretiseLevelDepBC: List with discrete &
+            &boundary conditions not available!'
+    RETURN
+  END IF
+  
+  ! Default target for the discretisation if everything.
+  IF (PRESENT(casmComplexity)) THEN
+    ccompl = casmComplexity
+  ELSE
+    ccompl = BCASM_DISCFORALL
+  END IF
+  
+  ! Release those information belonging to non-static boundary regions.
+  DO icurrentRegion = 1,p_rboundaryConditions%iregionCount
+    
+    ! Get a pointer to it so we can deal with it more easily
+    p_rbcRegion => p_rboundaryConditions%p_Rregions(icurrentRegion)
+  
+    IF (bforceRebuild .OR. (.NOT. p_rbcRegion%bisStatic)) THEN
+    
+      ! Release all allocated information to this boundary region
+      SELECT CASE (rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype)
+
+      CASE (DISCBC_TPFEASTMIRROR)
+
+        ! Discrete Dirichlet boundary conditions. Release the old structure.
+        CALL bcasm_releaseFeastMirror( &
+              rdiscreteBC%p_RdiscBCList(icurrentRegion)%rfeastMirrorBCs)
+
+        ! BC released, indicate this
+        rdiscreteBC%p_RdiscBCList(icurrentRegion)%itype = DISCBC_TPUNDEFINED
+        
+      END SELECT
+
+    END IF
+  
+  END DO  
+    
+  ! Loop through the regions on the boundary
+  DO icurrentRegion = 1,p_rboundaryConditions%iregionCount
+    
+    ! Get a pointer to it so we can deal with it more easily
+    p_rbcRegion => p_rboundaryConditions%p_Rregions(icurrentRegion)
+  
+    ! Do we have to process this region?
+    IF (bforceRebuild .OR. .NOT. p_rbcRegion%bisStatic) THEN
+    
+      ! Ok, let's go...
+      ! What for BC do we have here?
+      SELECT CASE (p_rbcRegion%ctype)
+      
       CASE (BC_FEASTMIRROR)
       
         CALL bcasm_discrBCFeastMirror (rblockDiscretisation, &
-                   p_rbcRegion, p_rdiscreteBC%p_RdiscBCList(icurrentRegion), &
-                   ccompl)
+                   p_rbcRegion, rdiscreteBC%p_RdiscBCList(icurrentRegion), &
+                   rlevelDependentBC%rconfigFeastMirrorBC,ccompl)
                    
       END SELECT
         
@@ -1047,56 +1226,63 @@ CONTAINS
         ! Nice element, only one DOF :-)
         ! Either the edge or an adjacent vertex is on the boundary.
         
+        ! If parameter values are available, get the parameter value.
+        ! Otherwise, take the standard value from above!
+        IF (ASSOCIATED(p_DvertexParameterValue)) &
+          dpar = p_DvertexParameterValue(I)
+      
+        ! Get the value at the corner point and accept it as
+        ! Dirichlet value.
+        CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                ipoint1,dpar, &
+                                p_rcollection, Dvalues)
+                                 
         IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
         
-          ! If parameter values are available, get the parameter value.
-          ! Otherwise, take the standard value from above!
-          IF (ASSOCIATED(p_DvertexParameterValue)) &
-            dpar = p_DvertexParameterValue(I)
-        
-          ! Get the value at the corner point and accept it as
-          ! Dirichlet value.
-          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                  rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                  ipoint1,dpar, &
-                                  p_rcollection, Dvalues)
-                                 
           ! Dvalues(1) gives us the function value in the point. Save it
           DdofValue(1,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1)
           
         END IF
         
-        ! Set the DOF number < 0 to indicate that it is Dirichlet
-        Idofs(1,isubsetstart+I-Iminidx(ipart)+1) = &
-            -ABS(Idofs(1,isubsetstart+I-Iminidx(ipart)+1))
+        ! A value of SYS_INFINITY indicates a do-nothing node inside of
+        ! Dirichlet boundary.
+        IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+          ! Set the DOF number < 0 to indicate that it is Dirichlet
+          Idofs(1,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(1,isubsetstart+I-Iminidx(ipart)+1))
+        END IF
         
       CASE (EL_P1,EL_Q1)
 
         ! Left point inside? -> Corresponding DOF must be computed
         IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
         
-          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN  
-          
-            ! If parameter values are available, get the parameter value.
-            ! Otherwise, take the standard value from above!
-            IF (ASSOCIATED(p_DvertexParameterValue)) &
-              dpar = p_DvertexParameterValue(I)
-                  
-            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                    ipoint1,dpar, &
-                                    p_rcollection, Dvalues)
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          IF (ASSOCIATED(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(I)
+                
+          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                  rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint1,dpar, &
+                                  p_rcollection, Dvalues)
                                     
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN  
             ! Save the computed function value
             DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
-          ! Set the DOF number < 0 to indicate that it is Dirichlet.
-          ! ilocalEdge is the number of the local edge - and at the same
-          ! time the number of the local DOF of Q1, as an edge always
-          ! follows a corner vertex!
-          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+            ! Set the DOF number < 0 to indicate that it is Dirichlet.
+            ! ilocalEdge is the number of the local edge - and at the same
+            ! time the number of the local DOF of Q1, as an edge always
+            ! follows a corner vertex!
+            Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          END IF
         END IF
         
         ! The right point does not have to be checked! It comes later
@@ -1112,28 +1298,31 @@ CONTAINS
         ! Left point inside? -> Corresponding DOF must be computed
         IF ( (I .GE. IminVertex(ipart)) .AND. (I .LE. ImaxVertex(ipart)) ) THEN
         
-          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN   
-                 
-            ! If parameter values are available, get the parameter value.
-            ! Otherwise, take the standard value from above!
-            IF (ASSOCIATED(p_DvertexParameterValue)) &
-              dpar = p_DvertexParameterValue(I)
-                  
-            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                    ipoint1,dpar, &
-                                    p_rcollection, Dvalues)
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          IF (ASSOCIATED(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(I)
+                
+          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                  rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint1,dpar, &
+                                  p_rcollection, Dvalues)
                                     
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN   
             ! Save the computed function value of the corner.
             DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
-          ! Set the DOF number < 0 to indicate that it is Dirichlet.
-          ! ilocalEdge is the number of the local edge - and at the same
-          ! time the number of the local DOF of Q1, as an edge always
-          ! follows a corner vertex!
-          Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-              -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+            ! Set the DOF number < 0 to indicate that it is Dirichlet.
+            ! ilocalEdge is the number of the local edge - and at the same
+            ! time the number of the local DOF of Q1, as an edge always
+            ! follows a corner vertex!
+            Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+          END IF
         END IF
         
         ! The right point does not have to be checked! It comes later
@@ -1146,30 +1335,34 @@ CONTAINS
         !
         ! Edge inside? -> Calculate point value on midpoint of edge iedge
         IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
-          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
           
-            ! If parameter values are available, get the parameter value.
-            ! Otherwise, take the standard value from above!
-            IF (ASSOCIATED(p_DedgeParameterValue)) &
-              dpar = p_DedgeParameterValue(I)
-                  
-            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                    rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
-                                    iedge,dpar, &
-                                    p_rcollection, Dvalues)
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          IF (ASSOCIATED(p_DedgeParameterValue)) &
+            dpar = p_DedgeParameterValue(I)
+                
+          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                  rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
+                                  iedge,dpar, &
+                                  p_rcollection, Dvalues)
                                     
+          IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
             ! Save the computed function value of the edge midpoint.
             ! This is found at position ilocalEdge+4, as the first four
             ! elements in DdofValue correspond to the corners!
             DdofValue(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
           END IF
           
-          ! Set the DOF number < 0 to indicate that it is Dirichlet
-          ! ilocalEdge is the number of the local edge, corresponding
-          ! to the local DOF ilocalEdge+4, as the first four elements
-          ! in this array correspond to the values in the corners.
-          Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = &
-              -ABS(Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1))
+          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+            ! Set the DOF number < 0 to indicate that it is Dirichlet
+            ! ilocalEdge is the number of the local edge, corresponding
+            ! to the local DOF ilocalEdge+4, as the first four elements
+            ! in this array correspond to the values in the corners.
+            Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1) = &
+                -ABS(Idofs(ilocalEdge+nve,isubsetstart+I-Iminidx(ipart)+1))
+          END IF
               
           ! The element midpoint does not have to be considered, as it cannot
           ! be on the boundary.
@@ -1180,20 +1373,20 @@ CONTAINS
         ! and derivatives.
         ! Either the edge or an adjacent vertex is on the boundary.
         
+        ! If parameter values are available, get the parameter value.
+        ! Otherwise, take the standard value from above!
+        IF (ASSOCIATED(p_DvertexParameterValue)) &
+          dpar = p_DvertexParameterValue(I)
+              
+        ! Get the value at the corner point and accept it as
+        ! Dirichlet value.
+        CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                rbcRegion,ielement, DISCBC_NEEDFUNC,&
+                                ipoint1,dpar, &
+                                p_rcollection, Dvalues)
+                                
         IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
 
-          ! If parameter values are available, get the parameter value.
-          ! Otherwise, take the standard value from above!
-          IF (ASSOCIATED(p_DvertexParameterValue)) &
-            dpar = p_DvertexParameterValue(I)
-                
-          ! Get the value at the corner point and accept it as
-          ! Dirichlet value.
-          CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                  rbcRegion,ielement, DISCBC_NEEDFUNC,&
-                                  ipoint1,dpar, &
-                                  p_rcollection, Dvalues)
-                                 
           ! Dvalues(1) gives us the function value in the point. Save it
           DdofValue(1,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1)
           
@@ -1203,9 +1396,13 @@ CONTAINS
           
         END IF
         
-        ! Set the DOF numbers < 0 to indicate that it is Dirichlet
-        Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1) = &
-            -ABS(Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1))
+        ! A value of SYS_INFINITY indicates a do-nothing node inside of
+        ! Dirichlet boundary.
+        IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+          ! Set the DOF numbers < 0 to indicate that it is Dirichlet
+          Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1) = &
+              -ABS(Idofs(1:3,isubsetstart+I-Iminidx(ipart)+1))
+        END IF
         
       CASE (EL_Q1T)
       
@@ -1218,25 +1415,28 @@ CONTAINS
           !
           ! Edge inside? -> Calculate integral mean value over the edge
           IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
-            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+            ! If parameter values are available, get the parameter value.
+            ! Otherwise, take the standard value from above!
+            IF (ASSOCIATED(p_DedgeParameterValue)) &
+              dpar = p_DedgeParameterValue(I)
 
-              ! If parameter values are available, get the parameter value.
-              ! Otherwise, take the standard value from above!
-              IF (ASSOCIATED(p_DedgeParameterValue)) &
-                dpar = p_DedgeParameterValue(I)
-
-              CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                      rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
-                                      iedge,dpar, &
-                                      p_rcollection, Dvalues)
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rbcRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                    iedge,dpar, &
+                                    p_rcollection, Dvalues)
                                       
+            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
               ! Save the computed function value
               DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
             END IF
-
-            ! Set the DOF number < 0 to indicate that it is Dirichlet
-            Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-                -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+            
+            ! A value of SYS_INFINITY indicates a do-nothing node inside of
+            ! Dirichlet boundary.
+            IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+              ! Set the DOF number < 0 to indicate that it is Dirichlet
+              Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                  -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+            END IF
           END IF
 
         ELSE
@@ -1245,25 +1445,28 @@ CONTAINS
           !
           ! Edge inside? -> Calculate point value on midpoint of edge iedge
           IF ( (I .GE. IminEdge(ipart)) .AND. (I .LE. ImaxEdge(ipart)) ) THEN
-            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
+            ! If parameter values are available, get the parameter value.
+            ! Otherwise, take the standard value from above!
+            IF (ASSOCIATED(p_DedgeParameterValue)) &
+              dpar = p_DedgeParameterValue(I)
 
-              ! If parameter values are available, get the parameter value.
-              ! Otherwise, take the standard value from above!
-              IF (ASSOCIATED(p_DedgeParameterValue)) &
-                dpar = p_DedgeParameterValue(I)
-
-              CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
-                                      rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
-                                      iedge,dpar, &
-                                      p_rcollection, Dvalues)
+            CALL fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                    rbcRegion,ielement, DISCBC_NEEDFUNCMID,&
+                                    iedge,dpar, &
+                                    p_rcollection, Dvalues)
                                       
+            IF (IAND(casmComplexity,NOT(BCASM_DISCFORDEFMAT)) .NE. 0) THEN
               ! Save the computed function value
               DdofValue(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = Dvalues(1) 
             END IF
             
-            ! Set the DOF number < 0 to indicate that it is Dirichlet
-            Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
-                -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+            ! A value of SYS_INFINITY indicates a do-nothing node inside of
+            ! Dirichlet boundary.
+            IF (Dvalues(1) .NE. SYS_INFINITY) THEN
+              ! Set the DOF number < 0 to indicate that it is Dirichlet
+              Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1) = &
+                  -ABS(Idofs(ilocalEdge,isubsetstart+I-Iminidx(ipart)+1))
+            END IF
           END IF
 
         END IF
@@ -1370,7 +1573,8 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE bcasm_discrBCFeastMirror (rblockDiscretisation, &
-                                       rbcRegion, rdiscreteBC, casmComplexity)
+                                       rbcRegion, rdiscreteBC, &
+                                       rconfigFeastMirrorBC, casmComplexity)
   
 !<description>
   ! Creates a discrete version of FEAST mirror boundary conditions.
@@ -1387,13 +1591,8 @@ CONTAINS
   ! The BC region which is to be discrised
   TYPE(t_bcRegion), INTENT(IN) :: rbcRegion
 
-  ! A callback function that calculates values on the boundary.
-  ! Is declared in the interface include file 'intf_bcassembly.inc'.
-  INCLUDE 'intf_bcassembly.inc'
-  
-  ! A collection structure to inform the callback function with
-  ! additional information. Can be NULL() if there is no information to pass.
-  TYPE(t_collection), POINTER :: p_rcollection
+  ! Configuration block for the FEAST mirror boundary conditions.
+  TYPE(t_configDiscreteFeastMirrorBC), INTENT(IN) :: rconfigFeastMirrorBC
 
   ! A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -1481,6 +1680,9 @@ CONTAINS
     p_rfeastMirrorBCs => rdiscreteBC%rfeastMirrorBCs
     
     p_rfeastMirrorBCs%icomponent = icomponent
+    
+    ! Copy the coarsening level from the configuration block
+    p_rfeastMirrorBCs%icoarseningLevel = rconfigFeastMirrorBC%icoarseningLevel
     
     ! We have to deal with all DOF's on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(

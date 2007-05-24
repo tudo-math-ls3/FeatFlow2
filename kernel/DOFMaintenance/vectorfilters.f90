@@ -799,12 +799,10 @@ CONTAINS
     
   ! local variables
   INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorDOFs
-  INTEGER :: i,j,k
+  INTEGER :: i
   REAL(DP), DIMENSION(:), POINTER    :: p_Ivec
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
-  INTEGER(PREC_MATIDX) :: ia
-  INTEGER(PREC_DOFIDX) :: idof
+  REAL(DP) :: dmirrorWeight
 
   ! Impose the DOF value directly into the vector - more precisely, into the
   ! components of the subvector that is indexed by icomponent.
@@ -825,6 +823,11 @@ CONTAINS
     RETURN
   END IF
   
+  ! Get the weight of the entries.
+  ! =2 on finest level, =1.5 on level NLMAX-1,...
+  !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
+  dmirrorWeight = 1.0_DP+1.0_DP*REAL(2**rfmbcStructure%icoarseningLevel,DP)
+  
   ! Get the vector data
   CALL lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Ivec)
   
@@ -842,7 +845,7 @@ CONTAINS
     ! Loop through the DOF's. Each DOF gives us the number of an entry
     ! which is to be doubled.
     DO i=1,SIZE(p_ImirrorDOFs)
-      p_Ivec(p_ImirrorDOFs(i)) = 2.0_DP * p_Ivec(p_ImirrorDOFs(i))
+      p_Ivec(p_ImirrorDOFs(i)) = dmirrorWeight * p_Ivec(p_ImirrorDOFs(i))
     END DO
     
   ELSE
@@ -860,7 +863,7 @@ CONTAINS
     ! Loop through the DOF's. Each DOF gives us the number of an entry
     ! which is to be doubled.
     DO i=1,SIZE(p_ImirrorDOFs)
-      p_Ivec(p_Iperm(p_ImirrorDOFs(i))) = 2.0_DP * p_Ivec(p_Iperm(p_ImirrorDOFs(i)))
+      p_Ivec(p_Iperm(p_ImirrorDOFs(i))) = dmirrorWeight * p_Ivec(p_Iperm(p_ImirrorDOFs(i)))
     END DO
 
   END IF

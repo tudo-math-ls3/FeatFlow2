@@ -215,7 +215,12 @@ MODULE discretebc
     
     ! The component of the equation, this discrete BC is specified for
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
-    INTEGER                            :: icomponent        = 0
+    INTEGER  :: icomponent        = 0
+    
+    ! Coarsening level. Used when adding additional contributions to the 
+    ! matrix/vector. Usually = 0. Must be increased for every level coarser
+    ! than the maximum one in a mesh hierarchy.
+    REAL(DP) :: icoarseningLevel  = 0
     
     ! Handle to a list of all DOF's in the FEAST mirror boundary region.
     ! The list is sorted for increasing DOF numbers.

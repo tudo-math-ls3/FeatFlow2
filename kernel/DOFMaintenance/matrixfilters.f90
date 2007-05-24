@@ -498,6 +498,7 @@ CONTAINS
   INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld
   INTEGER(PREC_MATIDX) :: ia
   INTEGER(PREC_DOFIDX) :: idof
+  REAL(DP) :: dmirrorWeight
 
   ! Offdiagonal matrices are not processed by this routine up to now.
   IF (boffDiag) RETURN
@@ -532,6 +533,11 @@ CONTAINS
   CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
   CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
   
+  ! Get the weight of the entries.
+  ! =2 on finest level, =1.5 on level NLMAX-1,...
+  !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
+  dmirrorWeight = 1.5_DP+1.0_DP*REAL(1**rfmbcStructure%icoarseningLevel,DP)
+  
   ! Get pointers to the list of DOF's that belong to that region and have
   ! to be tackled.
   ! p_ImirrorDOFs is a list of all DOF's in the region.
@@ -564,7 +570,7 @@ CONTAINS
         ! Probably in a later implementation...
         DO j=1,SIZE(p_ImirrorDOFsClosed)
           IF (p_ImirrorDOFsClosed(j) .EQ. idof) THEN
-            p_Da(ia) = 2.0_DP * p_Da(ia)
+            p_Da(ia) = dmirrorWeight * p_Da(ia)
             EXIT
           END IF
         END DO
@@ -599,7 +605,7 @@ CONTAINS
         ! of DOF's is sorted!
         DO j=1,SIZE(p_ImirrorDOFsClosed)
           IF (p_ImirrorDOFsClosed(j) .EQ. idof) THEN
-            p_Da(ia) = 2.0_DP * p_Da(ia)
+            p_Da(ia) = dmirrorWeight * p_Da(ia)
             EXIT
           END IF
         END DO
