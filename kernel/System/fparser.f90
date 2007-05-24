@@ -181,6 +181,15 @@
 !#             is measured in radians.
 !# tanh(A)   : Same as tan() but for hyperbolic tangent.
 !#
+!# The parser also supports a number of standard constants in the function
+!# string. All constants start with an underscore '_'. The following constants
+!# are defined by default:
+!#
+!# _PI       : Gives the number $pi$.
+!# _EXP      : Gives the number $e$
+!# _INFTY    : Gives the maximum possible number in double precision, defined
+!#             in fsystem by SYS_INFINITY.
+!#
 !# The following routines can be found in this module:
 !#
 !# 1.) fparser_init
@@ -454,16 +463,18 @@ MODULE fparser
 !</constantblock>
 
 
-!<constantblock description="predefined constant names for parser">
-  CHARACTER(LEN=5), DIMENSION(2) :: PredefinedConsts = (/ 'pi   ', &
-                                                          'exp  ' /)
+!<constantblock description="predefined constant names for parser; an underscore '_' is automatically added">
+  CHARACTER(LEN=5), DIMENSION(3) :: PredefinedConsts = (/ 'pi   ', &
+                                                          'exp  ', &
+                                                          'infty' /)
 !</constantblock>
 
 
 !<constantblock description="predefined constant values for parser">
-  REAL(DP), DIMENSION(2), PARAMETER :: PredefinedConstvals = (/&
+  REAL(DP), DIMENSION(3), PARAMETER :: PredefinedConstvals = (/&
       3.141592653589793115997963468544185161590576171875_DP, &
-      2.718281828459045090795598298427648842334747314453125_DP/)
+      2.718281828459045090795598298427648842334747314453125_DP, &
+      SYS_INFINITY/)
 !</constantblock>
 
 !</constants>
