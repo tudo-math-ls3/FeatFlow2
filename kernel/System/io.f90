@@ -53,7 +53,7 @@ CONTAINS
 !************************************************************************************
 
 !<subroutine>
-  subroutine io_openFileForReading(sfilename, iunit)
+  subroutine io_openFileForReading(sfilename, iunit, bformatted)
 
     !<description>
     !This routine tries to open a file for reading. If succesful, on can read from it
@@ -64,6 +64,12 @@ CONTAINS
 
     !filename
     character(*), intent(in) :: sfilename
+
+    ! OPTIONAL: 
+    ! TRUE : Open the file formatted, i.e. in human readable form
+    ! FALSE: Open the file in unformatted, machine dependent form
+    ! If not specified, the default system dependent setting is used.
+    LOGICAL, INTENT(IN), OPTIONAL :: bformatted
 
     !</input>
 
@@ -95,14 +101,26 @@ CONTAINS
     inquire(file=trim(sfilename), exist=bexists)
 
     if (bexists) then
-      open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read")
+    
+      IF (.NOT. PRESENT(bformatted)) THEN
+        open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read")
+      ELSE IF (bformatted) THEN
+        open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read",&
+             form="formatted")
+      ELSE
+        open(unit=iunit, file=trim(sfilename), iostat=istatus, action="read",&
+             form="formatted")
+      END IF
       if (istatus .ne. 0) then
         write(unit=*,fmt=*) "*** Error while opening file '",trim(sfilename),"'. ***"
         iunit = -1
       end if
+      
     else
+    
       call error_print(ERR_IO_NOSUCHFILE, "io_openFileForReading", ERR_CRITICAL, &
-                       sarg1 = sfilename)
+                      sarg1 = sfilename)
+                      
     endif
 
   end subroutine io_openFileForReading
@@ -111,7 +129,7 @@ CONTAINS
 
 
 !<subroutine>
-  subroutine io_openFileForWriting(sfilename, iunit, cflag, bfileExists)
+  subroutine io_openFileForWriting(sfilename, iunit, cflag, bfileExists, bformatted)
 
     !<description>
     !This routine tries to open a file for writing. If succesful, one can write to it
@@ -128,6 +146,11 @@ CONTAINS
     !mode: SYS_APPEND or SYS_REPLACE
     integer, intent(in) :: cflag
 
+    ! OPTIONAL: 
+    ! TRUE : Open the file formatted, i.e. in human readable form
+    ! FALSE: Open the file in unformatted, machine dependent form
+    ! If not specified, the default system dependent setting is used.
+    LOGICAL, INTENT(IN), OPTIONAL :: bformatted
     !</input>
 
     !<output>
@@ -137,6 +160,7 @@ CONTAINS
 
     !optional parameter (see description)
     logical, intent(out),optional :: bfileExists
+    
     !</output>
 !</subroutine>
 
@@ -156,13 +180,33 @@ CONTAINS
     endif
 
     inquire(file=trim(sfilename), exist=bexists)
-    if (bexists .and. cflag .eq. SYS_REPLACE) then
-      open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
-           action="write")
-    else
-      open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
-           position="append")
-    endif
+    IF (.NOT. PRESENT(bformatted)) THEN
+      if (bexists .and. cflag .eq. SYS_REPLACE) then
+        open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
+            action="write")
+      else
+        open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
+            position="append")
+      endif
+    ELSE
+      if (bexists .and. cflag .eq. SYS_REPLACE) then
+        IF (bformatted) THEN
+          open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
+              action="write", form="formatted")
+        ELSE
+          open(unit=iunit, file=trim(sfilename), iostat=istatus, status="replace", &
+              action="write", form="unformatted")
+        END IF
+      else
+        IF (bformatted) THEN
+          open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
+              position="append", form="formatted")
+        ELSE
+          open(unit=iunit, file=trim(sfilename), iostat=istatus, action="write", &
+              position="append", form="unformatted")
+        END IF
+      endif    
+    END IF
     if (present(bfileExists)) then
       bfileExists = bexists
     endif
