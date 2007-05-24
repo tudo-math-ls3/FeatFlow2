@@ -153,6 +153,9 @@ CONTAINS
     CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
     CALL c2d2_initAnalyticBC (p_rproblem)   
 
+    ! Create the solution vector -- zero or read from file.
+    CALL c2d2_initInitialSolution (p_rproblem,rvector)
+
     ! Now choose the algorithm. Stationary or time-dependent simulation?
     IF (p_rproblem%itimedependence .EQ. 0) THEN
     
@@ -201,6 +204,9 @@ CONTAINS
       CALL c2d2_solveNonstationaryDirect (p_rproblem,rvector,rrhs)
       
     END IF
+    
+    ! (Probably) write final solution vector
+    CALL c2d2_writeSolution (p_rproblem,rvector)
     
     ! Cleanup
     CALL c2d2_doneMatVec (p_rproblem,rvector,rrhs)

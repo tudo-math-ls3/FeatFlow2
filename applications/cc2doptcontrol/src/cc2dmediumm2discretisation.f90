@@ -30,6 +30,12 @@
 !# 6.) c2d2_doneDiscretisation
 !#     -> Cleanup of the underlying discretisation structures
 !#
+!# 7.) c2d2_initInitialSolution
+!#     -> Init solution vector according to parameters in the DAT file
+!#
+!# 8.) c2d2_writeSolution
+!#     -> Write solution vector as configured in the DAT file.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -52,6 +58,7 @@ MODULE cc2dmediumm2discretisation
   USE nonlinearsolver
   USE paramlist
   USE stdoperators
+  USE vectorio
   
   USE collection
   USE convection
@@ -903,6 +910,199 @@ CONTAINS
                                 
     ! Clean up the collection (as we are done with the assembly, that's it.
     CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_initInitialSolution (rproblem,rvector)
+  
+!<description>
+  ! Initialises the initial solution vector into rvector. Depending on the settings
+  ! in the DAT file this is either zero or read from a file.
+!</description>
+
+!<input>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(IN) :: rproblem
+!</input>
+
+!<inputoutput>
+  ! The solution vector to be initialised. Must be set up according to the
+  ! maximum level NLMAX in rproblem!
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(I32) :: istart
+    TYPE(t_vectorBlock) :: rvector1,rvector2
+    TYPE(t_vectorScalar) :: rvectorTemp
+    CHARACTER(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
+    INTEGER :: ilev
+    INTEGER(PREC_VECIDX) :: NEQ
+    TYPE(t_interlevelProjectionBlock) :: rprojection 
+
+    ! Get the parameter what to do with rvector
+    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'isolutionStart',istart,0)
+    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'ssolutionStart',sfileString,'')
+
+    ! Create a temp vector at level NLMAX-istart+1.
+    ilev = rproblem%NLMAX-ABS(istart)+1
+    
+    IF (ilev .LT. rproblem%NLMIN) THEN
+      PRINT *,'Warning: Level of start vector is < NLMIN! Initialising with zero!'
+      istart = 0
+    END IF
+    
+    ! Inít with zero? Read from file?
+    IF (istart .EQ. 0) THEN
+      ! Init with zero
+      CALL lsysbl_clearVector (rvector)
+    ELSE
+      ! Remove possible ''-characters
+      READ(sfileString,*) sfile
+
+      CALL lsysbl_createVectorBlock (&
+          rproblem%RlevelInfo(ilev)%p_rdiscretisation,rvector1,.FALSE.)
+      
+      ! Read in the vector
+      CALL vecio_readBlockVectorHR (&
+          rvector1, sarray, .TRUE., 0, sfile, istart .GT. 0)
+          
+      ! If the vector is on level < NLMAX, we have to bring it to level NLMAX
+      DO WHILE (ilev .LT. rproblem%NLMAX)
+        
+        ! Initialise a vector for the higher level and a prolongation structure.
+        CALL lsysbl_createVectorBlock (&
+            rproblem%RlevelInfo(ilev+1)%p_rdiscretisation,rvector2,.FALSE.)
+        
+        CALL mlprj_initProjectionVec (rprojection,rvector2)
+        
+        ! Prolongate to the next higher level.
+
+        NEQ = mlprj_getTempMemoryVec (rprojection,rvector1,rvector2)
+        IF (NEQ .NE. 0) CALL lsyssc_createVector (rvectorTemp,NEQ,.FALSE.)
+        CALL mlprj_performProlongation (rprojection,rvector1, &
+                                        rvector2,rvectorTemp)
+        IF (NEQ .NE. 0) CALL lsyssc_releaseVector (rvectorTemp)
+        
+        ! Swap rvector1 and rvector2. Release the coarse grid vector.
+        CALL lsysbl_swapVectors (rvector1,rvector2)
+        CALL lsysbl_releaseVector (rvector2)
+        
+        CALL mlprj_doneProjection (rprojection)
+        
+        ! rvector1 is now on level ilev+1
+        ilev = ilev+1
+        
+      END DO
+      
+      ! Copy the resulting vector rvector1 to the output.
+      CALL lsysbl_copyVector (rvector1,rvector)
+      
+      ! Release the temp vector
+      CALL lsysbl_releaseVector (rvector1)
+      
+    END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_writeSolution (rproblem,rvector)
+  
+!<description>
+  ! Writes a solution vector rvector to a file as configured in the parameters
+  ! in the DAT file.
+!</description>
+
+!<input>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(IN) :: rproblem
+
+  ! The solution vector to be written out. Must be set up according to the
+  ! maximum level NLMAX in rproblem!
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!</input>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(I32) :: idestLevel
+    TYPE(t_vectorBlock) :: rvector1,rvector2
+    TYPE(t_vectorScalar) :: rvectorTemp
+    CHARACTER(LEN=SYS_STRLEN) :: sfile,sfileString
+    INTEGER :: ilev
+    INTEGER(PREC_VECIDX) :: NEQ
+    TYPE(t_interlevelProjectionBlock) :: rprojection 
+    LOGICAL :: bformatted
+
+    ! Get the parameter what to do with rvector
+    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iSolutionWrite',idestLevel,0)
+    CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'sSolutionWrite',sfileString,'')
+
+    IF (idestLevel .EQ. 0) RETURN ! nothing to do.
+    
+    ! Remove possible ''-characters
+    READ(sfileString,*) sfile
+    
+    bformatted = idestLevel .GT. 0
+    idestLevel = rproblem%NLMAX-ABS(idestLevel)+1 ! level where to write out
+
+    IF (idestLevel .LT. rproblem%NLMIN) THEN
+      PRINT *,'Warning: Level for solution vector is < NLMIN! &
+              &Writing out at level NLMIN!'
+      idestLevel = rproblem%NLMIN
+    END IF
+    
+    ! Interpolate the solution down to level istart.
+    CALL lsysbl_copyVector (rvector,rvector1)   ! creates new rvector1!
+
+    DO ilev = rproblem%NLMAX,idestLevel+1,-1
+      
+      ! Initialise a vector for the lower level and a prolongation structure.
+      CALL lsysbl_createVectorBlock (&
+          rproblem%RlevelInfo(ilev-1)%p_rdiscretisation,rvector2,.FALSE.)
+      
+      CALL mlprj_initProjectionVec (rprojection,rvector2)
+      
+      ! Interpolate to the next higher level.
+      ! (Don't 'restrict'! Restriction would be for the dual space = RHS vectors!)
+
+      NEQ = mlprj_getTempMemoryVec (rprojection,rvector2,rvector1)
+      IF (NEQ .NE. 0) CALL lsyssc_createVector (rvectorTemp,NEQ,.FALSE.)
+      CALL mlprj_performInterpolation (rprojection,rvector2,rvector1, &
+                                       rvectorTemp)
+      IF (NEQ .NE. 0) CALL lsyssc_releaseVector (rvectorTemp)
+      
+      ! Swap rvector1 and rvector2. Release the fine grid vector.
+      CALL lsysbl_swapVectors (rvector1,rvector2)
+      CALL lsysbl_releaseVector (rvector2)
+      
+      CALL mlprj_doneProjection (rprojection)
+      
+    END DO
+
+    ! Write out the solution.
+    IF (bformatted) THEN
+      CALL vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .TRUE.,&
+                                    0, sfile, '(E22.15)')
+    ELSE
+      CALL vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .TRUE.,0, sfile)
+    END IF
+
+    ! Release temp memory.
+    CALL lsysbl_releaseVector (rvector1)
 
   END SUBROUTINE
 
