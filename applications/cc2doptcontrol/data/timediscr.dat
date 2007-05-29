@@ -16,8 +16,9 @@ itimedependence = 0                       # ISTAT
 # ----------------------------------------------------------------------
 
 # Number of time steps.
+# Must be >= 2 for everything except implicit Euler!
 
-niterations = 2                          # NITNS
+niterations = 5                          # NITNS
 
 # Absolute start time of the simulation (TIMENS)
 
@@ -31,7 +32,7 @@ dtimeMax = 10.0                           # TIMEMX
 # ----------------------------------------------------------------------
 
 # Time-stepping scheme (IFRSTP);
-# 0=one step scheme, 1=fractional step
+# 0=one step scheme
 
 itimeStepScheme = 0                       # IFRSTP
 
