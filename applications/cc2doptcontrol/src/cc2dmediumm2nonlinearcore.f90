@@ -72,10 +72,10 @@
 !#  2.) c2d2_createNonlinearLoop
 !#      -> Creates a nonlinear iteration structure, allocates memory.
 !#
-!#  4.) c2d2_solveCoreEquation
+!#  3.) c2d2_solveCoreEquation
 !#      -> Starts the nonlinear iteration to solve the core equation.
 !#
-!#  5.) c2d2_doneNonlinearLoop
+!#  4.) c2d2_doneNonlinearLoop
 !#      -> Releases allocated memory in the nonlinear iteration structure.
 !#
 !# Callback routines for the nonlinear solver:
@@ -108,14 +108,11 @@
 !# 13.) c2d2_assembleLinearisedMatrices
 !#      -> Assembles the linearised nonlinear matrix/matrices.
 !#
-!# 14.) c2d2_assembleConvDiffDefect
-!#      -> Assemble the convection-diffusion part of the nonlinear defect.
-!#
-!# 15.) c2d2_assembleNonlinearDefect
+!# 14.) c2d2_assembleNonlinearDefect
 !#      -> Assembles the nonlinear defect to a given RHS and a given solution
 !#         vector.
 !#
-!# 16.) c2d2_getDefectNorm
+!# 15.) c2d2_getDefectNorm
 !#      -> Calculate a couple of norms of a residual vector
 !#
 !# To solve a system with the core equation, one has to deal with two
@@ -132,7 +129,7 @@
 !#  b) c2d2_createNonlinearLoop -> Basic initialisation of the core equation
 !#                                 structures
 !#
-!#  e) Initialise further parameters in the core equation structure manually
+!#  c) Initialise further parameters in the core equation structure manually
 !#     (e.g. preconditioner, pointer to matrices, ...).
 !#     It's important, that the 'outer' application initialises pointers to
 !#     matrices, otherwise nothing will work!
@@ -1096,7 +1093,9 @@ CONTAINS
   LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
 
   ! TRUE  = Assemble the preconditioner matrices p_rmatrixPreconditioner
+  !         on every level in rnonlinearIteration.
   ! FALSE = Assemble the linearised system matrices p_rmatrix
+  !         on every level in rnonlinearIteration.
   LOGICAL, INTENT(IN) :: bassemblePreconditioner
   
   ! Applies only if bassemblePreconditioner=TRUE:
@@ -1113,13 +1112,15 @@ CONTAINS
 
 !</subroutine>
 
+  ! local variables
+  REAL(DP) :: dnewton
+
   ! An array for the system matrix(matrices) during the initialisation of
   ! the linear solver.
   TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
   TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
   TYPE(t_vectorScalar), POINTER :: p_rvectorTemp
   INTEGER :: NLMAX,NLMIN, ilev
-  REAL(DP) :: dnewton
   TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
   
   TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
@@ -1137,20 +1138,22 @@ CONTAINS
     NLMIN = rnonlinearIteration%NLMIN
     NLMAX = rnonlinearIteration%NLMAX
     
-    IF (.NOT. blevelHierarchy) THEN
-      ! Discretise only maximum level
-      NLMIN = NLMAX
-    END IF
-    
-    if (blevelHierarchy) THEN
+    IF (blevelHierarchy) THEN
       ! Get the interlevel projection structure and the temporary vector
       ! from the collection.
       ! Our 'parent' prepared there how to interpolate the solution on the
       ! fine grid to coarser grids.
       p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
       p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
+    ELSE
+      ! Discretise only maximum level
+      NLMIN = NLMAX
+    END IF
 
+    IF (bassemblePreconditioner) THEN
       p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
+    ELSE
+      NULLIFY(p_RfilterChain)
     END IF
 
     ! On all levels, we have to set up the nonlinear system matrix,
@@ -1378,21 +1381,18 @@ CONTAINS
       
       IF (bboundaryConditions) THEN
     
-        !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
-        !    .TRUE., 0, 'matrix'//TRIM(sys_siL(ilev,10))//'.txt', '(E20.10)')
-      
-        ! Call the matrix filter for the boundary conditions to include the BC's
-        ! into the matrix.
-        CALL matfil_discreteBC (p_rmatrix)
-        CALL matfil_discreteFBC (p_rmatrix)
-
-        !p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
-        !IF (ASSOCIATED(p_RfilterChain)) THEN
-        !  CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
-        !END IF
-
-        !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
-        !    .TRUE., 0, 'matrixbd'//TRIM(sys_siL(ilev,10))//'.txt', '(E20.10)')
+        IF (ASSOCIATED(p_RfilterChain)) THEN
+          ! Apply the filter chain to the matrix.
+          ! As the filter consists only of an implementation filter for
+          ! boundary conditions, this implements the boundary conditions
+          ! into the system matrix.
+          CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
+        ELSE
+          ! Call the matrix filter for the boundary conditions to include the BC's
+          ! into the matrix.
+          CALL matfil_discreteBC (p_rmatrix)
+          CALL matfil_discreteFBC (p_rmatrix)
+        END IF
 
       END IF
         
@@ -2486,6 +2486,7 @@ CONTAINS
     LOGICAL :: bassembleNewton
     TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
     TYPE(t_ccDynamicNewtonControl), POINTER :: p_rnewton
+    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 
     ! The nonlinear iteration structure
     TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
@@ -2584,10 +2585,12 @@ CONTAINS
         
         CALL linsol_setMatrices(&
             rnonlinearIteration%rpreconditioner%p_rsolverNode,Rmatrices(:))
-        DO i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
-          CALL storage_getbase_double (Rmatrices(i)% &
-              RmatrixBlock(4,1)%h_Da,p_Ddata)
-        END DO
+        
+        ! DEBUG!!!
+        !DO i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
+        !  CALL storage_getbase_double (Rmatrices(i)% &
+        !      RmatrixBlock(4,1)%h_Da,p_Ddata)
+        !END DO
             
         ! The solver got the matrices; clean up Rmatrices, it was only of temporary
         ! nature...
@@ -2668,6 +2671,12 @@ CONTAINS
         bsuccess = .TRUE.
       END IF
 
+      IF (bsuccess) THEN
+        ! Filter the final defect
+        p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
+        CALL filter_applyFilterChainVec (rd, p_RfilterChain)
+      END IF
+      
       ! Release the nonlinear-iteration structure, that's it.
       CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
       

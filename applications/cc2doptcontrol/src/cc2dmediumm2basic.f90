@@ -315,5 +315,14 @@ MODULE cc2dmediumm2basic
 ! Section [BDEXPRESSIONS]:
 ! ------------------------
 ! Saves the expressions that are to be evaluated on the boundary.
+!
+! During the assembly of RHS vectors and boundary conditions, the following
+! additional information is valid in the collection:
+!
+!   collection%IquickAccess(1)   = 0: stationary, 
+!                                  1: nonstationary with explicit time stepping
+!   collection%DquickAccess(1)   = current simulation time
+!   collection%DquickAccess(2)   = minimum simulation time
+!   collection%DquickAccess(3)   = maximum simulation time
   
 END MODULE

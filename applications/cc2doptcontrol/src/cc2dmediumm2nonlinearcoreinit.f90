@@ -291,17 +291,17 @@ CONTAINS
     CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
                 rmatrix%RmatrixBlock(5,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       
+    ! Put a reference to the identity matrix for the pressure into the
+    ! global matrix.
+    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixIdentityPressure,&
+        rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    
     ! That's it, all submatrices are basically set up.
     !
     ! Update the structural information of the block matrix, as we manually
     ! changed the submatrices:
     CALL lsysbl_updateMatStrucInfo (rmatrix)
       
-    ! Put a reference to the identity matrix for the pressure into the
-    ! global matrix.
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixIdentityPressure,&
-        rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -316,7 +316,7 @@ CONTAINS
   ! during the calculation. Boundary conditions etc. are not attached to the 
   ! matrix!
   !
-  ! The routine copies references from the submatrices to p_rmatrix,
+  ! The routine copies references from the submatrices to rmatrix,
   ! but it does not initialise any matrix weights / scaling factors.
   ! This has to be done by the caller for the actual situation.
   !
@@ -331,7 +331,7 @@ CONTAINS
   ! original template (Stokes-, Mass-,...) matrices are copied in memory,
   ! so the new matrix is allowed to be changed!
   !
-  ! Only exception: The rouitine includes identity matrices in the size
+  ! Only exception: The routine includes identity matrices in the size
   ! of the pressure to position (3,3) and (6,6) in the system matrix.
   ! These matrices are switched off by setting the multiplier to zero.
   !
@@ -344,7 +344,7 @@ CONTAINS
   ! A level-info structure specifying the matrices of the problem.
   TYPE(t_problem_lvl), INTENT(IN) :: rlevelInfo
   
-  ! Whether or not the matrix entries of the source matrices (Stokes, Mass,...)
+  ! Whether or not the matrix entries of the source matrices (Mass,B,...)
   ! should be copied in memory. 
   ! If set to FALSE, the routine initialises rmatrix
   ! only with references to the original matrices, thus the caller must not

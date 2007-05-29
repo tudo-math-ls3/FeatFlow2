@@ -136,6 +136,7 @@ CONTAINS
                               'NLMIN',ilvmin,2)
     CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'NLMAX',ilvmax,4)
+    IF (ilvmin .LE. 0) ilvmin = ilvmax-ilvmin
 
     ! Initialise the level in the problem structure
     ilvmin = MIN(ilvmin,ilvmax)
@@ -235,23 +236,12 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,ilvmin,ilvmax
+  INTEGER :: i
   
     ! Variable for a filename:  
     CHARACTER(LEN=256) :: sString
     CHARACTER(LEN=60) :: sPRMFile, sTRIFile
 
-    ! Get min/max level from the parameter file.
-    !
-    ! ilvmin receives the minimal level where to discretise for supporting
-    ! the solution process.
-    ! ilvmax receives the level where we want to solve.
-    
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'NLMIN',ilvmin,2)
-    CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'NLMAX',ilvmax,4)
-    
     ! Get the .prm and the .tri file from the parameter list.
     ! note that parlst_getvalue_string returns us exactly what stands
     ! in the parameter file, so we have to apply READ to get rid of
