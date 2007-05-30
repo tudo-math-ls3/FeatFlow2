@@ -407,7 +407,7 @@ CONTAINS
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
         ! global DOF's of our LINF_NELEMSIM elements simultaneously.
         CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                     .TRUE.,IdofsTrial)
+                                     .FALSE.,IdofsTrial)
                                      
         ! We have the coordinates of the cubature points saved in the
         ! coordinate array from above. Unfortunately for nonparametric
