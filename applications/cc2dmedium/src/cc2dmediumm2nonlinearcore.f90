@@ -117,7 +117,7 @@
 !#  b) c2d2_createNonlinearLoop -> Basic initialisation of the core equation
 !#                                 structures
 !#
-!#  e) Initialise further parameters in the core equation structure manually
+!#  c) Initialise further parameters in the core equation structure manually
 !#     (e.g. preconditioner, pointer to matrices, ...).
 !#     It's important, that the 'outer' application initialises pointers to
 !#     matrices, otherwise nothing will work!
@@ -2217,7 +2217,7 @@ CONTAINS
       !                  [ B1^T B2^T 0  ]
       !
       ! The parameter OMEGA is calculated as the result of the 1D
-      ! minimization problem:
+      ! minimisation problem:
       !
       !   OMEGA = min_omega || T(u^l+omega*Y)*(u^l+omega*Y) - f ||_E
       !
@@ -2226,7 +2226,7 @@ CONTAINS
       !              < T(u^l+omegaold*Y)Y , T(u^l+omegaold*Y)Y >
       !
       ! when choosing omegaold=previous omega, which is a good choice
-      ! as one can see by linearization (see p. 170, Turek's book).
+      ! as one can see by linearisation (see p. 170, Turek's book).
       !
       ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian 
       ! scalar product <.,.>.
