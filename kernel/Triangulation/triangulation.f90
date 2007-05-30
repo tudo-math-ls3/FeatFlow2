@@ -3441,7 +3441,7 @@ CONTAINS
 
 !<description>
   ! This routine generates information about the edges at the boundary
-  ! IedgesAtBoundary (KMBD). 
+  ! IedgesAtBoundary (KMBD). Initialises NMBD.
   ! For this purpose, the following arrays are used:
   ! IverticesAtElement, IelementsAtBoundary, IverticesAtBoundary, 
   ! IedgesAtElement, IboundaryCpIdx.
@@ -3552,6 +3552,9 @@ CONTAINS
       END DO
     
     END DO
+    
+    ! We have as many edges on the boundary as vertices.
+    rtriangulation%NMBD = rtriangulation%NVBD
     
   END SUBROUTINE
 
@@ -3723,7 +3726,7 @@ CONTAINS
 
 !<description>
   ! This routine generates the parameter value of edge midpoints
-  ! on the boundary DedgeParameterValue (DMBDP). Initialises NMBD.
+  ! on the boundary DedgeParameterValue (DMBDP).
   ! For this purpose, the following arrays are used:
   ! DvertexParameterValue, IverticesAtBoundary, IboundaryCpIdx.
   ! If necessary, new memory is allocated.
@@ -3850,8 +3853,6 @@ CONTAINS
         
     END DO
 
-    rtriangulation%NMBD = rtriangulation%NVBD
-    
     ! Release temporary array, finish.
     CALL storage_free(hvertAtBd)
     

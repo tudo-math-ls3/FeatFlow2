@@ -420,9 +420,9 @@ CONTAINS
       
       ! Initialise weights for matrices and RHS:   
       rtstepScheme%dweightMatrixLHS = dtstep * dtheta1
-      rtstepScheme%dweightMatrixRHS = dtstep * (dtheta1 - 1.0_DP)
+      rtstepScheme%dweightMatrixRHS = - dtstep * (1.0_DP - dtheta1)
       rtstepScheme%dweightNewRHS    = dtstep * dtheta1
-      rtstepScheme%dweightOldRHS    = dtstep * (dtheta1 - 1.0_DP)
+      rtstepScheme%dweightOldRHS    = dtstep * (1.0_DP - dtheta1)
       rtstepScheme%dweightStationaryRHS = dtstep
     
     ELSE
