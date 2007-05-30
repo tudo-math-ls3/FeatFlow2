@@ -128,6 +128,7 @@ CONTAINS
     CALL parlst_readfromfile (p_rproblem%rparamList, './data/paramtriang.dat')
     CALL parlst_readfromfile (p_rproblem%rparamList, './data/bdconditions.dat')
     CALL parlst_readfromfile (p_rproblem%rparamList, './data/timediscr.dat')
+    CALL parlst_readfromfile (p_rproblem%rparamList, './data/postprocessing.dat')
     
     ! Ok, parameters are read in.
     ! Get the output levels during the initialisation phase and during the program.

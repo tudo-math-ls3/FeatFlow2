@@ -39,6 +39,7 @@ MODULE cc2dmediumm2postprocessing
   USE ucd
   
   USE pprocnavierstokes
+  USE pprocerror
   
   USE cc2dmediumm2basic
   USE cc2dmedium_callback
@@ -50,7 +51,7 @@ MODULE cc2dmediumm2postprocessing
 !<typeblock>
 
   ! Postprocessing structure. Whenever the postprocessing calculation routines are
-  ! called, they fills this structure using the current solution vector (and other
+  ! called, they fill this structure using the current solution vector (and other
   ! information if necessary). The information in this structure can then be used
   ! for GMV output e.g.
   TYPE t_c2d2postprocessing
@@ -142,73 +143,14 @@ CONTAINS
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
     
-    ! Forces on the object
-    REAL(DP), DIMENSION(NDIM2D) :: Dforces
-    REAL(DP) :: df1,df2
-    TYPE(t_boundaryRegion) :: rregion
+    ! Calculate body forces.
+    CALL c2d2_calculateBodyForces (rvector,rproblem)
     
-    ! Divergence
-    TYPE(t_matrixScalar) :: rBmatrix
-    TYPE(t_vectorScalar), TARGET :: rtempVector
-
-    ! If we have a uniform discreisation, calculate the body forces on the
-    ! 2nd boundary component - if it exists.
-    IF ((rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-        (boundary_igetNBoundComp(rproblem%p_rboundary) .GE. 2)) THEN
-
-      ! Calculate drag-/lift coefficients on the 2nd boundary component.
-      ! This is for the benchmark channel!
-      CALL boundary_createRegion (rproblem%p_rboundary, &
-          2, 0, rregion)
-      rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-      df1 = 1.0_DP/1000.0_DP
-      df2 = 0.1_DP * 0.2_DP**2
-      CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
-
-      CALL output_lbrk()
-      CALL output_line ('Body forces real bd., bdc/horiz/vert')
-      CALL output_line (' 2 / ' &
-          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
-          //TRIM(sys_sdEP(Dforces(2),15,6)) )
-          
-      
-    ENDIF
+    ! Calculate the divergence
+    CALL c2d2_calculateDivergence (rvector,rproblem)
     
-    ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-        ccomplexity .EQ. SPDISC_UNIFORM) THEN
-        
-      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
-                
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
-      
-        ! Create a temporary vector 
-        CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
-            rtempVector,.TRUE.)
-
-        ! Calculate divergence = B1^T u1 + B2^T u2
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(1), &
-            rtempVector, 1.0_DP, 0.0_DP)
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(2), &
-            rtempVector, 1.0_DP, 1.0_DP)
-        
-        CALL output_lbrk()
-        CALL output_line ('Divergence = ' &
-            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
-
-        CALL lsyssc_releaseVector (rtempVector)
-      
-      END IF
-      
-    END IF    
+    ! Error analysis, comparison to reference function.
+    CALL c2d2_errorAnalysis (rvector,rproblem)
     
     ! The solution vector is probably not in the way, GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
@@ -386,72 +328,14 @@ CONTAINS
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
     
-    ! Forces on the object
-    REAL(DP), DIMENSION(NDIM2D) :: Dforces
-    REAL(DP) :: df1,df2
-    TYPE(t_boundaryRegion) :: rregion
+    ! Calculate body forces.
+    CALL c2d2_calculateBodyForces (rvector,rproblem)
     
-    ! Divergence
-    TYPE(t_matrixScalar) :: rBmatrix
-    TYPE(t_vectorScalar), TARGET :: rtempVector
+    ! Calculate the divergence
+    CALL c2d2_calculateDivergence (rvector,rproblem)
 
-    ! If we have a uniform discreisation, calculate the body forces on the
-    ! 2nd boundary component - if it exists.
-    IF ((rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-        (boundary_igetNBoundComp(rproblem%p_rboundary) .GE. 2)) THEN
-
-      ! Calculate drag-/lift coefficients on the 2nd boundary component.
-      ! This is for the benchmark channel!
-      CALL boundary_createRegion (rproblem%p_rboundary, &
-          2, 0, rregion)
-      rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-      df1 = 1.0_DP/1000.0_DP
-      df2 = 0.1_DP * 0.2_DP**2
-      CALL ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
-      
-      CALL output_lbrk()
-      CALL output_line ('Body forces real bd., bdc/horiz/vert')
-      CALL output_line (' 2 / ' &
-          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
-          //TRIM(sys_sdEP(Dforces(2),15,6)) )
-      
-    ENDIF
-    
-    ! If we have a simple Q1~ discretisation, calculate the streamfunction.
-    IF (rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-        ccomplexity .EQ. SPDISC_UNIFORM) THEN
-        
-      ieltype = rvector%p_rblockDiscretisation%RspatialDiscretisation(1)% &
-                RelementDistribution(1)%itrialElement
-                
-      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
-      
-        ! Create a temporary vector 
-        CALL lsyssc_createVecByDiscr (rvector%RvectorBlock(3)%p_rspatialDiscretisation,&
-            rtempVector,.TRUE.)
-
-        ! Calculate divergence = B1^T u1 + B2^T u2
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(1), &
-            rtempVector, 1.0_DP, 0.0_DP)
-        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
-        CALL lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(2), &
-            rtempVector, 1.0_DP, 1.0_DP)
-        
-        CALL output_lbrk()
-        CALL output_line ('Divergence = ' &
-            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
-            
-        CALL lsyssc_releaseVector (rtempVector)
-      
-      END IF
-      
-    END IF    
+    ! Error analysis, comparison to reference function.
+    CALL c2d2_errorAnalysis (rvector,rproblem)
     
     ! The solution vector is probably not in the way, GMV likes it!
     ! GMV for example does not understand Q1~ vectors!
@@ -587,6 +471,215 @@ CONTAINS
     ! another one.
     CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(1))
     CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(2))
+    
+  END SUBROUTINE
+
+!******************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_errorAnalysis (rsolution,rproblem)
+
+!<description>
+  ! Performs error analysis on a given solution rsolution as specified
+  ! in the .DAT file.
+  ! The result of the error analysis is written to the standard output.
+!</description>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  TYPE(t_vectorBlock), INTENT(IN) :: rsolution
+!</input>
+
+!<inputoutput>
+  ! Problem structure.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+    
+    ! local variables
+    REAL(DP),DIMENSION(3) :: Derr
+    REAL(DP) :: derrorVel, derrorP
+    INTEGER :: icalcL2,icalcH1
+    
+    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                     'IERRORANALYSISL2', icalcL2, 0)
+    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                     'IERRORANALYSISH1', icalcH1, 0)
+    
+    IF ((icalcL2 .NE. 0) .OR. (icalcH1 .NE. 0)) THEN
+      CALL output_lbrk()
+      CALL output_line ('Error Analysis')
+      CALL output_line ('--------------')
+    END IF
+    
+    IF (icalcL2 .NE. 0) THEN
+    
+      CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    
+      ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
+      CALL pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+                         ffunction_TargetX,rproblem%rcollection)
+
+      CALL pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+                         ffunction_TargetY,rproblem%rcollection)
+                         
+      derrorVel = (0.5_DP*(Derr(1)**2+Derr(2)**2))
+
+      CALL pperr_scalar (rsolution%RvectorBlock(3),PPERR_L2ERROR,Derr(3),&
+                         ffunction_TargetP,rproblem%rcollection)
+
+      derrorP = Derr(3)
+      
+      CALL output_line ('||u-reference||_L2 = '//TRIM(sys_sdEP(derrorVel,15,6)) )
+      CALL output_line ('||p-reference||_L2 = '//TRIM(sys_sdEP(derrorP,15,6)) )
+      
+      CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
+    END IF
+
+    IF (icalcL2 .NE. 0) THEN
+    
+      CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
+    
+      ! Perform error analysis to calculate and add 1/2||u-z||_{L^2}.
+      CALL pperr_scalar (rsolution%RvectorBlock(1),PPERR_H1ERROR,Derr(1),&
+                         ffunction_TargetX,rproblem%rcollection)
+
+      CALL pperr_scalar (rsolution%RvectorBlock(2),PPERR_H1ERROR,Derr(2),&
+                         ffunction_TargetY,rproblem%rcollection)
+                         
+      derrorVel = (0.5_DP*(Derr(1)**2+Derr(2)**2))
+
+      CALL output_line ('||u-reference||_H1 = '//TRIM(sys_sdEP(derrorVel,15,6)) )
+      
+      CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
+    END IF
+    
+  END SUBROUTINE
+
+!******************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_calculateBodyForces (rsolution,rproblem)
+
+!<description>
+  ! Calculates body forces as configured in the .DAT file.
+  ! The result is written to the standard output.
+!</description>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  TYPE(t_vectorBlock), INTENT(IN) :: rsolution
+!</input>
+
+!<inputoutput>
+  ! Problem structure.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+    
+    ! local variables
+    
+    ! Forces on the object
+    REAL(DP), DIMENSION(NDIM2D) :: Dforces
+    REAL(DP) :: df1,df2
+    TYPE(t_boundaryRegion) :: rregion
+    
+    ! If we have a uniform discretisation, calculate the body forces on the
+    ! 2nd boundary component - if it exists.
+    IF ((rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+         ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
+        (boundary_igetNBoundComp(rproblem%p_rboundary) .GE. 2)) THEN
+
+      ! Calculate drag-/lift coefficients on the 2nd boundary component.
+      ! This is for the benchmark channel!
+      CALL boundary_createRegion (rproblem%p_rboundary, &
+          2, 0, rregion)
+      rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      df1 = 1.0_DP/1000.0_DP
+      df2 = 0.1_DP * 0.2_DP**2
+      CALL ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,df1,df2)
+
+      CALL output_lbrk()
+      CALL output_line ('Body forces')
+      CALL output_line ('-----------')
+      CALL output_line ('Body forces real bd., bdc/horiz/vert')
+      CALL output_line (' 2 / ' &
+          //TRIM(sys_sdEP(Dforces(1),15,6)) // ' / '&
+          //TRIM(sys_sdEP(Dforces(2),15,6)) )
+      
+    ENDIF
+    
+  END SUBROUTINE
+
+!******************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_calculateDivergence (rsolution,rproblem)
+
+!<description>
+  ! Calculates the divergence of a solution.
+  ! The result is written to the standard output.
+!</description>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  TYPE(t_vectorBlock), INTENT(IN) :: rsolution
+!</input>
+
+!<inputoutput>
+  ! Problem structure.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: ieltype
+    TYPE(t_matrixScalar) :: rBmatrix
+    TYPE(t_vectorScalar), TARGET :: rtempVector
+    
+    IF (rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+        ccomplexity .EQ. SPDISC_UNIFORM) THEN
+        
+      ieltype = rsolution%p_rblockDiscretisation%RspatialDiscretisation(1)% &
+                RelementDistribution(1)%itrialElement
+                
+      IF (elem_getPrimaryElement(ieltype) .EQ. EL_Q1T) THEN
+      
+        ! Create a temporary vector 
+        CALL lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscretisation,&
+            rtempVector,.TRUE.)
+
+        ! Calculate divergence = B1^T u1 + B2^T u2
+        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
+            rBmatrix,LSYSSC_TR_VIRTUAL)
+        CALL lsyssc_scalarMatVec (&
+            rBmatrix, rsolution%RvectorBlock(1), &
+            rtempVector, 1.0_DP, 0.0_DP)
+        CALL lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
+            rBmatrix,LSYSSC_TR_VIRTUAL)
+        CALL lsyssc_scalarMatVec (&
+            rBmatrix, rsolution%RvectorBlock(2), &
+            rtempVector, 1.0_DP, 1.0_DP)
+        
+        CALL output_lbrk()
+        CALL output_line ('Divergence')
+        CALL output_line ('----------')
+        CALL output_line ('Divergence = ' &
+            //TRIM(sys_sdEP(lsyssc_vectorNorm(rtempVector,LINALG_NORML2),15,6)) )
+            
+        CALL lsyssc_releaseVector (rtempVector)
+      
+      END IF
+      
+    END IF    
     
   END SUBROUTINE
 

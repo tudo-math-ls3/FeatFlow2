@@ -36,26 +36,44 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) getBoundaryValues
+!# 4.) ffunction_TargetX
+!#     -> Returns analytical values for the desired flow field in X-direction.
+!#     -> Is used for error analysis during the postprocessing.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 5.) ffunction_TargetY
+!#     -> Returns analytical values for the desired flow field in Y-direction.
+!#     -> Is used for error analysis during the postprocessing.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 6.) ffunction_TargetP
+!#     -> Returns analytical values for the desired pressure.
+!#     -> Is used for error analysis during the postprocessing.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 7.) getBoundaryValues
 !#     -> Returns analitical values on the boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
-!# 5.) getBoundaryValuesFBC
+!# 8.) getBoundaryValuesFBC
 !#     -> Returns analytical values on the fictitious boundary components
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_fbcassembly.inc'
 !#
-!# 6.) c2d2_initCollectForAssembly
+!# 9.) c2d2_initCollectForAssembly
 !#     -> Is called prior to the assembly process.
 !#     -> Stores some information from the problem structure to a collection
 !#        such that it can be accessed in callback routines
 !#
-!# 7.) c2d2_doneCollectForAssembly
-!#     -> Is called after the assembly process.
-!#     -> Releases information stored in the collection by 
-!#        c2d2_initCollectForAssembly.
+!# 10.) c2d2_doneCollectForAssembly
+!#      -> Is called after the assembly process.
+!#      -> Releases information stored in the collection by 
+!#         c2d2_initCollectForAssembly.
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
@@ -421,9 +439,6 @@ CONTAINS
     END IF
     
     Dcoefficients(:,:,:) = 0.0_DP
-    !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
-    !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
-    !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
 
   END SUBROUTINE
 
@@ -510,9 +525,294 @@ CONTAINS
     END IF
     
     Dcoefficients(:,:,:) = 0.0_DP
-    !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
-    !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
-    !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ffunction_TargetX (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dvalues)
+  
+  USE basicgeometry
+  USE triangulation
+  USE collection
+  USE scalarpde
+  USE domainintegration
+  
+!<description>
+  ! This subroutine is called during the postprocessing. 
+  ! It should return values of the analytical solution (if it is known).
+  ! These are compared with the calculated solution to calculate the
+  ! error in the X-velocity.
+  !
+  ! If the analytical solution is unknown, this routine doesn't make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  INTEGER, INTENT(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  INTEGER, INTENT(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. May point to NULL() if not defined.
+  TYPE(t_collection), POINTER                      :: p_rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    REAL(DP) :: dtime,dtimeMax
+    INTEGER :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+      dtimeMax = p_rcollection%Dquickaccess(3)
+      itimedependence = p_rcollection%Iquickaccess(1)
+    ELSE
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    END IF
+
+    Dvalues(:,:) = 0.0_DP
+    
+    IF (cderivative .EQ. DER_FUNC) THEN
+      Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(Dpoints(1,:,:))
+    END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ffunction_TargetY (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dvalues)
+  
+  USE basicgeometry
+  USE triangulation
+  USE collection
+  USE scalarpde
+  USE domainintegration
+  
+!<description>
+  ! This subroutine is called during the postprocessing. 
+  ! It should return values of the analytical solution (if it is known).
+  ! These are compared with the calculated solution to calculate the
+  ! error in the Y-velocity.
+  !
+  ! If the analytical solution is unknown, this routine doesn't make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  INTEGER, INTENT(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  INTEGER, INTENT(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. May point to NULL() if not defined.
+  TYPE(t_collection), POINTER                      :: p_rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    REAL(DP) :: dtime,dtimeMax
+    INTEGER :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+      dtimeMax = p_rcollection%Dquickaccess(3)
+      itimedependence = p_rcollection%Iquickaccess(1)
+    ELSE
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    END IF
+
+    Dvalues(:,:) = 0.0_DP
+    
+    IF (cderivative .EQ. DER_FUNC) THEN
+      Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(2,:,:))
+    END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ffunction_TargetP (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,p_rcollection, &
+                Dvalues)
+  
+  USE basicgeometry
+  USE triangulation
+  USE collection
+  USE scalarpde
+  USE domainintegration
+  
+!<description>
+  ! This subroutine is called during the postprocessing. 
+  ! It should return values of the analytical solution (if it is known).
+  ! These are compared with the calculated solution to calculate the
+  ! error in the pressure
+  !
+  ! If the analytical solution is unknown, this routine doesn't make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  INTEGER, INTENT(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  INTEGER, INTENT(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  INTEGER, INTENT(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  TYPE(t_domainIntSubset), INTENT(IN)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. May point to NULL() if not defined.
+  TYPE(t_collection), POINTER                      :: p_rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    REAL(DP) :: dtime,dtimeMax
+    INTEGER :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+      dtimeMax = p_rcollection%Dquickaccess(3)
+      itimedependence = p_rcollection%Iquickaccess(1)
+    ELSE
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    END IF
+
+    Dvalues(:,:) = 0.0_DP
+
+    IF (cderivative .EQ. DER_FUNC) THEN
+      ! ...
+    END IF
 
   END SUBROUTINE
 
@@ -596,6 +896,10 @@ CONTAINS
   ! only needs one value, the computed quantity is put into Dvalues(1). 
   ! If multiple values are needed, they are collected here (e.g. for 
   ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+  !
+  ! The function may return SYS_INFINITY as a value. This indicates the
+  ! framework to ignore the node and treat it as 'natural boundary condition'
+  ! node.
   REAL(DP), DIMENSION(:), INTENT(OUT)                         :: Dvalues
 !</output>
   
