@@ -96,6 +96,9 @@ CONTAINS
     ! A structure for the solution vector and the RHS vector of the problem.
     TYPE(t_vectorBlock) :: rvector,rrhs
     
+    ! A structure for the postprocessing.
+    TYPE(t_c2d2postprocessing) :: rpostprocessing
+    
     INTEGER :: i
     
     ! Ok, let's start. 
@@ -113,7 +116,7 @@ CONTAINS
     CALL parlst_init (p_rproblem%rparamList)
     
     ! Add the parameter list to the collection so that the parameters
-    ! from the DAT/INI files are available everywhere where we have the 
+    ! from the DAT/INI files are available everywhere where we have the   
     ! collection.
     CALL collct_setvalue_parlst(p_rproblem%rcollection,'INI',&
                                 p_rproblem%rparamList,.TRUE.)
@@ -143,6 +146,7 @@ CONTAINS
     ! Initialisation
     CALL c2d2_initParamTriang (p_rproblem)
     CALL c2d2_initDiscretisation (p_rproblem)    
+    CALL c2d2_initPostprocessing (p_rproblem,rpostprocessing)
     CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
     CALL c2d2_initAnalyticBC (p_rproblem)   
 
@@ -171,7 +175,7 @@ CONTAINS
       CALL c2d2_solve (p_rproblem,rvector,rrhs)
     
       ! Postprocessing
-      CALL c2d2_postprocessingStationary (p_rproblem,rvector)
+      CALL c2d2_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
       
     ELSE
     
@@ -186,7 +190,7 @@ CONTAINS
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
       
       ! Call the nonstationary solver to solve the problem.
-      CALL c2d2_solveNonstationary (p_rproblem,rvector,rrhs)
+      CALL c2d2_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
       
     END IF
     
@@ -197,6 +201,7 @@ CONTAINS
     CALL c2d2_doneMatVec (p_rproblem,rvector,rrhs)
     CALL c2d2_doneBC (p_rproblem)
     CALL c2d2_doneDiscretisation (p_rproblem)
+    CALL c2d2_donepostprocessing (rpostprocessing)    
     CALL c2d2_doneParamTriang (p_rproblem)
     
     ! Release parameters from the DAT/INI files from the problem structure.
