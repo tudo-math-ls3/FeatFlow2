@@ -24,6 +24,6 @@ CFLAGS=
 ########################################################################
 
 ifeq ($(FC),g95)
-FFLAGS=-Wno-globals
+FFLAGS=-Wno-globals -fno-second-underscore
 endif
 
