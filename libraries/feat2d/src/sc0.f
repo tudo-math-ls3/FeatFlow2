@@ -226,7 +226,6 @@ C
        NQUAD=NQUAD+1
       ENDIF
 10    CONTINUE
-      PRINT *, "NQUAD=",NQUAD
       IF (NFINE.GT.0) THEN
        DO 1 IFINE=1,NFINE
        NNEL=4*NNEL
