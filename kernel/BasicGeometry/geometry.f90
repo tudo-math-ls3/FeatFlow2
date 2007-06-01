@@ -4,7 +4,9 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module realises some basic 2D/3D geometry objects...
+!# This module implements some basic 2D/3D geometry objects...
+!# TODO: Add a more detailed description of this module.
+!#
 !#
 !# The following routines can be found in this module:
 !#
@@ -27,14 +29,21 @@
 !#      -> Overwrites the rotation and scaling factor of a 2D object.
 !#
 !#  7.) geom_isInGeometry
-!#      -> Check whether a given point is inside a geometry object.
+!#      -> Checks whether a given point is inside a geometry object.
 !#
-!#  8.) geom_projectToBoundary
+!#  8.) geom_isInGeometryArray
+!#      -> Checks whether an array of given points is inside a geometry object.
+!#
+!#  9.) geom_projectToBoundary
 !#      -> Projects a point onto the boundary of a geometry object.
 !#
-!#  9.) geom_calcSignedDistance
+!# 10.) geom_calcSignedDistance
 !#      -> Calculates the shortest signed distance between a given point
 !#         and a geometry object.
+!#
+!# 11.) geom_calcSignedDistanceArray
+!#      -> Calculates the shortest signed distance between an array of given
+!#         points and a geometry object.
 !#
 !# </purpose>
 !##############################################################################
@@ -1091,6 +1100,15 @@ CONTAINS
 !<description>
   ! This routine calculates the projection of a point onto an ellipse's
   ! boundary.
+  !
+  ! This is probably the most complicated routine in this module ^_^
+  ! The algorithm for the projection was based on the following paper:
+  !
+  ! -> David Eberly - Distance from a Point to an Ellipse in 2D
+  !
+  ! The paper can be found on the following page:
+  ! -> http://www.geometrictools.com
+  !
 !</description>
 
 !<input>
@@ -1117,7 +1135,7 @@ CONTAINS
   ! Two variables for the ellipses radiuses
   REAL(DP) :: dradX, dradY
   
-  ! Some other temporary variables
+  ! Some other temporary variables needed for the Newton iteration
   REAL(DP) :: dT, dF, dFDer, dXDivA, dYDivB, dradXSqr, dradYSqr, dprX, dprY
   REAL(DP) :: dratio, dXDivASqr, dYDivBSqr, dASqr, dBSqr
   LOGICAL :: btranspose = .FALSE.
@@ -1904,8 +1922,56 @@ CONTAINS
   END SUBROUTINE
   
   ! ***************************************************************************
-      
+
 !<subroutine>
+
+  SUBROUTINE geom_isInGeometryArray (rgeomObject, Dcoords, IisInObject)
+
+!<description>
+  ! This routine check whether an array of given points is inside a given
+  ! geometry object or not.
+  !
+!</description>
+
+!<input>
+  ! The geometry object against that the points are to be tested.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! An array holding the coordinates of the points that are to be tested.
+  REAL(DP), DIMENSION(:,:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An array of integers storing the number of objects where the point is inside
+  ! the object's geometry.
+  ! The lower and upper bounds of the array are assumed to be the same as the ones
+  ! for the coordinate array.
+  INTEGER(I32), DIMENSION(:), INTENT(OUT) :: IisInObject
+!</output>
+
+!</subroutine>
+
+  INTEGER :: i, lb,ub
+
+    ! Until now, this routine is a simple DO-loop
+    lb = LBOUND(Dcoords, 2)
+    ub = UBOUND(Dcoords, 2)
+
+    DO i = lb, ub
+
+      ! Call the geom_isInGeometry routine
+      CALL geom_isInGeometry(rgeomObject, Dcoords(:,i), IisInObject(i))
+
+    END DO
+    
+    ! That's it
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+      
+  !<subroutine>
   
   SUBROUTINE geom_projectToBoundary (rgeomObject, Dcoords, Dproj)
 
@@ -2007,5 +2073,51 @@ CONTAINS
    ! That's it!
    
  END SUBROUTINE
+
+  ! ***************************************************************************
  
+!<subroutine>
+  
+  SUBROUTINE geom_calcSignedDistanceArray (rgeomObject, Dcoords, Ddistance)
+
+!<description>
+  
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! An array holding the coordinates of the points that are to be tested.
+  REAL(DP), DIMENSION(:,:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An array holding the calculated signed distances.
+  ! The lower and upper bounds of the array are assumed to be the same as the ones
+  ! for the coordinate array.
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Ddistance
+  
+!</output>
+
+!</subroutine>
+
+  INTEGER :: i, lb,ub
+
+    ! Until now, this routine is a simple DO-loop
+    lb = LBOUND(Dcoords, 2)
+    ub = UBOUND(Dcoords, 2)
+
+    DO i = lb, ub
+
+      ! Call the geom_isInGeometry routine
+      CALL geom_calcSignedDistance(rgeomObject, Dcoords(:,i), Ddistance(i))
+
+    END DO
+    
+    ! That's it
+   
+ END SUBROUTINE
+
 END MODULE
