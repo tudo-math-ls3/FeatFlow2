@@ -1842,6 +1842,10 @@ CONTAINS
     END IF
     
     ! Create a new variable. If necessary, increase the size of the buffers.
+    IF (.NOT. ASSOCIATED(rexport%p_Hpolygons)) THEN
+      CALL ucd_morePolygons(rexport)
+    END IF
+    
     IF (rexport%npolygons .GE. SIZE(rexport%p_Hpolygons)) THEN
       CALL ucd_morePolygons(rexport)
     END IF
