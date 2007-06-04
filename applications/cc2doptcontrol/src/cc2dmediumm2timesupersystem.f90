@@ -1578,8 +1578,8 @@ CONTAINS
             (1.0_DP-dtheta),dtheta,&
             rtempVectorRHS%RvectorBlock(3))
 
-        CALL generateRHS (rproblem,isubstep+1,rspaceTimeDiscr%niterations,&
-            rtempVector3, .TRUE., .FALSE.)
+        !CALL generateRHS (rproblem,isubstep+1,rspaceTimeDiscr%niterations,&
+        !    rtempVector3, .TRUE., .FALSE.)
 
         CALL lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
         CALL lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
