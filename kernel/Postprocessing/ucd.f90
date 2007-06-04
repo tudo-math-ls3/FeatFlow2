@@ -48,20 +48,23 @@
 !# 10.) ucd_setSimulationTime
 !#      -> Specify simulation time.
 !#
-!# 11.) ucd_addCommentLine
+!# 11.) ucd_addPolygon
+!#      -> Adds a point-array as polygon of line-segments to the output.
+!#
+!# 12.) ucd_addCommentLine
 !#      -> Add a comment line.
 !#
-!# 12.) ucd_addParameterList
+!# 13.) ucd_addParameterList
 !#      -> Add a configuration parameter list as comments to the output.
 !#
-!# 13.) ucd_setOutputNumberFormat
+!# 14.) ucd_setOutputNumberFormat
 !#      -> Allows to specify a custom format of double precision numbers 
 !#         in the output file.
 !#
-!# 14.) ucd_write
+!# 15.) ucd_write
 !#      -> Writes the output file to the hard disc, closes the file.
 !#
-!# 15.) ucd_release
+!# 16.) ucd_release
 !#      -> Releases a UCD export structure that was created by ucd_startXXXX.
 !#
 !# To write a file (GMV, AVS, MATLAB or what else), one has to use the
