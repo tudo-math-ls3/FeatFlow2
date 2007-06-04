@@ -30,7 +30,12 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
 	timestepping.f90 pprocerror.f90 trilinearformevaluation.f90 \
 	stdoperators.f90 sort.f90 quadtree.f90 l2projection.f90 \
 	pprocgradients.f90
-	
+
+# Include HDF5 subsystem if required
+ifeq ($(HDF5),YES)
+KERNELSRC:=$(KERNELSRC) h5lite.f90 linearsystemh5io.f90
+endif
+
 # path for the make where to look for which files
 
 vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \

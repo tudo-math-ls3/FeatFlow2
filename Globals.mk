@@ -93,8 +93,11 @@ LIBDIR=$(FEATFLOW)/object/libraries/lib-$(ID)
 APPS:= $(shell ls $(FEATFLOW)/applications)
 
 # list of all library modules available at the top level
-LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas \
-      zlib sz 
+LIBS= feat3d feat2d sysutils umfpack2 amd umfpack4 minisplib lapack blas
+
+ifeq ($(HDF5),YES)
+LIBS:=$(LIBS) hdf5_fortran hdf5 zlib sz 
+endif
 
 ########################################################################
 # General name and location of compilers.
@@ -339,4 +342,5 @@ endif
 	@echo '                 (See Globals.mk for details)'
 	@echo ' FFCORE=xxx    - overwrites the autodetected value for FFCORE by xxx'
 	@echo '                 (See Globals.mk for details)'
+	@echo ' HDF5=YES      - compile and link HDF5 libraries
 
