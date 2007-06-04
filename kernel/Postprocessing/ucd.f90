@@ -1383,43 +1383,35 @@ CONTAINS
         ! At least one polygon
         WRITE (MFILE,'(A)') 'polygons'
 
-        ! Coordinates        
-        CALL storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
-        
         ! Materials
         CALL storage_getbase_int (rexport%hpolygonMaterial,p_Idata)
 
         ! Write all polygons.
-        ! Either we have 2D or 3D coordinates...
-        IF (UBOUND(p_Ddata2D,1) .EQ. 2) THEN
-          DO i=1,SIZE(rexport%p_Hpolygons)
-            
-            ! Write material, #points
-            WRITE (MFILE,'(2I10)',ADVANCE='NO') p_Idata(i),UBOUND(p_Ddata2D,2)
-            
-            ! Write coordinates of the points forming the line segments 
-            ! of the polygon
-            DO j=1,UBOUND(p_Ddata2D,2)
-              WRITE (MFILE,'(3E15.8)',ADVANCE='NO') &
-                p_Ddata2D(1,j),p_Ddata2D(2,j),0.0_DP
-            END DO
-                
+        DO i=1,rexport%npolygons
+        
+          ! Coordinates        
+          CALL storage_getbase_double2D (rexport%p_Hpolygons(i),p_Ddata2D)
+          
+          ! Write material, #points
+          WRITE (MFILE,'(2I10)') p_Idata(i),UBOUND(p_Ddata2D,2)
+              
+          ! Either we have 2D or 3D coordinates. 
+          ! Write coordinates of the points forming the line segments 
+          ! of the polygon
+          ! First all X-, then all Y- and at the end all Z-coordinates -- or 0.0.
+          DO k=1,NDIM3D
+            IF (UBOUND(p_Ddata2D,1) .GE. k) THEN
+              DO j=1,UBOUND(p_Ddata2D,2)
+                WRITE (MFILE,'(3E15.7)') p_Ddata2D(2,j)
+              END DO
+            ELSE
+              DO j=1,UBOUND(p_Ddata2D,2)
+                WRITE (MFILE,'(3E15.7)') 0.0_DP
+              END DO
+            END IF
           END DO
-        ELSE
-          DO i=1,SIZE(rexport%p_Hpolygons)
-            
-            ! Write material, #points
-            WRITE (MFILE,'(2I10)',ADVANCE='NO') p_Idata(i),UBOUND(p_Ddata2D,2)
-            
-            ! Write coordinates of the points forming the line segments 
-            ! of the polygon
-            DO j=1,UBOUND(p_Ddata2D,2)
-              WRITE (MFILE,'(3E15.8)',ADVANCE='NO') &
-                p_Ddata2D(1,j),p_Ddata2D(2,j),p_Ddata2D(3,j)
-            END DO
-                
-          END DO
-        END IF
+          
+        END DO
         
         WRITE (mfile,'(A)') 'endpoly'
       
