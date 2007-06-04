@@ -140,7 +140,7 @@ CONTAINS
 
 !</subroutine>
 
-    TYPE(t_ccoptSpaceTimeMatrix) :: rsupermatrix
+    TYPE(t_ccoptSpaceTimeDiscretisation) :: rsupermatrix
     TYPE(t_spacetimeVector) :: rx,rd
     TYPE(t_vectorBlock) :: rtempVector
     INTEGER :: i
