@@ -1552,8 +1552,14 @@ CONTAINS
       nsize = SIZE(rexport%p_Hpolygons)
 
     ALLOCATE(p_Hpolygons(nsize+16))
-    CALL storage_realloc ('ucd_morePolygons', INT(nsize+16,I32), &
-        rexport%hpolygonMaterial, ST_NEWBLOCK_ZERO)
+    IF (rexport%hpolygonMaterial .EQ. ST_NOHANDLE) THEN
+      CALL storage_new ('ucd_morePolygons','hpolygonMaterial',&
+          INT(nsize+16,I32),ST_INT,&
+          rexport%hpolygonMaterial,ST_NEWBLOCK_ZERO)
+    ELSE
+      CALL storage_realloc ('ucd_morePolygons', INT(nsize+16,I32), &
+          rexport%hpolygonMaterial, ST_NEWBLOCK_ZERO)
+    END IF
     
     IF (ASSOCIATED(rexport%p_Hpolygons)) THEN
       p_Hpolygons(1:SIZE(rexport%p_Hpolygons)) = rexport%p_Hpolygons
