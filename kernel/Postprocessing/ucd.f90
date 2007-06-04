@@ -1402,7 +1402,7 @@ CONTAINS
           DO k=1,NDIM3D
             IF (UBOUND(p_Ddata2D,1) .GE. k) THEN
               DO j=1,UBOUND(p_Ddata2D,2)
-                WRITE (MFILE,'(3E15.7)') p_Ddata2D(2,j)
+                WRITE (MFILE,'(3E15.7)') p_Ddata2D(k,j)
               END DO
             ELSE
               DO j=1,UBOUND(p_Ddata2D,2)
