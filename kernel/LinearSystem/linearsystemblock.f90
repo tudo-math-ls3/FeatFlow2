@@ -2145,9 +2145,9 @@ CONTAINS
   ! Cnorms is an array containing the type of norm to compute for each
   ! subvector.
   !
-  ! If the arrays Cnorms or IposMax are sre smaller than rx%nblocks,
+  ! If the arrays Cnorms or IposMax are smaller than rx%nblocks,
   ! only the first couple of subvectors are processed until the
-  ! forst array (Cnorms or IposMax) is completely filled.
+  ! first array (Cnorms or IposMax) is completely filled.
 !</description>
   
 !<input>
