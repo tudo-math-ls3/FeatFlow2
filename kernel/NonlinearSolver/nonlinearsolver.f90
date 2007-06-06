@@ -315,7 +315,7 @@ CONTAINS
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the subvectors is returned in DvecNorm.
-  ! If not existent, the routine assumes that DvecNrm is the norm
+  ! If not existent, the routine assumes that DvecNorm is the norm
   ! of the vector and checks convergence depending on DvecNorm.
   TYPE(t_vectorBlock), INTENT(IN), OPTIONAL :: rdef
   
