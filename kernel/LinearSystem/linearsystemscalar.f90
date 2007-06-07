@@ -1197,7 +1197,14 @@ CONTAINS
     END IF
     
     ! Get the data array
-    CALL storage_getbase_double (rmatrix%h_DA,p_Ddata,rmatrix%NA)
+    SELECT CASE(rmatrix%cinterleavematrixFormat)
+    CASE (LSYSSC_MATRIX1)
+      CALL storage_getbase_double (rmatrix%h_DA,p_Ddata,rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR)
+    CASE (LSYSSC_MATRIXD)
+      CALL storage_getbase_double (rmatrix%h_DA,p_Ddata,rmatrix%NA*rmatrix%NVAR)
+    CASE DEFAULT
+      CALL storage_getbase_double (rmatrix%h_DA,p_Ddata,rmatrix%NA)
+    END SELECT
 
   END SUBROUTINE
 
@@ -1244,7 +1251,14 @@ CONTAINS
     END IF
 
     ! Get the data array
-    CALL storage_getbase_single (rmatrix%h_DA,p_Fdata,rmatrix%NA)
+    SELECT CASE(rmatrix%cinterleavematrixFormat)
+    CASE (LSYSSC_MATRIX1)
+      CALL storage_getbase_single (rmatrix%h_DA,p_Fdata,rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR)
+    CASE(LSYSSC_MATRIXD)
+      CALL storage_getbase_single (rmatrix%h_DA,p_Fdata,rmatrix%NA*rmatrix%NVAR)
+    CASE DEFAULT
+      CALL storage_getbase_single (rmatrix%h_DA,p_Fdata,rmatrix%NA)
+    END SELECT
 
   END SUBROUTINE
 
@@ -1291,7 +1305,14 @@ CONTAINS
     END IF
 
     ! Get the data array
-    CALL storage_getbase_int (rmatrix%h_DA,p_Idata,rmatrix%NA)
+    SELECT CASE(rmatrix%cinterleavematrixFormat)
+    CASE(LSYSSC_MATRIX1)
+      CALL storage_getbase_int (rmatrix%h_DA,p_Idata,rmatrix%NA*rmatrix%NVAR)
+    CASE(LSYSSC_MATRIXD)
+      CALL storage_getbase_int (rmatrix%h_DA,p_Idata,rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR)
+    CASE DEFAULT
+      CALL storage_getbase_int (rmatrix%h_DA,p_Idata,rmatrix%NA)
+    END SELECT
 
   END SUBROUTINE
 
@@ -3432,7 +3453,7 @@ CONTAINS
 
       ! Check if vectors are compatible
       IF (rx%NVAR /= NVAR .OR. ry%NVAR /= NVAR) THEN
-        PRINT *, "lsyssc_LAX79INTLdoubledouble: Matrix/Vector is incompatible!"
+        PRINT *, "lsyssc_LAX79INTL1doubledouble: Matrix/Vector is incompatible!"
         STOP
       END IF
 
@@ -3578,8 +3599,7 @@ CONTAINS
 
       ! Check if vectors are compatible
       IF (rx%NVAR /= NVAR .OR. ry%NVAR /= NVAR) THEN
-        PRINT *, "lsyssc_LAX79INTLdoubledouble: Matrix/Vector is incompatible!"
-        STOP
+        PRINT *, "lsyssc_LAX79INTLDdoubledouble: Matrix/Vector is incompatible!"        STOP
       END IF
 
       ! Get the vectors
