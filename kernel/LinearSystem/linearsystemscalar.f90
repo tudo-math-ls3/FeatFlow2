@@ -3599,7 +3599,8 @@ CONTAINS
 
       ! Check if vectors are compatible
       IF (rx%NVAR /= NVAR .OR. ry%NVAR /= NVAR) THEN
-        PRINT *, "lsyssc_LAX79INTLDdoubledouble: Matrix/Vector is incompatible!"        STOP
+        PRINT *, "lsyssc_LAX79INTLDdoubledouble: Matrix/Vector is incompatible!"
+        STOP
       END IF
 
       ! Get the vectors
