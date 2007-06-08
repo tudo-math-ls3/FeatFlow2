@@ -222,6 +222,10 @@ MODULE discretebc
     ! than the maximum one in a mesh hierarchy.
     REAL(DP) :: icoarseningLevel  = 0
     
+    ! =0: Modify matrix and defect vectors.
+    ! =1: Modify matrix, treat defect vectors as Dirichlet.
+    INTEGER :: isubtype           = 0
+    
     ! Handle to a list of all DOF's in the FEAST mirror boundary region.
     ! The list is sorted for increasing DOF numbers.
     INTEGER :: h_ImirrorDOFs   = ST_NOHANDLE

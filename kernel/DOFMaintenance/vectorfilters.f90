@@ -800,7 +800,7 @@ CONTAINS
   ! local variables
   INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorDOFs
   INTEGER :: i
-  REAL(DP), DIMENSION(:), POINTER    :: p_Ivec
+  REAL(DP), DIMENSION(:), POINTER    :: p_Dvec
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
   REAL(DP) :: dmirrorWeight
 
@@ -829,12 +829,21 @@ CONTAINS
   dmirrorWeight = 1.0_DP+1.0_DP*REAL(2**rfmbcStructure%icoarseningLevel,DP)
   
   ! Get the vector data
-  CALL lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Ivec)
+  CALL lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
   
   ! Get pointers to the list of DOF's that belong to that region and have
   ! to be tackled.
   CALL storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
 
+  IF ((rfmbcStructure%isubtype .EQ. 1) .OR. (rfmbcStructure%isubtype .EQ. 3)) THEN
+    ! The DOF's should be treated as Dirichlet-DOF's.
+    ! Only the matrix is modified according to the FEAST mirrir bondary conditions!
+    !
+    ! For the implementation, we just set dmirrorWeight to 0.0.
+    ! This clears all DOF entries and thus treats the DOF's like Dirichlet DOF's.
+    dmirrorWeight = 0.0_DP
+  END IF
+  
   ! The vector entry corresponds to the DOF. For every DOF decide on
   ! whether it's on the FEAST mirror boundary component or not.
   ! If yes, double the entry entry.
@@ -845,7 +854,7 @@ CONTAINS
     ! Loop through the DOF's. Each DOF gives us the number of an entry
     ! which is to be doubled.
     DO i=1,SIZE(p_ImirrorDOFs)
-      p_Ivec(p_ImirrorDOFs(i)) = dmirrorWeight * p_Ivec(p_ImirrorDOFs(i))
+      p_Dvec(p_ImirrorDOFs(i)) = dmirrorWeight * p_Dvec(p_ImirrorDOFs(i))
     END DO
     
   ELSE
@@ -863,7 +872,7 @@ CONTAINS
     ! Loop through the DOF's. Each DOF gives us the number of an entry
     ! which is to be doubled.
     DO i=1,SIZE(p_ImirrorDOFs)
-      p_Ivec(p_Iperm(p_ImirrorDOFs(i))) = dmirrorWeight * p_Ivec(p_Iperm(p_ImirrorDOFs(i)))
+      p_Dvec(p_Iperm(p_ImirrorDOFs(i))) = dmirrorWeight * p_Dvec(p_Iperm(p_ImirrorDOFs(i)))
     END DO
 
   END IF

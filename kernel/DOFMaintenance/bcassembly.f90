@@ -124,6 +124,11 @@ MODULE bcassembly
     ! than the maximum one in a mesh hierarchy.
     REAL(DP) :: icoarseningLevel = 0
     
+    ! Subtype of the FEAST mirror boundary conditions.
+    ! =0: apply to matrix and defect vectors.
+    ! =1: apply only to matrix; apply Dirichlete BC's to defect vectors
+    INTEGER :: isubtype
+    
   END TYPE
 !</typeblock>
 
@@ -1683,6 +1688,7 @@ CONTAINS
     
     ! Copy the coarsening level from the configuration block
     p_rfeastMirrorBCs%icoarseningLevel = rconfigFeastMirrorBC%icoarseningLevel
+    p_rfeastMirrorBCs%isubtype = rconfigFeastMirrorBC%isubtype
     
     ! We have to deal with all DOF's on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
