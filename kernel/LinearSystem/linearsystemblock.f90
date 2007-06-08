@@ -1250,8 +1250,9 @@ CONTAINS
       IF (rtemplateMat%RmatrixBlock(j,i)%NCOLS .GT. 0) THEN
         
         ! Found a template matrix we can use :-)
-        rx%RvectorBlock(i)%NEQ = rtemplateMat%RmatrixBlock(j,i)%NCOLS
-        
+        rx%RvectorBlock(i)%NEQ  = rtemplateMat%RmatrixBlock(j,i)%NCOLS
+        rx%RvectorBlock(i)%NVAR = rtemplateMat%RmatrixBlock(j,i)%NVAR
+
         ! Take the handle of the complete-solution vector, but set the index of
         ! the first entry to a value >= 1 - so that it points to the first
         ! entry in the global solution vector!
@@ -1289,7 +1290,8 @@ CONTAINS
     IF (j .GT. rtemplateMat%ndiagBlocks) THEN
       ! Let's hope this situation (an empty equation) never occurs - 
       ! might produce some errors elsewhere :)
-      rx%RvectorBlock(i)%NEQ = 0
+      rx%RvectorBlock(i)%NEQ  = 0
+      rx%RvectorBlock(i)%NVAR = 1
       rx%RvectorBlock(i)%iidxFirstEntry = 0
     END IF
     
