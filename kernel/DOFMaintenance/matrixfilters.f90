@@ -536,7 +536,7 @@ CONTAINS
   ! Get the weight of the entries.
   ! =2 on finest level, =1.5 on level NLMAX-1,...
   !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
-  dmirrorWeight = 1.5_DP+1.0_DP*REAL(1**rfmbcStructure%icoarseningLevel,DP)
+  dmirrorWeight = 1.0_DP+1.0_DP*REAL(2**rfmbcStructure%icoarseningLevel,DP)
   
   ! Get pointers to the list of DOF's that belong to that region and have
   ! to be tackled.

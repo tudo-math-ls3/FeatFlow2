@@ -111,6 +111,12 @@ MODULE cubature
 
   ! piecewise 3x3 Gauss formula, degree = 6, ncubp = 36
   INTEGER, PARAMETER :: CUB_PG3X3 = 215
+  
+  ! Simpson rule (corners and element midpoint), degree = 3, ncubp = 9
+  INTEGER, PARAMETER :: CUB_SIMPSON = 216
+
+  ! Simpson 3/8 rule (corners and 1/3 + 2/3), degree = 3, ncubp = 16
+  INTEGER, PARAMETER :: CUB_3_8 = 217
 
 !</constantblock>
 
@@ -984,6 +990,90 @@ CONTAINS
     Domega(36)=  0.1975308641975310_DP
     
     ncubp     =  36
+    
+  CASE(CUB_SIMPSON)
+    cub_Dxi(1,1)  = -1.0_DP
+    cub_Dxi(1,2)  = -1.0_DP
+    cub_Dxi(2,1)  =  0.0_DP
+    cub_Dxi(2,2)  = -1.0_DP
+    cub_Dxi(3,1)  =  1.0_DP
+    cub_Dxi(3,2)  = -1.0_DP
+    cub_Dxi(4,1)  = -1.0_DP
+    cub_Dxi(4,2)  =  0.0_DP
+    cub_Dxi(5,1)  =  0.0_DP
+    cub_Dxi(5,2)  =  0.0_DP
+    cub_Dxi(6,1)  =  1.0_DP
+    cub_Dxi(6,2)  =  0.0_DP
+    cub_Dxi(7,1)  = -1.0_DP
+    cub_Dxi(7,2)  =  1.0_DP
+    cub_Dxi(8,1)  =  0.0_DP
+    cub_Dxi(8,2)  =  1.0_DP
+    cub_Dxi(9,1)  =  1.0_DP
+    cub_Dxi(9,2)  =  1.0_DP
+
+    cub_Domega(1) = 0.111111111111111_DP
+    cub_Domega(2) = 0.444444444444444_DP
+    cub_Domega(3) = 0.111111111111111_DP
+    cub_Domega(4) = 0.444444444444444_DP
+    cub_Domega(5) = 1.777777777777778_DP
+    cub_Domega(6) = 0.444444444444444_DP
+    cub_Domega(7) = 0.111111111111111_DP
+    cub_Domega(8) = 0.444444444444444_DP
+    cub_Domega(9) = 0.111111111111111_DP
+    cub_ncubp     = 9
+
+  CASE(CUB_3_8)
+    cub_Dxi(1,1)   = -1.0_DP
+    cub_Dxi(1,2)   = -1.0_DP
+    cub_Dxi(2,1)   = -0.33333333333033_DP
+    cub_Dxi(2,2)   = -1.0_DP
+    cub_Dxi(3,1)   =  0.33333333333333_DP
+    cub_Dxi(3,2)   = -1.0_DP
+    cub_Dxi(4,1)   =  1.0_DP
+    cub_Dxi(4,2)   = -1.0_DP
+    cub_Dxi(5,1)   = -1.0_DP
+    cub_Dxi(5,2)   = -0.33333333333033_DP
+    cub_Dxi(6,1)   = -0.33333333333033_DP
+    cub_Dxi(6,2)   = -0.33333333333033_DP
+    cub_Dxi(7,1)   =  0.33333333333333_DP
+    cub_Dxi(7,2)   = -0.33333333333033_DP
+    cub_Dxi(8,1)   =  1.0_DP
+    cub_Dxi(8,2)   = -0.33333333333033_DP
+    cub_Dxi(9,1)   = -1.0_DP
+    cub_Dxi(9,2)   =  0.33333333333033_DP
+    cub_Dxi(10,1)  = -0.33333333333033_DP
+    cub_Dxi(10,2)  =  0.33333333333333_DP
+    cub_Dxi(11,1)  =  0.33333333333033_DP
+    cub_Dxi(11,2)  =  0.33333333333333_DP
+    cub_Dxi(12,1)  =  1.0_DP
+    cub_Dxi(12,2)  =  0.33333333333333_DP
+    cub_Dxi(13,1)  = -1.0_DP
+    cub_Dxi(13,2)  =  1.0_DP
+    cub_Dxi(14,1)  = -0.33333333333333_DP
+    cub_Dxi(14,2)  =  1.0_DP
+    cub_Dxi(15,1)  =  0.33333333333333_DP
+    cub_Dxi(15,2)  =  1.0_DP
+    cub_Dxi(16,1)  =  1.0_DP
+    cub_Dxi(16,2)  =  1.0_DP
+
+
+    cub_Domega(1)  = 0.0625_DP
+    cub_Domega(2)  = 0.1875_DP
+    cub_Domega(3)  = 0.1875_DP
+    cub_Domega(4)  = 0.0625_DP
+    cub_Domega(5)  = 0.1875_DP
+    cub_Domega(6)  = 0.5625_DP
+    cub_Domega(7)  = 0.5625_DP
+    cub_Domega(8)  = 0.1875_DP
+    cub_Domega(9)  = 0.1875_DP
+    cub_Domega(10) = 0.5625_DP
+    cub_Domega(11) = 0.5625_DP
+    cub_Domega(12) = 0.1875_DP
+    cub_Domega(13) = 0.0625_DP
+    cub_Domega(14) = 0.1875_DP
+    cub_Domega(15) = 0.1875_DP
+    cub_Domega(16) = 0.0625_DP
+    cub_ncubp     = 16
     
   !triangle cubature formulas
   CASE(CUB_G1_T)
