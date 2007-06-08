@@ -155,7 +155,7 @@ CONTAINS
     !  any 3D planar parallelogram V0V1V2V3, we have:"
     !
     !     A(V0V1V2V3) = 2 A(M0M1M2M3)
-    !                 = 2 | (V1-V0) X (V3-M0) |     (cross product)
+    !                 = 2 | (V1-V0) X (V3-V0) |     (cross product)
     !                 = ...
     !                 = (x1-x0)(y3-y0) - (x3-x1)(y1-y0) 
     !
