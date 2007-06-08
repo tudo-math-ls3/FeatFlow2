@@ -169,7 +169,7 @@ CONTAINS
     !           /              /                 
     !         /              /                   
     !       +--------------+
-    !     V0                     V1
+    !     V0                V1
     !
     !
     ! "Next, for an arbitrary quadrilateral, one can compute its area using a 
@@ -230,7 +230,7 @@ CONTAINS
     !           /       \        
     !         /           \      
     !       +--------------+
-    !     V0                     V1
+    !     V0                 V1
     
     gaux_getArea_quad2D = &
             0.5_DP *  ABS( (Dpoints(1,3) - Dpoints(1,1) ) * &
