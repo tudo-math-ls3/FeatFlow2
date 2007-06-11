@@ -11,14 +11,14 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 0                       # ISTAT
+itimedependence = 1                       # ISTAT
 
 # ----------------------------------------------------------------------
 
 # Number of time steps.
 # Must be >= 2 for everything except implicit Euler!
 
-niterations = 5                          # NITNS
+niterations = 2                          # NITNS
 
 # Absolute start time of the simulation (TIMENS)
 
@@ -39,4 +39,4 @@ itimeStepScheme = 0                       # IFRSTP
 # parameter for one step scheme (THETA) if itimeStepScheme=0;
 # =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
 
-dtimeStepTheta = 1.0                      # THETA
+dtimeStepTheta = 0.5 1.0                      # THETA

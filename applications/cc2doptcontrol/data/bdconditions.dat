@@ -44,10 +44,10 @@ bdExpressions(19) =
   'DirichletMX'   -1    '-X'
   'DirichletDMY'  -1    '-Y'
   'DirichletDMX'  -1    '-X'
-  'DirichletDTMX' -1    'IF(TIME<10, X*(TIME/50-1/5), _INFTY)'    # 'IF(TIME<10, -(X+1), _INFTY)'  #'X*(TIME/50-1/5)'
-  'DirichletDTY'  -1    'IF(TIME<10, (-Y)*(TIME/50-1/5), _INFTY)' # 'IF(TIME<10, Y-1, _INFTY)'     #'(-Y)*(TIME/50-1/5)'
-  'DirichletTX'   -1    'X*(-(TIME^2/100)+TIME/5)' #'TIME*X'    #'X*(-(TIME^2/100)+TIME/5)'
-  'DirichletTMY'  -1    '-Y*(-(TIME^2/100)+TIME/5)' #'TIME*(-Y)' #'-Y*(-(TIME^2/100)+TIME/5)'
+  'DirichletDTMX' -1    'X*(TIME/50-1/5)'    #'X*(-((10-TIME)^2/100)+(10-TIME)/5)'  #'(10-TIME)/10*X'    #'IF(TIME<10, 1/10*(X), 0)'#_INFTY)'  #'IF(TIME<10, X*(TIME/50-1/5), _INFTY)'    # 'IF(TIME<10, -(X+1), _INFTY)'  #'X*(TIME/50-1/5)'
+  'DirichletDTY'  -1    '(-Y)*(TIME/50-1/5)' #'-Y*(-((10-TIME)^2/100)+(10-TIME)/5)' #'(10-TIME)/10*(-Y)' #'IF(TIME<10, 1/10*(-Y), 0)'#_INFTY)' #'IF(TIME<10, (-Y)*(TIME/50-1/5), _INFTY)' # 'IF(TIME<10, Y-1, _INFTY)'     #'(-Y)*(TIME/50-1/5)'
+  'DirichletTX'   -1    'X*(-(TIME^2/100)+TIME/5)'  #'TIME/10*X'    #'X*(-(TIME^2/100)+TIME/5)'  #
+  'DirichletTMY'  -1    '-Y*(-(TIME^2/100)+TIME/5)' #'TIME/10*(-Y)' #'-Y*(-(TIME^2/100)+TIME/5)' #
   
 
 ##############
@@ -129,17 +129,17 @@ bdExpressions(19) =
 
 
 # For stationary Stokes reference:
-bdComponent1(2)=
-  0  4.0  3  1   'DirichletX'  'DirichletMY' 'Dirichlet0' 'Dirichlet0'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+#bdComponent1(2)=
+#  0  4.0  3  1   'DirichletX'  'DirichletMY' 'Dirichlet0' 'Dirichlet0'  # ]1.0,2.0[ : Neumann boundary = do-nothing
 
 # For stationary Navier-Stokes reference:
 #bdComponent1(1)=
 #  0  4.0  3  1   'DirichletX'  'DirichletMY' 'DirichletDMX' 'DirichletDMY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
 
 # For nonstationary Stokes reference:
-#bdComponent1(1)=
-#  0  4.0  3  1   'DirichletTX'  'DirichletTMY' 'DirichletDTMX' 'DirichletDTY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
-#  0  4.0  0  0                                                          # ]1.0,2.0[ : Neumann boundary = do-nothing
+bdComponent1(2)=
+  0  4.0  3  1   'DirichletTX'  'DirichletTMY' 'DirichletDTMX' 'DirichletDTY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
+  0  4.0  0  0                                                          # ]1.0,2.0[ : Neumann boundary = do-nothing
 
 
 #bdComponent1(4)=

@@ -39,17 +39,15 @@ iSolutionWrite     = 0
 
 sSolutionWrite     = 'ns/DX4'
 
-
 # ------------------------------------------------------------------------
 
-# minimum mg-level; <=0: Use level (NLMAX-NLMIN) as coarse grid
+# minimum mg-level; <=0: Use level (NLMAX+NLMIN) as coarse grid
 
-NLMIN              = 2
+NLMIN              = 0
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 5
-
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 
@@ -205,4 +203,7 @@ dintARboundEX3YVel       = 20.0
 
 dalphaC = 1.0
 
-dgammaC = 1.0
+# Penalty parameter for the terminal condition ||y(T)-z(T)|| in the
+# nonstationary optimal control problem.
+
+dgammaC = 0.0 1.0
