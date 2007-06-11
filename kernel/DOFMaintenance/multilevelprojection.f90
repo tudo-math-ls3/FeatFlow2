@@ -523,16 +523,6 @@ CONTAINS
     ractProjection%ielementTypeInterpolation = releDistrCoarse%itrialElement
   END IF
 
-  ! Set default prolongation/restriction for Ex3y-type elements 
-  ! if not specified
-  IF (ractProjection%iprolVariant .EQ. 0) THEN
-    ractProjection%iprolVariant = 1
-  END IF
-
-  IF (ractProjection%irestVariant .EQ. 0) THEN
-    ractProjection%irestVariant = 1
-  END IF
-
   ! Check to see if the discretisation structures fit to the projection structure
   IF (ractProjection%ielementTypeProlongation .NE. releDistrCoarse%itrialElement) THEN
     ! Here, we can insert some additional code so that E030 is compatible eith EM30
