@@ -730,6 +730,322 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+      isubstep,irelpos,rnonlinearIteration)
+
+!<description>
+  ! This routine sets up the matrix weights in a nonlinear iteration structure
+  ! according to the position of the corresponding submatrix.
+  ! isubstep defines the timestep which is to be tackled -- which corresponds
+  ! to the row in the supermatrix.
+  ! irelpos specifies the column in the supermatrix relative to the diagonal --
+  ! thus =0 means the diagonal, =1 the submatrix above the diagonal and =-1
+  ! the submatrix below the diagonal.
+  !
+  ! The matrix weights in rnonlinearIteration are initialised based on this
+  ! information such that the 'assembleLinearisedMatrix' routine of the core
+  ! equation will build the system matrix at that position in the supermatrix.
+!</description>
+
+!<input>
+  ! Problem structure
+  TYPE(t_problem), INTENT(IN) :: rproblem
+  
+  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
+  ! coupled space-time matrix.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+
+  ! Theta scheme identifier.
+  ! = 0.5: Crank-Nicolson.
+  ! = 1.0: Explicit Euler
+  REAL(DP), INTENT(IN) :: dtheta
+  
+  ! Substep in the time-dependent simulation = row in the supermatrix.
+  ! Range 0..nsubsteps
+  INTEGER, INTENT(IN) :: isubstep
+  
+  ! Specifies the column in the supermatrix relative to the diagonal.
+  ! =0: set matrix weights for the diagonal.
+  INTEGER, INTENT(IN) :: irelpos
+!</input>
+
+!<inputoutput>
+  ! Nonlinear-iteration-structure for the core-equation module. 
+  ! Must have been initialised with 'initNonlinearLoop'. The weights
+  ! that specify the submatrices of a small 6x6 block matrix system are initialised
+  ! depending on the position specified by isubstep and nsubsteps.
+  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
+!</inputoutput>
+
+!</subroutine>
+
+    ! If the following constant is set from 1.0 to 0.0, the primal system is
+    ! decoupled from the dual system!
+    REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
+    
+    ! If the following constant is set from 1.0 to 0.0, the dual system is
+    ! decoupled from the primal system!
+    REAL(DP), PARAMETER :: ddualPrimalCoupling = 1.0_DP
+    
+    ! If the following parameter is set from 1.0 to 0.0, the terminal
+    ! condition between the primal and dual equation is decoupled, i.e.
+    ! the dual equation gets independent from the primal one.
+    REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
+
+    ! The first and last substep is a little bit special concerning
+    ! the matrix!
+    IF (isubstep .EQ. 0) THEN
+      
+      ! We are in the first substep
+    
+      IF (irelpos .EQ. 0) THEN
+      
+        ! The diagonal matrix.
+        rnonlinearIteration%diota1 = 1.0_DP
+        rnonlinearIteration%diota2 = 0.0_DP
+
+        rnonlinearIteration%dkappa1 = 1.0_DP
+        rnonlinearIteration%dkappa2 = 0.0_DP
+        
+        rnonlinearIteration%dalpha1 = 0.0_DP
+        rnonlinearIteration%dalpha2 = 1.0_DP
+        
+        rnonlinearIteration%dtheta1 = 0.0_DP
+        rnonlinearIteration%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
+        
+        rnonlinearIteration%dgamma1 = 0.0_DP
+        rnonlinearIteration%dgamma2 = &
+            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        
+        rnonlinearIteration%deta1 = 0.0_DP
+        rnonlinearIteration%deta2 = rspaceTimeDiscr%dtstep
+        
+        rnonlinearIteration%dtau1 = 0.0_DP
+        rnonlinearIteration%dtau2 = 1.0_DP
+        
+        rnonlinearIteration%dmu1 = 0.0_DP
+        rnonlinearIteration%dmu2 = ddualPrimalCoupling * &
+            (-rspaceTimeDiscr%dtstep * dtheta)
+        
+      ELSE IF (irelpos .EQ. 1) THEN
+      
+        ! Offdiagonal matrix on the right of the diagonal.
+
+        ! Create the matrix
+        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+
+        rnonlinearIteration%diota1 = 0.0_DP
+        rnonlinearIteration%diota2 = 0.0_DP
+
+        rnonlinearIteration%dkappa1 = 0.0_DP
+        rnonlinearIteration%dkappa2 = 0.0_DP
+        
+        rnonlinearIteration%dalpha1 = 0.0_DP
+        rnonlinearIteration%dalpha2 = -1.0_DP
+        
+        rnonlinearIteration%dtheta1 = 0.0_DP
+        rnonlinearIteration%dtheta2 = rspaceTimeDiscr%dtstep * (1.0_DP-dtheta)
+        
+        rnonlinearIteration%dgamma1 = 0.0_DP
+        rnonlinearIteration%dgamma2 = &
+            rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP) * (1.0_DP-dtheta)
+        
+        rnonlinearIteration%deta1 = 0.0_DP
+        rnonlinearIteration%deta2 = 0.0_DP
+        
+        rnonlinearIteration%dtau1 = 0.0_DP
+        rnonlinearIteration%dtau2 = 0.0_DP
+        
+        rnonlinearIteration%dmu1 = 0.0_DP
+        rnonlinearIteration%dmu2 = ddualPrimalCoupling * &
+            (-rspaceTimeDiscr%dtstep) * (1.0_DP-dtheta)
+            
+      END IF
+    
+    ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
+      
+      ! We are sonewhere in the middle of the matrix. There is a substep
+      ! isubstep+1 and a substep isubstep-1!
+      
+      ! -----
+      
+      IF (irelpos .EQ. -1) THEN
+      
+        ! Matrix on the left of the diagonal.
+        !
+        ! Create the matrix
+        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+
+        rnonlinearIteration%diota1 = 0.0_DP
+        rnonlinearIteration%diota2 = 0.0_DP
+
+        rnonlinearIteration%dkappa1 = 0.0_DP
+        rnonlinearIteration%dkappa2 = 0.0_DP
+        
+        rnonlinearIteration%dalpha1 = -1.0_DP
+        rnonlinearIteration%dalpha2 = 0.0_DP
+        
+        rnonlinearIteration%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+        rnonlinearIteration%dtheta2 = 0.0_DP
+        
+        rnonlinearIteration%dgamma1 = &
+            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        rnonlinearIteration%dgamma2 = 0.0_DP
+        
+        rnonlinearIteration%deta1 = 0.0_DP
+        rnonlinearIteration%deta2 = 0.0_DP
+        
+        rnonlinearIteration%dtau1 = 0.0_DP
+        rnonlinearIteration%dtau2 = 0.0_DP
+        
+        rnonlinearIteration%dmu1 = dprimalDualCoupling * &
+            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+        rnonlinearIteration%dmu2 = 0.0_DP
+
+      ELSE IF (irelpos .EQ. 0) THEN    
+
+        ! The diagonal matrix.
+
+        rnonlinearIteration%diota1 = 0.0_DP
+        rnonlinearIteration%diota2 = 0.0_DP
+
+        rnonlinearIteration%dkappa1 = 0.0_DP
+        rnonlinearIteration%dkappa2 = 0.0_DP
+        
+        rnonlinearIteration%dalpha1 = 1.0_DP
+        rnonlinearIteration%dalpha2 = 1.0_DP
+        
+        rnonlinearIteration%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
+        rnonlinearIteration%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
+        
+        rnonlinearIteration%dgamma1 = &
+            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        rnonlinearIteration%dgamma2 = &
+            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        
+        rnonlinearIteration%deta1 = rspaceTimeDiscr%dtstep
+        rnonlinearIteration%deta2 = rspaceTimeDiscr%dtstep
+        
+        rnonlinearIteration%dtau1 = 1.0_DP
+        rnonlinearIteration%dtau2 = 1.0_DP
+        
+        rnonlinearIteration%dmu1 = dprimalDualCoupling * &
+            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+        rnonlinearIteration%dmu2 = ddualPrimalCoupling * &
+            dtheta * (-rspaceTimeDiscr%dtstep)
+
+      ELSE IF (irelpos .EQ. 1) THEN
+            
+        ! Matrix on the right of the diagonal.
+        !
+        ! Create the matrix
+        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+        rnonlinearIteration%diota1 = 0.0_DP
+        rnonlinearIteration%diota2 = 0.0_DP
+
+        rnonlinearIteration%dkappa1 = 0.0_DP
+        rnonlinearIteration%dkappa2 = 0.0_DP
+        
+        rnonlinearIteration%dalpha1 = 0.0_DP
+        rnonlinearIteration%dalpha2 = -1.0_DP
+        
+        rnonlinearIteration%dtheta1 = 0.0_DP
+        rnonlinearIteration%dtheta2 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+        
+        rnonlinearIteration%dgamma1 = 0.0_DP
+        rnonlinearIteration%dgamma2 = &
+            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        
+        rnonlinearIteration%deta1 = 0.0_DP
+        rnonlinearIteration%deta2 = 0.0_DP
+        
+        rnonlinearIteration%dtau1 = 0.0_DP
+        rnonlinearIteration%dtau2 = 0.0_DP
+        
+        rnonlinearIteration%dmu1 = 0.0_DP
+        rnonlinearIteration%dmu2 = ddualPrimalCoupling * &
+            (1.0_DP-dtheta) * (-rspaceTimeDiscr%dtstep)
+            
+      END IF
+    
+    ELSE
+    
+      ! We are in the last substep
+      
+      IF (irelpos .EQ. -1) THEN
+      
+        ! Matrix on the left of the diagonal
+        !
+        ! Create the matrix
+        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+        
+        rnonlinearIteration%diota1 = 0.0_DP
+        rnonlinearIteration%diota2 = 0.0_DP
+
+        rnonlinearIteration%dkappa1 = 0.0_DP
+        rnonlinearIteration%dkappa2 = 0.0_DP
+        
+        rnonlinearIteration%dalpha1 = -1.0_DP
+        rnonlinearIteration%dalpha2 = 0.0_DP
+        
+        rnonlinearIteration%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+        rnonlinearIteration%dtheta2 = 0.0_DP
+        
+        rnonlinearIteration%dgamma1 = &
+            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        rnonlinearIteration%dgamma2 = 0.0_DP
+        
+        rnonlinearIteration%deta1 = 0.0_DP
+        rnonlinearIteration%deta2 = 0.0_DP
+        
+        rnonlinearIteration%dtau1 = 0.0_DP
+        rnonlinearIteration%dtau2 = 0.0_DP
+        
+        rnonlinearIteration%dmu1 = dprimalDualCoupling * &
+            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+        rnonlinearIteration%dmu2 = 0.0_DP
+        
+      ELSE IF (irelpos .EQ. 0) THEN
+      
+        ! The diagonal matrix.
+        
+        rnonlinearIteration%diota1 = 0.0_DP
+        rnonlinearIteration%diota2 = 0.0_DP
+
+        rnonlinearIteration%dkappa1 = 0.0_DP
+        rnonlinearIteration%dkappa2 = 1.0_DP
+        
+        rnonlinearIteration%dalpha1 = 1.0_DP
+        rnonlinearIteration%dalpha2 = 1.0_DP
+        
+        rnonlinearIteration%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
+        rnonlinearIteration%dtheta2 = 0.0_DP
+        
+        rnonlinearIteration%dgamma1 = &
+            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        rnonlinearIteration%dgamma2 = 0.0_DP
+        
+        rnonlinearIteration%deta1 = rspaceTimeDiscr%dtstep
+        rnonlinearIteration%deta2 = 0.0_DP
+        
+        rnonlinearIteration%dtau1 = 1.0_DP
+        rnonlinearIteration%dtau2 = 0.0_DP
+        
+        rnonlinearIteration%dmu1 = dprimalDualCoupling * &
+            
+            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+        rnonlinearIteration%dmu2 = -rspaceTimeDiscr%dgammaC
+        
+      END IF
+
+    END IF
+
+  END SUBROUTINE  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE c2d2_solveSupersysDirectCN (rproblem, rspaceTimeDiscr, rx, rd, &
       rtempvectorX, rtempvectorB, rtempvectorD)
 
@@ -810,15 +1126,9 @@ CONTAINS
     ! Assemble the space-time RHS into rd.
     CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
       rtempvectorX, rtempvectorB, rtempvectorD)
-
-    ! Overwrite the primal RHS with the initial primal solution vector.
-    ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
-    CALL sptivec_getTimestepData(rd, 0, rtempVectorD)
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
-    CALL sptivec_setTimestepData(rd, 0, rtempVectorD)
+      
+    ! Implement the initial condition into the RHS.
+    CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvectorD)    
 
     ! ----------------------------------------------------------------------
     ! 2.) Generate the matrix A
@@ -863,33 +1173,10 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 1.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 1.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = 0.0_DP
-        rnonlinearIterationTmp%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-        rnonlinearIterationTmp%dgamma2 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = 0.0_DP
-        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
-            (-rspaceTimeDiscr%dtstep * dtheta)
-        
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,0,rnonlinearIterationTmp)
+          
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
         CALL c2d2_assembleLinearisedMatrices (&
@@ -915,32 +1202,9 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = -1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = 0.0_DP
-        rnonlinearIterationTmp%dtheta2 = rspaceTimeDiscr%dtstep * (1.0_DP-dtheta)
-        
-        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-        rnonlinearIterationTmp%dgamma2 = &
-            rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP) * (1.0_DP-dtheta)
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = 0.0_DP
-        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
-            (-rspaceTimeDiscr%dtstep) * (1.0_DP-dtheta)
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,1,rnonlinearIterationTmp)
       
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
@@ -987,33 +1251,10 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,-1,rnonlinearIterationTmp)
 
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = -1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dgamma1 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = 0.0_DP
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
-            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = 0.0_DP
-      
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
         CALL c2d2_assembleLinearisedMatrices (&
@@ -1060,34 +1301,9 @@ CONTAINS
         ! Assemble the nonlinear defect.
         ! We use explicit Euler, so the weights are easy.
       
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dgamma1 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        
-        rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dtau2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
-            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
-            dtheta * (-rspaceTimeDiscr%dtstep)
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,0,rnonlinearIterationTmp)
             
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
@@ -1113,32 +1329,9 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = -1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = 0.0_DP
-        rnonlinearIterationTmp%dtheta2 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-        rnonlinearIterationTmp%dgamma2 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = 0.0_DP
-        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
-            (1.0_DP-dtheta) * (-rspaceTimeDiscr%dtstep)
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,1,rnonlinearIterationTmp)
       
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
@@ -1184,32 +1377,9 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = -1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dgamma1 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = 0.0_DP
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
-            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,-1,rnonlinearIterationTmp)
       
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
@@ -1255,33 +1425,9 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dgamma1 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = 0.0_DP
-        
-        rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
-            
-            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dgammaC
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,0,rnonlinearIterationTmp)
         
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
@@ -1353,7 +1499,7 @@ CONTAINS
     CALL linsol_solveAdaptively (rsolverNode,rxGlobalSolve,rbGlobalSolve,rdGlobalSolve)
     
     ! DEBUG!!!
-    !CALL lsysbl_blockMatVec (rglobalA,rxGlobalSolve,rbGlobalSolve,-1.0_DP,1.0_DP)
+    CALL lsysbl_blockMatVec (rglobalA,rxGlobalSolve,rbGlobalSolve,-1.0_DP,1.0_DP)
     !CALL lsyssc_scalarMatVec (rglobalA%RmatrixBlock(16,13),&
     !                          rxGlobalSolve%RvectorBlock(13),&
     !                          rbGlobalSolve%RvectorBlock(16),1.0_DP,-1.0_DP)
@@ -1689,6 +1835,47 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE c2d2_implementInitCondRHS (rx, rb, rtempvectorX, rtempvectorD)
+
+!<description>
+  ! Implements the initial condition into the RHS vector rb.
+  ! Overwrites the rb of the first time step.
+!</description>
+
+!<input>
+  ! A space-time vector containing the initial condition in the first subvector.
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+!</input>
+
+!<inputoutput>
+  ! A space-time vector with the RHS. The initial condition is implemented into
+  ! this vector.
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
+
+  ! A temporary vector in the size of a spatial vector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorX
+
+  ! A temporary vector in the size of a spatial vector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
+!</inputoutput>
+
+!</subroutine>
+
+    ! Overwrite the primal RHS with the initial primal solution vector.
+    ! This realises the inital condition.
+    CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
+    CALL sptivec_getTimestepData(rb, 0, rtempVectorD)
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
+    CALL sptivec_setTimestepData(rb, 0, rtempVectorD)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, dnorm)
 
 !<description>
@@ -1732,6 +1919,9 @@ CONTAINS
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     TYPE(t_matrixBlock) :: rblockTemp
     
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
+    
     ! If the following constant is set from 1.0 to 0.0, the primal system is
     ! decoupled from the dual system!
     REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
@@ -1745,9 +1935,6 @@ CONTAINS
     ! the dual equation gets independent from the primal one.
     REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
 
-    ! DEBUG!!!
-    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
-
     ! Level of the discretisation
     ilevel = rspaceTimeDiscr%NLMAX
 
@@ -1760,24 +1947,30 @@ CONTAINS
     p_rdiscr => rspaceTimeDiscr%p_RlevelInfo%p_rdiscretisation
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.FALSE.)
     
+    ! The vector will be a defect vector. Assign the boundary conditions so
+    ! that we can implement them.
+    rtempVectorD%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorD%p_rdiscreteBCfict => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    
     ! Create a temp vector for the X-vectors at timestep i-1, i and i+1.
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector1,.FALSE.)
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector2,.FALSE.)
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector3,.FALSE.)
     
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rtempVector1,p_Dx1)
+    CALL lsysbl_getbase_double (rtempVector2,p_Dx2)
+    CALL lsysbl_getbase_double (rtempVector3,p_Dx3)
+    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+    
     ! Get the parts of the X-vector which are to be modified at first --
     ! subvector 1, 2 and 3.
     CALL sptivec_getTimestepData(rx, 0, rtempVector1)
     IF (rspaceTimeDiscr%niterations .GT. 0) &
-      CALL sptivec_getTimestepData(rx, 0, rtempVector2)
+      CALL sptivec_getTimestepData(rx, 1, rtempVector2)
     IF (rspaceTimeDiscr%niterations .GT. 1) &
-      CALL sptivec_getTimestepData(rx, 0, rtempVector3)
-    
-    ! Set up a core equation structure that we use for assembling the defect.
-    CALL c2d2_initNonlinearLoop (&
-        rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVector1,rtempVectorD,&
-        rnonlinearIterationTmp,'CC2D-NONLINEAR')
-
+      CALL sptivec_getTimestepData(rx, 2, rtempVector3)
+      
     ! If dnorm is specified, clear it.
     IF (PRESENT(dnorm)) THEN
       dnorm = 0.0_DP
@@ -1831,42 +2024,27 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVector1,rtempVectorD,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 1.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 1.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = 0.0_DP
-        rnonlinearIterationTmp%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-        rnonlinearIterationTmp%dgamma2 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = 0.0_DP
-        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
-            (-rspaceTimeDiscr%dtstep * dtheta)
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,0,rnonlinearIterationTmp)
 
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (&
-            rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (&
+        !    rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
             
+        !! Subtract: rd = rd - A11 x1
+        !CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
+        !    rtempVector1,rtempVectorD,-1.0_DP,1.0_DP)
+
         ! Subtract: rd = rd - A11 x1
-        CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-            rtempVector1,rtempVectorD,-1.0_DP,1.0_DP)
+        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
+          rtempVector1,rtempVectorD,&
+          .FALSE.,.FALSE.,rproblem%rcollection,&
+          rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix)
+
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
 
         ! -----
       
@@ -1881,57 +2059,48 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVector2,rtempVectorD,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,1,rnonlinearIterationTmp)
 
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = -1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = 0.0_DP
-        rnonlinearIterationTmp%dtheta2 = rspaceTimeDiscr%dtstep * (1.0_DP-dtheta)
-        
-        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-        rnonlinearIterationTmp%dgamma2 = &
-            rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP) * (1.0_DP-dtheta)
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = 0.0_DP
-        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
-            (-rspaceTimeDiscr%dtstep) * (1.0_DP-dtheta)
-      
-        ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
-        
+        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
+        !! Include the boundary conditions into the matrices.
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !
+        !CALL lsysbl_duplicateMatrix (&
+        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
+        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        !
+        !! Include the boundary conditions into that matrix.
+        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
+        !! main diagonal of the supermatrix.
+        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
+        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
+        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
+        !
+        !! We don't need submatrix (1,1) to (2,2).
+        !rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
+        !
+        !! Subtract: rd = rd - A12 x2
+        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
+ 
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
             rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
        
-        ! Include the boundary conditions into that matrix.
-        ! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        ! main diagonal of the supermatrix.
-        rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-
         ! We don't need submatrix (1,1) to (2,2).
         rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
 
         ! Subtract: rd = rd - A12 x2
-        CALL lsysbl_blockMatVec (rblockTemp,rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
+        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
+          rtempVector2,rtempVectorD,&
+          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
         
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
+
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
 
       ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
 
@@ -1960,58 +2129,49 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVector1,rtempVectorD,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = -1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dgamma1 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = 0.0_DP
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
-            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,-1,rnonlinearIterationTmp)
             
-        ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (&
-            rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
+        !! Include the boundary conditions into the matrices.
+        !CALL c2d2_assembleLinearisedMatrices (&
+        !    rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !
+        !CALL lsysbl_duplicateMatrix (&
+        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
+        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        !
+        !! We don't need submatrix (4,4) to (5,5).
+        !rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
+        !
+        !! Include the boundary conditions into that matrix.
+        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
+        !! main diagonal of the supermatrix.
+        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
+        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
+        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
+        !
+        !! Subtract: rd = rd - Aii-1 xi-1
+        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector1,rtempVectorD,-1.0_DP,1.0_DP)
         
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
             rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-       
+        
         ! We don't need submatrix (4,4) to (5,5).
         rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
-
-        ! Include the boundary conditions into that matrix.
-        ! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        ! main diagonal of the supermatrix.
-        rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-
+        
         ! Subtract: rd = rd - Aii-1 xi-1
-        CALL lsysbl_blockMatVec (rblockTemp,rtempVector1,rtempVectorD,-1.0_DP,1.0_DP)
+        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
+          rtempVector1,rtempVectorD,&
+          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
+
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
 
         ! -----      
 
@@ -2032,40 +2192,27 @@ CONTAINS
         ! Assemble the nonlinear defect.
         ! We use explicit Euler, so the weights are easy.
       
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,0,rnonlinearIterationTmp)
 
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        
-        rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dtau2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dtstep
-      
-        ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
-        
+        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
+        !! Include the boundary conditions into the matrices.
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        !
+        !! Subtract: rd = rd - Aii xi
+        !CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
+        !    rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
+
         ! Subtract: rd = rd - Aii xi
-        CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-            rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
+        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
+          rtempVector2,rtempVectorD,&
+          .FALSE.,.FALSE.,rproblem%rcollection,&
+          rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix)
             
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
+
         ! -----
         
         ! Create the matrix
@@ -2079,57 +2226,48 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVector3,rtempVectorD,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,1,rnonlinearIterationTmp)
 
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = -1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = 0.0_DP
-        rnonlinearIterationTmp%dtheta2 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
-        
-        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-        rnonlinearIterationTmp%dgamma2 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = 0.0_DP
-        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
-            (1.0_DP-dtheta) * (-rspaceTimeDiscr%dtstep)
-      
-        ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
-        
+        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
+        !! Include the boundary conditions into the matrices.
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !
+        !CALL lsysbl_duplicateMatrix (&
+        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
+        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        !
+        !! We don't need submatrix (1,1) to (2,2).
+        !rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
+        !
+        !! Include the boundary conditions into that matrix.
+        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
+        !! main diagonal of the supermatrix.
+        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
+        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
+        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
+        !
+        !! Subtract: rd = rd - Aii+1 xi+1
+        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector3,rtempVectorD,-1.0_DP,1.0_DP)
+
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
             rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-       
+        
         ! We don't need submatrix (1,1) to (2,2).
         rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
 
-        ! Include the boundary conditions into that matrix.
-        ! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        ! main diagonal of the supermatrix.
-        rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-
         ! Subtract: rd = rd - Aii+1 xi+1
-        CALL lsysbl_blockMatVec (rblockTemp,rtempVector3,rtempVectorD,-1.0_DP,1.0_DP)
+        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
+          rtempVector3,rtempVectorD,&
+          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
+
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
 
       ELSE 
         
@@ -2156,58 +2294,49 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVector2,rtempVectorD,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,-1,rnonlinearIterationTmp)
 
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = -1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dgamma1 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = 0.0_DP
-        
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
-            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = 0.0_DP
-      
-        ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (&
-            rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
-        
+        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
+        !! Include the boundary conditions into the matrices.
+        !CALL c2d2_assembleLinearisedMatrices (&
+        !    rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !
+        !CALL lsysbl_duplicateMatrix (&
+        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
+        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        !
+        !! We don't need submatrix (4,4) to (5,5).
+        !rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
+        !
+        !! Include the boundary conditions into that matrix.
+        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
+        !! main diagonal of the supermatrix.
+        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
+        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
+        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
+        !
+        !! Subtract: rd = rd - Ann-1 xn-1
+        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
+
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
             rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-       
+        
         ! We don't need submatrix (4,4) to (5,5).
         rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
 
-        ! Include the boundary conditions into that matrix.
-        ! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        ! main diagonal of the supermatrix.
-        rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-
         ! Subtract: rd = rd - Ann-1 xn-1
-        CALL lsysbl_blockMatVec (rblockTemp,rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
+        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
+          rtempVector2,rtempVectorD,&
+          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
+     
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
      
         ! -----
         
@@ -2228,42 +2357,32 @@ CONTAINS
         ! Assemble the nonlinear defect.
         ! We use explicit Euler, so the weights are easy.
       
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%diota2 = 0.0_DP
+        ! Set up the matrix weights of that submatrix.
+        CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
+          isubstep,0,rnonlinearIterationTmp)
 
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dalpha1 = 1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        
-        rnonlinearIterationTmp%dtheta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dgamma1 = &
-            rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = 0.0_DP
-        
-        rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        
-        rnonlinearIterationTmp%dmu1 = rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dgammaC
-        
-        ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
+        !! Include the boundary conditions into the matrices.
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        ! 
+        !! Subtract: rd = rd - Ann xn
+        !CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
+        !    rtempVector3,rtempVectorD,-1.0_DP,1.0_DP)
         
         ! Subtract: rd = rd - Ann xn
-        CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-            rtempVector3,rtempVectorD,-1.0_DP,1.0_DP)
+        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
+          rtempVector3,rtempVectorD,&
+          .FALSE.,.FALSE.,rproblem%rcollection,&
+          rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix)
+      
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
       
       END IF
+      
+      ! Implement the boundary conditions into the defect.
+      CALL vecfil_discreteBCdef (rtempVectorD)
+      CALL vecfil_discreteFBCdef (rtempVectorD)      
       
       ! Save the defect vector back to rd.
       CALL sptivec_setTimestepData(rd, isubstep, rtempVectorD)
@@ -2309,510 +2428,6 @@ CONTAINS
     
   END SUBROUTINE 
    
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
-      rtempvectorX, rtempvectorB, rtempvectorD, ddefNorm)
-
-!<description>
-  ! This routine assembles the defect of the time-space coupled supersystem:
-  ! $d=b-Ax$ with d=rd, x=rx, A=rspaceTimeDiscr. The RHS vector is generated
-  ! on-the-fly.
-!</description>
-
-!<input>
-  ! A problem structure that provides information about matrices on all
-  ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
-
-  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
-  ! coupled space-time matrix.
-  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
-  
-  ! A space-time vector defining the current solution.
-  TYPE(t_spacetimeVector), INTENT(IN) :: rx
-!</input>
-
-!<inputoutput>
-  ! A temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorX
-
-  ! A second temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorB
-
-  ! A third temporary vector in the size of a spatial vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
-
-  ! A space-time vector that receives the defect.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
-!</inputoutput>
-
-!<output>
-  ! The norm of the total defect.
-  REAL(DP), INTENT(OUT) :: ddefNorm
-!</output>
-
-!</subroutine>
-
-    ! local variables
-    INTEGER :: isubstep
-    REAL(DP) :: dtheta
-    TYPE(t_matrixBlock) :: rblockMass,rblockSystem
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    TYPE(t_matrixScalar) :: rmassLumped
-    TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
-    
-    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
-
-    ! Theta-scheme identifier.
-    ! =1: implicit Euler.
-    ! =0.5: Crank Nicolson
-    dtheta = rproblem%rtimedependence%dtimeStepTheta
-    
-    ! Calculate the lumped mass matrix of the FE space -- we need it later!
-    CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass,&
-        rmassLumped, LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
-    CALL lsyssc_lumpMatrixScalar (rmassLumped,LSYSSC_LUMP_STD)
-    
-    ! ----------------------------------------------------------------------
-    ! 1.) Generate the global RHS vector
-    
-    CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-    CALL lsysbl_getbase_double (rtempVectorB,p_Db)
-    CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
-
-    DO isubstep = 0,rspaceTimeDiscr%niterations
-    
-      ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
-
-      ! Initialise the collection for the assembly process with callback routines.
-      ! Basically, this stores the simulation time in the collection if the
-      ! simulation is nonstationary.
-      CALL c2d2_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-      ! Generate the RHS of that point in time.
-      CALL c2d2_generateBasicRHS (rproblem,rtempVectorB)
-      
-      ! Multiply the RHS of the dual velocity by dtstep according to the time
-      ! discretisation -- except for if we are in the last timestep!
-      !
-      ! In the last timestep, if GAMMA is =0, we have no terminal condition
-      ! and thus have to force the RHS to 0!
-      IF (isubstep .NE. rspaceTimeDiscr%niterations) THEN
-        CALL lsyssc_scaleVector (rtempVectorB%RvectorBlock(4),rspaceTimeDiscr%dtstep)
-        CALL lsyssc_scaleVector (rtempVectorB%RvectorBlock(5),rspaceTimeDiscr%dtstep)
-      ELSE
-        IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
-          CALL lsyssc_clearVector (rtempVectorB%RvectorBlock(4))
-          CALL lsyssc_clearVector (rtempVectorB%RvectorBlock(5))
-        ELSE
-        
-          ! Load y(T) into rtempVectorX
-          CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
-
-          ! Calculate GAMMA*(y(T)-z(T)). For that purpose, calculate z(T)
-          ! using the L2 projection of z into rtempVectorX(4,5).
-          CALL l2prj_analytL2projectionByMass (rtempVectorB%RvectorBlock(4),&
-              rspaceTimeDiscr%p_rlevelInfo%rmatrixMass,rmassLumped,&
-              rtempVectorX%RvectorBlock(4),&
-              rtempVectorD%RvectorBlock(4),coeff_TARGET_x,&
-              rproblem%rcollection)
-          CALL l2prj_analytL2projectionByMass (rtempVectorB%RvectorBlock(4),&
-              rspaceTimeDiscr%p_rlevelInfo%rmatrixMass,rmassLumped,&
-              rtempVectorX%RvectorBlock(5),&
-              rtempVectorD%RvectorBlock(5),coeff_TARGET_y,&
-              rproblem%rcollection)
-              
-          ! Subtract z from y to get the terminal condition. This is later
-          ! transferred to the solution vector without change.
-          CALL lsyssc_vectorLinearComb (&
-              rtempVectorX%RvectorBlock(1),rtempVectorX%RvectorBlock(4),&
-              1.0_DP*rspaceTimeDiscr%dgammaC,-1.0_DP*rspaceTimeDiscr%dgammaC)
-          CALL lsyssc_vectorLinearComb (&
-              rtempVectorX%RvectorBlock(2),rtempVectorX%RvectorBlock(5),&
-              1.0_DP*rspaceTimeDiscr%dgammaC,-1.0_DP*rspaceTimeDiscr%dgammaC)
-          CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(4),&
-              rtempVectorB%RvectorBlock(4))
-          CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(5),&
-              rtempVectorB%RvectorBlock(5))
-        END IF
-      END IF
-      
-      CALL sptivec_setTimestepData(rd, isubstep, rtempVectorB)
-      
-      ! Clean up the collection (as we are done with the assembly, that's it.
-      CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
-
-    END DO
-    
-    ! ----------------------------------------------------------------------
-    ! 2.) Generate rb = rb-Ax
-    !
-    ! For this purpose, loop through the substeps
-    
-    ddefNorm = 0.0_DP
-    
-    DO isubstep = 0,rspaceTimeDiscr%niterations
-    
-      ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
-
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
-      END IF
-      
-      ! Read in the RHS from the current timestep.
-      CALL sptivec_getTimestepData (rd, isubstep, rtempVectorB)
-        
-      ! Get the system matrix.
-      p_rmatrix => rproblem%RlevelInfo(rspaceTimeDiscr%NLMAX)%rmatrix
-        
-      ! The first and last substep is a little bit special concerning
-      ! the matrix!
-      IF (isubstep .EQ. 0) THEN
-        
-        ! We are in the first substep
-      
-        ! -----
-      
-        ! Read in the solution vector at time $t^{n+1}$
-        CALL sptivec_getTimestepData (rx, isubstep+1, rtempVectorX)
-        
-        ! Multiply the dual velocity (not the primal one!) by "-M" and subtract
-        ! from the given RHS. For this purpose, create a block matrix with
-        ! "M" on the dual velocity diagonal.
-        CALL lsysbl_createMatBlockByDiscr (rtempVectorX%p_rblockDiscretisation,&
-            rblockMass)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-        ! b=b+Mx = b-(-M)x
-        CALL lsysbl_blockMatVec (rblockMass,rtempVectorX,rtempVectorB,1.0_DP,1.0_DP)
-        
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockMass)
-      
-        ! -----
-        
-        ! Now the hardest -- or longest -- part: The nonlinear defect.  
-        !
-        ! Read in the solution vector at time $t^{n}$
-        CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
-
-        ! Scale the primal and dual pressure by the step length. this implements
-        ! the 'delta*t' in front of these subvectors
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),&
-            rspaceTimeDiscr%dtstep)
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),&
-            rspaceTimeDiscr%dtstep)
-      
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX.
-        ! For that purpose, we make a copy of the system matrix and replace
-        ! the static submatrices.
-        ! Share the entries with the original matrix since we don't modify them.
-        ! Boundary conditions are later implemented directly into the
-        ! defect vector.
-        CALL lsysbl_duplicateMatrix (p_rmatrix,rblockSystem,&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(rspaceTimeDiscr%NLMAX),&
-            rblockSystem,.TRUE.)
-
-        ! Set up a core equation structure and assemble the nonlinear defect.
-        ! We use explicit Euler, so the weights are easy.
-      
-        CALL c2d2_initNonlinearLoop (&
-            rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
-            rnonlinearIterationTmp,'CC2D-NONLINEAR')
-
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 1.0_DP
-        rnonlinearIterationTmp%dkappa1 = 1.0_DP
-        rnonlinearIterationTmp%dalpha1 = 0.0_DP
-        rnonlinearIterationTmp%dtheta1 = 0.0_DP
-        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-        rnonlinearIterationTmp%deta1 = 0.0_DP
-        rnonlinearIterationTmp%dtau1 = 0.0_DP
-        rnonlinearIterationTmp%dmu1 = 0.0_DP
-
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        rnonlinearIterationTmp%dtheta2 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%deta2 = 1.0_DP
-        rnonlinearIterationTmp%dtau2 = 1.0_DP
-        rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dtstep
-        
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-            rtempVectorX,rtempVectorB,&
-            .TRUE.,.TRUE.,rproblem%rcollection,rblockSystem)
-            
-        ! Scale the primal and dual pressure back. We only scaled it for setting
-        ! up the defect.
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),&
-            1.0_DP/rspaceTimeDiscr%dtstep)
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),&
-            1.0_DP/rspaceTimeDiscr%dtstep)
-            
-        ! Overwrite the defect of the primal vectors by zero -- since this
-        ! is the boundary of the time cylinder!
-        CALL lsyssc_clearVector (rtempVectorB%RvectorBlock(1))
-        CALL lsyssc_clearVector (rtempVectorB%RvectorBlock(2))
-
-        ! Release the temporary system matrix.
-        CALL lsysbl_releaseMatrix (rblockSystem)
-
-      ELSE IF (isubstep .EQ. rspaceTimeDiscr%niterations) THEN
-        
-        ! We are in the last substep
-        
-        ! -----
-        
-        ! Read in the solution vector at time $t^{n-1}$
-        CALL sptivec_getTimestepData (rx, isubstep-1, rtempVectorX)
-        
-        ! Multiply the velocity (not the dual one!) by "-M" and subtract
-        ! from the given RHS. For this purpose, create a block matrix with
-        ! "M" on the velocity diagonal.
-        CALL lsysbl_createMatBlockByDiscr (rtempVectorX%p_rblockDiscretisation,&
-            rblockMass)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-        ! b=b+Mx = b-(-M)x
-        CALL lsysbl_blockMatVec (rblockMass,rtempVectorX,rtempVectorB,1.0_DP,1.0_DP)
-        
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockMass)
-
-        ! -----
-        
-        ! Now the hardest -- or longest -- part: The nonlinear defect.  
-        !
-        ! Read in the solution vector at time $t^{n}$
-        CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
-
-        ! If GAMMA <> 0, there is a terminal condition. In this case, we have to 
-        ! subtract -GAMMA*M*lambda(last timestep) from the RHS.
-        IF (rspaceTimeDiscr%dgammaC .NE. 0.0_DP) THEN
-          CALL lsysbl_createMatBlockByDiscr (rtempVectorX%p_rblockDiscretisation,&
-              rblockMass)
-          CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-              rblockMass%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-          CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-              rblockMass%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-          
-          ! b=b+GAMMA*Mx = b-(-GAMMA*M)x
-          CALL lsysbl_blockMatVec (rblockMass,rtempVectorX,rtempVectorB,&
-              rspaceTimeDiscr%dgammaC,1.0_DP)
-          
-          ! Release the block mass matrix.
-          CALL lsysbl_releaseMatrix (rblockMass)
-        END IF
-        
-        ! Scale the primal and dual pressure by the step length. this implements
-        ! the 'delta*t' in front of these subvectors
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),&
-            rspaceTimeDiscr%dtstep)
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),&
-            rspaceTimeDiscr%dtstep)
-      
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX.
-        ! For that purpose, we make a copy of the system matrix and replace
-        ! the static submatrices.
-        ! Share the entries with the original matrix since we don't modify them.
-        ! Boundary conditions are later implemented directly into the
-        ! defect vector.
-        CALL lsysbl_duplicateMatrix (p_rmatrix,rblockSystem,&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(rspaceTimeDiscr%NLMAX),&
-            rblockSystem,.TRUE.)
-
-        ! Set up a core equation structure and assemble the nonlinear defect.
-        ! We use explicit Euler, so the weights are easy.
-      
-        CALL c2d2_initNonlinearLoop (&
-            rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
-            rnonlinearIterationTmp,'CC2D-NONLINEAR')
-            
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha1 = 1.0_DP
-        rnonlinearIterationTmp%dtheta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%deta1 = 1.0_DP
-        rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dmu1 = rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 1.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        rnonlinearIterationTmp%dtheta2 = 0.0_DP
-        rnonlinearIterationTmp%dgamma2 = 0.0_DP
-        rnonlinearIterationTmp%deta2 = 0.0_DP
-        rnonlinearIterationTmp%dtau2 = 0.0_DP
-        rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dgammaC
-        
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-            rtempVectorX,rtempVectorB,&
-            .TRUE.,.TRUE.,rproblem%rcollection,rblockSystem)
-            
-        ! Scale the primal and dual pressure back. We only scaled it for setting
-        ! up the defect.
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),&
-            1.0_DP/rspaceTimeDiscr%dtstep)
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),&
-            1.0_DP/rspaceTimeDiscr%dtstep)
-
-        ! Release the temporary system matrix.
-        CALL lsysbl_releaseMatrix (rblockSystem)
-
-      ELSE
-      
-        ! We are sonewhere in the middle of the matrix. There is a substep
-        ! isubstep+1 and a substep isubstep-1!
-        
-        ! -----
-        
-        ! Read in the solution vector at time $t^{n-1}$
-        CALL sptivec_getTimestepData (rx, isubstep-1, rtempVectorX)
-        
-        ! Multiply the velocity (not the dual one!) by "-M" and subtract
-        ! from the given RHS. For this purpose, create a block matrix with
-        ! "M" on the velocity diagonal.
-        CALL lsysbl_createMatBlockByDiscr (rtempVectorX%p_rblockDiscretisation,&
-            rblockMass)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-        ! b=b+Mx = b-(-M)x
-        CALL lsysbl_blockMatVec (rblockMass,rtempVectorX,rtempVectorB,1.0_DP,1.0_DP)
-        
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockMass)
-        
-        ! -----
-      
-        ! Read in the solution vector at time $t^{n+1}$
-        CALL sptivec_getTimestepData (rx, isubstep+1, rtempVectorX)
-        
-        ! Multiply the dual velocity (not the dual one!) by "-M" and subtract
-        ! from the given RHS. For this purpose, create a block matrix with
-        ! "M" on the dual velocity diagonal.
-        CALL lsysbl_createMatBlockByDiscr (rtempVectorX%p_rblockDiscretisation,&
-            rblockMass)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        CALL lsyssc_duplicateMatrix (rspaceTimeDiscr%p_rlevelInfo%rmatrixMass, &
-            rblockMass%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-        ! b=b+Mx = b-(-M)x
-        CALL lsysbl_blockMatVec (rblockMass,rtempVectorX,rtempVectorB,1.0_DP,1.0_DP)
-        
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockMass)
-      
-        ! -----
-        
-        ! Now the hardest -- or longest -- part: The nonlinear defect.  
-        !
-        ! Read in the solution vector at time $t^{n}$
-        CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
-
-        ! Scale the primal and dual pressure by the step length. this implements
-        ! the 'delta*t' in front of these subvectors
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),&
-            rspaceTimeDiscr%dtstep)
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),&
-            rspaceTimeDiscr%dtstep)
-      
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX.
-        ! For that purpose, we make a copy of the system matrix and replace
-        ! the static submatrices.
-        ! Share the entries with the original matrix since we don't modify them.
-        ! Boundary conditions are later implemented directly into the
-        ! defect vector.
-        CALL lsysbl_duplicateMatrix (p_rmatrix,rblockSystem,&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(rspaceTimeDiscr%NLMAX),&
-            rblockSystem,.TRUE.)
-
-        ! Set up a core equation structure and assemble the nonlinear defect.
-        ! We use explicit Euler, so the weights are easy.
-      
-        CALL c2d2_initNonlinearLoop (&
-            rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
-            rnonlinearIterationTmp,'CC2D-NONLINEAR')
-
-        ! Set up all the weights in the core equation according to the current timestep.
-        rnonlinearIterationTmp%diota1 = 0.0_DP
-        rnonlinearIterationTmp%dkappa1 = 0.0_DP
-        rnonlinearIterationTmp%dalpha1 = 1.0_DP
-        rnonlinearIterationTmp%dtheta1 = 1.0_DP
-        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtau1 = 1.0_DP
-        rnonlinearIterationTmp%dmu1 = rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-
-        rnonlinearIterationTmp%diota2 = 0.0_DP
-        rnonlinearIterationTmp%dkappa2 = 0.0_DP
-        rnonlinearIterationTmp%dalpha2 = 1.0_DP
-        rnonlinearIterationTmp%dtheta2 = 1.0_DP
-        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtau2 = 1.0_DP
-        rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dtstep
-      
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-            rtempVectorX,rtempVectorB,&
-            .TRUE.,.TRUE.,rproblem%rcollection,rblockSystem)
-            
-        ! Scale the primal and dual pressure back. We only scaled it for setting
-        ! up the defect.
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),&
-            1.0_DP/rspaceTimeDiscr%dtstep)
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),&
-            1.0_DP/rspaceTimeDiscr%dtstep)
-            
-        ! Release the temporary system matrix.
-        CALL lsysbl_releaseMatrix (rblockSystem)
-        
-      END IF
-    
-      ! Save the subdefect of the current timestep.
-      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorB)
-      
-      ! Calculate the norm of the subdefect
-      ddefNorm = ddefNorm + lsysbl_vectorNorm (rtempVectorB,LINALG_NORML2)**2
-    
-    END DO
-    
-    ! Complete the calculation of the defect norm by dividing by the
-    ! number of subvectors and taking the square root.
-    ddefNorm = SQRT(ddefNorm/rspaceTimeDiscr%niterations)
-
-    ! Release the lumped mass matrix, that's it.
-    CALL lsyssc_releaseMatrix (rmassLumped)
-
-  END SUBROUTINE
-
   ! ***************************************************************************
   
 !<subroutine>
@@ -2893,7 +2508,7 @@ CONTAINS
       CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
       CALL sptivec_getTimestepData (rd, isubstep, rtempVectorB)
 
-      ! Scale the primal and dual pressure by the step length. this implements
+      ! Scale the primal and dual pressure by the step length. This implements
       ! the 'delta*t' in front of these subvectors
       ! The core equation routines handle the equation
       !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = ...
@@ -3057,15 +2672,10 @@ CONTAINS
     CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
       rtempvectorX, rtempvectorB, rtempvector)    
 
-    ! Overwrite the primal RHS with the initial primal solution vector.
-    ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
-    CALL sptivec_getTimestepData(rd, 0, rtempVector)
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVector%RvectorBlock(1))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVector%RvectorBlock(2))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVector%RvectorBlock(3))
-    CALL sptivec_setTimestepData(rd, 0, rtempVector)
+    ! Implement the initial condition into the RHS.
+    CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvector)    
 
+    ! Assemble the defect
     CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, ddefNorm)
         
     dinitDefNorm = ddefNorm
@@ -3108,6 +2718,24 @@ CONTAINS
     ! Release the preconditioner of the nonlinear iteration
     CALL c2d2_releasePreconditioner (rnonlinearIteration)
     
+    !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
+    !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
+    CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
+      rtempvectorX, rtempvectorB, rtempvector)    
+
+    ! Implement the initial condition into the RHS.
+    CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvector)    
+
+    ! Assemble the defect
+    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, ddefNorm)
+        
+    CALL output_separator (OU_SEP_EQUAL)
+    CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
+    CALL output_separator (OU_SEP_EQUAL)        
+    
+    ! Release parameters of the nonlinear loop, final clean up
+    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+
     ! Do we have Neumann boundary?
     bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
     bneumann = .FALSE.
@@ -3127,29 +2755,6 @@ CONTAINS
       
     END IF
     
-    !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
-    !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
-    CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
-      rtempvectorX, rtempvectorB, rtempvector)    
-
-    ! Overwrite the primal RHS with the initial primal solution vector.
-    ! This realises the inital condition.
-    CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
-    CALL sptivec_getTimestepData(rd, 0, rtempVector)
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVector%RvectorBlock(1))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVector%RvectorBlock(2))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVector%RvectorBlock(3))
-    CALL sptivec_setTimestepData(rd, 0, rtempVector)
-
-    CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, ddefNorm)
-        
-    CALL output_separator (OU_SEP_EQUAL)
-    CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
-    CALL output_separator (OU_SEP_EQUAL)        
-    
-    ! Release parameters of the nonlinear loop, final clean up
-    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
-
   END SUBROUTINE
   
 END MODULE
