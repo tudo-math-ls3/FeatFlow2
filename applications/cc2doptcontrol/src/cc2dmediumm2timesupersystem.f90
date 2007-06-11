@@ -900,6 +900,8 @@ CONTAINS
         CALL insertMatrix (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
             rglobalA,1,1)
             
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
+
         ! -----
       
         ! Create the matrix
@@ -1042,10 +1044,14 @@ CONTAINS
         
         ! -----      
 
-        ! -----      
-
         ! Now the diagonal matrix.
         !
+        ! Set up a core equation structure and assemble matrices of the
+        ! time discretisation scheme.
+        CALL c2d2_initNonlinearLoop (&
+            rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
+            rnonlinearIterationTmp,'CC2D-NONLINEAR')
+
         ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX
         ! Will be modified by c2d2_assembleLinearisedMatrices later.
         CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(ilevel), &
@@ -1064,11 +1070,13 @@ CONTAINS
         rnonlinearIterationTmp%dalpha1 = 1.0_DP
         rnonlinearIterationTmp%dalpha2 = 1.0_DP
         
-        rnonlinearIterationTmp%dtheta1 = rspaceTimeDiscr%dtstep
-        rnonlinearIterationTmp%dtheta2 = rspaceTimeDiscr%dtstep
+        rnonlinearIterationTmp%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
+        rnonlinearIterationTmp%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
         
-        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        rnonlinearIterationTmp%dgamma1 = &
+            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        rnonlinearIterationTmp%dgamma2 = &
+            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         
         rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
         rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
@@ -1076,8 +1084,10 @@ CONTAINS
         rnonlinearIterationTmp%dtau1 = 1.0_DP
         rnonlinearIterationTmp%dtau2 = 1.0_DP
         
-        rnonlinearIterationTmp%dmu1 = rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-        rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dtstep
+        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
+            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+        rnonlinearIterationTmp%dmu2 = ddualPrimalCoupling * &
+            dtheta * (-rspaceTimeDiscr%dtstep)
             
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
@@ -1088,6 +1098,8 @@ CONTAINS
         CALL insertMatrix (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
             rglobalA,isubstep*6+1,isubstep*6+1)
             
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
+
         ! -----
         
         ! Create the matrix
@@ -1243,9 +1255,6 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Assemble the nonlinear defect.
-        ! We use explicit Euler, so the weights are easy.
-      
         ! Set up all the weights in the core equation according to the current timestep.
         rnonlinearIterationTmp%diota1 = 0.0_DP
         rnonlinearIterationTmp%diota2 = 0.0_DP
@@ -1256,11 +1265,11 @@ CONTAINS
         rnonlinearIterationTmp%dalpha1 = 1.0_DP
         rnonlinearIterationTmp%dalpha2 = 1.0_DP
         
-        rnonlinearIterationTmp%dtheta1 = rspaceTimeDiscr%dtstep
+        rnonlinearIterationTmp%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
         rnonlinearIterationTmp%dtheta2 = 0.0_DP
         
         rnonlinearIterationTmp%dgamma1 = &
-            rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         rnonlinearIterationTmp%dgamma2 = 0.0_DP
         
         rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
@@ -1269,7 +1278,9 @@ CONTAINS
         rnonlinearIterationTmp%dtau1 = 1.0_DP
         rnonlinearIterationTmp%dtau2 = 0.0_DP
         
-        rnonlinearIterationTmp%dmu1 = rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+        rnonlinearIterationTmp%dmu1 = dprimalDualCoupling * &
+            
+            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
         rnonlinearIterationTmp%dmu2 = -rspaceTimeDiscr%dgammaC
         
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
@@ -1284,6 +1295,8 @@ CONTAINS
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
       
+        CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
+
       END IF
     
     END DO
