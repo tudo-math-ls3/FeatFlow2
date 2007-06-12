@@ -217,7 +217,7 @@ MODULE nonlinearsolver
     ! Only valid, if there is no callback routine for the calculation of
     ! residuals passed to the nonlinear solver.
     ! Treat iteration as diverged if anywhere
-    !   !!defect!! >= DIVREL
+    !   !!defect!! >= DIVABS
     ! A value of SYS_INFINITY disables the absolute divergence check.
     ! standard = SYS_INFINITY
     REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DdivAbs = SYS_INFINITY
@@ -349,7 +349,7 @@ CONTAINS
   loutput = .TRUE.
   
   DO i=1,nblocks
-    !  Absolute convergence criterion? Check the norm directly.
+    ! Absolute convergence criterion? Check the norm directly.
     IF (rsolverNode%DepsAbs(i) .NE. 0.0_DP) THEN
       IF (DvecNorm(i) .GT. rsolverNode%DepsAbs(i)) THEN
         loutput = .FALSE.
