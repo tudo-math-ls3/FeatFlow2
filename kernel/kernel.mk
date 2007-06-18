@@ -29,7 +29,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
 	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90 signal_ccode.c \
 	timestepping.f90 pprocerror.f90 trilinearformevaluation.f90 \
 	stdoperators.f90 sort.f90 quadtree.f90 l2projection.f90 \
-	pprocgradients.f90
+	pprocgradients.f90 geometry.f90
 
 # Include HDF5 subsystem if required
 ifeq ($(HDF5),YES)
