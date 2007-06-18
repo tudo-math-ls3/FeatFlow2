@@ -837,7 +837,7 @@ CONTAINS
 
   IF ((rfmbcStructure%isubtype .EQ. 1) .OR. (rfmbcStructure%isubtype .EQ. 3)) THEN
     ! The DOF's should be treated as Dirichlet-DOF's.
-    ! Only the matrix is modified according to the FEAST mirrir bondary conditions!
+    ! Only the matrix is modified according to the FEAST mirror bondary conditions!
     !
     ! For the implementation, we just set dmirrorWeight to 0.0.
     ! This clears all DOF entries and thus treats the DOF's like Dirichlet DOF's.
@@ -875,6 +875,100 @@ CONTAINS
       p_Dvec(p_Iperm(p_ImirrorDOFs(i))) = dmirrorWeight * p_Dvec(p_Iperm(p_ImirrorDOFs(i)))
     END DO
 
+  END IF
+  
+  END SUBROUTINE
+  
+! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE vecfil_imposeFeastMirrorDefBC (rx,rfmbcStructure)
+  
+!<description>
+  ! Implements discrete Feast Mirror BC's into a scalar defect vector.
+!</description>
+
+!<input>
+  ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
+  TYPE(t_discreteBCFeastMirror), INTENT(IN), TARGET  :: rfmbcStructure
+!</input>
+
+!<inputoutput>
+  ! The scalar vector where the boundary conditions should be imposed.
+  TYPE(t_vectorBlock), INTENT(INOUT), TARGET :: rx
+!</inputoutput>
+  
+!</subroutine>
+    
+  ! local variables
+  INTEGER(I32), DIMENSION(:), POINTER :: p_ImirrorDOFs
+  INTEGER :: i
+  REAL(DP), DIMENSION(:), POINTER    :: p_Dvec
+  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Iperm
+
+  ! Impose the DOF value directly into the vector - more precisely, into the
+  ! components of the subvector that is indexed by icomponent.
+  
+  IF (rx%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'vecfil_imposeFeastMirrorDefBC: Matrix must be double precision'
+    STOP
+  END IF
+  
+  IF (rfmbcStructure%icomponent .EQ. 0) THEN
+    PRINT *,'Error: FMBC not configured'
+    STOP
+  END IF
+  
+  IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
+    ! No data inside of this structure.
+    ! May happen if the region is not large enough to cover at least one DOF.
+    RETURN
+  END IF
+  
+  ! Get the vector data
+  CALL lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
+  
+  ! Get pointers to the list of DOF's that belong to that region and have
+  ! to be tackled.
+  CALL storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
+
+  IF ((rfmbcStructure%isubtype .EQ. 1) .OR. (rfmbcStructure%isubtype .EQ. 3)) THEN
+    ! The DOF's should be treated as Dirichlet-DOF's.
+    !
+    ! The vector entry corresponds to the DOF. For every DOF decide on
+    ! whether it's on the FEAST mirror boundary component or not.
+    ! If yes, put the entry to zero.
+    
+    ! Is the vector sorted?
+    IF (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .LE. 0) THEN
+      
+      ! Loop through the DOF's. Each DOF gives us the number of an entry
+      ! which is to be doubled.
+      DO i=1,SIZE(p_ImirrorDOFs)
+        p_Dvec(p_ImirrorDOFs(i)) = 0.0_DP
+      END DO
+      
+    ELSE
+    
+      ! Ok, vector is sorted, so we have to filter all the DOF's through the
+      ! permutation before using them for implementing boundary conditions.
+      !
+      ! Get the permutation (or more precisely, the inverse permutation)
+      ! from the vector to renumber the columns into
+      ! the actual DOF numbers.
+      CALL storage_getbase_int (&
+          rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
+      p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
+      
+      ! Loop through the DOF's. Each DOF gives us the number of an entry
+      ! which is to be doubled.
+      DO i=1,SIZE(p_ImirrorDOFs)
+        p_Dvec(p_Iperm(p_ImirrorDOFs(i))) = 0.0_DP
+      END DO
+
+    END IF
+    
   END IF
   
   END SUBROUTINE
@@ -1232,7 +1326,8 @@ CONTAINS
         ! in a nonlinear loop - so there's nothing to do here.
                 
       CASE (DISCBC_TPFEASTMIRROR)
-        ! Nothing to do
+        ! Routine is on purpose not commented in! Not used for now!
+        ! CALL vecfil_imposeFeastMirrorDefBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
         
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCdef: unknown boundary condition: ',&
