@@ -1253,6 +1253,16 @@ MODULE linearsolver
     ! Number of remaining cycles to perform on this level.
     INTEGER                        :: ncyclesRemaining
     
+    ! STATUS/INTERNAL: initial residuum when a solution is restricted to this
+    ! level. Only used if adaptive cycles are activated by setting 
+    ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
+    REAL(DP)                       :: dinitResCycle = 0.0_DP
+    
+    ! STATUS/INTERNAL: Number of current cycle on that level. 
+    ! Only used if adaptive cycles are activated by setting 
+    ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
+    INTEGER                        :: icycleCount   = 0
+    
   END TYPE
   
 !</typeblock>
@@ -1269,8 +1279,28 @@ MODULE linearsolver
   
   TYPE t_linsolSubnodeMultigrid
   
-    ! INPUT PARAMETER: Cycle identifier. 0=F-cycle, 1=V-cycle, 2=W-cycle
+    ! INPUT PARAMETER: Cycle identifier. 
+    !  0=F-cycle, 
+    !  1=V-cycle, 
+    !  2=W-cycle.
     INTEGER                       :: icycle                   = 0
+    
+    ! INPUT PARAMETER: Adaptive cycle convergence criterion for coarse levels.
+    ! This value is usually =1E99_DP which deactivates adaptive cycles.
+    ! The user can set this variable on initialisation of Multigrid to
+    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all 
+    ! levels except for the fine grid is repeated until
+    !  |res. after postsmoothing| < depsRelCycle * |initial res on that level|.
+    ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
+    ! level before prolongating the solution to the fine grid.
+    ! This is an extension to the usual F/V/W-cycle scheme.
+    REAL(DP)                      :: depsRelCycle             = 1E99_DP
+    
+    ! INPUT PARAMETER: If adaptive cycles are activated by depsRelCycle < 1E99_DP,
+    ! this configures the maximum number of cycles that are performed.
+    ! The value =-1 deactivates this upper bouns, so coarse grid cycles are
+    ! repeated until the convergence criterion given by depsRelCycle is reached.
+    INTEGER                       :: nmaxAdaptiveCycles       = -1
     
     ! INPUT PARAMETER: Number of levels in the linked list of multigrid levels
     INTEGER                       :: nlevels                  = 0
@@ -11071,17 +11101,30 @@ CONTAINS
                 ! Choose zero as initial vector on lower level. 
                 CALL lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
                 
-                ! Extended output
-                IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
-                    (MOD(ite,niteResOutput).EQ.0)) THEN
-                    
+                ! Extended output and/or adaptive cycles
+                IF ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) .OR.&
+                    (rsolverNode%ioutputLevel .GE. 3)) THEN
+                
                   dres = lsysbl_vectorNorm (p_rlowerLevel%rrhsVector,&
                       rsolverNode%iresNorm)
                   IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                             (dres .LE. 1E99_DP))) dres = 0.0_DP
                             
-                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
-                      ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+                  ! In case adaptive cycles are activated, save the 'initial' residual
+                  ! of that level into the level structure. Then we can later check
+                  ! if we have to repeat the cycle on the coarse mesh.
+                  IF (rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) THEN
+                    p_rlowerLevel%dinitResCycle = dres
+                    p_rlowerLevel%icycleCount = 1
+                  END IF
+                         
+                  ! If the output level is high enough, print that residuum norm.   
+                  IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                      (MOD(ite,niteResOutput).EQ.0)) THEN
+                    CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
+                        ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+                  END IF
+                  
                 END IF
 
               ELSE
@@ -11288,11 +11331,62 @@ CONTAINS
                 IF (p_rsubnode%icycle .EQ. 0) THEN
                   p_rcurrentLevel%ncyclesRemaining = 1
                 ELSE
+                  ! Cycle finished. Reset counter for next cycle.
                   p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
+
+                  IF ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) .AND. &
+                      ASSOCIATED(p_rcurrentLevel%p_rnextLevel)) THEN
+                      
+                    ! Adaptive cycles activated. 
+                    !
+                    ! We are on a level < nlmax.
+                    ! At first, calculate the residuum on that level.
+                    CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
+                                            p_rcurrentLevel%rtempVector)
+                    CALL lsysbl_blockMatVec (&
+                        p_rcurrentLevel%rsystemMatrix, &
+                        p_rcurrentLevel%rsolutionVector,&
+                        p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+
+                    dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                        rsolverNode%iresNorm)
+                    IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                              (dres .LE. 1E99_DP))) dres = 0.0_DP
+                              
+                    ! Compare it with the initial residuum. If it's not small enough
+                    ! and if we haven't reached the maximum number of cycles,
+                    ! repeat the complete cycle.
+                    IF ( ((rsolverNode%p_rsubnodeMultigrid%nmaxAdaptiveCycles .LE. -1) &
+                          .OR. &
+                          (p_rcurrentLevel%icycleCount .LT. &
+                           rsolverNode%p_rsubnodeMultigrid%nmaxAdaptiveCycles)) &
+                        .AND. &
+                        (dres .GT. rsolverNode%p_rsubnodeMultigrid%depsRelCycle * &
+                                    p_rcurrentLevel%dinitResCycle) ) THEN
+
+                      IF (rsolverNode%ioutputLevel .GE. 3) THEN
+                        CALL output_line ( &
+                          TRIM( &
+                          sys_siL(p_rcurrentLevel%icycleCount,10)) &
+                          //'''th repetition of cycle on level '// &
+                          TRIM(sys_siL(ilev,5))//'.')
+                      END IF
+
+                      p_rcurrentLevel%icycleCount = p_rcurrentLevel%icycleCount+1
+                      CYCLE cycleloop
+                    END IF
+                    
+                    ! Otherwise: The cycle(s) is/are finished; 
+                    ! the END DO goes up one level.
+                    
+                  END IF
+
                 END IF
               ELSE
+
                 ! Next cycle; go down starting from the current level
                 CYCLE cycleloop
+
               END IF
               
             END DO ! ilev < nlmax
