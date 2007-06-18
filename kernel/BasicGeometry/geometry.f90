@@ -22,28 +22,35 @@
 !#  4.) geom_init_rectangle
 !#      -> Creates a 2D rectangle object.
 !#
-!#  5.) geom_moveto
+!#  5.) geom_init_polygon
+!#      -> Creates a 2D polygon object.
+!#
+!#  6.) geom_moveto
 !#      -> Moves the origin of a 2D/3D object to a specified point.
 !#
-!#  6.) geom_rotate2D
+!#  7.) geom_rotate2D
 !#      -> Overwrites the rotation and scaling factor of a 2D object.
 !#
-!#  7.) geom_isInGeometry
+!#  8.) geom_isInGeometry
 !#      -> Checks whether a given point is inside a geometry object.
 !#
-!#  8.) geom_isInGeometryArray
+!#  9.) geom_isInGeometryArray
 !#      -> Checks whether an array of given points is inside a geometry object.
 !#
-!#  9.) geom_projectToBoundary
+!# 10.) geom_projectToBoundary
 !#      -> Projects a point onto the boundary of a geometry object.
 !#
-!# 10.) geom_calcSignedDistance
+!# 11.) geom_calcSignedDistance
 !#      -> Calculates the shortest signed distance between a given point
 !#         and a geometry object.
 !#
-!# 11.) geom_calcSignedDistanceArray
+!# 12.) geom_calcSignedDistanceArray
 !#      -> Calculates the shortest signed distance between an array of given
 !#         points and a geometry object.
+!#
+!# 13.) geom_polygonise
+!#      -> Converts a (non-composed) geometry object to a polygon and
+!#         optionally converts the vertices into world coordinates.
 !#
 !# </purpose>
 !##############################################################################
@@ -51,6 +58,7 @@
 MODULE geometry
 
   USE basicgeometry
+  USE storage
 
   IMPLICIT NONE
 
@@ -74,10 +82,22 @@ MODULE geometry
   INTEGER, PARAMETER :: GEOM_ELLIPSE   = 3
 
   ! Rectangle object
-  INTEGER, PARAMETER :: geom_rect = 4
+  INTEGER, PARAMETER :: GEOM_RECT      = 4
+
+  ! Polygon object
+  INTEGER, PARAMETER :: GEOM_POLYGON   = 10
 
 !</constantblock>
 
+!<constantblock description="Polygon type identifiers">
+
+  ! General polygon
+  INTEGER, PARAMETER :: GEOM_POLYGON_GENERAL = 0
+
+  ! Convex polygon
+  INTEGER, PARAMETER :: GEOM_POLYGON_CONVEX  = 1
+
+!</constantblock>
 ! *****************************************************************************
 ! *****************************************************************************
 ! *****************************************************************************
@@ -161,6 +181,23 @@ MODULE geometry
 
 !<typeblock>
 
+  ! This structure realises the subnode for the polygon object.
+  TYPE t_geometryPolygon
+
+    ! Polygon type. One of the GEOM_POLYGON_XXXX constants defined above.
+    INTEGER :: npolyType
+
+    ! Polygon vertices
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+
+  END TYPE
+
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+
   ! Geometry object structure for 2D and 3D geometry objects.
   TYPE t_geometryObject
 
@@ -200,6 +237,9 @@ MODULE geometry
     
     ! Structure for the rectangle object
     TYPE(t_geometryRectangle)  :: rrectangle
+
+    ! Structure for the polygon object
+    TYPE(t_geometryPolygon)    :: rpolygon
     
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 3D object subnodes -
@@ -229,6 +269,11 @@ MODULE geometry
   INTERFACE geom_init_rectangle
     MODULE PROCEDURE geom_init_rectangle_indirect
     MODULE PROCEDURE geom_init_rectangle_direct
+  END INTERFACE
+
+  INTERFACE geom_init_polygon
+    MODULE PROCEDURE geom_init_polygon_indirect
+    MODULE PROCEDURE geom_init_polygon_direct
   END INTERFACE
   
 CONTAINS
@@ -293,6 +338,8 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+
+!<subroutine>
 
   SUBROUTINE geom_init_circle_direct(rgeomObject, dradius, Dorigin, &
                                      drotation, dscalingFactor, binverted)
@@ -423,6 +470,8 @@ CONTAINS
 
   ! ***************************************************************************
   
+!<subroutine>
+  
   SUBROUTINE geom_circle_prjToBoundary (rgeomObject, Dcoords, Dproj)
   
 !<description>
@@ -522,7 +571,75 @@ CONTAINS
     ! That's it
     
   END SUBROUTINE
+  
+  ! ***************************************************************************
+ 
+!<subroutine>
+  
+  SUBROUTINE geom_circle_polygonise (rgeomObject, hpolyHandle, &
+                                     ndesiredVerticeCount)
+  
+!<description>
+  ! This routine converts a circle to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+!</description>
 
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The desired number of vertices for the produced polygon.
+  ! Is only used for circles and ellipses, and is ignored for all other
+  ! geometry objects.
+  ! If not given, 32 vertices are generated.
+  INTEGER, INTENT(IN) :: ndesiredVerticeCount
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  INTEGER, INTENT(OUT) :: hpolyHandle
+  
+!</output>
+
+!</subroutine>
+
+  INTEGER :: i
+  
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  REAL(DP) :: dstep, dangle, dradius
+  
+  INTEGER(I32), DIMENSION(2) :: Isize
+  
+    ! Calculate angle step
+    dstep = (SYS_PI * 2.0_DP) / REAL(ndesiredVerticeCount, DP)
+    
+    ! Get radius
+    dradius = rgeomObject%rcircle%dradius
+  
+    ! Allocate desired number of vertices
+    Isize = (/ 2, ndesiredVerticeCount /)
+    CALL storage_new2D('geom_circle_polygonise', 'hpolyHandle', Isize, &
+                       ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
+
+    ! Get vertice array
+    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    
+    ! Set vertices
+    DO i=1, ndesiredVerticeCount
+    
+      ! Calculate angle
+      dangle = dstep * REAL(i, DP)
+      
+      ! Calculate vertice position
+      p_DVertices(1, i) = dradius * COS(dangle)
+      p_DVertices(2, i) = dradius * SIN(dangle)
+    
+    END DO
+
+  END SUBROUTINE
+  
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! *= 2D Square Routines                                                    =*
@@ -583,6 +700,8 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+  
+!<subroutine>
   
   SUBROUTINE geom_init_square_direct(rgeomObject, dlength, Dorigin,drotation, &
                                      dscalingFactor, binverted)
@@ -907,6 +1026,59 @@ CONTAINS
   END SUBROUTINE
   
   ! ***************************************************************************
+ 
+!<subroutine>
+  
+  SUBROUTINE geom_square_polygonise (rgeomObject, hpolyHandle)
+  
+!<description>
+  ! This routine converts a square to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  INTEGER, INTENT(OUT) :: hpolyHandle
+  
+!</output>
+
+!</subroutine>
+
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  REAL(DP) :: dedge
+
+  INTEGER(I32), DIMENSION(2), PARAMETER :: Isize = (/ 2, 4 /)  
+  
+    ! Get edge length
+    dedge = rgeomObject%rsquare%dlength * 0.5_DP
+  
+    ! Allocate desired number of vertices
+    CALL storage_new2D('geom_square_polygonise', 'hpolyHandle', Isize, &
+                       ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
+
+    ! Get vertice array
+    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    
+    ! Set coords
+    p_Dvertices(1,1) = -dedge
+    p_Dvertices(2,1) = dedge
+    p_Dvertices(1,2) = -dedge
+    p_Dvertices(2,2) = -dedge
+    p_Dvertices(1,3) = dedge
+    p_Dvertices(2,3) = -dedge
+    p_Dvertices(1,4) = dedge
+    p_Dvertices(2,4) = dedge
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! *= 2D Ellipse Routines                                                   =*
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -966,6 +1138,8 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+
+!<subroutine>
 
   SUBROUTINE geom_init_ellipse_direct(rgeomObject, Dradius, Dorigin, &
                                       drotation, dscalingFactor, binverted)
@@ -1137,7 +1311,7 @@ CONTAINS
   
   ! Some other temporary variables needed for the Newton iteration
   REAL(DP) :: dT, dF, dFDer, dXDivA, dYDivB, dradXSqr, dradYSqr, dprX, dprY
-  REAL(DP) :: dratio, dXDivASqr, dYDivBSqr, dASqr, dBSqr
+  REAL(DP) :: dratio, dXDivASqr, dYDivBSqr
   LOGICAL :: btranspose = .FALSE.
   INTEGER :: i
 
@@ -1418,6 +1592,74 @@ CONTAINS
     ! That's it
     
   END SUBROUTINE
+  
+  ! ***************************************************************************
+ 
+!<subroutine>
+  
+  SUBROUTINE geom_ellipse_polygonise (rgeomObject, hpolyHandle, &
+                                      ndesiredVerticeCount)
+  
+!<description>
+  ! This routine converts an ellipse to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The desired number of vertices for the produced polygon.
+  ! Is only used for circles and ellipses, and is ignored for all other
+  ! geometry objects.
+  INTEGER, INTENT(IN) :: ndesiredVerticeCount
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  INTEGER, INTENT(OUT) :: hpolyHandle
+  
+!</output>
+
+!</subroutine>
+
+  INTEGER :: i
+  
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  REAL(DP) :: dstep, dangle, dradiusX, dradiusY
+  
+  INTEGER(I32), DIMENSION(2) :: Isize
+  
+    ! Calculate angle step
+    dstep = (SYS_PI * 2.0_DP) / REAL(ndesiredVerticeCount, DP)
+    
+    ! Get radius
+    dradiusX = rgeomObject%rellipse%Dradius(1)
+    dradiusY = rgeomObject%rellipse%Dradius(2)
+  
+    ! Allocate desired number of vertices
+    Isize = (/ 2, ndesiredVerticeCount /)
+    CALL storage_new2D('geom_ellipse_polygonise', 'hpolyHandle', Isize, &
+                       ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
+
+    ! Get vertice array
+    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    
+    ! Set vertices
+    DO i=1, ndesiredVerticeCount
+    
+      ! Calculate angle
+      dangle = dstep * REAL(i, DP)
+      
+      ! Calculate vertice position
+      p_DVertices(1, i) = dradiusX * COS(dangle)
+      p_DVertices(2, i) = dradiusY * SIN(dangle)
+    
+    END DO
+
+  END SUBROUTINE
 
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -1479,6 +1721,9 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE geom_init_rectangle_direct(rgeomObject, Dlength, Dorigin, &
                                         drotation, dscalingFactor, binverted)
 
@@ -1570,9 +1815,6 @@ CONTAINS
 
 !</subroutine>
 
-  ! We need one local variable for distance calculation
-  REAL(DP) :: ddistance
-  
   ! And an array for the transformed X- and Y-coordinates of our point
   REAL(DP), DIMENSION(2) :: DrelCoords
 
@@ -1773,7 +2015,720 @@ CONTAINS
   END SUBROUTINE
   
   ! ***************************************************************************
+ 
+!<subroutine>
+  
+  SUBROUTINE geom_rect_polygonise (rgeomObject, hpolyHandle)
+  
+!<description>
+  ! This routine converts a rectangle to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  INTEGER, INTENT(OUT) :: hpolyHandle
+  
+!</output>
+
+!</subroutine>
+
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  REAL(DP) :: dedgeX, dedgeY
+  
+  INTEGER(I32), DIMENSION(2), PARAMETER :: Isize = (/ 2, 4 /)
+  
+    ! Get edge lengths
+    dedgeX = rgeomObject%rrectangle%Dlength(1) * 0.5_DP
+    dedgeY = rgeomObject%rrectangle%Dlength(2) * 0.5_DP
+  
+    ! Allocate desired number of vertices
+    CALL storage_new2D('geom_rect_polygonise', 'hpolyHandle', Isize, &
+                       ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
+
+    ! Get vertice array
+    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    
+    ! Set coords
+    p_Dvertices(1,1) = -dedgeX
+    p_Dvertices(2,1) = dedgeY
+    p_Dvertices(1,2) = -dedgeX
+    p_Dvertices(2,2) = -dedgeY
+    p_Dvertices(1,3) = dedgeX
+    p_Dvertices(2,3) = -dedgeY
+    p_Dvertices(1,4) = dedgeX
+    p_Dvertices(2,4) = dedgeY
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! *= 2D Polygon Routines                                                   =*
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! ***************************************************************************
+    
+!<subroutine>
+
+  SUBROUTINE geom_init_polygon_indirect(rgeomObject, rcoordSys, Dvertices, &
+                                        npolyType, binverted)
+
+!<description>
+  ! Creates a t_geometryObject representing a 2D polygon.
+!</description>
+
+!<input>
+  ! A 2D coordinate system for the polygon.
+  TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
+  
+  ! An 2D array for the vertices of the polygon
+  REAL(DP), DIMENSION(:,:), TARGET, INTENT(IN)     :: Dvertices
+  
+  ! OPTIONAL: One of the GEOM_POLYGON_XXXX constants.
+  ! Is set to GEOM_POLYGON_GENERAL if not given.
+  INTEGER, OPTIONAL, INTENT(IN)            :: npolyType
+  
+  ! OPTIONAL: A boolean telling us whether the object is inverted.
+  ! Is set to .FALSE. if not given.
+  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+
+!</input>  
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+    ! The dimension is 2D.
+    rgeomObject%ndimension = NDIM2D
+    
+    ! We want a polygon.
+    rgeomObject%ctype = GEOM_POLYGON
+    
+    ! Store the coordinate system.
+    rgeomObject%rcoord2D = rcoordSys
+    
+    ! Is our object inverted?
+    IF (PRESENT(binverted)) THEN
+      rgeomObject%binverted = binverted
+    ELSE
+      rgeomObject%binverted = .FALSE.
+    END IF
+    
+    ! Store the vertices of the polygon
+    rgeomObject%rpolygon%p_Dvertices => Dvertices
+    
+    ! Store the polygon type
+    IF (PRESENT(npolyType)) THEN
+      rgeomObject%rpolygon%npolyType = npolyType
+    ELSE
+      rgeomObject%rpolygon%npolyType = GEOM_POLYGON_GENERAL
+    END IF
+    
+    ! That's it!
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
       
+!<subroutine>
+
+  SUBROUTINE geom_init_polygon_direct(rgeomObject, Dvertices, npolyType, &
+                                      Dorigin, drotation, dscalingFactor, &
+                                      binverted)
+
+!<description>
+  ! Creates a t_geometryObject representing a 2D polygon.
+!</description>
+
+!<input>
+  ! An 2D array for the vertices of the polygon
+  REAL(DP), DIMENSION(:,:), TARGET, INTENT(IN)     :: Dvertices
+  
+  ! OPTIONAL: One of the GEOM_POLYGON_XXXX constants.
+  ! Is set to GEOM_POLYGON_GENERAL if not given.
+  INTEGER, OPTIONAL, INTENT(IN)            :: npolyType
+  
+  ! OPTIONAL: The origin of the polygon.
+  ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
+  REAL(DP), DIMENSION(:), OPTIONAL,  INTENT(IN)  :: Dorigin
+  
+  ! OPTIONAL: The rotation of the polygon.
+  ! Is set to 0.0_DP if not given.
+  REAL(DP), OPTIONAL,                INTENT(IN)  :: drotation
+  
+  ! OPTIONAL: The scaling factor of the polygon.
+  ! Is set to 1.0_DP if not given.
+  REAL(DP), OPTIONAL,                INTENT(IN)  :: dscalingFactor
+  
+  ! OPTIONAL: A boolean telling us whether the object is inverted.
+  ! Is set to .FALSE. if not given.
+  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+
+!</input>  
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+    ! The dimension is 2D.
+    rgeomObject%ndimension = NDIM2D
+    
+    ! We want a polygon.
+    rgeomObject%ctype = GEOM_POLYGON
+    
+    ! Now we need to create the coordinate system.
+    CALL bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
+                               dscalingFactor)
+    
+    ! Is our object inverted?
+    IF (PRESENT(binverted)) THEN
+      rgeomObject%binverted = binverted
+    ELSE
+      rgeomObject%binverted = .FALSE.
+    END IF
+    
+    ! Store the vertices of the polygon
+    rgeomObject%rpolygon%p_Dvertices => Dvertices
+    
+    ! Store the polygon type
+    IF (PRESENT(npolyType)) THEN
+      rgeomObject%rpolygon%npolyType = npolyType
+    ELSE
+      rgeomObject%rpolygon%npolyType = GEOM_POLYGON_GENERAL
+    END IF
+    
+    ! That's it!
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  SUBROUTINE geom_polygon_isInGeometry (rgeomObject, Dcoords, iisInObject)
+
+!<description>
+  ! This routine checks whether a given point is inside the polygon or not.
+  !
+  ! This routine calls the geom_polygon_iIG_convex routine if the polygon
+  ! type is set to GEOM_POLYGON_CONVEX, otherwise it calls the 
+  ! geom_polygon_projector method.
+  !
+  ! iisInObject is set to 0 if the point is outside the polygon, it is set
+  ! to 1 if it is inside the polygon and is set to -1 if the point is inside
+  ! the polygon and the polygon is inverted.
+!</description>
+
+!<input>
+  ! The polygon against that the point is to be tested.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An integer for the return value.
+  INTEGER(I32),           INTENT(OUT) :: iisInObject
+!</output>
+
+!</subroutine>
+  
+  ! The output of the projector routine
+  LOGICAL :: bisInObject
+  ! 2 Dummys for the projector routine
+  REAL(DP) :: ddummy1
+  REAL(DP), DIMENSION(2) :: Ddummy2
+
+    SELECT CASE (rgeomObject%rpolygon%npolyType)
+    CASE (GEOM_POLYGON_CONVEX)
+      ! Special Case: Convex Polygon
+      CALL geom_polygon_iIG_convex(rgeomObject, Dcoords, iisInObject)
+    CASE DEFAULT
+      ! Call Projector
+      CALL geom_polygon_projector(rgeomObject, Dcoords, Ddummy2, ddummy1, &
+                                  bisInObject)
+      IF (bisInObject) THEN
+        IF (rgeomObject%binverted) THEN
+          iisInObject = -1
+        ELSE
+          iisInObject = 1
+        END IF
+      ELSE
+        iisInObject = 0
+      END IF
+    END SELECT
+    
+  
+    ! That's it
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  SUBROUTINE geom_polygon_iIG_convex (rgeomObject, Dcoords, iisInObject)
+
+!<description>
+  ! This routine checks whether a given point is inside the convex (!) polygon
+  ! or not.
+  !
+  ! iisInObject is set to 0 if the point is outside the polygon, it is set
+  ! to 1 if it is inside the polygon and is set to -1 if the point is inside
+  ! the polygon and the polygon is inverted.
+!</description>
+
+!<input>
+  ! The polygon against that the point is to be tested.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An integer for the return value.
+  INTEGER(I32),           INTENT(OUT) :: iisInObject
+!</output>
+
+!</subroutine>
+
+  ! A pointer to the vertex array
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+
+  ! The lower and upper bounds of our vertice array
+  INTEGER:: lb, ub, i
+  
+  ! The point in the reference coordinate system and 2 temporary vectors:
+  ! an edge and a ray
+  REAL(DP), DIMENSION(2) :: DcoordsRef, Dedge, Dray
+  
+    ! Let's assume that the point is outside the polygon
+    iisInObject = 0
+  
+    ! First we're going to transform the point into the local reference
+    ! coordinate system
+    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+  
+    ! Get our vertice array
+    p_Dvertices => rgeomObject%rpolygon%p_Dvertices
+  
+    ! Get the bounds of our vector array
+    lb = LBOUND(p_Dvertices, 2)
+    ub = UBOUND(p_Dvertices, 2)
+    
+    ! Once again, we will use a fancy trick to find out whether a point is
+    ! inside a convex polygon or not.
+    ! The trick is simple:
+    ! Since we know that the edges of our polygon are given in counter-
+    ! clockwise direction, we will simply loop through all edges of the polygon
+    ! and calculate the scalar product of the edge and a ray vector.
+    ! The ray vector is the clockwise normal vector of the vector from the
+    ! edge's start-vertice to the point that is to be checked (transformed into
+    ! the polygon's local coordinate system, of course).
+    ! If all the scalar products of all edges and their corresponding ray
+    ! vectors are non-negative, then the point is inside the polygon.
+    
+    
+    ! Loop through the first n-1 edges of our polygon
+    DO i=lb, ub-1
+    
+      ! Calculate edge vector
+      Dedge = p_Dvertices(1:2,i+1) - p_Dvertices(1:2,i)
+      
+      ! Calculate ray vector
+      Dray = DcoordsRef - p_Dvertices(1:2, i)
+      
+      ! Calculate scalar product of ray vector's normal and the edge
+      IF (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .LT. 0.0_DP) THEN
+        
+        ! The point is outside
+        RETURN
+        
+      END IF
+    
+    END DO
+    
+    ! Check last edge
+    Dedge = p_Dvertices(1:2,lb) - p_Dvertices(1:2,ub)
+      
+    ! Calculate ray vector
+    Dray = DcoordsRef - p_Dvertices(1:2, ub)
+    
+    ! Calculate scalar product of ray vector's normal and the edge
+    IF (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .GE. 0.0_DP) THEN
+        
+      ! All scalar products are non-negative - so the point is inside the poly
+      ! Is our object inverted?
+      IF (rgeomObject%binverted) THEN
+        iisInObject = -1
+      
+      ELSE
+        iisInObject = 1
+        
+      END IF
+
+    END IF
+  
+    ! That's it
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  SUBROUTINE geom_polygon_projector (rgeomObject, Dcoords, Dproj, ddistance, &
+                                     bisInside)
+
+!<description>
+  ! This routine calculates the projection of a point onto a 2D polygon's
+  ! boundary.
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  ! The array must hold at least 2 entries for a 2D object, and at least 3
+  ! entries for a 3D object.
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! The coordinates of the boundary projection.
+  ! The array must hold at least 2 entries for a 2D object, and at least 3
+  ! entries for a 3D object.
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  
+  ! OPTIONAL: The distance between the given point and the projection.
+  ! Note: This distance is absolute, not signed!
+  REAL(DP), OPTIONAL, INTENT(OUT) :: ddistance
+  
+  ! OPTIONAL: A boolean deciding whether the point is inside or outside the
+  ! polygon.
+  LOGICAL, OPTIONAL, INTENT(OUT) :: bisInside
+  
+!</output>
+
+!</subroutine>
+
+  ! A pointer to the vertex array
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+
+  ! The lower and upper bounds of our vertice array
+  INTEGER :: lb, ub, i, iminVert, icurVert, iprev, inext
+  LOGICAL :: bminVert, bcurVert
+  
+  ! The point in the reference coordinate system and 5 temporary vectors:
+  ! two edges, two rays, and 2 vectors for the projection
+  REAL(DP), DIMENSION(2) :: DcoordsRef, Dedge, Dray1, Dray2
+  REAL(DP), DIMENSION(2) :: DprojMin, DprojCur
+  
+  ! The shortest squared distance from the point to the polygon's vertices
+  REAL(DP) :: ddistMin, ddistCur
+  REAL(DP) :: dalpha, dbeta, dgamma, ddelta
+  LOGICAL :: binsideMin, binsideCur
+  
+    ! First we're going to transform the point into the local reference
+    ! coordinate system
+    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+  
+    ! Get our vertice array
+    p_Dvertices => rgeomObject%rpolygon%p_Dvertices
+  
+    ! Get the bounds of our vector array
+    lb = LBOUND(p_Dvertices, 2)
+    ub = UBOUND(p_Dvertices, 2)
+    
+    ! Calculate the last edge
+    Dedge = p_Dvertices(1:2, lb) - p_Dvertices(1:2, ub)
+    
+    ! Calculate both rays
+    Dray1 = DcoordsRef - p_Dvertices(1:2, ub)
+    Dray2 = DcoordsRef - p_Dvertices(1:2, lb)
+    
+    ! Calculate (squared) vector lengths
+    dalpha = Dray1(1)**2 + Dray1(2)**2
+    dbeta = Dray2(1)**2 + Dray2(2)**2
+    dgamma = Dedge(1)**2 + Dedge(2)**2
+    
+    ! Calculate interpolation factor
+    ddelta = (dalpha - dbeta + dgamma) / (2.0_DP * dgamma)
+    
+    ! clip interpolation factor to [0, 1]
+    bminVert = .FALSE.
+    IF (ddelta .LE. 0.0_DP) THEN
+      ddelta = 0.0_DP
+      bminVert = .TRUE.
+      iminVert = ub
+    ELSE IF (ddelta .GE. 1.0_DP) THEN
+      ddelta = 1.0_DP
+      bminVert = .TRUE.
+      iminVert = lb
+    END IF
+    
+    ! Assume that this is the minimal projection
+    DprojMin = p_Dvertices(1:2, ub) + (ddelta * Dedge)
+    
+    ! abuse ray1 for the vector between the point and its projection
+    Dray1 = DcoordsRef - DprojMin
+    
+    ! calculate distance
+    ddistMin = Dray1(1)**2 + Dray1(2)**2
+    
+    ! Decide whether the point is inside or outside the polygon in
+    ! respect to this edge
+    binsideMin = (((Dray1(2) * Dedge(1)) - (Dray1(1) * Dedge(2))) &
+                  .GE. 0.0_DP)
+    
+    ! Now loop though all other edges
+    DO i = lb, ub-1
+      
+      ! Calculate i-th edge
+      Dedge = p_Dvertices(1:2, i+1) - p_Dvertices(1:2, i)
+      
+      ! Calculate both rays
+      Dray1 = Dray2
+      Dray2 = DcoordsRef - p_Dvertices(1:2, i+1)
+      
+      ! Calculate (squared) vector lengths
+      dalpha = Dray1(1)**2 + Dray1(2)**2
+      dbeta = Dray2(1)**2 + Dray2(2)**2
+      dgamma = Dedge(1)**2 + Dedge(2)**2
+        
+      ! Calculate interpolation factor
+      ddelta = (dalpha - dbeta + dgamma) / (2.0_DP * dgamma)
+        
+      ! clip interpolation factor to [0, 1]
+      bcurVert = .FALSE.
+      icurVert = 0
+      IF (ddelta .LE. 0.0_DP) THEN
+        ddelta = 0.0_DP
+        bcurVert = .TRUE.
+        icurVert = i
+      ELSE IF (ddelta .GE. 1.0_DP) THEN
+        ddelta = 1.0_DP
+        bcurVert = .TRUE.
+        icurVert = i+1
+      END IF
+        
+      ! Calculate current projection
+      DprojCur = p_Dvertices(1:2, i) + (ddelta * Dedge)
+        
+      ! abuse ray1 for the vector between the point and its projection
+      Dray1 = DcoordsRef - DprojCur
+        
+      ! calculate distance
+      ddistCur = Dray1(1)**2 + Dray1(2)**2
+
+      ! Decide whether the point is inside or outside the polygon in
+      ! respect to this edge
+      binsideCur = (((Dray1(2) * Dedge(1)) - (Dray1(1) * Dedge(2))) &
+                    .GE. 0.0_DP)
+      
+      ! Maybe the distance is minimal?
+      IF (ddistCur .LT. ddistMin) THEN
+      
+        ! Save the current projection as the minimal one
+        DprojMin = DprojCur
+        ddistMin = ddistCur
+        binsideMin = binsideCur
+        bminVert = bcurVert
+        iminVert = icurVert
+      
+      END IF
+      
+    END DO
+
+    ! Transform projection to world coordinates
+    CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, DprojMin, Dproj)
+    
+    IF (PRESENT(ddistance)) THEN
+      ddistance = SQRT(ddistMin) * rgeomObject%rcoord2D%dscalingFactor
+    END IF
+    
+    IF (PRESENT(bisInside)) THEN
+    
+      ! First we need to check if the projection is a vertice
+      IF (bminVert) THEN
+      
+        ! We now need to find out whether the projection vertice is convex or
+        ! (strictly) concav.
+        IF (iminVert .LT. ub) THEN
+          inext = iminVert + 1
+        ELSE
+          inext = lb
+        END IF
+        IF (iminVert .GT. lb) THEN
+          iprev = iminVert - 1
+        ELSE
+          iprev = ub
+        END IF 
+
+        Dray1 = p_Dvertices(1:2, iminVert) - p_Dvertices(1:2, iprev)
+        Dray2 = p_Dvertices(1:2, inext) - p_Dvertices(1:2, iminVert)
+        
+        ! Calculate the scalar product of both edges to find out whether the
+        ! vertice is convex.
+        dalpha = (Dray2(2) * Dray1(1)) - (Dray2(1) * Dray1(2))
+        
+        ! Calculate the scalar product of the ray and the 2 edges
+        Dedge = DcoordsRef - p_Dvertices(1:2, iminVert)
+        dbeta  = (Dedge(2) * Dray1(1)) - (Dedge(1) * Dray1(2))
+        dgamma = (Dedge(2) * Dray2(1)) - (Dedge(1) * Dray2(2))
+        
+        IF (dalpha .GE. 0.0_DP) THEN
+          ! The vertice is convex.
+          ! The point is inside the polygon if and only if both beta and gamma
+          ! are greater or equal to 0.
+          bisInside = (dbeta .GE. 0.0_DP) .AND. (dgamma .GE. 0.0_DP)
+        
+        ELSE
+          ! The vertice is stricly concav.
+          ! The point is outside the polygon if and only is both beta and gamma
+          ! are strictly less than 0.
+          bisInside = (dbeta .GE. 0.0_DP) .OR. (dgamma .GE. 0.0_DP)
+        
+        END IF
+      
+      ELSE
+        ! The projection is not a vertice.
+        bisInside = binsideMin
+      END IF
+    END IF
+  
+    ! That's it
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  SUBROUTINE geom_polygon_calcSignedDistance (rgeomObject, Dcoords, ddistance)
+
+!<description>
+  ! This routine calculates the signed distance of a given point and a polygon.
+  !
+  ! This routine is not a wrapper - it calls geom_polygon_prjToBoundary to get
+  ! a projection onto the boundary of the polygon and calculates the distance
+  ! to the projection.
+!</description>
+
+!<input>
+  ! The polygon against that the point is to be tested.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! The shortest signed distance between the point and the circle's boundary.
+  REAL(DP),               INTENT(OUT) :: ddistance
+!</output>
+
+!</subroutine>
+
+
+  ! The projection
+  REAL(DP), DIMENSION(2) :: Dproj
+  
+  ! Inside the polygon?
+  !INTEGER :: iisInside
+  LOGICAL :: bisInside
+  
+    ! Calculate projection
+    CALL geom_polygon_projector(rgeomObject, Dcoords, Dproj, ddistance, bisInside)
+    
+    !IF (iisInside .EQ. 1) THEN
+    IF (bisInside .AND. (.NOT. rgeomObject%binverted)) THEN
+      ddistance = -ddistance
+    END IF
+  
+    ! That's it
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+ 
+!<subroutine>
+  
+  SUBROUTINE geom_polygon_polygonise (rgeomObject, hpolyHandle)
+  
+!<description>
+  ! This routine converts a polygon to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+  ! This routine simply copies the vertices stored in the geometry object
+  ! into a new array of vertices without changing them.
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  INTEGER, INTENT(OUT) :: hpolyHandle
+  
+!</output>
+
+!</subroutine>
+
+  INTEGER :: i, inumVerts
+  
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  
+  INTEGER(I32), DIMENSION(2) :: Isize
+  
+    ! Get number of vertices
+    inumVerts = UBOUND(rgeomObject%rpolygon%p_Dvertices, 2)
+  
+    ! Allocate desired number of vertices
+    Isize = (/ 2, inumVerts /)
+    CALL storage_new2D('geom_polygon_polygonise', 'hpolyHandle', Isize, &
+                       ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
+
+    ! Get vertice array
+    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    
+    ! Copy all vertices
+    DO i=1, inumVerts
+
+      p_Dvertices(1, i) = rgeomObject%rpolygon%p_Dvertices(1, i)
+      p_Dvertices(2, i) = rgeomObject%rpolygon%p_Dvertices(2, i)
+    
+    END DO
+    
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
 !<subroutine>
   
   PURE SUBROUTINE geom_moveto(rgeomObject, DnewOrigin)
@@ -1911,8 +2866,10 @@ CONTAINS
       CALL geom_square_isInGeometry(rgeomObject, Dcoords, iisInObject)
     CASE (GEOM_ELLIPSE)
       CALL geom_ellipse_isInGeometry(rgeomObject, Dcoords, iisInObject)
-    CASE (geom_rect)
+    CASE (GEOM_RECT)
       CALL geom_rect_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    CASE (GEOM_POLYGON)
+      CALL geom_polygon_isInGeometry(rgeomObject, Dcoords, iisInObject)
     CASE DEFAULT
       iisInObject = 0
     END SELECT
@@ -2011,8 +2968,10 @@ CONTAINS
      CALL geom_square_prjToBoundary(rgeomObject, Dcoords, Dproj)
    CASE (GEOM_ELLIPSE)
      CALL geom_ellipse_prjToBoundary(rgeomObject, Dcoords, Dproj)
-   CASE (geom_rect)
+   CASE (GEOM_RECT)
      CALL geom_rect_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   CASE (GEOM_POLYGON)
+     CALL geom_polygon_projector(rgeomObject, Dcoords, Dproj)
    END SELECT
    
    ! That's it!
@@ -2064,8 +3023,10 @@ CONTAINS
      CALL geom_square_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    CASE (GEOM_ELLIPSE)
      CALL geom_ellipse_calcSignedDistance(rgeomObject, Dcoords, ddistance)
-   CASE (geom_rect)
+   CASE (GEOM_RECT)
      CALL geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   CASE (GEOM_POLYGON)
+     CALL geom_polygon_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    CASE DEFAULT
      ddistance = 0.0_DP
    END SELECT
@@ -2119,5 +3080,128 @@ CONTAINS
     ! That's it
    
  END SUBROUTINE
+
+  ! ***************************************************************************
+ 
+!<subroutine>
+  
+  SUBROUTINE geom_polygonise (rgeomObject, hpolyHandle, bconvertToWorld, &
+                              ndesiredVerticeCount)
+  
+!<description>
+  ! This routine converts a 2D geometry object to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+  !
+  ! This routine does not work for composed geometry objects and 3D objects,
+  ! and therefore it will set hpolyHandle to ST_NOHANDLE.
+  !
+  ! For all valid geometry objects this routine returns a handle to a 2D
+  ! double array holding the vertices of the polygon in world coordinates.
+  ! The caller of the routine is responsible for releasing the allocated
+  ! storage memory after using it.
+  !
+  ! Calling this routine for a polygon type geometry object with
+  ! bconvertToWorld = .FALSE. is quite senseless as the routine just copies
+  ! the polygons vertices into a new array.
+  !
+  ! This routine is (more or less) just a wrapper for the geom_XXXX_polygonise
+  ! routines.
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! OPTIONAL: Decides whether the coordinates of the polygon should be world
+  ! coordinates or coordinates relative to the geometry object's local
+  ! coordinate system. If not given, the coordinates are given in world
+  ! coordinates.
+  LOGICAL, OPTIONAL, INTENT(IN) :: bconvertToWorld
+  
+  ! OPTIONAL: The desired number of vertices for the generated polygon.
+  ! Is only used for circles and ellipses, and is ignored for all other
+  ! geometry objects.
+  ! If not given, 64 vertices are generated.
+  INTEGER, OPTIONAL, INTENT(IN) :: ndesiredVerticeCount
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  INTEGER, INTENT(OUT) :: hpolyHandle
+  
+!</output>
+
+!</subroutine>
+
+  ! Desired vertice count
+  INTEGER :: ndVC, i, ub, lb
+  
+  ! The polygon's vertices
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+  
+  ! A temporary vertice
+  REAL(DP), DIMENSION(1:2) :: Dtemp
+  
+    ! Check the optional parameter
+    IF (PRESENT(ndesiredVerticeCount)) THEN
+      IF (ndesiredVerticeCount .GE. 3) THEN
+        ndVC = ndesiredVerticeCount
+      ELSE
+        ndVC = 64
+      END IF
+    ELSE
+      ndVC = 64
+    END IF
+    
+    ! Set handle to ST_NOHANDLE
+    hpolyHandle = ST_NOHANDLE
+    
+    ! Call the corresponding subroutine of the geometry object
+    SELECT CASE(rgeomObject%ctype)
+    CASE (GEOM_CIRCLE)
+      CALL geom_circle_polygonise(rgeomObject, hpolyHandle, ndVC)
+    CASE (GEOM_ELLIPSE)
+      CALL geom_ellipse_polygonise(rgeomObject, hpolyHandle, ndVC)
+    CASE (GEOM_SQUARE)
+      CALL geom_square_polygonise(rgeomObject, hpolyHandle)
+    CASE (GEOM_RECT)
+      CALL geom_rect_polygonise(rgeomObject, hpolyHandle)
+    CASE (GEOM_POLYGON)
+      CALL geom_polygon_polygonise(rgeomObject, hpolyHandle)
+    END SELECT
+    
+    ! Maybe the subroutine failed?
+    IF (hpolyHandle .EQ. ST_NOHANDLE) THEN
+      RETURN
+    END IF
+    
+    ! Don't we need to convert them to world coordinates?
+    IF (PRESENT(bconvertToWorld)) THEN
+      IF (.NOT. bconvertToWorld) RETURN
+    END IF
+    
+    ! Get the vertices
+    CALL storage_getbase_double2D(hpolyHandle, p_Dvertices)
+    
+    ! Get bounds
+    ub = UBOUND(p_Dvertices, 2)
+    lb = LBOUND(p_Dvertices, 2)
+    
+    ! Go through all of them
+    DO i=lb, ub
+
+      ! Call transform routine
+      CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, p_Dvertices(1:2, i), &
+                                  Dtemp)
+      ! Copy back to buffer
+      p_Dvertices(1:2,i) = Dtemp
+
+    END DO
+    
+    ! That's it!
+  
+  END SUBROUTINE
 
 END MODULE
