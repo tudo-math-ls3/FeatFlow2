@@ -613,6 +613,15 @@ CONTAINS
 
     CALL parlst_getvalue_double (p_rsection, 'ddmpD', &
                                  rnonlinearIteration%DepsNL(5), 0.1_DP)
+
+    CALL parlst_getvalue_double (p_rsection, 'depsDualD', &
+                                 rnonlinearIteration%DepsNL(6), 0.1_DP)
+
+    CALL parlst_getvalue_double (p_rsection, 'depsDualDiv', &
+                                 rnonlinearIteration%DepsNL(7), 0.1_DP)
+
+    CALL parlst_getvalue_double (p_rsection, 'ddmpDualD', &
+                                 rnonlinearIteration%DepsNL(8), 0.1_DP)
                                  
     ! Store the regularisation parameter of the optimal control problem.
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&

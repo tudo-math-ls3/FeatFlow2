@@ -440,18 +440,38 @@ MODULE cc2dmediumm2nonlinearcore
     ! of the discretisation.
     TYPE(t_cccoreEquationOneLevel), DIMENSION(:), POINTER :: RcoreEquation => NULL()
     
-    ! Auxiliary variable: Saves the initial defect in the nonlinear iteration
-    REAL(DP), DIMENSION(2) :: DresidualInit = 0.0_DP
+    ! Auxiliary variable: Saves the initial defect in the nonlinear iteration.
+    ! DresidualInit(1) = velocity
+    ! DresidualInit(2) = pressure
+    ! DresidualInit(3) = total solution
+    ! DresidualInit(4) = velocity
+    ! DresidualInit(5) = dual pressure
+    ! DresidualInit(6) = total dual solution
+    REAL(DP), DIMENSION(10) :: DresidualInit = 0.0_DP
     
     ! Auxiliary variable: Saves the last defect in the nonlinear iteration
-    REAL(DP), DIMENSION(2) :: DresidualOld = 0.0_DP
+    ! DresidualOld(1) = velocity
+    ! DresidualOld(2) = pressure
+    ! DresidualOld(3) = total solution
+    ! DresidualOld(4) = velocity
+    ! DresidualOld(5) = dual pressure
+    ! DresidualOld(6) = total dual solution
+    REAL(DP), DIMENSION(10) :: DresidualOld = 0.0_DP
 
     ! Auxiliary variable: Norm of the relative change = norm of the 
     ! preconditioned residual in the nonlinear iteration
     REAL(DP), DIMENSION(3) :: DresidualCorr = 0.0_DP
     
-    ! Auxiliary variable: Convergence criteria of the nonlinear solver
-    REAL(DP), DIMENSION(5) :: DepsNL = 0.0_DP
+    ! Auxiliary variable: Convergence criteria of the nonlinear solver.
+    ! DepsNL(1)  = depsUR
+    ! DepsNL(2)  = depsPR
+    ! DepsNL(3)  = depsD
+    ! DepsNL(4)  = depsDiv
+    ! DepsNL(5)  = ddmpD
+    ! DepsNL(6)  = depsDualD
+    ! DepsNL(7)  = depsDualDiv
+    ! DepsNL(8)  = ddmpDualD
+    REAL(DP), DIMENSION(8) :: DepsNL = 0.0_DP
     
     ! Auxiliary variable: Last calculated damping parameter
     REAL(DP) :: domegaNL = 0.0_DP
@@ -2162,7 +2182,7 @@ CONTAINS
       TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
       
       ! DEBUG!!!
-      !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+      REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
       ! Rebuild the nonlinear-iteration structure from the collection
       CALL c2d2_restoreNonlinearLoop (rnonlinearIteration,p_rcollection)
@@ -2171,8 +2191,8 @@ CONTAINS
       CALL lsysbl_copyVector (rb,rd)
       
       ! DEBUG!!!
-      !CALL lsysbl_getbase_double (rx,p_Ddata)
-      !CALL lsysbl_getbase_double (rd,p_Ddata2)
+      CALL lsysbl_getbase_double (rx,p_Ddata)
+      CALL lsysbl_getbase_double (rd,p_Ddata2)
       
       CALL c2d2_assembleNonlinearDefect (rnonlinearIteration,rx,rd,&
           .TRUE.,.TRUE.,p_rcollection)      
@@ -2729,13 +2749,25 @@ CONTAINS
   !</output>
 
       ! local variables
-      REAL(DP), DIMENSION(3) :: Dresiduals,Dresiduals2
       REAL(DP) :: dresOld,drhoNL,ddelP,ddelU,dtmp,dresINIT
       REAL(DP) :: dresU,dresDIV,dres
-      REAL(DP) :: ddualresU,ddualresDIV,ddualres
+      REAL(DP) :: ddualresU,ddualresDIV,ddualRes,ddualResOld,ddualResINIT
       REAL(DP) :: depsD,depsDiv,depsUR,depsPR,depsRES
+      REAL(DP) :: depsDualD,depsDualDiv,depsDualRES
       INTEGER, DIMENSION(3) :: Cnorms
       TYPE(t_vectorBlock) :: rdualrx,rdualrb,rdualrd
+      
+      ! Temporal residuals.
+      ! Dresiduals(1) = velocity
+      ! Dresiduals(2) = pressure
+      ! Dresiduals(3) = total solution
+      ! Dresiduals(4) = dual velocity
+      ! Dresiduals(5) = dual pressure
+      ! Dresiduals(6) = total dual solution
+      REAL(DP), DIMENSION(10) :: Dresiduals
+      
+      ! DEBUG!!!
+      REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Db
 
       ! The nonlinear iteration structure
       TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
@@ -2746,22 +2778,24 @@ CONTAINS
 
       ! Calculate norms of the solution/defect vector.
       ! First those of the primal solution vector...
-      CALL c2d2_getDefectNorm (rx,rb,rd,Dresiduals)
+      CALL c2d2_getDefectNorm (rx,rb,rd,Dresiduals(1:2))
       Dresiduals(3) = SQRT(Dresiduals(1)**2 + Dresiduals(2)**2)
 
       ! Then those of the dual.
       CALL lsysbl_deriveSubvector(rx,rdualrx,4,6,.TRUE.)
       CALL lsysbl_deriveSubvector(rb,rdualrb,4,6,.TRUE.)
       CALL lsysbl_deriveSubvector(rd,rdualrd,4,6,.TRUE.)
-      CALL c2d2_getDefectNorm (rdualrx,rdualrb,rdualrd,Dresiduals2)
-      Dresiduals2(3) = SQRT(Dresiduals2(1)**2 + Dresiduals2(2)**2)
+      
+      ! DEBUG!!!
+      CALL lsysbl_getbase_double(rdualrx,p_Dx)
+      CALL lsysbl_getbase_double(rdualrb,p_Db)
+      
+      CALL c2d2_getDefectNorm (rdualrx,rdualrb,rdualrd,Dresiduals(4:5))
+      Dresiduals(6) = SQRT(Dresiduals(4)**2 + Dresiduals(5)**2)
       CALL lsysbl_releaseVector(rdualrx)
       CALL lsysbl_releaseVector(rdualrb)
       CALL lsysbl_releaseVector(rdualrd)
 
-      ! Replace the 'old' residual by the current one
-      rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
-      
       ! In the first iteration (initial defect), print the norm of the defect
       ! and save the norm of the initial residuum to the structure
       IF (ite .EQ. 0) THEN
@@ -2776,14 +2810,14 @@ CONTAINS
             TRIM(sys_sdEP(Dresiduals(1),9,2))//&
             TRIM(sys_sdEP(Dresiduals(2),9,2))//&
             TRIM(sys_sdEP(Dresiduals(3),9,2))//&
-            TRIM(sys_sdEP(Dresiduals2(1),9,2))//&
-            TRIM(sys_sdEP(Dresiduals2(2),9,2))//&
-            TRIM(sys_sdEP(Dresiduals2(3),9,2))&
+            TRIM(sys_sdEP(Dresiduals(4),9,2))//&
+            TRIM(sys_sdEP(Dresiduals(5),9,2))//&
+            TRIM(sys_sdEP(Dresiduals(6),9,2))&
             )
         CALL output_separator (OU_SEP_MINUS)     
 
-        rnonlinearIteration%DresidualInit (1:2) = Dresiduals(1:2)
-        rnonlinearIteration%DresidualOld (1:2) = Dresiduals(1:2)
+        rnonlinearIteration%DresidualInit (:) = Dresiduals(:)
+        rnonlinearIteration%DresidualOld (:) = Dresiduals(:)
 
         bconvergence = .FALSE.
         bdivergence = .FALSE.
@@ -2793,23 +2827,29 @@ CONTAINS
         ! test the convergence criteria.
       
         ! Old defect:
-        dresOld = SQRT(rnonlinearIteration%DresidualOld(1)**2 + &
-                       rnonlinearIteration%DresidualOld(2)**2)
+        dresOld = rnonlinearIteration%DresidualOld(3)
+        ddualResOld = rnonlinearIteration%DresidualOld(6)
                        
         ! Trick to avoid div/0.
         IF (dresOld .EQ. 0.0_DP) dresOld = 1.0_DP
+        IF (ddualResOld .EQ. 0.0_DP) ddualResOld = 1.0_DP
+
+        ! Replace the 'old' residual by the current one
+        rnonlinearIteration%DresidualOld(:) = Dresiduals(:)
         
         ! Nonlinear convergence rate
-        drhoNL = (Dresiduals(3)/dresOld) ** (1.0_DP/REAL(ite,DP))
+        
+        drhoNL = SQRT((Dresiduals(3)**2+Dresiduals(6)**2) / (dresOld**2+ddualresOld**2)) &
+                 ** (1.0_DP/REAL(ite,DP))
         
         ! Calculate norms of the solution/defect vector, calculated above
         dresU   = Dresiduals(1)
         dresDIV = Dresiduals(2)
-        dres    = SQRT(dresU**2 + dresDIV**2)
+        dres    = Dresiduals(3)
 
-        ddualresU   = Dresiduals2(1)
-        ddualresDIV = Dresiduals2(2)
-        ddualres    = SQRT(ddualresU**2 + ddualresDIV**2)
+        ddualresU   = Dresiduals(4)
+        ddualresDIV = Dresiduals(5)
+        ddualres    = Dresiduals(6)
         
         ! Calculate relative maximum changes 
         ! This simply calculates some postprocessing values of the relative
@@ -2848,13 +2888,14 @@ CONTAINS
         !        
         ! Get the stopping criteria from the parameters.
         ! Use the DepsNL data according to the initialisation above.
-        dresINIT = SQRT(rnonlinearIteration%DresidualInit(1)**2 + &
-                        rnonlinearIteration%DresidualInit(2)**2)
+        dresINIT = rnonlinearIteration%DresidualInit(3)
+        ddualResINIT = rnonlinearIteration%DresidualInit(6)
                         
         ! dresInit=0 may hardly occur -- except when we expect 'no flow'.
         ! But to prevent a check against "something<=0" in this case below,
         ! set dresInit to something <> 0.
         IF (dresINIT .EQ. 0.0_DP) dresINIT = 1.0_DP
+        IF (ddualResINIT .EQ. 0.0_DP) ddualResINIT = 1.0_DP
                         
         depsD   = rnonlinearIteration%DepsNL(1)
         depsDiv = rnonlinearIteration%DepsNL(2)
@@ -2862,14 +2903,21 @@ CONTAINS
         depsPR  = rnonlinearIteration%DepsNL(4)
         depsRES = rnonlinearIteration%DepsNL(5)*dresINIT
         
+        depsDualD   = rnonlinearIteration%DepsNL(6)
+        depsDualDiv = rnonlinearIteration%DepsNL(7)
+        depsDualRES = rnonlinearIteration%DepsNL(8)*ddualResINIT
+        
         ! All residual information calculated.
         ! Check for divergence; use a 'NOT' for better NaN handling.
-        bdivergence = .NOT. (dres/dresOld .LT. 1E2)
+        bdivergence = (.NOT. (dres/dresOld .LT. 1E2)) .OR. &
+                      (.NOT. (ddualres/ddualResOld .LT. 1E2)) 
         
         ! Check for convergence
         IF((ddelU .LE. depsUR).AND.(ddelP .LE. depsPR)   .AND. &
-           (dresU .LE. depsD) .AND.(depsDiv .LE. depsDiv).AND. &
-           (dres .LE. depsRES)) THEN
+           (dresU .LE. depsD) .AND.(dresDiv .LE. depsDiv).AND. &
+           (dres .LE. depsRES) .AND. &
+           (ddualResU .LE. depsDualD) .AND. (ddualResDiv .LE. depsDualDiv).AND. &
+           (ddualRes .LE. depsDualRES)) THEN
           bconvergence = .TRUE.
         ELSE
           bconvergence = .FALSE.

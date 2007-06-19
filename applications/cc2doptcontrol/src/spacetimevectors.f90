@@ -30,6 +30,12 @@
 !# 5.) sptivec_convertSupervectorToVector
 !#     -> Converts a global space-time vector to a usual block vector.
 !#
+!# 6.) sptivec_vectorLinearComb
+!#     -> Linear combination of two vectors
+!#
+!# 7.) sptivec_copyVector
+!#     -> Copy a vector to another
+!#
 !# </purpose>
 !##############################################################################
 
@@ -280,6 +286,7 @@ CONTAINS
   ! Performs a linear combination of space-time vectors: ry = cx * rx  +  cy * ry
 !</desctiprion>
 
+!<input>
   ! First source vector
   TYPE(t_spacetimeVector), INTENT(IN)   :: rx
   
@@ -327,6 +334,69 @@ CONTAINS
 
       CALL sptivec_setTimestepData (ry, i, ryBlock)
     END DO
+
+    ! Release temp memory    
+    CALL lsysbl_releaseVector (ryBlock)
+    CALL lsysbl_releaseVector (rxBlock)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sptivec_copyVector (rx,ry)
+
+!<description>
+  ! Copys a vector: ry := rx.
+!</desctiprion>
+
+!<input>
+  ! Source vector
+  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+!</input>
+
+!<inputoutput>
+  ! Destination vector
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: ry
+!</inputoutput>
+  
+!</subroutine>
+
+    INTEGER :: i
+    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
+    TYPE(t_vectorBlock) :: rxBlock,ryBlock
+    
+    IF (rx%NEQ .NE. ry%NEQ) THEN
+      PRINT *,'Space-time vectors have different size!'
+      STOP
+    END IF
+
+    IF (rx%ntimesteps .NE. ry%ntimesteps) THEN
+      PRINT *,'Space-time vectors have different number of timesteps!'
+      STOP
+    END IF
+    
+    Isize(1) = rx%NEQ
+
+    ! Allocate a 'little bit' of memory for the subvectors
+    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
+    CALL lsysbl_createVecBlockDirect (ryBlock,Isize,.FALSE.)
+
+    ! Loop through the substeps, load the data in, perform the linear combination
+    ! and write out again.
+    DO i=1,rx%ntimesteps
+      CALL sptivec_getTimestepData (rx, i, rxBlock)
+      CALL sptivec_getTimestepData (ry, i, ryBlock)
+      
+      CALL lsysbl_copyVector (rxBlock,ryBlock)
+
+      CALL sptivec_setTimestepData (ry, i, ryBlock)
+    END DO
+
+    ! Release temp memory    
+    CALL lsysbl_releaseVector (ryBlock)
+    CALL lsysbl_releaseVector (rxBlock)
 
   END SUBROUTINE
 

@@ -141,19 +141,19 @@ CONTAINS
 !</subroutine>
 
     TYPE(t_ccoptSpaceTimeDiscretisation) :: rsupermatrix
-    TYPE(t_spacetimeVector) :: rx,rd
+    TYPE(t_spacetimeVector) :: rx,rd,rb
     TYPE(t_vectorBlock) :: rtempVector
     INTEGER :: i
 
     ! Initialise the supersystem on the maximum level
     CALL c2d2_initParamsSupersystem (rproblem,1,rproblem%NLMAX,&
-        rsupermatrix, rx, rd)
+        rsupermatrix, rx, rb, rd)
         
     ! Allocate memory for the 3rd temp vector
     CALL lsysbl_createVecBlockIndirect (rrhsTmp,rtempVector,.FALSE.)
     
     ! Call the solver for the space/time coupled system. We only solve on level NLMAX.
-    CALL c2d2_solveSupersystem (rproblem, rsupermatrix, rx, rd, &
+    CALL c2d2_solveSupersystem (rproblem, rsupermatrix, rx, rb, rd, &
       rvectorTmp, rrhsTmp, rtempVector)
       
     ! Postprocessing of all solution vectors.
@@ -172,7 +172,7 @@ CONTAINS
     ! Release memory, finish.
     CALL lsysbl_releaseVector (rtempVector)
     
-    CALL c2d2_doneParamsSupersystem (rsupermatrix,rx,rd)
+    CALL c2d2_doneParamsSupersystem (rsupermatrix,rx,rb,rd)
 
   END SUBROUTINE
   
