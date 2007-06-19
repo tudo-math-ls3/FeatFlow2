@@ -22,25 +22,45 @@ nminIterations     = 1
 
 nmaxIterations     = 10 #0
 
+# ----------------------------------
+# error criteria for primal equation
+
 # (absolute) limit for U-defects, standard = 1.0E-5
 
-depsD              = 1.0E-5
+depsD              = 1E-12 1.0E-5
 
 # (absolute) limit for DIV-defects, standard = 1.0E-5
 
-depsDiv            = 1.0E-5
+depsDiv            = 1E-12 1.0E-5
 
 # limit for U-changes, standard = 1.0E-5
 
-depsUR             = 1.0E-5
+depsUR             = 1E-12 1.0E-5
 
 # limit for P-changes, standard = 1.0E-5
 
-depsPR             = 1.0E-5
+depsPR             = 1E-12 1.0E-5
 
 # (relative) limit for defect improvement
 
 dDampingD          = 1.0E-1
+
+# ----------------------------------
+# error criteria for dual equation
+
+# (absolute) limit for dual U-defects, standard = 1.0E-5
+
+depsDualD              = 1E-12 1.0E-5
+
+# (absolute) limit for dual DIV-defects, standard = 1.0E-5
+
+depsDualDiv            = 1E-12 1.0E-5
+
+# (relative) limit for defect improvement in dual equation
+
+dDampingDualD          = 1.0E-1
+
+# ----------------------------------
 
 # Output level of the nonlinear solver
 
