@@ -285,6 +285,7 @@ MODULE cc2dmediumm2nonlinearcore
   ! compatible with the preconditioner and more. It's more or less
   ! a collection if different flags.
   TYPE t_ccFinalAssemblyInfo
+  
     ! This flag is set to YES if the B matrices must be assembled
     ! transposedly. This may be necessary for special VANCA type smoothers
     ! if a linear solver is used as preconditioner.
@@ -2744,7 +2745,7 @@ CONTAINS
         
         ! Check for convergence
         IF((ddelU .LE. depsUR).AND.(ddelP .LE. depsPR)   .AND. &
-           (dresU .LE. depsD) .AND.(depsDiv .LE. depsDiv).AND. &
+           (dresU .LE. depsD) .AND.(dresDiv .LE. depsDiv).AND. &
            (dres .LE. depsRES)) THEN
           bconvergence = .TRUE.
         ELSE
