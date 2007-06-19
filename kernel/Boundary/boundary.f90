@@ -196,9 +196,6 @@ MODULE boundary
   
     PRIVATE 
 
-    ! number of fictitious boundary components
-    INTEGER :: iboundarycount_f = -1
-
     ! number of geometric boundary components
     INTEGER :: iboundarycount_g = -1
 
@@ -517,9 +514,6 @@ MODULE boundary
   ! Read NBCT - Number of boundary components
   READ (iunit,*) p_rboundary%iboundarycount_g
   
-  ! Fictitious boundary components not supported at the moment
-  p_rboundary%iboundarycount_f = 0
-  
   p_rboundary%iboundarycount = p_rboundary%iboundarycount_g
   
   ! Allocate an array containing handles. Each handle Each handle refers
@@ -816,7 +810,6 @@ MODULE boundary
   CALL storage_free (p_rboundary%h_IsegCount)
   CALL storage_free (p_rboundary%h_DmaxPar)
   
-  p_rboundary%iboundarycount_f = 0
   p_rboundary%iboundarycount_g = 0
   p_rboundary%iboundarycount = 0
 
@@ -1506,7 +1499,9 @@ MODULE boundary
   INTEGER, INTENT(IN) :: iboundCompIdx
   
   ! The parameter value of the point to be checked.
-  ! Must be in the range 0..max. par. value
+  ! Must be in the range 0..max. par. value.
+  ! The parametrisation type (0-1 or length parametrisation) must match 
+  ! the parametrisation in the boundary region rregion!
   REAL(DP), INTENT(IN) :: dparam
 !</input>
 

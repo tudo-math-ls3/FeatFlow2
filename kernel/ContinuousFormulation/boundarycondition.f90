@@ -97,21 +97,62 @@
 !#     -> Adds a general boundary condition for the real boundary to a 
 !#        boundary-condition object; normally used only internally.
 !#
-!# 4.) bcond_newDirichletBConRealBD
+!# 4.) bcond_getBCRegion
+!#     -> Finds the index of the first boundary condition region containing a point.
+!#
+!# 5.) bcond_newDirichletBConRealBD
 !#     -> Adds a Dirichlet boundary condition the real boundary to a 
 !#        boundary-condition object
 !#
-!# 5.) bcond_newPressureDropBConRealBD
+!# 6.) bcond_newPressureDropBConRealBD
 !#     -> Adds a pressure-drop boundary condition the real boundary to a 
 !#        boundary-condition object
 !#
-!# 6.) bcond_newSlipBConRealBD
+!# 7.) bcond_newSlipBConRealBD
 !#     -> Adds (nonlinear) slip boundary conditions on the real boundary
 !#        to a boundary-condition object
 !#
-!# 7.) bcond_newFeastMirrorBConRealBD
+!# 8.) bcond_newFeastMirrorBConRealBD
 !#     -> Adds a Dirichlet boundary condition the real boundary to a 
 !#        boundary-condition object
+!#
+!# Frequently asked questions -- internal hints
+!# --------------------------------------------
+!# 1.) I have a vector which is discrtised by $Q_1$ and I have a vertex IVT
+!#     where I want to get the boundary condition of. How to do that?
+!#
+!#  That is a very rare and tricky case, but it's possible (at least in 2D)!
+!#  Although it's not the very fastest method, as you have to access
+!#  multiple routines and structures, you can do like that:
+!#
+!#  Assume, you have your point IVT and you know it's on the boundary.
+!#  Then: Figure out the boundary component and the parameter value.
+!#  From this information, ask the boundary condition functions for the
+!#  boundary condition region. From here you can access the
+!#  boundary condition. It looks like that:
+!#
+!#  ! Assume, rvector is a block vector providing a discretisation
+!#  ! structure. Get the discretisation structure.
+!#  p_rblockDiscr => rvector%p_rblockDiscretisation
+!#
+!#  ! Get the position of a vertex on the boundary:
+!#  iboundaryNode = tria_searchBoundaryNode(IVT,...)
+!#
+!#  ! Get the corresponding boundary component and parameter value
+!#  iboundCompIdx = InodalProperty (IVT)
+!#  dparam = DvertexParameterValue(iboundaryNode)
+!#
+!#  ! Get the boundary condition region containing that point
+!#  iindexBC = bcond_getBCRegion (p_rblockDiscr%p_rboundaryConditions,&
+!#                                iboundCompIdx,dparam)
+!#
+!#  ! If you want to access the analytic version of the boundary conditions, 
+!#  ! access them via:
+!#  p_ranalyticBC => p_rblockDiscr%p_rboundaryConditions(iindexBC)
+!#
+!#  ! If you want to access the corresponding discretised version of the
+!#  ! boundary conditions, access them via:
+!#  p_rdiscrBC => rvector%p_rdiscreteBC%p_RdiscBCList(iindexBC)
 !#
 !# </purpose>
 !##############################################################################
@@ -577,6 +618,103 @@ CONTAINS
   END IF
   
   END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<function>
+
+  INTEGER FUNCTION bcond_getBCRegion (rboundaryConditions,&
+                                      iboundCompIdx,dparam,cparType,istartIndex)
+  
+!<description>
+  ! The tupel (iboundCompIdx,dparam) specifies a point on the real 2D boundary.
+  ! The routine tries to find the index of the first bonudary condition region
+  ! that contains this point. This index is returned in iindex.
+  ! Afterwards, the caller can access that boundary condition region
+  ! using rboundaryConditions%p_Rregions(iindexBC).
+!</description>
+
+!<input>
+  ! A structure containing all boundary condition regions on the real boundary.
+  TYPE(t_boundaryConditions), INTENT(INOUT), TARGET :: rboundaryConditions
+
+  ! The number of the boundary component of the point.
+  INTEGER, INTENT(IN) :: iboundCompIdx
+
+  ! The parameter value of the point to be checked.
+  REAL(DP), INTENT(IN) :: dparam
+  
+  ! OPTIONAL: Type of parametrisation to use.
+  ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+  INTEGER, INTENT(IN), OPTIONAL :: cparType
+
+  ! OPTIONAL: Start index in rboundaryConditions%p_Rregions(:) where to start
+  ! the search for the point identified by (iboundCompIndex,dparam).
+  ! If not specified, 1 is assumed, thus the routine will return the first
+  ! boundary condition region that contains the point.
+  ! If specified, the routine will search for the point in the boundary
+  ! condition regions rboundaryConditions%p_Rregions(istartIndex:).
+  ! This allows to skip some regions: E.g. if the caller assumes a point
+  ! to be in multiple regions and one region is found, the caller can
+  ! specify the number of the next region here where to continue the search.
+  INTEGER, INTENT(IN), OPTIONAL :: istartIndex
+!</input>
+
+!<result>
+  ! Number of the boundary region in rboundaryConditions%p_Rregions(:) that
+  ! contains the point.
+  ! =0 if no boundary condition region containing the point was found.
+!</result>
+
+!</function>
+
+    REAL(DP) :: dparValue
+    INTEGER :: cactParType, iindexBC
+    
+    cactParType = BDR_PAR_01
+    IF (PRESENT(cparType)) THEN
+      cactParType = cparType
+    END IF
+
+    ! Initialise iindexBC by istartIndex and use it as a counter.
+    iindexBC = 1
+    IF (PRESENT(istartIndex)) THEN
+      IF (istartIndex .GT. 0) THEN
+        iindexBC = istartIndex
+      END IF
+    END IF
+
+    ! Loop through the boundary condition regions    
+    DO WHILE (iindexBC .LE. rboundaryConditions%iregionCount) 
+    
+      ! Convert the parameter value to the correct parametrisation if necessary
+      dparValue = boundary_convertParameter(rboundaryConditions%p_rboundary, &
+          iboundCompIdx, dparam, &
+          rboundaryConditions%p_Rregions(iindexBC)%rboundaryRegion%cparType, &
+          cactParType)
+          
+      ! Check if it's inside of the region
+      SELECT CASE (rboundaryConditions%p_Rregions(iindexBC)%cbcRegionType)
+      CASE (BC_RTYPE_REAL,BC_RTYPE_FREE)
+
+        IF (boundary_isInRegion ( &
+            rboundaryConditions%p_Rregions(iindexBC)%rboundaryRegion,&
+            iboundCompIdx,dparValue)) THEN
+          ! Leave the subroutine. iindexBC has the index the caller is searching for.
+          bcond_getBCRegion = iindexBC
+          RETURN
+        END IF
+
+      END SELECT
+      
+      iindexBC = iindexBC+1
+      
+    END DO
+              
+    ! No region was found. Return 0.
+    bcond_getBCRegion = 0
+
+  END FUNCTION
 
   ! ***************************************************************************
   
