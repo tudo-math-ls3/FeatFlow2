@@ -9440,7 +9440,7 @@ CONTAINS
       h_Ddata = ry%h_Ddata
       cdataType = ry%cdataType
       bisCopy = ry%bisCopy
-      ioffset = rx%iidxFirstEntry
+      ioffset = ry%iidxFirstEntry
       
       ! Then transfer all structural information of rx to ry.
       ! This automatically makes both vectors compatible to each other.
