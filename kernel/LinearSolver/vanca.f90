@@ -6299,8 +6299,9 @@ CONTAINS
               STOP
             END IF
           ELSE
-            IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
-                .EQ. 0) THEN
+            IF ((i .NE. j) .AND. &
+                (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
+                 .EQ. 0)) THEN
               CALL output_line ('B1/B2 submatrices must be virtually',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
               CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
@@ -6856,7 +6857,7 @@ CONTAINS
     p_DM => rvanca%p_DM
     
     ! Diagonal submatrices A33 and A66 (if they exist)
-    IF (rvanca%Dmultipliers(6,6) .NE. 0.0_DP) THEN
+    IF (rvanca%Dmultipliers(3,3) .NE. 0.0_DP) THEN
       p_Da33 => rvanca%p_DA33
       p_KdiagonalA33 => rvanca%p_KdiagonalA33
     ELSE
@@ -7191,7 +7192,7 @@ CONTAINS
           !
           ! IEL is the pressure DOF which we have to tackle.
           
-          daux = rvanca%Dmultipliers(6,6)
+          daux = rvanca%Dmultipliers(3,3)
           FF(1+lofsp) = FF(1+lofsp) &
                       - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
           AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
@@ -7237,14 +7238,14 @@ CONTAINS
           J = p_KcolB(ib)
           
           ! primal equation
-          daux = p_Dvector(j+ioffsetp)
-          FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux
-          FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
+          daux = p_Dvector(j+ioffsetp) 
+          FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanca%Dmultipliers(1,3)
+          FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanca%Dmultipliers(2,3)
 
           ! dual equation
           daux2 = p_Dvector(j+ioffsetxi)
-          FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2
-          FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2
+          FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2 * rvanca%Dmultipliers(4,6)
+          FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanca%Dmultipliers(5,6)
           
           ! Don't incorporate the B-matrices into AA yet; this will come later!
         END DO
@@ -7339,22 +7340,22 @@ CONTAINS
             
             ! Get the entries in the B-matrices.
             ! Primal equation
-            AA(inode+lofsu,1+lofsp) = p_DB1(ib)
-            AA(inode+lofsv,1+lofsp) = p_DB2(ib)
+            AA(inode+lofsu,1+lofsp) = p_DB1(ib) * rvanca%Dmultipliers(1,3)
+            AA(inode+lofsv,1+lofsp) = p_DB2(ib) * rvanca%Dmultipliers(2,3)
 
             ! The same way, get DD1 and DD2.
             ! Note that DDi has exacty the same matrix structrure as BBi and is noted
             ! as 'transposed matrix' only because of the transposed-flag.
             ! So we can use "ib" as index here to access the entry of DDi:
-            AA(1+lofsp,inode+lofsu) = p_DD1(ib)
-            AA(1+lofsp,inode+lofsv) = p_DD2(ib)
+            AA(1+lofsp,inode+lofsu) = p_DD1(ib) * rvanca%Dmultipliers(3,1)
+            AA(1+lofsp,inode+lofsv) = p_DD2(ib) * rvanca%Dmultipliers(3,2)
 
             ! The same for the dual equation
-            AA(inode+lofsl1,1+lofsxi) = p_DB1(ib)
-            AA(inode+lofsl2,1+lofsxi) = p_DB2(ib)
+            AA(inode+lofsl1,1+lofsxi) = p_DB1(ib) * rvanca%Dmultipliers(4,5)
+            AA(inode+lofsl2,1+lofsxi) = p_DB2(ib) * rvanca%Dmultipliers(4,6)
 
-            AA(1+lofsxi,inode+lofsl1) = p_DD1(ib)
-            AA(1+lofsxi,inode+lofsl2) = p_DD2(ib)
+            AA(1+lofsxi,inode+lofsl1) = p_DD1(ib) * rvanca%Dmultipliers(6,4)
+            AA(1+lofsxi,inode+lofsl2) = p_DD2(ib) * rvanca%Dmultipliers(6,5)
 
             ! Build the pressure entry in the local defect vector:
             !   f_i = (f_i-Aui) - D_i pi

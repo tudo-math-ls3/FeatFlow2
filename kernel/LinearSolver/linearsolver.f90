@@ -1428,7 +1428,8 @@ CONTAINS
   
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matricesCompatible (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matricesCompatible (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   
@@ -1450,6 +1451,18 @@ CONTAINS
   ! i.e. that the solver can handle them. If the matrices are not compatible,
   ! ccompatible is set to a LINSOL_COMP_xxxx-flag that identifies what's
   ! wrong with the matrices.
+  !
+  ! With the optional parameter CcompatibleDetail, the caller can get more
+  ! detailed information about the compatibility of the matrices.
+  ! For every level i, CcompatibleDetail(i) returns a LINSOL_COMP_xxxx
+  ! flag that tells whether the matrix on that level is compatible
+  ! or not.
+  ! Note that it is possible to create cases where this routine ALWAYS
+  ! fails, e.g. if two incompatible VANCA solvers are used as pre- and
+  ! postsmoother, resp., on one leve in multigrid! But at least if pre- and
+  ! postsmoother on each MG level are identical, this routine will
+  ! successfully determine (and return in CcompatibleDetail) if 
+  ! everything is ok.
   
 !</description>
   
@@ -1465,6 +1478,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+  
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -1475,51 +1493,52 @@ CONTAINS
   SELECT CASE(rsolverNode%calgorithm)
   CASE (LINSOL_ALG_VANCA)
     ! Ask VANCA if the matrices are ok.
-    CALL linsol_matCompatVANCA (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatVANCA (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_JACOBI)
     ! Ask Jacobi if the matrices are ok.
-    CALL linsol_matCompatJacobi (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatJacobi (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_JINWEITAM)
     ! Ask JWT if the matrices are ok.
-    CALL linsol_matCompatJinWeiTam (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatJinWeiTam (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_SOR)
     ! Ask SOR if the matrices are ok.
-    CALL linsol_matCompatSOR (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatSOR (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_SSOR)
     ! Ask SSOR if the matrices are ok.
-    CALL linsol_matCompatSSOR (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatSSOR (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_DEFCORR)
     ! Ask the defect correction and its subsolvers if the matrices are ok.
-    CALL linsol_matCompatDefCorr (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatDefCorr (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_UMFPACK4)
     ! Ask VANCA if the matrices are ok.
-    CALL linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
   
   CASE (LINSOL_ALG_CG)
     ! Ask CG and its subsolvers if the matrices are ok.
-    CALL linsol_matCompatCG (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatCG (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_BICGSTAB)
     ! Ask BiCGStab and its subsolvers if the matrices are ok.
-    CALL linsol_matCompatBiCGStab (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatBiCGStab (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_GMRES)
     ! Ask GMRES(m) and its subsolvers if the matrices are ok.
-    CALL linsol_matCompatGMRES (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatGMRES (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE (LINSOL_ALG_MULTIGRID)
     ! Ask Multigrid and its subsolvers if the matrices are ok.
-    CALL linsol_matCompatMultigrid (rsolverNode,Rmatrices,ccompatible)
+    CALL linsol_matCompatMultigrid (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
   CASE DEFAULT
     ! Nothing special. Let's assume that the matrices are ok.
     ccompatible = LINSOL_COMP_OK
+    CcompatibleDetail(:) = ccompatible
     
   END SELECT
 
@@ -2489,7 +2508,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatDefCorr (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatDefCorr (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -2510,6 +2530,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -2522,7 +2547,7 @@ CONTAINS
     
     IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
       CALL linsol_matricesCompatible (rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner,&
-          Rmatrices,ccompatible)
+          Rmatrices,ccompatible,CcompatibleDetail)
     END IF
     
   END SUBROUTINE
@@ -3185,7 +3210,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatJacobi (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatJacobi (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -3206,12 +3232,22 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
 
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
     
   END SUBROUTINE
   
@@ -3460,7 +3496,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatJinWeiTam (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatJinWeiTam (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -3481,6 +3518,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -3492,9 +3534,14 @@ CONTAINS
     !
     ! ... it's not scalar
     IF (Rmatrices(UBOUND(Rmatrices,1))%ndiagBlocks .NE. 1) THEN
-      ccompatible = LINSOL_COMP_OK
+      ccompatible = LINSOL_COMP_ERRNOTSCALAR
     END IF
 
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
+    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -3898,7 +3945,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatSOR (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatSOR (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -3919,12 +3967,22 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
 
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
     
   END SUBROUTINE
 
@@ -4166,7 +4224,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatSSOR (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatSSOR (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -4187,12 +4246,22 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+  
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
 
     ! Normally we are compatible.
     ccompatible = LINSOL_COMP_OK
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
     
   END SUBROUTINE
 
@@ -4540,7 +4609,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatVANCA (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatVANCA (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -4561,6 +4631,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -4602,6 +4677,11 @@ CONTAINS
         ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
       END IF
     END SELECT
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
     
   END SUBROUTINE
 
@@ -4993,7 +5073,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatUMFPACK4 (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -5014,12 +5095,22 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
 
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
+
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
 
   END SUBROUTINE
   
@@ -5629,7 +5720,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatMILUs1x1 (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatMILUs1x1 (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -5650,6 +5742,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -5660,6 +5757,11 @@ CONTAINS
     ! But we cannot handle it if it's not scalar!
     IF (Rmatrices(UBOUND(Rmatrices,1))%ndiagBlocks .NE. 1) &
       ccompatible = LINSOL_COMP_ERRNOTSCALAR
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
     
   END SUBROUTINE
   
@@ -6099,7 +6201,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatCG (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatCG (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -6120,6 +6223,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -6128,15 +6236,20 @@ CONTAINS
     ! everything.
     ccompatible = LINSOL_COMP_OK
 
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
+    
     ! Do we have a preconditioner given? If yes, call the matrix check
     ! routine on that.
     
     IF (ASSOCIATED(rsolverNode%p_rsubnodeCG%p_rpreconditioner)) THEN
       CALL linsol_matricesCompatible ( &
           rsolverNode%p_rsubnodeCG%p_rpreconditioner, &
-          Rmatrices,ccompatible)
+          Rmatrices,ccompatible,CcompatibleDetail)
     END IF
-    
+
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -6969,7 +7082,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatBiCGStab (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatBiCGStab (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -6990,6 +7104,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -6998,13 +7117,18 @@ CONTAINS
     ! everything.
     ccompatible = LINSOL_COMP_OK
 
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
+
     ! Do we have a preconditioner given? If yes, call the matrix check
     ! routine on that.
     
     IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
       CALL linsol_matricesCompatible ( &
           rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
-          Rmatrices,ccompatible)
+          Rmatrices,ccompatible,CcompatibleDetail)
     END IF
     
   END SUBROUTINE
@@ -8340,7 +8464,8 @@ CONTAINS
 
 !<subroutine>
 
-  RECURSIVE SUBROUTINE linsol_matCompatGMRES (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatGMRES (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -8361,6 +8486,11 @@ CONTAINS
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -8369,12 +8499,17 @@ CONTAINS
     ! everything.
     ccompatible = LINSOL_COMP_OK
 
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    IF (PRESENT(CcompatibleDetail)) &
+        CcompatibleDetail (UBOUND(CcompatibleDetail,1)) = ccompatible
+
     ! Do we have a preconditioner given? If yes, call the matrix check
     ! routine on that.
     IF (ASSOCIATED(rsolverNode%p_rsubnodeGMRES%p_rpreconditioner)) THEN
       CALL linsol_matricesCompatible ( &
           rsolverNode%p_rsubnodeGMRES%p_rpreconditioner, &
-          Rmatrices,ccompatible)
+          Rmatrices,ccompatible,CcompatibleDetail)
     END IF
     
   END SUBROUTINE
@@ -9904,7 +10039,8 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE linsol_matCompatMultigrid (rsolverNode,Rmatrices,ccompatible)
+  RECURSIVE SUBROUTINE linsol_matCompatMultigrid (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
   
 !<description>
   ! This routine is called to check if the matrices in Rmatrices are
@@ -9924,17 +10060,27 @@ CONTAINS
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  ! More precisely, ccompatible returns always the status of the highest
+  ! level where there is an error -- or LINSOL_COMP_OK if there is no error.
   INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
 !</output>
   
 !</subroutine>
 
     ! local variables
     TYPE(t_linsolMGLevelInfo), POINTER :: p_rcurrentLevel
-    INTEGER                       :: ilevel,nlmin
+    INTEGER                       :: ilevel,nlmin,ccompatLevel
     
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
+    
+    ! Reset all compatibility flags
+    IF (PRESENT(CcompatibleDetail)) CcompatibleDetail (:) = ccompatible    
 
     ! Make sure the solver node is configured for multigrid
     IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
@@ -9959,28 +10105,79 @@ CONTAINS
     p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
     nlmin  = LBOUND(Rmatrices,1)
     ilevel = LBOUND(Rmatrices,1)
+    
+    ! Loop through all levels
     DO WHILE(ASSOCIATED(p_rcurrentLevel))
+    
+      ! Compatibility flag for that level
+      ccompatLevel = LINSOL_COMP_OK
+    
+      ! Check presmoother
       IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
-        CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
-            Rmatrices(nlmin:ilevel),ccompatible)
-        IF (ccompatible .NE. LINSOL_COMP_OK) RETURN
+      
+        IF (PRESENT(CcompatibleDetail)) THEN
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
+              Rmatrices(nlmin:ilevel),ccompatLevel,CcompatibleDetail(nlmin:ilevel))
+        ELSE
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
+              Rmatrices(nlmin:ilevel),ccompatLevel)
+        END IF
+      
+        IF (ccompatLevel .NE. LINSOL_COMP_OK) THEN
+          ccompatible = ccompatLevel
+          p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
+          ilevel = ilevel + 1
+          CYCLE
+        END IF
+        
       END IF
+      
       ! Pre- and postsmoother may be identical!
       ! Take care not to initialise the same smoother twice!
       IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
           (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
                             p_rcurrentLevel%p_rpostSmoother))) THEN
-        CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
-            Rmatrices(nlmin:ilevel),ccompatible)
-        IF (ccompatible .NE. LINSOL_COMP_OK) RETURN
+        
+        IF (PRESENT(CcompatibleDetail)) THEN
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
+              Rmatrices(nlmin:ilevel),ccompatLevel,CcompatibleDetail(nlmin:ilevel))
+        ELSE
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
+              Rmatrices(nlmin:ilevel),ccompatLevel)
+        END IF
+        
+        IF (ccompatLevel .NE. LINSOL_COMP_OK) THEN
+          ccompatible = ccompatLevel
+          p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
+          ilevel = ilevel + 1
+          CYCLE
+        END IF
+        
       END IF
+      
+      ! Check coarse grid solver
       IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
-        CALL linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
-                                  Rmatrices(nlmin:ilevel),ccompatible)
-        IF (ccompatible .NE. LINSOL_COMP_OK) RETURN
+        
+        IF (PRESENT(CcompatibleDetail)) THEN
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
+              Rmatrices(nlmin:ilevel),ccompatLevel,CcompatibleDetail(nlmin:ilevel))
+        ELSE
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
+              Rmatrices(nlmin:ilevel),ccompatLevel)
+        END IF
+        
+        IF (ccompatLevel .NE. LINSOL_COMP_OK) THEN
+          ccompatible = ccompatLevel
+          p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
+          ilevel = ilevel + 1
+          CYCLE
+        END IF
+        
       END IF
+      
       p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel
       ilevel = ilevel + 1
+      
     END DO
     
   END SUBROUTINE
