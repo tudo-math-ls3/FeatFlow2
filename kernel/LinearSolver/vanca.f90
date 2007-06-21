@@ -7342,8 +7342,8 @@ CONTAINS
             AA(1+lofsp,inode+lofsv) = p_DD2(ib) * rvanca%Dmultipliers(3,2)
 
             ! The same for the dual equation
-            AA(inode+lofsl1,1+lofsxi) = p_DB1(ib) * rvanca%Dmultipliers(4,5)
-            AA(inode+lofsl2,1+lofsxi) = p_DB2(ib) * rvanca%Dmultipliers(4,6)
+            AA(inode+lofsl1,1+lofsxi) = p_DB1(ib) * rvanca%Dmultipliers(4,6)
+            AA(inode+lofsl2,1+lofsxi) = p_DB2(ib) * rvanca%Dmultipliers(5,6)
 
             AA(1+lofsxi,inode+lofsl1) = p_DD1(ib) * rvanca%Dmultipliers(6,4)
             AA(1+lofsxi,inode+lofsl2) = p_DD2(ib) * rvanca%Dmultipliers(6,5)
