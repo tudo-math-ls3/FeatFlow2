@@ -6323,23 +6323,6 @@ CONTAINS
             STOP
           END IF
 
-          ! We support scaled matrices only in the mass matrices and to disable 
-          ! a submatrix like A12 or A21 on the off-diagonal!
-          IF ((rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 0.0_DP) .AND. &
-              (ABS(j-i) .LE. 2)) THEN
-            CALL output_line ('Scaled matrices not supported.',&
-                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-            STOP
-          END IF
-          
-          IF ((i .eq. j) .AND. &
-              (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) ) THEN
-            CALL output_line ('Scaled matrices not supported.',&
-                OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-            STOP
-          END IF
-
         END IF ! neq != 0
       END DO
     END DO
@@ -7095,22 +7078,26 @@ CONTAINS
           J = p_KcolA11(ia)
           
           ! Primal equation:
-          FF(inode+lofsu) = FF(inode+lofsu)-p_DA11(ia)*p_Dvector(J+ioffsetu)
-          FF(inode+lofsv) = FF(inode+lofsv)-p_DA22(ia)*p_Dvector(J+ioffsetv)
+          FF(inode+lofsu) = FF(inode+lofsu) &
+                          - rvanca%Dmultipliers(1,1)*p_DA11(ia)*p_Dvector(J+ioffsetu)
+          FF(inode+lofsv) = FF(inode+lofsv) &
+                          - rvanca%Dmultipliers(2,2)*p_DA22(ia)*p_Dvector(J+ioffsetv)
 
           ! dual equation
-          FF(inode+lofsl1) = FF(inode+lofsl1)-p_DA44(ia)*p_Dvector(J+ioffsetl1)
-          FF(inode+lofsl2) = FF(inode+lofsl2)-p_DA55(ia)*p_Dvector(J+ioffsetl2)
+          FF(inode+lofsl1) = FF(inode+lofsl1) &
+                           - rvanca%Dmultipliers(4,4)*p_DA44(ia)*p_Dvector(J+ioffsetl1)
+          FF(inode+lofsl2) = FF(inode+lofsl2) &
+                           - rvanca%Dmultipliers(5,5)*p_DA55(ia)*p_Dvector(J+ioffsetl2)
           
           ! Whereever we find a DOF that couples to another DOF on the 
           ! same element, we put that to both A-blocks of our local matrix.
           DO k=1,nnvel
             IF (j .EQ. IdofGlobal(k)) THEN
-              AA (inode+lofsu,k+lofsu) = p_DA11(ia)
-              AA (inode+lofsv,k+lofsv) = p_DA22(ia)
+              AA (inode+lofsu,k+lofsu) = p_DA11(ia)*rvanca%Dmultipliers(1,1)
+              AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanca%Dmultipliers(2,2)
               
-              AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)
-              AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)
+              AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)*rvanca%Dmultipliers(4,4)
+              AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanca%Dmultipliers(5,5)
               EXIT
             END IF
           END DO          
@@ -7132,15 +7119,17 @@ CONTAINS
             !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
 
             J = p_KcolA12(ia)
-            FF(inode+lofsu) = FF(inode+lofsu)-p_DA12(ia)*p_Dvector(J+ioffsetv)
-            FF(inode+lofsv) = FF(inode+lofsv)-p_DA21(ia)*p_Dvector(J+ioffsetu)
+            FF(inode+lofsu) = FF(inode+lofsu) &
+                            - rvanca%Dmultipliers(1,2)*p_DA12(ia)*p_Dvector(J+ioffsetv)
+            FF(inode+lofsv) = FF(inode+lofsv) &
+                            - rvanca%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
             DO k=1,nnvel
               IF (j .EQ. IdofGlobal(k)) THEN
-                AA (inode+lofsu,k+lofsv) = p_DA12(ia)
-                AA (inode+lofsv,k+lofsu) = p_DA21(ia)
+                AA (inode+lofsu,k+lofsv) = p_DA12(ia)*rvanca%Dmultipliers(1,2)
+                AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanca%Dmultipliers(2,1)
                 EXIT
               END IF
             END DO          
@@ -7162,15 +7151,17 @@ CONTAINS
             !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
 
             J = p_KcolA45(ia)
-            FF(inode+lofsl1) = FF(inode+lofsl1)-p_DA45(ia)*p_Dvector(J+ioffsetl2)
-            FF(inode+lofsl2) = FF(inode+lofsl2)-p_DA54(ia)*p_Dvector(J+ioffsetl1)
+            FF(inode+lofsl1) = FF(inode+lofsl1) &
+                             - rvanca%Dmultipliers(4,5)*p_DA45(ia)*p_Dvector(J+ioffsetl2)
+            FF(inode+lofsl2) = FF(inode+lofsl2) &
+                             - rvanca%Dmultipliers(5,4)*p_DA54(ia)*p_Dvector(J+ioffsetl1)
             
             ! Whereever we find a DOF that couples to another DOF on the 
             ! same element, we put that to both A-blocks of our local matrix.
             DO k=1,nnvel
               IF (j .EQ. IdofGlobal(k)) THEN
-                AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)
-                AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)
+                AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)*rvanca%Dmultipliers(4,5)
+                AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanca%Dmultipliers(5,4)
                 EXIT
               END IF
             END DO          
