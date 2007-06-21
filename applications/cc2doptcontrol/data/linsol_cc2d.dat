@@ -31,7 +31,7 @@ nmaxIterations     = 5
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8 0.001
+depsRel            = 1E-12 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
@@ -46,7 +46,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 0
+ioutputLevel       = 1
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
@@ -66,7 +66,7 @@ icycle             = 0
 # =0: use constant 1.0 = standard for conforming elements.
 # =1: use energy minimisation = standard for Q1~/Q0 discretisation
 # =2: use defect minimisation
-ccorrectionTypeAlpha = 1
+ccorrectionTypeAlpha = 0
 
 # lower limit for optimal MG-ALPHA; 
 # controls damping of coarse grid correction; Standard=-10.0
@@ -195,7 +195,7 @@ isolverSubtype     = 21
 
 # Relaxation parameter
 
-domega             = 0.8
+domega             = 0.7
 
 
 # ========================================================================

@@ -137,9 +137,9 @@ bdExpressions(19) =
 #  0  4.0  3  1   'DirichletX'  'DirichletMY' 'DirichletDMX' 'DirichletDMY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
 
 # For nonstationary Stokes reference:
-bdComponent1(2)=
+bdComponent1(1)=
   0  4.0  3  1   'DirichletTX'  'DirichletTMY' 'DirichletDTMX' 'DirichletDTY'  # ]1.0,2.0[ : Neumann boundary = do-nothing
-  0  4.0  0  0                                                          # ]1.0,2.0[ : Neumann boundary = do-nothing
+#  0  4.0  0  0                                                          # ]1.0,2.0[ : Neumann boundary = do-nothing
 
 
 #bdComponent1(4)=

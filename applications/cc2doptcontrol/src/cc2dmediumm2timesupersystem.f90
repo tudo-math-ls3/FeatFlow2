@@ -2719,7 +2719,7 @@ CONTAINS
     ! Implement the initial condition into the RHS.
     CALL c2d2_implementInitCondRHS (rx, rb, rtempvectorX, rtempvector)    
 
-    ! NOw word with rd, our 'defect' vector
+    ! Now word with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
 
     ! Assemble the defect.
@@ -2730,7 +2730,7 @@ CONTAINS
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     CALL output_separator (OU_SEP_EQUAL)        
-    
+
     iglobIter = 0
     
 !    !CALL c2d2_solveSupersysDirect (rproblem, rspaceTimeDiscr, rx, rd, &
@@ -2738,7 +2738,7 @@ CONTAINS
 !    CALL c2d2_solveSupersysDirectCN (rproblem, rspaceTimeDiscr, rx, rd, &
 !      rtempvectorX, rtempvectorB, rtempVector)
     
-    DO WHILE ((ddefNorm .GT. 1.0E-2*dinitDefNorm) .AND. (ddefNorm .LT. 1.0E99) .AND. &
+    DO WHILE ((ddefNorm .GT. 1.0E-5*dinitDefNorm) .AND. (ddefNorm .LT. 1.0E99) .AND. &
               (iglobIter .LT. 10))
     
       iglobIter = iglobIter+1

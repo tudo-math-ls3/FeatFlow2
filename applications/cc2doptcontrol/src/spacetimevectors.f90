@@ -385,7 +385,7 @@ CONTAINS
 
     ! Loop through the substeps, load the data in, perform the linear combination
     ! and write out again.
-    DO i=1,rx%ntimesteps
+    DO i=0,rx%ntimesteps
       CALL sptivec_getTimestepData (rx, i, rxBlock)
       CALL sptivec_getTimestepData (ry, i, ryBlock)
       
