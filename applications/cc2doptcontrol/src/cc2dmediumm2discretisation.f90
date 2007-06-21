@@ -669,10 +669,12 @@ CONTAINS
                                            
       ! -----------------------------------------------------------------------
       ! Allocate memory for an identity matrix in the size of the pressure.
-      ! There is no discretisation structure attached -- it's simply an
-      ! identity matrix.
+      ! Attach a discretisation structure that describes the pressure element
+      ! as trial space.
       CALL lsyssc_createDiagMatrixStruc (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
           rproblem%RlevelInfo(i)%rmatrixB1%NCOLS,LSYSSC_MATRIX9)
+      rproblem%RlevelInfo(i)%rmatrixIdentityPressure%p_rspatialDiscretisation => &
+        p_rdiscretisation%RspatialDiscretisation(3)
 
       ! -----------------------------------------------------------------------
       ! Now let's come to the main system matrix, which is a block matrix.

@@ -435,6 +435,8 @@ CONTAINS
     !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
     !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
     !Dcoefficients (1,:,:) = -(1./10.0_DP)*(-Dpoints(1,:,:))
+    
+    ! Without coupling:
     !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(Dpoints(1,:,:))
 
   END SUBROUTINE
@@ -526,6 +528,8 @@ CONTAINS
     !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
     !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
     !Dcoefficients (1,:,:) = -(1./10.0_DP)*(Dpoints(2,:,:))
+    
+    ! Without coupling:
     !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(-Dpoints(2,:,:))
 
   END SUBROUTINE
@@ -603,6 +607,16 @@ CONTAINS
     
   !</subroutine>
   
+    REAL(DP) :: dtime
+  
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
+
     Dcoefficients(:,:,:) = 0.0_DP
 
     ! Call ffunction_TargetX to calculate the analytic function. Store the results
@@ -612,6 +626,9 @@ CONTAINS
                 IdofsTest,rdomainIntSubset,p_rcollection, &
                 Dcoefficients(1,:,:))
                
+    ! Without coupling:
+    !Dcoefficients (1,:,:) = - (1/5.0_DP - (10.-dtime)/50.0_DP)*(Dpoints(1,:,:))
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -686,6 +703,16 @@ CONTAINS
   !</output>
     
   !</subroutine>
+  
+    REAL(DP) :: dtime
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    IF (ASSOCIATED(p_rcollection)) THEN
+      dtime = p_rcollection%Dquickaccess(1)
+    ELSE
+      dtime = 0.0_DP
+    END IF
 
     Dcoefficients(:,:,:) = 0.0_DP
 
@@ -695,6 +722,9 @@ CONTAINS
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,p_rcollection, &
                 Dcoefficients(1,:,:))
+
+    ! Without coupling:
+    !Dcoefficients (1,:,:) = - (1/5.0_DP - (10.-dtime)/50.0_DP)*(-Dpoints(2,:,:))
                
   END SUBROUTINE
 
@@ -812,7 +842,7 @@ CONTAINS
       !Dvalues(:,:) = Dvalues(:,:)*dtime
       !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
       !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * Dpoints(1,:,:)
-      Dvalues(:,:) = 1._DP/50._DP * Dpoints(1,:,:) + &
+      Dvalues(:,:) = & ! 1._DP/50._DP * Dpoints(1,:,:) + &
                      (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
       !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
       !                 (-(dtime**2)/100._DP + dtime/5._DP)) * Dpoints(1,:,:)
@@ -937,7 +967,7 @@ CONTAINS
       !Dvalues(:,:) = Dvalues(:,:)*dtime
       !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
       !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * (-Dpoints(2,:,:))
-      Dvalues(:,:) = 1._DP/50._DP * (-Dpoints(2,:,:)) + &
+      Dvalues(:,:) = & !1._DP/50._DP * (-Dpoints(2,:,:)) + &
                      (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
       !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
       !                 (-(dtime**2)/100._DP + dtime/5._DP)) * (-Dpoints(2,:,:))

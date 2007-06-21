@@ -2601,7 +2601,7 @@ CONTAINS
         
         ! DEBUG!!!
         !CALL matio_writeBlockMatrixHR (Rmatrices(rnonlinearIteration%NLMAX), 'matrix',&
-        !                              .TRUE., 0, 'matrixstat.txt','(E10.2)')
+        !                               .TRUE., 0, 'matrixstat.txt','(E10.2)')
         
         CALL linsol_setMatrices(&
             rnonlinearIteration%rpreconditioner%p_rsolverNode,Rmatrices(:))
@@ -3168,6 +3168,82 @@ CONTAINS
       DEALLOCATE (p_rtempBlock)
     END IF
         
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+    SUBROUTINE c2d2_precondDefectDirect (rnonlinearIteration,&
+        ite,rx,rb,rd,domega,bsuccess,rcollection)
+  
+    USE linearsystemblock
+    USE collection
+    
+  !<description>
+    ! Based on the current iteration 
+    ! vector rx and the right hand side vector rb, this routine performs 
+    ! preconditioning on the vector rd: rd := C^{-1} rd.
+    ! The routine accepts a pointer to a collection structure 
+    ! p_rcollection, which allows the routine to access information from the
+    ! main application (e.g. system matrices).
+  !</description>
+
+  !<inputoutput>
+    ! A nonlinear-iteration structure that configures the core equation to solve.
+    ! Must be initialised e.g. by c2d2_createNonlinearLoop + manual setup of
+    ! the coefficients of the terms.
+    TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
+
+    ! Number of current iteration. 
+    INTEGER, INTENT(IN)                           :: ite
+
+    ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
+    TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
+
+    ! A collection structure of the application. 
+    TYPE(t_collection), INTENT(INOUT), TARGET     :: rcollection
+    
+    ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
+    ! on the first call to the callback routine.
+    ! The callback routine can modify this parameter according to any suitable
+    ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
+    ! will then use this for adding rd to the solution vector:
+    ! $$ x_{n+1} = x_n + domega*rd $$
+    ! domega will stay at this value until it's changed again.
+    REAL(DP), INTENT(INOUT)                       :: domega
+
+    ! If the preconditioning was a success. Is normally automatically set to
+    ! TRUE. If there is an error in the preconditioner, this flag can be
+    ! set to FALSE. In this case, the nonlinear solver breaks down with
+    ! the error flag set to 'preconditioner broke down'.
+    LOGICAL, INTENT(INOUT)                        :: bsuccess
+  !</inputoutput>
+  
+  !<input>
+    ! Current iteration vector
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rx
+
+    ! Current right hand side of the system
+    TYPE(t_vectorBlock), INTENT(IN), TARGET       :: rb
+  !</input>
+  
+  !</subroutine>
+  
+    TYPE(t_collection), POINTER     :: p_rcollection
+    
+    p_rcollection => rcollection
+  
+    ! Save the nonlinear-iteration structure to the collection.
+    ! It's rebuild from the collection in the callback routines.
+    CALL c2d2_saveNonlinearLoop (rnonlinearIteration,rcollection)
+
+    ! Call the preconditioning routine
+    CALL c2d2_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
+    
+    ! Remove parameters of the nonlinear loop from the collection.
+    CALL c2d2_removeNonlinearLoop (rnonlinearIteration,rcollection)
+    
   END SUBROUTINE
 
 END MODULE

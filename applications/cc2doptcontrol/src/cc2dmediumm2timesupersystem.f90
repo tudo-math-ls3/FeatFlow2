@@ -1020,7 +1020,7 @@ CONTAINS
         ! The diagonal matrix.
         
         rnonlinearIteration%diota1 = 0.0_DP
-        rnonlinearIteration%diota2 = 0.0_DP
+        rnonlinearIteration%diota2 = (1.0_DP-ddualPrimalCoupling)
 
         rnonlinearIteration%dkappa1 = 0.0_DP
         rnonlinearIteration%dkappa2 = 1.0_DP
@@ -1042,9 +1042,9 @@ CONTAINS
         rnonlinearIteration%dtau2 = 0.0_DP
         
         rnonlinearIteration%dmu1 = dprimalDualCoupling * &
-            
             dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
-        rnonlinearIteration%dmu2 = -rspaceTimeDiscr%dgammaC
+        rnonlinearIteration%dmu2 = ddualPrimalCoupling * &
+            (-rspaceTimeDiscr%dgammaC)
         
       END IF
 
@@ -1135,7 +1135,7 @@ CONTAINS
     
     ! Assemble the space-time RHS into rd.
     CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
-      rtempvectorX, rtempvectorB, rtempvectorD)
+      rtempvectorX, rtempvectorB, rtempvectorD, .TRUE.)
       
     ! Implement the initial condition into the RHS.
     CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvectorD)    
@@ -1565,10 +1565,11 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
-      rtempvector1, rtempvector2, rtempvector3)
+      rtempvector1, rtempvector2, rtempvector3, bimplementBC)
 
 !<description>
-  ! Assembles the space-time RHS vector rb.
+  ! Assembles the space-time RHS vector rb. Bondary conditions are NOT
+  ! implemented!
   !
   ! Note: rproblem%rtimedependence%dtime will be undefined at the end of
   ! this routine!
@@ -1596,6 +1597,9 @@ CONTAINS
 
   ! A space-time vector that receives the RHS.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+  
+  ! Whether to implement boundary conditions into the RHS or not.
+  LOGICAL, INTENT(IN) :: bimplementBC
 !</inputoutput>
 
 !</subroutine>
@@ -1757,8 +1761,10 @@ CONTAINS
       END IF
 
       ! Implement the boundary conditions into the RHS vector        
-      CALL generateRHS (rproblem,isubstep,rspaceTimeDiscr%niterations,&
-          rtempVectorRHS, .FALSE., .TRUE.)
+      IF (bimplementBC) THEN
+        CALL generateRHS (rproblem,isubstep,rspaceTimeDiscr%niterations,&
+            rtempVectorRHS, .FALSE., .TRUE.)
+      END IF
       
       ! Save the RHS.
       CALL sptivec_setTimestepData(rb, isubstep, rtempVectorRHS)
@@ -1850,6 +1856,8 @@ CONTAINS
 !<description>
   ! Implements the initial condition into the RHS vector rb.
   ! Overwrites the rb of the first time step.
+  !
+  ! Does not implement boundary conditions!
 !</description>
 
 !<input>
@@ -1879,6 +1887,14 @@ CONTAINS
     CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
     CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
     CALL sptivec_setTimestepData(rb, 0, rtempVectorD)
+
+    ! DEBUG!!!
+    !CALL sptivec_getTimestepData(rx, 2, rtempVectorX)
+    !CALL sptivec_getTimestepData(rb, 2, rtempVectorD)
+    !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(4),rtempVectorD%RvectorBlock(4))
+    !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(5),rtempVectorD%RvectorBlock(5))
+    !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(6),rtempVectorD%RvectorBlock(6))
+    !CALL sptivec_setTimestepData(rb, 2, rtempVectorD)
 
   END SUBROUTINE
 
@@ -2442,8 +2458,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_precondDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
-      rtempvectorX, rtempvectorB, rtempvector, rnonlinearIteration, rnlSolver)
+  SUBROUTINE c2d2_precondDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rb, rd, &
+      rtempvectorX, rtempvectorB, rtempvectorD, rnonlinearIteration, rnlSolver)
 
 !<description>
   ! This routine performs preconditioning with the nonlinear super-defect
@@ -2462,6 +2478,9 @@ CONTAINS
   ! A space-time vector defining the current solution.
   TYPE(t_spacetimeVector), INTENT(IN) :: rx
 
+  ! A space-time vector defining the current RHS.
+  TYPE(t_spacetimeVector), INTENT(IN) :: rb
+
 !</input>
 
 !<inputoutput>
@@ -2478,7 +2497,7 @@ CONTAINS
   TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorB
   
   ! A third temporary vector for the nonlinear iteration
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVector
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
   
   ! A space-time vector that receives the preconditioned defect.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
@@ -2487,15 +2506,20 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep
+    INTEGER :: isubstep,ilevel,i
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
-    REAL(DP) :: dtheta,dtstep,deta1,deta2
+    REAL(DP) :: dtheta,dtstep,deta1,deta2,domega
+    LOGICAL :: bsuccess
+    TYPE(t_matrixBlock) :: rblockTemp
     
     ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Db
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Db,p_Dd
     
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     dtstep = rspaceTimeDiscr%dtstep
+
+    ! Level of the discretisation
+    ilevel = rspaceTimeDiscr%NLMAX
     
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
@@ -2520,63 +2544,47 @@ CONTAINS
       IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
         CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
       END IF
-      
-      ! Read in the solution- and defect vector of the current timestep.
-      CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
-      CALL sptivec_getTimestepData (rd, isubstep, rtempVectorB)
-      
+
+      ! DEBUG!!!      
       CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
       CALL lsysbl_getbase_double (rtempVectorB,p_Db)
+      CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
+
+      ! Read in the RHS/solution/defect vector of the current timestep.
+      CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
+      CALL sptivec_getTimestepData (rb, isubstep, rtempVectorB)
+      CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
+
+      ! Initialise the basic system matrices.
+      DO i=rproblem%NLMIN,ilevel
+        CALL c2d2_generateStaticSystemMatrix (&
+            rproblem%RlevelInfo(i),rproblem%RlevelInfo(i)%rmatrix,.FALSE.)
+      END DO
 
       ! Setup the core equation for the nonlinear loop -- in the temporary
       ! rnonlinearIterationTmp structure as copy of rnonlinearIteration.
       rnonlinearIterationTmp = rnonlinearIteration
+
+      ! Finally set up the matrix weights for the diagonal matrix
       CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
         isubstep,0,rnonlinearIterationTmp)
-
-      ! Scale the primal and dual pressure by the step length. This implements
-      ! the 'delta*t' in front of these subvectors
-      ! The core equation routines handle the equation
-      !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = ...
-      ! but we want to solve
-      !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + tstep*B*p = ...
-      !
-      ! So the trick is to scale p by tstep, solve the core equation
-      !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*(tstep*p) = ...
-      ! and scale it back afterwards.
-      deta1 = rnonlinearIterationTmp%deta1
-      deta2 = rnonlinearIterationTmp%deta2
-
-      rnonlinearIterationTmp%deta1 = 1.0_DP
-      rnonlinearIterationTmp%deta2 = 1.0_DP
-      
-      ! eta=0 may happen in the initial/terminal condition -- where the pressure is fixed
-      IF (deta1 .NE. 0.0_DP) &
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),deta1)
-      IF (deta2 .NE. 0.0_DP) &
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),deta2)
-    
-      !CALL c2d2_setupCoreEquation (rnonlinearIterationTmp, &
-      !  1.0_DP, &
-      !  rspaceTimeDiscr%dtstep, &
-      !  rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP))
+        
+      !rnonlinearIterationTmp%deta1 = 1.0_DP
+      !rnonlinearIterationTmp%deta2 = 1.0_DP
 
       ! Call the solver of the core equation to solve it using a nonlinear
       ! iteration. Overwrite rtempVectorX with temporary data from the
       ! nonlinear iteration.
-      CALL c2d2_solveCoreEquation (rnlSolver,rnonlinearIterationTmp,&
-          rtempVectorX,rtempVectorB,rproblem%rcollection,rtempVector)             
-    
-      ! Scale the pressure back, then we have again the correct solution vector.
-      ! eta=0 may happen in the initial/terminal condition -- 
-      ! where the pressure is fixed
-      IF (deta1 .NE. 0.0_DP) &
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(NDIM2D+1),    1.0_DP/deta1)
-      IF (deta2 .NE. 0.0_DP) &
-        CALL lsyssc_scaleVector (rtempVectorX%RvectorBlock(2*(NDIM2D+1)),1.0_DP/deta2)
+      ! CALL c2d2_solveCoreEquation (rnlSolver,rnonlinearIterationTmp,&
+      !     rtempVectorX,rtempVectorB,rproblem%rcollection,rtempVector)             
+      
+      ! Perform preconditioning of the defect with the method provided by the
+      ! core equation module.
+      CALL c2d2_precondDefectDirect (rnonlinearIterationTmp,&
+        0,rtempVectorX,rtempVectorB,rtempVectorD,domega,bsuccess,rproblem%rcollection)      
     
       ! Save back the preconditioned defect.
-      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorB)
+      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorD)
       
     END DO
     
@@ -2670,11 +2678,12 @@ CONTAINS
     CALL c2d2_preparePreconditioner (rproblem,&
         rnonlinearIteration,rtempvectorX, rtempvectorB)
 
-    DO isubstep = 1,rspaceTimeDiscr%niterations
+    ! Implement the bondary conditions into all initial solution vectors
+    DO isubstep = 0,rspaceTimeDiscr%niterations
     
       ! Current point in time
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + (isubstep-1)*rspaceTimeDiscr%dtstep
+          rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
 
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
@@ -2705,7 +2714,7 @@ CONTAINS
     !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
     !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
     CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
-      rtempvectorX, rtempvectorB, rtempvector)    
+      rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
 
     ! Implement the initial condition into the RHS.
     CALL c2d2_implementInitCondRHS (rx, rb, rtempvectorX, rtempvector)    
@@ -2713,7 +2722,7 @@ CONTAINS
     ! NOw word with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
 
-    ! Assemble the defect
+    ! Assemble the defect.
     CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, ddefNorm)
         
     dinitDefNorm = ddefNorm
@@ -2735,11 +2744,11 @@ CONTAINS
       iglobIter = iglobIter+1
       
       ! Preconditioning of the defect: d=C^{-1}d
-      CALL c2d2_precondDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
+      CALL c2d2_precondDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rb, rd, &
           rtempvectorX, rtempvectorB, rtempVector, rnonlinearIteration, rnlSol)
 
       ! Add the defect: x = x + omega*d          
-      CALL sptivec_vectorLinearComb (rd,rx,0.7_DP,1.0_DP)
+      CALL sptivec_vectorLinearComb (rd,rx,1.0_DP,1.0_DP)
           
       ! Assemble the new defect: d=b-Ax
       CALL sptivec_copyVector (rb,rd)
@@ -2759,7 +2768,7 @@ CONTAINS
     !CALL c2d2_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
     !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
     CALL c2d2_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
-      rtempvectorX, rtempvectorB, rtempvector)    
+      rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
 
     ! Implement the initial condition into the RHS.
     CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvector)    
