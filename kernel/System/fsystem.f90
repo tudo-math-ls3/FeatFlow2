@@ -216,6 +216,16 @@ MODULE fsystem
     MODULE PROCEDURE system_init_ext
   END INTERFACE
 
+  INTERFACE sys_toupper
+    MODULE PROCEDURE sys_toupper_replace
+    MODULE PROCEDURE sys_toupper_copy
+  END INTERFACE
+
+  INTERFACE sys_tolower
+    MODULE PROCEDURE sys_tolower_replace
+    MODULE PROCEDURE sys_tolower_copy
+  END INTERFACE
+
 CONTAINS
 
 !************************************************************************
@@ -339,20 +349,17 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE sys_toupper (str,strUpper) 
+  SUBROUTINE sys_toupper_replace (str)
 
 !<description>
-  ! Convert a string to upper case.
+  ! Convert a string to upper case. 
+  ! The given string is replaced by its uppercase version.
 !</description>
 
 !<inputoutput>
   
   ! The string that is to make uppercase
   CHARACTER(LEN=*), INTENT(INOUT) :: str
-
-  ! OPTIONAL: If given, then the original string will no be modified
-  !           but its uppercase version will be stored in this string
-  CHARACTER(LEN=*), INTENT(OUT), OPTIONAL :: strUpper
   
 !</inputoutput>
   
@@ -363,43 +370,74 @@ CONTAINS
   INTEGER, PARAMETER :: up2low = IACHAR("a") - IACHAR("A")
   INTEGER :: i
   CHARACTER    :: c
-  
-  IF (PRESENT(strUpper)) THEN
-
-    IF (LEN(str) > LEN(strUpper)) THEN
-      PRINT *, "sys_toupper: target string is too short"
-      STOP
+      
+  DO i=1,LEN(str)
+    c = str(i:i)
+    IF ((c .GE. "a") .AND. (c .LE. "z")) THEN
+      str(i:i) = ACHAR (IACHAR(c) - up2low)
     END IF
-
-    strUpper = str
-
-    DO i=1,LEN(str)
-      c = str(i:i)
-      IF ((c .GE. "a") .AND. (c .LE. "z")) THEN
-        strUpper(i:i) = ACHAR (IACHAR(c) - up2low)
-      END IF
-    END DO
-
-  ELSE
-    
-    DO i=1,LEN(str)
-      c = str(i:i)
-      IF ((c .GE. "a") .AND. (c .LE. "z")) THEN
-        str(i:i) = ACHAR (IACHAR(c) - up2low)
-      END IF
-    END DO
-
-  END IF
+  END DO
   END SUBROUTINE
 
 !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE sys_tolower (str,strLower) 
+  SUBROUTINE sys_toupper_copy (str,strUpper) 
+
+!<description>
+  ! Convert a string to upper case.
+!</description>
+
+!<input>
+  
+  ! The string that is to make uppercase
+  CHARACTER(LEN=*), INTENT(IN) :: str
+
+!</input>
+
+!<output>
+
+  ! Uppercase version of the given string
+  CHARACTER(LEN=*), INTENT(OUT) :: strUpper
+  
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  
+  INTEGER, PARAMETER :: up2low = IACHAR("a") - IACHAR("A")
+  INTEGER :: i
+  CHARACTER    :: c
+
+  IF (LEN(str) > LEN(strUpper)) THEN
+    PRINT *, "sys_toupper_copy: target string is too short"
+    STOP
+  END IF
+  
+  ! Initialize string
+  strUpper = ''
+  
+  DO i=1,LEN(str)
+    c = str(i:i)
+    IF ((c .GE. "a") .AND. (c .LE. "z")) THEN
+      strUpper(i:i) = ACHAR (IACHAR(c) - up2low)
+    ELSE
+      strUpper(i:i) = c
+    END IF
+  END DO
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE sys_tolower_replace (str) 
 
 !<description>
   ! Convert a string to lower case.
+  ! The given string is replaced by its lowercase version.
 !</description>
 
 !<inputoutput>
@@ -407,10 +445,6 @@ CONTAINS
   ! The string that is to make lowercase
   CHARACTER(LEN=*), INTENT(INOUT) :: str
 
-  ! OPTIONAL: If given, then the original string will no be modified
-  !           but its lowercase version will be stored in this string
-  CHARACTER(LEN=*), INTENT(OUT), OPTIONAL :: strLower
-  
 !</inputoutput>
   
 !</subroutine>
@@ -421,34 +455,64 @@ CONTAINS
   INTEGER :: i
   CHARACTER    :: c
   
-  IF (PRESENT(strLower)) THEN
-    
-    IF (LEN(str) > LEN(strLower)) THEN
-      PRINT *, "sys_tolower: target string is too short"
-      STOP
+  DO i=1,LEN(str)
+    c = str(i:i)
+    IF ((c .GE. "A") .AND. (c .LE. "Z")) THEN
+      str(i:i) = ACHAR (IACHAR(c) + up2low)
     END IF
-
-    strLower = str
-
-    DO i=1,LEN(str)
-      c = str(i:i)
-      IF ((c .GE. "A") .AND. (c .LE. "Z")) THEN
-        strLower(i:i) = ACHAR (IACHAR(c) + up2low)
-      END IF
-    END DO
-
-  ELSE
-
-    DO i=1,LEN(str)
-      c = str(i:i)
-      IF ((c .GE. "A") .AND. (c .LE. "Z")) THEN
-        str(i:i) = ACHAR (IACHAR(c) + up2low)
-      END IF
-    END DO
-
-  END IF
+  END DO
   END SUBROUTINE
   
+!************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE sys_tolower_copy (str,strLower) 
+
+!<description>
+  ! Convert a string to lower case.
+!</description>
+
+!<input>
+  
+  ! The string that is to make lowercase
+  CHARACTER(LEN=*), INTENT(IN) :: str
+
+!</input>
+
+!<output>
+
+  ! Lowercase version of the given string
+  CHARACTER(LEN=*), INTENT(OUT) :: strLower
+  
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  
+  INTEGER, PARAMETER :: up2low = IACHAR("a") - IACHAR("A")
+  INTEGER :: i
+  CHARACTER    :: c
+
+  IF (LEN(str) > LEN(strLower)) THEN
+    PRINT *, "sys_tolower_copy: target string is too short"
+    STOP
+  END IF
+  
+  ! Initialize string
+  strLower = ''
+  
+  DO i=1,LEN(str)
+    c = str(i:i)
+    IF ((c .GE. "A") .AND. (c .LE. "Z")) THEN
+      strLower(i:i) = ACHAR (IACHAR(c) + up2low)
+    ELSE
+      strLower(i:i) = c
+    END IF
+  END DO
+  END SUBROUTINE
+
 !******************************************************************************
 
 !<function>
