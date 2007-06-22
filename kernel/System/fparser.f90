@@ -190,6 +190,15 @@
 !# _INFTY    : Gives the maximum possible number in double precision, defined
 !#             in fsystem by SYS_INFINITY.
 !#
+!# In addition, the use can define his own global constant which are available
+!# throughout the complete function parser as it is the case for the standard
+!# constant defined above.
+!#
+!# The parser also supports user-defined expressions which are globally
+!# available throughout the complete function parser. All expressions must
+!# start with '@' to indicate that the following expression should be
+!# looked-up from the list of predefined expressions.
+!#
 !# The following routines can be found in this module:
 !#
 !# 1.) fparser_init
@@ -201,24 +210,27 @@
 !# 3.) fparser_defineConstant
 !#     -> Define special constants which are available for all function parsers
 !#
-!# 4.) fparser_create
+!# 4.) fparser_defineExpression
+!#     -> Define special expressions which are available for all function parsers
+!#
+!# 5.) fparser_create
 !#     -> Create function parser
 !#
-!# 5.) fparser_release
+!# 6.) fparser_release
 !#     -> Release function parser
 !#
-!# 6.) fparser_parseFunction
+!# 7.) fparser_parseFunction
 !#     -> Parse function string and compile it into bytecode
 !#
-!# 7.) fparser_evalFunction = fparser_evalFunctionScalar /
+!# 8.) fparser_evalFunction = fparser_evalFunctionScalar /
 !#                            fparser_evalFunctionArray
 !#     -> Evaluate bytecode
 !#
-!# 8.) fparser_ErrorMsg
+!# 9.) fparser_ErrorMsg
 !#     -> Get error message from function parser
 !#
-!# 9.) fparser_PrintByteCode
-!#     -> Print the bytecode stack (very technical!)
+!# 10.) fparser_PrintByteCode
+!#      -> Print the bytecode stack (very technical!)
 !#
 !# The following internal routines can be found in this module:
 !#
@@ -237,71 +249,74 @@
 !# 5.) ConstantIndex
 !#     -> Return index of predefined constant and 0 otherwise
 !#
-!# 6.) VariableIndex
+!# 6.) ExpressionIndex
+!#     -> Return index of predefined expression and 0 otherwise
+!#
+!# 7.) VariableIndex
 !#     -> Return index of variable
 !#
-!# 7.) RemoveSpaces
+!# 8.) RemoveSpaces
 !#     -> Remove spaces from string
 !#
-!# 8.) Replace
+!# 9.) Replace
 !#     -> Replace all appearances of one character set by another
 !#        character set in a given string
 !#
-!# 9.) Compile
-!#     -> Compile function string into bytecode
+!# 10.) Compile
+!#      -> Compile function string into bytecode
 !#
-!# 10.) incStackPtr
+!# 11.) incStackPtr
 !#     -> Increase stack pointer
 !#
-!# 11.) AddCompiledByte
+!# 12.) AddCompiledByte
 !#     -> Add compiled byte to bytecode stack
 !#
-!# 12.) RemoveCompiledByte
+!# 13.) RemoveCompiledByte
 !#     -> Remove last compiled byte from bytecode stack
 !#
-!# 13.) AddImmediate
+!# 14.) AddImmediate
 !#     -> Add immediate to immediate stack
 !#
-!# 14.) AddFunctionOpcode
+!# 15.) AddFunctionOpcode
 !#     -> Add function opcode to bytecode stack
 !#
-!# 15.) RealNum
+!# 16.) RealNum
 !#     -> Get real number from string
 !#
-!# 16.) LowCase
-!#     -> Transform upper case letters to lower case letters
+!# 17.) FunctionSize
+!#     -> Get the total size of the function
 !#
-!# 17.) CompileExpression
+!# 18.) CompileExpression
 !#      -> Compile ','
 !#
-!# 18.) CompileOr
+!# 19.) CompileOr
 !#      -> Compile '|'
 !#
-!# 19.) CompileAnd
+!# 20.) CompileAnd
 !#      -> Compile '&'
 !#
-!# 20.) CompileComparison
+!# 21.) CompileComparison
 !#      -> Compile '=', '<', and '>'
 !#
-!# 21.) CompileAddition
+!# 22.) CompileAddition
 !#      -> Compile '+' and '-'
 !#
-!# 22.) CompileMult
+!# 23.) CompileMult
 !#      -> Compile '*', '/', and '%'
 !#
-!# 23.) CompileUnaryMinus
+!# 24.) CompileUnaryMinus
 !#      -> Compile unary '-'
 !#
-!# 24.) CompilePow
+!# 25.) CompilePow
 !#      -> Compile '^'
 !#
-!# 25.) CompileElement
+!# 26.) CompileElement
 !#      -> Compile mathematical function, variable, constant and number
 !#
-!# 26.) CompileFunctionParameters
+!# 27.) CompileFunctionParameters
 !#      -> Compile function parameters
 !#
-!# 27.) CompileIf
+!# 28.) CompileIf
 !#      -> Compile if-then-else
 !#
 !# </purpose>
@@ -319,13 +334,13 @@ MODULE fparser
   PUBLIC :: fparser_init
   PUBLIC :: fparser_done
   PUBLIC :: fparser_defineConstant
+  PUBLIC :: fparser_defineExpression
   PUBLIC :: fparser_create
   PUBLIC :: fparser_release
   PUBLIC :: fparser_parseFunction
   PUBLIC :: fparser_evalFunction
   PUBLIC :: fparser_ErrorMsg
   PUBLIC :: fparser_PrintByteCode
-  public :: lowcase
   
   !****************************************************************************
   !****************************************************************************
@@ -346,10 +361,22 @@ MODULE fparser
   ! Maximum stack size
   ! The stack is used for all instances of function parsers. During initialization
   ! a smaller size can be specified. This is only the maximum size of the stack.
-  INTEGER, PARAMETER :: FPAR_MAXSTACKSIZE  = 1024*1024 ! this is 8 MByte
+  INTEGER, PARAMETER :: FPAR_MAXSTACKSIZE   = 1024*1024 ! this is 8 MByte
 
-  ! Maximum number of user-defined constants.
-  INTEGER, PARAMETER :: FPAR_MAXCONSTS     = 128
+  ! Lenght of string
+  INTEGER, PARAMETER :: FPAR_STRLEN         = 2048
+
+  ! Maximum number of predefined/user-defined constants
+  INTEGER, PARAMETER :: FPAR_MAXCONSTS      = 128
+
+  ! Maximum number of predefined/user-defined expressions
+  INTEGER, PARAMETER :: FPAR_MAXEXPRESSIONS = 128
+
+  ! Length of constant name
+  INTEGER, PARAMETER :: FPAR_CONSTLEN       = 12
+
+  ! Length of expression name
+  INTEGER, PARAMETER :: FPAR_EXPRLEN        = 12
 !</constantblock>
 
 
@@ -464,9 +491,9 @@ MODULE fparser
 
 
 !<constantblock description="predefined constant names for parser; an underscore '_' is automatically added">
-  CHARACTER(LEN=5), DIMENSION(3) :: PredefinedConsts = (/ 'pi   ', &
-                                                          'exp  ', &
-                                                          'infty' /)
+  CHARACTER(LEN=FPAR_CONSTLEN), DIMENSION(3) :: PredefinedConsts = (/ 'pi        ', &
+                                                                      'exp       ', &
+                                                                      'infty     ' /)
 !</constantblock>
 
 
@@ -486,19 +513,28 @@ MODULE fparser
 !<globals>
 
   ! Global handle to stack memory
-  INTEGER, SAVE                                        :: h_Stack = ST_NOHANDLE
+  INTEGER, SAVE                                                    :: h_Stack = ST_NOHANDLE
   
   ! Global pointer to stack memory
-  REAL(DP), DIMENSION(:), POINTER, SAVE                :: p_Stack => NULL()
+  REAL(DP), DIMENSION(:), POINTER, SAVE                            :: p_Stack => NULL()
 
   ! Global number of predefined/user-defined constants
-  INTEGER, SAVE                                        :: nConsts = 0 
+  INTEGER, SAVE                                                    :: nConsts = 0 
 
   ! Global constant names for parser
-  CHARACTER(LEN=5), DIMENSION(FPAR_MAXCONSTS), SAVE    :: Consts  = '     '
+  CHARACTER(LEN=FPAR_CONSTLEN), DIMENSION(FPAR_MAXCONSTS), SAVE    :: Consts  = '     '
 
   ! Global constant values for parser
-  REAL(DP), DIMENSION(FPAR_MAXCONSTS), SAVE            :: ConstVals = 0
+  REAL(DP), DIMENSION(FPAR_MAXCONSTS), SAVE                        :: ConstVals = 0
+
+  ! Global number of predefined/user-defined expressions
+  INTEGER, SAVE                                                    :: nExpressions = 0
+
+  ! Global expression name for parser
+  CHARACTER(LEN=FPAR_EXPRLEN), DIMENSION(FPAR_MAXCONSTS), SAVE     :: Expressions = ''
+
+  ! Global expression string for parser
+  CHARACTER(LEN=FPAR_STRLEN), DIMENSION(FPAR_MAXEXPRESSIONS), SAVE :: ExpressionStrings
 !</globals>
 
   !****************************************************************************
@@ -612,6 +648,11 @@ CONTAINS
     Consts    = '     '
     ConstVals = 0._DP
     
+    ! Reset expressions
+    nExpressions      = 0
+    Expressions       = ''
+    ExpressionStrings = ''
+
     ! Free memory
     IF (h_Stack  /= ST_NOHANDLE) CALL storage_free(h_Stack)
     NULLIFY(p_Stack)
@@ -621,7 +662,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE fparser_defineConstant(const,constval)
+  SUBROUTINE fparser_defineConstant(constant,constantValue)
 
 !<description>
     ! Define a new constant for the function parser.
@@ -630,14 +671,15 @@ CONTAINS
 
 !<input>
     ! Name of the constant
-    CHARACTER(LEN=5), INTENT(IN) :: const
+    CHARACTER(LEN=FPAR_CONSTLEN), INTENT(IN) :: constant
 
     ! Value of the constant
-    REAL(DP), INTENT(IN) :: constval
+    REAL(DP), INTENT(IN) :: constantValue
 !</input>
 !</subroutine>
 
     ! local variables
+    CHARACTER(LEN=LEN(constant)) :: const
     INTEGER :: iConst
 
     ! Check if there is enough space
@@ -648,11 +690,14 @@ CONTAINS
       STOP
     END IF
 
+    ! Prepare constant
+    CALL sys_tolower(constant,const)
+
     ! Check if constant is already defined
     DO iConst=1,nConsts-1
       IF (Consts(iConst) == const) THEN
         ! If it is already defined, then it must not have a different value
-        IF(ConstVals(iConst) /= constval) THEN
+        IF(ConstVals(iConst) /= constantValue) THEN
           PRINT *, "*** Parser error: constant is already defined with different value"
           STOP
         ELSE
@@ -664,8 +709,74 @@ CONTAINS
 
     ! Apply constant value and constant name
     Consts(nConsts)    = const
-    ConstVals(nConsts) = constval
+    ConstVals(nConsts) = constantValue
   END SUBROUTINE fparser_defineConstant
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE fparser_defineExpression(expression,expressionString)
+
+!<description>
+    ! Define a new expression for the function parser.
+    ! This subroutine checks if the given expression is already defined.
+!</description>
+
+!<input>
+    ! Name of the expression
+    CHARACTER(LEN=FPAR_EXPRLEN), INTENT(IN) :: expression
+
+    ! String of the expression
+    CHARACTER(LEN=*), INTENT(IN) :: expressionString
+!</input>
+!</subroutine>
+
+    ! local variables
+    CHARACTER(LEN=LEN(expression))       :: expr
+    CHARACTER(LEN=LEN(expressionString)) :: str
+    INTEGER :: iExpression
+
+    ! Check if there is enough space
+    IF (nExpressions < FPAR_MAXEXPRESSIONS) THEN
+      nExpressions = nExpressions+1
+    ELSE
+      PRINT *, "*** Parser error: no space left for definition of expression"
+      STOP
+    END IF
+
+    ! Prepare expression string
+    CALL sys_tolower(expression,expr)
+    CALL sys_tolower(expressionString,str)
+
+    ! Replace human readable function names by 1-Char. format
+    CALL Replace ('**','^ ',str)
+    CALL Replace ('[','(',  str)
+    CALL Replace (']',')',  str)
+    CALL Replace ('{','(',  str)
+    CALL Replace ('}',')',  str)
+    
+    ! Condense function string
+    CALL RemoveSpaces (str)
+
+    ! Check if expressions is already defined
+    DO iExpression=1,nExpressions-1
+      IF (Expressions(iExpression) == expr) THEN
+        ! If it is already defined, then it must not have a different value
+        IF(ExpressionStrings(iExpression) /= str) THEN
+          PRINT *, "*** Parser error: expression is already defined with different string"
+          STOP
+        ELSE
+          nExpressions = nExpressions-1
+          RETURN
+        END IF
+      END IF
+    END DO
+
+    ! Apply expressions string and expression name
+    Expressions(nExpressions)       = expr
+    ExpressionStrings(nExpressions) = str
+  END SUBROUTINE fparser_defineExpression
 
   ! *****************************************************************************
 
@@ -786,6 +897,10 @@ CONTAINS
         rparser%Comp(iComp)%useDegreeConversion = useDegrees
 
     CALL Compile (rparser%Comp(iComp),Func,Var)
+
+    CALL fparser_PrintByteCode(rparser,iComp)
+    pause
+
   END SUBROUTINE fparser_parseFunction
 
   ! *****************************************************************************
@@ -1883,7 +1998,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE CheckSyntax (Func,Var)
+  RECURSIVE SUBROUTINE CheckSyntax (Func,Var)
 
 !<description>
     ! Check syntax of function string, returns 0 if syntax is ok
@@ -2000,6 +2115,17 @@ CONTAINS
           STOP
         END IF
         FuncIndex = FuncIndex+LEN_TRIM(Consts(n))+1
+        IF (FuncIndex > FuncLength) EXIT
+        c=Func(FuncIndex:FuncIndex)
+      ELSEIF (c == '@') THEN
+        ! Check for expression
+        n = ExpressionIndex (Func(FuncIndex:))
+        IF (n == 0) THEN
+          PRINT *, "CheckSyntax: Invalid expression!"
+          STOP
+        END IF
+        CALL CheckSyntax(ExpressionStrings(n), Var)
+        FuncIndex = FuncIndex+LEN_TRIM(Expressions(n))+1
         IF (FuncIndex > FuncLength) EXIT
         c=Func(FuncIndex:FuncIndex)
       ELSE
@@ -2131,12 +2257,13 @@ CONTAINS
     n = 0
     DO j=cIf,cSec
       k = MIN(LEN_TRIM(Funcs(j)), LEN(str))
+
       ! Compare lower case letters
-      CALL LowCase (str(1:k), fun)
+      CALL sys_tolower(str(1:k), fun)
       IF (fun == Funcs(j)) THEN
         ! Found a matching function
         n = j
-        EXIT
+        RETURN
       END IF
     END DO
   END FUNCTION MathFunctionIndex
@@ -2201,19 +2328,62 @@ CONTAINS
     INTEGER k
     CHARACTER (LEN=LEN(Consts)) :: con
     
-    ! Check all math functions
+    ! Check all predefined constants
     n = 0
     DO j=1,nConsts
       k = MIN(LEN_TRIM(Consts(j)), LEN(str(2:)))
+
       ! Compare lower case letters
-      CALL LowCase (str(2:k+1), con)
+      CALL sys_tolower(str(2:k+1),con)
       IF (con == Consts(j)) THEN
         ! Found a matching constant
         n = j
-        EXIT
+        RETURN
       END IF
     END DO
   END FUNCTION ConstantIndex
+
+  ! *****************************************************************************
+
+!<function>
+
+  FUNCTION ExpressionIndex (str) RESULT (n)
+
+!<description>
+    ! Return index of predefined expression beginnig at 1st position of string str
+!</description>
+
+!<input>
+    ! Math function string
+    CHARACTER (LEN=*), INTENT(in) :: str
+!</input>
+
+!<result>
+    ! Index of math function
+    INTEGER(is) :: n
+!</result>
+!</function>
+
+    ! local variables
+    INTEGER(is) :: j
+    INTEGER k
+    CHARACTER (LEN=LEN(Expressions)) :: expression
+
+    ! Check all predefined expressions
+    n = 0
+    DO j=1,nExpressions
+      k = MIN(LEN_TRIM(Expressions(j)), LEN(str(2:)))
+
+      ! Compare lower case letters
+      CALL sys_tolower(str(2:k+1),expression)
+
+      IF (expression == Expressions(j)) THEN
+        ! Found a matching expression
+        n = j
+        RETURN
+      END IF
+    END DO
+  END FUNCTION ExpressionIndex
 
   ! *****************************************************************************
 
@@ -2271,6 +2441,7 @@ CONTAINS
         END IF
       END DO
     END IF
+
     IF (PRESENT(ibegin)) ibegin = ib
     IF (PRESENT(inext))  inext  = in
   END FUNCTION VariableIndex
@@ -2379,7 +2550,7 @@ CONTAINS
 
     ! Neither the stack for the bytecode nor the stack for the immediate expressions
     ! can exceed the size of the function string. Hence, allocate some initial memory
-    isize=LEN_TRIM(Func)
+    isize=FunctionSize(Func)
     ALLOCATE(Comp%ByteCode(isize),Comp%Immed(isize))
 
     ! Compile function string into bytecode
@@ -3061,37 +3232,45 @@ CONTAINS
 
   ! *****************************************************************************
 
-!<subroutine>
+!<function>
 
-  SUBROUTINE LowCase (str1, str2)
+  RECURSIVE FUNCTION FunctionSize (Func) RESULT (fsize)
 
 !<description>
-    ! Transform upper case letters in str1 into lower case 
-    ! letters, result is str2
+    ! Return the size of the total function including external expressions
 !</description>
     
 !<input>
-    ! Source string
-    CHARACTER (LEN=*),  INTENT(in) :: str1
+    ! Function string
+    CHARACTER (LEN=*),  INTENT(in) :: Func
 !</input>
 
-!<output>
-    ! Destination string
-    CHARACTER (LEN=*), INTENT(out) :: str2
-!</output>
-!</subroutine>
+!<result>
+    ! Size of function string
+    INTEGER :: fsize
+!</result>
+!</function>
     
     ! local variables
-    INTEGER :: j,k
-    CHARACTER (LEN=*),   PARAMETER :: lc = 'abcdefghijklmnopqrstuvwxyz'
-    CHARACTER (LEN=*),   PARAMETER :: uc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    
-    str2 = str1
-    DO j=1,LEN_TRIM(str1)
-      k = INDEX(uc,str1(j:j))
-      IF (k > 0) str2(j:j) = lc(k:k)
+    INTEGER :: ind,n
+    CHARACTER(LEN=1) :: c
+
+    ! Determine size of given expression
+    fsize=LEN_TRIM(Func)
+
+    ! "Parse" string for externally defined expressions
+    DO ind=1,fsize
+      c = Func(ind:ind)
+      IF (c == '@') THEN
+        n = ExpressionIndex (Func(ind:))
+        IF (n == 0) THEN
+          PRINT *, "FunctionSize: Invalid expression!"
+          STOP
+        END IF
+        fsize = fsize+FunctionSize(ExpressionStrings(n))
+      END IF
     END DO
-  END SUBROUTINE LowCase
+  END FUNCTION FunctionSize
 
   ! *****************************************************************************
 
@@ -3566,7 +3745,7 @@ CONTAINS
     CHARACTER(LEN=1) :: c
     REAL(DP) :: rnum
     INTEGER(is) :: n
-    INTEGER :: ind1,ib,in,requiredParams
+    INTEGER :: ind1,ind0,ib,in,requiredParams
     LOGICAL :: err
 
     ind1=ind; c=Func(ind1:ind1)
@@ -3610,7 +3789,7 @@ CONTAINS
         CALL AddFunctionOpcode(Comp, n)
         RETURN
       END IF
-
+      
       ! Check for predefined constant
       n = ConstantIndex(Func(ind1:))
       IF (n > 0) THEN
@@ -3618,6 +3797,18 @@ CONTAINS
         CALL AddImmediate(Comp, Constvals(n))
         CALL AddCompiledByte(Comp, cImmed)
         CALL incStackPtr(Comp)
+        RETURN
+      END IF
+
+      ! Check for predefined expressions
+      n = ExpressionIndex(Func(ind1:))
+      IF (n > 0) THEN
+        ind2 = ind1+LEN_TRIM(Expressions(n))+1
+
+        ! Recursively compile the given expression
+        ind0 = CompileExpression(Comp,ExpressionStrings(n), 1, Var)
+        
+        ! Proceed with compilation of mathematical function Func afterwards
         RETURN
       END IF
 
