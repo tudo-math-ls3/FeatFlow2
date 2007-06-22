@@ -14,6 +14,9 @@
 !# 2.) io_openFileForWriting
 !#     -> Opens a file for writing; the file handle is automatically determined
 !#
+!# 3.) io_readlinefromfile
+!#     -> Reads one line from an opend file 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -216,5 +219,76 @@ CONTAINS
     endif
 
   end subroutine io_openFileForWriting
+
+! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE io_readlinefromfile (iunit, sdata, ilinelen, ios)
+
+!<description>
+  !This routine reads a line from a text file
+!</description>
+
+!<input>  
+    ! The unit where to read from; must be connected to a file.
+    INTEGER, INTENT(IN) :: iunit
+!</input>  
+
+!<output>
+    ! The string where to write data to
+    CHARACTER(LEN=*), INTENT(OUT) :: sdata
+    
+    ! Length of the output
+    INTEGER, INTENT(OUT) :: ilinelen
+    
+    ! Status of the reading process. Set to a value <> 0 if the end
+    ! of the file is reached.
+    INTEGER, INTENT(OUT) :: ios
+!</output>
+    
+    ! local variables
+    INTEGER :: eol
+    CHARACTER :: c
+    
+    sdata = ''
+    ilinelen = 0
+    
+    ! Read the data - as long as the line/file does not end.
+    eol = NO
+    ios = 0
+    DO WHILE ((ios .EQ. 0) .AND. (eol .EQ. NO))
+      
+      ! Read a character.
+      ! Unfortunately, Fortran forces me to use this dirty GOTO
+      ! to decide processor-independently whether the line or
+      ! the record ends.
+      READ (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
+      GOTO 30
+      
+10    CONTINUE
+      ! End of file. 
+      ios = -1
+      GOTO 30
+      
+20    CONTINUE
+      ! End of record = END OF LINE.
+      eol = YES
+      
+      ! Set error flag back to 0.
+      ios = 0
+      
+30    CONTINUE    
+      ! Don't do anything in case of an error
+      IF (ios .EQ. 0) THEN
+        
+        ilinelen = ilinelen + 1
+        sdata (ilinelen:ilinelen) = c
+        
+      END IF
+      
+    END DO
+    
+  END SUBROUTINE
 
 END MODULE
