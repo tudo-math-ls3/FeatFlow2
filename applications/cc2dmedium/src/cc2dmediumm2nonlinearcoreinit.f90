@@ -25,28 +25,32 @@
 !#     -> Initialises a 'nonlinear iteration structure' with parameters from
 !#        the DAT file. This is needed for solving the core equation.
 !#
-!# 4.) c2d2_preparePreconditioner
+!# 4.) c2d2_initPreconditioner
 !#     -> Prepare preconditioner of nonlinear iteration
 !#
-!# 5.) c2d2_releasePreconditioner
+!# 5.) c2d2_updatePreconditioner
+!#     -> Updates the preconditioner if there was a change in the system matrices
+!#
+!# 6.) c2d2_releasePreconditioner
 !#     -> Clean up preconditioner of nonlinear iteration
 !#
-!# 6.) c2d2_getProlRest
+!# 7.) c2d2_getProlRest
 !#     -> Auxiliary routine: Set up interlevel projection structure
 !#        with information from INI/DAT files
 !#
-!# 7.) c2d2_checkAssembly
+!# Auxiliary routines, not to be called from outside:
+!#
+!# 1.) c2d2_checkAssembly
 !#     -> Checks if the system matrices are compatible to the preconditioner.
 !#        Set up some situation dependent 'tweak' flags for the assembly
 !#        of the matrices.
 !#
-!# 8.) c2d2_finaliseMatrices
-!#     -> Makes the system matrices compatible to the preconditioner if
-!#        necessary.
+!# 2.) c2d2_finaliseMatrices
+!#     -> Rearranges the structure of the preconditioner matrices if necessary.
 !#
-!# 9.) c2d2_unfinaliseMatrices 
-!#     -> Reverts the changes of c2d2_finaliseMatrices and brings matrices
-!#        into their original form.
+!# 3.) c2d2_unfinaliseMatrices 
+!#     -> Reverts the changes of c2d2_finaliseMatrices and brings preconditioner
+!#        matrices into their original form.
 !#
 !# The module works in tight relationship to cc2dmediumm2nonlinearcode.
 !# cc2dmediumm2nonlinearcodeinit provides the routines to initialise
@@ -463,7 +467,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_preparePreconditioner (rproblem,rnonlinearIteration,&
+  SUBROUTINE c2d2_initPreconditioner (rproblem,rnonlinearIteration,&
       rvector,rrhs)
   
 !<description>
@@ -634,6 +638,125 @@ CONTAINS
       CALL lsyssc_createVector (rnonlinearIteration%rpreconditioner%p_rtempVectorSc2,&
                                 rrhs%NEQ,.FALSE.,ST_DOUBLE)
       
+      ! Initialise the matrices.
+      CALL c2d2_updatePreconditioner (rproblem,rnonlinearIteration,&
+          rvector,rrhs,.TRUE.,.TRUE.)
+      
+!      ! Switch off adaptive matrix generation if our discretisation is not a 
+!      ! uniform Q1~ discretisation - the matrix restriction does not support
+!      ! other cases.
+!      p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscretisation(1)
+!      IF ((p_rdiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
+!          (elem_getPrimaryElement(p_rdiscr%RelementDistribution(1)%itrialElement) &
+!              .NE. EL_Q1T)) THEN
+!        i = 0
+!      END IF
+      
+    CASE DEFAULT
+      
+      ! Unknown preconditioner
+      PRINT *,'Unknown preconditioner for nonlinear iteration!'
+      STOP
+      
+    END SELECT
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_updatePreconditioner (rproblem,rnonlinearIteration,&
+      rvector,rrhs,binit,bstructuralUpdate)
+  
+!<description>
+  ! This routine has to be called whenever the system matrices change.
+  ! It initialises (depending on the system matrices) the matrices of the
+  ! preconditioner or performs an update of them
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!<input>
+  ! The current solution vector.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+
+  ! The right-hand-side vector to use in the equation
+  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+
+  ! First initialisation.
+  ! Has to be set to TRUE on the first call. Initialises the preconditioner
+  ! with the structure of the matrices.
+  LOGICAL, INTENT(IN) :: binit
+
+  ! Whether the structure of the system matrices is new.
+  ! This variable has to be set to TRUE whenever there was a structure in 
+  ! the system matrices. This reinitialises the linear solver.
+  LOGICAL, INTENT(IN) :: bstructuralUpdate
+!</input>
+
+!<inputoutput>
+  ! Nonlinar iteration structure saving data for the callback routines.
+  ! Preconditioner data is saved here.
+  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: NLMIN,NLMAX
+    INTEGER :: i
+    INTEGER(PREC_VECIDX) :: imaxmem
+    CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring,snewton
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
+    LOGICAL :: bneumann
+
+    ! Error indicator during initialisation of the solver
+    INTEGER :: ierror    
+  
+    ! A pointer to the system matrix and the RHS vector as well as 
+    ! the discretisation
+    TYPE(t_matrixBlock), POINTER :: p_rmatrix
+
+    ! A pointer to the matrix of the preconditioner
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner
+
+    ! An array for the system matrix(matrices) during the initialisation of
+    ! the linear solver.
+    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    
+    ! Pointer to the template FEM matrix
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM
+    
+    
+    SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
+    CASE (CCPREC_NONE)
+      ! No preconditioner
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
+    
+      IF (.NOT. binit) THEN
+        ! Restore the standard matrix structure in case the matrices had been
+        ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e. 
+        ! temporarily switch to the matrix structure that is compatible to 
+        ! the discretisation.
+        CALL c2d2_unfinaliseMatrices (rnonlinearIteration, &
+            rnonlinearIteration%rfinalAssembly,.FALSE.)
+      END IF
+    
+      ! Ok, we have to initialise a linear solver for solving the linearised
+      ! problem.
+      !
+      ! Which levels have we to take care of during the solution process?
+      NLMIN = rnonlinearIteration%NLMIN
+      NLMAX = rnonlinearIteration%NLMAX
+      
+      ! Get our right hand side / solution / matrix on the finest
+      ! level from the problem structure.
+      p_rmatrix => rproblem%RlevelInfo(NLMAX)%rmatrix
+      
       ! Initialise the preconditioner matrices on all levels.
       DO i=NLMIN,NLMAX
       
@@ -788,6 +911,26 @@ CONTAINS
         END IF
       END DO
       
+      IF (binit) THEN
+        ! Check the matrices if they are compatible to our
+        ! preconditioner. If not, we later have to modify the matrices a little
+        ! bit to make it compatible. 
+        ! The result of this matrix analysis is saved to the rfinalAssembly structure 
+        ! in rnonlinearIteration and allows us later to switch between these two
+        ! matrix representations: Compatibility to the discretisation routines
+        ! and compatibity to the preconditioner.
+        ! The c2d2_checkAssembly routine below uses this information to perform
+        ! the actual modification in the matrices.
+        CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
+            rnonlinearIteration%rfinalAssembly)
+      END IF
+      ! Otherwise, checkAssembly was already called and does not have to be 
+      ! called again.
+      
+      ! Using rfinalAssembly as computed above, make the matrices compatible 
+      ! to our preconditioner if they are not.
+      CALL c2d2_finaliseMatrices (rnonlinearIteration)
+      
       ! Attach the system matrices to the solver.
       !
       ! For this purpose, copy the matrix structures from the preconditioner
@@ -810,9 +953,15 @@ CONTAINS
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
-      CALL linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
-          ierror)
-      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      IF (binit) THEN
+        CALL linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
+            ierror)
+        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      ELSE IF (bstructuralUpdate) THEN
+        CALL linsol_updateStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
+            ierror)
+        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      END IF
       
       ! Switch off adaptive matrix generation if our discretisation is not a 
       ! uniform Q1~ discretisation - the matrix restriction does not support
@@ -1164,7 +1313,7 @@ CONTAINS
       ! Loop through the levels, transpose the B-matrices  
       DO ilev=NLMIN,NLMAX
         ! Get the matrix of the preconditioner
-        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
+        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
         
         ! Release the old B1/B2 matrices from the system matrix. This
         ! does not release any memory, as the content of the matrix

@@ -360,13 +360,7 @@ CONTAINS
     
     ! DEBUG!!!
     !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
-    
-    ! Restore the standard matrix structure in case the matrices had been
-    ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e. 
-    ! temporarily switch to the matrix structure that is compatible to 
-    ! the discretisation.
-    CALL c2d2_unfinaliseMatrices (rnonlinearIteration, &
-        rnonlinearIteration%rfinalAssembly,.FALSE.)
+    INTEGER :: i
   
     ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
     ! boundary conditions of rrhs to that vector so that rtempVectorRhs
@@ -426,6 +420,12 @@ CONTAINS
     IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
       CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
     END IF
+
+    ! Initialise the basic system matrices.
+    DO i=rproblem%NLMIN,rproblem%NLMAX
+      CALL c2d2_generateStaticSystemMatrix (&
+          rproblem%RlevelInfo(i),rproblem%RlevelInfo(i)%rmatrix,.FALSE.)
+    END DO
     ! -------------------------------------------    
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
@@ -455,11 +455,6 @@ CONTAINS
     rnonlinearIterationTmp%deta   = 1.0_DP
     rnonlinearIterationTmp%dtau   = 1.0_DP
 
-    ! Using rfinalAssembly, make the matrices compatible 
-    ! to our preconditioner if they are not. So we switch again to the matrix
-    ! representation that is compatible to our preconditioner.
-    CALL c2d2_finaliseMatrices (rnonlinearIteration)
-    
     ! Scale the pressure by the length of the time step. The core equation routines
     ! handle the equation
     !   alpha*M*u + theta*nu*Laplace*u + gamma*N(u)u + B*p = ...
@@ -498,7 +493,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_solveNonstationary (rproblem,rvector,rrhs)
+  SUBROUTINE c2d2_solveNonstationary (rproblem,rvector,rrhs,rpostprocessing)
   
 !<description>
   ! Starts the time discretisation. Proceeds in time until the final time
@@ -517,6 +512,10 @@ CONTAINS
   ! Boundary conditions must not be implemented into that vector, this is done
   ! internally depending on the time.
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+
+  ! Postprocessing structure. Defines what to do with solution vectors.
+  TYPE(t_c2d2postprocessing), INTENT(INOUT) :: rpostprocessing
+  
 !</inputoutput>
 
 !</subroutine>
@@ -545,6 +544,9 @@ CONTAINS
     TYPE(t_timeError) :: rtimeerror
     TYPE(t_timeDerivatives) :: rtimeDerivative
 
+    ! Backup postprocessing structure
+    TYPE(t_c2d2postprocessing) :: rpostprocessingBackup
+
     ! Some preparations for the nonlinear solver.
     !
     ! Initialise the nonlinear solver node rnlSol with parameters from
@@ -560,24 +562,8 @@ CONTAINS
     ! Initialise the time stepping scheme according to the problem configuration
     CALL c2d2_initTimeSteppingScheme (rproblem%rparamList,rtimestepping)
     
-    ! Check the matrices if they are compatible to our
-    ! preconditioner. If not, we later have to modify the matrices a little
-    ! bit to make it compatible. 
-    ! The result of this matrix analysis is saved to the rfinalAssembly structure 
-    ! in rnonlinearIteration and allows us later to switch between these two
-    ! matrix representations: Compatibility to the discretisation routines
-    ! and compatibity to the preconditioner.
-    ! The c2d2_checkAssembly routine below uses this information to perform
-    ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
-        rnonlinearIteration%rfinalAssembly)
-    
-    ! Using rfinalAssembly as computed above, make the matrices compatible 
-    ! to our preconditioner if they are not.
-    CALL c2d2_finaliseMatrices (rnonlinearIteration)
-    
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL c2d2_preparePreconditioner (rproblem,&
+    CALL c2d2_initPreconditioner (rproblem,&
         rnonlinearIteration,rvector,rrhs)
 
     ! Create temporary vectors we need for the nonlinear iteration.
@@ -644,6 +630,7 @@ CONTAINS
           IF (irepetition .eq. 0) THEN
             CALL c2d2_backupTimestep (rsnapshotLastMacrostep,rproblem,rtimeStepping,&
                 rvector,rrhs)
+            CALL c2d2_copyPostprocessing (rpostprocessing,rpostprocessingBackup)
           END IF
 
           ! At first, perform one predictor step with 3x time step size
@@ -737,6 +724,7 @@ CONTAINS
             ! We didn't change the solution vector and the time stepping structure,
             ! so we don't have to restore them.
             CALL c2d2_restoreTimestep (rsnapshotLastMacrostep,rproblem,rrhs=rrhs)
+            CALL c2d2_copyPostprocessing (rpostprocessingBackup,rpostprocessing)
 
             ! The solver worked, rpredictedSolution contains the predicted
             ! solution. Now we can continue with the usual time stepping.
@@ -1017,7 +1005,7 @@ CONTAINS
         CALL output_line ('Starting postprocessing of the time step...')
         
         ! Postprocessing. Write out the solution if it was calculated successfully.
-        CALL c2d2_postprocessingNonstat (rproblem,rvector)
+        CALL c2d2_postprocessingNonstat (rproblem,rvector,rpostprocessing)
         
         CALL output_separator(OU_SEP_MINUS)
         CALL output_line ('Analysing time derivative...')
@@ -1098,6 +1086,7 @@ CONTAINS
             dtmp = rtimeStepping%dtstepFixed
             CALL c2d2_restoreTimestep (rsnapshotLastMacrostep,rproblem,&
                 rtimeStepping,rvector,rrhs)
+            CALL c2d2_copyPostprocessing (rpostprocessingBackup,rpostprocessing)
             CALL timstp_setBaseSteplength (rtimeStepping, dtmp)
             
             CALL output_line ('Repeating macrostep. Returning to timestep ' &

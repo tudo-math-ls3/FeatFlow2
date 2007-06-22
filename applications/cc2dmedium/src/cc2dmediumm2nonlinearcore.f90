@@ -330,7 +330,7 @@ MODULE cc2dmediumm2nonlinearcore
     ! a Newton matrix. This matrix is changed during the
     ! nonlinear iteration and used e.g. if a linear solver (Multigrid) is
     ! used for preconditioning.
-    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner => NULL()
   
     ! Velocity coupling matrix $A_{12}$.
     ! Exists only of deformation tensor or Newton iteration is used in the

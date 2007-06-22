@@ -106,24 +106,8 @@ CONTAINS
     rnonlinearIteration%deta   = 1.0_DP
     rnonlinearIteration%dtau   = 1.0_DP
 
-    ! Check the matrices if they are compatible to our
-    ! preconditioner. If not, we later have to modify the matrices a little
-    ! bit to make it compatible. 
-    ! The result of this matrix analysis is saved to the rfinalAssembly structure 
-    ! in rnonlinearIteration and allows us later to switch between these two
-    ! matrix representations: Compatibility to the discretisation routines
-    ! and compatibity to the preconditioner.
-    ! The c2d2_checkAssembly routine below uses this information to perform
-    ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
-        rnonlinearIteration%rfinalAssembly)
-    
-    ! Using rfinalAssembly as computed above, make the matrices compatible 
-    ! to our preconditioner if they are not.
-    CALL c2d2_finaliseMatrices (rnonlinearIteration)
-    
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL c2d2_preparePreconditioner (rproblem,&
+    CALL c2d2_initPreconditioner (rproblem,&
         rnonlinearIteration,rvector,rrhs)
 
     ! Call the nonlinear solver to solve the core equation.
