@@ -387,7 +387,7 @@ CONTAINS
     ! a weighted copy of the current RHS f_n to the 'global' RHS vector
     ! according to the time stepping scheme.
     
-    ! Set up w_2*N(u_n) + w_4*f_n.
+    ! Set up w_4*f_n.
     CALL lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
          rtimestepping%dweightOldRHS,0.0_DP)
     
@@ -1049,7 +1049,7 @@ CONTAINS
       !----------------------------------------------------
       IF (babortTimestep) THEN
       
-        ! Uh, oh, somthing went wrong. Let's hope we can repeat the timestep!
+        ! Uh, oh, something went wrong. Let's hope we can repeat the timestep!
         !
         ! We have to repeat the time step if
         !  a) we have repetitions left and
@@ -1110,7 +1110,7 @@ CONTAINS
           
         END SELECT
       
-      ELSE
+      ELSE  ! IF (babortTimestep) THEN
       
         ! No, time step is ok. If this is the last time step of the macrostep,
         ! reset the repetition counter such that it starts with 0 for the
