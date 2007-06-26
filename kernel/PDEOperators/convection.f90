@@ -660,7 +660,7 @@ CONTAINS
     !********************************************************************
     !
     !********************************************************************
-    !     What we want to discretize here is the term
+    !     What we want to discretise here is the term
     !
     !         n(z,u,v) = ( (z*grad (.))u , v )_Omega
     !
@@ -676,9 +676,9 @@ CONTAINS
     !       |            \  |               |
     !       X------Gk-------X---------------X
     !
-    !     The edges Gl and Gk enclose a diagonal edge Gklof the above
+    !     The edges Gl and Gk enclose a diagonal edge Gkl of the above
     !     triangle. The operator can now be rewritten by decomposition
-    !     onto the elements as
+    !     into the elements as
     !
     !       n(z,u,v) ~= sum_l sum_k int_Gkl (z*n_lk) (u-u(Bl)) v(Bl) dGamma
     !
@@ -861,7 +861,7 @@ CONTAINS
       ! Duu1/Duu2 contains the velocity along the edges following
       ! the four corner points.
       !  
-      ! Initialize DlocalMatrix(.,.) to 0. DlocalMatrix will assemble the "local"
+      ! Initialise DlocalMatrix(.,.) to 0. DlocalMatrix will assemble the "local"
       ! matrix, i.e. the values that are later incorporated into
       ! the system matrix at the positions stored in IlocalMatrix.
       !
@@ -972,7 +972,7 @@ CONTAINS
       ! Dflux        - The flux along the edges of the triangles
       ! IlocalMatrix - The indices in the matrix A of the entries that
       !                are affected by integration on the current element iel.
-      ! DlocalMatrix - Local element matrix - initialized with 0 up to now.
+      ! DlocalMatrix - Local element matrix - initialised with 0 up to now.
       !
       ! So the next step is to assemble the local element matrix,
       ! which is to be incorporated into the system matrix later.
@@ -1027,7 +1027,7 @@ CONTAINS
           !
           ! Analyze the two fluxes on the edges of the triangle.
           ! Calculate the lambda-value by Samarskji-upwind,
-          ! depending on whether the flux goes "in" ou "out" of the
+          ! depending on whether the flux goes "in" or "out" of the
           ! triangle. DL0 saves the lambda of the triangle-edge
           ! corresponding to II, DL2 that of the triangle edge
           ! corresponding to  im2.
@@ -1093,7 +1093,7 @@ CONTAINS
       !
       !     THETA*K*u*grad(u)
       !
-      ! which is realized by a multiplication of the u*grad(.)-
+      ! which is realised by a multiplication of the u*grad(.)-
       ! matrix by THETA*K = dtheta here!
       
       DlocalMatrix = dtheta*DlocalMatrix
@@ -1455,14 +1455,14 @@ CONTAINS
   !   reconstruct a velocity from two previous time steps...\\
   !
   !  3.) In the nonlinear iteration, as a right hand side there arises
-  !   a defect vector D, which linear part can easily being assembled.
+  !   a defect vector D whose linear part can easily be assembled.
   !   However, there is a nonlinearity to be included into that vector,
   !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
   !   into that vector, using the formula
   !
   !            $$ D = D - dtheta * UUx * grad (Ux) $$
   !   
-  !  4.) If bALE=true, a mesh velocity field is added to the nonlineareity
+  !  4.) If bALE=true, a mesh velocity field is added to the nonlinearity
   !   according to the formula  "U * grad (U-DmeshVelocity)".
   !   For bALE=false, the simple nonlinearity "U * grad (U)" is used.
   
@@ -1675,7 +1675,7 @@ CONTAINS
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it's at most
-    ! BILF_NELEMSIM. This is only used for allocaing some arrays.
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
     
     ! For cdef containing CONV_MODDEFECT, we build the defect vector                     
@@ -3013,7 +3013,7 @@ CONTAINS
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
     ! this is NEL. If there are too many elements, it's at most
-    ! BILF_NELEMSIM. This is only used for allocaing some arrays.
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
     
     ! For cdef containing CONV_MODDEFECT, we build the defect vector                     
@@ -4265,7 +4265,7 @@ CONTAINS
                       Kvert,Kmid,Dcorvg,KDFG,IDFL,UPSAM,NUREC)
 
   ! This routine calculates a local ddelta=DELTA_T for a finite element
-  ! T=IEL. This can be used by the streamline diffusion stabilization
+  ! T=IEL. This can be used by the streamline diffusion stabilisation
   ! technique as a multiplier of the (local) bilinear form.
   !
   ! The effective velocity that is used for calculating the ddelta
@@ -4374,7 +4374,7 @@ CONTAINS
         
       ELSE
       
-        ! For ddelta >= 0, we use standard Samarskji-like calculation
+        ! For UPSAM >= 0, we use standard Samarskji-like calculation
         ! of ddelta. At first calculate the local Reynolds number
         ! RELOC = Re_T = ||u||_T * h_T / NU
         
