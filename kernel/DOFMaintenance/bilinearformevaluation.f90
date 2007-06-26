@@ -501,7 +501,7 @@ CONTAINS
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
-  ! BILF_NELEMSIM. This is only used for allocaing some arrays.
+  ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
 
   ! Allocate a list of handles and a list of pointers corresponding to it.
@@ -1218,7 +1218,7 @@ CONTAINS
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
-  ! BILF_NELEMSIM. This is only used for allocaing some arrays.
+  ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
 
   ! Allocate a list of handles and a list of pointers corresponding to it.
@@ -2073,7 +2073,7 @@ CONTAINS
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
-  ! BILF_NELEMSIM. This is only used for allocaing some arrays.
+  ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
   
   ! Get a pointer to the KVERT and DCORVG array
@@ -2904,7 +2904,7 @@ CONTAINS
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
-  ! BILF_NELEMSIM. This is only used for allocaing some arrays.
+  ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
   
   ! Get a pointer to the KVERT and DCORVG array
