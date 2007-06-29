@@ -175,6 +175,12 @@
 !# 49.) lsyssc_isVectorSorted
 !#      -> Checks if a vector is currently sorted.
 !#
+!# 50.) lsyssc_hasMatrixStructure
+!#      -> Check if a matrix has a structure in memory or not.
+!#
+!# 50.) lsyssc_hasMatrixContent
+!#      -> Check if a matrix has a content in memory or not.
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -3117,6 +3123,13 @@ CONTAINS
     ! rx and ry must have at least the same data type!
     IF (rx%cdataType .NE. ry%cdataType) THEN
       PRINT *,'MV with different data types for rx and ry not supported!'
+      STOP
+    END IF
+    
+    ! Up to now, all matrix types use h_Da. So if that's not associated,
+    ! there is for sure an error!
+    IF (rmatrix%h_Da .EQ. ST_NOHANDLE) THEN
+      PRINT *,'lsyssc_scalarMatVec: Matrix has no data!'
       STOP
     END IF
     
@@ -17040,5 +17053,63 @@ CONTAINS
     lsyssc_isVectorSorted = rvector%isortStrategy .GT. 0
 
   END FUNCTION
+
+  !****************************************************************************
+
+!<function>
+  
+  PURE LOGICAL FUNCTION lsyssc_hasMatrixStricture (rmatrix)
+  
+!<description>
+  ! Returns whether a matrix has a structure or not.
+  !
+  ! Note that some matrix types (e.g. matrix-type 1 = full matrix)
+  ! don't have a structure at all, so the routine always returns
+  ! FALSE in such a case.
+!</description>
+  
+!<input>
+  ! Matrix to check
+  TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
+!</input>
+
+!<result>
+  ! Whether the matrix has strucure arrays in memory or not.
+!</result>
+
+!</function>
+
+    ! All up to now implemented matrix types use Kcol if they have a 
+    ! structure...
+    lsyssc_hasMatrixStricture = rmatrix%h_Kcol .NE. ST_NOHANDLE
+
+  END FUNCTION
+
+  !****************************************************************************
+
+!<function>
+  
+  PURE LOGICAL FUNCTION lsyssc_hasMatrixContent (rmatrix)
+  
+!<description>
+  ! Returns whether a matrix has a content or not.
+!</description>
+  
+!<input>
+  ! Matrix to check
+  TYPE(t_matrixScalar), INTENT(IN)                  :: rmatrix
+!</input>
+
+!<result>
+  ! Whether the matrix has a content array in memory or not.
+!</result>
+
+!</function>
+
+    ! All up to now implemented matrix types save their data in h_Da.
+    lsyssc_hasMatrixContent = rmatrix%h_Da .NE. ST_NOHANDLE
+
+  END FUNCTION
+
 
 END MODULE

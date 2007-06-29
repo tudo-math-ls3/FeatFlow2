@@ -18,7 +18,7 @@
 !# 3.) conv_JumpStabilisation2d
 !#     -> Apply jump stabilisation to a vector, a matrix or both.
 !# 
-!# 4.) conv_streamlinediffusion2dBlk
+!# 4.) conv_streamlineDiffusionBlk2d
 !#     -> Apply streamline diffusion to a block vector, a block matrix or both.
 !#        Extended method compared to conv_streamlinediffusion2d.
 !#        Allows to assemble the Newton matrix directly.
