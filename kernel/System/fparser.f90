@@ -899,7 +899,6 @@ CONTAINS
     CALL Compile (rparser%Comp(iComp),Func,Var)
 
     CALL fparser_PrintByteCode(rparser,iComp)
-    pause
 
   END SUBROUTINE fparser_parseFunction
 
