@@ -357,10 +357,10 @@ CONTAINS
 
     ! local variables
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
+    TYPE(t_ccmatrixComponents) :: rmatrixAssembly
     
     ! DEBUG!!!
     !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
-    INTEGER :: i
   
     ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
     ! boundary conditions of rrhs to that vector so that rtempVectorRhs
@@ -402,14 +402,26 @@ CONTAINS
     
     rnonlinearIterationTmp = rnonlinearIteration
 
-    rnonlinearIterationTmp%dalpha = -1.0_DP
-    rnonlinearIterationTmp%dtheta = -rtimestepping%dweightMatrixRHS
-    rnonlinearIterationTmp%dgamma = -rtimestepping%dweightMatrixRHS * REAL(1-rproblem%iequation,DP)
-    rnonlinearIterationTmp%deta   = 0.0_DP
-    rnonlinearIterationTmp%dtau   = 0.0_DP
-    
-    CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,rvector,rtempVectorRhs,&
-        .FALSE.,.FALSE.,rproblem%rcollection)    
+    ! Initialise the matrix assembly structure rmatrixAssembly to describe the
+    ! matrix we want to have.
+    rmatrixAssembly%dalpha = -1.0_DP
+    rmatrixAssembly%dtheta = -rtimestepping%dweightMatrixRHS
+    rmatrixAssembly%dgamma = -rtimestepping%dweightMatrixRHS * REAL(1-rproblem%iequation,DP)
+    rmatrixAssembly%deta = 0.0_DP
+    rmatrixAssembly%dtau = 0.0_DP
+    rmatrixAssembly%iupwind = collct_getvalue_int (rproblem%rcollection,'IUPWIND')
+    rmatrixAssembly%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+    rmatrixAssembly%dupsam = collct_getvalue_real (rproblem%rcollection,'UPSAM')
+    rmatrixAssembly%p_rmatrixStokes => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokes
+    rmatrixAssembly%p_rmatrixB1 => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB1
+    rmatrixAssembly%p_rmatrixB2 => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB2
+    rmatrixAssembly%p_rmatrixMass => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass    
+        
+    CALL c2d2_assembleDefect (rmatrixAssembly,rvector,rtempVectorRhs)
 
     ! -------------------------------------------    
     ! Switch to the next point in time.
@@ -421,11 +433,6 @@ CONTAINS
       CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
     END IF
 
-    ! Initialise the basic system matrices.
-    DO i=rproblem%NLMIN,rproblem%NLMAX
-      CALL c2d2_generateStaticSystemMatrix (&
-          rproblem%RlevelInfo(i),rproblem%RlevelInfo(i)%rmatrix,.FALSE.)
-    END DO
     ! -------------------------------------------    
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
@@ -438,7 +445,7 @@ CONTAINS
 
     ! Implement boundary conditions into the RHS and solution vector, not
     ! into the matrices; the latter is done during the nonlinear iteration.
-    CALL c2d2_implementBC (rproblem,rvector,rtempVectorRhs,.FALSE.,.TRUE.,.TRUE.)
+    CALL c2d2_implementBC (rproblem,rvector,rtempVectorRhs,.TRUE.,.TRUE.)
 
     ! That's it for the RHS and solution vector.
     !    
@@ -574,7 +581,7 @@ CONTAINS
     ! Don't implement anything to matrices or RHS vector as these are
     ! maintained in the timeloop.
     ! Afterwards, we can start the timeloop.
-    CALL c2d2_implementBC (rproblem,rvector,rrhs,.FALSE.,.TRUE.,.FALSE.)
+    CALL c2d2_implementBC (rproblem,rvector,rrhs,.TRUE.,.FALSE.)
 
     ! First time step
     rproblem%rtimedependence%itimeStep = 1

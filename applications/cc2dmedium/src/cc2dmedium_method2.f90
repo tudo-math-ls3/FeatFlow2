@@ -150,8 +150,8 @@ CONTAINS
     CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
     CALL c2d2_initAnalyticBC (p_rproblem)   
 
-    ! On all levels, generate the static matrices and the basic
-    ! system matrix.
+    ! On all levels, generate the static matrices used as templates
+    ! for the system matrix (Laplace, B, Mass,...)
     CALL c2d2_generateBasicMatrices (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
@@ -169,7 +169,7 @@ CONTAINS
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
-      CALL c2d2_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.,.TRUE.)
+      CALL c2d2_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.)
     
       ! Solve the problem
       CALL c2d2_solve (p_rproblem,rvector,rrhs)
