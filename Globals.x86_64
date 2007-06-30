@@ -134,6 +134,22 @@ endif
 
 
 ########################################################################
+# AMD64 /w SUN compiler
+########################################################################
+
+ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-sun),yes)
+CC=suncc
+FC=sunf90
+OPTFLAGS  = -fast -O5 
+FCFLAGS   = -moddir=$(MODDIR)
+CCFLAGS   =
+BLASLIB   = 
+LAPACKLIB = 
+GENERIC   = 0
+endif
+
+
+########################################################################
 # AMD64 special user definitions
 ########################################################################
 
@@ -232,3 +248,18 @@ GENERIC   = 0
 endif
 endif
 
+
+########################################################################
+# Intel /w SUN compiler
+########################################################################
+
+ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-sun),yes)
+CC=suncc
+FC=sunf90
+OPTFLAGS  = -fast -O5 
+FCFLAGS   = -moddir=$(MODDIR)
+CCFLAGS   =
+BLASLIB   = 
+LAPACKLIB = 
+GENERIC   = 0
+endif
