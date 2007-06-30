@@ -17,6 +17,7 @@ LAPACKLIB =
 GENERIC   = 1
 endif
 
+
 ########################################################################
 # AMD /w GNU compiler
 ########################################################################
@@ -84,6 +85,7 @@ FCFLAGS   += -march=opteron
 endif
 endif
 
+
 ########################################################################
 # AMD /w Intel compiler
 ########################################################################
@@ -119,6 +121,7 @@ FCFLAGS   +=
 endif
 endif
 
+
 ########################################################################
 # AMD /w PGI compiler
 ########################################################################
@@ -136,6 +139,22 @@ GENERIC   = 0
 ifeq ($(FFCPU),athlonxp)
 FCFLAGS   += -tp athlonxp
 endif
+endif
+
+
+########################################################################
+# AMD /w SUN compiler
+########################################################################
+
+ifeq ($(call match,$(ID),pc-(k.?|athlon.?.?|opteron)-(linux|cygwin_nt?.?)-sun),yes)
+CC=suncc
+FC=sunf90
+OPTFLAGS  = -fast -O5 
+FCFLAGS   = -moddir=$(MODDIR)
+CCFLAGS   =
+BLASLIB   = 
+LAPACKLIB = 
+GENERIC   = 0
 endif
 
 
@@ -253,4 +272,20 @@ endif
 ifeq ($(FFCPU),core2)
 OPTFLAGS  += -xT
 endif
+endif
+
+
+########################################################################
+# Intel /w SUN compiler
+########################################################################
+
+ifeq ($(call match,$(ID),pc-(pentium?.?|core?.?)-linux-sun),yes)
+CC=suncc
+FC=sunf90
+OPTFLAGS  = -fast -O5 
+FCFLAGS   = -moddir=$(MODDIR)
+CCFLAGS   =
+BLASLIB   = 
+LAPACKLIB = 
+GENERIC   = 0
 endif
