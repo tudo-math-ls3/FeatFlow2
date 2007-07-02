@@ -17,47 +17,54 @@
 !#     -> Allocates memory for the system matrix representing the 
 !#        core equation.
 !#
-!# 2.) c2d2_generateStaticSystemMatrix
-!#     -> Sets up the static entries in the system matrix using scalar matrices
-!#        (mass, B,...) as building blocks.
-!#
-!# 3.) c2d2_initNonlinearLoop
+!# 2.) c2d2_initNonlinearLoop
 !#     -> Initialises a 'nonlinear iteration structure' with parameters from
 !#        the DAT file. This is needed for solving the core equation.
 !#
-!# 4.) c2d2_preparePreconditioner
+!# 3.) c2d2_doneNonlinearLoop
+!#     -> Cleans up a 'nonlinear iteration structure' initialised by
+!#        c2d2_initNonlinearLoop. 
+!#     -> Extension to c2d2_releaseNonlinearLoop.
+!#
+!# 4.) c2d2_initPreconditioner
 !#     -> Prepare preconditioner of nonlinear iteration
 !#
-!# 5.) c2d2_releasePreconditioner
+!# 5.) c2d2_updatePreconditioner
+!#     -> Updates the preconditioner if there was a change in the system matrices
+!#
+!# 6.) c2d2_releasePreconditioner
 !#     -> Clean up preconditioner of nonlinear iteration
 !#
-!# 6.) c2d2_getProlRest
+!# 7.) c2d2_getProlRest
 !#     -> Auxiliary routine: Set up interlevel projection structure
 !#        with information from INI/DAT files
 !#
-!# 7.) c2d2_checkAssembly
+!# Auxiliary routines, not to be called from outside:
+!#
+!# 1.) c2d2_checkAssembly
 !#     -> Checks if the system matrices are compatible to the preconditioner.
 !#        Set up some situation dependent 'tweak' flags for the assembly
 !#        of the matrices.
 !#
-!# 8.) c2d2_finaliseMatrices
+!# 2.) c2d2_finaliseMatrices
 !#     -> Makes the system matrices compatible to the preconditioner if
 !#        necessary.
 !#
-!# 9.) c2d2_unfinaliseMatrices 
+!# 3.) c2d2_unfinaliseMatrices 
 !#     -> Reverts the changes of c2d2_finaliseMatrices and brings matrices
 !#        into their original form.
 !#
-!# The module works in tight relationship to cc2dmediumm2nonlinearcode.
+!# The module works in tight relationship to cc2dmediumm2nonlinearcore.
 !# cc2dmediumm2nonlinearcodeinit provides the routines to initialise
 !# preconditioner and important structures using the problem related
 !# structure. This module cc2dmediumm2nonlinearcore on the other hand
 !# contains only the 'main' worker routines that do the work of the
-!# nonlinear iteration.
+!# nonlinear iteration -- independent of the problem structure!
 !#
 !# Note that this module and the "nonlinearcore" module are the only modules
 !# that 'know' the actual structure of the system matrix and how to link
-!# it to the main problem!
+!# it to the main problem! For the actual assembly of the matrices and defect
+!# vectors, routines of the module cc2dmediumm2matvecassembly are used.
 !#
 !# </purpose>
 !##############################################################################
@@ -131,6 +138,9 @@ CONTAINS
     ! A pointer to the discretisation structure with the data.
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
   
+    ! A t_ccmatrixComponents used for defining the matrix structure
+    TYPE(t_ccmatrixComponents) :: rmatrixAssembly
+  
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rlevelInfo%p_rdiscretisation
     
@@ -148,349 +158,52 @@ CONTAINS
     ! Let's consider the global system in detail. It has roughly
     ! the following shape:
     !
-    !    ( A11       B1  M            ) = ( A11  A12  A13 A14           )
-    !    (      A22  B2       M       )   ( A21  A22  A23      A25      )
-    !    ( B1^T B2^T I                )   ( A31  A32  A33               )
-    !    ( M             A44  A45  B1 )   ( A41           A44  A45  A46 )
-    !    (      M        A54  A55  B2 )   (      A52      A54  A55  A56 )
-    !    (               B1^T B2^T I  )   (               A64  A65  A66 )
+    !    ( A11       B1  ) = ( A11  A12  A13 )
+    !    (      A22  B2  )   ( A21  A22  A23 )
+    !    ( B1^T B2^T .   )   ( A31  A32  A33 )
     !
     ! All matices may have multiplication factors in their front.
-    ! E.g. usually, the "I" matrices are multiplied with "0", thus leading to
-    ! the usual (Navier-)Stokes saddle point structure!
-
-    ! Primal equation
-    ! ---------------
+    !
     ! The structure of the matrices A11 and A22 of the global system matrix 
     ! is governed by the template FEM matrix.
     ! Initialise them with the same structure, i.e. A11, A22 share (!) their
     ! structure (not the entries) with that of the template matrix.
     !
-    ! For this purpose, use the "duplicate matrix" routine.
-    ! The structure of the matrix is shared with the template FEM matrix.
-    ! For the content, a new empty array is allocated which will later receive
-    ! the entries.
-    CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        
-    IF (.NOT. rproblem%bdecoupledXY) THEN          
-      ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
-      ! A22 is identical to A11! So mirror A11 to A22 sharing the
-      ! structure and the content.
-      CALL lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(1,1),&
-                  rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    ! We allocate the system matrix using the c2d2_assembleMatrix routine.
+    ! For this purpose, we have to initialise a t_ccmatrixComponents structure
+    ! which defines the shape of the matrix. We simply set the parameters
+    ! of those terms which wshould appear in the matrix to a value <> 0,
+    ! that's enough for the memory allocation.
+    
+    rmatrixAssembly%dtheta1 = 1.0_DP   ! A velocity block
+    rmatrixAssembly%deta1 = 1.0_DP     ! A gradient block
+    rmatrixAssembly%dtau1 = 1.0_DP     ! A divergence block
+    rmatrixAssembly%dkappa1 = 1.0_DP   ! Pressure block
+    
+    rmatrixAssembly%dtheta2 = 1.0_DP   ! A velocity block
+    rmatrixAssembly%deta2 = 1.0_DP     ! A gradient block
+    rmatrixAssembly%dtau2 = 1.0_DP     ! A divergence block
+    rmatrixAssembly%dkappa2 = 1.0_DP   ! Pressure block
+    
+    rmatrixAssembly%p_rdiscretisation => rlevelInfo%p_rdiscretisation
+    rmatrixAssembly%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
+    rmatrixAssembly%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
+    rmatrixAssembly%p_rmatrixStokes => rlevelInfo%rmatrixStokes
+    rmatrixAssembly%p_rmatrixB1 => rlevelInfo%rmatrixB1
+    rmatrixAssembly%p_rmatrixB2 => rlevelInfo%rmatrixB2
+    rmatrixAssembly%p_rmatrixMass => rlevelInfo%rmatrixMass
+    rmatrixAssembly%p_rmatrixIdentityPressure => rlevelInfo%rmatrixIdentityPressure
+
+    IF (.NOT. rproblem%bdecoupledXY) THEN    
+      CALL c2d2_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
+        rmatrix,rmatrixAssembly)
     ELSE
-      ! Otherwise, create another copy of the template matrix.
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      CALL c2d2_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_DECOUPLED,&
+        rmatrix,rmatrixAssembly)
     END IF
-
-    ! Manually change the discretisation structure of the Y-velocity 
-    ! matrix to the Y-discretisation structure.
-    ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
-    ! so this is not really necessary - we do this for sure...
-    rmatrix%RmatrixBlock(2,2)%p_rspatialDiscretisation => &
-      p_rdiscretisation%RspatialDiscretisation(2)
                                   
-    ! The B1/B2 matrices exist up to now only in our local problem structure.
-    ! Put a copy of them into the block matrix.
-    !
-    ! Note that we share the structure of B1/B2 with those B1/B2 of the
-    ! block matrix, while we create empty space for the entries. 
-    ! Later, the B-matrices are copied into here and modified for boundary
-    ! conditions.
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(1,3),&
-                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(2,3),&
-                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+    ! That's it, all submatrices are set up.
       
-    ! Furthermore, put B1^T and B2^T to the block matrix.
-    ! These matrices will not change during the whole computation,
-    ! so we can put refereces to the original ones to the system matrix.
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(3,1),&
-                                  LSYSSC_TR_VIRTUAL)
-
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(3,2),&
-                                  LSYSSC_TR_VIRTUAL)
-                                  
-    ! Put a reference to the identity matrix for the pressure into the
-    ! global matrix.
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixIdentityPressure,&
-        rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-    ! Dual equation
-    ! -------------                                   
-    ! Add submatrices for the dual system to the main system matrix.
-    ! The velocity submatrices have the same structure as the template
-    ! FEM matrix, but they have all different content!
-    
-    CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-    IF (.NOT. rproblem%bdecoupledXY) THEN          
-      ! If X- and Y-velocity is to be treated in a 'coupled' way, the matrix 
-      ! A55 is identical to A11! So mirror A44 to A55 sharing the
-      ! structure and the content.
-      CALL lsyssc_duplicateMatrix (rmatrix%RmatrixBlock(4,4),&
-                  rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    ELSE
-      ! Otherwise, create another copy of the template matrix.
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    END IF
-
-    ! For a simple Stokes control equation, we don't need the matrices
-    ! (4,5) and (5,4) -- they only appear if the convective operator is present.
-    ! Furthermore, the presence of the convective operator forces A(5,5) to be
-    ! independent of A(4,4), so overwrite the definition of A(5,5) from above.
-    IF (rproblem%iequation .EQ. 0) THEN
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  rmatrix%RmatrixBlock(5,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  rmatrix%RmatrixBlock(4,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  rmatrix%RmatrixBlock(5,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    END IF
-
-    ! Add the B- and B^T submatrices to the main system matrix.
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(4,6),&
-                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(5,6),&
-                                  LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(6,4),&
-                                  LSYSSC_TR_VIRTUAL)
-
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(6,5),&
-                                  LSYSSC_TR_VIRTUAL)
-                                  
-    ! Coupling matrices
-    ! -----------------
-    ! Add space for the mass matrices to the system matrix.
-    !
-    ! They share their structure with the main mass matrix but provide
-    ! empty space for the entries. (The entries miht be changed due to
-    ! boundary conditions!)
-    CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                rmatrix%RmatrixBlock(1,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                rmatrix%RmatrixBlock(2,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-    CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                rmatrix%RmatrixBlock(4,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    CALL lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                rmatrix%RmatrixBlock(5,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      
-    ! Put a reference to the identity matrix for the pressure into the
-    ! global matrix.
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixIdentityPressure,&
-        rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    
-    ! That's it, all submatrices are basically set up.
-    !
-    ! Update the structural information of the block matrix, as we manually
-    ! changed the submatrices:
-    CALL lsysbl_updateMatStrucInfo (rmatrix)
-      
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE c2d2_generateStaticSystemMatrix (rlevelInfo,rmatrix,bsharedMatrix)
-  
-!<description>
-  ! Generates the basic system matrix rmatrix using the specified rlevelInfo
-  ! structure. Allocates memory for all submatrices that may be changed
-  ! during the calculation. Boundary conditions etc. are not attached to the 
-  ! matrix!
-  !
-  ! The routine copies references from the submatrices to rmatrix,
-  ! but it does not initialise any matrix weights / scaling factors.
-  ! This has to be done by the caller for the actual situation.
-  !
-  ! If bsharedMatrix=TRUE, the matrix is created using references to the
-  ! matrix building blocks in rlevelInfo, thus sharing all information
-  ! with those matrices in rlevelInfo. In this case, the caller must
-  ! not change the matrix entries, because this would change the
-  ! original 'template' matrices!
-  ! (This can be used e.g. for setting up a matrix for building a defect
-  !  vector without copying matrix data.)
-  ! If bsharedMatrix=TRUE on the other hand, the matrix entries of the
-  ! original template (Stokes-, Mass-,...) matrices are copied in memory,
-  ! so the new matrix is allowed to be changed!
-  !
-  ! Only exception: The routine includes identity matrices in the size
-  ! of the pressure to position (3,3) and (6,6) in the system matrix.
-  ! These matrices are switched off by setting the multiplier to zero.
-  !
-  ! The routine initialises only the 'static' parts of the system matrix
-  ! (B-matrices, mass matrices). It does not initialise the velocity
-  ! submatrices.
-!</description>
-
-!<input>
-  ! A level-info structure specifying the matrices of the problem.
-  TYPE(t_problem_lvl), INTENT(IN) :: rlevelInfo
-  
-  ! Whether or not the matrix entries of the source matrices (Mass,B,...)
-  ! should be copied in memory. 
-  ! If set to FALSE, the routine initialises rmatrix
-  ! only with references to the original matrices, thus the caller must not
-  ! change the entries.
-  ! If set to TRUE, the entries of the source matrices in rlevelInfo are
-  ! copied, so the caller can change rmatrix afterwards (e.g. to implement
-  ! boundary conditions).
-  LOGICAL, INTENT(IN) :: bsharedMatrix
-!</input>
-
-!<inputoutput>
-  ! A block matrix that receives the basic system matrix.
-  TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
-!</inputoutput>
-
-!</subroutine>
-
-    INTEGER :: idubStructure,idubContent
-    
-    ! Initialise a copy flag that tells the duplicateMatrix-routine whether to
-    ! copy the entries or to create references.
-    IF (bsharedMatrix) THEN
-      idubContent = LSYSSC_DUP_SHARE
-    ELSE
-      idubContent = LSYSSC_DUP_COPY
-    END IF
-    
-    idubStructure = LSYSSC_DUP_SHARE
-    
-    ! If the matrix is empty, create a new one.
-    IF (rmatrix%ndiagBlocks .EQ. 0) THEN
-      CALL lsysbl_createEmptyMatrix (rmatrix,6)
-    END IF
-
-    ! -----------------------------------------------------------------------
-    ! Basic (Navier-) Stokes problem
-    ! -----------------------------------------------------------------------
-
-    ! Let's consider the global system in detail:
-    !
-    !    ( A11  A12  B1  M            ) = ( A11  A12  A13 A14           )
-    !    ( A21  A22  B2       M       )   ( A21  A22  A23      A25      )
-    !    ( B1^T B2^T 0I               )   ( A31  A32  A33               )
-    !    ( M             A44  A45  B1 )   ( A41           A44  A45  A46 )
-    !    (      M        A54  A55  B2 )   (      A52      A54  A55  A56 )
-    !    (               B1^T B2^T 0I )   (               A64  A65  A66 )
-    !
-    ! We exclude the velocity submatrices here, so our system looks like:
-    !
-    !    (           B1  M            ) = (           A13 A14           )
-    !    (           B2       M       )   (           A23      A25      )
-    !    ( B1^T B2^T 0I               )   ( A31  A32  A33               )
-    !    ( M                       B1 )   ( A41                     A46 )
-    !    (      M                  B2 )   (      A52                A56 )
-    !    (               B1^T B2^T 0I )   (               A64  A65  A66 )
-
-    ! The purpose of this routine is to initialise these static parts of the
-    ! matrix. The two A-blocks are nonlinear, i.e. dynamic, so we don't
-    ! have to deal with them. What we do here is to initialise the
-    ! B-matrices and the mass matrices of this system according to given
-    ! templates!
-    !
-    ! The B1/B2 matrices exist up to now only in our local problem structure
-    ! as scalar 'template' matrices. Put a copy of them into the block matrix.
-    !
-    ! Note that we share the structure of B1/B2 with those B1/B2 of the
-    ! block matrix, while we create copies of the entries. The B-blocks
-    ! are already prepared and memory for the entries is already allocated;
-    ! so we only have to copy the entries.
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(1,3),&
-                                  idubStructure,idubContent)
-
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(2,3),&
-                                  idubStructure,idubContent)
-    
-    ! Furthermore, put B1^T and B2^T to the block matrix.
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(3,1),&
-                                  LSYSSC_TR_VIRTUAL)
-
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(3,2),&
-                                  LSYSSC_TR_VIRTUAL)
-
-    ! Include B1, B1^T, B2, B2^T also to the appropriate blocks for the
-    ! dual system
-
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(4,6),&
-                                  idubStructure,idubContent)
-
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(5,6),&
-                                  idubStructure,idubContent)
-    
-    ! Furthermore, put B1^T and B2^T to the block matrix.
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB1, &
-                                  rmatrix%RmatrixBlock(6,4),&
-                                  LSYSSC_TR_VIRTUAL)
-
-    CALL lsyssc_transposeMatrix (rlevelInfo%rmatrixB2, &
-                                  rmatrix%RmatrixBlock(6,5),&
-                                  LSYSSC_TR_VIRTUAL)
-                                
-    ! Include the mass matrices into the global system. Share the structure,
-    ! duplicate the content. It's important not to share the content as
-    ! boundary implementation routines might overwrite the content!
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixMass, &
-                                  rmatrix%RmatrixBlock(1,4),&
-                                  idubStructure,idubContent)
-                                  
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixMass, &
-                                  rmatrix%RmatrixBlock(2,5),&
-                                  idubStructure,idubContent)
-    
-
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixMass, &
-                                  rmatrix%RmatrixBlock(4,1),&
-                                  idubStructure,idubContent)
-                                  
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixMass, &
-                                  rmatrix%RmatrixBlock(5,2),&
-                                  idubStructure,idubContent)
-
-    ! At position (3,3) and (6,6), we include an identity matrix but
-    ! switch it off by setting the multiplier to zero.
-    !
-    !    (  .    .    .    .    .    . ) 
-    !    (  .    .    .    .    .    . ) 
-    !    (  .    .   0I    .    .    . ) 
-    !    (  .    .    .    .    .    . ) 
-    !    (  .    .    .    .    .    . ) 
-    !    (  .    .    .    .    .   0I ) 
-    
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixIdentityPressure, &
-                                  rmatrix%RmatrixBlock(3,3),&
-                                  idubStructure,idubContent)
-    rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
-
-    CALL lsyssc_duplicateMatrix (rlevelInfo%rmatrixIdentityPressure, &
-                                  rmatrix%RmatrixBlock(6,6),&
-                                  idubStructure,idubContent)
-    rmatrix%RmatrixBlock(6,6)%dscaleFactor = 0.0_DP
-    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -509,7 +222,7 @@ CONTAINS
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  TYPE(t_problem), INTENT(IN), TARGET :: rproblem
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
   
   ! Minimum refinement level in the rproblem structure that is allowed to be used
   ! by the preconditioners.
@@ -540,6 +253,7 @@ CONTAINS
 
     ! local variables
     INTEGER :: ilevel
+    LOGICAL :: bneumann
     TYPE(t_parlstSection), POINTER :: p_rsection
 
     ! Basic initialisation of the nonlinenar iteration structure.
@@ -570,7 +284,7 @@ CONTAINS
     ! all our matrices that we want to use.
     DO ilevel = nlmin,nlmax
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrix => &
-        rproblem%RlevelInfo(ilevel)%rmatrix
+        rproblem%RlevelInfo(ilevel)%rpreallocatedSystemMatrix
         
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixStokes => &
         rproblem%RlevelInfo(ilevel)%rmatrixStokes
@@ -583,6 +297,12 @@ CONTAINS
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass => &
         rproblem%RlevelInfo(ilevel)%rmatrixMass
+
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
+        rproblem%RlevelInfo(ilevel)%rtempVector
+
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixIdentityPressure => &
+        rproblem%RlevelInfo(ilevel)%rmatrixIdentityPressure
 
     END DO
       
@@ -629,13 +349,67 @@ CONTAINS
     CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
                                 'dgammaC',rnonlinearIteration%dgammaC,0.0_DP)
       
+      ! Set up a filter that modifies the block vectors/matrix
+      ! according to boundary conditions.
+      ALLOCATE(rnonlinearIteration%p_RfilterChain(4))
+      
+      ! Initialise the first filter of the filter chain as boundary
+      ! implementation filter for defect vectors:
+      rnonlinearIteration%p_RfilterChain(1)%ifilterType = &
+          FILTER_DISCBCDEFREAL
+
+      ! The second filter filters for boundary conditions of fictitious boundary
+      ! components
+      rnonlinearIteration%p_RfilterChain(2)%ifilterType = &
+          FILTER_DISCBCDEFFICT
+      
+      ! Do we have Neumann boundary?
+      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+      rnonlinearIteration%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      IF (.NOT. bneumann) THEN
+        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+        ! Filter the pressure to avoid indefiniteness.
+        rnonlinearIteration%p_RfilterChain(3)%ifilterType = FILTER_TOL20
+        rnonlinearIteration%p_RfilterChain(3)%itoL20component = NDIM2D+1
+
+        rnonlinearIteration%p_RfilterChain(4)%ifilterType = FILTER_TOL20
+        rnonlinearIteration%p_RfilterChain(4)%itoL20component = 2*(NDIM2D+1)
+      END IF
+      
   END SUBROUTINE
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE c2d2_preparePreconditioner (rproblem,rnonlinearIteration,&
+  SUBROUTINE c2d2_doneNonlinearLoop (rnonlinearIteration)
+  
+!<description>
+  ! Releases memory allocated in c2d2_initNonlinearLoop.
+  ! The routine automatically calls c2d2_releaseNonlinearLoop to release
+  ! internal parameters.
+!</description>
+
+!<inputoutput>
+  ! The nonlinear iteration structure that should be cleaned up.
+  TYPE(t_ccNonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
+!</inputoutput>
+
+!</subroutine>
+    
+    ! Release the filter chain for the defect vectors.
+    IF (ASSOCIATED(rnonlinearIteration%p_RfilterChain)) &
+      DEALLOCATE(rnonlinearIteration%p_RfilterChain)
+      
+    CALL c2d2_releaseNonlinearLoop (rnonlinearIteration)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_initPreconditioner (rproblem,rnonlinearIteration,&
       rvector,rrhs)
   
 !<description>
@@ -672,27 +446,8 @@ CONTAINS
     INTEGER :: NLMIN,NLMAX
     INTEGER :: i
     INTEGER(PREC_VECIDX) :: imaxmem
-    CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring,snewton
-    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
-    LOGICAL :: bneumann
+    CHARACTER(LEN=PARLST_MLDATA) :: ssolverName,sstring
 
-    ! Error indicator during initialisation of the solver
-    INTEGER :: ierror    
-  
-    ! A pointer to the system matrix and the RHS vector as well as 
-    ! the discretisation
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
-
-    ! A pointer to the matrix of the preconditioner
-    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner
-
-    ! An array for the system matrix(matrices) during the initialisation of
-    ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
-    
-    ! Pointer to the template FEM matrix
-    TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM
-    
     ! At first, ask the parameters in the INI/DAT file which type of 
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
@@ -710,10 +465,6 @@ CONTAINS
       ! Which levels have we to take care of during the solution process?
       NLMIN = rnonlinearIteration%NLMIN
       NLMAX = rnonlinearIteration%NLMAX
-      
-      ! Get our right hand side / solution / matrix on the finest
-      ! level from the problem structure.
-      p_rmatrix => rproblem%RlevelInfo(NLMAX)%rmatrix
       
       ! Figure out the name of the section that contains the information
       ! about the linear subsolver. Ask the parameter list from the INI/DAT file
@@ -740,38 +491,6 @@ CONTAINS
       CALL c2d2_getProlRest (rnonlinearIteration%rpreconditioner%p_rprojection, &
           rproblem%rparamList,  'CC-PROLREST')
       
-      ! Set up a filter that modifies the block vectors/matrix
-      ! according to boundary conditions.
-      ALLOCATE(rnonlinearIteration%rpreconditioner%p_RfilterChain(4))
-      
-      ! Initialise the first filter of the filter chain as boundary
-      ! implementation filter for defect vectors:
-      rnonlinearIteration%rpreconditioner%p_RfilterChain(1)%ifilterType = &
-          FILTER_DISCBCDEFREAL
-
-      ! The second filter filters for boundary conditions of fictitious boundary
-      ! components
-      rnonlinearIteration%rpreconditioner%p_RfilterChain(2)%ifilterType = &
-          FILTER_DISCBCDEFFICT
-      
-      ! Do we have Neumann boundary?
-      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
-      rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%ifilterType = &
-          FILTER_DONOTHING
-      IF (.NOT. bneumann) THEN
-        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
-        ! Filter the pressure to avoid indefiniteness.
-        rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%ifilterType = &
-            FILTER_TOL20
-        rnonlinearIteration%rpreconditioner%p_RfilterChain(3)%itoL20component = &
-            NDIM2D+1
-
-        rnonlinearIteration%rpreconditioner%p_RfilterChain(4)%ifilterType = &
-            FILTER_TOL20
-        rnonlinearIteration%rpreconditioner%p_RfilterChain(4)%itoL20component = &
-            2*(NDIM2D+1)
-      END IF
-      
       ! Initialise the linear subsolver using the parameters from the INI/DAT
       ! files, the prepared filter chain and the interlevel projection structure.
       ! This gives us the linear solver node rpreconditioner%p_rsolverNode
@@ -779,7 +498,7 @@ CONTAINS
       CALL linsolinit_initFromFile (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
                                     rproblem%rparamList,ssolverName,&
                                     NLMAX-NLMIN+1,&
-                                    rnonlinearIteration%rpreconditioner%p_RfilterChain,&
+                                    rnonlinearIteration%p_RfilterChain,&
                                     rnonlinearIteration%rpreconditioner%p_rprojection)
       
       ! How much memory is necessary for performing the level change?
@@ -792,10 +511,12 @@ CONTAINS
         ! Pass the system metrices on the coarse/fine grid to 
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
-        imaxmem = MAX(imaxmem,mlprj_getTempMemoryMat (&
+        imaxmem = MAX(imaxmem,mlprj_getTempMemoryDirect (&
             rnonlinearIteration%rpreconditioner%p_rprojection,&
-            rproblem%RlevelInfo(i-1)%rmatrix,&
-            rproblem%RlevelInfo(i)%rmatrix))
+            rproblem%RlevelInfo(i-1)% &
+              p_rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks),&
+            rproblem%RlevelInfo(i)% &
+              p_rdiscretisation%RspatialDiscretisation(1:rrhs%nblocks)))
       END DO
       
       ! Set up a scalar temporary vector that we need for building up nonlinear
@@ -811,6 +532,110 @@ CONTAINS
       CALL lsyssc_createVector (rnonlinearIteration%rpreconditioner%p_rtempVectorSc2,&
                                 rrhs%NEQ,.FALSE.,ST_DOUBLE)
       
+      ! Initialise the matrices.
+      CALL c2d2_updatePreconditioner (rproblem,rnonlinearIteration,&
+          rvector,rrhs,.TRUE.,.TRUE.)
+
+    CASE DEFAULT
+      
+      ! Unknown preconditioner
+      PRINT *,'Unknown preconditioner for nonlinear iteration!'
+      STOP
+      
+    END SELECT
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_updatePreconditioner (rproblem,rnonlinearIteration,&
+      rvector,rrhs,binit,bstructuralUpdate)
+  
+!<description>
+  ! This routine has to be called whenever the system matrices change.
+  ! It initialises (depending on the system matrices) the matrices of the
+  ! preconditioner or performs an update of them.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!<input>
+  ! The current solution vector.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+
+  ! The right-hand-side vector to use in the equation
+  TYPE(t_vectorBlock), INTENT(IN) :: rrhs
+
+  ! First initialisation.
+  ! Has to be set to TRUE on the first call. Initialises the preconditioner
+  ! with the structure of the matrices.
+  LOGICAL, INTENT(IN) :: binit
+
+  ! Whether the structure of the system matrices is new.
+  ! This variable has to be set to TRUE whenever there was a structure in 
+  ! the system matrices. This reinitialises the linear solver.
+  LOGICAL, INTENT(IN) :: bstructuralUpdate
+!</input>
+
+!<inputoutput>
+  ! Nonlinar iteration structure saving data for the callback routines.
+  ! Preconditioner data is saved here.
+  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: NLMIN,NLMAX
+    INTEGER :: i
+    CHARACTER(LEN=PARLST_MLDATA) :: sstring,snewton
+
+    ! Error indicator during initialisation of the solver
+    INTEGER :: ierror    
+  
+    ! A pointer to the matrix of the preconditioner
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner
+
+    ! An array for the system matrix(matrices) during the initialisation of
+    ! the linear solver.
+    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    
+    ! Pointer to the template FEM matrix
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM
+    
+    ! At first, ask the parameters in the INI/DAT file which type of 
+    ! preconditioner is to be used. The data in the preconditioner structure
+    ! is to be initialised appropriately!
+    CALL parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
+        'itypePreconditioning', &
+        rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
+    
+    SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
+    CASE (CCPREC_NONE)
+      ! No preconditioner
+    CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
+
+      IF (.NOT. binit) THEN
+        ! Restore the standard matrix structure in case the matrices had been
+        ! modified by c2d2_finaliseMatrices for the preconditioner -- i.e. 
+        ! temporarily switch to the matrix structure that is compatible to 
+        ! the discretisation.
+        CALL c2d2_unfinaliseMatrices (rnonlinearIteration, &
+            rnonlinearIteration%rfinalAssembly,.FALSE.)
+      END IF
+    
+      ! Ok, we have to initialise a linear solver for solving the linearised
+      ! problem.
+      !
+      ! Which levels have we to take care of during the solution process?
+      NLMIN = rnonlinearIteration%NLMIN
+      NLMAX = rnonlinearIteration%NLMAX
+      
       ! Initialise the preconditioner matrices on all levels.
       DO i=NLMIN,NLMAX
       
@@ -820,7 +645,7 @@ CONTAINS
         p_rmatrixPreconditioner => &
             rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner
       
-        CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrix,&
+        CALL lsysbl_duplicateMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
             p_rmatrixPreconditioner,&
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
             
@@ -869,37 +694,9 @@ CONTAINS
               ! Allocate memory for the entries; don't initialise the memory.
               CALL lsyssc_allocEmptyMatrix (&
                   p_rmatrixPreconditioner%RmatrixBlock(2,1),LSYSSC_SETM_UNDEFINED)
-               
-            ELSE
-            
-              ! A21 may share its entries with A12. If that's the case,
-              ! allocate additional memory for A21!
-              IF (lsyssc_isMatrixContentShared( &
-                  p_rmatrixPreconditioner%RmatrixBlock(1,2), &
-                  p_rmatrixPreconditioner%RmatrixBlock(2,1)) ) THEN
 
-                ! Release the matrix structure. As the matrix is a copy
-                ! of another one, this will clean up the structure but
-                ! not release any memory.
-                CALL lsyssc_releaseMatrix ( &
-                    p_rmatrixPreconditioner%RmatrixBlock(2,1))
+            END IF               
 
-                ! Create a new matrix A21 in memory. create a new matrix
-                ! using the template FEM matrix...
-                CALL lsyssc_duplicateMatrix (p_rmatrixTempateFEM, &
-                  p_rmatrixPreconditioner%RmatrixBlock(2,1),&
-                  LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                  
-                ! ... then allocate memory for the entries; 
-                ! don't initialise the memory.
-                CALL lsyssc_allocEmptyMatrix (&
-                    p_rmatrixPreconditioner%RmatrixBlock(2,1),&
-                    LSYSSC_SETM_UNDEFINED)
-                  
-              END IF
-              
-            END IF
-          
           END IF
 
           ! A22 may share its entries with A11. If that's the case,
@@ -965,6 +762,26 @@ CONTAINS
         END IF
       END DO
       
+      IF (binit) THEN
+        ! Check the matrices if they are compatible to our
+        ! preconditioner. If not, we later have to modify the matrices a little
+        ! bit to make it compatible. 
+        ! The result of this matrix analysis is saved to the rfinalAssembly structure 
+        ! in rnonlinearIteration and allows us later to switch between these two
+        ! matrix representations: Compatibility to the discretisation routines
+        ! and compatibity to the preconditioner.
+        ! The c2d2_checkAssembly routine below uses this information to perform
+        ! the actual modification in the matrices.
+        CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
+            rnonlinearIteration%rfinalAssembly)
+      END IF
+      ! Otherwise, checkAssembly was already called and does not have to be 
+      ! called again.
+
+      ! Using rfinalAssembly as computed above, make the matrices compatible 
+      ! to our preconditioner if they are not.
+      CALL c2d2_finaliseMatrices (rnonlinearIteration)
+
       ! Attach the system matrices to the solver.
       !
       ! For this purpose, copy the matrix structures from the preconditioner
@@ -987,18 +804,14 @@ CONTAINS
       ! Initialise structure/data of the solver. This allows the
       ! solver to allocate memory / perform some precalculation
       ! to the problem.
-      CALL linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
-          ierror)
-      IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-      
-      ! Switch off adaptive matrix generation if our discretisation is not a 
-      ! uniform Q1~ discretisation - the matrix restriction does not support
-      ! other cases.
-      p_rdiscr => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation%RspatialDiscretisation(1)
-      IF ((p_rdiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
-          (elem_getPrimaryElement(p_rdiscr%RelementDistribution(1)%itrialElement) &
-              .NE. EL_Q1T)) THEN
-        i = 0
+      IF (binit) THEN
+        CALL linsol_initStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
+            ierror)
+        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+      ELSE IF (bstructuralUpdate) THEN
+        CALL linsol_updateStructure (rnonlinearIteration%rpreconditioner%p_rsolverNode,&
+            ierror)
+        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
       END IF
       
     CASE DEFAULT
@@ -1056,7 +869,6 @@ CONTAINS
       DEALLOCATE(rnonlinearIteration%rpreconditioner%p_rtempVectorSc2)
       
       ! Clean up data about the projection etc.
-      DEALLOCATE(rnonlinearIteration%rpreconditioner%p_RfilterChain)
       CALL mlprj_doneProjection(rnonlinearIteration%rpreconditioner%p_rprojection)
       DEALLOCATE(rnonlinearIteration%rpreconditioner%p_rprojection)
 
@@ -1269,7 +1081,7 @@ CONTAINS
       ! We copy our matrices to a big matrix array and transfer that
       ! to the setMatrices routines. This intitialises then the matrices
       ! on all levels according to that array.
-      Rmatrices(NLMIN:NLMAX) = rproblem%RlevelInfo(NLMIN:NLMAX)%rmatrix
+      Rmatrices(NLMIN:NLMAX) = rproblem%RlevelInfo(NLMIN:NLMAX)%rpreallocatedSystemMatrix
       CALL linsol_matricesCompatible(p_rsolverNode, &
           Rmatrices(NLMIN:NLMAX),ccompatible)
       

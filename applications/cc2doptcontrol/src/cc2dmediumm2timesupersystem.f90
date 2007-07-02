@@ -45,6 +45,7 @@ MODULE cc2dmediumm2timesupersystem
   USE cc2dmediumm2boundary
   USE cc2dmediumm2discretisation
   USE cc2dmediumm2postprocessing
+  USE cc2dmediumm2matvecassembly
   
   USE spacetimevectors
   USE dofmapping
@@ -825,8 +826,12 @@ CONTAINS
         
         rnonlinearIteration%dgamma1 = 0.0_DP
         rnonlinearIteration%dgamma2 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         
+        rnonlinearIteration%dnewton1 = 0.0_DP
+        rnonlinearIteration%dnewton2 = &
+              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+
         rnonlinearIteration%deta1 = 0.0_DP
         rnonlinearIteration%deta2 = rspaceTimeDiscr%dtstep
         
@@ -854,12 +859,16 @@ CONTAINS
         rnonlinearIteration%dalpha2 = -1.0_DP
         
         rnonlinearIteration%dtheta1 = 0.0_DP
-        rnonlinearIteration%dtheta2 = rspaceTimeDiscr%dtstep * (1.0_DP-dtheta)
+        rnonlinearIteration%dtheta2 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
         
         rnonlinearIteration%dgamma1 = 0.0_DP
         rnonlinearIteration%dgamma2 = &
-            rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP) * (1.0_DP-dtheta)
+            - (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         
+        rnonlinearIteration%dnewton1 = 0.0_DP
+        rnonlinearIteration%dnewton2 = &
+              (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+
         rnonlinearIteration%deta1 = 0.0_DP
         rnonlinearIteration%deta2 = 0.0_DP
         
@@ -902,6 +911,9 @@ CONTAINS
             (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         rnonlinearIteration%dgamma2 = 0.0_DP
         
+        rnonlinearIteration%dnewton1 = 0.0_DP
+        rnonlinearIteration%dnewton2 = 0.0_DP
+
         rnonlinearIteration%deta1 = 0.0_DP
         rnonlinearIteration%deta2 = 0.0_DP
         
@@ -931,8 +943,12 @@ CONTAINS
         rnonlinearIteration%dgamma1 = &
             dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         rnonlinearIteration%dgamma2 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         
+        rnonlinearIteration%dnewton1 = 0.0_DP
+        rnonlinearIteration%dnewton2 = &
+              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+
         rnonlinearIteration%deta1 = rspaceTimeDiscr%dtstep
         rnonlinearIteration%deta2 = rspaceTimeDiscr%dtstep
         
@@ -964,8 +980,12 @@ CONTAINS
         
         rnonlinearIteration%dgamma1 = 0.0_DP
         rnonlinearIteration%dgamma2 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            - (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         
+        rnonlinearIteration%dnewton1 = 0.0_DP
+        rnonlinearIteration%dnewton2 = &
+            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+
         rnonlinearIteration%deta1 = 0.0_DP
         rnonlinearIteration%deta2 = 0.0_DP
         
@@ -1034,7 +1054,12 @@ CONTAINS
         rnonlinearIteration%dgamma1 = &
             dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         rnonlinearIteration%dgamma2 = 0.0_DP
+!           - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
         
+        rnonlinearIteration%dnewton1 = 0.0_DP
+        rnonlinearIteration%dnewton2 = 0.0_DP
+!             dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+
         rnonlinearIteration%deta1 = rspaceTimeDiscr%dtstep
         rnonlinearIteration%deta2 = 0.0_DP
         
@@ -1102,7 +1127,7 @@ CONTAINS
     INTEGER :: isubstep,ilevel,ierror,i
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
-    TYPE(t_vectorBlock) :: rxGlobal, rbGlobal, rdGlobal,rtempVectorRHS
+    TYPE(t_vectorBlock) :: rxGlobal, rbGlobal, rdGlobal
     TYPE(t_vectorBlock) :: rxGlobalSolve, rbGlobalSolve, rdGlobalSolve
     TYPE(t_matrixBlock) :: rglobalA
     TYPE(t_linsolNode), POINTER :: rsolverNode,p_rpreconditioner
@@ -1110,6 +1135,7 @@ CONTAINS
     INTEGER(PREC_VECIDX), DIMENSION(:), ALLOCATABLE :: Isize
     INTEGER(PREC_VECIDX), DIMENSION(6) :: Isize2
     REAL(DP) :: dtheta
+    TYPE(t_ccmatrixComponents) :: rmatrixComponents
     
     REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
 
@@ -1170,11 +1196,6 @@ CONTAINS
         ! -----
         
         ! The diagonal matrix.
-        !
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX
-        ! Will be modified by c2d2_assembleLinearisedMatrices later.
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(ilevel), &
-            rproblem%RlevelInfo(ilevel)%rmatrix,.FALSE.)
       
         ! Set up a core equation structure and assemble the nonlinear defect.
         ! We use explicit Euler, so the weights are easy.
@@ -1187,11 +1208,18 @@ CONTAINS
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,0,rnonlinearIterationTmp)
           
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
+        ! Assemble the matrix
+        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,rmatrixComponents) 
+          
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (&
-            rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (&
+        !    rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
             
         ! Insert the system matrix for the dual equation to our global matrix.
         CALL insertMatrix (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
@@ -1218,8 +1246,15 @@ CONTAINS
       
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
+        ! Assemble the matrix
+        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,rmatrixComponents) 
         
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
@@ -1267,9 +1302,16 @@ CONTAINS
 
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (&
-            rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (&
+        !    rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
+        ! Assemble the matrix
+        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,rmatrixComponents) 
         
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
@@ -1303,11 +1345,6 @@ CONTAINS
             rproblem,rproblem%NLMIN,rspaceTimeDiscr%NLMAX,rtempVectorX,rtempVectorB,&
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX
-        ! Will be modified by c2d2_assembleLinearisedMatrices later.
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(ilevel), &
-            rproblem%RlevelInfo(ilevel)%rmatrix,.FALSE.)
-      
         ! Assemble the nonlinear defect.
         ! We use explicit Euler, so the weights are easy.
       
@@ -1317,8 +1354,15 @@ CONTAINS
             
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
+        ! Assemble the matrix
+        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,rmatrixComponents) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
         CALL insertMatrix (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
@@ -1345,8 +1389,15 @@ CONTAINS
       
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
+        ! Assemble the matrix
+        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,rmatrixComponents) 
         
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
@@ -1393,9 +1444,15 @@ CONTAINS
       
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (&
-            rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (&
+        !    rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
+        ! Assemble the matrix
+        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,rmatrixComponents) 
         
         CALL lsysbl_duplicateMatrix (&
             rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
@@ -1422,11 +1479,6 @@ CONTAINS
         ! -----
         
         ! The diagonal matrix.
-        !
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX
-        ! Will be modified by c2d2_assembleLinearisedMatrices later.
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(ilevel), &
-            rproblem%RlevelInfo(ilevel)%rmatrix,.FALSE.)
       
         ! Set up a core equation structure and assemble matrices of the
         ! time discretisation scheme.
@@ -1441,8 +1493,14 @@ CONTAINS
         
         ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
         ! Include the boundary conditions into the matrices.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-            .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
+        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
+        ! Assemble the matrix
+        CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,rmatrixComponents) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
         CALL insertMatrix (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
@@ -1461,7 +1519,8 @@ CONTAINS
     CALL lsysbl_updateMatStrucInfo (rglobalA)
 
     ! Write the global matrix to a file.
-    !CALL matio_writeBlockMatrixHR(rglobalA,'MATRIX',.TRUE.,0,'matrixcn.txt','(E13.2)')
+    CALL matio_writeBlockMatrixHR(rglobalA,'MATRIX',.TRUE.,0,'matrixcn.txt','(1X,E20.10)')
+    !'(E13.2)')
     
     ! Get the global solution/rhs/temp vector.
     CALL sptivec_convertSupervecToVector (rx, rxGlobal)
@@ -1556,6 +1615,58 @@ CONTAINS
       END DO
     END DO
         
+    END SUBROUTINE
+    
+    ! -----------------------------------------------------
+  
+    SUBROUTINE createMatAssembly (rnonlinearIteration,rmatrixComponents)
+    
+    ! Initialises a t_ccmatrixComponents structure based on the problem 
+    ! a nonlinear iteration structure. rmatrixComponents will be initialised
+    ! based on the information of the maximum level in rnonlinearIteration.
+    
+    ! Nonlinear-iteration structure providing all information for rmatrixComponents
+    TYPE(t_ccnonlinearIteration), INTENT(IN) :: rnonlinearIteration
+    
+    ! t_ccmatrixComponents stucture. After initialisation with this routine,
+    ! this structure can be used to assemble a system matrix mor a defect.
+    TYPE(t_ccmatrixComponents), INTENT(OUT) :: rmatrixComponents
+    
+      ! local variables
+      INTEGER :: ilev
+      TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
+      
+      ilev = rnonlinearIteration%NLMAX
+      p_rlevelInfo => rnonlinearIteration%RcoreEquation(ilev)
+    
+      ! Transfer the pointers
+      rmatrixComponents%p_rdiscretisation         => p_rlevelInfo%p_rmatrix%p_rblockDiscretisation
+      rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
+      rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
+      rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
+      rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
+      rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
+      
+      ! Transfer the weights
+      rmatrixComponents%diota1   = rnonlinearIteration%diota1  
+      rmatrixComponents%diota2   = rnonlinearIteration%diota2  
+      rmatrixComponents%dkappa1  = rnonlinearIteration%dkappa1 
+      rmatrixComponents%dkappa2  = rnonlinearIteration%dkappa2 
+      rmatrixComponents%dalpha1  = rnonlinearIteration%dalpha1 
+      rmatrixComponents%dalpha2  = rnonlinearIteration%dalpha2 
+      rmatrixComponents%dtheta1  = rnonlinearIteration%dtheta1 
+      rmatrixComponents%dtheta2  = rnonlinearIteration%dtheta2 
+      rmatrixComponents%dgamma1  = rnonlinearIteration%dgamma1 
+      rmatrixComponents%dgamma2  = rnonlinearIteration%dgamma2 
+      rmatrixComponents%deta1    = rnonlinearIteration%deta1   
+      rmatrixComponents%deta2    = rnonlinearIteration%deta2   
+      rmatrixComponents%dtau1    = rnonlinearIteration%dtau1   
+      rmatrixComponents%dtau2    = rnonlinearIteration%dtau2   
+      rmatrixComponents%dmu1     = rnonlinearIteration%dmu1    
+      rmatrixComponents%dmu2     = rnonlinearIteration%dmu2    
+      rmatrixComponents%dnewton1 = rnonlinearIteration%dnewton1
+      rmatrixComponents%dnewton2 = rnonlinearIteration%dnewton2
+          
     END SUBROUTINE
     
   END SUBROUTINE
@@ -1941,9 +2052,10 @@ CONTAINS
     INTEGER :: isubstep,ilevel
     TYPE(t_vectorBlock) :: rtempVectorD, rtempVector1, rtempVector2, rtempVector3
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscr
-    REAL(DP) :: dtemp,dtheta
+    REAL(DP) :: dtheta
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     TYPE(t_matrixBlock) :: rblockTemp
+    TYPE(t_ccmatrixComponents) :: rmatrixComponents
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
@@ -2037,11 +2149,6 @@ CONTAINS
         ! -----
         
         ! The diagonal matrix.
-        !
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX
-        ! Will be modified by c2d2_assembleLinearisedMatrices later.
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(ilevel), &
-            rproblem%RlevelInfo(ilevel)%rmatrix,.FALSE.)
       
         ! Set up a core equation structure and assemble the nonlinear defect.
         ! We use explicit Euler, so the weights are easy.
@@ -2053,22 +2160,12 @@ CONTAINS
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,0,rnonlinearIterationTmp)
-
-        ! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        ! Include the boundary conditions into the matrices.
-        !CALL c2d2_assembleLinearisedMatrices (&
-        !    rnonlinearIterationTmp,rproblem%rcollection,&
-        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
-            
-        !! Subtract: rd = rd - A11 x1
-        !CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-        !    rtempVector1,rtempVectorD,-1.0_DP,1.0_DP)
+          
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
 
         ! Subtract: rd = rd - A11 x1
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-          rtempVector1,rtempVectorD,&
-          .FALSE.,.FALSE.,rproblem%rcollection,&
-          rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix)
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector1,rtempVectorD)
 
         CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
 
@@ -2089,40 +2186,12 @@ CONTAINS
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,1,rnonlinearIterationTmp)
 
-        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        !! Include the boundary conditions into the matrices.
-        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
-        !
-        !CALL lsysbl_duplicateMatrix (&
-        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        !
-        !! Include the boundary conditions into that matrix.
-        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        !! main diagonal of the supermatrix.
-        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-        !
-        !! We don't need submatrix (1,1) to (2,2).
-        !rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
-        !
-        !! Subtract: rd = rd - A12 x2
-        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
- 
-        CALL lsysbl_duplicateMatrix (&
-            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-            rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-       
-        ! We don't need submatrix (1,1) to (2,2).
-        rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
 
         ! Subtract: rd = rd - A12 x2
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-          rtempVector2,rtempVectorD,&
-          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
-        
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector2,rtempVectorD)
+
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
 
@@ -2159,40 +2228,11 @@ CONTAINS
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,-1,rnonlinearIterationTmp)
             
-        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        !! Include the boundary conditions into the matrices.
-        !CALL c2d2_assembleLinearisedMatrices (&
-        !    rnonlinearIterationTmp,rproblem%rcollection,&
-        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
-        !
-        !CALL lsysbl_duplicateMatrix (&
-        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        !
-        !! We don't need submatrix (4,4) to (5,5).
-        !rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
-        !
-        !! Include the boundary conditions into that matrix.
-        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        !! main diagonal of the supermatrix.
-        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-        !
-        !! Subtract: rd = rd - Aii-1 xi-1
-        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector1,rtempVectorD,-1.0_DP,1.0_DP)
-        
-        CALL lsysbl_duplicateMatrix (&
-            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-            rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-        ! We don't need submatrix (4,4) to (5,5).
-        rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
-        
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
         ! Subtract: rd = rd - Aii-1 xi-1
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-          rtempVector1,rtempVectorD,&
-          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector1,rtempVectorD)
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
@@ -2202,11 +2242,6 @@ CONTAINS
         ! -----      
 
         ! Now the diagonal matrix.
-        !
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX
-        ! Will be modified by c2d2_assembleLinearisedMatrices later.
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(ilevel), &
-            rproblem%RlevelInfo(ilevel)%rmatrix,.FALSE.)
       
         ! Set up a core equation structure and assemble matrices of the
         ! time discretisation scheme.
@@ -2216,26 +2251,16 @@ CONTAINS
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
         ! Assemble the nonlinear defect.
-        ! We use explicit Euler, so the weights are easy.
       
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,0,rnonlinearIterationTmp)
 
-        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        !! Include the boundary conditions into the matrices.
-        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
-        !
-        !! Subtract: rd = rd - Aii xi
-        !CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-        !    rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
 
         ! Subtract: rd = rd - Aii xi
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-          rtempVector2,rtempVectorD,&
-          .FALSE.,.FALSE.,rproblem%rcollection,&
-          rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix)
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector2,rtempVectorD)
             
         CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
 
@@ -2255,41 +2280,13 @@ CONTAINS
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,1,rnonlinearIterationTmp)
-
-        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        !! Include the boundary conditions into the matrices.
-        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
-        !
-        !CALL lsysbl_duplicateMatrix (&
-        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        !
-        !! We don't need submatrix (1,1) to (2,2).
-        !rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
-        !
-        !! Include the boundary conditions into that matrix.
-        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        !! main diagonal of the supermatrix.
-        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-        !
-        !! Subtract: rd = rd - Aii+1 xi+1
-        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector3,rtempVectorD,-1.0_DP,1.0_DP)
-
-        CALL lsysbl_duplicateMatrix (&
-            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-            rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-        ! We don't need submatrix (1,1) to (2,2).
-        rblockTemp%RmatrixBlock(1:2,1:2)%dscaleFactor = 0.0_DP
+          
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
 
         ! Subtract: rd = rd - Aii+1 xi+1
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-          rtempVector3,rtempVectorD,&
-          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
-
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector3,rtempVectorD)
+        
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
 
@@ -2323,55 +2320,18 @@ CONTAINS
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,-1,rnonlinearIterationTmp)
-
-        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        !! Include the boundary conditions into the matrices.
-        !CALL c2d2_assembleLinearisedMatrices (&
-        !    rnonlinearIterationTmp,rproblem%rcollection,&
-        !    .FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.)
-        !
-        !CALL lsysbl_duplicateMatrix (&
-        !    rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-        !    rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        !
-        !! We don't need submatrix (4,4) to (5,5).
-        !rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
-        !
-        !! Include the boundary conditions into that matrix.
-        !! Specify the matrix as 'off-diagonal' matrix because it's not on the
-        !! main diagonal of the supermatrix.
-        !rblockTemp%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-        !CALL matfil_discreteBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteBC)
-        !CALL matfil_discreteFBC (rblockTemp,rproblem%RlevelInfo(ilevel)%p_rdiscreteFBC)
-        !
-        !! Subtract: rd = rd - Ann-1 xn-1
-        !CALL lsysbl_blockMatVec (rblockTemp,rtempVector2,rtempVectorD,-1.0_DP,1.0_DP)
-
-        CALL lsysbl_duplicateMatrix (&
-            rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-            rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-        ! We don't need submatrix (4,4) to (5,5).
-        rblockTemp%RmatrixBlock(4:5,4:5)%dscaleFactor = 0.0_DP
+          
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
 
         ! Subtract: rd = rd - Ann-1 xn-1
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-          rtempVector2,rtempVectorD,&
-          .FALSE.,.FALSE.,rproblem%rcollection,rblockTemp)
-
-        ! Release the block mass matrix.
-        CALL lsysbl_releaseMatrix (rblockTemp)
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector2,rtempVectorD)
      
         CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
      
         ! -----
         
         ! Now the diagonal matrix.
-        !
-        ! Generate the basic system matrix level rspaceTimeDiscr%NLMAX
-        ! Will be modified by c2d2_assembleLinearisedMatrices later.
-        CALL c2d2_generateStaticSystemMatrix (rproblem%RlevelInfo(ilevel), &
-            rproblem%RlevelInfo(ilevel)%rmatrix,.FALSE.)
       
         ! Set up a core equation structure and assemble matrices of the
         ! time discretisation scheme.
@@ -2381,26 +2341,16 @@ CONTAINS
             rnonlinearIterationTmp,'CC2D-NONLINEAR')
 
         ! Assemble the nonlinear defect.
-        ! We use explicit Euler, so the weights are easy.
       
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,dtheta,&
           isubstep,0,rnonlinearIterationTmp)
 
-        !! Assemble the system matrix on level rspaceTimeDiscr%NLMAX.
-        !! Include the boundary conditions into the matrices.
-        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIterationTmp,rproblem%rcollection,&
-        !    .FALSE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.)
-        ! 
-        !! Subtract: rd = rd - Ann xn
-        !CALL lsysbl_blockMatVec (rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix,&
-        !    rtempVector3,rtempVectorD,-1.0_DP,1.0_DP)
-        
+        ! Create a matrix assembly structure for assembling the defect
+        CALL createMatAssembly (rnonlinearIterationTmp,rmatrixComponents)
+
         ! Subtract: rd = rd - Ann xn
-        CALL c2d2_assembleNonlinearDefect (rnonlinearIterationTmp,&
-          rtempVector3,rtempVectorD,&
-          .FALSE.,.FALSE.,rproblem%rcollection,&
-          rnonlinearIterationTmp%RcoreEquation(ilevel)%p_rmatrix)
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVector3,rtempVectorD)
       
         CALL c2d2_doneNonlinearLoop (rnonlinearIterationTmp)
       
@@ -2451,6 +2401,58 @@ CONTAINS
     CALL lsysbl_releaseVector (rtempVector2)
     CALL lsysbl_releaseVector (rtempVector1)
     CALL lsysbl_releaseVector (rtempVectorD)
+    
+  CONTAINS
+  
+    SUBROUTINE createMatAssembly (rnonlinearIteration,rmatrixComponents)
+    
+    ! Initialises a t_ccmatrixComponents structure based on the problem 
+    ! a nonlinear iteration structure. rmatrixComponents will be initialised
+    ! based on the information of the maximum level in rnonlinearIteration.
+    
+    ! Nonlinear-iteration structure providing all information for rmatrixComponents
+    TYPE(t_ccnonlinearIteration), INTENT(IN) :: rnonlinearIteration
+    
+    ! t_ccmatrixComponents stucture. After initialisation with this routine,
+    ! this structure can be used to assemble a system matrix mor a defect.
+    TYPE(t_ccmatrixComponents), INTENT(OUT) :: rmatrixComponents
+    
+      ! local variables
+      INTEGER :: ilev
+      TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
+      
+      ilev = rnonlinearIteration%NLMAX
+      p_rlevelInfo => rnonlinearIteration%RcoreEquation(ilev)
+    
+      ! Transfer the pointers
+      rmatrixComponents%p_rdiscretisation         => p_rlevelInfo%p_rmatrix%p_rblockDiscretisation
+      rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
+      rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
+      rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
+      rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
+      rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
+      
+      ! Transfer the weights
+      rmatrixComponents%diota1   = rnonlinearIteration%diota1  
+      rmatrixComponents%diota2   = rnonlinearIteration%diota2  
+      rmatrixComponents%dkappa1  = rnonlinearIteration%dkappa1 
+      rmatrixComponents%dkappa2  = rnonlinearIteration%dkappa2 
+      rmatrixComponents%dalpha1  = rnonlinearIteration%dalpha1 
+      rmatrixComponents%dalpha2  = rnonlinearIteration%dalpha2 
+      rmatrixComponents%dtheta1  = rnonlinearIteration%dtheta1 
+      rmatrixComponents%dtheta2  = rnonlinearIteration%dtheta2 
+      rmatrixComponents%dgamma1  = rnonlinearIteration%dgamma1 
+      rmatrixComponents%dgamma2  = rnonlinearIteration%dgamma2 
+      rmatrixComponents%deta1    = rnonlinearIteration%deta1   
+      rmatrixComponents%deta2    = rnonlinearIteration%deta2   
+      rmatrixComponents%dtau1    = rnonlinearIteration%dtau1   
+      rmatrixComponents%dtau2    = rnonlinearIteration%dtau2   
+      rmatrixComponents%dmu1     = rnonlinearIteration%dmu1    
+      rmatrixComponents%dmu2     = rnonlinearIteration%dmu2    
+      rmatrixComponents%dnewton1 = rnonlinearIteration%dnewton1
+      rmatrixComponents%dnewton2 = rnonlinearIteration%dnewton2
+          
+    END SUBROUTINE
     
   END SUBROUTINE 
    
@@ -2508,9 +2510,8 @@ CONTAINS
     ! local variables
     INTEGER :: isubstep,ilevel,i
     TYPE(t_ccnonlinearIteration) :: rnonlinearIterationTmp
-    REAL(DP) :: dtheta,dtstep,deta1,deta2,domega
+    REAL(DP) :: dtheta,dtstep,domega
     LOGICAL :: bsuccess
-    TYPE(t_matrixBlock) :: rblockTemp
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Db,p_Dd
@@ -2554,12 +2555,6 @@ CONTAINS
       CALL sptivec_getTimestepData (rx, isubstep, rtempVectorX)
       CALL sptivec_getTimestepData (rb, isubstep, rtempVectorB)
       CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
-
-      ! Initialise the basic system matrices.
-      DO i=rproblem%NLMIN,ilevel
-        CALL c2d2_generateStaticSystemMatrix (&
-            rproblem%RlevelInfo(i),rproblem%RlevelInfo(i)%rmatrix,.FALSE.)
-      END DO
 
       ! Setup the core equation for the nonlinear loop -- in the temporary
       ! rnonlinearIterationTmp structure as copy of rnonlinearIteration.
@@ -2658,24 +2653,8 @@ CONTAINS
         rtempvectorX, rtempvectorB,&
         rnonlinearIteration,'CC2D-NONLINEAR')
 
-    ! Check the matrices if they are compatible to our
-    ! preconditioner. If not, we later have to modify the matrices a little
-    ! bit to make it compatible. 
-    ! The result of this matrix analysis is saved to the rfinalAssembly structure 
-    ! in rnonlinearIteration and allows us later to switch between these two
-    ! matrix representations: Compatibility to the discretisation routines
-    ! and compatibity to the preconditioner.
-    ! The c2d2_checkAssembly routine below uses this information to perform
-    ! the actual modification in the matrices.
-    CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,&
-        rtempVectorB,rnonlinearIteration%rfinalAssembly)
-    
-    ! Using rfinalAssembly as computed above, make the matrices compatible 
-    ! to our preconditioner if they are not.
-    CALL c2d2_finaliseMatrices (rnonlinearIteration)
-    
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL c2d2_preparePreconditioner (rproblem,&
+    CALL c2d2_initPreconditioner (rproblem,&
         rnonlinearIteration,rtempvectorX, rtempvectorB)
 
     ! Implement the bondary conditions into all initial solution vectors
@@ -2698,8 +2677,7 @@ CONTAINS
       ! DEBUG!!!
       CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
       
-      CALL c2d2_implementBC (rproblem,rtempVectorX,rtempVectorB,.FALSE.,&
-          .TRUE.,.FALSE.)
+      CALL c2d2_implementBC (rproblem,rtempVectorX,rtempVectorB,.TRUE.,.FALSE.)
       
       CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
       
@@ -2719,7 +2697,7 @@ CONTAINS
     ! Implement the initial condition into the RHS.
     CALL c2d2_implementInitCondRHS (rx, rb, rtempvectorX, rtempvector)    
 
-    ! Now word with rd, our 'defect' vector
+    ! Now work with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
 
     ! Assemble the defect.
@@ -2735,8 +2713,8 @@ CONTAINS
     
 !    !CALL c2d2_solveSupersysDirect (rproblem, rspaceTimeDiscr, rx, rd, &
 !    !  rtempvectorX, rtempvectorB, rtempVector)
-!    CALL c2d2_solveSupersysDirectCN (rproblem, rspaceTimeDiscr, rx, rd, &
-!      rtempvectorX, rtempvectorB, rtempVector)
+    CALL c2d2_solveSupersysDirectCN (rproblem, rspaceTimeDiscr, rx, rd, &
+      rtempvectorX, rtempvectorB, rtempVector)
     
     DO WHILE ((ddefNorm .GT. 1.0E-5*dinitDefNorm) .AND. (ddefNorm .LT. 1.0E99) .AND. &
               (iglobIter .LT. 10))

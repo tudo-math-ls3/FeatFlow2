@@ -59,8 +59,24 @@ MODULE cc2dmediumm2basic
     TYPE(t_matrixScalar) :: rmatrixTemplateGradient
     
     ! A template matrix for the system matrix for that specific level.
-    ! Provides memory for all sub-matrices.
-    TYPE(t_matrixBlock) :: rmatrix
+    ! Provides memory for intermediate calculations of the system matrix.
+    ! This matrix is used e.g. as template matrix for a Multigrid preconditioner
+    ! during the nonlinear iteration; in this case, the 'preconditioner matrices'
+    ! on all levels share some information with this to prevent frequent 
+    ! reallocation of memory. On the other hand, the matrix might have to be
+    ! evaluated for some reason (e.g. the evaluation of damping parameters)
+    ! which can be done with this variable to avoid memory allocation.
+    !
+    ! The system matrix at the same time defines on the one hand the shape
+    ! of the global system (number of DOF's, submatrices for gradient and/or
+    ! deformation tensor). On the other hand, the boundary conditions are associated
+    ! to this matrix to allow the implementation of boundary conditions into
+    ! a globally assembled system matrix.
+    !
+    ! Note that the system matrix does not have to be assembled for calculating
+    ! the defect! Routines to assemble the system matrix or the defect
+    ! can be found in the module cc2dmediumm2matvecassembly.
+    TYPE(t_matrixBlock) :: rpreallocatedSystemMatrix
     
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
@@ -202,23 +218,6 @@ MODULE cc2dmediumm2basic
 !</typeblock>
 
 !</types>
-
-!<constants>
-
-  !<constantblock description="Names of entities in the problem-specific collection structure">
-  
-  ! Name of the RHS vector in the collection
-  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_RHS          = 'RHS'
-
-  ! Name of the solution vector in the collection
-  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_SOLUTION     = 'SOLUTION'
-  
-  ! Name of a temporary vector in the collection
-  CHARACTER(LEN=COLLCT_MLNAME), PARAMETER :: PAR_TEMPVEC      = 'RTEMPVEC'
-  
-  !</constantblock>
-
-!</constants>
 
 !******************************************************************************
 ! Documentation

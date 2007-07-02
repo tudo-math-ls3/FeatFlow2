@@ -23,17 +23,19 @@
 !#
 !# with
 !#
-!#   $$ A_1 = \iota_1 I  +  \alpha_1 M  +  \theta_1 L  +  \gamma_1 N(y) $$
-!#   $$ A_2 = \iota_2 I  +  \alpha_2 M  +  \theta_2 L  +  \gamma_2 N*(y) $$
+!#   $$ A_1 = \iota_1 I  +  \alpha_1 M  +  \theta_1 L  +  \gamma_1 N(y) + dnewton_1 N*(y)$$
+!#   $$ A_2 = \iota_2 I  +  \alpha_2 M  +  \theta_2 L  +  \gamma_2 N(y) + dnewton_2 N*(y)$$
 !#  
 !# and
 !#
 !#   $I$     = identity matrix,
 !#   $M$     = mass matrix,
 !#   $L$     = Stokes matrix ($\nu$*Laplace),
-!#   $N(y)$  = Nonlinearity includung stabilisation,
-!#   $N*(y)$ = Adjoint nonlinearity includung stabilisation
-!#             $-(y\Delta)\cdot + (\Delta y)\cdot$,
+!#   $N(y)$  = Nonlinearity including stabilisation, depending on the 
+!#             primal velocity, i.e.
+!#                   $$ (y\Delta)\cdot $$
+!#   $N*(y)$ = Newton matrix, depending on the primal velocity, i.e.
+!#                  $$ (\Delta y)\cdot $$
 !#   
 !#   $\iota_i$  = 0/1     - switches the identity matrix on/off,
 !#   $\alpha_i$ = 0/1     - switches the mass matrix on/off;
@@ -41,6 +43,7 @@
 !#   $\theta_í$           - weight for the Laplace matrix,
 !#   $\gamma_i$ = 0/1     - Switches the nonlinearity on/off;
 !#                          =0 for Stokes system,
+!#   $dnewton_i \in R$    - Switches the Newton matrix on/off.
 !#   $\eta_i$   = 0/1     - Switches the 'B'-term on/off,
 !#   $\tau_i$   = 0/1     - Switches the 'B^T'-term on/off,
 !#   $\mu_i$              - Weight for the 'coupling' mass matrix.
@@ -75,7 +78,7 @@
 !#  3.) c2d2_solveCoreEquation
 !#      -> Starts the nonlinear iteration to solve the core equation.
 !#
-!#  4.) c2d2_doneNonlinearLoop
+!#  5.) c2d2_releaseNonlinearLoop
 !#      -> Releases allocated memory in the nonlinear iteration structure.
 !#
 !# Callback routines for the nonlinear solver:
@@ -141,7 +144,7 @@
 !#  e) c2d2_solveCoreEquation -> Solve the core equation with the nonlinear
 !#                               solver structure from c2d2_getNonlinearSolver.
 !#
-!#  f) c2d2_doneNonlinearLoop -> Release core equation structure
+!#  f) c2d2_releaseNonlinearLoop -> Release core equation structure
 !#
 !# </purpose>
 !##############################################################################
@@ -177,6 +180,7 @@ MODULE cc2dmediumm2nonlinearcore
   USE vectorio
   
   USE cc2dmediumm2optcanalysis
+  USE cc2dmediumm2matvecassembly
   
   IMPLICIT NONE
   
@@ -273,10 +277,6 @@ MODULE cc2dmediumm2nonlinearcore
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
     
-    ! A filter chain that is used for implementing boundary conditions or other
-    ! things when invoking the linear solver.
-    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-    
     ! Configuration block for the adaptive Newton preconditioner.
     ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
     TYPE(t_ccDynamicNewtonControl) :: radaptiveNewton
@@ -338,6 +338,13 @@ MODULE cc2dmediumm2nonlinearcore
 
     ! Mass matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixMass => NULL()
+    
+    ! Temporary vector for the interpolation of a solution to a lower level.
+    ! Exists only on levels NLMIN..NLMAX-1 !
+    TYPE(t_vectorBlock), POINTER :: p_rtempVector => NULL()
+
+    ! Identty matrix for the pressure
+    TYPE(t_matrixScalar), POINTER :: p_rmatrixIdentityPressure => NULL()
 
     ! Block matrix, which is used in the defect correction / Newton
     ! algorithm as preconditioner matrix of the correspnding underlying
@@ -386,6 +393,11 @@ MODULE cc2dmediumm2nonlinearcore
     REAL(DP) :: dgamma1 = 0.0_DP
     REAL(DP) :: dgamma2 = 0.0_DP
     
+    ! DNEWTON-parameters that control the weight in front of the
+    ! Newton matrix. =1.0 to activate, =0.0 to deactivate
+    REAL(DP) :: dnewton1 = 0.0_DP
+    REAL(DP) :: dnewton2 = 0.0_DP
+    
     ! ETA-parameters that switch the B-terms on/off.
     REAL(DP) :: deta1 = 0.0_DP
     REAL(DP) :: deta2 = 0.0_DP
@@ -428,6 +440,10 @@ MODULE cc2dmediumm2nonlinearcore
     
     ! Pointer to the RHS vector
     TYPE(t_vectorBlock), POINTER :: p_rrhs => NULL()
+    
+    ! A filter chain that is used for implementing boundary conditions or other
+    ! things when invoking the linear solver.
+    TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     
     ! A t_ccPreconditioner saving information about the preconditioner.
     TYPE(t_ccPreconditioner) :: rpreconditioner
@@ -530,7 +546,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_doneNonlinearLoop (rnonlinearIteration)
+  SUBROUTINE c2d2_releaseNonlinearLoop (rnonlinearIteration)
   
 !<description>
   ! Releases allocated memory in the nonlinear iteration structure.
@@ -637,6 +653,10 @@ CONTAINS
     CALL collct_setvalue_int(rcollection,'CCNL_PRECONDITIONER',&
         rnonlinearIteration%rpreconditioner%ctypePreconditioning,.TRUE.)
 
+    ! Save the filter chain
+    CALL collct_setvalue_fchn(rcollection,'CCNL_FILTERCHAIN',&
+        rnonlinearIteration%p_RfilterChain,.TRUE.)
+
     ! Which preconditioner is chosen?
     SELECT CASE (rnonlinearIteration%rpreconditioner%ctypePreconditioning)
     CASE (CCPREC_LINEARSOLVER,CCPREC_NEWTON,CCPREC_NEWTONDYNAMIC)
@@ -646,10 +666,6 @@ CONTAINS
      
       CALL collct_setvalue_vecsca(rcollection,'CCNL_RTEMP2SCALAR',&
           rnonlinearIteration%rpreconditioner%p_rtempVectorSc2,.TRUE.)
-
-      ! Save the filter chain
-      CALL collct_setvalue_fchn(rcollection,'CCNL_FILTERCHAIN',&
-          rnonlinearIteration%rpreconditioner%p_RfilterChain,.TRUE.)
 
       ! Add the interlevel projection structure to the collection; we can
       ! use it later for setting up nonlinear matrices.
@@ -718,10 +734,18 @@ CONTAINS
       CALL collct_setvalue_matsca(rcollection,'CCNL_MATMASS',&
           rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass,.TRUE.,ilevel)
 
+      CALL collct_setvalue_matsca(rcollection,'CCNL_MATIDP',&
+          rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixIdentityPressure,&
+          .TRUE.,ilevel)
+
       CALL collct_setvalue_mat(rcollection,'CCNL_MATPREC',&
           rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixPreconditioner,&
           .TRUE.,ilevel)
       
+      CALL collct_setvalue_vec(rcollection,'CCNL_TEMPVEC',&
+          rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector,&
+          .TRUE.,ilevel)
+
     END DO
     
     ! Save auxiliary variables for the nonlinear iteration
@@ -816,6 +840,10 @@ CONTAINS
     rnonlinearIteration%dmu1 = collct_getvalue_real(rcollection,'CCNL_MU1')
     rnonlinearIteration%dmu2 = collct_getvalue_real(rcollection,'CCNL_MU2')
         
+    ! Restore the filter chain
+    rnonlinearIteration%p_RfilterChain => &
+        collct_getvalue_fchn(rcollection,'CCNL_FILTERCHAIN')
+    
     ! Get information about the preconditioner
     rnonlinearIteration%rpreconditioner%ctypePreconditioning = &
         collct_getvalue_int(rcollection,'CCNL_PRECONDITIONER')
@@ -834,10 +862,6 @@ CONTAINS
       rnonlinearIteration%rpreconditioner%p_rprojection => & 
           collct_getvalue_ilvp(rcollection,'CCNL_ILVPROJECTION')
 
-      ! Restore the filter chain
-      rnonlinearIteration%rpreconditioner%p_RfilterChain => &
-          collct_getvalue_fchn(rcollection,'CCNL_FILTERCHAIN')
-      
       ! Put the prepared solver node to the collection for later use.
       ! Remember, it's our preconditioner we need during the nonlinear
       ! iteration!
@@ -895,10 +919,14 @@ CONTAINS
           collct_getvalue_matsca(rcollection,'CCNL_MATB2',ilevel)
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass => &
           collct_getvalue_matsca(rcollection,'CCNL_MATMASS',ilevel)
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixIdentityPressure => &
+          collct_getvalue_matsca(rcollection,'CCNL_MATIDP',ilevel)
           
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixPreconditioner => &
-          collct_getvalue_mat(rcollection,'CCNL_MATPrec',ilevel)
+          collct_getvalue_mat(rcollection,'CCNL_MATPREC',ilevel)
 
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
+          collct_getvalue_vec(rcollection,'CCNL_TEMPVEC',ilevel)
     END DO
     
     ! Reconstruct residual information
@@ -1053,9 +1081,11 @@ CONTAINS
       CALL collct_deletevalue (rcollection,'CCNL_MATB1',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_MATB2',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_MATMASS',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_MATIDP',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_MATA12',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_MATA21',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_MATPREC',ilevel)
+      CALL collct_deletevalue (rcollection,'CCNL_TEMPVEC',ilevel)
     END DO
       
   END SUBROUTINE
@@ -1064,1078 +1094,1216 @@ CONTAINS
   ! Routines to set up matrices and (nonlinear) defect vectors.
   ! ***************************************************************************
 
-!<subroutine>
-
-  SUBROUTINE c2d2_assembleLinearisedMatrices (rnonlinearIteration,rcollection,&
-      blevelHierarchy,bboundaryConditions,bboundaryConditionsNonlin,&
-      bassemblePreconditioner,bassembleNewton,rx)
-
-  USE linearsystemblock
-  USE collection
-  
-!<description>
-  ! This routine assembles the linearised nonlinear system matrices.
-  ! Pointers to these matrices must have been attached the rnonlinearIteration
-  ! by a previous c2d2_initNonlinearLoop. The constants of the different terms
-  ! in the core equation must have been initialised by the caller.
-  !
-  ! The system matrices are assembled into 
-  ! -> the p_rmatrix variable in the nonlinear iteration structure if 
-  !    bassemblePreconditioner=FALSE
-  ! -> the p_rmatrixPreconditioner variable in the nonlinear iteration structure 
-  !    if bassemblePreconditioner=TRUE.
-!</description>
-
-!<inputoutput>
-  ! Reference to a collection structure that contains all parameters of the
-  ! discretisation (for nonlinearity, etc.).
-  TYPE(t_collection), INTENT(INOUT)                :: rcollection
-
-  ! Nonlinear iteration structure where to write the linearised system matrix to.
-  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
-!</inputoutput>
-
-!<input>
-  ! Whether to initialise the whole level hirarchy.
-  ! TRUE  = calculate the system matrices on all levels.
-  ! FALSE = calculate the system matrix only on the maximum level where to solve
-  !         the problem
-  LOGICAL, INTENT(IN) :: blevelHierarchy
-  
-  ! TRUE  = include (linear) boundary conditions into the system 
-  !   matrix/matrices after assembly
-  ! FASLE = don't incorporate any boundary conditions
-  LOGICAL, INTENT(IN) :: bboundaryConditions
-
-  ! TRUE  = include nonlinear boundary conditions into the system 
-  !   matrix/matrices after assembly
-  ! FASLE = don't incorporate any boundary conditions
-  LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
-
-  ! TRUE  = Assemble the preconditioner matrices p_rmatrixPreconditioner
-  !         on every level in rnonlinearIteration.
-  ! FALSE = Assemble the linearised system matrices p_rmatrix
-  !         on every level in rnonlinearIteration.
-  LOGICAL, INTENT(IN) :: bassemblePreconditioner
-  
-  ! Applies only if bassemblePreconditioner=TRUE:
-  ! TRUE  = Assemble the Newton preconditioner.
-  ! FALSE = Assemble the standard defect correction preconditioner
-  !         (i.e. the linearised system matrix).
-  LOGICAL, INTENT(IN) :: bassembleNewton
-  
-  ! OPTIONAL: Current iteration vector. Must be specified if the nonlinearity
-  ! is to be discretised.
-  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL       :: rx
- 
-!</input>
-
-!</subroutine>
-
-  ! local variables
-  REAL(DP) :: dnewton
-
-  ! An array for the system matrix(matrices) during the initialisation of
-  ! the linear solver.
-  TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
-  TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
-  TYPE(t_vectorScalar), POINTER :: p_rvectorTemp
-  INTEGER :: NLMAX,NLMIN, ilev
-  TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
-  
-  TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
-
-  ! A filter chain for the linear solver
-  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-  
-  ! DEBUG!!!
-!    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
-!    call lsysbl_getbase_double (rd,p_def)
-!    call lsysbl_getbase_double (rx,p_vec)
-!    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
-
-    ! Get minimum and maximum level from the collection
-    NLMIN = rnonlinearIteration%NLMIN
-    NLMAX = rnonlinearIteration%NLMAX
-    
-    IF (blevelHierarchy) THEN
-      ! Get the interlevel projection structure and the temporary vector
-      ! from the collection.
-      ! Our 'parent' prepared there how to interpolate the solution on the
-      ! fine grid to coarser grids.
-      p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
-      p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
-    ELSE
-      ! Discretise only maximum level
-      NLMIN = NLMAX
-    END IF
-
-    IF (bassemblePreconditioner) THEN
-      p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
-    ELSE
-      NULLIFY(p_RfilterChain)
-    END IF
-
-    ! On all levels, we have to set up the nonlinear system matrix,
-    ! so that the linear solver can be applied to it.
-
-    NULLIFY(p_rmatrix)
-    DO ilev=NLMAX,NLMIN,-1
-    
-      ! Get the system matrix and the Stokes matrix
-      p_rmatrixFine => p_rmatrix
-      ! What should we assemble? Linearised matrix or preconditioner?
-      IF (bassemblePreconditioner) THEN
-        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
-      ELSE
-        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
-      END IF
-      p_rmatrixStokes => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
-      p_rmatrixMass => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
-      
-      IF (PRESENT(rx)) THEN
-        ! On the highest level, we use rx as solution to build the nonlinear
-        ! matrix. On lower levels, we have to create a solution
-        ! on that level from a fine-grid solution before we can use
-        ! it to build the matrix!
-        IF (ilev .EQ. NLMAX) THEN
-        
-          p_rvectorCoarse => rx
-          
-        ELSE
-          ! We have to discretise a level hierarchy and are on a level < NLMAX.
-        
-          ! Get the temporary vector on level i. Will receive the solution
-          ! vector on that level. 
-          p_rvectorCoarse => collct_getvalue_vec (rcollection,PAR_TEMPVEC,ilev)
-          
-          ! Get the solution vector on level i+1. This is either the temporary
-          ! vector on that level, or the solution vector on the maximum level.
-          IF (ilev .LT. NLMAX-1) THEN
-            p_rvectorFine => collct_getvalue_vec (rcollection,PAR_TEMPVEC,ilev+1)
-          ELSE
-            p_rvectorFine => rx
-          END IF
-
-          ! Interpolate the solution from the finer grid to the coarser grid.
-          ! The interpolation is configured in the interlevel projection
-          ! structure we got from the collection.
-          CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
-                                          p_rvectorFine,p_rvectorTemp)
-
-          ! Apply the filter chain to the temp vector.
-          ! This implements the boundary conditions that are attached to it.
-          ! NOTE: Deactivated for standard CC2D compatibility -- and because
-          ! it has to be checked whether the correct boundary conditions
-          ! are attached to that vector!
-          ! CALL filter_applyFilterChainVec (p_rvectorCoarse, p_RfilterChain)
-
-        END IF
-        
-      ELSE 
-      
-        NULLIFY (p_rvectorCoarse)
-        
-      END IF
-
-      ! The system matrix looks like:
-      !          
-      !    ( A11  A12  B1  M/a          ) 
-      !    ( A21  A22  B2       M/a     ) 
-      !    ( B1^T B2^T                  ) 
-      !    ( -M            A44  A45  B1 ) 
-      !    (      -M       A54  A55  B2 ) 
-      !    (               B1^T B2^T    ) 
-      !
-      ! With some multiplication factors in front of the matrices.
-      !
-      ! Primal equation
-      ! ---------------
-      ! Assemble rows 1..3 of the block matrix:
-      !
-      !    ( A11  A12  B1  M/a          ) 
-      !    ( A21  A22  B2       M/a     ) 
-      !    ( B1^T B2^T I                )
-      !
-      ! 1.) Assemble the velocity submatrix
-      !
-      !    ( A11  A12   .    .    .    . ) 
-      !    ( A21  A22   .    .    .      ) 
-      !    (  .    .    .    .    .    . )
-      
-      dnewton = 0.0_DP
-      IF (bassemblePreconditioner .AND. bassembleNewton) dnewton = 1.0_DP
-      
-      CALL assembleVelocityBlocks (&
-          rnonlinearIteration%RcoreEquation(ilev),&
-          p_rmatrix,1,1,&
-          rnonlinearIteration%diota1,&
-          rnonlinearIteration%dalpha1,&
-          rnonlinearIteration%dtheta1,&
-          rnonlinearIteration%dgamma1,&
-          dnewton,rcollection,p_rvectorCoarse,1.0_DP)
-      
-      ! 2.) Initialise the weights for the mass- and B-matrices
-      !
-      !    (  .    .   B1    M    .    . ) 
-      !    (  .    .   B2    .    M    . ) 
-      !    ( B1^T B2^T  I    .    .    . )
-
-      ! Initialise the weights for the B/B^T matrices
-      p_rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearIteration%deta1
-      p_rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearIteration%deta1
-      
-      p_rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearIteration%dtau1
-      p_rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearIteration%dtau1
-      
-      ! Initialise the weights of the mass matrices
-      p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = rnonlinearIteration%dmu1
-      p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = rnonlinearIteration%dmu1
-      
-      ! Switch the I-matrix in the continuity equation on/off.
-      p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = rnonlinearIteration%dkappa1
-      
-      ! Dual equation
-      ! ---------------
-      ! Assemble rows 1..3 of the block matrix:
-      !
-      !    ( -M    .    .  A44  A45  B1 ) 
-      !    (  .   -M    .  A54  A55  B2 ) 
-      !    (  .    .    .  B1^T B2^T    ) 
-      !
-      ! 1.) Assemble the velocity submatrix
-      !
-      !    (  .    .    .   A44  A45   . ) 
-      !    (  .    .    .   A54  A55   . ) 
-      !    (  .    .    .    .    .    . )
-      !
-      ! Note that the Newton part (if assembled) is set up with the
-      ! primal velocity! The weight is taken from the GAMMA parameter
-      ! and switches of the assembly of Newton. Actually, it's not
-      ! a 'Newton' matrix but the adjoint of the nonlinearity
-      ! which is assembled here...
-      ! Note that in the dual equation, the SD term has a "-" while the Newton 
-      ! term has a '+'. To cover that, we include '-' signs in front of Newton
-      ! as well as in front of the velocity field.
-            
-      dnewton = -rnonlinearIteration%dgamma2
-      
-      CALL assembleVelocityBlocks (&
-          rnonlinearIteration%RcoreEquation(ilev),&
-          p_rmatrix,4,4,&
-          rnonlinearIteration%diota2,&
-          rnonlinearIteration%dalpha2,&
-          rnonlinearIteration%dtheta2,&
-          rnonlinearIteration%dgamma2,&
-          dnewton,rcollection,p_rvectorCoarse,-1.0_DP)
-      
-      ! In case dgamma2=0, switch off the A45/A54 matrices as we didn't
-      ! assemble them.
-      IF (rnonlinearIteration%dgamma2 .NE. 0.0_DP) THEN
-        p_rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
-        p_rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
-      ELSE
-        p_rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
-        p_rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
-      END IF
-      
-      ! 2.) Initialise the weights for the mass- and B-matrices
-      !
-      !    ( M    .    .    .    .   B1 ) 
-      !    ( .    M    .    .    .   B2 ) 
-      !    ( .    .    .   B1^T B2^T  . )
-
-      ! Initialise the weights for the B/B^T matrices
-      p_rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearIteration%deta2
-      p_rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearIteration%deta2
-      
-      p_rmatrix%RmatrixBlock(6,4)%dscaleFactor = rnonlinearIteration%dtau2
-      p_rmatrix%RmatrixBlock(6,5)%dscaleFactor = rnonlinearIteration%dtau2
-      
-      ! Initialise the weights of the mass matrices
-      p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = rnonlinearIteration%dmu2
-      p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = rnonlinearIteration%dmu2
-      
-      ! Switch the I-matrix in the dual continuity equation on/off.
-      p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = rnonlinearIteration%dkappa2
-      
-      ! Matrix restriction
-      ! ---------------------------------------------------
-
-      ! For the construction of matrices on lower levels, call the matrix
-      ! restriction. In case we have a uniform discretisation with Q1~,
-      ! iadaptivematrix may be <> 0 and so this will rebuild some matrix entries
-      ! by a Galerkin approach using constant prolongation/restriction.
-      ! This helps to stabilise the solver if there are elements in the
-      ! mesh with high aspect ratio.
-      IF (ilev .LT. NLMAX) THEN
-        CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(1,1), &
-            p_rmatrix%RmatrixBlock(1,1), &
-            rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
-            rnonlinearIteration%rfinalAssembly%dadmatthreshold)
-            
-        IF (.NOT. lsyssc_isMatrixContentShared(&
-            p_rmatrixFine%RmatrixBlock(1,1),p_rmatrix%RmatrixBlock(2,2))) THEN
-          CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(2,2), &
-              p_rmatrix%RmatrixBlock(1,1), &
-              rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
-              rnonlinearIteration%rfinalAssembly%dadmatthreshold)
-        END IF
-
-        CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(4,4), &
-            p_rmatrix%RmatrixBlock(4,4), &
-            rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
-            rnonlinearIteration%rfinalAssembly%dadmatthreshold)
-            
-        IF (.NOT. lsyssc_isMatrixContentShared(&
-          p_rmatrix%RmatrixBlock(4,4),p_rmatrix%RmatrixBlock(5,5))) THEN
-          CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(5,5), &
-              p_rmatrix%RmatrixBlock(5,5), &
-              rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
-              rnonlinearIteration%rfinalAssembly%dadmatthreshold)
-        END IF
-      END IF
-      
-      ! Boundary conditions
-      ! ---------------------------------------------------
-      
-      IF (bboundaryConditions) THEN
-    
-        IF (ASSOCIATED(p_RfilterChain)) THEN
-          ! Apply the filter chain to the matrix.
-          ! As the filter consists only of an implementation filter for
-          ! boundary conditions, this implements the boundary conditions
-          ! into the system matrix.
-          CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
-        ELSE
-          ! Call the matrix filter for the boundary conditions to include the BC's
-          ! into the matrix.
-          CALL matfil_discreteBC (p_rmatrix)
-          CALL matfil_discreteFBC (p_rmatrix)
-        END IF
-
-      END IF
-        
-      IF (bboundaryConditionsNonlin) THEN
-
-        ! 'Nonlinear' boundary conditions like slip boundary conditions
-        ! are not implemented with a filter chain into a matrix.
-        ! Call the appropriate matrix filter of 'nonlinear' boundary
-        ! conditions manually:
-        CALL matfil_discreteNLSlipBC (p_rmatrix,.TRUE.)
-        
-      END IF
-      
-      ! DEBUG!!!
-      !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
-      !                              .TRUE., 0, 'matrix.txt','(1X,E20.10)')
-      
-    END DO
-
-  CONTAINS
-  
-    SUBROUTINE assembleVelocityBlocks (rcoreequation,rmatrix,itop,ileft,&
-        diota,dalpha,dtheta,dgamma,dnewton,rcollection,p_rvector,dvectorWeight)
-        
-    ! Assembles the velocity matrix in the block matrix rmatrix at position
-    ! (itop,ileft):
-    !
-    ! rmatrix := diota*I + dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
-    !            dnewton*N*(p_rvector)
-    
-    ! Core equation structure that defines the source matrices that are used
-    ! to assemble the system matrix
-    TYPE(t_cccoreEquationOneLevel), INTENT(IN) :: rcoreequation   
-    
-    ! Block matrix where the 2x2-velocity submatrix should be assembled
-    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
-    
-    ! Row in the block matrix where the 2x2-velocity submatrix should be
-    ! assembled to.
-    INTEGER, INTENT(IN) :: itop
-
-    ! Column in the block matrix where the 2x2-velocity submatrix should be
-    ! assembled to.
-    INTEGER, INTENT(IN) :: ileft
-    
-    ! Weight for the identity matrix
-    REAL(DP), INTENT(IN) :: diota
-    
-    ! Weight for the mass matrix
-    REAL(DP), INTENT(IN) :: dalpha
-    
-    ! Weight for the Laplace matrix
-    REAL(DP), INTENT(IN) :: dtheta
-    
-    ! Weight for the nonlinearity
-    REAL(DP), INTENT(IN) :: dgamma
-    
-    ! Weight for the Newton matrix
-    REAL(DP), INTENT(IN) :: dnewton
-    
-    ! Weight for the velocity vector; usually = -1.
-    REAL(DP), INTENT(IN) :: dvectorWeight
-    
-    ! Velocity vector for the nonlinearity. Must be <> NULL() if
-    ! GAMMA <> 0; can be omitted if GAMMA=0.
-    TYPE(t_vectorBlock), POINTER :: p_rvector
-    
-    ! Collection structure with parameters for the assembly.
-    TYPE(t_collection), INTENT(INOUT) :: rcollection
-    
-    ! local variables
-    LOGICAL :: bshared
-    INTEGER :: iupwind
-    TYPE(t_matrixBlock) :: rmatrixTemp
-    TYPE(t_vectorBlock) :: rvectorTemp
-    TYPE(t_convUpwind) :: rupwind
-    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    TYPE(T_jumpStabilisation) :: rjumpStabil
-    
-      bshared = lsyssc_isMatrixContentShared(&
-                    rmatrix%RmatrixBlock(itop  ,ileft),&
-                    rmatrix%RmatrixBlock(itop+1,ileft+1))
-    
-      ! ---------------------------------------------------
-      ! If diota <> 0, initialise the matrix with the identity,
-      ! otherwise with zero.
-      IF (diota .EQ. 0.0_DP) THEN
-        CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop,ileft))
-        
-        IF (.NOT. bshared) THEN
-          CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop+1,ileft+1))
-        END IF
-        
-      ELSE
-        
-        CALL lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(itop,ileft))
-        CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(itop,ileft),diota)
-        
-        IF (.NOT. bshared) THEN
-          CALL lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(itop+1,ileft+1))
-          CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(itop+1,ileft+1),diota)
-        END IF
-        
-      END IF
-    
-      ! ---------------------------------------------------
-      ! Plug in the mass matrix?
-      IF (dalpha .NE. 0.0_DP) THEN
-        CALL lsyssc_matrixLinearComb (&
-            rcoreequation%p_rmatrixMass       ,dalpha,&
-            p_rmatrix%RmatrixBlock(itop,ileft),1.0_DP,&
-            p_rmatrix%RmatrixBlock(itop,ileft),&
-            .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-            
-        IF (.NOT. bshared) THEN
-          CALL lsyssc_matrixLinearComb (&
-              rcoreequation%p_rmatrixMass           ,dalpha,&
-              p_rmatrix%RmatrixBlock(itop+1,ileft+1),1.0_DP,&
-              p_rmatrix%RmatrixBlock(itop+1,ileft+1),&
-              .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-        END IF
-      END IF
-      
-      ! ---------------------------------------------------
-      ! Plug in the Stokes matrix?
-      IF (dtheta .NE. 0.0_DP) THEN
-        CALL lsyssc_matrixLinearComb (&
-            rcoreequation%p_rmatrixStokes     ,dtheta,&
-            p_rmatrix%RmatrixBlock(itop,ileft),1.0_DP,&
-            p_rmatrix%RmatrixBlock(itop,ileft),&
-            .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-            
-        IF (.NOT. bshared) THEN
-          CALL lsyssc_matrixLinearComb (&
-              rcoreequation%p_rmatrixStokes         ,dtheta,&
-              p_rmatrix%RmatrixBlock(itop+1,ileft+1),1.0_DP,&
-              p_rmatrix%RmatrixBlock(itop+1,ileft+1),&
-              .FALSE.,.FALSE.,.TRUE.,.TRUE.)
-        END IF
-      END IF
-      
-      ! ---------------------------------------------------
-      ! That was easy -- the adventure begins now... The nonlinearity!
-      IF (dgamma .NE. 0.0_DP) THEN
-      
-        IF (.NOT. ASSOCIATED(p_rvector)) THEN
-          CALL output_line ('Velocity vector not present!', &
-                             OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocity')
-          STOP
-        END IF
-      
-        ! Type of stablilisation?
-        iupwind = collct_getvalue_int (rcollection,'IUPWIND')
-      
-        SELECT CASE (iupwind)
-        CASE (0)
-          ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = collct_getvalue_real (rcollection,'UPSAM')
-          
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
-          
-          ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = dnewton
-          
-          ! Derive a submatrix from the main matrix that represents our velocity
-          ! submatrix
-          CALL lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,&
-                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
-                                       ileft,ileft+1)
-                                       
-          ! Derive a subvector that represents the velocity to be used for
-          ! the stabilisation term.
-          CALL lsysbl_deriveSubvector(p_rvector,rvectorTemp, &
-              ileft,ileft+1,.TRUE.)
-          
-          IF (dnewton .EQ. 0.0_DP) THEN
-
-            ! Deactivate the matrices A12 and A21 by setting the multiplicators
-            ! to 0.0. Whatever the content is (if there's content at all),
-            ! these matrices are ignored then by the kernel.
-            
-            rmatrix%RmatrixBlock(itop,ileft+1)%dscaleFactor = 0.0_DP
-            rmatrix%RmatrixBlock(itop+1,ileft)%dscaleFactor = 0.0_DP
-            
-         ELSE
-
-            ! Clear A12/A21 that receives parts of the Newton matrix
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop,ileft+1))
-            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop+1,ileft))
-          
-            ! Activate the submatrices A12 and A21 if they aren't.
-            rmatrix%RmatrixBlock(itop,ileft+1)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(itop+1,ileft)%dscaleFactor = 1.0_DP
-         
-         END IF
-         
-          ! Call the SD method to calculate the nonlinearity.
-          ! As rmatrixTemp shares its entries with rmatrix, the result is
-          ! directly written to rmatrix!
-          CALL conv_streamlineDiffusionBlk2d (&
-                              rvectorTemp, rvectorTemp, &
-                              dvectorWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrixTemp)
-                              
-         ! Release the temporary matrix / vector
-         CALL lsysbl_releaseVector (rvectorTemp)
-         CALL lsysbl_releaseMatrix (rmatrixTemp)
-
-        CASE (1)
-          ! Set up the upwind structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rupwind%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rupwind%dupsam = collct_getvalue_real (rcollection,'UPSAM')
-
-          ! Matrix weight
-          rupwind%dtheta = dgamma
-          
-          IF (bassembleNewton .AND. (rnonlinearIteration%MT_OutputLevel .GE. 2)) THEN
-            CALL output_line ('Warning: Upwind does not support assembly '&
-                //'of the Newton matrix!',OU_CLASS_TRACE1)
-          END IF
-          
-          PRINT *,'Not implemented!'
-          STOP
-
-        CASE (2)
-          ! Set up the jump stabilisation structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgammastar = collct_getvalue_real (rcollection,'UPSAM')
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
-          
-          ! Set up the SD structure for the creation of the defect.
-          ! Initialise the viscosity...
-          rstreamlineDiffusion%dnu = rjumpStabil%dnu
-          
-          ! Set upsam=0 to obtain a central-difference-type discretisation
-          rstreamlineDiffusion%dupsam = 0.0_DP
-
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
-          rjumpStabil%dtheta = dgamma
-
-          PRINT *,'Not implemented!'
-          STOP
-
-        CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
-        
-        END SELECT
-      
-      END IF ! gamma <> 0
-    
-    END SUBROUTINE
-
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE c2d2_assembleNonlinearDefect (rnonlinearIteration,rx,rd,&
-      bfilterDefect,bboundaryConditionsNonlin,rcollection,rmatrix)
-
-  USE linearsystemblock
-  USE collection
-  
-!<description>
-  ! Assembles the nonlinear defect of the core equation.
-!</description>
-
-!<input>
-  ! Current iteration vector
-  TYPE(t_vectorBlock), INTENT(IN),TARGET        :: rx
-
-  ! TRUE  = include (linear) boundary conditions into the system 
-  !   matrix/matrices after assembly by applying the filter chain that is
-  !   associated to the preconditioner in rnonlinearIteration.
-  ! FASLE = don't incorporate any boundary conditions
-  LOGICAL, INTENT(IN) :: bfilterDefect
-
-  ! TRUE  = include nonlinear boundary conditions into the system 
-  !   matrix/matrices after assembly
-  ! FASLE = don't incorporate any boundary conditions
-  LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
-
-  ! OPTIONAL: System matrix to use for setting up the defect.
-  ! If not specified, the standard system matrix on the maximum level
-  ! in rnonlinearIteration is used.
-  ! The matrix must specify all 'static' submatrices of the global
-  ! system (B-matrices, coupling mass matrices).
-  TYPE(t_matrixBlock), INTENT(IN), TARGET, OPTIONAL :: rmatrix
-!</input>
-              
-!<inputoutput>
-  ! Nonlinear iteration structure that specifies the core equation.
-  TYPE(t_ccnonlinearIteration), INTENT(IN)      :: rnonlinearIteration
-
-  ! Collection structure of the application. 
-  TYPE(t_collection), INTENT(INOUT)             :: rcollection
-
-  ! IN: Right hand side vector of the equation.
-  ! OUT: Defect vector b-A(x)x. 
-  TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
-!</inputoutput>
-
-!</subroutine>
-
-  ! local variables
-  INTEGER :: ilev
-  REAL(DP) :: dnewton
-  TYPE(t_matrixBlock), POINTER :: p_rmatrix
-  TYPE(t_matrixBlock) :: rmatrixTmpBlock
-  
-  ! A filter chain for the linear solver
-  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-  
-  ! DEBUG!!!
-  REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
-
-    ! DEBUG!!!
-    CALL lsysbl_getbase_double (rx,p_Ddata)
-    CALL lsysbl_getbase_double (rd,p_Ddata2)
-
-    ! Get the level that we are working on.
-    ilev = rnonlinearIteration%NLMAX
- 
-    ! Get reference to matrices we later need.
-    p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
-    
-    IF (PRESENT(rmatrix)) THEN
-      p_rmatrix => rmatrix
-    END IF
- 
-    ! The system matrix looks like:
-    !          
-    !    ( A11  A12  B1  M/a          ) 
-    !    ( A21  A22  B2       M/a     ) 
-    !    ( B1^T B2^T I                ) 
-    !    ( -M            A44  A45  B1 ) 
-    !    (      -M       A54  A55  B2 ) 
-    !    (               B1^T B2^T I  ) 
-    !
-    ! With some multiplication factors in front of the matrices.
-    !
-    ! Primal velocity equation
-    ! ------------------------
-    ! In the first step, we assemble the defect that arises in the velocity 
-    ! components. This is characterised by the following submatrix:
-    !
-    !    ( A11  A12  .    .    .    .  ) 
-    !    ( A21  A22  .    .    .    .  ) 
-    !    ( .    .    .    .    .    .  ) 
-    !    ( .    .    .    .    .    .  ) 
-    !    ( .    .    .    .    .    .  ) 
-    !    ( .    .    .    .    .    .  ) 
-    
-    dnewton = 0.0_DP
-    CALL assembleVelocityDefect (&
-        rnonlinearIteration%RcoreEquation(ilev),&
-        1,&
-        rnonlinearIteration%diota1,&
-        rnonlinearIteration%dalpha1,&
-        rnonlinearIteration%dtheta1,&
-        rnonlinearIteration%dgamma1,&
-        dnewton,rcollection,p_rmatrix,rx,rd,rx,1.0_DP)
-
-    ! Dual velocity equation
-    ! ----------------------
-    ! In the second step, we assemble the defect that arises in the dual velocity 
-    ! components. This is characterised by the following submatrix:
-    !
-    !    ( .    .    .    .    .    .  ) 
-    !    ( .    .    .    .    .    .  ) 
-    !    ( .    .    .    .    .    .  ) 
-    !    ( .    .    .    A44  A45  .  ) 
-    !    ( .    .    .    A54  A55  .  ) 
-    !    ( .    .    .    .    .    .  ) 
-    !
-    ! Note that the Newton part (if assembled) is set up with the
-    ! primal velocity! The weight is taken from the GAMMA parameter
-    ! and switches of the assembly of Newton. Actually, it's not
-    ! a 'Newton' matrix but the adjoint of the nonlinearity
-    ! which is assembled here...
-    ! Note that in the dual equation, the SD term has a "-" while the Newton 
-    ! term has a '+'. To cover that, we include '-' signs in front of Newton
-    ! as well as in front of the velocity field.
-    
-    dnewton = -rnonlinearIteration%dgamma2
-    
-    CALL assembleVelocityDefect (&
-        rnonlinearIteration%RcoreEquation(ilev),&
-        4,&
-        rnonlinearIteration%diota2,&
-        rnonlinearIteration%dalpha2,&
-        rnonlinearIteration%dtheta2,&
-        rnonlinearIteration%dgamma2,&
-        dnewton,rcollection,p_rmatrix,rx,rd,rx,-1.0_DP)
-
-    ! Static blocks
-    ! -------------
-    ! In the third step, we treat all the remaining blocks. Let's see what is missing:
-    !
-    !    ( .    .    B1  M            ) 
-    !    ( .    .    B2       M       ) 
-    !    ( B1^T B2^T I                ) 
-    !    ( M             .    .    B1 ) 
-    !    (      M        .    .    B2 ) 
-    !    (               B1^T B2^T I  ) 
-    !
-    ! Each matrix with an appropriate multiplication factor in the front.
-    ! To build the appropriate defect, we first derive a submatrix from
-    ! the global matrix and remove the velocity blocks:
-    
-    CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixTmpBlock,&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(1,1))
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(1,2))
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(2,1))
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(2,2))
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(4,4))
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(4,5))
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(5,4))
-    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(5,5))
-    
-    ! Primal equation
-    ! ---------------
-    ! Initialise the weights for the mass- and B-matrices in the primal
-    ! equation:
-    !
-    !    (  .    .   B1    M    .    . ) 
-    !    (  .    .   B2    .    M    . ) 
-    !    ( B1^T B2^T  I    .    .    . )
-    !    (  .    .    .    .    .    . )
-    !    (  .    .    .    .    .    . )
-    !    (  .    .    .    .    .    . )
-
-    ! Initialise the weights for the B/B^T matrices
-    rmatrixTmpBlock%RmatrixBlock(1,3)%dscaleFactor = rnonlinearIteration%deta1
-    rmatrixTmpBlock%RmatrixBlock(2,3)%dscaleFactor = rnonlinearIteration%deta1
-    
-    rmatrixTmpBlock%RmatrixBlock(3,1)%dscaleFactor = rnonlinearIteration%dtau1
-    rmatrixTmpBlock%RmatrixBlock(3,2)%dscaleFactor = rnonlinearIteration%dtau1
-    
-    ! Initialise the weights of the mass matrices
-    rmatrixTmpBlock%RmatrixBlock(1,4)%dscaleFactor = rnonlinearIteration%dmu1
-    rmatrixTmpBlock%RmatrixBlock(2,5)%dscaleFactor = rnonlinearIteration%dmu1
-    
-    ! Switch the I-matrix in the continuity equation on/off.
-    rmatrixTmpBlock%RmatrixBlock(3,3)%dscaleFactor = rnonlinearIteration%dkappa1
-    
-    ! Dual equation
-    ! ---------------
-    ! Initialise the weights for the mass- and B-matrices in the dual
-    ! equation:
-    !
-    !    (  .    .    .    .    .    . )
-    !    (  .    .    .    .    .    . )
-    !    (  .    .    .    .    .    . )
-    !    (  M    .    .    .    .   B1 ) 
-    !    (  .    M    .    .    .   B2 ) 
-    !    (  .    .    .   B1^T B2^T  . )
-    
-    ! Initialise the weights for the B/B^T matrices
-    rmatrixTmpBlock%RmatrixBlock(4,6)%dscaleFactor = rnonlinearIteration%deta2
-    rmatrixTmpBlock%RmatrixBlock(5,6)%dscaleFactor = rnonlinearIteration%deta2
-    
-    rmatrixTmpBlock%RmatrixBlock(6,4)%dscaleFactor = rnonlinearIteration%dtau2
-    rmatrixTmpBlock%RmatrixBlock(6,5)%dscaleFactor = rnonlinearIteration%dtau2
-    
-    ! Initialise the weights of the mass matrices
-    rmatrixTmpBlock%RmatrixBlock(4,1)%dscaleFactor = rnonlinearIteration%dmu2
-    rmatrixTmpBlock%RmatrixBlock(5,2)%dscaleFactor = rnonlinearIteration%dmu2
-    
-    ! Switch the I-matrix in the dual continuity equation on/off.
-    rmatrixTmpBlock%RmatrixBlock(6,6)%dscaleFactor = rnonlinearIteration%dkappa2
-
-    ! ------------------------------------------------
-    ! Build the defect by matrix-vector multiplication
-    !
-    ! Note that no time step or whatever is included here; everything
-    ! is initialised with the multiplication factors in the submatrices
-    ! from above!
-    CALL lsysbl_blockMatVec (rmatrixTmpBlock, rx, rd, -1.0_DP, 1.0_DP)
-            
-    ! Release the temporary matrix, we don't need it anymore.
-    CALL lsysbl_releaseMatrix (rmatrixTmpBlock)
-
-    ! Boundary conditions
-    ! ---------------------------------------------------
-    
-    ! Apply the filter chain to the defect vector -- if this is desired.
-    IF (bfilterDefect) THEN
-      p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
-      IF (ASSOCIATED(p_RfilterChain)) THEN    
-        CALL filter_applyFilterChainVec (rd, p_RfilterChain)
-      END IF
-    END IF
-    
-    ! Filter the resulting defect vector through the slip-boundary-
-    ! condition vector filter for implementing nonlinear slip boundary
-    ! conditions into a defect vector. This changes the vector only IF we
-    ! have slip boundary conditions!
-    IF (bboundaryConditionsNonlin) &
-      CALL vecfil_discreteNLSlipBCdef (rd)
-
-  CONTAINS
-
-    SUBROUTINE assembleVelocityDefect (rcoreequation,itop,&
-        diota,dalpha,dtheta,dgamma,dnewton,rcollection,&
-        rmatrix,rvector,rdefect,rvelocityVector,dvectorWeight)
-        
-    ! Assembles the velocity defect in the block matrix rmatrix at position
-    ! itop..itop+1 in the velocity vector. rdefect must have been initialised
-    ! with the right hand side vector.
-    !
-    ! that means, with a matrix A constructed as
-    !
-    !       A := diota*I + dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
-    !            dnewton*N*(p_rvector)
-    !
-    ! the routine will construct
-    !
-    !  rrhs = rrhs - A rvector
-    
-    ! Core equation structure that defines the source matrices that are used
-    ! to assemble the system matrix
-    TYPE(t_cccoreEquationOneLevel), INTENT(IN) :: rcoreequation   
-    
-    ! Number of the first velocity block in rrhs that should be tackled.
-    INTEGER, INTENT(IN) :: itop
-
-    ! Weight for the identity matrix
-    REAL(DP), INTENT(IN) :: diota
-    
-    ! Weight for the mass matrix
-    REAL(DP), INTENT(IN) :: dalpha
-    
-    ! Weight for the Laplace matrix
-    REAL(DP), INTENT(IN) :: dtheta
-    
-    ! Weight for the nonlinearity
-    REAL(DP), INTENT(IN) :: dgamma
-    
-    ! Weight for the Newton matrix
-    REAL(DP), INTENT(IN) :: dnewton
-    
-    ! Reference to the system matrix. Only the structure of the matrix
-    ! is used to reconstruct the structure of the discretisation.
-    ! The content of the matrix is not changed or used.
-    TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
-    
-    ! Solution vector.
-    TYPE(t_vectorBlock), INTENT(IN) :: rvector
-    
-    ! On entry: RHS vector.
-    ! Is overwritten by the defect vector in the velocity subsystem.
-    TYPE(t_vectorBlock), INTENT(INOUT) :: rdefect
-    
-    ! Collection structure with parameters for the assembly.
-    TYPE(t_collection), INTENT(INOUT) :: rcollection
-    
-    ! Weight for the velocity vector; usually = -1.
-    REAL(DP), INTENT(IN) :: dvectorWeight
-    
-    ! Velocity vector field that should be used for the assembly of the
-    ! nonlinearity. The first two blocks in that block vector are
-    ! used as velocity field.
-    TYPE(t_vectorBlock), INTENT(IN) :: rvelocityVector
-
-    ! local variables
-    LOGICAL :: bshared
-    INTEGER :: iupwind
-    TYPE(t_matrixBlock) :: rmatrixTemp
-    TYPE(t_vectorBlock) :: rvectorTemp,rrhsTemp
-    TYPE(t_convUpwind) :: rupwind
-    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
-    TYPE(T_jumpStabilisation) :: rjumpStabil
-    
-      ! ---------------------------------------------------
-      ! If diota <> 0, subtract I*rvector from rdefect.
-      IF (diota .NE. 0.0_DP) THEN
-        CALL lsyssc_vectorLinearComb (rvector%RvectorBlock(itop),&
-                                      rdefect%RvectorBlock(itop),-diota,1.0_DP)
-        CALL lsyssc_vectorLinearComb (rvector%RvectorBlock(itop+1),&
-                                      rdefect%RvectorBlock(itop+1),-diota,1.0_DP)
-      END IF
-    
-      ! ---------------------------------------------------
-      ! Subtract the mass matrix stuff?
-      IF (dalpha .NE. 0.0_DP) THEN
-        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixMass, &
-            rvector%RvectorBlock(itop), rdefect%RvectorBlock(itop), -dalpha, 1.0_DP)
-
-        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixMass, &
-            rvector%RvectorBlock(itop+1), rdefect%RvectorBlock(itop+1), -dalpha, 1.0_DP)
-      END IF
-      
-      ! ---------------------------------------------------
-      ! Subtract the Stokes matrix stuff?
-      IF (dtheta .NE. 0.0_DP) THEN
-        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixStokes, &
-            rvector%RvectorBlock(itop), rdefect%RvectorBlock(itop), -dtheta, 1.0_DP)
-
-        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixStokes, &
-            rvector%RvectorBlock(itop+1), rdefect%RvectorBlock(itop+1), -dtheta, 1.0_DP)
-      END IF
-      
-      ! ---------------------------------------------------
-      ! That was easy -- the adventure begins now... The nonlinearity!
-      IF (dgamma .NE. 0.0_DP) THEN
-      
-        ! Type of stablilisation?
-        iupwind = collct_getvalue_int (rcollection,'IUPWIND')
-      
-        SELECT CASE (iupwind)
-        CASE (0)
-          ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = collct_getvalue_real (rcollection,'UPSAM')
-          
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
-          
-          ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = dnewton
-          
-          ! Derive a subvector that represents the velocity to be used for
-          ! the stabilisation term.
-          CALL lsysbl_deriveSubvector(rvector,rvectorTemp, &
-              itop,itop+1,.TRUE.)
-
-          ! Derive a subvector that represents the rhs.
-          CALL lsysbl_deriveSubvector(rdefect,rrhsTemp, &
-              itop,itop+1,.TRUE.)
-              
-          ! Derive a submatrix from the main matrix that represents our velocity
-          ! submatrix
-          CALL lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,&
-                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
-                                       itop,itop+1)
-                                       
-          ! Call the SD method to calculate the defect of the nonlinearity.
-          ! As rrhsTemp shares its entries with rdefect, the result is
-          ! directly written to rdefect!
-          ! As velocity field, we specify rvelocityVector here. The first two
-          ! subvectors are used as velocity field.
-          
-          CALL conv_streamlineDiffusionBlk2d (&
-                              rvelocityVector, rvelocityVector, &
-                              dvectorWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrixTemp,rsolution=rvectorTemp,rdefect=rrhsTemp)
-                              
-         ! Release the temporary matrix / vector
-         CALL lsysbl_releaseVector (rrhsTemp)
-         CALL lsysbl_releaseVector (rvectorTemp)
-         CALL lsysbl_releaseMatrix (rmatrixTemp)
-
-        CASE (1)
-          ! Set up the upwind structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rupwind%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rupwind%dupsam = collct_getvalue_real (rcollection,'UPSAM')
-
-          ! Matrix weight
-          rupwind%dtheta = dgamma
-          
-          PRINT *,'Not implemented!'
-          STOP
-
-        CASE (2)
-          ! Set up the jump stabilisation structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = collct_getvalue_real (rcollection,'NU')
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgammastar = collct_getvalue_real (rcollection,'UPSAM')
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
-          
-          ! Set up the SD structure for the creation of the defect.
-          ! Initialise the viscosity...
-          rstreamlineDiffusion%dnu = rjumpStabil%dnu
-          
-          ! Set upsam=0 to obtain a central-difference-type discretisation
-          rstreamlineDiffusion%dupsam = 0.0_DP
-
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
-          rjumpStabil%dtheta = dgamma
-
-          PRINT *,'Not implemented!'
-          STOP
-
-        CASE DEFAULT
-          PRINT *,'Don''t know how to set up nonlinearity!?!'
-          STOP
-        
-        END SELECT
-      
-      END IF ! gamma <> 0
-    
-    END SUBROUTINE
-
-  END SUBROUTINE
-
+!!<subroutine>
+!
+!  SUBROUTINE c2d2_assembleLinearisedMatrices (rnonlinearIteration,rcollection,&
+!      blevelHierarchy,bboundaryConditions,bboundaryConditionsNonlin,&
+!      bassemblePreconditioner,bassembleNewton,rx)
+!
+!  USE linearsystemblock
+!  USE collection
+!  
+!!<description>
+!  ! This routine assembles the linearised nonlinear system matrices.
+!  ! Pointers to these matrices must have been attached the rnonlinearIteration
+!  ! by a previous c2d2_initNonlinearLoop. The constants of the different terms
+!  ! in the core equation must have been initialised by the caller.
+!  !
+!  ! The system matrices are assembled into 
+!  ! -> the p_rmatrix variable in the nonlinear iteration structure if 
+!  !    bassemblePreconditioner=FALSE
+!  ! -> the p_rmatrixPreconditioner variable in the nonlinear iteration structure 
+!  !    if bassemblePreconditioner=TRUE.
+!!</description>
+!
+!!<inputoutput>
+!  ! Reference to a collection structure that contains all parameters of the
+!  ! discretisation (for nonlinearity, etc.).
+!  TYPE(t_collection), INTENT(INOUT)                :: rcollection
+!
+!  ! Nonlinear iteration structure where to write the linearised system matrix to.
+!  TYPE(t_ccnonlinearIteration), INTENT(INOUT) :: rnonlinearIteration
+!!</inputoutput>
+!
+!!<input>
+!  ! Whether to initialise the whole level hirarchy.
+!  ! TRUE  = calculate the system matrices on all levels.
+!  ! FALSE = calculate the system matrix only on the maximum level where to solve
+!  !         the problem
+!  LOGICAL, INTENT(IN) :: blevelHierarchy
+!  
+!  ! TRUE  = include (linear) boundary conditions into the system 
+!  !   matrix/matrices after assembly
+!  ! FASLE = don't incorporate any boundary conditions
+!  LOGICAL, INTENT(IN) :: bboundaryConditions
+!
+!  ! TRUE  = include nonlinear boundary conditions into the system 
+!  !   matrix/matrices after assembly
+!  ! FASLE = don't incorporate any boundary conditions
+!  LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
+!
+!  ! TRUE  = Assemble the preconditioner matrices p_rmatrixPreconditioner
+!  !         on every level in rnonlinearIteration.
+!  ! FALSE = Assemble the linearised system matrices p_rmatrix
+!  !         on every level in rnonlinearIteration.
+!  LOGICAL, INTENT(IN) :: bassemblePreconditioner
+!  
+!  ! Applies only if bassemblePreconditioner=TRUE:
+!  ! TRUE  = Assemble the Newton preconditioner.
+!  ! FALSE = Assemble the standard defect correction preconditioner
+!  !         (i.e. the linearised system matrix).
+!  LOGICAL, INTENT(IN) :: bassembleNewton
+!  
+!  ! OPTIONAL: Current iteration vector. Must be specified if the nonlinearity
+!  ! is to be discretised.
+!  TYPE(t_vectorBlock), INTENT(IN), TARGET, OPTIONAL       :: rx
+! 
+!!</input>
+!
+!!</subroutine>
+!
+!  ! local variables
+!  REAL(DP) :: dnewton
+!
+!  ! An array for the system matrix(matrices) during the initialisation of
+!  ! the linear solver.
+!  TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
+!  TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes,p_rmatrixMass
+!  TYPE(t_vectorScalar), POINTER :: p_rvectorTemp
+!  INTEGER :: NLMAX,NLMIN, ilev
+!  TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
+!  
+!  TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
+!
+!  ! A filter chain for the linear solver
+!  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+!  
+!  ! DEBUG!!!
+!!    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
+!!    call lsysbl_getbase_double (rd,p_def)
+!!    call lsysbl_getbase_double (rx,p_vec)
+!!    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
+!
+!    ! Get minimum and maximum level from the collection
+!    NLMIN = rnonlinearIteration%NLMIN
+!    NLMAX = rnonlinearIteration%NLMAX
+!    
+!    IF (blevelHierarchy) THEN
+!      ! Get the interlevel projection structure and the temporary vector
+!      ! from the collection.
+!      ! Our 'parent' prepared there how to interpolate the solution on the
+!      ! fine grid to coarser grids.
+!      p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
+!      p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
+!    ELSE
+!      ! Discretise only maximum level
+!      NLMIN = NLMAX
+!    END IF
+!
+!    IF (bassemblePreconditioner) THEN
+!      p_RfilterChain => rnonlinearIteration%p_RfilterChain
+!    ELSE
+!      NULLIFY(p_RfilterChain)
+!    END IF
+!
+!    ! On all levels, we have to set up the nonlinear system matrix,
+!    ! so that the linear solver can be applied to it.
+!
+!    NULLIFY(p_rmatrix)
+!    DO ilev=NLMAX,NLMIN,-1
+!    
+!      ! Get the system matrix and the Stokes matrix
+!      p_rmatrixFine => p_rmatrix
+!      ! What should we assemble? Linearised matrix or preconditioner?
+!      IF (bassemblePreconditioner) THEN
+!        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
+!      ELSE
+!        p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
+!      END IF
+!      p_rmatrixStokes => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
+!      p_rmatrixMass => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
+!      
+!      IF (PRESENT(rx)) THEN
+!        ! On the highest level, we use rx as solution to build the nonlinear
+!        ! matrix. On lower levels, we have to create a solution
+!        ! on that level from a fine-grid solution before we can use
+!        ! it to build the matrix!
+!        IF (ilev .EQ. NLMAX) THEN
+!        
+!          p_rvectorCoarse => rx
+!          
+!        ELSE
+!          ! We have to discretise a level hierarchy and are on a level < NLMAX.
+!        
+!          ! Get the temporary vector on level i. Will receive the solution
+!          ! vector on that level. 
+!          p_rvectorCoarse => rnonlinearIteration%RcoreEquation(ilev)%p_rtempVector
+!          
+!          ! Get the solution vector on level i+1. This is either the temporary
+!          ! vector on that level, or the solution vector on the maximum level.
+!          IF (ilev .LT. NLMAX-1) THEN
+!            p_rvectorFine => rnonlinearIteration%RcoreEquation(ilev+1)%p_rtempVector
+!          ELSE
+!            p_rvectorFine => rx
+!          END IF
+!
+!          ! Interpolate the solution from the finer grid to the coarser grid.
+!          ! The interpolation is configured in the interlevel projection
+!          ! structure we got from the collection.
+!          CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
+!                                          p_rvectorFine,p_rvectorTemp)
+!
+!          ! Apply the filter chain to the temp vector.
+!          ! This implements the boundary conditions that are attached to it.
+!          ! NOTE: Deactivated for standard CC2D compatibility -- and because
+!          ! it has to be checked whether the correct boundary conditions
+!          ! are attached to that vector!
+!          ! CALL filter_applyFilterChainVec (p_rvectorCoarse, p_RfilterChain)
+!
+!        END IF
+!        
+!      ELSE 
+!      
+!        NULLIFY (p_rvectorCoarse)
+!        
+!      END IF
+!
+!      ! The system matrix looks like:
+!      !          
+!      !    ( A11  A12  B1  M/a          ) 
+!      !    ( A21  A22  B2       M/a     ) 
+!      !    ( B1^T B2^T                  ) 
+!      !    ( -M            A44  A45  B1 ) 
+!      !    (      -M       A54  A55  B2 ) 
+!      !    (               B1^T B2^T    ) 
+!      !
+!      ! With some multiplication factors in front of the matrices.
+!      !
+!      ! Primal equation
+!      ! ---------------
+!      ! Assemble rows 1..3 of the block matrix:
+!      !
+!      !    ( A11  A12  B1  M/a          ) 
+!      !    ( A21  A22  B2       M/a     ) 
+!      !    ( B1^T B2^T I                )
+!      !
+!      ! 1.) Assemble the velocity submatrix
+!      !
+!      !    ( A11  A12   .    .    .    . ) 
+!      !    ( A21  A22   .    .    .      ) 
+!      !    (  .    .    .    .    .    . )
+!      
+!      dnewton = 0.0_DP
+!      IF (bassemblePreconditioner .AND. bassembleNewton) dnewton = 1.0_DP
+!      
+!      CALL assembleVelocityBlocks (&
+!          rnonlinearIteration%RcoreEquation(ilev),&
+!          p_rmatrix,1,1,&
+!          rnonlinearIteration%diota1,&
+!          rnonlinearIteration%dalpha1,&
+!          rnonlinearIteration%dtheta1,&
+!          rnonlinearIteration%dgamma1,&
+!          dnewton,rcollection,p_rvectorCoarse,1.0_DP)
+!      
+!      ! Gradient matrices
+!      CALL assembleGradientMatrices (.FALSE.,rnonlinearIteration%RcoreEquation(ilev),&
+!          p_rmatrix,.FALSE.)
+!      
+!      ! 2.) Initialise the weights for the mass- and B-matrices
+!      !
+!      !    (  .    .   B1    M    .    . ) 
+!      !    (  .    .   B2    .    M    . ) 
+!      !    ( B1^T B2^T  I    .    .    . )
+!
+!      ! Initialise the weights for the B/B^T matrices
+!      p_rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearIteration%deta1
+!      p_rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearIteration%deta1
+!      
+!      p_rmatrix%RmatrixBlock(3,1)%dscaleFactor = rnonlinearIteration%dtau1
+!      p_rmatrix%RmatrixBlock(3,2)%dscaleFactor = rnonlinearIteration%dtau1
+!      
+!      ! Initialise the weights of the mass matrices
+!      p_rmatrix%RmatrixBlock(1,4)%dscaleFactor = rnonlinearIteration%dmu1
+!      p_rmatrix%RmatrixBlock(2,5)%dscaleFactor = rnonlinearIteration%dmu1
+!      
+!      ! Switch the I-matrix in the continuity equation on/off.
+!      CALL lsyssc_duplicateMatrix (&
+!          rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixIdentityPressure,&
+!          p_rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!      p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = rnonlinearIteration%dkappa1
+!      
+!      ! Dual equation
+!      ! ---------------
+!      ! Assemble rows 1..3 of the block matrix:
+!      !
+!      !    ( -M    .    .  A44  A45  B1 ) 
+!      !    (  .   -M    .  A54  A55  B2 ) 
+!      !    (  .    .    .  B1^T B2^T    ) 
+!      !
+!      ! 1.) Assemble the velocity submatrix
+!      !
+!      !    (  .    .    .   A44  A45   . ) 
+!      !    (  .    .    .   A54  A55   . ) 
+!      !    (  .    .    .    .    .    . )
+!      !
+!      ! Note that the Newton part (if assembled) is set up with the
+!      ! primal velocity! The weight is taken from the GAMMA parameter
+!      ! and switches off the assembly of Newton. Actually, it's not
+!      ! a 'Newton' matrix but the adjoint of the nonlinearity
+!      ! which is assembled here...
+!      ! Note that in the dual equation, the SD term has a "-" while the Newton 
+!      ! term has a '+'. To cover that, we include '-' signs in front of Newton
+!      ! as well as in front of the velocity field.
+!            
+!      dnewton = -rnonlinearIteration%dgamma2
+!      
+!      CALL assembleVelocityBlocks (&
+!          rnonlinearIteration%RcoreEquation(ilev),&
+!          p_rmatrix,4,4,&
+!          rnonlinearIteration%diota2,&
+!          rnonlinearIteration%dalpha2,&
+!          rnonlinearIteration%dtheta2,&
+!          rnonlinearIteration%dgamma2,&
+!          dnewton,rcollection,p_rvectorCoarse,-1.0_DP)
+!      
+!      ! In case dgamma2=0, switch off the A45/A54 matrices as we didn't
+!      ! assemble them.
+!      IF (rnonlinearIteration%dgamma2 .NE. 0.0_DP) THEN
+!        p_rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
+!        p_rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
+!      ELSE
+!        p_rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
+!        p_rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
+!      END IF
+!      
+!      ! Gradient matrices
+!      CALL assembleGradientMatrices (.TRUE.,rnonlinearIteration%RcoreEquation(ilev),&
+!          p_rmatrix,.FALSE.)
+!
+!      ! 2.) Initialise the weights for the mass- and B-matrices
+!      !
+!      !    ( M    .    .    .    .   B1 ) 
+!      !    ( .    M    .    .    .   B2 ) 
+!      !    ( .    .    .   B1^T B2^T  . )
+!
+!      ! Initialise the weights for the B/B^T matrices
+!      p_rmatrix%RmatrixBlock(4,6)%dscaleFactor = rnonlinearIteration%deta2
+!      p_rmatrix%RmatrixBlock(5,6)%dscaleFactor = rnonlinearIteration%deta2
+!      
+!      p_rmatrix%RmatrixBlock(6,4)%dscaleFactor = rnonlinearIteration%dtau2
+!      p_rmatrix%RmatrixBlock(6,5)%dscaleFactor = rnonlinearIteration%dtau2
+!      
+!      ! Initialise the weights of the mass matrices
+!      p_rmatrix%RmatrixBlock(4,1)%dscaleFactor = rnonlinearIteration%dmu2
+!      p_rmatrix%RmatrixBlock(5,2)%dscaleFactor = rnonlinearIteration%dmu2
+!      
+!      ! Switch the I-matrix in the dual continuity equation on/off.
+!      CALL lsyssc_duplicateMatrix (&
+!          rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixIdentityPressure,&
+!          p_rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!      p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = rnonlinearIteration%dkappa2
+!      
+!      ! Matrix restriction
+!      ! ---------------------------------------------------
+!
+!      ! For the construction of matrices on lower levels, call the matrix
+!      ! restriction. In case we have a uniform discretisation with Q1~,
+!      ! iadaptivematrix may be <> 0 and so this will rebuild some matrix entries
+!      ! by a Galerkin approach using constant prolongation/restriction.
+!      ! This helps to stabilise the solver if there are elements in the
+!      ! mesh with high aspect ratio.
+!      IF (ilev .LT. NLMAX) THEN
+!        CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(1,1), &
+!            p_rmatrix%RmatrixBlock(1,1), &
+!            rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
+!            rnonlinearIteration%rfinalAssembly%dadmatthreshold)
+!            
+!        IF (.NOT. lsyssc_isMatrixContentShared(&
+!            p_rmatrixFine%RmatrixBlock(1,1),p_rmatrix%RmatrixBlock(2,2))) THEN
+!          CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(2,2), &
+!              p_rmatrix%RmatrixBlock(1,1), &
+!              rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
+!              rnonlinearIteration%rfinalAssembly%dadmatthreshold)
+!        END IF
+!
+!        CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(4,4), &
+!            p_rmatrix%RmatrixBlock(4,4), &
+!            rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
+!            rnonlinearIteration%rfinalAssembly%dadmatthreshold)
+!            
+!        IF (.NOT. lsyssc_isMatrixContentShared(&
+!          p_rmatrix%RmatrixBlock(4,4),p_rmatrix%RmatrixBlock(5,5))) THEN
+!          CALL mrest_matrixRestrictionEX3Y (p_rmatrixFine%RmatrixBlock(5,5), &
+!              p_rmatrix%RmatrixBlock(5,5), &
+!              rnonlinearIteration%rfinalAssembly%iadaptiveMatrices, &
+!              rnonlinearIteration%rfinalAssembly%dadmatthreshold)
+!        END IF
+!      END IF
+!      
+!      ! Boundary conditions
+!      ! ---------------------------------------------------
+!      
+!      IF (bboundaryConditions) THEN
+!    
+!        IF (ASSOCIATED(p_RfilterChain)) THEN
+!          ! Apply the filter chain to the matrix.
+!          ! As the filter consists only of an implementation filter for
+!          ! boundary conditions, this implements the boundary conditions
+!          ! into the system matrix.
+!          CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
+!        ELSE
+!          ! Call the matrix filter for the boundary conditions to include the BC's
+!          ! into the matrix.
+!          CALL matfil_discreteBC (p_rmatrix)
+!          CALL matfil_discreteFBC (p_rmatrix)
+!        END IF
+!
+!      END IF
+!        
+!      IF (bboundaryConditionsNonlin) THEN
+!
+!        ! 'Nonlinear' boundary conditions like slip boundary conditions
+!        ! are not implemented with a filter chain into a matrix.
+!        ! Call the appropriate matrix filter of 'nonlinear' boundary
+!        ! conditions manually:
+!        CALL matfil_discreteNLSlipBC (p_rmatrix,.TRUE.)
+!        
+!      END IF
+!      
+!      ! DEBUG!!!
+!      !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
+!      !                              .TRUE., 0, 'matrix.txt','(1X,E20.10)')
+!      
+!    END DO
+!
+!  CONTAINS
+!  
+!    SUBROUTINE assembleVelocityBlocks (rcoreequation,rmatrix,itop,ileft,&
+!        diota,dalpha,dtheta,dgamma,dnewton,rcollection,p_rvector,dvectorWeight)
+!        
+!    ! Assembles the velocity matrix in the block matrix rmatrix at position
+!    ! (itop,ileft):
+!    !
+!    ! rmatrix := diota*I + dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
+!    !            dnewton*N*(p_rvector)
+!    
+!    ! Core equation structure that defines the source matrices that are used
+!    ! to assemble the system matrix
+!    TYPE(t_cccoreEquationOneLevel), INTENT(IN) :: rcoreequation   
+!    
+!    ! Block matrix where the 2x2-velocity submatrix should be assembled
+!    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+!    
+!    ! Row in the block matrix where the 2x2-velocity submatrix should be
+!    ! assembled to.
+!    INTEGER, INTENT(IN) :: itop
+!
+!    ! Column in the block matrix where the 2x2-velocity submatrix should be
+!    ! assembled to.
+!    INTEGER, INTENT(IN) :: ileft
+!    
+!    ! Weight for the identity matrix
+!    REAL(DP), INTENT(IN) :: diota
+!    
+!    ! Weight for the mass matrix
+!    REAL(DP), INTENT(IN) :: dalpha
+!    
+!    ! Weight for the Laplace matrix
+!    REAL(DP), INTENT(IN) :: dtheta
+!    
+!    ! Weight for the nonlinearity
+!    REAL(DP), INTENT(IN) :: dgamma
+!    
+!    ! Weight for the Newton matrix
+!    REAL(DP), INTENT(IN) :: dnewton
+!    
+!    ! Weight for the velocity vector; usually = -1.
+!    REAL(DP), INTENT(IN) :: dvectorWeight
+!    
+!    ! Velocity vector for the nonlinearity. Must be <> NULL() if
+!    ! GAMMA <> 0; can be omitted if GAMMA=0.
+!    TYPE(t_vectorBlock), POINTER :: p_rvector
+!    
+!    ! Collection structure with parameters for the assembly.
+!    TYPE(t_collection), INTENT(INOUT) :: rcollection
+!    
+!    ! local variables
+!    LOGICAL :: bshared
+!    INTEGER :: iupwind
+!    TYPE(t_matrixBlock) :: rmatrixTemp
+!    TYPE(t_vectorBlock) :: rvectorTemp
+!    TYPE(t_convUpwind) :: rupwind
+!    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+!    TYPE(T_jumpStabilisation) :: rjumpStabil
+!    
+!      bshared = lsyssc_isMatrixContentShared(&
+!                    rmatrix%RmatrixBlock(itop  ,ileft),&
+!                    rmatrix%RmatrixBlock(itop+1,ileft+1))
+!    
+!      ! ---------------------------------------------------
+!      ! If diota <> 0, initialise the matrix with the identity,
+!      ! otherwise with zero.
+!      IF (diota .EQ. 0.0_DP) THEN
+!        CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop,ileft))
+!        
+!        IF (.NOT. bshared) THEN
+!          CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop+1,ileft+1))
+!        END IF
+!        
+!      ELSE
+!        
+!        CALL lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(itop,ileft))
+!        CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(itop,ileft),diota)
+!        
+!        IF (.NOT. bshared) THEN
+!          CALL lsyssc_initialiseIdentityMatrix (rmatrix%RmatrixBlock(itop+1,ileft+1))
+!          CALL lsyssc_scaleMatrix (rmatrix%RmatrixBlock(itop+1,ileft+1),diota)
+!        END IF
+!        
+!      END IF
+!    
+!      ! ---------------------------------------------------
+!      ! Plug in the mass matrix?
+!      IF (dalpha .NE. 0.0_DP) THEN
+!        CALL lsyssc_matrixLinearComb (&
+!            rcoreequation%p_rmatrixMass       ,dalpha,&
+!            p_rmatrix%RmatrixBlock(itop,ileft),1.0_DP,&
+!            p_rmatrix%RmatrixBlock(itop,ileft),&
+!            .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+!            
+!        IF (.NOT. bshared) THEN
+!          CALL lsyssc_matrixLinearComb (&
+!              rcoreequation%p_rmatrixMass           ,dalpha,&
+!              p_rmatrix%RmatrixBlock(itop+1,ileft+1),1.0_DP,&
+!              p_rmatrix%RmatrixBlock(itop+1,ileft+1),&
+!              .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+!        END IF
+!      END IF
+!      
+!      ! ---------------------------------------------------
+!      ! Plug in the Stokes matrix?
+!      IF (dtheta .NE. 0.0_DP) THEN
+!        CALL lsyssc_matrixLinearComb (&
+!            rcoreequation%p_rmatrixStokes     ,dtheta,&
+!            p_rmatrix%RmatrixBlock(itop,ileft),1.0_DP,&
+!            p_rmatrix%RmatrixBlock(itop,ileft),&
+!            .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+!            
+!        IF (.NOT. bshared) THEN
+!          CALL lsyssc_matrixLinearComb (&
+!              rcoreequation%p_rmatrixStokes         ,dtheta,&
+!              p_rmatrix%RmatrixBlock(itop+1,ileft+1),1.0_DP,&
+!              p_rmatrix%RmatrixBlock(itop+1,ileft+1),&
+!              .FALSE.,.FALSE.,.TRUE.,.TRUE.)
+!        END IF
+!      END IF
+!      
+!      ! ---------------------------------------------------
+!      ! That was easy -- the adventure begins now... The nonlinearity!
+!      IF (dgamma .NE. 0.0_DP) THEN
+!      
+!        IF (.NOT. ASSOCIATED(p_rvector)) THEN
+!          CALL output_line ('Velocity vector not present!', &
+!                             OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocity')
+!          STOP
+!        END IF
+!      
+!        ! Type of stablilisation?
+!        iupwind = collct_getvalue_int (rcollection,'IUPWIND')
+!      
+!        SELECT CASE (iupwind)
+!        CASE (0)
+!          ! Set up the SD structure for the creation of the defect.
+!          ! There's not much to do, only initialise the viscosity...
+!          rstreamlineDiffusion%dnu = collct_getvalue_real (rcollection,'NU')
+!          
+!          ! Set stabilisation parameter
+!          rstreamlineDiffusion%dupsam = collct_getvalue_real (rcollection,'UPSAM')
+!          
+!          ! Matrix weight
+!          rstreamlineDiffusion%dtheta = dgamma
+!          
+!          ! Weight for the Newtop part; =0 deactivates Newton.
+!          rstreamlineDiffusion%dnewton = dnewton
+!          
+!          ! Derive a submatrix from the main matrix that represents our velocity
+!          ! submatrix
+!          CALL lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,&
+!                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
+!                                       ileft,ileft+1)
+!                                       
+!          ! Derive a subvector that represents the velocity to be used for
+!          ! the stabilisation term.
+!          CALL lsysbl_deriveSubvector(p_rvector,rvectorTemp, &
+!              ileft,ileft+1,.TRUE.)
+!          
+!          IF (dnewton .EQ. 0.0_DP) THEN
+!
+!            ! Deactivate the matrices A12 and A21 by setting the multiplicators
+!            ! to 0.0. Whatever the content is (if there's content at all),
+!            ! these matrices are ignored then by the kernel.
+!            
+!            rmatrix%RmatrixBlock(itop,ileft+1)%dscaleFactor = 0.0_DP
+!            rmatrix%RmatrixBlock(itop+1,ileft)%dscaleFactor = 0.0_DP
+!            
+!         ELSE
+!
+!            ! Clear A12/A21 that receives parts of the Newton matrix
+!            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop,ileft+1))
+!            CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(itop+1,ileft))
+!          
+!            ! Activate the submatrices A12 and A21 if they aren't.
+!            rmatrix%RmatrixBlock(itop,ileft+1)%dscaleFactor = 1.0_DP
+!            rmatrix%RmatrixBlock(itop+1,ileft)%dscaleFactor = 1.0_DP
+!         
+!         END IF
+!         
+!          ! Call the SD method to calculate the nonlinearity.
+!          ! As rmatrixTemp shares its entries with rmatrix, the result is
+!          ! directly written to rmatrix!
+!          CALL conv_streamlineDiffusionBlk2d (&
+!                              rvectorTemp, rvectorTemp, &
+!                              dvectorWeight, 0.0_DP,&
+!                              rstreamlineDiffusion, CONV_MODMATRIX, &
+!                              rmatrixTemp)
+!                              
+!         ! Release the temporary matrix / vector
+!         CALL lsysbl_releaseVector (rvectorTemp)
+!         CALL lsysbl_releaseMatrix (rmatrixTemp)
+!
+!        CASE (1)
+!          ! Set up the upwind structure for the creation of the defect.
+!          ! There's not much to do, only initialise the viscosity...
+!          rupwind%dnu = collct_getvalue_real (rcollection,'NU')
+!          
+!          ! Set stabilisation parameter
+!          rupwind%dupsam = collct_getvalue_real (rcollection,'UPSAM')
+!
+!          ! Matrix weight
+!          rupwind%dtheta = dgamma
+!          
+!          IF (bassembleNewton .AND. (rnonlinearIteration%MT_OutputLevel .GE. 2)) THEN
+!            CALL output_line ('Warning: Upwind does not support assembly '&
+!                //'of the Newton matrix!',OU_CLASS_TRACE1)
+!          END IF
+!          
+!          PRINT *,'Not implemented!'
+!          STOP
+!
+!        CASE (2)
+!          ! Set up the jump stabilisation structure for the creation of the defect.
+!          ! There's not much to do, only initialise the viscosity...
+!          rjumpStabil%dnu = collct_getvalue_real (rcollection,'NU')
+!          
+!          ! Set stabilisation parameter
+!          rjumpStabil%dgammastar = collct_getvalue_real (rcollection,'UPSAM')
+!          rjumpStabil%dgamma = rjumpStabil%dgammastar
+!          
+!          ! Set up the SD structure for the creation of the defect.
+!          ! Initialise the viscosity...
+!          rstreamlineDiffusion%dnu = rjumpStabil%dnu
+!          
+!          ! Set upsam=0 to obtain a central-difference-type discretisation
+!          rstreamlineDiffusion%dupsam = 0.0_DP
+!
+!          ! Matrix weight
+!          rstreamlineDiffusion%dtheta = dgamma
+!          rjumpStabil%dtheta = dgamma
+!
+!          PRINT *,'Not implemented!'
+!          STOP
+!
+!        CASE DEFAULT
+!          PRINT *,'Don''t know how to set up nonlinearity!?!'
+!          STOP
+!        
+!        END SELECT
+!      
+!      END IF ! gamma <> 0
+!    
+!    END SUBROUTINE
+!
+!    ! -----------------------------------------------------
+!    
+!    SUBROUTINE assembleGradientMatrices (bdualEquation,&
+!        rcoreequation,rmatrix,bsharedMatrix)
+!    
+!    ! Initialises the gradient/divergence matrices with entries from
+!    ! the rmatrixComponents structure.
+!    !
+!    ! The routine copies references from the submatrices tormatrix,
+!    ! but it does not initialise any matrix weights / scaling factors.
+!    !
+!    ! If bsharedMatrix=TRUE, the matrix is created using references to the
+!    ! matrix building blocks in rlevelInfo, thus sharing all information
+!    ! with those matrices in rmatrixComponents. In this case, the caller must
+!    ! not change the matrix entries, because this would change the
+!    ! original 'template' matrices!
+!    ! (This can be used e.g. for setting up a matrix for building a defect
+!    !  vector without copying matrix data.)
+!    ! If bsharedMatrix=TRUE on the other hand, the matrix entries of the
+!    ! original template (B-) matrices are copied in memory,
+!    ! so the new matrix is allowed to be changed!
+!
+!    ! Whether to set up the proimal or the dual equation.
+!    ! FALSE=primal, TRUE=dual equation.
+!    LOGICAL, INTENT(IN) :: bdualEquation
+!
+!    ! Core equation structure that defines the source matrices that are used
+!    ! to assemble the system matrix
+!    TYPE(t_cccoreEquationOneLevel), INTENT(IN) :: rcoreequation   
+!
+!    ! Block matrix where the B-matrices should be set up
+!    TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+!
+!    ! Whether or not the matrix entries of the source gradient-matrices 
+!    ! should be copied in memory. 
+!    !
+!    ! If set to TRUE, the routine tries to initialise rmatrix
+!    ! only with references to the original matrices, thus the caller must not
+!    ! change the entries. Nevertheless, if rmatrix is the owner of one of the
+!    ! submatrices, the routine will always copy the matrix entries,
+!    ! as otherwise memory would have to be deallocated!
+!    !
+!    ! If set to FALSE, the entries of the source matrices in rmatrixComponents are
+!    ! copied, so the caller can change rmatrix afterwards (e.g. to implement
+!    ! boundary conditions).
+!    LOGICAL, INTENT(IN) :: bsharedMatrix
+!
+!      ! local variables
+!      INTEGER :: idubStructure,idubContent,imatOffset
+!      
+!      IF (.NOT. bdualEquation) THEN
+!        ! Set imatOffset=0 so the submatrix at position 1,1 is tackled.
+!        imatOffset = 0
+!      ELSE
+!        ! Set the weights used here according to the primal equation.
+!        imatOffset = 3
+!      END IF
+!
+!      ! Initialise a copy flag that tells the duplicateMatrix-routine whether to
+!      ! copy the entries or to create references.
+!      IF (bsharedMatrix) THEN
+!      
+!        idubContent = LSYSSC_DUP_SHARE
+!        
+!        ! Normally we share entries -- except for if the submatrices belong to
+!        ! rmatrix! To avoid memory deallocation in this case, we copy
+!        ! the entries.
+!        IF ((.NOT. lsyssc_isMatrixContentShared(&
+!                Rmatrix%RmatrixBlock(imatOffset+1,imatOffset+3))) .OR.&
+!            (.NOT. lsyssc_isMatrixContentShared(&
+!                Rmatrix%RmatrixBlock(imatOffset+2,imatOffset+3)))) THEN
+!          idubContent = LSYSSC_DUP_COPY
+!        END IF
+!        
+!      ELSE
+!      
+!        idubContent = LSYSSC_DUP_COPY
+!        
+!      END IF
+!      
+!      idubStructure = LSYSSC_DUP_SHARE
+!      
+!      ! Let's consider the global system in detail:
+!      !
+!      !    ( A11  A12  B1  ) = ( A11  A12  A13 )
+!      !    ( A21  A22  B2  )   ( A21  A22  A23 )
+!      !    ( B1^T B2^T 0   )   ( A31  A32  A33 )
+!      !
+!      ! We exclude the velocity submatrices here, so our system looks like:
+!      !
+!      !    (           B1 ) = (           A13 )
+!      !    (           B2 )   (           A23 )
+!      !    ( B1^T B2^T    )   ( A31  A32      )
+!
+!      ! The B1/B2 matrices exist up to now only in rmatrixComponents.
+!      ! Put a copy of them into the block matrix.
+!      !
+!      ! Note that we share the structure of B1/B2 with those B1/B2 of the
+!      ! block matrix, while we create copies of the entries. The B-blocks
+!      ! are already prepared and memory for the entries is already allocated;
+!      ! so we only have to copy the entries.
+!      !
+!      ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
+!      ! memory if necessary.
+!      CALL lsyssc_duplicateMatrix (rcoreequation%p_rmatrixB1, &
+!                                    rmatrix%RmatrixBlock(imatOffset+1,imatOffset+3),&
+!                                    idubStructure,idubContent)
+!
+!      CALL lsyssc_duplicateMatrix (rcoreequation%p_rmatrixB2, &
+!                                    rmatrix%RmatrixBlock(imatOffset+2,imatOffset+3),&
+!                                    idubStructure,idubContent)
+!      
+!      ! Furthermore, put B1^T and B2^T to the block matrix.
+!      ! These matrices are always 'shared'.
+!      CALL lsyssc_transposeMatrix (rcoreequation%p_rmatrixB1, &
+!                                    rmatrix%RmatrixBlock(imatOffset+3,imatOffset+1),&
+!                                    LSYSSC_TR_VIRTUAL)
+!
+!      CALL lsyssc_transposeMatrix (rcoreequation%p_rmatrixB2, &
+!                                    rmatrix%RmatrixBlock(imatOffset+3,imatOffset+2),&
+!                                    LSYSSC_TR_VIRTUAL)
+!
+!    END SUBROUTINE
+!
+!  END SUBROUTINE
+!
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  SUBROUTINE c2d2_assembleNonlinearDefect (rnonlinearIteration,rx,rd,&
+!      bfilterDefect,bboundaryConditionsNonlin,rcollection,rmatrix)
+!
+!  USE linearsystemblock
+!  USE collection
+!  
+!!<description>
+!  ! Assembles the nonlinear defect of the core equation.
+!!</description>
+!
+!!<input>
+!  ! Current iteration vector
+!  TYPE(t_vectorBlock), INTENT(IN),TARGET        :: rx
+!
+!  ! TRUE  = include (linear) boundary conditions into the system 
+!  !   matrix/matrices after assembly by applying the filter chain that is
+!  !   associated to the preconditioner in rnonlinearIteration.
+!  ! FASLE = don't incorporate any boundary conditions
+!  LOGICAL, INTENT(IN) :: bfilterDefect
+!
+!  ! TRUE  = include nonlinear boundary conditions into the system 
+!  !   matrix/matrices after assembly
+!  ! FASLE = don't incorporate any boundary conditions
+!  LOGICAL, INTENT(IN) :: bboundaryConditionsNonlin
+!
+!  ! OPTIONAL: System matrix to use for setting up the defect.
+!  ! If not specified, the standard system matrix on the maximum level
+!  ! in rnonlinearIteration is used.
+!  ! The matrix must specify all 'static' submatrices of the global
+!  ! system (B-matrices, coupling mass matrices).
+!  TYPE(t_matrixBlock), INTENT(IN), TARGET, OPTIONAL :: rmatrix
+!!</input>
+!              
+!!<inputoutput>
+!  ! Nonlinear iteration structure that specifies the core equation.
+!  TYPE(t_ccnonlinearIteration), INTENT(IN)      :: rnonlinearIteration
+!
+!  ! Collection structure of the application. 
+!  TYPE(t_collection), INTENT(INOUT)             :: rcollection
+!
+!  ! IN: Right hand side vector of the equation.
+!  ! OUT: Defect vector b-A(x)x. 
+!  TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
+!!</inputoutput>
+!
+!!</subroutine>
+!
+!  ! local variables
+!  INTEGER :: ilev
+!  REAL(DP) :: dnewton
+!  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+!  TYPE(t_matrixBlock) :: rmatrixTmpBlock
+!  
+!  ! A filter chain for the linear solver
+!  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+!  
+!  ! DEBUG!!!
+!  REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+!
+!    ! DEBUG!!!
+!    CALL lsysbl_getbase_double (rx,p_Ddata)
+!    CALL lsysbl_getbase_double (rd,p_Ddata2)
+!
+!    ! Get the level that we are working on.
+!    ilev = rnonlinearIteration%NLMAX
+! 
+!    ! Get reference to matrices we later need.
+!    p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrix
+!    
+!    IF (PRESENT(rmatrix)) THEN
+!      p_rmatrix => rmatrix
+!    END IF
+! 
+!    ! The system matrix looks like:
+!    !          
+!    !    ( A11  A12  B1  M/a          ) 
+!    !    ( A21  A22  B2       M/a     ) 
+!    !    ( B1^T B2^T I                ) 
+!    !    ( -M            A44  A45  B1 ) 
+!    !    (      -M       A54  A55  B2 ) 
+!    !    (               B1^T B2^T I  ) 
+!    !
+!    ! With some multiplication factors in front of the matrices.
+!    !
+!    ! Primal velocity equation
+!    ! ------------------------
+!    ! In the first step, we assemble the defect that arises in the velocity 
+!    ! components. This is characterised by the following submatrix:
+!    !
+!    !    ( A11  A12  .    .    .    .  ) 
+!    !    ( A21  A22  .    .    .    .  ) 
+!    !    ( .    .    .    .    .    .  ) 
+!    !    ( .    .    .    .    .    .  ) 
+!    !    ( .    .    .    .    .    .  ) 
+!    !    ( .    .    .    .    .    .  ) 
+!    
+!    dnewton = 0.0_DP
+!    CALL assembleVelocityDefect (&
+!        rnonlinearIteration%RcoreEquation(ilev),&
+!        1,&
+!        rnonlinearIteration%diota1,&
+!        rnonlinearIteration%dalpha1,&
+!        rnonlinearIteration%dtheta1,&
+!        rnonlinearIteration%dgamma1,&
+!        dnewton,rcollection,p_rmatrix,rx,rd,rx,1.0_DP)
+!
+!    ! Dual velocity equation
+!    ! ----------------------
+!    ! In the second step, we assemble the defect that arises in the dual velocity 
+!    ! components. This is characterised by the following submatrix:
+!    !
+!    !    ( .    .    .    .    .    .  ) 
+!    !    ( .    .    .    .    .    .  ) 
+!    !    ( .    .    .    .    .    .  ) 
+!    !    ( .    .    .    A44  A45  .  ) 
+!    !    ( .    .    .    A54  A55  .  ) 
+!    !    ( .    .    .    .    .    .  ) 
+!    !
+!    ! Note that the Newton part (if assembled) is set up with the
+!    ! primal velocity! The weight is taken from the GAMMA parameter
+!    ! and switches of the assembly of Newton. Actually, it's not
+!    ! a 'Newton' matrix but the adjoint of the nonlinearity
+!    ! which is assembled here...
+!    ! Note that in the dual equation, the SD term has a "-" while the Newton 
+!    ! term has a '+'. To cover that, we include '-' signs in front of Newton
+!    ! as well as in front of the velocity field.
+!    
+!    dnewton = -rnonlinearIteration%dgamma2
+!    
+!    CALL assembleVelocityDefect (&
+!        rnonlinearIteration%RcoreEquation(ilev),&
+!        4,&
+!        rnonlinearIteration%diota2,&
+!        rnonlinearIteration%dalpha2,&
+!        rnonlinearIteration%dtheta2,&
+!        rnonlinearIteration%dgamma2,&
+!        dnewton,rcollection,p_rmatrix,rx,rd,rx,-1.0_DP)
+!
+!    ! Static blocks
+!    ! -------------
+!    ! In the third step, we treat all the remaining blocks. Let's see what is missing:
+!    !
+!    !    ( .    .    B1  M            ) 
+!    !    ( .    .    B2       M       ) 
+!    !    ( B1^T B2^T I                ) 
+!    !    ( M             .    .    B1 ) 
+!    !    (      M        .    .    B2 ) 
+!    !    (               B1^T B2^T I  ) 
+!    !
+!    ! Each matrix with an appropriate multiplication factor in the front.
+!    ! To build the appropriate defect, we first derive a submatrix from
+!    ! the global matrix and remove the velocity blocks:
+!    
+!    CALL lsysbl_duplicateMatrix (p_rmatrix,rmatrixTmpBlock,&
+!        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+!        
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(1,1))
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(1,2))
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(2,1))
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(2,2))
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(4,4))
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(4,5))
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(5,4))
+!    CALL lsyssc_releaseMatrix (rmatrixTmpBlock%RmatrixBlock(5,5))
+!    
+!    ! Primal equation
+!    ! ---------------
+!    ! Initialise the weights for the mass- and B-matrices in the primal
+!    ! equation:
+!    !
+!    !    (  .    .   B1    M    .    . ) 
+!    !    (  .    .   B2    .    M    . ) 
+!    !    ( B1^T B2^T  I    .    .    . )
+!    !    (  .    .    .    .    .    . )
+!    !    (  .    .    .    .    .    . )
+!    !    (  .    .    .    .    .    . )
+!
+!    ! Initialise the weights for the B/B^T matrices
+!    rmatrixTmpBlock%RmatrixBlock(1,3)%dscaleFactor = rnonlinearIteration%deta1
+!    rmatrixTmpBlock%RmatrixBlock(2,3)%dscaleFactor = rnonlinearIteration%deta1
+!    
+!    rmatrixTmpBlock%RmatrixBlock(3,1)%dscaleFactor = rnonlinearIteration%dtau1
+!    rmatrixTmpBlock%RmatrixBlock(3,2)%dscaleFactor = rnonlinearIteration%dtau1
+!    
+!    ! Initialise the weights of the mass matrices
+!    rmatrixTmpBlock%RmatrixBlock(1,4)%dscaleFactor = rnonlinearIteration%dmu1
+!    rmatrixTmpBlock%RmatrixBlock(2,5)%dscaleFactor = rnonlinearIteration%dmu1
+!    
+!    ! Switch the I-matrix in the continuity equation on/off.
+!    rmatrixTmpBlock%RmatrixBlock(3,3)%dscaleFactor = rnonlinearIteration%dkappa1
+!    
+!    ! Dual equation
+!    ! ---------------
+!    ! Initialise the weights for the mass- and B-matrices in the dual
+!    ! equation:
+!    !
+!    !    (  .    .    .    .    .    . )
+!    !    (  .    .    .    .    .    . )
+!    !    (  .    .    .    .    .    . )
+!    !    (  M    .    .    .    .   B1 ) 
+!    !    (  .    M    .    .    .   B2 ) 
+!    !    (  .    .    .   B1^T B2^T  . )
+!    
+!    ! Initialise the weights for the B/B^T matrices
+!    rmatrixTmpBlock%RmatrixBlock(4,6)%dscaleFactor = rnonlinearIteration%deta2
+!    rmatrixTmpBlock%RmatrixBlock(5,6)%dscaleFactor = rnonlinearIteration%deta2
+!    
+!    rmatrixTmpBlock%RmatrixBlock(6,4)%dscaleFactor = rnonlinearIteration%dtau2
+!    rmatrixTmpBlock%RmatrixBlock(6,5)%dscaleFactor = rnonlinearIteration%dtau2
+!    
+!    ! Initialise the weights of the mass matrices
+!    rmatrixTmpBlock%RmatrixBlock(4,1)%dscaleFactor = rnonlinearIteration%dmu2
+!    rmatrixTmpBlock%RmatrixBlock(5,2)%dscaleFactor = rnonlinearIteration%dmu2
+!    
+!    ! Switch the I-matrix in the dual continuity equation on/off.
+!    rmatrixTmpBlock%RmatrixBlock(6,6)%dscaleFactor = rnonlinearIteration%dkappa2
+!
+!    ! ------------------------------------------------
+!    ! Build the defect by matrix-vector multiplication
+!    !
+!    ! Note that no time step or whatever is included here; everything
+!    ! is initialised with the multiplication factors in the submatrices
+!    ! from above!
+!    CALL lsysbl_blockMatVec (rmatrixTmpBlock, rx, rd, -1.0_DP, 1.0_DP)
+!            
+!    ! Release the temporary matrix, we don't need it anymore.
+!    CALL lsysbl_releaseMatrix (rmatrixTmpBlock)
+!
+!    ! Boundary conditions
+!    ! ---------------------------------------------------
+!    
+!    ! Apply the filter chain to the defect vector -- if this is desired.
+!    IF (bfilterDefect) THEN
+!      p_RfilterChain => rnonlinearIteration%p_RfilterChain
+!      IF (ASSOCIATED(p_RfilterChain)) THEN    
+!        CALL filter_applyFilterChainVec (rd, p_RfilterChain)
+!      END IF
+!    END IF
+!    
+!    ! Filter the resulting defect vector through the slip-boundary-
+!    ! condition vector filter for implementing nonlinear slip boundary
+!    ! conditions into a defect vector. This changes the vector only IF we
+!    ! have slip boundary conditions!
+!    IF (bboundaryConditionsNonlin) &
+!      CALL vecfil_discreteNLSlipBCdef (rd)
+!
+!  CONTAINS
+!
+!    SUBROUTINE assembleVelocityDefect (rcoreequation,itop,&
+!        diota,dalpha,dtheta,dgamma,dnewton,rcollection,&
+!        rmatrix,rvector,rdefect,rvelocityVector,dvectorWeight)
+!        
+!    ! Assembles the velocity defect in the block matrix rmatrix at position
+!    ! itop..itop+1 in the velocity vector. rdefect must have been initialised
+!    ! with the right hand side vector.
+!    !
+!    ! that means, with a matrix A constructed as
+!    !
+!    !       A := diota*I + dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
+!    !            dnewton*N*(p_rvector)
+!    !
+!    ! the routine will construct
+!    !
+!    !  rrhs = rrhs - A rvector
+!    
+!    ! Core equation structure that defines the source matrices that are used
+!    ! to assemble the system matrix
+!    TYPE(t_cccoreEquationOneLevel), INTENT(IN) :: rcoreequation   
+!    
+!    ! Number of the first velocity block in rrhs that should be tackled.
+!    INTEGER, INTENT(IN) :: itop
+!
+!    ! Weight for the identity matrix
+!    REAL(DP), INTENT(IN) :: diota
+!    
+!    ! Weight for the mass matrix
+!    REAL(DP), INTENT(IN) :: dalpha
+!    
+!    ! Weight for the Laplace matrix
+!    REAL(DP), INTENT(IN) :: dtheta
+!    
+!    ! Weight for the nonlinearity
+!    REAL(DP), INTENT(IN) :: dgamma
+!    
+!    ! Weight for the Newton matrix
+!    REAL(DP), INTENT(IN) :: dnewton
+!    
+!    ! Reference to the system matrix. Only the structure of the matrix
+!    ! is used to reconstruct the structure of the discretisation.
+!    ! The content of the matrix is not changed or used.
+!    TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+!    
+!    ! Solution vector.
+!    TYPE(t_vectorBlock), INTENT(IN) :: rvector
+!    
+!    ! On entry: RHS vector.
+!    ! Is overwritten by the defect vector in the velocity subsystem.
+!    TYPE(t_vectorBlock), INTENT(INOUT) :: rdefect
+!    
+!    ! Collection structure with parameters for the assembly.
+!    TYPE(t_collection), INTENT(INOUT) :: rcollection
+!    
+!    ! Weight for the velocity vector; usually = -1.
+!    REAL(DP), INTENT(IN) :: dvectorWeight
+!    
+!    ! Velocity vector field that should be used for the assembly of the
+!    ! nonlinearity. The first two blocks in that block vector are
+!    ! used as velocity field.
+!    TYPE(t_vectorBlock), INTENT(IN) :: rvelocityVector
+!
+!    ! local variables
+!    LOGICAL :: bshared
+!    INTEGER :: iupwind
+!    TYPE(t_matrixBlock) :: rmatrixTemp
+!    TYPE(t_vectorBlock) :: rvectorTemp,rrhsTemp
+!    TYPE(t_convUpwind) :: rupwind
+!    TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+!    TYPE(T_jumpStabilisation) :: rjumpStabil
+!    
+!      ! ---------------------------------------------------
+!      ! If diota <> 0, subtract I*rvector from rdefect.
+!      IF (diota .NE. 0.0_DP) THEN
+!        CALL lsyssc_vectorLinearComb (rvector%RvectorBlock(itop),&
+!                                      rdefect%RvectorBlock(itop),-diota,1.0_DP)
+!        CALL lsyssc_vectorLinearComb (rvector%RvectorBlock(itop+1),&
+!                                      rdefect%RvectorBlock(itop+1),-diota,1.0_DP)
+!      END IF
+!    
+!      ! ---------------------------------------------------
+!      ! Subtract the mass matrix stuff?
+!      IF (dalpha .NE. 0.0_DP) THEN
+!        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixMass, &
+!            rvector%RvectorBlock(itop), rdefect%RvectorBlock(itop), -dalpha, 1.0_DP)
+!
+!        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixMass, &
+!            rvector%RvectorBlock(itop+1), rdefect%RvectorBlock(itop+1), -dalpha, 1.0_DP)
+!      END IF
+!      
+!      ! ---------------------------------------------------
+!      ! Subtract the Stokes matrix stuff?
+!      IF (dtheta .NE. 0.0_DP) THEN
+!        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixStokes, &
+!            rvector%RvectorBlock(itop), rdefect%RvectorBlock(itop), -dtheta, 1.0_DP)
+!
+!        CALL lsyssc_scalarMatVec (rcoreequation%p_rmatrixStokes, &
+!            rvector%RvectorBlock(itop+1), rdefect%RvectorBlock(itop+1), -dtheta, 1.0_DP)
+!      END IF
+!      
+!      ! ---------------------------------------------------
+!      ! That was easy -- the adventure begins now... The nonlinearity!
+!      IF (dgamma .NE. 0.0_DP) THEN
+!      
+!        ! Type of stablilisation?
+!        iupwind = collct_getvalue_int (rcollection,'IUPWIND')
+!      
+!        SELECT CASE (iupwind)
+!        CASE (0)
+!          ! Set up the SD structure for the creation of the defect.
+!          ! There's not much to do, only initialise the viscosity...
+!          rstreamlineDiffusion%dnu = collct_getvalue_real (rcollection,'NU')
+!          
+!          ! Set stabilisation parameter
+!          rstreamlineDiffusion%dupsam = collct_getvalue_real (rcollection,'UPSAM')
+!          
+!          ! Matrix weight
+!          rstreamlineDiffusion%dtheta = dgamma
+!          
+!          ! Weight for the Newtop part; =0 deactivates Newton.
+!          rstreamlineDiffusion%dnewton = dnewton
+!          
+!          ! Derive a subvector that represents the velocity to be used for
+!          ! the stabilisation term.
+!          CALL lsysbl_deriveSubvector(rvector,rvectorTemp, &
+!              itop,itop+1,.TRUE.)
+!
+!          ! Derive a subvector that represents the rhs.
+!          CALL lsysbl_deriveSubvector(rdefect,rrhsTemp, &
+!              itop,itop+1,.TRUE.)
+!              
+!          ! Derive a submatrix from the main matrix that represents our velocity
+!          ! submatrix
+!          CALL lsysbl_deriveSubmatrix (rmatrix,rmatrixTemp,&
+!                                       LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,&
+!                                       itop,itop+1)
+!                                       
+!          ! Call the SD method to calculate the defect of the nonlinearity.
+!          ! As rrhsTemp shares its entries with rdefect, the result is
+!          ! directly written to rdefect!
+!          ! As velocity field, we specify rvelocityVector here. The first two
+!          ! subvectors are used as velocity field.
+!          
+!          CALL conv_streamlineDiffusionBlk2d (&
+!                              rvelocityVector, rvelocityVector, &
+!                              dvectorWeight, 0.0_DP,&
+!                              rstreamlineDiffusion, CONV_MODDEFECT, &
+!                              rmatrixTemp,rsolution=rvectorTemp,rdefect=rrhsTemp)
+!                              
+!         ! Release the temporary matrix / vector
+!         CALL lsysbl_releaseVector (rrhsTemp)
+!         CALL lsysbl_releaseVector (rvectorTemp)
+!         CALL lsysbl_releaseMatrix (rmatrixTemp)
+!
+!        CASE (1)
+!          ! Set up the upwind structure for the creation of the defect.
+!          ! There's not much to do, only initialise the viscosity...
+!          rupwind%dnu = collct_getvalue_real (rcollection,'NU')
+!          
+!          ! Set stabilisation parameter
+!          rupwind%dupsam = collct_getvalue_real (rcollection,'UPSAM')
+!
+!          ! Matrix weight
+!          rupwind%dtheta = dgamma
+!          
+!          PRINT *,'Not implemented!'
+!          STOP
+!
+!        CASE (2)
+!          ! Set up the jump stabilisation structure for the creation of the defect.
+!          ! There's not much to do, only initialise the viscosity...
+!          rjumpStabil%dnu = collct_getvalue_real (rcollection,'NU')
+!          
+!          ! Set stabilisation parameter
+!          rjumpStabil%dgammastar = collct_getvalue_real (rcollection,'UPSAM')
+!          rjumpStabil%dgamma = rjumpStabil%dgammastar
+!          
+!          ! Set up the SD structure for the creation of the defect.
+!          ! Initialise the viscosity...
+!          rstreamlineDiffusion%dnu = rjumpStabil%dnu
+!          
+!          ! Set upsam=0 to obtain a central-difference-type discretisation
+!          rstreamlineDiffusion%dupsam = 0.0_DP
+!
+!          ! Matrix weight
+!          rstreamlineDiffusion%dtheta = dgamma
+!          rjumpStabil%dtheta = dgamma
+!
+!          PRINT *,'Not implemented!'
+!          STOP
+!
+!        CASE DEFAULT
+!          PRINT *,'Don''t know how to set up nonlinearity!?!'
+!          STOP
+!        
+!        END SELECT
+!      
+!      END IF ! gamma <> 0
+!    
+!    END SUBROUTINE
+!
+!  END SUBROUTINE
+!
   ! ***************************************************************************
   ! Callback routines for the nonlinear solver
   ! ***************************************************************************
@@ -2180,9 +2348,14 @@ CONTAINS
   
       ! The nonlinear iteration structure
       TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
+      TYPE(t_ccmatrixComponents) :: rmatrixAssembly
+      INTEGER :: ilvmax
+      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+      TYPE(t_cccoreEquationOneLevel), POINTER :: p_rlevelInfo
+      TYPE(t_ccmatrixComponents) :: rmatrixComponents
       
       ! DEBUG!!!
-      REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
+      !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
       ! Rebuild the nonlinear-iteration structure from the collection
       CALL c2d2_restoreNonlinearLoop (rnonlinearIteration,p_rcollection)
@@ -2190,15 +2363,50 @@ CONTAINS
       ! Build the nonlinear defect
       CALL lsysbl_copyVector (rb,rd)
       
-      ! DEBUG!!!
-      CALL lsysbl_getbase_double (rx,p_Ddata)
-      CALL lsysbl_getbase_double (rd,p_Ddata2)
+      ilvmax = rnonlinearIteration%NLMAX
+      p_rlevelInfo => rnonlinearIteration%RcoreEquation(ilvmax)
+    
+      ! Transfer the pointers
+      rmatrixComponents%p_rdiscretisation         => p_rlevelInfo%p_rmatrix%p_rblockDiscretisation
+      rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
+      rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
+      rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
+      rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
+      rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
       
-      CALL c2d2_assembleNonlinearDefect (rnonlinearIteration,rx,rd,&
-          .TRUE.,.TRUE.,p_rcollection)      
+      ! Transfer the weights
+      rmatrixComponents%diota1   = rnonlinearIteration%diota1  
+      rmatrixComponents%diota2   = rnonlinearIteration%diota2  
+      rmatrixComponents%dkappa1  = rnonlinearIteration%dkappa1 
+      rmatrixComponents%dkappa2  = rnonlinearIteration%dkappa2 
+      rmatrixComponents%dalpha1  = rnonlinearIteration%dalpha1 
+      rmatrixComponents%dalpha2  = rnonlinearIteration%dalpha2 
+      rmatrixComponents%dtheta1  = rnonlinearIteration%dtheta1 
+      rmatrixComponents%dtheta2  = rnonlinearIteration%dtheta2 
+      rmatrixComponents%dgamma1  = rnonlinearIteration%dgamma1 
+      rmatrixComponents%dgamma2  = rnonlinearIteration%dgamma2 
+      rmatrixComponents%deta1    = rnonlinearIteration%deta1   
+      rmatrixComponents%deta2    = rnonlinearIteration%deta2   
+      rmatrixComponents%dtau1    = rnonlinearIteration%dtau1   
+      rmatrixComponents%dtau2    = rnonlinearIteration%dtau2   
+      rmatrixComponents%dmu1     = rnonlinearIteration%dmu1    
+      rmatrixComponents%dmu2     = rnonlinearIteration%dmu2    
+      rmatrixComponents%dnewton1 = rnonlinearIteration%dnewton1
+      rmatrixComponents%dnewton2 = rnonlinearIteration%dnewton2
+      
+      ! Assemble the defect
+      CALL c2d2_assembleDefect (rmatrixAssembly,rx,rd)        
+
+      ! Apply the filter chain to implement boundary conditions
+      p_RfilterChain => rnonlinearIteration%p_RfilterChain
+      IF (ASSOCIATED(p_RfilterChain)) THEN    
+        CALL filter_applyFilterChainVec (rd, p_RfilterChain)
+      END IF
+    
+      CALL vecfil_discreteNLSlipBCdef (rd)
           
       ! Release the nonlinear-iteration structure, that's it.
-      CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+      CALL c2d2_releaseNonlinearLoop (rnonlinearIteration)
       
     END SUBROUTINE
     
@@ -2578,8 +2786,14 @@ CONTAINS
         END IF
         
         ! Ok, now assemble the preconditioner matrices in  rnonlinearIteration.
-        CALL c2d2_assembleLinearisedMatrices (rnonlinearIteration,p_rcollection,&
-            .TRUE.,.TRUE.,.TRUE.,.TRUE.,bassembleNewton,rx)
+        !CALL c2d2_assembleLinearisedMatrices (rnonlinearIteration,p_rcollection,&
+        !    .TRUE.,.TRUE.,.TRUE.,.TRUE.,bassembleNewton,rx)
+
+        ! Assemble the preconditioner matrices in rnonlinearIteration
+        ! on all levels that the solver uses.
+        CALL assembleLinsolMatrices (rnonlinearIteration,p_rcollection,&
+            bassembleNewton,rx,rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX)
+        
           
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
@@ -2693,12 +2907,205 @@ CONTAINS
 
       IF (bsuccess) THEN
         ! Filter the final defect
-        p_RfilterChain => rnonlinearIteration%rpreconditioner%p_RfilterChain
+        p_RfilterChain => rnonlinearIteration%p_RfilterChain
         CALL filter_applyFilterChainVec (rd, p_RfilterChain)
       END IF
       
       ! Release the nonlinear-iteration structure, that's it.
-      CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+      CALL c2d2_releaseNonlinearLoop (rnonlinearIteration)
+      
+    CONTAINS
+      
+      SUBROUTINE assembleLinsolMatrices (rnonlinearIteration,rcollection,&
+          bassembleNewton,rx,NLMIN,NLMAX)
+
+      USE linearsystemblock
+      USE collection
+
+      ! Assembles on every level a matrix for the linear-solver/Newton preconditioner.
+      ! bnewton allows to specify whether the Newton matrix or only the standard
+      ! system matrix is evaluated. The output is written to the p_rpreconditioner 
+      ! matrices specified in the rnonlinearIteration structure.
+
+      ! Reference to a collection structure that contains all parameters of the
+      ! discretisation (for nonlinearity, etc.).
+      TYPE(t_collection), INTENT(INOUT)                :: rcollection
+
+      ! Nonlinear iteration structure where to write the linearised system matrix to.
+      TYPE(t_ccnonlinearIteration), INTENT(INOUT)      :: rnonlinearIteration
+
+      ! TRUE  = Assemble the Newton preconditioner.
+      ! FALSE = Assemble the standard defect correction preconditioner
+      !         (i.e. the linearised system matrix).
+      LOGICAL, INTENT(IN) :: bassembleNewton
+      
+      ! Minimum level of the preconditioner that is to be initialised.
+      INTEGER, INTENT(IN)                              :: NLMIN
+      
+      ! Maximum level of the preconditioner that is to be initialised.
+      ! This must corresponds to the last matrix in Rmatrices.
+      INTEGER, INTENT(IN)                              :: NLMAX
+      
+      ! Current iteration vector. 
+      TYPE(t_vectorBlock), INTENT(IN), TARGET          :: rx
+
+      ! local variables
+      REAL(DP) :: dnewton
+      INTEGER :: ilev
+      TYPE(t_matrixBlock), POINTER :: p_rmatrix,p_rmatrixFine
+      TYPE(t_vectorScalar), POINTER :: p_rvectorTemp
+      TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
+      TYPE(t_ccmatrixComponents) :: rmatrixAssembly
+      TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
+
+      ! A filter chain for the linear solver
+      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+      
+      ! DEBUG!!!
+    !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
+    !    call lsysbl_getbase_double (rd,p_def)
+    !    call lsysbl_getbase_double (rx,p_vec)
+    !    NLMAX = collct_getvalue_int (p_rcollection,'NLMAX')
+
+        ! Get the interlevel projection structure and the temporary vector
+        ! from the collection.
+        ! Our 'parent' prepared there how to interpolate the solution on the
+        ! fine grid to coarser grids.
+        p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
+        p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
+
+        ! Get the filter chain. We need tghat later to filter the matrices.        
+        p_RfilterChain => rnonlinearIteration%p_RfilterChain
+
+        ! On all levels, we have to set up the nonlinear system matrix,
+        ! so that the linear solver can be applied to it.
+        
+        NULLIFY(p_rmatrix)
+
+        DO ilev=NLMAX,NLMIN,-1
+        
+          ! Get the matrix on the current level.
+          ! Shift the previous matrix to the pointer of the fine grid matrix.
+          p_rmatrixFine => p_rmatrix
+          p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
+        
+          ! On the highest level, we use rx as solution to build the nonlinear
+          ! matrix. On lower levels, we have to create a solution
+          ! on that level from a fine-grid solution before we can use
+          ! it to build the matrix!
+          IF (ilev .EQ. NLMAX) THEN
+          
+            p_rvectorCoarse => rx
+            
+          ELSE
+            ! We have to discretise a level hierarchy and are on a level < NLMAX.
+            
+            ! Get the temporary vector on level i. Will receive the solution
+            ! vector on that level. 
+            p_rvectorCoarse => rnonlinearIteration%RcoreEquation(ilev)%p_rtempVector
+            
+            ! Get the solution vector on level i+1. This is either the temporary
+            ! vector on that level, or the solution vector on the maximum level.
+            IF (ilev .LT. NLMAX-1) THEN
+              p_rvectorFine => rnonlinearIteration%RcoreEquation(ilev+1)%p_rtempVector
+            ELSE
+              p_rvectorFine => rx
+            END IF
+
+            ! Interpolate the solution from the finer grid to the coarser grid.
+            ! The interpolation is configured in the interlevel projection
+            ! structure we got from the collection.
+            CALL mlprj_performInterpolation (p_rprojection,p_rvectorCoarse, &
+                                             p_rvectorFine,p_rvectorTemp)
+
+            ! Apply the filter chain to the temp vector.
+            ! This implements the boundary conditions that are attached to it.
+            ! NOTE: Deactivated for standard CC2D compatibility -- and because
+            ! it has to be checked whether the correct boundary conditions
+            ! are attached to that vector!
+            ! CALL filter_applyFilterChainVec (p_rvectorCoarse, p_RfilterChain)
+
+          END IF
+
+          ! Initialise the matrix assembly structure rmatrixAssembly to describe the
+          ! matrix we want to have.
+          rmatrixAssembly%diota1 = rnonlinearIteration%diota1
+          rmatrixAssembly%dalpha1 = rnonlinearIteration%dalpha1
+          rmatrixAssembly%dtheta1 = rnonlinearIteration%dtheta1
+          rmatrixAssembly%dnewton1 = rnonlinearIteration%dnewton1
+          rmatrixAssembly%deta1 = rnonlinearIteration%deta1
+          rmatrixAssembly%dtau1 = rnonlinearIteration%dtau1
+          rmatrixAssembly%dgamma1 = rnonlinearIteration%dgamma1
+          rmatrixAssembly%dkappa1 = rnonlinearIteration%dkappa1
+          rmatrixAssembly%dmu1 = rnonlinearIteration%dmu1
+          
+          rmatrixAssembly%diota2 = rnonlinearIteration%diota2
+          rmatrixAssembly%dalpha2 = rnonlinearIteration%dalpha2
+          rmatrixAssembly%dtheta2 = rnonlinearIteration%dtheta2
+          rmatrixAssembly%dgamma2 = rnonlinearIteration%dgamma2
+          rmatrixAssembly%dnewton2 = rnonlinearIteration%dnewton2
+          rmatrixAssembly%deta2 = rnonlinearIteration%deta2
+          rmatrixAssembly%dtau2 = rnonlinearIteration%dtau2
+          rmatrixAssembly%dkappa2 = rnonlinearIteration%dkappa2
+          rmatrixAssembly%dmu2 = rnonlinearIteration%dmu2
+          
+          rmatrixAssembly%iupwind = collct_getvalue_int (p_rcollection,'IUPWIND')
+          rmatrixAssembly%dnu = collct_getvalue_real (p_rcollection,'NU')
+          rmatrixAssembly%dupsam = collct_getvalue_real (p_rcollection,'UPSAM')
+          rmatrixAssembly%iadaptiveMatrices = &
+              rnonlinearIteration%rfinalAssembly%iadaptiveMatrices
+          rmatrixAssembly%dadmatthreshold = &
+              rnonlinearIteration%rfinalAssembly%dadmatthreshold
+          rmatrixAssembly%p_rmatrixStokes => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
+          rmatrixAssembly%p_rmatrixB1 => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1
+          rmatrixAssembly%p_rmatrixB2 => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2
+          rmatrixAssembly%p_rmatrixMass => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
+          rmatrixAssembly%p_rmatrixIdentityPressure => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixIdentityPressure
+
+          ! Assemble the matrix.
+          ! If we are on a lower level, we can specify a 'fine-grid' matrix.
+          IF (ilev .EQ. NLMAX) THEN
+            CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+                p_rmatrix,rmatrixAssembly,p_rvectorCoarse)
+          ELSE
+            CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine)
+          END IF
+
+          ! Boundary conditions
+          ! ---------------------------------------------------
+
+          IF (ASSOCIATED(p_RfilterChain)) THEN
+            ! Apply the filter chain to the matrix.
+            ! As the filter consists only of an implementation filter for
+            ! boundary conditions, this implements the boundary conditions
+            ! into the system matrix.
+            CALL filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
+          ELSE
+            ! Call the matrix filter for the boundary conditions to include the BC's
+            ! into the matrix.
+            CALL matfil_discreteBC (p_rmatrix)
+            CALL matfil_discreteFBC (p_rmatrix)
+          END IF
+            
+          ! 'Nonlinear' boundary conditions like slip boundary conditions
+          ! are not implemented with a filter chain into a matrix.
+          ! Call the appropriate matrix filter of 'nonlinear' boundary
+          ! conditions manually:
+          CALL matfil_discreteNLSlipBC (p_rmatrix,.TRUE.)
+            
+          ! DEBUG!!!
+          !CALL matio_writeBlockMatrixHR (p_rmatrix, 'matrix',&
+          !                              .TRUE., 0, 'matrix.txt','(1X,E20.10)')
+
+        END DO
+        
+      END SUBROUTINE
       
     END SUBROUTINE
 
@@ -2943,7 +3350,7 @@ CONTAINS
       
       ! Save and release the nonlinear-iteration structure, that's it.
       CALL c2d2_saveNonlinearLoop (rnonlinearIteration,p_rcollection)
-      CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
+      CALL c2d2_releaseNonlinearLoop (rnonlinearIteration)
 
     END SUBROUTINE
 

@@ -153,6 +153,10 @@ CONTAINS
     CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
     CALL c2d2_initAnalyticBC (p_rproblem)   
 
+    ! On all levels, generate the static matrices used as templates
+    ! for the system matrix (Laplace, B, Mass,...)
+    CALL c2d2_generateBasicMatrices (p_rproblem)
+
     ! Create the solution vector -- zero or read from file.
     CALL c2d2_initInitialSolution (p_rproblem,rvector)
 
@@ -160,15 +164,6 @@ CONTAINS
     IF (p_rproblem%itimedependence .EQ. 0) THEN
     
       ! Stationary simulation
-      !
-      ! On all levels, generate the static matrices and the basic
-      ! system matrix.
-      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        CALL c2d2_generateStaticMatrices (&
-            p_rproblem,p_rproblem%RlevelInfo(i))
-        CALL c2d2_generateStaticSystemMatrix (&
-            p_rproblem%RlevelInfo(i),p_rproblem%RlevelInfo(i)%rmatrix,.FALSE.)
-      END DO
 
       ! Generate the RHS vector.
       CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
@@ -177,7 +172,7 @@ CONTAINS
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
-      CALL c2d2_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.,.TRUE.)
+      CALL c2d2_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.)
     
       ! Solve the problem
       CALL c2d2_solve (p_rproblem,rvector,rrhs)
@@ -188,12 +183,6 @@ CONTAINS
     ELSE
     
       ! Time dependent simulation with explicit time stepping.
-      !
-      ! On all levels, generate the static matrices.
-      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        CALL c2d2_generateStaticMatrices (&
-            p_rproblem,p_rproblem%RlevelInfo(i))
-      END DO
       
       ! Initialise the boundary conditions for the 0th time step, but 
       ! don't implement any boundary conditions as the nonstationary solver

@@ -17,24 +17,28 @@
 !# 2.) c2d2_allocMatVec
 !#     -> Allocates memory for vectors/matrices on all levels.
 !#
-!# 3.) c2d2_generateStaticMatrices
-!#     -> Assembles matrix entries of static matrices (Stokes, B) on one level
+!# 4.) c2d2_generateStaticMatrices
+!#     -> Assembles matrix entries of static matrices (Stokes, B)
+!#        on one level
 !#
-!# 4.) c2d2_generateBasicRHS
+!# 5.) c2d2_generateBasicMatrices
+!#     -> Assembles the matrix entries of all static matrices on all levels.
+!#
+!# 6.) c2d2_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
 !#        implemented
 !#
-!# 5.) c2d2_doneMatVec
+!# 7.) c2d2_doneMatVec
 !#     -> Cleanup of matrices/vectors, release all memory
 !#
-!# 6.) c2d2_doneDiscretisation
+!# 8.) c2d2_doneDiscretisation
 !#     -> Cleanup of the underlying discretisation structures
 !#
-!# 7.) c2d2_initInitialSolution
+!# 9.) c2d2_initInitialSolution
 !#     -> Init solution vector according to parameters in the DAT file
 !#
-!# 8.) c2d2_writeSolution
-!#     -> Write solution vector as configured in the DAT file.
+!# 10.) c2d2_writeSolution
+!#      -> Write solution vector as configured in the DAT file.
 !#
 !# </purpose>
 !##############################################################################
@@ -683,7 +687,7 @@ CONTAINS
       ! The modules "nonlinearcoreinit" and "nonlinearcore" are actually the
       ! only modules that 'know' the structure of the system matrix!
       CALL c2d2_allocSystemMatrix (rproblem,rproblem%RlevelInfo(i),&
-          rproblem%RlevelInfo(i)%rmatrix)
+          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
       
       ! -----------------------------------------------------------------------
       ! Temporary vectors
@@ -693,13 +697,9 @@ CONTAINS
       ! It's used for building the matrices on lower levels.
       IF (i .LT. rproblem%NLMAX) THEN
         p_rtempVector => rproblem%RlevelInfo(i)%rtempVector
-        CALL lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(i)%rmatrix,&
+        CALL lsysbl_createVecBlockIndMat (&
+            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
             p_rtempVector,.FALSE.)
-        
-        ! Add the temp vector to the collection on level i
-        ! for use in the callback routine
-        CALL collct_setvalue_vec(rproblem%rcollection,PAR_TEMPVEC,p_rtempVector,&
-                                .TRUE.,i)
       END IF
       
     END DO
@@ -711,10 +711,10 @@ CONTAINS
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template.
     ! Initialise the vectors with 0.
-    CALL lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(rproblem%NLMAX)%rmatrix,&
-        rrhs, .TRUE.)
-    CALL lsysbl_createVecBlockIndMat (rproblem%RlevelInfo(rproblem%NLMAX)%rmatrix,&
-        rvector, .TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (&
+        rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation,rrhs,.TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (&
+        rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation,rvector,.TRUE.)
 
   END SUBROUTINE
 
@@ -806,6 +806,36 @@ CONTAINS
     ! -----------------------------------------------------------------------
     ! Initialise the identity matrix
     CALL lsyssc_initialiseIdentityMatrix (rlevelInfo%rmatrixIdentityPressure)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_generateBasicMatrices (rproblem)
+  
+!<description>
+  ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
+  !
+  ! Memory for those matrices must have been allocated before with 
+  ! allocMatVec!
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i
+
+    DO i=rproblem%NLMIN,rproblem%NLMAX
+      CALL c2d2_generateStaticMatrices (&
+          rproblem,rproblem%RlevelInfo(i))
+    END DO
 
   END SUBROUTINE
 
@@ -1138,7 +1168,7 @@ CONTAINS
     ! Release matrices and vectors on all levels
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
       ! Delete the system matrix.
-      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rmatrix)
+      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
 
       ! If there is an existing mass matrix, release it.
       CALL lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
@@ -1159,7 +1189,6 @@ CONTAINS
       ! from higher to lower levels in the nonlinear iteration.
       IF (i .LT. rproblem%NLMAX) THEN
         CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector)
-        CALL collct_deletevalue(rproblem%rcollection,PAR_TEMPVEC,i)
       END IF
       
     END DO

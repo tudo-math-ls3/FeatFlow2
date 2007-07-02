@@ -140,7 +140,7 @@ CONTAINS
     CALL c2d2_finaliseMatrices (rnonlinearIteration)
     
     ! Initialise the preconditioner for the nonlinear iteration
-    CALL c2d2_preparePreconditioner (rproblem,&
+    CALL c2d2_initPreconditioner (rproblem,&
         rnonlinearIteration,rvector,rrhs)
         
     ! Print out the value of the optimal control functional for the

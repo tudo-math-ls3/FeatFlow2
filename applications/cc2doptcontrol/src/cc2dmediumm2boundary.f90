@@ -137,7 +137,6 @@ CONTAINS
 
   ! A pointer to the system matrix and the RHS vector as well as 
   ! the discretisation
-  TYPE(t_matrixBlock), POINTER :: p_rmatrix
   TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
   ! Pointer to structure for saving discrete BC's:
@@ -151,12 +150,9 @@ CONTAINS
 
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
-      ! Get our velocity matrix from the problem structure.
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
-      p_rdiscretisation => p_rmatrix%p_rblockDiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
       
       ! For the discrete problem, we need a discrete version of the above
       ! boundary conditions. So we have to discretise them.
@@ -207,7 +203,7 @@ CONTAINS
       ! vector.
       p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBC
       
-      p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix%p_rdiscreteBC => p_rdiscreteBC
       
       ! Also hang in the boundary conditions into the temporary vector that is
       ! used for the creation of solutions on lower levels.
@@ -216,7 +212,8 @@ CONTAINS
       
       ! The same for the fictitious boudary boundary conditions.
       p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
-      p_rmatrix%p_rdiscreteBCfict => p_rdiscreteFBC
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix%p_rdiscreteBCfict => &
+          p_rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
       
     END DO
@@ -270,7 +267,6 @@ CONTAINS
 
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
-    TYPE(t_matrixBlock), POINTER :: p_rmatrix
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
     ! Initialise the collection for the assembly process with callback routines.
@@ -280,12 +276,9 @@ CONTAINS
 
     DO i=rproblem%NLMIN,rproblem%NLMAX
     
-      ! Get our velocity matrix from the problem structure.
-      p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-      
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
-      p_rdiscretisation => p_rmatrix%p_rblockDiscretisation
+      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
       
       ! For the discrete problem, we need a discrete version of the above
       ! boundary conditions. So we have to discretise them.
@@ -344,8 +337,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs,bmatrices,&
-      bsolvector,brhsvector)
+  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs,bsolvector,brhsvector)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -364,9 +356,6 @@ CONTAINS
   ! A vector structure for the RHS vector. The discrete BC's are implamented into that.
   TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
   
-  ! Whether to implement the BC's into the system matrix/matrices or not.
-  LOGICAL, INTENT(IN) :: bmatrices
-
   ! Whether to implement the BC's into the solution vector or not
   LOGICAL, INTENT(IN) :: bsolvector
 
@@ -377,13 +366,8 @@ CONTAINS
 !</subroutine>
 
   ! local variables
-  INTEGER :: i,ilvmax
-  REAL(DP), DIMENSION(:), POINTER :: p_DA
+  INTEGER :: ilvmax
   
-  ! A pointer to the system matrix and the RHS vector as well as 
-  ! the discretisation
-  TYPE(t_matrixBlock), POINTER :: p_rmatrix
-    
     ! Get our the right hand side and solution from the problem structure
     ! on the finest level
     ilvmax = rproblem%NLMAX
@@ -416,19 +400,22 @@ CONTAINS
 
     END IF
     
-    IF (bmatrices) THEN
-    
-      ! Implement discrete boundary conditions into the matrices on all 
-      ! levels, too.
-      ! In fact, this modifies the B-matrices. The A-matrices are overwritten
-      ! later and must then be modified again!
-      DO i=rproblem%NLMIN ,rproblem%NLMAX
-        p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
-        CALL matfil_discreteBC (p_rmatrix)  ! standard boundary conditions
-        CALL matfil_discreteFBC (p_rmatrix)  ! fictitious boundary boundary conditions
-      END DO
-      
-    END IF
+    ! Implementation of boundary conditions into matrices deactivated.
+    ! It's simply not used as the global matrices are actually not used outside
+    ! of the nonlinear iteration!
+    !  IF (bmatrices) THEN
+    !  
+    !    ! Implement discrete boundary conditions into the matrices on all 
+    !    ! levels, too.
+    !    ! In fact, this modifies the B-matrices. The A-matrices are overwritten
+    !    ! later and must then be modified again!
+    !    DO i=rproblem%NLMIN ,rproblem%NLMAX
+    !      p_rmatrix => rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix
+    !      CALL matfil_discreteBC (p_rmatrix)  ! standard boundary conditions
+    !      CALL matfil_discreteFBC (p_rmatrix)  ! fictitious boundary boundary conditions
+    !    END DO
+    !    
+    !  END IF
 
   END SUBROUTINE
 
