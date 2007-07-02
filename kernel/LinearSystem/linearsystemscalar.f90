@@ -10587,6 +10587,11 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Da1,p_Da2
     REAL(SP), DIMENSION(:), POINTER :: p_Fa1,p_Fa2
   
+    IF (rsourceMatrix%h_Da .EQ. ST_NOHANDLE) THEN
+      PRINT *,'lsyssc_auxcopy_DA: Source matrux undefined!'
+      STOP
+    END IF
+
     IF (rdestMatrix%h_Da .EQ. ST_NOHANDLE) THEN
       CALL storage_new ('lsyssc_auxcopy_DA', 'DA', rsourceMatrix%NA, &
           rsourceMatrix%cdataType, rdestMatrix%h_Da,ST_NEWBLOCK_NOINIT)
