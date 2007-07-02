@@ -798,7 +798,7 @@ CONTAINS
   
 !<description>
   ! This routine releases the preconditioner for the nonlinear iteration
-  ! which was prepared in c2d2_preparePreconditioner. Memory is released
+  ! which was prepared in c2d2_initPreconditioner. Memory is released
   ! from heap.
 !</description>
 
