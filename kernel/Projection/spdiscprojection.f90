@@ -123,7 +123,8 @@ CONTAINS
       ! Copy the vector data but prevent structural data from being overwritten.
       ! Let's hope the vectors have the same length :)
       ! (otherwise the copy-routine will quit)
-      CALL lsyssc_copyVector (rsourceVector,rdestVector,.FALSE.,.TRUE.)
+      CALL lsyssc_duplicateVector (rsourceVector,rdestVector,&
+          LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
       RETURN
       
     END IF

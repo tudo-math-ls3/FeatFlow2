@@ -38,11 +38,13 @@
 !#
 !#  9.) lsysbl_duplicateMatrix
 !#      -> Duplicates a block matrix by duplicating all sub-matrices
+!#      -> Extendend version of lsysbl_copyMatrix
 !#
 !# 10.) lsysbl_duplicateVector
 !#      -> Duplicates a block vector by duplicating all sub-vectors
+!#      -> Extended version of lsysbl_copyVector
 !#
-!# 10.) lsysbl_enforceStructure
+!# 11.) lsysbl_enforceStructure
 !#      -> Enforces the structure of a given block vector in another
 !#         block vector
 !#
@@ -50,105 +52,108 @@
 !#      -> Enforces a subvector structure according to a length definition
 !#         to a block vector
 !#
-!# 11.) lsysbl_assignDiscretIndirect
+!# 12.) lsysbl_assignDiscretIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!# 12.) lsysbl_assignDiscretIndirectMat
+!# 13.) lsysbl_assignDiscretIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector to make it compatible.
 !#
-!# 13.) lsysbl_updateMatStrucInfo
+!# 14.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!# 14.) lsysbl_releaseVector
+!# 15.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 15.) lsysbl_releaseMatrix
+!# 16.) lsysbl_releaseMatrix
 !#      -> Releases a block matrix and all submatrices
 !#
-!# 16.) lsysbl_releaseMatrixRow
+!# 17.) lsysbl_releaseMatrixRow
 !#      -> Releases a row of submatrices from a block matrix
 !#
-!# 17.) lsysbl_releaseMatrixColumn
+!# 18.) lsysbl_releaseMatrixColumn
 !#      -> Releases a column of submatrices from a block matrix
 !#
-!# 18.) lsysbl_blockMatVec
+!# 19.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 19.) lsysbl_copyVector
-!#       -> Copy a block vector over to another one
+!# 20.) lsysbl_copyVector
+!#       -> Copy a block vector to another one
 !#
-!# 20.) lsysbl_scaleVector
+!# 21.) lsysbl_copyMatrix
+!#       -> Copy a block matrix to another one
+!#
+!# 22.) lsysbl_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 21.) lsysbl_clearVector
+!# 23.) lsysbl_clearVector
 !#      -> Clear a block vector
 !#
-!# 22.) lsysbl_vectorLinearComb
+!# 24.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 23.) lsysbl_scalarProduct
+!# 25.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 24.) lsysbl_setSortStrategy
+!# 26.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 25.) lsysbl_sortVectorInSitu
+!# 27.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 26.) lsysbl_isVectorCompatible
+!# 28.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 27.) lsysbl_isMatrixCompatible
+!# 29.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 28.) lsysbl_isMatrixSorted
+!# 30.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 29.) lsysbl_isVectorSorted
+!# 31.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 30.) lsysbl_getbase_double
+!# 32.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 31.) lsysbl_getbase_single
+!# 33.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 32.) lsysbl_vectorNorm
+!# 34.) lsysbl_vectorNorm
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 33.) lsysbl_vectorNormBlock
+!# 35.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 34.) lsysbl_invertedDiagMatVec
+!# 36.) lsysbl_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !#
-!# 35.) lsysbl_swapVectors
+!# 37.) lsysbl_swapVectors
 !#      -> Swap two vectors
 !#
-!# 36.) lsysbl_deriveSubvector
+!# 38.) lsysbl_deriveSubvector
 !#      -> Derives a blockvector as a subset of another blockvector
 !#
-!# 37.) lsysbl_deriveSubmatrix
+!# 39.) lsysbl_deriveSubmatrix
 !#      -> Extracts a submatrix from a block matrix
 !#
-!# 38.) lsysbl_isSubmatrixPresent
+!# 40.) lsysbl_isSubmatrixPresent
 !#      -> Checks if a submatrix of a blockmatrix is present
 !#
-!# 39.) lsysbl_resizeVectorBlock
+!# 41.) lsysbl_resizeVectorBlock
 !#      -> Resize a block vector
 !#
-!# 40.) lsysbl_resizeVecBlockIndMat
+!# 42.) lsysbl_resizeVecBlockIndMat
 !#      -> Resize a block vector according to a block matrix
 !#
-!# 41.) lsysbl_infoVector
+!# 43.) lsysbl_infoVector
 !#      -> Outputs information about the vector (mostly used for debugging)
 !#
-!# 42.) lsysbl_infoMatrix
+!# 44.) lsysbl_infoMatrix
 !#      -> Outputs information about the matrix (mostly used for debugging)
 !# </purpose>
 !##############################################################################
@@ -1826,6 +1831,42 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE lsysbl_copyMatrix (rsourceMatrix,rdestMatrix)
+  
+!<description>
+  ! Copies a matrix data: rsourceMatrix = rdestMatrix.
+  ! All structural (discretisation related) data of rsourceMatrix is
+  ! transferred to rdestMatrix.
+  !
+  ! If the destination matrix contains data, the data is overwritten,
+  ! regardless of whether the data belongs to rdestmatrix or not.
+  ! If the destination matrix is empty, new memory is allocated.
+  !
+  ! Therefore, lsysbl_copyMatrix coincides with a call to
+  ! lsysbl_duplicateMatrix (.,.,LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE).
+!</description>
+  
+!<input>
+  ! Source vector
+  TYPE(t_matrixScalar),INTENT(IN) :: rsourceMatrix
+!</input>
+
+!<inputoutput>
+  ! Destination vector
+  TYPE(t_matrixScalar),INTENT(INOUT) :: rdestMatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    CALL lsysbl_duplicateMatrix (rsourceMatrix,rdestMatrix,&
+        LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE lsysbl_scaleVector (rx,c)
   
 !<description>
@@ -2283,7 +2324,7 @@ CONTAINS
 !</input>
 
 !<output>
-  ! The 1x1 block matrix, created from rscalarMat.
+  ! The block vector, created from rscalarVec.
   TYPE(t_vectorBlock), INTENT(OUT) :: rvector
 !</output>
   
@@ -2323,6 +2364,101 @@ CONTAINS
       rvector%p_rblockDiscretisation => rblockDiscretisation
     ELSE
       NULLIFY(rvector%p_rblockDiscretisation)
+    END IF
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE lsysbl_createScalarFromVec (rvector,rscalarVec,bshare)
+  
+!<description>
+  ! This routine creates a scalar vector rscalarVec from a block vector rvector.
+  ! rscalarVec will contain the information from all subvectors in rvector
+  ! in the order specified by rvector.
+  ! If bshare=TRUE, the routine shares the information of rvector
+  ! with rscalarVec without allocating new memory, so changing the content of 
+  ! rscalarVec will also change rvector. The bisCopy flag of the subvector 
+  ! in the block vector will be set to TRUE.
+  !
+  ! If the source vector contains exactly one subvector, the routine copies
+  ! additional information (pointer to the discretisation structure) to 
+  ! rscalarVec. Otherwise, rscalarVec will contain only the basic data.
+!</description>
+  
+!<input>
+  ! The block vector which should provide the data
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  
+  ! OPTIONAL: Whether to share data.
+  ! = FALSE: Create a new vector, copy all data.
+  ! = TRUE: Create a vector that shares information with rvector.
+  !         If that's not possible, create a new vector. (Standard)
+  LOGICAL, OPTIONAL :: bshare
+!</input>
+
+!<output>
+  ! Scalar vector created from rvector.
+  TYPE(t_vectorScalar), INTENT(OUT) :: rscalarVec
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    LOGICAL :: bshareData
+    INTEGER :: istart
+    REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+    REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
+    
+    bshareData = .TRUE.
+    IF (PRESENT(bshare)) bshareData = bshare
+    
+    IF (bshareData) THEN
+    
+      ! Share the data
+      rscalarVec%cdataType = rvector%cdataType
+      rscalarVec%NEQ = rvector%NEQ
+      rscalarVec%h_Ddata = rvector%h_Ddata
+      
+    ELSE
+    
+      ! Is there only one subvector? If yes, copy that one!
+      ! Allocate new memory if necessary.
+      IF (rvector%nblocks .EQ. 1) THEN
+      
+        CALL lsyssc_duplicateVector (rvector%RvectorBlock(1),rscalarVec,&
+            LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+            
+      ELSE
+    
+        ! Create a new vector.
+        CALL lsyssc_createVector (rscalarVec,rvector%NEQ,.FALSE.,rvector%cdataType)
+        
+        ! Copy the data
+
+        istart = 1
+        SELECT CASE (rvector%cdataType)
+        CASE (ST_DOUBLE)
+          CALL lsyssc_getbase_double (rscalarVec,p_Ddest)
+          CALL lsysbl_getbase_double (rvector,p_Dsource)
+          CALL lalg_copyVectorDble (p_Dsource(:),p_Ddest(:))
+          
+        CASE (ST_SINGLE)
+          CALL lsyssc_getbase_single (rscalarVec,p_Fdest)
+          CALL lsysbl_getbase_single (rvector,p_Fsource)
+          CALL lalg_copyVectorSngl (p_Fsource(:),p_Fdest(:))
+          
+        CASE DEFAULT
+        
+          PRINT *,'lsysbl_createScalarFromVec: Invalid data type!'
+          STOP
+          
+        END SELECT
+        
+      END IF
+        
     END IF
     
   END SUBROUTINE
@@ -2594,7 +2730,7 @@ CONTAINS
 !<subroutine>
   
   SUBROUTINE lsysbl_duplicateMatrix (rsourceMatrix,rdestMatrix,&
-                                     idupStructure, idupContent)
+                                     cdupStructure, cdupContent)
   
 !<description>
   ! Duplicates an existing matrix, creates a new matrix rdestMatrix based
@@ -2603,7 +2739,7 @@ CONTAINS
   !
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
-  ! idupStructure and idupContent decide on how to set up rdestMatrix.
+  ! cdupStructure and cdupContent decide on how to set up rdestMatrix.
   ! Depending on their setting, it's possible to copy only the handles
   ! of such dynamic information, so that both matrices share the same
   ! information.
@@ -2657,7 +2793,7 @@ CONTAINS
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  INTEGER, INTENT(IN)                            :: idupStructure
+  INTEGER, INTENT(IN)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -2691,7 +2827,7 @@ CONTAINS
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  INTEGER, INTENT(IN)                            :: idupContent
+  INTEGER, INTENT(IN)                            :: cdupContent
 !</input>
 
 !<output>
@@ -2732,7 +2868,7 @@ CONTAINS
               
           CALL lsyssc_duplicateMatrix ( &
               rsourceMatrix%RmatrixBlock(i,j), rdestMatrix%RmatrixBlock(i,j),&
-              idupStructure, idupContent)
+              cdupStructure, cdupContent)
                                        
         END IF
       END DO
@@ -2747,43 +2883,291 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsysbl_duplicateVector (rsourceVector,rdestVector,&
-                                     idupStructure, idupContent)
+  SUBROUTINE lsysbl_duplicateVector (rx,ry,&
+                                     cdupStructure, cdupContent)
   
 !<description>
-  ! Duplicates an existing vector, creates a new vector rdestVector based
+  ! Duplicates an existing vector: ry := rx.
+  ! Creates a new vector rdestVector based
   ! on a template vector rsourceVector. To duplicate a block vector means here
   ! to copy all the existing subvectors in the block vector in the same way.
   !
   ! Duplicating a vector does not necessarily mean that new memory is
   ! allocated and the vector entries are copied to that. The two flags
-  ! idupStructure and idupContent decide on how to set up rdestVector.
+  ! cdupStructure and cdupContent decide on how to set up rdestVector.
   ! Depending on their setting, it's possible to copy only then handles
   ! of such dynamic information, so that both vectors share the same
   ! information.
+  !
+  ! We follow the following convention:
+  !  Structure = NEQ, sorting permutation(s), discretisation-related 
+  !              information, boundary conditions.
+  !  Content   = Enties in the vector.
+  !
+  ! Remark 1: There is never memory allocated on the heap for the sorting
+  !  permutation. A vector is never the 'owner' of a permutation, i.e.
+  !  does not maintain it. Therefore, copying a permutation means
+  !  copying the corresponding handle. The application must keep track
+  !  of the permutations.
+  ! Remark 2: The vector is never resorted! If rx is sorted while
+  !  ry is unsorted and cdupStructure=LSYSSC_DUP_IGNORE,
+  !  the state of the new vector is undefined as no reference to the
+  !  sorting strategy is transferred! The data is simply copied.
 !</description>
 
 !<input>
   ! Source vector.
-  TYPE(t_vectorBlock), INTENT(IN) :: rsourceVector
+  TYPE(t_vectorBlock), INTENT(IN) :: rx
 
   ! Duplication flag that decides on how to set up the structure
-  ! of rdestVector. This duplication flag is applied to all subvectors
-  ! of rsourceVector.
-  INTEGER, INTENT(IN) :: idupStructure
-
+  ! of ry. Not all flags are possible!
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Ignore the structure of rx
+  ! LSYSSC_DUP_COPY or
+  ! LSYSSC_DUP_COPYOVERWRITE or
+  ! LSYSSC_DUP_TEMPLATE   : Structural data is copied from rx
+  !   to ry (NEQ, sorting strategy, pointer to discretisation structure).
+  INTEGER, INTENT(IN)                            :: cdupStructure
+  
   ! Duplication flag that decides on how to set up the content
-  ! of rdestVector. This duplication flag is applied to all subvectors
-  ! of rsourceVector.
-  INTEGER, INTENT(IN) :: idupContent
+  ! of ry. Not all flags are possible!
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Ignore the content of rx.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing content from 
+  !   ry if there is any. Releases memory if necessary.
+  ! LSYSSC_DUP_DISMISS    : Removes any existing content from 
+  !   ry if there is any. No memory is released, handles are simply
+  !   dismissed.
+  ! LSYSSC_DUP_SHARE      : ry receives the same handles for
+  !   content data as rx and therefore shares the same content.
+  !   If necessary, the old data in ry is released.
+  ! LSYSSC_DUP_COPY       : ry gets a copy of the content of rx.
+  !   If necessary, new memory is allocated for the content.
+  !   If ry already contains allocated memory that belongs
+  !   to that vector, content/structure data is simply copied from rx
+  !   into that.
+  !   Note that this respects the ownership! I.e. if the destination vector is not
+  !   the owner of the content/structure data arrays, new memory is allocated to
+  !   prevent the actual owner from getting destroyed!
+  ! LSYSSC_DUP_COPYOVERWRITE:   The destination vector gets a copy of the content 
+  !   of rx. If necessary, new memory is allocated.
+  !   If the destination vector already contains allocated memory, content
+  !   data is simply copied from rx into that.
+  !   The ownership of the content/data arrays is not respected, i.e. if the
+  !   destination vector is not the owner, the actual owner of the data arrays is
+  !   modified, too!
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  !   rx belongs to rx, ry gets a copy
+  !   of the content; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the content of rx belongs to another
+  !   vector than rx, ry receives the same handles as
+  !   rx and is therefore a third vector sharing the same content
+  !   (the same as LSYSSC_DUP_SHARE, so rx, ry and the 
+  !   other vector have the same content).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  !   same size in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  INTEGER, INTENT(IN)                            :: cdupContent
 !</input>
 
-!<output>
+!<inputoutput>
   ! Destination vector.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rdestVector
-!</output>
+  TYPE(t_vectorBlock), INTENT(INOUT) :: ry
+!</inputoutput>
+
 !</subroutine>
 
+    INTEGER :: h_Ddata
+    INTEGER(PREC_VECIDX) :: cdataType
+    LOGICAL :: bisCopy
+    TYPE(t_vectorScalar), DIMENSION(:), POINTER :: p_Rblocks
+    INTEGER(PREC_VECIDX) ::  isize
+
+    ! First the structure
+
+    IF (cdupStructure .NE. LSYSSC_DUP_IGNORE) THEN
+      ! First, make a backup of some crucial data so that it does not
+      ! get destroyed.
+      h_Ddata = ry%h_Ddata
+      cdataType = ry%cdataType
+      bisCopy = ry%bisCopy
+      p_Rblocks => ry%RvectorBlock
+      
+      ! Then transfer all structural information of rx to ry.
+      ! This automatically makes both vectors compatible to each other.
+      ry = rx
+      
+      ! Restore crucial data
+      ry%h_Ddata = h_Ddata
+      ry%bisCopy = bisCopy
+      ry%RvectorBlock => p_Rblocks
+      
+      ! If necessary, allocate new memory for the blocks.
+      ! Note that ry%nblocks is now =rx%nblocks!
+      IF (.NOT. ASSOCIATED(ry%RvectorBlock)) THEN
+        ALLOCATE(ry%RvectorBlock(ry%nblocks))
+      ELSE IF (SIZE(ry%RvectorBlock) .LT. rx%nblocks) THEN
+        DEALLOCATE(ry%RvectorBlock)
+        ALLOCATE(ry%RvectorBlock(ry%nblocks))
+      END IF
+      ry%RvectorBlock = rx%RvectorBlock
+      
+      ! Restore the handle in all subvectors
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = h_Ddata
+      ry%RvectorBlock(1:ry%nblocks)%cdataType = cdataType
+    END IF
+    
+    ! Now the content
+
+    SELECT CASE (cdupContent)
+    CASE (LSYSSC_DUP_IGNORE) 
+      ! Nothing to do
+    
+    CASE (LSYSSC_DUP_REMOVE)
+      ! Release vector data
+      IF (ry%h_Ddata .NE. ST_NOHANDLE) &
+        CALL storage_free (ry%h_Ddata)
+      ry%bisCopy = .FALSE.
+      
+    CASE (LSYSSC_DUP_DISMISS)
+      ! Dismiss data
+      ry%h_Ddata = ST_NOHANDLE
+      ry%bisCopy = .FALSE.
+    
+    CASE (LSYSSC_DUP_SHARE)
+      ! Share information. Release memory if necessary.
+      IF (ry%bisCopy .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) &
+        CALL storage_free (ry%h_Ddata)
+      ry%h_Ddata = rx%h_Ddata
+      ry%cdataType = rx%cdataType
+      ry%bisCopy = .TRUE.
+      
+      ! Restore the handle in all subvectors
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
+      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+      
+    CASE (LSYSSC_DUP_COPY)
+      ! Copy information. If necessary, allocate new data -- by setting
+      ! h_Ddata to ST_NOHANDLE before calling storage_copy.
+      IF (ry%bisCopy) THEN
+        ry%h_Ddata = ST_NOHANDLE
+        ry%bisCopy = .FALSE.
+      END IF
+      
+      ! Some basic checks
+      IF ((ry%h_Ddata .NE. ST_NOHANDLE) .AND. (rx%cdataType .NE. ry%cdataType)) THEN
+        ! Release old data, allocate new.
+        CALL storage_free (ry%h_Ddata)
+      END IF
+      
+      IF (ry%h_Ddata .NE. ST_NOHANDLE) THEN    
+        CALL storage_getsize1D (ry%h_Ddata, isize)
+        IF (isize .LT. rx%NEQ) THEN
+          ! Reallocate by first releasing the data
+          CALL storage_free (ry%h_Ddata)
+        END IF
+      END IF
+      
+      ry%cdataType = rx%cdataType
+      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+    
+      ! Restore the handle in all subvectors
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
+      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+    
+    CASE (LSYSSC_DUP_COPYOVERWRITE)
+    
+      ! Some basic checks
+      IF ((ry%h_Ddata .NE. ST_NOHANDLE) .AND. (rx%cdataType .NE. ry%cdataType)) THEN
+        ! Release old data, allocate new.
+        CALL storage_free (ry%h_Ddata)
+      END IF
+      
+      IF (ry%h_Ddata .NE. ST_NOHANDLE) THEN    
+        CALL storage_getsize1D (ry%h_Ddata, isize)
+        IF (isize .LT. rx%NEQ) THEN
+          ! Reallocate by first releasing the data
+          CALL storage_free (ry%h_Ddata)
+        END IF
+      END IF
+      
+      ! Copy information, regardless of whether ry is the owner or not.
+      ! If no memory is allocated, ry%h_Ddata is =ST_NOHANDLE and thus,
+      ! storage_copy will allocate memory!
+      
+      ry%cdataType = rx%cdataType
+      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+    
+      ! Restore the handle in all subvectors
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
+      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+    
+    CASE (LSYSSC_DUP_ASIS)
+    
+      ! Copy by ownership. This is either LSYSSC_COPY or LSYSSC_SHARE,
+      ! depending on whether rx is the owner of the data or not.
+      IF (rx%bisCopy) THEN
+        
+        ! rx shares it's data and thus ry will also.
+        ry%h_Ddata = rx%h_Ddata
+        ry%cdataType = rx%cdataType
+        ry%bisCopy = .TRUE.
+        
+      ELSE
+      
+        ! The data belongs to rx and thus it must also belong to ry --
+        ! So copy information. If necessary, allocate new data -- by setting
+        ! h_Ddata to ST_NOHANDLE before calling storage_copy.
+        IF (ry%bisCopy) THEN
+          ry%h_Ddata = ST_NOHANDLE
+          ry%bisCopy = .FALSE.
+        END IF
+        
+        ! Some basic checks
+        IF ((ry%h_Ddata .NE. ST_NOHANDLE) .AND. (rx%cdataType .NE. ry%cdataType)) THEN
+          ! Release old data, allocate new.
+          CALL storage_free (ry%h_Ddata)
+        END IF
+        
+        IF (ry%h_Ddata .NE. ST_NOHANDLE) THEN    
+          CALL storage_getsize1D (ry%h_Ddata, isize)
+          IF (isize .LT. rx%NEQ) THEN
+            ! Reallocate by first releasing the data
+            CALL storage_free (ry%h_Ddata)
+          END IF
+        END IF
+        
+        ry%cdataType = rx%cdataType
+        CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+
+      END IF
+      
+      ! Restore the handle in all subvectors
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
+      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+      
+    CASE (LSYSSC_DUP_EMPTY)
+    
+      ! Allocate new memory if ry is empty. Don't initialise.
+      ! If ry contains data, we don't have to do anything.
+      IF (ry%h_Ddata .EQ. ST_NOHANDLE) THEN
+        ry%cdataType = rx%cdataType
+        CALL storage_new ('lsyssc_duplicateVector','vec-copy',rx%NEQ,&
+                          ry%cdataType, ry%h_Ddata, &
+                          ST_NEWBLOCK_NOINIT)
+      END IF
+
+      ! Restore the handle in all subvectors
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
+      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+    
+    CASE DEFAULT
+    
+      PRINT *,'lsysbl_duplicateVector: cdupContent unknown!'
+      STOP
+    
+    END SELECT
+  
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -3189,7 +3573,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: ifirst, ilast, ncount, i
+    INTEGER :: ifirst, ilast, ncount, i, idupflag
     INTEGER(PREC_VECIDX) :: n
     LOGICAL :: bshareContent
     INTEGER(PREC_VECIDX), DIMENSION(MAX(rvectorSrc%nblocks,1)) :: Isize
@@ -3270,12 +3654,16 @@ CONTAINS
     END IF
 
     rvectorDest%bisCopy = bshareContent
+    
+    idupflag = LSYSSC_DUP_COPY
+    IF (bshareContent) idupflag = LSYSSC_DUP_SHARE
 
     ! Everything is prepared, just copy -- either only the structure or
     ! the structure as well as the content.
     DO i=1,ncount
-      CALL lsyssc_copyVector (rvectorSrc%RvectorBlock(i),rvectorDest%RvectorBlock(i),&
-          .TRUE.,.NOT. bshareContent)
+      CALL lsyssc_duplicateVector (rvectorSrc%RvectorBlock(i),&
+          rvectorDest%RvectorBlock(i),&
+          LSYSSC_DUP_COPY,idupflag)
     END DO
     
   END SUBROUTINE 
@@ -3285,7 +3673,7 @@ CONTAINS
 !<subroutine>
   
   SUBROUTINE lsysbl_deriveSubmatrix (rsourceMatrix,rdestMatrix,&
-                                     idupStructure, idupContent,&
+                                     cdupStructure, cdupContent,&
                                      ifirstBlock,ilastBlock)
   
 !<description>
@@ -3305,7 +3693,7 @@ CONTAINS
   !
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
-  ! idupStructure and idupContent decide on how to set up rdestMatrix.
+  ! cdupStructure and cdupContent decide on how to set up rdestMatrix.
   ! Depending on their setting, it's possible to copy only the handles
   ! of such dynamic information, so that both matrices share the same
   ! information.
@@ -3367,7 +3755,7 @@ CONTAINS
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  INTEGER, INTENT(IN)                            :: idupStructure
+  INTEGER, INTENT(IN)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -3401,7 +3789,7 @@ CONTAINS
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  INTEGER, INTENT(IN)                            :: idupContent
+  INTEGER, INTENT(IN)                            :: cdupContent
 !</input>
 
 !<output>
@@ -3438,7 +3826,7 @@ CONTAINS
           CALL lsyssc_duplicateMatrix ( &
               rsourceMatrix%RmatrixBlock(i,j), &
               rdestMatrix%RmatrixBlock(i-ifirst+1,j-ifirst+1),&
-              idupStructure, idupContent)
+              cdupStructure, cdupContent)
                                        
         END IF
       END DO

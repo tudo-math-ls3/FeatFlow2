@@ -4023,68 +4023,198 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_duplicateVector (roldVector,rnewVector)
+  SUBROUTINE lsyssc_duplicateVector (rx,ry,cdupStructure,cdupContent)
   
 !<description>
-  ! Duplicates an existing vector. All structural data from roldVector
-  ! is assigned to rnewVector. A new handle for vector data will be allocated
-  ! in rnewVector and the data of the vector in roldVector is copied
-  ! to the new data array.
+  ! Duplicates an existing vector: ry := rx.
+  ! Creates a new vector ry based on a template vector rx.
+  ! Duplicating a vector does not necessarily mean that new memory is
+  ! allocated and the vector entries are copied to that. The two flags
+  ! cdupStructure and cdupContent decide on how to set up ry.
+  ! Depending on their setting, it's possible to copy only the handle
+  ! of such dynamic information, so that both vectors share the same
+  ! information.
+  !
+  ! We follow the following convention:
+  !  Structure = NEQ, sorting permutation, discretisation-related information.
+  !  Content   = Enties in the vector.
+  !
+  ! Remark 1: There is never memory allocated on the heap for the sorting
+  !  permutation. A vector is never the 'owner' of a permutation, i.e.
+  !  does not maintain it. Therefore, copying a permutation means
+  !  copying the corresponding handle. The application must keep track
+  !  of the permutations.
+  ! Remark 2: The vector is never resorted! If rx is sorted while
+  !  ry is unsorted and cdupStructure=LSYSSC_DUP_IGNORE,
+  !  the state of the new vector is undefined as no reference to the
+  !  sorting strategy is transferred! The data is simply copied.
 !</description>
   
 !<input>
   ! Vector to copy
-  TYPE(t_vectorScalar), INTENT(IN)                :: roldVector
+  TYPE(t_vectorScalar), INTENT(IN)                :: rx
+
+  ! Duplication flag that decides on how to set up the structure
+  ! of ry. Not all flags are possible!
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Ignore the structure of rx
+  ! LSYSSC_DUP_COPY or
+  ! LSYSSC_DUP_COPYOVERWRITE or
+  ! LSYSSC_DUP_TEMPLATE   : Structural data is copied from rx
+  !   to ry (NEQ, sorting strategy, pointer to discretisation structure).
+  INTEGER, INTENT(IN)                            :: cdupStructure
+  
+  ! Duplication flag that decides on how to set up the content
+  ! of ry. Not all flags are possible!
+  ! One of the LSYSSC_DUP_xxxx flags:
+  ! LSYSSC_DUP_IGNORE     : Ignore the content of rx.
+  ! LSYSSC_DUP_REMOVE     : Removes any existing content from 
+  !   ry if there is any. Releases memory if necessary.
+  ! LSYSSC_DUP_DISMISS    : Removes any existing content from 
+  !   ry if there is any. No memory is released, handles are simply
+  !   dismissed.
+  ! LSYSSC_DUP_SHARE      : ry receives the same handles for
+  !   content data as rx and therefore shares the same content.
+  !   If necessary, the old data in ry is released.
+  ! LSYSSC_DUP_COPY       : ry gets a copy of the content of rx.
+  !   If necessary, new memory is allocated for the content.
+  !   If ry already contains allocated memory that belongs
+  !   to that vector, content/structure data is simply copied from rx
+  !   into that.
+  !   Note that this respects the ownership! I.e. if the destination vector is not
+  !   the owner of the content/structure data arrays, new memory is allocated to
+  !   prevent the actual owner from getting destroyed!
+  ! LSYSSC_DUP_COPYOVERWRITE:   The destination vector gets a copy of the content 
+  !   of rx. If necessary, new memory is allocated.
+  !   If the destination vector already contains allocated memory, content
+  !   data is simply copied from rx into that.
+  !   The ownership of the content/data arrays is not respected, i.e. if the
+  !   destination vector is not the owner, the actual owner of the data arrays is
+  !   modified, too!
+  ! LSYSSC_DUP_ASIS       : Duplicate by ownership. If the content of 
+  !   rx belongs to rx, ry gets a copy
+  !   of the content; new memory is allocated if necessary (the same as 
+  !   LSYSSC_DUP_COPY). If the content of rx belongs to another
+  !   vector than rx, ry receives the same handles as
+  !   rx and is therefore a third vector sharing the same content
+  !   (the same as LSYSSC_DUP_SHARE, so rx, ry and the 
+  !   other vector have the same content).
+  ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
+  !   same size in rsourceMatrix but no data is copied;
+  !   the arrays are left uninitialised.
+  INTEGER, INTENT(IN)                            :: cdupContent
 !</input>
 
-!<output>
+!<inputoutput>
   ! The new vector which will be a copy of roldvector
-  TYPE(t_vectorScalar), INTENT(OUT)               :: rnewVector
-!</output>
+  TYPE(t_vectorScalar), INTENT(INOUT)               :: ry
+!</inputoutput>
 
 !</subroutine>
 
-  ! local variables
-  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
-  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
-  INTEGER(PREC_VECIDX) :: NEQ
-  INTEGER :: NVAR
-
-  ! At first, copy all 'local' data.
-  rnewVector = roldVector
-  
-  ! Then allocate a new array for the content in the same data
-  ! format as the vector and copy the data.
-  ! We can't use storage_copy here, as the content of roldVector
-  ! maybe > NEQ!
-  
-  NEQ = roldVector%NEQ
-  NVAR= roldVector%NVAR
-  CALL storage_new ('lsyssc_duplicateVector','vec-copy',INT(NEQ*NVAR,I32),&
-                    roldVector%cdataType, rnewVector%h_Ddata, &
-                    ST_NEWBLOCK_NOINIT)
-
-  ! The new vector starts at index position 1
-  rnewVector%iidxFirstEntry = 1
-
-  ! Take care of the index of the first entry when copying the data!
-
-  SELECT CASE (roldVector%cdataType)
-  CASE (ST_DOUBLE)
-    CALL lsyssc_getbase_double (roldVector,p_Dsource)
-    CALL lsyssc_getbase_double (rnewVector,p_Ddest)
-    CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    ! local variables
+    INTEGER(PREC_VECIDX) :: NEQ,ioffset,cdataType
+    LOGICAL :: bisCopy
+    INTEGER :: h_Ddata,NVAR
     
-  CASE (ST_SINGLE)
-    CALL lsyssc_getbase_single (roldVector,p_Fsource)
-    CALL lsyssc_getbase_single (rnewVector,p_Fdest)
-    CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+    ! First the structure
+    
+    IF (cdupStructure .NE. LSYSSC_DUP_IGNORE) THEN
+      ! Standard case: Copy the whole vector information
+      !
+      ! First, make a backup of some crucial data so that it does not
+      ! get destroyed.
+      h_Ddata = ry%h_Ddata
+      cdataType = ry%cdataType
+      bisCopy = ry%bisCopy
+      ioffset = ry%iidxFirstEntry
+      
+      ! Then transfer all structural information of rx to ry.
+      ! This automatically makes both vectors compatible to each other.
+      ry = rx
+      
+      ! Restore crucial data
+      ry%h_Ddata = h_Ddata
+      ry%bisCopy = bisCopy
+      ry%iidxFirstEntry = ioffset 
+    END IF
 
-  CASE DEFAULT
-    PRINT *,'lsyssc_duplicateVector: Unsupported data type!'
-    STOP
-  END SELECT
-   
+    ! Now the content.
+
+    SELECT CASE (cdupContent)
+    CASE (LSYSSC_DUP_IGNORE) 
+      ! Nothing to do
+    
+    CASE (LSYSSC_DUP_REMOVE)
+      ! Release vector data
+      IF (ry%h_Ddata .NE. ST_NOHANDLE) &
+          CALL storage_free (ry%h_Ddata)
+      ry%bisCopy = .FALSE.
+      
+    CASE (LSYSSC_DUP_DISMISS)
+      ! Dismiss data
+      ry%h_Ddata = ST_NOHANDLE
+      ry%bisCopy = .FALSE.
+    
+    CASE (LSYSSC_DUP_SHARE)
+      ! Share information. Release memory if necessary.
+      IF (ry%bisCopy .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) &
+        CALL storage_free (ry%h_Ddata)
+      ry%h_Ddata = rx%h_Ddata
+      ry%bisCopy = .TRUE.
+      
+    CASE (LSYSSC_DUP_COPY)
+      ! Copy information. If necessary, allocate new data -- by setting
+      ! h_Ddata to ST_NOHANDLE before calling storage_copy.
+      IF (ry%bisCopy) THEN
+        ry%h_Ddata = ST_NOHANDLE
+        ry%bisCopy = .FALSE.
+      END IF
+      
+      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+    
+    CASE (LSYSSC_DUP_COPYOVERWRITE)
+      ! Copy information, regardless of whether ry is the owner or not.
+      ! If no memory is allocated, ry%h_Ddata is =ST_NOHANDLE and thus,
+      ! storage_copy will allocate memory!
+      
+      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+    
+    CASE (LSYSSC_DUP_ASIS)
+    
+      ! Copy by ownership. This is either LSYSSC_COPY or LSYSSC_SHARE,
+      ! depending on whether rx is the owner of the data or not.
+      IF (rx%bisCopy) THEN
+        ! rx shares it's data and thus ry will also.
+        ry%h_Ddata = rx%h_Ddata
+        ry%bisCopy = .TRUE.
+      ELSE
+        ! The data belongs to rx and thus it must also belong to ry --
+        ! so copy it.
+        ry%h_Ddata = ST_NOHANDLE
+        ry%bisCopy = .FALSE.
+        CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+      END IF
+      
+    CASE (LSYSSC_DUP_EMPTY)
+    
+      ! Allocate new memory if ry is empty. Don't initialise.
+      ! If ry contains data, we don't have to do anything.
+      IF (ry%h_Ddata .EQ. ST_NOHANDLE) THEN
+        NEQ = rx%NEQ
+        NVAR= rx%NVAR
+        CALL storage_new ('lsyssc_duplicateVector','vec-copy',INT(NEQ*NVAR,I32),&
+                          rx%cdataType, ry%h_Ddata, &
+                          ST_NEWBLOCK_NOINIT)
+      END IF
+    
+    CASE DEFAULT
+    
+      PRINT *,'lsyssc_duplicateVector: cdupContent unknown!'
+      STOP
+    
+    END SELECT
+    
   END SUBROUTINE
   
   !****************************************************************************
@@ -4092,14 +4222,14 @@ CONTAINS
 !<subroutine>
   
   SUBROUTINE lsyssc_duplicateMatrix (rsourceMatrix,rdestMatrix,&
-                                     idupStructure, idupContent)
+                                     cdupStructure, cdupContent)
   
 !<description>
   ! Duplicates an existing matrix, creates a new matrix rdestMatrix based
   ! on a template matrix rsourceMatrix.
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
-  ! idupStructure and idupContent decide on how to set up rdestMatrix.
+  ! cdupStructure and cdupContent decide on how to set up rdestMatrix.
   ! Depending on their setting, it's possible to copy only the handles
   ! of such dynamic information, so that both matrices share the same
   ! information.
@@ -4158,10 +4288,10 @@ CONTAINS
   ! LSYSSC_DUP_EMPTY      : New memory is allocated for the structure in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE   : Copies static structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  INTEGER, INTENT(IN)                            :: idupStructure
+  INTEGER, INTENT(IN)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
@@ -4200,10 +4330,10 @@ CONTAINS
   ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
   !   same size as the structure in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
+  ! LSYSSC_DUP_TEMPLATE   : Copies static structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  INTEGER, INTENT(IN)                            :: idupContent
+  INTEGER, INTENT(IN)                            :: cdupContent
 !</input>
 
 !<output>
@@ -4217,7 +4347,7 @@ CONTAINS
     INTEGER(PREC_MATIDX) :: isize
   
     ! What do we have to do for the structure?
-    SELECT CASE (idupStructure)
+    SELECT CASE (cdupStructure)
     CASE (LSYSSC_DUP_IGNORE)
       ! Nothing
     CASE (LSYSSC_DUP_REMOVE)
@@ -4299,7 +4429,7 @@ CONTAINS
     ! -----
     
     ! What do we have to do for the content?
-    SELECT CASE (idupContent)
+    SELECT CASE (cdupContent)
     CASE (LSYSSC_DUP_IGNORE)
       ! Nothing
     CASE (LSYSSC_DUP_REMOVE)
@@ -6538,7 +6668,7 @@ CONTAINS
     p_rtemp => rtemp
   ELSE
     p_rtemp => rtempLocal
-    CALL lsyssc_duplicateVector (rvector,rtempLocal)
+    CALL lsyssc_copyVector (rvector,rtempLocal)
   END IF
 
   ! Perform the sorting or unsorting
@@ -9398,25 +9528,19 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE lsyssc_copyVector (rx,ry,bcopyStructure,bcopyData)
+  SUBROUTINE lsyssc_copyVector (rx,ry)
   
 !<description>
   ! Copies vector data: ry = rx.
   ! Both vectors must have the same size. All structural data of rx is
   ! transferred to ry, so rx and ry are compatible to each other afterwards.
+  ! If ry is empty, new memory is allocated automatically. Otherwise,
+  ! ry is overwritten.
 !</description>
 
 !<input>
   ! Source vector
   TYPE(t_vectorScalar),INTENT(IN) :: rx
-  
-  ! OPTIONAL: Copy vector structure. Standard=TRUE.
-  ! If set to TRUE, this routine will copy structural information from rx to ry.
-  LOGICAL, INTENT(IN), OPTIONAL :: bcopyStructure
-
-  ! OPTIONAL: Copy vector data. Standard=TRUE.
-  ! If set to TRUE, this routine will copy the content data from rx to ry.
-  LOGICAL, INTENT(IN), OPTIONAL :: bcopyData
 !</input>
 
 !<inputoutput>
@@ -9426,71 +9550,9 @@ CONTAINS
   
 !</subroutine>
 
-    ! local variables
-    INTEGER :: h_Ddata, cdataType
-    LOGICAL :: bisCopy,bdoCopyStructure,bdoCopyData
-    INTEGER(PREC_VECIDX) :: ioffset
-    REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
-    REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
-    
-    IF (PRESENT(bcopyStructure)) THEN 
-      bdoCopyStructure = bcopyStructure
-    ELSE
-      bdoCopyStructure = .TRUE.
-    END IF
-    
-    IF (PRESENT(bcopyData)) THEN 
-      bdoCopyData = bcopyData
-    ELSE
-      bdoCopyData = .TRUE.
-    END IF
-    
-    IF (bdoCopyStructure) THEN
-      ! Standard case: Copy the whole vector information
-      !
-      ! First, make a backup of some crucial data so that it does not
-      ! get destroyed.
-      h_Ddata = ry%h_Ddata
-      cdataType = ry%cdataType
-      bisCopy = ry%bisCopy
-      ioffset = ry%iidxFirstEntry
-      
-      ! Then transfer all structural information of rx to ry.
-      ! This automatically makes both vectors compatible to each other.
-      ry = rx
-      
-      ! Restore crucial data
-      ry%h_Ddata = h_Ddata
-      ry%bisCopy = bisCopy
-      ry%iidxFirstEntry = ioffset 
-    END IF
-    
-    IF (bdoCopyData) THEN
-    
-      IF (rx%cdataType .NE. ry%cdataType) THEN
-        PRINT *,'lsyssc_copyVector: different data types not supported!'
-        STOP
-      END IF
-      
-      ! And finally copy the data. 
-      SELECT CASE (rx%cdataType)
-      CASE (ST_DOUBLE)
-        CALL lsyssc_getbase_double (rx,p_Dsource)
-        CALL lsyssc_getbase_double (ry,p_Ddest)
-        CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
-        
-      CASE (ST_SINGLE)
-        CALL lsyssc_getbase_single (rx,p_Fsource)
-        CALL lsyssc_getbase_single (ry,p_Fdest)
-        CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+    CALL lsyssc_duplicateVector (rx,ry,&
+        LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
 
-      CASE DEFAULT
-        PRINT *,'lsyssc_copyVector: Unsupported data type!'
-        STOP
-      END SELECT
-    
-    END IF
-   
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -9675,11 +9737,15 @@ CONTAINS
   
 !<description>
   ! Copies a matrix data: rsourceMatrix = rdestMatrix.
-  ! Both matrices must have the same size and the same structure.
   ! All structural (discretisation related) data of rsourceMatrix is
-  ! transferred to rrdestMatrix. 
-  ! The content data arrays (e.g. Kcol, Kld, Da,...) in the destination matrix 
-  ! are not released but overwritten by the data arrays in the source matrix.
+  ! transferred to rdestMatrix.
+  !
+  ! If the destination matrix contains data, the data is overwritten,
+  ! regardless of whether the data belongs to rdestmatrix or not.
+  ! If the destination matrix is empty, new memory is allocated.
+  !
+  ! Therefore, lsyssc_copyMatrix coincides with a call to
+  ! lsyssc_duplicateMatrix (.,.,LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE).
 !</description>
   
 !<input>
@@ -9694,141 +9760,144 @@ CONTAINS
   
 !</subroutine>
 
-  ! local variables
-  TYPE(t_matrixScalar) :: rtempMatrix
-  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
-  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
-  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolSource,p_KcolDest
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldSource,p_KldDest
-  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalSource,p_KdiagonalDest
-  
-  ! Is it possible at all to copy the matrix? Both matrices must have
-  ! the same size, otherwise the memory does not fit.
-  IF (rsourceMatrix%cmatrixFormat .NE. rdestMatrix%cmatrixFormat) THEN
-    PRINT *,'lsyssc_copyMatrix: Different matrix formats not allowed!'
-    STOP
-  END IF
-  
-  IF (rsourceMatrix%NA .NE. rdestMatrix%NA) THEN
-    PRINT *,'lsyssc_copyMatrix: Matrices have different size!'
-    STOP
-  END IF
-  
-  ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
-  ! and the same structure!
-  
-  IF (rsourceMatrix%cdataType .NE. rdestMatrix%cdataType) THEN
-    PRINT *,'lsyssc_copyMatrix: Matrices have different data types!'
-    STOP
-  END IF
-  
-  ! First, make a backup of the matrix for restoring some critical data.
-  rtempMatrix = rdestMatrix
-  
-  ! Copy the matrix structure
-  rdestMatrix = rsourceMatrix
-  
-  ! Restore crucial data
-  rdestMatrix%imatrixSpec = rtempMatrix%imatrixSpec
+    CALL lsyssc_duplicateMatrix (rsourceMatrix,rdestMatrix,&
+        LSYSSC_DUP_COPYOVERWRITE,LSYSSC_DUP_COPYOVERWRITE)
 
-  ! Which structure do we actually have?
-  SELECT CASE (rsourceMatrix%cmatrixFormat)
-  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-  
-    ! Restore crucial format-specific data
-    rdestMatrix%h_DA        = rtempMatrix%h_DA
-    rdestMatrix%h_Kcol      = rtempMatrix%h_Kcol
-    rdestMatrix%h_Kld       = rtempMatrix%h_Kld
-    rdestMatrix%h_Kdiagonal = rtempMatrix%h_Kdiagonal
-    
-    ! And finally copy the data. 
-    SELECT CASE (rsourceMatrix%cdataType)
-    
-    CASE (ST_DOUBLE)
-      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
-      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
-      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
-
-    CASE (ST_SINGLE)
-      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
-      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
-      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
-
-    CASE DEFAULT
-      PRINT *,'lsyssc_copyMatrix: Unsupported data type!'
-      STOP
-    END SELECT
-    
-    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
-    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
-    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
-
-    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
-    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
-    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
-    
-    CALL lsyssc_getbase_Kdiagonal (rsourceMatrix,p_KdiagonalSource)
-    CALL lsyssc_getbase_Kdiagonal (rdestMatrix,p_KdiagonalDest)
-    CALL lalg_copyVectorInt (p_KdiagonalSource,p_KdiagonalDest)
-      
-  CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
-
-    ! Restore crucial format-specific data
-    rdestMatrix%h_DA        = rtempMatrix%h_DA
-    rdestMatrix%h_Kcol      = rtempMatrix%h_Kcol
-    rdestMatrix%h_Kld       = rtempMatrix%h_Kld
-    
-    ! And finally copy the data. 
-    SELECT CASE (rsourceMatrix%cdataType)
-    CASE (ST_DOUBLE)
-      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
-      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
-      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
-
-    CASE (ST_SINGLE)
-      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
-      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
-      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
-
-    CASE DEFAULT
-      PRINT *,'storage_copyMatrix: Unsupported data type!'
-      STOP
-    END SELECT
-
-    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
-    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
-    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
-
-    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
-    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
-    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
-
-  CASE (LSYSSC_MATRIXD)
-
-    ! Restore crucial format-specific data
-    rdestMatrix%h_DA        = rtempMatrix%h_DA
-    
-    ! And finally copy the data. 
-    SELECT CASE (rsourceMatrix%cdataType)
-    CASE (ST_DOUBLE)
-      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
-      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
-      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
-
-    CASE (ST_SINGLE)
-      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
-      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
-      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
-
-    CASE DEFAULT
-      PRINT *,'storage_copyMatrix: Unsupported data type!'
-      STOP
-    END SELECT
-
-  CASE DEFAULT
-    PRINT *,'lsyssc_copyMatrix: Unsupported matrix format!'
-    STOP
-  END SELECT
+!  ! local variables
+!  TYPE(t_matrixScalar) :: rtempMatrix
+!  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+!  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
+!  INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolSource,p_KcolDest
+!  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldSource,p_KldDest
+!  INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalSource,p_KdiagonalDest
+!  
+!  ! Is it possible at all to copy the matrix? Both matrices must have
+!  ! the same size, otherwise the memory does not fit.
+!  IF (rsourceMatrix%cmatrixFormat .NE. rdestMatrix%cmatrixFormat) THEN
+!    PRINT *,'lsyssc_copyMatrix: Different matrix formats not allowed!'
+!    STOP
+!  END IF
+!  
+!  IF (rsourceMatrix%NA .NE. rdestMatrix%NA) THEN
+!    PRINT *,'lsyssc_copyMatrix: Matrices have different size!'
+!    STOP
+!  END IF
+!  
+!  ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
+!  ! and the same structure!
+!  
+!  IF (rsourceMatrix%cdataType .NE. rdestMatrix%cdataType) THEN
+!    PRINT *,'lsyssc_copyMatrix: Matrices have different data types!'
+!    STOP
+!  END IF
+!  
+!  ! First, make a backup of the matrix for restoring some critical data.
+!  rtempMatrix = rdestMatrix
+!  
+!  ! Copy the matrix structure
+!  rdestMatrix = rsourceMatrix
+!  
+!  ! Restore crucial data
+!  rdestMatrix%imatrixSpec = rtempMatrix%imatrixSpec
+!
+!  ! Which structure do we actually have?
+!  SELECT CASE (rsourceMatrix%cmatrixFormat)
+!  CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
+!  
+!    ! Restore crucial format-specific data
+!    rdestMatrix%h_DA        = rtempMatrix%h_DA
+!    rdestMatrix%h_Kcol      = rtempMatrix%h_Kcol
+!    rdestMatrix%h_Kld       = rtempMatrix%h_Kld
+!    rdestMatrix%h_Kdiagonal = rtempMatrix%h_Kdiagonal
+!    
+!    ! And finally copy the data. 
+!    SELECT CASE (rsourceMatrix%cdataType)
+!    
+!    CASE (ST_DOUBLE)
+!      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
+!      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
+!      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+!
+!    CASE (ST_SINGLE)
+!      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
+!      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
+!      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+!
+!    CASE DEFAULT
+!      PRINT *,'lsyssc_copyMatrix: Unsupported data type!'
+!      STOP
+!    END SELECT
+!    
+!    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
+!    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
+!    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
+!
+!    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
+!    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
+!    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
+!    
+!    CALL lsyssc_getbase_Kdiagonal (rsourceMatrix,p_KdiagonalSource)
+!    CALL lsyssc_getbase_Kdiagonal (rdestMatrix,p_KdiagonalDest)
+!    CALL lalg_copyVectorInt (p_KdiagonalSource,p_KdiagonalDest)
+!      
+!  CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
+!
+!    ! Restore crucial format-specific data
+!    rdestMatrix%h_DA        = rtempMatrix%h_DA
+!    rdestMatrix%h_Kcol      = rtempMatrix%h_Kcol
+!    rdestMatrix%h_Kld       = rtempMatrix%h_Kld
+!    
+!    ! And finally copy the data. 
+!    SELECT CASE (rsourceMatrix%cdataType)
+!    CASE (ST_DOUBLE)
+!      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
+!      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
+!      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+!
+!    CASE (ST_SINGLE)
+!      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
+!      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
+!      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+!
+!    CASE DEFAULT
+!      PRINT *,'storage_copyMatrix: Unsupported data type!'
+!      STOP
+!    END SELECT
+!
+!    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
+!    CALL lsyssc_getbase_Kcol (rdestMatrix,p_KcolDest)
+!    CALL lalg_copyVectorInt (p_KcolSource,p_KcolDest)
+!
+!    CALL lsyssc_getbase_Kld (rsourceMatrix,p_KldSource)
+!    CALL lsyssc_getbase_Kld (rdestMatrix,p_KldDest)
+!    CALL lalg_copyVectorInt (p_KldSource,p_KldDest)
+!
+!  CASE (LSYSSC_MATRIXD)
+!
+!    ! Restore crucial format-specific data
+!    rdestMatrix%h_DA        = rtempMatrix%h_DA
+!    
+!    ! And finally copy the data. 
+!    SELECT CASE (rsourceMatrix%cdataType)
+!    CASE (ST_DOUBLE)
+!      CALL lsyssc_getbase_double (rsourceMatrix,p_Dsource)
+!      CALL lsyssc_getbase_double (rdestMatrix,p_Ddest)
+!      CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+!
+!    CASE (ST_SINGLE)
+!      CALL lsyssc_getbase_single (rsourceMatrix,p_Fsource)
+!      CALL lsyssc_getbase_single (rdestMatrix,p_Fdest)
+!      CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)
+!
+!    CASE DEFAULT
+!      PRINT *,'storage_copyMatrix: Unsupported data type!'
+!      STOP
+!    END SELECT
+!
+!  CASE DEFAULT
+!    PRINT *,'lsyssc_copyMatrix: Unsupported matrix format!'
+!    STOP
+!  END SELECT
   
   END SUBROUTINE
   
