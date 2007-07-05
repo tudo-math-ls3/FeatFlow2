@@ -2814,10 +2814,17 @@ CONTAINS
         ! Is there a neighbour?
         IF (p_IneighboursAtElement(ive,iel) .EQ. 0) THEN
           ! No. Store the element as only adjacent one to that edge.
+          !
+          ! Don't do anything if we are looking at a nonexisting edge here!
+          ! (i.e. edge 4 of a tri element in a quad mesh -- tri elements
+          !  don't have 4 edges :-) )
+          IF (p_IedgesAtElement(ive,iel) .NE. 0) THEN
 
-          iedge = p_IedgesAtElement (ive,iel)-NVT
-          p_IelementsAtEdge(1,iedge) = iel
-          p_IelementsAtEdge(2,iedge) = 0
+            iedge = p_IedgesAtElement (ive,iel)-NVT
+            p_IelementsAtEdge(1,iedge) = iel
+            p_IelementsAtEdge(2,iedge) = 0
+            
+          END IF
           
         ELSE IF (p_IneighboursAtElement(ive,iel) .LT. iel) THEN
         
