@@ -4450,7 +4450,7 @@ CONTAINS
       ! The 2-level ordering algorithm says:
       !  - Every edge produces an edge midpoint. Connect opposite midpoints to get
       !    the fine grid.
-      !  - The vertex numbers in the coars grid are transferred to the fine grid
+      !  - The vertex numbers in the coarse grid are transferred to the fine grid
       !    without change.
       !  - The edge numbers in the coarse grid define the vertex numbers of the
       !    edge midpoints in the fine grid.
