@@ -276,6 +276,9 @@ CONTAINS
     ! Current element distribution
     TYPE(t_elementDistribution), POINTER :: p_elementDistribution
     
+    ! Number of elements in the current element distribution
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+
     ! Pointer to the values of the function that are computed by the callback routine.
     REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
     
@@ -388,19 +391,22 @@ CONTAINS
       CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
                                 p_IelementList)
                      
+      ! Get the number of elements there.
+      NEL = SIZE(p_IelementList)
+    
       ! Set the current error to 0 and add the error contributions of each element
       ! to that.
       derror = 0.0_DP
                                 
       ! Loop over the elements - blockwise.
-      DO IELset = 1, p_rtriangulation%NEL, PPERR_NELEMSIM
+      DO IELset = 1, NEL, PPERR_NELEMSIM
       
         ! We always handle LINF_NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
         ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
         ! elements simultaneously.
         
-        IELmax = MIN(p_rtriangulation%NEL,IELset-1+PPERR_NELEMSIM)
+        IELmax = MIN(NEL,IELset-1+PPERR_NELEMSIM)
       
         ! Calculate the global DOF's into IdofsTrial.
         !

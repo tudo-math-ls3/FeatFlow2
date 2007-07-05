@@ -695,6 +695,172 @@ CONTAINS
   
 !<subroutine>
 
+  SUBROUTINE spdiscr_initDiscr_triquad (rspatialDiscr,&
+      ieltyptri,ieltypquad,ccubTypeTri,ccubTypeQuad,&
+      rtriangulation, rboundary, rboundaryConditions)
+  
+!<description>
+  ! This routine initialises a discretisation structure for a conformal
+  ! discretisation, mixed triangular/quad mesh with one element type for all
+  ! triangles and one element type for all quads -- for trial as well as 
+  ! for test functions.
+  !
+  ! If rspatialDiscr is NULL(), a new structure will be created. Otherwise,
+  ! the existing structure is recreated/updated.
+!</description>
+
+!<input>
+  ! The element type identifier that is to be used for all triangular elements.
+  INTEGER(I32), INTENT(IN)                       :: ieltypTri
+
+  ! The element type identifier that is to be used for all quadrilateral elements.
+  INTEGER(I32), INTENT(IN)                       :: ieltypQuad
+  
+  ! Cubature formula to use for calculating integrals on triangular elements
+  INTEGER, INTENT(IN)                       :: ccubTypeTri
+
+  ! Cubature formula to use for calculating integrals on quadrilateral elements
+  INTEGER, INTENT(IN)                       :: ccubTypeQuad
+  
+  ! The triangulation structure underlying to the discretisation.
+  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
+  
+  ! The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
+  
+  ! OPTIONAL: The analytical description of the boundary conditions.
+  ! Parameter can be ommitted if boundary conditions are not defined.
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rspatialDiscr
+!</output>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: i,j
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+  TYPE(t_elementDistribution), POINTER :: p_relementDistrTria,p_relementDistrQuad
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+  
+  ! Do we have a structure?
+  IF (rspatialDiscr%ndimension .NE. 0) THEN
+    ! Release the old structure.
+    CALL spdiscr_releaseDiscr(rspatialDiscr)
+  END IF
+
+  ! Initialise the variables of the structure for the simple discretisation
+  rspatialDiscr%ndimension             = NDIM2D
+  rspatialDiscr%p_rtriangulation       => rtriangulation
+  rspatialDiscr%p_rboundary            => rboundary
+  rspatialDiscr%ccomplexity            = SPDISC_CONFORMAL
+  
+  ! Create an array containing the element type for each element
+  CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  
+  CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
+        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
+        ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+  
+  DO i=1,rtriangulation%NEL
+    IF (p_IverticesAtElement (4,i) .EQ. 0) THEN
+      ! Triangular element
+      p_Iarray(i) = ieltypTri
+    ELSE
+      ! Quad element
+      p_Iarray(i) = ieltypQuad
+    END IF
+  END DO
+  
+  ! Trial and test element coincide.
+  ! Use the same handle for trial and test functions to save memory!
+  rspatialDiscr%bidenticalTrialAndTest = .TRUE.
+  rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements  
+  
+  ! Initialise the first element distribution
+  rspatialDiscr%inumFESpaces           = 2
+  p_relementDistrTria => rspatialDiscr%RelementDistribution(1)
+  p_relementDistrQuad => rspatialDiscr%RelementDistribution(2)
+  
+  ! Initialise test and trial space for that block
+  p_relementDistrTria%itrialElement = ieltypTri
+  p_relementDistrTria%itestElement = ieltypTri
+  p_relementDistrTria%ccubTypeBilForm = ccubTypeTri
+  p_relementDistrTria%ccubTypeLinForm = ccubTypeTri
+  p_relementDistrTria%ccubTypeEval = ccubTypeTri
+
+  p_relementDistrQuad%itrialElement = ieltypQuad
+  p_relementDistrQuad%itestElement = ieltypQuad
+  p_relementDistrQuad%ccubTypeBilForm = ccubTypeQuad
+  p_relementDistrQuad%ccubTypeLinForm = ccubTypeQuad
+  p_relementDistrQuad%ccubTypeEval = ccubTypeQuad
+  
+  ! Get the typical transformation used with the element
+  p_relementDistrTria%ctrafoType = elem_igetTrafoType(ieltypTri)
+  p_relementDistrQuad%ctrafoType = elem_igetTrafoType(ieltypQuad)
+  
+  ! Check the cubature formula against the element distribution.
+  ! This stops the program if this is not fulfilled.
+  CALL spdiscr_checkCubature(ccubTypeTri,ieltypTri)
+  CALL spdiscr_checkCubature(ccubTypeQuad,ieltypQuad)
+
+  ! Initialise an 'identity' array containing the numbers of all elements.
+  ! This list defines the sequence how elements are processed, e.g. in the
+  ! assembly of matrices/vectors.
+  
+  ! We have to collect all triangles to the first and all quads to the second
+  ! element distribution. j counts how many elements we found
+  !  
+  ! Collect all triangles
+  j = 0
+  IF (rtriangulation%InelOfType(TRIA_NVETRI2D) .NE. 0) THEN
+    
+    CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
+          rtriangulation%InelOfType(TRIA_NVETRI2D), &
+          ST_INT, p_relementDistrTria%h_IelementList,   &
+          ST_NEWBLOCK_NOINIT)
+          
+    CALL storage_getbase_int (p_relementDistrTria%h_IelementList,p_Iarray)
+    
+    DO i=1,rtriangulation%NEL
+      IF (p_IverticesAtElement(4,i) .EQ. 0) THEN
+        j = j+1
+        p_Iarray(j) = i
+      END IF
+    END DO
+  END IF
+  
+  ! Collect all quads
+  j = 0
+  IF (rtriangulation%InelOfType(TRIA_NVEQUAD2D) .NE. 0) THEN
+    
+    CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
+          rtriangulation%InelOfType(TRIA_NVEQUAD2D), &
+          ST_INT, p_relementDistrQuad%h_IelementList,   &
+          ST_NEWBLOCK_NOINIT)
+          
+    CALL storage_getbase_int (p_relementDistrQuad%h_IelementList,p_Iarray)
+    
+    DO i=1,rtriangulation%NEL
+      IF (p_IverticesAtElement(4,i) .NE. 0) THEN
+        j = j+1
+        p_Iarray(j) = i
+      END IF
+    END DO
+  END IF
+  
+  rspatialDiscr%bisCopy = .FALSE.
+  
+  END SUBROUTINE  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
   SUBROUTINE spdiscr_deriveSimpleDiscrSc (rsourceDiscr, ieltyp, ccubType, &
                                           rdestDiscr)
   

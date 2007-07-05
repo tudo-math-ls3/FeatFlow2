@@ -417,6 +417,9 @@ CONTAINS
   ! Currently active memory block
   INTEGER :: icurrentblock
   
+  ! Number of elements in the current element distribution
+  INTEGER(PREC_ELEMENTIDX) :: NEL
+  
   ! Size of memory blocks
   INTEGER(PREC_DOFIDX) :: imemblkSize
   
@@ -636,6 +639,8 @@ CONTAINS
     CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
                               p_IelementList)
     
+    ! Get the number of elements there.
+    NEL = SIZE(p_IelementList)
 
     ! Set the pointers/indices to the initial position. During the
     ! search for new DOF's, these might be changed if there's not enough
@@ -646,14 +651,14 @@ CONTAINS
     p_Iindx => Rmemblock(1)%p_Iindx
     
     ! Loop over the elements. 
-    DO IELset = 1, p_rtriangulation%NEL, BILF_NELEMSIM
+    DO IELset = 1, NEL, BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = MIN(p_rtriangulation%NEL,IELset-1+BILF_NELEMSIM)
+      IELmax = MIN(NEL,IELset-1+BILF_NELEMSIM)
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only

@@ -267,6 +267,9 @@ CONTAINS
   ! Current element distribution
   TYPE(t_elementDistribution), POINTER :: p_elementDistribution
   
+  ! Number of elements in the current element distribution
+  INTEGER(PREC_ELEMENTIDX) :: NEL
+  
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
   INTEGER :: nelementsPerBlock
@@ -445,16 +448,19 @@ CONTAINS
     ! with that combination of trial/test functions
     CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
                               p_IelementList)
+
+    ! Get the number of elements there.
+    NEL = SIZE(p_IelementList)
                               
     ! Loop over the elements - blockwise.
-    DO IELset = 1, p_rtriangulation%NEL, LINF_NELEMSIM
+    DO IELset = 1, NEL, LINF_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = MIN(p_rtriangulation%NEL,IELset-1+LINF_NELEMSIM)
+      IELmax = MIN(NEL,IELset-1+LINF_NELEMSIM)
     
       ! Calculate the global DOF's into IdofsTest.
       !
@@ -754,6 +760,9 @@ CONTAINS
   ! Current element distribution
   TYPE(t_elementDistribution), POINTER :: p_elementDistribution
   
+  ! Number of elements in the current element distribution
+  INTEGER(PREC_ELEMENTIDX) :: NEL
+
   ! Number of elements in a block. Normally =BILF_NELEMSIM,
   ! except if there are less elements in the discretisation.
   INTEGER :: nelementsPerBlock
@@ -950,15 +959,18 @@ CONTAINS
     CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
                               p_IelementList)
                               
+    ! Get the number of elements there.
+    NEL = SIZE(p_IelementList)
+  
     ! Loop over the elements - blockwise.
-    DO IELset = 1, p_rtriangulation%NEL, LINF_NELEMSIM
+    DO IELset = 1, NEL, LINF_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = MIN(p_rtriangulation%NEL,IELset-1+LINF_NELEMSIM)
+      IELmax = MIN(NEL,IELset-1+LINF_NELEMSIM)
     
       ! Calculate the global DOF's into IdofsTest.
       !
@@ -1004,7 +1016,7 @@ CONTAINS
       ! Unfortunately, we need the real coordinates of the cubature points
       ! anyway for the function - so calculate them all.
       CALL trafo_calctrafo_sim (&
-            rdiscretisation%RelementDistribution(icurrentElementDistr)%ctrafoType,&
+            p_elementDistribution%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
             p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
             p_DcubPtsReal)

@@ -81,6 +81,7 @@ CONTAINS
 !</function>
 
   INTEGER(I32) :: ieltyp
+  INTEGER(I32), DIMENSION(SPDISC_MAXFESPACES) :: IelTypes
 
   dof_igetNDofGlob = 0
 
@@ -99,6 +100,26 @@ CONTAINS
 
     ! Uniform discretisation - fall back to the old FEAT mapping
     dof_igetNDofGlob = NDFG_uniform2D (rdiscretisation%p_rtriangulation, ieltyp)
+  
+  ELSE IF (rdiscretisation%ccomplexity .EQ. SPDISC_CONFORMAL) THEN
+  
+    ! Conformal discretisation. That's a little bit tricky!
+    ! At first, we support only the case where two element types are mixed.
+    IF (rdiscretisation%inumFESpaces .EQ. 2) THEN
+      IelTypes(1) = rdiscretisation%RelementDistribution(1)%itrialElement
+      IelTypes(2) = rdiscretisation%RelementDistribution(2)%itrialElement
+
+      IF (PRESENT (btestSpace)) THEN
+        IF (btestSpace) THEN
+          IelTypes(1) = rdiscretisation%RelementDistribution(1)%itestElement
+          IelTypes(2) = rdiscretisation%RelementDistribution(2)%itestElement
+        END IF
+      END IF
+
+      dof_igetNDofGlob = NDFG_conformal2D_2el (&
+          rdiscretisation%p_rtriangulation, IelTypes(1:2))
+      
+    END IF
   
   END IF
   
@@ -146,6 +167,47 @@ CONTAINS
     CASE (EL_Q1T)
       ! 1 DOF per edge
       NDFG_uniform2D = rtriangulation%NMT
+    END SELECT
+    
+    END FUNCTION
+
+    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    ! Internal subroutine: Get global DOF number for conformal discretisation
+    ! with two element types.
+    ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    INTEGER(PREC_DOFIDX) FUNCTION NDFG_conformal2D_2el (rtriangulation, IelTypes)
+    
+    ! IN: The underlying triangulation
+    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+    
+    ! IN: List of element types in the discretisation. IelTypes(1) is one element
+    ! type identifier, IelTypes(2) the other one.
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IelTypes
+    
+    ! OUT: number of global DOF's.
+    
+    ! local variables
+    INTEGER(I32), DIMENSION(SIZE(IelTypes)) :: IelTypesPrimary
+    
+    ! Get the primary element number
+    IelTypesPrimary = elem_getPrimaryElement(IelTypes)
+    
+    ! The number of global DOF's depends on the element type...
+    SELECT CASE (IelTypes(1))
+    CASE (EL_P0, EL_Q0)
+      SELECT CASE (IelTypes(2))
+      CASE (EL_P0, EL_Q0)
+        ! DOF's in the cell midpoints
+        NDFG_conformal2D_2el = rtriangulation%NEL
+      END SELECT
+      
+    CASE (EL_P1, EL_Q1)
+      SELECT CASE (IelTypes(2))
+      CASE (EL_P1, EL_Q1)
+        ! DOF's in the vertices
+        NDFG_conformal2D_2el = rtriangulation%NVT
+      END SELECT
     END SELECT
     
     END FUNCTION
@@ -291,65 +353,119 @@ CONTAINS
 
 ! </subroutine>
 
-  ! local variables
-  INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray,p_2darray2
-  TYPE(t_triangulation), POINTER :: p_rtriangulation     
-  INTEGER(I32) :: ieltype
+    ! local variables
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray,p_2darray2
+    TYPE(t_triangulation), POINTER :: p_rtriangulation     
+    INTEGER(I32) :: ieltype
+    INTEGER(I32), DIMENSION(SPDISC_MAXFESPACES) :: IelTypes
 
-  ! 3D currently not supported
-  IF (rdiscretisation%ndimension .NE. NDIM2D) THEN
-    PRINT *,'dof_locGlobMapping_mult: Only 2D supported at the moment!'
-    STOP
-  END IF
-
-  ! At first we deal only with uniform discretisations
-  IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
-  
-    p_rtriangulation => rdiscretisation%p_rtriangulation
-  
-    ! Call the right 'multiple-get' routines for global DOF's.
-    ! For this purpose we evaluate the pointers in the discretisation
-    ! structure (if necessary) to prevent another call using pointers...
-    ! The number of global DOF's depends on the element type...
-    
-    IF (btestFct) THEN
-      ieltype = rdiscretisation%RelementDistribution(1)%itestElement
-    ELSE
-      ieltype = rdiscretisation%RelementDistribution(1)%itrialElement
+    ! 3D currently not supported
+    IF (rdiscretisation%ndimension .NE. NDIM2D) THEN
+      PRINT *,'dof_locGlobMapping_mult: Only 2D supported at the moment!'
+      STOP
     END IF
-    
-    SELECT CASE (elem_getPrimaryElement(ieltype))
-    CASE (EL_P0, EL_Q0)
-      ! DOF's for Q0
-      CALL dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
-    CASE (EL_P1, EL_Q1)
-      ! DOF's in the vertices
-      CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
-      CALL dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
-    CASE (EL_P2)
-      ! DOF's in the vertices and egde midpoints
-      CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
-      CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
-      CALL dof_locGlobUniMult_P2(p_2darray, p_2darray2, IelIdx, IdofGlob)
-    CASE (EL_Q2)
-      ! DOF's in the vertices, egde midpoints and element midpoints
-      CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
-      CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
-      CALL dof_locGlobUniMult_Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,&
-                                 p_2darray, p_2darray2, IelIdx, IdofGlob)
-    CASE (EL_P3) 
-    CASE (EL_Q3) 
 
-    CASE (EL_QP1)
-      ! DOF's for Q1
-      CALL dof_locGlobUniMult_QP1(p_rtriangulation%NEL,IelIdx, IdofGlob)
-    CASE (EL_Q1T)
-      ! DOF's in the edges
-      CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
-      CALL dof_locGlobUniMult_E30(p_rtriangulation%NVT,p_2darray, IelIdx, IdofGlob)
-    END SELECT
-  
-  END IF
+    p_rtriangulation => rdiscretisation%p_rtriangulation
+    
+    ! At first we deal only with uniform discretisations
+    IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    
+      ! Call the right 'multiple-get' routines for global DOF's.
+      ! For this purpose we evaluate the pointers in the discretisation
+      ! structure (if necessary) to prevent another call using pointers...
+      ! The number of global DOF's depends on the element type...
+      
+      IF (btestFct) THEN
+        ieltype = rdiscretisation%RelementDistribution(1)%itestElement
+      ELSE
+        ieltype = rdiscretisation%RelementDistribution(1)%itrialElement
+      END IF
+      
+      SELECT CASE (elem_getPrimaryElement(ieltype))
+      CASE (EL_P0, EL_Q0)
+        ! DOF's for Q0
+        CALL dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
+        RETURN
+      CASE (EL_P1, EL_Q1)
+        ! DOF's in the vertices
+        CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+        CALL dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
+        RETURN
+      CASE (EL_P2)
+        ! DOF's in the vertices and egde midpoints
+        CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+        CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
+        CALL dof_locGlobUniMult_P2(p_2darray, p_2darray2, IelIdx, IdofGlob)
+        RETURN
+      CASE (EL_Q2)
+        ! DOF's in the vertices, egde midpoints and element midpoints
+        CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+        CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
+        CALL dof_locGlobUniMult_Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,&
+                                  p_2darray, p_2darray2, IelIdx, IdofGlob)
+        RETURN
+      CASE (EL_P3) 
+      CASE (EL_Q3) 
+
+      CASE (EL_QP1)
+        ! DOF's for Q1
+        CALL dof_locGlobUniMult_QP1(p_rtriangulation%NEL,IelIdx, IdofGlob)
+        RETURN
+      CASE (EL_Q1T)
+        ! DOF's in the edges
+        CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
+        CALL dof_locGlobUniMult_E30(p_rtriangulation%NVT,p_2darray, IelIdx, IdofGlob)
+        RETURN
+      END SELECT
+      
+      RETURN
+    
+    ELSE IF (rdiscretisation%ccomplexity .EQ. SPDISC_CONFORMAL) THEN
+    
+      ! Conformal discretisation. That's a little bit tricky!
+      ! At first, we support only the case where two element types are mixed.
+      IF (rdiscretisation%inumFESpaces .EQ. 2) THEN
+
+        IF (btestFct) THEN
+          IelTypes(1) = rdiscretisation%RelementDistribution(1)%itestElement
+          IelTypes(2) = rdiscretisation%RelementDistribution(2)%itestElement
+        ELSE
+          IelTypes(1) = rdiscretisation%RelementDistribution(1)%itrialElement
+          IelTypes(2) = rdiscretisation%RelementDistribution(2)%itrialElement
+        END IF
+
+        ! Get the primary element type(s)
+        IelTypes = elem_getPrimaryElement(IelTypes)
+
+        ! Now the actual mappings...
+        SELECT CASE (IelTypes(1))
+        CASE (EL_P0, EL_Q0)
+          SELECT CASE (IelTypes(2))
+          CASE (EL_P0, EL_Q0)
+            ! DOF's in the cell midpoints.
+            ! That works like P0 elements.
+            CALL dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
+            RETURN
+          END SELECT
+          
+        CASE (EL_P1, EL_Q1)
+          SELECT CASE (IelTypes(2))
+          CASE (EL_P1, EL_Q1)
+            ! DOF's in the vertices.
+            ! That works like P1 elements.
+            CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+            CALL dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
+            RETURN
+          END SELECT
+          
+        END SELECT
+
+      END IF
+    
+    END IF
+
+    PRINT *,'dof_locGlobMapping_mult: Unsupported discretisation!'
+    STOP
 
   END SUBROUTINE
 
