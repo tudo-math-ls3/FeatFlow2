@@ -739,8 +739,8 @@ MODULE boundary
         p_DsegInfo(isegrel+1) = dmaxpar
         
         ! Now compute the real length of the arc.
-        dl = p_DsegInfo(isegrel+4) * &
-             ABS(p_DsegInfo(isegrel+7)-p_DsegInfo(isegrel+6))
+        dl = p_DsegInfo(isegrel+5) * &
+             ABS(p_DsegInfo(isegrel+8)-p_DsegInfo(isegrel+7))
         p_DsegInfo(isegrel+2) = dl
         
         ! Increase the maximum parameter value
@@ -980,7 +980,7 @@ MODULE boundary
     IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
   
     ! Calculate the x/y coordinates from the startpoint and
-    ! the unid direction vector.
+    ! the unit direction vector.
     dx = p_DsegInfo(istartidx+3) + dparloc*p_DsegInfo(istartidx+5)
     dy = p_DsegInfo(istartidx+4) + dparloc*p_DsegInfo(istartidx+6)
 
@@ -993,14 +993,14 @@ MODULE boundary
     IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
 
     ! Get the rotation angle.
-    ! Use the initial rotation angle, saved at position 6 of the double
+    ! Use the initial rotation angle, saved at position 7 of the double
     ! precision data block
     dphi = p_DsegInfo(istartidx+7) &
          + dparloc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
 
     ! And calculate the x/y coordinate with sin/cos; the radius is
-    ! to be found in element 4 of the double precision data block!
-    ! The center of the circle is at position 2/3.
+    ! to be found in element 5 of the double precision data block!
+    ! The center of the circle is at position 3/4.
     dx = p_DsegInfo(istartidx+3) + p_DsegInfo(istartidx+5)*cos(dphi)
     dy = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
 
