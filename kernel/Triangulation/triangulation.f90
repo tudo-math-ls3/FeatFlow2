@@ -1983,6 +1983,7 @@ CONTAINS
       DO ive=nve,1,-1
         IF (p_Idata2D(ive,iel) .NE. 0) THEN
           rtriangulation%InelOfType(ive) = rtriangulation%InelOfType(ive)+1
+          EXIT
         END IF
       END DO
     END DO
