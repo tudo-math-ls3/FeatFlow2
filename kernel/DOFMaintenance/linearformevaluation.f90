@@ -450,7 +450,7 @@ CONTAINS
                               p_IelementList)
 
     ! Get the number of elements there.
-    NEL = SIZE(p_IelementList)
+    NEL = p_elementDistribution%NEL
                               
     ! Loop over the elements - blockwise.
     DO IELset = 1, NEL, LINF_NELEMSIM
@@ -960,7 +960,7 @@ CONTAINS
                               p_IelementList)
                               
     ! Get the number of elements there.
-    NEL = SIZE(p_IelementList)
+    NEL = p_elementDistribution%NEL
   
     ! Loop over the elements - blockwise.
     DO IELset = 1, NEL, LINF_NELEMSIM

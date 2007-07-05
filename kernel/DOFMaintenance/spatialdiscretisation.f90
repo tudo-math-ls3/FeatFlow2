@@ -132,6 +132,10 @@ MODULE spatialdiscretisation
     ! (matrix/RHS generation).
     INTEGER(I32) :: ctrafoType      = TRAFO_ID_UNKNOWN
     
+    ! Number of elements in the list p_IelementList.
+    ! May vary from the actual length of p_IelementList!
+    INTEGER(PREC_ELEMENTIDX) :: NEL = 0
+    
     ! Handle to list of element numbers that are discretised with this 
     ! combination of trial/test functions
     INTEGER :: h_IelementList       = ST_NOHANDLE
@@ -191,6 +195,22 @@ MODULE spatialdiscretisation
     ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
     ! handle is ST_NOHANDLE as all elements are of the same type.
     INTEGER                          :: h_ItestElements        = ST_NOHANDLE
+    
+    ! Handle to an 'element counter' array. For every element of every
+    ! type, there is a unique running number given to that element in the
+    ! corresponding element subset.
+    !
+    ! Example: Think of a mixed mesh of triangles and quads, discretised
+    !  with $P_1$ and $Q_1$. Then there are two disjunct element sets,
+    !  one with triangles, one with quads. Every triangle gets a running
+    !  number (1,2,3,...) and every quad gets a running number (1,2,3,...).
+    !  These numbers are stored here, corresponding to each element.
+    !
+    ! Note that the handle may be =ST_NOHANDLE. Whether it's set up or not
+    ! depends on the discretisation. The information is usually used in
+    ! the DOFMapping-routines to compute the mapping between local and
+    ! global degrees of freedom.
+    INTEGER                          :: h_IelementCounter      = ST_NOHANDLE
     
     ! Number of different FE spaces mixed in this discretisation.
     ! This is the number of elements occupied in RelementDisttribution.
@@ -686,6 +706,9 @@ CONTAINS
     p_Iarray(i) = i
   END DO
   
+  ! Save the number of elements in that element list.
+  p_relementDistr%NEL = rtriangulation%NEL
+  
   ! This is a complete new structure, everything 'belongs' to this.
   rspatialDiscr%bisCopy = .FALSE.
   
@@ -742,7 +765,8 @@ CONTAINS
 
   ! local variables
   INTEGER :: i,j
-  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+  INTEGER, DIMENSION(2) :: IelemCount
+  INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray,p_IelementCounter
   TYPE(t_elementDistribution), POINTER :: p_relementDistrTria,p_relementDistrQuad
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
   
@@ -758,21 +782,37 @@ CONTAINS
   rspatialDiscr%p_rboundary            => rboundary
   rspatialDiscr%ccomplexity            = SPDISC_CONFORMAL
   
-  ! Create an array containing the element type for each element
-  CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
-  
-  CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
+  ! Allocate an array containing the element type for each element
+  CALL storage_new1D ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
         rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
         ST_NEWBLOCK_NOINIT)
   CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+
+  ! Allocate an array with an element counter for every element type.
+  CALL storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
+        rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementCounter,   &
+        ST_NEWBLOCK_NOINIT)
+  CALL storage_getbase_int (rspatialDiscr%h_IelementCounter,p_IelementCounter)
   
+  ! Create both arrays simultaneously.
+  CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+  
+  IelemCount(:) = 0
   DO i=1,rtriangulation%NEL
     IF (p_IverticesAtElement (4,i) .EQ. 0) THEN
       ! Triangular element
       p_Iarray(i) = ieltypTri
+      
+      ! This is the IelemCount(1)'th triangle
+      IelemCount(1) = IelemCount(1)+1
+      p_IelementCounter(i) = IelemCount(1)
     ELSE
       ! Quad element
       p_Iarray(i) = ieltypQuad
+
+      ! This is the IelemCount(2)'th quad
+      IelemCount(2) = IelemCount(2)+1
+      p_IelementCounter(i) = IelemCount(2)
     END IF
   END DO
   
@@ -808,6 +848,10 @@ CONTAINS
   CALL spdiscr_checkCubature(ccubTypeTri,ieltypTri)
   CALL spdiscr_checkCubature(ccubTypeQuad,ieltypQuad)
 
+  ! Save the number of elements in the two element lists.
+  p_relementDistrTria%NEL = rtriangulation%InelOfType(TRIA_NVETRI2D)
+  p_relementDistrQuad%NEL = rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+
   ! Initialise an 'identity' array containing the numbers of all elements.
   ! This list defines the sequence how elements are processed, e.g. in the
   ! assembly of matrices/vectors.
@@ -819,7 +863,7 @@ CONTAINS
   j = 0
   IF (rtriangulation%InelOfType(TRIA_NVETRI2D) .NE. 0) THEN
     
-    CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
+    CALL storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementList', &
           rtriangulation%InelOfType(TRIA_NVETRI2D), &
           ST_INT, p_relementDistrTria%h_IelementList,   &
           ST_NEWBLOCK_NOINIT)
@@ -838,7 +882,7 @@ CONTAINS
   j = 0
   IF (rtriangulation%InelOfType(TRIA_NVEQUAD2D) .NE. 0) THEN
     
-    CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
+    CALL storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementList', &
           rtriangulation%InelOfType(TRIA_NVEQUAD2D), &
           ST_INT, p_relementDistrQuad%h_IelementList,   &
           ST_NEWBLOCK_NOINIT)
@@ -1065,6 +1109,9 @@ CONTAINS
   CALL spdiscr_checkCubature(ccubType,ieltypTrial)
   CALL spdiscr_checkCubature(ccubType,ieltypTest)
 
+  ! Save the number of elements in that element list.
+  p_relementDistr%NEL = rtriangulation%NEL
+
   ! Initialise an 'identity' array containing the numbers of all elements.
   ! This list defines the sequence how elements are processed, e.g. in the
   ! assembly of matrices/vectors.
@@ -1137,6 +1184,13 @@ CONTAINS
     p_relementDistr%itestElement  = EL_UNDEFINED
     
   END DO
+  
+  IF (.NOT. rspatialDiscr%bisCopy) THEN
+    IF (rspatialDiscr%h_IelementCounter .NE. ST_NOHANDLE) &
+      CALL storage_free (rspatialDiscr%h_IelementCounter)
+  ELSE    
+    rspatialDiscr%h_IelementCounter = ST_NOHANDLE
+  END IF
   
   ! No FE-spaces in here anymore...
   rspatialDiscr%inumFESpaces = 0

@@ -208,8 +208,17 @@ CONTAINS
         ! DOF's in the vertices
         NDFG_conformal2D_2el = rtriangulation%NVT
       END SELECT
-    END SELECT
     
+    CASE (EL_P2)
+      SELECT CASE (IelTypes(2))
+      CASE (EL_Q2)
+        ! Number of vertices + Number of edges (edge midpoints) +
+        ! Number of quads (quad midpoints)
+        NDFG_conformal2D_2el = rtriangulation%NVT + rtriangulation%NMT + &
+            rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+      END SELECT
+    END SELECT
+
     END FUNCTION
 
   END FUNCTION 
@@ -355,6 +364,7 @@ CONTAINS
 
     ! local variables
     INTEGER(I32), DIMENSION(:,:), POINTER :: p_2darray,p_2darray2
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementCounter
     TYPE(t_triangulation), POINTER :: p_rtriangulation     
     INTEGER(I32) :: ieltype
     INTEGER(I32), DIMENSION(SPDISC_MAXFESPACES) :: IelTypes
@@ -455,6 +465,29 @@ CONTAINS
             ! That works like P1 elements.
             CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
             CALL dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
+            RETURN
+          END SELECT
+          
+        CASE (EL_P2, EL_Q2)
+          SELECT CASE (IelTypes(2))
+          CASE (EL_P2, EL_Q2)
+            ! DOF's in the vertices, edges and element mitpoints of the quads.
+            ! For this purpose, we need the element counter array that counts
+            ! every quad element.
+            CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
+            CALL storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
+            CALL storage_getbase_int (rdiscretisation%h_IelementCounter,p_IelementCounter)
+            
+            ! Use p_IverticesAtElement evaluated at the first element in the element
+            ! set to determine NVE. It's either 3 or 4 and valid for all elements
+            ! in the current element set.
+            IF (p_2darray(4,IelIdx(1)) .EQ. 0) THEN
+              CALL dof_locGlobUniMult_P2Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,3,&
+                  p_2darray, p_2darray2, p_IelementCounter, IelIdx, IdofGlob)
+            ELSE
+              CALL dof_locGlobUniMult_P2Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,4,&
+                  p_2darray, p_2darray2, p_IelementCounter, IelIdx, IdofGlob)
+            END IF
             RETURN
           END SELECT
           
@@ -687,6 +720,109 @@ CONTAINS
     IdofGlob(9,i) = IelIdx(i)+NVT+NMT
     
   END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  PURE SUBROUTINE dof_locGlobUniMult_P2Q2(NVT,NMT,NVE,IverticesAtElement, &
+     IedgesAtElement,IelementCounter,IelIdx,IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be P2 or Q2.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+  ! An array with the number of vertices adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+
+  ! An array with the number of edges adjacent to each element of the
+  ! triangulation.
+  INTEGER(I32), DIMENSION(:,:), INTENT(IN) :: IedgesAtElement
+
+  ! Element counter array. This gives every triangle and every quad a
+  ! unique running number (1,2,3,...)
+  INTEGER(I32), DIMENSION(:), INTENT(IN) :: IelementCounter
+
+  ! Element indices, where the mapping should be computed.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: IelIdx
+  
+  ! Number of corner vertices in the triangulation
+  INTEGER(PREC_VERTEXIDX), INTENT(IN) :: NVT
+  
+  ! Number of edes in the triangulation
+  INTEGER(PREC_EDGEIDX), INTENT(IN) :: NMT
+  
+  ! Element type identifier for which type of elements is currently
+  ! under view in IelIdx. All elements in IelIdx are assumed to be of
+  ! the same type.
+  ! =3: triangular, =4: quad.
+  INTEGER, INTENT(IN) :: NVE
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  INTEGER(PREC_DOFIDX), DIMENSION(:,:), INTENT(OUT) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  INTEGER(I32) :: i
+  
+  IF (NVE .EQ. 3) THEN
+    ! This element set consists of triangular elements.
+     
+    ! Loop through the elements to handle
+    DO i=1,SIZE(IelIdx)
+      ! Calculate the global DOF's.
+      ! The P2 element has global DOF's in the corners and edge midpoints.
+      !
+      ! Take the numbers of the corners of the triangles at first.
+      IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
+
+      ! Then append the numbers of the edges as midpoint numbers.
+      ! Note that the number in this array is NVT+1..NVT+NMT.
+      IdofGlob(4:6,i) = IedgesAtElement(1:3,IelIdx(i))
+      
+    END DO
+     
+  ELSE
+    ! This element set consists of quad elements.
+
+    ! Loop through the elements to handle
+    DO i=1,SIZE(IelIdx)
+      ! Calculate the global DOF's.
+      ! The Q2 element has global DOF's in the corners, edge midpoints
+      ! and element midpoints of the quads.
+      !
+      ! Take the numbers of the corners of the triangles at first.
+      IdofGlob(1:4,i) = IverticesAtElement(1:4,IelIdx(i))
+
+      ! Then append the numbers of the edges as midpoint numbers.
+      ! Note that the number in this array is NVT+1..NVT+NMT.
+      IdofGlob(5:8,i) = IedgesAtElement(1:4,IelIdx(i))
+      
+      ! At last append the element number - shifted by NVT+NMT to get
+      ! a number behind. Note that we must not specify the actual element
+      ! number here, but the element number in the set of quad elements!
+      ! This is due to the fact that the element midpoints of triangular 
+      ! elements don't contribute to DOF's in a mixed P2/Q2 discretisatrion!
+      IdofGlob(9,i) = IelementCounter(IelIdx(i))+NVT+NMT
+      
+    END DO
+    
+  END IF
 
   END SUBROUTINE
 

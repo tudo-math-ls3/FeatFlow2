@@ -392,7 +392,7 @@ CONTAINS
                                 p_IelementList)
                      
       ! Get the number of elements there.
-      NEL = SIZE(p_IelementList)
+      NEL = p_elementDistribution%NEL
     
       ! Set the current error to 0 and add the error contributions of each element
       ! to that.

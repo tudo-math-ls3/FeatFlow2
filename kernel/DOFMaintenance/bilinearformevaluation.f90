@@ -640,7 +640,7 @@ CONTAINS
                               p_IelementList)
     
     ! Get the number of elements there.
-    NEL = SIZE(p_IelementList)
+    NEL = p_elementDistribution%NEL
 
     ! Set the pointers/indices to the initial position. During the
     ! search for new DOF's, these might be changed if there's not enough
