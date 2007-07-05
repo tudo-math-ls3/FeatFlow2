@@ -916,7 +916,7 @@ MODULE linearsolver
 
 !<typeblock>
   
-  ! This structure realises the subnode for the BiCGStab solver.
+  ! This structure realises the subnode for the defect correction solver.
   ! The entry p_rpreconditioner points either to NULL() or to another
   ! t_linsolNode structure for the solver that realises the 
   ! preconditioning.
