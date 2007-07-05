@@ -333,8 +333,8 @@ CONTAINS
       ! Fill list of edges
       CALL arrlst_copyArraylistTable(p_Kcol,rgraph%rEdges,p_Kld)
 
-      ! Generate p_Key = array [1,2,3,...,NVT+1]
-      CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT+1,ST_INT,&
+      ! Generate p_Key = array [1,2,3,...,NVT]
+      CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
           h_Key,ST_NEWBLOCK_ORDERED)
       CALL storage_getbase_int(h_Key,p_Key)
       CALL tree_copyToTree(p_Key,rgraph%rVertices)
@@ -357,8 +357,8 @@ CONTAINS
       ! Fill list of edges
       CALL arrlst_copyArraylistTable(p_Kcol,rgraph%rEdges,p_Kld)
 
-      ! Generate p_Key = array [1,2,3,...,NVT+1]
-      CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT+1,ST_INT,&
+      ! Generate p_Key = array [1,2,3,...,NVT]
+      CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
           h_Key,ST_NEWBLOCK_ORDERED)
       CALL storage_getbase_int(h_Key,p_Key)
       CALL tree_copyToTree(p_Key,rgraph%rVertices)
