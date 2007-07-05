@@ -1848,12 +1848,12 @@ CONTAINS
   
 !<input>
   ! Source vector
-  TYPE(t_matrixScalar),INTENT(IN) :: rsourceMatrix
+  TYPE(t_matrixBlock),INTENT(IN) :: rsourceMatrix
 !</input>
 
 !<inputoutput>
   ! Destination vector
-  TYPE(t_matrixScalar),INTENT(INOUT) :: rdestMatrix
+  TYPE(t_matrixBlock),INTENT(INOUT) :: rdestMatrix
 !</inputoutput>
   
 !</subroutine>
