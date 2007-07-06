@@ -798,23 +798,36 @@ CONTAINS
   CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
   
   IelemCount(:) = 0
-  DO i=1,rtriangulation%NEL
-    IF (p_IverticesAtElement (4,i) .EQ. 0) THEN
+  IF (UBOUND(p_IverticesAtElement,1) .GE. 4) THEN
+    ! There are quads and probably triangles in the mesh
+    DO i=1,rtriangulation%NEL
+      IF (p_IverticesAtElement (4,i) .EQ. 0) THEN
+        ! Triangular element
+        p_Iarray(i) = ieltypTri
+        
+        ! This is the IelemCount(1)'th triangle
+        IelemCount(1) = IelemCount(1)+1
+        p_IelementCounter(i) = IelemCount(1)
+      ELSE
+        ! Quad element
+        p_Iarray(i) = ieltypQuad
+
+        ! This is the IelemCount(2)'th quad
+        IelemCount(2) = IelemCount(2)+1
+        p_IelementCounter(i) = IelemCount(2)
+      END IF
+    END DO
+  ELSE
+    ! Pure triangular mesh
+    DO i=1,rtriangulation%NEL
       ! Triangular element
       p_Iarray(i) = ieltypTri
       
       ! This is the IelemCount(1)'th triangle
       IelemCount(1) = IelemCount(1)+1
       p_IelementCounter(i) = IelemCount(1)
-    ELSE
-      ! Quad element
-      p_Iarray(i) = ieltypQuad
-
-      ! This is the IelemCount(2)'th quad
-      IelemCount(2) = IelemCount(2)+1
-      p_IelementCounter(i) = IelemCount(2)
-    END IF
-  END DO
+    END DO
+  END IF
   
   ! Trial and test element coincide.
   ! Use the same handle for trial and test functions to save memory!
@@ -870,12 +883,21 @@ CONTAINS
           
     CALL storage_getbase_int (p_relementDistrTria%h_IelementList,p_Iarray)
     
-    DO i=1,rtriangulation%NEL
-      IF (p_IverticesAtElement(4,i) .EQ. 0) THEN
+    IF (UBOUND(p_IverticesAtElement,1) .GE. 4) THEN
+      ! There are quads and probably triangles in the mesh
+      DO i=1,rtriangulation%NEL
+        IF (p_IverticesAtElement(4,i) .EQ. 0) THEN
+          j = j+1
+          p_Iarray(j) = i
+        END IF
+      END DO
+    ELSE
+      ! Pure triangular mesh
+      DO i=1,rtriangulation%NEL
         j = j+1
         p_Iarray(j) = i
-      END IF
-    END DO
+      END DO
+    END IF
   END IF
   
   ! Collect all quads
@@ -889,12 +911,14 @@ CONTAINS
           
     CALL storage_getbase_int (p_relementDistrQuad%h_IelementList,p_Iarray)
     
+    ! Because of the IF above, there are for sure quads in the mesh!
     DO i=1,rtriangulation%NEL
       IF (p_IverticesAtElement(4,i) .NE. 0) THEN
         j = j+1
         p_Iarray(j) = i
       END IF
     END DO
+    
   END IF
   
   rspatialDiscr%bisCopy = .FALSE.
