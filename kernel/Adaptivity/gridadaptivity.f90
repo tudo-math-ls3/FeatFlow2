@@ -559,7 +559,7 @@ MODULE gridadaptivity
     INTEGER(PREC_VERTEXIDX) :: NVT                   = 0
 
     ! Increment of vertices
-    INTEGER(PREC_VERTEXIDX) :: INCNVT                = 0
+    INTEGER(PREC_VERTEXIDX) :: increaseNVT           = 0
 
     ! Total number of boundary vertives (initially)
     INTEGER :: NVBD0                                 = 0
@@ -931,7 +931,7 @@ CONTAINS
     rgridadapt%ndim             = 0
     rgridadapt%NVT              = 0
     rgridadapt%NVT0             = 0
-    rgridadapt%INCNVT           = 0
+    rgridadapt%increaseNVT      = 0
     rgridadapt%NVBD             = 0
     rgridadapt%NVBD0            = 0
     rgridadapt%NBCT             = 0
@@ -1667,7 +1667,7 @@ CONTAINS
     rgridadapt%NVT0        = rgridadapt%NVT
     rgridadapt%NEL0        = rgridadapt%NEL
     rgridadapt%NVBD0       = rgridadapt%NVBD
-    rgridadapt%INCNVT      = 0
+    rgridadapt%increaseNVT = 0
     
     ! What kind of grid refinement should be performed
     SELECT CASE(rgridadapt%irefinementStrategy)
@@ -1686,7 +1686,7 @@ CONTAINS
       CALL mark_coarsening2D(rgridadapt,rindicator)
       
       ! Compute new dimensions
-      nvt = rgridadapt%NVT+rgridadapt%INCNVT
+      nvt = rgridadapt%NVT+2*rgridadapt%increaseNVT
       nel = NumberOfElements(rgridadapt)
 
       ! Adjust vertex age array and nodal property array
@@ -1705,7 +1705,8 @@ CONTAINS
 
       ! Reset pointers
       CALL storage_getbase_int(rgridadapt%h_IvertexAge,rgridadapt%p_IvertexAge)
-      CALL storage_getbase_int(rgridadapt%h_InodalProperty,rgridadapt%p_InodalProperty)
+      CALL storage_getbase_int(rgridadapt%h_InodalProperty,&
+          rgridadapt%p_InodalProperty)
       CALL storage_getbase_int2D(rgridadapt%h_IverticesAtElement,&
           rgridadapt%p_IverticesAtElement)
       CALL storage_getbase_int2D(rgridadapt%h_IneighboursAtElement,&
@@ -1715,7 +1716,7 @@ CONTAINS
 
 
       ! Adjust dimension of solution vector
-      CALL fcb_adjustDimension(NVT)
+      CALL fcb_adjustDimension(nvt)
       
       ! Perform refinement
       CALL redgreen_refine(rgridadapt,fcb_insertVertex)
@@ -1725,7 +1726,6 @@ CONTAINS
       CALL storage_realloc('gridadapt_performAdaptation',nvt,&
           rgridadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
       
-
     CASE (ADAPT_LONGESTEDGE)   ! Bisection of Longest edge
 
       ! Mark elements for refinement based on indicator function
@@ -1763,14 +1763,19 @@ CONTAINS
       
       ! Loop over all elements and check marker
       DO iel=1,rgridadapt%NEL0
+        
         SELECT CASE(p_Imarker(iel))
-        CASE(2,4,8,11,21)
+        CASE(MARK_TRIA2TRIA_1,MARK_TRIA2TRIA_2,MARK_TRIA2TRIA_3,&
+             MARK_QUAD2QUAD_13,MARK_QUAD2QUAD_24)
           nel=nel+1
-          
-        CASE(3,5,9,17,6,12,10)
+
+        CASE(MARK_QUAD3TRIA_1,MARK_QUAD3TRIA_2,MARK_QUAD3TRIA_3,&
+             MARK_QUAD3TRIA_4,MARK_TRIA3TRIA_12,MARK_TRIA3TRIA_23,&
+             MARK_TRIA3TRIA_13)
           nel=nel+2
           
-        CASE(14,31,7,13,25,19)
+        CASE(MARK_TRIA4TRIA,MARK_QUAD4QUAD,MARK_QUAD4TRIA_12,&
+             MARK_QUAD4TRIA_23,MARK_QUAD4TRIA_34,MARK_QUAD4TRIA_14)
           nel=nel+3
         END SELECT
       END DO
@@ -1865,8 +1870,8 @@ CONTAINS
     REAL(DP) :: x0,y0,xdim,ydim,xscale,yscale,xmid,ymid
     CHARACTER(LEN=9) :: cnvt,cnel,cx,cy,cstate,cmark,cout
     INTEGER, DIMENSION(:), POINTER     :: p_Imarker
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(2*TRIA_MAXNVE2D) :: Kadj
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D)   :: Kvert
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: Kadj,Kmidadj
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: Kvert
     INTEGER(PREC_VERTEXIDX)  :: ivt
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER :: iunit,ive,nve,istate,iout=0
@@ -1922,9 +1927,10 @@ CONTAINS
         WRITE(UNIT=cnel,FMT='(I9)') iel
         
         ! Get local data
-        Kvert = rgridadapt%p_IverticesAtElement(:,iel)
-        Kadj  = rgridadapt%p_IneighboursAtElement(:,iel)
-        nve   = MERGE(3,4,Kvert(4)==0)
+        Kvert   = rgridadapt%p_IverticesAtElement(:,iel)
+        Kadj    = rgridadapt%p_IneighboursAtElement(:,iel)
+        Kmidadj = rgridadapt%p_ImidneighboursAtElement(:,iel)
+        nve     = MERGE(3,4,Kvert(4)==0)
         
         ! Start new element ...
         IF (iel <= rgridadapt%NEL0) THEN
@@ -2019,9 +2025,9 @@ CONTAINS
             WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
             WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
             
-            WRITE(UNIT=cnel,FMT='(I2,A,I2)') Kadj(ive),';',Kadj(4+ive)
+            WRITE(UNIT=cnel,FMT='(I3,A,I3)') Kadj(ive),';',Kmidadj(ive)
             WRITE(UNIT=iunit,FMT='(A)') ' <text x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                '" font-family="Verdana" font-size="36" text-anchor="middle" fill="sienne">'//TRIM(ADJUSTL(cnel))//'</text>'
+                '" font-family="Verdana" font-size="14" text-anchor="middle" fill="sienne">'//TRIM(ADJUSTL(cnel))//'</text>'
           END DO
         END IF
       END DO
@@ -2035,8 +2041,9 @@ CONTAINS
         WRITE(UNIT=cnel,FMT='(I9)') iel
 
         ! Get local data
-        Kvert = rgridadapt%p_IverticesAtElement(:,iel)
-        Kadj  = rgridadapt%p_IneighboursAtElement(:,iel)
+        Kvert   = rgridadapt%p_IverticesAtElement(:,iel)
+        Kadj    = rgridadapt%p_IneighboursAtElement(:,iel)
+        Kmidadj = rgridadapt%p_ImidneighboursAtElement(:,iel)
         nve   = MERGE(3,4,Kvert(4)==0)
         
         ! Start new element ...
@@ -2100,7 +2107,7 @@ CONTAINS
             WRITE(UNIT=cx,FMT='(I4)') xoff+INT(xscale*xdim)
             WRITE(UNIT=cy,FMT='(I4)') ysize+yoff-INT(yscale*ydim)
             
-            WRITE(UNIT=cnel,FMT='(I2,A,I2)') Kadj(ive),';',Kadj(4+ive)
+            WRITE(UNIT=cnel,FMT='(I2,A,I2)') Kadj(ive),';',Kmidadj(ive)
             WRITE(UNIT=iunit,FMT='(A)') ' <text x="'//cx//'" y="'//cy//&
                 '" font-family="Verdana" font-size="36" text-anchor="middle" fill="sienne">'//TRIM(ADJUSTL(cnel))//'</text>'
           END DO
@@ -2218,7 +2225,7 @@ CONTAINS
       ! Update number of vertices
       rgridadapt%NVT = rgridadapt%NVT+1
       i12            = rgridadapt%NVT
-      
+
       ! Set age of vertex
       rgridadapt%p_IvertexAge(i12) = 1+&
           MAX(ABS(rgridadapt%p_IvertexAge(i1)),ABS(rgridadapt%p_IvertexAge(i2)))
@@ -2333,8 +2340,7 @@ CONTAINS
       
       ! Update number of vertices
       rgridadapt%NVT = rgridadapt%NVT+1
-
-      i5 = rgridadapt%NVT
+      i5             = rgridadapt%NVT
       
       ! Set age of vertex
       rgridadapt%p_IvertexAge(I5) = 1+MAX(ABS(rgridadapt%p_IvertexAge(i1)),&
@@ -2683,7 +2689,7 @@ CONTAINS
     
     ! Increase number of elements and number of triangles
     rgridadapt%NEL   = rgridadapt%NEL+1
-    rgridadapt%InelOfType(TRIA_NVETRI2D) =  rgridadapt%InelOfType(TRIA_NVETRI2D)+1
+    rgridadapt%InelOfType(TRIA_NVETRI2D) = rgridadapt%InelOfType(TRIA_NVETRI2D)+1
 
     rgridadapt%p_IverticesAtElement(:,rgridadapt%NEL)      = (/i1,i2,i3,0/)
     rgridadapt%p_IneighboursAtElement(:,rgridadapt%NEL)    = (/e1,e2,e3,0/)
@@ -2720,7 +2726,7 @@ CONTAINS
     
     ! Increase number of elements and number of quadrilaterals
     rgridadapt%NEL   = rgridadapt%NEL+1
-    rgridadapt%InelOfType(TRIA_NVEQUAD2D) =  rgridadapt%InelOfType(TRIA_NVEQUAD2D)+1
+    rgridadapt%InelOfType(TRIA_NVEQUAD2D) = rgridadapt%InelOfType(TRIA_NVEQUAD2D)+1
 
     rgridadapt%p_IverticesAtElement(:,rgridadapt%NEL)      = (/i1,i2,i3,i4/)
     rgridadapt%p_IneighboursAtElement(:,rgridadapt%NEL)    = (/e1,e2,e3,e4/)
@@ -3987,6 +3993,14 @@ CONTAINS
     ! Update list of neighboring elements
     CALL update_ElementNeighbors2D(rgridadapt,f2,f5,jel,nel0+1,jel)
     CALL update_ElementNeighbors2D(rgridadapt,e2,e5,iel,iel,nel0+1)
+
+    ! "Lock" all vertices
+    rgridadapt%p_IvertexAge(i1) = -ABS(rgridadapt%p_IvertexAge(i1))
+    rgridadapt%p_IvertexAge(i2) = -ABS(rgridadapt%p_IvertexAge(i2))
+    rgridadapt%p_IvertexAge(i3) = -ABS(rgridadapt%p_IvertexAge(i3))
+    rgridadapt%p_IvertexAge(j2) = -ABS(rgridadapt%p_IvertexAge(j2))
+    rgridadapt%p_IvertexAge(k1) = -ABS(rgridadapt%p_IvertexAge(k1))
+    rgridadapt%p_IvertexAge(k2) = -ABS(rgridadapt%p_IvertexAge(k2))
     
     ! Delete broken edges (I1,I2),(J2,I2) and (I2,I3)
     CALL remove_edge(rgridadapt,i1,i2)
@@ -4006,21 +4020,13 @@ CONTAINS
     CALL add_edge(rgridadapt,k1,k2)
     CALL add_edge(rgridadapt,k1,i1)
     CALL add_edge(rgridadapt,k2,i1)
-
-    ! "Lock" all vertices
-    rgridadapt%p_IvertexAge(i1) = -ABS(rgridadapt%p_IvertexAge(i1))
-    rgridadapt%p_IvertexAge(i2) = -ABS(rgridadapt%p_IvertexAge(i2))
-    rgridadapt%p_IvertexAge(i3) = -ABS(rgridadapt%p_IvertexAge(i3))
-    rgridadapt%p_IvertexAge(j2) = -ABS(rgridadapt%p_IvertexAge(j2))
-    rgridadapt%p_IvertexAge(k1) = -ABS(rgridadapt%p_IvertexAge(k1))
-    rgridadapt%p_IvertexAge(k2) = -ABS(rgridadapt%p_IvertexAge(k2))
   END SUBROUTINE convert_Tria2Tria
 
 ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE convert_Quad2Quad(rgridadapt,iel,jel,fcb_insertVertex)
+  SUBROUTINE convert_Quad2Quad(rgridadapt,iel1,iel2,fcb_insertVertex)
 
 !<description>
     ! This subroutine combines two neighboring quadrilaterals into one
@@ -4046,10 +4052,10 @@ CONTAINS
 
 !<input>
     ! Number of first element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel1
 
     ! Number of second element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: jel
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel2
     
     ! Callback function
     include 'intf_adaptcallback.inc'
@@ -4062,8 +4068,15 @@ CONTAINS
 !</subroutine>
     
     ! local variables
-    INTEGER(PREC_ELEMENTIDX) :: nel0,kel,lel,e1,e2,e3,e4,e5,e6,e7,e8
+    INTEGER(PREC_ELEMENTIDX) :: nel0,iel,jel,e1,e3,e4,e5,e7,e8,f1,f3,f4,f5,f7,f8
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6,i7,i8,i9
+
+    ! Make sure that IEL < JEL
+    IF (iel1 < iel2) THEN
+      iel = iel1; jel = iel2
+    ELSE
+      iel = iel2; jel = iel1
+    END IF
 
     ! Find local positions of element iel
     i1 = rgridadapt%p_IverticesAtElement(1,iel)
@@ -4071,51 +4084,91 @@ CONTAINS
     i7 = rgridadapt%p_IverticesAtElement(3,iel)
     i4 = rgridadapt%p_IverticesAtElement(4,iel)
 
-    e1 = rgridadapt%p_IneighboursAtElement(1,iel)   
-    e7 = rgridadapt%p_IneighboursAtElement(3,iel)
+    e1 = rgridadapt%p_IneighboursAtElement(1,iel)
+    e3 = rgridadapt%p_IneighboursAtElement(3,iel)
     e4 = rgridadapt%p_IneighboursAtElement(4,iel)
     
+    e5 = rgridadapt%p_ImidneighboursAtElement(1,iel)
+    e7 = rgridadapt%p_ImidneighboursAtElement(3,iel)
     e8 = rgridadapt%p_ImidneighboursAtElement(4,iel)
 
     ! Find local positions of element jel
     i2 = rgridadapt%p_IverticesAtElement(4,jel)
     i3 = rgridadapt%p_IverticesAtElement(1,jel)
 
-    e2 = rgridadapt%p_IneighboursAtElement(4,jel)   
-    e3 = rgridadapt%p_IneighboursAtElement(1,jel)
-    e5 = rgridadapt%p_IneighboursAtElement(3,jel)
-
-    e6 = rgridadapt%p_ImidneighboursAtElement(4,jel)
+    f1 = rgridadapt%p_IneighboursAtElement(1,jel)   
+    f3 = rgridadapt%p_IneighboursAtElement(3,jel)
+    f4 = rgridadapt%p_IneighboursAtElement(4,jel)
+    
+    f5 = rgridadapt%p_ImidneighboursAtElement(1,jel)
+    f7 = rgridadapt%p_ImidneighboursAtElement(3,jel)
+    f8 = rgridadapt%p_ImidneighboursAtElement(4,jel)
 
     ! Store values before conversion
     nel0 = rgridadapt%NEL
 
     ! Add two new vertices I6, I8, and I9
-    CALL add_vertex2D(rgridadapt,i2,i3,e2,i6,fcb_insertVertex)
+    CALL add_vertex2D(rgridadapt,i2,i3,f4,i6,fcb_insertVertex)
     CALL add_vertex2D(rgridadapt,i4,i1,e4,i8,fcb_insertVertex)
     CALL add_vertex2D(rgridadapt,i1,i2,i3,i4,i9,fcb_insertVertex)
 
     ! Replace element IEL and JEL and add two new elements KEL and LEL
-    CALL replace_element2D(rgridadapt,iel,i1,i5,i9,i8,e1,jel,nel0+2,e8,e1,jel,nel0+2,e8)
-    CALL replace_element2D(rgridadapt,jel,i2,i6,i9,i5,e2,nel0+1,iel,e5,e2,nel0+1,iel,e5)
-    CALL add_element2D(rgridadapt,i3,i7,i9,i6,e3,nel0+2,jel,e6,e3,nel0+2,jel,e6)
-    CALL add_element2D(rgridadapt,i4,i8,i9,i7,e4,iel,nel0+1,e7,e4,iel,nel0+1,e7)
+    CALL replace_element2D(rgridadapt,iel,i1,i5,i9,i8,e1,jel,nel0+2,e8,e5,jel,nel0+2,e8)
+    CALL replace_element2D(rgridadapt,jel,i2,i6,i9,i5,f4,nel0+1,iel,f3,f4,nel0+1,iel,f7)
+    CALL add_element2D(rgridadapt,i3,i7,i9,i6,f1,nel0+2,jel,f8,f5,nel0+2,jel,f8)
+    CALL add_element2D(rgridadapt,i4,i8,i9,i7,e4,iel,nel0+1,e3,e4,iel,nel0+1,e7)
 
     ! Update list of neighboring elements
-    CALL update_elementNeighbors2D(rgridadapt,e2,e6,jel,nel0+1,jel)
-    CALL update_elementNeighbors2D(rgridadapt,e4,e8,iel,iel,nel0+2)
-    CALL update_elementNeighbors2D(rgridadapt,e3,e3,jel,nel0+1,nel0+1)
-    CALL update_elementNeighbors2D(rgridadapt,e7,e7,iel,nel0+2,nel0+2)
+    CALL update_elementNeighbors2D(rgridadapt,f4,f8,jel,nel0+1,jel)
+    CALL update_elementNeighbors2D(rgridadapt,e4,e4,iel,iel,nel0+2)
+    CALL update_elementNeighbors2D(rgridadapt,f1,f5,jel,nel0+1,nel0+1)
+    CALL update_elementNeighbors2D(rgridadapt,e3,e7,iel,nel0+2,nel0+2)
 
-    ! Delete broken edges (I5,I7), (I2,I7), (I3,I5), (I1,I7), (I4,I5),
-    ! (I1,I5), (I2,I5), (I3,I7), (I4,I7), (I2,I3) and (I4,I1)
+    ! "Lock" all vertices
+    rgridadapt%p_IvertexAge(i1) = -ABS(rgridadapt%p_IvertexAge(i1))
+    rgridadapt%p_IvertexAge(i2) = -ABS(rgridadapt%p_IvertexAge(i2))
+    rgridadapt%p_IvertexAge(i3) = -ABS(rgridadapt%p_IvertexAge(i3))
+    rgridadapt%p_IvertexAge(i4) = -ABS(rgridadapt%p_IvertexAge(i4))
+    rgridadapt%p_IvertexAge(i5) = -ABS(rgridadapt%p_IvertexAge(i5))
+    rgridadapt%p_IvertexAge(i6) = -ABS(rgridadapt%p_IvertexAge(i6))
+    rgridadapt%p_IvertexAge(i7) = -ABS(rgridadapt%p_IvertexAge(i7))
+    rgridadapt%p_IvertexAge(i8) = -ABS(rgridadapt%p_IvertexAge(i8))
+    rgridadapt%p_IvertexAge(i9) = -ABS(rgridadapt%p_IvertexAge(i9))
+
+
+    ! Delete broken edges (I5,I7),(I2,I7),(I3,I5),(I1,I7),(I4,I5),
+    ! (I2,I3), and (I4,I1)
     CALL remove_edge(rgridadapt,i5,i7)
     CALL remove_edge(rgridadapt,i2,i7)
     CALL remove_edge(rgridadapt,i3,i5)
     CALL remove_edge(rgridadapt,i1,i7)
     CALL remove_edge(rgridadapt,i4,i5)
-    
-    
+    IF (f4 == f8) CALL remove_edge(rgridadapt,i2,i3)
+    IF (e4 == e8) CALL remove_edge(rgridadapt,i1,i4)
+
+    ! Add new edges (I2,I6),(I3,I6),(I1,I8),(I4,I8),(I5,I9),(I6,I9),
+    ! (I7,I9),(I8,I9),(I1,I9),(I2,I9),(I3,I9),(I4,I9),(I5,I8),
+    ! (I5,I6),(I6,I7),(I7,I8)
+    IF (f4 == f8) THEN
+      CALL add_edge(rgridadapt,i2,i6)
+      CALL add_edge(rgridadapt,i3,i6)
+    END IF
+    IF (e4 == e8) THEN
+      CALL add_edge(rgridadapt,i1,i8)
+      CALL add_edge(rgridadapt,i4,i8)
+    END IF
+    CALL add_edge(rgridadapt,i5,i9)
+    CALL add_edge(rgridadapt,i6,i9)
+    CALL add_edge(rgridadapt,i7,i9)
+    CALL add_edge(rgridadapt,i8,i9)
+    CALL add_edge(rgridadapt,i1,i9)
+    CALL add_edge(rgridadapt,i2,i9)
+    CALL add_edge(rgridadapt,i3,i9)
+    CALL add_edge(rgridadapt,i4,i9)
+    CALL add_edge(rgridadapt,i5,i8)
+    CALL add_edge(rgridadapt,i5,i6)
+    CALL add_edge(rgridadapt,i6,i7)
+    CALL add_edge(rgridadapt,i7,i8)
   END SUBROUTINE convert_Quad2Quad
 
    ! ***************************************************************************
@@ -4516,10 +4569,10 @@ CONTAINS
           ! is connected to the boundary or if the adjacent element has not been marked.
           DO ive=1,3
             IF (Kadj(ive)==0) THEN
-              rgridadapt%INCNVT = rgridadapt%INCNVT+1
+              rgridadapt%increaseNVT = rgridadapt%increaseNVT+1
             ELSEIF((p_Imarker(Kadj(ive)) /= MARK_TRIA4TRIA) .AND.&
                    (p_Imarker(Kadj(ive)) /= MARK_QUAD4QUAD)) THEN
-              rgridadapt%INCNVT = rgridadapt%INCNVT+1
+              rgridadapt%increaseNVT = rgridadapt%increaseNVT+1
             END IF
           END DO
         ELSE
@@ -4545,14 +4598,14 @@ CONTAINS
           ! Update number of new vertices
           DO ive=1,4
             IF (Kadj(ive)==0) THEN
-              rgridadapt%INCNVT = rgridadapt%INCNVT+1
+              rgridadapt%increaseNVT = rgridadapt%increaseNVT+1
             ELSEIF((p_Imarker(Kadj(ive)) /= MARK_TRIA4TRIA) .AND.&
                    (p_Imarker(Kadj(ive)) /= MARK_QUAD4QUAD)) THEN
-              rgridadapt%INCNVT = rgridadapt%INCNVT+1
+              rgridadapt%increaseNVT = rgridadapt%increaseNVT+1
             END IF
           END DO
           ! And don't forget the new vertex in the interior of the quadrilateral
-          rgridadapt%INCNVT = rgridadapt%INCNVT+1
+          rgridadapt%increaseNVT = rgridadapt%increaseNVT+1
         END IF
         
       ELSE
@@ -5041,9 +5094,38 @@ CONTAINS
           isConform=.FALSE.
 
           ! The new elements NEL0+1 and NEL0+2 have zero markers by construction.
-          ! The markers for the modified elements IEL and JEL need to be adjusted
-          p_Imarker(iel) = ibclr(ibclr(p_Imarker(iel),2),4)
-          p_Imarker(jel) = ibclr(ibclr(p_Imarker(jel),2),4)
+          ! The conversion routine checks element IEL and JEL and keeps the element
+          ! with smaller number at its "corner". That is, the "first" vertex of the
+          ! element with smaller number remains the "first" vertex whereas the 
+          ! "first" vertex of the element with larger number will be converted to
+          ! the second "vertex". This is due to the fact, that all corners vertices
+          ! are the "first" vertex if the correcponding element. Hence, we have to
+          ! check if IEL<JEL or vice versa and transfer some markers from elements
+          ! IEL, JEL to the new elements NEL0+1, NEL0+2. In addition, we have to
+          ! remove some markers from elements IEL and JEL afterwards(!!!)
+          
+          IF (iel < jel) THEN
+            kel =  rgridadapt%p_IneighboursAtElement(2,jel)
+            lel =  rgridadapt%p_IneighboursAtElement(3,iel)
+            IF (btest(p_Imarker(iel),3)) p_Imarker(lel) = ibset(0,4)
+            IF (btest(p_Imarker(jel),1)) p_Imarker(kel) = ibset(0,1)
+            p_Imarker(iel) = ibclr(ibclr(ibclr(p_Imarker(iel),2),3),4)
+            p_Imarker(jel) = ibclr(ibclr(ibclr(p_Imarker(jel),1),2),3)
+          ELSE
+            kel =  rgridadapt%p_IneighboursAtElement(2,iel)
+            lel =  rgridadapt%p_IneighboursAtElement(3,jel)
+            IF (btest(p_Imarker(jel),3)) p_Imarker(lel) = ibset(0,4)
+            IF (btest(p_Imarker(iel),1)) p_Imarker(kel) = ibset(0,1)
+            p_Imarker(jel) = ibclr(ibclr(ibclr(p_Imarker(jel),2),3),4)
+            p_Imarker(iel) = ibclr(ibclr(ibclr(p_Imarker(iel),1),2),3)
+          END IF
+          
+          ! Mark as quadrilaterals
+          p_Imarker(lel) = ibset(p_Imarker(lel),0)
+          p_Imarker(kel) = ibset(p_Imarker(kel),0)
+         
+!          Kadj    = rgridadapt%p_IneighboursAtElement(:,iel)
+!          Kmidadj = rgridadapt%p_ImidneighboursAtElement(:,iel)
 
         CASE(STATE_QUAD_HALF2)
           ! Theoretically, this state is not possible. In general, it has to be treated
@@ -5388,19 +5470,19 @@ CONTAINS
         CASE(MARK_TRIA3TRIA_12,MARK_TRIA3TRIA_13,MARK_TRIA3TRIA_23)
           ! Blue refinement for triangles is not allowed. Hence, 
           ! mark triangle for red refinement
-          p_Imarker(iel)    = MARK_TRIA4TRIA
-          p_Imodified(iel)  = -imodifier
-          isConform         =.FALSE.
-          rgridadapt%INCNVT = rgridadapt%INCNVT+1
+          p_Imarker(iel)         = MARK_TRIA4TRIA
+          p_Imodified(iel)       = -imodifier
+          isConform              =.FALSE.
+          rgridadapt%increaseNVT = rgridadapt%increaseNVT+1
           
         CASE(MARK_QUADBLUE_123,MARK_QUADBLUE_412,&
             MARK_QUADBLUE_341,MARK_QAUDBLUE_234)
           ! Blue refinement for quadrilaterals is not allowed. Hence,
           ! mark quadrilateral for red refinement
-          p_Imarker(iel)    = MARK_QUAD4QUAD
-          p_Imodified(iel)  = -imodifier
-          isConform         =.FALSE.
-          rgridadapt%INCNVT = rgridadapt%INCNVT+1
+          p_Imarker(iel)         = MARK_QUAD4QUAD
+          p_Imodified(iel)       = -imodifier
+          isConform              =.FALSE.
+          rgridadapt%increaseNVT = rgridadapt%increaseNVT+1
 
         CASE DEFAULT
           p_Imodified(iel) = (p_Imodified(iel)-imodifier)/2
@@ -5513,7 +5595,7 @@ CONTAINS
       CASE(MARK_QUAD4QUAD)
         ! Red refinement quadrilateral
         CALL refine_Quad4Quad(rgridadapt,iel,fcb_insertVertex)
-
+        
       CASE(MARK_TRIA2TRIA_1,MARK_TRIA2TRIA_2,MARK_TRIA2TRIA_3)   
         ! Green refinement triangle
         CALL refine_Tria2Tria(rgridadapt,iel,p_Imarker(iel),fcb_insertVertex)
