@@ -30,15 +30,21 @@
 !#  6.) sys_lowcase
 !#      -> Convert a string to lowercase, function version
 !#
-!#  5.) sys_charreplace
+!#  7.) sys_charreplace
 !#      -> Replaces characters in a string
 !#
-!#  6.) sys_throwFPE
+!#  8.) sys_throwFPE
 !#      -> Throw a floating point exception
 !#
-!#  7.) sys_getFreeUnit
+!#  9.) sys_getFreeUnit
 !#      -> Determine a free file handle for use in an OPEN() command
 !#
+!# 10.) sys_halt
+!#      -> Halts the application. Replacement for STOP in F90.
+!#         Can be configured how to halt.
+!#         E.g. if the global variable sys_haltmode is set to SYS_HALT_THROFPE,
+!#         this routine will stop the program by a floating point exception,
+!#         which prints the stack trace to the terminal on some compilers.
 !# 
 !#  ... (documentation incomplete)
 !# </purpose>
@@ -128,6 +134,18 @@ MODULE fsystem
   
 !</constantblock>
 
+!<constantblock description="Constants for the sys_haltmode variable">
+
+  ! Halts the program by the STOP command
+  INTEGER, PARAMETER :: SYS_HALT_STOP     = 0
+
+  ! Halts the program by sys_throwFPE. On some compilers, this helps with
+  ! debugging as the compiler will print a stack trace to the terminal
+  ! that allows tracing back where an error came from.
+  INTEGER, PARAMETER :: SYS_HALT_THROWFPE = 1
+  
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -209,6 +227,10 @@ MODULE fsystem
 
   ! global system configuration
   TYPE (t_sysconfig), TARGET :: sys_sysconfig
+  
+  ! Halt mode. This variable defines the way, sys_halt halts the program.
+  ! One of the SYS_HALT_xxxx constants.
+  INTEGER :: sys_haltmode = SYS_HALT_STOP
 !</globals>
 
   INTERFACE system_init
@@ -227,6 +249,30 @@ MODULE fsystem
   END INTERFACE
 
 CONTAINS
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_halt()
+  
+!<description>
+  ! This routine halts the application like the STOP command in
+  ! Fortran 90. The routine can be configured how to halt the application.
+  ! For this purpose, the main program can set the global variable
+  ! sys_haltmode to one of the SYS_HALT_xxxx constants.
+!</description>
+    
+!</subroutine>
+
+    SELECT CASE (sys_haltmode)
+    CASE (SYS_HALT_STOP)
+      STOP
+    CASE (SYS_HALT_THROWFPE)
+      CALL sys_throwFPE()
+    END SELECT
+
+  END SUBROUTINE sys_halt
 
 !************************************************************************
 
