@@ -67,9 +67,10 @@
 !##############################################################################
 
 MODULE graph
+
   USE fsystem
   USE storage
-  USE tree
+  USE binarytree
   USE arraylist
   USE linearsystemscalar
   IMPLICIT NONE
@@ -136,7 +137,7 @@ MODULE graph
     LOGICAL :: bisDense = .TRUE.
 
     ! Search tree for the list of vertices
-    TYPE(t_tree) :: rVertices
+    TYPE(t_btree) :: rVertices
 
     ! Array of lists for the edges
     TYPE(t_arraylist) :: rEdges
@@ -205,9 +206,9 @@ CONTAINS
 
       ! Create search tree for the list of vertices
       IF (rgraph%bisDense) THEN
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       ELSE
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
       END IF
       
       ! Create array of lists for edges
@@ -218,9 +219,9 @@ CONTAINS
 
       ! Create search tree for the list of vertices
       IF (rgraph%bisDense) THEN
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       ELSE
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
       END IF
       
       ! Create array of lists for edges
@@ -231,9 +232,9 @@ CONTAINS
 
       ! Create search tree for the list of vertices
       IF (rgraph%bisDense) THEN
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       ELSE
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
       END IF
 
       ! Create array of lists for edges
@@ -244,9 +245,9 @@ CONTAINS
 
       ! Create search tree for the list of vertices
       IF (rgraph%bisDense) THEN
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       ELSE
-        CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
+        CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,1)
       END IF
 
       ! Create array of lists for edges
@@ -321,7 +322,7 @@ CONTAINS
       rgraph%cgraphFormat = GRPH_GRAPH7
 
       ! Create search tree for the list of vertices
-      CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+      CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       
       ! Create array of lists for edges
       CALL arrlst_createArraylist(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_CSR7)
@@ -337,7 +338,7 @@ CONTAINS
       CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
           h_Key,ST_NEWBLOCK_ORDERED)
       CALL storage_getbase_int(h_Key,p_Key)
-      CALL tree_copyToTree(p_Key,rgraph%rVertices)
+      CALL btree_copyToTree(p_Key,rgraph%rVertices)
       CALL storage_free(h_Key)
       
 
@@ -345,7 +346,7 @@ CONTAINS
       rgraph%cgraphFormat = GRPH_GRAPH9
       
       ! Create search tree for the list of vertices
-      CALL tree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
+      CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       
       ! Create array of lists for edges
       CALL arrlst_createArraylist(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_INCREASING)
@@ -361,7 +362,7 @@ CONTAINS
       CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
           h_Key,ST_NEWBLOCK_ORDERED)
       CALL storage_getbase_int(h_Key,p_Key)
-      CALL tree_copyToTree(p_Key,rgraph%rVertices)
+      CALL btree_copyToTree(p_Key,rgraph%rVertices)
       CALL storage_free(h_Key)
 
 
@@ -388,7 +389,7 @@ CONTAINS
 !</subroutine>
 
     ! Release search tree for the list of vertices
-    CALL tree_releaseTree(rgraph%rVertices)
+    CALL btree_releaseTree(rgraph%rVertices)
 
     ! Release array of lists for edges
     CALL arrlst_releaseArraylist(rgraph%rEdges)
@@ -512,7 +513,7 @@ CONTAINS
         p_Kld(ieq) = ia
 
         ! Check if vertex with number ieq exists
-        IF (tree_searchInTree(rgraph%rVertices,ieq,ipred).EQ.TREE_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,ieq,ipred).EQ.BTREE_FOUND) THEN
           ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
           itable = rgraph%rVertices%IData(1,ipos)
 
@@ -641,7 +642,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: ipred
 
     ! Search in the vertex list
-    bexists = (tree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.TREE_FOUND)
+    bexists = (btree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.BTREE_FOUND)
 
     ! Return vertex position if required
     IF (bexists .AND. PRESENT(iVertexPosition)) THEN
@@ -690,10 +691,10 @@ CONTAINS
     ! Try to add entry with key iVertex
     IF (rgraph%bisDense) THEN
       itable=iVertex
-      CALL tree_insertIntoTree(rgraph%rVertices,iVertex,iposOpt=iposVertex)
+      CALL btree_insertIntoTree(rgraph%rVertices,iVertex,iposOpt=iposVertex)
     ELSE
       itable=rgraph%NVT+1
-      CALL tree_insertIntoTree(rgraph%rVertices,iVertex,IData=(/itable/),iposOpt=iposVertex)
+      CALL btree_insertIntoTree(rgraph%rVertices,iVertex,IData=(/itable/),iposOpt=iposVertex)
     END IF
 
     ! Return if vertex already exists
@@ -762,7 +763,7 @@ CONTAINS
     LOGICAL :: bdoReplace
 
     ! Check if vertex is present in tree?
-    IF (tree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+    IF (btree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
       PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
       STOP
     END IF
@@ -798,8 +799,8 @@ CONTAINS
         !         replaced by the last vertex, then the last vertex is 
         !         removed from the tree instead of vertex numbered iVertex.
         
-        IF (tree_deleteFromTree(rgraph%rVertices,&
-            MERGE(ireplaceVertex,iVertex,bdoReplace)).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_deleteFromTree(rgraph%rVertices,&
+            MERGE(ireplaceVertex,iVertex,bdoReplace)).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
           STOP
         END IF
@@ -934,7 +935,7 @@ CONTAINS
         ! of vertex iVertex.
         
         ! Get table for iVertex
-        IF (tree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
           STOP
         END IF
@@ -943,7 +944,7 @@ CONTAINS
         
         ! Get table for ireplaceVertex if required
         IF (bdoReplace) THEN
-          IF (tree_searchInTree(rgraph%rVertices,ireplaceVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+          IF (btree_searchInTree(rgraph%rVertices,ireplaceVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
             STOP
           END IF
@@ -959,8 +960,8 @@ CONTAINS
         !         replaced by the last vertex, then the last vertex is 
         !         removed from the tree instead of vertex numbered iVertex.
         
-        IF (tree_deleteFromTree(rgraph%rVertices,&
-            MERGE(ireplaceTable,iVertex,bdoReplace)).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_deleteFromTree(rgraph%rVertices,&
+            MERGE(ireplaceTable,iVertex,bdoReplace)).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
           STOP
         END IF
@@ -987,7 +988,7 @@ CONTAINS
           IF (bdoReplace .AND. (ireplaceVertex == jVertex)) CYCLE
 
           ! Get table for jVertex
-          IF (tree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+          IF (btree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
             STOP
           END IF
@@ -1031,7 +1032,7 @@ CONTAINS
             IF ((ireplaceVertex == jVertex) .OR. iVertex == jVertex) CYCLE
             
             ! Get table for jVertex
-            IF (tree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+            IF (btree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
               PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
               STOP
             END IF
@@ -1142,7 +1143,7 @@ CONTAINS
     IF (rgraph%bisDense) THEN
       itable = iFromVertex
     ELSE
-      IF (tree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+      IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
         bexists = .FALSE.
         RETURN
       END IF
@@ -1216,7 +1217,7 @@ CONTAINS
       ELSE
 
         ! Get table associated with vertex iToVertex
-        IF (tree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
           STOP
         END IF
@@ -1251,7 +1252,7 @@ CONTAINS
       ELSE
 
         ! Get table associated with vertex iToVertex
-        IF (tree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
           STOP
         END IF
@@ -1296,7 +1297,7 @@ CONTAINS
       ELSE
         
         ! Get table associated with vertex iToVertex
-        IF (tree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
           STOP
         END IF
@@ -1314,7 +1315,7 @@ CONTAINS
         END IF
 
         ! Get table associated with vertex iFromVertex
-        IF (tree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
           STOP
         END IF
@@ -1383,7 +1384,7 @@ CONTAINS
       ELSE
 
         ! Get table associated with vertex iFromVertex
-        IF (tree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
           STOP
         END IF
@@ -1410,7 +1411,7 @@ CONTAINS
       ELSE
 
         ! Get table associated with vertex iFromVertex
-        IF (tree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
           STOP
         END IF
@@ -1422,7 +1423,7 @@ CONTAINS
             .EQ.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
 
         ! Get table associated with vertex iFromVertex
-        IF (tree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.TREE_NOT_FOUND) THEN
+        IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
           STOP
         END IF

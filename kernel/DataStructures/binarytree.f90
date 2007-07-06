@@ -1,102 +1,103 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> tree </name>
+!# <name> binarytree </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module implements a (linear) AVL tree implemented as an array
+!# This module implements a (linear) binary/AVL tree implemented as an array
 !#
 !# The following routines are available:
 !#
-!# 1.) tree_createTree
+!# 1.) btree_createTree
 !#     -> Create an empty tree
 !#
-!# 2.) tree_releaseTree
+!# 2.) btree_releaseTree
 !#     -> Release an existing tree
 !#
-!# 3.) tree_resizeTree
+!# 3.) btree_resizeTree
 !#     -> Reallocate memory for an existing tree
 !#
-!# 4.) tree_copyToTree = t_tree_copyto_handle /
+!# 4.) btree_copyToTree = t_tree_copyto_handle /
 !#                       t_tree_copyto_arrayDble /
 !#                       t_tree_copyto_arraySngl / 
 !#                       t_tree_copyto_arrayInt
 !#     -> Copy key and auxiliary data to tree
 !#
-!# 5.) tree_copyFromTreeKey = t_tree_copyfrom_key_handle /
+!# 5.) btree_copyFromTreeKey = t_tree_copyfrom_key_handle /
 !#                            t_tree_copyfrom_key_arrayDble /
 !#                            t_tree_copyfrom_key_arraySngl /
 !#                            t_tree_copyfrom_key_arrayInt
 !#     -> Copy the key of the tree to handle/array
 !#
-!# 6.) tree_copyFromTreeDble = t_tree_copyfrom_handle /
+!# 6.) btree_copyFromTreeDble = t_tree_copyfrom_handle /
 !#                             t_tree_copyfrom_arrayDble
 !#                             t_tree_copyfrom_arrayDble2D
 !#     -> Copy some auxiliary double data of the tree to handle/array
 !#
-!# 7.) tree_copyFromTreeSngl = t_tree_copyfrom_handle /
+!# 7.) btree_copyFromTreeSngl = t_tree_copyfrom_handle /
 !#                             t_tree_copyfrom_arraySngl
 !#                             t_tree_copyfrom_arraySngl2D
 !#     -> Copy some auxiliary single data of the tree to handle/array
 !#
-!# 8.) tree_copyFromTreeInt = t_tree_copyfrom_handle /
+!# 8.) btree_copyFromTreeInt = t_tree_copyfrom_handle /
 !#                            t_tree_copyfrom_arrayInt
 !#                            t_tree_copyfrom_arrayInt2D
 !#     -> Copy some auxiliary integer data of the tree to handle/array
 !#
-!# 9.) tree_insertToTree = t_tree_insertDble /
+!# 9.) btree_insertToTree = t_tree_insertDble /
 !#                         t_tree_insertSngl /
 !#                         t_tree_insertInt
 !#     -> Insert key into tree
 !#
-!# 10.) tree_deleteFromTree = t_tree_deleteDble /
+!# 10.) btree_deleteFromTree = t_tree_deleteDble /
 !#                            t_tree_deleteSngl /
 !#                            t_tree_deleteInt
 !#      -> Delete key from tree
 !#
-!# 11.) tree_searchInTree = t_tree_searchDble /
+!# 11.) btree_searchInTree = t_tree_searchDble /
 !#                          t_tree_searchSngl /
 !#                          t_tree_searchInt
 !#      -> Search for key in tree
 !#
-!# 12.) tree_getItemInTree = t_tree_getitemDble /
+!# 12.) btree_getItemInTree = t_tree_getitemDble /
 !#                           t_tree_getitemSngl / 
 !#                           t_tree_getitemInt
 !#      -> Search for key in tree and return position of item directly
 !#
-!# 13.) tree_printTree
+!# 13.) btree_printTree
 !#      -> Print out tree
 !#
-!# 14.) tree_getHeight
+!# 14.) btree_getHeight
 !#      -> Get height of the tree
 !#
-!# 15.) tree_infoTree
+!# 15.) btree_infoTree
 !#      -> Output statistical info about the tree
 !#
 !# </purpose>
 !##############################################################################
-MODULE tree
+MODULE binarytree
+
   USE fsystem
   USE storage
   IMPLICIT NONE
 
   PRIVATE
-  PUBLIC :: t_tree
-  PUBLIC :: tree_createTree
-  PUBLIC :: tree_releaseTree
-  PUBLIC :: tree_resizeTree
-  PUBLIC :: tree_copyToTree
-  PUBLIC :: tree_copyFromTreeKey
-  PUBLIC :: tree_copyFromTreeDble
-  PUBLIC :: tree_copyFromTreeSngl
-  PUBLIC :: tree_copyFromTreeInt
-  PUBLIC :: tree_insertIntoTree
-  PUBLIC :: tree_deleteFromTree
-  PUBLIC :: tree_searchInTree
-  PUBLIC :: tree_getItemInTree
-  PUBLIC :: tree_printTree
-  PUBLIC :: tree_getHeight
-  PUBLIC :: tree_infoTree
+  PUBLIC :: t_btree
+  PUBLIC :: btree_createTree
+  PUBLIC :: btree_releaseTree
+  PUBLIC :: btree_resizeTree
+  PUBLIC :: btree_copyToTree
+  PUBLIC :: btree_copyFromTreeKey
+  PUBLIC :: btree_copyFromTreeDble
+  PUBLIC :: btree_copyFromTreeSngl
+  PUBLIC :: btree_copyFromTreeInt
+  PUBLIC :: btree_insertIntoTree
+  PUBLIC :: btree_deleteFromTree
+  PUBLIC :: btree_searchInTree
+  PUBLIC :: btree_getItemInTree
+  PUBLIC :: btree_printTree
+  PUBLIC :: btree_getHeight
+  PUBLIC :: btree_infoTree
 
 !<constants>
 
@@ -110,29 +111,29 @@ MODULE tree
 !<constantblock description="Global flags for tree output">
 
   ! Tag for preorder traversal
-  INTEGER, PARAMETER, PUBLIC :: TREE_PREORDER  = 0
+  INTEGER, PARAMETER, PUBLIC :: BTREE_PREORDER  = 0
 
   ! Tag for inorder traversal
-  INTEGER, PARAMETER, PUBLIC :: TREE_INORDER   = 1
+  INTEGER, PARAMETER, PUBLIC :: BTREE_INORDER   = 1
 
   ! Tag for postorder traversal
-  INTEGER, PARAMETER, PUBLIC :: TREE_POSTORDER = 2
+  INTEGER, PARAMETER, PUBLIC :: BTREE_POSTORDER = 2
 
 !</constantblock>
 
 !<constantblock description="Global flags for tree operations">
 
   ! Identifier for "not found in tree"
-  INTEGER, PARAMETER, PUBLIC :: TREE_NOT_FOUND = -1
+  INTEGER, PARAMETER, PUBLIC :: BTREE_NOT_FOUND = -1
 
   ! Identifier for "found in tree"
-  INTEGER, PARAMETER, PUBLIC :: TREE_FOUND     =  0
+  INTEGER, PARAMETER, PUBLIC :: BTREE_FOUND     =  0
   
   ! Identifier for "copy to tree"
-  INTEGER, PARAMETER, PUBLIC :: TREE_COPY1     =  1
+  INTEGER, PARAMETER, PUBLIC :: BTREE_COPY1     =  1
 
   ! Identifier for "copy from tree"
-  INTEGER, PARAMETER, PUBLIC :: TREE_COPY2     =  2
+  INTEGER, PARAMETER, PUBLIC :: BTREE_COPY2     =  2
 
 !</constantblock>
 
@@ -159,7 +160,7 @@ MODULE tree
 !<types>
 !<typeblock>
   
-  TYPE t_tree
+  TYPE t_btree
     ! Format-Tag:
     INTEGER :: ctreeFormat         = ST_NOHANDLE
     
@@ -251,7 +252,7 @@ MODULE tree
     ! Tree data (Integer)
     ! NOTE: This array is introduced to increase performance (see above).
     INTEGER(PREC_TREEIDX), DIMENSION(:,:), POINTER :: IData => NULL()
-  END TYPE t_tree
+  END TYPE t_btree
 
 !</typeblock>
 !</types>
@@ -261,15 +262,15 @@ MODULE tree
   ! ***************************************************************************
   
   
-  INTERFACE tree_createTree
+  INTERFACE btree_createTree
     MODULE PROCEDURE t_tree_create
   END INTERFACE
   
-  INTERFACE tree_releaseTree
+  INTERFACE btree_releaseTree
     MODULE PROCEDURE t_tree_release
   END INTERFACE
   
-  INTERFACE tree_resizeTree
+  INTERFACE btree_resizeTree
     MODULE PROCEDURE t_tree_resize
   END INTERFACE
   
@@ -277,39 +278,39 @@ MODULE tree
     MODULE PROCEDURE t_tree_resize
   END INTERFACE
 
-  INTERFACE tree_copyToTree
+  INTERFACE btree_copyToTree
     MODULE PROCEDURE t_tree_copyto_handle
     MODULE PROCEDURE t_tree_copyto_arrayDble
     MODULE PROCEDURE t_tree_copyto_arraySngl
     MODULE PROCEDURE t_tree_copyto_arrayInt
   END INTERFACE
 
-  INTERFACE tree_copyFromTreeKey
+  INTERFACE btree_copyFromTreeKey
     MODULE PROCEDURE t_tree_copyfrom_key_handle
     MODULE PROCEDURE t_tree_copyfrom_key_arrayDble
     MODULE PROCEDURE t_tree_copyfrom_key_arraySngl
     MODULE PROCEDURE t_tree_copyfrom_key_arrayInt
   END INTERFACE
 
-  INTERFACE tree_copyFromTreeDble
+  INTERFACE btree_copyFromTreeDble
     MODULE PROCEDURE t_tree_copyfrom_handle
     MODULE PROCEDURE t_tree_copyfrom_arrayDble
     MODULE PROCEDURE t_tree_copyfrom_arrayDble2D
   END INTERFACE
 
-  INTERFACE tree_copyFromTreeSngl
+  INTERFACE btree_copyFromTreeSngl
     MODULE PROCEDURE t_tree_copyfrom_handle
     MODULE PROCEDURE t_tree_copyfrom_arraySngl
     MODULE PROCEDURE t_tree_copyfrom_arraySngl2D
   END INTERFACE
 
-  INTERFACE tree_copyFromTreeInt
+  INTERFACE btree_copyFromTreeInt
     MODULE PROCEDURE t_tree_copyfrom_handle
     MODULE PROCEDURE t_tree_copyfrom_arrayInt
     MODULE PROCEDURE t_tree_copyfrom_arrayInt2D
   END INTERFACE
   
-  INTERFACE tree_insertIntoTree
+  INTERFACE btree_insertIntoTree
     MODULE PROCEDURE t_tree_insertDble
     MODULE PROCEDURE t_tree_insertSngl
     MODULE PROCEDURE t_tree_insertInt
@@ -321,7 +322,7 @@ MODULE tree
     MODULE PROCEDURE t_tree_insertInt
   END INTERFACE
 
-  INTERFACE tree_deleteFromTree
+  INTERFACE btree_deleteFromTree
     MODULE PROCEDURE t_tree_deleteDble
     MODULE PROCEDURE t_tree_deleteSngl
     MODULE PROCEDURE t_tree_deleteInt
@@ -333,13 +334,13 @@ MODULE tree
     MODULE PROCEDURE t_tree_deleteInt
   END INTERFACE
   
-  INTERFACE tree_searchInTree
+  INTERFACE btree_searchInTree
     MODULE PROCEDURE t_tree_searchDble
     MODULE PROCEDURE t_tree_searchSngl
     MODULE PROCEDURE t_tree_searchInt
   END INTERFACE
 
-  INTERFACE tree_getItemInTree
+  INTERFACE btree_getItemInTree
     MODULE PROCEDURE t_tree_getitemDble
     MODULE PROCEDURE t_tree_getitemSngl
     MODULE PROCEDURE t_tree_getitemInt
@@ -351,15 +352,15 @@ MODULE tree
     MODULE PROCEDURE t_tree_searchInt
   END INTERFACE
   
-  INTERFACE tree_printTree
+  INTERFACE btree_printTree
     MODULE PROCEDURE t_tree_print
   END INTERFACE
   
-  INTERFACE tree_getHeight
+  INTERFACE btree_getHeight
     MODULE PROCEDURE t_tree_height
   END INTERFACE
 
-  INTERFACE tree_infoTree
+  INTERFACE btree_infoTree
     MODULE PROCEDURE t_tree_info
   END INTERFACE
   
@@ -403,7 +404,7 @@ CONTAINS
 
 !<output>
     ! tree
-    TYPE(t_tree), INTENT(OUT) :: rtree
+    TYPE(t_btree), INTENT(OUT) :: rtree
 !</output>
 !</subroutine>
 
@@ -492,7 +493,7 @@ CONTAINS
 !</description>
 
 !<inputoutput>
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -539,7 +540,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -616,7 +617,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
     
@@ -696,7 +697,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -792,7 +793,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -888,7 +889,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -967,7 +968,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
 !</input>
 
 !<inputoutput>
@@ -1064,7 +1065,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
 !</input>
 
 !<inputoutput>
@@ -1119,7 +1120,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
 !</input>
 
 !<inputoutput>
@@ -1174,7 +1175,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
 !</input>
 
 !<inputoutput>
@@ -1244,7 +1245,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
     
     ! type of data
     INTEGER, INTENT(IN) :: ctype
@@ -1486,7 +1487,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
     
     ! mask of component to be copied
     INTEGER, INTENT(IN) :: mask
@@ -1555,7 +1556,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
     
     ! OPTIONAL: mask of components to be copied
     INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: mask
@@ -1649,7 +1650,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
     
     ! mask of component to be copied
     INTEGER, INTENT(IN) :: mask
@@ -1718,7 +1719,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
     
     ! OPTIONAL: mask of components to be copied
     INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: mask
@@ -1812,7 +1813,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
     
     ! mask of component to be copied
     INTEGER, INTENT(IN) :: mask
@@ -1881,7 +1882,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
     
     ! OPTIONAL: mask of components to be copied
     INTEGER, DIMENSION(:), INTENT(IN), OPTIONAL :: mask
@@ -1988,7 +1989,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<output>
@@ -2008,7 +2009,7 @@ CONTAINS
     END IF
 
     ! Check if key is already stored in tree
-    IF (search(rtree,dkey,jpos) == TREE_NOT_FOUND) THEN
+    IF (search(rtree,dkey,jpos) == BTREE_NOT_FOUND) THEN
       
       ! Adjust size and position
       rtree%na = rtree%na+1
@@ -2082,7 +2083,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<output>
@@ -2102,7 +2103,7 @@ CONTAINS
     END IF
 
     ! Check if key is already stored in tree
-    IF (search(rtree,skey,jpos) == TREE_NOT_FOUND) THEN
+    IF (search(rtree,skey,jpos) == BTREE_NOT_FOUND) THEN
       
       ! Adjust size and position
       rtree%na = rtree%na+1
@@ -2176,7 +2177,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<output>
@@ -2196,7 +2197,7 @@ CONTAINS
     END IF
 
     ! Check if key is already stored in tree
-    IF (search(rtree,ikey,jpos) == TREE_NOT_FOUND) THEN
+    IF (search(rtree,ikey,jpos) == BTREE_NOT_FOUND) THEN
       
       ! Adjust size and position
       rtree%na = rtree%na+1
@@ -2260,7 +2261,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>    
     
@@ -2401,11 +2402,11 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<result>
-    ! Result of the deletion TREE_NOUT_FOUND / TREE_FOUND
+    ! Result of the deletion BTREE_NOUT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2421,7 +2422,7 @@ CONTAINS
 
     ! Search for key
     f=search(rtree,dkey,ipred)
-    IF (f == TREE_NOT_FOUND) RETURN
+    IF (f == BTREE_NOT_FOUND) RETURN
 
     ! Compute new dimensions
     rtree%na = rtree%na-1
@@ -2503,11 +2504,11 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<result>
-    ! Result of the deletion TREE_NOUT_FOUND / TREE_FOUND
+    ! Result of the deletion BTREE_NOUT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2523,7 +2524,7 @@ CONTAINS
 
     ! Search for key
     f=search(rtree,skey,ipred)
-    IF (f == TREE_NOT_FOUND) RETURN
+    IF (f == BTREE_NOT_FOUND) RETURN
 
     ! Compute new dimensions
     rtree%na = rtree%na-1
@@ -2605,11 +2606,11 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<result>
-    ! Result of the deletion TREE_NOUT_FOUND / TREE_FOUND
+    ! Result of the deletion BTREE_NOUT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2625,7 +2626,7 @@ CONTAINS
 
     ! Search for key
     f=search(rtree,ikey,ipred)
-    IF (f == TREE_NOT_FOUND) RETURN
+    IF (f == BTREE_NOT_FOUND) RETURN
 
     ! Compute new dimensions
     rtree%na = rtree%na-1
@@ -2707,7 +2708,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -2854,7 +2855,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<output>
@@ -2863,7 +2864,7 @@ CONTAINS
 !</output>
 
 !<result>
-    ! Result of the search TREE_NOUT_FOUND / TREE_FOUND
+    ! Result of the search BTREE_NOUT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2878,7 +2879,7 @@ CONTAINS
       STOP
     END IF
     
-    f           = TREE_NOT_FOUND
+    f           = BTREE_NOT_FOUND
     ipos        = TROOT
     dir         = TRIGHT
     jpos        = rtree%Kchild(dir,ipos)
@@ -2891,7 +2892,7 @@ CONTAINS
       END IF
       
       IF (rtree%DKey(jpos) == dkey) THEN
-        f    = TREE_FOUND
+        f    = BTREE_FOUND
         ipos = MERGE(-ipos,ipos,dir == TLEFT)
         EXIT search
       END IF
@@ -2921,7 +2922,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<output>
@@ -2930,7 +2931,7 @@ CONTAINS
 !</output>
 
 !<result>
-    ! Result of the search TREE_NOUT_FOUND / TREE_FOUND
+    ! Result of the search BTREE_NOUT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2945,7 +2946,7 @@ CONTAINS
       STOP
     END IF
     
-    f           = TREE_NOT_FOUND
+    f           = BTREE_NOT_FOUND
     ipos        = TROOT
     dir         = TRIGHT
     jpos        = rtree%Kchild(dir,ipos)
@@ -2958,7 +2959,7 @@ CONTAINS
       END IF
       
       IF (rtree%FKey(jpos) == skey) THEN
-        f    = TREE_FOUND
+        f    = BTREE_FOUND
         ipos = MERGE(-ipos,ipos,dir == TLEFT)
         EXIT search
       END IF
@@ -2988,7 +2989,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<output>
@@ -2997,7 +2998,7 @@ CONTAINS
 !</output>
 
 !<result>
-    ! Result of the search TREE_NOUT_FOUND / TREE_FOUND
+    ! Result of the search BTREE_NOUT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -3012,7 +3013,7 @@ CONTAINS
       STOP
     END IF
     
-    f           = TREE_NOT_FOUND
+    f           = BTREE_NOT_FOUND
     ipos        = TROOT
     dir         = TRIGHT
     jpos        = rtree%Kchild(dir,ipos)
@@ -3025,7 +3026,7 @@ CONTAINS
       END IF
       
       IF (rtree%IKey(jpos) == ikey) THEN
-        f    = TREE_FOUND
+        f    = BTREE_FOUND
         ipos = MERGE(-ipos,ipos,dir == TLEFT)
         EXIT search
       END IF
@@ -3057,7 +3058,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3069,7 +3070,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TREEIDX) :: ipred
     
-    IF (search(rtree,dkey,ipred) /= TREE_FOUND) THEN
+    IF (search(rtree,dkey,ipred) /= BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemDble: Unable to find item in tree"
       STOP
     END IF
@@ -3095,7 +3096,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3107,7 +3108,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TREEIDX) :: ipred
     
-    IF (search(rtree,skey,ipred) /= TREE_FOUND) THEN
+    IF (search(rtree,skey,ipred) /= BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemSngl: Unable to find item in tree"
       STOP
     END IF
@@ -3133,7 +3134,7 @@ CONTAINS
 
 !<inputoutput>
     ! tree
-    TYPE(t_tree), INTENT(INOUT) :: rtree
+    TYPE(t_btree), INTENT(INOUT) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3145,15 +3146,15 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TREEIDX) :: ipred
     
-    IF (search(rtree,ikey,ipred) /= TREE_FOUND) THEN
+    IF (search(rtree,ikey,ipred) /= BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemInt: Unable to find item in tree"
-      CALL sys_throwFPE()
+      STOP
     END IF
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 
     IF (ipos /= ikey) THEN
       WRITE(*,'(A,I5,A,I5,A)') 'Position',ipos,'and key',ikey,'are different'
-      PAUSE
+      STOP
     END IF
   END FUNCTION t_tree_getitemInt
 
@@ -3169,7 +3170,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
 
     ! type of traversal
     INTEGER, INTENT(IN) :: op
@@ -3179,7 +3180,7 @@ CONTAINS
     ! Which kind of traversal should be applied
     SELECT CASE (op)
       
-    CASE (TREE_PREORDER)
+    CASE (BTREE_PREORDER)
       IF (rtree%Kchild(TRIGHT,TROOT) /= TNULL) THEN
         SELECT CASE(rtree%ctreeFormat)
         CASE (ST_DOUBLE)
@@ -3194,7 +3195,7 @@ CONTAINS
         END SELECT
       END IF
       
-    CASE (TREE_INORDER)
+    CASE (BTREE_INORDER)
       IF (rtree%Kchild(TRIGHT,TROOT) /= TNULL) THEN
         SELECT CASE(rtree%ctreeFormat)
         CASE (ST_DOUBLE)
@@ -3209,7 +3210,7 @@ CONTAINS
         END SELECT
       END IF
       
-    CASE (TREE_POSTORDER)
+    CASE (BTREE_POSTORDER)
       IF (rtree%Kchild(TRIGHT,TROOT) /= TNULL) THEN
         SELECT CASE(rtree%ctreeFormat)
         CASE (ST_DOUBLE)
@@ -3358,7 +3359,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
 !</input>
 
 !<result>
@@ -3403,7 +3404,7 @@ CONTAINS
 
 !<input>
     ! tree
-    TYPE(t_tree), INTENT(IN) :: rtree
+    TYPE(t_btree), INTENT(IN) :: rtree
 !</input>
 !</subroutine>
 
@@ -3449,4 +3450,4 @@ CONTAINS
         
     LOG2=LOG(REAL(i,DP))/LOG(2._DP)
   END FUNCTION LOG2
-END MODULE tree
+END MODULE binarytree
