@@ -255,7 +255,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "grph_createGraph: Invalid matrix format!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_createGraph
 
@@ -368,7 +368,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "grph_createGraphFromMatrix: Invalid matrix format!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_createGraphFromMatrix
   
@@ -439,18 +439,18 @@ CONTAINS
     CASE(LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
       IF (rgraph%cgraphFormat /= GRPH_GRAPH7) THEN
         PRINT *, "grph_generateMatrix: Matrix/graph have incompatible format!"
-        STOP
+        CALL sys_halt()
       END IF
 
     CASE(LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
       IF (rgraph%cgraphFormat /= GRPH_GRAPH9) THEN
         PRINT *, "grph_generateMatrix: Matrix/graph have incompatible format!"
-        STOP
+        CALL sys_halt()
       END IF
 
     CASE DEFAULT
       PRINT *, "grph_generateMatrix: Unsupported matrix format!"
-      STOP
+      CALL sys_halt()
     END SELECT
  
     ! Set number of edges = number of nonzero matrix entries
@@ -716,7 +716,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "grph_insertVertex: Unsupported graph format!"
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Increase number of edges by one
@@ -765,7 +765,7 @@ CONTAINS
     ! Check if vertex is present in tree?
     IF (btree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
       PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Replace vertex or leave "holes"?
@@ -784,7 +784,7 @@ CONTAINS
         
       CASE(GRPH_GRAPHUNORDERED_DIRECTED,GRPH_GRAPHORDERED_DIRECTED)
         PRINT *, "We cannot remove directed graphs at the moment!"
-        STOP
+        CALL sys_halt()
       
       CASE(GRPH_GRAPH7,GRPH_GRAPH9)
         ! We are in the lucky position, that the graph is undirected, that is,
@@ -802,7 +802,7 @@ CONTAINS
         IF (btree_deleteFromTree(rgraph%rVertices,&
             MERGE(ireplaceVertex,iVertex,bdoReplace)).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
-          STOP
+          CALL sys_halt()
         END IF
 
         ! Step 2: Loop through adjacency list of vertex iVertex and delete all 
@@ -830,7 +830,7 @@ CONTAINS
           IF (arrlst_deleteFromArraylist(rgraph%rEdges,jVertex,iVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Unable to delete vertex from adjacency list!"
-            STOP
+            CALL sys_halt()
           END IF
             
           ! Decrease number of edges by two; for the edge (iVertex,jVertex)
@@ -866,14 +866,14 @@ CONTAINS
             IF (arrlst_deleteFromArraylist(rgraph%rEdges,jVertex,ireplaceVertex).EQ.&
                 ARRAYLIST_NOT_FOUND) THEN
               PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
-              STOP
+              CALL sys_halt()
             END IF
             
             ! Look for position of edge (jVertex,iVertex)
             IF (arrlst_searchInArraylist(rgraph%rEdges,jVertex,&
                 iVertex,ipred).EQ.ARRAYLIST_FOUND) THEN
               PRINT *, "grph_removeVertex: Vertex replacement already exists in adjacency list!"
-              STOP
+              CALL sys_halt()
             END IF
             
             ! Insert edge (jVertex,iVertex) into adjacency list
@@ -886,7 +886,7 @@ CONTAINS
           IF (arrlst_deleteFromArraylist(rgraph%rEdges,ireplaceVertex,ireplaceVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
-            STOP
+            CALL sys_halt()
           END IF
 
           ! Swap adjacency list of vertices iVertex and ireplaceVertex
@@ -915,7 +915,7 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *, "grph_removeVertex: Invalid graph format!"
-        STOP
+        CALL sys_halt()
       END SELECT
 
     ELSE   ! - - - - - - The following is for non-dense graphs - - - - - -
@@ -925,7 +925,7 @@ CONTAINS
         
       CASE(GRPH_GRAPHUNORDERED_DIRECTED,GRPH_GRAPHORDERED_DIRECTED)
         PRINT *, "We cannot remove directed graphs at the moment!"
-        STOP
+        CALL sys_halt()
 
       CASE(GRPH_GRAPH7,GRPH_GRAPH9)
         ! We are in the lucky position, that the graph is undirected, that is,
@@ -937,7 +937,7 @@ CONTAINS
         ! Get table for iVertex
         IF (btree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -946,7 +946,7 @@ CONTAINS
         IF (bdoReplace) THEN
           IF (btree_searchInTree(rgraph%rVertices,ireplaceVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
-            STOP
+            CALL sys_halt()
           END IF
           ipos          = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
           ireplaceTable = rgraph%rVertices%IData(1,ipos)
@@ -963,7 +963,7 @@ CONTAINS
         IF (btree_deleteFromTree(rgraph%rVertices,&
             MERGE(ireplaceTable,iVertex,bdoReplace)).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
-          STOP
+          CALL sys_halt()
         END IF
         
         ! Step 2: Loop through adjacency list of vertex iVertex and delete all 
@@ -990,7 +990,7 @@ CONTAINS
           ! Get table for jVertex
           IF (btree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
-            STOP
+            CALL sys_halt()
           END IF
           ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
           jtable = rgraph%rVertices%IData(1,ipos)
@@ -999,7 +999,7 @@ CONTAINS
           IF (arrlst_deleteFromArraylist(rgraph%rEdges,jtable,iVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Unable to delete vertex from adjacency list!"
-            STOP
+            CALL sys_halt()
           END IF
           
           ! Decrease number of edges by two; for the edge (iVertex,jVertex)
@@ -1034,7 +1034,7 @@ CONTAINS
             ! Get table for jVertex
             IF (btree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
               PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
-              STOP
+              CALL sys_halt()
             END IF
             ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
             jtable = rgraph%rVertices%IData(1,ipos)
@@ -1043,14 +1043,14 @@ CONTAINS
             IF (arrlst_deleteFromArraylist(rgraph%rEdges,jtable,ireplaceVertex).EQ.&
                 ARRAYLIST_NOT_FOUND) THEN
               PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
-              STOP
+              CALL sys_halt()
             END IF
             
             ! Look for position of edge (jVertex,iVertex)
             IF (arrlst_searchInArraylist(rgraph%rEdges,jtable,&
                 iVertex,ipred).EQ.ARRAYLIST_FOUND) THEN
               PRINT *, "grph_removeVertex: Vertex replacement already exists in adjacency list!"
-              STOP
+              CALL sys_halt()
             END IF
             
             ! Insert edge (jVertex,iVertex) into adjacency list
@@ -1063,7 +1063,7 @@ CONTAINS
           IF (arrlst_deleteFromArraylist(rgraph%rEdges,ireplaceTable,ireplaceVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
             PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
-            STOP
+            CALL sys_halt()
           END IF
 
           ! Swap adjacency list of vertices iVertex and ireplaceVertex
@@ -1092,7 +1092,7 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *, "grph_removeVertex: Invalid graph format!"
-        STOP
+        CALL sys_halt()
       END SELECT   
     END IF
   END SUBROUTINE grph_removeVertex
@@ -1219,7 +1219,7 @@ CONTAINS
         ! Get table associated with vertex iToVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -1254,7 +1254,7 @@ CONTAINS
         ! Get table associated with vertex iToVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -1299,7 +1299,7 @@ CONTAINS
         ! Get table associated with vertex iToVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -1317,7 +1317,7 @@ CONTAINS
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -1336,7 +1336,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "grph_addEdge: Unsupported graph format!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_insertEdge
 
@@ -1386,7 +1386,7 @@ CONTAINS
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -1413,7 +1413,7 @@ CONTAINS
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -1425,7 +1425,7 @@ CONTAINS
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
           PRINT *, "grph_insertEdge: Vertex does not exists!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
@@ -1438,7 +1438,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "grph_removeEdge: Unsupported graph format!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_removeEdge
 END MODULE graph

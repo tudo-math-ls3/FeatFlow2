@@ -99,7 +99,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "stack_create: Invalid data type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     rstack%istackSize=isize
@@ -213,7 +213,7 @@ CONTAINS
     
     IF (rstack%h_StackData == ST_NOHANDLE) THEN
       PRINT *, "stack_pushbackInt: Invalid data type"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Double storage for stack if required
@@ -253,7 +253,7 @@ CONTAINS
 
     IF (rstack%h_StackData == ST_NOHANDLE) THEN
       PRINT *, "stack_pushbackSngl: Invalid data type"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Double storage for stack if required
@@ -293,7 +293,7 @@ CONTAINS
 
     IF (rstack%h_StackData == ST_NOHANDLE) THEN
       PRINT *, "stack_pushbackDble: Invalid data type"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Double storage for stack if required
@@ -335,7 +335,7 @@ CONTAINS
       idata=StackData(rstack%istackPosition)
     ELSE
       PRINT *, "stack_backInt: Stack empty!"
-      STOP
+      CALL sys_halt()
     END IF
     
   END FUNCTION stack_backInt
@@ -366,7 +366,7 @@ CONTAINS
       sdata=StackData(rstack%istackPosition)
     ELSE
       PRINT *, "stack_backSngl: Stack empty!"
-      STOP
+      CALL sys_halt()
     END IF
     
   END FUNCTION stack_backSngl
@@ -397,7 +397,7 @@ CONTAINS
       ddata=StackData(rstack%istackPosition)
     ELSE
       PRINT *, "stack_backDble: Stack empty!"
-      STOP
+      CALL sys_halt()
     END IF
     
   END FUNCTION stack_backDble
@@ -429,7 +429,7 @@ CONTAINS
       rstack%istackPosition=rstack%istackPosition-1
     ELSE
       PRINT *, "stack_popbackInt: Stack empty!"
-      STOP
+      CALL sys_halt()
     END IF
     
   END FUNCTION stack_popbackInt
@@ -461,7 +461,7 @@ CONTAINS
       rstack%istackPosition=rstack%istackPosition-1
     ELSE
       PRINT *, "stack_popbackSngl: Stack empty!"
-      STOP
+      CALL sys_halt()
     END IF
     
   END FUNCTION stack_popbackSngl
@@ -493,7 +493,7 @@ CONTAINS
       rstack%istackPosition=rstack%istackPosition-1
     ELSE
       PRINT *, "stack_popbackDble: Stack empty!"
-      STOP
+      CALL sys_halt()
     END IF
     
   END FUNCTION stack_popbackDble

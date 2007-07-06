@@ -123,34 +123,34 @@ CONTAINS
     IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
       CALL output_line ('No discretisation attached to the source vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      STOP
+      CALL sys_halt()
     END IF
     
     IF ((rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND.&
         (rvectorScalar%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
       CALL output_line ('Only uniform and conformal discretisations supported!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation%p_rtriangulation)) THEN
       CALL output_line ('No triangulation attached to the source vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim .GT. &
         rvectorGradient%nblocks) THEN
       CALL output_line ('Dimension of destination vector not large enough!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! There must be given discretisation structures in the destination vector.
     IF (.NOT. ASSOCIATED(rvectorScalar%p_rspatialDiscretisation)) THEN
       CALL output_line ('No discretisation attached to the destination vector!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      STOP
+      CALL sys_halt()
     END IF
 
     SELECT CASE (rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%ndim)
@@ -187,7 +187,7 @@ CONTAINS
         CALL output_line ('Only Q1, P1, Q2 and P2 supported as discretisation for the &
             &destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-        STOP
+        CALL sys_halt()
       END IF
       
       ! The bisXXXX flags might get important later...
@@ -200,13 +200,13 @@ CONTAINS
       CASE (PPGRD_ZZTECHNIQUE)
         CALL output_line ('ZZ not implemented!!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE DEFAULT
       CALL output_line ('Unsupported dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
-      STOP
+      CALL sys_halt()
     END SELECT
 
   END SUBROUTINE
@@ -468,7 +468,7 @@ CONTAINS
       CASE DEFAULT
         CALL output_line ('Unsupported FE space in destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DInterpP1Q1cnf')
-        STOP
+        CALL sys_halt()
       END SELECT
 
       ! Get from the trial element space the type of coordinate system

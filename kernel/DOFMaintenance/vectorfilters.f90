@@ -192,14 +192,14 @@ CONTAINS
     
     IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
       PRINT *,'Error: DBC not configured'
-      STOP
+      CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
       PRINT *,'Error: No vector'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Only handle nDOF DOF's, not the complete array!
@@ -267,14 +267,14 @@ CONTAINS
     
     IF (.NOT.ASSOCIATED(p_idx)) THEN
       PRINT *,'Error: DBC not configured'
-      STOP
+      CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
       PRINT *,'Error: No vector'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Impose the BC-DOF's directly - more precisely, into the
@@ -356,14 +356,14 @@ CONTAINS
     
     IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
       PRINT *,'Error: DBC not configured'
-      STOP
+      CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
       PRINT *,'Error: No vector'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Only handle nDOF DOF's, not the complete array!
@@ -432,14 +432,14 @@ CONTAINS
     
     IF (.NOT.ASSOCIATED(p_idx)) THEN
       PRINT *,'Error: DBC not configured'
-      STOP
+      CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
       PRINT *,'Error: No vector'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Impose the BC-DOF's directly - more precisely, into the
@@ -544,7 +544,7 @@ CONTAINS
          
     ELSE
       PRINT *,'Normalisation of non-P0 vectors not implemented!'
-      STOP
+      CALL sys_halt()
     END IF
 
   END SUBROUTINE
@@ -604,7 +604,7 @@ CONTAINS
     
     IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
       PRINT *,'Error: pressure drop BC not configured'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Currently, only 2D is supported. 
@@ -617,7 +617,7 @@ CONTAINS
     
       IF (.NOT.ASSOCIATED(p_vec)) THEN
         PRINT *,'Error: No vector'
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Only handle nDOF DOF's, not the complete array!
@@ -694,13 +694,13 @@ CONTAINS
     ! Only 2D supported at the moment
     IF (rslipBCStructure%ncomponents .NE. NDIM2D) THEN
       PRINT *,'vecfil_imposeNLSlipDefectBC: Only 2D supported.'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Only double precision vectors supported.
     IF (rx%cdataType .NE. ST_DOUBLE) THEN 
       PRINT *,'vecfil_imposeNLSlipDefectBC: Only double precision supported.'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get pointers to the structures. For the vector, get the pointer from
@@ -710,13 +710,13 @@ CONTAINS
     
     IF (.NOT.ASSOCIATED(p_idx)) THEN
       PRINT *,'Error: slip-BC not configured'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rx%RvectorBlock(rslipBCStructure%Icomponents(1))%isortStrategy .NE.&
         rx%RvectorBlock(rslipBCStructure%Icomponents(2))%isortStrategy) THEN
       PRINT *,'vecfil_imposeNLSlipDefectBC: Subectors differently sorted.'
-      STOP
+      CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double ( &
@@ -726,7 +726,7 @@ CONTAINS
     
     IF ( (.NOT.ASSOCIATED(p_vecX)) .OR. (.NOT.ASSOCIATED(p_vecX)) )THEN
       PRINT *,'Error: No vector'
-      STOP
+      CALL sys_halt()
     END IF
 
     CALL storage_getbase_double2d(rslipBCStructure%h_DnormalVectors,p_Dnormals)
@@ -809,12 +809,12 @@ CONTAINS
   
   IF (rx%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'vecfil_imposeFeastMirrorBC: Matrix must be double precision'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%icomponent .EQ. 0) THEN
     PRINT *,'Error: FMBC not configured'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
@@ -912,12 +912,12 @@ CONTAINS
   
   IF (rx%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'vecfil_imposeFeastMirrorDefBC: Matrix must be double precision'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%icomponent .EQ. 0) THEN
     PRINT *,'Error: FMBC not configured'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
@@ -1067,7 +1067,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO
@@ -1161,7 +1161,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCrhs: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO
@@ -1332,7 +1332,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCdef: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO
@@ -1506,7 +1506,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
                 p_RdiscreteFBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO
@@ -1600,7 +1600,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'vecfil_discreteFBCrhs: unknown boundary condition: ',&
                 p_RdiscreteFBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO
@@ -1698,7 +1698,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'vecfil_discreteFBCdef: unknown boundary condition: ',&
                 p_RdiscreteFBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO
@@ -1733,7 +1733,7 @@ CONTAINS
 
     IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock))) THEN
       PRINT *,'vecfil_subvectorToL20: isubvector out of allowed range!'
-      STOP
+      CALL sys_halt()
     END IF
       
     ! Don't use one single IF here as this may lead to errors depending

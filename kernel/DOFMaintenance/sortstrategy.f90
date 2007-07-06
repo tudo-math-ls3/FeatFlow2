@@ -192,7 +192,7 @@ CONTAINS
   
   CASE DEFAULT
     PRINT *,'sstrat_calcCuthillMcKee: Unsupported matrix format'
-    STOP
+    CALL sys_halt()
   END SELECT
     
 
@@ -783,7 +783,7 @@ CONTAINS
     IF (rdiscretisation%ndimension .EQ. 0) THEN
       CALL output_line ('Discretisation not initialised.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
-      STOP
+      CALL sys_halt()
     END IF
     
     idir = 0
@@ -827,13 +827,13 @@ CONTAINS
       CASE DEFAULT
         CALL output_line ('Element type not supported.', &
                           OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
-        STOP
+        CALL sys_halt()
       END SELECT
     
     CASE DEFAULT
       CALL output_line ('Discretisation too complex.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcRowwise')
-      STOP
+      CALL sys_halt()
     END SELECT
   
     ! Calculate the inverse permutation, that's it.
@@ -960,7 +960,7 @@ CONTAINS
     IF (rdiscretisation%ndimension .EQ. 0) THEN
       CALL output_line ('Discretisation not initialised.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Depending on the discrisation, choose the correct implementation.
@@ -999,13 +999,13 @@ CONTAINS
       CASE DEFAULT
         CALL output_line ('Element type not supported.', &
                           OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
-        STOP
+        CALL sys_halt()
       END SELECT
     
     CASE DEFAULT
       CALL output_line ('Discretisation too complex.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'sstrat_calcFEASTsorting')
-      STOP
+      CALL sys_halt()
     END SELECT
   
     ! Calculate the inverse permutation, that's it.

@@ -224,7 +224,7 @@ MODULE nonlinearsolver
 
     ! INPUT PARAMETER: 
     ! Type of stopping criterion to use. One of the
-    ! NLSOL_STOP_xxxx constants.
+    ! NLSOL_CALL sys_halt()_xxxx constants.
     INTEGER                    :: istoppingCriterion = NLSOL_STOP_STANDARD
 
     ! INPUT PARAMETER: 

@@ -329,14 +329,14 @@ CONTAINS
     IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
       IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
         PRINT *,'UPWIND: Solution/defect vector not present!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
     IF (rconfig%bALE) THEN
       IF (.NOT. PRESENT(DmeshVelocity)) THEN
         PRINT *,'UPWIND: Mesh velocity vector not present!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -375,38 +375,38 @@ CONTAINS
     IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'UPWIND: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     i = rmatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
     IF ((rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
         (elem_getPrimaryElement(i) .NE. EL_Q1T)) THEN
       PRINT *,'UPWIND: Unsupported discretisation.'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
         (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
       PRINT *,'UPWIND: Unsupported vector data type in velocity.'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (PRESENT(rdefect)) THEN
       IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
           (rdefect%cdataType .NE. ST_DOUBLE)) THEN
         PRINT *,'UPWIND: Unsupported vector data type in solution/defect'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
     IF (.NOT. rconfig%bconstViscosity) THEN
       PRINT *,'UPWIND: Only constant viscosity supported at the moment!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
       PRINT *,'UPWIND: Viscosity parameter nu not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Call the actual calculation routine.
@@ -1271,14 +1271,14 @@ CONTAINS
     IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
       IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
         PRINT *,'SD: Solution/defect vector not present!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
     IF (rconfig%bALE) THEN
       IF (.NOT. PRESENT(DmeshVelocity)) THEN
         PRINT *,'SD: Mesh velocity vector not present!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -1317,37 +1317,37 @@ CONTAINS
     IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     i = rmatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
     IF (rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'SD: Unsupported discretisation.'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
         (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
       PRINT *,'SD: Unsupported vector data type in velocity.'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (PRESENT(rdefect)) THEN
       IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
           (rdefect%cdataType .NE. ST_DOUBLE)) THEN
         PRINT *,'SD: Unsupported vector data type in solution/defect'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
     IF (.NOT. rconfig%bconstViscosity) THEN
       PRINT *,'SD: Only constant viscosity supported at the moment!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
       PRINT *,'SD: Viscosity parameter nu not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
@@ -1686,7 +1686,7 @@ CONTAINS
       IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
                  PRESENT(Du1) .AND. PRESENT(Du2))) THEN
         PRINT *,'conv_strdiff2dALE_double: Necessary arguments missing!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -1784,7 +1784,7 @@ CONTAINS
     ELSE
       PRINT *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
               ' from being build!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
@@ -2538,14 +2538,14 @@ CONTAINS
     IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
       IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
         PRINT *,'SD: Solution/defect vector not present!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
     IF (rconfig%bALE) THEN
       IF (.NOT. PRESENT(DmeshVelocity)) THEN
         PRINT *,'SD: Mesh velocity vector not present!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -2578,34 +2578,34 @@ CONTAINS
     IF ((rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(1,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(2,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (lsysbl_isSubmatrixPresent(rmatrix,1,2) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (lsysbl_isSubmatrixPresent(rmatrix,2,1) .AND. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'SD: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! If Newton must be calculated, make sure A12 and A21 exists and that
@@ -2614,14 +2614,14 @@ CONTAINS
       IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,1,2) .OR. &
           .NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
         PRINT *,'SD: For the Newton matrix, A12 and A21 must be defined!'
-        STOP
+        CALL sys_halt()
       END IF
       IF (lsyssc_isMatrixContentShared ( &
               rmatrix%RmatrixBlock(1,1),rmatrix%RmatrixBlock(2,2)) .OR. &
           lsyssc_isMatrixContentShared ( &
               rmatrix%RmatrixBlock(1,2),rmatrix%RmatrixBlock(2,1)) ) THEN
         PRINT *,'SD: For the Newton matrix, the matrix blocks must be indepentent!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
@@ -2630,31 +2630,31 @@ CONTAINS
     IF (rmatrix%RmatrixBlock(1,1)%p_rspatialDiscretisation%ccomplexity &
         .NE. SPDISC_UNIFORM) THEN
       PRINT *,'SD: Unsupported discretisation.'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
         (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
       PRINT *,'SD: Unsupported vector data type in velocity.'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (PRESENT(rdefect)) THEN
       IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
           (rdefect%cdataType .NE. ST_DOUBLE)) THEN
         PRINT *,'SD: Unsupported vector data type in solution/defect'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
     IF (.NOT. rconfig%bconstViscosity) THEN
       PRINT *,'SD: Only constant viscosity supported at the moment!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
       PRINT *,'SD: Viscosity parameter nu not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
@@ -3024,7 +3024,7 @@ CONTAINS
       IF (.NOT. (PRESENT(Ddef1) .AND. PRESENT(Ddef2) .AND. &
                  PRESENT(Du1) .AND. PRESENT(Du2))) THEN
         PRINT *,'conv_strdiff2dALE_double: Necessary arguments missing!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -3167,7 +3167,7 @@ CONTAINS
     ELSE
       PRINT *,'SD: NU=0 not allowed! Set dbeta=0 to prevent Stokes operator'// &
               ' from being build!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
@@ -4744,7 +4744,7 @@ CONTAINS
     ! Get the number of corner vertices of the element
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'conv_ueoJumpStabil2d_double_uni: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Initialise the cubature formula,
@@ -5050,7 +5050,7 @@ CONTAINS
           END DO
 
           PRINT *,'Matrix invalid! Trial-DOF not found!'
-          STOP
+          CALL sys_halt()
             
         END DO trialspaceloop
       
@@ -5390,7 +5390,7 @@ CONTAINS
     IF ((cdef .EQ. CONV_MODDEFECT) .OR. (cdef .EQ. CONV_MODBOTH)) THEN
       IF ((.NOT. PRESENT(rsolution)) .OR. (.NOT. PRESENT(rdefect))) THEN
         PRINT *,'EOS: Solution/defect vector not present!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -5424,36 +5424,36 @@ CONTAINS
     IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
         (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'EOS: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rmatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'EOS: Unsupported discretisation.'
-      STOP
+      CALL sys_halt()
     END IF
 
     !IF ((rvecPrimary%cdataType .NE. ST_DOUBLE) .OR. &
     !    (rvecSecondary%cdataType .NE. ST_DOUBLE)) THEN
     !  PRINT *,'EOS: Unsupported vector data type in velocity.'
-    !  STOP
+    !  CALL sys_halt()
     !END IF
     ! 
     !IF (PRESENT(rdefect)) THEN
     !  IF ((rsolution%cdataType .NE. ST_DOUBLE) .OR. &
     !      (rdefect%cdataType .NE. ST_DOUBLE)) THEN
     !    PRINT *,'EOS: Unsupported vector data type in solution/defect'
-    !    STOP
+    !    CALL sys_halt()
     !  END IF
     !END IF
     
     IF (.NOT. rconfig%bconstViscosity) THEN
       PRINT *,'EOS: Only constant viscosity supported at the moment!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rconfig%dnu .EQ. SYS_INFINITY) THEN
       PRINT *,'EOS: Viscosity parameter nu not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rconfig%cjump .EQ. CONV_JUMP_UNIFIEDEDGE) THEN
@@ -5474,7 +5474,7 @@ CONTAINS
       END IF
     ELSE
       PRINT *,'EOS: Unknown jump stabilisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
   END SUBROUTINE
@@ -5701,7 +5701,7 @@ CONTAINS
     ! Get the number of corner vertices of the element
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'conv_ueoJumpStabil2d_double_uni: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Initialise the cubature formula,
@@ -6007,7 +6007,7 @@ CONTAINS
           END DO
 
           PRINT *,'Matrix invalid! Trial-DOF not found!'
-          STOP
+          CALL sys_halt()
             
         END DO trialspaceloop
       

@@ -168,11 +168,11 @@ MODULE matrixio
                                       bnoZero, ifile, sfile, sformat)
     CASE DEFAULT
       PRINT *,'matio_writeFullMatrix: Unsupported matrix precision.'
-      STOP
+      CALL sys_halt()
     END SELECT
   CASE DEFAULT
     PRINT *,'matio_writeFullMatrix: Unknown matrix format.'
-    STOP
+    CALL sys_halt()
   END SELECT
     
   END SUBROUTINE 
@@ -233,7 +233,7 @@ MODULE matrixio
       IF (cf .EQ. -1) THEN
         PRINT *, 'matio_writeFullMatrix: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -342,7 +342,7 @@ MODULE matrixio
       IF (cf .EQ. -1) THEN
         PRINT *, 'matio_writeFullMatrix: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -489,7 +489,7 @@ MODULE matrixio
             CALL do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,rmatrix%NVAR,Kld,Kcol,Da)
           CASE DEFAULT
             PRINT *, 'lsyssc_spyMatrix: Unsupported interleave matrix type!'
-            STOP
+            CALL sys_halt()
           END SELECT
           WRITE(UNIT=iunit,FMT=30)
           
@@ -503,13 +503,13 @@ MODULE matrixio
             CALL do_spy_mat79mat1_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,rmatrix%NVAR,Kld,Kcol,Fa)
           CASE DEFAULT
             PRINT *, 'lsyssc_spyMatrix: Unsupported interleave matrix type!'
-            STOP
+            CALL sys_halt()
           END SELECT
           WRITE(UNIT=iunit,FMT=30)
 
         CASE DEFAULT
           PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       ELSE
@@ -523,7 +523,7 @@ MODULE matrixio
           CALL do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,rmatrix%NVAR,Kld,Kcol)
         CASE DEFAULT
           PRINT *, 'lsyssc_spyMatrix: Unsupported interleave matrix type!'
-          STOP
+          CALL sys_halt()
         END SELECT
         WRITE(UNIT=iunit,FMT=30)
       END IF
@@ -550,7 +550,7 @@ MODULE matrixio
           
         CASE DEFAULT
           PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       ELSE
@@ -584,7 +584,7 @@ MODULE matrixio
 
         CASE DEFAULT
           PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       ELSE
@@ -617,7 +617,7 @@ MODULE matrixio
 
         CASE DEFAULT
           PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       ELSE
@@ -631,7 +631,7 @@ MODULE matrixio
       
     CASE DEFAULT
       PRINT *, 'lsyssc_spyMatrix: Unsoppurted matrix format!'
-      STOP
+      CALL sys_halt()
       
     END SELECT
     

@@ -158,12 +158,12 @@ CONTAINS
         ELSE
           PRINT *,'bilf_createMatrixStructure: Edge-based matrix constrution only for'//&
                   ' uniform discr., supported.'
-          STOP
+          CALL sys_halt()
         END IF
         
       CASE DEFAULT
         PRINT *,'Invalid matrix construction method.'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE (LSYSSC_MATRIX7)
@@ -182,12 +182,12 @@ CONTAINS
         ELSE
           PRINT *,'bilf_createMatrixStructure: Edge-based matrix constrution only for'//&
                   ' uniform discr., supported.'
-          STOP
+          CALL sys_halt()
         END IF
         
       CASE DEFAULT
         PRINT *,'bilf_createMatrixStructure: Invalid matrix construction method.'
-        STOP
+        CALL sys_halt()
       END SELECT
         
       ! Translate to matrix structure 7:
@@ -195,13 +195,13 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'bilf_createMatrixStructure: Not supported matrix structure!'
-      STOP
+      CALL sys_halt()
     END SELECT
   
   ELSE
     PRINT *,'bilf_createMatrixStructure: General discretisation &
             & not implemented!'
-    STOP
+    CALL sys_halt()
   END IF
 
   END SUBROUTINE
@@ -271,12 +271,12 @@ CONTAINS
   ! has to make sure, the matrix is unsorted when this routine is called.
   IF (rmatrixScalar%isortStrategy .GT. 0) THEN
     PRINT *,'bilf_buildMatrixScalar: Matrix-structure must be unsorted!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
     PRINT *,'bilf_buildMatrixScalar: No discretisation associated!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Do we have a uniform triangulation? Would simplify a lot...
@@ -307,11 +307,11 @@ CONTAINS
                                        
       CASE DEFAULT
         PRINT *,'bilf_buildMatrixScalar: Not supported matrix structure!'
-        STOP
+        CALL sys_halt()
       END SELECT
     CASE DEFAULT
       PRINT *,'bilf_buildMatrixScalar: Single precision matrices currently not supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
   CASE (SPDISC_CONFORMAL) 
@@ -342,15 +342,15 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *,'bilf_buildMatrixScalar: Not supported matrix structure!'
-        STOP
+        CALL sys_halt()
       END SELECT
     CASE DEFAULT
       PRINT *,'bilf_buildMatrixScalar: Single precision matrices currently not supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
   CASE DEFAULT
     PRINT *,'bilf_buildMatrixScalar: General discretisation not implemented!'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -482,7 +482,7 @@ CONTAINS
   
   IF (NEQ .EQ. 0) THEN
     PRINT *,'bilf_createMatrixStructure9_uni: Empty matrix!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Allocate KLD...
@@ -613,7 +613,7 @@ CONTAINS
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'bilf_createMatStructure9_conf: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Allocate an array saving a couple of DOF's for trial and test functions
@@ -1204,7 +1204,7 @@ CONTAINS
   
   IF (NEQ .EQ. 0) THEN
     PRINT *,'bilf_createMatrixStructure9_uni: Empty matrix!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Allocate KLD...
@@ -1327,7 +1327,7 @@ CONTAINS
   NVE = elem_igetNVE(p_elementDistribution%itrialElement)
   IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
     PRINT *,'bilf_createMatStructure9_conf: element spaces incompatible!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Allocate the IadjCount array. This array counts for every element,
@@ -1998,7 +1998,7 @@ CONTAINS
   
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
     PRINT *,'bilf_buildMatrix9d_conf: No discretisation associated!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Which derivatives of basis functions are needed?
@@ -2022,7 +2022,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     BderTrialTempl(I1)=.TRUE.
@@ -2032,7 +2032,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     BderTestTempl(I1)=.TRUE.
@@ -2113,7 +2113,7 @@ CONTAINS
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'bilf_buildMatrix9d_conf: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Initialise the cubature formula,
@@ -2190,11 +2190,11 @@ CONTAINS
       IF (rform%ballCoeffConstant) THEN
         PRINT *,'Error in bilf_buildMatrix9d_conf: Some oefficients are not constant &
                 &although thy should be!'
-        STOP
+        CALL sys_halt()
       END IF
       IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
         PRINT *,'Error in bilf_buildMatrix9d_conf: coefficient function not given!'
-        STOP
+        CALL sys_halt()
       END IF
       ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
     END IF
@@ -2817,7 +2817,7 @@ CONTAINS
   
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
     PRINT *,'bilf_buildMatrix9d_conf2: No discretisation associated!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Which derivatives of basis functions are needed?
@@ -2841,7 +2841,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     BderTrialTempl(I1)=.TRUE.
@@ -2851,7 +2851,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     BderTestTempl(I1)=.TRUE.
@@ -2866,7 +2866,7 @@ CONTAINS
       (rmatrixScalar%h_KLD .EQ. ST_NOHANDLE)) THEN
     CALL output_line ('No discretisation structure! Cannot assemble matrix!', &
                       OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
-    STOP
+    CALL sys_halt()
   END IF
   
   CALL lsyssc_getbase_Kcol (rmatrixScalar,p_KCOL)
@@ -2898,7 +2898,7 @@ CONTAINS
   
   IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
     PRINT *,'bilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get a pointer to the triangulation - for easier access.
@@ -2945,7 +2945,7 @@ CONTAINS
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'bilf_buildMatrix9d_conf2: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Initialise the cubature formula,
@@ -2985,14 +2985,14 @@ CONTAINS
           (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
         PRINT *,'bilf_buildMatrix9d_conf2: Specified trial-derivative',IA,&
                 ' not available'
-        STOP
+        CALL sys_halt()
       END IF
 
       IF ((IB.LT.0) .OR. &
           (IB .GT. elem_getMaxDerivative(p_elementDistribution%itestElement))) THEN
         PRINT *,'bilf_buildMatrix9d_conf2: Specified test-derivative',IB,&
                 ' not available'
-        STOP
+        CALL sys_halt()
       END IF
     END DO
     
@@ -3047,11 +3047,11 @@ CONTAINS
       IF (rform%ballCoeffConstant) THEN
         PRINT *,'Error in bilf_buildMatrix9d_conf: Some oefficients are not constant &
                 &although thy should be!'
-        STOP
+        CALL sys_halt()
       END IF
       IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
         PRINT *,'Error in bilf_buildMatrix9d_conf: coefficient function not given!'
-        STOP
+        CALL sys_halt()
       END IF
       ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
     END IF

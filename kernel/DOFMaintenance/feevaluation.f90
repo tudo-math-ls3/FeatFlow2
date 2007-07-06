@@ -168,7 +168,7 @@ CONTAINS
     
   ELSE
     PRINT *,'fevl_evaluate_sim: Unsupported vector precision'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Release memory, finish

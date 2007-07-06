@@ -745,7 +745,7 @@ MODULE linearsolver
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Type of stopping criterion to use. One of the
-    ! LINSOL_STOP_xxxx constants.
+    ! LINSOL_CALL sys_halt()_xxxx constants.
     INTEGER                    :: istoppingCriterion = LINSOL_STOP_STANDARD
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
@@ -3358,7 +3358,7 @@ CONTAINS
 
           CASE DEFAULT
             PRINT *,'Jacobi: Unsupported vector format.'
-            STOP
+            CALL sys_halt()
           END SELECT
           
         CASE (ST_SINGLE)
@@ -3410,17 +3410,17 @@ CONTAINS
 
           CASE DEFAULT
             PRINT *,'Jacobi: Unsupported vector format.'
-            STOP
+            CALL sys_halt()
           END SELECT
 
         CASE DEFAULT
           PRINT *,'Jacobi: Unsupported matrix format.'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       CASE DEFAULT
         PRINT *,'Jacobi: Unsupported matrix format.'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     END DO
@@ -3641,7 +3641,7 @@ CONTAINS
         !IF(p_rmatrix%dscaleFactor .NE. 1.0_DP) THEN
         !  PRINT *,'Jin-Wei-Tam: Unsupported scale factor'
         !  ierror = LINSOL_ERR_INITERROR
-        !  STOP
+        !  CALL sys_halt()
         !END IF
 
         ! check the data format
@@ -3678,7 +3678,7 @@ CONTAINS
     IF(dSum .EQ. 0.0_DP) THEN
       PRINT *,'Jin-Wei-Tam: Sum of all matrix elements is 0.0!'
       ierror = LINSOL_ERR_INITERROR
-      STOP
+      CALL sys_halt()
     END IF
     
     ! everything went fine, we can store the sum now
@@ -3766,7 +3766,7 @@ CONTAINS
 
       CASE DEFAULT      
         PRINT *,'Jin-Wei-Tam: Unsupported Vector format'
-        STOP
+        CALL sys_halt()
         
       END SELECT
       
@@ -3832,7 +3832,7 @@ CONTAINS
 
           CASE DEFAULT
             PRINT *,'Jin-Wei-Tam: Unsupported vector format.'
-            STOP
+            CALL sys_halt()
           END SELECT
           
         CASE (ST_SINGLE)
@@ -3870,17 +3870,17 @@ CONTAINS
 
           CASE DEFAULT
             PRINT *,'Jin-Wei-Tam: Unsupported vector format.'
-            STOP
+            CALL sys_halt()
           END SELECT
 
         CASE DEFAULT
           PRINT *,'Jin-Wei-Tam: Unsupported matrix format.'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       CASE DEFAULT
         PRINT *,'Jin-Wei-Tam: Unsupported matrix format.'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     END DO
@@ -4033,13 +4033,13 @@ CONTAINS
       ! Some small checks...
       IF (p_rmatrix%NEQ .EQ. 0) THEN
         PRINT *,'SOR: No diagonal submatrix for component ',iblock
-        STOP
+        CALL sys_halt()
       END IF
       
       IF (IAND(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
           .NE. 0) THEN
         PRINT *,'SOR: Transposed submatrices not supported.'
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Now we have to make some decisions. At first, which matrix
@@ -4070,17 +4070,17 @@ CONTAINS
             
           CASE DEFAULT
             PRINT *,'SOR: Unsupported vector format.'
-            STOP
+            CALL sys_halt()
           END SELECT
           
         CASE DEFAULT
           PRINT *,'SOR: Unsupported matrix format.'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       CASE DEFAULT
         PRINT *,'SOR: Unsupported matrix format.'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     END DO
@@ -4338,13 +4338,13 @@ CONTAINS
       ! Some small checks...
       IF (p_rmatrix%NEQ .EQ. 0) THEN
         PRINT *,'SSOR: No diagonal submatrix for component ',iblock
-        STOP
+        CALL sys_halt()
       END IF
       
       IF (IAND(p_rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
           .NE. 0) THEN
         PRINT *,'SSOR: Transposed submatrices not supported.'
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Now we have to make some decisions. At first, which matrix
@@ -4376,17 +4376,17 @@ CONTAINS
             
           CASE DEFAULT
             PRINT *,'SSOR: Unsupported vector format.'
-            STOP
+            CALL sys_halt()
           END SELECT
           
         CASE DEFAULT
           PRINT *,'SSOR: Unsupported matrix format.'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       CASE DEFAULT
         PRINT *,'SSOR: Unsupported matrix format.'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     END DO
@@ -4733,7 +4733,7 @@ CONTAINS
   
   IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
     PRINT *,'Error: No matrix associated!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! If isubgroup does not coincide with isolverSubgroup from the solver
@@ -4796,7 +4796,7 @@ CONTAINS
     
     IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
       PRINT *,'Error: No matrix associated!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Which VANCA solver do we actually have?
@@ -5172,7 +5172,7 @@ CONTAINS
   
   IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
     PRINT *,'Error: No matrix associated!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! If isubgroup does not coincide with isolverSubgroup from the solver
@@ -5192,7 +5192,7 @@ CONTAINS
 
   IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'UMFPACK can only handle double precision matrices!'
-    STOP
+    CALL sys_halt()
   END IF
 
   SELECT CASE (p_rmatrix%cmatrixFormat)
@@ -5313,7 +5313,7 @@ CONTAINS
   
   IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
     PRINT *,'Error: No matrix associated!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! If isubgroup does not coincide with isolverSubgroup from the solver
@@ -5332,7 +5332,7 @@ CONTAINS
 
   IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'UMFPACK can only handle double precision matrices!'
-    STOP
+    CALL sys_halt()
   END IF
 
   SELECT CASE (p_rmatrix%cmatrixFormat)
@@ -5371,7 +5371,7 @@ CONTAINS
   !WHERE (abs(p_Da) .LT. 1.0E-12_DP) p_Da = 0.0_DP
   !CALL matio_writeMatrixHR (p_rmatrix, 'matrix',&
   !                          .TRUE., 0, 'matrix.txt', '(D20.10)')
-  !STOP
+  !CALL sys_halt()
 
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get them 0-based.
   CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
@@ -5587,7 +5587,7 @@ CONTAINS
     ! this.
     IF (rd%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'UMFPACK only supports double precision vectors!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Status reset
@@ -5848,7 +5848,7 @@ CONTAINS
     
     IF (rsolverNode%rsystemMatrix%NEQ .EQ. 0) THEN
       PRINT *,'Error: No matrix associated!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! If isubgroup does not coincide with isolverSubgroup from the solver
@@ -5860,7 +5860,7 @@ CONTAINS
     ! We only support scalar 1x1 matrices in structure 7 and 9.
     IF (p_rmatrix%ndiagBlocks .NE. 1) THEN
       PRINT *,'(M)ILU(s) supports only 1x1 matrices!'
-      STOP
+      CALL sys_halt()
     END IF
 
     p_rmatrixSc => p_rmatrix%RmatrixBlock(1,1)
@@ -5868,13 +5868,13 @@ CONTAINS
     ! We only support scalar 1x1 matrices in structure 7 and 9.
     IF (p_rmatrixSc%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'(M)ILU(s) supports only double precision matrices!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF ((p_rmatrixSc%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND.&
         (p_rmatrixSc%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
       PRINT *,'(M)ILU(s) supports only structure 7 and 9 matrices!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get the matrix description
@@ -6096,7 +6096,7 @@ CONTAINS
     
     IF (rd%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'(M)ILU(s) only supports double precision vectors!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get the data array of rd
@@ -8621,7 +8621,7 @@ CONTAINS
     IF (p_rsubnode%ikrylovDim .LE. 0) THEN
       PRINT *, "Error: Dimension of Krylov subspace for GMRES(m) is <= 0 !"
       ierror = LINSOL_ERR_INITERROR
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get the stuff out of our solver node
@@ -9556,7 +9556,7 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Create a new level-info structure
@@ -9662,7 +9662,7 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Where's the levelInfo-structure to delete?
@@ -9987,13 +9987,13 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Make sure we have the right amount of matrices
   IF (SIZE(Rmatrices) .NE. rsolverNode%p_rsubnodeMultigrid%nlevels) THEN
     PRINT *,'Error: Wrong number of matrices'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Check for every level, if there's a presmoother, postsmoother or
@@ -10086,13 +10086,13 @@ CONTAINS
     IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
         (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
       PRINT *,'Error: Multigrid structure not initialised'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Make sure we have the right amount of matrices
     IF (SIZE(Rmatrices) .NE. rsolverNode%p_rsubnodeMultigrid%nlevels) THEN
       PRINT *,'Error: Wrong number of matrices'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check for every level, if there's a presmoother, postsmoother or
@@ -10245,7 +10245,7 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Check for every level, if there's a presmoother, postsmoother or
@@ -10432,7 +10432,7 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Check for every level, if there's a presmoother, postsmoother or
@@ -10515,7 +10515,7 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Check for every level, if there's a presmoother, postsmoother or
@@ -10596,7 +10596,7 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Check for every level, if there's a presmoother, postsmoother or
@@ -10700,7 +10700,7 @@ CONTAINS
   IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
       (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid))) THEN
     PRINT *,'Error: Multigrid structure not initialised'
-    STOP
+    CALL sys_halt()
   END IF
 
 !  ! Check for every level, if there's a presmoother, postsmoother or

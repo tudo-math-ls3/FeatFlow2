@@ -180,18 +180,18 @@ CONTAINS
     
     IF (rvector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'ppns2D_bdforces: Unsupported vector precision.'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! We support only uniform discretisation structures.
     IF (.NOT. ASSOCIATED(rvector%p_rblockDiscretisation)) THEN
       PRINT *,'ppns2D_bdforces: No discretisation structure!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rvector%p_rblockDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'ppns2D_bdforces_uniform: Discretisation too complex!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get pointers to the subvectors from the block vector
@@ -203,7 +203,7 @@ CONTAINS
         (rvector%RvectorBlock(2)%isortStrategy > 0) .OR. &
         (rvector%RvectorBlock(3)%isortStrategy > 0)) THEN
       PRINT *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get pointers to the spatial discretisation structures of the
@@ -260,7 +260,7 @@ CONTAINS
                                    
     IF (p_rtriangulation%h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
       PRINT *,'No boundary parameters available!'
-      STOP
+      CALL sys_halt()
     END IF
     
     CALL storage_getbase_double (p_rtriangulation%h_DvertexParameterValue, &
@@ -360,7 +360,7 @@ CONTAINS
         
         IF (ilocaledge .GT. nlocaledges) THEN
           PRINT *,'ppns2D_bdforces: Edge not found. KMID destroyed?'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! The number of the edge is in ilocaledge. We have to transfer
@@ -532,28 +532,28 @@ CONTAINS
 
     IF (rvector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'ppns2D_streamfct_uniform: Unsupported vector precision.'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! We support only uniform discretisation structures.
     IF (.NOT. ASSOCIATED(rvector%p_rblockDiscretisation)) THEN
       PRINT *,'ppns2D_streamfct_uniform: No discretisation structure in rvector!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rvector%p_rblockDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'ppns2D_streamfct_uniform: Discretisation of rvector too complex!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (.NOT. ASSOCIATED(rdestVector%p_rspatialDiscretisation)) THEN
       PRINT *,'ppns2D_streamfct_uniform: No discretisation structure in rdestVector!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rdestVector%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'ppns2D_streamfct_uniform: Discretisation of rdestVector too complex!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ieltype1 = rvector%p_rblockDiscretisation% &
@@ -579,7 +579,7 @@ CONTAINS
         (rvector%RvectorBlock(2)%isortStrategy > 0) .OR. &
         (rdestVector%isortStrategy > 0)) THEN
       PRINT *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Let's go. Note that we perform the same computation for all,

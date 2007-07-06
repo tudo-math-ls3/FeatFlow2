@@ -538,7 +538,7 @@ CONTAINS
     Isize = SHAPE(p_Ddata)
     IF (Isize(1) /= 2 .OR. Isize(2) < rquadtree%NVT) THEN
       PRINT *, "(EE) t_quadtree_copyfrom_array: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Set pointers
@@ -578,7 +578,7 @@ CONTAINS
     CALL storage_getbase_double2D(h_Ddata,p_Ddata)
     IF (SIZE(p_Ddata,1) /= 2) THEN
       PRINT *, "(EE) t_quadtree_copyto_handle: First dimension of array must be 2!"
-      STOP
+      CALL sys_halt()
     END IF
     
     DO ivt=1,SIZE(p_Ddata,2)
@@ -613,7 +613,7 @@ CONTAINS
     
     IF (SIZE(p_Ddata,1) /= 2) THEN
       PRINT *, "(EE) t_quadtree_copyto_handle: First dimension of array must be 2!"
-      STOP
+      CALL sys_halt()
     END IF
 
     DO ivt=1,SIZE(p_Ddata,2)
@@ -1063,7 +1063,7 @@ CONTAINS
     IF (PRESENT(iquad)) THEN
       IF (iquad > rquadtree%NVT) THEN
         PRINT *, "(EE) t_quadtree_getboundingbox: quad number exceeds quadtree dimension"
-        STOP
+        CALL sys_halt()
       END IF
       bbox=rquadtree%p_Dbbox(QXMIN:QYMAX,iquad)
     ELSE

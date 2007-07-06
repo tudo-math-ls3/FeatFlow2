@@ -468,7 +468,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, 't_list_create: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Initialize list structure
@@ -586,7 +586,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, 't_list_resize: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Reallocate auxiliary data
@@ -677,7 +677,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, 't_list_copy: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_list_copyfrom
 
@@ -708,7 +708,7 @@ CONTAINS
 
     IF (rlist%clistFormat /= ST_DOUBLE) THEN
       PRINT *, 't_list_copyfromDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ipos = rlist%Knext(LHEAD)
@@ -748,7 +748,7 @@ CONTAINS
 
     IF (rlist%clistFormat /= ST_SINGLE) THEN
       PRINT *, 't_list_copyfromSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ipos = rlist%Knext(LHEAD)
@@ -788,7 +788,7 @@ CONTAINS
 
     IF (rlist%clistFormat /= ST_INT) THEN
       PRINT *, 't_list_copyfromInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ipos = rlist%Knext(LHEAD)
@@ -847,7 +847,7 @@ CONTAINS
       END DO
     CASE DEFAULT
       PRINT *, 't_list_copy: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_list_copyto
 
@@ -877,7 +877,7 @@ CONTAINS
 
     IF (rlist%clistFormat /= ST_DOUBLE) THEN
       PRINT *, 't_list_copytoDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_DKeySrc)
@@ -911,7 +911,7 @@ CONTAINS
 
     IF (rlist%clistFormat /= ST_SINGLE) THEN
       PRINT *, 't_list_copytoSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_SKeySrc)
@@ -945,7 +945,7 @@ CONTAINS
 
     IF (rlist%clistFormat /= ST_INT) THEN
       PRINT *, 't_list_copytoInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_IKeySrc)
@@ -982,7 +982,7 @@ CONTAINS
         rlist1%isizeDble   /= rlist2%isizeDble .OR.&
         rlist1%isizeSngl   /= rlist2%isizeSngl) THEN
       PRINT *, "t_list_swap: Lists are not compatible"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Swap
@@ -1009,7 +1009,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, 't_list_swap: Unsupported data type!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     IF (rlist1%isizeDble > 0)&
@@ -1038,7 +1038,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, 't_list_swap: Unsupported data type!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     IF (rlist2%isizeDble > 0)&
@@ -1166,7 +1166,7 @@ CONTAINS
     IF (rlist%clinkType /= LIST_DOUBLELINKED) THEN
       PRINT *, "t_list_prev: This operation is only available for&
           & double-linked lists!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Reset?
@@ -1218,7 +1218,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_DOUBLE) THEN
       PRINT *, 't_list_prependDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1263,7 +1263,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_list_prependDble: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Double key
@@ -1318,7 +1318,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_SINGLE) THEN
       PRINT *, 't_list_prependSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1362,7 +1362,7 @@ CONTAINS
       END IF
     CASE DEFAULT
       PRINT *, "t_list_prependSngl: Invalid linktype!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Single key
@@ -1417,7 +1417,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_INT) THEN
       PRINT *, 't_list_prependInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1462,7 +1462,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "t_list_prependInt: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Integer key
@@ -1517,7 +1517,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_DOUBLE) THEN
       PRINT *, 't_list_appendDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1563,7 +1563,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_list_appendDble: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Double key
@@ -1618,7 +1618,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_SINGLE) THEN
       PRINT *, 't_list_appendSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1664,7 +1664,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_list_appendSngl: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Single key
@@ -1719,7 +1719,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_INT) THEN
       PRINT *, 't_list_appendInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1765,7 +1765,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "t_list_appendInt: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Integere key
@@ -1824,7 +1824,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_DOUBLE) THEN
       PRINT *, 't_list_insertDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1878,7 +1878,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_list_insertDble: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Double key
@@ -1937,7 +1937,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_SINGLE) THEN
       PRINT *, 't_list_insertSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -1991,7 +1991,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_list_insertSngl: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Single key
@@ -2050,7 +2050,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_INT) THEN
       PRINT *, 't_list_insertInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if list needs to be enlarged
@@ -2104,7 +2104,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_list_insertInt: Invalid link type!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Integer key
@@ -2153,7 +2153,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_DOUBLE) THEN
       PRINT *, 't_list_deleteDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for data
@@ -2203,7 +2203,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_SINGLE) THEN
       PRINT *, 't_list_deleteSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for data
@@ -2253,7 +2253,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_INT) THEN
       PRINT *, 't_list_deleteInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for data
@@ -2306,7 +2306,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_DOUBLE) THEN
       PRINT *, 't_list_searchDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialization
@@ -2403,7 +2403,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_SINGLE) THEN
       PRINT *, 't_list_searchSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialization
@@ -2500,7 +2500,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rlist%clistFormat /= ST_INT) THEN
       PRINT *, 't_list_searchInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialization
@@ -2608,7 +2608,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, 't_list_print: Unsupported data type!'
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_list_print
 END MODULE list

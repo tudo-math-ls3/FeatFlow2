@@ -1230,7 +1230,7 @@ CONTAINS
       
       IF (ilocalEdge .GT. nnve) THEN
         PRINT *,'Error in bcasm_discrBCDirichlet: Edge not found!'
-        STOP
+        CALL sys_halt()
       END IF
       
       ! Now, ilocalEdge is the 'local' number of the edge
@@ -1497,7 +1497,7 @@ CONTAINS
       CASE DEFAULT
       
         PRINT *,'bcasm_discrBCDirichlet: Unsupported element!'
-        STOP
+        CALL sys_halt()
       
       END SELECT
     
@@ -1670,7 +1670,7 @@ CONTAINS
     IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
       PRINT *,'for uniform discretisations!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! For easier access:
@@ -1679,14 +1679,14 @@ CONTAINS
 
     IF (p_rtriangulation%ndim .NE. NDIM2D) THEN
       PRINT *,'FEAST mirror boundary only support 2D!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
     IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1) THEN
       PRINT *,'Discrete FEAST mirror boundary conditions currently only supported'
       PRINT *,'for Q1 element!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! All elements are of the samne type. Get information about the shape in advance.
@@ -1903,19 +1903,19 @@ CONTAINS
   IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
     PRINT *,'Discrete pressure drop boundary conditions currently only supported'
     PRINT *,'for uniform discretisations!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
   IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
     PRINT *,'Discrete pressure drop boundary conditions currently only supported'
     PRINT *,'for Q1~ element!'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rbcRegion%nequations .NE. NDIM2D) THEN
     PRINT *,'Pressure drop boundary conditions only support 2D!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! For easier access:
@@ -2167,19 +2167,19 @@ CONTAINS
   IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
     PRINT *,'Discrete Slip boundary conditions currently only supported'
     PRINT *,'for uniform discretisations!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
   IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
     PRINT *,'Discrete Slip boundary conditions currently only supported'
     PRINT *,'for Q1~ element!'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rbcRegion%nequations .NE. NDIM2D) THEN
     PRINT *,'Pressure drop boundary conditions only support 2D!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! For easier access:
@@ -2679,12 +2679,12 @@ CONTAINS
     
     IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
       PRINT *,'bcasm_discrFBCDirichlet: Can only handle uniform discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (p_rspatialDiscretisation%ndimension .NE. NDIM2D) THEN
       PRINT *,'bcasm_discrFBCDirichlet: Only 2D supported for now!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! For easier access:

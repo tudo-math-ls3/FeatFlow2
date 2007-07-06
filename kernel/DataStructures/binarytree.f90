@@ -456,7 +456,7 @@ CONTAINS
       CALL storage_getbase_int(rtree%h_Key,rtree%IKey)
     CASE DEFAULT
       PRINT *, 't_tree_create: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Allocate memory fo auxiliary data
@@ -568,7 +568,7 @@ CONTAINS
       CALL storage_getbase_int(rtree%h_Key,rtree%IKey)
     CASE DEFAULT
       PRINT *, 't_tree_resize: Unsupported key data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Auxiliary data
@@ -649,7 +649,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, 't_tree_copyto_handle: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Transform the content of the auxiliary handles to the tree.
@@ -708,7 +708,7 @@ CONTAINS
     ! Check if tree has correct data format
     IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
       PRINT *, "t_tree_copyto_arrayDble: Invalid data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Build-up treee structure
@@ -721,7 +721,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_DData,Isize)
       IF ((rtree%isizeDble /= SIZE(p_DData,1)) .OR. (rtree%NA /= SIZE(p_DData,2))) THEN
         PRINT *, "t_tree_copyto_arrayDble: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -736,7 +736,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_FData,Isize)
       IF ((rtree%isizeSngl /= SIZE(p_FData,1)) .OR. (rtree%NA /= SIZE(p_FData,2))) THEN
         PRINT *, "t_tree_copyto_arrayDble: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -751,7 +751,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_IData,Isize)
       IF ((rtree%isizeInt /= SIZE(p_IData,1)) .OR. (rtree%NA /= SIZE(p_IData,2))) THEN
         PRINT *, "t_tree_copyto_arrayDble: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -804,7 +804,7 @@ CONTAINS
     ! Check if tree has correct data format
     IF (rtree%ctreeFormat /= ST_SINGLE) THEN
       PRINT *, "t_tree_copyto_arraySngl: Invalid data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Build-up treee structure
@@ -817,7 +817,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_DData,Isize)
       IF ((rtree%isizeDble /= SIZE(p_DData,1)) .OR. (rtree%NA /= SIZE(p_DData,2))) THEN
         PRINT *, "t_tree_copyto_arraySngl: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -832,7 +832,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_FData,Isize)
       IF ((rtree%isizeSngl /= SIZE(p_FData,1)) .OR. (rtree%NA /= SIZE(p_FData,2))) THEN
         PRINT *, "t_tree_copyto_arraySngl: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -847,7 +847,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_IData,Isize)
       IF ((rtree%isizeInt /= SIZE(p_IData,1)) .OR. (rtree%NA /= SIZE(p_IData,2))) THEN
         PRINT *, "t_tree_copyto_arraySngl: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -900,7 +900,7 @@ CONTAINS
     ! Check if tree has correct data format
     IF (rtree%ctreeFormat /= ST_INT) THEN
       PRINT *, "t_tree_copyto_arrayInt: Invalid data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Build-up treee structure
@@ -913,7 +913,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_DData,Isize)
       IF ((rtree%isizeDble /= SIZE(p_DData,1)) .OR. (rtree%NA /= SIZE(p_DData,2))) THEN
         PRINT *, "t_tree_copyto_arrayInt: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -928,7 +928,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_FData,Isize)
       IF ((rtree%isizeSngl /= SIZE(p_FData,1)) .OR. (rtree%NA /= SIZE(p_FData,2))) THEN
         PRINT *, "t_tree_copyto_arrayInt: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -943,7 +943,7 @@ CONTAINS
       CALL storage_getsize(rtree%h_IData,Isize)
       IF ((rtree%isizeInt /= SIZE(p_IData,1)) .OR. (rtree%NA /= SIZE(p_IData,2))) THEN
         PRINT *, "t_tree_copyto_arrayInt: Invalid auxiliary data!"
-        STOP
+        CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
       IF (Isize(2) /= rtree%NNA) THEN
@@ -1012,7 +1012,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, 't_tree_copyfrom_handle: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
   CONTAINS
@@ -1080,13 +1080,13 @@ CONTAINS
     ! Check data format
     IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
       PRINT *, "t_tree_copyfrom_key_arrayDble: Invalid data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check size of array
     IF (SIZE(p_DKey) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_key_arrayDble: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
     
     j=0
@@ -1135,13 +1135,13 @@ CONTAINS
     ! Check data format
     IF (rtree%ctreeFormat /= ST_SINGLE) THEN
       PRINT *, "t_tree_copyfrom_key_arraySngl: Invalid data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check size of array
     IF (SIZE(p_FKey) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_key_arraySngl: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
     
     j=0
@@ -1190,13 +1190,13 @@ CONTAINS
     ! Check data format
     IF (rtree%ctreeFormat /= ST_INT) THEN
       PRINT *, "t_tree_copyfrom_key_arrayInt: Invalid data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check size of array
     IF (SIZE(p_IKey) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_key_arrayInt: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
     
     j=0
@@ -1350,7 +1350,7 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *, "t_tree_copyfrom_handle: Unsupported data format!"
-        STOP
+        CALL sys_halt()
       END SELECT
 
     ELSE   ! The handle is already associated
@@ -1359,7 +1359,7 @@ CONTAINS
       CALL storage_getdatatype(h_Data,idatatype)
       IF (idatatype /= ctype) THEN
         PRINT *, "t_tree_copyfrom_handle: Data type mismatch!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Are we 1D- or 2D-array?
@@ -1384,7 +1384,7 @@ CONTAINS
             IF (SIZE(mask) > 1) THEN
               PRINT *, "t_tree_copyfrom_handle: For 1D-array mask can only&
                   & have one entry!"
-              STOP
+              CALL sys_halt()
             END IF
             CALL t_tree_copyfrom_arrayDble(rtree,p_DData,mask(1))
           ELSEIF (rtree%isizeDble == 1) THEN
@@ -1392,7 +1392,7 @@ CONTAINS
           ELSE
             PRINT *, "t_tree_copyfrom_handle: A 1D-array was given but there&
                 & are more than one components in the tree!"
-            STOP
+            CALL sys_halt()
           END IF
                     
         CASE (ST_SINGLE)
@@ -1403,7 +1403,7 @@ CONTAINS
             IF (SIZE(mask) > 1) THEN
               PRINT *, "t_tree_copyfrom_handle: For 1D-array mask can only&
                   & have one entry!"
-              STOP
+              CALL sys_halt()
             END IF
             CALL t_tree_copyfrom_arraySngl(rtree,p_FData,mask(1))
           ELSEIF (rtree%isizeSngl == 1) THEN
@@ -1411,7 +1411,7 @@ CONTAINS
           ELSE
             PRINT *, "t_tree_copyfrom_handle: A 1D-array was given but there&
                 & are more than one components in the tree!"
-            STOP
+            CALL sys_halt()
           END IF
           
         CASE (ST_INT)
@@ -1422,7 +1422,7 @@ CONTAINS
             IF (SIZE(mask) > 1) THEN
               PRINT *, "t_tree_copyfrom_handle: For 1D-array mask can only&
                   & have one entry!"
-              STOP
+              CALL sys_halt()
             END IF
             CALL t_tree_copyfrom_arrayInt(rtree,p_IData,mask(1))
           ELSEIF (rtree%isizeInt == 1) THEN
@@ -1430,12 +1430,12 @@ CONTAINS
           ELSE
             PRINT *, "t_tree_copyfrom_handle: A 1D-array was given but there&
                 & are more than one components in the tree!"
-            STOP
+            CALL sys_halt()
           END IF
 
         CASE DEFAULT
           PRINT *, "t_tree_copyfrom_handle: Unsupported data type!"
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE (2)   !!! 2D-ARRAY !!!
@@ -1462,12 +1462,12 @@ CONTAINS
 
         CASE DEFAULT
           PRINT *, "t_tree_copyfrom_handle: Unsupported data type!"
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE DEFAULT
         PRINT *, "t_tree_copyfrom_handle: Unsupported data dimension!"
-        STOP
+        CALL sys_halt()
       END SELECT
     END IF
 
@@ -1505,19 +1505,19 @@ CONTAINS
     ! Check if auxiliary double data is available
     IF (rtree%isizeDble == 0) THEN
       PRINT *, "t_tree_copyfrom_arrayDble: No double data available!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if given array is large enough in its second dimension
     IF (SIZE(p_DData) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_arrayDble: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if mask is valid
     IF (mask < 1 .OR. mask > rtree%isizeDble) THEN
       PRINT *, "t_tree_copyfrom_arrayDble: Invalid mask!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Do the work
@@ -1575,14 +1575,14 @@ CONTAINS
     ! Check if auxiliary double data is available
     IF (rtree%isizeDble == 0) THEN
       PRINT *, "t_tree_copyfrom_arrayDble2D: No double data available!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if given array is large enough in its second dimension
     Isize = SHAPE(p_Ddata)
     IF (Isize(2) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_arrayDble2D: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Copy the content to the array
@@ -1590,20 +1590,20 @@ CONTAINS
       ! Check if given array has correct size in its first dimension
       IF (Isize(1) /= SIZE(mask)) THEN
         PRINT *, "t_tree_copyfrom_arrayDble2D: Array dimensions do not match mask!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Check if mask is valid
       IF (ANY(mask < 1) .OR. ANY(mask > rtree%isizeDble)) THEN
         PRINT *, "t_tree_copyfrom_arrayDble2D: Invalid mask!"
-        STOP
+        CALL sys_halt()
       END IF
       j=0; CALL inorderDataDbleMask(rtree%Kchild(TRIGHT,TROOT))
     ELSE
       ! Check if given array has correct size in its first dimension
       IF (Isize(1) /= rtree%isizeDble) THEN
         PRINT *, "t_tree_copyfrom_arrayDble2D: Array too smalle!"
-        STOP
+        CALL sys_halt()
       END IF
       j=0; CALL inorderDataDble(rtree%Kchild(TRIGHT,TROOT))
     END IF
@@ -1668,19 +1668,19 @@ CONTAINS
     ! Check if auxiliary single data is available
     IF (rtree%isizeSngl == 0) THEN
       PRINT *, "t_tree_copyfrom_arraySngl: No single data available!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if given array is large enough in its second dimension
     IF (SIZE(p_FData) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_arraySngl: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if mask is valid
     IF (mask < 1 .OR. mask > rtree%isizeSngl) THEN
       PRINT *, "t_tree_copyfrom_arraySngl: Invalid mask!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Do the work
@@ -1738,14 +1738,14 @@ CONTAINS
     ! Check if auxiliary single data is available
     IF (rtree%isizeSngl == 0) THEN
       PRINT *, "t_tree_copyfrom_arraySngl2D: No single data available!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if given array is large enough in its second dimension
     Isize = SHAPE(p_Fdata)
     IF (Isize(2) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_arraySngl2D: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Copy the content to the array
@@ -1753,20 +1753,20 @@ CONTAINS
       ! Check if given array has correct size in its first dimension
       IF (Isize(1) /= SIZE(mask)) THEN
         PRINT *, "t_tree_copyfrom_arraySngl2D: Array dimensions do not match mask!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Check if mask is valid
       IF (ANY(mask < 1) .OR. ANY(mask > rtree%isizeSngl)) THEN
         PRINT *, "t_tree_copyfrom_arraySngl2D: Invalid mask!"
-        STOP
+        CALL sys_halt()
       END IF
       j=0; CALL inorderDataSnglMask(rtree%Kchild(TRIGHT,TROOT))
     ELSE
       ! Check if given array has correct size in its first dimension
       IF (Isize(1) /= rtree%isizeSngl) THEN
         PRINT *, "t_tree_copyfrom_arraySngl2D: Array too smalle!"
-        STOP
+        CALL sys_halt()
       END IF
       j=0; CALL inorderDataSngl(rtree%Kchild(TRIGHT,TROOT))
     END IF
@@ -1831,19 +1831,19 @@ CONTAINS
     ! Check if auxiliary integer data is available
     IF (rtree%isizeInt == 0) THEN
       PRINT *, "t_tree_copyfrom_arrayInt: No integer data available!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if given array is large enough in its second dimension
     IF (SIZE(p_IData) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_arrayInt: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if mask is valid
     IF (mask < 1 .OR. mask > rtree%isizeInt) THEN
       PRINT *, "t_tree_copyfrom_arrayInt: Invalid mask!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Do the work
@@ -1901,14 +1901,14 @@ CONTAINS
     ! Check if auxiliary integer data is available
     IF (rtree%isizeInt == 0) THEN
       PRINT *, "t_tree_copyfrom_arrayInt2D: No integer data available!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if given array is large enough in its second dimension
     Isize = SHAPE(p_IData)
     IF (Isize(2) < rtree%NA) THEN
       PRINT *, "t_tree_copyfrom_arrayInt2D: Array too small!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Copy the content to the array
@@ -1916,20 +1916,20 @@ CONTAINS
       ! Check if given array has correct size in its first dimension
       IF (Isize(1) /= SIZE(mask)) THEN
         PRINT *, "t_tree_copyfrom_arrayInt2D: Array dimensions do not match mask!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Check if mask is valid
       IF (ANY(mask < 1) .OR. ANY(mask > rtree%isizeInt)) THEN
         PRINT *, "t_tree_copyfrom_arrayInt2D: Invalid mask!"
-        STOP
+        CALL sys_halt()
       END IF
       j=0; CALL inorderDataIntMask(rtree%Kchild(TRIGHT,TROOT))
     ELSE
       ! Check if given array has correct size in its first dimension
       IF (Isize(1) /= rtree%isizeInt) THEN
         PRINT *, "t_tree_copyfrom_arrayInt2D: Array too smalle!"
-        STOP
+        CALL sys_halt()
       END IF
       j=0; CALL inorderDataInt(rtree%Kchild(TRIGHT,TROOT))
     END IF
@@ -2005,7 +2005,7 @@ CONTAINS
     ! Check if tree format is ok
     IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
       PRINT *, 't_tree_insertDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if key is already stored in tree
@@ -2099,7 +2099,7 @@ CONTAINS
     ! Check if tree format is ok
     IF (rtree%ctreeFormat /= ST_SINGLE) THEN
       PRINT *, 't_tree_insertSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if key is already stored in tree
@@ -2193,7 +2193,7 @@ CONTAINS
     ! Check if tree format is ok
     IF (rtree%ctreeFormat /= ST_INT) THEN
       PRINT *, 't_tree_insertInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if key is already stored in tree
@@ -2417,7 +2417,7 @@ CONTAINS
     ! Check if tree format is ok
     IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
       PRINT *, 't_tree_deleteDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for key
@@ -2519,7 +2519,7 @@ CONTAINS
     ! Check if tree format is ok
     IF (rtree%ctreeFormat /= ST_SINGLE) THEN
       PRINT *, 't_tree_deleteSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for key
@@ -2621,7 +2621,7 @@ CONTAINS
     ! Check if tree format is ok
     IF (rtree%ctreeFormat /= ST_INT) THEN
       PRINT *, 't_tree_deleteInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for key
@@ -2876,7 +2876,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
       PRINT *, 't_tree_searchDble: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     f           = BTREE_NOT_FOUND
@@ -2943,7 +2943,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rtree%ctreeFormat /= ST_SINGLE) THEN
       PRINT *, 't_tree_searchSngl: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     f           = BTREE_NOT_FOUND
@@ -3010,7 +3010,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rtree%ctreeFormat /= ST_INT) THEN
       PRINT *, 't_tree_searchInt: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END IF
     
     f           = BTREE_NOT_FOUND
@@ -3072,7 +3072,7 @@ CONTAINS
     
     IF (search(rtree,dkey,ipred) /= BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemDble: Unable to find item in tree"
-      STOP
+      CALL sys_halt()
     END IF
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
   END FUNCTION t_tree_getitemDble
@@ -3110,7 +3110,7 @@ CONTAINS
     
     IF (search(rtree,skey,ipred) /= BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemSngl: Unable to find item in tree"
-      STOP
+      CALL sys_halt()
     END IF
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
   END FUNCTION t_tree_getitemSngl
@@ -3148,13 +3148,13 @@ CONTAINS
     
     IF (search(rtree,ikey,ipred) /= BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemInt: Unable to find item in tree"
-      STOP
+      CALL sys_halt()
     END IF
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 
     IF (ipos /= ikey) THEN
       WRITE(*,'(A,I5,A,I5,A)') 'Position',ipos,'and key',ikey,'are different'
-      STOP
+      CALL sys_halt()
     END IF
   END FUNCTION t_tree_getitemInt
 
@@ -3191,7 +3191,7 @@ CONTAINS
           CALL preorderInt(rtree%Kchild(TRIGHT,TROOT))
         CASE DEFAULT
           PRINT *, 't_tree_print: Unsupported data format!'
-          STOP
+          CALL sys_halt()
         END SELECT
       END IF
       
@@ -3206,7 +3206,7 @@ CONTAINS
           CALL inorderInt(rtree%Kchild(TRIGHT,TROOT))
         CASE DEFAULT
           PRINT *, 't_tree_print: Unsupported data format!'
-          STOP
+          CALL sys_halt()
         END SELECT
       END IF
       
@@ -3221,7 +3221,7 @@ CONTAINS
           CALL postorderInt(rtree%Kchild(TRIGHT,TROOT))
         CASE DEFAULT
           PRINT *, 't_tree_print: Unsupported data format!'
-          STOP
+          CALL sys_halt()
         END SELECT
       END IF
     END SELECT

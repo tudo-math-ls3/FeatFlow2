@@ -340,7 +340,7 @@ CONTAINS
   
   IF (.NOT. bcompatible) THEN
     PRINT *,'Element and cubature formula not compatible!'
-    STOP
+    CALL sys_halt()
   END IF
   
   END SUBROUTINE  
@@ -376,7 +376,7 @@ CONTAINS
     IF (PRESENT(ndim)) THEN
       IF (ndim .NE. NDIM2D) THEN
         PRINT *,'spdiscr_getLumpCubature: Only 2D supported.'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
@@ -518,7 +518,7 @@ CONTAINS
     ! Check that the source discretisation structure is valid.
     IF (rsourceDiscr%ndimension .LE. 0) THEN
       PRINT *,'spdiscr_deriveBlockDiscr: Source structure invalid!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Evaluate the optional parameters
@@ -972,14 +972,14 @@ CONTAINS
   ! Check that the source discretisation structure is valid.
   IF (rsourceDiscr%ndimension .LE. 0) THEN
     PRINT *,'spdiscr_deriveSimpleDiscr: Source structure invalid!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Check that the discretisation structure is really uniform.
   ! More complex situations are not supported by this routine.
   IF (rsourceDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
     PRINT *,'spdiscr_deriveSimpleDiscr only supports uniform discretisations!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Check the cubature formula against the element distribution.
@@ -1125,7 +1125,7 @@ CONTAINS
   IF (p_relementDistr%ctrafoType .NE. ctrafoTest) THEN
     PRINT *,'spdiscr_initDiscr_combined: Elements incompatible due to different'
     PRINT *,'transformation between reference and real element!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Check the cubature formula against the element distribution.

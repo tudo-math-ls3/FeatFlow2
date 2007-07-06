@@ -135,12 +135,12 @@ CONTAINS
   ! has to make sure, the matrix is unsorted when this routine is called.
   IF (rmatrixScalar%isortStrategy .GT. 0) THEN
     PRINT *,'trilf_buildMatrixScalar: Matrix-structure must be unsorted!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
     PRINT *,'trilf_buildMatrixScalar: No discretisation associated!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Do we have a uniform triangulation? Would simplify a lot...
@@ -168,11 +168,11 @@ CONTAINS
                                        
       CASE DEFAULT
         PRINT *,'trilf_buildMatrixScalar: Not supported matrix structure!'
-        STOP
+        CALL sys_halt()
       END SELECT
     CASE DEFAULT
       PRINT *,'trilf_buildMatrixScalar: Single precision matrices currently not supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
   CASE (SPDISC_CONFORMAL) 
@@ -200,16 +200,16 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *,'bilf_buildMatrixScalar: Not supported matrix structure!'
-        STOP
+        CALL sys_halt()
       END SELECT
     CASE DEFAULT
       PRINT *,'bilf_buildMatrixScalar: Single precision matrices &
               &currently not supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
   CASE DEFAULT
     PRINT *,'bilf_buildMatrixScalar: General discretisation not implemented!'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -392,7 +392,7 @@ CONTAINS
   
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
     PRINT *,'trilf_buildMatrix9d_conf2: No discretisation associated!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Which derivatives of basis functions are needed?
@@ -417,7 +417,7 @@ CONTAINS
     
     IF ((I1 .LT.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     IF (I1 .NE. 0) BderFuncTempl(I1)=.TRUE.
@@ -426,7 +426,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     BderTrialTempl(I1)=.TRUE.
@@ -436,7 +436,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     BderTestTempl(I1)=.TRUE.
@@ -477,17 +477,17 @@ CONTAINS
   
   IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
     PRINT *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (.NOT. ASSOCIATED(p_rdiscretisationFunc)) THEN
     PRINT *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the vector!'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (p_rdiscretisation%inumFESpaces .NE. p_rdiscretisationFunc%inumFESpaces) THEN
     PRINT *,'trilf_buildMatrix9d_conf2 error: Discretisations not compatible!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get a pointer to the triangulation - for easier access.
@@ -538,11 +538,11 @@ CONTAINS
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     IF (NVE .NE. elem_igetNVE(p_elementDistributionFunc%itrialElement)) THEN
       PRINT *,'trilf_buildMatrix9d_conf2: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Initialise the cubature formula,
@@ -584,21 +584,21 @@ CONTAINS
           (ifunc .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified function-derivative',ifunc,&
                 ' not available'
-        STOP
+        CALL sys_halt()
       END IF
       
       IF ((IA.LE.0) .OR. &
           (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified trial-derivative',IA,&
                 ' not available'
-        STOP
+        CALL sys_halt()
       END IF
 
       IF ((IB.LE.0) .OR. &
           (IB .GT. elem_getMaxDerivative(p_elementDistribution%itestElement))) THEN
         PRINT *,'trilf_buildMatrix9d_conf2: Specified test-derivative',IB,&
                 ' not available'
-        STOP
+        CALL sys_halt()
       END IF
     END DO
     

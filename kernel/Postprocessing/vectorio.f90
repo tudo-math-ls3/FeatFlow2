@@ -88,7 +88,7 @@ MODULE vectorio
       IF (cf .EQ. -1) THEN
         PRINT *, 'vecio_writeArray_Dble: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -180,7 +180,7 @@ MODULE vectorio
       IF (cf .EQ. -1) THEN
         PRINT *, 'vecio_readArray_Dble: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -275,7 +275,7 @@ MODULE vectorio
       IF (cf .EQ. -1) THEN
         PRINT *, 'vecio_writeVectorHR: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -326,7 +326,7 @@ MODULE vectorio
       END IF
     CASE DEFAULT
       PRINT *,'vecio_writeVectorHR: Unsupported vector precision.'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Close the file if necessary
@@ -407,7 +407,7 @@ MODULE vectorio
       IF (cf .EQ. -1) THEN
         PRINT *, 'vecio_writeVectorHR: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -431,7 +431,7 @@ MODULE vectorio
     
     IF (rvector%NEQ .NE. NEQ) THEN
       PRINT *,'vecio_readVectorHR: Vector has wrong size!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Vector precision?
@@ -462,7 +462,7 @@ MODULE vectorio
       END IF
     CASE DEFAULT
       PRINT *,'vecio_readVectorHR: Unsupported vector precision.'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Close the file if necessary
@@ -528,7 +528,7 @@ MODULE vectorio
       IF (cf .EQ. -1) THEN
         PRINT *, 'vecio_writeBlockVectorHR: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -591,7 +591,7 @@ MODULE vectorio
       END DO
     CASE DEFAULT
       PRINT *,'vecio_writeBlockVectorHR: Unsupported vector precision.'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Close the file if necessary
@@ -680,7 +680,7 @@ MODULE vectorio
       IF (cf .EQ. -1) THEN
         PRINT *, 'vecio_writeVectorHR: Could not open file '// &
                  trim(sfile)
-        STOP
+        CALL sys_halt()
       END IF
     ELSE
       cf = ifile
@@ -732,7 +732,7 @@ MODULE vectorio
     ! it's a feature ;-)
     IF (rvector%NEQ .NE. NEQ) THEN
       PRINT *,'vecio_readBlockVectorHR: Vector has wrong size!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! We don't need the block size anymore.    
@@ -769,7 +769,7 @@ MODULE vectorio
       END DO
     CASE DEFAULT
       PRINT *,'vecio_readBlockVectorHR: Unsupported vector precision.'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Close the file if necessary

@@ -128,7 +128,7 @@ CONTAINS
   
   IF (.NOT.ASSOCIATED(p_idx)) THEN
     PRINT *,'Error: DBC not configured'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Only handle nDOF DOF's, not the complete array!
@@ -257,7 +257,7 @@ CONTAINS
   
   IF (.NOT.ASSOCIATED(p_idx)) THEN
     PRINT *,'Error: DBC not configured'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Only handle nDOF DOF's, not the complete array!
@@ -386,7 +386,7 @@ CONTAINS
   
   IF (.NOT.ASSOCIATED(p_idx)) THEN
     PRINT *,'Error: DBC not configured'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Only handle nDOF DOF's, not the complete array!
@@ -509,17 +509,17 @@ CONTAINS
   IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
       (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
     PRINT *,'matfil_imposeFeastMirrorBC: Only support matrix format 7 and 9'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'matfil_imposeFeastMirrorBC: Matrix must be double precision'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%icomponent .EQ. 0) THEN
     PRINT *,'Error: FMBC not configured'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%h_ImirrorDOFs .EQ. ST_NOHANDLE) THEN
@@ -739,7 +739,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'matfil_discreteBC: unknown boundary condition: ',&
                 p_RdiscreteBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO
@@ -915,7 +915,7 @@ CONTAINS
       CASE DEFAULT
         PRINT *,'matfil_discreteFBC: unknown boundary condition: ',&
                 p_RdiscreteFBC(i)%itype
-        STOP
+        CALL sys_halt()
         
       END SELECT
     END DO

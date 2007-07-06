@@ -135,18 +135,18 @@ CONTAINS
     
     IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
       PRINT *,'pperr_scalar: No discretisation structure!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (p_rdiscretisation%ndimension .NE. NDIM2D) THEN
       PRINT *,'pperr_scalar: 3D discretisation currently not supported.'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! The vector must be unsorted, otherwise we can't set up the vector.
     IF (rvectorScalar%isortStrategy .GT. 0) THEN
       PRINT *,'pperr_scalar: Vector must be unsorted!'
-      STOP
+      CALL sys_halt()
     END IF
   
     ! Do we have a uniform triangulation? Would simplify a lot...
@@ -171,7 +171,7 @@ CONTAINS
     
     ELSE
       PRINT *,'pperr_scalar: General discretisation not implemented!'
-      STOP
+      CALL sys_halt()
     END IF
 
   END SUBROUTINE
@@ -306,7 +306,7 @@ CONTAINS
       Bder(DER_DERIV_Y) = .TRUE.
     CASE DEFAULT
       PRINT *,'pperr_scalar2d_conf: Unknown error type identifier!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Get a pointer to the triangulation - for easier access.
@@ -585,7 +585,7 @@ CONTAINS
         
         CASE DEFAULT
           PRINT *,'pperr_scalar2d_conf: Unknown error type identifier!'
-          STOP
+          CALL sys_halt()
         END SELECT
     
       END DO ! IELset

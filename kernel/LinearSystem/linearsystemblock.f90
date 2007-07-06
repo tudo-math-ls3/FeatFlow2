@@ -383,7 +383,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vectors not compatible, different size!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
 
@@ -393,7 +393,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vectors not compatible, different block structure!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
   
@@ -405,7 +405,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Vectors not compatible, different block structure!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -421,7 +421,7 @@ CONTAINS
           RETURN
         ELSE
           PRINT *,'Vectors not compatible, differently sorted!'
-          STOP
+          CALL sys_halt()
         END IF
       END IF
 
@@ -432,7 +432,7 @@ CONTAINS
           RETURN
         ELSE
           PRINT *,'Vectors not compatible, differently sorted!'
-          STOP
+          CALL sys_halt()
         END IF
       END IF
     END IF
@@ -492,7 +492,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vector/Matrix not compatible, different size!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
 
@@ -502,7 +502,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vector/Matrix not compatible, different block structure!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
   
@@ -516,7 +516,7 @@ CONTAINS
 !      RETURN
 !    ELSE
 !      PRINT *,'Vector/Matrix not compatible, different boundary conditions!'
-!      STOP
+!      CALL sys_halt()
 !    END IF
 !  END IF
 !
@@ -529,7 +529,7 @@ CONTAINS
 !      RETURN
 !    ELSE
 !      PRINT *,'Vector/Matrix not compatible, different fict. boundary conditions!'
-!      STOP
+!      CALL sys_halt()
 !    END IF
 !  END IF
   
@@ -554,7 +554,7 @@ CONTAINS
 !            RETURN
 !          ELSE
 !            PRINT *,'Vector/Matrix not compatible, different discretisation!'
-!            STOP
+!            CALL sys_halt()
 !          END IF
 !        END IF
 
@@ -564,7 +564,7 @@ CONTAINS
             RETURN
           ELSE
             PRINT *,'Vector/Matrix not compatible, different block structure!'
-            STOP
+            CALL sys_halt()
           END IF
         END IF
 
@@ -580,7 +580,7 @@ CONTAINS
               RETURN
             ELSE
               PRINT *,'Vector/Matrix not compatible, differently sorted!'
-              STOP
+              CALL sys_halt()
             END IF
           END IF
 
@@ -591,7 +591,7 @@ CONTAINS
               RETURN
             ELSE
               PRINT *,'Vector/Matrix not compatible, differently sorted!'
-              STOP
+              CALL sys_halt()
             END IF
           END IF
         END IF
@@ -639,7 +639,7 @@ CONTAINS
   ! Check that the vector is really double precision
   IF (rvector%cdataType .NE. ST_DOUBLE) THEN
     PRINT *,'lsysbl_getbase_double: Vector is of wrong precision!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the data array
@@ -683,7 +683,7 @@ CONTAINS
   ! Check that the vector is really double precision
   IF (rvector%cdataType .NE. ST_SINGLE) THEN
     PRINT *,'lsysbl_getbase_single: Vector is of wrong precision!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the data array
@@ -727,7 +727,7 @@ CONTAINS
   ! Check that the vector is really integer
   IF (rvector%cdataType .NE. ST_INT) THEN
     PRINT *,'lsysbl_getbase_int: Vector is of wrong precision!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the data array
@@ -1405,7 +1405,7 @@ CONTAINS
   IF ((rtemplateMat%NEQ .NE. rx%NEQ) .OR. &
       (rtemplateMat%ndiagBlocks .NE. rx%nblocks)) THEN
     PRINT *,'lsysbl_assignDiscretIndirectMat error: Matrix/Vector incompatible!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Simply modify all pointers of all subvectors, that's it.
@@ -1773,13 +1773,13 @@ CONTAINS
   NEQ = rx%NEQ
   IF (isize .LT. NEQ) THEN
     PRINT *,'lsysbl_copyVector: Destination vector too small!'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsysbl_copyVector: Destination vector has different type &
             &than source vector!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! First, make a backup of some crucial data so that it does not
@@ -1822,7 +1822,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'lsysbl_copyVector: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
    
   END SUBROUTINE
@@ -1903,7 +1903,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'lsysbl_scaleVector: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END SUBROUTINE
@@ -1943,7 +1943,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'lsysbl_clearVector: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END SUBROUTINE
@@ -1996,7 +1996,7 @@ CONTAINS
 
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsysbl_vectorLinearComb: different data types not supported!'
-    STOP
+    CALL sys_halt()
   END IF
   
   SELECT CASE (rx%cdataType)
@@ -2028,7 +2028,7 @@ CONTAINS
   
   CASE DEFAULT
     PRINT *,'lsysbl_vectorLinearComb: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -2075,12 +2075,12 @@ CONTAINS
   
   IF ( (rx%NEQ .EQ. 0) .OR. (ry%NEQ .EQ. 0) .OR. (rx%NEQ .NE. rx%NEQ)) THEN
     PRINT *,'Error in lsysbl_scalarProduct: Vector dimensions wrong!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsysbl_scalarProduct: Data types different!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Take care of the data type before doing a scalar product!
@@ -2109,7 +2109,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'lsysbl_scalarProduct: Not supported precision combination'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   ! Return the scalar product, finish
@@ -2156,7 +2156,7 @@ CONTAINS
   ! Is there data at all?
   IF (rx%h_Ddata .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in lsysbl_vectorNorm: Vector empty!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Take care of the data type before doing a scalar product!
@@ -2173,7 +2173,7 @@ CONTAINS
     
   CASE DEFAULT
     PRINT *,'lsysbl_vectorNorm: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END FUNCTION
@@ -2453,7 +2453,7 @@ CONTAINS
         CASE DEFAULT
         
           PRINT *,'lsysbl_createScalarFromVec: Invalid data type!'
-          STOP
+          CALL sys_halt()
           
         END SELECT
         
@@ -2516,13 +2516,13 @@ CONTAINS
 !      length = SIZE(p_Fdata)-rvector%iidxFirstEntry+1
 !    CASE DEFAULT
 !      PRINT *,'lsysbl_enforceStructure: Unsupported data type'
-!      STOP
+!      CALL sys_halt()
 !    END SELECT
     
     ! Only basic check: there must be enough memory.
     IF (rvector%NEQ .LT. rtemplateVec%NEQ) THEN
       PRINT *,'lsysbl_enforceStructure: Destination vector too small!'
-      STOP
+      CALL sys_halt()
     END IF
   
     ! Get data type and handle from rvector
@@ -2604,7 +2604,7 @@ CONTAINS
     ! Only basic check: there must be enough memory.
     IF (rvector%NEQ .LT. SUM(Isize)) THEN
       PRINT *,'lsysbl_enforceStructureDirect: Destination vector too small!'
-      STOP
+      CALL sys_halt()
     END IF
   
     ! Set the attributes of the vector
@@ -3164,7 +3164,7 @@ CONTAINS
     CASE DEFAULT
     
       PRINT *,'lsysbl_duplicateVector: cdupContent unknown!'
-      STOP
+      CALL sys_halt()
     
     END SELECT
   
@@ -3944,14 +3944,14 @@ CONTAINS
     ! Check, that the vector is not a copy of another (possibly larger) vector
     IF (rx%bisCopy) THEN
       PRINT *, "lsysbl_resizeVecBlockDirect: A copied vector cannot be resized!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check, if vector has been initialized before
     IF (rx%NEQ == 0 .OR. rx%h_Ddata == ST_NOHANDLE) THEN
       PRINT *, "lsysbl_resizeVecBlockDirect: A vector can only be resized &
           & uf it has been created correctly!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Update the global NEQ and set working dimensions
@@ -4136,7 +4136,7 @@ CONTAINS
       IF ((rx%cdataType /= rTemplate%cdataType) .OR. &
           (rx%nblocks /= rTemplate%nblocks)) THEN
         PRINT *, "lsysbl_resizeVecBlockIndirect: Vectors are incompatible!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Fill auxiliary vector Iisize
@@ -4202,7 +4202,7 @@ CONTAINS
     ! Check, that the vector is not a copy of another (possibly larger) vector
     IF (rx%bisCopy) THEN
       PRINT *, "lsysbl_resizeVecBlockIndMat: A copied vector cannot be resized!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if vector exists?
@@ -4216,7 +4216,7 @@ CONTAINS
       ! Check if vector/matrix are compatible
       IF (rx%nblocks /= rtemplateMat%ndiagblocks) THEN
         PRINT *, "lsysbl_resizeVecBlockIndMat: Matrix/Vector incompatible!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Update the global NEQ

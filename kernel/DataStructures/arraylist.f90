@@ -467,7 +467,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, 't_arraylist_create: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Initialize list structures
@@ -501,7 +501,7 @@ CONTAINS
     ! Check if table number is valid
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_create_table: Invalid table number"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Resize tables if required
@@ -573,7 +573,7 @@ CONTAINS
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
       PRINT *, "t_arraylist_release_table: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Reset table
@@ -623,7 +623,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, 't_arraylist_resize: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_arraylist_resize
 
@@ -720,7 +720,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, 't_arraylist_copyfrom: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_arraylist_copyfrom
 
@@ -798,7 +798,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, 't_arraylist_copyfrom_table: Unsupported data format!'
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_arraylist_copyfrom_table
   
@@ -838,12 +838,12 @@ CONTAINS
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
       PRINT *, "t_arraylist_copyfromDble: Invalid table number"
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_copyfromDble: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     icount = 0
@@ -891,12 +891,12 @@ CONTAINS
     ntable=SIZE(p_Table)-1
     IF (ntable /= rarraylist%NTABLE) THEN
       PRINT *, "t_arraylist_copyfromDble_table: Invalid dimension of table array!"
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_copyfromDble_table: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     icount=1
@@ -949,12 +949,12 @@ CONTAINS
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
       PRINT *, "t_arraylist_copyfromSngl: Invalid table number"
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "_arraylist_copyfromSngl: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     icount = 0
@@ -1002,12 +1002,12 @@ CONTAINS
     ntable=SIZE(p_Table)-1
     IF (ntable /= rarraylist%NTABLE) THEN
       PRINT *, "t_arraylist_copyfromSngl_table: Invalid dimension of table array!"
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_copyfromSngl_table: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     icount=1
@@ -1061,12 +1061,12 @@ CONTAINS
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
       PRINT *, "t_arraylist_copyfromInt: Invalid table number"
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_copyfromInt: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     icount = 0
@@ -1114,12 +1114,12 @@ CONTAINS
     ntable=SIZE(p_Table)-1
     IF (ntable /= rarraylist%NTABLE) THEN
       PRINT *, "t_arraylist_copyfromInt_table: Invalid dimension of table array!"
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_copyfromInt_table: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     icount=1
@@ -1184,7 +1184,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_arraylist_copy: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_arraylist_copyto
 
@@ -1239,7 +1239,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "t_arraylist_copy_table: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_arraylist_copyto_table
 
@@ -1273,7 +1273,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_copytoDble: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_DDataSrc)
@@ -1312,7 +1312,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_copytoDble_table: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ntable=SIZE(p_Table)-1
@@ -1353,7 +1353,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_copytoSngl: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_SDataSrc)
@@ -1392,7 +1392,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_copytoSngl_table: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ntable=SIZE(p_Table)-1
@@ -1433,7 +1433,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_copytoInt: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_IDataSrc)
@@ -1472,7 +1472,7 @@ CONTAINS
 
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_copytoInt_table: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ntable=SIZE(p_Table)-1
@@ -1670,13 +1670,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_prependDble: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_prependDble: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
     
@@ -1741,13 +1741,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_prependSngl: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_prependSngl: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
 
@@ -1812,13 +1812,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_prependInt: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_prependInt: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
 
@@ -1883,13 +1883,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_appendDble: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_appendDble: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
     
@@ -1955,13 +1955,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_appendSngl: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_appendSngl: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
 
@@ -2027,13 +2027,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_appendInt: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_appendInt: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
 
@@ -2102,13 +2102,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_insertDble: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_insertDble: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
 
@@ -2185,13 +2185,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_insertSngl: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_insertSngl: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
 
@@ -2268,13 +2268,13 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_insertInt: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
       PRINT *, "t_arraylist_insertInt: Invalid table number!"
-      STOP
+      CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
 
@@ -2351,7 +2351,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_deleteDble: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for data
@@ -2423,7 +2423,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_deleteSngl: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for data
@@ -2495,7 +2495,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_deleteInt: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Search for data
@@ -2572,7 +2572,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
       PRINT *, "t_arraylist_searchDble: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialization
@@ -2711,7 +2711,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
       PRINT *, "t_arraylist_searchSngl: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialization
@@ -2850,7 +2850,7 @@ CONTAINS
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
       PRINT *, "t_arraylist_searchInt: Unsupported data format!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialization
@@ -3039,7 +3039,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "t_arraylist_print: Unsupported data type!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE t_arraylist_print
 

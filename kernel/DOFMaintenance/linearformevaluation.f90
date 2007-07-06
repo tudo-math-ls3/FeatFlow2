@@ -105,7 +105,7 @@ CONTAINS
   ! The vector must be unsorted, otherwise we can't set up the vector.
   IF (rvectorScalar%isortStrategy .GT. 0) THEN
     PRINT *,'linf_buildVectorScalar: Vector must be unsorted!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Do we have a uniform triangulation? Would simplify a lot...
@@ -133,7 +133,7 @@ CONTAINS
   ELSE
     PRINT *,'linf_buildVectorScalar: General discretisation &
             & not implemented!'
-    STOP
+    CALL sys_halt()
   END IF
 
   END SUBROUTINE
@@ -300,7 +300,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'linf_buildVectord_conf: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     Bder(I1)=.TRUE.
@@ -387,7 +387,7 @@ CONTAINS
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. p_elementDistribution%itestElement) THEN
       PRINT *,'bilf_buildMatrix9d_conf2: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get the number of local DOF's for trial and test functions
@@ -800,7 +800,7 @@ CONTAINS
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
       PRINT *,'linf_buildVectord_conf: Invalid descriptor'
-      STOP
+      CALL sys_halt()
     ENDIF
     
     Bder(I1)=.TRUE.
@@ -887,7 +887,7 @@ CONTAINS
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
       PRINT *,'linf_buildVectord_conf2: element spaces incompatible!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Initialise the cubature formula,
@@ -928,7 +928,7 @@ CONTAINS
           (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
         PRINT *,'linf_buildVectord_conf2: Specified test-derivative',IA,&
                 ' not available'
-        STOP
+        CALL sys_halt()
       END IF
     END DO
 

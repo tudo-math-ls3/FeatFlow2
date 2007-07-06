@@ -687,7 +687,7 @@ CONTAINS
       nConsts = nConsts+1
     ELSE
       PRINT *, "*** Parser error: no space left for definition of constant"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Prepare constant
@@ -699,7 +699,7 @@ CONTAINS
         ! If it is already defined, then it must not have a different value
         IF(ConstVals(iConst) /= constantValue) THEN
           PRINT *, "*** Parser error: constant is already defined with different value"
-          STOP
+          CALL sys_halt()
         ELSE
           nConsts = nConsts-1
           RETURN
@@ -742,7 +742,7 @@ CONTAINS
       nExpressions = nExpressions+1
     ELSE
       PRINT *, "*** Parser error: no space left for definition of expression"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Prepare expression string
@@ -765,7 +765,7 @@ CONTAINS
         ! If it is already defined, then it must not have a different value
         IF(ExpressionStrings(iExpression) /= str) THEN
           PRINT *, "*** Parser error: expression is already defined with different string"
-          STOP
+          CALL sys_halt()
         ELSE
           nExpressions = nExpressions-1
           RETURN
@@ -872,7 +872,7 @@ CONTAINS
     
     IF (iComp < 1 .OR. iComp > rparser%nComp) THEN
       WRITE(*,*) '*** Parser error: Function number ',iComp,' out of range'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Local copy of function string
@@ -933,7 +933,7 @@ CONTAINS
 
     IF (h_Stack .EQ. ST_NOHANDLE) THEN
       PRINT *, "*** Parser error: Parser not initialised!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check if memory of global stack is sufficient
@@ -944,7 +944,7 @@ CONTAINS
         CALL storage_getbase_double(h_Stack,p_Stack)
       ELSE
         PRINT *, "*** Parser error: stack size exceeds memory!"
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -1033,7 +1033,7 @@ CONTAINS
           CALL storage_getbase_double(h_Stack,p_Stack)
         ELSE
           PRINT *, "*** Parser error: stack size exceeds memory!"
-          STOP
+          CALL sys_halt()
         END IF
       END IF
       
@@ -1075,7 +1075,7 @@ CONTAINS
           CALL storage_getbase_double(h_Stack,p_Stack)
         ELSE
           PRINT *, "*** Parser error: stack size exceeds memory!"
-          STOP
+          CALL sys_halt()
         END IF
       END IF
 
@@ -1665,7 +1665,7 @@ CONTAINS
         ! bytecode compilation. If we reach this point, then something
         ! went wrong before.
         PRINT *, "*** Parser error: IF-THEN-ELSE cannot be vectorized!"
-        STOP
+        CALL sys_halt()
         
       CASE (cLog)
 !$omp parallel do default(shared) private(iBlock)
@@ -2027,7 +2027,7 @@ CONTAINS
     DO
       IF (FuncIndex > FuncLength) THEN
         PRINT *, "CheckSyntax: invalid function string!"
-        STOP
+        CALL sys_halt()
       END IF
       c = Func(FuncIndex:FuncIndex)
 
@@ -2038,7 +2038,7 @@ CONTAINS
         FuncIndex = FuncIndex+1
         IF (FuncIndex > FuncLength) THEN
           PRINT *, "CheckSyntax: Premature end of string!"
-          STOP
+          CALL sys_halt()
         END IF
         c = Func(FuncIndex:FuncIndex)
       END IF
@@ -2050,23 +2050,23 @@ CONTAINS
         FuncIndex = FuncIndex+LEN_TRIM(Funcs(n))
         IF (FuncIndex > FuncLength) THEN
           PRINT *, "CheckSyntax: Premature end of string!"
-          STOP
+          CALL sys_halt()
         END IF
         c = Func(FuncIndex:FuncIndex)
         IF (c /= '(') THEN
           PRINT *, "CheckSyntax: Expecting ( after function!",Func(FuncIndex:)
-          STOP
+          CALL sys_halt()
         END IF
         FuncIndex2=FuncIndex+1
         IF (FuncIndex2 > FuncLength) THEN
           PRINT *, "CheckSyntax: Premature end of string!"
-          STOP
+          CALL sys_halt()
         END IF
         IF (Func(FuncIndex2:FuncIndex2) == ')') THEN
           FuncIndex=FuncIndex2+1
           IF (FuncIndex > FuncLength) THEN
             PRINT *, "CheckSyntax: Premature end of string!"
-            STOP
+            CALL sys_halt()
           END IF
           c = Func(FuncIndex:FuncIndex)
           
@@ -2084,11 +2084,11 @@ CONTAINS
         FuncIndex = FuncIndex+1
         IF (FuncIndex > FuncLength) THEN
           PRINT *, "CheckSyntax: Premature end of string!"
-          STOP
+          CALL sys_halt()
         END IF
         IF (Func(FuncIndex:FuncIndex) == ')') THEN
           PRINT *, "CheckSyntax: Empty parantheses!"
-          STOP
+          CALL sys_halt()
         END IF
         CYCLE
       END IF
@@ -2098,7 +2098,7 @@ CONTAINS
         r = RealNum (Func(FuncIndex:),ib,in,err)
         IF (err) THEN
           PRINT *, "CheckSyntax: Invalid number format!"
-          STOP
+          CALL sys_halt()
         END IF
         FuncIndex = FuncIndex+in-1
         IF (FuncIndex > FuncLength) EXIT
@@ -2108,7 +2108,7 @@ CONTAINS
         n = ConstantIndex (Func(FuncIndex:))
         IF (n == 0) THEN
           PRINT *, "CheckSyntax: Invalid constant!"
-          STOP
+          CALL sys_halt()
         END IF
         FuncIndex = FuncIndex+LEN_TRIM(Consts(n))+1
         IF (FuncIndex > FuncLength) EXIT
@@ -2118,7 +2118,7 @@ CONTAINS
         n = ExpressionIndex (Func(FuncIndex:))
         IF (n == 0) THEN
           PRINT *, "CheckSyntax: Invalid expression!"
-          STOP
+          CALL sys_halt()
         END IF
         CALL CheckSyntax(ExpressionStrings(n), Var)
         FuncIndex = FuncIndex+LEN_TRIM(Expressions(n))+1
@@ -2129,7 +2129,7 @@ CONTAINS
         n = VariableIndex (Func(FuncIndex:),Var,ib,in)
         IF (n == 0) THEN
           PRINT *, "CheckSyntax: Invalid element!"
-          STOP
+          CALL sys_halt()
         END IF
         FuncIndex = FuncIndex+in-1
         IF (FuncIndex > FuncLength) EXIT
@@ -2145,11 +2145,11 @@ CONTAINS
         ParCnt = ParCnt-1
         IF (ParCnt < 0) THEN
           PRINT *, "CheckSyntax: Mismatched parenthesis!"
-          STOP
+          CALL sys_halt()
         END IF
         IF (Func(FuncIndex-1:FuncIndex-1) == '(') THEN
           PRINT *, "CheckSyntax: Empty parentheses!"
-          STOP
+          CALL sys_halt()
         END IF
         FuncIndex = FuncIndex+1
         IF (FuncIndex > FuncLength) EXIT
@@ -2173,7 +2173,7 @@ CONTAINS
       END IF
       IF (opSize == 0) THEN
         PRINT *, "CheckSyntax: Operator expected!"
-        STOP
+        CALL sys_halt()
       END IF
       
       ! Now, we have an operand and an operator: the next loop will check for another 
@@ -2182,7 +2182,7 @@ CONTAINS
     END DO
     IF (ParCnt > 0) THEN
       PRINT *, "CheckSyntax: Missing )!"
-      STOP
+      CALL sys_halt()
     END IF
     CALL stack_release(functionParenthDepth)
   END SUBROUTINE CheckSyntax
@@ -2631,7 +2631,7 @@ CONTAINS
         IF (Comp%Immed(Comp%ImmedSize) < -1._DP .OR. &
             Comp%Immed(Comp%ImmedSize) >  1._DP) THEN
           PRINT *, "*** Parser error: invalid argument for ACOS!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=ACOS(Comp%Immed(Comp%ImmedSize))
         CALL RemoveCompiledByte(Comp)
@@ -2642,7 +2642,7 @@ CONTAINS
         IF (Comp%Immed(Comp%ImmedSize) < -1._DP .OR. &
             Comp%Immed(Comp%ImmedSize) >  1._DP) THEN
           PRINT *, "*** Parser error: invalid argument for ACOS!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=ASIN(Comp%Immed(Comp%ImmedSize))
         CALL RemoveCompiledByte(Comp)
@@ -2668,7 +2668,7 @@ CONTAINS
         daux=Comp%Immed(Comp%ImmedSize)+SQRT(Comp%Immed(Comp%ImmedSize)**2-1)
         IF (daux <= 0) THEN
           PRINT *, "*** Parser error: invalid argument for ACOSH!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=LOG(daux)
         CALL RemoveCompiledByte(Comp)
@@ -2691,7 +2691,7 @@ CONTAINS
         daux=Comp%Immed(Comp%ImmedSize)+SQRT(Comp%Immed(Comp%ImmedSize)**2-1)
         IF (daux <= 0) THEN
           PRINT *, "*** Parser error: invalid argument for ASINH!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=LOG(daux)
         CALL RemoveCompiledByte(Comp)
@@ -2701,12 +2701,12 @@ CONTAINS
       IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
         IF (Comp%Immed(Comp%ImmedSize) == -1._DP) THEN
           PRINT *, "*** Parser error: invalid argument for ATANH!"
-          STOP
+          CALL sys_halt()
         END IF
         daux=(1+Comp%Immed(Comp%ImmedSize))/(1-Comp%Immed(Comp%ImmedSize))
         IF (daux <= 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for ATANH!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=LOG(daux)/2._DP
         CALL RemoveCompiledByte(Comp)
@@ -2735,7 +2735,7 @@ CONTAINS
         daux=TAN(Comp%Immed(Comp%ImmedSize))
         IF (daux == 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for COT!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=1/daux
         CALL RemoveCompiledByte(Comp)
@@ -2746,7 +2746,7 @@ CONTAINS
         daux=SIN(Comp%Immed(Comp%ImmedSize))
         IF (daux == 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for CSC!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=1/daux
         CALL RemoveCompiledByte(Comp)
@@ -2771,7 +2771,7 @@ CONTAINS
       IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
         IF (Comp%Immed(Comp%ImmedSize) <= 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for LOG!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=LOG(Comp%Immed(Comp%ImmedSize))
         CALL RemoveCompiledByte(Comp)
@@ -2781,7 +2781,7 @@ CONTAINS
       IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
         IF (Comp%Immed(Comp%ImmedSize) <= 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for LOG!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=LOG10(Comp%Immed(Comp%ImmedSize))
         CALL RemoveCompiledByte(Comp)
@@ -2810,7 +2810,7 @@ CONTAINS
         daux=COS(Comp%Immed(Comp%ImmedSize))
         IF (daux == 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for SEC!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=1/daux
         CALL RemoveCompiledByte(Comp)
@@ -2832,7 +2832,7 @@ CONTAINS
       IF (Comp%ByteCode(Comp%ByteCodeSize-1) == cImmed) THEN
         IF (Comp%Immed(Comp%ImmedSize) < 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for SQRT!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize)=SQRT(Comp%Immed(Comp%ImmedSize))
         CALL RemoveCompiledByte(Comp)
@@ -2897,7 +2897,7 @@ CONTAINS
           Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
         IF (Comp%Immed(Comp%ImmedSize) == 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for DIV!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize-1)=Comp%Immed(Comp%ImmedSize-1)/Comp%Immed(Comp%ImmedSize)
         CALL RemoveCompiledImmediate(Comp)
@@ -2910,7 +2910,7 @@ CONTAINS
           Comp%ByteCode(Comp%ByteCodeSize-2) == cImmed) THEN
         IF (Comp%Immed(Comp%ImmedSize) == 0._DP) THEN
           PRINT *, "*** Parser error: invalid argument for MOD!"
-          STOP
+          CALL sys_halt()
         END IF
         Comp%Immed(Comp%ImmedSize-1)=MOD(Comp%Immed(Comp%ImmedSize-1),Comp%Immed(Comp%ImmedSize))
         CALL RemoveCompiledImmediate(Comp)
@@ -3183,7 +3183,7 @@ CONTAINS
         ELSEIF (Eflag) THEN               
           InExp=.true.; Eflag=.false. ! - at beginning of exponent
         ELSE
-          EXIT ! - otherwise STOP
+          EXIT ! - otherwise CALL sys_halt()
         ENDIF
       CASE ('0':'9') ! Mark
         IF     (Bflag) THEN           
@@ -3200,16 +3200,16 @@ CONTAINS
         ELSEIF (InMan .AND..NOT.Pflag) THEN
           Pflag=.true. ! - mark 1st appearance of '.'
         ELSE
-          EXIT ! - otherwise STOP
+          EXIT ! - otherwise CALL sys_halt()
         END IF
       CASE ('e','E','d','D') ! Permitted only
         IF (InMan) THEN
           Eflag=.true.; InMan=.false. ! - following mantissa
         ELSE
-          EXIT ! - otherwise STOP
+          EXIT ! - otherwise CALL sys_halt()
         ENDIF
       CASE DEFAULT
-        EXIT ! STOP at all other characters
+        EXIT ! CALL sys_halt() at all other characters
       END SELECT
       in = in+1
     END DO
@@ -3261,7 +3261,7 @@ CONTAINS
         n = ExpressionIndex (Func(ind:))
         IF (n == 0) THEN
           PRINT *, "FunctionSize: Invalid expression!"
-          STOP
+          CALL sys_halt()
         END IF
         fsize = fsize+FunctionSize(ExpressionStrings(n))
       END IF
@@ -3756,7 +3756,7 @@ CONTAINS
       rnum = RealNum (Func(ind1:),ib,in,err)
       IF (err) THEN
         PRINT *, "CompileElement: Invalid number format!"
-        STOP
+        CALL sys_halt()
       END IF
       CALL AddImmediate(Comp, rnum)
       CALL AddCompiledByte(Comp, cImmed)
@@ -3818,7 +3818,7 @@ CONTAINS
     END IF
 
     PRINT *, "CompileElement: An unexpected error occured."
-    STOP
+    CALL sys_halt()
   END FUNCTION CompileElement
 
   ! *****************************************************************************
@@ -3867,7 +3867,7 @@ CONTAINS
 
       IF (Comp%StackPtr /= curStackPtr+requiredParams) THEN
         PRINT *, "CompileFunctionParameters: Illegal number of parameters to function!"
-        STOP
+        CALL sys_halt()
       END IF
 
       Comp%StackPtr = Comp%StackPtr-(requiredParams-1)
@@ -3921,7 +3921,7 @@ CONTAINS
 
     IF (Func(ind2:ind2) /= ',') THEN
       PRINT *, "CompileIf: Illegal number of parameters to function!"
-      STOP
+      CALL sys_halt()
     END IF
     CALL AddCompiledByte(Comp, cIf)
     curByteCodeSize = Comp%ByteCodeSize
@@ -3934,7 +3934,7 @@ CONTAINS
 
     IF (Func(ind2:ind2) /= ',') THEN
       PRINT *, "CompileIf: Illegal number of parameters to function!"
-      STOP
+      CALL sys_halt()
     END IF
     CALL AddCompiledByte(Comp, cJump)
     curByteCodeSize2 = Comp%ByteCodeSize
@@ -3948,7 +3948,7 @@ CONTAINS
 
     IF (Func(ind2:ind2) /= ')') THEN
       PRINT *, "CompileIf: Illegal number of parameters to function!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Set jump indices

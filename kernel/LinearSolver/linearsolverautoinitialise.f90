@@ -270,7 +270,7 @@ CONTAINS
     IF (.NOT. ASSOCIATED(p_rsection)) THEN
       PRINT *,'Cannot create linear solver; no section '''&
               //TRIM(ssolverName)//'''!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Ok, we have the section where we can get parameters from.
@@ -456,13 +456,13 @@ CONTAINS
       ! We need an interlevel projection structure!
       IF (.NOT. PRESENT(rinterlevelProjection)) THEN
         PRINT *,'Cannot create linear solver; no interlevel projection structure!'
-        STOP
+        CALL sys_halt()
       END IF
       
       ! Initialise the coarse grid solver - if there is one. There must be one!
       IF (scoarsegridsolver .EQ. '') THEN
         PRINT *,'Cannot create linear solver; no coarse grid solver for MG!'
-        STOP
+        CALL sys_halt()
       END IF
       CALL linsolinit_initFromFile (p_rcoarsegridsolver,rparamList,&
                                     scoarsegridsolver,nlevels,RfilterChain)
@@ -515,7 +515,7 @@ CONTAINS
     CASE DEFAULT
       PRINT *,'Cannot create linear solver; unsupported solver type isolverType=',&
               isolverType
-      STOP
+      CALL sys_halt()
     
     END SELECT ! isolverType
 

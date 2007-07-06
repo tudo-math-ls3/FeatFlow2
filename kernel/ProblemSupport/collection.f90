@@ -733,7 +733,7 @@ CONTAINS
       ! This must work, otherwise ivalueCount is wrong!
       IF (i .GT. SIZE(p_rLevel%p_Rvalues)) THEN
         PRINT *,'Error in collct_addvalue: Collection structure inconsistent!'
-        STOP
+        CALL sys_halt()
       END IF
       
       ! If i is larger than ivalueCount, all holes are filled up again,
@@ -962,7 +962,7 @@ CONTAINS
   ! Some basic checks
   IF (rcollection%isectionCount .EQ. 0) THEN
     PRINT *,'Error: Collection not initalised!'
-    STOP
+    CALL sys_halt()
   END IF
 
   NULLIFY(p_rvalue)
@@ -1195,7 +1195,7 @@ CONTAINS
   
   IF (.NOT. ASSOCIATED(p_rsection)) THEN
     PRINT *,'Error: section not found: ',ssectionName
-    STOP
+    CALL sys_halt()
   END IF
   
   ilevel = p_rsection%ilevelCount
@@ -1314,7 +1314,7 @@ CONTAINS
   
   IF (rcollection%isectionCount .EQ. 0) THEN
     PRINT *,'Error: Collection not initalised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get the section
@@ -1322,7 +1322,7 @@ CONTAINS
     CALL collct_fetchsection(rcollection, ssectionName, p_rsection) 
     IF (.NOT. ASSOCIATED(p_rsection)) THEN
       PRINT *,'Error: section not found: ',ssectionName
-      STOP
+      CALL sys_halt()
     END IF
   ELSE
     ! unnamed section
@@ -1358,7 +1358,7 @@ CONTAINS
   
   IF (rcollection%isectionCount .EQ. 0) THEN
     PRINT *,'Error: Collection not initalised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Go through all sections
@@ -1397,12 +1397,12 @@ CONTAINS
 
   IF (ssectionName .EQ. '') THEN
     PRINT *,'collct_addSection: Empty section name!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (rcollection%isectionCount .EQ. 0) THEN
     PRINT *,'Error: Collection not initalised!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Add a new section - reallocate the memory if necessary
@@ -1453,7 +1453,7 @@ CONTAINS
   ! Some basic checks
   IF (rcollection%isectionCount .EQ. 0) THEN
     PRINT *,'Error: Collection not initalised!'
-    STOP
+    CALL sys_halt()
   END IF
 
   CALL collct_fetchsection(rcollection, ssectionName, p_rsection, isectionIndex) 
@@ -1712,7 +1712,7 @@ CONTAINS
     p_rlevel => rsection%rlevel0
   ELSE IF (ilevel .GT. rsection%ilevelCount) THEN
     PRINT *,'collct_queryvalue_indir: Level out of bounds!'
-    STOP
+    CALL sys_halt()
   ELSE
     p_rlevel => rsection%p_Rlevels(ilv)
   END IF
@@ -1770,7 +1770,7 @@ CONTAINS
   
   IF (rcollection%isectionCount .EQ. 0) THEN
     PRINT *,'Error: Collection not initalised!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Fall back to the 'indirect' search.
@@ -1786,7 +1786,7 @@ CONTAINS
     CALL collct_fetchsection(rcollection, ssectionName, p_rsection) 
     IF (.NOT. ASSOCIATED(p_rsection)) THEN 
       PRINT *,'collct_queryvalue_direct: Section not found'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
     
@@ -1953,7 +1953,7 @@ CONTAINS
   ELSE
     IF ((.NOT. badd) .AND. (.NOT. ASSOCIATED(p_rvalue))) THEN
       PRINT *,'collct_getvalue: Parameter '//TRIM(sparameter)//' not found!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
 
@@ -1966,7 +1966,7 @@ CONTAINS
         PRINT *,'collct_getvalue: Wrong type!'
         PRINT *,'Parameter: '//TRIM(sparameter)// ' is of type ',p_rvalue%itype,&
                 ' but expected as ',itype,'!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
@@ -2232,7 +2232,7 @@ CONTAINS
     IF (SIZE(p_rvalue%p_Iarray) .NE. SIZE(value)) THEN
       CALL output_line ('Destination array has the wrong length!',&
           OU_CLASS_ERROR,OU_MODE_STD,'collct_getvalue_intarr')
-      STOP
+      CALL sys_halt()
     END IF
     value = p_rvalue%p_Iarray
   ELSE
@@ -2362,7 +2362,7 @@ CONTAINS
     IF (SIZE(p_rvalue%p_Darray) .NE. SIZE(value)) THEN
       CALL output_line ('Destination array has the wrong length!',&
           OU_CLASS_ERROR,OU_MODE_STD,'collct_getvalue_realarr')
-      STOP
+      CALL sys_halt()
     END IF
     value = p_rvalue%p_Darray
   ELSE

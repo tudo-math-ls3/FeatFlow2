@@ -527,7 +527,7 @@ CONTAINS
 
   IF (rheap%nhandlesTotal .LE. 0) THEN
     PRINT *,'Error: Heap not initialised!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Handles available?
@@ -722,10 +722,10 @@ CONTAINS
             END DO
           CASE (ST_LOGICAL)
             PRINT *, "Error: Logical array can not be initialised with ST_NEWBLOCK_ORDERED !"
-            STOP
+            CALL sys_halt()
           CASE (ST_CHAR)
             PRINT *, "Error: Character array can not be initialised with ST_NEWBLOCK_ORDERED !"
-            STOP
+            CALL sys_halt()
           END SELECT
         ELSE
           SELECT CASE (rstorageNode%idataType)
@@ -743,10 +743,10 @@ CONTAINS
             END DO
           CASE (ST_LOGICAL)
             PRINT *, "Error: Logical array can not be initialised with ST_NEWBLOCK_ORDERED !"
-            STOP
+            CALL sys_halt()
           CASE (ST_CHAR)
             PRINT *, "Error: Character array can not be initialised with ST_NEWBLOCK_ORDERED !"
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -787,13 +787,13 @@ CONTAINS
 
       CASE (ST_NEWBLOCK_ORDERED)
         PRINT *, 'Error: ordering not available for multidimensional array'
-        STOP
+        CALL sys_halt()
 
       END SELECT
 
     CASE DEFAULT
       PRINT *,'storage_initialiseNode: Unsupported dimension'
-      STOP
+      CALL sys_halt()
 
     END SELECT
 
@@ -961,7 +961,7 @@ CONTAINS
     p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
@@ -1083,7 +1083,7 @@ CONTAINS
     p_rnode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
@@ -1200,7 +1200,7 @@ CONTAINS
     p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
@@ -1322,7 +1322,7 @@ CONTAINS
     p_rnode%dmemBytes = REAL(Isize(1),DP)*REAL(Isize(2),DP)*REAL(ST_CHAR2BYTES)
   CASE DEFAULT
     PRINT *,'Error: unknown mem type'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   p_rheap%dtotalMem = p_rheap%dtotalMem + p_rnode%dmemBytes
@@ -1374,7 +1374,7 @@ CONTAINS
 
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_free: Releasing ST_NOHANDLE is not allowed!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Where is the descriptor of the handle?
@@ -1384,7 +1384,7 @@ CONTAINS
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_free: Trying to release nonexistent handle!'
     PRINT *,'Handle number: ',ihandle
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Release the memory assigned to that handle.
@@ -1447,7 +1447,7 @@ CONTAINS
 
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_clear: Handle invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Where is the descriptor of the handle?
@@ -1457,7 +1457,7 @@ CONTAINS
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_clear: Trying to release nonexistent handle!'
     PRINT *,'Handle number: ',ihandle
-    STOP
+    CALL sys_halt()
   END IF
 
   ! What are we?
@@ -1490,7 +1490,7 @@ CONTAINS
     END SELECT
   CASE DEFAULT
     PRINT *,'storage_clear: invalid dimension.'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -1539,7 +1539,7 @@ CONTAINS
 
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize1D: Handle invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Where is the descriptor of the handle?
@@ -1549,13 +1549,13 @@ CONTAINS
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize1D: Handle invalid!'
     PRINT *,'Handle number: ',ihandle
-    STOP
+    CALL sys_halt()
   END IF
 
   ! What are we?
   IF (p_rnode%idimension .NE. 1) THEN
     PRINT *,'Error in storage_getsize1D: Handle ',ihandle,' is not 1-dimensional!'
-    STOP
+    CALL sys_halt()
   END IF
 
   SELECT CASE (p_rnode%idataType)
@@ -1571,7 +1571,7 @@ CONTAINS
     isize = SIZE(p_rnode%p_Schar1D)
   CASE DEFAULT
     PRINT *,'Error in storage_getsize1D: Invalid data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -1620,7 +1620,7 @@ CONTAINS
 
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize2D: Handle invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Where is the descriptor of the handle?
@@ -1630,13 +1630,13 @@ CONTAINS
   IF (p_rnode%idataType .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize2D: Handle invalid!'
     PRINT *,'Handle number: ',ihandle
-    STOP
+    CALL sys_halt()
   END IF
 
   ! What are we?
   IF (p_rnode%idimension .NE. 2) THEN
     PRINT *,'Error in storage_getsize1D: Handle ',ihandle,' is not 2-dimensional!'
-    STOP
+    CALL sys_halt()
   END IF
 
   SELECT CASE (p_rnode%idataType)
@@ -1652,7 +1652,7 @@ CONTAINS
     Isize = SHAPE(p_rnode%p_Schar2D)
   CASE DEFAULT
     PRINT *,'Error in storage_getsize2D: Invalid data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -1705,12 +1705,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_int: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
     PRINT *,'storage_getbase_int: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -1770,18 +1770,18 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_int: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
     PRINT *,'storage_getbase_int: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D))) THEN
     PRINT *,'storage_getbase_intUBnd: Upper bound invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -1843,12 +1843,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_int: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_INT) THEN
     PRINT *,'storage_getbase_int: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -1857,7 +1857,7 @@ CONTAINS
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger1D)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_intLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -1914,12 +1914,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_single: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
     PRINT *,'storage_getbase_single: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -1979,18 +1979,18 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_single: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
     PRINT *,'storage_getbase_single: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D))) THEN
     PRINT *,'storage_getbase_singleUBnd: Upper bound invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2053,12 +2053,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_single: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_SINGLE) THEN
     PRINT *,'storage_getbase_single: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -2067,7 +2067,7 @@ CONTAINS
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle1D)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_singleLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2124,13 +2124,13 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_double: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
 
     PRINT *,'storage_getbase_double: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2190,18 +2190,18 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_double: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
     PRINT *,'storage_getbase_double: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D))) THEN
     PRINT *,'storage_getbase_doubleUBnd: Upper bound invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2263,12 +2263,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_double: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_DOUBLE) THEN
     PRINT *,'storage_getbase_double: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -2277,7 +2277,7 @@ CONTAINS
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble1D)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_doubleLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2333,12 +2333,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_logical: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_LOGICAL) THEN
     PRINT *,'storage_getbase_logical: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2398,18 +2398,18 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_logical: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_LOGICAL) THEN
     PRINT *,'storage_getbase_logical: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D))) THEN
     PRINT *,'storage_getbase_logicalUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2472,12 +2472,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_logical: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_LOGICAL) THEN
     PRINT *,'storage_getbase_logical: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -2486,7 +2486,7 @@ CONTAINS
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_logicalUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2543,12 +2543,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_char: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_CHAR) THEN
     PRINT *,'storage_getbase_char: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2608,18 +2608,18 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_char: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_CHAR) THEN
     PRINT *,'storage_getbase_char: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D))) THEN
     PRINT *,'storage_getbase_charLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2682,12 +2682,12 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_char: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (p_rheap%p_Rdescriptors(ihandle)%idataType .NE. ST_CHAR) THEN
     PRINT *,'storage_getbase_char: Wrong data format!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -2696,7 +2696,7 @@ CONTAINS
       (ubnd .GT. SIZE(p_rheap%p_Rdescriptors(ihandle)%p_Blogical1D)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_charLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2753,7 +2753,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_int2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2813,13 +2813,13 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_int2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2))) THEN
     PRINT *,'storage_getbase_int2DUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2883,7 +2883,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_int2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -2892,7 +2892,7 @@ CONTAINS
       (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D,2)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_int2DLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -2949,7 +2949,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_single2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3009,13 +3009,13 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_single2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2))) THEN
     PRINT *,'storage_getbase_single2DUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3079,7 +3079,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_single2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -3088,7 +3088,7 @@ CONTAINS
       (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D,2)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_single2DLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3141,7 +3141,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_double2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3197,13 +3197,13 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_double2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((ubnd .LT. 1) .OR. &
       (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2))) THEN
     PRINT *,'storage_getbase_double2DUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3263,7 +3263,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_double2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF ((lbnd .LT. 1) .OR. &
@@ -3272,7 +3272,7 @@ CONTAINS
       (ubnd .GT. UBOUND(p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D,2)) .OR. &
       (lbnd .GT. ubnd)) THEN
     PRINT *,'storage_getbase_double2DLUBnd: Bounds invalid invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3329,7 +3329,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_logical2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3389,7 +3389,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_logical2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3453,7 +3453,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_logical2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3510,7 +3510,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_char2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3570,7 +3570,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_char2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3634,7 +3634,7 @@ CONTAINS
 
   IF (ihandle .EQ. ST_NOHANDLE) THEN
     PRINT *,'storage_getbase_char2D: Wrong handle'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the pointer
@@ -3691,11 +3691,11 @@ CONTAINS
 
     IF (h_source .EQ. ST_NOHANDLE) THEN
       PRINT *,'storage_copy: Wrong handle'
-      STOP
+      CALL sys_halt()
     END IF
     IF (.NOT. ASSOCIATED(p_rheap%p_Rdescriptors)) THEN
       PRINT *,'storage_copy: Heap not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
 
     p_rsource => p_rheap%p_Rdescriptors(h_source)
@@ -3764,7 +3764,7 @@ CONTAINS
     ! 1D/2D the same?
     IF (p_rsource%idimension .NE. p_rdest%idimension) THEN
       PRINT *,'storage_copy: Structure different!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! What is to copy
@@ -3779,7 +3779,7 @@ CONTAINS
           CALL lalg_copyVectorDblSngl (p_rsource%p_Ddouble1D,p_rdest%p_Fsingle1D)
         CASE DEFAULT
           PRINT *,'storage_copy: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE (ST_SINGLE)
@@ -3790,7 +3790,7 @@ CONTAINS
           CALL lalg_copyVectorSngl (p_rsource%p_Fsingle1D,p_rdest%p_Fsingle1D)
         CASE DEFAULT
           PRINT *,'storage_copy: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE (ST_INT)
@@ -3798,7 +3798,7 @@ CONTAINS
           CALL lalg_copyVectorInt (p_rsource%p_Iinteger1D,p_rdest%p_Iinteger1D)
         ELSE
           PRINT *,'storage_copy: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END IF
 
       CASE (ST_LOGICAL)
@@ -3809,7 +3809,7 @@ CONTAINS
           END DO
         ELSE
           PRINT *,'storage_copy: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END IF
 
       CASE (ST_CHAR)
@@ -3820,12 +3820,12 @@ CONTAINS
           END DO
         ELSE
           PRINT *,'storage_copy: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END IF
 
       CASE DEFAULT
         PRINT *,'storage_copy: Unknown data type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE (2)
@@ -3834,7 +3834,7 @@ CONTAINS
         IF ((UBOUND(p_rsource%p_Ddouble2D,1) .NE. UBOUND(p_rdest%p_Ddouble2D,1)) .OR.&
             (UBOUND(p_rsource%p_Ddouble2D,2) .NE. UBOUND(p_rdest%p_Ddouble2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
-          STOP
+          CALL sys_halt()
         END IF
 
         SELECT CASE (p_rdest%idataType)
@@ -3864,7 +3864,7 @@ CONTAINS
 
         CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
           PRINT *,'storage_copy: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
 
         END SELECT
 
@@ -3872,7 +3872,7 @@ CONTAINS
         IF ((UBOUND(p_rsource%p_Fsingle2D,1) .NE. UBOUND(p_rdest%p_Fsingle2D,1)) .OR.&
             (UBOUND(p_rsource%p_Fsingle2D,2) .NE. UBOUND(p_rdest%p_Fsingle2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
-          STOP
+          CALL sys_halt()
         END IF
 
         SELECT CASE (p_rdest%idataType)
@@ -3903,7 +3903,7 @@ CONTAINS
         ! Might be ST_LOGICAL or ST_CHAR
         CASE DEFAULT
           PRINT *,'storage_copy: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
 
         END SELECT
 
@@ -3911,11 +3911,11 @@ CONTAINS
         IF ((UBOUND(p_rsource%p_Iinteger2D,1) .NE. UBOUND(p_rdest%p_Iinteger2D,1)) .OR.&
             (UBOUND(p_rsource%p_Iinteger2D,2) .NE. UBOUND(p_rdest%p_Iinteger2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
-          STOP
+          CALL sys_halt()
         END IF
         IF (p_rdest%idataType .NE. ST_INT) THEN
           PRINT *,'storage_copy: unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! Copy by hand
@@ -3929,11 +3929,11 @@ CONTAINS
         IF ((UBOUND(p_rsource%p_Blogical2D,1) .NE. UBOUND(p_rdest%p_Blogical2D,1)) .OR.&
             (UBOUND(p_rsource%p_Blogical2D,2) .NE. UBOUND(p_rdest%p_Blogical2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
-          STOP
+          CALL sys_halt()
         END IF
         IF (p_rdest%idataType .NE. ST_LOGICAL) THEN
           PRINT *,'storage_copy: unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! Copy by hand
@@ -3947,11 +3947,11 @@ CONTAINS
         IF ((UBOUND(p_rsource%p_Schar2D,1) .NE. UBOUND(p_rdest%p_Schar2D,1)) .OR.&
             (UBOUND(p_rsource%p_Schar2D,2) .NE. UBOUND(p_rdest%p_Schar2D,2))) THEN
           PRINT *,'storage_copy: Structure different!'
-          STOP
+          CALL sys_halt()
         END IF
         IF (p_rdest%idataType .NE. ST_CHAR) THEN
           PRINT *,'storage_copy: unsupported data type combination'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! Copy by hand
@@ -3963,7 +3963,7 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *,'storage_copy: Unknown data type'
-        STOP
+        CALL sys_halt()
       END SELECT
     END SELECT
 
@@ -4023,7 +4023,7 @@ CONTAINS
     ! Check if the start address is positive
     IF (istart_source <= 0 .OR. istart_dest <= 0) THEN
       PRINT *, 'storage_copy_explicit: start address must be positive'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the heap to use - local or global one.
@@ -4036,11 +4036,11 @@ CONTAINS
 
     IF (h_source .EQ. ST_NOHANDLE) THEN
       PRINT *,'storage_copy_explicit: Wrong handle'
-      STOP
+      CALL sys_halt()
     END IF
     IF (.NOT. ASSOCIATED(p_rheap%p_Rdescriptors)) THEN
       PRINT *,'storage_copy_explicit: Heap not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
 
     p_rsource => p_rheap%p_Rdescriptors(h_source)
@@ -4051,7 +4051,7 @@ CONTAINS
       ! as h_source.
       IF (p_rsource%idimension /= 1) THEN
         PRINT *, 'storage_copy_explicit: only 1D arrays are allowed'
-        STOP
+        CALL sys_halt()
       END IF
 
       SELECT CASE (p_rsource%idataType)
@@ -4088,7 +4088,7 @@ CONTAINS
     ! 1D/2D the same?
     IF (p_rsource%idimension .NE. p_rdest%idimension) THEN
       PRINT *,'storage_copy_explicit: Structure different!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! What is to copy
@@ -4099,7 +4099,7 @@ CONTAINS
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Ddouble1D) .OR. &
                istart_dest+ilength-1 > SIZE(p_rdest%p_Ddouble1D)) THEN
             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
-            STOP
+            CALL sys_halt()
           END IF
           ! Copy by hand
           DO i=1,ilength
@@ -4110,7 +4110,7 @@ CONTAINS
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Ddouble1D) .OR. &
                istart_dest+ilength-1 > SIZE(p_rdest%p_Fsingle1D)) THEN
             PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
-            STOP
+            CALL sys_halt()
           END IF
           ! Copy by hand
           DO i=1,ilength
@@ -4119,7 +4119,7 @@ CONTAINS
           END DO
        CASE DEFAULT
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END SELECT
 
     CASE (ST_SINGLE)
@@ -4128,7 +4128,7 @@ CONTAINS
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Fsingle1D) .OR. &
                istart_dest+ilength-1 > SIZE(p_rdest%p_Ddouble1D)) THEN
              PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO i=1,ilength
@@ -4139,7 +4139,7 @@ CONTAINS
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Fsingle1D) .OR. &
                istart_dest+ilength-1 > SIZE(p_rdest%p_Fsingle1D)) THEN
              PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO i=1,ilength
@@ -4148,7 +4148,7 @@ CONTAINS
           END DO
        CASE DEFAULT
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END SELECT
 
     CASE (ST_INT)
@@ -4156,7 +4156,7 @@ CONTAINS
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Iinteger1D) .OR. &
                istart_dest+ilength-1 > SIZE(p_rdest%p_Iinteger1D)) THEN
              PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO i=1,ilength
@@ -4164,7 +4164,7 @@ CONTAINS
           END DO
        ELSE
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END IF
 
     CASE (ST_LOGICAL)
@@ -4172,7 +4172,7 @@ CONTAINS
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Blogical1D) .OR. &
                istart_dest+ilength-1 > SIZE(p_rdest%p_Blogical1D)) THEN
              PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO i=1,ilength
@@ -4180,7 +4180,7 @@ CONTAINS
           END DO
        ELSE
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END IF
 
     CASE (ST_CHAR)
@@ -4188,7 +4188,7 @@ CONTAINS
           IF (istart_source+ilength-1 > SIZE(p_rsource%p_Schar1D) .OR. &
                istart_dest+ilength-1 > SIZE(p_rdest%p_Schar1D)) THEN
              PRINT *, 'storage_copy_explicit: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO i=1,ilength
@@ -4196,12 +4196,12 @@ CONTAINS
           END DO
        ELSE
           PRINT *,'storage_copy_explicit: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END IF
 
     CASE DEFAULT
        PRINT *,'storage_copy_explicit: Unknown data type'
-       STOP
+       CALL sys_halt()
     END SELECT
 
   END SUBROUTINE
@@ -4260,7 +4260,7 @@ CONTAINS
     ! Check if the start address is positive
     IF (ANY(istart_source <= 0) .OR. ANY(istart_dest <= 0)) THEN
       PRINT *, 'storage_copy_explicit: start address must be positive'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the heap to use - local or global one.
@@ -4273,11 +4273,11 @@ CONTAINS
 
     IF (h_source .EQ. ST_NOHANDLE) THEN
       PRINT *,'storage_copy_explicit: Wrong handle'
-      STOP
+      CALL sys_halt()
     END IF
     IF (.NOT. ASSOCIATED(p_rheap%p_Rdescriptors)) THEN
       PRINT *,'storage_copy_explicit: Heap not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
 
     p_rsource => p_rheap%p_Rdescriptors(h_source)
@@ -4288,7 +4288,7 @@ CONTAINS
       ! as h_source.
       IF (p_rsource%idimension /= 2) THEN
         PRINT *, 'storage_copy_explicit: only 1D arrays are allowed'
-        STOP
+        CALL sys_halt()
       END IF
 
       SELECT CASE (p_rsource%IdataType)
@@ -4325,7 +4325,7 @@ CONTAINS
     ! 1D/2D the same?
     IF (p_rsource%idimension .NE. p_rdest%idimension) THEN
       PRINT *,'storage_copy_explicit: Structure different!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! What is to copy
@@ -4338,7 +4338,7 @@ CONTAINS
                Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Ddouble2D,1) .OR. &
                Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Ddouble2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO j=1,Ilength(2)
@@ -4354,7 +4354,7 @@ CONTAINS
                Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Fsingle2D,1) .OR. &
                Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Fsingle2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO j=1,Ilength(2)
@@ -4370,7 +4370,7 @@ CONTAINS
                Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Iinteger2D,1) .OR. &
                Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Iinteger2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO j=1,Ilength(2)
@@ -4382,7 +4382,7 @@ CONTAINS
 
        CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
           PRINT *,'storage_copy_explicit2D: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
 
        END SELECT
 
@@ -4394,7 +4394,7 @@ CONTAINS
                Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Ddouble2D,1) .OR. &
                Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Ddouble2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO j=1,Ilength(2)
@@ -4410,7 +4410,7 @@ CONTAINS
                Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Fsingle2D,1) .OR. &
                Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Fsingle2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO j=1,Ilength(2)
@@ -4426,7 +4426,7 @@ CONTAINS
                Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Iinteger2D,1) .OR. &
                Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Iinteger2D,2)) THEN
              PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-             STOP
+             CALL sys_halt()
           END IF
           ! Copy by hand
           DO j=1,Ilength(2)
@@ -4438,21 +4438,21 @@ CONTAINS
 
        CASE DEFAULT ! Might be ST_LOGICAL or ST_CHAR
           PRINT *,'storage_copy_explicit2D: Unsupported data type combination'
-          STOP
+          CALL sys_halt()
 
        END SELECT
 
     CASE (ST_INT)
        IF (p_rdest%idataType .NE. ST_INT) THEN
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END IF
        IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Iinteger2D,1) .OR. &
             Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Iinteger2D,2) .OR. &
             Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Iinteger2D,1) .OR. &
             Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Iinteger2D,2)) THEN
           PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-          STOP
+          CALL sys_halt()
        END IF
 
        ! Copy by hand
@@ -4466,14 +4466,14 @@ CONTAINS
     CASE (ST_LOGICAL)
        IF (p_rdest%idataType .NE. ST_LOGICAL) THEN
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END IF
        IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Blogical2D,1) .OR. &
             Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Blogical2D,2) .OR. &
             Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Blogical2D,1) .OR. &
             Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Blogical2D,2)) THEN
           PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-          STOP
+          CALL sys_halt()
        END IF
 
        ! Copy by hand
@@ -4487,14 +4487,14 @@ CONTAINS
     CASE (ST_CHAR)
        IF (p_rdest%idataType .NE. ST_CHAR) THEN
           PRINT *,'storage_copy_explicit2D: unsupported data type combination'
-          STOP
+          CALL sys_halt()
        END IF
        IF (Istart_source(1)+Ilength(1)-1 > UBOUND(p_rsource%p_Schar2D,1) .OR. &
             Istart_source(2)+Ilength(2)-1 > UBOUND(p_rsource%p_Schar2D,2) .OR. &
             Istart_dest(1)+Ilength(1)-1 > UBOUND(p_rdest%p_Schar2D,1) .OR. &
             Istart_dest(2)+Ilength(2)-1 > UBOUND(p_rdest%p_Schar2D,2)) THEN
           PRINT *, 'storage_copy_explicit2D: Subarrays incompatible!'
-          STOP
+          CALL sys_halt()
        END IF
 
        ! Copy by hand
@@ -4507,7 +4507,7 @@ CONTAINS
 
     CASE DEFAULT
        PRINT *,'storage_copy: Unknown data type'
-       STOP
+       CALL sys_halt()
     END SELECT
 
   END SUBROUTINE
@@ -4644,7 +4644,7 @@ CONTAINS
 
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getdatatype: Handle invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Where is the descriptor of the handle?
@@ -4664,10 +4664,10 @@ CONTAINS
   CASE (ST_NOHANDLE)
     PRINT *,'Error in storage_getdatatype: Handle invalid!'
     PRINT *,'Handle number: ',ihandle
-    STOP
+    CALL sys_halt()
   CASE DEFAULT
     PRINT *,'Error in storage_getdatatype: Invalid data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -4716,7 +4716,7 @@ CONTAINS
 
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getdatatype: Handle invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Where is the descriptor of the handle?
@@ -4724,7 +4724,7 @@ CONTAINS
 
   IF (ihandle .LE. ST_NOHANDLE) THEN
     PRINT *,'Error in storage_getsize1D: Handle invalid!'
-    STOP
+    CALL sys_halt()
   END IF
 
   idimension = p_rnode%idimension
@@ -4876,7 +4876,7 @@ CONTAINS
         rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       IF (isize > isizeOld) &
@@ -4952,7 +4952,7 @@ CONTAINS
              REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       IF (isize > Isize2Dold(2)) &
@@ -5011,7 +5011,7 @@ CONTAINS
     CASE DEFAULT
       PRINT *, 'Error in storage_realloc: Handle ',ihandle, &
                ' is neither 1- nor 2- dimensional!'
-      STOP
+      CALL sys_halt()
 
     END SELECT
 
@@ -5222,7 +5222,7 @@ CONTAINS
         rstorageNode%dmemBytes = REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       IF (iubound > iuboundOld) &
@@ -5322,7 +5322,7 @@ CONTAINS
              REAL(Isize2Dold(1),DP)*REAL(isize,DP)*REAL(ST_CHAR2BYTES,DP)
       CASE DEFAULT
         PRINT *,'Error: unknown mem type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       IF (iubound > Iubound2Dold(2)) &
@@ -5384,7 +5384,7 @@ CONTAINS
     CASE DEFAULT
       PRINT *, 'Error in storage_realloc: Handle ',ihandle, &
                ' is neither 1- nor 2- dimensional!'
-      STOP
+      CALL sys_halt()
 
     END SELECT
 

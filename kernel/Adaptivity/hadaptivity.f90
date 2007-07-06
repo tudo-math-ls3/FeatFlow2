@@ -978,7 +978,7 @@ CONTAINS
     ! Check if handle is not empty
     IF (h_DvertexCoords == ST_NOHANDLE) THEN
       PRINT *, "hadapt_setVertexCoords2D: Invalid handle!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if quadtree is already generated, then remove old quadtree first
@@ -1047,7 +1047,7 @@ CONTAINS
     ! Check if quadtree exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_QUADTREE) .EQ. 0) THEN
       PRINT *, "hadapt_getVertexCoords2D: quadtree does not exist!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Copy quadtree to handle h_DvertexCoords
@@ -1086,7 +1086,7 @@ CONTAINS
     ! Check if handle is not empty
     IF (h_IverticesAtElement == ST_NOHANDLE) THEN
       PRINT *, "hadapt_setVerticesAtElement: Invalid handle!"
-      STOP
+      CALL sys_halt()
     END IF
 
     rhadapt%h_IverticesAtElement = h_IverticesAtElement
@@ -1129,7 +1129,7 @@ CONTAINS
     ! Check if "vertices-at-element" array exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_VERTATELEM) .EQ. 0) THEN
       PRINT *, "hadapt_getVerticesAtElement: structure does not exist!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if handle needs to be freed first
@@ -1169,7 +1169,7 @@ CONTAINS
     ! Check if handle is not empty
     IF (h_IneighboursAtElement == ST_NOHANDLE) THEN
       PRINT *, "hadapt_setNeighboursAtElement: Invalid handle!"
-      STOP
+      CALL sys_halt()
     END IF
 
     rhadapt%h_IneighboursAtElement = h_IneighboursAtElement
@@ -1217,7 +1217,7 @@ CONTAINS
     ! Check if "neighbours-at-element" array exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_NEIGHATELEM) .EQ. 0) THEN
       PRINT *, "hadapt_getNeighboursAtElement: structure does not exist!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if handle needs to be freed first
@@ -1285,7 +1285,7 @@ CONTAINS
     ! Check if "InelOfType" array exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_NELOFTYPE) .EQ. 0) THEN
       PRINT *, "hadapt_getNelOfType: structure does not exist!"
-      STOP
+      CALL sys_halt()
     END IF
     
     InelOfType=rhadapt%InelOfType
@@ -1340,7 +1340,7 @@ CONTAINS
         (h_IverticesAtBoundary == ST_NOHANDLE) .OR.&
         (h_DvertexParameterValue == ST_NOHANDLE)) THEN
       PRINT *, "hadapt_setNodalProperty: Invalid handle!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if boundary structure exists and remove it
@@ -1467,7 +1467,7 @@ CONTAINS
     ! Check if boundary data exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_BOUNDARY) .EQ. 0) THEN
       PRINT *, "hadapt_getBoundary: structure does not exist!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Due to the fact, that the boundary data may be stored in multiple 
@@ -1568,7 +1568,7 @@ CONTAINS
     ! Check if handle is not empty
     IF (h_InodalProperty == ST_NOHANDLE) THEN
       PRINT *, "hadapt_setNodalProperty: Invalid handle!"
-      STOP
+      CALL sys_halt()
     END IF
 
     rhadapt%h_InodalProperty = h_InodalProperty
@@ -1604,7 +1604,7 @@ CONTAINS
     ! Check if "nodal property" list exits
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_NODALPROP) .EQ. 0) THEN
       PRINT *, "hadapt_getNodalProperty: structure does not exist!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if handle needs to be freed first
@@ -1656,7 +1656,7 @@ CONTAINS
     ! Check if dynamic data structures are available
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).EQ.0) THEN
       PRINT *, "hadapt_performAdaptation: dynamic data structures are not generated!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialize initial dimensions
@@ -1739,7 +1739,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "hadapt_performAdaptation: Unsupported refinement strategy!"
-      STOP
+      CALL sys_halt()
     END SELECT
 
   CONTAINS
@@ -1881,7 +1881,7 @@ CONTAINS
     ! Check if dynamic data structures generated
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).EQ.0) THEN
       PRINT *, "adapt_output_svg: dynamic data structures are not generated"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Increment the sample number
@@ -2253,14 +2253,14 @@ CONTAINS
         ! Get parameter values of the boundary nodes
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
           PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         dvbdp1 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
         
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
           PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
-          STOP
+          CALL sys_halt()
         END IF
         ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         dvbdp2 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
@@ -2399,7 +2399,7 @@ CONTAINS
     INTEGER :: ibct
 
     PRINT *, "NOT TESTED"
-    STOP
+    CALL sys_halt()
 
     ! Remove solution value
     CALL fcb_removeVertex(ivt)
@@ -2414,7 +2414,7 @@ CONTAINS
       ! Find position of vertex IVT in boundary array
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivt,ipred) == BTREE_NOT_FOUND) THEN
         PRINT *, "remove_vertex: Unable to find vertex IVT=",ivt," in boundary data structure"
-        STOP
+        CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       
@@ -2425,21 +2425,21 @@ CONTAINS
       ! Connect the boundary neighbors with each other: I1<->I2
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
         PRINT *, "remove_vertex: Unable to find vertex I1=",i1," in boundary data structure"
-        STOP
+        CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       rhadapt%rBoundary(ibct)%IData(BdrNext,ipos) = i2
       
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
         PRINT *, "remove_vertex: Unable to find vertex I2=",i2," in boundary data structure"
-        STOP
+        CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos) = i1
       
       IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivt) == BTREE_NOT_FOUND) THEN
         PRINT *, "remove_vertex: Unable to delete vertex IVT=",ivt," from boundary data structure"
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -2457,7 +2457,7 @@ CONTAINS
 
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),jvt,ipred) == BTREE_NOT_FOUND) THEN
           PRINT *, "remove_vertex: Unable to find vertex JVT=",jvt," in boundary data structure"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         
@@ -2473,14 +2473,14 @@ CONTAINS
         ! Connect the boundary neighbors with IVT: I1<-IVT->I2
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
           PRINT *, "remove_vertex: Unable to find vertex I1=",i1," in boundary data structure"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         rhadapt%rBoundary(ibct)%IData(BdrNext,ipos) = ivt
         
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
           PRINT *, "remove_vertex: Unable to find vertex I2=",i2," in boundary data structure"
-          STOP
+          CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos) = ivt
@@ -2488,7 +2488,7 @@ CONTAINS
         ! Delete JVT from the boundary
         IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),jvt) == BTREE_NOT_FOUND) THEN
           PRINT *, "remove_vertex: Unable to delete vertex JVT=",jvt," from the boundary data structure"
-          STOP
+          CALL sys_halt()
         END IF
       END IF
       
@@ -2512,12 +2512,12 @@ CONTAINS
 !!$        
 !!$        IF (arrlst_deleteFromArraylist(rhadapt%rKcol,kvt,jvt) == ARRAYLIST_NOT_FOUND) THEN
 !!$          PRINT *, "remove_vertex: Unable to delete vertex JVT=",jvt," from list KCOL"
-!!$          STOP
+!!$          CALL sys_halt()
 !!$        END IF
 !!$
 !!$        IF (arrlst_searchInArraylist(rhadapt%rKcol,kvt,ivt,ipred) == ARRAYLIST_NOT_FOUND) THEN
 !!$          PRINT *, "remove_vertex: Unable to find vertex IVT=",ivt," in list KCOL"
-!!$          STOP
+!!$          CALL sys_halt()
 !!$        END IF
 !!$        CALL arrlst_insertIntoArraylist(rhadapt%rKcol,kvt,ivt,ipred,ipos)
 !!$      END DO
@@ -2531,7 +2531,7 @@ CONTAINS
 
 !!$    IF (btree_deleteFromTree(rhadapt%rKld,jvt+1) == BTREE_NOT_FOUND) THEN
 !!$      PRINT *, "remove_vertex: Unable to delete last entry ",jvt+1," from KLD"
-!!$      STOP
+!!$      CALL sys_halt()
 !!$    END IF
   END SUBROUTINE remove_vertex2D
 
@@ -2777,7 +2777,7 @@ CONTAINS
       ! Element is not the last one.
       IF (iel > ielReplace) THEN
         PRINT *, "remove_element: Invalid element!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Copy data iposReplaced -> ipos
@@ -3073,7 +3073,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "refine_Tria2Tria2: Invalid marker",imarker
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Store vertex- and element-values of the current element
@@ -3174,7 +3174,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "refine_Tria3Tria: Invalid marker",imarker
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Store vertex- and element-values of the current element
@@ -3422,7 +3422,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "refine_Quad2Quad: Invalid marker",imarker
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Store vertex- and element-values of the current element
@@ -3544,7 +3544,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "refine_Quad3Tria: Invalid marker",imarker
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Store vertex- and element-values of the current element
@@ -3657,7 +3657,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "refine_Quad4Tria: Invalid marker",imarker
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Store vertex- and element-values of the current element
@@ -3942,7 +3942,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *, "convert_Tria4Tria: Invalid state",istate
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Find local positions of element jel from is state
@@ -3976,7 +3976,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *, "convert_Tria4Tria: Invalid state",jstate
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Store values before conversion
@@ -4512,7 +4512,7 @@ CONTAINS
     ! Check if dynamic data structures are generated and contain data
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).EQ.0) THEN
       PRINT *, "mark_refinement2D: dynamic data structures are not generated"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Initialize marker structure for NEL0 elements
@@ -4661,13 +4661,13 @@ CONTAINS
         IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE).EQ.0) THEN
       PRINT *, "mark_coarsening2D: dynamic data structures are not generated or &
           & not marker for grid refinement exists!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Set pointers
     IF (rhadapt%h_Imarker == ST_NOHANDLE) THEN
       PRINT *, "mark_coarsening2D: marker array is not available"
-      STOP
+      CALL sys_halt()
     END IF
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
     CALL lsyssc_getbase_double(rindicator,p_Dindicator)
@@ -4788,13 +4788,13 @@ CONTAINS
         
       CASE (STATE_QUAD_RED1,STATE_QUAD_RED2,STATE_QUAD_RED3)
         PRINT *, "I thought, this is impossible. Please contact the author of this module."
-        STOP
+        CALL sys_halt()
         
       CASE(STATE_TRIA_ROOT,STATE_QUAD_ROOT,STATE_TRIA_OUTERINNER)
         
       CASE DEFAULT
         PRINT *, "mark_coarsening2D: Invalid state",istate
-        STOP
+        CALL sys_halt()
       END SELECT
     END DO mark
 
@@ -4989,7 +4989,7 @@ CONTAINS
           ! In all cases, the edge which connects the two nodes is opposite
           ! to the first local vertex. Hence, work must only be done for CASE(4)
           PRINT *, "redgreen_mark_refinement2D: State 2 or 8 must not occur"
-          STOP
+          CALL sys_halt()
           
         CASE(STATE_TRIA_OUTERINNER)
           ! The triangle can either be an outer red element resulting from a Tria4Tria 
@@ -5133,7 +5133,7 @@ CONTAINS
           ! Theoretically, this state is not possible. In general, it has to be treated
           ! like state 21 = STATE_QUAD_HALF1
           PRINT *, "redgreen_mark_refinement2D: State 11 must not occur"
-          STOP
+          CALL sys_halt()
           
         CASE(STATE_TRIA_GREENINNER)
           ! We are processing a green triangle. Due to our refinement convention, element IEL
@@ -5276,7 +5276,7 @@ CONTAINS
 
           CASE DEFAULT
             PRINT *, "redgreen_mark_refinement2D: Invalid state",istate,iel
-            STOP
+            CALL sys_halt()
           END SELECT
 
         CASE(STATE_TRIA_GREENOUTER_RIGHT)
@@ -5384,12 +5384,12 @@ CONTAINS
 
           CASE DEFAULT
             PRINT *, "redgreen_mark_refinement2D: Invalid state",istate,iel
-            STOP
+            CALL sys_halt()
           END SELECT
           
         CASE DEFAULT
           PRINT *, "redgreen_mark_refinement2D: Invalid state",istate,iel
-          STOP
+          CALL sys_halt()
         END SELECT
 100     CONTINUE
 
@@ -5436,7 +5436,7 @@ CONTAINS
 
             IF (jve > mve) THEN
               PRINT *, "Processing element",iel,".Try to find in adjacency list of element",jel,"KADJ",Kjadj
-              STOP
+              CALL sys_halt()
             END IF
 
             ! If the edge is already marked for refinement then we can
@@ -5577,7 +5577,7 @@ CONTAINS
         IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE)   .EQ.0) THEN
       PRINT *, "redgreen_refine: dynamic data structures are not generated &
           &or no marker for refinement is available!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Set pointers
@@ -5620,7 +5620,7 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *, "redgreen_refine: Refinement is not allowed!",p_Imarker(iel),iel
-        STOP
+        CALL sys_halt()
       END SELECT
     END DO
 
@@ -5879,11 +5879,11 @@ CONTAINS
 !!$             !     d(2)=seglength(TQ_dcorvg%dcorvg(1,kvert((/2,3/))),TQ_dcorvg%dcorvg(2,kvert((/2,3/))))
 !!$             !     d(3)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,3/))),TQ_dcorvg%dcorvg(2,kvert((/1,3/))))
 !!$                  
-!!$                  IF (search(TT_node,kvert(1),ipred) /= TFOUND) STOP
+!!$                  IF (search(TT_node,kvert(1),ipred) /= TFOUND) CALL sys_halt()
 !!$                  i1=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$                  IF (search(TT_node,kvert(2),ipred) /= TFOUND) STOP
+!!$                  IF (search(TT_node,kvert(2),ipred) /= TFOUND) CALL sys_halt()
 !!$                  i2=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$                  IF (search(TT_node,kvert(3),ipred) /= TFOUND) STOP
+!!$                  IF (search(TT_node,kvert(3),ipred) /= TFOUND) CALL sys_halt()
 !!$                  i3=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 !!$                  
 !!$                  d(1)=ABS(TT_node%db(1,i1)-TT_node%db(1,i2))
@@ -5931,11 +5931,11 @@ CONTAINS
 !!$    !           d(2)=seglength(TQ_dcorvg%dcorvg(1,kvert((/2,3/))),TQ_dcorvg%dcorvg(2,kvert((/2,3/))))
 !!$    !           d(3)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,3/))),TQ_dcorvg%dcorvg(2,kvert((/1,3/))))
 !!$               
-!!$               IF (search(TT_node,kvert(1),ipred) /= TFOUND) STOP
+!!$               IF (search(TT_node,kvert(1),ipred) /= TFOUND) CALL sys_halt()
 !!$               i1=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               IF (search(TT_node,kvert(2),ipred) /= TFOUND) STOP
+!!$               IF (search(TT_node,kvert(2),ipred) /= TFOUND) CALL sys_halt()
 !!$               i2=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               IF (search(TT_node,kvert(3),ipred) /= TFOUND) STOP
+!!$               IF (search(TT_node,kvert(3),ipred) /= TFOUND) CALL sys_halt()
 !!$               i3=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 !!$
 !!$               d(1)=ABS(TT_node%db(1,i1)-TT_node%db(1,i2))

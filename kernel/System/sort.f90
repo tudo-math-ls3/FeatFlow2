@@ -142,7 +142,7 @@ CONTAINS
       case default
         CALL output_line ('Unknown sorting algorithm: '//TRIM(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
-        STOP
+        CALL sys_halt()
       end select
     else
       call heapsort(Iarray, Imapping)
@@ -1603,7 +1603,7 @@ CONTAINS
         CASE DEFAULT
           CALL output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          STOP 
+          CALL sys_halt() 
       END SELECT
     ELSE
       CALL heapSort
@@ -1856,7 +1856,7 @@ CONTAINS
         CASE DEFAULT
           CALL output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          STOP 
+          CALL sys_halt() 
       END SELECT
     ELSE
       CALL heapSort
@@ -2113,7 +2113,7 @@ CONTAINS
         CASE DEFAULT
           CALL output_line('unknown Method:' // sys_i6(cmethod),&
               OU_CLASS_ERROR,OU_MODE_STD,'arraySort_sortByIndex')
-          STOP 
+          CALL sys_halt() 
       END SELECT
     ELSE
       CALL heapSort

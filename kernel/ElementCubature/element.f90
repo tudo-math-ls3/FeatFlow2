@@ -122,7 +122,7 @@
 !#    SUBROUTINE abc (ieltype)
 !#    ...
 !#      IF ( (ieltype .NE. EL_E030) .AND. (ieltype .NE. EL_EM30) ...) THEN
-!#        STOP
+!#        CALL sys_halt()
 !#      END IF
 !#
 !#   No you don't need to. The simplest method for such element families:
@@ -133,7 +133,7 @@
 !#    SUBROUTINE abc (ieltype)
 !#    ...
 !#      IF (elem_getPrimaryElement(ieltype) .NE. EL_Q1T) THEN
-!#        STOP
+!#        CALL sys_halt()
 !#      END IF
 !#
 !#   Which directly describes all $\tilde Q_1$ elements. If you additionally

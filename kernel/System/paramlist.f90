@@ -652,7 +652,7 @@ CONTAINS
   ! Cancel if the list is not initialised.
   IF (rparlist%isectionCount .EQ. 0) THEN
     PRINT *,'Parameter list not initialised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Create the upper-case section name
@@ -705,7 +705,7 @@ CONTAINS
   
   IF (sparameter .EQ. '') THEN
     PRINT *,'Empty parameter name!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Create the upper-case parameter name
@@ -757,7 +757,7 @@ CONTAINS
   ! Cancel if the list is not initialised.
   IF (rparlist%isectionCount .EQ. 0) THEN
     PRINT *,'Parameter list not initialised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get the section
@@ -805,7 +805,7 @@ CONTAINS
   
   IF (sparameter .EQ. '') THEN
     PRINT *,'Empty parameter name!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Create the upper-case parameter name
@@ -859,7 +859,7 @@ CONTAINS
   ! Cancel if the list is not initialised.
   IF (rparlist%isectionCount .EQ. 0) THEN
     PRINT *,'Parameter list not initialised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get the section
@@ -934,7 +934,7 @@ CONTAINS
   
   IF (sparameter .EQ. '') THEN
     PRINT *,'Empty parameter name!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Create the upper-case parameter name
@@ -949,7 +949,7 @@ CONTAINS
       svalue = sdefault
     ELSE
       PRINT *,'Parameter ',TRIM(paramname),' does not exist!'
-      STOP
+      CALL sys_halt()
     END IF
   ELSE
     ! Depending on isubstring, return either the 'headline' or one
@@ -1030,7 +1030,7 @@ CONTAINS
   
     IF (.NOT. PRESENT(bexists)) THEN 
       PRINT *,'Error. Parameter ',iparameter,' does not exist!'
-      STOP
+      CALL sys_halt()
     ELSE
       svalue = ''
       bexists = .FALSE.
@@ -1116,7 +1116,7 @@ CONTAINS
   ! Cancel if the list is not initialised.
   IF (rparlist%isectionCount .EQ. 0) THEN
     PRINT *,'Parameter list not initialised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get the section
@@ -1127,7 +1127,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Section not found'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
 
@@ -1551,7 +1551,7 @@ CONTAINS
   ! Cancel if the list is not initialised.
   IF (rparlist%isectionCount .EQ. 0) THEN
     PRINT *,'Parameter list not initialised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get the section
@@ -1632,7 +1632,7 @@ CONTAINS
   
     IF (.NOT. PRESENT(iexists)) THEN 
       PRINT *,'Error. Parameter ',iparameter,' does not exist!'
-      STOP
+      CALL sys_halt()
     ELSE
       iexists = NO
       RETURN
@@ -1712,7 +1712,7 @@ CONTAINS
   
   IF (i .EQ. 0) THEN
     PRINT *,'Parameter ',paramname,' does not exist, cannot be modified!'
-    STOP
+    CALL sys_halt()
   ELSE 
   
     ! Depending on isubstring, change either the 'headline' or one
@@ -1782,7 +1782,7 @@ CONTAINS
   ! Cancel if the list is not initialised.
   IF (rparlist%isectionCount .EQ. 0) THEN
     PRINT *,'Parameter list not initialised!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Get the section
@@ -1935,7 +1935,7 @@ CONTAINS
         IF (sbuf(ltr:ltr) .NE. ']') THEN
           PRINT *,'Wrong syntax of section name. Line ',ilinenum,':'
           PRINT *,sbuf
-          STOP
+          CALL sys_halt()
         END IF
         
         ! Get the section name
@@ -1966,7 +1966,7 @@ CONTAINS
 
         IF (i .EQ. 0) THEN
           PRINT *,'Invalid parameter syntax. Line ',ilinenum,':'
-          STOP
+          CALL sys_halt()
         END IF
       
         IF ((j1 .EQ. 0) .OR. (j2 .LE. j1)) THEN
@@ -2136,7 +2136,7 @@ CONTAINS
   ! Oops...
   IF (iunit .EQ. -1) THEN
     PRINT *,'Error opening .INI file.' 
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Start adding parameters to the unnamed section
@@ -2242,7 +2242,7 @@ CONTAINS
   
     IF (rparlist%isectionCount .EQ. 0) THEN
       PRINT *,'parlst_getStringRepresentation: Parameter list not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
   
     NULLIFY(p_sbuf)

@@ -714,7 +714,7 @@ CONTAINS
       WRITE (saux,'(A,I3,A)') '(',LEN(cstr),'(''@''))'
     CASE DEFAULT
       PRINT *,'output_separator: Unknown separator type: ',csepType
-      STOP
+      CALL sys_halt()
     END SELECT
     
     WRITE (cstr,saux)

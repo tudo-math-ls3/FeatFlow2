@@ -356,7 +356,7 @@ CONTAINS
 
     IF (rdiscretisation%ncomponents .EQ. 0) THEN
       PRINT *,'mlprj_initProjectionDiscr: No discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Call the standard initialisation routine
@@ -405,7 +405,7 @@ CONTAINS
 
     IF (rvector%nblocks .EQ. 0) THEN
       PRINT *,'mlprj_initProjectionVec: No discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Set up an array of discretisation structures for all the equations
@@ -459,7 +459,7 @@ CONTAINS
 
     IF (rmatrix%ndiagBlocks .EQ. 0) THEN
       PRINT *,'mlprj_initProjectionMat: No discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Set up an array of discretisation structures for all the equations.
@@ -547,7 +547,7 @@ CONTAINS
     PRINT *,'Element distribution on the coarse and fine grid incompatible!'
     PRINT *,'Coarse grid: ',releDistrCoarse%itrialElement,&
             ' Fine grid: ',releDistrFine%itrialElement
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Copy the template to the actual projection structure.
@@ -573,7 +573,7 @@ CONTAINS
     PRINT *,'Element distribution of the grid and interlevel projection incompatible!'
     PRINT *,'Grid: ',releDistrCoarse%itrialElement,&
             ' Prolongation: ',ractProjection%ielementTypeProlongation
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (ractProjection%ielementTypeRestriction .NE. releDistrCoarse%itrialElement) THEN
@@ -582,7 +582,7 @@ CONTAINS
     PRINT *,'Element distribution of the grid and interlevel projection incompatible!'
     PRINT *,'Grid: ',releDistrCoarse%itrialElement,&
             ' Restriction: ',ractProjection%ielementTypeRestriction
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (ractProjection%ielementTypeInterpolation .NE. releDistrCoarse%itrialElement) THEN
@@ -591,7 +591,7 @@ CONTAINS
     PRINT *,'Element distribution of the grid and interlevel projection incompatible!'
     PRINT *,'Grid: ',releDistrCoarse%itrialElement,&
             ' Interpolation: ',ractProjection%ielementTypeInterpolation
-    STOP
+    CALL sys_halt()
   END IF
 
   END SUBROUTINE
@@ -680,7 +680,7 @@ CONTAINS
 
   IF (SIZE(RdiscrCoarse) .NE. SIZE(RdiscrFine)) THEN
     PRINT *,'mlprj_allocTempVector: Coarse and fine grid incompatible!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! How much memory do we need?
@@ -748,7 +748,7 @@ CONTAINS
 
     IF ((rvectorCoarse%nblocks .EQ. 0) .OR. (rvectorFine%nblocks .EQ. 0)) THEN
       PRINT *,'mlprj_getTempMemoryVec: No discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Set up an array of discretisation structures for all the equations
@@ -812,7 +812,7 @@ CONTAINS
 
     IF ((rmatrixCoarse%ndiagBlocks .EQ. 0) .OR. (rmatrixFine%ndiagBlocks .EQ. 0)) THEN
       PRINT *,'mlprj_getTempMemoryVec: No discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Set up an array of discretisation structures for all the equations
@@ -823,7 +823,7 @@ CONTAINS
               ASSOCIATED(rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscretisation)) THEN
             PRINT *,'mlprj_getTempMemoryMat: No discretisation structure in coarse &
                   &matrix at ',i,',',j
-            STOP
+            CALL sys_halt()
           END IF
           RdiscrCoarse(i) = &
             rmatrixCoarse%RmatrixBlock(j,i)%p_rspatialDiscretisation
@@ -839,7 +839,7 @@ CONTAINS
               ASSOCIATED(rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscretisation)) THEN
             PRINT *,'mlprj_getTempMemoryMat: No discretisation structure in fine matrix&
                   & at ',i,',',j
-            STOP
+            CALL sys_halt()
           END IF
           RdiscrFine(i) = &
             rmatrixFine%RmatrixBlock(j,i)%p_rspatialDiscretisation
@@ -919,17 +919,17 @@ CONTAINS
     ! different at the moment...
     IF (rcoarseVector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'Coarse grid vector has unsupported data type!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rfineVector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'Fine grid vector has unsupported data type!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (lsysbl_isVectorSorted(rfineVector) .OR. lsysbl_isVectorSorted(rcoarseVector)) THEN
       PRINT *,'Vectors must be unsorted for level change!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Calls the correct prolongation routine for each block in the 
@@ -944,14 +944,14 @@ CONTAINS
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
             (.NOT. ASSOCIATED(p_rdiscrFine))) THEN
           PRINT *,'Intergrid transfer: No discretisation!'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! Currently, we support only uniform triangulations.
         IF ((p_rdiscrCoarse%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
             (p_rdiscrCoarse%ccomplexity .NE. SPDISC_UNIFORM)) THEN
           PRINT *,'Intergrid transfer supports currently only uniform discretisations!'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! Get the pointers to the vectors
@@ -1125,7 +1125,7 @@ CONTAINS
                
         CASE DEFAULT
           PRINT *,'Unsupported prolongation!'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       END IF
@@ -1198,17 +1198,17 @@ CONTAINS
     ! different at the moment...
     IF (rcoarseVector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'Coarse grid vector has unsupported data type!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rfineVector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'Fine grid vector has unsupported data type!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (lsysbl_isVectorSorted(rfineVector) .OR. lsysbl_isVectorSorted(rcoarseVector)) THEN
       PRINT *,'Vectors must be unsorted for level change!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Calls the correct prolongation routine for each block in the 
@@ -1223,14 +1223,14 @@ CONTAINS
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
             (.NOT. ASSOCIATED(p_rdiscrFine))) THEN
           PRINT *,'Intergrid transfer: No discretisation!'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! Currently, we support only uniform triangulations.
         IF ((p_rdiscrCoarse%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
             (p_rdiscrCoarse%ccomplexity .NE. SPDISC_UNIFORM)) THEN
           PRINT *,'Intergrid transfer supports currently only uniform discretisations!'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! Get the pointers to the vectors
@@ -1413,7 +1413,7 @@ CONTAINS
                
         CASE DEFAULT
           PRINT *,'Unsupported restriction!'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       END IF
@@ -1483,17 +1483,17 @@ CONTAINS
     ! different at the moment...
     IF (rcoarseVector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'Coarse grid vector has unsupported data type!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rfineVector%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'Fine grid vector has unsupported data type!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (lsysbl_isVectorSorted(rfineVector) .OR. lsysbl_isVectorSorted(rcoarseVector)) THEN
       PRINT *,'Vectors must be unsorted for level change!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Calls the correct prolongation routine for each block in the 
@@ -1508,14 +1508,14 @@ CONTAINS
         IF ((.NOT. ASSOCIATED(p_rdiscrCoarse)) .OR. &
             (.NOT. ASSOCIATED(p_rdiscrFine))) THEN
           PRINT *,'Intergrid transfer: No discretisation!'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! Currently, we support only uniform triangulations.
         IF ((p_rdiscrCoarse%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
             (p_rdiscrCoarse%ccomplexity .NE. SPDISC_UNIFORM)) THEN
           PRINT *,'Intergrid transfer supports currently only uniform discretisations!'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! Get the pointers to the vectors
@@ -1587,7 +1587,7 @@ CONTAINS
                
         CASE DEFAULT
           PRINT *,'Unsupported interpolation!'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       END IF
@@ -1653,7 +1653,7 @@ CONTAINS
   ! local variables
 
   PRINT *,'not implemented!'
-  STOP
+  CALL sys_halt()
 
   END SUBROUTINE
   
@@ -1677,7 +1677,7 @@ CONTAINS
 !</subroutine>
   
   PRINT *,'not implemented.'
-  STOP
+  CALL sys_halt()
 
   END SUBROUTINE
   
@@ -1701,7 +1701,7 @@ CONTAINS
 !</subroutine>
   
   PRINT *,'not implemented.'
-  STOP
+  CALL sys_halt()
     
   END SUBROUTINE
 

@@ -666,7 +666,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *,'Unknown VANCA problem class!'
-      STOP  
+      CALL sys_halt()  
       
     END SELECT
     
@@ -743,13 +743,13 @@ CONTAINS
           IF ((p_rdiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND. &
               (p_rdiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
             PRINT *,'General VANCA supports only uniform and conformal discretisations!'
-            STOP
+            CALL sys_halt()
           END IF
           
           IF ((rmatrix%RmatrixBlock(j,i)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
               (rmatrix%RmatrixBlock(j,i)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
             PRINT *,'General VANCA supports only matrix structure 7 and 9!'
-            STOP
+            CALL sys_halt()
           END IF
           
           rvancaGeneral%p_Rmatrices(j,i)%bexists = .TRUE.
@@ -1165,7 +1165,7 @@ CONTAINS
       DO j=1,SIZE(Rmatrices,2)
         IF (Rmatrices(i,j)%bexists .AND. Rmatrices(i,j)%btransposed) THEN
           PRINT *,'General VANCA does not support transposed matrices!'
-          STOP
+          CALL sys_halt()
         END IF 
       END DO ! j
     END DO ! i
@@ -1373,7 +1373,7 @@ CONTAINS
     IF (rmatrix%ndiagBlocks .NE. 3) THEN
       CALL output_line ('System matrix is not 3x3.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
@@ -1388,7 +1388,7 @@ CONTAINS
                 .NE. 0) THEN
               CALL output_line ('Transposed submatrices not supported.',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-              STOP
+              CALL sys_halt()
             END IF
           ELSE
             IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
@@ -1397,7 +1397,7 @@ CONTAINS
                   OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
               CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-              STOP
+              CALL sys_halt()
             END IF
           END IF
           
@@ -1405,13 +1405,13 @@ CONTAINS
               (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
             CALL output_line ('Only format 7 and 9 matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-            STOP
+            CALL sys_halt()
           END IF
 
           IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
             CALL output_line ('Only double precision matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-            STOP
+            CALL sys_halt()
           END IF
 
           ! We support scaled matrices only to disable a submatrix like A12 or A21
@@ -1420,14 +1420,14 @@ CONTAINS
               (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 0.0_DP)) THEN
             CALL output_line ('Scaled matrices not supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-            STOP
+            CALL sys_halt()
           END IF
           
           IF ((i .eq. j) .AND. &
               (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) ) THEN
             CALL output_line ('Scaled matrices not supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-            STOP
+            CALL sys_halt()
           END IF
           
         END IF ! neq != 0
@@ -1440,14 +1440,14 @@ CONTAINS
         (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
       CALL output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
         (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
       CALL output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-      STOP
+      CALL sys_halt()
     END IF      
   
     ! Fill the output structure with data of the matrices.
@@ -1505,7 +1505,7 @@ CONTAINS
       IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
         CALL output_line ('If A12 is given, A21 must also be given!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesO')
-        STOP
+        CALL sys_halt()
       END IF
       
       CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
@@ -1523,7 +1523,7 @@ CONTAINS
     IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
       CALL output_line ('No discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get the discretisation structure of U,V and P from the block
@@ -1537,7 +1537,7 @@ CONTAINS
       CALL output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rvanca%rvanca2DNavSt%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
@@ -1550,7 +1550,7 @@ CONTAINS
       CALL output_line (&
           'Discretisation structures of velocity and pressure incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokes')
-      STOP
+      CALL sys_halt()
     END IF
 
   END SUBROUTINE
@@ -1687,7 +1687,7 @@ CONTAINS
         
         CASE DEFAULT
           PRINT *,'Unknown VANCA subtype!'
-          STOP  
+          CALL sys_halt()  
         
         END SELECT
         
@@ -1716,7 +1716,7 @@ CONTAINS
             ! Apply the conformal VANCA that allows different matrices
             ! in A11, A12, A21 and A22!
             PRINT *,'VANCA has no support for A12 and A21!'
-            STOP
+            CALL sys_halt()
           END IF
           
         CASE (VANCATP_FULL)
@@ -1736,18 +1736,18 @@ CONTAINS
             ! Apply the conformal VANCA that allows different matrices
             ! in A11, A12, A21 and A22!
             PRINT *,'VANCA has no support for A12 and A21!'
-            STOP
+            CALL sys_halt()
           END IF
           
         CASE DEFAULT
           PRINT *,'Unknown VANCA subtype!'
-          STOP  
+          CALL sys_halt()  
           
         END SELECT
           
       ELSE
         PRINT *,'VANCA: Unsupported discretisation!'
-        STOP
+        CALL sys_halt()
         
       END IF
       
@@ -1798,7 +1798,7 @@ CONTAINS
     ! Matrix must be 3x3.
     IF (rmatrix%ndiagBlocks .NE. 3) THEN
       PRINT *,'vanca_check2DSPQ1TQ0: System matrix is not 3x3.'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! A(1:2,1:3) must not be virtually transposed and of format 9.
@@ -1812,31 +1812,31 @@ CONTAINS
             IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
                 .NE. 0) THEN
               PRINT *,'vanca_check2DSPQ1TQ0: Transposed submatrices not supported.'
-              STOP
+              CALL sys_halt()
             END IF
           ELSE
             IF (IAND(rmatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) &
                 .EQ. 0) THEN
               PRINT *,'vanca_check2DSPQ1TQ0: B1/B2 submatrices must be virtually'
               PRINT *,'transposed (LSYSSC_MSPEC_TRANSPOSED)!'
-              STOP
+              CALL sys_halt()
             END IF
           END IF
           
           IF ((rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX7) .AND. &
               (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
             PRINT *,'vanca_check2DSPQ1TQ0: Only format 7 and 9 matrices supported.'
-            STOP
+            CALL sys_halt()
           END IF
 
           IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
             PRINT *,'vanca_check2DSPQ1TQ0: Only double precision matrices supported.'
-            STOP
+            CALL sys_halt()
           END IF
 
           IF (rmatrix%RmatrixBlock(i,j)%dscaleFactor .NE. 1.0_DP) THEN
             PRINT *,'vanca_check2DSPQ1TQ0: Scaled matrices not supported.'
-            STOP
+            CALL sys_halt()
           END IF
           
         END IF ! neq != 0
@@ -1848,13 +1848,13 @@ CONTAINS
     IF ((rmatrix%RmatrixBlock(1,3)%NA .NE. rmatrix%RmatrixBlock(3,1)%NA) .OR. &
         (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
       PRINT *,'vanca_check2DSPQ1TQ0: Structure of B1 and B1^T different!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
         (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
       PRINT *,'vanca_check2DSPQ1TQ0: Structure of B2 and B2^T different!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Fill the output structure with data of the matrices.
@@ -6280,7 +6280,7 @@ CONTAINS
     IF (rmatrix%ndiagBlocks .NE. 6) THEN
       CALL output_line ('System matrix is not 6x6.',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! A(1:2,1:3), A(4:5,4:6) must not be virtually transposed and of format 9.
@@ -6296,7 +6296,7 @@ CONTAINS
                 .NE. 0) THEN
               CALL output_line ('Transposed submatrices not supported.',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-              STOP
+              CALL sys_halt()
             END IF
           ELSE
             IF ((i .NE. j) .AND. &
@@ -6306,7 +6306,7 @@ CONTAINS
                   OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
               CALL output_line ('transposed (LSYSSC_MSPEC_TRANSPOSED)!',&
                   OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-              STOP
+              CALL sys_halt()
             END IF
           END IF
           
@@ -6314,13 +6314,13 @@ CONTAINS
               (rmatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
             CALL output_line ('Only format 7 and 9 matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-            STOP
+            CALL sys_halt()
           END IF
 
           IF (rmatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
             CALL output_line ('Only double precision matrices supported.',&
                 OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-            STOP
+            CALL sys_halt()
           END IF
 
         END IF ! neq != 0
@@ -6333,14 +6333,14 @@ CONTAINS
         (rmatrix%RmatrixBlock(1,3)%NEQ .NE. rmatrix%RmatrixBlock(3,1)%NCOLS)) THEN
       CALL output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rmatrix%RmatrixBlock(2,3)%NA .NE. rmatrix%RmatrixBlock(3,2)%NA) .OR. &
         (rmatrix%RmatrixBlock(2,3)%NEQ .NE. rmatrix%RmatrixBlock(3,2)%NCOLS)) THEN
       CALL output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF      
   
     ! The structure of A(4,6) must be identical to A(6,4) and
@@ -6349,14 +6349,14 @@ CONTAINS
         (rmatrix%RmatrixBlock(4,6)%NEQ .NE. rmatrix%RmatrixBlock(6,4)%NCOLS)) THEN
       CALL output_line ('Structure of B1 and B1^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rmatrix%RmatrixBlock(5,6)%NA .NE. rmatrix%RmatrixBlock(6,5)%NA) .OR. &
         (rmatrix%RmatrixBlock(5,6)%NEQ .NE. rmatrix%RmatrixBlock(6,5)%NCOLS)) THEN
       CALL output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF      
   
     ! Fill the output structure with data of the matrices.
@@ -6410,7 +6410,7 @@ CONTAINS
       IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,2,1)) THEN
         CALL output_line ('If A12 is given, A21 must also be given!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-        STOP
+        CALL sys_halt()
       END IF
       
       CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(2,1),&
@@ -6449,7 +6449,7 @@ CONTAINS
       IF (.NOT. lsysbl_isSubmatrixPresent(rmatrix,5,4)) THEN
         CALL output_line ('If A45 is given, A54 must also be given!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-        STOP
+        CALL sys_halt()
       END IF
       
       CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(5,4),&
@@ -6496,7 +6496,7 @@ CONTAINS
       IF (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .EQ. LSYSSC_MATRIXD) THEN
         CALL output_line ('Lumped mass matrices not supported!',&
             OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-        STOP
+        CALL sys_halt()
       END IF
       
       CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
@@ -6527,7 +6527,7 @@ CONTAINS
     IF (.NOT. ASSOCIATED(p_rblockDiscr)) THEN
       CALL output_line ('No discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get the discretisation structure of U,V and P from the block
@@ -6543,7 +6543,7 @@ CONTAINS
       CALL output_line (&
           'Discretisation structures of X- and Y-velocity incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rvanca%rvanca2DNavStOptC%p_rspatialDiscrP%inumFESpaces .NE. 1) .AND. &
@@ -6556,7 +6556,7 @@ CONTAINS
       CALL output_line (&
           'Discretisation structures of velocity and pressure incompatible!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
-      STOP
+      CALL sys_halt()
     END IF
 
   END SUBROUTINE
@@ -6654,7 +6654,7 @@ CONTAINS
           
       ELSE
         PRINT *,'VANCA: Unsupported discretisation!'
-        STOP
+        CALL sys_halt()
         
       END IF
       

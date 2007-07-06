@@ -568,7 +568,7 @@ CONTAINS
     ifull => rboundaryConditions%iregionCountFBC
   CASE DEFAULT
     PRINT *,'Not implemented boundary condition.'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   ! Space left, or do we have to reallocate?

@@ -715,7 +715,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Vectors not compatible, different size!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
     
@@ -731,7 +731,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Vectors not compatible, differently sorted!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
@@ -742,7 +742,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Vectors not compatible, differently sorted!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
   END IF
@@ -806,7 +806,7 @@ CONTAINS
     ELSE
       PRINT *,'Vector/Matrix not compatible, different block structure!'
       CALL sys_throwFPE()
-      STOP
+      CALL sys_halt()
     END IF
   END IF
 
@@ -822,7 +822,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Vector/Matrix not compatible, differently sorted!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
@@ -833,7 +833,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Vector/Matrix not compatible, differently sorted!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
   END IF
@@ -884,7 +884,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Matrices not compatible, different block structure!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
 
@@ -896,7 +896,7 @@ CONTAINS
       RETURN
     ELSE
       PRINT *,'Matrices not compatible, different sparsity pattern!'
-      STOP
+      CALL sys_halt()
     END IF
   END IF
 
@@ -912,7 +912,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Matrices not compatible, differently sorted!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
@@ -923,7 +923,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Matrices not compatible, differently sorted!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
   END IF
@@ -976,7 +976,7 @@ CONTAINS
         RETURN
       ELSE
         PRINT *,'Vector not compatible to discretisation, different NEQ!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -1010,14 +1010,14 @@ CONTAINS
   IF ((rvector%NEQ .EQ. 0) .OR. (rvector%h_Ddata .EQ. ST_NOHANDLE)) THEN
     CALL output_line('Trying to access empty vector!', &
         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Check that the vector is really double precision
   IF (rvector%cdataType .NE. ST_DOUBLE) THEN
     CALL output_line('Vector is of wrong precision!', &
        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_getbase_double')
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the data array
@@ -1062,7 +1062,7 @@ CONTAINS
   ! Check that the vector is really double precision
   IF (rvector%cdataType .NE. ST_SINGLE) THEN
     PRINT *,'lsyssc_getbase_single: Vector is of wrong precision!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the data array
@@ -1107,7 +1107,7 @@ CONTAINS
   ! Check that the vector is really integer
   IF (rvector%cdataType .NE. ST_INT) THEN
     PRINT *,'lsyssc_getbase_int: Vector is of wrong precision!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Get the data array
@@ -1187,7 +1187,7 @@ CONTAINS
     ! Check if the matrix format allows to access DA
     IF (.NOT. lsyssc_isExplicitMatrix1D(rmatrix)) THEN
       PRINT *,'lsyssc_getbaseMatrixDA_double: Matrix does not exist explicitely!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Do we have data at all?
@@ -1199,7 +1199,7 @@ CONTAINS
     ! Check that the matrix is really double precision
     IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
       PRINT *,'lsyssc_getbaseMatrixDA_double: Matrix is of wrong precision!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Get the data array
@@ -1241,7 +1241,7 @@ CONTAINS
     ! Check if the matrix format allows to access DA
     IF (.NOT. lsyssc_isExplicitMatrix1D(rmatrix)) THEN
       PRINT *,'lsyssc_getbaseMatrixDA_single: Matrix does not exist explicitely!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Do we have data at all?
@@ -1253,7 +1253,7 @@ CONTAINS
     ! Check that the matrix is really single precision
     IF (rmatrix%cdataType .NE. ST_SINGLE) THEN
       PRINT *,'lsyssc_getbaseMatrix_single: Matrix is of wrong precision!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the data array
@@ -1295,7 +1295,7 @@ CONTAINS
     ! Check if the matrix format allows to access DA
     IF (.NOT. lsyssc_isExplicitMatrix1D(rmatrix)) THEN
       PRINT *,'lsyssc_getbaseMatrixDA_int: Matrix does not exist explicitely!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Do we have data at all?
@@ -1307,7 +1307,7 @@ CONTAINS
     ! Check that the matrix is really integer
     IF (rmatrix%cdataType .NE. ST_INT) THEN
       PRINT *,'lsyssc_getbaseMatrix_int: Matrix is of wrong precision!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the data array
@@ -1352,7 +1352,7 @@ CONTAINS
         (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. &
         (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
       PRINT *,'lsyssc_getbase_Kcol: matrix format does not provide KCOL!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Do we have a column array at all?
@@ -1396,7 +1396,7 @@ CONTAINS
         (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND. &
         (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
       PRINT *,'lsyssc_getbase_Kld: matrix format does not provide KLD!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Do we have a column offset array at all?
@@ -1444,7 +1444,7 @@ CONTAINS
     IF ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .AND.&
         (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) THEN
       PRINT *,'lsyssc_getbase_Kdiagonal: matrix format does not provide KDIAGONAL!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Do we have a column offset array at all?
@@ -1800,14 +1800,14 @@ CONTAINS
     ! Check, that vector is not a copy of another (possibly larger) vector
     IF (rvector%bisCopy) THEN
       PRINT *, "lsyssc_resizeVectorDirect: A copied vector cannot be resized!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Check, if vector has been initialized before.
     IF (rvector%NEQ == 0 .OR. rvector%h_Ddata == ST_NOHANDLE) THEN
       PRINT *, "lsyssc_resizeVectorDirect: A vector can only be resized &
           & if it has been created correctly!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Set working dimensions
@@ -1928,7 +1928,7 @@ CONTAINS
     ! Check, if vector is a copy of another (possibly larger) vector
     IF (rvector%bisCopy) THEN
       PRINT *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check, if vector has been initialized before. If this is not
@@ -1958,7 +1958,7 @@ CONTAINS
       IF ((rvector%cdataType /= rvectorTemplate%cdataType) .OR.&
           (rvector%NVAR /= rvectorTemplate%NVAR)) THEN
         PRINT *, "lsyssc_resizeVectorIndirect: Vectors are incompatible!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Get NEQMAX from template vector
@@ -2011,7 +2011,7 @@ CONTAINS
     ! Check, if vector is a copy of another (possibly larger) vector
     IF (rvector%bisCopy) THEN
       PRINT *, "lsyssc_resizeVectorIndirect: A copied vector cannot be resized!"
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Does the vector exist?
@@ -2026,7 +2026,7 @@ CONTAINS
       ! Check if vector/matrix are compatible
       IF (rvector%NVAR /= rmatrix%NVAR) THEN
         PRINT *, "lsyssc_resizeVectorIndMat: Vector/Matrix incompatible!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Resize vector directly
@@ -2134,14 +2134,14 @@ CONTAINS
          .NOT.bdoresize) THEN
       PRINT *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if&
           & this is forced explicitely!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check, if matrix has been initialized before.
     IF (rmatrix%NEQ == 0 .OR. rmatrix%NCOLS == 0 .OR. rmatrix%NA == 0) THEN
       PRINT *, "lsyssc_resizeMatrixDirect: A matrix can only be resized &
           & if it has been created correctly!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Set working dimensions
@@ -2202,7 +2202,7 @@ CONTAINS
         CALL storage_getsize(rmatrix%h_DA,isize)
         IF (rmatrix%NA > isize) THEN
           PRINT *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
-          STOP
+          CALL sys_halt()
         END IF
 
       ELSE
@@ -2260,13 +2260,13 @@ CONTAINS
         CALL storage_getsize(rmatrix%h_Kld,isize)
         IF ((rmatrix%NEQ+1 > isize) .OR. btransposed .AND. (rmatrix%NCOLS+1 > isize)) THEN
           PRINT *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
-          STOP
+          CALL sys_halt()
         END IF
         
         CALL storage_getsize(rmatrix%h_Kcol,isize)
         IF (rmatrix%NA > isize) THEN
           PRINT *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
-          STOP
+          CALL sys_halt()
         END IF
         
         IF ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .OR.&
@@ -2274,7 +2274,7 @@ CONTAINS
           CALL storage_getsize(rmatrix%h_Kdiagonal,isize)
           IF ((rmatrix%NEQ > isize) .OR. btransposed .AND. (rmatrix%NCOLS > isize)) THEN
             PRINT *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
-            STOP
+            CALL sys_halt()
           END IF
         END IF
         
@@ -2410,24 +2410,24 @@ CONTAINS
         CASE (LSYSSC_MATRIXUNDEFINED)
           IF (rmatrix%NA > isize) THEN
             PRINT *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
-            STOP
+            CALL sys_halt()
           END IF
           
         CASE (LSYSSC_MATRIX1)
           IF (rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR > isize) THEN
             PRINT *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
-            STOP
+            CALL sys_halt()
           END IF
 
         CASE (LSYSSC_MATRIXD)
           IF (rmatrix%NA*rmatrix%NVAR > isize) THEN
             PRINT *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
-            STOP
+            CALL sys_halt()
           END IF
 
         CASE DEFAULT
           PRINT *, "lsyssc_resizeMatrixDirect: Unsupported interleave matrix format!"
-          STOP
+          CALL sys_halt()
         END SELECT
 
       ELSE   ! The content of the matrix is not a copy of another matrix
@@ -2556,14 +2556,14 @@ CONTAINS
           
         CASE DEFAULT
           PRINT *, "lsyssc_resizeMatrixDirect: Unsupported interleave matrix format!"
-          STOP
+          CALL sys_halt()
         END SELECT
         
       END IF
       
     CASE DEFAULT
       PRINT *, "lsyssc_resizeMatrixDirect: Unsupported matrix format!"
-      STOP
+      CALL sys_halt()
     END SELECT
   END SUBROUTINE lsyssc_resizeMatrixDirect
 
@@ -2643,7 +2643,7 @@ CONTAINS
          .NOT.bdoresize) THEN
       PRINT *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if&
           & this is forced explicitely!"
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check, if matrix has been initialized before.
@@ -2711,7 +2711,7 @@ CONTAINS
           IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /=&
           IAND(rmatrixTemplate%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)) THEN
         PRINT *, "lsyssc_resizeMatrixDirect: Matrices are incompatible!"
-        STOP
+        CALL sys_halt()
       END IF
       
       ! Set copy/clear attributes
@@ -2740,7 +2740,7 @@ CONTAINS
         CALL storage_getsize(rmatrix%h_DA,isize)
         IF (rmatrix%NA > isize) THEN
           PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
-          STOP
+          CALL sys_halt()
         END IF
 
       ELSE
@@ -2779,7 +2779,7 @@ CONTAINS
           IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1 .AND.&
               rmatrix%NCOLS+1 > isize .OR. rmatrix%NEQ+1 > isize) THEN
             PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
-            STOP
+            CALL sys_halt()
           END IF
         END IF
 
@@ -2788,7 +2788,7 @@ CONTAINS
           CALL storage_getsize(rmatrix%h_Kcol, isize)
           IF (rmatrix%NA > isize) THEN
             PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
-            STOP
+            CALL sys_halt()
           END IF
         END IF
 
@@ -2798,7 +2798,7 @@ CONTAINS
           IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 1 .AND.&
               rmatrix%NCOLS > isize .OR. rmatrix%NEQ > isize) THEN
             PRINT *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
-            STOP
+            CALL sys_halt()
           END IF
         END IF
         
@@ -2954,12 +2954,12 @@ CONTAINS
       (rx%NEQ .NE. rx%NEQ) .OR. &
       (rx%NVAR .NE. ry%NVAR)) THEN
     PRINT *,'Error in lsyssc_scalarProduct: Vector dimensions wrong!'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsyssc_scalarProduct: Data types different!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Take care of the data type before doing a scalar product!
@@ -2984,7 +2984,7 @@ CONTAINS
     
   CASE DEFAULT
     PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   ! Return the scalar product, finish
@@ -3027,7 +3027,7 @@ CONTAINS
   ! Matrix must be diagonal matrix
   IF (rx%cmatrixFormat .NE. LSYSSC_MATRIXD) THEN
     PRINT *, 'lsyssc_scalarProductMatVec: Matrix must be diagonal matrix!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Vectors must be compatible!
@@ -3041,12 +3041,12 @@ CONTAINS
       (rx%NEQ .NE. rx%NEQ) .OR. &
       (rx%NVAR .NE. ry%NVAR)) THEN
     PRINT *,'Error in lsyssc_scalarProductMatVec: Vector dimensions wrong!'
-    STOP
+    CALL sys_halt()
   END IF
   
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsyssc_scalarProductMatVec: Data types different!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Take care of the data type before doing a scalar product!
@@ -3071,7 +3071,7 @@ CONTAINS
     
   CASE DEFAULT
     PRINT *,'lsyssc_scalarProduct: Not supported precision combination'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   ! Return the scalar product, finish
@@ -3123,14 +3123,14 @@ CONTAINS
     ! rx and ry must have at least the same data type!
     IF (rx%cdataType .NE. ry%cdataType) THEN
       PRINT *,'MV with different data types for rx and ry not supported!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Up to now, all matrix types use h_Da. So if that's not associated,
     ! there is for sure an error!
     IF (rmatrix%h_Da .EQ. ST_NOHANDLE) THEN
       PRINT *,'lsyssc_scalarMatVec: Matrix has no data!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Handle the scaling factor by multiplication of cx with dscaleFactor.
@@ -3156,13 +3156,13 @@ CONTAINS
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
-            STOP
+            CALL sys_halt()
             
           END SELECT
           
         CASE DEFAULT
           PRINT *,'Only double precision matrices supported for now in MV!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       CASE (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
@@ -3186,18 +3186,18 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'Invalid interleave matrix format!'
-              STOP
+              CALL sys_halt()
             END SELECT
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
-            STOP
+            CALL sys_halt()
             
           END SELECT
           
         CASE DEFAULT
           PRINT *,'Only double precision matrices supported for now in MV!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE (LSYSSC_MATRIXD)
@@ -3215,18 +3215,18 @@ CONTAINS
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
-            STOP
+            CALL sys_halt()
             
           END SELECT
           
         CASE DEFAULT
           PRINT *,'Only double precision matrices supported for now in MV!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE DEFAULT
         PRINT *,'Unknown matrix format in MV-multiplication!'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     ELSE
@@ -3249,13 +3249,13 @@ CONTAINS
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
-            STOP
+            CALL sys_halt()
             
           END SELECT
           
         CASE DEFAULT
           PRINT *,'Only double precision matrices supported for now in MV!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       CASE (LSYSSC_MATRIX7)
@@ -3273,13 +3273,13 @@ CONTAINS
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
-            STOP
+            CALL sys_halt()
             
           END SELECT
           
         CASE DEFAULT
           PRINT *,'Only double precision matrices supported for now in MV!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       CASE (LSYSSC_MATRIXD)
@@ -3297,18 +3297,18 @@ CONTAINS
           
           CASE DEFAULT
             PRINT *,'Only double precision vectors supported for now in MV!'
-            STOP
+            CALL sys_halt()
             
           END SELECT
           
         CASE DEFAULT
           PRINT *,'Only double precision matrices supported for now in MV!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE DEFAULT
         PRINT *,'Unknown matrix format in MV-multiplication!'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     END IF
@@ -3467,7 +3467,7 @@ CONTAINS
       ! Check if vectors are compatible
       IF (rx%NVAR /= NVAR .OR. ry%NVAR /= NVAR) THEN
         PRINT *, "lsyssc_LAX79INTL1doubledouble: Matrix/Vector is incompatible!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Get the vectors
@@ -3613,7 +3613,7 @@ CONTAINS
       ! Check if vectors are compatible
       IF (rx%NVAR /= NVAR .OR. ry%NVAR /= NVAR) THEN
         PRINT *, "lsyssc_LAX79INTLDdoubledouble: Matrix/Vector is incompatible!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Get the vectors
@@ -3738,7 +3738,7 @@ CONTAINS
 
       IF (NVAR /= ry%NVAR) THEN
         PRINT *, "Internal structure of vectors is not compatible!"
-        STOP
+        CALL sys_halt()
       END IF
 
       ! Get the vectors
@@ -4211,7 +4211,7 @@ CONTAINS
     CASE DEFAULT
     
       PRINT *,'lsyssc_duplicateVector: cdupContent unknown!'
-      STOP
+      CALL sys_halt()
     
     END SELECT
     
@@ -4496,7 +4496,7 @@ CONTAINS
               rdestMatrix%h_DA, ST_NEWBLOCK_NOINIT)
         CASE DEFAULT
           PRINT *, 'lsyssc_duplicateMatrix: wrong matrix format of interleaved matrix'
-          STOP
+          CALL sys_halt()
         END SELECT
       END SELECT
     END SELECT
@@ -4517,17 +4517,17 @@ CONTAINS
         CASE (LSYSSC_MATRIX1)
           IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR * rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
-            STOP
+            CALL sys_halt()
           END IF
         CASE (LSYSSC_MATRIXD)
           IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
-            STOP
+            CALL sys_halt()
           END IF
         CASE DEFAULT
           IF (isize .LT. rdestMatrix%NA) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
-            STOP
+            CALL sys_halt()
           END IF
         END SELECT
       END IF
@@ -4537,7 +4537,7 @@ CONTAINS
         CALL storage_getsize (rdestMatrix%h_Kcol,isize)
         IF (isize .LT. rdestMatrix%NA) THEN
           PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(KCOL)!'
-          STOP
+          CALL sys_halt()
         END IF
       END IF
 
@@ -4549,12 +4549,12 @@ CONTAINS
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
           IF (isize .LT. rdestMatrix%NEQ+1) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
-            STOP
+            CALL sys_halt()
           END IF
         ELSE
           IF (isize .LT. rdestMatrix%NCOLS+1) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
-            STOP
+            CALL sys_halt()
           END IF
         END IF
       END IF
@@ -4567,12 +4567,12 @@ CONTAINS
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
           IF (isize .LT. rdestMatrix%NEQ) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(Kdiag)!'
-            STOP
+            CALL sys_halt()
           END IF
         ELSE
           IF (isize .LT. rdestMatrix%NCOLS) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(Kdiag)!'
-            STOP
+            CALL sys_halt()
           END IF
         END IF
       END IF
@@ -4586,17 +4586,17 @@ CONTAINS
         CASE (LSYSSC_MATRIX1)
           IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR*rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
-            STOP
+            CALL sys_halt()
           END IF
         CASE (LSYSSC_MATRIXD)
           IF (isize .LT. rdestMatrix%NA * rdestMatrix%NVAR) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
-            STOP
+            CALL sys_halt()
           END IF
         CASE DEFAULT
           IF (isize .LT. rdestMatrix%NA) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(DA)!'
-            STOP
+            CALL sys_halt()
           END IF
         END SELECT
       END IF
@@ -4606,7 +4606,7 @@ CONTAINS
         CALL storage_getsize (rdestMatrix%h_Kcol,isize)
         IF (isize .LT. rdestMatrix%NA) THEN
           PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA < length(KCOL)!'
-          STOP
+          CALL sys_halt()
         END IF
       END IF
 
@@ -4618,12 +4618,12 @@ CONTAINS
         IF (IAND(rdestMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .EQ. 0) THEN
           IF (isize .LT. rdestMatrix%NEQ+1) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
-            STOP
+            CALL sys_halt()
           END IF
         ELSE
           IF (isize .LT. rdestMatrix%NCOLS+1) THEN
             PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NEQ+1 < length(KLD)!'
-            STOP
+            CALL sys_halt()
           END IF
         END IF
       END IF
@@ -4635,7 +4635,7 @@ CONTAINS
         CALL storage_getsize (rdestMatrix%h_DA,isize)
         IF (isize .NE. rdestMatrix%NA) THEN
           PRINT *,'lsyssc_duplicateMatrix: Matrix destroyed; NA != length(DA)!'
-          STOP
+          CALL sys_halt()
         END IF
       END IF
 
@@ -5083,7 +5083,7 @@ CONTAINS
               bremove = bremove .OR. (isize .LT. rdestMatrix%NA*rdestMatrix%NVAR)
             CASE DEFAULT
               PRINT *, 'copyContent: wrong interleave matrix format'
-              STOP
+              CALL sys_halt()
             END SELECT
           
             ! Check the data type
@@ -5287,7 +5287,7 @@ CONTAINS
       CALL lalg_clearVectorSngl (p_Fdata)
     CASE DEFAULT
       PRINT *,'lsyssc_clearMatrix: Unsupported Data type!'
-      STOP
+      CALL sys_halt()
     END SELECT
   
   END IF
@@ -5358,7 +5358,7 @@ CONTAINS
         END DO
       CASE DEFAULT
         PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE (LSYSSC_MATRIX7)
@@ -5382,7 +5382,7 @@ CONTAINS
         END DO
       CASE DEFAULT
         PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE (LSYSSC_MATRIX1)
@@ -5406,7 +5406,7 @@ CONTAINS
         END DO
       CASE DEFAULT
         PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE (LSYSSC_MATRIXD)
@@ -5420,12 +5420,12 @@ CONTAINS
         p_Fdata(:) = 1.0_SP
       CASE DEFAULT
         PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
     
     CASE DEFAULT
       PRINT *,'lsyssc_initialiseIdentityMatrix: Unsupported matrix format!'
-      STOP
+      CALL sys_halt()
     
     END SELECT
     
@@ -5530,7 +5530,7 @@ CONTAINS
       DO i=1,rmatrix%NEQ
         IF (p_Kcol(p_Kdiagonal(i)) .NE. i) THEN
           PRINT *,'lsyssc_convertMatrix: incompatible Format-9 matrix!'
-          STOP
+          CALL sys_halt()
         END IF
       END DO
       
@@ -5569,7 +5569,7 @@ CONTAINS
           
         CASE DEFAULT
           PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       END IF
@@ -5609,7 +5609,7 @@ CONTAINS
           
         CASE DEFAULT
           PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
         ! Reallocate the entries-array to have only the diagonal entries.
@@ -5637,7 +5637,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
   CASE (LSYSSC_MATRIX7)
@@ -5703,7 +5703,7 @@ CONTAINS
           
         CASE DEFAULT
           PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
       
       END IF
@@ -5743,7 +5743,7 @@ CONTAINS
           
         CASE DEFAULT
           PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
         ! Reallocate the entries-array to have only the diagonal entries.
@@ -5769,7 +5769,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
   CASE (LSYSSC_MATRIX9INTL)
@@ -5814,7 +5814,7 @@ CONTAINS
       DO i=1,rmatrix%NEQ
         IF (p_Kcol(p_Kdiagonal(i)) .NE. i) THEN
           PRINT *,'lsyssc_convertMatrix: incompatible Format-9 matrix!'
-          STOP
+          CALL sys_halt()
         END IF
       END DO
 
@@ -5851,7 +5851,7 @@ CONTAINS
                 
           CASE DEFAULT
             PRINT *, 'lsyssc_convertMatrix: Unsupported interleave matrix!'
-            STOP
+            CALL sys_halt()
           END SELECT
 
           ! Release diagonal pointer if it belongs to us
@@ -5865,14 +5865,14 @@ CONTAINS
           
         CASE DEFAULT
           PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       END IF
 
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
   CASE (LSYSSC_MATRIX7INTL)
@@ -5939,25 +5939,25 @@ CONTAINS
                 
           CASE DEFAULT
             PRINT *, 'lsyssc_convertMatrix: Unsupported interleave matrix format!'
-            STOP
+            CALL sys_halt()
           END SELECT
           rmatrix%cmatrixFormat = LSYSSC_MATRIX9INTL
           
         CASE DEFAULT
           PRINT *,'lsyssc_convertMatrix: Unsupported data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       END IF
 
     CASE DEFAULT
       PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
   CASE DEFAULT
     PRINT *,'lsyssc_convertMatrix: Cannot convert matrix!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END SUBROUTINE
@@ -6337,12 +6337,12 @@ CONTAINS
 
     IF (rvectorSrc%NEQ .NE. rvectorDst%NEQ) THEN
       PRINT *,'lsyssc_synchroniseSortVecVec: Vectors have different size!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtemp%NEQ .LT. rvectorDst%NEQ) THEN
       PRINT *,'lsyssc_synchroniseSortVecVec: Auxiliary vector too small!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! If both are unsorted or both sorted in the same way, there's nothing to do.
@@ -6398,12 +6398,12 @@ CONTAINS
 
     IF (rmatrixSrc%NEQ .NE. rvectorDst%NEQ) THEN
       PRINT *,'lsyssc_synchroniseSortMatVec: Matrix and vector have different size!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtemp%NEQ .LT. rvectorDst%NEQ) THEN
       PRINT *,'lsyssc_synchroniseSortMatVec: Auxiliary vector too small!'
-      STOP
+      CALL sys_halt()
     END IF
 
 
@@ -6523,7 +6523,7 @@ CONTAINS
       CALL lsyssc_getbase_single(rtemp,p_Fdata2)
     CASE DEFAULT
       PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     
@@ -6547,7 +6547,7 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
-        STOP
+        CALL sys_halt()
         
       END SELECT
         
@@ -6582,7 +6582,7 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
-        STOP
+        CALL sys_halt()
         
       END SELECT
       
@@ -6610,7 +6610,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'lsyssc_sortVectorInSitu: unsuppported data type'
-      STOP
+      CALL sys_halt()
       
     END SELECT
     
@@ -6991,7 +6991,7 @@ CONTAINS
                                               p_Kld, Itr1, Itr2, NEQ)        
             CASE DEFAULT
               PRINT *,'lsyssc_sortMatrix: Unsupported data type.'
-              STOP
+              CALL sys_halt()
             END SELECT
           
             ! Remove temp matrix
@@ -7028,7 +7028,7 @@ CONTAINS
                                            Itr1, Itr2, NEQ)        
             CASE DEFAULT
               PRINT *,'lsyssc_sortMatrix: Unsupported data type.'
-              STOP
+              CALL sys_halt()
             END SELECT
             
             ! Remove temp matrix
@@ -7095,7 +7095,7 @@ CONTAINS
                                               p_Kld, Itr1, Itr2, NEQ)        
             CASE DEFAULT
               PRINT *,'lsyssc_sortMatrix: Unsupported data type.'
-              STOP
+              CALL sys_halt()
             END SELECT
 
             ! Remove temp matrix
@@ -7131,7 +7131,7 @@ CONTAINS
                                           Itr1, Itr2, NEQ)        
             CASE DEFAULT
               PRINT *,'lsyssc_sortMatrix: Unsupported data type.'
-              STOP
+              CALL sys_halt()
             END SELECT
             
             ! Remove temp matrix
@@ -7167,7 +7167,7 @@ CONTAINS
             CALL lalg_vectorSortSngl (p_FdataTmp, p_Fdata, Itr1)
           CASE DEFAULT
             PRINT *,'lsyssc_sortMatrix: Unsupported data type.'
-            STOP
+            CALL sys_halt()
           END SELECT
           
           ! Remove temp matrix
@@ -7177,7 +7177,7 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *,'lsyssc_sortMatrix: Unsupported matrix format!'
-        STOP
+        CALL sys_halt()
         
       END SELECT
 
@@ -9096,7 +9096,7 @@ CONTAINS
   ! Is there data at all?
   IF (rx%h_Ddata .EQ. ST_NOHANDLE) THEN
     PRINT *,'Error in lsyssc_vectorNorm: Vector empty!'
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Take care of the data type before doing a scalar product!
@@ -9113,7 +9113,7 @@ CONTAINS
     
   CASE DEFAULT
     PRINT *,'lsyssc_vectorNorm: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END FUNCTION
@@ -9167,7 +9167,7 @@ CONTAINS
 
   IF (rvectorSrc%cdataType .NE. rvectorDst%cdataType) THEN
     PRINT *,'lsyssc_invertedDiagMatVec: Vectors have different precisions!'
-    STOP
+    CALL sys_halt()
   END IF
 
   ! Which matrix structure do we have?
@@ -9215,7 +9215,7 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE (ST_SINGLE)
@@ -9250,12 +9250,12 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE DEFAULT
       PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
   CASE (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
@@ -9309,7 +9309,7 @@ CONTAINS
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
               &matrix format!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       CASE (ST_SINGLE)
@@ -9344,12 +9344,12 @@ CONTAINS
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
               &matrix format!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE (ST_SINGLE)
@@ -9390,7 +9390,7 @@ CONTAINS
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
               &matrix format!'
-          STOP
+          CALL sys_halt()
         END SELECT
         
       CASE (ST_SINGLE)
@@ -9425,17 +9425,17 @@ CONTAINS
         CASE DEFAULT
           PRINT *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
               &matrix format!'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE DEFAULT
       PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
   CASE (LSYSSC_MATRIXD)
@@ -9474,7 +9474,7 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE (ST_SINGLE)
@@ -9509,17 +9509,17 @@ CONTAINS
         
       CASE DEFAULT
         PRINT *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
     CASE DEFAULT
       PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
   CASE DEFAULT
     PRINT *,'lsyssc_invertedDiagMatVec: unsupported matrix format!'
-    STOP
+    CALL sys_halt()
   END SELECT
     
   END SUBROUTINE
@@ -9595,7 +9595,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'lsyssc_scaleVector: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END SUBROUTINE
@@ -9635,7 +9635,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'lsyssc_clearVector: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END SUBROUTINE
@@ -9683,7 +9683,7 @@ CONTAINS
 
   IF (rx%cdataType .NE. ry%cdataType) THEN
     PRINT *,'lsyssc_vectorLinearComb: different data types not supported!'
-    STOP
+    CALL sys_halt()
   END IF
   
   p_rdest => ry
@@ -9698,7 +9698,7 @@ CONTAINS
 
       IF (rx%cdataType .NE. rdest%cdataType) THEN
         PRINT *,'lsyssc_vectorLinearComb: different data types not supported!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -9724,7 +9724,7 @@ CONTAINS
   
   CASE DEFAULT
     PRINT *,'lsyssc_vectorLinearComb: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE
@@ -9775,12 +9775,12 @@ CONTAINS
 !  ! the same size, otherwise the memory does not fit.
 !  IF (rsourceMatrix%cmatrixFormat .NE. rdestMatrix%cmatrixFormat) THEN
 !    PRINT *,'lsyssc_copyMatrix: Different matrix formats not allowed!'
-!    STOP
+!    CALL sys_halt()
 !  END IF
 !  
 !  IF (rsourceMatrix%NA .NE. rdestMatrix%NA) THEN
 !    PRINT *,'lsyssc_copyMatrix: Matrices have different size!'
-!    STOP
+!    CALL sys_halt()
 !  END IF
 !  
 !  ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
@@ -9788,7 +9788,7 @@ CONTAINS
 !  
 !  IF (rsourceMatrix%cdataType .NE. rdestMatrix%cdataType) THEN
 !    PRINT *,'lsyssc_copyMatrix: Matrices have different data types!'
-!    STOP
+!    CALL sys_halt()
 !  END IF
 !  
 !  ! First, make a backup of the matrix for restoring some critical data.
@@ -9825,7 +9825,7 @@ CONTAINS
 !
 !    CASE DEFAULT
 !      PRINT *,'lsyssc_copyMatrix: Unsupported data type!'
-!      STOP
+!      CALL sys_halt()
 !    END SELECT
 !    
 !    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
@@ -9861,7 +9861,7 @@ CONTAINS
 !
 !    CASE DEFAULT
 !      PRINT *,'storage_copyMatrix: Unsupported data type!'
-!      STOP
+!      CALL sys_halt()
 !    END SELECT
 !
 !    CALL lsyssc_getbase_Kcol (rsourceMatrix,p_KcolSource)
@@ -9891,12 +9891,12 @@ CONTAINS
 !
 !    CASE DEFAULT
 !      PRINT *,'storage_copyMatrix: Unsupported data type!'
-!      STOP
+!      CALL sys_halt()
 !    END SELECT
 !
 !  CASE DEFAULT
 !    PRINT *,'lsyssc_copyMatrix: Unsupported matrix format!'
-!    STOP
+!    CALL sys_halt()
 !  END SELECT
   
   END SUBROUTINE
@@ -10053,7 +10053,7 @@ CONTAINS
     IF ((SIZE(Itmp) .NE. ncol) .OR. (SIZE(IrowDest) .NE. ncol+1) .OR. &
         (SIZE(Irow) .NE. nrow+1)) THEN
       PRINT *,'lsyssc_transpMat79double: array parameters have wrong size!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! determine the number of matrix entries
@@ -10340,12 +10340,12 @@ CONTAINS
       ! matrix. Matrix format and size must match.
       IF (rMatrix%cmatrixFormat .NE. rtransposedMatrix%cmatrixFormat) THEN
         PRINT *,'lsyssc_transposeMatrix: Different matrix formats not allowed!'
-        STOP
+        CALL sys_halt()
       END IF
 
       IF (rmatrix%NA .NE. rtransposedMatrix%NA) THEN
         PRINT *,'lsyssc_transposeMatrix: Matrices have different size!'
-        STOP
+        CALL sys_halt()
       END IF
 
       ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
@@ -10354,7 +10354,7 @@ CONTAINS
       IF (itrans .EQ. LSYSSC_TR_ALL) THEN
         IF (rmatrix%cdataType .NE. rtransposedMatrix%cdataType) THEN
           PRINT *,'lsyssc_transposeMatrix: Matrices have different data types!'
-          STOP
+          CALL sys_halt()
         END IF
       END IF
 
@@ -10372,7 +10372,7 @@ CONTAINS
     IF (itrans .EQ. LSYSSC_TR_ALL) THEN
       IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
         PRINT *,'lsyssc_transposeMatrix: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -10482,7 +10482,7 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *,'lsyssc_transposeMatrix: Unsupported matrix format.'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE (LSYSSC_TR_ALL)
@@ -10611,7 +10611,7 @@ CONTAINS
 
       CASE DEFAULT
         PRINT *,'lsyssc_transposeMatrix: Unsupported matrix format.'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE DEFAULT ! = LSYSSC_TR_ALL 
@@ -10658,7 +10658,7 @@ CONTAINS
   
     IF (rsourceMatrix%h_Da .EQ. ST_NOHANDLE) THEN
       PRINT *,'lsyssc_auxcopy_DA: Source matrux undefined!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rdestMatrix%h_Da .EQ. ST_NOHANDLE) THEN
@@ -10679,7 +10679,7 @@ CONTAINS
 
     CASE DEFAULT
       PRINT *,'lsyssc_transposeMatrix: Unsupported data type!'
-      STOP
+      CALL sys_halt()
       
     END SELECT
 
@@ -10848,7 +10848,7 @@ CONTAINS
   
   IF (rmatrixScalar%h_DA .NE. ST_NOHANDLE) THEN
     PRINT *,'lsyssc_allocEmptyMatrix: Cannot create empty matrix; exists already!'
-    STOP
+    CALL sys_halt()
   END IF
   
   NA = rmatrixScalar%NA
@@ -10889,7 +10889,7 @@ CONTAINS
           CALL lalg_setVectorSngl (p_Fa,1.0_SP)
         CASE DEFAULT
           PRINT *,'lsyssc_allocEmptyMatrix: Unknown data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
       END IF
       
@@ -10911,7 +10911,7 @@ CONTAINS
         CASE DEFAULT
           PRINT *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
               &eave matrix format'
-          STOP
+          CALL sys_halt()
         END SELECT
 
       ELSE
@@ -10925,7 +10925,7 @@ CONTAINS
         CASE DEFAULT
           PRINT *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
               &eave matrix format'
-          STOP
+          CALL sys_halt()
         END SELECT
           
       END IF
@@ -10940,7 +10940,7 @@ CONTAINS
           CALL lalg_setVectorSngl (p_Fa,1.0_SP)
         CASE DEFAULT
           PRINT *,'lsyssc_allocEmptyMatrix: Unknown data type!'
-          STOP
+          CALL sys_halt()
         END SELECT
       END IF
       
@@ -10948,7 +10948,7 @@ CONTAINS
     
   CASE DEFAULT
     PRINT *,'lsyssc_allocEmptyMatrix: Not supported matrix structure!'
-    STOP
+    CALL sys_halt()
   END SELECT
     
   END SUBROUTINE
@@ -11012,7 +11012,7 @@ CONTAINS
     CASE DEFAULT
     
       PRINT *,'lsyssc_createDiagMatrix: unsupported matrix format!'
-      STOP
+      CALL sys_halt()
       
     END SELECT
   
@@ -11118,7 +11118,7 @@ CONTAINS
       
       CASE DEFAULT
         PRINT *,'lsyssc_lumpMatrixScalar: Unsupported matrix precision'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE (LSYSSC_MATRIX9)
@@ -11160,12 +11160,12 @@ CONTAINS
       
       CASE DEFAULT
         PRINT *,'lsyssc_lumpMatrixScalar: Unsupported matrix precision'
-        STOP
+        CALL sys_halt()
       END SELECT
       
     CASE DEFAULT
       PRINT *,'lsyssc_lumpMatrixScalar: Unsupported matrix format'
-      STOP
+      CALL sys_halt()
     END SELECT
   
   END SELECT
@@ -11211,7 +11211,7 @@ CONTAINS
     CALL removeOffdiags_format1 (rmatrix) 
   CASE DEFAULT
     PRINT *,'lsyssc_clearOffdiags: Unsupported matrix format'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   CONTAINS
@@ -11274,7 +11274,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'removeOffdiags_format9: Unsupported matrix precision!'
-      STOP
+      CALL sys_halt()
       
     END SELECT
     
@@ -11324,7 +11324,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'removeOffdiags_format7: Unsupported matrix precision!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     END SUBROUTINE
@@ -11389,7 +11389,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'removeOffdiags_format7: Unsupported matrix precision!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     END SUBROUTINE
@@ -11436,7 +11436,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'lsyssc_scaleMatrix: Unsupported data type!'
-    STOP
+    CALL sys_halt()
   END SELECT
   
   END SUBROUTINE
@@ -11523,13 +11523,13 @@ CONTAINS
     IF (rmatrixA%NCOLS /= rmatrixB%NEQ) THEN
       PRINT *, 'lsyssc_multMatMat: number of columns of matrix A is not&
           & compatible with number of rows of matrix B'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if both matrices have the same sorting
     IF (rmatrixA%isortStrategy /= rmatrixB%isortStrategy) THEN
       PRINT *, 'lsyssc_multMatMat: incompatible sorting strategies'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Release matrix if required and set common variables
@@ -11568,7 +11568,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolical multiplication?
@@ -11606,7 +11606,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -11629,12 +11629,12 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE DEFAULT
             PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -11652,7 +11652,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolical multiplication?
@@ -11690,7 +11690,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -11713,18 +11713,18 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
         
           CASE DEFAULT
             PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
       CASE DEFAULT
         PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       !--------------------------------------------------------------
@@ -11747,7 +11747,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolic multiplication?
@@ -11783,7 +11783,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE (ST_SINGLE)
@@ -11804,12 +11804,12 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -11827,7 +11827,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolical multiplication?
@@ -11865,7 +11865,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -11888,12 +11888,12 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
         
           CASE DEFAULT
             PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -11911,7 +11911,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolical multiplication?
@@ -11972,7 +11972,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -12013,18 +12013,18 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
       CASE DEFAULT
         PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
       
       !--------------------------------------------------------------
@@ -12047,7 +12047,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolical multiplication?
@@ -12108,7 +12108,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -12149,12 +12149,12 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE DEFAULT
             PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -12197,7 +12197,7 @@ CONTAINS
             &rmatrixB%cmatrixFormat)) THEN
           PRINT *, 'lsyssc_multMatMat: destination matrix has incompati&
               &ble format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolical multiplication?
@@ -12274,7 +12274,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -12305,25 +12305,25 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
         
       CASE DEFAULT
         PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
             
       !--------------------------------------------------------------
       
     CASE DEFAULT
       PRINT *, 'lsyssc_multMatMat: Unsupported data type!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Clear auxiliary vectors
@@ -13468,13 +13468,13 @@ CONTAINS
         & rmatrixA%NCOLS /= rmatrixB%NCOLS) THEN
       PRINT *, 'lsyssc_matrixLinearComb: number of rows/columns of matrix A &
           &is not compatible with number of rows/columns of matrix B'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Check if both matrices have the same sorting
     IF (rmatrixA%isortStrategy /= rmatrixB%isortStrategy) THEN
       PRINT *, 'lsyssc_matrixLinearComb: incompatible sorting strategies'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Release matrix if required and set common variables
@@ -13510,7 +13510,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolic addition?
@@ -13548,7 +13548,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -13571,12 +13571,12 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
         
@@ -13593,7 +13593,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolical addition?
@@ -13629,7 +13629,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -13650,12 +13650,12 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -13672,7 +13672,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolical addition?
@@ -13714,7 +13714,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -13741,18 +13741,18 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
       CASE DEFAULT
         PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -13774,7 +13774,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolical addition?
@@ -13810,7 +13810,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -13831,12 +13831,12 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -13853,7 +13853,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolical addition?
@@ -13889,7 +13889,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -13910,12 +13910,12 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
         
@@ -13932,7 +13932,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolic addition?
@@ -13997,7 +13997,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE (ST_SINGLE)
@@ -14048,12 +14048,12 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -14077,7 +14077,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat .OR. &
             rmatrixC%cinterleavematrixFormat /= rmatrixB%cinterleavematrixFormat) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolic addition?
@@ -14164,7 +14164,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -14237,18 +14237,18 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
       CASE DEFAULT
         PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -14270,7 +14270,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolical addition?
@@ -14312,7 +14312,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE (ST_SINGLE)
@@ -14339,12 +14339,12 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -14361,7 +14361,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolic addition?
@@ -14426,7 +14426,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE (ST_SINGLE)
@@ -14477,12 +14477,12 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
@@ -14520,7 +14520,7 @@ CONTAINS
         ! Check if matrix is given in the correct format
         IF (rmatrixC%cmatrixFormat /= MAX(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! symbolic addition?
@@ -14611,7 +14611,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE (ST_SINGLE)
@@ -14672,18 +14672,18 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
       CASE DEFAULT
         PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
       
       !-------------------------------------------------------------------------
@@ -14712,7 +14712,7 @@ CONTAINS
         IF (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat .OR. &
             rmatrixC%cinterleavematrixFormat /= rmatrixA%cinterleavematrixFormat) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolic addition?
@@ -14799,7 +14799,7 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -14872,12 +14872,12 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
                 
@@ -14887,7 +14887,7 @@ CONTAINS
         IF (rmatrixA%NVAR /= rmatrixB% NVAR .OR. &
             rmatrixA%cinterleavematrixFormat /= rmatrixB%cinterleavematrixFormat) THEN
           PRINT *, 'lsyssc_matrixLinearComb: incompatible interleave matrices!'
-          STOP
+          CALL sys_halt()
         END IF
         
         ! Set size of interleave block
@@ -14927,7 +14927,7 @@ CONTAINS
           rmatrixC%cinterleavematrixFormat /= rmatrixA%cinterleavematrixFormat .OR. &
           rmatrixC%NA /= rmatrixA%NVAR) THEN
           PRINT *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
-          STOP
+          CALL sys_halt()
         END IF
 
         ! symbolic addition?
@@ -15018,7 +15018,7 @@ CONTAINS
               
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
 
           CASE (ST_SINGLE)
@@ -15079,25 +15079,25 @@ CONTAINS
 
             CASE DEFAULT
               PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-              STOP
+              CALL sys_halt()
             END SELECT
             
           CASE DEFAULT
             PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-            STOP
+            CALL sys_halt()
           END SELECT
         END IF
 
       CASE DEFAULT
         PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       !-------------------------------------------------------------------------
 
     CASE DEFAULT
       PRINT *, 'lsyssc_matrixLinearComb: Unsupported data type!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     ! Clear auxiliary vectors
@@ -15543,7 +15543,7 @@ CONTAINS
 
       ELSE
         PRINT *, "do_mat79matDadd_doubledouble: either Kld,Kcol or Kdiag must be present."
-        STOP        
+        CALL sys_halt()        
       END IF
     END SUBROUTINE do_mat79matDadd_doubledouble
 
@@ -15670,7 +15670,7 @@ CONTAINS
         
       ELSE
         PRINT *, "do_mat79matDadd_singledouble: either Kld,Kcol or Kdiag must be present."
-        STOP        
+        CALL sys_halt()        
       END IF
     END SUBROUTINE do_mat79matDadd_singledouble
 
@@ -15794,7 +15794,7 @@ CONTAINS
      
       ELSE
         PRINT *, "do_mat79matDadd_doublesingle: either Kld,Kcol or Kdiag must be present."
-        STOP        
+        CALL sys_halt()        
       END IF
     END SUBROUTINE do_mat79matDadd_doublesingle
 
@@ -15916,7 +15916,7 @@ CONTAINS
 
       ELSE
         PRINT *, "do_mat79matDadd_singlesingle: either Kld,Kcol or Kdiag must be present."
-        STOP        
+        CALL sys_halt()        
       END IF
     END SUBROUTINE do_mat79matDadd_singlesingle
     

@@ -89,7 +89,7 @@ CONTAINS
       CALL lsyssc_getbase_double(rmatrix,p_DA)
       IF (.NOT. ASSOCIATED(p_DA)) THEN
         PRINT *,'replaceLines_format9: Matrix has no data!'
-        STOP
+        CALL sys_halt()
       END IF
       
       ! loop through the rows
@@ -105,7 +105,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'mmod_replaceLinesByUnit: Only double prec. matices supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     END SUBROUTINE
@@ -133,7 +133,7 @@ CONTAINS
       CALL lsyssc_getbase_double(rmatrix,p_DA)
       IF (.NOT. ASSOCIATED(p_DA)) THEN
         PRINT *,'replaceLines_format7: Matrix has no data!'
-        STOP
+        CALL sys_halt()
       END IF
       
       ! loop through the rows
@@ -149,7 +149,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'mmod_replaceLinesByUnit: Only double prec. matices supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     END SUBROUTINE
@@ -231,7 +231,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'mmod_clearOffdiags: Only double prec. matices supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     END SUBROUTINE
@@ -268,7 +268,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'mmod_clearOffdiags: Only double prec. matices supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
 
     END SUBROUTINE
@@ -337,7 +337,7 @@ CONTAINS
       
     CASE DEFAULT
       PRINT *,'mmod_replaceLinesByZero: Only double prec. matices supported!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
     END SUBROUTINE

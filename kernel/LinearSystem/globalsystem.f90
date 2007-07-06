@@ -100,12 +100,12 @@ CONTAINS
     
     IF (cdataTypeLocal .NE. ST_DOUBLE) THEN
       PRINT *,'glsys_assembleGlobal: Only double precision dest. matrix supported!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (cmatrixFormatLocal .NE. LSYSSC_MATRIX9) THEN
       PRINT *,'glsys_assembleGlobal: Only format 9 dest. matrix supported!'
-      STOP
+      CALL sys_halt()
     END IF
     
     DO j=1,rsourceMatrix%ndiagBlocks
@@ -116,12 +116,12 @@ CONTAINS
           IF (rsourceMatrix%RmatrixBlock(i,j)%cdataType .NE. ST_DOUBLE) THEN
             PRINT *,'glsys_assembleGlobal: Only double precision source matrices &
                     &supported!'
-            STOP
+            CALL sys_halt()
           END IF
 
           IF (rsourceMatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIX9) THEN
             PRINT *,'glsys_assembleGlobal: Only format 9 source matrices supported!'
-            STOP
+            CALL sys_halt()
           END IF
           
         END IF

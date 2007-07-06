@@ -40,7 +40,7 @@
 !#      -> Determine a free file handle for use in an OPEN() command
 !#
 !# 10.) sys_halt
-!#      -> Halts the application. Replacement for STOP in F90.
+!#      -> Halts the application. Replacement for CALL sys_halt() in F90.
 !#         Can be configured how to halt.
 !#         E.g. if the global variable sys_haltmode is set to SYS_HALT_THROFPE,
 !#         this routine will stop the program by a floating point exception,
@@ -136,7 +136,7 @@ MODULE fsystem
 
 !<constantblock description="Constants for the sys_haltmode variable">
 
-  ! Halts the program by the STOP command
+  ! Halts the program by the CALL sys_halt() command
   INTEGER, PARAMETER :: SYS_HALT_STOP     = 0
 
   ! Halts the program by sys_throwFPE. On some compilers, this helps with
@@ -257,7 +257,7 @@ CONTAINS
   SUBROUTINE sys_halt()
   
 !<description>
-  ! This routine halts the application like the STOP command in
+  ! This routine halts the application like the CALL sys_halt() command in
   ! Fortran 90. The routine can be configured how to halt the application.
   ! For this purpose, the main program can set the global variable
   ! sys_haltmode to one of the SYS_HALT_xxxx constants.
@@ -459,7 +459,7 @@ CONTAINS
 
   IF (LEN(str) > LEN(strUpper)) THEN
     PRINT *, "sys_toupper_copy: target string is too short"
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Initialize string
@@ -543,7 +543,7 @@ CONTAINS
 
   IF (LEN(str) > LEN(strLower)) THEN
     PRINT *, "sys_tolower_copy: target string is too short"
-    STOP
+    CALL sys_halt()
   END IF
   
   ! Initialize string

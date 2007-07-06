@@ -83,35 +83,35 @@ CONTAINS
     
     IF (.NOT. ASSOCIATED(p_rsourceDiscr)) THEN
       PRINT *,'spdp_projectSolutionScalar: No source discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (.NOT. ASSOCIATED(p_rdestDiscr)) THEN
       PRINT *,'spdp_projectSolutionScalar: No destination discretisation!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (.NOT. ASSOCIATED(p_rsourceDiscr%p_rboundary, p_rdestDiscr%p_rboundary)) THEN
       PRINT *,'spdp_projectSolutionScalar: Different domains'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (.NOT. ASSOCIATED(p_rsourceDiscr%p_rtriangulation,&
                          p_rdestDiscr%p_rtriangulation)) THEN
       PRINT *,'spdp_projectSolutionScalar: Different triangulations'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF ((p_rsourceDiscr%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
         (p_rdestDiscr%ccomplexity .NE. SPDISC_UNIFORM)) THEN
       PRINT *,'spdp_projectSolutionScalar: Only uniform discretisations supported!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF ((rsourceVector%isortStrategy .GT. 0) .OR. &
         (rdestVector%isortStrategy .GT. 0)) THEN
       PRINT *,'spdp_projectSolutionScalar: Vectors must be unsorted for projection!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Ok, now we have a chance that we can convert.
@@ -132,7 +132,7 @@ CONTAINS
     IF ((rsourceVector%cdataType .NE. ST_DOUBLE) .OR. &
         (rdestVector%cdataType .NE. ST_DOUBLE)) THEN
       PRINT *,'spdp_projectSolutionScalar: Only double precision vectors supported!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Clear the destination vector
@@ -219,12 +219,12 @@ CONTAINS
      
       CASE DEFAULT
         PRINT *,'spdp_projectSolutionScalar: Unsupported element in source space!'
-        STOP
+        CALL sys_halt()
       END SELECT
     
     CASE DEFAULT
       PRINT *,'spdp_projectSolutionScalar: Unsupported element in destination space!'
-      STOP
+      CALL sys_halt()
     END SELECT
     
   END SUBROUTINE
@@ -482,7 +482,7 @@ CONTAINS
     
     IF (rsourceVector%nblocks .NE. rdestVector%nblocks) THEN
       PRINT *,'spdp_projectSolution: Different block structure!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Apply spdp_projectSolutionScalar to every subvector, that's all

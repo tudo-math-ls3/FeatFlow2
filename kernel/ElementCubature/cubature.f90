@@ -268,7 +268,7 @@ CONTAINS
 
   CASE DEFAULT
     PRINT *,'Error: Unknown cubature formula: ',scubname
-    STOP
+    CALL sys_halt()
   END SELECT
     
   END FUNCTION 
@@ -1448,7 +1448,7 @@ CONTAINS
     ncubp     =  27
   CASE DEFAULT 
     PRINT *,'Error: unknown cubature formula: ',ccubType
-    STOP
+    CALL sys_halt()
   END SELECT
    
   END SUBROUTINE cub_getCubPoints

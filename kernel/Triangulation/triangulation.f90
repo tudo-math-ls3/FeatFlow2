@@ -2276,7 +2276,7 @@ CONTAINS
     CASE DEFAULT
       CALL output_line ('Triangulation structure not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_generateStandardMeshFromRaw')
-      STOP
+      CALL sys_halt()
     END SELECT
 
   END SUBROUTINE
@@ -2759,25 +2759,25 @@ CONTAINS
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IedgesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IneighboursAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%NMT .EQ. 0) THEN
       CALL output_line ('Edge information (NMT) not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtEdge2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -2880,19 +2880,19 @@ CONTAINS
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IedgesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IneighboursAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genVerticesAtEdge2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -2992,13 +2992,13 @@ CONTAINS
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IneighboursAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtElement2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -3113,19 +3113,19 @@ CONTAINS
     IF (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) THEN
       CALL output_line ('InodalPropertys not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IedgesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty2D')
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IneighboursAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgeNodalProperty2D')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Do we have (enough) memory for that array?
@@ -3211,13 +3211,13 @@ CONTAINS
     IF (rtriangulation%h_DvertexCoords .EQ. ST_NOHANDLE) THEN
       CALL output_line ('h_DvertexCoords not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtElement  not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Do we have (enough) memory for that array?
@@ -3329,37 +3329,37 @@ CONTAINS
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IneighboursAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtBoundary not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IboundaryCpIdx not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IelementsAtVertexIdx .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IelementsAtVertexIdx not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IelementsAtVertex .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IelementsAtVertex not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementsAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -3478,31 +3478,31 @@ CONTAINS
     IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IedgesAtElement not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtBoundary not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IelementsAtBoundary not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IboundaryCpIdx not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -3598,13 +3598,13 @@ CONTAINS
     IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtBoundary not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genBoundaryVertexPos2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IboundaryCpIdx not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -3678,13 +3678,13 @@ CONTAINS
     IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IedgesAtBoundary not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genBoundaryEdgePos2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IboundaryCpIdx not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genBoundaryEdgePos2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -3766,19 +3766,19 @@ CONTAINS
     IF (rtriangulation%h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
       CALL output_line ('DvertexParameterValue not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IverticesAtBoundary not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
       CALL output_line ('IboundaryCpIdx not available!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_genEdgesAtBoundary2D')
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Get the arrays.
@@ -3997,7 +3997,7 @@ CONTAINS
     CASE DEFAULT
       CALL output_line ('Triangulation structure not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_generateStandardMeshFromRaw')
-      STOP
+      CALL sys_halt()
     END SELECT
     
     ! Either copy rdestTria to rdestTriangulation or overwrite the source
@@ -4073,7 +4073,7 @@ CONTAINS
         CALL output_line (&
             '2-level refinement supports only triangular and quad meshes!', &
             OU_CLASS_ERROR,OU_MODE_STD,'tria_refineMesh2lv2D')
-        STOP
+        CALL sys_halt()
         
       END IF
       
@@ -4753,7 +4753,7 @@ CONTAINS
       IF (SIZE(DparValue) .LT. npointsPerEdge) THEN
         CALL output_line ('DparValue not large enough!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'tria_getPointsOnEdge')
-        STOP
+        CALL sys_halt()
       END IF
       Dparameters(:) = DparValue(1:npointsPerEdge)
     END IF
@@ -4762,13 +4762,13 @@ CONTAINS
     IF (rtriangulation%ndim .EQ. 0) THEN
       CALL output_line ('Triangulation not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_getPointsOnEdge')
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (rtriangulation%h_IverticesAtEdge .EQ. 0) THEN
       CALL output_line ('IverticesAtEdge not initialised!', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tria_getPointsOnEdge')
-      STOP
+      CALL sys_halt()
     END IF
     
     CALL storage_getbase_double2d(rtriangulation%h_DvertexCoords,p_Dcoords)

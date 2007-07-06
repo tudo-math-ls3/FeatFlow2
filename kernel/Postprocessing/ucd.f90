@@ -480,7 +480,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_setAlternativeSource: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Depending on the flags in caltFlags, put sfilename to the
@@ -542,7 +542,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_setMaterials: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Make a copy of the strings. Use ALLOCATE/DEALLOCATE directly.
@@ -594,14 +594,14 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_setCellMaterial: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     NEL = rexport%p_rtriangulation%NEL
     
     IF (SIZE(Imaterials) .LT. NEL) THEN
       PRINT *,'ucd_setCellMaterial error: Imaterials invalid!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Copy that data and save it to the rexport structure.
@@ -668,7 +668,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_setVertexMaterial: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     NVT = rexport%p_rtriangulation%NVT
@@ -677,20 +677,20 @@ CONTAINS
     
     IF (SIZE(ImaterialsVert) .LT. NVT) THEN
       PRINT *,'ucd_setVertexMaterial error: ImaterialsVert invalid!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF (PRESENT(ImaterialsMid)) THEN
       IF (SIZE(ImaterialsMid) .LT. NMT) THEN
         PRINT *,'ucd_setVertexMaterial error: ImaterialsMid invalid!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
     IF (PRESENT(ImaterialsElem)) THEN
       IF (SIZE(ImaterialsElem) .LT. NEL) THEN
         PRINT *,'ucd_setVertexMaterial error: ImaterialsElem invalid!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
     
@@ -755,7 +755,7 @@ CONTAINS
       IF (rexport%iunit .LT. 0) THEN
         PRINT *,'ucd_write: Cannot open file "'//TRIM(rexport%sfilename)&
                 //'" for writing!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
 
@@ -1640,12 +1640,12 @@ CONTAINS
 
     IF (PRESENT(DdataMid) .AND. .NOT. PRESENT(DdataElem)) THEN
       PRINT *,'ucd_addVariableVertexBased: Error in the parameters!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_addVariableVertexBased: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Create a new variable. If necessary, increase the size of the buffer.
@@ -1744,7 +1744,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_addVariableElementBased: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Create a new variable. If necessary, increase the size of the buffer.
@@ -1836,7 +1836,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_addPolygon: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Create a new variable. If necessary, increase the size of the buffers.
@@ -1901,7 +1901,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_setTracers: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Create a new variable. If necessary, increase the size of the buffers.
@@ -1992,12 +1992,12 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_addTracerVariable: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (rexport%ntracers .LE. 0) THEN
       PRINT *,'ucd_addTracerVariable: No tracers specified!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF (SIZE(Ddata) .LT. rexport%ntracers) THEN
@@ -2057,7 +2057,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_addTracerVariable: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     rexport%dsimulationTime = dtime
@@ -2072,7 +2072,7 @@ CONTAINS
       WRITE(stext,ssimTimeFormat) 0.0_DP
       IF (stext .EQ. "") THEN
         PRINT *,'ucd_setSimulationTime: Invalid output format!'
-        STOP
+        CALL sys_halt()
       END IF
     END IF
   
@@ -2107,7 +2107,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_setOutputNumberFormat: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Copy the output format string and overwrite the standard setting.
@@ -2119,7 +2119,7 @@ CONTAINS
     WRITE(stext,sformat) 0.0_DP
     IF (stext .EQ. "") THEN
       PRINT *,'ucd_setOutputNumberFormat: Invalid output format!'
-      STOP
+      CALL sys_halt()
     END IF
   
   END SUBROUTINE
@@ -2153,7 +2153,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_addCommentLine: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Is there enough space in the output buffer? If not, reallocate it.
@@ -2208,7 +2208,7 @@ CONTAINS
 
     IF (rexport%coutputFormat .EQ. 0) THEN
       PRINT *,'ucd_addParameterList: Export structure not initialised!'
-      STOP
+      CALL sys_halt()
     END IF
     
     ! Ask the parameter list to create a large array of characters

@@ -88,7 +88,7 @@ CONTAINS
   ! 3D currently not supported
   IF (rdiscretisation%ndimension .NE. NDIM2D) THEN
     PRINT *,'dof_igetNDofGlob: Only 2D supported at the moment!'
-    STOP
+    CALL sys_halt()
   END IF
 
   IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
@@ -373,7 +373,7 @@ CONTAINS
     ! 3D currently not supported
     IF (rdiscretisation%ndimension .NE. NDIM2D) THEN
       PRINT *,'dof_locGlobMapping_mult: Only 2D supported at the moment!'
-      STOP
+      CALL sys_halt()
     END IF
 
     p_rtriangulation => rdiscretisation%p_rtriangulation
@@ -505,7 +505,7 @@ CONTAINS
     END IF
 
     PRINT *,'dof_locGlobMapping_mult: Unsupported discretisation!'
-    STOP
+    CALL sys_halt()
 
   END SUBROUTINE
 

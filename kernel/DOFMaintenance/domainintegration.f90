@@ -154,7 +154,7 @@ CONTAINS
     CASE DEFAULT
       ! NULLIFY(rintSubset%p_DcubPtsRef)
       PRINT *,'domint_initIntegration: Unknown coordinate system!'
-      STOP
+      CALL sys_halt()
       
     END SELECT
 

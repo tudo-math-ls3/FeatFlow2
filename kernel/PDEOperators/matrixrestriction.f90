@@ -125,37 +125,37 @@ CONTAINS
     IF ((rfineMatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .OR. &
        (rcoarseMatrix%cmatrixFormat .NE. LSYSSC_MATRIX9)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Only format 9 matrices supported!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF ((IAND(rfineMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) .OR. &
         (IAND(rcoarseMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Matrix must not be transposed!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF ((rfineMatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .OR. &
         (rcoarseMatrix%p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Only uniform discretisation supported!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rfineMatrix%cdataType .NE. ST_DOUBLE) .OR. &
         (rcoarseMatrix%cdataType .NE. ST_DOUBLE)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Only double precision matrices supported!'
-      STOP
+      CALL sys_halt()
     END IF
     
     IF ((rfineMatrix%isortStrategy .GT. 0) .OR. &
         (rcoarseMatrix%isortStrategy .GT. 0)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Sorted matrices not supported!'
-      STOP
+      CALL sys_halt()
     END IF
 
     IF ((rfineMatrix%dscaleFactor .NE. 1.0_DP) .OR. &
         (rcoarseMatrix%dscaleFactor .NE. 1.0_DP)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Scaled matrices not supported!'
-      STOP
+      CALL sys_halt()
     END IF
 
     i1 = rfineMatrix%p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
@@ -163,7 +163,7 @@ CONTAINS
     IF ((elem_getPrimaryElement(i1) .NE. EL_Q1T) .OR. &
         (elem_getPrimaryElement(i2) .NE. EL_Q1T)) THEN
       PRINT *,'mrest_matrixRestrictionEX3Y: Only Q1~-discretisation supported!'
-      STOP
+      CALL sys_halt()
     END IF
 
     ! Looks good, so let's start.

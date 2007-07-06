@@ -884,7 +884,7 @@ MODULE boundary
 
   if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
     PRINT *,'Error in boundary_getCoords'
-    STOP
+    CALL sys_halt()
   ENDIF
 
   ! Get the pointers to the segment information arrays for the current
@@ -1006,7 +1006,7 @@ MODULE boundary
 
   CASE DEFAULT
     PRINT *,'boundary_getCoords: Wrong segment type'
-    STOP
+    CALL sys_halt()
   END SELECT
 
   END SUBROUTINE 
@@ -1065,7 +1065,7 @@ MODULE boundary
     ! Small check
     IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
       PRINT *,'Error in boundary_convertParameter'
-      STOP
+      CALL sys_halt()
     ENDIF
 
     ! In case, source and destination type is the same, it's easy.
@@ -1230,7 +1230,7 @@ MODULE boundary
     ! Small check
     IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
       PRINT *,'Error in boundary_convertParameterList'
-      STOP
+      CALL sys_halt()
     ENDIF
 
     ! In case, source and destination type is the same, it's easy.
@@ -1404,7 +1404,7 @@ MODULE boundary
 
   IF ((iboundCompIdx .GT. rboundary%iboundarycount) .OR. (iboundCompIdx.lt.0)) THEN
     PRINT *,'boundary_createregion: iboundCompIdx out of bounds'
-    STOP
+    CALL sys_halt()
   ENDIF
 
   ! Get the pointers to the segment information arrays for the current
@@ -1423,7 +1423,7 @@ MODULE boundary
 
     IF ((iboundSegIdx .GT. p_IsegCount(iboundCompIdx)) .OR. (iboundSegIdx.lt.0)) THEN
       PRINT *,'Error in boundary_createregion: iboundSegIdx out of bounds.'
-      STOP
+      CALL sys_halt()
     ENDIF
 
     ! Find segment iseg the parameter value belongs to.
@@ -1702,7 +1702,7 @@ MODULE boundary
 
     if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
       PRINT *,'Error in boundary_getNormalVec'
-      STOP
+      CALL sys_halt()
     ENDIF
 
     ! Get the pointers to the segment information arrays for the current
@@ -1829,7 +1829,7 @@ MODULE boundary
 
       CASE DEFAULT
         PRINT *,'boundary_getCoords: Wrong segment type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       ! Normalize the vector
@@ -1953,7 +1953,7 @@ MODULE boundary
 
       CASE DEFAULT
         PRINT *,'boundary_getCoords: Wrong segment type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       ! Normalize the vector
@@ -2070,7 +2070,7 @@ MODULE boundary
 
       CASE DEFAULT
         PRINT *,'boundary_getCoords: Wrong segment type'
-        STOP
+        CALL sys_halt()
       END SELECT
 
       ! Normalize the vector
