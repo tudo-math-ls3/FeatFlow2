@@ -9,8 +9,7 @@ INCOMING=$(FEATFLOW)/incoming
 INCDIR:= $(INCDIR) -I$(KERNEL)/System -I$(KERNEL)/Triangulation \
 	-I$(KERNEL)/DOFMaintenance
 
-KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
-	mprimitives.f90\
+KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	genoutput.f90 linearalgebra.f90 storage.f90 derivatives.f90 \
 	cubature.f90 transformation.f90 triangulation.f90 scalarpde.f90\
 	error.f90 element.f90 io.f90 boundary.f90 \
@@ -29,7 +28,9 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90  \
 	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90 signal_ccode.c \
 	timestepping.f90 pprocerror.f90 trilinearformevaluation.f90 \
 	stdoperators.f90 sort.f90 quadtree.f90 l2projection.f90 \
-	pprocgradients.f90 geometry.f90
+	pprocgradients.f90 geometry.f90 mprimitives.f90 \
+	gridadaptivity.f90 list.f90 tree.f90 arraylist.f90 \
+	graph.f90 
 
 # Include HDF5 subsystem if required
 ifeq ($(HDF5),YES)
@@ -44,10 +45,10 @@ vpath %.f $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
-	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
-	$(KERNEL)/TimeDependence \
-	$(KERNEL) $(INCOMING)
+	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
+	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
+	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
 
 vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
@@ -55,10 +56,10 @@ vpath %.f90 $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
-	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
-	$(KERNEL)/TimeDependence \
-	$(KERNEL) $(INCOMING)
+	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
+	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
+	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
 
 vpath %.c $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
@@ -66,10 +67,10 @@ vpath %.c $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
-	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
-	$(KERNEL)/TimeDependence \
-	$(KERNEL) $(INCOMING)
+	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
+	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
+	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
 
 vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/LinearAlgebra $(KERNEL)/ElementCubature \
@@ -77,8 +78,8 @@ vpath %.inc $(KERNEL)/System $(KERNEL)/BasicGeometry \
 	$(KERNEL)/Boundary $(KERNEL)/DOFMaintenance \
 	$(KERNEL)/LinearSystem $(KERNEL)/LinearSolver \
 	$(KERNEL)/ProblemSupport $(KERNEL)/Postprocessing \
-	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection\
-	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators\
-	$(KERNEL)/TimeDependence \
-	$(KERNEL) $(INCOMING)
+	$(KERNEL)/NonlinearSolver $(KERNEL)/Projection \
+	$(KERNEL)/Mathematics $(KERNEL)/PDEOperators \
+	$(KERNEL)/TimeDependence $(KERNEL)/Adaptivity \
+	$(KERNEL)/DataStructures $(KERNEL) $(INCOMING)
 
