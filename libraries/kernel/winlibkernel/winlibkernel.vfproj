@@ -23,6 +23,10 @@
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<Filter Name="Adaptivity">
+		<File RelativePath="..\..\..\kernel\Adaptivity\gridadaptivity.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
 		<Filter Name="BasicGeometry">
 		<File RelativePath="..\..\..\kernel\BasicGeometry\basicgeometry.f90">
 			<FileConfiguration Name="Debug|Win32">
@@ -47,6 +51,12 @@
 		<File RelativePath="..\..\..\kernel\ContinuousFormulation\scalarpde.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File></Filter>
+		<Filter Name="Datastructures">
+		<File RelativePath="..\..\..\kernel\DataStructures\arraylist.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\graph.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\list.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\quadtree.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\tree.f90"/></Filter>
 		<Filter Name="DOFMaintenance">
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassembly.f90">
 			<FileConfiguration Name="Debug|Win32">
@@ -207,9 +217,6 @@
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\System\paramlist.f90">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\..\..\kernel\System\quadtree.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\System\sort.f90">

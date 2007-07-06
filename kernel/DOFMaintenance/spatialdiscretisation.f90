@@ -1199,7 +1199,8 @@ CONTAINS
     ! element list 'belongs' to another structure, and so we mustn't
     ! delete it from memory!
     IF (.NOT. rspatialDiscr%bisCopy) THEN
-      CALL storage_free (p_relementDistr%h_IelementList)
+      IF (p_relementDistr%h_IelementList .NE. ST_NOHANDLE) &
+        CALL storage_free (p_relementDistr%h_IelementList)
     ELSE
       p_relementDistr%h_IelementList = ST_NOHANDLE
     END IF

@@ -380,6 +380,9 @@ CONTAINS
     ! Activate the current element distribution
     p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
   
+    ! Cancel if this element distribution is empty.
+    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
     ! Get the number of corner vertices of the element
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. p_elementDistribution%itestElement) THEN
@@ -874,6 +877,9 @@ CONTAINS
     ! Activate the current element distribution
     p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
   
+    ! Cancel if this element distribution is empty.
+    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
     ! Get the number of local DOF's for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
     

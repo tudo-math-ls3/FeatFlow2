@@ -1165,14 +1165,32 @@ CONTAINS
   ! Ask the DOF-mapping routine to get us those DOF's belonging to elements
   ! on the boundary.
   IF (icountmax .GE. 1) THEN
-    CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
-              p_IelementsAtBoundary(Iminidx(1):Imaxidx(1)), .FALSE., Idofs)
+    ! The 'mult' call only works on uniform discretisations. We cannot assume
+    ! that and have to call dof_locGlobMapping for every element separately.
+    IF (p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+      CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
+                p_IelementsAtBoundary(Iminidx(1):Imaxidx(1)), .FALSE., Idofs)
+    ELSE
+      DO ielement = Iminidx(1),Imaxidx(1)
+        CALL dof_locGlobMapping(p_rspatialDiscretisation, p_IelementsAtBoundary(ielement),&
+            .FALSE., Idofs(:,ielement-Iminidx(1)+1))
+      END DO
+    END IF
   END IF
             
   IF (icountmax .GE. 2) THEN
-    CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
-              p_IelementsAtBoundary(Iminidx(2):Imaxidx(2)), .FALSE., &
-              Idofs( :, Imaxidx(1)-Iminidx(1)+1+1 : ))
+    ! The 'mult' call only works on uniform discretisations. We cannot assume
+    ! that and have to call dof_locGlobMapping for every element separately.
+    IF (p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+      CALL dof_locGlobMapping_mult(p_rspatialDiscretisation, &
+                p_IelementsAtBoundary(Iminidx(2):Imaxidx(2)), .FALSE., &
+                Idofs( :, Imaxidx(1)-Iminidx(1)+1+1 : ))
+    ELSE
+      DO ielement = Iminidx(2),Imaxidx(2)
+        CALL dof_locGlobMapping(p_rspatialDiscretisation, p_IelementsAtBoundary(ielement),&
+            .FALSE., Idofs(:,Imaxidx(1)-Iminidx(1)+1 + (ielement-Iminidx(2)) +1))
+      END DO
+    END IF
   END IF
                  
   isubsetstart = 0

@@ -312,6 +312,7 @@ CONTAINS
 
   ! Wrapper to dof_locGlobMapping_mult - better use this directly!
   ielIdx_array(1) = ielidx
+  IdofGlob_array(:,1) = IdofGlob(:)
   CALL dof_locGlobMapping_mult (rdiscretisation, ielIdx_array, btestFct, &
                                 IdofGlob_array)
   IdofGlob = IdofGlob_array(:,1)
@@ -481,11 +482,17 @@ CONTAINS
             ! Use p_IverticesAtElement evaluated at the first element in the element
             ! set to determine NVE. It's either 3 or 4 and valid for all elements
             ! in the current element set.
-            IF (p_2darray(4,IelIdx(1)) .EQ. 0) THEN
-              CALL dof_locGlobUniMult_P2Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,3,&
-                  p_2darray, p_2darray2, p_IelementCounter, IelIdx, IdofGlob)
+            IF (UBOUND(p_2darray,1) .GE. 4) THEN
+              IF (p_2darray(4,IelIdx(1)) .EQ. 0) THEN
+                CALL dof_locGlobUniMult_P2Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,3,&
+                    p_2darray, p_2darray2, p_IelementCounter, IelIdx, IdofGlob)
+              ELSE
+                CALL dof_locGlobUniMult_P2Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,4,&
+                    p_2darray, p_2darray2, p_IelementCounter, IelIdx, IdofGlob)
+              END IF
             ELSE
-              CALL dof_locGlobUniMult_P2Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,4,&
+              ! Pure triangular mesh
+              CALL dof_locGlobUniMult_P2Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,3,&
                   p_2darray, p_2darray2, p_IelementCounter, IelIdx, IdofGlob)
             END IF
             RETURN

@@ -360,6 +360,9 @@ CONTAINS
   TYPE(t_elementDistribution), POINTER :: p_elementDistribution
   TYPE(t_elementDistribution), POINTER :: p_elementDistributionFunc
   
+  ! Number of elements in the current element distribution
+  INTEGER(PREC_ELEMENTIDX) :: NEL
+  
   ! DOF-Data of the vector
   REAL(DP), DIMENSION(:), POINTER :: p_Ddata
   
@@ -523,6 +526,9 @@ CONTAINS
     p_elementDistributionFunc => &
       p_rdiscretisationFunc%RelementDistribution(icurrentElementDistr)
   
+    ! Cancel if this element distribution is empty.
+    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
     ! Get the number of local DOF's for trial and test functions
     indofFunc = elem_igetNDofLoc(p_elementDistributionFunc%itrialElement)
     indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
@@ -721,15 +727,18 @@ CONTAINS
     ! Get the data array from the vector
     CALL lsyssc_getbase_double(rvector,p_Ddata)
                               
+    ! Get the number of elements there.
+    NEL = p_elementDistribution%NEL
+
     ! Loop over the elements - blockwise.
-    DO IELset = 1, SIZE(p_IelementList), TRILF_NELEMSIM
+    DO IELset = 1, NEL, TRILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      IELmax = MIN(SIZE(p_IelementList),IELset-1+TRILF_NELEMSIM)
+      IELmax = MIN(NEL,IELset-1+TRILF_NELEMSIM)
     
       ! --------------------- DOF SEARCH PHASE ------------------------
     

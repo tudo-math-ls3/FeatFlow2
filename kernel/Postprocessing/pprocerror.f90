@@ -324,6 +324,10 @@ CONTAINS
     CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
                                p_DvertexCoords)
                                
+    ! Set the current error to 0 and add the error contributions of each element
+    ! to that.
+    derror = 0.0_DP
+
     ! Now loop over the different element distributions (=combinations
     ! of trial and test functions) in the discretisation.
 
@@ -332,6 +336,9 @@ CONTAINS
       ! Activate the current element distribution
       p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
     
+      ! Cancel if this element distribution is empty.
+      IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
       ! Get the number of local DOF's for trial functions
       indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
       
@@ -394,10 +401,6 @@ CONTAINS
       ! Get the number of elements there.
       NEL = p_elementDistribution%NEL
     
-      ! Set the current error to 0 and add the error contributions of each element
-      ! to that.
-      derror = 0.0_DP
-                                
       ! Loop over the elements - blockwise.
       DO IELset = 1, NEL, PPERR_NELEMSIM
       

@@ -602,6 +602,9 @@ CONTAINS
     ! Activate the current element distribution
     p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
 
+    ! Cancel if this element distribution is empty.
+    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
     ! Get the number of local DOF's for trial and test functions
     indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
     indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
@@ -2099,6 +2102,9 @@ CONTAINS
     ! Activate the current element distribution
     p_elementDistribution => rdiscretisation%RelementDistribution(icurrentElementDistr)
   
+    ! Cancel if this element distribution is empty.
+    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
     ! Get the number of local DOF's for trial and test functions
     indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
     indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
@@ -2927,6 +2933,9 @@ CONTAINS
     ! Activate the current element distribution
     p_elementDistribution => p_rdiscretisation%RelementDistribution(icurrentElementDistr)
   
+    ! Cancel if this element distribution is empty.
+    IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+
     ! Get the number of local DOF's for trial and test functions
     indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
     indofTest = elem_igetNDofLoc(p_elementDistribution%itestElement)
