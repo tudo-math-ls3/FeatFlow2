@@ -4147,8 +4147,10 @@ CONTAINS
     
     CASE (LSYSSC_DUP_REMOVE)
       ! Release vector data
-      IF (ry%h_Ddata .NE. ST_NOHANDLE) &
-          CALL storage_free (ry%h_Ddata)
+      IF ((.NOT. ry%bisCopy) .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) &
+        CALL storage_free (ry%h_Ddata)
+        
+      ry%h_Ddata = ST_NOHANDLE
       ry%bisCopy = .FALSE.
       
     CASE (LSYSSC_DUP_DISMISS)
@@ -4158,7 +4160,7 @@ CONTAINS
     
     CASE (LSYSSC_DUP_SHARE)
       ! Share information. Release memory if necessary.
-      IF (ry%bisCopy .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) &
+      IF ((.NOT. ry%bisCopy) .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) &
         CALL storage_free (ry%h_Ddata)
       ry%h_Ddata = rx%h_Ddata
       ry%bisCopy = .TRUE.
