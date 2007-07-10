@@ -455,7 +455,7 @@ MODULE hadaptivity
 
   ! Mark element for 1-quad blue refinement
   INTEGER, PARAMETER :: MARK_QUADBLUE_412           = 23
-  INTEGER, PARAMETER :: MARK_QAUDBLUE_234           = 29
+  INTEGER, PARAMETER :: MARK_QUADBLUE_234           = 29
   INTEGER, PARAMETER :: MARK_QUADBLUE_123           = 15
   INTEGER, PARAMETER :: MARK_QUADBLUE_341           = 27
   
@@ -1688,7 +1688,7 @@ CONTAINS
       CALL mark_coarsening2D(rhadapt,rindicator)
       
       ! Compute new dimensions
-      nvt = rhadapt%NVT+2*rhadapt%increaseNVT
+      nvt = rhadapt%NVT+rhadapt%increaseNVT
       nel = NumberOfElements(rhadapt)
 
       ! Adjust vertex age array and nodal property array
@@ -1948,7 +1948,7 @@ CONTAINS
             WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="green" stroke="black" stroke-width="1" '
 
           CASE(MARK_TRIA3TRIA_12,MARK_TRIA3TRIA_23,MARK_TRIA3TRIA_13,&
-               MARK_QUADBLUE_412,MARK_QAUDBLUE_234,MARK_QUADBLUE_123,&
+               MARK_QUADBLUE_412,MARK_QUADBLUE_234,MARK_QUADBLUE_123,&
                MARK_QUADBLUE_341)
             WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="blue" stroke="black" stroke-width="1" '
 
@@ -5126,9 +5126,6 @@ CONTAINS
           p_Imarker(lel) = ibset(p_Imarker(lel),0)
           p_Imarker(kel) = ibset(p_Imarker(kel),0)
          
-!          Kadj    = rhadapt%p_IneighboursAtElement(:,iel)
-!          Kmidadj = rhadapt%p_ImidneighboursAtElement(:,iel)
-
         CASE(STATE_QUAD_HALF2)
           ! Theoretically, this state is not possible. In general, it has to be treated
           ! like state 21 = STATE_QUAD_HALF1
@@ -5460,7 +5457,7 @@ CONTAINS
       rhadapt%NVT0 = rhadapt%NVT
 
       !--------------------------------------------------------------
-      ! We don't want the have elements with two and/or three divided edges, 
+      ! We don't want to have elements with two and/or three divided edges, 
       ! aka, blue refinement for triangles and quadrilaterals, respectively.
       ! As a remedy, these elements are filtered and marked for red refinement.
       !--------------------------------------------------------------
@@ -5470,21 +5467,21 @@ CONTAINS
         ! What type of element are we?
         SELECT CASE(p_Imarker(iel))
         CASE(MARK_TRIA3TRIA_12,MARK_TRIA3TRIA_13,MARK_TRIA3TRIA_23)
-          ! Blue refinement for triangles is not allowed. Hence, 
-          ! mark triangle for red refinement
+          ! Blue refinement for triangles is not allowed.
+          ! Hence, mark triangle for red refinement
           p_Imarker(iel)         = MARK_TRIA4TRIA
           p_Imodified(iel)       = -imodifier
           isConform              =.FALSE.
-          rhadapt%increaseNVT = rhadapt%increaseNVT+1
+          rhadapt%increaseNVT    = rhadapt%increaseNVT+1
           
         CASE(MARK_QUADBLUE_123,MARK_QUADBLUE_412,&
-            MARK_QUADBLUE_341,MARK_QAUDBLUE_234)
-          ! Blue refinement for quadrilaterals is not allowed. Hence,
-          ! mark quadrilateral for red refinement
+            MARK_QUADBLUE_341,MARK_QUADBLUE_234)
+          ! Blue refinement for quadrilaterals is not allowed. 
+          ! Hence, mark quadrilateral for red refinement
           p_Imarker(iel)         = MARK_QUAD4QUAD
           p_Imodified(iel)       = -imodifier
           isConform              =.FALSE.
-          rhadapt%increaseNVT = rhadapt%increaseNVT+1
+          rhadapt%increaseNVT    = rhadapt%increaseNVT+2
 
         CASE DEFAULT
           p_Imodified(iel) = (p_Imodified(iel)-imodifier)/2
