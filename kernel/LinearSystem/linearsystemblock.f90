@@ -48,112 +48,115 @@
 !#      -> Enforces the structure of a given block vector in another
 !#         block vector
 !#
-!#      lsysbl_enforceStructureDirect
+!# 12.) lsysbl_enforceStructureDirect
 !#      -> Enforces a subvector structure according to a length definition
 !#         to a block vector
 !#
-!# 12.) lsysbl_assignDiscretIndirect
+!# 13.) lsysbl_enforceStructureDiscr
+!#      -> Enforces a subvector structure according to a given discretisation
+!#
+!# 14.) lsysbl_assignDiscretIndirect
 !#      -> Assign discretisation related information of one vector
 !#         to another
 !#
-!# 13.) lsysbl_assignDiscretIndirectMat
+!# 15.) lsysbl_assignDiscretIndirectMat
 !#      -> Assign discretisation related information of a matrix
 !#         to a vector to make it compatible.
 !#
-!# 14.) lsysbl_updateMatStrucInfo
+!# 16.) lsysbl_updateMatStrucInfo
 !#      -> Recalculate structural data of a block matrix from
 !#         the submatrices
 !#
-!# 15.) lsysbl_releaseVector
+!# 17.) lsysbl_releaseVector
 !#      -> Release a block vector from memory
 !#
-!# 16.) lsysbl_releaseMatrix
+!# 18.) lsysbl_releaseMatrix
 !#      -> Releases a block matrix and all submatrices
 !#
-!# 17.) lsysbl_releaseMatrixRow
+!# 19.) lsysbl_releaseMatrixRow
 !#      -> Releases a row of submatrices from a block matrix
 !#
-!# 18.) lsysbl_releaseMatrixColumn
+!# 20.) lsysbl_releaseMatrixColumn
 !#      -> Releases a column of submatrices from a block matrix
 !#
-!# 19.) lsysbl_blockMatVec
+!# 21.) lsysbl_blockMatVec
 !#      -> Multiply a block matrix with a block vector
 !#
-!# 20.) lsysbl_copyVector
+!# 22.) lsysbl_copyVector
 !#       -> Copy a block vector to another one
 !#
-!# 21.) lsysbl_copyMatrix
+!# 23.) lsysbl_copyMatrix
 !#       -> Copy a block matrix to another one
 !#
-!# 22.) lsysbl_scaleVector
+!# 24.) lsysbl_scaleVector
 !#      -> Scale a block vector by a constant
 !#
-!# 23.) lsysbl_clearVector
+!# 25.) lsysbl_clearVector
 !#      -> Clear a block vector
 !#
-!# 24.) lsysbl_vectorLinearComb
+!# 26.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
 !#
-!# 25.) lsysbl_scalarProduct
+!# 27.) lsysbl_scalarProduct
 !#      -> Calculate a scalar product of two vectors
 !#
-!# 26.) lsysbl_setSortStrategy
+!# 28.) lsysbl_setSortStrategy
 !#      -> Assigns a sorting strategy/permutation to every subvector
 !#
-!# 27.) lsysbl_sortVectorInSitu
+!# 29.) lsysbl_sortVectorInSitu
 !#      -> Resort the entries of all subvectors according to an assigned
 !#         sorting strategy
 !#
-!# 28.) lsysbl_isVectorCompatible
+!# 30.) lsysbl_isVectorCompatible
 !#      -> Checks whether two vectors are compatible to each other
 !#
-!# 29.) lsysbl_isMatrixCompatible
+!# 31.) lsysbl_isMatrixCompatible
 !#      -> Checks whether a matrix and a vector are compatible to each other
 !#
-!# 30.) lsysbl_isMatrixSorted
+!# 32.) lsysbl_isMatrixSorted
 !#      -> Checks if a block matrix is sorted
 !#
-!# 31.) lsysbl_isVectorSorted
+!# 33.) lsysbl_isVectorSorted
 !#      -> Checks if a block vector is sorted
 !#
-!# 32.) lsysbl_getbase_double
+!# 34.) lsysbl_getbase_double
 !#      -> Get a pointer to the double precision data array of the vector
 !#
-!# 33.) lsysbl_getbase_single
+!# 35.) lsysbl_getbase_single
 !#      -> Get a pointer to the single precision data array of the vector
 !#
-!# 34.) lsysbl_vectorNorm
+!# 36.) lsysbl_vectorNorm
 !#      -> Calculates the norm of a vector. the vector is treated as one
 !#         long data array.
 !#
-!# 35.) lsysbl_vectorNormBlock
+!# 37.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 36.) lsysbl_invertedDiagMatVec
+!# 38.) lsysbl_invertedDiagMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !#
-!# 37.) lsysbl_swapVectors
+!# 39.) lsysbl_swapVectors
 !#      -> Swap two vectors
 !#
-!# 38.) lsysbl_deriveSubvector
+!# 40.) lsysbl_deriveSubvector
 !#      -> Derives a blockvector as a subset of another blockvector
 !#
-!# 39.) lsysbl_deriveSubmatrix
+!# 41.) lsysbl_deriveSubmatrix
 !#      -> Extracts a submatrix from a block matrix
 !#
-!# 40.) lsysbl_isSubmatrixPresent
+!# 42.) lsysbl_isSubmatrixPresent
 !#      -> Checks if a submatrix of a blockmatrix is present
 !#
-!# 41.) lsysbl_resizeVectorBlock
+!# 43.) lsysbl_resizeVectorBlock
 !#      -> Resize a block vector
 !#
-!# 42.) lsysbl_resizeVecBlockIndMat
+!# 44.) lsysbl_resizeVecBlockIndMat
 !#      -> Resize a block vector according to a block matrix
 !#
-!# 43.) lsysbl_infoVector
+!# 45.) lsysbl_infoVector
 !#      -> Outputs information about the vector (mostly used for debugging)
 !#
-!# 44.) lsysbl_infoMatrix
+!# 46.) lsysbl_infoMatrix
 !#      -> Outputs information about the matrix (mostly used for debugging)
 !# </purpose>
 !##############################################################################
@@ -2421,6 +2424,7 @@ CONTAINS
       rscalarVec%cdataType = rvector%cdataType
       rscalarVec%NEQ = rvector%NEQ
       rscalarVec%h_Ddata = rvector%h_Ddata
+      rscalarVec%bisCopy = .TRUE.
       
     ELSE
     
@@ -2631,6 +2635,78 @@ CONTAINS
     
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_enforceStructureDiscr (rdiscretisation,rx)
+  
+!<description>
+  ! This routine enforces the structure of the discretisation rdiscretisaation
+  ! in the vector rvector. 
+  !
+  ! WARNING: This routine should be used with care if you know
+  !          what you are doing !!!
+  ! 
+  ! The routine can be used to save space if multiple vectors with a different
+  ! structure share the same memory array. Nevertheless, the caller must
+  ! take care of which information is aactually in the arrays.
+  !
+  ! The only check in this routine is that the free space in the vector is
+  ! at least as large as NEQ specified by the discretisation structure; 
+  ! otherwise an error is thrown. The data type of rvector is also not 
+  ! changed.
+!</description>
+  
+!<input>
+  ! Destination structure. Discretisation-related information of rdiscretisation
+  ! is assigned to rx.
+  TYPE(t_blockDiscretisation),INTENT(IN), TARGET :: rdiscretisation
+!</input>
+
+!<inputoutput>
+  ! Destination vector which structure should be changed.
+  TYPE(t_vectorBlock),INTENT(INOUT) :: rx
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i
+    INTEGER(PREC_VECIDX) :: iidx
+
+    ! Get current size of vector memory
+    CALL storage_getsize(rx%h_Ddata, iidx)
+
+    ! Check that the destination vector can handle this structure
+    IF (dof_igetNDofGlobBlock(rdiscretisation) .GT. iidx) THEN
+      PRINT *,'lsysbl_enforceStructureDiscr: Destination vector too small!'
+      CALL sys_halt()
+    END IF
+
+    iidx = 1
+
+    DO i=1,rx%nblocks
+      ! Modify all pointers of the spatial discretisation in all subvectors.
+      rx%RvectorBlock(i)%p_rspatialDiscretisation => &
+        rdiscretisation%RspatialDiscretisation(i)
+        
+      ! Recalculate the size of the subvectors
+      rx%RvectorBlock(i)%NEQ = &
+        dof_igetNDofGlob(rx%RvectorBlock(i)%p_rspatialDiscretisation)
+      rx%RvectorBlock(i)%iidxFirstEntry = iidx
+      
+      iidx = iidx + rx%RvectorBlock(i)%NEQ
+    END DO
+    
+    ! Total size of the vector
+    rx%NEQ = iidx-1
+    
+    ! Set a pointer to the discretisation structure in the vector, finish
+    rx%p_rblockDiscretisation => rdiscretisation
+  
+  END SUBROUTINE
+  
   ! ***************************************************************************
   
 !<subroutine>
