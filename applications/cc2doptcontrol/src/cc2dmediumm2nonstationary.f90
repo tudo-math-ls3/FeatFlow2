@@ -115,7 +115,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_solveNonstationaryDirect (rproblem,rvectorTmp,rrhsTmp)
+  SUBROUTINE c2d2_solveNonstationaryDirect (rproblem)
   
 !<description>
   ! Solve the nonstationary optimal control problem. This allocates
@@ -128,39 +128,54 @@ CONTAINS
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT) :: rproblem
-  
-  ! Temporary vector which defines the shape of the solution vector
-  ! in each time step.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvectorTmp
-
-  ! Temporary vector which defines the shape of the RHS vector
-  ! in each time step.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhsTmp
 !</inputoutput>
 
 !</subroutine>
 
-    TYPE(t_ccoptSpaceTimeDiscretisation) :: rsupermatrix
+    TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: Rsupermatrix
     TYPE(t_spacetimeVector) :: rx,rd,rb
-    TYPE(t_vectorBlock) :: rtempVector
+    TYPE(t_vectorBlock) :: rvectorTmp
     INTEGER :: i
+    INTEGER(I32) :: TIMENLMIN,TIMENLMAX
 
-    ! Initialise the supersystem on the maximum level
-    CALL c2d2_initParamsSupersystem (rproblem,1,rproblem%NLMAX,&
-        rsupermatrix, rx, rb, rd)
+    ! Get the minimum and maximum time level from the parameter list    
+    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
+                              'TIMENLMIN',TIMENLMIN,1)
+    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
+                              'TIMENLMAX',TIMENLMAX,1)
+
+    ALLOCATE(Rsupermatrix(TIMENLMAX))
+
+    ! Initialise the supersystem on all levels
+    DO i=TIMENLMIN,TIMENLMAX
+      IF (i .EQ. TIMENLMAX) THEN
+        CALL c2d2_initParamsSupersystem (rproblem,i,&
+            MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+            Rsupermatrix(i-TIMENLMIN+1), rx, rb, rd)
+      ELSE
+        CALL c2d2_initParamsSupersystem (rproblem,i,&
+            MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+            Rsupermatrix(i-TIMENLMIN+1))
+      END IF
+    END DO
         
-    ! Allocate memory for the 3rd temp vector
-    CALL lsysbl_createVecBlockIndirect (rrhsTmp,rtempVector,.FALSE.)
-    
     ! Call the solver for the space/time coupled system. We only solve on level NLMAX.
-    CALL c2d2_solveSupersystem (rproblem, rsupermatrix, rx, rb, rd, &
-      rvectorTmp, rrhsTmp, rtempVector)
+    CALL c2d2_solveSupersystem (rproblem, Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
+      
+    ! Create a temp vector
+    CALL lsysbl_createVecBlockByDiscr (&
+        Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscretisation,&
+        rvectorTmp,.TRUE.)
+    
+    ! Attach the boundary conditions to that vector
+    rvectorTmp%p_rdiscreteBC => Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteBC
+    rvectorTmp%p_rdiscreteBCfict => Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
       
     ! Postprocessing of all solution vectors.
-    DO i = 0,rsupermatrix%niterations
+    DO i = 0,Rsupermatrix(TIMENLMAX)%niterations
     
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + i*rsupermatrix%dtstep
+          rproblem%rtimedependence%dtimeInit + i*Rsupermatrix(TIMENLMAX)%dtstep
       rproblem%rtimedependence%itimeStep = i
     
       CALL sptivec_getTimestepData (rx, i, rvectorTmp)
@@ -170,9 +185,16 @@ CONTAINS
     END DO
     
     ! Release memory, finish.
-    CALL lsysbl_releaseVector (rtempVector)
+    CALL lsysbl_releaseVector (rvectorTmp)
     
-    CALL c2d2_doneParamsSupersystem (rsupermatrix,rx,rb,rd)
+    ! Initialise the supersystem on all levels
+    DO i=TIMENLMIN,TIMENLMAX
+      IF (i .EQ. TIMENLMAX) THEN
+        CALL c2d2_doneParamsSupersystem (Rsupermatrix(i),rx,rb,rd)
+      ELSE
+        CALL c2d2_doneParamsSupersystem (Rsupermatrix(i))
+      END IF
+    END DO
 
   END SUBROUTINE
   

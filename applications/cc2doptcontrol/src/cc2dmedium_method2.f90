@@ -190,7 +190,7 @@ CONTAINS
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Call the nonstationary solver to solve the problem.
-      CALL c2d2_solveNonstationaryDirect (p_rproblem,rvector,rrhs)
+      CALL c2d2_solveNonstationaryDirect (p_rproblem)
       
     END IF
     

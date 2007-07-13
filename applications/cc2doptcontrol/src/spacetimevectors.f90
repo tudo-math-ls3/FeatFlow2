@@ -36,6 +36,12 @@
 !# 7.) sptivec_copyVector
 !#     -> Copy a vector to another
 !#
+!# 8.) sptivec_vectorNorm
+!#     -> Calculate the norm of a vector
+!#
+!# 9.) sptivec_clearVector
+!#     -> Clears a vector
+!#
 !# </purpose>
 !##############################################################################
 
@@ -62,6 +68,10 @@ MODULE spacetimevectors
     ! The name of a directory that is used for temporarily storing data to disc.
     ! Standard is the current directory.
     CHARACTER(SYS_STRLEN) :: sdirectory = './'
+    
+    ! If this flag is zero, the vector is assumed to be empty (initialised with 0).
+    ! A vector is empty if it's new and if it's cleared by clearVector.
+    LOGICAL :: bzero = .TRUE.
     
     ! Number of equations in each subvector of the 'global time-step vector'.
     INTEGER(PREC_VECIDX) :: NEQ = 0
@@ -128,7 +138,7 @@ CONTAINS
     
     ! Allocate memory for every subvector
     DO i=0,ntimesteps
-      CALL storage_new ('sptivec_initVector', 'stvec_'//TRIM(sys_si(i,10)), &
+      CALL storage_new ('sptivec_initVector', 'stvec_'//TRIM(sys_siL(i,10)), &
         NEQ, ST_DOUBLE, rspaceTimeVector%p_IdataHandleList(i), ST_NEWBLOCK_ZERO)
     END DO
 
@@ -225,6 +235,9 @@ CONTAINS
     ! default value of the handle in the handle list is ST_NOHANDLE.
     CALL storage_copy (rvector%h_Ddata,rspaceTimeVector%p_IdataHandleList(isubvector))
 
+    ! After a setTimestepData, the vector cannot be assumed to be a zero vector.
+    rspaceTimeVector%bzero = .FALSE.
+
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -264,12 +277,18 @@ CONTAINS
       STOP
     END IF
     
+    IF (rspaceTimeVector%bzero) THEN
+      ! The vector is a zero vector
+      CALL storage_clear (rvector%h_Ddata)
+      RETURN
+    END IF
+
     IF ((rspaceTimeVector%p_IdataHandleList(isubvector) .NE. ST_NOHANDLE) .AND. &
         (rspaceTimeVector%p_IdataHandleList(isubvector) .LT. 0)) THEN
       PRINT *,'external data not implemented!'
       STOP
     END IF
-
+    
     ! Save the vector data. If necessary, new memory is allocated -- as the
     ! default value of the handle in the handle list is ST_NOHANDLE.
     CALL storage_copy (rspaceTimeVector%p_IdataHandleList(isubvector),rvector%h_Ddata)
@@ -397,6 +416,92 @@ CONTAINS
     ! Release temp memory    
     CALL lsysbl_releaseVector (ryBlock)
     CALL lsysbl_releaseVector (rxBlock)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<function>
+
+  REAL(DP) FUNCTION sptivec_vectorNorm (rx,cnorm)
+
+!<description>
+  ! Calculates the norm of the vector rx.
+!</desctiprion>
+
+!<input>
+  ! Source vector
+  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+
+  ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
+  INTEGER, INTENT(IN) :: cnorm
+!</input>
+
+!<result>
+  ! Norm of the vector.
+!</result>
+  
+!</function>
+
+    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
+    TYPE(t_vectorBlock) :: rxBlock
+    REAL(DP) :: dnorm
+    INTEGER :: i
+
+    Isize(1) = rx%NEQ
+
+    ! Allocate a 'little bit' of memory for the subvectors
+    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
+    
+    dnorm = 0.0_DP
+    
+    ! Loop through the substeps, load the data in, sum up to the norm.
+    DO i=0,rx%ntimesteps
+      CALL sptivec_getTimestepData (rx, i, rxBlock)
+      
+      SELECT CASE (cnorm)
+      CASE (LINALG_NORML2)
+        dnorm = dnorm + lsysbl_vectorNorm (rxBlock,cnorm)**2
+      CASE DEFAULT
+        dnorm = dnorm + lsysbl_vectorNorm (rxBlock,cnorm)
+      END SELECT
+    END DO
+
+    ! Release temp memory    
+    CALL lsysbl_releaseVector (rxBlock)
+    
+    ! Calculate the actual norm.
+    SELECT CASE (cnorm)
+    CASE (LINALG_NORML1)
+      sptivec_vectorNorm = dnorm / rx%ntimesteps
+    CASE (LINALG_NORML2)
+      sptivec_vectorNorm = SQRT(dnorm / rx%ntimesteps)
+    CASE DEFAULT
+      sptivec_vectorNorm = dnorm
+    END SELECT
+
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sptivec_clearVector (rx)
+
+!<description>
+  ! Initialises a vector with zero.
+!</desctiprion>
+
+!<inputoutput>
+  ! Vector to be cleared.
+  TYPE(t_spacetimeVector), INTENT(INOUT)   :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    ! Simply set the "empty" flag to TRUE.
+    ! When restoreing data with getTimestepData, that routine will return a zero vector.
+    rx%bzero = .TRUE.
 
   END SUBROUTINE
 
