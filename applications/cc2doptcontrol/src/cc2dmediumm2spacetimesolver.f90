@@ -2647,6 +2647,12 @@ CONTAINS
                       p_rsubnode%p_Rlevels(ilev-1)%rprjVector, &
                       p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
+                ! Implement boundary conditions into the defect
+                CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
+
                 ! Choose zero as initial vector on lower level. 
                 CALL sptivec_clearVector (p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector)
                 
@@ -2675,6 +2681,12 @@ CONTAINS
                       p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                       p_rsubnode%p_Rlevels(ilev-1)%rprjVector, &
                       p_rsubnode%p_Rlevels(ilev)%rprjVector)
+
+                ! Implement boundary conditions into the defect
+                CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
 
                 ! Extended output
                 IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
@@ -2734,6 +2746,13 @@ CONTAINS
                     p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector, &
                     p_rsubnode%p_Rlevels(ilev)%rprjVector)
+
+              ! Implement boundary conditions into the vector.
+              ! It's still a defect, although a preconditioned one.
+              CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+                  p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr,&
+                  p_rsubnode%p_Rlevels(ilev)%rtempVector,&
+                  p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
               ! Step length control. By default, choose step length 1.0.
               dstep = 1.0_DP

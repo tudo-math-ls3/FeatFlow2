@@ -337,7 +337,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs,bsolvector,brhsvector)
+  SUBROUTINE c2d2_implementBC (rproblem,rvector,rrhs,rdefect)
   
 !<description>
   ! Implements boundary conditions into the RHS and into a given solution vector.
@@ -349,18 +349,16 @@ CONTAINS
   ! A problem structure saving problem-dependent information.
   TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
 
-  ! A vector structure for the solution vector. The discrete BC's are implemented
+  ! A vector structure of a solution vector. The discrete BC's are implemented
   ! into that.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
+  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rvector
 
-  ! A vector structure for the RHS vector. The discrete BC's are implamented into that.
-  TYPE(t_vectorBlock), INTENT(INOUT) :: rrhs
+  ! A vector structure of a RHS vector. The discrete BC's are implamented into that.
+  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rrhs
+
+  ! A vector structure of a defect vector. The discrete BC's are implamented into that.
+  TYPE(t_vectorBlock), INTENT(INOUT), OPTIONAL :: rdefect
   
-  ! Whether to implement the BC's into the solution vector or not
-  LOGICAL, INTENT(IN) :: bsolvector
-
-  ! Whether to implement the BC's into the solution vector or not
-  LOGICAL, INTENT(IN) :: brhsvector
 !</inputoutput>
 
 !</subroutine>
@@ -372,7 +370,7 @@ CONTAINS
     ! on the finest level
     ilvmax = rproblem%NLMAX
     
-    IF (bsolvector) THEN
+    IF (PRESENT(rvector)) THEN
     
       ! Implement discrete boundary conditions into solution vector by
       ! filtering the vector.
@@ -384,7 +382,19 @@ CONTAINS
       
     END IF
     
-    IF (brhsvector) THEN
+    IF (PRESENT(rdefect)) THEN
+    
+      ! Implement discrete boundary conditions into solution vector by
+      ! filtering the vector.
+      CALL vecfil_discreteBCdef (rdefect)
+      
+      ! Implement discrete boundary conditions of fictitioous boundary comnponents
+      ! into solution vector by filtering the vector.
+      CALL vecfil_discreteFBCdef (rdefect)
+      
+    END IF
+    
+    IF (PRESENT(rrhs)) THEN
     
       ! Implement pressure drop boundary conditions into RHS vector
       ! if there are any.

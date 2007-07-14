@@ -1,3 +1,8 @@
+!- Anfangsbedingung wird zerstört!?!
+!- Keine Behandlung der Randwerte und Anfangswerte. 'Filter' fehlt!
+!  -> muss nach der Restriktion angewendet werden, sonst stimmen die
+!     DOF-Werte der Randknoten nicht! Müssen auf 0 gesetzt werden!
+
 !##############################################################################
 !# ****************************************************************************
 !# <name> spacetimeinterevelprojection </name>
@@ -267,8 +272,10 @@ CONTAINS
 
     ! local variables
     INTEGER :: istep
-    TYPE(t_vectorBlock) :: rx1,rx3,rtempVecFine2
+    TYPE(t_vectorBlock) :: rx1,rx3
     TYPE(t_vectorScalar) :: rx1scalar
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx3
+    REAL(DP), DIMENSION(:), POINTER :: p_DtempVecCoarse,p_DtempVecFine
 
     ! Prolongation 'distributes' information from the coarse grid nodes
     ! to the fine grid nodes as follows:
@@ -300,7 +307,12 @@ CONTAINS
     ! Create a scalar representation of rx1 for auxiliary reasons
     CALL lsysbl_createScalarFromVec (rx1,rx1Scalar)
    
-    
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rx1,p_Dx1)
+    CALL lsysbl_getbase_double (rx3,p_Dx3)
+    CALL lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
+    CALL lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
+       
     ! Load timestep 0,1 (fine grid) into the temp vectors.
     CALL sptivec_getTimestepData (rfineVector, 0, rtempVecFine)
     CALL sptivec_getTimestepData (rfineVector, 1, rx3)

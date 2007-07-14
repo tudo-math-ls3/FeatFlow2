@@ -397,7 +397,7 @@ CONTAINS
             
       END IF
     
-    ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
+    ELSE IF (isubstep .LE. rspaceTimeDiscr%niterations) THEN
       
       ! We are sonewhere in the middle of the matrix. There is a substep
       ! isubstep+1 and a substep isubstep-1!
@@ -515,6 +515,15 @@ CONTAINS
       END IF
     
     ELSE
+    
+      ! NOT USED!!!
+      ! Although this would be the correct implementation of the matrix weights
+      ! for the terminal condition at the first glance, it would be wrong to use 
+      ! that. The last timestep has to be processed like
+      ! the others, which infers some 'smoothing' in the dual solution
+      ! at the end of the time cylinder! Without that smoothing that, some 
+      ! time discretisation schemes like Crank-Nicolson would get instable
+      ! if a terminal condition <> 0 is prescribed!
     
       ! We are in the last substep
       
@@ -1390,11 +1399,84 @@ CONTAINS
       ! Implement the boundary conditions into the global solution vector.
       CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
       
-      CALL c2d2_implementBC (rproblem,rtempVectorX,rtempVectorX,.TRUE.,.FALSE.)
+      CALL c2d2_implementBC (rproblem,rvector=rtempVectorX)
       
       CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
       
     END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE c2d2_implementBCdefect (rproblem,rspaceTimeDiscr,rd,rtempvectorX)
+
+!<description>
+  ! Implements the boundary conditions of all timesteps into the defect rd.
+!</description>
+
+!<input>
+  ! Problem structure of the main problem.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  
+  ! Discretisation structure that corresponds to rx.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+
+!</input>
+
+!<inputoutput>
+  ! A space-time vector with the solution where the BC's should be implemented
+  ! to.
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
+
+  ! A temporary vector in the size of a spatial vector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorX
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: isubstep
+    TYPE(t_vectorBlock) :: rtempVector
+    
+    CALL lsysbl_duplicateVector(rtempVectorX,rtempVector,&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+
+    ! Implement the bondary conditions into all initial solution vectors
+    DO isubstep = 0,rspaceTimeDiscr%niterations
+    
+      ! Current point in time
+      rproblem%rtimedependence%dtime = &
+          rproblem%rtimedependence%dtimeInit + &
+          isubstep*rspaceTimeDiscr%dtstep
+
+      ! -----
+      ! Discretise the boundary conditions at the new point in time -- 
+      ! if the boundary conditions are nonconstant in time!
+      IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+        CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+      END IF
+      
+      ! Implement the boundary conditions into the global solution vector.
+      CALL sptivec_getTimestepData(rd, isubstep, rtempVector)
+      
+      CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
+      
+      ! In the very first time step, we have the initial condition for the
+      ! solution. The defect is =0 there!
+      IF (isubstep .EQ. 0) THEN
+        CALL lsyssc_clearVector (rtempVector%RvectorBlock(1))
+        CALL lsyssc_clearVector (rtempVector%RvectorBlock(2))
+        CALL lsyssc_clearVector (rtempVector%RvectorBlock(3))
+      END IF
+      
+      CALL sptivec_setTimestepData(rd, isubstep, rtempVector)
+      
+    END DO
+    
+    CALL lsysbl_releaseVector(rtempVector)
 
   END SUBROUTINE
 

@@ -475,7 +475,7 @@ CONTAINS
         END DO
         
         ! DEBUG!!!
-        !CALL matio_writeBlockMatrixHR (Rmatrices(rnonlinearIteration%NLMAX), 'matrix',&
+        !CALL matio_writeBlockMatrixHR (Rmatrices(rpreconditioner%NLMIN), 'matrix',&
         !                               .TRUE., 0, 'matrixstat.txt','(E10.2)')
         
         CALL linsol_setMatrices(rpreconditioner%p_rsolverNode,Rmatrices(:))

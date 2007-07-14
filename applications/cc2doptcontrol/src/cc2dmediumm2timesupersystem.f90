@@ -1636,7 +1636,7 @@ CONTAINS
       ! DEBUG!!!
       CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
       
-      CALL c2d2_implementBC (rproblem,rtempVectorX,rtempVectorB,.TRUE.,.FALSE.)
+      CALL c2d2_implementBC (rproblem,rvector=rtempVectorX)
       
       CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
       
@@ -1843,7 +1843,11 @@ CONTAINS
     !
     ! Create as many time levels as specified by the length of RspatialPrecond.
     CALL sptils_initMultigrid (rproblem,1,SIZE(RspatialPrecond),p_rmgSolver)
+    
     p_rmgSolver%ioutputLevel = 3
+    
+    ! V-cyccle
+    p_rmgSolver%p_rsubnodeMultigrid%icycle = 1 
     
     ! On each time level...
     DO ilev=1,SIZE(RspatialPrecond)
