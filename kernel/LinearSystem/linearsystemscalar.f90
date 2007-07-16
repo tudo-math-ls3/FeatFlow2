@@ -16940,6 +16940,9 @@ CONTAINS
 !<description>
   ! Checks whether the structure of rmatrix belongs to that matrix or if it's
   ! shared among rmatrix and another matrix.
+  !
+  ! Note: If both matrices rmatrix and rmatrix2 are specified and both matrices
+  !   don't contain structure data, the return value is of course FALSE.
 !</description>
 
 !<input>
@@ -16977,12 +16980,17 @@ CONTAINS
         ! No structure, full matrix
         bresult = .FALSE.
       CASE (LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
-        bresult = (rmatrix%h_Kcol .EQ. rmatrix2%h_Kcol) .OR. &
-                  (rmatrix%h_Kld .EQ. rmatrix2%h_Kld)
+        bresult = ((rmatrix%h_Kcol .NE. ST_NOHANDLE) .AND. &
+                   (rmatrix%h_Kcol .EQ. rmatrix2%h_Kcol)) .OR. &
+                  ((rmatrix%h_Kld .NE. ST_NOHANDLE) .AND. &
+                   (rmatrix%h_Kld .EQ. rmatrix2%h_Kld))
       CASE (LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-        bresult = (rmatrix%h_Kcol .EQ. rmatrix2%h_Kcol) .OR. &
-                  (rmatrix%h_Kld .EQ. rmatrix2%h_Kld) .OR. &
-                  (rmatrix%h_Kdiagonal .EQ. rmatrix2%h_Kdiagonal)
+        bresult = ((rmatrix%h_Kcol .NE. ST_NOHANDLE) .AND. &
+                   (rmatrix%h_Kcol .EQ. rmatrix2%h_Kcol)) .OR. &
+                  ((rmatrix%h_Kld .NE. ST_NOHANDLE) .AND. &
+                   (rmatrix%h_Kld .EQ. rmatrix2%h_Kld)) .OR. &
+                  ((rmatrix%h_Kdiagonal .NE. ST_NOHANDLE) .AND. &
+                   (rmatrix%h_Kdiagonal .EQ. rmatrix2%h_Kdiagonal))
       END SELECT
     END IF
 
@@ -16998,6 +17006,9 @@ CONTAINS
 !<description>
   ! Checks whether the content of rmatrix belongs to that matrix or if it's
   ! shared among rmatrix and another matrix.
+  !
+  ! Note: If both matrices rmatrix and rmatrix2 are specified and both matrices
+  !   don''t contain content data, the return value is of course FALSE.
 !</description>
 
 !<input>
@@ -17015,7 +17026,8 @@ CONTAINS
 !<result>
   ! TRUE, if the content arrays in rmatrix are shared among rmatrix and
   !   another matrix or with the matrix rmatrix2, respectively.
-  ! FALSE, if the content arrays in rmatrix belong to rmatrix.
+  ! FALSE, if the content arrays in rmatrix belong to rmatrix or if
+  !   rmatrix does not have content data.
 !</result>
 
 !</function>
@@ -17032,7 +17044,8 @@ CONTAINS
       SELECT CASE (rmatrix%cmatrixFormat)
       CASE (LSYSSC_MATRIX1,LSYSSC_MATRIX7,LSYSSC_MATRIX9,LSYSSC_MATRIXD, &
             LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL)
-        bresult = (rmatrix%h_Da .EQ. rmatrix2%h_Da)
+        bresult = ((rmatrix%h_Da .NE. ST_NOHANDLE) .AND. &
+                   (rmatrix%h_Da .EQ. rmatrix2%h_Da))
       END SELECT
     END IF
 
