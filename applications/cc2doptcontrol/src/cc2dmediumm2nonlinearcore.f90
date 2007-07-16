@@ -68,6 +68,16 @@
 !#
 !# The following routines can be found here:
 !#
+!# 1.) c2d2_createPreconditioner
+!#     -> Creates a basic preconditioner structure for a spatial 
+!#        preconditioner.
+!#
+!# 2.) c2d2_releasePreconditioner
+!#     -> Releases a spatial preconditioner structure
+!#
+!# 3.) c2d2_precondDefect
+!#     -> Executes spatial preconditioning on a given defect vector
+!#
 !# </purpose>
 !##############################################################################
 
@@ -375,10 +385,8 @@ CONTAINS
     
   !<description>
     ! Defect preconditioning routine. Based on the current iteration 
-    ! vector rx, this routine has to perform
-    ! preconditioning on the defect vector rd. The routine accepts a pointer 
-    ! a collection structure rcollection, which allows the routine to access 
-    ! information from the main application (e.g. system matrices).
+    ! vector rx, this routine has to perform preconditioning on the defect 
+    ! vector rd.
   !</description>
 
   !<input>

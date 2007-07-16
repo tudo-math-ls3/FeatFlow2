@@ -4,6 +4,32 @@
 !# ****************************************************************************
 !#
 !# <purpose>
+!# This module aims to solve the fully space-time coupled Stokes and
+!# Navier-Stokes optimal control problem with a one-shot approach.
+!# As this type of problem is of elliptic nature with a very special
+!# structure, a nonlinear defect correction loop is executed for the solution
+!# where a space-time coupled multigrid preconditioner does the preconditioning
+!# of the nonlinear defect.
+!#
+!# The following subroutines can be found here:
+!#
+!# 1.) c2d2_solveSupersysDirectCN
+!#     -> Only for nonstationary Stokes problem. Executes Crank-Nicolson on the
+!#        fully space-time coupled system
+!#
+!# 2.) c2d2_solveSupersystemPrecond
+!#     -> Solves the Stokes and Navier-Stokes problem with a preconditioned
+!#        defect correction approach. Crank Nicolson is used for the time
+!#        discretisation.
+!#
+!# Auxiliary routines:
+!#
+!# 1.) c2d2_assembleSpaceTimeDefect
+!#     -> Calculates a space-time defect
+!#
+!# 2.) c2d2_precondDefectSupersystem
+!#     -> Executes preconditioning on a space-time defect vector
+!#
 !# </purpose>
 !##############################################################################
 
@@ -1500,11 +1526,9 @@ CONTAINS
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + isubstep * dtstep
 
-      CALL output_separator (OU_SEP_MINUS)
-
       CALL output_line ('Block-Jacobi preconditioning of timestep: '//&
           TRIM(sys_siL(isubstep,10))//&
-          ' Time: '//TRIM(sys_sdEL(rproblem%rtimedependence%dtime,10)))
+          ' Time: '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,10)))
     
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
@@ -1749,7 +1773,22 @@ CONTAINS
   SUBROUTINE c2d2_solveSupersystemPrecond (rproblem, RspaceTimeDiscr, rx, rb, rd)
   
 !<description>
-  ! 
+  ! This subroutine solves the nonstationary space time coupled (Navier-)Stokes
+  ! optimal control problem. For this purpose, a nonlinear defect correction
+  ! loop is executed. Every defect is preconditioned by a space-time coupled
+  ! preconditioner like Block-Jacobi, block SOR or whatever.
+  !
+  ! The caller must provide problem information in rproblem and a set of
+  ! matrix configurations for all time levels which are allowed for the solver
+  ! to use. If multiple time-levels are provided, space-time coupled multigrid
+  ! is used for preconditioning. matrix configurations must be provided in
+  ! RspaceTimeDiscr. The maximum level in this array defines the level where
+  ! the system is solved. This level must correspond to the vectors rx, rb and 
+  ! rd.
+  !
+  ! The caller can provide an initial solution in rx. However, rb is
+  ! overwritten by a newly generated space-time coupled RHS vector.
+  ! rd is used as temporary vector.
 !</description>
 
 !<input>
@@ -1945,7 +1984,7 @@ CONTAINS
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-DISCRETISATION', &
                                  'depsRel', depsRel, 1E-5_DP)
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                 'depsAbs', depsABS, 1E-5_DP)
+                                 'depsAbs', depsAbs, 1E-5_DP)
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-DISCRETISATION', &
                                  'domega', domega, 1.0_DP)
 
@@ -2023,48 +2062,6 @@ CONTAINS
     CALL lsysbl_releaseVector (rtempVectorX)
     CALL lsysbl_releaseVector (rtempVector)
     
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  SUBROUTINE c2d2_solveSupersystem (rproblem, RspaceTimeDiscr, rx, rb, rd)
-  
-!<description>
-  ! 
-!</description>
-
-!<input>
-  ! A problem structure that provides information about matrices on all
-  ! levels as well as temporary vectors.
-  TYPE(t_problem), INTENT(INOUT) :: rproblem
-
-  ! An array of t_ccoptSpaceTimeDiscretisation structure defining the 
-  ! discretisation of the coupled space-time matrix on all levels of the
-  ! space-time discretisation.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: RspaceTimeDiscr
-!</input>
-
-!<inputoutput>
-  ! A space-time vector defining the initial solution. Is replaced by a new
-  ! solution vector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
-
-  ! A temporary space-time vector that receives the RHS during the calculation.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
-
-  ! A temporary space-time vector that receives the defect during the calculation.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
-!</inputoutput>
-
-!</subroutine>
-
-    !CALL c2d2_solveSupersystemDefCorr (rproblem, RspaceTimeDiscr(SIZE(RspaceTimeDiscr)),&
-    !    rx, rb, rd)
-    
-    CALL c2d2_solveSupersystemPrecond (rproblem, RspaceTimeDiscr, rx, rb, rd)
-      
   END SUBROUTINE
   
 END MODULE

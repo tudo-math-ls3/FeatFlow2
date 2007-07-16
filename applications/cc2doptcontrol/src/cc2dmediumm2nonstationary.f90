@@ -160,7 +160,9 @@ CONTAINS
     END DO
         
     ! Call the solver for the space/time coupled system. We only solve on level NLMAX.
-    CALL c2d2_solveSupersystem (rproblem, Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
+    CALL c2d2_solveSupersystemPrecond (rproblem, Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
+    !CALL c2d2_solveSupersystemDefCorr (rproblem, Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
+    
       
     ! Create a temp vector
     CALL lsysbl_createVecBlockByDiscr (&

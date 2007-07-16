@@ -4,6 +4,123 @@
 !# ****************************************************************************
 !#
 !# <purpose>
+!# This module realises a linear preconditioner for space-time coupled
+!# systems and is somehow an extension to the usual preconditioner for
+!# linear systems.
+!#
+!# The preconditioner module has a similar structure and can similarly be used
+!# as the usual linearsolver module. The t_sptilsNode structure is the
+!# equvalient to the t_solverNode structure in linearsolver.f90.
+!# To initialise / use the space-time coupled preconditioner, proceed as
+!# follows:
+!#
+!#   ! Create a nullified pointer to a t_sptilsNode structure
+!#
+!#   TYPE(t_sptilsNode), POINTER :: p_rsolver => NULL()
+!#
+!#   ! Declare an array for the space-time coupled system matrices
+!#
+!#   TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(NLMIN:NLMAX) :: Rmatrices
+!#
+!#   ! Initialise the preconditioner. This produces you a pointer to a
+!#   ! t_sptilsNode structure that identifies the solver.
+!#
+!#   CALL sptils_initXXXX (p_rsolver,...)
+!#
+!#   ! Attach the system matrices (a set of t_ccoptSpaceTimeDiscretisation
+!#   ! structures) to the solver
+!#
+!#   ... -> Rmatrices(NLMIN:NLMAX)
+!#   CALL sptils_setMatrices (...,Rmatrices,p_rsolver)
+!#
+!#   ! Call the initialisation routines
+!#
+!#   CALL sptils_initStructure (p_rsolver)
+!#   CALL sptils_initData (p_rsolver)
+!#
+!#   ! Preform the preconditioning for a given space-time defect vector rd
+!#
+!#   CALL sptils_precondDefect (p_rsolver,rd)
+!#
+!#   ! Clean up the structure of the solver
+!#
+!#   CALL sptils_doneData (p_rsolver)
+!#   CALL sptils_doneStructure (p_rsolver)
+!#   CALL sptils_releaseSolver (p_rsolver)
+!#   
+!# The usage of the Multigrid preconditioner is slightly more complicated.
+!# You have to initialise a smoother and a coarse-grid solver and attach
+!# it to MG. Here an example of how to create a MG preconditioner with
+!# Block-Jacobi smoother. The coarse-grid solver is Defect correction
+!# with Block-Jacobi preconditioning:
+!#
+!#   ! Create a nullified pointer to a t_sptilsNode structure.
+!#   ! Preconditioner, smoother, coarse grid solver, main solver.
+!#
+!#   TYPE(t_sptilsNode), POINTER :: p_rsolver => NULL()
+!#   TYPE(t_sptilsNode), POINTER :: p_rcgrSolver => NULL()
+!#   TYPE(t_sptilsNode), POINTER :: p_rprecond => NULL()
+!#   TYPE(t_sptilsNode), POINTER :: p_rSmoother => NULL()
+!#
+!#   ! Declare an array for the space-time coupled system matrices
+!#
+!#   TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(NLMIN:NLMAX) :: Rmatrices
+!#
+!#   ! Initialise the MG preconditioner. This produces you a pointer to a
+!#   ! t_sptilsNode structure that identifies the solver.
+!#   ! TIMENLMIN and TIMENLMAX are the time refinement levels. The solution
+!#   ! is calculated on time level TIMENLMAX.
+!#
+!#   CALL sptils_initMultigrid (...,TIMENLMIN,TIMENLMAX,p_rsolver)
+!#
+!#   ! Attach level information to MG. On every level, create a separate
+!#   ! smoother. On the coarse grid, create a coarse grid solver
+!#
+!#   DO ilev=TIMENLMIN,TIMENLMAX
+!#
+!#     NULLIFY(p_rsmoother)
+!#     NULLIFY(p_rcgrSolver)
+!#
+!#     IF (ilev .EQ. 1) THEN
+!#       ! On the minimum level, create a coarse grid solver.
+!#       !
+!#       ! Block Jacobi preconditioner
+!#       CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+!#       
+!#       ! Defect correction solver
+!#       CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
+!#     ELSE
+!#       ! On higher levels, create a Block Jacobi (pre- and post-) smoother
+!#       CALL sptils_initBlockJacobi (rproblem,p_rsmoother,...)
+!#       CALL sptils_convertToSmoother (p_rsmoother...)
+!#     END IF
+!#      
+!#     ! Iinally initialise the level ilev with that       
+!#     CALL linsol_setMultigridLevel (p_rsolver,ilev,...,&
+!#         p_rsmoother,p_rsmoother,p_rcgrSolver)
+!#   END DO
+!#
+!#   ! Attach the system matrices (a set of t_ccoptSpaceTimeDiscretisation
+!#   ! structures) to the solver
+!#
+!#   ... -> Rmatrices(NLMIN:NLMAX)
+!#   CALL sptils_setMatrices (p_rsolver,Rmatrices)
+!#
+!#   ! Call the initialisation routines
+!#
+!#   CALL sptils_initStructure (p_rsolver)
+!#   CALL sptils_initData (p_rsolver)
+!#
+!#   ! Preform the preconditioning for a given space-time defect vector rd
+!#
+!#   CALL sptils_precondDefect (p_rsolver,rd)
+!#
+!#   ! Clean up the structure of the solver
+!#
+!#   CALL sptils_doneData (p_rsolver)
+!#   CALL sptils_doneStructure (p_rsolver)
+!#   CALL sptils_releaseSolver (p_rsolver)
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -1696,11 +1813,9 @@ CONTAINS
       rsolverNode%p_rproblem%rtimedependence%dtime = &
           rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
 
-      CALL output_separator (OU_SEP_MINUS)
-
       CALL output_line ('Block-Jacobi preconditioning of timestep: '//&
           TRIM(sys_siL(isubstep,10))//&
-          ' Time: '//TRIM(sys_sdEL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+          ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
     
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 

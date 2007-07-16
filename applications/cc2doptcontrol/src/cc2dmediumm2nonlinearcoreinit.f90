@@ -181,6 +181,8 @@ CONTAINS
     rmatrixAssembly%dtheta2 = 1.0_DP   ! A velocity block
     rmatrixAssembly%deta2 = 1.0_DP     ! A gradient block
     rmatrixAssembly%dtau2 = 1.0_DP     ! A divergence block
+    ! A Newton block, if we have Navier-Stokes
+    rmatrixAssembly%dnewton2 = REAL(1-rproblem%iequation,DP)
     rmatrixAssembly%dkappa2 = 1.0_DP   ! Pressure block
     
     rmatrixAssembly%p_rdiscretisation => rlevelInfo%p_rdiscretisation

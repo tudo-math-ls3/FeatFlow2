@@ -1,14 +1,26 @@
-!- Anfangsbedingung wird zerstört!?!
-!- Keine Behandlung der Randwerte und Anfangswerte. 'Filter' fehlt!
-!  -> muss nach der Restriktion angewendet werden, sonst stimmen die
-!     DOF-Werte der Randknoten nicht! Müssen auf 0 gesetzt werden!
-
 !##############################################################################
 !# ****************************************************************************
 !# <name> spacetimeinterevelprojection </name>
 !# ****************************************************************************
 !#
 !# <purpose>
+!# This module realises the interlevel projection (prolongation and 
+!# restriction) of space-time coupled solution vectors. The t_sptiProjection
+!# structure configures the interlevel projection. For the actual projection,
+!# the following routines can be found in this module:
+!#
+!# 1.) sptipr_initProjection
+!#     -> Initialises a space-time interlevel projection structure
+!#
+!# 2.) sptipr_doneProjection
+!#     -> Cleans up a space-time interlevel projection structure
+!#
+!# 3.) sptipr_performProlongation
+!#     -> Prolongation of a space-time coupled solution vector
+!#
+!# 4.) sptipr_performRestriction
+!#     -> Retriction of a space-time coupled defect vector
+!#
 !# </purpose>
 !##############################################################################
 

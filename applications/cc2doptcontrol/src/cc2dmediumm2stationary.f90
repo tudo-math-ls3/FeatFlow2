@@ -40,6 +40,7 @@ MODULE cc2dmediumm2stationary
   USE cc2dmediumm2basic
   USE cc2dmedium_callback
   
+  USE cc2dmediumm2matvecassembly
   USE cc2dmediumm2nonlinearcore
   USE cc2dmediumm2nonlinearcoreinit
   USE cc2dmediumm2postprocessing
@@ -84,85 +85,153 @@ CONTAINS
 
 !</subroutine>
 
-!    ! local variables
-!    REAL(DP) :: dalphaC
-!    TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
-!
-!    ! The nonlinear solver configuration
-!    TYPE(t_nlsolNode) :: rnlSol
-!    
-!    ! Initialise the nonlinear solver node rnlSol with parameters from
-!    ! the INI/DAT files.
-!    CALL c2d2_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
-!
-!    ! Initialise the nonlinear loop. This is to prepare everything for
-!    ! or callback routines that are called from the nonlinear solver.
-!    ! The preconditioner in that structure is initialised later.
-!    CALL c2d2_initNonlinearLoop (&
-!        rproblem,rproblem%NLMIN,rproblem%NLMAX,&
-!        rnonlinearIteration,'CC2D-NONLINEAR')
-!        
-!    ! Set up all the weights in the core equation according to the current timestep.
-!    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
-!                                'dalphaC',dalphaC,0.1_DP)
-!    rnonlinearIteration%diota1  = 0.0_DP
-!    rnonlinearIteration%dkappa1 = 0.0_DP
-!    rnonlinearIteration%dalpha1 = 0.0_DP
-!    rnonlinearIteration%dtheta1 = 1.0_DP
-!    rnonlinearIteration%dgamma1 = REAL(1-rproblem%iequation,DP)
-!    rnonlinearIteration%deta1   = 1.0_DP
-!    rnonlinearIteration%dtau1   = 1.0_DP
-!    rnonlinearIteration%dmu1    = 1.0_DP/dalphaC
-!
-!    rnonlinearIteration%diota2  = 0.0_DP
-!    rnonlinearIteration%dkappa2 = 0.0_DP
-!    rnonlinearIteration%dalpha2 = 0.0_DP
-!    rnonlinearIteration%dtheta2 = 1.0_DP
-!    rnonlinearIteration%dgamma2 = REAL(1-rproblem%iequation,DP)
-!    rnonlinearIteration%deta2   = 1.0_DP
-!    rnonlinearIteration%dtau2   = 1.0_DP
-!    rnonlinearIteration%dmu2    = -1.0_DP
-!    
-!    ! Check the matrices if they are compatible to our
-!    ! preconditioner. If not, we later have to modify the matrices a little
-!    ! bit to make it compatible. 
-!    ! The result of this matrix analysis is saved to the rfinalAssembly structure 
-!    ! in rnonlinearIteration and allows us later to switch between these two
-!    ! matrix representations: Compatibility to the discretisation routines
-!    ! and compatibity to the preconditioner.
-!    ! The c2d2_checkAssembly routine below uses this information to perform
-!    ! the actual modification in the matrices.
-!    CALL c2d2_checkAssembly (rproblem,rnonlinearIteration,rrhs,&
-!        rnonlinearIteration%rfinalAssembly)
-!    
-!    ! Using rfinalAssembly as computed above, make the matrices compatible 
-!    ! to our preconditioner if they are not.
-!    CALL c2d2_finaliseMatrices (rnonlinearIteration)
-!    
-!    ! Initialise the preconditioner for the nonlinear iteration
-!    CALL c2d2_initPreconditioner (rproblem,&
-!        rnonlinearIteration,rvector,rrhs)
-!        
-!    ! Print out the value of the optimal control functional for the
-!    ! initial solution vector directly prior to the solution process.
-!    CALL c2d2_printControlFunctionalStat (rproblem,rvector)
-!
-!    ! Call the nonlinear solver to solve the core equation.
-!    CALL c2d2_solveCoreEquation (rnlSol,rnonlinearIteration,&
-!        rvector,rrhs,rproblem%rcollection)             
-!             
-!    ! Release the preconditioner
-!    CALL c2d2_releasePreconditioner (rnonlinearIteration)
-!    
-!    ! Release parameters of the nonlinear loop, final clean up
-!    CALL c2d2_doneNonlinearLoop (rnonlinearIteration)
-!             
-!    CALL output_lbrk()
-!    CALL output_line ('Nonlinear solver statistics')
-!    CALL output_line ('---------------------------')
-!    CALL output_line ('Intial defect: '//TRIM(sys_sdEL(rnlSol%DinitialDefect(1),15)))
-!    CALL output_line ('Final defect:  '//TRIM(sys_sdEL(rnlSol%DfinalDefect(1),15)))
-!    CALL output_line ('#Iterations:   '//TRIM(sys_siL(rnlSol%iiterations,10)))
+    ! local variables
+    REAL(DP) :: dalphaC
+    TYPE(t_ccmatrixComponents) :: rmatrix
+    TYPE(t_ccspatialPreconditioner) :: rpreconditioner
+    TYPE(t_vectorBlock) :: rd
+    LOGICAL :: bsuccess
+
+    ! The nonlinear solver configuration
+    TYPE(t_nlsolNode) :: rnlSol
+    
+    ! Some parameters for the nonlinear loop
+    INTEGER :: nminIterations,nmaxIterations,iglobIter
+    REAL(DP) :: depsRel,depsAbs,domega,ddefNorm,dinitDefNorm
+    
+    !!!!!!!!!!!!!!
+    ! NOT TESTED !
+    !!!!!!!!!!!!!!
+    
+    ! Set up all the weights in the core equation according to the current timestep.
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+                                'dalphaC',dalphaC,0.1_DP)
+    rmatrix%dnu = rproblem%dnu
+                                
+    rmatrix%diota1  = 0.0_DP
+    rmatrix%dkappa1 = 0.0_DP
+    rmatrix%dalpha1 = 0.0_DP
+    rmatrix%dtheta1 = 1.0_DP
+    rmatrix%dgamma1 = REAL(1-rproblem%iequation,DP)
+    rmatrix%deta1   = 1.0_DP
+    rmatrix%dtau1   = 1.0_DP
+    rmatrix%dmu1    = 1.0_DP/dalphaC
+
+    rmatrix%diota2  = 0.0_DP
+    rmatrix%dkappa2 = 0.0_DP
+    rmatrix%dalpha2 = 0.0_DP
+    rmatrix%dtheta2 = 1.0_DP
+    rmatrix%dgamma2 = REAL(1-rproblem%iequation,DP)
+    rmatrix%deta2   = 1.0_DP
+    rmatrix%dtau2   = 1.0_DP
+    rmatrix%dmu2    = -1.0_DP
+    
+    ! Initialise pointers to the matrix building blocks
+    rmatrix%p_rpreallocatedMatrix => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rpreallocatedSystemMatrix
+      
+    rmatrix%p_rdiscretisation => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscretisation
+
+    rmatrix%p_rmatrixTemplateFEM => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixTemplateFEM
+
+    rmatrix%p_rmatrixTemplateGradient => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixTemplateGradient
+      
+    rmatrix%p_rmatrixStokes => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokes
+      
+    rmatrix%p_rmatrixB1 => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB1
+      
+    rmatrix%p_rmatrixB2 => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB2
+
+    rmatrix%p_rmatrixMass => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass
+
+    rmatrix%p_rmatrixIdentityPressure => &
+      rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixIdentityPressure
+    
+    
+    ! Initialise the preconditioner for the nonlinear iteration
+    CALL c2d2_initPreconditioner (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
+        rpreconditioner)
+    CALL c2d2_configPreconditioner (rproblem,rpreconditioner)
+        
+    ! Print out the value of the optimal control functional for the
+    ! initial solution vector directly prior to the solution process.
+    CALL c2d2_printControlFunctionalStat (rproblem,rvector)
+
+    ! Get configuration parameters from the DAT file
+    CALL parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                              'nminIterations', nminIterations, 1)
+    CALL parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                             'nmaxIterations', nmaxIterations, 10)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                                 'depsRel', depsRel, 1E-5_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                                 'depsAbs', depsAbs, 1E-5_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                                 'domega', domega, 1.0_DP)
+
+    ! allocate a temp vector
+    CALL lsysbl_createVecBlockIndirect (rvector,rd)
+
+    ! Get the initial nonlinear defect
+    CALL lsysbl_copyVector (rrhs,rd)
+    CALL c2d2_assembleDefect (rmatrix,rvector,rd)
+
+    ! ... and its norm
+    ddefNorm = lsysbl_vectorNorm (rd,LINALG_NORML2)
+    dinitDefNorm = ddefNorm
+
+    ! Nonlinear loop
+    iglobIter = 0
+
+    CALL output_separator (OU_SEP_EQUAL)
+    CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
+        ' ||Res|| = '//sys_sdEP(ddefNorm,20,10))
+
+    DO WHILE ((iglobIter .LT. nminIterations) .OR. &
+              ((ddefNorm .GT. depsRel*dinitDefNorm) .AND. (ddefNorm .GT. depsAbs) &
+              .AND. (iglobIter .LT. nmaxIterations)))
+    
+      iglobIter = iglobIter+1
+      
+      ! Preconditioning of the defect: d=C^{-1}d
+      CALL c2d2_precondDefect (rpreconditioner,rmatrix,rd,rvector,bsuccess,&
+          rproblem%rcollection)
+      
+      ! Add the defect: x = x + omega*d          
+      CALL lsysbl_vectorLinearComb (rd,rvector,domega,1.0_DP)
+          
+      ! Assemble the new defect: d=b-Ax
+      CALL lsysbl_copyVector (rrhs,rd)
+      CALL c2d2_assembleDefect (rmatrix,rvector,rd)
+      
+      ! ... and its norm
+      ddefNorm = lsysbl_vectorNorm (rd,LINALG_NORML2)
+          
+      CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
+          ' ||Res|| = '//sys_sdEP(ddefNorm,20,10))
+      
+    END DO
+
+    CALL output_separator (OU_SEP_EQUAL)
+             
+    ! Release the preconditioner and the temp vector
+    CALL c2d2_releasePreconditioner (rpreconditioner)
+    
+    CALL lsysbl_releaseVector (rd)
+    
+    CALL output_lbrk()
+    CALL output_line ('Nonlinear solver statistics')
+    CALL output_line ('---------------------------')
+    CALL output_line ('Intial defect: '//TRIM(sys_sdEL(rnlSol%DinitialDefect(1),15)))
+    CALL output_line ('Final defect:  '//TRIM(sys_sdEL(rnlSol%DfinalDefect(1),15)))
+    CALL output_line ('#Iterations:   '//TRIM(sys_siL(rnlSol%iiterations,10)))
     
   END SUBROUTINE
 

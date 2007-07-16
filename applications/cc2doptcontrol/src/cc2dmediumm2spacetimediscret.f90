@@ -10,15 +10,118 @@
 !# multiplication with the global matrix.
 !# The routines in this module form the basic set of discretisation routines:
 !#
-!# 1.) c2d2_spaceTimeMatVec
+!# 1.) c2d2_initParamsSupersystem
+!#     -> Initialises a space-time discretisation according to the parameters
+!#        in a DAT file.
+!#
+!# 2.) c2d2_doneParamsSupersystem
+!#     -> Cleans up a space-time discretisation structure allocated with 
+!#        c2d2_initParamsSupersystem.
+!#
+!# 3.) c2d2_spaceTimeMatVec
 !#     -> Matrix-Vector multiplication of a space-time vector with the
 !#        global matrix.
 !#
-!# 2.) c2d2_assembleSpaceTimeRHS
+!# 4.) c2d2_assembleSpaceTimeRHS
 !#     -> Assemble the space-time RHS vector. 
 !#
-!# 3.) ...
+!# 5.) c2d2_implementInitCondRHS
+!#     -> Implements initial conditions into a given space-time RHS vector.
+!#
+!# 6.) c2d2_implementBCsolution
+!#     -> Implements boundary conditions into a given space-time solution vector.
+!#
+!# 7.) c2d2_implementBCdefect
+!#     -> Implements initial and boundary conditions into a fiven space-time
+!#        defect vector.
+!#
+!# Auxiliary routines:
+!#
+!# 1.) c2d2_setupMatrixWeights
+!#     -> Initialise the matrix weights of a submatrix in the global space-time
+!#        matrix.
+!#
 !# </purpose>
+!#
+!# The structure t_ccoptSpaceTimeDiscretisation realises in conjunction with
+!# the above assembling routines a large space-time coupled system which solves
+!# the nonstationary (Navier-)Stokes problem in all time steps simultaneously.
+!# The main system matrix is assembled from the matrix blocks that are used in
+!# each time step of a usual time-dependent simulation. It has the following 
+!# form (here for 2 timesteps with solutions y_0(initial), y_1 and y_2):
+!#
+!#  Explicit Euler.
+!#  a=alpha. y_i=velocity in the i'th step.
+!#  Stokes:          A = A(y_i) = -nu*Laplace(.)
+!#  Navier-Stokes:   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.)
+!#  
+!#  ==================================================================================================================
+!#  [I    ]                          |                                        |
+!#                                   |                                        |
+!#           [I ]                    |                                        |
+!#                                   |                                        |
+!#  [-dt M]       [M + dt A] [-dt B] |                    [-M       ]         |
+!#                                   |                                        |
+!#                [-B^t    ]         |                                        |
+!#                                   |                                        |
+!#  ---------------------------------+----------------------------------------+---------------------------------------
+!#  [-M   ]                          | [M + dt A] [-dt B] [ dt/a M  ]         |
+!#                                   |                                        |
+!#                                   | [-B^t    ]                             |
+!#                                   |                                        |
+!#                                   | [-dt M   ]         [M + dt A ] [-dt B] |                     [-M      ]
+!#                                   |                                        |
+!#                                   |                    [-B^t     ]         |
+!#                                   |                                        |
+!#  ---------------------------------+----------------------------------------+---------------------------------------
+!#                                   | [-M      ]                             |  [M + dt A] [-dt B] [ dt/a M ]         
+!#                                   |                                        |                                        
+!#                                   |                                        |  [-B^t    ]                            
+!#                                   |                                        |                                        
+!#                                   |                                        |  [-dt M   ]         [M + dt A] [-dt B] 
+!#                                   |                                        |                                        
+!#                                   |                                        |                     [-B^t    ]         
+!#                                   |                                        |                                             
+!#  ==================================================================================================================
+!#  
+!# More general:
+!#
+!#  Crank Nicolson.
+!#  a=alpha. y_i=(primal) velocity in the i'th step. T=theta=0.5
+!#  Stokes:          A(y_i) = -nu*Laplace(.)
+!#                   N(y_i) = not present
+!#  Navier-Stokes:   A(y_i) = -nu*Laplace(.) + y_i*grad(.)
+!#                   N(y_i) = -nu*Laplace(.) + y_i*grad(.) + (.)*grad(y_i)
+!#  
+!#  ======================================================================================================================================================================================
+!#  [I               ]                                         |                                                             |                                                 
+!#                                                             |                                                             |                                                 
+!#                      [I      ]                              |                                                             |                                                 
+!#                                                             |                                                             |                                                 
+!#  [-dt M           ]            [M + dt T A(y_0)] [-dt B   ] |                               [-M+dt(1-T)N(y_0)]            |                                                 
+!#                                                             |                                             ^               |                                                 
+!#                                [-B^t           ]            |                                             |               |                                                 
+!#                                                             |                                         !correct!           |                                                 
+!#  -----------------------------------------------------------+-------------------------------------------------------------+------------------------------------------------------------
+!#  [-M+dt(1-T)A(y_0)]                                         | [M + dt T A(y_1) ] [-dt B   ] [ dt/a M         ]            |                                                 
+!#                                                             |                                                             |                                                 
+!#                                                             | [-B^t            ]                                          |                                                 
+!#                                                             |                                                             |                                                 
+!#                                                             | [-dt M           ]            [M + dt N(y_1)   ] [-dt B   ] |                               [-M+dt(1-T)N(y_1)]
+!#                                                             |                                                             |                                             ^    
+!#                                                             |                               [-B^t            ]            |                                             |    
+!#                                                             |                                                             |                                         !correct!       
+!#  -----------------------------------------------------------+-------------------------------------------------------------+------------------------------------------------------------
+!#                                                             | [-M+dt(1-T)A(y_1)]                                          |  [M + dt T A(y_2)] [-dt B   ] [ dt/a M         ]            
+!#                                                             |                                                             |                                                             
+!#                                                             |                                                             |  [-B^t           ]                                          
+!#                                                             |                                                             |                                                             
+!#                                                             |                                                             |  [-dt M          ]            [M + dt T N(y_2) ] [-dt B   ] 
+!#                                                             |                                                             |                                                             
+!#                                                             |                                                             |                               [-B^t            ]            
+!#                                                             |                                                             |                                                                  
+!#  ======================================================================================================================================================================================
+!#
 !##############################################################################
 
 MODULE cc2dmediumm2spacetimediscret
