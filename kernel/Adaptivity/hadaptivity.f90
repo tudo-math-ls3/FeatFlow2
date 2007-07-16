@@ -143,22 +143,28 @@
 !# 20.) mark_refinement2D
 !#      -> mark elements for refinement in 2D
 !#
-!# 21.) mark_coarsening2D
+!# 21.) redgreen_mark_coarsening2D
 !#      -> mark elements for coarsening in 2D
 !#
-!# 22.) redgree_mark_refinement2D
+!# 22.) redgreen_mark_refinement2D
 !#      -> mark elements for refinement due to Red-Green strategy in 2D
 !#
-!# 23.) redgreen_getState
+!# 23.) redgreen_refine
+!#      -> perform red-green refinement for marked elements
+!#
+!# 24) redgreeen_coarsen
+!#      -> perform red-green coarsening for marked elements
+!#
+!# 25.) redgreen_getState
 !#      -> return the state of an element
 !#
-!# 24.) redgreen_getStateTria
+!# 26.) redgreen_getStateTria
 !#      -> return the state of a triangle
 !#
-!# 25.) redgreen_getStateQuad
+!# 27.) redgreen_getStateQuad
 !#      -> return the state of a quadrilateral
 !#
-!# 26.) redgreen_rotateState
+!# 28.) redgreen_rotateState
 !#      -> compute the state of an element after rotation
 !#
 !#
@@ -300,6 +306,7 @@ MODULE hadaptivity
   USE list
   USE sort
   USE graph
+  USE io
   
   IMPLICIT NONE
 
@@ -394,70 +401,160 @@ MODULE hadaptivity
 
 !<constantblock description="Constants for element marker">
 
-  ! Mark for no refinement
-  INTEGER, PARAMETER :: MARK_NOREF                  = 0
-  INTEGER, PARAMETER :: MARK_NOREFTRIA              = 0
-  INTEGER, PARAMETER :: MARK_NOREFQUAD              = 1
+  ! Mark sub-element for generic recoarsening. Note that the detailed
+  ! recoarsening strategy must be determined form the element state.
+  INTEGER, PARAMETER :: MARK_CRS_GENERIC            = -1
+
+  ! Mark inner triangle of a 1-tria : 4-tria refinement for
+  ! recoarsening into the macro element
+  INTEGER, PARAMETER :: MARK_CRS_4TRIA1TRIA         = -2
+
+  ! Mark inner triangle of a 1-tria : 4-tria refinement for
+  ! recoarsening into two green triangles, whereby the first vertex
+  ! if the inner triangle is connected to the opposite vertex
+  INTEGER, PARAMETER :: MARK_CRS_4TRIA2TRIA_1       = -3
+
+  ! Mark inner triangle of a 1-tria : 4-tria refinement for
+  ! recoarsening into two green triangles, whereby the second vertex
+  ! if the inner triangle is connected to the opposite vertex
+  INTEGER, PARAMETER :: MARK_CRS_4TRIA2TRIA_2       = -4
+
+  ! Mark inner triangle of a 1-tria : 4-tria refinement for
+  ! recoarsening into two green triangles, whereby the third vertex
+  ! if the inner triangle is connected to the opposite vertex
+  INTEGER, PARAMETER :: MARK_CRS_4TRIA2TRIA_3       = -5
+
+  ! Mark inner green triangle of a 1-quad : 3-tria refinement for
+  ! recoarsening into the macro quadrilateral together with is neighbors
+  INTEGER, PARAMETER :: MARK_CRS_3TRIA1QUAD         = -6
+
+  ! Mark left green triangle of a 1-tria : 2-tia refinement for 
+  ! recoarsening inte the macro triangle together with its right neighbor
+  INTEGER, PARAMETER :: MARK_CRS_2TRIA1TRIA_LEFT    = -7
+
+  ! Mark right green triangle of a 1-tria : 2-tia refinement for 
+  ! recoarsening into the macro triangle together with its left neighbor
+  INTEGER, PARAMETER :: MARK_CRS_2TRIA1TRIA_RIGHT   = -8
+
+  ! Mark "most inner" green triangle of a 1-quad : 4-tria refinement for
+  ! recoarsening into the macro quadrilateral together with its three neighbors
+  INTEGER, PARAMETER :: MARK_CRS_4TRIA1QUAD         = -9
+
+  ! Mark "most inner" green triangle of a 1-quad : 4-tria refinement for
+  ! conversion into three triangles keeping the left neighboring triangle
+  INTEGER, PARAMETER :: MARK_CRS_4TRIA3TRIA_LEFT    = -10
+
+  ! Mark "most inner" green triangle of a 1-quad : 4-tria refinement for
+  ! conversion into three triangles keeping the right neighboring triangle
+  INTEGER, PARAMETER :: MARK_CRS_4TRIA3TRIA_RIGHT   = -11
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for recoarsening
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD1QUAD         = -12
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! three triangles keeping the midpoint of the first edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD3TRIA_1       = -13
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! three triangles keeping the midpoint of the second edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD3TRIA_2       = -14
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! three triangles keeping the midpoint of the third edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD3TRIA_3       = -15
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! three triangles keeping the midpoint of the fourth edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD3TRIA_4       = -16
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! four triangles keeping the midpoints of the first and second edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD4TRIA_12      = -17
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! four triangles keeping the midpoints of the second and third edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD4TRIA_23      = -18
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! four triangles keeping the midpoints of the third and fourth edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD4TRIA_34      = -19
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! four triangles keeping the midpoints of the first and fourth edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD4TRIA_14      = -20
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! two quadrilaterals keeping the midpoints of the first and third edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD2QUAD_13      = -21
+
+  ! Mark red quadrilateral of a 1-quad : 4-quad refinement for conversion into
+  ! two quadrilaterals keeping the midpoints of the second and fourth edge
+  INTEGER, PARAMETER :: MARK_CRS_4QUAD2QUAD_24      = -22
+
+  ! Mark for keeping element 'as is'
+  INTEGER, PARAMETER :: MARK_ASIS                   = 0
+  INTEGER, PARAMETER :: MARK_ASIS_TRIA              = 0
+  INTEGER, PARAMETER :: MARK_ASIS_QUAD              = 1
 
   ! Mark element for 1-tria : 2-tria refinement along first edge
-  INTEGER, PARAMETER :: MARK_TRIA2TRIA_1            = 2
+  INTEGER, PARAMETER :: MARK_REF_TRIA2TRIA_1        = 2
 
   ! Mark element for 1-tria : 2-tria refinement along second edge
-  INTEGER, PARAMETER :: MARK_TRIA2TRIA_2            = 4
+  INTEGER, PARAMETER :: MARK_REF_TRIA2TRIA_2        = 4
 
   ! Mark element for 1-tria : 2-tria refinement along third edge
-  INTEGER, PARAMETER :: MARK_TRIA2TRIA_3            = 8
+  INTEGER, PARAMETER :: MARK_REF_TRIA2TRIA_3        = 8
 
   ! Mark element for 1-tria : 3-tria refinement along first and second edge
-  INTEGER, PARAMETER :: MARK_TRIA3TRIA_12           = 6
+  INTEGER, PARAMETER :: MARK_REF_TRIA3TRIA_12       = 6
 
   ! Mark element for 1-tria : 3-tria refinement along second and third edge
-  INTEGER, PARAMETER :: MARK_TRIA3TRIA_23           = 12
+  INTEGER, PARAMETER :: MARK_REF_TRIA3TRIA_23       = 12
 
   ! Mark element for 1-tria : 3-tria refinement along first and third edge
-  INTEGER, PARAMETER :: MARK_TRIA3TRIA_13           = 10
+  INTEGER, PARAMETER :: MARK_REF_TRIA3TRIA_13       = 10
 
   ! Mark element for 1-tria : 4-tria red refinement
-  INTEGER, PARAMETER :: MARK_TRIA4TRIA              = 14
+  INTEGER, PARAMETER :: MARK_REF_TRIA4TRIA          = 14
 
   ! Mark element for 1-quad : 3-tria refinement along first edge
-  INTEGER, PARAMETER :: MARK_QUAD3TRIA_1            = 3
+  INTEGER, PARAMETER :: MARK_REF_QUAD3TRIA_1        = 3
   
   ! Mark element for 1-quad : 3-tria refinement along second edge
-  INTEGER, PARAMETER :: MARK_QUAD3TRIA_2            = 5
+  INTEGER, PARAMETER :: MARK_REF_QUAD3TRIA_2        = 5
   
   ! Mark element for 1-quad : 3-tria refinement along third edge
-  INTEGER, PARAMETER :: MARK_QUAD3TRIA_3            = 9
+  INTEGER, PARAMETER :: MARK_REF_QUAD3TRIA_3        = 9
   
   ! Mark element for 1-quad : 3-tria refinement along fourth edge
-  INTEGER, PARAMETER :: MARK_QUAD3TRIA_4            = 17
+  INTEGER, PARAMETER :: MARK_REF_QUAD3TRIA_4        = 17
 
   ! Mark element for 1-quad : 4-tria refinement along first and second edge
-  INTEGER, PARAMETER :: MARK_QUAD4TRIA_12           = 7
+  INTEGER, PARAMETER :: MARK_REF_QUAD4TRIA_12       = 7
 
   ! Mark element for 1-quad : 4-tria refinement along second and third edge
-  INTEGER, PARAMETER :: MARK_QUAD4TRIA_23           = 13
+  INTEGER, PARAMETER :: MARK_REF_QUAD4TRIA_23       = 13
 
   ! Mark element for 1-quad : 4-tria refinement along third and fourth edge
-  INTEGER, PARAMETER :: MARK_QUAD4TRIA_34           = 25
+  INTEGER, PARAMETER :: MARK_REF_QUAD4TRIA_34       = 25
 
   ! Mark element for 1-quad : 4-tria refinement along first and fourth edge
-  INTEGER, PARAMETER :: MARK_QUAD4TRIA_14           = 19
+  INTEGER, PARAMETER :: MARK_REF_QUAD4TRIA_14       = 19
 
   ! Mark element for 1-quad : 4-quad red refinement
-  INTEGER, PARAMETER :: MARK_QUAD4QUAD              = 31
+  INTEGER, PARAMETER :: MARK_REF_QUAD4QUAD          = 31
 
   ! Mark element for 1-quad : 2-quad refinement along first and third edge
-  INTEGER, PARAMETER :: MARK_QUAD2QUAD_13           = 11
+  INTEGER, PARAMETER :: MARK_REF_QUAD2QUAD_13       = 11
 
   ! Mark element for 1-quad : 2-quad refinement along second and fourth edge
-  INTEGER, PARAMETER :: MARK_QUAD2QUAD_24           = 21
+  INTEGER, PARAMETER :: MARK_REF_QUAD2QUAD_24       = 21
 
   ! Mark element for 1-quad blue refinement
-  INTEGER, PARAMETER :: MARK_QUADBLUE_412           = 23
-  INTEGER, PARAMETER :: MARK_QUADBLUE_234           = 29
-  INTEGER, PARAMETER :: MARK_QUADBLUE_123           = 15
-  INTEGER, PARAMETER :: MARK_QUADBLUE_341           = 27
+  INTEGER, PARAMETER :: MARK_REF_QUADBLUE_412       = 23
+  INTEGER, PARAMETER :: MARK_REF_QUADBLUE_234       = 29
+  INTEGER, PARAMETER :: MARK_REF_QUADBLUE_123       = 15
+  INTEGER, PARAMETER :: MARK_REF_QUADBLUE_341       = 27
   
 !</constant>
 
@@ -609,9 +706,14 @@ MODULE hadaptivity
     !       p_IvertexAge = array [1..NVT] of integer
     ! Each node has an individual age which is used to determine
     ! the type of the element (green/red triangle/quadrilateral).
-    ! The nodes of the initial grid are assigned the age 0.
+    ! The nodes of the initial grid are assigned age 0 by default.
     ! Each node which is introduced at the midpoint of one edge (I,J)
-    ! is given the age MAX(AGE(I),AGE(J))+1. 
+    ! is given the age MAX(AGE(I),AGE(J))+1. For vertices which are
+    ! inserted at the center of a quadrilateral, the maximum age of
+    ! all four surrounding vertices is adopted and increased by one.
+    ! A negative age means, the the vertex is lockes, that is, it
+    ! cannot be removed. By definition, vertices of the initial
+    ! triangulation cannot be removed and are always locked.
     INTEGER :: h_IvertexAge = ST_NOHANDLE
 
     ! Pointer to h_IvertexAge.
@@ -1673,8 +1775,8 @@ CONTAINS
     
     ! What kind of grid refinement should be performed
     SELECT CASE(rhadapt%irefinementStrategy)
-      
     CASE (HADAPT_NOREFINEMENT)   ! No grid refinement
+
       
     CASE (HADAPT_REDGREEN)   ! Red-green grid refinement
 
@@ -1685,8 +1787,10 @@ CONTAINS
       CALL redgreen_mark_refinement2D(rhadapt,fcb_adjustDimension,fcb_insertVertex)
 
       ! Mark element for recoarsening based on indicator function
-      CALL mark_coarsening2D(rhadapt,rindicator)
+      CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
       
+      CALL hadapt_writegridSVG(rhadapt,"mygrid",ibset(0,0))
+
       ! Compute new dimensions
       nvt = rhadapt%NVT+rhadapt%increaseNVT
       nel = NumberOfElements(rhadapt)
@@ -1723,11 +1827,17 @@ CONTAINS
       ! Perform refinement
       CALL redgreen_refine(rhadapt,fcb_insertVertex)
 
+      CALL hadapt_writegridSVG(rhadapt,"mygrid",ibset(0,0))
+
+      ! Perform coarsening
+      CALL redgreen_coarsen(rhadapt)
+
       ! Adjust nodal property array
       nvt = rhadapt%NVT
       CALL storage_realloc('hadapt_performAdaptation',nvt,&
           rhadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
       
+
     CASE (HADAPT_LONGESTEDGE)   ! Bisection of Longest edge
 
       ! Mark elements for refinement based on indicator function
@@ -1767,17 +1877,17 @@ CONTAINS
       DO iel=1,rhadapt%NEL0
         
         SELECT CASE(p_Imarker(iel))
-        CASE(MARK_TRIA2TRIA_1,MARK_TRIA2TRIA_2,MARK_TRIA2TRIA_3,&
-             MARK_QUAD2QUAD_13,MARK_QUAD2QUAD_24)
+        CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3,&
+             MARK_REF_QUAD2QUAD_13,MARK_REF_QUAD2QUAD_24)
           nel=nel+1
 
-        CASE(MARK_QUAD3TRIA_1,MARK_QUAD3TRIA_2,MARK_QUAD3TRIA_3,&
-             MARK_QUAD3TRIA_4,MARK_TRIA3TRIA_12,MARK_TRIA3TRIA_23,&
-             MARK_TRIA3TRIA_13)
+        CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,MARK_REF_QUAD3TRIA_3,&
+             MARK_REF_QUAD3TRIA_4,MARK_REF_TRIA3TRIA_12,MARK_REF_TRIA3TRIA_23,&
+             MARK_REF_TRIA3TRIA_13)
           nel=nel+2
           
-        CASE(MARK_TRIA4TRIA,MARK_QUAD4QUAD,MARK_QUAD4TRIA_12,&
-             MARK_QUAD4TRIA_23,MARK_QUAD4TRIA_34,MARK_QUAD4TRIA_14)
+        CASE(MARK_REF_TRIA4TRIA,MARK_REF_QUAD4QUAD,MARK_REF_QUAD4TRIA_12,&
+             MARK_REF_QUAD4TRIA_23,MARK_REF_QUAD4TRIA_34,MARK_REF_QUAD4TRIA_14)
           nel=nel+3
         END SELECT
       END DO
@@ -1833,11 +1943,11 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE hadapt_writeGridSVG(rhadapt,coutputFile,cinfo)
+  SUBROUTINE hadapt_writeGridSVG(rhadapt,coutputFile,cinfo,width,height)
 
 !<description>
     ! This subroutine outputs the current state of the adapted grid stored
-    ! in the dynamic data structure to a given file in SVG format
+    ! in the dynamic data structure to a given file in SVG format.
 !</description>
 
 !<input>
@@ -1853,6 +1963,12 @@ CONTAINS
     ! BIT5 : output element marker
     ! BIT6 : output adjacency numbers
     INTEGER, INTENT(IN) :: cinfo
+
+    ! OPTIONAL: Width of the generated file
+    INTEGER, INTENT(IN), OPTIONAL :: width
+
+    ! OPTIONAL: Heigh of the generated file
+    INTEGER, INTENT(IN), OPTIONAL :: height
 !</input>
 
 !<inputoutput>
@@ -1862,22 +1978,27 @@ CONTAINS
 !</subroutine>
 
     ! local parameters
-    INTEGER, PARAMETER :: xsize = 3000
-    INTEGER, PARAMETER :: ysize = 3000
-    INTEGER, PARAMETER :: xoff  = 100
-    INTEGER, PARAMETER :: yoff  = 100
+    INTEGER, PARAMETER :: defaultwidth  = 3000
+    INTEGER, PARAMETER :: defaultheight = 3000
+    INTEGER, PARAMETER :: xoff = 100
+    INTEGER, PARAMETER :: yoff = 100
 
+    CHARACTER(LEN=*), PARAMETER :: font_family     = "Verdana"
+    CHARACTER(LEN=*), PARAMETER :: font_size       = "64"
+    CHARACTER(LEN=*), PARAMETER :: font_size_small = "14"
+    
     ! local variables
-    REAL(DP), DIMENSION(4) :: bbox
+    REAL(DP), DIMENSION(2*NDIM2D) :: bbox
     REAL(DP) :: x0,y0,xdim,ydim,xscale,yscale,xmid,ymid
-    CHARACTER(LEN=9) :: cnvt,cnel,cx,cy,cstate,cmark,cout
-    INTEGER, DIMENSION(:), POINTER     :: p_Imarker
+    INTEGER :: xsize,ysize
+    INTEGER, DIMENSION(:), POINTER                     :: p_Imarker
     INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: Kadj,Kmidadj
     INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: Kvert
     INTEGER(PREC_VERTEXIDX)  :: ivt
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: iunit,ive,nve,istate,iout=0
-
+    INTEGER :: iunit,ive,nve,istate
+    INTEGER, SAVE :: iout=0
+    
     ! Check if dynamic data structures generated
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).EQ.0) THEN
       PRINT *, "adapt_output_svg: dynamic data structures are not generated"
@@ -1886,34 +2007,43 @@ CONTAINS
     
     ! Increment the sample number
     iout=iout+1
-    WRITE(UNIT=cout,FMT='(I5)') iout
-   
-    ! Open file for output
-    iunit=sys_getFreeUnit()
-    OPEN (UNIT=iunit,FILE=TRIM(ADJUSTL(coutputFile))//'.'//TRIM(ADJUSTL(cout))//'.svg')
     
-    ! Write XML-header
-    WRITE(UNIT=iunit,FMT='(A)') '<?xml version="1.0" encoding="utf-8" standalone="no"?>'
-    WRITE(UNIT=iunit,FMT='(A)') '<!-- Created with Featflow2 (http://www.featflow.de/) -->'
-    WRITE(UNIT=iunit,FMT='(A)') '<svg'
-    WRITE(UNIT=iunit,FMT='(A)') ' xmlns:svg="http://www.w3.org/2000/svg"'
-    WRITE(UNIT=iunit,FMT='(A)') ' xmlns="http://www.w3.org/2000/svg"'
-    WRITE(UNIT=iunit,FMT='(A)') ' version="1.0"'
+    ! Open output file for writing
+    CALL io_openFileForWriting(TRIM(ADJUSTL(coutputFile))//'.'//&
+        TRIM(sys_siL(iout,5))//'.svg',iunit,SYS_REPLACE,bformatted=.TRUE.)
     
-    ! Determine bounding box
-    bbox = qtree_getBoundingBox(rhadapt%rVertexCoordinates2D)
-    xdim = bbox(3)-bbox(1); x0 = bbox(1)
-    ydim = bbox(4)-bbox(2); y0 = bbox(2)
+    ! Write XML-header to file
+    WRITE(iunit,FMT='(A)') '<?xml version="1.0" encoding="utf-8" standalone="no"?>'
+    WRITE(iunit,FMT='(A)') '<!-- Created with Featflow2 (http://www.featflow.de/) -->'
+    WRITE(iunit,FMT='(A)') '<svg'
+    WRITE(iunit,FMT='(A)') ' xmlns:svg="http://www.w3.org/2000/svg"'
+    WRITE(iunit,FMT='(A)') ' xmlns="http://www.w3.org/2000/svg"'
+    WRITE(iunit,FMT='(A)') ' version="1.0"'
+    
+    IF (PRESENT(width)) THEN
+      xsize=width
+    ELSE
+      xsize=defaultwidth
+    END IF
 
+    IF (PRESENT(height)) THEN
+      ysize=height
+    ELSE
+      ysize=defaultheight
+    END IF
+
+    ! Determine bounding box
+    bbox   = qtree_getBoundingBox(rhadapt%rVertexCoordinates2D)
+    xdim   = bbox(3)-bbox(1); x0 = bbox(1)
+    ydim   = bbox(4)-bbox(2); y0 = bbox(2)
     xscale = xsize*MIN(1._DP,xdim/ydim)/xdim
     yscale = ysize*MIN(1._DP,xdim/ydim)/ydim
 
     ! Set height and width of image
-    WRITE(UNIT=cx,FMT='(I9)') INT(xscale*xdim)+2*xoff
-    WRITE(UNIT=cy,FMT='(I9)') INT(yscale*ydim)+2*yoff
-    WRITE(UNIT=iunit,FMT='(A)') ' width="100%" height="100%" viewBox="0 0 '&
-        //TRIM(ADJUSTL(cx))//' '//TRIM(ADJUSTL(cy))//'" xml:space="preserve">'
-    
+    WRITE(iunit,FMT='(A)') ' width="100%" height="100%" viewBox="0 0 '//&
+        TRIM(sys_siL(INT(xscale*xdim)+2*xoff,10))//' '//&
+        TRIM(sys_siL(INT(yscale*ydim)+2*yoff,10))//'" xml:space="preserve">'
+       
     !---------------------------------------------------------------------------
     ! Output all elements
     !---------------------------------------------------------------------------
@@ -1925,9 +2055,151 @@ CONTAINS
       ! Output elements and color those which are marked for refinement
       DO iel=1,rhadapt%NEL
         
-        ! Convert element number
-        WRITE(UNIT=cnel,FMT='(I9)') iel
+        ! Get local data
+        Kvert   = rhadapt%p_IverticesAtElement(:,iel)
+        Kadj    = rhadapt%p_IneighboursAtElement(:,iel)
+        Kmidadj = rhadapt%p_ImidneighboursAtElement(:,iel)
+        nve     = MERGE(3,4,Kvert(4)==0)
         
+        IF (iel <= rhadapt%NEL0) THEN
+
+          ! What kind of element are we?
+          SELECT CASE(p_Imarker(iel))
+          
+          ! Element is neither marked for refinement nor coarsening
+          CASE(MARK_ASIS_TRIA,MARK_ASIS_QUAD)
+            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+                '" fill="white" stroke="black" stroke-width="1"'
+
+          ! Element is marked for green refinement
+          CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3,&
+               MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,MARK_REF_QUAD3TRIA_3,&
+               MARK_REF_QUAD3TRIA_4,MARK_REF_QUAD4TRIA_12,MARK_REF_QUAD4TRIA_23,&
+               MARK_REF_QUAD4TRIA_34,MARK_REF_QUAD4TRIA_14,MARK_REF_QUAD2QUAD_13,&
+               MARK_REF_QUAD2QUAD_24)
+            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+                '" fill="green" stroke="black" stroke-width="1"'
+
+          ! Element is marked for blue refinement
+          CASE(MARK_REF_TRIA3TRIA_12,MARK_REF_TRIA3TRIA_23,MARK_REF_TRIA3TRIA_13,&
+               MARK_REF_QUADBLUE_412,MARK_REF_QUADBLUE_234,MARK_REF_QUADBLUE_123,&
+               MARK_REF_QUADBLUE_341)
+            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+                '" fill="blue" stroke="black" stroke-width="1"'
+
+          ! Element is marked for red refinement
+          CASE(MARK_REF_TRIA4TRIA,MARK_REF_QUAD4QUAD)
+            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+                '" fill="red" stroke="black" stroke-width="1"'
+
+          ! Element is marked for generic coarsening
+          CASE(MARK_CRS_GENERIC)
+            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+                '" fill="lightgray" stroke="black" stroke-width="1"'
+            
+          ! Element is marked for specific coarsening
+          CASE(MARK_CRS_4QUAD2QUAD_24:MARK_CRS_4TRIA1TRIA)
+            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+                '" fill="yellow" stroke="black" stroke-width="1"'
+
+          ! Unknown element marker
+          CASE DEFAULT
+            WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+                '" fill="hotpink" stroke="black" stroke-width="1"'
+          END SELECT
+
+        ELSE
+
+          ! For all new elements no marker is available
+          WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+              '" fill="white" stroke="black" stroke-width="1"'
+        END IF
+               
+        ! Each element is a polygon made up from 3/4 points
+        WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
+        DO ive=1,nve
+          xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))-x0
+          ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))-y0
+          WRITE(iunit,FMT='(A)',ADVANCE='NO') &
+              TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
+              TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//' '
+        END DO
+        
+        ! And of course, the polygone must be closed !
+        xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1))-x0
+        ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1))-y0
+        WRITE(iunit,FMT='(A)') &
+            TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
+            TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//'"/>'
+        
+        ! Output elemental data
+        IF (btest(cinfo,3) .OR.&
+            btest(cinfo,4) .OR.&
+            btest(cinfo,5)) THEN
+          
+          ! Determine state of element
+          IF (nve == 3) THEN
+            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-x0
+            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-y0
+            istate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+          ELSE
+            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-x0
+            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-y0
+            istate = redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+          END IF
+          
+          ! What data should be written?
+          IF (btest(cinfo,3)) THEN
+            
+            ! Write element number
+            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
+                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
+                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
+                TRIM(sys_siL(iel,9))//'</text>'
+            
+          ELSEIF (btest(cinfo,4)) THEN
+            
+            ! Write element state
+            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
+                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
+                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
+                TRIM(sys_siL(istate,3))//'</text>'
+            
+          ELSEIF (btest(cinfo,5)) THEN
+            
+            ! Write element marker
+            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
+                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
+                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
+                TRIM(sys_siL(p_Imarker(iel),3))//'</text>'
+          END IF
+        END IF
+        
+        ! Output adjacency information?
+        IF (btest(cinfo,6)) THEN
+          xmid = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-x0
+          ymid = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-y0
+          
+          DO ive=1,nve
+            xdim = (2*qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))+xmid)/3._DP
+            ydim = (2*qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))+ymid)/3._DP
+            WRITE(iunit,FMT='(A)') ' <text x="'//TRIM(sys_siL(xoff+INT(xscale*xdim),9))//&
+                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size_small//&
+                '" text-anchor="middle" fill="sienne">'//&
+                TRIM(sys_siL(Kadj(ive),9))//","//TRIM(sys_siL(Kmidadj(ive),9))//'</text>'
+          END DO
+        END IF
+      END DO
+      
+    ELSE
+      
+      ! Output only elements without individual coloring
+      DO iel=1,rhadapt%NEL
+
         ! Get local data
         Kvert   = rhadapt%p_IverticesAtElement(:,iel)
         Kadj    = rhadapt%p_IneighboursAtElement(:,iel)
@@ -1935,141 +2207,33 @@ CONTAINS
         nve     = MERGE(3,4,Kvert(4)==0)
         
         ! Start new element ...
-        IF (iel <= rhadapt%NEL0) THEN
-          SELECT CASE(p_Imarker(iel))
-          CASE(MARK_NOREFTRIA,MARK_NOREFQUAD)
-            WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="white" stroke="black" stroke-width="1" '
-
-          CASE(MARK_TRIA2TRIA_1,MARK_TRIA2TRIA_2,MARK_TRIA2TRIA_3,&
-               MARK_QUAD3TRIA_1,MARK_QUAD3TRIA_2,MARK_QUAD3TRIA_3,&
-               MARK_QUAD3TRIA_4,MARK_QUAD4TRIA_12,MARK_QUAD4TRIA_23,&
-               MARK_QUAD4TRIA_34,MARK_QUAD4TRIA_14,MARK_QUAD2QUAD_13,&
-               MARK_QUAD2QUAD_24)
-            WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="green" stroke="black" stroke-width="1" '
-
-          CASE(MARK_TRIA3TRIA_12,MARK_TRIA3TRIA_23,MARK_TRIA3TRIA_13,&
-               MARK_QUADBLUE_412,MARK_QUADBLUE_234,MARK_QUADBLUE_123,&
-               MARK_QUADBLUE_341)
-            WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="blue" stroke="black" stroke-width="1" '
-
-          CASE(MARK_TRIA4TRIA,MARK_QUAD4QUAD)
-            WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="red" stroke="black" stroke-width="1" '
-
-          CASE DEFAULT
-            WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="hotpink" stroke="black" stroke-width="1" '
-
-          END SELECT
-        ELSE
-          WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="white" stroke="black" stroke-width="1" '
-        END IF
+        WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
+            '" fill="white" stroke="black" stroke-width="1" '
+        WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
         
-        ! ... output vertices of element
-        WRITE(UNIT=iunit,FMT='(A)',ADVANCE='NO') ' points="'
-        DO ive=1,nve
-          xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))-x0
-          ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))-y0
-          WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-          WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
-          WRITE(UNIT=iunit,FMT='(A)',ADVANCE='NO') TRIM(ADJUSTL(cx))//','//TRIM(ADJUSTL(cy))//' '
-        END DO
-        
-        ! ... end element.
-        xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1))-x0
-        ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1))-y0
-        WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-        WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
-        WRITE(UNIT=iunit,FMT='(A)') TRIM(ADJUSTL(cx))//','//TRIM(ADJUSTL(cy))//'"/>'
-
-        ! Output elemental data
-        IF (btest(cinfo,3) .OR. btest(cinfo,4) .OR. btest(cinfo,5)) THEN
-          IF (nve == 3) THEN
-            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-x0
-            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-y0
-            istate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
-          ELSE
-            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-x0
-            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-y0
-            istate = redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
-          END IF
-          WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-          WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
-          
-          ! What data should be written
-          IF (btest(cinfo,3)) THEN
-            ! Element numbers
-            WRITE(UNIT=iunit,FMT='(A)') '<text id="nel'//TRIM(ADJUSTL(cnel))//&
-                &'" x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                &'" font-family="Verdana" font-size="48" fill="black">'//TRIM(ADJUSTL(cnel))//'</text>'
-          ELSEIF (btest(cinfo,4)) THEN
-            ! Element state
-            WRITE(UNIT=cstate,FMT='(I3)') istate
-            WRITE(UNIT=iunit,FMT='(A)') '<text id="nel'//TRIM(ADJUSTL(cnel))//&
-                &'" x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                &'" font-family="Verdana" font-size="48" fill="black">'//TRIM(ADJUSTL(cstate))//'</text>'
-          ELSE
-            ! Element marker
-            WRITE(UNIT=cmark,FMT='(I3)') p_Imarker(iel)
-            WRITE(UNIT=iunit,FMT='(A)') '<text id="nel'//TRIM(ADJUSTL(cnel))//&
-                &'" x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                &'" font-family="Verdana" font-size="48" fill="black">'//TRIM(ADJUSTL(cmark))//'</text>'
-          END IF
-        END IF
-        
-        ! Output adjacency information?
-        IF (btest(cinfo,6)) THEN
-          xmid = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-x0
-          ymid = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-y0
-          
+        ! Output vertices of element if required
+        IF (btest(cinfo,0)) THEN
           DO ive=1,nve
-            xdim = (2*qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))+xmid)/3._DP
-            ydim = (2*qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))+ymid)/3._DP
-            
-            WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-            WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
-            
-            WRITE(UNIT=cnel,FMT='(I3,A,I3)') Kadj(ive),';',Kmidadj(ive)
-            WRITE(UNIT=iunit,FMT='(A)') ' <text x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                '" font-family="Verdana" font-size="14" text-anchor="middle" fill="sienne">'//TRIM(ADJUSTL(cnel))//'</text>'
+            xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))-x0
+            ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))-y0
+            WRITE(iunit,FMT='(A)',ADVANCE='NO') &
+                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
+                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//' '
           END DO
+          
+          ! The first vertex is also the last vertex
+          xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1))-x0
+          ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1))-y0
+          WRITE(iunit,FMT='(A)') &
+              TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
+              TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//'"/>'
         END IF
-      END DO
-      
-    ELSE
-      
-      ! Output only elements without coloring individual elements
-      DO iel=1,rhadapt%NEL
-
-        ! Convert element number
-        WRITE(UNIT=cnel,FMT='(I9)') iel
-
-        ! Get local data
-        Kvert   = rhadapt%p_IverticesAtElement(:,iel)
-        Kadj    = rhadapt%p_IneighboursAtElement(:,iel)
-        Kmidadj = rhadapt%p_ImidneighboursAtElement(:,iel)
-        nve   = MERGE(3,4,Kvert(4)==0)
-        
-        ! Start new element ...
-        WRITE(UNIT=iunit,FMT='(A)') '<polygon id="el'//TRIM(ADJUSTL(cnel))//'" fill="white" stroke="black" stroke-width="1" '
-        WRITE(UNIT=iunit,FMT='(A)',ADVANCE='NO') ' points="'
-        
-        ! ... output vertices of element
-        DO ive=1,nve
-          xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))-x0
-          ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))-y0
-          WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-          WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
-          WRITE(UNIT=iunit,FMT='(A)',ADVANCE='NO') ' '//TRIM(ADJUSTL(cx))//','//TRIM(ADJUSTL(cy))
-        END DO
-        
-        ! ... end element.
-        xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1))-x0
-        ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1))-y0
-        WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-        WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
-        WRITE(UNIT=iunit,FMT='(A)') ' '//TRIM(ADJUSTL(cx))//','//TRIM(ADJUSTL(cy))//' "/>'
 
         ! Output elemental data
-        IF (btest(cinfo,3) .OR. btest(cinfo,4)) THEN
+        IF (btest(cinfo,3) .OR.&
+            btest(cinfo,4)) THEN
+          
+          ! Determine state of element
           IF (nve == 3) THEN
             xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-x0
             ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-y0
@@ -2079,21 +2243,25 @@ CONTAINS
             ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-y0
             istate = redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
           END IF
-          WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-          WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
           
-          ! What data should be written
+          ! What data should be written?
           IF (btest(cinfo,3)) THEN
-            ! Element numbers
-            WRITE(UNIT=iunit,FMT='(A)') '<text id="nel'//TRIM(ADJUSTL(cnel))//&
-                &'" x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                &'" font-family="Verdana" font-size="48" fill="black">'//TRIM(ADJUSTL(cnel))//'</text>'
-          ELSE
-            ! Element state
-            WRITE(UNIT=cstate,FMT='(I3)') istate
-            WRITE(UNIT=iunit,FMT='(A)') '<text id="nel'//TRIM(ADJUSTL(cnel))//&
-                &'" x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                &'" font-family="Verdana" font-size="48" fill="black">'//TRIM(ADJUSTL(cstate))//'</text>'
+            
+            ! Write element number
+            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
+                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
+                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
+                TRIM(sys_siL(iel,9))//'</text>'
+            
+          ELSEIF(btest(cinfo,4)) THEN
+
+            ! Write element state
+            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
+                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
+                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
+                TRIM(sys_siL(istate,3))//'</text>'
           END IF
         END IF
         
@@ -2105,53 +2273,72 @@ CONTAINS
           DO ive=1,nve
             xdim = (2*qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))+xmid)/3._DP
             ydim = (2*qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))+ymid)/3._DP
-            
-            WRITE(UNIT=cx,FMT='(I4)') xoff+INT(xscale*xdim)
-            WRITE(UNIT=cy,FMT='(I4)') ysize+yoff-INT(yscale*ydim)
-            
-            WRITE(UNIT=cnel,FMT='(I2,A,I2)') Kadj(ive),';',Kmidadj(ive)
-            WRITE(UNIT=iunit,FMT='(A)') ' <text x="'//cx//'" y="'//cy//&
-                '" font-family="Verdana" font-size="36" text-anchor="middle" fill="sienne">'//TRIM(ADJUSTL(cnel))//'</text>'
+            WRITE(iunit,FMT='(A)') ' <text x="'//TRIM(sys_siL(xoff+INT(xscale*xdim),9))//&
+                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size_small//&
+                '" text-anchor="middle" fill="sienne">'//&
+                TRIM(sys_siL(Kadj(ive),9))//","//TRIM(sys_siL(Kmidadj(ive),9))//'</text>'
           END DO
         END IF
       END DO
     END IF
-
+    
     ! Output nodal data
-    IF (btest(cinfo,0) .OR. btest(cinfo,1) .OR. btest(cinfo,2)) THEN
+    IF (btest(cinfo,0) .OR.&
+        btest(cinfo,1) .OR.&
+        btest(cinfo,2)) THEN
       
+      ! Loop over all vertices
       DO ivt=1,qtree_getsize(rhadapt%rVertexCoordinates2D)
+       
         xdim = qtree_getX(rhadapt%rVertexCoordinates2D,ivt)-x0
         ydim = qtree_getY(rhadapt%rVertexCoordinates2D,ivt)-y0
-        WRITE(UNIT=cx,FMT='(I9)') xoff+INT(xscale*xdim)
-        WRITE(UNIT=cy,FMT='(I9)') ysize+yoff-INT(yscale*ydim)
         
-        ! Output nodal point
+        ! Write vertices as points?
         IF (btest(cinfo,0)) THEN
-          WRITE(UNIT=iunit,FMT='(A)') '<circle cx="'//TRIM(ADJUSTL(cx))//&
-              &'" cy="'//TRIM(ADJUSTL(cy))//'" r="10"  fill="black" stroke="black" stroke-width="1"/>'
+          IF (rhadapt%p_IvertexAge(ivt) > 0) THEN
+            WRITE(iunit,FMT='(A)') '<circle cx="'//&
+                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" cy="'//&
+                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" r="15"  fill="white" stroke="black" stroke-width="3"/>'
+          ELSE
+            WRITE(iunit,FMT='(A)') '<circle cx="'//&
+                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" cy="'//&
+                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" r="15"  fill="black" stroke="black" stroke-width="1"/>'
+          END IF
         END IF
         
         IF (btest(cinfo,1)) THEN
-          WRITE(UNIT=cnvt,FMT='(I9)') ivt
-          WRITE(UNIT=iunit,FMT='(A)') '<text x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-              '" font-family="Verdana" font-size="48" fill="black">'//TRIM(ADJUSTL(cnvt))//'</text>'
+          ! Write vertex number?
+          WRITE(iunit,FMT='(A)') '<text x="'//&
+              TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" y="'//&
+              TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+              '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
+              TRIM(sys_siL(ivt,9))//'</text>'
+          
         ELSEIF (btest(cinfo,2)) THEN
-          WRITE(UNIT=cnvt,FMT='(I9)') rhadapt%p_IvertexAge(ivt)
+          ! Write vertex age?
           IF (rhadapt%p_IvertexAge(ivt) > 0) THEN
-            WRITE(UNIT=iunit,FMT='(A)') '<text x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                '" font-family="Verdana" font-size="48" fill="black">'//TRIM(ADJUSTL(cnvt))//'</text>'
+            WRITE(iunit,FMT='(A)') '<text x="'//&
+                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" y="'//&
+                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
+                TRIM(sys_siL(rhadapt%p_IvertexAge(ivt),3))//'</text>'
           ELSE
-            WRITE(UNIT=iunit,FMT='(A)') '<text x="'//TRIM(ADJUSTL(cx))//'" y="'//TRIM(ADJUSTL(cy))//&
-                '" font-family="Verdana" font-size="48" fill="fuchsia">'//TRIM(ADJUSTL(cnvt))//'</text>'
+            WRITE(iunit,FMT='(A)') '<text x="'//&
+                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" y="'//&
+                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
+                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="fuchsia">'//&
+                TRIM(sys_siL(-rhadapt%p_IvertexAge(ivt),3))//'</text>'
           END IF
         END IF
       END DO
     END IF
-
+    
     ! Close XML-file
-    WRITE(UNIT=iunit,FMT='(A)') '</svg>'
-    CLOSE (UNIT=iunit)
+    WRITE(iunit,FMT='(A)') '</svg>'
+    CLOSE(iunit)
   END SUBROUTINE hadapt_writeGridSVG
 
   ! ***************************************************************************
@@ -2229,8 +2416,9 @@ CONTAINS
       i12            = rhadapt%NVT
 
       ! Set age of vertex
-      rhadapt%p_IvertexAge(i12) = 1+&
-          MAX(ABS(rhadapt%p_IvertexAge(i1)),ABS(rhadapt%p_IvertexAge(i2)))
+      rhadapt%p_IvertexAge(i12) = &
+          1+MAX(ABS(rhadapt%p_IvertexAge(i1)),&
+                ABS(rhadapt%p_IvertexAge(i2)))
       
       ! Set nodal property
       IF (e1 == 0) THEN
@@ -2345,9 +2533,11 @@ CONTAINS
       i5             = rhadapt%NVT
       
       ! Set age of vertex
-      rhadapt%p_IvertexAge(I5) = 1+MAX(ABS(rhadapt%p_IvertexAge(i1)),&
-          ABS(rhadapt%p_IvertexAge(i2)),ABS(rhadapt%p_IvertexAge(i3)),&
-          ABS(rhadapt%p_IvertexAge(i4)))
+      rhadapt%p_IvertexAge(I5) = &
+          1+MAX(ABS(rhadapt%p_IvertexAge(i1)),&
+                ABS(rhadapt%p_IvertexAge(i2)),&
+                ABS(rhadapt%p_IvertexAge(i3)),&
+                ABS(rhadapt%p_IvertexAge(i4)))
 
       ! Set nodal property
       rhadapt%p_InodalProperty(i5) = 0
@@ -2369,7 +2559,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE remove_vertex2D(rhadapt,ivt,jvt,fcb_removeVertex)
+  SUBROUTINE remove_vertex2D(rhadapt,ivt,jvt)
   
 !<description>
     ! This subroutine removes and existing vertex from the adaptive data
@@ -2382,9 +2572,6 @@ CONTAINS
 
     ! Number of the vertex to replace the deleted one
     INTEGER(PREC_VERTEXIDX), INTENT(IN) :: jvt
-
-    ! Callback routines
-    include 'intf_adaptcallback.inc'
 !</input>
 
 !<inputoutput>
@@ -2401,19 +2588,20 @@ CONTAINS
     PRINT *, "NOT TESTED"
     CALL sys_halt()
 
-    ! Remove solution value
-    CALL fcb_removeVertex(ivt)
+!!$    ! Remove solution value
+!!$    CALL fcb_removeVertex(ivt)
     
     ! If IVT is a boundary node remove it from the boundary and
     ! connect its boundary neighbors with each other
     ibct = rhadapt%p_InodalProperty(ivt)
-
+    
     ! Are we at the boundary?
     IF (ibct /= 0) THEN
-
+      
       ! Find position of vertex IVT in boundary array
-      IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivt,ipred) == BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to find vertex IVT=",ivt," in boundary data structure"
+      IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivt,ipred)&
+          .EQ. BTREE_NOT_FOUND) THEN
+        PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -2423,22 +2611,25 @@ CONTAINS
       i2 = rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
       
       ! Connect the boundary neighbors with each other: I1<->I2
-      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to find vertex I1=",i1," in boundary data structure"
+      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred)&
+          .EQ. BTREE_NOT_FOUND) THEN
+        PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       rhadapt%rBoundary(ibct)%IData(BdrNext,ipos) = i2
       
-      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to find vertex I2=",i2," in boundary data structure"
+      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred)&
+          .EQ. BTREE_NOT_FOUND) THEN
+        PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos) = i1
       
-      IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivt) == BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to delete vertex IVT=",ivt," from boundary data structure"
+      IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivt)&
+          .EQ. BTREE_NOT_FOUND) THEN
+        PRINT *, "remove_vertex: Unable to delete vertex from boundary data structure"
         CALL sys_halt()
       END IF
     END IF
@@ -2455,8 +2646,9 @@ CONTAINS
       ! Are we at the boundary?
       IF (ibct /= 0) THEN
 
-        IF (btree_searchInTree(rhadapt%rBoundary(ibct),jvt,ipred) == BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to find vertex JVT=",jvt," in boundary data structure"
+        IF (btree_searchInTree(rhadapt%rBoundary(ibct),jvt,ipred)&
+            .EQ. BTREE_NOT_FOUND) THEN
+          PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -2471,23 +2663,26 @@ CONTAINS
         i2 = rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
         
         ! Connect the boundary neighbors with IVT: I1<-IVT->I2
-        IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to find vertex I1=",i1," in boundary data structure"
+        IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred)&
+            .EQ. BTREE_NOT_FOUND) THEN
+          PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         rhadapt%rBoundary(ibct)%IData(BdrNext,ipos) = ivt
         
-        IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to find vertex I2=",i2," in boundary data structure"
+        IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred)&
+            .EQ. BTREE_NOT_FOUND) THEN
+          PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos) = ivt
         
         ! Delete JVT from the boundary
-        IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),jvt) == BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to delete vertex JVT=",jvt," from the boundary data structure"
+        IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),jvt)&
+            .EQ. BTREE_NOT_FOUND) THEN
+          PRINT *, "remove_vertex: Unable to delete vertex from the boundary data structure"
           CALL sys_halt()
         END IF
       END IF
@@ -2496,7 +2691,6 @@ CONTAINS
       rhadapt%p_InodalProperty(ivt) = rhadapt%p_InodalProperty(jvt)
       rhadapt%p_IvertexAge(ivt)     = rhadapt%p_IvertexAge(jvt)
       
-
 !!$      ! Replace column IVT by column JVT in KCOL
 !!$      CALL arrlst_swapArraylist(rhadapt%rKcol,ivt,jvt)
 !!$      
@@ -3285,11 +3479,11 @@ CONTAINS
     !        / \                       / \
     !       /   \                     /   \
     !      /     \                   /     \
-    !     /       \          ->     +------ +
+    !     /       \          ->     +-------+
     !    /         \               / \     / \
     !   /           \             /   \   /   \
     !  /             \           /     \ /     \
-    ! +---------------+          +------+-------+
+    ! +---------------+         +-------+-------+
     !
 !</description>
 
@@ -4478,6 +4672,90 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE coarsen_Tria4Tria(rhadapt,iel)
+
+!<description>
+    ! This subroutine combines four triangles resulting from a
+    ! 1-tria : 4-tria refinement into the original macro triangle.
+    ! By definition, iel is the number of the inner red triangle.
+    ! Be warned, this numbering convention is not checked since the
+    ! routine is only called internally and cannot be used from outside.
+    !
+    ! Due to the numbering convention used in the refinement procedure
+    ! the "third" element neighbor of the inner triangle has the number
+    ! of the original macro element which will be used for resulting triangle.
+    !
+    ! initial triangle           subdivided triangle
+    !
+    !         +                         +
+    !        / \                       / \
+    !       /   \                     /   \
+    !      /     \                   /     \
+    !     +-------+        ->       /       \
+    !    / \     / \               /         \
+    !   /   \   /   \             /           \
+    !  /     \ /     \           /             \
+    ! +-------+-------+         +---------------+
+    !
+!</description>
+
+!<input>
+    ! Element number of the inner red triangle
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+!</input>
+
+!<inputoutput>
+    ! Adaptivity structure
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_ELEMENTIDX) :: iel0,iel1,iel2,e1,e2,e3,e4,e5,e6,ielReplace
+    INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6,ivtReplace
+    
+    ! Store vertex- and element-values of the three neighboring elements
+    i4 = rhadapt%p_IverticesAtElement(1,iel)
+    i5 = rhadapt%p_IverticesAtElement(1,iel)
+    i6 = rhadapt%p_IverticesAtElement(1,iel)
+    
+    iel0 = rhadapt%p_IneighboursAtElement(3,iel)
+    iel1 = rhadapt%p_IneighboursAtElement(1,iel)
+    iel2 = rhadapt%p_IneighboursAtElement(2,iel)
+    
+    i1 = rhadapt%p_IverticesAtElement(1,iel0)
+    i2 = rhadapt%p_IverticesAtElement(1,iel1)
+    i3 = rhadapt%p_IverticesAtElement(1,iel2)
+
+    ! Store values of the elements adjacent to the resulting macro element
+    e1 = rhadapt%p_IneighboursAtElement(1,iel0)
+    e6 = rhadapt%p_IneighboursAtElement(3,iel0)
+
+    e2 = rhadapt%p_IneighboursAtElement(1,iel1)
+    e4 = rhadapt%p_IneighboursAtElement(3,iel1)
+
+    e3 = rhadapt%p_IneighboursAtElement(1,iel2)
+    e5 = rhadapt%p_IneighboursAtElement(3,iel2)
+
+    ! Remove the three vertices I4,I5, and I6
+    CALL remove_vertex2D(rhadapt,i6,ivtReplace)
+    CALL remove_vertex2D(rhadapt,i5,ivtReplace)
+    CALL remove_vertex2D(rhadapt,i4,ivtReplace)
+
+    ! Delete elements IEL, IEL1 and IEL2
+    CALL remove_element2D(rhadapt,iel,ielReplace)
+    CALL remove_element2D(rhadapt,iel2,ielReplace)
+    CALL remove_element2D(rhadapt,iel1,ielReplace)
+
+    ! Update element IEL0
+    CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e5)
+
+  END SUBROUTINE coarsen_Tria4Tria
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE mark_refinement2D(rhadapt,rindicator)
 
 !<description>
@@ -4551,13 +4829,13 @@ CONTAINS
           DO ive=1,3
             IF (ABS(rhadapt%p_IvertexAge(Kvert(ive))).EQ.&
                 rhadapt%NSUBDIVIDEMAX) THEN
-              p_Imarker(iel) = MARK_NOREF
+              p_Imarker(iel) = MARK_ASIS
               CYCLE mark
             END IF
           END DO
           
           ! Otherwise, we can mark the triangle for refinement
-          p_Imarker(iel) = MARK_TRIA4TRIA
+          p_Imarker(iel) = MARK_REF_TRIA4TRIA
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,3
@@ -4566,14 +4844,14 @@ CONTAINS
           
           ! Update number of new vertices. In principle, we can increase the number of 
           ! new vertices by 3, i.e., one for each each. However, some care must be taken
-          ! if the edges belongs to some adjacent element which has been marked for
+          ! if the edge belongs to some adjacent element which has been marked for
           ! refinement previously. Hence, a new vertex is only added, if the edge
           ! is connected to the boundary or if the adjacent element has not been marked.
           DO ive=1,3
             IF (Kadj(ive)==0) THEN
               rhadapt%increaseNVT = rhadapt%increaseNVT+1
-            ELSEIF((p_Imarker(Kadj(ive)) /= MARK_TRIA4TRIA) .AND.&
-                   (p_Imarker(Kadj(ive)) /= MARK_QUAD4QUAD)) THEN
+            ELSEIF((p_Imarker(Kadj(ive)) .NE. MARK_REF_TRIA4TRIA) .AND.&
+                   (p_Imarker(Kadj(ive)) .NE. MARK_REF_QUAD4QUAD)) THEN
               rhadapt%increaseNVT = rhadapt%increaseNVT+1
             END IF
           END DO
@@ -4584,13 +4862,13 @@ CONTAINS
           DO ive=1,4
             IF (ABS(rhadapt%p_IvertexAge(Kvert(ive))).EQ.&
                 rhadapt%NSUBDIVIDEMAX) THEN
-              p_Imarker(iel) = MARK_NOREF
+              p_Imarker(iel) = MARK_ASIS
               CYCLE mark
             END IF
           END DO
           
           ! Otherwise, we can mark the quadrilateral for refinement
-          p_Imarker(iel) = MARK_QUAD4QUAD
+          p_Imarker(iel) = MARK_REF_QUAD4QUAD
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,4
@@ -4601,18 +4879,19 @@ CONTAINS
           DO ive=1,4
             IF (Kadj(ive)==0) THEN
               rhadapt%increaseNVT = rhadapt%increaseNVT+1
-            ELSEIF((p_Imarker(Kadj(ive)) /= MARK_TRIA4TRIA) .AND.&
-                   (p_Imarker(Kadj(ive)) /= MARK_QUAD4QUAD)) THEN
+            ELSEIF((p_Imarker(Kadj(ive)) .NE. MARK_REF_TRIA4TRIA) .AND.&
+                   (p_Imarker(Kadj(ive)) .NE. MARK_REF_QUAD4QUAD)) THEN
               rhadapt%increaseNVT = rhadapt%increaseNVT+1
             END IF
           END DO
+
           ! And don't forget the new vertex in the interior of the quadrilateral
           rhadapt%increaseNVT = rhadapt%increaseNVT+1
         END IF
         
       ELSE
         ! Unmark element for refinement
-        p_Imarker(iel) = MARK_NOREF
+        p_Imarker(iel) = MARK_ASIS
       END IF
     END DO mark
 
@@ -4624,16 +4903,60 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE mark_coarsening2D(rhadapt,rindicator)
+  SUBROUTINE redgreen_mark_coarsening2D(rhadapt,rindicator)
 
 !<description>
-    ! This routine marks all elements that sould be recoarsened due
-    ! to accuracy reasons. The decision is based on some indicator
-    ! vector which must be given elementwise.
-    ! Recoarsening is implemented as follows: All vertices present
-    ! in the initial triangulation cannot be removed. All other
-    ! nodes are candidates for removal. Hence, they have to be "locked"
-    ! if they should be kept in the final triangulation.
+    ! This routine marks all elements that sould be recoarsened due to accuracy
+    ! reasons. The decision is based on some indicator vector which must be 
+    ! given elementwise. The recoarsening strategy is as follows: A subset of
+    ! elements can only be coarsened if this subset results from a previous
+    ! refinement step. In other words, the grid cannot become coarser than the
+    ! initial triangulation. Moreover, one recoarsening step can only "undo"
+    ! what one refinement step can "do". This is in contrast to other "node-
+    ! removal" techniques, which remove all needless vertices and retriangulates
+    ! the generated "holes". However, such algorithms cannot guarantee a grid
+    ! hierarchy between refined and recoarsened grids.
+    !
+    ! In the context of hierarchical red-green mesh adaptivity, each recoarsening
+    ! step is the inverse operation of a previous refinement step. In other words,
+    ! the result of a complete recoarsening step could also be generated by locally
+    ! refining the initial triangulation. The algorithm is as follows:
+    !
+    ! 1) All vertices present in the initial triangulation cannot be removed. A 
+    ! vertex belongs to the initial triangulation if and only if its age is zero.
+    !
+    ! 2) All other nodes which do not belong to elements that are marked for 
+    ! refinement are potential candidates for removal. In order to prevent the
+    ! removel of such vertices, the nodes must be "locked" by some mechanism.
+    ! 
+    ! 3) All three/four nodes of a red triangle/quadrilateral are "locked" if 
+    ! the element should not be coarsened due to accuracy reasons. Otherwise, if
+    ! a red element should be coarsened then proceed as follows:
+    !  a) For a red quadrilateral "lock" the single vertex of the macro element
+    !  b) For a red outer triangle "lock" the single vertex of the macro element
+    !  c) For a red inner tringle do nothing
+    !
+    ! 4) For a green element "lock" the vertices of the macro element.
+    !
+    ! As a consequence, all vertices of macro elements are locked and in addition
+    ! all vertices belonging to red elements which should not be coarsened due to
+    ! accuracy reasons are removed from the list of removable nodes.
+    ! It remains to prevent the generaiton of blue elements to to nodal removal.
+    ! This must be done iteratively since "locking" of on vertex may alter the
+    ! situation for all adjacent elements. The generaiton of blue elements can
+    ! be prevented by applying the following rules:
+    !
+    ! 1) If an inner red triangle has two locked vertices, then the third vertex
+    ! is locked, too.
+    !
+    ! 2) If the youngest vertex of an outer green triangle (i.e. the vertex which
+    ! is responsible for the green refinement) is locked, then lock all nodes
+    ! connected to the green triangle. There is one exception to this rule. For
+    ! the "inner" green triangles resulting from a 1-quad : 4-tria refinement, 
+    ! this rule should not be applied since the four triangles can be converted
+    ! into three triangles if only one of the two "green vertices" are locked.
+    ! (apply 4-tria : 1-quad coarsening and eliminate the handing node by suitable
+    ! 1-quad : 3-tria refinement = 4-tria : 3-tria conversion).
 !</description>
 
 !<input>
@@ -4648,39 +4971,43 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    REAL(DP), DIMENSION(:), POINTER    :: p_Dindicator
-    INTEGER, DIMENSION(:), POINTER     :: p_Imarker
-    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: Kvert
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: Kadj
+    REAL(DP), DIMENSION(:), POINTER                    :: p_Dindicator
+    INTEGER,  DIMENSION(:), POINTER                    :: p_Imarker
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: Kvert,KvertJ
     INTEGER(PREC_VERTEXIDX)  :: i,j
-    INTEGER(PREC_ELEMENTIDX) :: iel,jel
-    INTEGER :: ive,jve,nve,istate
+    INTEGER(PREC_ELEMENTIDX) :: iel,jel,kel
+    INTEGER :: ive,nve,istate,jstate,icount,ishift,iVertexLocked
+    LOGICAL :: isModified
 
     ! Check if dynamic data structures are generated and contain data
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).EQ.0 .OR.&
         IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE).EQ.0) THEN
-      PRINT *, "mark_coarsening2D: dynamic data structures are not generated or &
-          & not marker for grid refinement exists!"
+      PRINT *, "redgreen_mark_coarsening2D: dynamic data structures are not &
+          & generated or no marker for grid refinement exists!"
       CALL sys_halt()
     END IF
     
     ! Set pointers
     IF (rhadapt%h_Imarker == ST_NOHANDLE) THEN
-      PRINT *, "mark_coarsening2D: marker array is not available"
+      PRINT *, "redgreen_mark_coarsening2D: marker array is not available"
       CALL sys_halt()
     END IF
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
     CALL lsyssc_getbase_double(rindicator,p_Dindicator)
-    
+
     ! All nodes of the initial triangulation have age-0 and, hence, will
     ! never be deleted. Loop over all elements and "lock" nodes which 
-    ! should not be removed from the triangulation due to the indicator
-    mark: DO iel=1,SIZE(p_Dindicator)
+    ! should not be removed from the triangulation due to the indicator.
+    DO iel=1,SIZE(p_Dindicator)
       
       ! Get local data for element iel
       Kvert = rhadapt%p_IverticesAtElement(:,iel)
-      Kadj  = rhadapt%p_IneighboursAtElement(:,iel)
       nve   = MERGE(3,4,Kvert(4) == 0)
+
+      ! Check if the current element is marked for refinement. Then
+      ! all vertices are already locked by the refinement procedure
+      IF (p_Imarker(iel) .NE. MARK_ASIS_TRIA .AND.&
+          p_Imarker(iel) .NE. MARK_ASIS_QUAD) CYCLE
 
       ! Get state of current element
       IF (nve == 3) THEN
@@ -4689,129 +5016,624 @@ CONTAINS
         istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
       END IF
       
-      ! Phase 1: Depending on the state if the element IEL and its indicator
+      ! Phase 1: Depending on the state if the element IEL and the indicator
       ! "lock" some or all of its nodes so that they will not be removed.
       SELECT CASE(istate)
 
         !-----------------------------------------------------------------------
-        ! Green elements: For each edge which does not connect two green
-        ! elements, lock the older vertex, i.e., the one of the macro element
+        ! The starting point of the re-coarsening algorithm are the red elements.
+        ! Strictly speaking, if all four subelements of a red-refinement should
+        ! be coarsened, then the aim is to convert them back into their original
+        ! macro element. On the other hand, if one or more red triangle cannot
+        ! be combined, then all of its nodes must be "locked".
+
+      CASE(STATE_TRIA_ROOT,STATE_QUAD_ROOT)
+        ! The vertices of a root triangle/quadrilateral have zero age by
+        ! definition. Hence, they are never deleted from the triangulation.
+
         !-----------------------------------------------------------------------
+        ! Non-green elements: If the element is not marked for coarsening,
+        ! then "lock" all of its vertices. For quadrilateral elements, this
+        ! is sufficient to determine those elements which can be combined.
+        ! This algorithm works also for inner red triangles, but for outer
+        ! red triangles some more care must be taken. An outer red triangle
+        ! has the same state as an inner triangle of a 1-quad : 4-tria 
+        ! refinement. Hence, we must check, if the current triangle is 
+        ! adjacent to an inner red triangle in order to apply the algorithm.
 
-      CASE(STATE_TRIA_GREENOUTER_RIGHT)
-        ! Element IEL is green (right) triangle. Here, the third vertex
-        ! is the newly inserted one. Hence, the first vertex is older.
-        i = Kvert(1)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-        
-        ! In addition, check if the second vertex is older and "lock" it if required
-        j = Kvert(2)
-        IF (ABS(rhadapt%p_IvertexAge(i)) > ABS(rhadapt%p_IvertexAge(j))) &
-            rhadapt%p_IvertexAge(j) = -ABS(rhadapt%p_IvertexAge(j))
+      CASE(STATE_QUAD_RED1,STATE_QUAD_RED2,STATE_QUAD_RED3)
+        PRINT *, "redgreen_mark_coarsening2D: Theoretically, this state should &
+            & not appear. Please inform the author of this routine."
+        CALL sys_halt()
 
-      CASE(STATE_TRIA_GREENOUTER_LEFT)
-        ! Element IEL is green (left) triangle. Here, the second vertex
-        ! is the newly inserted one. Hence, the first vertex is older.
-        i = Kvert(1)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-        
-        ! In addition, check if the third vertex is older and "lock" it if required
-        j = Kvert(3)
-        IF (ABS(rhadapt%p_IvertexAge(i)) > ABS(rhadapt%p_IvertexAge(j))) &
-            rhadapt%p_IvertexAge(j) = -ABS(rhadapt%p_IvertexAge(j))
-
-      CASE(STATE_TRIA_GREENINNER)
-        ! Element IEL is green (middle) triangle. "Lock" the second and third vertex.
-        i = Kvert(2)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-
-        j = Kvert(3)
-        rhadapt%p_IvertexAge(j) = -ABS(rhadapt%p_IvertexAge(j))
-        
-        !-----------------------------------------------------------------------
-        ! Non-green elements: If the element is not marked for recoarsening,
-        ! then "lock" all of its vertices. Otherwise, loop over all edges
-        ! and "lock" the node which is older.
-        !-----------------------------------------------------------------------
-        
       CASE(STATE_QUAD_RED4)
-        ! Element IEL is red quadrilateral of a Quad4Quad refinement
-        IF (p_Dindicator(iel) >= rhadapt%dcoarseningTolerance) THEN
-          ! "Lock" all four nodes
+        ! Element IEL is red sub-element of a Quad4Quad refinement.
+
+        ! Should the element be coarsened?
+        IF (p_Dindicator(iel) .GE. rhadapt%dcoarseningTolerance) THEN
+
+          ! If this is not the case, then "lock" all of its four nodes
           DO ive=1,4
-            i = Kvert(ive)
+            i = rhadapt%p_IverticesAtElement(ive,iel)
             rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
           END DO
         ELSE
-          ! "Lock" only node from macro element, i.e., first vertex
-          i = Kvert(1)
+
+          ! Otherwise, "lock" only the node from the macro element.
+          ! Due to the refinement strategy, this is the first vertex.
+          i = rhadapt%p_IverticesAtElement(1,iel)
           rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+          ! Provisionally, mark element for generic coarsening
+          p_Imarker(iel) = MARK_CRS_GENERIC
         END IF
 
       CASE(STATE_TRIA_REDINNER)
         ! Element IEL is inner red triangle of a Tria4Tria refinement.
-        ! If element IEL should not be coarsened, then "lock" all three vertices.
-        IF (p_Dindicator(iel) >= rhadapt%dcoarseningTolerance) THEN
+        
+        ! Should the element be coarsened?
+        IF (p_Dindicator(iel) .GE. rhadapt%dcoarseningTolerance) THEN
+          
+          ! If this is not the case, then "lock" all of its three nodes
           DO ive=1,3
-            i = Kvert(ive)
+            i = rhadapt%p_IverticesAtElement(ive,iel)
             rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
           END DO
+
+        ELSE
+          ! Otherwise, mark element for generic coarsening
+          p_Imarker(iel) = MARK_CRS_GENERIC
         END IF
+
+      CASE(STATE_TRIA_OUTERINNER)
+        ! Element IEL is either an outer red triangle of a 1-tria : 4-tria re-
+        ! finement or one of the two inner triangles of a 1-quad : 4-tria refinement
         
-        ! Proceed to the three outer red triangles
-        DO ive=1,3
-          jel  = Kadj(ive)
+        ! Are we outer red triangle that was not created during the 
+        ! red-green marking routine as a result of element conversion?
+        jel    = rhadapt%p_IneighboursAtElement(2,iel)
+        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(&
+                 rhadapt%p_IverticesAtElement(1:3,jel)))
+        
+        IF (jstate .EQ. STATE_TRIA_REDINNER) THEN
           
-          ! Check if element belongs to initial triangulation
-          IF (jel > SIZE(p_Dindicator)) THEN
+          ! Should the element be coarsened?
+          IF (p_Dindicator(iel) .GE. rhadapt%dcoarseningTolerance) THEN
 
-            DO jve=1,4
-              i = rhadapt%p_IverticesAtElement(ive,jel)
+            ! If this is not the case, then "lock" all of its three nodes
+            DO ive=1,3
+              i = rhadapt%p_IverticesAtElement(ive,iel)
               rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
             END DO
-
-          ELSEIF(p_Dindicator(jel) >= rhadapt%dcoarseningTolerance) THEN
-            
-            ! If element JEL should not be coarsened, then "lock" all three vertices.
-            DO jve=1,4
-              i = rhadapt%p_IverticesAtElement(ive,jel)
-              rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-            END DO
-
           ELSE
-
-            i = rhadapt%p_IverticesAtElement(1,jel)
+            
+            ! Otherwise, "lock" only the node from the macro element.
+            ! Due to the refinement strategy, this is the first vertex.
+            i = rhadapt%p_IverticesAtElement(1,iel)
             rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
 
+            ! Provisionally, mark element for generic coarsening
+            p_Imarker(iel) = MARK_CRS_GENERIC
           END IF
-        END DO
+        ELSE
+          
+          ! We are an inner green triangle resulting from a 1-quad : 4-tria
+          ! refinement. By construction, the first vertex belongs to the macro
+          ! element and, consequently, has to be "locked" from removal
+          i = rhadapt%p_IverticesAtElement(1,iel)
+          rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+          ! Provisionally, mark element for generic coarsening
+          p_Imarker(iel) = MARK_CRS_GENERIC
+        END IF
+
+        !-----------------------------------------------------------------------
+        ! Green elements: "Lock" the vertices of the macro element.
+        ! This sounds rather complicated but it is an easy task.
+        ! All non-green elements have been processed before, so we can be sure
+        ! to deal only with green elements. For a green element that results 
+        ! from a 1-tria : 2-tria refinement, we know that the vertices of the
+        ! macro element are located at the first position. The other "old" node
+        ! is the second/third vertex depending on the position of the green
+        ! triangle, i.e. right/left. By construction, this is also true for
+        ! the outer green triangles resulting from a 1-quad : 3/4-tria
+        ! refinement. It suffices to check for inner green triangles of a
+        ! 1-quad : 3-tria refinement, since the inner triangles of a 1-quad :
+        ! 4-tria refinement are processed in (STATE_TRIA_OUTERINNER)
+        !-----------------------------------------------------------------------
         
-      CASE (STATE_QUAD_RED1,STATE_QUAD_RED2,STATE_QUAD_RED3)
-        PRINT *, "I thought, this is impossible. Please contact the author of this module."
+      CASE(STATE_TRIA_GREENOUTER_RIGHT)
+        ! Element IEL is right green triangle resulting from a 1-tria : 2-tria
+        ! refinement. Here, the third vertex is the one which was last inserted.
+        ! Hence, the first vertex is older then the third one by construction.
+        i = rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+        i = rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+        ! Provisionally, mark element for generic coarsening
+        p_Imarker(iel) = MARK_CRS_GENERIC
+        
+      CASE(STATE_TRIA_GREENOUTER_LEFT)
+        ! Element IEL is left green triangle resulting from a 1-tria : 2-tria
+        ! refinement. Here, the second vertex is the one which was last insrted.
+        ! Hence, the first vertex is older than the second one by construction.
+        i = rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+        i = rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+        ! Provisionally, mark element for generic coarsening
+        p_Imarker(iel) = MARK_CRS_GENERIC
+
+      CASE(STATE_TRIA_GREENINNER)
+        ! Element IEL is the inner green triangle resulting from a 1-quad :
+        ! 3-tria refinement. By construction, the first vertex is the newly
+        ! introduced one which is the youngest vertex of the element. Hence,
+        ! "lock" both the second and the third vertex which belong to the
+        ! original macro element which was a quadrilateral
+        i = rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        
+        j = rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(j) = -ABS(rhadapt%p_IvertexAge(j))
+
+        ! Provisionally, mark element for generic coarsening
+        p_Imarker(iel) = MARK_CRS_GENERIC
+
+      CASE(STATE_QUAD_HALF1,STATE_QUAD_HALF2)
+        PRINT *, "mark_coarsening2D: Not implemented yet."
         CALL sys_halt()
-        
-      CASE(STATE_TRIA_ROOT,STATE_QUAD_ROOT,STATE_TRIA_OUTERINNER)
-        
+
       CASE DEFAULT
         PRINT *, "mark_coarsening2D: Invalid state",istate
         CALL sys_halt()
       END SELECT
-    END DO mark
+    END DO
 
     ! Phase 2: Prevent the recoarsening algorithm from generating blue elements.
     ! The above loop "locked" all vertices, which should not be removed either
     ! based on the indicator vector or due to the fact, that the vertex 
-    ! correcponds to the outer macro element. However, we have to take care
-    ! that now blue elements would be generated during recoarsening. In short,
+    ! correcponds to the outer macro element. However, we have to keep in mind
+    ! that blue elements could be generated during recoarsening. In short,
     ! inner red triangles with two "locked" vertices and red quadrilaterals
     ! for which the macro element has only one or two "unlocked" nodes must
-    ! be locked completely.
+    ! be locked completely. Moreover, all nodes of a green element must be
+    ! "locked" if one of its youngest vertices (which have been created during
+    ! the last green-refinement) must not be removed, i.e., it is locked.
+    ! Keep in mind, that the "locking" of a vertex requires the recursive check
+    ! of all surrounding elements. In order to prevent this recursion, we make 
+    ! use of a do-while loop which is terminated of no more vertices are touched.
 
-    ! Phase 3: Convert 
+    isModified = .TRUE.
+    DO WHILE(isModified)
+      isModified = .FALSE.
 
-    rhadapt%iSpec=IOR(rhadapt%iSpec,HADAPT_MARKEDCOARSEN)
+      ! Loop over all elements (from the initial triangulation + those which
+      ! have been created during the conversion of green into red elements)
+      DO iel=1,rhadapt%NEL
 
-  END SUBROUTINE mark_coarsening2D
+        ! Only process those elements which are candidates for removal
+        IF (p_Imarker(iel) .NE. MARK_CRS_GENERIC) CYCLE
+
+        ! Get local data for element iel
+        Kvert = rhadapt%p_IverticesAtElement(:,iel)
+        nve   = MERGE(3,4,Kvert(4) == 0)
+
+        ! Check if all vertices of the element are locked then delete element
+        ! from the list of removable elements. This could also be done in the
+        ! third phase when the locked vertices are translated into coarsening
+        ! rules. However, this check is relatively cheap as compared to the
+        ! computation of the exact element state for some elements. Heuristically,
+        ! a large number of elements can be filtered out by this check in advance
+        ! so that no detailed investigation of their vertices is required.
+        IF (ALL(rhadapt%p_IvertexAge(Kvert(1:nve)).LE.0)) THEN
+          p_Imarker(iel) = MERGE(MARK_ASIS_TRIA,MARK_ASIS_QUAD,nve == 3)
+          CYCLE
+        END IF
+        
+        ! Get state of current element
+        IF (nve == 3) THEN
+          istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        ELSE
+          istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+        END IF
+
+        
+        ! Do we have to "lock" some vertices?
+        SELECT CASE(istate)
+
+        CASE(STATE_QUAD_RED4)
+          ! Element IEL is one of four red quadrilaterals of a 1-quad : 4-quad refinement.
+
+          ! If the interior vertex is locked then lock all vertices of the element
+          IF (rhadapt%p_IvertexAge(Kvert(3)) .LE. 0) THEN
+
+            ! Lock all other vertices. Note that the first vertiex and the third
+            ! one are already locked, so that we have to consider vertices 2 and 4
+            DO ive=2,4,2
+              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            END DO
+
+            ! Delete element from list of removable elements
+            p_Imarker(iel) = MARK_ASIS_QUAD
+            
+            ! We modified some vertex in this iteration
+            isModified=.TRUE.
+
+          ! If three midpoint vertices of adjacent quadrilaterals are locked
+          ! then all vertices of the four red sub-quadrilaterals must be locked
+          ! in order to prevent the generation of blue quadrilaterals
+          ELSEIF(rhadapt%p_IvertexAge(Kvert(2)) .LE. 0 .AND.&
+                 rhadapt%p_IvertexAge(Kvert(4)) .LE. 0) THEN
+            
+            ! Check the midpoint of the counterclockwise neighboring element
+            jel = rhadapt%p_IneighboursAtElement(2,iel)
+            i   = rhadapt%p_IverticesAtElement(2,jel)
+            IF (rhadapt%p_IvertexAge(i) .LE. 0) THEN
+              
+              ! Lock all vertices of element IEL. Due to the fact that the interior
+              ! vertex is locked, the nodes of all other quadrilaterals will be
+              ! locked in the next loop of phase 2.
+              DO ive=1,4
+                rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+              END DO
+
+              ! Delete element from list of removable elements
+              p_Imarker(iel) = MARK_ASIS_QUAD
+              
+              ! We modified some vertex in this iteration
+              isModified=.TRUE.
+              CYCLE
+            END IF
+
+            ! Check the midpoint of the clockwise neighboring element
+            jel = rhadapt%p_IneighboursAtElement(3,iel)
+            i   = rhadapt%p_IverticesAtElement(4,jel)
+            IF (rhadapt%p_IvertexAge(i) .LE. 0) THEN
+              
+              ! Lock all vertices of element IEL. Due to the fact that the interior
+              ! vertex is locked, the nodes of all other quadrilaterals will be
+              ! locked in the next loop of phase 2.
+              DO ive=1,4
+                rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+              END DO
+
+              ! Delete element from list of removable elements
+              p_Imarker(iel) = MARK_ASIS_QUAD
+              
+              ! We modified some vertex in this iteration
+              isModified=.TRUE.
+              CYCLE
+            END IF
+          END IF
+
+        CASE(STATE_TRIA_REDINNER)
+          ! Element IEL is inner red triangle of a 1-tria : 4-tria refinement.
+          
+          ! Determine number of locked vertices of the inner triangle.
+          icount = 0
+          DO ive=1,3
+            IF (rhadapt%p_IvertexAge(Kvert(ive)) .LE. 0) icount=icount+1
+          END DO
+          
+          ! If exactly two vertices are locked, then "lock" the third one, too.
+          IF (icount .EQ. 2) THEN
+            DO ive=1,3
+              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            END DO
+            
+            ! Delete element from list of removable elements
+            p_Imarker(iel) = MARK_ASIS
+            
+            ! We modified some vertex in this iteration
+            isModified=.TRUE.
+            
+          ELSEIF(icount .EQ. 3) THEN
+            ! Delete element from list of removable elements
+            p_Imarker(iel) = MARK_ASIS
+          END IF
+
+        CASE(STATE_TRIA_GREENOUTER_RIGHT)
+          ! Element IEL is right green triangle of a 1-tria : 2-tria refinement.
+          
+          ! If the third vertex is locked, then "lock" all other vertices, too.
+          IF (rhadapt%p_IvertexAge(Kvert(3)) .LE. 0) THEN
+            
+            ! Lock all other vertices
+            DO ive=1,2
+              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            END DO
+            
+            ! Delete element from list of removable elements              
+            p_Imarker(iel) = MARK_ASIS
+            
+            ! We modified some vertex in this iteration
+            isModified=.TRUE.
+          END IF
+          
+        CASE(STATE_TRIA_GREENOUTER_LEFT)
+          ! Element IEL is left green triangle of a 1-tria : 2-tria refinement.
+          
+          ! If the second vertex is locked, then "lock" all other vertices, too.
+          IF (rhadapt%p_IvertexAge(Kvert(2)) .LE. 0) THEN
+            
+            ! Lock all other vertices
+            DO ive=1,3,2
+              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            END DO
+            
+            ! Delete element from list of removable elements              
+            p_Imarker(iel) = MARK_ASIS
+            
+            ! We modified some vertex in this iteration
+            isModified=.TRUE.
+          END IF
+
+        END SELECT
+      END DO
+    END DO
+
+    ! Phase 3: All vertices that are still "free" can be removed from the
+    ! triangulation. At the moment, elements are only marked for generic
+    ! removal and some of them cannot be removed, e.g., if all of its vertices
+    ! are locked. In a loop over all elements which are marked for generic
+    ! removal we determine how to remove the element or delete it from the
+    ! list of removable elements if all of its vertices are locked.
+    DO iel=1,rhadapt%NEL
+      
+      ! Only process those elements which are candidates for removal
+      IF (p_Imarker(iel) .NE. MARK_CRS_GENERIC) CYCLE
+      
+      ! Get local data for element iel
+      Kvert = rhadapt%p_IverticesAtElement(:,iel)
+      nve   = MERGE(3,4,Kvert(4) == 0)
+      
+      ! Get state of current element
+      IF (nve == 3) THEN
+        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+      ELSE
+        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+      END IF
+
+      ! What state are we?
+      SELECT CASE(istate)
+        
+      CASE(STATE_TRIA_REDINNER)
+        ! If all vertices of the element are free, then the inner red triangle
+        ! can be combined with its three nieghboring red triangles so as to
+        ! recover the original macro triangle. If one vertex of the inner
+        ! triangle is locked, then the inner red tiangle together with its three
+        ! neighboring elements can be convertec into two green triangles.
+        IF (rhadapt%p_IvertexAge(Kvert(1)) .LE. 0) THEN
+          p_Imarker(iel) = MARK_CRS_4TRIA2TRIA_1
+        ELSEIF(rhadapt%p_IvertexAge(Kvert(2)) .LE. 0) THEN
+          p_Imarker(iel) = MARK_CRS_4TRIA2TRIA_2
+        ELSEIF(rhadapt%p_IvertexAge(Kvert(3)) .LE. 0) THEN
+          p_Imarker(iel) = MARK_CRS_4TRIA2TRIA_3
+        ELSE
+          p_Imarker(iel) = MARK_CRS_4TRIA1TRIA
+        END IF
+        
+      CASE(STATE_TRIA_GREENINNER)
+        ! If all vertices of the element are locked, then we can delete the
+        ! element from the list of removable elements. Recall that both 
+        ! vertices of the macro element are locked by definition so that it
+        ! suffices to check the remaining (first) vertex.
+        IF (rhadapt%p_IvertexAge(Kvert(1)) .LE. 0) THEN
+          
+          ! Delete element from list of removable elements              
+          p_Imarker(iel) = MARK_ASIS
+        ELSE
+
+          ! Mark element for recoarsening together with its two neighbors
+          p_Imarker(iel) = MARK_CRS_3TRIA1QUAD
+        END IF
+        
+      CASE(STATE_TRIA_GREENOUTER_LEFT)
+        ! If this is the left green triangle of a 1-tria : 2-tria refinement then
+        ! get the element number of the corresponding right triangle and mark the
+        ! element with the smaller number for refinement
+        jel = rhadapt%p_IneighboursAtElement(2,iel)
+        Kvert  = rhadapt%p_IverticesAtElement(:,jel)
+        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        IF (jstate .EQ. STATE_TRIA_GREENOUTER_RIGHT) THEN
+          
+          ! Which is the element with smaller number?
+          IF (iel < jel) THEN
+            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_LEFT
+          ELSE
+            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_RIGHT
+          END IF
+        END IF
+        
+      CASE(STATE_TRIA_GREENOUTER_RIGHT)
+        ! If this is the right green triangle of a 1-tria : 2-tria refinement then
+        ! get the element number of the corresponding left triangle and mark the
+        ! element with the smaller number for refinement
+        jel = rhadapt%p_IneighboursAtElement(2,iel)
+        Kvert  = rhadapt%p_IverticesAtElement(:,jel)
+        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        IF (jstate .EQ. STATE_TRIA_GREENOUTER_LEFT) THEN
+          
+          ! Which is the element with smaller number?
+          IF (iel < jel) THEN
+            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_RIGHT
+          ELSE
+            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_LEFT
+          END IF
+        END IF
+        
+      CASE(STATE_TRIA_OUTERINNER)
+        ! If this is the inner green tiangle of a 1-quad : 4-tria refinement then
+        ! mark the element for 4-tria : 1-quad or 4-tria : 3-tria coarsening.
+        jel = rhadapt%p_IneighboursAtElement(2,iel)
+        KvertJ = rhadapt%p_IverticesAtElement(:,jel)
+        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(KvertJ(1:3)))
+        
+        ! Are we green triangle of a 1-quad : 4-tria refinement?
+        IF (jstate .EQ. STATE_TRIA_OUTERINNER) THEN
+
+          ! Which of elements IEL and JEL is the "most inner" one?
+          kel = rhadapt%p_IneighboursAtElement(1,iel)
+
+          IF (redgreen_getStateTria(rhadapt%p_IvertexAge(&
+              rhadapt%p_IverticesAtElement(1:3,kel))).EQ.&
+              STATE_TRIA_GREENOUTER_LEFT) THEN
+            
+            ! Element IEL is the "most inner" element
+            IF (rhadapt%p_IvertexAge(Kvert(2)).LE.0) THEN
+              p_Imarker(iel) = MARK_CRS_4TRIA3TRIA_RIGHT
+            ELSEIF(rhadapt%p_IvertexAge(Kvert(3)).LE.0) THEN
+              p_Imarker(iel) = MARK_CRS_4TRIA3TRIA_LEFT
+            ELSE
+              p_Imarker(iel) = MARK_CRS_4TRIA1QUAD
+            END IF
+
+          ELSE
+            ! Element JEL is the "most inner" element
+            IF (rhadapt%p_IvertexAge(KvertJ(2)).LE.0) THEN
+              p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_RIGHT
+            ELSEIF(rhadapt%p_IvertexAge(KvertJ(3)).LE.0) THEN
+              p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_LEFT
+            ELSE
+              p_Imarker(jel) = MARK_CRS_4TRIA1QUAD
+            END IF   
+          END IF
+        END IF
+
+      CASE(STATE_QUAD_RED4)
+        ! This is one of four quadrilaterals which result from a 1-quad : 4-quad
+        ! refinement. Here, the situation is slightly more difficult because 
+        ! multiple rotationally-symmetric situations have to be considered.
+                
+        ! As a first step, determine the element with the smallest number that
+        ! originates from the resulting macro element. Starting from element
+        ! IEL visit the "right" neighbor and compare its element number to
+        ! the smallest element number currently available. Start with IEL.
+        
+        jel = iel
+        kel = iel
+        ishift = 0
+        
+        ! In the same loop, determine those vertices (exlcuding the interior
+        ! vertex) which are connected to two adjacent quadilaterals that are locked
+        IF (rhadapt%p_IvertexAge(Kvert(2)).LE.0) THEN
+          iVertexLocked = ibset(0,0)
+          icount        = 1
+        ELSE
+          iVertexLocked = 0
+          icount        = 0
+        END IF
+
+        ! Ok, loop over all remaining elements (counterclockwise)
+        DO ive=1,3
+          
+          ! Get counterclockwise neighboring element
+          jel = rhadapt%p_IneighboursAtElement(2,jel)
+          
+          ! Is its second vertex locked?
+          IF (rhadapt%p_IvertexAge(rhadapt%p_IverticesAtElement(2,jel)).LE.0) THEN
+            iVertexLocked = ibset(iVertexLocked,ive)
+            icount        = icount+1
+          END IF
+          
+          ! Do we have a new smallest element number?
+          IF (jel < kel) THEN
+            kel    = jel
+            ishift = ive
+          END IF
+        END DO
+
+        ! How many vertices are locked?
+        SELECT CASE(icount)
+        CASE(0)
+          ! Simply, mark element with smallest number for 4-quad : 1-quad coarsening
+          p_Imarker(kel) = MARK_CRS_4QUAD1QUAD
+
+        CASE(1)
+          ! Ok, the four red quadrilaterals have to be converted into three triangles.
+          ! Now, we have to find out the exact conversion routine. The bits of 
+          ! iVertexLocked are set if and only if the vertex is locked. Moreover,
+          ! the first bit corresponds to the second vertex of element IEL, the second
+          ! bit corresponds to the second vertex of  the right neighbor of element 
+          ! IEL and so on. The value ishift determines the relative position of the
+          ! element with minimum number w.r.t. to IEL. That is, if IEL is the 
+          ! element with the smallest number, then ishift=0. Let us perform a 
+          ! cyclic bit-shift by the value ishift of iVertexLocked so that afterwards
+          ! the first bit corresponds to the element with the minimum number.
+          IF (ishift.NE.0) iVertexLocked = ISHFTC(iVertexLocked,ishift,TRIA_MAXNVE2D)
+
+          ! Which vertex is locked?
+          SELECT CASE(iVertexLocked)
+          CASE(1)
+            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_1
+
+          CASE(2)
+            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_2
+
+          CASE(4)
+            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_3
+
+          CASE(8)
+            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_4
+
+          CASE DEFAULT
+            PRINT *, "redgreen_mark_coarsening2D: Invalid locking."
+            CALL sys_halt()
+          END SELECT
+          
+        CASE(2)
+          ! Ok, the four red quadrilaterals have to be converted into three triangles.
+          ! Now, we have to find out the exact conversion routine. The bits of 
+          ! iVertexLocked are set if and only if the vertex is locked. Moreover,
+          ! the first bit corresponds to the second vertex of element IEL, the second
+          ! bit corresponds to the second vertex of  the right neighbor of element 
+          ! IEL and so on. The value ishift determines the relative position of the
+          ! element with minimum number w.r.t. to IEL. That is, if IEL is the 
+          ! element with the smallest number, then ishift=0. Let us perform a 
+          ! cyclic bit-shift by the value ishift of iVertexLocked so that afterwards
+          ! the first bit corresponds to the element with the minimum number.
+          IF (ishift.NE.0) iVertexLocked = ISHFTC(iVertexLocked,ishift,TRIA_MAXNVE2D)
+          
+          ! Which vertices are locked?
+          SELECT CASE(iVertexLocked)
+          CASE(3)
+            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_12
+            
+          CASE(6)
+            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_23
+
+          CASE(9)
+            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_34
+
+          CASE(12)
+            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_14
+
+          CASE(5)
+            p_Imarker(kel) = MARK_CRS_4QUAD2QUAD_13
+
+          CASE(10)
+            p_Imarker(kel) = MARK_CRS_4QUAD2QUAD_24
+
+          CASE DEFAULT
+            PRINT *, "redgreen_mark_coarsening2D: Invalid locking."
+            CALL sys_halt()
+          END SELECT
+          
+        CASE DEFAULT
+          PRINT *, "redgreen_mark_coarsening2D: Invalid number of locked vertices!"
+          CALL sys_halt()
+          
+        END SELECT
+        
+      END SELECT
+    END DO
+
+10  rhadapt%iSpec=IOR(rhadapt%iSpec,HADAPT_MARKEDCOARSEN)
+  END SUBROUTINE redgreen_mark_coarsening2D
 
   ! ***************************************************************************
 
@@ -4935,7 +5757,7 @@ CONTAINS
     imodifier=1
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
     DO iel=1,rhadapt%NEL0
-      IF (p_Imarker(iel) .NE. MARK_NOREF) p_Imodified(iel) = imodifier
+      IF (p_Imarker(iel) .NE. MARK_ASIS) p_Imodified(iel) = imodifier
     END DO
 
     isConform = .FALSE.
@@ -5466,19 +6288,19 @@ CONTAINS
         
         ! What type of element are we?
         SELECT CASE(p_Imarker(iel))
-        CASE(MARK_TRIA3TRIA_12,MARK_TRIA3TRIA_13,MARK_TRIA3TRIA_23)
+        CASE(MARK_REF_TRIA3TRIA_12,MARK_REF_TRIA3TRIA_13,MARK_REF_TRIA3TRIA_23)
           ! Blue refinement for triangles is not allowed.
           ! Hence, mark triangle for red refinement
-          p_Imarker(iel)         = MARK_TRIA4TRIA
+          p_Imarker(iel)         = MARK_REF_TRIA4TRIA
           p_Imodified(iel)       = -imodifier
           isConform              =.FALSE.
           rhadapt%increaseNVT    = rhadapt%increaseNVT+1
           
-        CASE(MARK_QUADBLUE_123,MARK_QUADBLUE_412,&
-            MARK_QUADBLUE_341,MARK_QUADBLUE_234)
+        CASE(MARK_REF_QUADBLUE_123,MARK_REF_QUADBLUE_412,&
+            MARK_REF_QUADBLUE_341,MARK_REF_QUADBLUE_234)
           ! Blue refinement for quadrilaterals is not allowed. 
           ! Hence, mark quadrilateral for red refinement
-          p_Imarker(iel)         = MARK_QUAD4QUAD
+          p_Imarker(iel)         = MARK_REF_QUAD4QUAD
           p_Imodified(iel)       = -imodifier
           isConform              =.FALSE.
           rhadapt%increaseNVT    = rhadapt%increaseNVT+2
@@ -5569,7 +6391,8 @@ CONTAINS
     INTEGER, DIMENSION(:), POINTER :: p_Imarker
     INTEGER(PREC_ELEMENTIDX) :: iel
     
-    ! Check if dynamic data structures are o.k. and if cells are marked for refinement
+    ! Check if dynamic data structures are o.k. and if 
+    ! cells are marked for refinement
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).EQ.0 .OR.&
         IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE)   .EQ.0) THEN
       PRINT *, "redgreen_refine: dynamic data structures are not generated &
@@ -5584,33 +6407,37 @@ CONTAINS
     DO iel=1,SIZE(p_Imarker)
       
       SELECT CASE(p_Imarker(iel))
-      CASE(MARK_NOREFTRIA,MARK_NOREFQUAD)
+      CASE(MARK_ASIS_TRIA,MARK_ASIS_QUAD)
         ! Do nothing
 
-      CASE(MARK_TRIA4TRIA)
+      CASE(:-1)
+
+      CASE(MARK_REF_TRIA4TRIA)
         ! Red refinement triangle
         CALL refine_Tria4Tria(rhadapt,iel,fcb_insertVertex)
         
-      CASE(MARK_QUAD4QUAD)
+      CASE(MARK_REF_QUAD4QUAD)
         ! Red refinement quadrilateral
         CALL refine_Quad4Quad(rhadapt,iel,fcb_insertVertex)
         
-      CASE(MARK_TRIA2TRIA_1,MARK_TRIA2TRIA_2,MARK_TRIA2TRIA_3)   
+      CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3)   
         ! Green refinement triangle
         CALL refine_Tria2Tria(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
         rhadapt%nGreenElements = rhadapt%nGreenElements+2
         
-      CASE(MARK_QUAD3TRIA_1,MARK_QUAD3TRIA_2,MARK_QUAD3TRIA_3,MARK_QUAD3TRIA_4)
+      CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,&
+           MARK_REF_QUAD3TRIA_3,MARK_REF_QUAD3TRIA_4)
         ! Green refinement quadrilateral
         CALL refine_Quad3Tria(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
         rhadapt%nGreenElements = rhadapt%nGreenElements+3
         
-      CASE(MARK_QUAD2QUAD_13,MARK_QUAD2QUAD_24)
+      CASE(MARK_REF_QUAD2QUAD_13,MARK_REF_QUAD2QUAD_24)
         ! Green refinement quadrilateral
         CALL refine_Quad2Quad(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
         rhadapt%nGreenElements = rhadapt%nGreenElements+2
 
-      CASE(MARK_QUAD4TRIA_12,MARK_QUAD4TRIA_23,MARK_QUAD4TRIA_34,MARK_QUAD4TRIA_14)
+      CASE(MARK_REF_QUAD4TRIA_12,MARK_REF_QUAD4TRIA_23,&
+           MARK_REF_QUAD4TRIA_34,MARK_REF_QUAD4TRIA_14)
         ! Green refinement quadrilateral
         CALL refine_Quad4Tria(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
         rhadapt%nGreenElements = rhadapt%nGreenElements+4
@@ -5631,6 +6458,66 @@ CONTAINS
     rhadapt%iSpec = IAND(rhadapt%iSpec,NOT(HADAPT_MARKEDREFINE))
 
   END SUBROUTINE redgreen_refine
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE redgreen_coarsen(rhadapt)
+
+!<description>
+    ! This subroutine performs red-green coarsening as proposed by R. Bank
+!</description>
+
+!<inputoutptut>
+    ! adativity structure
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: Kvert
+    INTEGER,  DIMENSION(:), POINTER                    :: p_Imarker
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER :: istate,nve
+
+    ! Check if dynamic data structures are o.k. and if 
+    ! cells are marked for coarsening
+    IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).EQ.0 .OR.&
+        IAND(rhadapt%iSpec,HADAPT_MARKEDCOARSEN)   .EQ.0) THEN
+      PRINT *, "redgreen_coarsen: dynamic data structures are not generated &
+          &or no marker for coarsening is available!"
+      CALL sys_halt()
+    END IF
+    CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
+
+!!$    ! Loop over all elements in reverse order
+!!$    DO iel=rhadapt%NEL0,1,-1
+!!$      
+!!$      ! Get local data for element iel
+!!$      Kvert = rhadapt%p_IverticesAtElement(:,iel)
+!!$      nve   = MERGE(3,4,Kvert(4) == 0)
+!!$
+!!$      ! Get state of current element
+!!$      IF (nve == 3) THEN
+!!$        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+!!$      ELSE
+!!$        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+!!$      END IF
+!!$
+!!$      ! What element state are we?
+!!$      SELECT CASE(istate)
+!!$
+!!$      CASE(STATE_TRIA_REDINNER)
+!!$        IF (p_Imarker(iel).EQ.MARK_ASIS) THEN
+!!$          PRINT *, "Coarsening element ",iel
+!!$        END IF
+!!$
+!!$      END SELECT
+!!$    END DO
+
+  END SUBROUTINE redgreen_coarsen
 
   ! ***************************************************************************
 
