@@ -360,7 +360,7 @@ CONTAINS
 
 !<inputoutput>
   ! The spatial preconditioner structure that should be cleaned up.
-  TYPE(t_ccspatialPreconditioner), INTENT(OUT) :: rpreconditioner
+  TYPE(t_ccspatialPreconditioner), INTENT(INOUT) :: rpreconditioner
 !</inputoutput>
 
 !</subroutine>

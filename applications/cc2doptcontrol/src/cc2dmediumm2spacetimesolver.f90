@@ -1930,10 +1930,40 @@ CONTAINS
 !</inputoutput>
   
 !</subroutine>
+    INTEGER :: ilev
   
     ! Release memory if still associated
     CALL sptils_doneDataMultigrid (rsolverNode)
     CALL sptils_doneStructureMultigrid (rsolverNode)
+    
+    ! Release level information
+    DO ilev=rsolverNode%p_rsubnodeMultigrid%NLMAX,rsolverNode%p_rsubnodeMultigrid%NLMIN,-1
+    
+      ! Pre- and postsmoother may be identical; release them only once!
+      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
+        IF (.NOT. ASSOCIATED(&
+            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
+            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+          CALL sptils_releaseSolver(&
+              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+        ELSE
+          NULLIFY(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+        END IF
+      END IF
+
+      IF (ASSOCIATED(&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+        CALL sptils_releaseSolver(&
+            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)
+      END IF
+      
+      IF (ASSOCIATED(&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)) THEN
+        CALL sptils_releaseSolver(&
+            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rcoarseGridSolver)
+      END IF
+      
+    END DO
     
     ! Release the subnode structure
     DEALLOCATE(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
