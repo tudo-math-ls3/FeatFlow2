@@ -399,8 +399,6 @@ MODULE vectorio
     CHARACTER(len=15) :: sarrayname,sformat
     CHARACTER(len=6) :: sformatChar,S
 
-    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
-
     ! Open the file
     IF (ifile .EQ. 0) THEN
       CALL io_openFileForReading(sfile, cf, bformatted=bformatted)
@@ -671,8 +669,6 @@ MODULE vectorio
 
     CHARACTER(len=15) :: sarrayname,sformat
     CHARACTER(len=6) :: sformatChar,S
-
-    IF (rvector%NEQ .EQ. 0) RETURN ! nothing to do
 
     ! Open the file
     IF (ifile .EQ. 0) THEN
