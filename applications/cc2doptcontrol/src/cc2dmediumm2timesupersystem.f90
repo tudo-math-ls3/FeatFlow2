@@ -1699,7 +1699,7 @@ CONTAINS
 !    CALL c2d2_solveSupersysDirectCN (rproblem, rspaceTimeDiscr, rx, rd, &
 !      rtempvectorX, rtempvectorB, rtempVector)
     
-    DO WHILE ((ddefNorm .GT. 1.0E-5*dinitDefNorm) .AND. (ddefNorm .LT. 1.0E99) .AND. &
+    DO WHILE ((ddefNorm .GT. 1.0E-5*dinitDefNorm) .AND. (ddefNorm .LT. 1.0E99_DP) .AND. &
               (iglobIter .LT. 10))
     
       iglobIter = iglobIter+1
@@ -1914,11 +1914,11 @@ CONTAINS
         ! Defect correction solver
         CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
         
-        p_rcgrSolver%domega = 0.7_DP
+        p_rcgrSolver%domega = 0.9_DP
       ELSE
         ! ... on higher levels, create a Block Jacobi smoother, ...
         CALL sptils_initBlockJacobi (rproblem,p_rsmoother,RspatialPrecond(ilev))
-        CALL sptils_convertToSmoother (p_rsmoother,2,0.7_DP)
+        CALL sptils_convertToSmoother (p_rsmoother,1,0.9_DP)
 
         NULLIFY(p_rcgrSolver)
       END IF
@@ -1932,6 +1932,8 @@ CONTAINS
     
     ! Our main solver is MG now.
     p_rsolverNode => p_rmgSolver
+    
+    p_rsolverNode%nmaxIterations = 5
         
     ! Initialise the space-time coupled Block-Jacobi preconditioner.
     ! Attach the spatial preconditioner which is applied to each block.

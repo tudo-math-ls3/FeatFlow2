@@ -17,10 +17,12 @@ SRC =   cc2dmedium_callback.f90 cc2dmediumm2basic.f90 \
 	cc2dmediumm2discretisation.f90 cc2dmediumm2postprocessing.f90 \
 	cc2dmediumm2stationary.f90 cc2dmedium_method2.f90\
 	cc2dmediumm2nonlinearcoreinit.f90\
-	cc2dmediumm2timesupersystem.f90\
-        cc2dmediumm2nonstationary.f90 adaptivetimestep.f90\
-        cc2dmediumm2timeanalysis.f90 cc2dmediumm2optcanalysis.f90\
-        cc2dmediumoptc.f90 spacetimevectors.f90
+	cc2dmediumm2nonstationary.f90 adaptivetimestep.f90\
+	cc2dmediumm2timeanalysis.f90 cc2dmediumm2optcanalysis.f90\
+	cc2dmediumoptc.f90 spacetimevectors.f90 \
+	spacetimeinterlevelprojection.f90 cc2dmediumm2timesupersystem.f90 \
+	cc2dmediumm2spacetimediscret.f90 cc2dmediumm2matvecassembly.f90 \
+	cc2dmediumm2spacetimesolver.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
