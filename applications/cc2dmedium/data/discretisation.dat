@@ -32,6 +32,8 @@ ssolutionStart     = 'ns/DX4'
 # etc... 
 # <0: sSolutionWrite is unformatted file 
 #     (smaller, but processor dependent and not human readable)
+# To write out raw solution data during a nonstationary simulation,
+# use the 'film output' feature in the postprocessing!
 
 iSolutionWrite     = 0
 
@@ -39,10 +41,9 @@ iSolutionWrite     = 0
 
 sSolutionWrite     = 'ns/DX4'
 
-
 # ------------------------------------------------------------------------
 
-# minimum mg-level; <=0: Use level (NLMAX-NLMIN) as coarse grid
+# minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
 NLMIN              = 1
 
@@ -101,7 +102,7 @@ iElementType       = 3
 # 1=upwind
 # 2=unified edge oriented jump stabilisation
 
-iUpwind            = 1
+iUpwind            = 0
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01

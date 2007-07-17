@@ -19,9 +19,9 @@
 # 3=Paraview
 # 4=Matlab
 
-ioutputUCD = 0
+ioutputUCD = 1
 
-# Level where to write UCD output.
+# Level where to write UCD output. Standard=0 = maximum level.
 # =1,2,3,...  : Write on level ilevelUCD.
 # =0,-1,-2,...: Write on level NLMAX - |ilevelUCD|
 # Standard is =0 which writes the solution at the maximum level.
@@ -29,6 +29,11 @@ ioutputUCD = 0
 # level and written out there (saves disc space).
 
 ilevelUCD = 0
+
+# Filename for UCD output.
+# In a nonstationary simulation, a number '.0001','.0002',... is appended
+# to this.
+sfilenameUCD = 'gmv/u.gmv'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters
@@ -41,7 +46,7 @@ dminTimeUCD = -1.0E100
 
 dmaxTimeUCD = 1.0E100
 
-# Time difference for UCD output
+# Time difference for UCD output.
 # =0.0: generate UCD output for every timestep in the range 
 #       dminTimeUCD..dmaxTimeUCD
 
@@ -54,13 +59,56 @@ dtimeDifferenceUCD = 0.0
 istartSuffixUCD = 1
 
 # ------------------------------------------------------------------------
+# Film output.
+# In a nonstationary simulation, this writes the raw solution vectors 
+# to a sequence of files. For stationary simulations, this has no effect.
+
+# Type of output file to generate from solutions.
+# 0=disabled (standard)
+# 1=formatted film output
+# 2=unformatted film output
+
+ioutputFilm = 0
+
+# Level where to write Film output. Standard = 0 = maximum level.
+# =1,2,3,...  : Write on level ilevelFilm.
+# =0,-1,-2,...: Write on level NLMAX - |ilevelFilm|
+# Standard is =0 which writes the solution at the maximum level.
+# For a value <> 0, the solution is projected down to the desired
+# level and written out there (saves disc space).
+
+ilevelFilm = 0
+
+# Basic filename for Film output. A number '.0001','.0002',... is appended
+# to this.
+sfilenameFilm = 'ns/solution'
+
+# Start time for Film output.
+
+dminTimeFilm = -1.0E100
+
+# End time for Film output.
+
+dmaxTimeFilm = 1.0E100
+
+# Time difference for Film output.
+# =0.0: generate Film output for every timestep in the range 
+#       dminTimeFilm..dmaxTimeFilm
+
+dtimeDifferenceFilm = 0.0
+
+# Start number for file suffix when writing Film files (1='.0001',...).
+
+istartSuffixFilm = 1
+
+# ------------------------------------------------------------------------
 # Error analysis
 
 # Calculate L2-error to reference solution.
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 0
+ierrorAnalysisL2 = 1
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate

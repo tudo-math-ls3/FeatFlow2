@@ -75,7 +75,13 @@ MODULE cc2dmediumm2postprocessing
     REAL(DP)             :: dnextTimeUCD = 0.0_DP
     
     ! Next file extension for UCD output file.
-    INTEGER              :: inextFileSuffix = 0
+    INTEGER              :: inextFileSuffixUCD = 0
+
+    ! Point in time when the next Film file is to be written out
+    REAL(DP)             :: dnextTimeFilm = 0.0_DP
+    
+    ! Next file extension for Film output file.
+    INTEGER              :: inextFileSuffixFilm = 0
 
     ! A vector that describes the X-velocity field in the vertices
     TYPE(t_vectorScalar) :: rvectorVelX
@@ -182,7 +188,12 @@ CONTAINS
     CALL c2d2_errorAnalysis (rvector,rproblem)
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
-    CALL c2d2_writeUCD (rpostprocessing, rvector, rproblem, rproblem%rtimedependence%dtime)
+    CALL c2d2_writeUCD (rpostprocessing, rvector, rproblem, &
+        rproblem%rtimedependence%dtime)
+    
+    ! Write film output (raw data vectors)
+    CALL c2d2_writeFilm (rpostprocessing, rvector, rproblem, &
+        rproblem%rtimedependence%dtime)
     
   END SUBROUTINE
 
@@ -452,6 +463,8 @@ CONTAINS
     REAL(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
     INTEGER :: ioutputUCD,ieltype,ilevelUCD
     
+    CHARACTER(SYS_STRLEN) :: sfile,sfilename
+    
     IF (PRESENT(dtime)) THEN
       ! In a nonstationary simulation, first check if we are allowed
       ! to write something.
@@ -554,6 +567,16 @@ CONTAINS
     ! Clean up the collection (as we are done with the assembly, that's it.
     CALL c2d2_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
+    ! Basic filename
+    CALL parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                 'SFILENAMEUCD', sfile, '')
+                                 
+    ! Remove possible ''-characters
+    READ(sfile,*) sfilename
+    
+    ! Create the actual filename
+    sfile = TRIM(ADJUSTL(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixUCD,5)
+                                 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector -- on the level NLMAX.
     ! The next step is to project it down to level ilevelUCD.
     ! Due to the fact that solutions are usually 2-level-ordered,
@@ -566,13 +589,11 @@ CONTAINS
     
     ! Start UCD export to GMV file:
     CALL output_lbrk ()
-    CALL output_line ('Writing GMV file: ' &
-        //'gmv/u.gmv.'//sys_si0(rpostprocessing%inextFileSuffix,5))
+    CALL output_line ('Writing GMV file: '//sfile)
     
     SELECT CASE (ioutputUCD)
     CASE (1)
-      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-          'gmv/u.gmv.'//sys_si0(rpostprocessing%inextFileSuffix,5))
+      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
           
     CASE DEFAULT
       CALL output_line ('Invalid UCD ooutput type.', &
@@ -643,10 +664,153 @@ CONTAINS
     CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(2))
 
     IF (PRESENT(dtime)) THEN
-      ! Update time steamp of last written out GMV.
+      ! Update time stamp of last written out GMV.
       rpostprocessing%dnextTimeUCD = rpostprocessing%dnextTimeUCD+dtimeDifferenceUCD
-      rpostprocessing%inextFileSuffix = rpostprocessing%inextFileSuffix + 1
+      rpostprocessing%inextFileSuffixUCD = rpostprocessing%inextFileSuffixUCD + 1
     END IF
+
+  END SUBROUTINE
+
+!******************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_writeFilm (rpostprocessing,rvector,rproblem,dtime)
+
+!<description>
+  ! Writes Film output (raw data vectors) to a file as configured in the 
+  ! DAT file.
+  !
+  ! Note: This file is usually only used in a nonstationary simulation.
+  ! In a stationary simulation, Film output makes no sense!
+!</description>
+  
+!<input>
+  ! Solution vector.
+  TYPE(t_vectorBlock), INTENT(IN) :: rvector
+  
+  ! Simulation time.
+  REAL(DP), INTENT(IN) :: dtime
+!</input>
+
+!<inputoutput>
+  ! Problem structure.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+  
+  ! Postprocessing structure. Must have been initialised prior
+  ! to calling this routine.
+  ! The time stamp of the last written out Film file is updated.
+  TYPE(t_c2d2postprocessing), INTENT(INOUT) :: rpostprocessing  
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: dminTime, dmaxTime, dtimeDifferenceFilm
+    INTEGER :: ioutputFilm,ilevelFilm
+    
+    TYPE(t_vectorBlock) :: rvector1,rvector2
+    TYPE(t_vectorScalar) :: rvectorTemp
+    CHARACTER(LEN=SYS_STRLEN) :: sfile,sfilename
+    INTEGER :: ilev
+    INTEGER(PREC_VECIDX) :: NEQ
+    TYPE(t_interlevelProjectionBlock) :: rprojection 
+    LOGICAL :: bformatted
+    
+    ! Type of output:    
+    CALL parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                              'IOUTPUTFILM', ioutputFilm, 0)
+    IF (ioutputFilm .EQ. 0) RETURN
+
+    ! First check if we are allowed to write something.
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DMINTIMEFILM', dminTime, -1.E100_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DMAXTIMEFILM', dmaxTime, 1.E100_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DTIMEDIFFERENCEFILM', dtimeDifferenceFilm, 0.0_DP)
+                                    
+    IF ((dtime .LT. dminTime) .OR. (dtime .GT. dmaxTime)) RETURN
+    
+    IF (dtimeDifferenceFilm .GT. 0.0_DP) THEN
+      IF (rpostprocessing%dnextTimeFilm .GT.  dtime) RETURN
+    ELSE IF (dtimeDifferenceFilm .LT. 0.0_DP) THEN
+      IF (rpostprocessing%dnextTimeFilm .LT. dtime) RETURN
+    END IF
+
+    ! Basic filename
+    CALL parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                 'SFILENAMEFILM', sfile, '')
+                                 
+    ! Remove possible ''-characters
+    READ(sfile,*) sfilename
+    
+    ! Create the actual filename
+    sfile = TRIM(ADJUSTL(sfilename))//'.'//sys_si0(rpostprocessing%inextFileSuffixFilm,5)
+                                 
+    ! Level of output:
+    CALL parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                              'ILEVELFILM', ilevelFilm, 0)
+    IF (ilevelFilm .LE. 0) THEN
+      ilevelFilm = rproblem%NLMAX+ilevelFilm
+    END IF
+    
+    ilevelFilm = MIN(rproblem%NLMAX,MAX(rproblem%NLMIN,ilevelFilm))
+    
+    IF (ilevelFilm .LT. rproblem%NLMIN) THEN
+      PRINT *,'Warning: Level for solution vector is < NLMIN! &
+              &Writing out at level NLMIN!'
+      ilevelFilm = rproblem%NLMIN
+    END IF
+    
+    ! Write formatted output?
+    bformatted = ioutputFilm .NE. 2
+
+    ! Interpolate the solution down to level istart.
+    CALL lsysbl_copyVector (rvector,rvector1)   ! creates new rvector1!
+
+    DO ilev = rproblem%NLMAX,ilevelFilm+1,-1
+      
+      ! Initialise a vector for the lower level and a prolongation structure.
+      CALL lsysbl_createVectorBlock (&
+          rproblem%RlevelInfo(ilev-1)%p_rdiscretisation,rvector2,.FALSE.)
+      
+      CALL mlprj_initProjectionVec (rprojection,rvector2)
+      
+      ! Interpolate to the next higher level.
+      ! (Don't 'restrict'! Restriction would be for the dual space = RHS vectors!)
+
+      NEQ = mlprj_getTempMemoryVec (rprojection,rvector2,rvector1)
+      IF (NEQ .NE. 0) CALL lsyssc_createVector (rvectorTemp,NEQ,.FALSE.)
+      CALL mlprj_performInterpolation (rprojection,rvector2,rvector1, &
+                                       rvectorTemp)
+      IF (NEQ .NE. 0) CALL lsyssc_releaseVector (rvectorTemp)
+      
+      ! Swap rvector1 and rvector2. Release the fine grid vector.
+      CALL lsysbl_swapVectors (rvector1,rvector2)
+      CALL lsysbl_releaseVector (rvector2)
+      
+      CALL mlprj_doneProjection (rprojection)
+      
+    END DO
+
+    CALL output_lbrk ()
+    CALL output_line ('Writing Film file: '//sfile)
+
+    ! Write out the solution.
+    IF (bformatted) THEN
+      CALL vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .TRUE.,&
+         0, sfile, '(E22.15)')
+    ELSE
+      CALL vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .TRUE.,0, sfile)
+    END IF
+
+    ! Release temp memory.
+    CALL lsysbl_releaseVector (rvector1)
+
+    ! Update time stamp of last written out Film file.
+    rpostprocessing%dnextTimeFilm = rpostprocessing%dnextTimeFilm+dtimeDifferenceFilm
+    rpostprocessing%inextFileSuffixFilm = rpostprocessing%inextFileSuffixFilm + 1
 
   END SUBROUTINE
 
@@ -710,8 +874,11 @@ CONTAINS
     IF (rproblem%itimedependence .NE. 0) THEN
       rpostprocessing%dnextTimeUCD = rproblem%rtimedependence%dtimeInit
       CALL parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                'ISTARTSUFFIXUCD', rpostprocessing%inextFileSuffix, 1)
+         'ISTARTSUFFIXUCD', rpostprocessing%inextFileSuffixUCD, 1)
       
+      rpostprocessing%dnextTimeFilm = rproblem%rtimedependence%dtimeInit
+      CALL parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+         'ISTARTSUFFIXFILM', rpostprocessing%inextFileSuffixFilm, 1)
     END IF
                                     
   END SUBROUTINE
@@ -745,8 +912,12 @@ CONTAINS
     IF (rpostprocessingSrc%bnonstationaryPostprocessing) THEN
       rpostprocessingDst%bnonstationaryPostprocessing = &
           rpostprocessingSrc%bnonstationaryPostprocessing
+
       rpostprocessingDst%dnextTimeUCD = rpostprocessingSrc%dnextTimeUCD
-      rpostprocessingDst%inextFileSuffix = rpostprocessingSrc%inextFileSuffix
+      rpostprocessingDst%inextFileSuffixUCD = rpostprocessingSrc%inextFileSuffixUCD
+
+      rpostprocessingDst%dnextTimeFilm = rpostprocessingSrc%dnextTimeFilm
+      rpostprocessingDst%inextFileSuffixFilm = rpostprocessingSrc%inextFileSuffixFilm
     END IF
                                     
   END SUBROUTINE
