@@ -4857,4 +4857,73 @@ CONTAINS
   
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_infoStatistics (rtriangulation,bheadline,ilevel)
+  
+!<description>
+  ! Prints out statistical information of the given triangulation to the
+  ! terminal. The output is formatted as a table with an optional headline
+  ! and an optional level identifier.
+!</description>
+
+!<input>
+  ! Triangulation structure.
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  
+  ! OPTIONAL: Print out a headline above the statistical data.
+  ! =FALSE: don't print = standard.
+  ! =TRUE: print a headline.
+  LOGICAL, INTENT(IN), OPTIONAL :: bheadline
+  
+  ! OPTIONAL: Level identifier.
+  ! If specified, an additional column 'Level' is added to the front of
+  ! the statistics table. ilevel is printed to this column.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+!</input>
+
+!</subroutine>
+
+    SELECT CASE (rtriangulation%NDIM)
+    CASE (NDIM2D)
+      IF (PRESENT(bheadline)) THEN
+        IF (bheadline) THEN
+          ! Print a headline
+          IF (PRESENT(ilevel)) THEN
+            CALL output_line(&
+              'Lv. dim.       NVT        NMT        NEL    NBCT' &
+            //'    NVBD     #trias     #quads')
+            CALL output_line(&
+              '------------------------------------------------' &
+            //'------------------------------')
+          ELSE
+            CALL output_line(&
+              'dim.       NVT        NMT        NEL    NBCT' &
+            //'    NVBD     #trias     #quads')
+            CALL output_line(&
+              '--------------------------------------------' &
+            //'------------------------------')
+          END IF
+        END IF
+      END IF
+
+      ! Print out the statistics
+      IF (PRESENT(ilevel)) CALL output_line (TRIM(sys_si(ilevel,3))//' ',&
+          bnolinebreak=.TRUE.)
+      
+      CALL output_line (&
+          TRIM(sys_si(rtriangulation%NDIM,4)) &
+        //TRIM(sys_si(rtriangulation%NVT,11)) &
+        //TRIM(sys_si(rtriangulation%NMT,11)) &
+        //TRIM(sys_si(rtriangulation%NEL,11)) &
+        //TRIM(sys_si(rtriangulation%NBCT,8)) &
+        //TRIM(sys_si(rtriangulation%NVBD,8)) &
+        //TRIM(sys_si(rtriangulation%InelOfType(TRIA_NVETRI2D),11)) &
+        //TRIM(sys_si(rtriangulation%InelOfType(TRIA_NVEQUAD2D),11)) )
+    END SELECT
+
+  END SUBROUTINE
+
 END MODULE

@@ -102,6 +102,7 @@ MODULE paramlist
 
   USE fsystem
   USE io
+  USE genoutput
   
   IMPLICIT NONE
 
@@ -2364,6 +2365,72 @@ CONTAINS
     
     END SUBROUTINE
   
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE parlst_info (rparlist)
+  
+!<description>
+  ! Prints the parameter list rparlist to the terminal.
+!</description>
+  
+!<input> 
+  ! The parameter list which is to be printed to the terminal.
+  TYPE(t_parlist), INTENT(IN) :: rparlist
+!</input>
+
+!</subroutine>
+
+
+  INTEGER :: isection,ivalue,ientry,icount
+  
+    IF (rparlist%isectionCount .EQ. 0) THEN
+      PRINT *,'parlst_info: Parameter list not initialised!'
+      CALL sys_halt()
+    END IF
+  
+    ! Loop through all sections
+    DO isection = 1,rparlist%isectionCount
+    
+      ! Append the section name. May be empty for the unnamed section,
+      ! which is always the first one.
+      IF (isection .GT. 1) THEN
+        ! Empty line before
+        CALL output_lbrk()
+        CALL output_line('['//TRIM(rparlist%p_Rsections(isection)%ssectionName)//']')
+      END IF
+        
+      ! Loop through the values in the section
+      DO ivalue = 1,rparlist%p_Rsections(isection)%iparamCount
+        
+        ! Do we have one or multiple entries to that parameter?
+        icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
+        IF (icount .EQ. 0) THEN
+          ! Write "name=value"
+          CALL output_line(&
+            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+            //"="// &
+            TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
+        ELSE
+          ! Write "name(icount)="
+          CALL output_line(&
+            TRIM(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+            //"("//TRIM(sys_siL(icount, 10))//")=")
+          ! Write all the entries of that value, one each line.
+          DO ientry = 1,icount
+            CALL output_line(&
+              TRIM(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
+                   p_Sentry(ientry)))
+          END DO
+        END IF
+      
+      END DO ! ivalue
+    
+    END DO ! isection
+    
   END SUBROUTINE
   
 END MODULE
