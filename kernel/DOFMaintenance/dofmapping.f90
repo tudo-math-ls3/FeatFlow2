@@ -24,6 +24,12 @@
 !#     -> Map the 'local' degrees of freedom 1..n on a set of elements to 
 !#        the global degrees of freedom according to a discretisaion. 
 !#
+!# 5.) dof_infoDiscr
+!#     -> Prints out information about a discretisation to the terminal
+!#
+!# 6.) dof_infoDiscrBlock
+!#     -> Prints out information about a block discretisation to the terminal
+!#
 !# </purpose>
 !##############################################################################
 
@@ -932,6 +938,131 @@ CONTAINS
     
     IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))-iNVT
   END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE dof_infoDiscr (rspatialDiscr)
+  
+!<description>
+  ! This routine prints out statistical information about a discretisation
+  ! to the terminal.
+!</description>
+
+!<inputoutput>
+  ! The discretisation structure where information should be printed.
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rspatialDiscr
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i
+    TYPE(t_elementDistribution), POINTER :: p_relementDistr
+
+    ! General information:
+    CALL output_line ('Dimension:                    '&
+        //TRIM(sys_siL(rspatialDiscr%ndimension,10)))
+    CALL output_line ('Complexity:                   ',bnolinebreak=.TRUE.,&
+        bnoTrim=.TRUE.)
+    SELECT CASE (rspatialDiscr%ccomplexity)
+    CASE (SPDISC_UNIFORM)
+      CALL output_line ('uniform')
+    CASE (SPDISC_CONFORMAL)
+      CALL output_line ('conformal')
+    CASE (SPDISC_MIXED)
+      CALL output_line ('mixed')
+    CASE DEFAULT
+      CALL output_line ('undefined')
+    END SELECT
+    CALL output_line ('#DOFs(trial space):           '&
+        //TRIM(sys_siL(dof_igetNDofGlob(rspatialDiscr,.FALSE.),16)))
+    CALL output_line ('#DOFs(test space):            '&
+        //TRIM(sys_siL(dof_igetNDofGlob(rspatialDiscr,.TRUE.),16)))
+    CALL output_line ('#finite element spaces:       '&
+        //TRIM(sys_siL(rspatialDiscr%inumFESpaces,10)))
+        
+    ! Print out detailed information about the FE spaces.
+    CALL output_line ('Discretisation details:')
+    CALL output_line ('FE-space #elements       NVE   trial-element   test-element')
+    
+    ! Loop through all element distributions
+    DO i=1,rspatialDiscr%inumFESpaces
+    
+      p_relementDistr => rspatialDiscr%RelementDistribution(i)
+      
+      CALL output_line ( ' ' &
+        // sys_siL(i,8) &
+        // sys_siL(p_relementDistr%NEL,16) &
+        // sys_siL(elem_igetNVE(p_relementDistr%itrialElement),6) &
+        // sys_siL(IAND(elem_getPrimaryElement(p_relementDistr%itrialElement),&
+                        NOT(EL_DIMENSION)),16) &
+        // sys_siL(IAND(elem_getPrimaryElement(p_relementDistr%itestElement),&
+                   NOT(EL_DIMENSION)),16) )
+      
+    END DO
+    
+  END SUBROUTINE  
+
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE dof_infoDiscrBlock (rblockDiscr,bdetailed)
+  
+!<description>
+  ! This routine prints out statistical information about a block 
+  ! discretisation to the terminal.
+!</description>
+
+!<input>
+  ! Whether a detailed description is printed to the terminal or not.
+  ! FALSE prints out information only about the block discretisation.
+  ! TRUE prints out more detailed information about the block 
+  ! discretisation, the structure of the blocks, the used FE spaces etc.
+  LOGICAL, INTENT(IN) :: bdetailed
+
+  ! The discretisation structure where information should be printed.
+  TYPE(t_blockDiscretisation), INTENT(IN), TARGET :: rblockDiscr
+!</input>
+  
+!</subroutine>
+
+    INTEGER :: i
+
+    CALL output_line ('Dimension:                    '&
+        //TRIM(sys_siL(rblockDiscr%ndimension,10)))
+    CALL output_line ('Complexity:                   ',bnolinebreak=.TRUE.,&
+        bnoTrim=.TRUE.)
+    SELECT CASE (rblockDiscr%ccomplexity)
+    CASE (SPDISC_UNIFORM)
+      CALL output_line ('uniform')
+    CASE (SPDISC_CONFORMAL)
+      CALL output_line ('conformal')
+    CASE (SPDISC_MIXED)
+      CALL output_line ('mixed')
+    CASE DEFAULT
+      CALL output_line ('undefined')
+    END SELECT
+    CALL output_line ('#DOFs(trial space):           '&
+        //TRIM(sys_siL(dof_igetNDofGlobBlock(rblockDiscr,.FALSE.),16)))
+    CALL output_line ('#DOFs(test space):            '&
+        //TRIM(sys_siL(dof_igetNDofGlobBlock(rblockDiscr,.TRUE.),16)))
+
+    CALL output_line ('Number of components:         '&
+        //TRIM(sys_siL(rblockDiscr%ncomponents,10)))
+        
+    IF (bdetailed) THEN
+      DO i=1,rblockDiscr%ncomponents
+        CALL output_lbrk ()
+        CALL output_line ('Solution component:           '//TRIM(sys_siL(i,10)))
+        CALL dof_infoDiscr(rblockDiscr%RspatialDiscretisation(i))
+      END DO
+    END IF
 
   END SUBROUTINE
 
