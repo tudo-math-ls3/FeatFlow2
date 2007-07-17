@@ -583,6 +583,10 @@ CONTAINS
     ! Afterwards, we can start the timeloop.
     CALL c2d2_implementBC (rproblem,rvector,rrhs,.TRUE.,.FALSE.)
 
+    ! Postprocessing. Write out the initial solution.
+    CALL output_line ('Starting postprocessing of initial solution...')
+    CALL c2d2_postprocessingNonstat (rproblem,rvector,rpostprocessing)
+
     ! First time step
     rproblem%rtimedependence%itimeStep = 1
     rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimeInit

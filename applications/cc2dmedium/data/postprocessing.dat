@@ -56,7 +56,7 @@ dtimeDifferenceUCD = 0.0
 # Whether this is used or not depends on the type of output
 # (e.g. GMV uses this)
 
-istartSuffixUCD = 1
+istartSuffixUCD = 0
 
 # ------------------------------------------------------------------------
 # Film output.
@@ -99,7 +99,7 @@ dtimeDifferenceFilm = 0.0
 
 # Start number for file suffix when writing Film files (1='.0001',...).
 
-istartSuffixFilm = 1
+istartSuffixFilm = 0
 
 # ------------------------------------------------------------------------
 # Error analysis

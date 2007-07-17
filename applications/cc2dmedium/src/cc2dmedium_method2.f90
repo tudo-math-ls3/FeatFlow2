@@ -137,6 +137,12 @@ CONTAINS
     ! Get the output levels during the initialisation phase and during the program.
     CALL c2d2_initOutput (p_rproblem)
     
+    ! Print the configuration to the terminal
+    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
+      CALL output_line ('Parameters:')
+      CALL parlst_info (p_rproblem%rparamList)
+    END IF
+    
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     CALL c2d2_initParameters (p_rproblem)
@@ -144,17 +150,75 @@ CONTAINS
     ! So now the different steps - one after the other.
     !
     ! Initialisation
+    !
+    ! Parametrisation & Triangulation
+    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+      CALL output_separator (OU_SEP_MINUS)
+      CALL output_line('Initialising parametrisation / triangulation...')
+    END IF
+    
     CALL c2d2_initParamTriang (p_rproblem)
+    
+    ! Print mesh information
+    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
+      CALL output_lbrk ()
+      CALL output_line ('Mesh statistics:')
+      CALL output_lbrk ()
+      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        CALL tria_infoStatistics (p_rproblem%RlevelInfo(i)%rtriangulation,&
+            i .EQ. p_rproblem%NLMIN,i)
+      END DO
+    END IF
+    
+    ! Discretisation
+    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+      CALL output_separator (OU_SEP_MINUS)
+      CALL output_line('Initialising discretisation...')
+    END IF
     CALL c2d2_initDiscretisation (p_rproblem)    
+
+    IF (p_rproblem%MSHOW_Initialisation .GE. 2) THEN
+      CALL output_lbrk ()
+      CALL output_line ('Discretisation statistics:')
+      DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
+        CALL output_lbrk ()
+        CALL output_line ('Level '//sys_siL(i,5))
+        CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%p_rdiscretisation,.FALSE.)
+      END DO
+    END IF
+    
+    ! And all the other stuff...
+    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+      CALL output_separator (OU_SEP_MINUS)
+      CALL output_line('Initialising postprocessing...')
+    END IF
     CALL c2d2_initPostprocessing (p_rproblem,rpostprocessing)
+    
+    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+      CALL output_separator (OU_SEP_MINUS)
+      CALL output_line('Initialising matrices/vectors...')
+    END IF
     CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
+
+    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+      CALL output_separator (OU_SEP_MINUS)
+      CALL output_line('Initialising analytic boundary conditions...')
+    END IF
     CALL c2d2_initAnalyticBC (p_rproblem)   
 
     ! On all levels, generate the static matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
+    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+      CALL output_separator (OU_SEP_MINUS)
+      CALL output_line('Generating basic matrices...')
+    END IF
     CALL c2d2_generateBasicMatrices (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
+    IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+      CALL output_separator (OU_SEP_MINUS)
+      CALL output_line('Initialising initial solution vector...')
+    END IF
     CALL c2d2_initInitialSolution (p_rproblem,rvector)
 
     ! Now choose the algorithm. Stationary or time-dependent simulation?
@@ -163,15 +227,28 @@ CONTAINS
       ! Stationary simulation
       !
       ! Generate the RHS vector.
+      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+        CALL output_separator (OU_SEP_MINUS)
+        CALL output_line('Generating RHS vector...')
+      END IF
       CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
       
       ! Generate discrete boundary conditions
+      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+        CALL output_separator (OU_SEP_MINUS)
+        CALL output_line('Generating discrete boundary conditions...')
+      END IF
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
 
       ! Implementation of boundary conditions
       CALL c2d2_implementBC (p_rproblem,rvector,rrhs,.TRUE.,.TRUE.)
     
       ! Solve the problem
+      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+        CALL output_separator (OU_SEP_MINUS)
+        CALL output_line('Invoking stationary solver...')
+        CALL output_separator (OU_SEP_MINUS)
+      END IF
       CALL c2d2_solve (p_rproblem,rvector,rrhs)
     
       ! Postprocessing
@@ -182,14 +259,27 @@ CONTAINS
       ! Time dependent simulation with explicit time stepping.
       !
       ! Generate the RHS vector for the first time step.
+      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+        CALL output_separator (OU_SEP_MINUS)
+        CALL output_line('Generating RHS vector...')
+      END IF
       CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
       
       ! Initialise the boundary conditions, but 
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
+      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+        CALL output_separator (OU_SEP_MINUS)
+        CALL output_line('Generating discrete boundary conditionsof first time step...')
+      END IF
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
       
       ! Call the nonstationary solver to solve the problem.
+      IF (p_rproblem%MSHOW_Initialisation .GE. 1) THEN
+        CALL output_separator (OU_SEP_MINUS)
+        CALL output_line('Invoking nonstationary solver...')
+        CALL output_separator (OU_SEP_MINUS)
+      END IF
       CALL c2d2_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
       
     END IF
