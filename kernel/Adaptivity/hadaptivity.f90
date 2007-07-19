@@ -155,7 +155,7 @@
 !# 23.) redgreen_refine
 !#      -> perform red-green refinement for marked elements
 !#
-!# 24) redgreeen_coarsen
+!# 24) redgreen_coarsen
 !#      -> perform red-green coarsening for marked elements
 !#
 !# 25.) redgreen_getState
@@ -1855,9 +1855,7 @@ CONTAINS
       CALL redgreen_mark_refinement2D(rhadapt,fcb_adjustDimension,fcb_insertVertex)
 
       ! Mark element for recoarsening based on indicator function
-      CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
-      
-      CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(0,0))
+!      CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
 
       ! Compute new dimensions
       nvt = rhadapt%NVT+rhadapt%increaseNVT
@@ -1888,19 +1886,17 @@ CONTAINS
       CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
           rhadapt%p_ImidneighboursAtElement)
 
-
       ! Adjust dimension of solution vector
       CALL fcb_adjustDimension(nvt)
       
       ! Perform refinement
       CALL redgreen_refine(rhadapt,fcb_insertVertex)
 
-!      CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(0,0))
-
       ! Perform coarsening
-      CALL redgreen_coarsen(rhadapt)
+!      CALL redgreen_coarsen(rhadapt,fcb_removeVertex)
 
-!      CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(0,0))
+      ! Adjust dimension of solution vector
+      CALL fcb_adjustDimension(rhadapt%NVT)
 
       ! Adjust nodal property array
       nvt = rhadapt%NVT
@@ -2117,7 +2113,8 @@ CONTAINS
     !---------------------------------------------------------------------------
     ! Output all elements
     !---------------------------------------------------------------------------
-    IF (IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE).EQ.HADAPT_MARKED) THEN
+    IF (IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE).EQ.HADAPT_MARKEDREFINE .OR.&
+        IAND(rhadapt%iSpec,HADAPT_MARKEDCOARSEN).EQ.HADAPT_MARKEDCOARSEN) THEN
 
       ! Set pointer to marker
       CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
@@ -2479,63 +2476,61 @@ CONTAINS
     ! If the vertex already exists, e.g., it was added when the adjacent element
     ! was refined, then nothing needs to be done for this vertex
     IF (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D,&
-        Dcoord,iquad,ipos,i12) == QNOT_FOUND) THEN
-      
-      ! Update number of vertices
-      rhadapt%NVT = rhadapt%NVT+1
-      i12            = rhadapt%NVT
-
-      ! Set age of vertex
-      rhadapt%p_IvertexAge(i12) = &
-          1+MAX(ABS(rhadapt%p_IvertexAge(i1)),&
-                ABS(rhadapt%p_IvertexAge(i2)))
-      
-      ! Set nodal property
-      IF (e1 == 0) THEN
-        rhadapt%p_InodalProperty(i12) = rhadapt%p_InodalProperty(i1)
-      ELSE
-        rhadapt%p_InodalProperty(i12) = 0
-      END IF
-      
-      ! Add new entry to vertex coordinates
-      CALL qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,i12,Dcoord,iquad)
-      
-      ! Are we at the boundary?
-      IF (e1 == 0) THEN
-        ! Increment number of boundary nodes
-        rhadapt%NVBD = rhadapt%NVBD+1
-        
-        ! Get number of boundary component
-        ibct = rhadapt%p_InodalProperty(i1)
-        
-        ! Get parameter values of the boundary nodes
-        IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
-          PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
-          CALL sys_halt()
-        END IF
-        ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        dvbdp1 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
-        
-        IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
-          PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
-          CALL sys_halt()
-        END IF
-        ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        dvbdp2 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
-        
-        ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
-        IF (dvbdp2 <= dvbdp1) dvbdp2=CEILING(dvbdp1)
-        
-        ! Add new entry to boundary structure
-        CALL btree_insertIntoTree(rhadapt%rBoundary(ibct),i12,&
-            Idata=(/i1,i2/),Ddata=(/0.5_DP*(dvbdp1+dvbdp2)/))
-      END IF
+        Dcoord,iquad,ipos,i12) == QFOUND) RETURN
+    
+    
+    ! Otherwise, update number of vertices
+    rhadapt%NVT = rhadapt%NVT+1
+    i12            = rhadapt%NVT
+    
+    ! Set age of vertex
+    rhadapt%p_IvertexAge(i12) = &
+        1+MAX(ABS(rhadapt%p_IvertexAge(i1)),ABS(rhadapt%p_IvertexAge(i2)))
+    
+    ! Set nodal property
+    IF (e1 == 0) THEN
+      rhadapt%p_InodalProperty(i12) = rhadapt%p_InodalProperty(i1)
+    ELSE
+      rhadapt%p_InodalProperty(i12) = 0
     END IF
-
-   
+    
+    ! Add new entry to vertex coordinates
+    CALL qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,i12,Dcoord,iquad)
+    
+    ! Are we at the boundary?
+    IF (e1 == 0) THEN
+      ! Increment number of boundary nodes
+      rhadapt%NVBD = rhadapt%NVBD+1
+      
+      ! Get number of boundary component
+      ibct = rhadapt%p_InodalProperty(i1)
+      
+      ! Get parameter values of the boundary nodes
+      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
+        PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
+        CALL sys_halt()
+      END IF
+      ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      dvbdp1 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
+      
+      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
+        PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
+        CALL sys_halt()
+      END IF
+      ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      dvbdp2 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
+      
+      ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
+      IF (dvbdp2 <= dvbdp1) dvbdp2=CEILING(dvbdp1)
+      
+      ! Add new entry to boundary structure
+      CALL btree_insertIntoTree(rhadapt%rBoundary(ibct),i12,&
+          Idata=(/i1,i2/),Ddata=(/0.5_DP*(dvbdp1+dvbdp2)/))
+    END IF
+      
     ! Insert vertex into graph
     CALL grph_insertVertex(rhadapt%rsparsitygraph,i12)
-     
+    
     ! Finally, update the solution vector
     ksvt=(/i1,i2/)
     CALL fcb_insertVertex(2,ksvt,i12)
@@ -2629,34 +2624,41 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE remove_vertex2D(rhadapt,ivt,jvt)
+  SUBROUTINE remove_vertex2D(rhadapt,ivt,ivtReplace)
   
 !<description>
-    ! This subroutine removes and existing vertex from the adaptive data
-    ! structure and moves the last vertex at its position
+    ! This subroutine removes an existing vertex from the adaptivity structure
+    ! and moves the last vertex at its position. The number of the replacement
+    ! vertex is returned as ivtReplace. If the vertex to be replace is the last
+    ! vertex then ivtReplace=0 is returned on output.
 !</description>
 
 !<input>
     ! Number of the vertex to be deleted
     INTEGER(PREC_VERTEXIDX), INTENT(IN) :: ivt
 
-    ! Number of the vertex to replace the deleted one
-    INTEGER(PREC_VERTEXIDX), INTENT(IN) :: jvt
+    
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
     TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
 !</inputoutput>
+
+!<output>
+    ! Number of the vertex to replace the deleted one
+    INTEGER(PREC_VERTEXIDX), INTENT(OUT) :: ivtReplace
+!</output>
 !</subroutine>
 
     ! local variables
     INTEGER(PREC_VERTEXIDX) :: i1,i2
     INTEGER(PREC_TREEIDX)   :: ipred,ipos
     INTEGER :: ibct
-    
-!!$    ! Remove solution value
-!!$    CALL fcb_removeVertex(ivt)
+
+    ! Get last vertex and decrease number of vertices by one
+    ivtReplace  = rhadapt%NVT
+    rhadapt%NVT = rhadapt%NVT-1
     
     ! If IVT is a boundary node remove it from the boundary and
     ! connect its boundary neighbors with each other
@@ -2704,19 +2706,19 @@ CONTAINS
       END IF
     END IF
     
-    ! If IVT is not the last node then copy the data for vertex JVT
-    ! to IVT and prepare JVT for elimination
-    IF (ivt < jvt) THEN
+    ! If IVT is not the last node then copy the data for vertex IVTREPLACE
+    ! to IVT and prepare IVTREPLACE for elimination
+    IF (ivt < ivtReplace) THEN
       
-      ! If JVT is a boundary node then remove JVT from the boundary
-      ! vector, insert IVT into the boundary vector instead, and
-      ! connect the boundary neighbors of JVT with IVT
-      ibct = rhadapt%p_InodalProperty(jvt)
+      ! If IVTREPLACE is a boundary node then remove IVTREPLACE from the boundary
+      ! vector, insert IVT into the boundary vector instead, and connect the
+      ! boundary neighbors of IVTREPLACE with IVT
+      ibct = rhadapt%p_InodalProperty(ivtReplace)
 
       ! Are we at the boundary?
       IF (ibct .NE. 0) THEN
 
-        IF (btree_searchInTree(rhadapt%rBoundary(ibct),jvt,ipred) .EQ.&
+        IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivtReplace,ipred) .EQ.&
             BTREE_NOT_FOUND) THEN
           PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
           CALL sys_halt()
@@ -2728,7 +2730,7 @@ CONTAINS
             Idata=rhadapt%rBoundary(ibct)%IData(:,ipos),&
             Ddata=rhadapt%rBoundary(ibct)%DData(:,ipos))
         
-        ! Get the two boundary neighbors: I1 <- JVT -> I2
+        ! Get the two boundary neighbors: I1 <- IVTREPLACE -> I2
         i1 = rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)
         i2 = rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
         
@@ -2751,54 +2753,22 @@ CONTAINS
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos) = ivt
         
-        ! Finally, delete JVT from the boundary
-        IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),jvt) .EQ.&
+        ! Finally, delete IVTREPLACE from the boundary
+        IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivtReplace) .EQ.&
             BTREE_NOT_FOUND) THEN
           PRINT *, "remove_vertex: Unable to delete vertex from the boundary data structure"
           CALL sys_halt()
         END IF
       END IF
       
-      ! Copy data from node JVT to node IVT
-      rhadapt%p_InodalProperty(ivt) = rhadapt%p_InodalProperty(jvt)
-      rhadapt%p_IvertexAge(ivt)     = rhadapt%p_IvertexAge(jvt)
-      
-!!$      ! Replace column IVT by column JVT in KCOL
-!!$      CALL arrlst_swapArraylist(rhadapt%rKcol,ivt,jvt)
-!!$      
-!!$      ! Modify diagonal entry in KCOL
-!!$      ipos = arrlst_getNextInArraylist(rhadapt%rKcol,ivt,.TRUE.)
-!!$      rhadapt%rKcol%IData(ipos) = ivt
-!!$      
-!!$      ! Eliminate JVT from the KCOL and insert the replacement IVT
-!!$      DO
-!!$        ipos = arrlst_getNextInArraylist(rhadapt%rKcol,ivt,.FALSE.)
-!!$        IF (ipos == ANULL) EXIT
-!!$        kvt = rhadapt%rKcol%IData(ipos)
-!!$        
-!!$        IF (arrlst_deleteFromArraylist(rhadapt%rKcol,kvt,jvt) == ARRAYLIST_NOT_FOUND) THEN
-!!$          PRINT *, "remove_vertex: Unable to delete vertex JVT=",jvt," from list KCOL"
-!!$          CALL sys_halt()
-!!$        END IF
-!!$
-!!$        IF (arrlst_searchInArraylist(rhadapt%rKcol,kvt,ivt,ipred) == ARRAYLIST_NOT_FOUND) THEN
-!!$          PRINT *, "remove_vertex: Unable to find vertex IVT=",ivt," in list KCOL"
-!!$          CALL sys_halt()
-!!$        END IF
-!!$        CALL arrlst_insertIntoArraylist(rhadapt%rKcol,kvt,ivt,ipred,ipos)
-!!$      END DO
-    END IF
- 
-    ! Eliminate column JVT in KCOL
-!    CALL arrlst_releaseArraylist(rhadapt%rKcol,jvt)
-    
-    ! Decrease number of entries in KCOL by one
- !   rhadapt%NA = rhadapt%NA-1
+      ! Copy data from node IVTREPLACE to node IVT
+      rhadapt%p_InodalProperty(ivt) = rhadapt%p_InodalProperty(ivtReplace)
+      rhadapt%p_IvertexAge(ivt)     = rhadapt%p_IvertexAge(ivtReplace)
+    ELSE
 
-!!$    IF (btree_deleteFromTree(rhadapt%rKld,jvt+1) == BTREE_NOT_FOUND) THEN
-!!$      PRINT *, "remove_vertex: Unable to delete last entry ",jvt+1," from KLD"
-!!$      CALL sys_halt()
-!!$    END IF
+      ! IVT is the last vertex of the adaptivity structure
+      ivtReplace = 0
+    END IF
   END SUBROUTINE remove_vertex2D
 
   ! ***************************************************************************
@@ -3414,7 +3384,7 @@ CONTAINS
     ! Store values before refinement
     nel0 = rhadapt%NEL
     
-    ! Add one new vertex I4 
+    ! Add one new vertex I4 at the midpoint of edge (I1,I2).
     CALL add_vertex2D(rhadapt,i1,i2,e1,i4,fcb_insertVertex)
     
     ! Replace element IEL and add one new element E4
@@ -3528,7 +3498,7 @@ CONTAINS
     ! Store values before refinement
     nel0 = rhadapt%NEL
     
-    ! Add two new vertices I4 and I5
+    ! Add two new vertices I4 and I5 at the midpoint of edges (I1,I2) and (I2,I3).
     CALL add_vertex2D(rhadapt,i1,i2,e1,i4,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i2,i3,e2,i5,fcb_insertVertex)
     
@@ -3695,7 +3665,8 @@ CONTAINS
     ! Store values before refinement
     nel0 = rhadapt%NEL
     
-    ! Add three new vertices I4,I5 and I6
+    ! Add three new vertices I4,I5 and I6 at the midpoint of edges (I1,I2),
+    ! (I2,I3) and (I1,I3), respectively. 
     CALL add_vertex2D(rhadapt,i1,i2,e1,i4,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i2,i3,e2,i5,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i3,i1,e3,i6,fcb_insertVertex)
@@ -3840,7 +3811,8 @@ CONTAINS
     ! Store values before refinement
     nel0 = rhadapt%NEL
     
-    ! Add two new vertices I5 and I6
+    ! Add two new vertices I5 and I6 at the midpoint of edges (I1,I2) and
+    ! (I3,I4), respectively.
     CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i3,i4,e3,i6,fcb_insertVertex)
     
@@ -3985,7 +3957,7 @@ CONTAINS
     ! Store values before refinement
     nel0 = rhadapt%NEL
     
-    ! Add one new vertex I5
+    ! Add one new vertex I5 it the midpoint of edge (I1,I2)
     CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
     
     ! Replace element IEL and add two new elements E5 and E6
@@ -4122,7 +4094,8 @@ CONTAINS
     ! Store values before refinement
     nel0 = rhadapt%NEL
     
-    ! Add new vertices I5 and I6
+    ! Add new vertices I5 and I6 at the midpoint of edges (I1,I2) and
+    ! (I2,I3), respectively.
     CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i2,i3,e2,i6,fcb_insertVertex)
     
@@ -4247,7 +4220,8 @@ CONTAINS
     ! Store values before refinement
     nel0 = rhadapt%NEL
     
-    ! Add five new vertices I5,I6,I7,I8 and I9
+    ! Add five new vertices I5,I6,I7,I8 and I9 at the midpoint of edges
+    ! (I1,I2), (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
     CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i2,i3,e2,i6,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i3,i4,e3,i7,fcb_insertVertex)
@@ -4428,7 +4402,8 @@ CONTAINS
     ! Store values before conversion
     nel0 = rhadapt%NEL
 
-    ! Add two new vertices I5 and I6
+    ! Add two new vertices I5 and I6 at the midpoint of edges (I2,I3)
+    ! and (I1,I3), respectively.
     CALL add_vertex2D(rhadapt,i2,i3,e2,i5,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i3,i1,e3,i6,fcb_insertVertex)
 
@@ -4578,7 +4553,8 @@ CONTAINS
     ! Store values before conversion
     nel0 = rhadapt%NEL
 
-    ! Add two new vertices I6, I8, and I9
+    ! Add two new vertices I6, I8, and I9 at the midpoint of edges (I2,I3),
+    ! (I1,I4) and (I1,I2), respectively.
     CALL add_vertex2D(rhadapt,i2,i3,f4,i6,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i4,i1,e4,i8,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,fcb_insertVertex)
@@ -4763,7 +4739,8 @@ CONTAINS
     ! Store values before conversion
     nel0 = rhadapt%NEL
 
-    ! Add four new vertices
+    ! Add four new vertices I6,I7,I8 and I9 at the midpoint of edges 
+    ! (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
     CALL add_vertex2D(rhadapt,i2,i3,e2,i6,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i3,i4,e3,i7,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i4,i1,e4,i8,fcb_insertVertex)
@@ -4783,19 +4760,26 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list!"
+      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i3!",i3
       CALL sys_halt()
     END IF
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel1).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list!"
+      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i4!",i4
       CALL sys_halt()
     END IF
 
+    IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).EQ.&
+        ARRAYLIST_NOT_FOUND) THEN
+      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i4!",i4
+      CALL sys_halt()
+    END IF
+    CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,nel0+1,ipos)
+
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel3).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list!"
+      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i5!",i5
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,iel2,ipos)
@@ -4951,7 +4935,8 @@ CONTAINS
     e7 = rhadapt%p_ImidneighboursAtElement(1,iel3)
     e12= rhadapt%p_ImidneighboursAtElement(3,iel3)
     
-    ! Add three new vertices I7, I8 and I9
+    ! Add three new vertices I7, I8 and I9 at the midpoint of edges
+    ! (I3,I4) and (I1,I4) and at the center of element IEL
     CALL add_vertex2D(rhadapt,i3,i4,e3,i7,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i4,i1,e4,i8,fcb_insertVertex)
     CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,fcb_insertVertex)
@@ -5273,7 +5258,7 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_ELEMENTIDX) :: iel0,iel1,iel2,e1,e2,e3,e4,e5,e6,ielReplace
-    INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6,ivtReplace
+    INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
     
     ! Store vertex- and element-values of the three neighboring elements
     i4 = rhadapt%p_IverticesAtElement(1,iel)
@@ -5408,7 +5393,7 @@ CONTAINS
     ! the indicator is greater than the prescribed treshold
     mark: DO iel=1,SIZE(p_Dindicator)
 
-      IF (p_Dindicator(iel) > rhadapt%drefinementTolerance) THEN
+      IF (p_Dindicator(iel) .GT. rhadapt%drefinementTolerance) THEN
         
         ! Mark element for refinement
         Kvert = rhadapt%p_IverticesAtElement(:,iel)
@@ -5421,13 +5406,20 @@ CONTAINS
           
           ! If triangle has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          DO ive=1,3
-            IF (ABS(rhadapt%p_IvertexAge(Kvert(ive))).EQ.&
-                rhadapt%NSUBDIVIDEMAX) THEN
-              p_Imarker(iel) = MARK_ASIS
-              CYCLE mark
-            END IF
-          END DO
+          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:3))).EQ.&
+              rhadapt%NSUBDIVIDEMAX)) THEN
+            p_Imarker(iel) = MARK_ASIS
+            
+            ! According to the indicator, this element should be refined. Since the 
+            ! maximum admissible refinement level has been reached no refinement 
+            ! was performed. At the same time, all vertices of the element should
+            ! be "locked" to prevent this element from coarsening
+            DO ive=1,3
+              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
+            END DO
+            
+            CYCLE mark
+          END IF
           
           ! Otherwise, we can mark the triangle for refinement
           p_Imarker(iel) = MARK_REF_TRIA4TRIA
@@ -5454,13 +5446,20 @@ CONTAINS
           
           ! If quadrilateral has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          DO ive=1,4
-            IF (ABS(rhadapt%p_IvertexAge(Kvert(ive))).EQ.&
-                rhadapt%NSUBDIVIDEMAX) THEN
-              p_Imarker(iel) = MARK_ASIS
-              CYCLE mark
-            END IF
-          END DO
+          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:4))).EQ.&
+              rhadapt%NSUBDIVIDEMAX)) THEN
+            p_Imarker(iel) = MARK_ASIS
+
+            ! According to the indicator, this element should be refined. Since the 
+            ! maximum admissible refinement level has been reached no refinement 
+            ! was performed. At the same time, all vertices of the element should
+            ! be "locked" to prevent this element from coarsening
+            DO ive=1,4
+              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
+            END DO
+
+            CYCLE mark
+          END IF
           
           ! Otherwise, we can mark the quadrilateral for refinement
           p_Imarker(iel) = MARK_REF_QUAD4QUAD
@@ -5601,9 +5600,21 @@ CONTAINS
 
       ! Check if the current element is marked for refinement. Then
       ! all vertices are already locked by the refinement procedure
-      IF (p_Imarker(iel) .NE. MARK_ASIS_TRIA .AND.&
-          p_Imarker(iel) .NE. MARK_ASIS_QUAD) CYCLE
+      ! in most situations. However, there exist configurations, in
+      ! which some vertices have to be locked in addition
+      SELECT CASE(p_Imarker(iel))
+      CASE(MARK_ASIS_TRIA,MARK_ASIS_QUAD)
+        CYCLE
 
+      CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,&
+           MARK_REF_QUAD3TRIA_3,MARK_REF_QUAD3TRIA_4)
+        DO ive=1,4
+          i = rhadapt%p_IverticesAtElement(ive,iel)
+          rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        END DO
+        CYCLE
+      END SELECT
+      
       ! Get state of current element
       IF (nve == 3) THEN
         istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
@@ -7078,7 +7089,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE redgreen_coarsen(rhadapt)
+  SUBROUTINE redgreen_coarsen(rhadapt,fcb_removeVertex)
 
 !<description>
     ! This subroutine performs red-green coarsening as proposed by R. Bank
@@ -7087,14 +7098,16 @@ CONTAINS
 !<inputoutptut>
     ! adativity structure
     TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+
+    ! callback routines
+    include 'intf_adaptcallback.inc'
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: Kvert
-    INTEGER,  DIMENSION(:), POINTER                    :: p_Imarker
+    INTEGER,  DIMENSION(:), POINTER :: p_Imarker
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_VERTEXIDX)  :: ivt,ivtReplace,nvt0
+    INTEGER(PREC_VERTEXIDX)  :: ivt,ivtReplace
     INTEGER :: istate,nve
 
     ! Check if dynamic data structures are o.k. and if 
@@ -7138,10 +7151,20 @@ CONTAINS
       END SELECT
     END DO
 
+    PRINT *, "Elemental removal is done"
+
     DO ivt=rhadapt%NVT0,1,-1
-      IF (rhadapt%p_IvertexAge(ivt) .GT.0) PRINT *, "Removing",ivt
+      IF (rhadapt%p_IvertexAge(ivt) .GT.0) THEN
+        PRINT *, "Removing",ivt
+        CALL remove_vertex2D(rhadapt,ivt,ivtReplace)
+        
+        IF (ivtReplace.NE.0) THEN
+          PRINT *, "Replacement",ivtReplace
+        END IF
+        
+        CALL fcb_removeVertex(ivt,ivtReplace)
+      END IF
     END DO
-    PAUSE
 
     ! Increase the number of recoarsening steps by one
     rhadapt%nCoarseningSteps = rhadapt%nCoarseningSteps+1

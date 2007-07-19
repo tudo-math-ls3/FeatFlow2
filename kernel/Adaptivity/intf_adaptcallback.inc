@@ -43,13 +43,16 @@
 
 !<subroutine>
 
-  SUBROUTINE fcb_removeVertex(ivt)
+  SUBROUTINE fcb_removeVertex(ivt,ivtReplace)
 
   USE fsystem
 
 !<input>
     ! number of removed vertex
     INTEGER, INTENT(IN) :: ivt
+
+    ! number of replacement vertex
+    INTEGER, INTENT(IN) :: ivtReplace
 !</input>
 !</subroutine>
 
