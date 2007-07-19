@@ -25,30 +25,33 @@
 !#  5.) geom_init_polygon
 !#      -> Creates a 2D polygon object.
 !#
-!#  6.) geom_moveto
+!#  6.) geom_done
+!#      -> Releases a geometry object (including subobjects)
+!#
+!#  7.) geom_moveto
 !#      -> Moves the origin of a 2D/3D object to a specified point.
 !#
-!#  7.) geom_rotate2D
+!#  8.) geom_rotate2D
 !#      -> Overwrites the rotation and scaling factor of a 2D object.
 !#
-!#  8.) geom_isInGeometry
+!#  9.) geom_isInGeometry
 !#      -> Checks whether a given point is inside a geometry object.
 !#
-!#  9.) geom_isInGeometryArray
+!# 10.) geom_isInGeometryArray
 !#      -> Checks whether an array of given points is inside a geometry object.
 !#
-!# 10.) geom_projectToBoundary
+!# 11.) geom_projectToBoundary
 !#      -> Projects a point onto the boundary of a geometry object.
 !#
-!# 11.) geom_calcSignedDistance
+!# 12.) geom_calcSignedDistance
 !#      -> Calculates the shortest signed distance between a given point
 !#         and a geometry object.
 !#
-!# 12.) geom_calcSignedDistanceArray
+!# 13.) geom_calcSignedDistanceArray
 !#      -> Calculates the shortest signed distance between an array of given
 !#         points and a geometry object.
 !#
-!# 13.) geom_polygonise
+!# 14.) geom_polygonise
 !#      -> Converts a (non-composed) geometry object to a polygon and
 !#         optionally converts the vertices into world coordinates.
 !#
