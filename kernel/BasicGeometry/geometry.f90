@@ -98,6 +98,17 @@ MODULE geometry
   INTEGER, PARAMETER :: GEOM_POLYGON_CONVEX  = 1
 
 !</constantblock>
+
+!<constantblock description="Composed type identifiers">
+
+  ! Union of objects
+  INTEGER, PARAMETER :: GEOM_COMP_TYPE_OR = 1
+  
+  ! Intersection of objects
+  INTEGER, PARAMETER :: GEOM_COMP_TYPE_AND = 2
+  
+!</constantblock>
+
 ! *****************************************************************************
 ! *****************************************************************************
 ! *****************************************************************************
@@ -108,12 +119,15 @@ MODULE geometry
   ! This structure realises the subnode for the composed geometry object.
   
   TYPE t_geometryComposed
+  
+    ! Type of composed object. One of the GEOM_COMP_TYPE_XXXX constants.
+    INTEGER :: ccomposedType
     
     ! Number of sub-objects in the composed object.
-    INTEGER :: nsubobjects
+    INTEGER :: nsubObjects
     
     ! An array of sub-objects with are composed.
-    TYPE(t_geometryObject), DIMENSION(:), POINTER :: rsubobjects
+    TYPE(t_geometryObject), DIMENSION(:), POINTER :: p_RsubObjects
     
   END TYPE
   
@@ -278,6 +292,218 @@ MODULE geometry
   
 CONTAINS
 
+  ! ***************************************************************************
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! *= Composed Object Routines                                              =*
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_init_composed(rgeomObject, nsubObjects, ccomposedType, &
+                                binverted, ndim)
+!<description>
+  ! Creates a t_geometryObject representing a composed object, i.e. an union
+  ! or an intersection of geometry objects.
+!</description>
+
+!<input>
+  ! The number of sub-objects. Must be positive.
+  INTEGER,                     INTENT(IN)  :: nsubObjects
+  
+  ! The type of the composed object. One of the GEOM_COMP_TYPE_XXXX constants.
+  INTEGER,                     INTENT(IN)  :: ccomposedType
+  
+  ! OPTIONAL: A boolean telling whether the object is inverted.
+  ! Is set to .FALSE. if not given.
+  LOGICAL, OPTIONAL,           INTENT(IN)  :: binverted
+
+  ! OPTIONAL: The dimension of the composed object. May be NDIM2D or NDIM3D.
+  ! If not given, the dimension is set to NDIM2D.
+  INTEGER, OPTIONAL,           INTENT(IN)  :: ndim
+
+!</input>
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  TYPE(t_geometryObject),      INTENT(OUT) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+  ! Check if nsubObjects is valid
+  IF (nsubObjects .LE. 0) THEN
+    RETURN
+  END IF
+
+  ! Set the dimension
+  IF (PRESENT(ndim)) THEN
+    rgeomObject%ndimension = ndim
+  ELSE
+    rgeomObject%ndimension = NDIM2D
+  END IF
+  
+  ! Set the composed type
+  rgeomObject%ctype = GEOM_COMPOSED
+  
+  ! Is our object inverted?
+  IF (PRESENT(binverted)) THEN
+    rgeomObject%binverted = binverted
+  ELSE
+    rgeomObject%binverted = .FALSE.
+  END IF
+  
+  ! Set the operator
+  rgeomObject%rcomposed%ccomposedType = ccomposedType
+  
+  ! Set the number of sub-objects
+  rgeomObject%rcomposed%nsubObjects = nsubObjects
+  
+  ! Allocate sub-objects
+  ALLOCATE(rgeomObject%rcomposed%p_RsubObjects(nsubObjects))
+  
+  ! That's it
+  
+END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_composed_addNode(rgeomObject, rsubObject, nindex)
+  
+!<description>
+  ! This routine inserts a geometry object into the composed geometry object
+  ! tree.
+!</description>
+
+!<input>
+  ! The index of the child node of the composed geometry object, where
+  ! the geometry object is to be attached.
+  INTEGER, INTENT(IN) :: nindex
+  
+!</input>
+
+!<inputoutput>
+  ! The composed geometry object
+  TYPE(t_geometryObject), INTENT(INOUT) :: rgeomObject
+  
+  ! The sub-object
+  TYPE(t_geometryObject), INTENT(INOUT) :: rsubObject
+
+!</inputoutput>
+
+!</subroutine>
+
+    ! Make sure the object is composed
+    IF (rgeomObject%ctype .NE. GEOM_COMPOSED) THEN
+      RETURN
+    END IF
+    
+    ! Make sure the index is in range
+    IF ((nindex .LE. 0) .OR. (nindex .GT. rgeomObject%rcomposed%nsubObjects)) &
+      THEN
+      RETURN
+    END IF
+    
+    ! Insert the sub-node
+    rgeomObject%rcomposed%p_RsubObjects(nindex) = rsubObject
+    
+    ! Reset the sub-node
+    rsubObject%ctype = GEOM_NONE
+    
+    ! That's it
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  RECURSIVE SUBROUTINE geom_composed_isInGeometry (rgeomObject, Dcoords, &
+                                                    iisInObject)
+
+!<description>
+  ! This routine checks whether a given point is inside the circle or not.
+  !
+  ! iisInObject is set to 0 if the point is outside the circle, it is set
+  ! to 1 if it is inside the circle and is set to -1 if the point is inside
+  ! the circle and the circle is inverted.
+!</description>
+
+!<input>
+  ! The circle against that the point is to be tested.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An integer for the return value.
+  INTEGER(I32),           INTENT(OUT) :: iisInObject
+!</output>
+
+!</subroutine>
+
+  ! The relative coordinates
+  REAL(DP), DIMENSION(3) :: DrelCoords
+  
+  INTEGER(I32) :: i, iisInSubObject
+  
+    ! Transform to local coordinate system
+    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+  
+    ! Go through all sub-objects
+    IF (rgeomObject%rcomposed%ccomposedType .EQ. GEOM_COMP_TYPE_AND) THEN
+    
+      ! Let's assume that the point is inside
+      iisInObject = 1
+      
+      DO i=1, rgeomObject%rcomposed%nsubObjects
+      
+        CALL geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
+                               DrelCoords, iisInSubObject)
+      
+        IF (iisInSubObject .EQ. 0) THEN
+          ! The point is outside the sub-object
+          iisInObject = 0
+          EXIT
+        END IF
+        
+      END DO
+      
+    ELSE
+    
+      ! Let's assume the point is outside
+      iisInObject = 0
+    
+      DO i=1, rgeomObject%rcomposed%nsubObjects
+      
+        CALL geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
+                               DrelCoords, iisInSubObject)
+      
+        IF (iisInSubObject .EQ. 1) THEN
+          ! The point is inside the sub-object
+          iisInObject = 1
+          EXIT
+        END IF
+        
+      END DO
+      
+    END IF
+
+    ! Maybe the composed object is inverted?
+    IF (rgeomObject%binverted) THEN
+      iisInObject = 1 - iisInObject
+    END IF
+  
+    ! That's it
+
+  END SUBROUTINE
+  
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! *= 2D Circle Routines                                                    =*
@@ -452,16 +678,15 @@ CONTAINS
     IF (ddistance .LE. ((rgeomObject%rcoord2D%dscalingFactor * &
                          rgeomObject%rcircle%dradius)**2)) THEN
       ! We are inside the circle
-      ! Maybe it's inverted?
-      IF (rgeomObject%binverted) THEN
-        iisInObject = -1
-      ELSE
-        iisInObject = 1
-      END IF
-      
+      iisInObject = 1
     ELSE
       ! We are not inside the circle
       iisInObject = 0
+    END IF
+
+    ! Maybe the circle is inverted?    
+    IF (rgeomObject%binverted) THEN
+      iisInObject = 1 - iisInObject
     END IF
         
     ! That's it
@@ -781,8 +1006,7 @@ CONTAINS
 !<input>
   ! The square against that the point is to be tested.
   TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
-  
-  ! The coordinates of the point that is to be tested.
+    ! The coordinates of the point that is to be tested.
   REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
   
 !</input>
@@ -810,18 +1034,15 @@ CONTAINS
     ! Check against half of the edge length
     IF (ddistance .LE. (0.5_DP * rgeomObject%rsquare%dlength)) THEN
       ! We are inside the square
-      
-      ! Is the square inverted?
-      IF (rgeomObject%binverted) THEN
-        iisInObject = -1
-      ELSE
-        iisInObject = 1
-      END IF
-      
+      iisInObject = 1
     ELSE
       ! We are outside the square
       iisInObject = 0
-      
+    END IF
+    
+    ! Maybe the square is inverted
+    IF (rgeomObject%binverted) THEN
+      iisInObject = 1 - iisInObject
     END IF
 
     ! That's it
@@ -1248,12 +1469,7 @@ CONTAINS
     ! Now check the length of our resulting point
     IF ((DrelCoords(1)**2 + DrelCoords(2)**2) .LE. 1.0_DP) THEN
       ! We're inside the ellipse
-      ! Is the ellipse inverted?
-      IF (rgeomObject%binverted) THEN
-        iisInObject = -1
-      ELSE
-        iisInObject = 1
-      END IF
+      iisInObject = 1
       
     ELSE
       ! We are outside the ellipse
@@ -1261,6 +1477,11 @@ CONTAINS
       
     END IF
 
+    ! Is the ellipse inverted?
+    IF (rgeomObject%binverted) THEN
+      iisInObject = 1 - iisInObject
+    END IF
+    
     ! That's it
     
   END SUBROUTINE
@@ -1831,17 +2052,17 @@ CONTAINS
         (DrelCoords(2) .LE. (0.5_DP * rgeomObject%rrectangle%Dlength(2)))) THEN
       
       ! We are inside the rectangle
-      ! Is the rectangle inverted?
-      IF (rgeomObject%binverted) THEN
-        iisInObject = -1
-      ELSE
-        iisInObject = 1
-      END IF
+      iisInObject = 1
       
     ELSE
       ! We are outside the rectangle
       iisInObject = 0
       
+    END IF
+
+    ! Is the rectangle inverted?
+    IF (rgeomObject%binverted) THEN
+      iisInObject = 1 - iisInObject
     END IF
 
     ! That's it
@@ -2251,30 +2472,35 @@ CONTAINS
   
   ! The output of the projector routine
   LOGICAL :: bisInObject
+  
   ! 2 Dummys for the projector routine
   REAL(DP) :: ddummy1
   REAL(DP), DIMENSION(2) :: Ddummy2
 
     SELECT CASE (rgeomObject%rpolygon%npolyType)
+
     CASE (GEOM_POLYGON_CONVEX)
       ! Special Case: Convex Polygon
       CALL geom_polygon_iIG_convex(rgeomObject, Dcoords, iisInObject)
+
     CASE DEFAULT
       ! Call Projector
       CALL geom_polygon_projector(rgeomObject, Dcoords, Ddummy2, ddummy1, &
                                   bisInObject)
+      ! Are we inside the polygon?
       IF (bisInObject) THEN
-        IF (rgeomObject%binverted) THEN
-          iisInObject = -1
-        ELSE
-          iisInObject = 1
-        END IF
+        iisInObject = 1
       ELSE
         iisInObject = 0
       END IF
+      
+      ! Maybe the polygon is inverted?
+      IF (rgeomObject%binverted) THEN
+        iisInObject = 1 - iisInObject
+      END IF
+      
     END SELECT
     
-  
     ! That's it
     
   END SUBROUTINE
@@ -2365,8 +2591,7 @@ CONTAINS
       END IF
     
     END DO
-    
-    ! Check last edge
+        ! Check last edge
     Dedge = p_Dvertices(1:2,lb) - p_Dvertices(1:2,ub)
       
     ! Calculate ray vector
@@ -2376,15 +2601,15 @@ CONTAINS
     IF (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .GE. 0.0_DP) THEN
         
       ! All scalar products are non-negative - so the point is inside the poly
-      ! Is our object inverted?
-      IF (rgeomObject%binverted) THEN
-        iisInObject = -1
+      iisInObject = 1
       
-      ELSE
-        iisInObject = 1
-        
-      END IF
+    ELSE
+      iisInObject = 0;
 
+    END IF
+    
+    IF (rgeomObject%binverted) THEN
+      iisInObject = 1 - iisInObject
     END IF
   
     ! That's it
@@ -2605,7 +2830,7 @@ CONTAINS
         
         ELSE
           ! The vertice is stricly concav.
-          ! The point is outside the polygon if and only is both beta and gamma
+          ! The point is outside the polygon if and only if both beta and gamma
           ! are strictly less than 0.
           bisInside = (dbeta .GE. 0.0_DP) .OR. (dgamma .GE. 0.0_DP)
         
@@ -2656,13 +2881,11 @@ CONTAINS
   REAL(DP), DIMENSION(2) :: Dproj
   
   ! Inside the polygon?
-  !INTEGER :: iisInside
   LOGICAL :: bisInside
   
     ! Calculate projection
     CALL geom_polygon_projector(rgeomObject, Dcoords, Dproj, ddistance, bisInside)
     
-    !IF (iisInside .EQ. 1) THEN
     IF (bisInside .AND. (.NOT. rgeomObject%binverted)) THEN
       ddistance = -ddistance
     END IF
@@ -2789,11 +3012,11 @@ CONTAINS
   
 !</input>
 
-!<output>
+!<inputoutput>
   ! The geometry object that is to be rotated and/or scaled.
-  TYPE(t_geometryObject), INTENT(OUT) :: rgeomObject
+  TYPE(t_geometryObject), INTENT(INOUT) :: rgeomObject
   
-!</output>
+!</inputoutput>
 
 !</subroutine>
 
@@ -2822,7 +3045,7 @@ CONTAINS
       
 !<subroutine>
 
-  SUBROUTINE geom_isInGeometry (rgeomObject, Dcoords, iisInObject)
+  RECURSIVE SUBROUTINE geom_isInGeometry (rgeomObject, Dcoords, iisInObject)
 
 !<description>
   ! This routine is a wrapper for the geom_****_isInGeometry routines.
@@ -2858,8 +3081,8 @@ CONTAINS
     ! Check what type of object we have and call the object's corresponding
     ! subroutine.
     SELECT CASE(rgeomObject%ctype)
-    !CASE (GEOM_COMPOSED)
-      !CALL geom_composed_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    CASE (GEOM_COMPOSED)
+      CALL geom_composed_isInGeometry(rgeomObject, Dcoords, iisInObject)
     CASE (GEOM_CIRCLE)
       CALL geom_circle_isInGeometry(rgeomObject, Dcoords, iisInObject)
     CASE (GEOM_SQUARE)
@@ -3204,4 +3427,48 @@ CONTAINS
   
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  RECURSIVE SUBROUTINE geom_done(rgeomObject)
+
+!<description>
+  ! This routine releases allocated buffer from a geometry object
+  
+!</description>
+
+!<inputoutput>
+  ! The geometry object that is to be destroyed
+  TYPE(t_geometryObject), INTENT(INOUT) :: rgeomObject
+
+!</inputoutput>
+
+!</subroutine>
+
+  INTEGER :: i
+
+    ! If the object is composed, we have some work to do...
+    IF(rgeomObject%ctype .EQ. GEOM_COMPOSED) THEN
+    
+      ! Go through all sub-objects and destroy them
+      DO i=1, rgeomObject%rcomposed%nsubObjects
+      
+        ! Destroy sub-object
+        CALL geom_done(rgeomObject%rcomposed%p_RsubObjects(i))
+      
+      END DO
+      
+      ! Deallocate object array
+      DEALLOCATE(rgeomObject%rcomposed%p_RsubObjects)
+    
+    END IF
+
+    ! Reset the object's type
+    rgeomObject%ctype = GEOM_NONE
+    
+    ! That's it
+  
+  END SUBROUTINE
+  
 END MODULE
