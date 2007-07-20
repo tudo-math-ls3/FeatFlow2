@@ -101,13 +101,15 @@
 !#                          replace_elementQuad
 !#      -> replace an existing element by another element of he same type in 2D
 !#
-!#  6.) add_element2D
+!#  6.) add_element2D = add_elementTria /
+!#                      add_elementQuad
 !#      -> add a new element to the adaptation data structure in 2D
 !#
 !#  7.) remove_element2D
 !#      -> remove an existing element from the adaptation data structure in 2D
 !#
-!#  8.) update_ElementNeighbors2D
+!#  8.) update_ElementNeighbors2D = update_ElemEdgeNeighbors2D /
+!#                                  update_ElemNeighbors2D
 !#      -> update the list of neighboring elements along a given edge in 2D
 !#
 !#  9.) refine_Tria2Tria
@@ -143,31 +145,40 @@
 !# 19.) convert_Quad4Tria
 !#      -> convert four neighboring triangles into four similar quadrilaterals
 !#
-!# 20.) mark_refinement2D
+!# 20.) coarsen_2Tria1Tria
+!#      -> coarsen two green triangles by combining them to the macro element
+!#
+!# 21.) coarsen_4Tria1Tria
+!#      -> coarsen four red triangles by combining them to the macro element
+!#
+!# 22.) coarsen_4Tria2Tria
+!#      -> coarsen four red triangles by combining them to two green elements
+!#
+!# 23.) mark_refinement2D
 !#      -> mark elements for refinement in 2D
 !#
-!# 21.) redgreen_mark_coarsening2D
+!# 24.) redgreen_mark_coarsening2D
 !#      -> mark elements for coarsening in 2D
 !#
-!# 22.) redgreen_mark_refinement2D
+!# 25.) redgreen_mark_refinement2D
 !#      -> mark elements for refinement due to Red-Green strategy in 2D
 !#
-!# 23.) redgreen_refine
+!# 26.) redgreen_refine
 !#      -> perform red-green refinement for marked elements
 !#
-!# 24) redgreen_coarsen
+!# 27) redgreen_coarsen
 !#      -> perform red-green coarsening for marked elements
 !#
-!# 25.) redgreen_getState
+!# 28.) redgreen_getState
 !#      -> return the state of an element
 !#
-!# 26.) redgreen_getStateTria
+!# 29.) redgreen_getStateTria
 !#      -> return the state of a triangle
 !#
-!# 27.) redgreen_getStateQuad
+!# 30.) redgreen_getStateQuad
 !#      -> return the state of a quadrilateral
 !#
-!# 28.) redgreen_rotateState
+!# 31.) redgreen_rotateState
 !#      -> compute the state of an element after rotation
 !#
 !#
@@ -301,6 +312,7 @@ MODULE hadaptivity
   USE fsystem
   USE storage
   USE paramlist
+  USE collection
   USE triangulation
   USE linearsystemscalar
   USE quadtree
@@ -338,19 +350,69 @@ MODULE hadaptivity
 
 !<constants>
 
+!<constantblock description="Global constants for grid modification operations">
+
+  ! Operation identifier for adjustment of vertex dimension
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_ADJUSTVERTEXDIM  = 1
+
+  ! Operation identifier for vertex insertion at edge midpoint
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_INSERTVERTEXEDGE = 2
+
+  ! Operation identifier for vertex insertion at element centroid
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_INSERTVERTEXCENTR= 3
+
+  ! Operation identifier for vertex removal
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REMOVEVERTEX     = 4
+
+  ! Operation identifier for refinment: 1-tria : 2-tria
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_TRIA2TRIA    = 5
+
+  ! Operation identifier for refinment: 1-tria : 3-tria
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_TRIA3TRIA12  = 6
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_TRIA3TRIA23  = 7
+ 
+  ! Operation identifier for refinment: 1-tria : 4-tria
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_TRIA4TRIA    = 8
+
+  ! Operation identifier for refinment: 1-quad : 2-quad
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_QUAD2QUAD    = 9
+  
+  ! Operation identifier for refinment: 1-quad : 3-tria
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_QUAD3TRIA    = 10
+
+  ! Operation identifier for refinment: 1-quad : 4-tria
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_QUAD4TRIA    = 11
+
+  ! Operation identifier for refinment: 1-quad : 4-quad
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_REF_QUAD4QUAD    = 12
+
+  ! Operation identifier for conversion: 2-tria : 4-tria
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CVT_TRIA2TRIA    = 13
+
+  ! Operation identifier for conversion: 2-quad : 4-tria
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CVT_QUAD2QUAD    = 14
+
+  ! Operation identifier for conversion: 3-tria : 4-quad
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CVT_QUAD3TRIA    = 15
+
+  ! Operation identifier for conversion: 4-tria : 4-quad
+  INTEGER, PARAMETER, PUBLIC :: HADAPT_OPR_CVT_QUAD4TRIA    = 16
+
+!</constantblock>
+
 !<constantblock description="Global flags for grid refinement/coarsening">
 
   ! No refinement
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_NOREFINEMENT  = 0
+  INTEGER, PARAMETER :: HADAPT_NOREFINEMENT          = 0
 
   ! No coarsening
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_NOCOARSENING  = 0
+  INTEGER, PARAMETER :: HADAPT_NOCOARSENING          = 0
 
   ! Red-Green refinement strategy (R. Banks)
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_REDGREEN      = 1
+  INTEGER, PARAMETER :: HADAPT_REDGREEN              = 1
 
   ! Longest edge bisection strategy (M. Rivara)
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_LONGESTEDGE   = 2
+  INTEGER, PARAMETER :: HADAPT_LONGESTEDGE           = 2
 
 !</constantblock>
 
@@ -394,20 +456,20 @@ MODULE hadaptivity
                                                        HADAPT_HAS_ELEMATVERTEX
 
   ! Cells are marked for refinement
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_MARKEDREFINE  = 2**9
+  INTEGER, PARAMETER :: HADAPT_MARKEDREFINE          = 2**9
 
   ! Cells are marked for coarsening
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_MARKEDCOARSEN = 2**10
+  INTEGER, PARAMETER :: HADAPT_MARKEDCOARSEN         = 2**10
 
   ! Cells are marked
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_MARKED        = HADAPT_MARKEDREFINE+&
+  INTEGER, PARAMETER :: HADAPT_MARKED                = HADAPT_MARKEDREFINE+&
                                                        HADAPT_MARKEDCOARSEN
   
   ! Grid has been refined
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_REFINED       = 2**11
+  INTEGER, PARAMETER :: HADAPT_REFINED               = 2**11
   
   ! Grid has been coarsened
-  INTEGER, PARAMETER, PUBLIC :: HADAPT_COARSENED     = 2**12
+  INTEGER, PARAMETER :: HADAPT_COARSENED             = 2**12
 
 !</constantblock>
 
@@ -809,14 +871,15 @@ MODULE hadaptivity
 
   !<typeblock>
   
-  ! This type contains all information about one adaptivity step, e.g.,
-  ! insert element, convert element, remove element
-  TYPE, PUBLIC :: t_gridadaptOperation
-
-    INTEGER :: blabla
-    
-  END TYPE t_gridadaptOperation
-
+  ! This type contains all information to describe grid modification operations,
+  ! namely, insertion and removal of elements and vertices. During the grid 
+  ! refinement/recoarsening procedure a queue of operations is built. Afterwards,
+  ! each grid modification step can be obtained from this queue in the application
+  TYPE, PUBLIC :: t_hadaptOperation
+    INTEGER                                             :: iGridOperation = 0
+    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D+1) :: Ivertices
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D)  :: Ielements
+  END TYPE t_hadaptOperation
   !</typeblock>
   
 
@@ -938,6 +1001,9 @@ CONTAINS
         rtriangulation%h_IverticesAtBoundary,&
         rtriangulation%h_DvertexParameterValue,&
         rtriangulation%NBCT,rtriangulation%NVBD)
+
+    ! Generate "elements-meeting-at-vertex" structure
+    CALL hadapt_genElementsAtVertex(rhadapt)
   END SUBROUTINE hadapt_initFromTriangulation
 
   ! ***************************************************************************
@@ -1790,8 +1856,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE hadapt_performAdaptation(rhadapt,rindicator,&
-      fcb_adjustDimension,fcb_insertVertex,fcb_removeVertex)
+  SUBROUTINE hadapt_performAdaptation(rhadapt,rindicator,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine performs the complete adaptation process.
@@ -1806,15 +1871,19 @@ CONTAINS
 
 !<input>
     ! Indicator vector for refinement
-    TYPE(t_vectorScalar), INTENT(IN) :: rindicator
+    TYPE(t_vectorScalar), INTENT(IN)         :: rindicator
 
     ! callback routines
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)            :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1852,10 +1921,10 @@ CONTAINS
       CALL mark_refinement2D(rhadapt,rindicator)
 
       ! Mark additional elements to restore conformity
-      CALL redgreen_mark_refinement2D(rhadapt,fcb_adjustDimension,fcb_insertVertex)
+      CALL redgreen_mark_refinement2D(rhadapt,rcollection,fcb_hadaptCallback)
 
       ! Mark element for recoarsening based on indicator function
-!      CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
+      CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
 
       ! Compute new dimensions
       nvt = rhadapt%NVT+rhadapt%increaseNVT
@@ -1887,20 +1956,18 @@ CONTAINS
           rhadapt%p_ImidneighboursAtElement)
 
       ! Adjust dimension of solution vector
-      CALL fcb_adjustDimension(nvt)
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+          CALL fcb_hadaptCallback(rcollection,&
+          HADAPT_OPR_ADJUSTVERTEXDIM,(/nvt/),(/0/))
       
       ! Perform refinement
-      CALL redgreen_refine(rhadapt,fcb_insertVertex)
+      CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
 
       ! Perform coarsening
-!      CALL redgreen_coarsen(rhadapt,fcb_removeVertex)
-
-      ! Adjust dimension of solution vector
-      CALL fcb_adjustDimension(rhadapt%NVT)
+      CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
 
       ! Adjust nodal property array
-      nvt = rhadapt%NVT
-      CALL storage_realloc('hadapt_performAdaptation',nvt,&
+      CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
           rhadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
       
 
@@ -2420,7 +2487,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE add_vertex_atEdgeMidpoint2D(rhadapt,i1,i2,e1,i12,fcb_insertVertex)
+  SUBROUTINE add_vertex_atEdgeMidpoint2D(rhadapt,i1,i2,e1,i12,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine adds a new vertex at the midpoint of a given egde. 
@@ -2441,12 +2508,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: e1
 
     ! Callback routines
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2458,7 +2529,6 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(NDIM2D)           :: Dcoord
     REAL(DP)                              :: x1,y1,x2,y2,dvbdp1,dvbdp2
-    INTEGER(PREC_VERTEXIDX), DIMENSION(2) :: ksvt
     INTEGER(PREC_QTIDX)                   :: iquad
     INTEGER(PREC_TREEIDX)                 :: ipred,ipos
     INTEGER                               :: ibct
@@ -2477,7 +2547,6 @@ CONTAINS
     ! was refined, then nothing needs to be done for this vertex
     IF (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D,&
         Dcoord,iquad,ipos,i12) == QFOUND) RETURN
-    
     
     ! Otherwise, update number of vertices
     rhadapt%NVT = rhadapt%NVT+1
@@ -2528,19 +2597,17 @@ CONTAINS
           Idata=(/i1,i2/),Ddata=(/0.5_DP*(dvbdp1+dvbdp2)/))
     END IF
       
-    ! Insert vertex into graph
-    CALL grph_insertVertex(rhadapt%rsparsitygraph,i12)
-    
-    ! Finally, update the solution vector
-    ksvt=(/i1,i2/)
-    CALL fcb_insertVertex(2,ksvt,i12)
+    ! Optionally, invoke callback function
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,&
+        HADAPT_OPR_INSERTVERTEXEDGE,(/i12,i1,i2/),(/0/))
   END SUBROUTINE add_vertex_atEdgeMidpoint2D
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE add_vertex_atElementCenter2D(rhadapt,i1,i2,i3,i4,i5,fcb_insertVertex)
+  SUBROUTINE add_vertex_atElementCenter2D(rhadapt,i1,i2,i3,i4,i5,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine adds a new vertex at the center of a given quadtrilateral.
@@ -2553,12 +2620,16 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX), INTENT(IN)  :: i1,i2,i3,i4
 
     ! Callback routine
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 
 !<output>
@@ -2570,7 +2641,6 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(NDIM2D)           :: Dcoord
     REAL(DP) :: x1,y1,x2,y2,x3,y3,x4,y4,x21,y21,x31,y31,x24,y24,alpha
-    INTEGER(PREC_VERTEXIDX), DIMENSION(4) :: ksvt
     INTEGER(PREC_QTIDX)                   :: iquad,ipos
     
     ! Compute coordinates of new vertex
@@ -2611,13 +2681,10 @@ CONTAINS
       CALL qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,i5,Dcoord,iquad)
     END IF
     
-
-    ! Insert vertex into graph
-    CALL grph_insertVertex(rhadapt%rsparsitygraph,i5)
-   
-    ! Finally, update the solution vector
-    ksvt=(/i1,i2,i3,i4/)
-    CALL fcb_insertVertex(4,ksvt,i5)
+    ! Optionally, invoke callback function
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,&
+        HADAPT_OPR_INSERTVERTEXCENTR,(/i5,i1,i2,i3,i4/),(/0/))
   END SUBROUTINE add_vertex_atElementCenter2D
 
   ! ***************************************************************************
@@ -3304,7 +3371,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE refine_Tria2Tria(rhadapt,iel,imarker,fcb_insertVertex)
+  SUBROUTINE refine_Tria2Tria(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine subdivides one triangular element into two triangular 
@@ -3338,12 +3405,16 @@ CONTAINS
     INTEGER, INTENT(IN)                  :: imarker
 
     ! Callback routines
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
     
@@ -3385,7 +3456,7 @@ CONTAINS
     nel0 = rhadapt%NEL
     
     ! Add one new vertex I4 at the midpoint of edge (I1,I2).
-    CALL add_vertex2D(rhadapt,i1,i2,e1,i4,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i1,i2,e1,i4,rcollection,fcb_hadaptCallback)
     
     ! Replace element IEL and add one new element E4
     CALL replace_element2D(rhadapt,iel,i1,i4,i3,e1,nel0+1,e3,e1,nel0+1,e6)
@@ -3406,21 +3477,26 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,nel0+1,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,iel,ipos)
 
-    ! Delete broken edge (I1,I2) and add three new edges 
-    ! (I1,I4), (I2,I4), and (I3,I4) if this is necessary
-    IF (e1 == e4) THEN
-      CALL remove_edge(rhadapt,i1,i2)
-      CALL add_edge(rhadapt,i1,i4)
-      CALL add_edge(rhadapt,i2,i4)
-    END IF
-    CALL add_edge(rhadapt,i3,i4)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA2TRIA,&
+        (/i1,i2,i3,i4/),(/e1,e2,e3,e4,e5,e6/))
+    
+!!$    ! Delete broken edge (I1,I2) and add three new edges 
+!!$    ! (I1,I4), (I2,I4), and (I3,I4) if this is necessary
+!!$    IF (e1 == e4) THEN
+!!$      CALL remove_edge(rhadapt,i1,i2)
+!!$      CALL add_edge(rhadapt,i1,i4)
+!!$      CALL add_edge(rhadapt,i2,i4)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i3,i4)
   END SUBROUTINE refine_Tria2Tria
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE refine_Tria3Tria(rhadapt,iel,imarker,fcb_insertVertex)
+  SUBROUTINE refine_Tria3Tria(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine subdivides one triangular element into three triangular 
@@ -3451,12 +3527,16 @@ CONTAINS
     INTEGER, INTENT(IN)                  :: imarker
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -3499,8 +3579,8 @@ CONTAINS
     nel0 = rhadapt%NEL
     
     ! Add two new vertices I4 and I5 at the midpoint of edges (I1,I2) and (I2,I3).
-    CALL add_vertex2D(rhadapt,i1,i2,e1,i4,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i2,i3,e2,i5,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i1,i2,e1,i4,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i2,i3,e2,i5,rcollection,fcb_hadaptCallback)
     
     ! Compute the length of edges (I1,I2) and (I2,I3)
     x = qtree_getX(rhadapt%rVertexCoordinates2D,i1)-&
@@ -3542,22 +3622,26 @@ CONTAINS
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+1,ipos)
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+2,ipos)
 
+      ! Optionally, invoke callback routine
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA3TRIA12,&
+          (/i1,i2,i3,i4,i5/),(/e1,e2,e3,e4,e5/))
 
-      ! Delete broken edges (I1,I2), (I2,I3)
-      IF (e1 == e4) CALL remove_edge(rhadapt,i1,i2)
-      IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
-      
-      ! Add new edges (I1,I4),(I2,I4),(I2,I5),(I3,I5),(I3,I4),(I4,I5)
-      IF (e1 == e4) THEN
-        CALL add_edge(rhadapt,i1,i4)
-        CALL add_edge(rhadapt,i2,i4)
-      END IF
-      IF (e2 == e5) THEN
-        CALL add_edge(rhadapt,i2,i5)
-        CALL add_edge(rhadapt,i3,i5)
-      END IF
-      CALL add_edge(rhadapt,i3,i4)
-      CALL add_edge(rhadapt,i4,i5)
+!!$      ! Delete broken edges (I1,I2), (I2,I3)
+!!$      IF (e1 == e4) CALL remove_edge(rhadapt,i1,i2)
+!!$      IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
+!!$      
+!!$      ! Add new edges (I1,I4),(I2,I4),(I2,I5),(I3,I5),(I3,I4),(I4,I5)
+!!$      IF (e1 == e4) THEN
+!!$        CALL add_edge(rhadapt,i1,i4)
+!!$        CALL add_edge(rhadapt,i2,i4)
+!!$      END IF
+!!$      IF (e2 == e5) THEN
+!!$        CALL add_edge(rhadapt,i2,i5)
+!!$        CALL add_edge(rhadapt,i3,i5)
+!!$      END IF
+!!$      CALL add_edge(rhadapt,i3,i4)
+!!$      CALL add_edge(rhadapt,i4,i5)
       
     ELSE
       
@@ -3587,21 +3671,26 @@ CONTAINS
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+1,ipos)
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+2,ipos)
 
-      ! Delete broken edges (I1,I2),(I2,I3)
-      IF (e1 == e4) CALL remove_edge(rhadapt,i1,i2)
-      IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
-      
-      ! Add new edges (I1,I5),(I1,I4),(I2,I4),(I2,I5),(I3,I5),(I4,I5)
-      IF (e1 == e4) THEN
-        CALL add_edge(rhadapt,i1,i4)
-        CALL add_edge(rhadapt,i2,i4)
-      END IF
-      IF (e2 == e6) THEN
-        CALL add_edge(rhadapt,i2,i5)
-        CALL add_edge(rhadapt,i3,i5)
-      END IF
-      CALL add_edge(rhadapt,i4,i5)
-      CALL add_edge(rhadapt,i1,i5)
+      ! Optionally, invoke callback routine
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA3TRIA23,&
+          (/i1,i2,i3,i4,i5/),(/e1,e2,e3,e4,e5/))
+
+!!$      ! Delete broken edges (I1,I2),(I2,I3)
+!!$      IF (e1 == e4) CALL remove_edge(rhadapt,i1,i2)
+!!$      IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
+!!$      
+!!$      ! Add new edges (I1,I5),(I1,I4),(I2,I4),(I2,I5),(I3,I5),(I4,I5)
+!!$      IF (e1 == e4) THEN
+!!$        CALL add_edge(rhadapt,i1,i4)
+!!$        CALL add_edge(rhadapt,i2,i4)
+!!$      END IF
+!!$      IF (e2 == e6) THEN
+!!$        CALL add_edge(rhadapt,i2,i5)
+!!$        CALL add_edge(rhadapt,i3,i5)
+!!$      END IF
+!!$      CALL add_edge(rhadapt,i4,i5)
+!!$      CALL add_edge(rhadapt,i1,i5)
     END IF
   END SUBROUTINE refine_Tria3Tria
 
@@ -3609,7 +3698,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE refine_Tria4Tria(rhadapt,iel,fcb_insertVertex)
+  SUBROUTINE refine_Tria4Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine subdivides one triangular element into four similar 
@@ -3636,12 +3725,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -3667,9 +3760,9 @@ CONTAINS
     
     ! Add three new vertices I4,I5 and I6 at the midpoint of edges (I1,I2),
     ! (I2,I3) and (I1,I3), respectively. 
-    CALL add_vertex2D(rhadapt,i1,i2,e1,i4,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i2,i3,e2,i5,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i3,i1,e3,i6,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i1,i2,e1,i4,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i2,i3,e2,i5,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i3,i1,e3,i6,rcollection,fcb_hadaptCallback)
     
     ! Replace element IEL and add three new elements E4, E5, and E6
     CALL replace_element2D(rhadapt,iel,i1,i4,i6,e1,nel0+3,e6,e1,nel0+3,e6)
@@ -3707,35 +3800,40 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+2,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+3,ipos)
 
-    ! Delete broken edges (I1,I2),(I1,I3),(I2,I3) (if required)
-    IF (e1 == e4) CALL remove_edge(rhadapt,i1,i2)
-    IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
-    IF (e3 == e6) CALL remove_edge(rhadapt,i1,i3)
-    
-    ! Add new edges (I1,I4),(I1,I6),(I2,I4),(I2,I5),&
-    ! (I3,I5),(I3,I6),(I4,I5),(I4,I6),(I5,I6)
-    IF (e1 == e4) THEN
-      CALL add_edge(rhadapt,i1,i4)
-      CALL add_edge(rhadapt,i2,i4)
-    END IF
-    IF (e2 == e5) THEN
-      CALL add_edge(rhadapt,i2,i5)
-      CALL add_edge(rhadapt,i3,i5)
-    END IF
-    IF (e3 == e6) THEN
-      CALL add_edge(rhadapt,i3,i6)
-      CALL add_edge(rhadapt,i1,i6)
-    END IF
-    CALL add_edge(rhadapt,i4,i5)
-    CALL add_edge(rhadapt,i4,i6)
-    CALL add_edge(rhadapt,i5,i6)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA4TRIA,&
+        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
+
+!!$    ! Delete broken edges (I1,I2),(I1,I3),(I2,I3) (if required)
+!!$    IF (e1 == e4) CALL remove_edge(rhadapt,i1,i2)
+!!$    IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
+!!$    IF (e3 == e6) CALL remove_edge(rhadapt,i1,i3)
+!!$    
+!!$    ! Add new edges (I1,I4),(I1,I6),(I2,I4),(I2,I5),&
+!!$    ! (I3,I5),(I3,I6),(I4,I5),(I4,I6),(I5,I6)
+!!$    IF (e1 == e4) THEN
+!!$      CALL add_edge(rhadapt,i1,i4)
+!!$      CALL add_edge(rhadapt,i2,i4)
+!!$    END IF
+!!$    IF (e2 == e5) THEN
+!!$      CALL add_edge(rhadapt,i2,i5)
+!!$      CALL add_edge(rhadapt,i3,i5)
+!!$    END IF
+!!$    IF (e3 == e6) THEN
+!!$      CALL add_edge(rhadapt,i3,i6)
+!!$      CALL add_edge(rhadapt,i1,i6)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i4,i5)
+!!$    CALL add_edge(rhadapt,i4,i6)
+!!$    CALL add_edge(rhadapt,i5,i6)
   END SUBROUTINE refine_Tria4Tria
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE refine_Quad2Quad(rhadapt,iel,imarker,fcb_insertVertex)
+  SUBROUTINE refine_Quad2Quad(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine subdivides one quadrilateral element 
@@ -3765,12 +3863,16 @@ CONTAINS
     INTEGER, INTENT(IN)                  :: imarker
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>    
 
@@ -3813,8 +3915,8 @@ CONTAINS
     
     ! Add two new vertices I5 and I6 at the midpoint of edges (I1,I2) and
     ! (I3,I4), respectively.
-    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i3,i4,e3,i6,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i3,i4,e3,i6,rcollection,fcb_hadaptCallback)
     
     ! Replace element IEL and add one new element E5
     CALL replace_element2D(rhadapt,iel,i1,i5,i6,i4,e1,nel0+1,e7,e4,e1,nel0+1,e7,e8)
@@ -3845,37 +3947,42 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,iel,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+1,ipos)
     
-    ! Delete broken edges (I1,I3) and (I2,I4)
-    CALL remove_edge(rhadapt,i1,i3)
-    CALL remove_edge(rhadapt,i2,i4)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD2QUAD,&
+        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
 
-    ! Delete broken edges (I1,I2) and (I3,I4)
-    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
-    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
-    
-    ! Add new edges (I1,I6), (I4,I5), (I2,I6), (I3,I5) and (I5,I6)
-    CALL add_edge(rhadapt,i1,i6)
-    CALL add_edge(rhadapt,i4,i5)
-    CALL add_edge(rhadapt,i2,i6)
-    CALL add_edge(rhadapt,i3,i5)
-    CALL add_edge(rhadapt,i5,i6)
-
-    ! Add new edges (I1,I5),(I2,I5),(I3,I6),(I4,I6),(I5,I6)
-    IF (e1 == e5) THEN
-      CALL add_edge(rhadapt,i1,i5)
-      CALL add_edge(rhadapt,i2,i5)
-    END IF
-    IF (e3 == e7) THEN
-      CALL add_edge(rhadapt,i3,i6)
-      CALL add_edge(rhadapt,i4,i6)
-    END IF   
+!!$    ! Delete broken edges (I1,I3) and (I2,I4)
+!!$    CALL remove_edge(rhadapt,i1,i3)
+!!$    CALL remove_edge(rhadapt,i2,i4)
+!!$
+!!$    ! Delete broken edges (I1,I2) and (I3,I4)
+!!$    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
+!!$    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
+!!$    
+!!$    ! Add new edges (I1,I6), (I4,I5), (I2,I6), (I3,I5) and (I5,I6)
+!!$    CALL add_edge(rhadapt,i1,i6)
+!!$    CALL add_edge(rhadapt,i4,i5)
+!!$    CALL add_edge(rhadapt,i2,i6)
+!!$    CALL add_edge(rhadapt,i3,i5)
+!!$    CALL add_edge(rhadapt,i5,i6)
+!!$
+!!$    ! Add new edges (I1,I5),(I2,I5),(I3,I6),(I4,I6),(I5,I6)
+!!$    IF (e1 == e5) THEN
+!!$      CALL add_edge(rhadapt,i1,i5)
+!!$      CALL add_edge(rhadapt,i2,i5)
+!!$    END IF
+!!$    IF (e3 == e7) THEN
+!!$      CALL add_edge(rhadapt,i3,i6)
+!!$      CALL add_edge(rhadapt,i4,i6)
+!!$    END IF   
   END SUBROUTINE refine_Quad2Quad
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE refine_Quad3Tria(rhadapt,iel,imarker,fcb_insertVertex)
+  SUBROUTINE refine_Quad3Tria(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine subdivides one quadrilateral element
@@ -3905,12 +4012,16 @@ CONTAINS
     INTEGER, INTENT(IN)                  :: imarker
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
     TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -3958,7 +4069,7 @@ CONTAINS
     nel0 = rhadapt%NEL
     
     ! Add one new vertex I5 it the midpoint of edge (I1,I2)
-    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,rcollection,fcb_hadaptCallback)
     
     ! Replace element IEL and add two new elements E5 and E6
     CALL replace_element2D(rhadapt,iel,i1,i5,i4,e1,nel0+2,e4,e1,nel0+2,e8)
@@ -3991,28 +4102,33 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+1,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+2,ipos)
 
-    ! Delete broken edges (I1,I3) and (I2,I4)
-    CALL remove_edge(rhadapt,i1,i3)
-    CALL remove_edge(rhadapt,i2,i4)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD3TRIA,&
+        (/i1,i2,i3,i4,i5/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
 
-    ! Delete broken edges (I1,I2)
-    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
-    
-    ! Add new edges (I1,I5),(I2,I5),(I3,I5),(I4,I5)
-    
-    IF (e1 == e5) THEN
-      CALL add_edge(rhadapt,i1,i5)
-      CALL add_edge(rhadapt,i2,i5)
-    END IF
-    CALL add_edge(rhadapt,i3,i5)
-    CALL add_edge(rhadapt,i4,i5)
+!!$    ! Delete broken edges (I1,I3) and (I2,I4)
+!!$    CALL remove_edge(rhadapt,i1,i3)
+!!$    CALL remove_edge(rhadapt,i2,i4)
+!!$
+!!$    ! Delete broken edges (I1,I2)
+!!$    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
+!!$    
+!!$    ! Add new edges (I1,I5),(I2,I5),(I3,I5),(I4,I5)
+!!$    
+!!$    IF (e1 == e5) THEN
+!!$      CALL add_edge(rhadapt,i1,i5)
+!!$      CALL add_edge(rhadapt,i2,i5)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i3,i5)
+!!$    CALL add_edge(rhadapt,i4,i5)
   END SUBROUTINE refine_Quad3Tria
   
 ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE refine_Quad4Tria(rhadapt,iel,imarker,fcb_insertVertex)
+  SUBROUTINE refine_Quad4Tria(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine subdivides one quadrilateral element
@@ -4042,12 +4158,16 @@ CONTAINS
     INTEGER, INTENT(IN)                  :: imarker
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -4096,8 +4216,8 @@ CONTAINS
     
     ! Add new vertices I5 and I6 at the midpoint of edges (I1,I2) and
     ! (I2,I3), respectively.
-    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i2,i3,e2,i6,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i2,i3,e2,i6,rcollection,fcb_hadaptCallback)
     
     ! Replace element IEL and add three new elements E5,E6 and E7
     CALL replace_element2D(rhadapt,iel,i1,i5,i4,e1,nel0+3,e4,e1,nel0+3,e8)
@@ -4134,34 +4254,39 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+2,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+3,ipos)
 
-    ! Delete broken edges (I1,I3) and (I2,I4)
-    CALL remove_edge(rhadapt,i1,i3)
-    CALL remove_edge(rhadapt,i2,i4)
-
-    ! Delete broken edges (I1,I2) and (I2,I3)
-    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
-    IF (e2 == e6) CALL remove_edge(rhadapt,i2,i3)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD4TRIA,&
+        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
     
-    ! Add new edges (I1,I5),(I2,I5),(I2,I6),(I3,I6),(I4,I5),
-    ! (I4,I6) and (I5,I6)
-    IF (e1 == e5) THEN
-      CALL add_edge(rhadapt,i1,i5)
-      CALL add_edge(rhadapt,i2,i5)
-    END IF
-    IF (e2 == e6) THEN
-      CALL add_edge(rhadapt,i2,i6)
-      CALL add_edge(rhadapt,i3,i6)
-    END IF
-    CALL add_edge(rhadapt,i4,i5)
-    CALL add_edge(rhadapt,i4,i6)
-    CALL add_edge(rhadapt,i5,i6)
+!!$    ! Delete broken edges (I1,I3) and (I2,I4)
+!!$    CALL remove_edge(rhadapt,i1,i3)
+!!$    CALL remove_edge(rhadapt,i2,i4)
+!!$
+!!$    ! Delete broken edges (I1,I2) and (I2,I3)
+!!$    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
+!!$    IF (e2 == e6) CALL remove_edge(rhadapt,i2,i3)
+!!$    
+!!$    ! Add new edges (I1,I5),(I2,I5),(I2,I6),(I3,I6),(I4,I5),
+!!$    ! (I4,I6) and (I5,I6)
+!!$    IF (e1 == e5) THEN
+!!$      CALL add_edge(rhadapt,i1,i5)
+!!$      CALL add_edge(rhadapt,i2,i5)
+!!$    END IF
+!!$    IF (e2 == e6) THEN
+!!$      CALL add_edge(rhadapt,i2,i6)
+!!$      CALL add_edge(rhadapt,i3,i6)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i4,i5)
+!!$    CALL add_edge(rhadapt,i4,i6)
+!!$    CALL add_edge(rhadapt,i5,i6)
   END SUBROUTINE refine_Quad4Tria
     
     ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE refine_Quad4Quad(rhadapt,iel,fcb_insertVertex)
+  SUBROUTINE refine_Quad4Quad(rhadapt,iel,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine subdivides one quadrilateral element
@@ -4188,12 +4313,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -4222,11 +4351,11 @@ CONTAINS
     
     ! Add five new vertices I5,I6,I7,I8 and I9 at the midpoint of edges
     ! (I1,I2), (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
-    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i2,i3,e2,i6,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i3,i4,e3,i7,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i1,i2,e1,i5,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i2,i3,e2,i6,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i3,i4,e3,i7,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,rcollection,fcb_hadaptCallback)
     
     ! Replace element IEL and add three new elements E5, E6, and E7
     CALL replace_element2D(rhadapt,iel,i1,i5,i9,i8,e1,nel0+1,nel0+3,e8,e1,nel0+1,nel0+3,e8)
@@ -4275,56 +4404,61 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,nel0+2,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,nel0+3,ipos)
 
-    ! Delete broken edges (I1,I3) and (I2,I4)
-    CALL remove_edge(rhadapt,i1,i3)
-    CALL remove_edge(rhadapt,i2,i4)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) &
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD4QUAD,&
+        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
 
-    ! Delete broken edges (I1,I2),(I2,I3),(I3,I4) and (I4,I1)
-    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
-    IF (e2 == e6) CALL remove_edge(rhadapt,i2,i3)
-    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
-    IF (e4 == e8) CALL remove_edge(rhadapt,i4,i1)
-    
-    ! Add new edges (I1,I5), (I2,I5),(I2,I6),(I3,I6),(I3,I7),
-    ! (I4,I7),(I4,I8),(I1,I8),(I5,I9),(I6,I9),(I7,I9),(I8,I9)
-    IF (e1 == e5) THEN
-      CALL add_edge(rhadapt,i1,i5)
-      CALL add_edge(rhadapt,i2,i5)
-    END IF
-    IF (e2 == e6) THEN
-      CALL add_edge(rhadapt,i2,i6)
-      CALL add_edge(rhadapt,i3,i6)
-    END IF
-    IF (e3 == e7) THEN
-      CALL add_edge(rhadapt,i3,i7)
-      CALL add_edge(rhadapt,i4,i7)
-    END IF
-    IF (e4 == e8) THEN
-      CALL add_edge(rhadapt,i4,i8)
-      CALL add_edge(rhadapt,i1,i8)
-    END IF
-    CALL add_edge(rhadapt,i5,i9)
-    CALL add_edge(rhadapt,i6,i9)
-    CALL add_edge(rhadapt,i7,i9)
-    CALL add_edge(rhadapt,i8,i9)
-
-    ! Add new edges (I1,I9), (I5,I8), (I2,I9), (I5,I6)
-    ! (I3,I9), I6,I7), (I4,I9), and (I7,I8)
-    CALL add_edge(rhadapt,i1,i9)
-    CALL add_edge(rhadapt,i5,i8)
-    CALL add_edge(rhadapt,i2,i9)
-    CALL add_edge(rhadapt,i5,i6)
-    CALL add_edge(rhadapt,i3,i9)
-    CALL add_edge(rhadapt,i6,i7)
-    CALL add_edge(rhadapt,i4,i9)
-    CALL add_edge(rhadapt,i7,i8)
+!!$    ! Delete broken edges (I1,I3) and (I2,I4)
+!!$    CALL remove_edge(rhadapt,i1,i3)
+!!$    CALL remove_edge(rhadapt,i2,i4)
+!!$
+!!$    ! Delete broken edges (I1,I2),(I2,I3),(I3,I4) and (I4,I1)
+!!$    IF (e1 == e5) CALL remove_edge(rhadapt,i1,i2)
+!!$    IF (e2 == e6) CALL remove_edge(rhadapt,i2,i3)
+!!$    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
+!!$    IF (e4 == e8) CALL remove_edge(rhadapt,i4,i1)
+!!$    
+!!$    ! Add new edges (I1,I5), (I2,I5),(I2,I6),(I3,I6),(I3,I7),
+!!$    ! (I4,I7),(I4,I8),(I1,I8),(I5,I9),(I6,I9),(I7,I9),(I8,I9)
+!!$    IF (e1 == e5) THEN
+!!$      CALL add_edge(rhadapt,i1,i5)
+!!$      CALL add_edge(rhadapt,i2,i5)
+!!$    END IF
+!!$    IF (e2 == e6) THEN
+!!$      CALL add_edge(rhadapt,i2,i6)
+!!$      CALL add_edge(rhadapt,i3,i6)
+!!$    END IF
+!!$    IF (e3 == e7) THEN
+!!$      CALL add_edge(rhadapt,i3,i7)
+!!$      CALL add_edge(rhadapt,i4,i7)
+!!$    END IF
+!!$    IF (e4 == e8) THEN
+!!$      CALL add_edge(rhadapt,i4,i8)
+!!$      CALL add_edge(rhadapt,i1,i8)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i5,i9)
+!!$    CALL add_edge(rhadapt,i6,i9)
+!!$    CALL add_edge(rhadapt,i7,i9)
+!!$    CALL add_edge(rhadapt,i8,i9)
+!!$
+!!$    ! Add new edges (I1,I9), (I5,I8), (I2,I9), (I5,I6)
+!!$    ! (I3,I9), I6,I7), (I4,I9), and (I7,I8)
+!!$    CALL add_edge(rhadapt,i1,i9)
+!!$    CALL add_edge(rhadapt,i5,i8)
+!!$    CALL add_edge(rhadapt,i2,i9)
+!!$    CALL add_edge(rhadapt,i5,i6)
+!!$    CALL add_edge(rhadapt,i3,i9)
+!!$    CALL add_edge(rhadapt,i6,i7)
+!!$    CALL add_edge(rhadapt,i4,i9)
+!!$    CALL add_edge(rhadapt,i7,i8)
   END SUBROUTINE refine_Quad4Quad
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE convert_Tria2Tria(rhadapt,iel1,iel2,fcb_insertVertex)
+  SUBROUTINE convert_Tria2Tria(rhadapt,iel1,iel2,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two neighboring triangles into one triangle 
@@ -4357,12 +4491,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel2
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -4404,8 +4542,8 @@ CONTAINS
 
     ! Add two new vertices I5 and I6 at the midpoint of edges (I2,I3)
     ! and (I1,I3), respectively.
-    CALL add_vertex2D(rhadapt,i2,i3,e2,i5,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i3,i1,e3,i6,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i2,i3,e2,i5,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i3,i1,e3,i6,rcollection,fcb_hadaptCallback)
 
     ! Replace elements IEL and JEL and add two new elements
     CALL replace_element2D(rhadapt,iel,i1,i4,i6,e1,nel0+2,e6,e7,nel0+2,e6)
@@ -4445,31 +4583,36 @@ CONTAINS
     rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
     rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
     
-    ! Delete broken edges (I1,I3),(I2,I3) and (I3,I4)
-    CALL remove_edge(rhadapt,i3,i4)
-    IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
-    IF (e3 == e6) CALL remove_edge(rhadapt,i1,i3)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_TRIA2TRIA,&
+        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
 
-    ! Add new edges (I1,I6),(I3,I6),(I2,I5),(I3,I5),
-    ! (I5,I6),(I4,I6), and (I4,I5)
-    IF(e2 == e5) THEN
-      CALL add_edge(rhadapt,i2,i5)
-      CALL add_edge(rhadapt,i3,i5)
-    END IF
-    IF (e3 == e6) THEN
-      CALL add_edge(rhadapt,i3,i6)
-      CALL add_edge(rhadapt,i1,i6)
-    END IF
-    CALL add_edge(rhadapt,i4,i5)
-    CALL add_edge(rhadapt,i5,i6)
-    CALL add_edge(rhadapt,i6,i4)
+!!$    ! Delete broken edges (I1,I3),(I2,I3) and (I3,I4)
+!!$    CALL remove_edge(rhadapt,i3,i4)
+!!$    IF (e2 == e5) CALL remove_edge(rhadapt,i2,i3)
+!!$    IF (e3 == e6) CALL remove_edge(rhadapt,i1,i3)
+!!$
+!!$    ! Add new edges (I1,I6),(I3,I6),(I2,I5),(I3,I5),
+!!$    ! (I5,I6),(I4,I6), and (I4,I5)
+!!$    IF(e2 == e5) THEN
+!!$      CALL add_edge(rhadapt,i2,i5)
+!!$      CALL add_edge(rhadapt,i3,i5)
+!!$    END IF
+!!$    IF (e3 == e6) THEN
+!!$      CALL add_edge(rhadapt,i3,i6)
+!!$      CALL add_edge(rhadapt,i1,i6)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i4,i5)
+!!$    CALL add_edge(rhadapt,i5,i6)
+!!$    CALL add_edge(rhadapt,i6,i4)
   END SUBROUTINE convert_Tria2Tria
 
 ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE convert_Quad2Quad(rhadapt,iel1,iel2,fcb_insertVertex)
+  SUBROUTINE convert_Quad2Quad(rhadapt,iel1,iel2,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two neighboring quadrilaterals into one
@@ -4481,7 +4624,7 @@ CONTAINS
     !
     !     initial quadrilateral      subdivided quadrilateral
     !
-    !     i4(e7,e3)i7(f5,f5)i3          i4(e,e37)i7(f5,f1)i3
+    !     i4(e7,e3)i7(f5,f5)i3         i4(e7,e3)i7(f5,f1)i3
     !      +-------+-------+            +-------+-------+
     !      |       |      *|            |*      |      *|
     ! (e4) |       |       | (f8)  (e4) | nel+2 | nel+1 | (f8)
@@ -4503,12 +4646,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel2
     
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
     TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
     
@@ -4555,9 +4702,9 @@ CONTAINS
 
     ! Add two new vertices I6, I8, and I9 at the midpoint of edges (I2,I3),
     ! (I1,I4) and (I1,I2), respectively.
-    CALL add_vertex2D(rhadapt,i2,i3,f4,i6,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i2,i3,f4,i6,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,rcollection,fcb_hadaptCallback)
 
     ! Replace element IEL and JEL and add two new elements KEL and LEL
     CALL replace_element2D(rhadapt,iel,i1,i5,i9,i8,e1,jel,nel0+2,e8,e5,jel,nel0+2,e8)
@@ -4620,47 +4767,51 @@ CONTAINS
     rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
     rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
 
-
-    ! Delete broken edges (I5,I7),(I2,I7),(I3,I5),(I1,I7),(I4,I5),
-    ! (I2,I3), and (I4,I1)
-    CALL remove_edge(rhadapt,i5,i7)
-    CALL remove_edge(rhadapt,i2,i7)
-    CALL remove_edge(rhadapt,i3,i5)
-    CALL remove_edge(rhadapt,i1,i7)
-    CALL remove_edge(rhadapt,i4,i5)
-    IF (f4 == f8) CALL remove_edge(rhadapt,i2,i3)
-    IF (e4 == e8) CALL remove_edge(rhadapt,i1,i4)
-
-    ! Add new edges (I2,I6),(I3,I6),(I1,I8),(I4,I8),(I5,I9),(I6,I9),
-    ! (I7,I9),(I8,I9),(I1,I9),(I2,I9),(I3,I9),(I4,I9),(I5,I8),
-    ! (I5,I6),(I6,I7),(I7,I8)
-    IF (f4 == f8) THEN
-      CALL add_edge(rhadapt,i2,i6)
-      CALL add_edge(rhadapt,i3,i6)
-    END IF
-    IF (e4 == e8) THEN
-      CALL add_edge(rhadapt,i1,i8)
-      CALL add_edge(rhadapt,i4,i8)
-    END IF
-    CALL add_edge(rhadapt,i5,i9)
-    CALL add_edge(rhadapt,i6,i9)
-    CALL add_edge(rhadapt,i7,i9)
-    CALL add_edge(rhadapt,i8,i9)
-    CALL add_edge(rhadapt,i1,i9)
-    CALL add_edge(rhadapt,i2,i9)
-    CALL add_edge(rhadapt,i3,i9)
-    CALL add_edge(rhadapt,i4,i9)
-    CALL add_edge(rhadapt,i5,i8)
-    CALL add_edge(rhadapt,i5,i6)
-    CALL add_edge(rhadapt,i6,i7)
-    CALL add_edge(rhadapt,i7,i8)
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD2QUAD,&
+        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,f4,f1,e4,f3,f8,e3,e8/))
+    
+!!$    ! Delete broken edges (I5,I7),(I2,I7),(I3,I5),(I1,I7),(I4,I5),
+!!$    ! (I2,I3), and (I4,I1)
+!!$    CALL remove_edge(rhadapt,i5,i7)
+!!$    CALL remove_edge(rhadapt,i2,i7)
+!!$    CALL remove_edge(rhadapt,i3,i5)
+!!$    CALL remove_edge(rhadapt,i1,i7)
+!!$    CALL remove_edge(rhadapt,i4,i5)
+!!$    IF (f4 == f8) CALL remove_edge(rhadapt,i2,i3)
+!!$    IF (e4 == e8) CALL remove_edge(rhadapt,i1,i4)
+!!$
+!!$    ! Add new edges (I2,I6),(I3,I6),(I1,I8),(I4,I8),(I5,I9),(I6,I9),
+!!$    ! (I7,I9),(I8,I9),(I1,I9),(I2,I9),(I3,I9),(I4,I9),(I5,I8),
+!!$    ! (I5,I6),(I6,I7),(I7,I8)
+!!$    IF (f4 == f8) THEN
+!!$      CALL add_edge(rhadapt,i2,i6)
+!!$      CALL add_edge(rhadapt,i3,i6)
+!!$    END IF
+!!$    IF (e4 == e8) THEN
+!!$      CALL add_edge(rhadapt,i1,i8)
+!!$      CALL add_edge(rhadapt,i4,i8)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i5,i9)
+!!$    CALL add_edge(rhadapt,i6,i9)
+!!$    CALL add_edge(rhadapt,i7,i9)
+!!$    CALL add_edge(rhadapt,i8,i9)
+!!$    CALL add_edge(rhadapt,i1,i9)
+!!$    CALL add_edge(rhadapt,i2,i9)
+!!$    CALL add_edge(rhadapt,i3,i9)
+!!$    CALL add_edge(rhadapt,i4,i9)
+!!$    CALL add_edge(rhadapt,i5,i8)
+!!$    CALL add_edge(rhadapt,i5,i6)
+!!$    CALL add_edge(rhadapt,i6,i7)
+!!$    CALL add_edge(rhadapt,i7,i8)
   END SUBROUTINE convert_Quad2Quad
 
    ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE convert_Quad3Tria(rhadapt,iel1,iel2,iel3,fcb_insertVertex)
+  SUBROUTINE convert_Quad3Tria(rhadapt,iel1,iel2,iel3,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines three neighboring triangles which result
@@ -4697,12 +4848,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel3
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
     TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -4741,10 +4896,10 @@ CONTAINS
 
     ! Add four new vertices I6,I7,I8 and I9 at the midpoint of edges 
     ! (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
-    CALL add_vertex2D(rhadapt,i2,i3,e2,i6,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i3,i4,e3,i7,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i2,i3,e2,i6,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i3,i4,e3,i7,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,rcollection,fcb_hadaptCallback)
 
     ! Replace elements IEL1, IEL2 and IEL3 and add one new element
     CALL replace_element2D(rhadapt,iel1,i1,i5,i9,i8,e1,iel2,nel0+1,e8,e9,iel2,nel0+1,e8)
@@ -4793,43 +4948,6 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,iel3,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,nel0+1,ipos)
 
-    ! Delete broken edges (I2,I3),(I3,I4),(I4,I1),(I5,I3) and (I5,I4)
-    IF (e2 == e6) CALL remove_edge(rhadapt,i2,i3)
-    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
-    IF (e4 == e8) CALL remove_edge(rhadapt,i4,i1)
-    CALL remove_edge(rhadapt,i5,i3)
-    CALL remove_edge(rhadapt,i5,i4)
-
-    ! Add new edges (I2,I6),(I3,I6),(I3,I7),(I4,I7),(I4,I8),(I1,I8)
-    ! (I5,I9),(I6,I9),(I7,I9) and (I8,I9)
-    IF (e2 == e6) THEN
-      CALL add_edge(rhadapt,i2,i6)
-      CALL add_edge(rhadapt,i3,i6)
-    END IF
-    IF (e3 == e7) THEN
-      CALL add_edge(rhadapt,i3,i7)
-      CALL add_edge(rhadapt,i4,i7)
-    END IF
-    IF (e4 == e8) THEN
-      CALL add_edge(rhadapt,i4,i8)
-      CALL add_edge(rhadapt,i1,i8)
-    END IF
-    CALL add_edge(rhadapt,i5,i9)
-    CALL add_edge(rhadapt,i6,i9)
-    CALL add_edge(rhadapt,i7,i9)
-    CALL add_edge(rhadapt,i8,i9)
-
-    ! Add new edges (I1,I9), (I5,I8), (I2,I9), (I5,I6)
-    ! (I3,I9), I6,I7), (I4,I9), and (I7,I8)
-    CALL add_edge(rhadapt,i1,i9)
-    CALL add_edge(rhadapt,i5,i8)
-    CALL add_edge(rhadapt,i2,i9)
-    CALL add_edge(rhadapt,i5,i6)
-    CALL add_edge(rhadapt,i3,i9)
-    CALL add_edge(rhadapt,i6,i7)
-    CALL add_edge(rhadapt,i4,i9)
-    CALL add_edge(rhadapt,i7,i8)
-
     ! Finally, adjust numbers of triangles/quadrilaterals
     rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-3
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+3
@@ -4844,13 +4962,55 @@ CONTAINS
     rhadapt%p_IvertexAge(i7) = -ABS(rhadapt%p_IvertexAge(i7))
     rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
     rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
+    
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD3TRIA,&
+        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+
+!!$    ! Delete broken edges (I2,I3),(I3,I4),(I4,I1),(I5,I3) and (I5,I4)
+!!$    IF (e2 == e6) CALL remove_edge(rhadapt,i2,i3)
+!!$    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
+!!$    IF (e4 == e8) CALL remove_edge(rhadapt,i4,i1)
+!!$    CALL remove_edge(rhadapt,i5,i3)
+!!$    CALL remove_edge(rhadapt,i5,i4)
+!!$
+!!$    ! Add new edges (I2,I6),(I3,I6),(I3,I7),(I4,I7),(I4,I8),(I1,I8)
+!!$    ! (I5,I9),(I6,I9),(I7,I9) and (I8,I9)
+!!$    IF (e2 == e6) THEN
+!!$      CALL add_edge(rhadapt,i2,i6)
+!!$      CALL add_edge(rhadapt,i3,i6)
+!!$    END IF
+!!$    IF (e3 == e7) THEN
+!!$      CALL add_edge(rhadapt,i3,i7)
+!!$      CALL add_edge(rhadapt,i4,i7)
+!!$    END IF
+!!$    IF (e4 == e8) THEN
+!!$      CALL add_edge(rhadapt,i4,i8)
+!!$      CALL add_edge(rhadapt,i1,i8)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i5,i9)
+!!$    CALL add_edge(rhadapt,i6,i9)
+!!$    CALL add_edge(rhadapt,i7,i9)
+!!$    CALL add_edge(rhadapt,i8,i9)
+!!$
+!!$    ! Add new edges (I1,I9), (I5,I8), (I2,I9), (I5,I6)
+!!$    ! (I3,I9), I6,I7), (I4,I9), and (I7,I8)
+!!$    CALL add_edge(rhadapt,i1,i9)
+!!$    CALL add_edge(rhadapt,i5,i8)
+!!$    CALL add_edge(rhadapt,i2,i9)
+!!$    CALL add_edge(rhadapt,i5,i6)
+!!$    CALL add_edge(rhadapt,i3,i9)
+!!$    CALL add_edge(rhadapt,i6,i7)
+!!$    CALL add_edge(rhadapt,i4,i9)
+!!$    CALL add_edge(rhadapt,i7,i8)
   END SUBROUTINE convert_Quad3Tria
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE convert_Quad4Tria(rhadapt,iel1,iel2,iel3,iel4,fcb_insertVertex)
+  SUBROUTINE convert_Quad4Tria(rhadapt,iel1,iel2,iel3,iel4,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four neighboring triangles which result
@@ -4891,12 +5051,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel4
 
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT)     :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -4937,9 +5101,9 @@ CONTAINS
     
     ! Add three new vertices I7, I8 and I9 at the midpoint of edges
     ! (I3,I4) and (I1,I4) and at the center of element IEL
-    CALL add_vertex2D(rhadapt,i3,i4,e3,i7,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,fcb_insertVertex)
-    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,fcb_insertVertex)
+    CALL add_vertex2D(rhadapt,i3,i4,e3,i7,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i4,i1,e4,i8,rcollection,fcb_hadaptCallback)
+    CALL add_vertex2D(rhadapt,i1,i2,i3,i4,i9,rcollection,fcb_hadaptCallback)
 
     ! Replace all four elements
     CALL replace_element2D(rhadapt,iel1,i1,i5,i9,i8,e1,iel2,iel4,e8,e9,iel2,iel4,e8)
@@ -4985,39 +5149,6 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,iel3,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,iel4,ipos)
 
-    ! Delete broken edges (I3,I4),(I4,I1),(I4,I5),(I5,I6) and (I4,I6)
-    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
-    IF (e4 == e8) CALL remove_edge(rhadapt,i4,i1)
-    CALL remove_edge(rhadapt,i4,i5)
-    CALL remove_edge(rhadapt,i5,i6)
-    CALL remove_edge(rhadapt,i4,i6)
-
-    ! Add new edges (I3,I7),(I4,I7),(I4,I8),(I1,I8)
-    ! (I5,I9),(I6,I9),(I7,I9),(I8,I9)
-    IF (e3 == e7) THEN
-      CALL add_edge(rhadapt,i3,i7)
-      CALL add_edge(rhadapt,i4,i7)
-    END IF
-    IF (e4 == e8) THEN
-      CALL add_edge(rhadapt,i4,i8)
-      CALL add_edge(rhadapt,i1,i8)
-    END IF
-    CALL add_edge(rhadapt,i5,i9)
-    CALL add_edge(rhadapt,i6,i9)
-    CALL add_edge(rhadapt,i7,i9)
-    CALL add_edge(rhadapt,i8,i9)
-
-    ! Add new edges (I1,I9), (I5,I8), (I2,I9), (I5,I6)
-    ! (I3,I9), I6,I7), (I4,I9), and (I7,I8)
-    CALL add_edge(rhadapt,i1,i9)
-    CALL add_edge(rhadapt,i5,i8)
-    CALL add_edge(rhadapt,i2,i9)
-    CALL add_edge(rhadapt,i5,i6)
-    CALL add_edge(rhadapt,i3,i9)
-    CALL add_edge(rhadapt,i6,i7)
-    CALL add_edge(rhadapt,i4,i9)
-    CALL add_edge(rhadapt,i7,i8)
-
     ! Finally, adjust numbers of triangles/quadrilaterals
     rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-4
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+4
@@ -5032,13 +5163,51 @@ CONTAINS
     rhadapt%p_IvertexAge(i7) = -ABS(rhadapt%p_IvertexAge(i7))
     rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
     rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
+
+    ! Optionally, invoke callback routine
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD4TRIA,&
+        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    
+!!$    ! Delete broken edges (I3,I4),(I4,I1),(I4,I5),(I5,I6) and (I4,I6)
+!!$    IF (e3 == e7) CALL remove_edge(rhadapt,i3,i4)
+!!$    IF (e4 == e8) CALL remove_edge(rhadapt,i4,i1)
+!!$    CALL remove_edge(rhadapt,i4,i5)
+!!$    CALL remove_edge(rhadapt,i5,i6)
+!!$    CALL remove_edge(rhadapt,i4,i6)
+!!$
+!!$    ! Add new edges (I3,I7),(I4,I7),(I4,I8),(I1,I8)
+!!$    ! (I5,I9),(I6,I9),(I7,I9),(I8,I9)
+!!$    IF (e3 == e7) THEN
+!!$      CALL add_edge(rhadapt,i3,i7)
+!!$      CALL add_edge(rhadapt,i4,i7)
+!!$    END IF
+!!$    IF (e4 == e8) THEN
+!!$      CALL add_edge(rhadapt,i4,i8)
+!!$      CALL add_edge(rhadapt,i1,i8)
+!!$    END IF
+!!$    CALL add_edge(rhadapt,i5,i9)
+!!$    CALL add_edge(rhadapt,i6,i9)
+!!$    CALL add_edge(rhadapt,i7,i9)
+!!$    CALL add_edge(rhadapt,i8,i9)
+!!$
+!!$    ! Add new edges (I1,I9), (I5,I8), (I2,I9), (I5,I6)
+!!$    ! (I3,I9), I6,I7), (I4,I9), and (I7,I8)
+!!$    CALL add_edge(rhadapt,i1,i9)
+!!$    CALL add_edge(rhadapt,i5,i8)
+!!$    CALL add_edge(rhadapt,i2,i9)
+!!$    CALL add_edge(rhadapt,i5,i6)
+!!$    CALL add_edge(rhadapt,i3,i9)
+!!$    CALL add_edge(rhadapt,i6,i7)
+!!$    CALL add_edge(rhadapt,i4,i9)
+!!$    CALL add_edge(rhadapt,i7,i8)   
   END SUBROUTINE convert_Quad4Tria
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE coarsen_2Tria1Tria(rhadapt,iel)
+  SUBROUTINE coarsen_2Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two triangles resulting from a 1-tria : 2-tria
@@ -5069,11 +5238,18 @@ CONTAINS
 !<input>
     ! Element number of the inner red triangle
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+
+    ! callback routines
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection    
 !</inputoutput>
 !</subroutine>
 
@@ -5114,7 +5290,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE coarsen_4Tria1Tria(rhadapt,iel)
+  SUBROUTINE coarsen_4Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four triangles resulting from a
@@ -5144,17 +5320,24 @@ CONTAINS
 !<input>
     ! Element number of the inner red triangle
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+
+    ! callback routines
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     INTEGER(PREC_ELEMENTIDX) :: iel0,iel1,iel2,e1,e2,e3,e4,e5,e6,ielReplace
-    INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6,ivtReplace
+    INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
 
     ! Store vertex- and element-values of the three neighboring elements
     i4 = rhadapt%p_IverticesAtElement(1,iel)
@@ -5211,7 +5394,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE coarsen_4Tria2Tria(rhadapt,iel,iloc)
+  SUBROUTINE coarsen_4Tria2Tria(rhadapt,iel,iloc,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four triangles resulting from a
@@ -5248,11 +5431,18 @@ CONTAINS
 
     ! Relative position of the midpoint vertex that is kept
     INTEGER, INTENT(IN) :: iloc
+
+    ! callback routines
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -5594,27 +5784,15 @@ CONTAINS
     ! should not be removed from the triangulation due to the indicator.
     DO iel=1,SIZE(p_Dindicator)
       
+      ! Check if the current element is marked for refinement. Then
+      ! all vertices are already locked by the refinement procedure
+      IF (p_Imarker(iel) .NE. MARK_ASIS_TRIA .AND.&
+          p_Imarker(iel) .NE. MARK_ASIS_QUAD) CYCLE
+
       ! Get local data for element iel
       Kvert = rhadapt%p_IverticesAtElement(:,iel)
       nve   = MERGE(3,4,Kvert(4) == 0)
 
-      ! Check if the current element is marked for refinement. Then
-      ! all vertices are already locked by the refinement procedure
-      ! in most situations. However, there exist configurations, in
-      ! which some vertices have to be locked in addition
-      SELECT CASE(p_Imarker(iel))
-      CASE(MARK_ASIS_TRIA,MARK_ASIS_QUAD)
-        CYCLE
-
-      CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,&
-           MARK_REF_QUAD3TRIA_3,MARK_REF_QUAD3TRIA_4)
-        DO ive=1,4
-          i = rhadapt%p_IverticesAtElement(ive,iel)
-          rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-        END DO
-        CYCLE
-      END SELECT
-      
       ! Get state of current element
       IF (nve == 3) THEN
         istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
@@ -6245,7 +6423,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE redgreen_mark_refinement2D(rhadapt,fcb_adjustDimension,fcb_insertVertex)
+  SUBROUTINE redgreen_mark_refinement2D(rhadapt,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine initializes tha adaptive data structure for red-green refinement.
@@ -6257,18 +6435,21 @@ CONTAINS
 
 !<input>
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     INTEGER, DIMENSION(:), POINTER :: p_Imarker,p_Imodified
-
     INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: Kvert
     INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: Kadj,Kmidadj,Kjadj
     INTEGER(PREC_VERTEXIDX)  :: i,nvt
@@ -6325,7 +6506,8 @@ CONTAINS
           rhadapt%p_ImidneighboursAtElement)
 
       ! Adjust dimension of solution vector
-      CALL fcb_adjustDimension(nvt)
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_ADJUSTVERTEXDIM,(/nvt/),(/0/))
 
       ! Create new array for modifier
       CALL storage_new ('redgreen_mark_refinement2D','p_Imodified',nel,&
@@ -6458,7 +6640,7 @@ CONTAINS
               IF (iel1 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
               ! Now, we can physically convert the four triangles into four quadrilaterals
-              CALL convert_Quad4Tria(rhadapt,kel,jel,lel,iel,fcb_insertVertex)
+              CALL convert_Quad4Tria(rhadapt,kel,jel,lel,iel,rcollection,fcb_hadaptCallback)
               isConform=.FALSE.
 
               ! All four elements have to be converted from triangles to quadrilaterals.
@@ -6488,7 +6670,7 @@ CONTAINS
               IF (iel1 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
               ! Now, we can physically convert the four triangles into four quadrilaterals
-              CALL convert_Quad4Tria(rhadapt,kel,iel,lel,jel,fcb_insertVertex)
+              CALL convert_Quad4Tria(rhadapt,kel,iel,lel,jel,rcollection,fcb_hadaptCallback)
               isConform=.FALSE.
 
               ! All four elements have to be converted from triangles to quadrilaterals.
@@ -6520,7 +6702,7 @@ CONTAINS
           IF (iel1 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
           
           ! Now, we can physically convert the two quadrilaterals into four quadrilaterals
-          CALL convert_Quad2Quad(rhadapt,iel,jel,fcb_insertVertex)
+          CALL convert_Quad2Quad(rhadapt,iel,jel,rcollection,fcb_hadaptCallback)
           isConform=.FALSE.
 
           ! The new elements NEL0+1 and NEL0+2 have zero markers by construction.
@@ -6583,7 +6765,7 @@ CONTAINS
 
           ! Now, we can physically convert the three elements IEL,JEL and KEL
           ! into four similar quadrilaterals
-          CALL convert_Quad3Tria(rhadapt,jel,kel,iel,fcb_insertVertex)
+          CALL convert_Quad3Tria(rhadapt,jel,kel,iel,rcollection,fcb_hadaptCallback)
           isConform=.FALSE.
           
           ! The new element NEL0+1 has zero marker by construction but that of IEL
@@ -6621,7 +6803,7 @@ CONTAINS
             IF (iel1 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
             
             ! Now, we can physically convert the two elements IEL and JEL into four similar triangles
-            CALL convert_Tria2Tria(rhadapt,iel,jel,fcb_insertVertex)
+            CALL convert_Tria2Tria(rhadapt,iel,jel,rcollection,fcb_hadaptCallback)
             isConform=.FALSE.
             
             ! The new elements NEL0+1 and NEL0+2 have zero markers by construction.
@@ -6656,7 +6838,7 @@ CONTAINS
             
             ! Now, we can physically convert the three elements IEL,JEL and KEL
             ! into four similar quadrilaterals
-            CALL convert_Quad3Tria(rhadapt,iel,kel,jel,fcb_insertVertex)
+            CALL convert_Quad3Tria(rhadapt,iel,kel,jel,rcollection,fcb_hadaptCallback)
             isConform=.FALSE.
             
             ! The new element NEL0+1 has zero marker by construction but that of JEL
@@ -6686,7 +6868,7 @@ CONTAINS
             IF (iel1 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
             ! Now, we can physically convert the four triangles into four quadrilaterals
-            CALL convert_Quad4Tria(rhadapt,iel,kel,lel,jel,fcb_insertVertex)
+            CALL convert_Quad4Tria(rhadapt,iel,kel,lel,jel,rcollection,fcb_hadaptCallback)
             isConform=.FALSE.
             
             ! All four elements have to be converted from triangles to quadrilaterals.
@@ -6729,7 +6911,7 @@ CONTAINS
             IF (iel1 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
             
             ! Now, we can physically convert the two elements IEL and JEL into four similar triangles
-            CALL convert_Tria2Tria(rhadapt,jel,iel,fcb_insertVertex)
+            CALL convert_Tria2Tria(rhadapt,jel,iel,rcollection,fcb_hadaptCallback)
             isConform=.FALSE.
             
             ! The new elements NEL0+1 and NEL0+2 have zero markers by construction.
@@ -6764,7 +6946,7 @@ CONTAINS
 
             ! Now, we can physically convert the three elements IEL,JEL and KEL
             ! into four similar quadrilaterals
-            CALL convert_Quad3Tria(rhadapt,kel,iel,jel,fcb_insertVertex)
+            CALL convert_Quad3Tria(rhadapt,kel,iel,jel,rcollection,fcb_hadaptCallback)
             isConform=.FALSE.
             
             ! The new element NEL0+1 has zero marker by construction but that of JEL
@@ -6794,7 +6976,7 @@ CONTAINS
             IF (iel1 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
             ! Now, we can physically convert the four triangles into four quadrilaterals
-            CALL convert_Quad4Tria(rhadapt,lel,kel,iel,jel,fcb_insertVertex)
+            CALL convert_Quad4Tria(rhadapt,lel,kel,iel,jel,rcollection,fcb_hadaptCallback)
             isConform=.FALSE.
             
             ! All four elements have to be converted from triangles to quadrilaterals.
@@ -6936,6 +7118,30 @@ CONTAINS
       CASE(MARK_REF_TRIA2TRIA_3)
         i = rhadapt%p_IverticesAtElement(2,iel)
         rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+      CASE(MARK_REF_QUAD3TRIA_1)
+        i = rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i = rhadapt%p_IverticesAtElement(4,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        
+      CASE(MARK_REF_QUAD3TRIA_2)
+        i = rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i = rhadapt%p_IverticesAtElement(4,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+      CASE(MARK_REF_QUAD3TRIA_3)
+        i = rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i = rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+
+      CASE(MARK_REF_QUAD3TRIA_4)
+        i = rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i = rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
       END SELECT
     END DO
       
@@ -6996,7 +7202,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE redgreen_refine(rhadapt,fcb_insertVertex)
+  SUBROUTINE redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine performs red-green refinement as proposed by R. Bank
@@ -7004,12 +7210,16 @@ CONTAINS
 
 !<input>
     ! Callback function
-    include 'intf_adaptcallback.inc'
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
 !</input>
 
 !<inputoutput>
     ! adaptive data structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+
+    ! OPTIONAL: Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</subroutine>
     
     ! local variables
@@ -7040,32 +7250,32 @@ CONTAINS
 
       CASE(MARK_REF_TRIA4TRIA)
         ! Red refinement triangle
-        CALL refine_Tria4Tria(rhadapt,iel,fcb_insertVertex)
+        CALL refine_Tria4Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
         
       CASE(MARK_REF_QUAD4QUAD)
         ! Red refinement quadrilateral
-        CALL refine_Quad4Quad(rhadapt,iel,fcb_insertVertex)
+        CALL refine_Quad4Quad(rhadapt,iel,rcollection,fcb_hadaptCallback)
         
       CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3)   
         ! Green refinement triangle
-        CALL refine_Tria2Tria(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
+        CALL refine_Tria2Tria(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+2
         
       CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,&
            MARK_REF_QUAD3TRIA_3,MARK_REF_QUAD3TRIA_4)
         ! Green refinement quadrilateral
-        CALL refine_Quad3Tria(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
+        CALL refine_Quad3Tria(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+3
         
       CASE(MARK_REF_QUAD2QUAD_13,MARK_REF_QUAD2QUAD_24)
         ! Green refinement quadrilateral
-        CALL refine_Quad2Quad(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
+        CALL refine_Quad2Quad(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+2
 
       CASE(MARK_REF_QUAD4TRIA_12,MARK_REF_QUAD4TRIA_23,&
            MARK_REF_QUAD4TRIA_34,MARK_REF_QUAD4TRIA_14)
         ! Green refinement quadrilateral
-        CALL refine_Quad4Tria(rhadapt,iel,p_Imarker(iel),fcb_insertVertex)
+        CALL refine_Quad4Tria(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
         rhadapt%nGreenElements = rhadapt%nGreenElements+4
 
       CASE DEFAULT
@@ -7089,18 +7299,24 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE redgreen_coarsen(rhadapt,fcb_removeVertex)
+  SUBROUTINE redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine performs red-green coarsening as proposed by R. Bank
 !</description>
 
+!<input>
+    ! callback routines
+    include 'intf_hadaptcallback.inc'
+    OPTIONAL :: fcb_hadaptCallback
+!</input>
+
 !<inputoutptut>
     ! adativity structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
-
-    ! callback routines
-    include 'intf_adaptcallback.inc'
+    TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
+    
+    ! OPTIONAL Collection
+    TYPE(t_collection), INTENT(INOUT), OPTIONAL :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -7108,7 +7324,6 @@ CONTAINS
     INTEGER,  DIMENSION(:), POINTER :: p_Imarker
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(PREC_VERTEXIDX)  :: ivt,ivtReplace
-    INTEGER :: istate,nve
 
     ! Check if dynamic data structures are o.k. and if 
     ! cells are marked for coarsening
@@ -7131,19 +7346,19 @@ CONTAINS
         ! - that are marked for refinement.
 
       CASE(MARK_CRS_2TRIA1TRIA_LEFT)
-        CALL coarsen_2Tria1Tria(rhadapt,iel)
-
+        CALL coarsen_2Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
+        
       CASE(MARK_CRS_4TRIA1TRIA)
-        CALL coarsen_4Tria1Tria(rhadapt,iel)
+        CALL coarsen_4Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_1)
-        CALL coarsen_4Tria2Tria(rhadapt,iel,1)
+        CALL coarsen_4Tria2Tria(rhadapt,iel,1,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_2)
-        CALL coarsen_4Tria2Tria(rhadapt,iel,2)
+        CALL coarsen_4Tria2Tria(rhadapt,iel,2,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_3)
-        CALL coarsen_4Tria2Tria(rhadapt,iel,3)
+        CALL coarsen_4Tria2Tria(rhadapt,iel,3,rcollection,fcb_hadaptCallback)
 
       CASE DEFAULT
         PRINT *, "redgreen_coarsen: Invalid recoarsening marker!",p_Imarker(iel)
@@ -7155,14 +7370,14 @@ CONTAINS
 
     DO ivt=rhadapt%NVT0,1,-1
       IF (rhadapt%p_IvertexAge(ivt) .GT.0) THEN
-        PRINT *, "Removing",ivt
+        PRINT *, "Removing",ivt,"..."
         CALL remove_vertex2D(rhadapt,ivt,ivtReplace)
         
         IF (ivtReplace.NE.0) THEN
           PRINT *, "Replacement",ivtReplace
         END IF
         
-        CALL fcb_removeVertex(ivt,ivtReplace)
+!        CALL fcb_removeVertex(ivt,ivtReplace)
       END IF
     END DO
 
