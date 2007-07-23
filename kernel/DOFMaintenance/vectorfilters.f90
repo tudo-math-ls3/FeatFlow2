@@ -138,6 +138,7 @@ MODULE vectorfilters
   USE discretebc
   USE discretefbc
   USE dofmapping
+  USE genoutput
   
   IMPLICIT NONE
 
@@ -184,6 +185,20 @@ CONTAINS
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
+    IF (rdbcStructure%h_DdirichletValues .EQ. ST_NOHANDLE) THEN
+      CALL output_line('Dirichlet BC''s not correctly configured!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
+      CALL output_line('Are the BC''s only configured for defect values?!?',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
+      CALL sys_halt()
+    END IF
+    
+    IF (rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) THEN
+      CALL output_line('DBC not configured',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
+      CALL sys_halt()
+    END IF
+    
     CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
     CALL storage_getbase_double(rdbcStructure%h_DdirichletValues,p_val)
 
@@ -191,14 +206,16 @@ CONTAINS
     ! components of the subvector that is indexed by icomponent.
     
     IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
-      PRINT *,'Error: DBC not configured'
+      CALL output_line('DBC not configured',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
       CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
-      PRINT *,'Error: No vector'
+      CALL output_line('No vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletBC')
       CALL sys_halt()
     END IF
 
@@ -263,17 +280,25 @@ CONTAINS
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
+    IF (rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) THEN
+      CALL output_line('DBC not configured',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
+      CALL sys_halt()
+    END IF
+    
     CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
     
     IF (.NOT.ASSOCIATED(p_idx)) THEN
-      PRINT *,'Error: DBC not configured'
+      CALL output_line('DBC not configured',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
       CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
-      PRINT *,'Error: No vector'
+      CALL output_line('No vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectBC')
       CALL sys_halt()
     END IF
 
@@ -348,21 +373,31 @@ CONTAINS
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
+    IF (rdbcStructure%h_DdirichletValues .EQ. ST_NOHANDLE) THEN
+      CALL output_line('Dirichlet BC''s not correctly configured!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
+      CALL output_line('Are the BC''s only configured for defect values?!?',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
+      CALL sys_halt()
+    END IF
+    
+    IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
+      CALL output_line('DBC not configured',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
+      CALL sys_halt()
+    END IF
+    
     CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
     CALL storage_getbase_double2d(rdbcStructure%h_DdirichletValues,p_val)
 
     ! Impose the DOF value directly into the vector - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
     
-    IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
-      PRINT *,'Error: DBC not configured'
-      CALL sys_halt()
-    END IF
-    
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
-      PRINT *,'Error: No vector'
+      CALL output_line('Error: No vector',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
       CALL sys_halt()
     END IF
 
@@ -428,17 +463,25 @@ CONTAINS
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
+    IF (rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) THEN
+      CALL output_line('DBC not configured',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
+      CALL sys_halt()
+    END IF
+
     CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
     
     IF (.NOT.ASSOCIATED(p_idx)) THEN
-      PRINT *,'Error: DBC not configured'
+      CALL output_line('DBC not configured',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
       CALL sys_halt()
     END IF
     
     CALL lsyssc_getbase_double (rx, p_vec)  
     
     IF (.NOT.ASSOCIATED(p_vec)) THEN
-      PRINT *,'Error: No vector'
+      CALL output_line('No vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletDefectFBC')
       CALL sys_halt()
     END IF
 
@@ -543,7 +586,8 @@ CONTAINS
       END DO
          
     ELSE
-      PRINT *,'Normalisation of non-P0 vectors not implemented!'
+      CALL output_line('Normalisation of non-P0 vectors not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
       CALL sys_halt()
     END IF
 
@@ -603,7 +647,8 @@ CONTAINS
     ! components of the subvectors that is indexed by Icomponent(1..NDIM2D).
     
     IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
-      PRINT *,'Error: pressure drop BC not configured'
+      CALL output_line('Pressure drop BC not configured!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposePressureDropBC')
       CALL sys_halt()
     END IF
     
@@ -616,7 +661,8 @@ CONTAINS
       CALL lsyssc_getbase_double (rx%RvectorBlock(icp), p_vec)
     
       IF (.NOT.ASSOCIATED(p_vec)) THEN
-        PRINT *,'Error: No vector'
+        CALL output_line('No vector!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposePressureDropBC')
         CALL sys_halt()
       END IF
 
@@ -693,29 +739,39 @@ CONTAINS
     
     ! Only 2D supported at the moment
     IF (rslipBCStructure%ncomponents .NE. NDIM2D) THEN
-      PRINT *,'vecfil_imposeNLSlipDefectBC: Only 2D supported.'
+      CALL output_line('Only 2D supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
       CALL sys_halt()
     END IF
     
     ! Only double precision vectors supported.
     IF (rx%cdataType .NE. ST_DOUBLE) THEN 
-      PRINT *,'vecfil_imposeNLSlipDefectBC: Only double precision supported.'
+      CALL output_line('Only double precision supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
       CALL sys_halt()
     END IF
 
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
+    IF (rslipBCStructure%h_IslipDOFs .EQ. ST_NOHANDLE) THEN
+      CALL output_line('Slip-BC not configured!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
+      CALL sys_halt()
+    END IF
+
     CALL storage_getbase_int(rslipBCStructure%h_IslipDOFs,p_idx)
     
     IF (.NOT.ASSOCIATED(p_idx)) THEN
-      PRINT *,'Error: slip-BC not configured'
+      CALL output_line('Slip-BC not configured!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
       CALL sys_halt()
     END IF
     
     IF (rx%RvectorBlock(rslipBCStructure%Icomponents(1))%isortStrategy .NE.&
         rx%RvectorBlock(rslipBCStructure%Icomponents(2))%isortStrategy) THEN
-      PRINT *,'vecfil_imposeNLSlipDefectBC: Subectors differently sorted.'
+      CALL output_line('Subectors differently sorted!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
       CALL sys_halt()
     END IF
     
@@ -725,7 +781,8 @@ CONTAINS
            rx%RvectorBlock(rslipBCStructure%Icomponents(2)), p_vecY)
     
     IF ( (.NOT.ASSOCIATED(p_vecX)) .OR. (.NOT.ASSOCIATED(p_vecX)) )THEN
-      PRINT *,'Error: No vector'
+      CALL output_line('No vector!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeNLSlipDefectBC')
       CALL sys_halt()
     END IF
 
@@ -808,12 +865,14 @@ CONTAINS
   ! components of the subvector that is indexed by icomponent.
   
   IF (rx%cdataType .NE. ST_DOUBLE) THEN
-    PRINT *,'vecfil_imposeFeastMirrorBC: Matrix must be double precision'
+    CALL output_line('Matrix must be double precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorBC')
     CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%icomponent .EQ. 0) THEN
-    PRINT *,'Error: FMBC not configured'
+    CALL output_line('FMBC not configured!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorBC')
     CALL sys_halt()
   END IF
   
@@ -911,12 +970,14 @@ CONTAINS
   ! components of the subvector that is indexed by icomponent.
   
   IF (rx%cdataType .NE. ST_DOUBLE) THEN
-    PRINT *,'vecfil_imposeFeastMirrorDefBC: Matrix must be double precision'
+    CALL output_line('Matrix must be double precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorDefBC')
     CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%icomponent .EQ. 0) THEN
-    PRINT *,'Error: FMBC not configured'
+    CALL output_line('FMBC not configured!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeFeastMirrorDefBC')
     CALL sys_halt()
   END IF
   
@@ -1066,8 +1127,10 @@ CONTAINS
         ! Nothing to do
         
       CASE DEFAULT
-        PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
-                p_RdiscreteBC(i)%itype
+        CALL output_line(&
+            'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
+                
         CALL sys_halt()
         
       END SELECT
@@ -1160,8 +1223,10 @@ CONTAINS
         CALL vecfil_imposeFeastMirrorBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
         
       CASE DEFAULT
-        PRINT *,'vecfil_discreteBCrhs: unknown boundary condition: ',&
-                p_RdiscreteBC(i)%itype
+        CALL output_line(&
+            'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCrhs')
+                
         CALL sys_halt()
         
       END SELECT
@@ -1341,8 +1406,9 @@ CONTAINS
         ! CALL vecfil_imposeFeastMirrorDefBC (rx,p_RdiscreteBC(i)%rfeastMirrorBCs)
         
       CASE DEFAULT
-        PRINT *,'vecfil_discreteBCdef: unknown boundary condition: ',&
-                p_RdiscreteBC(i)%itype
+        CALL output_line(&
+            'Unknown boundary condition:'//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCdef')
         CALL sys_halt()
         
       END SELECT
@@ -1521,8 +1587,9 @@ CONTAINS
         ! Nothing to do
         
       CASE DEFAULT
-        PRINT *,'vecfil_discreteBCsol: unknown boundary condition: ',&
-                p_RdiscreteFBC(i)%itype
+        CALL output_line(&
+            'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteBCsol')
         CALL sys_halt()
         
       END SELECT
@@ -1620,8 +1687,9 @@ CONTAINS
         ! Nothing to do
         
       CASE DEFAULT
-        PRINT *,'vecfil_discreteFBCrhs: unknown boundary condition: ',&
-                p_RdiscreteFBC(i)%itype
+        CALL output_line(&
+            'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCrhs')
         CALL sys_halt()
         
       END SELECT
@@ -1723,8 +1791,9 @@ CONTAINS
         ! Nothing to do
         
       CASE DEFAULT
-        PRINT *,'vecfil_discreteFBCdef: unknown boundary condition: ',&
-                p_RdiscreteFBC(i)%itype
+        CALL output_line(&
+            'Unknown boundary condition:'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_discreteFBCdef')
         CALL sys_halt()
         
       END SELECT
@@ -1759,7 +1828,8 @@ CONTAINS
 !</subroutine>
 
     IF ((isubvector .LE. 0) .OR. (isubvector .GT. SIZE(rx%RvectorBlock))) THEN
-      PRINT *,'vecfil_subvectorToL20: isubvector out of allowed range!'
+      CALL output_line('isubvector out of allowed range!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vecfil_subvectorToL20')
       CALL sys_halt()
     END IF
       

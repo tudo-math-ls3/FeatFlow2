@@ -4113,9 +4113,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_VECIDX) :: NEQ,ioffset,cdataType
+    INTEGER(PREC_VECIDX) :: ioffset,cdataType
     LOGICAL :: bisCopy
-    INTEGER :: h_Ddata,NVAR
+    INTEGER :: h_Ddata
     
     ! First the structure
     
@@ -4162,6 +4162,7 @@ CONTAINS
       ! Share information. Release memory if necessary.
       IF ((.NOT. ry%bisCopy) .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) &
         CALL storage_free (ry%h_Ddata)
+        
       ry%h_Ddata = rx%h_Ddata
       ry%bisCopy = .TRUE.
       
@@ -4172,15 +4173,20 @@ CONTAINS
         ry%h_Ddata = ST_NOHANDLE
         ry%bisCopy = .FALSE.
       END IF
+
+      IF (ry%h_Ddata .EQ. ST_NOHANDLE) &
+        CALL allocDestinationVector (rx,ry)
       
-      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+      CALL copy_data (rx,ry)
     
     CASE (LSYSSC_DUP_COPYOVERWRITE)
       ! Copy information, regardless of whether ry is the owner or not.
-      ! If no memory is allocated, ry%h_Ddata is =ST_NOHANDLE and thus,
-      ! storage_copy will allocate memory!
+      ! If no memory is allocated, allocate new memory.
       
-      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+      IF (ry%h_Ddata .EQ. ST_NOHANDLE) &
+        CALL allocDestinationVector (rx,ry)
+      
+      CALL copy_data (rx,ry)
     
     CASE (LSYSSC_DUP_ASIS)
     
@@ -4195,7 +4201,8 @@ CONTAINS
         ! so copy it.
         ry%h_Ddata = ST_NOHANDLE
         ry%bisCopy = .FALSE.
-        CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+        CALL allocDestinationVector (rx,ry)
+        CALL copy_data (rx,ry)
       END IF
       
     CASE (LSYSSC_DUP_EMPTY)
@@ -4203,11 +4210,7 @@ CONTAINS
       ! Allocate new memory if ry is empty. Don't initialise.
       ! If ry contains data, we don't have to do anything.
       IF (ry%h_Ddata .EQ. ST_NOHANDLE) THEN
-        NEQ = rx%NEQ
-        NVAR= rx%NVAR
-        CALL storage_new ('lsyssc_duplicateVector','vec-copy',INT(NEQ*NVAR,I32),&
-                          rx%cdataType, ry%h_Ddata, &
-                          ST_NEWBLOCK_NOINIT)
+        CALL allocDestinationVector (rx,ry)
       END IF
     
     CASE DEFAULT
@@ -4216,6 +4219,62 @@ CONTAINS
       CALL sys_halt()
     
     END SELECT
+    
+  CONTAINS
+  
+    SUBROUTINE allocDestinationVector (rx,ry)
+    
+    ! Allocates new memory ry in the size of rx. The memory is not initialised.
+    
+    TYPE(t_vectorScalar), INTENT(IN) :: rx
+    TYPE(t_vectorScalar), INTENT(INOUT) :: ry
+
+      ! local variables
+      INTEGER(PREC_VECIDX) :: NEQ,NVAR
+    
+      NEQ = rx%NEQ
+      NVAR= rx%NVAR
+      ry%cdataType = rx%cdataType
+      CALL storage_new ('lsyssc_duplicateVector','ry',NEQ*NVAR,&
+                        rx%cdataType, ry%h_Ddata, &
+                        ST_NEWBLOCK_NOINIT)
+    
+    END SUBROUTINE
+    
+    ! ---------------------------------------------------------------
+    
+    SUBROUTINE copy_data (rx,ry)
+    
+    ! Copies the content of rx to ry. Takes care of the data type
+    
+    TYPE(t_vectorScalar), INTENT(IN) :: rx
+    TYPE(t_vectorScalar), INTENT(INOUT) :: ry
+    
+      ! local variables
+      REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+      REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest    
+    
+      ! Take care of the data type!
+      SELECT CASE (rx%cdataType)
+      CASE (ST_DOUBLE)
+        ! Get the pointer and scale the whole data array.
+        CALL lsyssc_getbase_double(rx,p_Dsource)
+        CALL lsyssc_getbase_double(ry,p_Ddest)
+        CALL lalg_copyVectorDble (p_Dsource,p_Ddest)  
+
+      CASE (ST_SINGLE)
+        ! Get the pointer and scale the whole data array.
+        CALL lsyssc_getbase_single(rx,p_Fsource)
+        CALL lsyssc_getbase_single(ry,p_Fdest)
+        CALL lalg_copyVectorSngl (p_Fsource,p_Fdest)  
+
+      CASE DEFAULT
+        CALL output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_duplicateVector')
+        CALL sys_halt()
+      END SELECT
+
+    END SUBROUTINE    
     
   END SUBROUTINE
   
