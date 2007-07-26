@@ -66,7 +66,6 @@ MODULE cc2dmediumm2timesupersystem
   USE cc2dmediumm2nonlinearcore
   USE cc2dmediumm2nonlinearcoreinit
   USE cc2dmediumm2stationary
-  USE adaptivetimestep
   USE cc2dmediumm2timeanalysis
   USE cc2dmediumm2boundary
   USE cc2dmediumm2discretisation
@@ -690,7 +689,8 @@ CONTAINS
       rtempvectorX, rtempvectorB, rtempvectorD, .TRUE.)
       
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvectorD)    
+    CALL c2d2_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
+        rx, rd, rtempvectorX, rtempvectorD)    
 
     ! ----------------------------------------------------------------------
     ! 2.) Generate the matrix A
@@ -731,6 +731,7 @@ CONTAINS
       ! Current point in time
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
+      rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
@@ -1103,7 +1104,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER :: isubstep,ilevel
+    INTEGER :: isubstep,ilevel,icp
     TYPE(t_vectorBlock) :: rtempVectorD, rtempVector1, rtempVector2, rtempVector3
     TYPE(t_vectorBlock) :: rtempVectorEval1, rtempVectorEval2, rtempVectorEval3
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscr
@@ -1219,6 +1220,7 @@ CONTAINS
       ! Current point in time
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
+      rproblem%rtimedependence%itimestep = isubstep
 
       ! Get the part of rd which is to be modified.
       IF (PRESENT(rb)) THEN
@@ -1265,7 +1267,7 @@ CONTAINS
         ! -----
       
         ! Create the matrix
-        !   A12  :=  -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+        !   A12  :=  -M/dt + dtheta*[-nu\Laplace u + u \grad u]
         ! and subtract A12 x2 from rd.
         !
         ! Set up the matrix weights of that submatrix.
@@ -1278,6 +1280,13 @@ CONTAINS
 
         ! Release the block mass matrix.
         CALL lsysbl_releaseMatrix (rblockTemp)
+        
+        ! The primal defect is =0 because of the initial condition.
+        ! This is important, otherwise the nonlinear loop will not converge
+        ! because of a lack in the defect in the 0th timestep!!!
+        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(1))
+        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(2))
+        CALL lsyssc_clearVector (rtempVectorD%RvectorBlock(3))
 
       ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
 
@@ -1356,7 +1365,7 @@ CONTAINS
         ! -----
         
         ! Create the matrix
-        !   Ann-1 = -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+        !   Ann-1 = -M/dt + dtheta*[-nu\Laplace u + u \grad u]
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
@@ -1393,6 +1402,19 @@ CONTAINS
       ! If dnorm is specified, calculate the norm of the sub-defect vector and
       ! add it to dnorm.
       IF (PRESENT(dnorm)) THEN
+        IF (rproblem%MT_outputLevel .GE. 2) THEN
+          CALL output_line ('||D_'//TRIM(sys_siL(isubstep,2))//'|| = '//&
+              TRIM(sys_sdEL(&
+                  SQRT(lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)&
+                  ),10)) )
+          DO icp=1,6
+            CALL output_line ('  ||D_'//TRIM(sys_siL(isubstep,2))//'^'//TRIM(sys_siL(icp,2))&
+                //'|| = '//&
+                TRIM(sys_sdEL(&
+                    SQRT(lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2)&
+                    ),10)) )
+          END DO
+        END IF
         dnorm = dnorm + lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)**2
       END IF
       
@@ -1525,6 +1547,7 @@ CONTAINS
       ! Current time step?
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + isubstep * dtstep
+      rproblem%rtimedependence%itimestep = isubstep
 
       CALL output_line ('Block-Jacobi preconditioning of timestep: '//&
           TRIM(sys_siL(isubstep,10))//&
@@ -1646,6 +1669,7 @@ CONTAINS
       ! Current point in time
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
+      rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
@@ -1678,7 +1702,8 @@ CONTAINS
       rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rx, rb, rtempvectorX, rtempvector)    
+    CALL c2d2_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
+        rx, rb, rtempvectorX, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
@@ -1732,7 +1757,8 @@ CONTAINS
       rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvector)    
+    CALL c2d2_implementInitCondRHS (rproblem, rspaceTimeDiscr, &
+        rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
     CALL c2d2_assembleSpaceTimeDefect (rproblem, rspaceTimeDiscr, rx, rd, ddefNorm)
@@ -1743,7 +1769,6 @@ CONTAINS
     
     ! Do we have Neumann boundary?
     bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
-    bneumann = .FALSE.
     
     IF (.NOT. bneumann) THEN
       ! Normalise the primal and dual pressure to zero.
@@ -1818,15 +1843,16 @@ CONTAINS
 !</subroutine>
 
     ! The nonlinear solver configuration
-    INTEGER :: isubstep,iglobIter,ierror,ilev
+    INTEGER :: isubstep,iglobIter,ierror,ilev,nsmSteps
+    LOGICAL :: bneumann
     INTEGER(I32) :: nminIterations,nmaxIterations
     REAL(DP) :: depsRel,depsAbs,domega
-    LOGICAL :: bneumann
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecond
-    TYPE(t_sptiProjection)   :: rinterlevelProjection
+    TYPE(t_sptiProjection), DIMENSION(SIZE(RspaceTimeDiscr)) :: RinterlevelProjection
     TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(SIZE(RspaceTimeDiscr)) :: &
         myRspaceTimeDiscr
+    TYPE(t_vectorBlock) :: rtempVecCoarse,rtempVecFine
     
     ! A solver node that identifies our solver.
     TYPE(t_sptilsNode), POINTER :: p_rprecond,p_rsolverNode
@@ -1883,15 +1909,10 @@ CONTAINS
     ! Create as many time levels as specified by the length of RspatialPrecond.
     CALL sptils_initMultigrid (rproblem,1,SIZE(RspatialPrecond),p_rmgSolver)
     
-    p_rmgSolver%ioutputLevel = 3
-    
-    ! V-cyccle
-    p_rmgSolver%p_rsubnodeMultigrid%icycle = 1 
-    
-    ! On each time level...
+    ! Loop over the time levels.
     DO ilev=1,SIZE(RspatialPrecond)
     
-      ! ... initialise the spatial preconditioner for Block Jacobi, ...
+      ! Initialise the spatial preconditioner for Block Jacobi
       ! (note: this is slightly expensive in terms of memory!
       ! Probably we could use the same preconditioner for all levels,
       ! but this has still to be implemeted and is a little bit harder!)
@@ -1900,9 +1921,13 @@ CONTAINS
           RspatialPrecond(ilev))
       CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev))
       
-      ! ... generate an interlevel projection structure for that level, ...
+      ! Generate an interlevel projection structure for that level.
+      ! Note that space restriction/prolongation must be switched off if
+      ! we are on the spatial coarse mesh!
       CALL sptipr_initProjection (&
-          rinterlevelProjection,RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation)
+          rinterlevelProjection(ilev),&
+          RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation,&
+          RspaceTimeDiscr(ilev)%ilevel .GT. rproblem%NLMIN)
        
       IF (ilev .EQ. 1) THEN
         ! ..., on the minimum level, create a coarse grid solver, ...
@@ -1914,18 +1939,42 @@ CONTAINS
         ! Defect correction solver
         CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
         
-        p_rcgrSolver%domega = 0.9_DP
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+            'nminIterations', p_rcgrSolver%nminIterations, 1)
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+            'nmaxIterations', p_rcgrSolver%nmaxIterations, 100)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'depsRel', p_rcgrSolver%depsRel, 1E-5_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'depsAbs', p_rcgrSolver%depsAbs, 1E-5_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'domega', p_rcgrSolver%domega, 1.0_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'ddivRel', p_rcgrSolver%ddivRel, 1.0_DP)
+
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+            'ioutputLevel', p_rcgrSolver%ioutputLevel, 100)
+        p_rprecond%ioutputLevel = p_rcgrSolver%ioutputLevel-2
+        
       ELSE
         ! ... on higher levels, create a Block Jacobi smoother, ...
-        CALL sptils_initBlockJacobi (rproblem,p_rsmoother,RspatialPrecond(ilev))
-        CALL sptils_convertToSmoother (p_rsmoother,1,0.9_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                    'domega', domega, 1.0_DP)
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+            'nsmSteps', nsmSteps, 1)
 
+        CALL sptils_initBlockJacobi (rproblem,p_rsmoother,RspatialPrecond(ilev))
+        CALL sptils_convertToSmoother (p_rsmoother,nsmSteps,domega)
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                  'ioutputLevel', p_rsmoother%ioutputLevel, 1)
+
+        ! NULLIFY(p_rsmoother)
         NULLIFY(p_rcgrSolver)
       END IF
        
       ! ...; finally initialise the level with that       
-      CALL linsol_setMultigridLevel (p_rmgSolver,ilev,&
-                    rinterlevelProjection,&
+      CALL sptils_setMultigridLevel (p_rmgSolver,ilev,&
+                    rinterlevelProjection(ilev),&
                     p_rsmoother,p_rsmoother,p_rcgrSolver)
     
     END DO
@@ -1933,8 +1982,19 @@ CONTAINS
     ! Our main solver is MG now.
     p_rsolverNode => p_rmgSolver
     
-    p_rsolverNode%nmaxIterations = 5
-        
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+                             'nmaxIterations', p_rsolverNode%nmaxIterations, 1)
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+                             'nminIterations', p_rsolverNode%nminIterations, 10)
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+                             'ioutputLevel', p_rsolverNode%ioutputLevel, 0)
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+                             'icycle', p_rmgSolver%p_rsubnodeMultigrid%icycle, 0)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
+                                'depsRel', p_rmgSolver%depsRel, 1E-5_DP)
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                'depsAbs', p_rmgSolver%depsAbs, 1E-5_DP)
+
     ! Initialise the space-time coupled Block-Jacobi preconditioner.
     ! Attach the spatial preconditioner which is applied to each block.
     ! CALL sptils_initBlockJacobi (rproblem,p_rsolverNode,rspatialPrecond)
@@ -1943,11 +2003,17 @@ CONTAINS
     myRspaceTimeDiscr = RspaceTimeDiscr
     myRspaceTimeDiscr(UBOUND(myRspaceTimeDiscr,1))%p_rsolution => rx
     
+    ! Allocate space-time vectors on all lower levels that hold the solution vectors
+    ! for the evaluation of the nonlinearity (if we have a nonlinearity).
+    DO ilev=1,SIZE(RspatialPrecond)-1
+      ALLOCATE(myRspaceTimeDiscr(ilev)%p_rsolution)
+      CALL sptivec_initVector (myRspaceTimeDiscr(ilev)%p_rsolution,&
+        dof_igetNDofGlobBlock(myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation),&
+        myRspaceTimeDiscr(ilev)%niterations)   
+    END DO
+    
     ! Attach matrix information
     CALL sptils_setMatrices (p_rsolverNode,myRspaceTimeDiscr)
-    !p_rsolverNode%nminIterations = 2
-    !p_rsolverNode%nmaxIterations = 10
-    !p_rsolverNode%domega = 0.7_DP
     
     ! Initialise the space-time preconditioner
     CALL sptils_initStructure (p_rsolverNode,ierror)
@@ -1963,7 +2029,8 @@ CONTAINS
       rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rx, rb, rtempvectorX, rtempvector)    
+    CALL c2d2_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
+        rx, rb, rtempvectorX, rtempvector)    
 
     ! Now work with rd, our 'defect' vector
     CALL sptivec_copyVector (rb,rd)
@@ -1998,14 +2065,91 @@ CONTAINS
     
       iglobIter = iglobIter+1
       
+      ! Project the solution down to all levels, so the nonlinearity
+      ! on the lower levels can be calculated correctly.
+      ! Use the memory in rtempvectorX and rtempvectorB as temp memory;
+      ! it's large enough.
+      CALL lsysbl_duplicateVector (rtempvectorX,rtempVecFine,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      CALL lsysbl_duplicateVector (rtempvectorB,rtempVecCoarse,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      DO ilev=SIZE(RspatialPrecond)-1,1,-1
+        CALL lsysbl_enforceStructureDiscr(&
+            myRspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscretisation,rtempVecFine)
+        rtempVecFine%p_rdiscreteBC =>&
+            myRspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteBC
+        rtempVecFine%p_rdiscreteBCfict =>&
+            myRspaceTimeDiscr(ilev+1)%p_rlevelInfo%p_rdiscreteFBC
+            
+        CALL lsysbl_enforceStructureDiscr(&
+            myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation,rtempVecCoarse)
+        rtempVecCoarse%p_rdiscreteBC =>&
+            myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteBC
+        rtempVecCoarse%p_rdiscreteBCfict =>&
+            myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscreteFBC
+
+        ! Interpolate down
+        CALL sptipr_performInterpolation (RinterlevelProjection(ilev+1),&
+            myRspaceTimeDiscr(ilev)%p_rsolution, myRspaceTimeDiscr(ilev+1)%p_rsolution,&
+            rtempVecCoarse,rtempVecFine)
+            
+        ! Set boundary conditions
+        CALL c2d2_implementBCsolution (rproblem,myRspaceTimeDiscr(ilev),&
+            myRspaceTimeDiscr(ilev)%p_rsolution,rtempVecCoarse)
+      END DO
+      
+      CALL lsysbl_releaseVector(rtempVecFine)
+      CALL lsysbl_releaseVector(rtempVecCoarse)
+          
+      IF (rproblem%MT_outputLevel .GE. 2) THEN
+        CALL output_line ('Writing solution to file '//&
+            './ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10)))
+        CALL sptivec_saveToFileSequence(&
+            myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
+            '(''./ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10))//'.'',I5.5)',&
+            .TRUE.,rtempVectorX)
+          
+        DO ilev=1,SIZE(RspatialPrecond)
+          CALL c2d2_postprocSpaceTimeGMV(rproblem,myRspaceTimeDiscr(ilev),&
+              myRspaceTimeDiscr(ilev)%p_rsolution,&
+              './gmv/iteration'//TRIM(sys_siL(iglobIter-1,10))//'level'//TRIM(sys_siL(ilev,10))//&
+              '.gmv')
+        END DO
+      END IF
+      
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
         CALL sptils_precondDefect (p_rsolverNode,rd)
       END IF
       
+      ! Filter the defect for boundary conditions in space and time.
+      ! Normally this is done before the preconditioning -- but by doing it
+      ! afterwards, the initial conditions can be seen more clearly!
+      CALL c2d2_implementInitCondDefect (rd,rtempVector)
+      CALL c2d2_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      
       ! Add the defect: x = x + omega*d          
       CALL sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
+      
+      ! Do we have Neumann boundary?
+      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+      
+      IF (.NOT. bneumann) THEN
+        ! Normalise the primal and dual pressure to zero.
+        DO isubstep = 0,p_rspaceTimeDiscr%niterations
+        
+          CALL sptivec_getTimestepData(rx, isubstep, rtempVectorX)
           
+          CALL vecfil_subvectorToL20 (rtempVectorX,3)
+          CALL vecfil_subvectorToL20 (rtempVectorX,6)
+          
+          CALL sptivec_setTimestepData(rx, isubstep, rtempVectorX)
+          
+        END DO
+        
+      END IF
+
       ! Assemble the new defect: d=b-Ax
       CALL sptivec_copyVector (rb,rd)
       CALL c2d2_assembleSpaceTimeDefect (rproblem, p_rspaceTimeDiscr, &
@@ -2022,16 +2166,23 @@ CONTAINS
     ! We don't need them anymore.
     CALL sptils_releaseSolver (p_rsolverNode)
     
-    ! Release the spatial preconditioner on every level
+    ! Release the spatial preconditioner and temp vector on every level
     DO ilev=1,SIZE(RspatialPrecond)
       CALL c2d2_donePreconditioner (RspatialPrecond(ilev))
+
+    END DO
+
+    DO ilev=1,SIZE(RspatialPrecond)-1
+      CALL sptivec_releaseVector (myRspaceTimeDiscr(ilev)%p_rsolution)
+      DEALLOCATE(myRspaceTimeDiscr(ilev)%p_rsolution)
     END DO
           
     CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
       rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
 
     ! Implement the initial condition into the RHS.
-    CALL c2d2_implementInitCondRHS (rx, rd, rtempvectorX, rtempvector)    
+    CALL c2d2_implementInitCondRHS (rproblem, p_rspaceTimeDiscr, &
+        rx, rd, rtempvectorX, rtempvector)    
 
     ! Assemble the defect
     CALL c2d2_assembleSpaceTimeDefect (rproblem, p_rspaceTimeDiscr, &  
@@ -2043,7 +2194,6 @@ CONTAINS
 
     ! Do we have Neumann boundary?
     bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
-    bneumann = .FALSE.
     
     IF (.NOT. bneumann) THEN
       ! Normalise the primal and dual pressure to zero.

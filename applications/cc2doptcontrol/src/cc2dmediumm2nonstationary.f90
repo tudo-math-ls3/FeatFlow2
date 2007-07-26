@@ -50,12 +50,12 @@ MODULE cc2dmediumm2nonstationary
   USE cc2dmediumm2nonlinearcore
   USE cc2dmediumm2nonlinearcoreinit
   USE cc2dmediumm2stationary
-  USE adaptivetimestep
   USE cc2dmediumm2timeanalysis
   USE cc2dmediumm2boundary
   USE cc2dmediumm2discretisation
   USE cc2dmediumm2postprocessing
   USE cc2dmediumm2timesupersystem
+  USE cc2dmediumm2discretisation
     
   IMPLICIT NONE
 
@@ -144,25 +144,28 @@ CONTAINS
     CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMAX',TIMENLMAX,1)
 
-    ALLOCATE(Rsupermatrix(TIMENLMAX))
+    ALLOCATE(Rsupermatrix(TIMENLMIN:TIMENLMAX))
 
     ! Initialise the supersystem on all levels
     DO i=TIMENLMIN,TIMENLMAX
       IF (i .EQ. TIMENLMAX) THEN
         CALL c2d2_initParamsSupersystem (rproblem,i,&
             MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-            Rsupermatrix(i-TIMENLMIN+1), rx, rb, rd)
+            Rsupermatrix(i), rx, rb, rd)
       ELSE
         CALL c2d2_initParamsSupersystem (rproblem,i,&
             MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-            Rsupermatrix(i-TIMENLMIN+1))
+            Rsupermatrix(i))
       END IF
     END DO
+    
+    ! Read the target flow -- stationary or nonstationary
+    CALL c2d2_initTargetFlow (rproblem,Rsupermatrix(TIMENLMAX)%niterations)
         
     ! Call the solver for the space/time coupled system. We only solve on level NLMAX.
-    CALL c2d2_solveSupersystemPrecond (rproblem, Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
+    CALL c2d2_solveSupersystemPrecond (rproblem, &
+        Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
     !CALL c2d2_solveSupersystemDefCorr (rproblem, Rsupermatrix(TIMENLMIN:TIMENLMAX), rx, rb, rd)
-    
       
     ! Create a temp vector
     CALL lsysbl_createVecBlockByDiscr (&
@@ -170,14 +173,17 @@ CONTAINS
         rvectorTmp,.TRUE.)
     
     ! Attach the boundary conditions to that vector
-    rvectorTmp%p_rdiscreteBC => Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteBC
-    rvectorTmp%p_rdiscreteBCfict => Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
+    rvectorTmp%p_rdiscreteBC => &
+        Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteBC
+    rvectorTmp%p_rdiscreteBCfict => &
+        Rsupermatrix(TIMENLMAX)%p_rlevelInfo%p_rdiscreteFBC
       
     ! Postprocessing of all solution vectors.
     DO i = 0,Rsupermatrix(TIMENLMAX)%niterations
     
       rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + i*Rsupermatrix(TIMENLMAX)%dtstep
+          rproblem%rtimedependence%dtimeInit + &
+          i*Rsupermatrix(TIMENLMAX)%dtstep
       rproblem%rtimedependence%itimeStep = i
     
       CALL sptivec_getTimestepData (rx, i, rvectorTmp)
@@ -189,7 +195,8 @@ CONTAINS
     ! Release memory, finish.
     CALL lsysbl_releaseVector (rvectorTmp)
     
-    ! Initialise the supersystem on all levels
+    CALL c2d2_doneTargetFlow (rproblem)
+    
     DO i=TIMENLMIN,TIMENLMAX
       IF (i .EQ. TIMENLMAX) THEN
         CALL c2d2_doneParamsSupersystem (Rsupermatrix(i),rx,rb,rd)

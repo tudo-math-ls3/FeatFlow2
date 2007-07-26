@@ -157,7 +157,6 @@ MODULE cc2dmediumm2spacetimesolver
   USE cc2dmediumm2nonlinearcore
   USE cc2dmediumm2nonlinearcoreinit
   USE cc2dmediumm2stationary
-  USE adaptivetimestep
   USE cc2dmediumm2timeanalysis
   USE cc2dmediumm2boundary
   USE cc2dmediumm2discretisation
@@ -371,6 +370,8 @@ MODULE cc2dmediumm2spacetimesolver
     ! A temporary space-time vector.
     TYPE(t_spacetimeVector)           :: rtempVector2
     
+    ! A temp vector in space.
+    TYPE(t_vectorBlock)               :: rtempVectorSpace
   END TYPE
   
 !</typeblock>
@@ -1110,6 +1111,15 @@ CONTAINS
     CALL sptivec_initVector (rsolverNode%p_rsubnodeDefCorr%rtempVector2,&
         dof_igetNDofGlobBlock(rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
         rsolverNode%rspaceTimeDiscr%niterations)
+        
+    ! and memory for a spatial temp vector.
+    CALL lsysbl_createVecBlockByDiscr (&
+        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
+        rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace)
+    rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%p_rdiscreteBC => &
+        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%p_rdiscreteBCfict => &
+        rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
     ! We simply pass isubgroup to the subsolvers when calling them.
     ! Inside of this routine, there's not much to do with isubgroup,
@@ -1205,9 +1215,14 @@ CONTAINS
   
 !</subroutine>
 
-    ! Release the temp vectors
-    CALL sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector2)
-    CALL sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector)
+    ! Release the temp vectors.
+    ! Note that the vectors may already be released from a previous call.
+    IF (rsolverNode%p_rsubnodeDefCorr%rtempVector2%ntimesteps .NE. 0) &
+      CALL sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector2)
+    IF (rsolverNode%p_rsubnodeDefCorr%rtempVector%ntimesteps .NE. 0) &
+      CALL sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector)
+    IF (rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%NEQ .NE. 0) &
+      CALL lsysbl_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace)
 
     ! Call the init routine of the preconditioner.
     IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
@@ -1287,8 +1302,7 @@ CONTAINS
     ! Damping parameter
     domega = rsolverNode%domega
       
-    ! Use preconditioning? Filtering?
-
+    ! Use preconditioning? 
     bprec = ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
     
     IF (bprec) THEN
@@ -1350,7 +1364,7 @@ CONTAINS
     ELSE
 
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
-        CALL output_line ('DefCorr: Iteration '// &
+        CALL output_line ('Space-Time-DefCorr: Iteration '// &
              TRIM(sys_siL(0,10))//',  !!RES!! = '//&
              TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
       END IF
@@ -1371,6 +1385,13 @@ CONTAINS
         CALL sptivec_copyVector (rd,p_rdef)
         CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
             p_rx,p_rdef, -1.0_DP,1.0_DP)
+        
+        ! Filter the defect for boundary conditions in space and time.
+        CALL c2d2_implementInitCondDefect (&
+            p_rdef,p_rsubnode%rtempVectorSpace)
+        CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+           p_rmatrix,p_rdef,p_rsubnode%rtempVectorSpace)
+        
         IF (bprec) THEN
           ! Perform preconditioning with the assigned preconditioning
           ! solver structure.
@@ -1385,7 +1406,7 @@ CONTAINS
         ! Test if the iteration is diverged
         IF (rsolverNode%depsRel .NE. SYS_INFINITY) THEN
           IF ( .NOT. (dfr .LE. rsolverNode%dinitialDefect*rsolverNode%ddivRel) ) THEN
-            CALL output_line ('DefCorr: Solution diverging!')
+            CALL output_line ('Space-Time-DefCorr: Solution diverging!')
             rsolverNode%iresult = 1
             EXIT
           END IF
@@ -1417,7 +1438,7 @@ CONTAINS
 
         IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
             (MOD(ite,niteResOutput).EQ.0)) THEN
-          CALL output_line ('DefCorr: Iteration '// &
+          CALL output_line ('Space-Time-DefCorr: Iteration '// &
               TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
               TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         END IF
@@ -1436,7 +1457,7 @@ CONTAINS
       IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
           (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
           (rsolverNode%iresult .GE. 0)) THEN
-        CALL output_line ('DefCorr: Iteration '// &
+        CALL output_line ('Space-Time-DefCorr: Iteration '// &
             TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       END IF
@@ -1468,7 +1489,7 @@ CONTAINS
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
         CALL output_lbrk()
-        CALL output_line ('DefCorr statistics:')
+        CALL output_line ('Space-Time-DefCorr statistics:')
         CALL output_lbrk()
         CALL output_line ('Iterations              : '//&
              TRIM(sys_siL(rsolverNode%iiterations,10)) )
@@ -1491,7 +1512,7 @@ CONTAINS
 
       IF (rsolverNode%ioutputLevel .EQ. 1) THEN
         CALL output_line (&
-              'DefCorr: Iterations/Rate of convergence: '//&
+              'Space-Time-DefCorr: Iterations/Rate of convergence: '//&
               TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
               TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
       END IF
@@ -1813,9 +1834,11 @@ CONTAINS
       rsolverNode%p_rproblem%rtimedependence%dtime = &
           rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
 
-      CALL output_line ('Block-Jacobi preconditioning of timestep: '//&
-          TRIM(sys_siL(isubstep,10))//&
-          ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+      IF (rsolverNode%ioutputLevel .GE. 1) THEN
+        CALL output_line ('Space-Time-Block-Jacobi preconditioning of timestep: '//&
+            TRIM(sys_siL(isubstep,10))//&
+            ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+      END IF
     
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
@@ -2006,10 +2029,16 @@ CONTAINS
       
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-        CALL sptils_setMatrices(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
-            Rmatrices(1:ilev))
+      IF (.NOT. ASSOCIATED(&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+        ! May be the presmoother and postsmoother are identical; release them
+        ! only once!
+        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
+          CALL sptils_setMatrices(&
+              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
+              Rmatrices(1:ilev))
+        END IF
       END IF
       
       IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
@@ -2059,20 +2088,26 @@ CONTAINS
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
     
+    ! Maximum time level.
     NLMAX = SIZE(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
 
     ! On each level, call the initStructure routine of the
     ! presmoother/postsmoother/coarse grid solver
 
-
     ! Loop through the level. 
     DO ilev=1,NLMAX
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-        CALL sptils_initStructure(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,ierror)
-        IF (ierror .NE. ierror) RETURN
+      IF (.NOT. ASSOCIATED(&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+        ! May be the presmoother and postsmoother are identical; initialise them
+        ! only once!
+        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
+          CALL sptils_initStructure(&
+              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,ierror)
+          IF (ierror .NE. ierror) RETURN
+        END IF
       END IF
       
       IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
@@ -2088,10 +2123,10 @@ CONTAINS
       END IF
       
       ! Generate an interlevel projection structure for that level
-      CALL sptipr_initProjection (&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rinterlevelProjection,&
-          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
-              rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
+      !CALL sptipr_initProjection (&
+      !    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%rinterlevelProjection,&
+      !    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
+      !        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
               
       ntimesteps = rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
               rspaceTimeDiscr%niterations
@@ -2165,10 +2200,16 @@ CONTAINS
     DO ilev=1,SIZE(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-        CALL sptils_initData(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,ierror)
-        IF (ierror .NE. ierror) RETURN
+      IF (.NOT. ASSOCIATED(&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+        ! May be the presmoother and postsmoother are identical; initialise them
+        ! only once!
+        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
+          CALL sptils_initData(&
+              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,ierror)
+          IF (ierror .NE. ierror) RETURN
+        END IF
       END IF
       
       IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
@@ -2216,9 +2257,15 @@ CONTAINS
     DO ilev=1,SIZE(rsolverNode%p_rsubnodeMultigrid%p_Rlevels)
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-        CALL sptils_doneData(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+      IF (.NOT. ASSOCIATED(&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+        ! May be the presmoother and postsmoother are identical; release them
+        ! only once!
+        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
+          CALL sptils_doneData(&
+              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+        END IF
       END IF
       
       IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
@@ -2265,9 +2312,15 @@ CONTAINS
     DO ilev=1,NLMAX
       ! Call the setmatrices-routine for the presmoother/postsmoother/
       ! coarse grid solver
-      IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
-        CALL sptils_doneStructure(&
-            rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+      IF (.NOT. ASSOCIATED(&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother,&
+          rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
+        ! May be the presmoother and postsmoother are identical; release them
+        ! only once!
+        IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)) THEN
+          CALL sptils_doneStructure(&
+              rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpresmoother)
+        END IF
       END IF
       
       IF (ASSOCIATED(rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%p_rpostsmoother)) THEN
@@ -2311,7 +2364,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE linsol_setMultigridLevel (rsolverNode,ilevel,&
+  SUBROUTINE sptils_setMultigridLevel (rsolverNode,ilevel,&
                     rinterlevelProjection,&
                     p_rpresmoother,p_rpostsmoother,p_rcoarseGridSolver)
                     
@@ -2447,7 +2500,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_smoothCorrection (rsolverNode,rx,rb,rtemp)
+  RECURSIVE SUBROUTINE sptils_smoothCorrection (rsolverNode,rx,rb,rtemp,rspatialTemp)
   
 !<description>
   ! This routine performs a smoothing process on the vector rx
@@ -2488,6 +2541,9 @@ CONTAINS
   
   ! A temporary vector of the same size and structure as rx.
   TYPE(t_spacetimeVector), INTENT(INOUT)                 :: rtemp
+
+  ! A spatial temporary vector of the same size and structure as every timestep in rx.
+  TYPE(t_vectorBlock), INTENT(INOUT)                     :: rspatialTemp
 !</inputoutput>
   
 !</subroutine>
@@ -2520,10 +2576,16 @@ CONTAINS
       CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
           rx,rtemp, -1.0_DP,1.0_DP,dres)
       
+      ! Implement boundary conditions into the defect
+      CALL c2d2_implementInitCondDefect (&
+          rtemp,rspatialTemp)
+      CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
+          p_rmatrix,rtemp,rspatialTemp)
+      
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
         IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
                   
-        CALL output_line ('Smoother: Step '//TRIM(sys_siL(i-1,10))//&
+        CALL output_line ('Space-Time-Smoother: Step '//TRIM(sys_siL(i-1,10))//&
             ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
       END IF
       
@@ -2536,11 +2598,11 @@ CONTAINS
     IF (rsolverNode%ioutputLevel .GE. 2) THEN
       CALL sptivec_copyVector(rb,rtemp)
       CALL c2d2_spaceTimeMatVec (rsolverNode%p_rproblem, p_rmatrix, &
-          rx,rtemp, -1.0_DP,1.0_DP,dres)
+          rx,rtemp, -rsolverNode%domega,1.0_DP,dres)
       
       IF (.NOT.((dres .GE. 1E-99_DP) .AND. (dres .LE. 1E99_DP))) dres = 0.0_DP
                 
-      CALL output_line ('Smoother: Step '//TRIM(sys_siL(i-1,10))//&
+      CALL output_line ('Space-Time-Smoother: Step '//TRIM(sys_siL(i-1,10))//&
           ' !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
     END IF
     
@@ -2628,7 +2690,7 @@ CONTAINS
     IF (nlmin .EQ. nlmax) THEN
     
       IF (rsolverNode%ioutputLevel .GT. 1) THEN
-        CALL output_line ('Multigrid: Only one level. '//&
+        CALL output_line ('Space-Time-Multigrid: Only one level. '//&
              'Switching back to standard solver.')
       END IF
       CALL sptils_precondDefect(p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver,rd)
@@ -2685,7 +2747,7 @@ CONTAINS
         ! Print out the initial residuum
 
         IF (rsolverNode%ioutputLevel .GE. 2) THEN
-          CALL output_line ('Multigrid: Iteration '// &
+          CALL output_line ('Space-Time-Multigrid: Iteration '// &
               TRIM(sys_siL(0,10))//',  !!RES!! = '//&
               TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
         END IF
@@ -2720,7 +2782,7 @@ CONTAINS
           p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr
           
           IF (rsolverNode%ioutputLevel .GE. 3) THEN
-            CALL output_line ('Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
+            CALL output_line ('Space-Time-Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
           END IF
           
           ! Build the defect...
@@ -2748,7 +2810,8 @@ CONTAINS
                           p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother,&
                           p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                           p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
-                          p_rsubnode%p_Rlevels(ilev)%rtempVector)
+                          p_rsubnode%p_Rlevels(ilev)%rtempVector,&
+                          p_rsubnode%p_Rlevels(ilev)%rprjVector)
               END IF
             
               ! Build the defect vector
@@ -2766,7 +2829,7 @@ CONTAINS
                 IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                           (dres .LE. 1E99_DP))) dres = 0.0_DP
                           
-                CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                CALL output_line ('Space-Time-Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
                     ' after presm.:     !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
               END IF
 
@@ -2793,6 +2856,9 @@ CONTAINS
                       p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
                 ! Implement boundary conditions into the defect
+                CALL c2d2_implementInitCondDefect (&
+                    p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
                 CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
                     p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
@@ -2811,7 +2877,7 @@ CONTAINS
                             
                   ! If the output level is high enough, print that residuum norm.   
                   IF (MOD(ite,niteResOutput).EQ. 0) THEN
-                    CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
+                    CALL output_line ('Space-Time-Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
                         ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
                   END IF
                   
@@ -2828,6 +2894,9 @@ CONTAINS
                       p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
                 ! Implement boundary conditions into the defect
+                CALL c2d2_implementInitCondDefect (&
+                    p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
                 CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
                     p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
@@ -2842,7 +2911,7 @@ CONTAINS
                   IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                             (dres .LE. 1E99_DP))) dres = 0.0_DP
                             
-                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
+                  CALL output_line ('Space-Time-Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
                       ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
                 END IF
 
@@ -2853,7 +2922,7 @@ CONTAINS
               p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr
 
               IF (rsolverNode%ioutputLevel .GE. 3) THEN
-                CALL output_line ('Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
+                CALL output_line ('Space-Time-Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
               END IF
               
               ! If we are not on the lowest level, repeat the smoothing of 
@@ -2864,7 +2933,7 @@ CONTAINS
             ! Now we reached the coarse grid.
             
             IF (rsolverNode%ioutputLevel .GE. 3) THEN
-              CALL output_line ('Multigrid: Invoking coarse grid solver.')
+              CALL output_line ('Space-Time-Multigrid: Invoking coarse grid solver.')
             END IF
             
             ! Solve the system on lowest level by preconditioning
@@ -2880,7 +2949,8 @@ CONTAINS
               p_rmatrix => p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr
               
               IF (rsolverNode%ioutputLevel .GE. 3) THEN
-                CALL output_line ('Multigrid: Current mesh level: '//TRIM(sys_siL(ilev,5)))
+                CALL output_line ('Space-Time-Multigrid: Current mesh level: '&
+                    //TRIM(sys_siL(ilev,5)))
               END IF
 
               ! Prolongate the solution vector from the coarser level
@@ -2894,6 +2964,9 @@ CONTAINS
 
               ! Implement boundary conditions into the vector.
               ! It's still a defect, although a preconditioned one.
+              CALL c2d2_implementInitCondDefect (&
+                  p_rsubnode%p_Rlevels(ilev)%rtempVector, &
+                  p_rsubnode%p_Rlevels(ilev)%rprjVector)
               CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
                   p_rsubnode%p_Rlevels(ilev)%rspaceTimeDiscr,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector,&
@@ -2923,7 +2996,7 @@ CONTAINS
                 IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                           (dres .LE. 1E99_DP))) dres = 0.0_DP
                           
-                CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                CALL output_line ('Space-Time-Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
                     ' after c.g.corr.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
               END IF
                                             
@@ -2933,7 +3006,8 @@ CONTAINS
                           p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother,&
                           p_rsubnode%p_Rlevels(ilev)%rsolutionVector,&
                           p_rsubnode%p_Rlevels(ilev)%rrhsVector,&
-                          p_rsubnode%p_Rlevels(ilev)%rtempVector)
+                          p_rsubnode%p_Rlevels(ilev)%rtempVector,&
+                          p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
                 ! Extended output
                 IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
@@ -2948,7 +3022,7 @@ CONTAINS
                   IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
                             (dres .LE. 1E99_DP))) dres = 0.0_DP
                             
-                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                  CALL output_line ('Space-Time-Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
                       ' after postsm.:    !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
                 END IF
                                               
@@ -2977,7 +3051,7 @@ CONTAINS
               ELSE
 
                 IF (rsolverNode%ioutputLevel .GE. 3) THEN
-                  CALL output_line ('Multigrid: Cycle on level '&
+                  CALL output_line ('Space-Time-Multigrid: Cycle on level '&
                       //TRIM(sys_siL(ilev,5))//' finished.')
                 END IF
 
@@ -3014,7 +3088,7 @@ CONTAINS
           ! Test if the iteration is diverged
           IF (rsolverNode%depsRel .NE. SYS_INFINITY) THEN
             IF ( .NOT. (dres .LE. rsolverNode%dinitialDefect*rsolverNode%ddivRel) ) THEN
-              CALL output_line ('Multigrid: Solution diverging!')
+              CALL output_line ('Space-Time-Multigrid: Solution diverging!')
               rsolverNode%iresult = 1
               EXIT
             END IF
@@ -3046,7 +3120,7 @@ CONTAINS
 
           IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
               (MOD(ite,niteResOutput).EQ.0)) THEN
-            CALL output_line ('Multigrid: Iteration '// &
+            CALL output_line ('Space-Time-Multigrid: Iteration '// &
                 TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
                 TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           END IF
@@ -3065,7 +3139,7 @@ CONTAINS
         IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
             (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
             (rsolverNode%iresult .GE. 0)) THEN
-          CALL output_line ('Multigrid: Iteration '// &
+          CALL output_line ('Space-Time-Multigrid: Iteration '// &
               TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
               TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         END IF
@@ -3104,7 +3178,7 @@ CONTAINS
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
         CALL output_lbrk()
-        CALL output_line ('Multigrid statistics:')
+        CALL output_line ('Space-Time-Multigrid statistics:')
         CALL output_lbrk()
         CALL output_line ('Iterations              : '//&
              TRIM(sys_siL(rsolverNode%iiterations,10)) )

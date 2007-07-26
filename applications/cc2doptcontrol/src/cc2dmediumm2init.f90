@@ -174,6 +174,9 @@ CONTAINS
     ! Time dependence
     CALL c2d2_initParTimeDependence (rproblem,'TIME-DISCRETISATION',&
         rproblem%rparamList)
+        
+    ! Optimal control
+    CALL c2d2_initOptControl(rproblem)
 
   END SUBROUTINE
 
@@ -195,6 +198,9 @@ CONTAINS
 !</inputoutput>
 
 !</subroutine>
+
+    ! Optimal control
+    CALL c2d2_doneOptControl(rproblem)
 
     ! Remove information about boundary conditions
     CALL collct_deleteValue(rproblem%rcollection,'IBOUNDARY')

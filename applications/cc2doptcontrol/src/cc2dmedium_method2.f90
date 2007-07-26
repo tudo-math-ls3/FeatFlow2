@@ -150,7 +150,18 @@ CONTAINS
     ! Initialisation
     CALL c2d2_initParamTriang (p_rproblem)
     CALL c2d2_initDiscretisation (p_rproblem)    
-    CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)    
+    CALL c2d2_allocMatVec (p_rproblem,rvector,rrhs)   
+    
+    ! Print information about the discretisation
+    CALL output_line ('Discretisation statistics:')
+    CALL output_line ('--------------------------')
+    DO i=p_rproblem%NLMIN,p_rproblem%NLMAX
+      CALL output_lbrk ()
+      CALL output_line ('Level '//sys_siL(i,10))
+      CALL output_line ('---------')
+      CALL dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%p_rdiscretisation,.FALSE.)
+    END DO
+     
     CALL c2d2_initAnalyticBC (p_rproblem)   
 
     ! On all levels, generate the static matrices used as templates
@@ -159,11 +170,14 @@ CONTAINS
 
     ! Create the solution vector -- zero or read from file.
     CALL c2d2_initInitialSolution (p_rproblem,rvector)
-
+    
     ! Now choose the algorithm. Stationary or time-dependent simulation?
     IF (p_rproblem%itimedependence .EQ. 0) THEN
     
       ! Stationary simulation
+
+      ! Read the (stationary) target flow.
+      CALL c2d2_initTargetFlow (p_rproblem)
 
       ! Generate the RHS vector.
       CALL c2d2_generateBasicRHS (p_rproblem,rrhs)
@@ -180,6 +194,9 @@ CONTAINS
       ! Postprocessing
       CALL c2d2_postprocessingStationary (p_rproblem,rvector)
       
+      ! Release the target flow
+      CALL c2d2_doneTargetFlow (p_rproblem)
+      
     ELSE
     
       ! Time dependent simulation with explicit time stepping.
@@ -188,6 +205,9 @@ CONTAINS
       ! don't implement any boundary conditions as the nonstationary solver
       ! doesn't like this.
       CALL c2d2_initDiscreteBC (p_rproblem,rvector,rrhs)
+      
+      ! Don't read the target flow, this is done in 
+      ! c2d2_solveNonstationaryDirect!
 
       ! Call the nonstationary solver to solve the problem.
       CALL c2d2_solveNonstationaryDirect (p_rproblem)

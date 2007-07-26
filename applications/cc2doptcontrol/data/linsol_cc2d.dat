@@ -26,18 +26,18 @@ nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 5
+nmaxIterations     = 10
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-12 1E-8 0.001
+depsRel            = 1E-4 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-8 0.001
+depsAbs            = 1E-4 0.001
 
 # General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
 # not used if MG is the linear solver.
@@ -46,7 +46,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 1
+ioutputLevel       = 0
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
@@ -134,7 +134,7 @@ nsmoothingSteps    = 4
 
 # Relaxation parameter
 
-domega             = 0.8 1.0
+domega             = 0.7 1.0
 
 # ========================================================================
 # The following section describes the parameters of the VANCA coarse grid
@@ -156,12 +156,12 @@ nminIterations     = 1
 
 # Maximum number of steps
 
-nmaxIterations     = 100
+nmaxIterations     = 1000
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 0.01
+depsRel            = 1E-5 #0.01
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 

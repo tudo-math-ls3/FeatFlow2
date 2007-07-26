@@ -47,13 +47,13 @@ NLMIN              = 2
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 4
+NLMAX              = 6
 
 # ------------------------------------------------------------------------
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
-iequation    = 1
+iequation    = 0
 
 # Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
 
@@ -61,7 +61,7 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 1.0 1000.0 000.0
+RE                 = 400.0 1000.0 000.0
 
 # Type of right hand side. 
 # 0=zero, 1=steady inhomog., 2=nonsteady force
@@ -201,9 +201,28 @@ dintARboundEX3YVel       = 20.0
 
 # Penalty parameter ALPHA for the ||u||-term in the optimal-control problem.
 
-dalphaC = 1.0
+dalphaC = 0.01 # 1.0
 
 # Penalty parameter for the terminal condition ||y(T)-z(T)|| in the
 # nonstationary optimal control problem.
 
-dgammaC = 1.0
+dgammaC = 0.0  # 1.0
+
+# Type of target flow.
+# =0: analytically given
+# =1: stationary flow as prescribed by a solution vector read in from a file.
+#     The filename is stargetFlow below.
+# =2: nonstationary flow as prescribed by a sequence of files on the 
+#     hard disc. stargetFlow is the basic filename target. A number
+#     '.0000','.0001',... is appended to this to form the filename of the
+#     solution vector in every timestep. There must be exactly as many
+#     files present on the hard disc as prescribed by the 
+#     time discretisation!
+
+itypeTargetFlow = 2
+
+# If itypeTargetFlow = 1, this is the filename of a file on disc containing
+# the target flow. The file must contain a solution at the same spatial
+# level as prescribed by NLMAX.
+
+stargetFlow = 'ns/solution6_0.05'

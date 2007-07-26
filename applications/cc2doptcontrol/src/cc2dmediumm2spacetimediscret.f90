@@ -28,10 +28,13 @@
 !# 5.) c2d2_implementInitCondRHS
 !#     -> Implements initial conditions into a given space-time RHS vector.
 !#
-!# 6.) c2d2_implementBCsolution
+!# 5.) c2d2_implementInitCondDefect
+!#     -> Implements initial conditions into a given space-time defect vector.
+!#
+!# 7.) c2d2_implementBCsolution
 !#     -> Implements boundary conditions into a given space-time solution vector.
 !#
-!# 7.) c2d2_implementBCdefect
+!# 8.) c2d2_implementBCdefect
 !#     -> Implements initial and boundary conditions into a fiven space-time
 !#        defect vector.
 !#
@@ -51,7 +54,7 @@
 !# form (here for 2 timesteps with solutions y_0(initial), y_1 and y_2):
 !#
 !#  Explicit Euler.
-!#  a=alpha. y_i=velocity in the i'th step.
+!#  a=alpha. g=gamma. y_i=velocity in the i'th step.
 !#  Stokes:          A = A(y_i) = -nu*Laplace(.)
 !#  Navier-Stokes:   A = A(y_i) = -nu*Laplace(.) + y_i*grad(.)
 !#  
@@ -61,33 +64,33 @@
 !#           [I ]                    |                                        |
 !#                                   |                                        |
 !#  [-dt M]       [M + dt A] [-dt B] |                    [-M       ]         |
-!#                                   |                                        |
-!#                [-B^t    ]         |                                        |
-!#                                   |                                        |
+!#    ^                              |                                        |
+!#  from the      [-B^t    ]         |                                        |
+!#  RHS                              |                                        |
 !#  ---------------------------------+----------------------------------------+---------------------------------------
 !#  [-M   ]                          | [M + dt A] [-dt B] [ dt/a M  ]         |
 !#                                   |                                        |
 !#                                   | [-B^t    ]                             |
 !#                                   |                                        |
 !#                                   | [-dt M   ]         [M + dt A ] [-dt B] |                     [-M      ]
-!#                                   |                                        |
-!#                                   |                    [-B^t     ]         |
-!#                                   |                                        |
+!#                                   |   ^                                    |
+!#                                   | from the           [-B^t     ]         |
+!#                                   | RHS                                    |
 !#  ---------------------------------+----------------------------------------+---------------------------------------
 !#                                   | [-M      ]                             |  [M + dt A] [-dt B] [ dt/a M ]         
 !#                                   |                                        |                                        
 !#                                   |                                        |  [-B^t    ]                            
 !#                                   |                                        |                                        
-!#                                   |                                        |  [-dt M   ]         [M + dt A] [-dt B] 
-!#                                   |                                        |                                        
-!#                                   |                                        |                     [-B^t    ]         
-!#                                   |                                        |                                             
+!#                                   |                                        |  [-g M    ]         [M + dt A] [-dt B] 
+!#                                   |                                        |    ^                                   
+!#                                   |                                        |  from the           [-B^t    ]         
+!#                                   |                                        |  RHS                                        
 !#  ==================================================================================================================
 !#  
 !# More general:
 !#
 !#  Crank Nicolson.
-!#  a=alpha. y_i=(primal) velocity in the i'th step. T=theta=0.5
+!#  a=alpha. g=gamma. y_i=(primal) velocity in the i'th step. T=theta=0.5
 !#  Stokes:          A(y_i) = -nu*Laplace(.)
 !#                   N(y_i) = not present
 !#  Navier-Stokes:   A(y_i) = -nu*Laplace(.) + y_i*grad(.)
@@ -98,28 +101,28 @@
 !#                                                             |                                                             |                                                 
 !#                      [I      ]                              |                                                             |                                                 
 !#                                                             |                                                             |                                                 
-!#  [-dt M           ]            [M + dt T A(y_0)] [-dt B   ] |                               [-M+dt(1-T)N(y_0)]            |                                                 
-!#                                                             |                                             ^               |                                                 
-!#                                [-B^t           ]            |                                             |               |                                                 
-!#                                                             |                                         !correct!           |                                                 
+!#  [-dt T M         ]            [M + dt T A(y_0)] [-dt B   ] |                               [-M+dt(1-T)N(y_0)]            |                                                 
+!#    ^                                                        |                                             ^               |                                                 
+!#  from the                      [-B^t           ]            |                                             |               |                                                 
+!#  RHS                                                        |                                         !correct!           |                                                 
 !#  -----------------------------------------------------------+-------------------------------------------------------------+------------------------------------------------------------
 !#  [-M+dt(1-T)A(y_0)]                                         | [M + dt T A(y_1) ] [-dt B   ] [ dt/a M         ]            |                                                 
 !#                                                             |                                                             |                                                 
 !#                                                             | [-B^t            ]                                          |                                                 
 !#                                                             |                                                             |                                                 
-!#                                                             | [-dt M           ]            [M + dt N(y_1)   ] [-dt B   ] |                               [-M+dt(1-T)N(y_1)]
-!#                                                             |                                                             |                                             ^    
-!#                                                             |                               [-B^t            ]            |                                             |    
-!#                                                             |                                                             |                                         !correct!       
+!#                                                             | [-dt T M         ]            [M + dt T N(y_1) ] [-dt B   ] |                               [-M+dt(1-T)N(y_1)]
+!#                                                             |   ^                                                         |                                             ^    
+!#                                                             | from the                      [-B^t            ]            |                                             |    
+!#                                                             | RHS                                                         |                                         !correct!       
 !#  -----------------------------------------------------------+-------------------------------------------------------------+------------------------------------------------------------
 !#                                                             | [-M+dt(1-T)A(y_1)]                                          |  [M + dt T A(y_2)] [-dt B   ] [ dt/a M         ]            
 !#                                                             |                                                             |                                                             
 !#                                                             |                                                             |  [-B^t           ]                                          
 !#                                                             |                                                             |                                                             
-!#                                                             |                                                             |  [-dt M          ]            [M + dt T N(y_2) ] [-dt B   ] 
-!#                                                             |                                                             |                                                             
-!#                                                             |                                                             |                               [-B^t            ]            
-!#                                                             |                                                             |                                                                  
+!#                                                             |                                                             |  [-g T M         ]            [M + dt T N(y_2) ] [-dt B   ] 
+!#                                                             |                                                             |    ^                                                        
+!#                                                             |                                                             |  from the                     [-B^t            ]            
+!#                                                             |                                                             |  RHS                                                             
 !#  ======================================================================================================================================================================================
 !#
 !##############################################################################
@@ -156,12 +159,9 @@ MODULE cc2dmediumm2spacetimediscret
 
   USE cc2dmediumm2nonlinearcore
   USE cc2dmediumm2nonlinearcoreinit
-  USE cc2dmediumm2stationary
-  USE adaptivetimestep
   USE cc2dmediumm2timeanalysis
   USE cc2dmediumm2boundary
   USE cc2dmediumm2discretisation
-  USE cc2dmediumm2postprocessing
   USE cc2dmediumm2matvecassembly
   
   USE spacetimevectors
@@ -180,7 +180,7 @@ MODULE cc2dmediumm2spacetimediscret
   TYPE t_ccoptSpaceTimeDiscretisation
   
     ! Spatial refinement level of this matrix.
-    INTEGER :: ilevel
+    INTEGER :: ilevel = 0
   
     ! Number of time steps
     INTEGER :: niterations         = 0
@@ -431,36 +431,93 @@ CONTAINS
       IF (irelpos .EQ. 0) THEN
       
         ! The diagonal matrix.
-        rmatrixComponents%diota1 = 1.0_DP
+        !
+        ! The commented out code is used when we want to implement the initial condition
+        ! directly, i.e. when we want to solve Ix=x in the primal equation. However,
+        ! this is not always advisable...
+        
+!        rmatrixComponents%diota1 = 1.0_DP
+!        rmatrixComponents%diota2 = 0.0_DP
+!
+!        rmatrixComponents%dkappa1 = 1.0_DP
+!        rmatrixComponents%dkappa2 = 0.0_DP
+!        
+!        rmatrixComponents%dalpha1 = 0.0_DP
+!        rmatrixComponents%dalpha2 = 1.0_DP
+!        
+!        rmatrixComponents%dtheta1 = 0.0_DP
+!        rmatrixComponents%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
+!        
+!        rmatrixComponents%dgamma1 = 0.0_DP
+!        rmatrixComponents%dgamma2 = &
+!            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        
+!        rmatrixComponents%dnewton1 = 0.0_DP
+!        rmatrixComponents%dnewton2 = &
+!              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!
+!        rmatrixComponents%deta1 = 0.0_DP
+!        rmatrixComponents%deta2 = rspaceTimeDiscr%dtstep
+!        
+!        rmatrixComponents%dtau1 = 0.0_DP
+!        rmatrixComponents%dtau2 = 1.0_DP
+!        
+!        rmatrixComponents%dmu1 = 0.0_DP
+!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+!            (-rspaceTimeDiscr%dtstep * dtheta)
+
+        ! It's better to use a trick!
+        ! The RHS of the primal equation in teh 0th timestep can be assembled as
+        !    rhs = A*initial condition
+        ! The solver then solves:
+        !    A*x = rhs = A*initial condition
+        ! => x=initial condition
+        !
+        ! This trick introduces some smoothing of the the initial condition,
+        ! otherwise the linear systems in the first timestep wouldn't be solvable!
+
+        rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP
 
-        rmatrixComponents%dkappa1 = 1.0_DP
+        rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = 1.0_DP
+        rmatrixComponents%dalpha1 = 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = 1.0_DP/rspaceTimeDiscr%dtstep
         
-        rmatrixComponents%dtheta1 = 0.0_DP
-        rmatrixComponents%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
+        rmatrixComponents%dtheta1 = dtheta
+        rmatrixComponents%dtheta2 = dtheta
         
-        rmatrixComponents%dgamma1 = 0.0_DP
+        rmatrixComponents%dgamma1 = &
+            dtheta * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = &
-            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            - dtheta * REAL(1-rproblem%iequation,DP)
         
         rmatrixComponents%dnewton1 = 0.0_DP
         rmatrixComponents%dnewton2 = &
-              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+              dtheta * REAL(1-rproblem%iequation,DP)
 
-        rmatrixComponents%deta1 = 0.0_DP
-        rmatrixComponents%deta2 = rspaceTimeDiscr%dtstep
+        rmatrixComponents%deta1 = 1.0_DP
+        rmatrixComponents%deta2 = 1.0_DP
         
-        rmatrixComponents%dtau1 = 0.0_DP
+        rmatrixComponents%dtau1 = 1.0_DP
         rmatrixComponents%dtau2 = 1.0_DP
         
-        rmatrixComponents%dmu1 = 0.0_DP
-        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (-rspaceTimeDiscr%dtstep * dtheta)
-        
+        ! In the 0'th timestep, there is no RHS in the dual equation
+        ! and therefore no coupling between the primal and dual solution!
+        ! That is because of the initial condition, which fixes the primal solution
+        ! => dual solution has no influence on the primal one
+        ! Therefore, the following weights must be commented out, otherwise
+        ! the solver cannot converge in the 0'th timestep!
+        ! Instead, the dual solution of this 0'th timestep only depends
+        ! on the dual solution of the 1st timestep and is computed assuming that
+        ! the initial condition meets the target flow (y_0 = z_0).
+        !
+        ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
+        !     dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
+        ! rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+        !     dtheta * (-1.0_DP)
+                    
       ELSE IF (irelpos .EQ. 1) THEN
       
         ! Offdiagonal matrix on the right of the diagonal.
@@ -475,18 +532,18 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = -1.0_DP
+        rmatrixComponents%dalpha2 = -1.0_DP/rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
-        rmatrixComponents%dtheta2 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+        rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
         
         rmatrixComponents%dgamma1 = 0.0_DP
         rmatrixComponents%dgamma2 = &
-            - (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
         
         rmatrixComponents%dnewton1 = 0.0_DP
         rmatrixComponents%dnewton2 = &
-              (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+              (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -496,11 +553,11 @@ CONTAINS
         
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (-rspaceTimeDiscr%dtstep) * (1.0_DP-dtheta)
+            (-1.0_DP) * (1.0_DP-dtheta)
             
       END IF
     
-    ELSE IF (isubstep .LE. rspaceTimeDiscr%niterations) THEN
+    ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
       
       ! We are sonewhere in the middle of the matrix. There is a substep
       ! isubstep+1 and a substep isubstep-1!
@@ -520,14 +577,14 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = -1.0_DP
+        rmatrixComponents%dalpha1 = -1.0_DP/rspaceTimeDiscr%dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
-        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
         rmatrixComponents%dtheta2 = 0.0_DP
         
         rmatrixComponents%dgamma1 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = 0.0_DP
         
         rmatrixComponents%dnewton1 = 0.0_DP
@@ -540,7 +597,7 @@ CONTAINS
         rmatrixComponents%dtau2 = 0.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+            (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
       ELSE IF (irelpos .EQ. 0) THEN    
@@ -553,31 +610,31 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = 1.0_DP
-        rmatrixComponents%dalpha2 = 1.0_DP
+        rmatrixComponents%dalpha1 = 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = 1.0_DP/rspaceTimeDiscr%dtstep
         
-        rmatrixComponents%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
-        rmatrixComponents%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
+        rmatrixComponents%dtheta1 = dtheta
+        rmatrixComponents%dtheta2 = dtheta
         
         rmatrixComponents%dgamma1 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            dtheta * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = &
-            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            - dtheta * REAL(1-rproblem%iequation,DP)
         
         rmatrixComponents%dnewton1 = 0.0_DP
         rmatrixComponents%dnewton2 = &
-              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+              dtheta * REAL(1-rproblem%iequation,DP)
 
-        rmatrixComponents%deta1 = rspaceTimeDiscr%dtstep
-        rmatrixComponents%deta2 = rspaceTimeDiscr%dtstep
+        rmatrixComponents%deta1 = 1.0_DP
+        rmatrixComponents%deta2 = 1.0_DP
         
         rmatrixComponents%dtau1 = 1.0_DP
         rmatrixComponents%dtau2 = 1.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+            dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            dtheta * (-rspaceTimeDiscr%dtstep)
+            dtheta * (-1.0_DP)
 
       ELSE IF (irelpos .EQ. 1) THEN
             
@@ -592,18 +649,18 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = -1.0_DP
+        rmatrixComponents%dalpha2 = -1.0_DP/rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
-        rmatrixComponents%dtheta2 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+        rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
         
         rmatrixComponents%dgamma1 = 0.0_DP
         rmatrixComponents%dgamma2 = &
-            - (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            - (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
         
         rmatrixComponents%dnewton1 = 0.0_DP
         rmatrixComponents%dnewton2 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
 
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
@@ -613,49 +670,122 @@ CONTAINS
         
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (1.0_DP-dtheta) * (-rspaceTimeDiscr%dtstep)
+            (1.0_DP-dtheta) * (-1.0_DP)
             
       END IF
     
     ELSE
     
-      ! NOT USED!!!
-      ! Although this would be the correct implementation of the matrix weights
-      ! for the terminal condition at the first glance, it would be wrong to use 
-      ! that. The last timestep has to be processed like
-      ! the others, which infers some 'smoothing' in the dual solution
-      ! at the end of the time cylinder! Without that smoothing that, some 
-      ! time discretisation schemes like Crank-Nicolson would get instable
-      ! if a terminal condition <> 0 is prescribed!
-    
       ! We are in the last substep
       
+!      ! Although this would be the correct implementation of the matrix weights
+!      ! for the terminal condition at the first glance, it would be wrong to use 
+!      ! that. The last timestep has to be processed like
+!      ! the others, which infers some 'smoothing' in the dual solution
+!      ! at the end of the time cylinder! Without that smoothing that, some 
+!      ! time discretisation schemes like Crank-Nicolson would get instable
+!      ! if a terminal condition <> 0 is prescribed!
+!      
+!      IF (irelpos .EQ. -1) THEN
+!      
+!        ! Matrix on the left of the diagonal
+!        !
+!        ! Create the matrix
+!        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+!        
+!        rmatrixComponents%diota1 = 0.0_DP
+!        rmatrixComponents%diota2 = 0.0_DP
+!
+!        rmatrixComponents%dkappa1 = 0.0_DP
+!        rmatrixComponents%dkappa2 = 0.0_DP
+!        
+!        rmatrixComponents%dalpha1 = -1.0_DP
+!        rmatrixComponents%dalpha2 = 0.0_DP
+!        
+!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta2 = 0.0_DP
+!        
+!        rmatrixComponents%dgamma1 = &
+!            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        rmatrixComponents%dgamma2 = 0.0_DP
+!        
+!        rmatrixComponents%dnewton1 = 0.0_DP
+!        rmatrixComponents%dnewton2 = 0.0_DP
+!        
+!        rmatrixComponents%deta1 = 0.0_DP
+!        rmatrixComponents%deta2 = 0.0_DP
+!        
+!        rmatrixComponents%dtau1 = 0.0_DP
+!        rmatrixComponents%dtau2 = 0.0_DP
+!        
+!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+!            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+!        rmatrixComponents%dmu2 = 0.0_DP
+!        
+!      ELSE IF (irelpos .EQ. 0) THEN
+!      
+!        ! The diagonal matrix.
+!        
+!        rmatrixComponents%diota1 = 0.0_DP
+!        rmatrixComponents%diota2 = (1.0_DP-ddualPrimalCoupling)
+!
+!        rmatrixComponents%dkappa1 = 0.0_DP
+!        rmatrixComponents%dkappa2 = 1.0_DP
+!        
+!        rmatrixComponents%dalpha1 = 1.0_DP
+!        rmatrixComponents%dalpha2 = 1.0_DP
+!        
+!        rmatrixComponents%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta2 = 0.0_DP
+!        
+!        rmatrixComponents%dgamma1 = &
+!            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        rmatrixComponents%dgamma2 = 0.0_DP
+!!           - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        
+!        rmatrixComponents%dnewton1 = 0.0_DP
+!        rmatrixComponents%dnewton2 = 0.0_DP
+!!             dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!
+!        rmatrixComponents%deta1 = rspaceTimeDiscr%dtstep
+!        rmatrixComponents%deta2 = 0.0_DP
+!        
+!        rmatrixComponents%dtau1 = 1.0_DP
+!        rmatrixComponents%dtau2 = 0.0_DP
+!        
+!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+!            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+!            (-rspaceTimeDiscr%dgammaC)
+!
+!      END IF
+        
       IF (irelpos .EQ. -1) THEN
       
-        ! Matrix on the left of the diagonal
+        ! Matrix on the left of the diagonal.
         !
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-        
+
         rmatrixComponents%diota1 = 0.0_DP
         rmatrixComponents%diota2 = 0.0_DP
 
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = -1.0_DP
+        rmatrixComponents%dalpha1 = -1.0_DP/rspaceTimeDiscr%dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
-        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
         rmatrixComponents%dtheta2 = 0.0_DP
         
         rmatrixComponents%dgamma1 = &
-            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            (1.0_DP-dtheta) * REAL(1-rproblem%iequation,DP)
         rmatrixComponents%dgamma2 = 0.0_DP
         
         rmatrixComponents%dnewton1 = 0.0_DP
         rmatrixComponents%dnewton2 = 0.0_DP
-        
+
         rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 0.0_DP
         
@@ -663,46 +793,125 @@ CONTAINS
         rmatrixComponents%dtau2 = 0.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+            (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
-        
-      ELSE IF (irelpos .EQ. 0) THEN
-      
+
+      ELSE IF (irelpos .EQ. 0) THEN    
+
         ! The diagonal matrix.
-        
+
         rmatrixComponents%diota1 = 0.0_DP
-        rmatrixComponents%diota2 = (1.0_DP-ddualPrimalCoupling)
+        rmatrixComponents%diota2 = 0.0_DP
 
         rmatrixComponents%dkappa1 = 0.0_DP
-        rmatrixComponents%dkappa2 = 1.0_DP
+        rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = 1.0_DP
-        rmatrixComponents%dalpha2 = 1.0_DP
+        rmatrixComponents%dalpha1 = 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = 1.0_DP/rspaceTimeDiscr%dtstep
         
-        rmatrixComponents%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
-        rmatrixComponents%dtheta2 = 0.0_DP
+        rmatrixComponents%dtheta1 = dtheta
+        rmatrixComponents%dtheta2 = dtheta
         
         rmatrixComponents%dgamma1 = &
-            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-        rmatrixComponents%dgamma2 = 0.0_DP
-!           - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+            dtheta * REAL(1-rproblem%iequation,DP)
+        rmatrixComponents%dgamma2 = &
+            - dtheta * REAL(1-rproblem%iequation,DP)
         
         rmatrixComponents%dnewton1 = 0.0_DP
-        rmatrixComponents%dnewton2 = 0.0_DP
-!             dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+        rmatrixComponents%dnewton2 = &
+              dtheta * REAL(1-rproblem%iequation,DP)
 
-        rmatrixComponents%deta1 = rspaceTimeDiscr%dtstep
-        rmatrixComponents%deta2 = 0.0_DP
+        rmatrixComponents%deta1 = 1.0_DP
+        rmatrixComponents%deta2 = 1.0_DP
         
         rmatrixComponents%dtau1 = 1.0_DP
-        rmatrixComponents%dtau2 = 0.0_DP
+        rmatrixComponents%dtau2 = 1.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+            dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
+            
+        ! Weight the mass matrix by GAMMA instead of delta(T).
+        ! That's the only difference to the implementation above!
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (-rspaceTimeDiscr%dgammaC)
+            !dtheta * (-rspaceTimeDiscr%dtstep)
+            dtheta * (-rspaceTimeDiscr%dgammaC)
+
+      END IF        
         
-      END IF
+!      IF (irelpos .EQ. -1) THEN
+!      
+!        ! Matrix on the left of the diagonal.
+!        !
+!        ! Create the matrix
+!        !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
+!
+!        rmatrixComponents%diota1 = 0.0_DP
+!        rmatrixComponents%diota2 = 0.0_DP
+!
+!        rmatrixComponents%dkappa1 = 0.0_DP
+!        rmatrixComponents%dkappa2 = 0.0_DP
+!        
+!        rmatrixComponents%dalpha1 = -1.0_DP
+!        rmatrixComponents%dalpha2 = 0.0_DP
+!        
+!        rmatrixComponents%dtheta1 = (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta2 = 0.0_DP
+!        
+!        rmatrixComponents%dgamma1 = &
+!            (1.0_DP-dtheta) * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        rmatrixComponents%dgamma2 = 0.0_DP
+!        
+!        rmatrixComponents%dnewton1 = 0.0_DP
+!        rmatrixComponents%dnewton2 = 0.0_DP
+!
+!        rmatrixComponents%deta1 = 0.0_DP
+!        rmatrixComponents%deta2 = 0.0_DP
+!        
+!        rmatrixComponents%dtau1 = 0.0_DP
+!        rmatrixComponents%dtau2 = 0.0_DP
+!        
+!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+!            rspaceTimeDiscr%dtstep * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+!        rmatrixComponents%dmu2 = 0.0_DP
+!
+!      ELSE IF (irelpos .EQ. 0) THEN    
+!
+!        ! The diagonal matrix.
+!
+!        rmatrixComponents%diota1 = 0.0_DP
+!        rmatrixComponents%diota2 = 0.0_DP
+!
+!        rmatrixComponents%dkappa1 = 0.0_DP
+!        rmatrixComponents%dkappa2 = 0.0_DP
+!        
+!        rmatrixComponents%dalpha1 = 1.0_DP
+!        rmatrixComponents%dalpha2 = 1.0_DP
+!        
+!        rmatrixComponents%dtheta1 = dtheta * rspaceTimeDiscr%dtstep
+!        rmatrixComponents%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
+!        
+!        rmatrixComponents%dgamma1 = &
+!            dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        rmatrixComponents%dgamma2 = &
+!            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        
+!        rmatrixComponents%dnewton1 = 0.0_DP
+!        rmatrixComponents%dnewton2 = &
+!              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!
+!        rmatrixComponents%deta1 = rspaceTimeDiscr%dtstep
+!        rmatrixComponents%deta2 = rspaceTimeDiscr%dtstep
+!        
+!        rmatrixComponents%dtau1 = 1.0_DP
+!        rmatrixComponents%dtau2 = 1.0_DP
+!        
+!        rmatrixComponents%dmu1 = dprimalDualCoupling * &
+!            dtheta * rspaceTimeDiscr%dtstep / rspaceTimeDiscr%dalphaC
+!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+!            dtheta * (-rspaceTimeDiscr%dgammaC)
+!            !dtheta * (-rspaceTimeDiscr%dtstep) ! probably wrong!
+!
+!      END IF
 
     END IF
 
@@ -767,6 +976,7 @@ CONTAINS
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
+    REAL(DP), DIMENSION(:), POINTER :: p_DxE1,p_DxE2,p_DxE3
     
     ! If the following constant is set from 1.0 to 0.0, the primal system is
     ! decoupled from the dual system!
@@ -802,12 +1012,6 @@ CONTAINS
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector1,.FALSE.)
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector2,.FALSE.)
     CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector3,.FALSE.)
-    
-    ! DEBUG!!!
-    !CALL lsysbl_getbase_double (rtempVector1,p_Dx1)
-    !CALL lsysbl_getbase_double (rtempVector2,p_Dx2)
-    !CALL lsysbl_getbase_double (rtempVector3,p_Dx3)
-    !CALL lsysbl_getbase_double (rtempVectorD,p_Db)
     
     ! Get the parts of the X-vector which are to be modified at first --
     ! subvector 1, 2 and 3.
@@ -851,6 +1055,15 @@ CONTAINS
       IF (rspaceTimeDiscr%niterations .GT. 1) &
         CALL sptivec_getTimestepData(rspaceTimeDiscr%p_rsolution, 2, rtempVectorEval3)
     END IF
+    
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rtempVector1,p_Dx1)
+    CALL lsysbl_getbase_double (rtempVector2,p_Dx2)
+    CALL lsysbl_getbase_double (rtempVector3,p_Dx3)
+    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+    CALL lsysbl_getbase_double (rtempVectorEval1,p_DxE1)
+    CALL lsysbl_getbase_double (rtempVectorEval2,p_DxE2)
+    CALL lsysbl_getbase_double (rtempVectorEval3,p_DxE3)
     
     ! Basic initialisation of rmatrixComponents with the pointers to the
     ! matrices / discretisation structures on the current level.
@@ -1100,7 +1313,7 @@ CONTAINS
     ! If dnorm is specified, normalise it.
     ! It was calculated from rspaceTimeDiscr%niterations+1 subvectors.
     IF (PRESENT(dnorm)) THEN
-      dnorm = SQRT(dnorm) / REAL(rspaceTimeDiscr%niterations+1,DP)
+      dnorm = SQRT(dnorm / REAL(rspaceTimeDiscr%niterations+1,DP))
     END IF
     
     ! Release the temp vectors.
@@ -1160,7 +1373,8 @@ CONTAINS
 
     ! local variables
     INTEGER :: isubstep
-    REAL(DP) :: dtheta,dtstep
+    REAL(DP) :: dtheta
+    TYPE(t_ccmatrixComponents) :: rmatrixComponents
     
     ! A temporary vector for the creation of the RHS.
     TYPE(t_vectorBlock) :: rtempVectorRHS
@@ -1171,7 +1385,6 @@ CONTAINS
     ! =1: impliciz Euler.
     ! =0.5: Crank Nicolson
     dtheta = rproblem%rtimedependence%dtimeStepTheta
-    dtstep = rspaceTimeDiscr%dtstep
     
     ! ----------------------------------------------------------------------
     ! Generate the global RHS vector
@@ -1181,15 +1394,15 @@ CONTAINS
     CALL lsysbl_getbase_double (rtempVector3,p_Dd)
 
     ! Assemble 1st RHS vector in X temp vector.
-    CALL generateRHS (rproblem,0,rb%ntimesteps,&
+    CALL generateRHS (rproblem,0,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
         rtempVector1, .TRUE., .FALSE.)
-    
+        
     ! Assemble the 2nd RHS vector in the RHS temp vector
-    CALL generateRHS (rproblem,1,rb%ntimesteps,&
+    CALL generateRHS (rproblem,1,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
         rtempVector2, .TRUE., .FALSE.)
 
     ! Assemble the 3rd RHS vector in the defect temp vector
-    CALL generateRHS (rproblem,2,rb%ntimesteps,&
+    CALL generateRHS (rproblem,2,rb%ntimesteps,rspaceTimeDiscr%dtstep,&
         rtempVector3, .TRUE., .FALSE.)
         
     ! Create a copy of the X temp vector (RHS0). That vector will be
@@ -1215,19 +1428,28 @@ CONTAINS
         CALL lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
         CALL lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 
-        CALL lsyssc_vectorLinearComb (&
-            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
-            dtstep*dtheta,dtstep*(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(4))
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
-            dtstep*dtheta,dtstep*(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(5))
-        ! Pressure is fully implicit; no weighting by dtstep!
-        CALL lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
-            dtheta,(1.0_DP-dtheta),&
-            rtempVectorRHS%RvectorBlock(6))
+!        CALL lsyssc_vectorLinearComb (&
+!            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(4))
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(5))
+!        ! Pressure is fully implicit
+!        CALL lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
+!            dtheta,(1.0_DP-dtheta),&
+!            rtempVectorRHS%RvectorBlock(6))
+
+        ! In the 0'th timestep, there is no RHS in the dual equation!
+        ! That is because of the initial condition, which fixes the primal solution
+        ! => dual solution has no influence on the primal one
+        ! => setting up a dual RHS in not meaningful as the dual RHS cannot
+        !    influence the primal solution
+        CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(4))
+        CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(5))
+        CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(6))
             
       ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
       
@@ -1241,13 +1463,13 @@ CONTAINS
         
         CALL lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
-            dtstep*(1.0_DP-dtheta),dtstep*dtheta,&
+            (1.0_DP-dtheta),dtheta,&
             rtempVectorRHS%RvectorBlock(1))                                        
         CALL lsyssc_vectorLinearComb (&                                                   
             rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
-            dtstep*(1.0_DP-dtheta),dtstep*dtheta,&
+            (1.0_DP-dtheta),dtheta,&
             rtempVectorRHS%RvectorBlock(2))                                        
-        ! Pressure is fully implicit; no weighting by dtstep!
+        ! Pressure is fully implicit
         CALL lsyssc_vectorLinearComb (&                                                   
             rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
             (1.0_DP-dtheta),dtheta,&
@@ -1255,13 +1477,13 @@ CONTAINS
 
         CALL lsyssc_vectorLinearComb (&
             rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
-            dtstep*dtheta,dtstep*(1.0_DP-dtheta),&
+            dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(4))
         CALL lsyssc_vectorLinearComb (&                                                   
             rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
-            dtstep*dtheta,dtstep*(1.0_DP-dtheta),&
+            dtheta,(1.0_DP-dtheta),&
             rtempVectorRHS%RvectorBlock(5))
-        ! Pressure is fully implicit; no weighting by dtstep!
+        ! Pressure is fully implicit
         CALL lsyssc_vectorLinearComb (&                                                   
             rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
             dtheta,(1.0_DP-dtheta),&
@@ -1274,7 +1496,7 @@ CONTAINS
           CALL lsysbl_copyVector(rtempVector2,rtempVector1)
           CALL lsysbl_copyVector(rtempVector3,rtempVector2)
           CALL generateRHS (rproblem,isubstep+2,rspaceTimeDiscr%niterations,&
-              rtempVector3, .TRUE., .FALSE.)
+              rspaceTimeDiscr%dtstep,rtempVector3, .TRUE., .FALSE.)
         END IF
         
       ELSE
@@ -1289,13 +1511,13 @@ CONTAINS
       
         CALL lsyssc_vectorLinearComb (&
             rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
-            dtstep*(1.0_DP-dtheta),dtstep*dtheta,&
+            (1.0_DP-dtheta),dtheta,&
             rtempVectorRHS%RvectorBlock(1))                                        
         CALL lsyssc_vectorLinearComb (&                                                   
             rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
-            dtstep*(1.0_DP-dtheta),dtstep*dtheta,&
+            (1.0_DP-dtheta),dtheta,&
             rtempVectorRHS%RvectorBlock(2))                                        
-        ! Pressure is fully implicit; no weighting by dtstep!
+        ! Pressure is fully implicit
         CALL lsyssc_vectorLinearComb (&                                                   
             rtempVector2%RvectorBlock(3),rtempVector3%RvectorBlock(3),&
             (1.0_DP-dtheta),dtheta,&
@@ -1317,7 +1539,7 @@ CONTAINS
       ! Implement the boundary conditions into the RHS vector        
       IF (bimplementBC) THEN
         CALL generateRHS (rproblem,isubstep,rspaceTimeDiscr%niterations,&
-            rtempVectorRHS, .FALSE., .TRUE.)
+            rspaceTimeDiscr%dtstep, rtempVectorRHS, .FALSE., .TRUE.)
       END IF
       
       ! Save the RHS.
@@ -1330,7 +1552,7 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE generateRHS (rproblem,isubstep,nsubsteps,&
+    SUBROUTINE generateRHS (rproblem,isubstep,nsubsteps,dtstep,&
         rvector, bgenerate, bincludeBC)
     
     ! Generate the RHS vector of timestep isubstep and/or include boundary
@@ -1344,6 +1566,9 @@ CONTAINS
     
     ! Total number of substeps
     INTEGER, INTENT(IN) :: nsubsteps
+    
+    ! Length od one timestep
+    REAL(DP), INTENT(IN) :: dtstep
     
     ! Destination vector
     TYPE(t_vectorBlock), INTENT(INOUT) :: rvector
@@ -1363,6 +1588,7 @@ CONTAINS
       ! Set the time where we are at the moment
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + isubstep*dtstep
+      rproblem%rtimedependence%itimestep = isubstep
           
       ! Assemble the RHS?
       IF (bgenerate) THEN
@@ -1405,7 +1631,8 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_implementInitCondRHS (rx, rb, rtempvectorX, rtempvectorD)
+  SUBROUTINE c2d2_implementInitCondRHS (rproblem,rspaceTimeDiscr, &
+      rx, rb, rtempvectorX, rtempvectorD)
 
 !<description>
   ! Implements the initial condition into the RHS vector rb.
@@ -1415,11 +1642,19 @@ CONTAINS
 !</description>
 
 !<input>
-  ! A space-time vector containing the initial condition in the first subvector.
-  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+  ! A problem structure that provides information on all
+  ! levels as well as temporary vectors.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+
+  ! A t_ccoptSpaceTimeDiscretisation structure defining the discretisation of the
+  ! coupled space-time system. Must correspond to rb.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
 !</input>
 
 !<inputoutput>
+  ! A space-time vector containing the initial condition in the first subvector.
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rb
+
   ! A space-time vector with the RHS. The initial condition is implemented into
   ! this vector.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rx
@@ -1433,15 +1668,74 @@ CONTAINS
 
 !</subroutine>
 
+    REAL(DP) :: dtheta
+    REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd, p_Drhs
+    TYPE(t_ccmatrixComponents) :: rmatrixComponents
+    
+    ! DEBUG!!!    
+    CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
+    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+
+    ! Theta-scheme identifier.
+    ! =1: impliciz Euler.
+    ! =0.5: Crank Nicolson
+    dtheta = rproblem%rtimedependence%dtimeStepTheta
+
     ! Overwrite the primal RHS with the initial primal solution vector.
     ! This realises the inital condition.
     CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
-    CALL sptivec_getTimestepData(rb, 0, rtempVectorD)
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
-    CALL sptivec_setTimestepData(rb, 0, rtempVectorD)
+    
+    ! If the initial condition is used directly, one could use the following commented
+    ! out lines. However, this is not advisable!:
+    !
+!    CALL sptivec_getTimestepData(rb, 0, rtempVectorD)
+!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
+!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
+!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
 
+    ! Trick for the initial condition: Matrix-vector multiplication!
+    ! rtempVector2 = A * initial-solution.
+    ! This gives the RHS for the 0th timestep. The solver will later solve:
+    !     A x = rtempVector2 = A * initial-solution
+    !
+    ! ==> x=initial solution 
+    rmatrixComponents%p_rdiscretisation         => &
+        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
+    rmatrixComponents%p_rmatrixStokes         => &
+        rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
+    rmatrixComponents%p_rmatrixB1             => &
+        rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
+    rmatrixComponents%p_rmatrixB2             => &
+        rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
+    rmatrixComponents%p_rmatrixMass           => &
+        rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
+    rmatrixComponents%p_rmatrixIdentityPressure => &
+        rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+    rmatrixComponents%iupwind = collct_getvalue_int (rproblem%rcollection,'IUPWIND')
+    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+    rmatrixComponents%dupsam = collct_getvalue_real (rproblem%rcollection,'UPSAM')
+    CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,&
+        dtheta,0,0,rmatrixComponents)
+
+    CALL lsysbl_clearVector (rtempVectorD)
+    CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX,rtempVectorD,-1.0_DP)
+    
+    ! We only need the RHS of the primal equation!
+    ! Restore the RHS for the dual equation.
+    CALL sptivec_getTimestepData(rb, 0, rtempVectorX)
+
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(4),rtempVectorD%RvectorBlock(4))
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(5),rtempVectorD%RvectorBlock(5))
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(6),rtempVectorD%RvectorBlock(6))
+    
+    ! DEBUG!!!
+    !CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(4))
+    !CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(5))
+    !CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(6))
+    
+    ! Save the modified RHS.
+    CALL sptivec_setTimestepData(rb, 0, rtempVectorD)
+    
     ! DEBUG!!!
     !CALL sptivec_getTimestepData(rx, 2, rtempVectorX)
     !CALL sptivec_getTimestepData(rb, 2, rtempVectorD)
@@ -1449,6 +1743,47 @@ CONTAINS
     !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(5),rtempVectorD%RvectorBlock(5))
     !CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(6),rtempVectorD%RvectorBlock(6))
     !CALL sptivec_setTimestepData(rb, 2, rtempVectorD)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE c2d2_implementInitCondDefect (rd, rtempvectorD)
+
+!<description>
+  ! Implements the initial condition into a defect vector rd.
+  ! Overwrites the rd of the first time step.
+  !
+  ! Does not implement boundary conditions!
+!</description>
+
+!<inputoutput>
+  ! A space-time vector containing the defect in the first subvector.
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
+
+  ! A temporary vector in the size of a spatial vector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVectorD
+!</inputoutput>
+
+!</subroutine>
+
+    REAL(DP) :: dtheta
+    REAL(DP), DIMENSION(:),POINTER :: p_Db
+    
+    ! DEBUG!!!    
+    CALL lsysbl_getbase_double (rtempVectorD,p_Db)
+
+    ! Overwrite the primal defect with 0 -- as the solution must not be changed.
+    ! This realises the inital condition.
+    CALL sptivec_getTimestepData(rd, 0, rtempVectorD)
+    
+    CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(1))
+    CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(2))
+    CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(3))
+    
+    CALL sptivec_setTimestepData(rd, 0, rtempVectorD)
 
   END SUBROUTINE
 
@@ -1483,6 +1818,10 @@ CONTAINS
 !</subroutine>
 
     INTEGER :: isubstep
+    
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    CALL lsyssc_getbase_double (rtempVectorX%RvectorBlock(1),p_Ddata)
 
     ! Implement the bondary conditions into all initial solution vectors
     DO isubstep = 0,rspaceTimeDiscr%niterations
@@ -1491,6 +1830,7 @@ CONTAINS
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + &
           isubstep*rspaceTimeDiscr%dtstep
+      rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 
@@ -1554,6 +1894,7 @@ CONTAINS
       rproblem%rtimedependence%dtime = &
           rproblem%rtimedependence%dtimeInit + &
           isubstep*rspaceTimeDiscr%dtstep
+      rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
       ! Discretise the boundary conditions at the new point in time -- 

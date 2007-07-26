@@ -100,6 +100,8 @@ MODULE cc2dmedium_callback
   USE vectorfilters
   USE bcassembly
   USE mprimitives
+  USE feevaluation
+  USE spacetimevectors
   
   USE cc2dmediumm2basic
   USE cc2dmediumm2boundarydef
@@ -128,7 +130,7 @@ CONTAINS
 
 !<input>
   ! Problem structure with all problem relevant data.
-  TYPE(t_problem), INTENT(IN) :: rproblem
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
 !</input>
 
 !<inputoutput>
@@ -137,7 +139,6 @@ CONTAINS
 !</inputoutput>
   
 !</subroutine>
-
     ! In a nonstationary simulation, save the simulation time as well as the
     ! minimum and maximum time to the quick-access array of the collection,
     ! so it can be accessed in the callback routines!
@@ -153,6 +154,20 @@ CONTAINS
       rcollection%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
       rcollection%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
     END SELECT
+    
+    rcollection%Iquickaccess(2) = rproblem%roptcontrol%itypeTargetFlow
+    CALL collct_setvalue_vec (rcollection, 'TARGETFLOW', &
+        rproblem%roptcontrol%rtargetFlow, .TRUE.) 
+    
+    ! In case the target vector changes in time, load the current target
+    ! from the space-time vector.    
+    IF (rproblem%roptcontrol%itypeTargetFlow .EQ. 2) THEN
+      IF (rproblem%roptcontrol%rtargetFlowNonstat%ntimesteps .GT. 0) THEN
+        CALL sptivec_getTimestepData (rproblem%roptcontrol%rtargetFlowNonstat, &
+            rproblem%rtimedependence%itimeStep, rproblem%roptcontrol%rtargetFlow)
+      END IF
+      ! Otherwise, there is no vector.
+    END IF
 
   END SUBROUTINE
   
@@ -187,6 +202,8 @@ CONTAINS
     ! the collection in c2d2_initCollectForAssembly is put to the quick-access
     ! arrays -- which do not have to be cleaned up. 
     ! This might change in future...
+
+    CALL collct_deletevalue (rcollection, 'TARGETFLOW') 
 
   END SUBROUTINE
   
@@ -802,7 +819,12 @@ CONTAINS
 !</subroutine>
 
     REAL(DP) :: dtime,dtimeMax
-    INTEGER :: itimedependence
+    INTEGER :: itimedependence,itypeTargetFlow,ieltype
+    TYPE(t_vectorBlock), POINTER :: p_rvector
+    TYPE(t_spaceTimeVector) :: rspaceTimeVector
+    
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -810,8 +832,10 @@ CONTAINS
       dtime = p_rcollection%Dquickaccess(1)
       dtimeMax = p_rcollection%Dquickaccess(3)
       itimedependence = p_rcollection%Iquickaccess(1)
+      itypeTargetFlow = p_rcollection%Iquickaccess(2)
     ELSE
       itimedependence = 0
+      itypeTargetFlow = 0
       dtime = 0.0_DP
       dtimeMax = 0.0_DP
     END IF
@@ -835,21 +859,53 @@ CONTAINS
 !    END IF
 !    !Dvalues(:,:) = 1.0_DP
 
-    Dvalues(:,:) = Dpoints(1,:,:)
-
     IF (itimedependence .NE. 0) THEN  
-      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
-      !Dvalues(:,:) = Dvalues(:,:)*dtime
-      !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
-      !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * Dpoints(1,:,:)
-      Dvalues(:,:) = & ! 1._DP/50._DP * Dpoints(1,:,:) + &
-                     (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
-      !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
-      !                 (-(dtime**2)/100._DP + dtime/5._DP)) * Dpoints(1,:,:)
-      !Dvalues(:,:) = 0.0_DP
-      !IF (dtime .gt. 10._DP) THEN
-      !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
-      !END IF
+    
+      SELECT CASE (itypeTargetFlow)
+      CASE (0)
+        ! Analytically given target flow
+    
+        !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+        !Dvalues(:,:) = Dvalues(:,:)*dtime
+        !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
+        !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * Dpoints(1,:,:)
+        Dvalues(:,:) = & ! 1._DP/50._DP * Dpoints(1,:,:) + &
+                      (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
+        !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
+        !                 (-(dtime**2)/100._DP + dtime/5._DP)) * Dpoints(1,:,:)
+        !Dvalues(:,:) = 0.0_DP
+        !IF (dtime .gt. 10._DP) THEN
+        !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
+        !END IF
+      CASE (1:)
+        ! Target flow is specified by a block vector.
+        !
+        ! Fetch the block vector from the collection
+        p_rvector => collct_getvalue_vec (p_rcollection,'TARGETFLOW')
+        
+        IF (dof_igetNDofGlob(rdiscretisation) .NE. p_rvector%RvectorBlock(1)%NEQ) THEN
+          CALL output_line ('Target flow vector invalid, NEQ wrong!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ffunction_TargetX')
+          CALL sys_halt()
+        END IF
+        
+        ! Element type
+        ieltype = &
+            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
+            itrialElement
+        
+        ! DEBUG!!!
+        CALL lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
+        
+        ! Evaluate at the given points
+        CALL fevl_evaluate_sim(p_rvector%RvectorBlock(1),rdomainIntSubset%p_Dcoords,&
+            rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
+            ieltype, IdofsTest, npointsPerElement,  nelements, &
+            Dpoints, DER_FUNC, Dvalues)
+        
+      CASE DEFAULT
+        Dvalues(:,:) = Dpoints(1,:,:)
+      END SELECT
     END IF
 
   END SUBROUTINE
@@ -928,7 +984,8 @@ CONTAINS
 !</subroutine>
 
     REAL(DP) :: dtime,dtimeMax
-    INTEGER :: itimedependence
+    INTEGER :: itimedependence,itypeTargetFlow,ieltype
+    TYPE(t_vectorBlock), POINTER :: p_rvector
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -936,6 +993,7 @@ CONTAINS
       dtime = p_rcollection%Dquickaccess(1)
       dtimeMax = p_rcollection%Dquickaccess(3)
       itimedependence = p_rcollection%Iquickaccess(1)
+      itypeTargetFlow = p_rcollection%Iquickaccess(2)
     ELSE
       itimedependence = 0
       dtime = 0.0_DP
@@ -960,21 +1018,51 @@ CONTAINS
 !    END IF
 !    !Dvalues(:,:) = 1.0_DP
 
-    Dvalues(:,:) = -Dpoints(2,:,:)
-
     IF (itimedependence .NE. 0) THEN  
-      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
-      !Dvalues(:,:) = Dvalues(:,:)*dtime
-      !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
-      !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * (-Dpoints(2,:,:))
-      Dvalues(:,:) = & !1._DP/50._DP * (-Dpoints(2,:,:)) + &
-                     (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
-      !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
-      !                 (-(dtime**2)/100._DP + dtime/5._DP)) * (-Dpoints(2,:,:))
-      !Dvalues(:,:) = 0.0_DP
-      !IF (dtime .gt. 10._DP) THEN
-      !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
-      !END IF
+    
+      SELECT CASE (itypeTargetFlow)
+      CASE (0)
+        ! Analytically given target flow
+    
+        !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+        !Dvalues(:,:) = Dvalues(:,:)*dtime
+        !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
+        !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * (-Dpoints(2,:,:))
+        Dvalues(:,:) = & !1._DP/50._DP * (-Dpoints(2,:,:)) + &
+                      (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
+        !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
+        !                 (-(dtime**2)/100._DP + dtime/5._DP)) * (-Dpoints(2,:,:))
+        !Dvalues(:,:) = 0.0_DP
+        !IF (dtime .gt. 10._DP) THEN
+        !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
+        !END IF
+      CASE (1:)
+        ! Target flow is specified by a block vector.
+        !
+        ! Fetch the block vector from the collection
+        p_rvector => collct_getvalue_vec (p_rcollection,'TARGETFLOW')
+        
+        IF (dof_igetNDofGlob(rdiscretisation) .NE. p_rvector%RvectorBlock(1)%NEQ) THEN
+          CALL output_line ('Target flow vector invalid, NEQ wrong!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ffunction_TargetY')
+          CALL sys_halt()              
+        END IF
+        
+        ! Element type
+        ieltype = &
+            rdiscretisation%RelementDistribution(rdomainIntSubset%ielementDistribution)% &
+            itrialElement
+        
+        ! Evaluate at the given points
+        CALL fevl_evaluate_sim(p_rvector%RvectorBlock(2),rdomainIntSubset%p_Dcoords,&
+            rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
+                  ieltype, IdofsTest, npointsPerElement,  nelements, &
+                  Dpoints, DER_FUNC, Dvalues)
+        
+      CASE DEFAULT
+        Dvalues(:,:) = -Dpoints(2,:,:)
+      END SELECT
+
     END IF
 
   END SUBROUTINE

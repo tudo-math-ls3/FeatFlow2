@@ -1199,4 +1199,157 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_initOptControl (rproblem)
+  
+!<description>
+  ! Initialises the optimal control problem. Reads parameters from the DAT
+  ! file and evaluates them.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  ! The roptcontrol substructure is initialised.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    CHARACTER(SYS_STRLEN) :: spar
+
+    ! Read in the parameters
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+        'dalphaC',rproblem%roptcontrol%dalphaC,1.0_DP)
+        
+    CALL parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&
+        'dgammaC',rproblem%roptcontrol%dgammaC,0.0_DP)
+        
+    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
+        'itypeTargetFlow',rproblem%roptcontrol%itypeTargetFlow,0)
+
+    CALL parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
+        'stargetFlow',spar,'')
+    READ(spar,*) rproblem%roptcontrol%stargetFlow
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_doneOptControl (rproblem)
+  
+!<description>
+  ! Cleans up the structure for the optimal control problem. 
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  ! The roptcontrol substructure is initialised.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    rproblem%roptcontrol%dalphaC = 1.0_DP
+    rproblem%roptcontrol%dgammaC = 0.0_DP
+    rproblem%roptcontrol%itypeTargetFlow = 0
+    rproblem%roptcontrol%stargetFlow = ''
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_initTargetFlow (rproblem,ntimesteps)
+  
+!<description>
+  ! Reads in the target flow of the optimal control problem.
+!</description>
+
+!<input>
+  ! OPTIONAL: Total number of timesteps in a nonstationary simulation.
+  ! This parameter must be present in a nonstatinoary simulation. In a stationary
+  ! simulation, the parameter can be skipped.
+  INTEGER, INTENT(IN), OPTIONAL :: ntimesteps
+!</input>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  ! The target flow is saved to the roptcontrol substructure.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!</subroutine>
+    
+    ! local variables
+    CHARACTER(SYS_STRLEN) :: sarray
+
+    ! Probably create a vector containing the target flow
+    SELECT CASE (rproblem%roptcontrol%itypeTargetFlow)
+    CASE (1)
+    
+      ! Stationary target flow. Read in the vector
+      CALL vecio_readBlockVectorHR (&
+          rproblem%roptcontrol%rtargetFlow, sarray, .TRUE., &
+          0, rproblem%roptcontrol%stargetFlow, .TRUE.)
+          
+    CASE (2)
+    
+      ! Nonstationary target flow given by a sequence of files.
+
+      IF (.NOT. PRESENT(ntimesteps)) THEN
+        CALL output_line ('ntimesteps not available!')
+        CALL sys_halt()
+      END IF
+
+      ! Read the first vector. It defines the shape of all vectors in rx!
+      CALL vecio_readBlockVectorHR (&
+          rproblem%roptcontrol%rtargetFlow, sarray, .TRUE., &
+          0, TRIM(rproblem%roptcontrol%stargetFlow)//'.00000', .TRUE.)
+
+      ! Read them in into a space-time vector.
+      
+      CALL sptivec_loadFromFileSequence (&
+          rproblem%roptcontrol%rtargetFlowNonstat,&
+          '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
+          0,ntimesteps,.TRUE.)
+
+    END SELECT
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE c2d2_doneTargetFlow (rproblem)
+  
+!<description>
+  ! Cleans up the structure for the optimal control problem. 
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  ! The roptcontrol substructure is initialised.
+  TYPE(t_problem), INTENT(INOUT), TARGET :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release memory
+    SELECT CASE (rproblem%roptcontrol%itypeTargetFlow) 
+    CASE (1)
+      CALL lsysbl_releaseVector (rproblem%roptcontrol%rtargetFlow)
+    CASE (2)
+      CALL lsysbl_releaseVector (rproblem%roptcontrol%rtargetFlow)
+      CALL sptivec_releaseVector (rproblem%roptcontrol%rtargetFlowNonstat)
+    END SELECT
+
+  END SUBROUTINE
+
 END MODULE

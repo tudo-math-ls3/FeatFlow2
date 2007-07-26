@@ -175,13 +175,18 @@ CONTAINS
       IF (i .EQ. rproblem%NLMAX) THEN
         CALL bcasm_discretiseBC (p_rdiscretisation, &
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                .FALSE.,getBoundaryValues, &
-                                rproblem%rcollection)
+                                 .FALSE.,getBoundaryValues, &
+                                 rproblem%rcollection)
       ELSE
+        ! Calculate BC's for matrix assembly, defect vector assembly and
+        ! solution. The latter one is needed for the implementation of
+        ! boundary conditions on lower levels in case the nonlinearity
+        ! is discretised!
         CALL bcasm_discretiseBC (p_rdiscretisation, &
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
-                                .FALSE.,getBoundaryValues, &
-                                rproblem%rcollection,BCASM_DISCFORDEFMAT)
+                                 .FALSE.,getBoundaryValues, &
+                                 rproblem%rcollection,&
+                                 BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
       END IF
                 
       ! The same way, discretise the fictitious boundary conditions and hang
@@ -192,10 +197,14 @@ CONTAINS
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
                                   getBoundaryValuesFBC,rproblem%rcollection)
       ELSE
+        ! Calculate BC's for matrix assembly, defect vector assembly and
+        ! solution. The latter one is needed for the implementation of
+        ! boundary conditions on lower levels in case the nonlinearity
+        ! is discretised!
         CALL bcasm_discretiseFBC (p_rdiscretisation,&
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
                                   getBoundaryValuesFBC,rproblem%rcollection,&
-                                  BCASM_DISCFORDEFMAT)
+                                  BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
       END IF
 
       ! Hang the pointer into the the matrix. That way, these
@@ -307,10 +316,15 @@ CONTAINS
                                 bforce,getBoundaryValues, &
                                 rproblem%rcollection)
       ELSE
+        ! Calculate BC's for matrix assembly, defect vector assembly and
+        ! solution. The latter one is needed for the implementation of
+        ! boundary conditions on lower levels in case the nonlinearity
+        ! is discretised!
         CALL bcasm_discretiseBC (p_rdiscretisation, &
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
                                 bforce,getBoundaryValues, &
-                                rproblem%rcollection,BCASM_DISCFORDEFMAT)
+                                rproblem%rcollection,&
+                                BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
       END IF
                 
       ! The same way, discretise the fictitious boundary conditions and hang
@@ -320,10 +334,14 @@ CONTAINS
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,bforce, &
                                   getBoundaryValuesFBC,rproblem%rcollection)
       ELSE
+        ! Calculate BC's for matrix assembly, defect vector assembly and
+        ! solution. The latter one is needed for the implementation of
+        ! boundary conditions on lower levels in case the nonlinearity
+        ! is discretised!
         CALL bcasm_discretiseFBC (p_rdiscretisation,&
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,bforce, &
                                   getBoundaryValuesFBC,rproblem%rcollection,&
-                                  BCASM_DISCFORDEFMAT)
+                                  BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
       END IF
 
     END DO

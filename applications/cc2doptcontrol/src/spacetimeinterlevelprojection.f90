@@ -16,10 +16,15 @@
 !#     -> Cleans up a space-time interlevel projection structure
 !#
 !# 3.) sptipr_performProlongation
-!#     -> Prolongation of a space-time coupled solution vector
+!#     -> Prolongation of a space-time coupled solution vector to a higher 
+!#        level
 !#
 !# 4.) sptipr_performRestriction
-!#     -> Retriction of a space-time coupled defect vector
+!#     -> Retriction of a space-time coupled defect vector to a lower level
+!#
+!# 5.) sptipr_performInterpolation
+!#     -> Interpolation of a space-time coupled solution vector to a lower
+!#        level
 !#
 !# </purpose>
 !##############################################################################
@@ -65,7 +70,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE sptipr_initProjection (rprojection,rdiscretisation)
+  SUBROUTINE sptipr_initProjection (rprojection,rdiscretisation,bspaceProjection)
   
 !<description>
   ! Initialises a space-time interlevel projection structure rprojection based
@@ -74,12 +79,19 @@ CONTAINS
   ! is done simultaneously in space/time.
   !
   ! The resulting space-time interlevel projection structure can be used to
-  ! perform prolongation/restriction in space/time.
+  ! perform prolongation/restriction in space/time. It defines how to do
+  ! prolongation/restriction between level i-1 and level i.
 !</description>
 
 !<input>
   ! A block discretisation structure specifying the spatial discretisation.
   TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscretisation
+  
+  ! Whether prolongation/restriction should be done also in space, not only
+  ! on time.
+  ! =TRUE: space and time restriction
+  ! =FALSE: only time restriction
+  LOGICAL, INTENT(IN) :: bspaceProjection
 !</input>
 
 !<output>
@@ -96,6 +108,8 @@ CONTAINS
     ! Intialise the spatial interlevel projection structure with the
     ! standard method.
     CALL mlprj_initProjectionDiscr (rprojection%rspatialProjection,rdiscretisation)
+    
+    rprojection%bspaceTimeSimultaneously = bspaceProjection
     
     ! The other variables are left in their default initialisation as
     ! set by INTENT(OUT).
@@ -174,8 +188,13 @@ CONTAINS
 
     ! local variables
     INTEGER :: istep
-    TYPE(t_vectorBlock) :: rx1,rx3,rtempVecFine2
+    TYPE(t_vectorBlock) :: rx1,rx3
     TYPE(t_vectorScalar) :: rtempVecFineScalar
+
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx3
+    REAL(DP), DIMENSION(:), POINTER :: p_DtempVecCoarse,p_DtempVecFine
+    REAL(DP), DIMENSION(:), POINTER :: p_DtempVecFineSca
 
     ! We need two more temp vectors:
     !
@@ -188,6 +207,13 @@ CONTAINS
     ! We need a scalar representation of the temp vector
     CALL lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
     
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rx1,p_Dx1)
+    CALL lsysbl_getbase_double (rx3,p_Dx3)
+    CALL lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
+    CALL lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
+    CALL lsyssc_getbase_double (rtempVecFineScalar,p_DtempVecFineSca)
+
     ! Load timestep 0 into the temp vector and interpolate to the current level.
     ! Put the result to rx3.
     IF (rprojection%bspaceTimeSimultaneously) THEN
@@ -216,7 +242,7 @@ CONTAINS
                                         rx3,rtempVecFineScalar)
       ELSE
         ! Only time
-        CALL sptivec_getTimestepData (rfineVector, istep, rx3)
+        CALL sptivec_getTimestepData (rcoarseVector, istep, rx3)
       END IF
       
       ! Save that vector as new vector on the fine grid.
@@ -286,6 +312,8 @@ CONTAINS
     INTEGER :: istep
     TYPE(t_vectorBlock) :: rx1,rx3
     TYPE(t_vectorScalar) :: rx1scalar
+    
+    ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx3
     REAL(DP), DIMENSION(:), POINTER :: p_DtempVecCoarse,p_DtempVecFine
 
@@ -345,7 +373,7 @@ CONTAINS
       CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecCoarse)
     ELSE
       ! Only time
-      CALL sptivec_getTimestepData (rcoarseVector, 0, rtempVecFine)
+      CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecFine)
     END IF
     
     ! Loop through the time steps -- on the coarse grid!
@@ -381,7 +409,7 @@ CONTAINS
         CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
       ELSE
         ! Only time
-        CALL sptivec_getTimestepData (rcoarseVector, istep, rtempVecFine)
+        CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecFine)
       END IF
     
     END DO
@@ -413,7 +441,192 @@ CONTAINS
           rcoarseVector%ntimesteps, rtempVecCoarse)
     ELSE
       ! Only time
-      CALL sptivec_getTimestepData (rcoarseVector, &
+      CALL sptivec_setTimestepData (rcoarseVector, &
+          rcoarseVector%ntimesteps, rtempVecFine)
+    END IF
+
+    ! Release the temp vectors
+    CALL lsyssc_releaseVector (rx1Scalar)
+    CALL lsysbl_releaseVector (rx3)
+    CALL lsysbl_releaseVector (rx1)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sptipr_performInterpolation (rprojection,rcoarseVector, &
+                                          rfineVector,rtempVecCoarse,rtempVecFine)
+  
+!<description>
+  ! Performs an interpolation for a given space/time vector to a lower level.
+  ! The solution vector rfineVector on a finer grid is projected to the vector
+  ! rcoarseVector on a coarser space/time mesh. 
+  ! rprojection configures how the transfer is performed.
+  ! This projection structure rprojection must correspond to the space/time
+  ! discretisation of rcoarseVector and rfineVector.
+!</description>
+
+!<input>
+  ! A space/time interlevel projection structure that configures the 
+  ! prolongation/restriction in space/time.
+  TYPE(t_sptiProjection), INTENT(IN) :: rprojection
+
+  ! Fine grid vector
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rfineVector
+!</input>
+
+!<inputoutput>
+  ! Temporary space-vector, specifying the discretisation and vector shape
+  ! on the coarse grid.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVecCoarse
+
+  ! Temporary space-vector, specifying the discretisation and vector shape
+  ! on the fine grid.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rtempVecFine
+!</inputoutput>
+
+!<output>
+  ! Coarse grid vector
+  TYPE(t_spacetimeVector), INTENT(INOUT) :: rcoarseVector
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: istep
+    TYPE(t_vectorBlock) :: rx1,rx3
+    TYPE(t_vectorScalar) :: rx1scalar
+    
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx3
+    REAL(DP), DIMENSION(:), POINTER :: p_DtempVecCoarse,p_DtempVecFine
+
+    ! Prolongation 'distributes' information from the coarse grid nodes
+    ! to the fine grid nodes as follows:
+    !
+    ! Timestep:    n-1         n          n+1        (fine grid)
+    !               x <--1/2-- X --1/2--> x
+    !                         ^ \
+    !                        /   \
+    !                       +--1--+
+    !
+    ! Interpolation is now taking the mean of adjacent nodes.
+    ! Written nodewise this means:
+    !
+    ! Timestep:    n-1         n          n+1        (fine grid)
+    !               x --1/4--> X <--1/4-- x
+    !                         ^ \
+    !                        /   \
+    !                       +-1/2-+
+
+    ! We need two more temp vectors:
+    !
+    ! One for the current timestep
+    CALL lsysbl_createVecBlockIndirect (rtempVecFine,rx1,.FALSE.)
+    
+    ! And one for the next timestep
+    CALL lsysbl_createVecBlockIndirect (rtempVecFine,rx3,.FALSE.)
+    
+    ! Create a scalar representation of rx1 for auxiliary reasons
+    CALL lsysbl_createScalarFromVec (rx1,rx1Scalar)
+   
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rx1,p_Dx1)
+    CALL lsysbl_getbase_double (rx3,p_Dx3)
+    CALL lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
+    CALL lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
+       
+    ! Load timestep 0,1 (fine grid) into the temp vectors.
+    CALL sptivec_getTimestepData (rfineVector, 0, rtempVecFine)
+    CALL sptivec_getTimestepData (rfineVector, 1, rx3)
+    
+    ! Perform restriction for the first time step.
+    !                          X <--1/4-- x
+    !                         ^ \
+    !                        /   \
+    !                       +-3/4-+
+    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,1._DP/4._DP,3._DP/4._DP)
+    
+    ! Probably restrict the vector in space to the lower level.
+    ! Save the result.
+    IF (rprojection%bspaceTimeSimultaneously) THEN
+      ! Space + time
+      CALL mlprj_performInterpolation (rprojection%rspatialProjection,rtempVecCoarse, &
+                                       rtempVecFine,rx1Scalar)
+      CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecCoarse)
+    ELSE
+      ! Only time
+      CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecFine)
+    END IF
+    
+    ! Loop through the time steps -- on the coarse grid!
+    DO istep = 1,rcoarseVector%ntimesteps-1
+    
+      ! rx3 was the 'right inner fine grid node x' in the above picture.
+      ! Copy it to rx1, so it gets the new 'left inner fine grid node x'
+      ! and load the new 'right inner fine grid node x' to rx1
+      ! as well as the 'inner fine grid node X' to rtempVecFine.
+      CALL lsysbl_copyVector (rx3,rx1)
+      
+      CALL sptivec_getTimestepData (rfineVector,2*istep, rtempVecFine)
+      CALL sptivec_getTimestepData (rfineVector,2*istep+1, rx3)
+      
+      ! In rtempVecFine, create the restriction of the fine grid vectors
+      ! rx1 and rx3 according to
+      !
+      ! Timestep:    n-1          n          n+1        (fine grid)
+      !              rx3 --1/4--> X <--1/4-- rx3
+      !             (old)        ^ \
+      !                         /   \
+      !                        +-1/2-+
+      
+      CALL lsysbl_vectorLinearComb (rx1,rtempVecFine,0.25_DP,0.5_DP)
+      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.25_DP,1.0_DP)
+      
+      ! Probably restrict the vector in space to the lower level.
+      ! Save the result.
+      IF (rprojection%bspaceTimeSimultaneously) THEN
+        ! Space + time
+        CALL mlprj_performInterpolation (rprojection%rspatialProjection,rtempVecCoarse, &
+                                         rtempVecFine,rx1Scalar)
+        CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
+      ELSE
+        ! Only time
+        CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecFine)
+      END IF
+    
+    END DO
+
+    ! Last time step.
+
+    ! rx3 is now the new 'left inner fine grid node x'.
+    ! Load the 'inner fine grid node X' to rtempVecFine.
+    CALL sptivec_getTimestepData (rfineVector,2*rcoarseVector%ntimesteps, rtempVecFine)
+    
+    ! In rtempVecFine, create the restriction of the fine grid vectors
+    ! rx1 and rx3 according to
+    !
+    ! Timestep:    n-1          n       (fine grid)
+    !              rx3 --1/4--> X             
+    !                          ^ \
+    !                         /   \
+    !                        +-3/4-+
+    
+    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,1._DP/4._DP,3._DP/4._DP)
+    
+    ! Probably restrict the vector in space to the lower level.
+    ! Save the result.
+    IF (rprojection%bspaceTimeSimultaneously) THEN
+      ! Space + time
+      CALL mlprj_performInterpolation (&
+          rprojection%rspatialProjection,rtempVecCoarse, rtempVecFine,rx1Scalar)
+      CALL sptivec_setTimestepData (rcoarseVector, &
+          rcoarseVector%ntimesteps, rtempVecCoarse)
+    ELSE
+      ! Only time
+      CALL sptivec_setTimestepData (rcoarseVector, &
           rcoarseVector%ntimesteps, rtempVecFine)
     END IF
 

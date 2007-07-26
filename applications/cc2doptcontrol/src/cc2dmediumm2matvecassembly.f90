@@ -978,7 +978,6 @@ CONTAINS
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(t_jumpStabilisation) :: rjumpStabil
     TYPE(t_matrixBlock) :: rtempMatrix
-    TYPE(t_vectorBlock) :: rtempVector
     REAL(DP) :: dvecWeight
     INTEGER :: imatOffset
     REAL(DP) :: diota, dalpha, dtheta, dnewton, dgamma
@@ -990,7 +989,6 @@ CONTAINS
         diota = rmatrixComponents%diota1
         dalpha = rmatrixComponents%dalpha1
         dtheta = rmatrixComponents%dtheta1
-        diota  = rmatrixComponents%diota1
         dgamma = rmatrixComponents%dgamma1
         dnewton = rmatrixComponents%dnewton1
       ELSE
@@ -1000,18 +998,10 @@ CONTAINS
         diota = rmatrixComponents%diota2
         dalpha = rmatrixComponents%dalpha2
         dtheta = rmatrixComponents%dtheta2
-        diota  = rmatrixComponents%diota2
         dgamma = rmatrixComponents%dgamma2
         dnewton = rmatrixComponents%dnewton2
       END IF
 
-      ! Derive a temporary vector that contains only those velocity
-      ! subvectors that might affect the matrix.
-      IF (PRESENT(rvector)) THEN
-        CALL lsysbl_deriveSubvector(rvector,rtempVector, &
-            imatOffset+1,imatOffset+2,.TRUE.)
-      END IF
-      
       ! Standard value for dvectorWeight is = -1.
       dvecWeight = -1.0_DP
       IF (PRESENT(dvectorWeight)) dvecWeight = dvectorWeight
@@ -1165,7 +1155,7 @@ CONTAINS
                                        imatOffset+1,imatOffset+2)
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector, not rtempVector!
+          ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           CALL conv_streamlineDiffusionBlk2d (&
@@ -1194,7 +1184,7 @@ CONTAINS
           END IF
           
           ! Call the upwind method to calculate the nonlinear matrix.
-          ! As velocity vector, specify rvector, not rtempVector!
+          ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           CALL conv_upwind2d (rvector, rvector, &
@@ -1256,7 +1246,7 @@ CONTAINS
                                        imatOffset+1,imatOffset+2)
           
           ! Call the SD method to calculate the nonlinearity.
-          ! As velocity vector, specify rvector, not rtempVector!
+          ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
           ! that thing!
           CALL conv_streamlineDiffusionBlk2d (&
@@ -1340,11 +1330,6 @@ CONTAINS
       
       END IF ! gamma <> 0
 
-      ! Release the temp vector if it was created.
-      IF (PRESENT(rvector)) THEN
-        CALL lsysbl_releaseVector (rtempVector)
-      END IF
-      
     END SUBROUTINE  
       
     ! -----------------------------------------------------
@@ -1821,6 +1806,20 @@ CONTAINS
       bshared = lsyssc_isMatrixContentShared(&
                     rtempmatrix%RmatrixBlock(1,1),&
                     rtempmatrix%RmatrixBlock(2,2))
+
+      ! ---------------------------------------------------
+      ! Subtract Ix ?
+      IF (diota .NE. 0.0_DP) THEN
+        CALL lsyssc_vectorLinearComb (&
+            rvector%RvectorBlock(imatOffset+1), &
+            rdefect%RvectorBlock(imatOffset+1), &
+            -diota, 1.0_DP)
+
+        CALL lsyssc_vectorLinearComb (&
+            rvector%RvectorBlock(imatOffset+2), &
+            rdefect%RvectorBlock(imatOffset+2), &
+            -diota, 1.0_DP)
+      END IF
 
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?

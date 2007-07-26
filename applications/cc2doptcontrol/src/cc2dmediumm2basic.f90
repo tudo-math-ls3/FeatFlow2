@@ -29,6 +29,7 @@ MODULE cc2dmediumm2basic
   USE nonlinearsolver
   USE paramlist
   USE timestepping
+  USE spacetimevectors
   
   USE collection
   
@@ -111,8 +112,9 @@ MODULE cc2dmediumm2basic
 !</typeblock>
 
 
-!<typeblock description="Application-specific type block for the nonstationary Nav.St. problem">
-
+!<typeblock>
+  
+  ! Application-specific type block for the nonstationary Nav.St. problem
   TYPE t_problem_explTimeStepping
   
     ! Number of current time step; changes during the simulation.
@@ -143,8 +145,41 @@ MODULE cc2dmediumm2basic
 !</typeblock>
 
 
-!<typeblock description="Application-specific type block for the Nav.St. problem">
+!<typeblock>
 
+  ! This block saves parameters of the optimal control problem
+  TYPE t_problem_optcontrol
+  
+    ! $\alpha$ parameter of the optimal control functional
+    REAL(DP) :: dalphaC = 1.0_DP
+    
+    ! $\gamma$ parameter of the nonstationary optimal control functional
+    REAL(DP) :: dgammaC = 0.0_DP
+  
+    ! Type of target flow.
+    ! =0: analytically given.
+    ! =1: stationary solution, read from file.
+    INTEGER :: itypeTargetFlow = 0
+  
+    ! Name of the file with the target flow
+    CHARACTER(SYS_STRLEN) :: stargetFlow = ''
+    
+    ! Solution vector containing a stationary target flow.
+    ! Only used if itypeTargetFlow = 1.
+    TYPE(t_vectorBlock) :: rtargetFlow
+  
+    ! Solution vector containing a nonstationary target flow.
+    ! Only used if itypeTargetFlow = 2
+    TYPE(t_spaceTimeVector) :: rtargetFlowNonstat
+  
+  END TYPE
+
+!</typeblock>
+
+
+!<typeblock>
+
+  ! Application-specific type block for the Nav.St. problem
   TYPE t_problem
   
     ! Output level during the initialisation phase.
@@ -204,6 +239,10 @@ MODULE cc2dmediumm2basic
     ! A parameter block for everything that controls the time dependence.
     ! Only valid if itimedependence=1!
     TYPE(t_problem_explTimeStepping)      :: rtimedependence
+    
+    ! A parameter block for everything that controls the optimal control
+    ! problem.
+    TYPE(t_problem_optcontrol)            :: roptcontrol
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
