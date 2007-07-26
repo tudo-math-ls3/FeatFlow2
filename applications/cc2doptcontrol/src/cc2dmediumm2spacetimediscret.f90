@@ -431,65 +431,20 @@ CONTAINS
       IF (irelpos .EQ. 0) THEN
       
         ! The diagonal matrix.
-        !
-        ! The commented out code is used when we want to implement the initial condition
-        ! directly, i.e. when we want to solve Ix=x in the primal equation. However,
-        ! this is not always advisable...
         
-!        rmatrixComponents%diota1 = 1.0_DP
-!        rmatrixComponents%diota2 = 0.0_DP
-!
-!        rmatrixComponents%dkappa1 = 1.0_DP
-!        rmatrixComponents%dkappa2 = 0.0_DP
-!        
-!        rmatrixComponents%dalpha1 = 0.0_DP
-!        rmatrixComponents%dalpha2 = 1.0_DP
-!        
-!        rmatrixComponents%dtheta1 = 0.0_DP
-!        rmatrixComponents%dtheta2 = dtheta * rspaceTimeDiscr%dtstep
-!        
-!        rmatrixComponents%dgamma1 = 0.0_DP
-!        rmatrixComponents%dgamma2 = &
-!            - dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        
-!        rmatrixComponents%dnewton1 = 0.0_DP
-!        rmatrixComponents%dnewton2 = &
-!              dtheta * rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!
-!        rmatrixComponents%deta1 = 0.0_DP
-!        rmatrixComponents%deta2 = rspaceTimeDiscr%dtstep
-!        
-!        rmatrixComponents%dtau1 = 0.0_DP
-!        rmatrixComponents%dtau2 = 1.0_DP
-!        
-!        rmatrixComponents%dmu1 = 0.0_DP
-!        rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-!            (-rspaceTimeDiscr%dtstep * dtheta)
-
-        ! It's better to use a trick!
-        ! The RHS of the primal equation in teh 0th timestep can be assembled as
-        !    rhs = A*initial condition
-        ! The solver then solves:
-        !    A*x = rhs = A*initial condition
-        ! => x=initial condition
-        !
-        ! This trick introduces some smoothing of the the initial condition,
-        ! otherwise the linear systems in the first timestep wouldn't be solvable!
-
-        rmatrixComponents%diota1 = 0.0_DP
+        rmatrixComponents%diota1 = 1.0_DP
         rmatrixComponents%diota2 = 0.0_DP
 
-        rmatrixComponents%dkappa1 = 0.0_DP
+        rmatrixComponents%dkappa1 = 1.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = 0.0_DP
         rmatrixComponents%dalpha2 = 1.0_DP/rspaceTimeDiscr%dtstep
         
-        rmatrixComponents%dtheta1 = dtheta
+        rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = dtheta
         
-        rmatrixComponents%dgamma1 = &
-            dtheta * REAL(1-rproblem%iequation,DP)
+        rmatrixComponents%dgamma1 = 0.0_DP
         rmatrixComponents%dgamma2 = &
             - dtheta * REAL(1-rproblem%iequation,DP)
         
@@ -497,10 +452,10 @@ CONTAINS
         rmatrixComponents%dnewton2 = &
               dtheta * REAL(1-rproblem%iequation,DP)
 
-        rmatrixComponents%deta1 = 1.0_DP
+        rmatrixComponents%deta1 = 0.0_DP
         rmatrixComponents%deta2 = 1.0_DP
         
-        rmatrixComponents%dtau1 = 1.0_DP
+        rmatrixComponents%dtau1 = 0.0_DP
         rmatrixComponents%dtau2 = 1.0_DP
         
         ! In the 0'th timestep, there is no RHS in the dual equation
@@ -517,6 +472,8 @@ CONTAINS
         !     dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
         ! rmatrixComponents%dmu2 = ddualPrimalCoupling * &
         !     dtheta * (-1.0_DP)
+        rmatrixComponents%dmu1 = 0.0_DP
+        rmatrixComponents%dmu2 = 0.0_DP
                     
       ELSE IF (irelpos .EQ. 1) THEN
       
@@ -1685,54 +1642,11 @@ CONTAINS
     ! This realises the inital condition.
     CALL sptivec_getTimestepData(rx, 0, rtempVectorX)
     
-    ! If the initial condition is used directly, one could use the following commented
-    ! out lines. However, this is not advisable!:
-    !
 !    CALL sptivec_getTimestepData(rb, 0, rtempVectorD)
-!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
-!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
-!    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
+    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
 
-    ! Trick for the initial condition: Matrix-vector multiplication!
-    ! rtempVector2 = A * initial-solution.
-    ! This gives the RHS for the 0th timestep. The solver will later solve:
-    !     A x = rtempVector2 = A * initial-solution
-    !
-    ! ==> x=initial solution 
-    rmatrixComponents%p_rdiscretisation         => &
-        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
-    rmatrixComponents%p_rmatrixStokes         => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%iupwind = collct_getvalue_int (rproblem%rcollection,'IUPWIND')
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%dupsam = collct_getvalue_real (rproblem%rcollection,'UPSAM')
-    CALL c2d2_setupMatrixWeights (rproblem,rspaceTimeDiscr,&
-        dtheta,0,0,rmatrixComponents)
-
-    CALL lsysbl_clearVector (rtempVectorD)
-    CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX,rtempVectorD,-1.0_DP)
-    
-    ! We only need the RHS of the primal equation!
-    ! Restore the RHS for the dual equation.
-    CALL sptivec_getTimestepData(rb, 0, rtempVectorX)
-
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(4),rtempVectorD%RvectorBlock(4))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(5),rtempVectorD%RvectorBlock(5))
-    CALL lsyssc_copyVector (rtempVectorX%RvectorBlock(6),rtempVectorD%RvectorBlock(6))
-    
-    ! DEBUG!!!
-    !CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(4))
-    !CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(5))
-    !CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(6))
-    
     ! Save the modified RHS.
     CALL sptivec_setTimestepData(rb, 0, rtempVectorD)
     
