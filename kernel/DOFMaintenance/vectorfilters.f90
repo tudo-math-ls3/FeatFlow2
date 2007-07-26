@@ -536,7 +536,7 @@ CONTAINS
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
     REAL(DP), DIMENSION(:), POINTER        :: p_DelementArea,p_Ddata
     REAL(DP) :: dpintegral,c
-    INTEGER(PREC_ELEMENTIDX) :: iel,nel
+    INTEGER(PREC_ELEMENTIDX) :: iel,nel,itrial,itrialspace
     
     ! Get the discretisation...
     IF (.NOT. ASSOCIATED(rx%p_rspatialDiscretisation)) RETURN
@@ -548,47 +548,100 @@ CONTAINS
     ! representing is area*rx. Otherwise we have to calculate the integral
     ! which is somehow more costly...
     
-    IF ((p_rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) .AND. &
-        ((p_rdiscretisation%RelementDistribution(1)%itrialElement .EQ. EL_P0) .OR. &
-        (p_rdiscretisation%RelementDistribution(1)%itrialElement .EQ. EL_Q0))) THEN
-      
-      ! Ok, easy case. Get from the triangulation the AREA-array for calculating
-      ! a simple integral of rx:
-      
-      CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
-                                  p_DelementArea)
-                                   
-      ! Get the vector data of rx
-      CALL lsyssc_getbase_double (rx,p_Ddata)
-      
-      nel = SIZE(p_DelementArea)-1
-                                   
-      ! Build the integral
-      !   int_Omega p dx
-      ! This is approximated by
-      !   dpintegral = SUM_Elements P(Element)*Volume(Element)
-      
-      dpintegral=0.0_DP
-      DO iel=1,nel 
-        dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
-      END DO
-      
-      ! Divide dpintegral by the volume of the domain; this gives the integral
-      ! mean value of the pressure:
-        
-      C = dpintegral / p_DelementArea(nel+1)
-      
-      ! Subtract the integral mean value C of the pressure from all
-      ! pressure components. Afterwards, P has integral mean value = 0.
 
-      DO iel=1,nel
-        p_Ddata(iel) = p_Ddata(iel) - C
-      END DO
-         
+    IF (p_rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
+    
+      itrialspace = elem_getPrimaryElement(&
+          p_rdiscretisation%RelementDistribution(1)%itrialElement)
+  
+      SELECT CASE (itrialspace)
+      CASE (EL_P0, EL_Q0) 
+    
+        ! Ok, easy case. Get from the triangulation the AREA-array for calculating
+        ! a simple integral of rx:
+        
+        CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
+                                     p_DelementArea)
+                                      
+        ! Get the vector data of rx
+        CALL lsyssc_getbase_double (rx,p_Ddata)
+        
+        nel = SIZE(p_DelementArea)-1
+                                      
+        ! Build the integral
+        !   int_Omega p dx
+        ! This is approximated by
+        !   dpintegral = SUM_Elements P(Element)*Volume(Element)
+        
+        dpintegral=0.0_DP
+        DO iel=1,nel 
+          dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
+        END DO
+        
+        ! Divide dpintegral by the volume of the domain; this gives the integral
+        ! mean value of the pressure:
+          
+        C = dpintegral / p_DelementArea(nel+1)
+        
+        ! Subtract the integral mean value C of the pressure from all
+        ! pressure components. Afterwards, P has integral mean value = 0.
+
+        DO iel=1,nel
+          p_Ddata(iel) = p_Ddata(iel) - C
+        END DO
+        
+      CASE (EL_QP1)
+    
+        ! Ok, quadrilateral P1 element. Get from the triangulation the AREA-array for 
+        ! calculating a simple integral of rx:
+        
+        CALL storage_getbase_double (p_rdiscretisation%p_rtriangulation%h_DelementVolume, &
+                                    p_DelementArea)
+                                      
+        ! Get the vector data of rx
+        CALL lsyssc_getbase_double (rx,p_Ddata)
+        
+        nel = SIZE(p_DelementArea)-1
+                                      
+        ! Build the integral
+        !   int_Omega p dx
+        ! This is approximated by
+        !   dpintegral = SUM_Elements P(Element)*Volume(Element)
+        ! Because taking the value in the element midpoint approximates the
+        ! integral exactly by means of the 1x1 Gauss formula, the implementation
+        ! is the same as in the Q0 and P0 case, respectively.
+        
+        dpintegral=0.0_DP
+        DO iel=1,nel 
+          dpintegral = dpintegral + p_Ddata(iel)*p_DelementArea(iel)
+        END DO
+        
+        ! Divide dpintegral by the volume of the domain; this gives the integral
+        ! mean value of the pressure:
+          
+        C = dpintegral / p_DelementArea(nel+1)
+        
+        ! Subtract the integral mean value C of the pressure from all
+        ! pressure components. Afterwards, P has integral mean value = 0.
+
+        DO iel=1,nel
+          p_Ddata(iel) = p_Ddata(iel) - C
+        END DO
+        
+      CASE DEFAULT
+
+        CALL output_line('Unsupported discretisation!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
+        CALL sys_halt()
+        
+      END SELECT
+      
     ELSE
-      CALL output_line('Normalisation of non-P0 vectors not implemented!',&
+    
+      CALL output_line('Unsupported discretisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_normaliseToL20Sca')
       CALL sys_halt()
+      
     END IF
 
   END SUBROUTINE

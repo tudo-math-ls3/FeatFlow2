@@ -59,6 +59,7 @@ MODULE matrixfilters
   USE discretefbc
   USE dofmapping
   USE matrixmodification
+  USE genoutput
   
   IMPLICIT NONE
 
@@ -127,7 +128,8 @@ CONTAINS
   ! components of the subvector that is indexed by icomponent.
   
   IF (.NOT.ASSOCIATED(p_idx)) THEN
-    PRINT *,'Error: DBC not configured'
+    CALL output_line ('DBC not configured',&
+        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeDirichletBC')
     CALL sys_halt()
   END IF
   
@@ -256,7 +258,8 @@ CONTAINS
   ! components of the subvector that is indexed by icomponent.
   
   IF (.NOT.ASSOCIATED(p_idx)) THEN
-    PRINT *,'Error: DBC not configured'
+    CALL output_line ('DBC not configured',&
+        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeNLSlipBC')
     CALL sys_halt()
   END IF
   
@@ -385,7 +388,8 @@ CONTAINS
   ! components of the subvector that is indexed by icomponent.
   
   IF (.NOT.ASSOCIATED(p_idx)) THEN
-    PRINT *,'Error: DBC not configured'
+    CALL output_line ('DBC not configured',&
+        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeDirichletFBC')
     CALL sys_halt()
   END IF
   
@@ -508,17 +512,20 @@ CONTAINS
   
   IF ((rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
       (rmatrix%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
-    PRINT *,'matfil_imposeFeastMirrorBC: Only support matrix format 7 and 9'
+    CALL output_line ('Only matrix format 7 and 9 supported!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
     CALL sys_halt()
   END IF
   
   IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
-    PRINT *,'matfil_imposeFeastMirrorBC: Matrix must be double precision'
+    CALL output_line ('Matrix must be double precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
     CALL sys_halt()
   END IF
   
   IF (rfmbcStructure%icomponent .EQ. 0) THEN
-    PRINT *,'Error: FMBC not configured'
+    CALL output_line ('FMBC not configured!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'matfil_imposeFeastMirrorBC')
     CALL sys_halt()
   END IF
   
@@ -697,7 +704,7 @@ CONTAINS
         ! and not on the diagonal of its parent, we must replace the rows
         ! by zero vectors!
         DO jblock = 1,rmatrix%ndiagBlocks
-          IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
+          IF (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) THEN
             CALL matfil_imposeDirichletBC (&
                         rmatrix%RmatrixBlock(iblock,jblock), &
                         (iblock .NE. jblock) .OR. boffdiagSubmatrix,&
@@ -728,7 +735,7 @@ CONTAINS
         ! and not on the diagonal of its parent, we must replace the rows
         ! by zero vectors!
         DO jblock = 1,rmatrix%ndiagBlocks
-          IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
+          IF (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) THEN
             CALL matfil_imposeFeastMirrorBC (&
                         rmatrix%RmatrixBlock(iblock,jblock), &
                         (iblock .NE. jblock) .OR. boffdiagSubmatrix,&
@@ -737,8 +744,9 @@ CONTAINS
         END DO
 
       CASE DEFAULT
-        PRINT *,'matfil_discreteBC: unknown boundary condition: ',&
-                p_RdiscreteBC(i)%itype
+        CALL output_line (&
+            'Unknown boundary condition'//sys_siL(p_RdiscreteBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'matfil_discreteBC')
         CALL sys_halt()
         
       END SELECT
@@ -816,7 +824,7 @@ CONTAINS
           iblock = p_RdiscreteBC(i)%rslipBCs%Icomponents(icp)
 
           DO jblock = 1,rmatrix%ndiagBlocks
-            IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
+            IF (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) THEN
               CALL matfil_imposeNLSlipBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &
                           (iblock .NE. jblock) .OR. boffdiagSubmatrix,bforprec,&
@@ -902,7 +910,7 @@ CONTAINS
           ! and not on the diagonal of its parent, we must replace the rows
           ! by zero vectors!
           DO jblock = 1,rmatrix%ndiagBlocks
-            IF (rmatrix%RmatrixBlock(iblock,jblock)%NEQ .NE. 0) THEN
+            IF (lsysbl_isSubmatrixPresent(rmatrix,iblock,jblock)) THEN
               CALL matfil_imposeDirichletFBC (&
                           rmatrix%RmatrixBlock(iblock,jblock), &
                           (iblock .NE. jblock) .OR. boffdiagSubmatrix,&
@@ -913,8 +921,9 @@ CONTAINS
         END DO
         
       CASE DEFAULT
-        PRINT *,'matfil_discreteFBC: unknown boundary condition: ',&
-                p_RdiscreteFBC(i)%itype
+        CALL output_line (&
+            'Unknown boundary condition'//sys_siL(p_RdiscreteFBC(i)%itype,5),&
+            OU_CLASS_ERROR,OU_MODE_STD,'matfil_discreteFBC')
         CALL sys_halt()
         
       END SELECT
