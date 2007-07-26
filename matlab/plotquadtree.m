@@ -26,15 +26,15 @@ while 1,
   if length(key)==0,
     break;
   end
-    
-  if key=='rect',
-    rect=fscanf(fid,'%g',4);
-    rectangle('Position',[rect(1) rect(2) rect(3)-rect(1) rect(4)-rect(2)]);
-  end
-  
-  if key=='node',
-    node=fscanf(fid,'%g',2);
-    plot(node(1),node(2),'.r');
+
+  switch lower(key)
+      case{'rect'}
+          rect=fscanf(fid,'%g',4);
+          rectangle('Position',[rect(1) rect(2) rect(3)-rect(1) rect(4)-rect(2)]);
+          
+      case{'node'}
+          node=fscanf(fid,'%g',2);
+          plot(node(1),node(2),'.r');
   end
   
 end
