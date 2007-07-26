@@ -1845,6 +1845,7 @@ CONTAINS
     ! The nonlinear solver configuration
     INTEGER :: isubstep,iglobIter,ierror,ilev,nsmSteps
     LOGICAL :: bneumann
+    REAL(DP), DIMENSION(4) :: Derror
     INTEGER(I32) :: nminIterations,nmaxIterations
     REAL(DP) :: depsRel,depsAbs,domega
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
@@ -2043,6 +2044,16 @@ CONTAINS
     
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
+    ! Value of the functional
+    CALL c2d2_optc_nonstatFunctional (rproblem,&
+        myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
+        rtempVector,myRspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
+        myRspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
+        Derror)
+    CALL output_line ('||y-z||       = '//TRIM(sys_sdEL(Derror(1),10)))
+    CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
+    CALL output_line ('||y(T)-z(T)|| = '//TRIM(sys_sdEL(Derror(3),10)))
+    CALL output_line ('J(y,u)        = '//TRIM(sys_sdEL(Derror(4),10)))
     CALL output_separator (OU_SEP_EQUAL)        
 
     ! Get configuration parameters from the DAT file
@@ -2118,6 +2129,19 @@ CONTAINS
         END DO
       END IF
       
+      IF (rproblem%MT_outputLevel .GE. 1) THEN
+        ! Value of the functional
+        CALL c2d2_optc_nonstatFunctional (rproblem,&
+            myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
+            rtempVector,myRspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
+            myRspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
+            Derror)
+        CALL output_line ('||y-z||       = '//TRIM(sys_sdEL(Derror(1),10)))
+        CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
+        CALL output_line ('||y(T)-z(T)|| = '//TRIM(sys_sdEL(Derror(3),10)))
+        CALL output_line ('J(y,u)        = '//TRIM(sys_sdEL(Derror(4),10)))
+      END IF
+      
       ! Preconditioning of the defect: d=C^{-1}d
       IF (ASSOCIATED(p_rsolverNode)) THEN
         CALL sptils_precondDefect (p_rsolverNode,rd)
@@ -2162,21 +2186,6 @@ CONTAINS
       
     END DO
     
-    ! Release the space-time and spatial preconditioner. 
-    ! We don't need them anymore.
-    CALL sptils_releaseSolver (p_rsolverNode)
-    
-    ! Release the spatial preconditioner and temp vector on every level
-    DO ilev=1,SIZE(RspatialPrecond)
-      CALL c2d2_donePreconditioner (RspatialPrecond(ilev))
-
-    END DO
-
-    DO ilev=1,SIZE(RspatialPrecond)-1
-      CALL sptivec_releaseVector (myRspaceTimeDiscr(ilev)%p_rsolution)
-      DEALLOCATE(myRspaceTimeDiscr(ilev)%p_rsolution)
-    END DO
-          
     CALL c2d2_assembleSpaceTimeRHS (rproblem, p_rspaceTimeDiscr, rd, &
       rtempvectorX, rtempvectorB, rtempvector,.FALSE.)
 
@@ -2190,6 +2199,16 @@ CONTAINS
         
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
+    ! Value of the functional
+    CALL c2d2_optc_nonstatFunctional (rproblem,&
+        myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
+        rtempVector,myRspaceTimeDiscr(SIZE(RspatialPrecond))%dalphaC,&
+        myRspaceTimeDiscr(SIZE(RspatialPrecond))%dgammaC,&
+        Derror)
+    CALL output_line ('||y-z||       = '//TRIM(sys_sdEL(Derror(1),10)))
+    CALL output_line ('||u||         = '//TRIM(sys_sdEL(Derror(2),10)))
+    CALL output_line ('||y(T)-z(T)|| = '//TRIM(sys_sdEL(Derror(3),10)))
+    CALL output_line ('J(y,u)        = '//TRIM(sys_sdEL(Derror(4),10)))
     CALL output_separator (OU_SEP_EQUAL)        
 
     ! Do we have Neumann boundary?
@@ -2210,6 +2229,21 @@ CONTAINS
       
     END IF
     
+    ! Release the space-time and spatial preconditioner. 
+    ! We don't need them anymore.
+    CALL sptils_releaseSolver (p_rsolverNode)
+    
+    ! Release the spatial preconditioner and temp vector on every level
+    DO ilev=1,SIZE(RspatialPrecond)
+      CALL c2d2_donePreconditioner (RspatialPrecond(ilev))
+
+    END DO
+
+    DO ilev=1,SIZE(RspatialPrecond)-1
+      CALL sptivec_releaseVector (myRspaceTimeDiscr(ilev)%p_rsolution)
+      DEALLOCATE(myRspaceTimeDiscr(ilev)%p_rsolution)
+    END DO
+          
     CALL lsysbl_releaseVector (rtempVectorB)
     CALL lsysbl_releaseVector (rtempVectorX)
     CALL lsysbl_releaseVector (rtempVector)
