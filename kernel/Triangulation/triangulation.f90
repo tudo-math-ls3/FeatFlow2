@@ -425,7 +425,7 @@ MODULE triangulation
     ! fo 2D meshes and
     !   p_DvertexCoords(1,.) = X-coordinate.
     !   p_DvertexCoords(2,.) = Y-coordinate.
-    !   p_DvertexCoords(3,.) = Y-coordinate.
+    !   p_DvertexCoords(3,.) = Z-coordinate.
     ! for 3D meshes.
     ! This is a handle to the old DCORVG-array.
     !
