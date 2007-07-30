@@ -7277,8 +7277,10 @@ CONTAINS
                 AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
                 AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
                 
-                AA (k+lofsl1,inode+lofsu) = daux2*p_DM(ia)
-                AA (k+lofsl2,inode+lofsv) = daux2*p_DM(ia)
+                AA (inode+lofsl1,k+lofsu) = daux2*p_DM(ia)
+                AA (inode+lofsl2,k+lofsv) = daux2*p_DM(ia)
+                ! AA (k+lofsl1,inode+lofsu) = daux2*p_DM(ia)
+                ! AA (k+lofsl2,inode+lofsv) = daux2*p_DM(ia)
                 EXIT
               END IF
             END DO          
