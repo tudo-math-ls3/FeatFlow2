@@ -6678,14 +6678,14 @@ CONTAINS
 
           ! Apply the conformal VANCA that allows different matrices
           ! in A11, A12, A21 and A22!
-          CALL vanca_2DNSSOCQ1TQ0fullCoupCfFW (rvanca2DNavStOptC, &
+          CALL vanca_2DNSSOCQ1TQ0fullCoupCfFB (rvanca2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList,1)
               
         CASE (VANCATP_FULLOPTC_DUAL)
                 
           ! Apply the conformal VANCA that allows different matrices
           ! in A11, A12, A21 and A22!
-          CALL vanca_2DNSSOCQ1TQ0fullCoupCfFW (rvanca2DNavStOptC, &
+          CALL vanca_2DNSSOCQ1TQ0fullCoupCfFB (rvanca2DNavStOptC, &
               rvector, rrhs, domega,p_IelementList,2)
               
         CASE DEFAULT
