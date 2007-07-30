@@ -129,6 +129,10 @@
 !# 6.) linsol_convertToSmoother
 !#     -> Converts a solver node into a smoother for multigrid smoothing.
 !#
+!# 7.) linsol_alterSolver
+!#     -> Allows direct modification of an existing solver. Passes a command
+!#        block to all subsolvers in a solver tree.
+!#
 !#
 !# Implementational details / structure of the solver library
 !# ----------------------------------------------------------
@@ -623,6 +627,21 @@ MODULE linearsolver
 
   ! One or two Gram-Schmidt calls per GMRES iteration
   LOGICAL, PARAMETER :: LINSOL_GMRES_DEF_TWICE_GS              = .FALSE.
+    
+!</constantblock>
+
+! *****************************************************************************
+
+!<constantblock description="Possible commands for linsol_slterSolver">
+
+  ! Dummy command, do-nothing.
+  INTEGER, PARAMETER :: LINSOL_ALTER_NOTHING                   = 0
+  
+  ! Change VANCA subtype.
+  ! In the configuration block, there must be specified:
+  ! Iconfig(1) = identifier for VANCA subtype to be changed.
+  ! Iconfig(2) = destination subtype of VANCA solver
+  INTEGER, PARAMETER :: LINSOL_ALTER_CHANGEVANCA               = 1
     
 !</constantblock>
 
@@ -1329,6 +1348,29 @@ MODULE linearsolver
     ! in doneStructure.
     TYPE(t_vectorScalar) :: rprjTempVector
     
+  END TYPE
+  
+!</typeblock>
+
+  ! ***************************************************************************
+
+!<typeblock>
+
+  ! This structure realises a configuration block that can be passed to the
+  ! function linsol_alterSolver to allow in-computation change of
+  ! a solver or its subsolvers.
+  TYPE t_linsol_alterSolverConfig
+  
+    ! A command flag of type LINSOL_ALTER_xxxx.
+    INTEGER :: ccommand = LINSOL_ALTER_NOTHING
+  
+    ! An integer precision configuration block. The meaning of this block
+    ! depends on ccommand.
+    INTEGER, DIMENSION(16) :: Iconfig
+    
+    ! A double precision configuration block. The meaning of this block
+    ! depends on ccommand.
+    REAL(DP), DIMENSION(16) :: Dconfig
   END TYPE
   
 !</typeblock>
@@ -2046,6 +2088,65 @@ CONTAINS
   END SUBROUTINE
   
   ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterSolver (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of an existing solver
+  ! configuration. It can be used to explicitely alter the configuration
+  ! of a solver or one of the subsolvers or to fetch information from
+  ! it. This is especially useful if rsolverNode represents a very complex
+  ! solver configuration and the caller wants to modify a very special
+  ! part of one of the subsolvers in it (like changing a solvers subtype).
+  !
+  ! ralterConfig is a configuration block that specifies a 'command' and
+  ! a couple of integer/double precision variables. This command block
+  ! is passed to all solvers in the whole rsolverNode solver tree.
+  ! Each subsolver then decides on it's own what to do with the configuration,
+  ! depending on the command ralterConfig%ccommand.
+  ! 
+  ! Example: If ralterConfig%ccommand=LINSOL_ALTER_CHANGEVANCA, all VANCA
+  !  solvers and smoothers in the solver will react to the configuration
+  !  block and change their type, depending on ralterConfig%Iconfig.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
+
+  ! A command/configuration block that is passed to all solvers in the
+  ! solver tree identified by rsolverNode.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! Call the alterConfig-routine of the actual solver
+    
+    SELECT CASE(rsolverNode%calgorithm)
+    CASE (LINSOL_ALG_VANCA)
+      CALL linsol_alterVANCA (rsolverNode, ralterConfig)
+    CASE (LINSOL_ALG_DEFCORR)
+      CALL linsol_alterDefCorr (rsolverNode, ralterConfig)
+    CASE (LINSOL_ALG_UMFPACK4)
+      ! No alter routine for UMFPACK
+    CASE (LINSOL_ALG_MILUS1X1)
+      ! No structure routine for (M)ILU(s)
+    CASE (LINSOL_ALG_CG)
+      CALL linsol_alterCG (rsolverNode, ralterConfig)
+    CASE (LINSOL_ALG_BICGSTAB)
+      CALL linsol_alterBiCGStab (rsolverNode, ralterConfig)
+    CASE (LINSOL_ALG_GMRES)
+      CALL linsol_alterGMRES (rsolverNode, ralterConfig)
+    CASE (LINSOL_ALG_MULTIGRID)
+      CALL linsol_alterMultigrid (rsolverNode, ralterConfig)
+    END SELECT
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
 
 !<function>
   
@@ -2472,6 +2573,38 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterDefCorr (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of the Defect correction solver.
+  ! ralterConfig%ccommand is analysed and depending on the configuration 
+  ! in this structure, the solver reacts.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
+
+  ! A command/configuration block that specifies a command which is given
+  ! to the solver.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check if there's a preconditioner attached. If yes, pass the command
+    ! structure to that one.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) THEN
+      CALL linsol_alterSolver(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner,&
+          ralterConfig)
+    END IF
+  
+  END SUBROUTINE
+  
   ! ***************************************************************************
 
 !<subroutine>
@@ -4606,6 +4739,46 @@ CONTAINS
   END SUBROUTINE
 
   ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterVANCA (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of the VACNA solver.
+  ! ralterConfig%ccommand is analysed and depending on the configuration 
+  ! in this structure, the solver reacts.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
+
+  ! A command/configuration block that specifies a command which is given
+  ! to the solver.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check the command.
+    IF (ralterConfig%ccommand .EQ. LINSOL_ALTER_CHANGEVANCA) THEN
+    
+      ! That's a command to all VANCA solvers. Are we meant?
+      ! Check Iconfig(1) which specifies the VANCA subsolver group
+      ! to be changed.
+      IF (ralterConfig%Iconfig(1) .EQ. rsolverNode%p_rsubnodeVANCA%csubtypeVANCA) THEN
+      
+        ! Oops, we are meant. Set the VANCA variant as specified in Iconfig(2).
+        rsolverNode%p_rsubnodeVANCA%csubtypeVANCA = ralterConfig%Iconfig(2)
+      
+      END IF
+    
+    END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
 
 !<subroutine>
   
@@ -6198,6 +6371,38 @@ CONTAINS
   END SUBROUTINE
   
   ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterCG (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of the CG solver.
+  ! ralterConfig%ccommand is analysed and depending on the configuration 
+  ! in this structure, the solver reacts.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
+
+  ! A command/configuration block that specifies a command which is given
+  ! to the solver.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check if there's a preconditioner attached. If yes, pass the command
+    ! structure to that one.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeCG%p_rpreconditioner)) THEN
+      CALL linsol_alterSolver(rsolverNode%p_rsubnodeCG%p_rpreconditioner,&
+          ralterConfig)
+    END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
 
 !<subroutine>
   
@@ -7078,6 +7283,38 @@ CONTAINS
   
   END SUBROUTINE
   
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterBiCGStab (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of the BiCGStab solver.
+  ! ralterConfig%ccommand is analysed and depending on the configuration 
+  ! in this structure, the solver reacts.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
+
+  ! A command/configuration block that specifies a command which is given
+  ! to the solver.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check if there's a preconditioner attached. If yes, pass the command
+    ! structure to that one.
+    IF (ASSOCIATED(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) THEN
+      CALL linsol_alterSolver(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner,&
+          ralterConfig)
+    END IF
+
+  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -8458,6 +8695,38 @@ CONTAINS
       p_rsolverNode%p_rsubNodeGMRES%p_RfilterChain => p_Rfilter
     END IF
   
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterGMRES (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of the GMRES solver.
+  ! ralterConfig%ccommand is analysed and depending on the configuration 
+  ! in this structure, the solver reacts.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
+
+  ! A command/configuration block that specifies a command which is given
+  ! to the solver.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check if there's a preconditioner attached. If yes, pass the command
+    ! structure to that one.
+    IF (ASSOCIATED(rsolverNode%p_rsubNodeGMRES%p_rpreconditioner)) THEN
+      CALL linsol_alterSolver(rsolverNode%p_rsubNodeGMRES%p_rpreconditioner,&
+          ralterConfig)
+    END IF
+
   END SUBROUTINE
   
   ! ***************************************************************************
@@ -9949,6 +10218,59 @@ CONTAINS
   
   END SUBROUTINE
   
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterMultigrid (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of the Multigrid solver.
+  ! ralterConfig%ccommand is analysed and depending on the configuration 
+  ! in this structure, the solver reacts.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT)                     :: rsolverNode
+
+  ! A command/configuration block that specifies a command which is given
+  ! to the solver.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    TYPE(t_linsolMGLevelInfo), POINTER :: p_rcurrentLevel
+
+    ! Pass the command structure to all subsolvers and smoothers
+    ! on all levels.
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid%p_rlevelInfoHead
+    DO WHILE(ASSOCIATED(p_rcurrentLevel))
+      IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+        CALL linsol_alterSolver (p_rcurrentLevel%p_rpreSmoother, &
+                                 ralterConfig)
+      END IF
+      ! Pre- and postsmoother may be identical!
+      ! Take care not to alter the same smoother twice!
+      IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+          (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                            p_rcurrentLevel%p_rpostSmoother))) THEN
+        CALL linsol_alterSolver (p_rcurrentLevel%p_rpostSmoother, &
+                                 ralterConfig)
+      END IF
+      IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+        CALL linsol_alterSolver (p_rcurrentLevel%p_rcoarseGridSolver, &
+                                 ralterConfig)
+      END IF
+      
+      ! Next level -- if there is one.    
+      p_rcurrentLevel => p_rcurrentLevel%p_rnextLevel        
+    END DO
+    
+  END SUBROUTINE
+
 ! ***************************************************************************
 
 !<subroutine>

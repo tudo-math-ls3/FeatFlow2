@@ -174,6 +174,12 @@ MODULE vanca
 
   ! 'Full' VANCA
   INTEGER, PARAMETER :: VANCATP_FULL      = 1
+  
+  ! 'Full' VANCA for optimal control problems, primal equation processing
+  INTEGER, PARAMETER :: VANCATP_FULLOPTC_PRIMAL = 2
+
+  ! 'Full' VANCA for optimal control problems, dual equation processing
+  INTEGER, PARAMETER :: VANCATP_FULLOPTC_DUAL   = 3
 
 !</constantblock>
 
@@ -665,7 +671,8 @@ CONTAINS
           rvanca%csubtype)
 
     CASE DEFAULT
-      PRINT *,'Unknown VANCA problem class!'
+      CALL output_line ('Unknown VANCA problem class!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_conformal')
       CALL sys_halt()  
       
     END SELECT
@@ -742,13 +749,17 @@ CONTAINS
           
           IF ((p_rdiscretisation%ccomplexity .NE. SPDISC_UNIFORM) .AND. &
               (p_rdiscretisation%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
-            PRINT *,'General VANCA supports only uniform and conformal discretisations!'
+            CALL output_line (&
+                'General VANCA supports only uniform and conformal discretisations!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_initGeneralVanca')
             CALL sys_halt()
           END IF
           
           IF ((rmatrix%RmatrixBlock(j,i)%cmatrixFormat .NE. LSYSSC_MATRIX9) .AND. &
               (rmatrix%RmatrixBlock(j,i)%cmatrixFormat .NE. LSYSSC_MATRIX7)) THEN
-            PRINT *,'General VANCA supports only matrix structure 7 and 9!'
+            CALL output_line (&
+                'General VANCA supports only matrix structure 7 and 9!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_initGeneralVanca')
             CALL sys_halt()
           END IF
           
@@ -1164,7 +1175,9 @@ CONTAINS
     DO i=1,SIZE(Rmatrices,1)
       DO j=1,SIZE(Rmatrices,2)
         IF (Rmatrices(i,j)%bexists .AND. Rmatrices(i,j)%btransposed) THEN
-          PRINT *,'General VANCA does not support transposed matrices!'
+          CALL output_line (&
+              'General VANCA does not support transposed matrices!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'vanca_general_double_mat79')
           CALL sys_halt()
         END IF 
       END DO ! j
@@ -1686,7 +1699,9 @@ CONTAINS
           END IF
         
         CASE DEFAULT
-          PRINT *,'Unknown VANCA subtype!'
+          CALL output_line (&
+              'Unknown VANCA subtype!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNavierStokes')
           CALL sys_halt()  
         
         END SELECT
@@ -1715,7 +1730,9 @@ CONTAINS
           ELSE
             ! Apply the conformal VANCA that allows different matrices
             ! in A11, A12, A21 and A22!
-            PRINT *,'VANCA has no support for A12 and A21!'
+            CALL output_line (&
+                'VANCA has no support for A12 and A21!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNavierStokes')
             CALL sys_halt()
           END IF
           
@@ -1735,18 +1752,24 @@ CONTAINS
           ELSE
             ! Apply the conformal VANCA that allows different matrices
             ! in A11, A12, A21 and A22!
-            PRINT *,'VANCA has no support for A12 and A21!'
+            CALL output_line (&
+                'VANCA has no support for A12 and A21!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNavierStokes')
             CALL sys_halt()
           END IF
           
         CASE DEFAULT
-          PRINT *,'Unknown VANCA subtype!'
+          CALL output_line (&
+              'Unknown VANCA subtype!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNavierStokes')
           CALL sys_halt()  
           
         END SELECT
           
       ELSE
-        PRINT *,'VANCA: Unsupported discretisation!'
+        CALL output_line (&
+            'Unsupported discretisation!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNavierStokes')
         CALL sys_halt()
         
       END IF
@@ -1797,7 +1820,9 @@ CONTAINS
 
     ! Matrix must be 3x3.
     IF (rmatrix%ndiagBlocks .NE. 3) THEN
-      PRINT *,'vanca_check2DSPQ1TQ0: System matrix is not 3x3.'
+      CALL output_line (&
+          'System matrix is not 3x3.',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_check2DSPQ1TQ0')
       CALL sys_halt()
     END IF
     
@@ -6647,11 +6672,30 @@ CONTAINS
         
         ! Q1~/Q1~/Q0 discretisation
         
-        ! Apply the conformal VANCA that allows different matrices
-        ! in A11, A12, A21 and A22!
-        CALL vanca_2DNSSOCQ1TQ0fullCoupConf (rvanca2DNavStOptC, &
-            rvector, rrhs, domega,p_IelementList)
-          
+        SELECT CASE (csubtype)
+        
+        CASE (VANCATP_FULLOPTC_PRIMAL)
+
+          ! Apply the conformal VANCA that allows different matrices
+          ! in A11, A12, A21 and A22!
+          CALL vanca_2DNSSOCQ1TQ0fullCoupCfFW (rvanca2DNavStOptC, &
+              rvector, rrhs, domega,p_IelementList,1)
+              
+        CASE (VANCATP_FULLOPTC_DUAL)
+                
+          ! Apply the conformal VANCA that allows different matrices
+          ! in A11, A12, A21 and A22!
+          CALL vanca_2DNSSOCQ1TQ0fullCoupCfFW (rvanca2DNavStOptC, &
+              rvector, rrhs, domega,p_IelementList,2)
+              
+        CASE DEFAULT
+        
+          ! Apply the conformal VANCA that allows different matrices
+          ! in A11, A12, A21 and A22!
+          CALL vanca_2DNSSOCQ1TQ0fullCoupConf (rvanca2DNavStOptC, &
+              rvector, rrhs, domega,p_IelementList)
+
+        END SELECT          
       ELSE
         PRINT *,'VANCA: Unsupported discretisation!'
         CALL sys_halt()
@@ -7426,6 +7470,1494 @@ CONTAINS
       ! In this case, nothing must be changed in the vector!
     
     END DO ! iel
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  ! 2D VANCA, 'full' version for fully coupled Navier-Stokes systems with
+  ! primal and dual equations. Forward-Backward-variant that handles only either
+  ! the primal or the dual system.
+  ! Supports Q1~/Q0 discretisation only.
+  ! Matrix must be of the form
+  !
+  !    ( A11  A12  B1  aM           )
+  !    ( A21  A22  B2       aM      )
+  !    ( D1^T D2^T I1               )
+  !    ( bM            A44  A45  B1 )
+  !    (      bM       A54  A55  B2 )
+  !    (               D1^T D2^T I2 )
+  !
+  ! with D1/D2 having the same structure as B1/B2 and the 'transposed'
+  ! flag set (LSYSSC_MSPEC_TRANSPOSED).
+  ! In general, B1 and B2 are the same matrices as D1 and D2. The only
+  ! difference: Some rows in B1/B2 may be replaced by zero lines to implement
+  ! Dirichlet boundary conditions.
+  ! The mass matrices must all be the same except for their scaling factors!
+  ! Here, a and b are arbitrary multiplication factors for the mass matrices.
+  !
+  ! I1 and I2 are two diagonal matrices in format 9, which may or may not
+  ! exist in the system. For usual saddle point problems, these matrices
+  ! don't exist, what results in a '0' block in these positions.
+  !
+  ! This variant decouples the primal system from the dual one. Depending on
+  ! the parameter csystemType in the VANCA structure, only parts of the system
+  ! are processed:
+  !
+  ! csystemType = 1: Apply VANCA to the system
+  !
+  !    ( A11  A12  B1  aM           )
+  !    ( A21  A22  B2       aM      )
+  !    ( D1^T D2^T I1               )
+  !    (               I            )
+  !    (                    I       )
+  !    (                         I  )
+  !
+  ! csystemType = 2: Apply VANCA to the system
+  !
+  !    ( I                          )
+  !    (      I                     )
+  !    (           I                )
+  !    ( bM            A44  A45  B1 )
+  !    (      bM       A54  A55  B2 )
+  !    (               D1^T D2^T I2 )
+  !
+  ! This variant is typically used in a nonstationary environment as Gauss-Seidel
+  ! preconditioner which is at first applied to the primal equation before being
+  ! applied to the dual equation.
+  !
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE vanca_2DNSSOCQ1TQ0fullCoupCfFB (rvanca, rvector, rrhs, domega, IelementList,&
+      csystemPart)
+  
+!<description>
+  ! This routine applies the specialised forward-backward full local system 
+  ! VANCA algorithm for 2D Navier Stokes optimal control problems with 
+  ! Q1~/Q0 discretisation to the system $Ax=b$.
+  ! x=rvector is the initial solution vector and b=rrhs the right-hand-side
+  ! vector. The rvanca structure has to be initialised before calling
+  ! this routine, as this holds a reference to the system matrix.
+  !
+  ! vanca_2DNSSOCQ1TQ0fullCoupCfFB supports fully coupled velocity submatrices.
+  ! The matrices A11, A22, A44 and A55 must have the same structure. 
+  ! The matrices A12 and A21 must have the same structure. 
+  ! The matrices A45 and A54 must have the same structure. 
+  ! The structure of A11 and A12 may be different from each other.
+!</description>
+
+!<input>
+  ! t_vancaPointer2DNavSt structure that saves algorithm-specific parameters.
+  TYPE(t_vancaPointer2DNavStOptC), INTENT(IN) :: rvanca
+
+  ! The right-hand-side vector of the system
+  TYPE(t_vectorBlock), INTENT(IN)         :: rrhs
+  
+  ! Relaxation parameter. Standard=1.0_DP.
+  REAL(DP), INTENT(IN)                    :: domega
+
+  ! A list of element numbers where VANCA should be applied to.
+  INTEGER(PREC_ELEMENTIDX), DIMENSION(:)     :: IelementList
+
+  ! Identifier for the part of the equation, where VANCA should be
+  ! applied.
+  ! =0: apply VANCA to the whole primal-dual-coupled system
+  ! =1: apply VANCA only to the primal system, take the dual one as constant
+  ! =2: apply VANCA only to the dual system, take the primal one as constant
+  INTEGER, INTENT(IN) :: csystemPart
+  
+!</input>
+
+!<inputoutput>
+  ! The initial solution vector. Is replaced by a new iterate.
+  TYPE(t_vectorBlock), INTENT(IN)         :: rvector
+!</inputoutput>
+
+!</subroutine>
+
+    ! local vairables
+    INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
+    INTEGER :: inode,idof
+    
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA11
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA11
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA11,p_DA12,p_DA21,p_DA22
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA45
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA45
+    REAL(DP), DIMENSION(:), POINTER             :: p_DA44,p_DA45,p_DA54,p_DA55
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolA12
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldA12
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolM
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldM
+    REAL(DP), DIMENSION(:), POINTER             :: p_DM
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_KcolB
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KldB
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB1
+    REAL(DP), DIMENSION(:), POINTER             :: p_DB2
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD1
+    REAL(DP), DIMENSION(:), POINTER             :: p_DD2
+    REAL(DP), DIMENSION(:), POINTER             :: p_Da33,p_Da66
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_KdiagonalA33,p_KdiagonalA66
+    
+    ! Triangulation information
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+    INTEGER(PREC_VERTEXIDX)   :: NVT
+    INTEGER(PREC_EDGEIDX)    :: NMT
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    REAL(DP), DIMENSION(:), POINTER :: p_Drhs,p_Dvector
+    
+    ! Local arrays for informations about one element
+    INTEGER, PARAMETER :: nnvel = 4      ! Q1T = 4 DOF's per velocity
+    INTEGER, PARAMETER :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    INTEGER, PARAMETER :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
+    INTEGER, PARAMETER :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
+    INTEGER, PARAMETER :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
+    INTEGER, PARAMETER :: nnld = 2*nnprimal
+    INTEGER(PREC_VECIDX), DIMENSION(nnvel) :: IdofGlobal
+    REAL(DP), DIMENSION(nnld,nnld) :: AA
+    REAL(DP), DIMENSION(nnld) :: FF
+    
+    ! Offsets of the 'local' solution parts in the 'local' solution vector
+    INTEGER, PARAMETER :: lofsu = 0
+    INTEGER, PARAMETER :: lofsv = nnvel
+    INTEGER, PARAMETER :: lofsp = 2*nnvel
+    INTEGER, PARAMETER :: lofsl1 = 2*nnvel+1
+    INTEGER, PARAMETER :: lofsl2 = 2*nnvel+1+nnvel
+    INTEGER, PARAMETER :: lofsxi = 2*nnvel+1+2*nnvel
+    
+    ! LAPACK temporary space
+    INTEGER :: Ipiv(nnld),ilapackInfo
+    
+    ! Offset information in arrays.
+    ! Primal variables
+    INTEGER(PREC_VECIDX)     :: ioffsetu,ioffsetv,ioffsetp,j
+    
+    ! Dual variables
+    INTEGER(PREC_VECIDX)     :: ioffsetl1,ioffsetl2,ioffsetxi
+    
+    INTEGER :: ia1,ia2,ib1,ib2,ia,ib,k
+    REAL(DP) :: daux,daux2
+    
+    ! Get pointers to the system matrix, so we don't have to write
+    ! so much - and it's probably faster.
+    
+    ! Structure of A11 is assumed to be the same as A22
+    p_KcolA11 => rvanca%p_KcolA11
+    p_KldA11 => rvanca%p_KldA11
+    p_DA11 => rvanca%p_DA11
+    p_DA22 => rvanca%p_DA22
+
+    ! Structure of A12 is assumed to be the same as A21.
+    ! Get A12 and A21 -- except for if the multipliers are =0, then
+    ! we switch them off by nullifying the pointers.
+    IF (rvanca%Dmultipliers(1,2) .NE. 0.0_DP) THEN
+      p_KcolA12 => rvanca%p_KcolA12
+      p_KldA12 => rvanca%p_KldA12
+      p_DA12 => rvanca%p_DA12
+      p_DA21 => rvanca%p_DA21
+    ELSE
+      NULLIFY(p_KcolA12)
+      NULLIFY(p_KldA12) 
+      NULLIFY(p_DA12 )
+      NULLIFY(p_DA21 )
+    END IF
+    
+    p_KcolB => rvanca%p_KcolB
+    p_KldB => rvanca%p_KldB
+    p_DB1 => rvanca%p_DB1
+    p_DB2 => rvanca%p_DB2
+    p_DD1 => rvanca%p_DD1
+    p_DD2 => rvanca%p_DD2
+    
+    ! Structure of A44 is assumed to be the same as A55, A11 and A22
+    p_DA44 => rvanca%p_DA44
+    p_DA55 => rvanca%p_DA55
+
+    ! Structure of A45 is assumed to be the same as A54
+    p_KcolA45 => rvanca%p_KcolA45
+    p_KldA45 => rvanca%p_KldA45
+    p_DA45 => rvanca%p_DA45
+    p_DA54 => rvanca%p_DA54
+    
+    ! Mass matrix - if it's given, otherwise the pointers will be set to NULL
+    ! because of the initialisation of the structure!
+    p_KcolM => rvanca%p_KcolM
+    p_KldM => rvanca%p_KldM
+    p_DM => rvanca%p_DM
+    
+    ! Diagonal submatrices A33 and A66 (if they exist)
+    IF (rvanca%Dmultipliers(3,3) .NE. 0.0_DP) THEN
+      p_Da33 => rvanca%p_DA33
+      p_KdiagonalA33 => rvanca%p_KdiagonalA33
+    ELSE
+      NULLIFY(p_Da33)
+      NULLIFY(p_KdiagonalA33)
+    END IF
+    
+    IF (rvanca%Dmultipliers(6,6) .NE. 0.0_DP) THEN
+      p_Da66 => rvanca%p_DA66
+      p_KdiagonalA66 => rvanca%p_KdiagonalA66
+    ELSE
+      NULLIFY(p_Da66)
+      NULLIFY(p_KdiagonalA66)
+    END IF
+
+    ! Get pointers to the vectors, RHS, get triangulation information
+    NVT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NVT
+    NMT = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NMT
+    NEL = rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation%NEL
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+                                p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    CALL storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscretisation% &
+                                p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
+    CALL lsysbl_getbase_double (rvector,p_Dvector)
+    CALL lsysbl_getbase_double (rrhs,p_Drhs)
+    
+    ! Get the relative offsets of the 2nd and 3rd solution of the component
+    ioffsetu = 0
+    ioffsetv = rvector%RvectorBlock(1)%NEQ
+    ioffsetp = ioffsetv+rvector%RvectorBlock(2)%NEQ
+
+    ! Get the offsets of lambda1, lambda2 and xi, so the offsets
+    ! of the dual solution vectors.
+    ioffsetl1 = ioffsetp+rvector%RvectorBlock(3)%NEQ
+    ioffsetl2 = ioffsetl1+rvector%RvectorBlock(4)%NEQ
+    ioffsetxi = ioffsetl2+rvector%RvectorBlock(5)%NEQ
+    
+    !=======================================================================
+    !     Block Gauss-Seidel on Schur Complement
+    !=======================================================================
+
+    ! Basic algorithm:
+    !
+    ! What are we doing here? Well, we want to perform 
+    ! *preconditioning*, i.e. we have to solve the problem
+    !
+    !   x_new  =  C^-1 (x_old)  =  C^-1 (F)  =  C^-1 (f,g)
+    !
+    ! for a "special" preconditioner C which we define in a moment.
+    ! This is equivalent to solving the system
+    !
+    !   C (x_new)  = x_old
+    !
+    ! C should be some approximation to A. Imagine our global system:
+    !
+    !     [ A   B ] (u) = (f)
+    !     [ B^t 0 ] (p)   (g)
+    !
+    ! In the Navier-Stokes equations with (u,p) being the preconditioned
+    ! vector, there should be g=0 - but this cannot be assumed
+    ! as it does not happen in general.
+    ! Now the algorithm for generating a new (u,p) vector from the old
+    ! one reads roughly as follows:
+    !
+    ! a) Restrict to a small part of the domain, in our case to one cell.
+    ! b) Fetch all the data (velocity, pressure) on that cell. On the
+    !    first cell, we have only "old" velocity entries. These values
+    !    are updated and then the calculation proceeds with the 2nd cell.
+    !
+    !           old                      new     
+    !        +---X---+                +---X---+
+    !        |       |                |       |
+    !    old X       X       -->  new X   X   X new
+    !        |   1   |                |   1   |
+    !        +---X---+                +---X---+
+    !           old                      new     
+    !
+    !    From the second cell on, there might be "old" data and "new" 
+    !    data on that cell - the old data that has not been updated and
+    !    perhaps some already updated velocity data from a neighbor cell.
+    !    
+    !           new     old                   new       new    
+    !        +---X---+---X---+             +---X---+---X---+
+    !        |     1 |     2 |             |     1 |     2 |
+    !    new X       X       X old --> new X       X       X new
+    !        |       |new    |             |       |newer  |
+    !        +---X---+---X---+             +---X---+---X---+
+    !           new     old                   new       new    
+    !
+    !    These values are updated and then the calculation proceeds
+    !    with the next cell.
+    !    As can be seen in the above picture, the "new" node in the
+    !    middle is even going to be a "newer" node when handled again
+    !    for the 2nd cell. This is meant by "Gauss-Seldel" character:
+    !    Information is updated subsequently by using "old" data and
+    !    "new" data from a previous calculation.
+    !
+    ! So we start with a loop over all elements in the list
+
+    SELECT CASE (csystemPart)
+    ! -------------------------------------------------------------------------
+    CASE (0)
+      ! VANCA applied to full 18x18 system
+
+      DO ielidx=1,SIZE(IelementList)
+      
+        ! Get the element number which is to be processed.
+        iel = IelementList(ielidx)
+      
+        ! Clear the 'local system matrix'.
+        AA(:,:) = 0.0_DP
+        
+        ! We now have the element
+        !                                               
+        ! +---------+                       +----3----+
+        ! |         |                       |         |
+        ! |   IEL   |   with DOF's          4    P    2      
+        ! |         |                       |    Q0   |
+        ! +---------+                       +----1----+
+        !                                               
+        !
+        ! Fetch the pressure P on the current element into FF.
+        ! The numbers of the DOF's coincide with the definition
+        ! in dofmapping.f90!
+      
+        ! Get the primal pressure
+        FF(1+lofsp) = p_Drhs(iel+ioffsetp)
+        
+        ! Get the dual pressure
+        FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
+        
+        ! Get the velocity DOF's on the current element.
+        ! We assume: DOF 1..4 = edge-NVT.
+        ! That's the same implementation as in dofmapping.f90!
+        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+
+        ! Loop over all U-nodes of that element.
+        DO inode=1,nnvel
+        
+          ! Get the DOF we have to tackle:
+          idof = IdofGlobal(inode)
+          
+          ! Set FF initially to the value of the right hand
+          ! side vector that belongs to our current DOF corresponding
+          ! to inode.
+          
+          ! Primal equation
+          FF(inode+lofsu) = p_Drhs(idof+ioffsetu)
+          FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
+
+          ! dual equation
+          FF(inode+lofsl1) = p_Drhs(idof+ioffsetl1)
+          FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
+          
+          ! What do we have at this point?                           
+          ! FF     : "local" RHS vector belonging to the DOF's on the
+          !          current element                                 
+          ! AA     : Diagonal entries of A belonging to these DOF's  
+          !                                                          
+          ! And at the moment:                                       
+          ! idof      : number of current DOF on element IEL            
+          ! inode     : "local" number of DOF on element IEL, i.e.      
+          !              number of the edge         
+          !                     
+          ! Now comes the crucial point with the "update": How to         
+          ! subsequently update the vertex values, such that the whole    
+          ! thing still converges to the solution, even if a node         
+          ! is updated more than once? Here, we use a typical             
+          ! matrix-decomposition approach:                                
+          !                                                               
+          ! Again consider the problem:                                   
+          !                                                               
+          !    [ A   B  M     ] (u)  = (f  )                                        
+          !    [ B^t 0        ] (p)    (g  )                                        
+          !    [ M      A   B ] (l)    (fl )                                        
+          !    [        B^t 0 ] (xi)   (fxi)                                        
+          !                                                               
+          ! We assume, that all components in the vector (u,p) are        
+          ! given - except for the velocity and pressure unknowns 
+          ! on the current element; these 21 unknowns  
+          ! are located anywhere in the (u,p) vector. The idea is to      
+          ! shift "everything known" to the right hand side to obtain     
+          ! a system for only these unknowns!   
+          !
+          ! Extracting all the lines of the system that correspond to     
+          ! DOF's on our single element IEL results in rectangular
+          ! systems of the form                                            
+          !                                                               
+          !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )                                
+          !    [ B~^t       I1~               ] (u )   (f2 )                                
+          !    [ === M^ ===     === A^ === B~ ] (| )   (g  )                                   
+          !    [                B~^t       I2~] (p )   (fl1)
+          !                                     (| )   (fl2)
+          !                                     (l )   (flg)
+          !                                     (| )
+          !                                     (xi)
+          !                                     
+          !                                                               
+          ! B~ is a 8 x 2 matrix: As every velocity couples with at most  
+          ! 2*1 pressure elements on the adjacent cells, so we have       
+          ! 2 columns in the B-matrix.                                    
+          !                                                               
+          !        IEL                              IEL                   
+          !     |--------|             |--------|--------|                
+          !     |        |             |        |        |                
+          !     |   P    |      or     |   Q    X   P    |                
+          !     |   X    |             |        |        |                
+          !   --|--------|--           |--------|--------|                
+          !
+          !
+          ! Now, throw all summands to the RHS vector to build a local
+          ! 'defect' on our single element IEL.
+          !                                                               
+          !  (d1 ) = (f1 ) -  [ === A^ === B~  === M^ ====   ] (| )                                 
+          !  (d2 )   (f2 )    [ B~^t       I1~               ] (u )                                 
+          !  (dg )   (g  )    [ === M^ ===     === A^ === B~ ] (| )                                    
+          !  (dl1)   (fl1)    [                B~^t       I2~] (p ) 
+          !  (dl2)   (fl2)                                     (| ) 
+          !  (dlg)   (flg)                                     (l ) 
+          !                                                    (| )
+          !                                                    (xi)
+          !
+          ! Extract those entries in the A-, B- and M-matrices to our local
+          ! matrix AA, which belong to DOF's in our current solution vector.
+          !
+          ! At first build: fi = fi-Aui
+          
+          ia1 = p_KldA11(idof)
+          ia2 = p_KldA11(idof+1)-1
+          DO ia = ia1,ia2
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - ( A11  .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .  A22  .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .   .   .  A44  .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .  A55  .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            J = p_KcolA11(ia)
+            
+            ! Primal equation:
+            FF(inode+lofsu) = FF(inode+lofsu) &
+                            - rvanca%Dmultipliers(1,1)*p_DA11(ia)*p_Dvector(J+ioffsetu)
+            FF(inode+lofsv) = FF(inode+lofsv) &
+                            - rvanca%Dmultipliers(2,2)*p_DA22(ia)*p_Dvector(J+ioffsetv)
+
+            ! dual equation
+            FF(inode+lofsl1) = FF(inode+lofsl1) &
+                            - rvanca%Dmultipliers(4,4)*p_DA44(ia)*p_Dvector(J+ioffsetl1)
+            FF(inode+lofsl2) = FF(inode+lofsl2) &
+                            - rvanca%Dmultipliers(5,5)*p_DA55(ia)*p_Dvector(J+ioffsetl2)
+            
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode+lofsu,k+lofsu) = p_DA11(ia)*rvanca%Dmultipliers(1,1)
+                AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanca%Dmultipliers(2,2)
+                
+                AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)*rvanca%Dmultipliers(4,4)
+                AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanca%Dmultipliers(5,5)
+                EXIT
+              END IF
+            END DO          
+          END DO
+
+          ! Handle the 'off-diagonal' matrices A12 and A21
+          
+          IF (ASSOCIATED(p_KldA12)) THEN
+            ia1 = p_KldA12(idof)
+            ia2 = p_KldA12(idof+1)-1
+            DO ia = ia1,ia2
+              ! Calculate:
+              !
+              !   ( du  ) = ( du  ) - (  .  A12  .   .   .   .  ) ( u  )
+              !   ( dv  )   ( dv  )   ( A21  .   .   .   .   .  ) ( v  )
+              !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+              !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+              !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+              !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+              J = p_KcolA12(ia)
+              FF(inode+lofsu) = FF(inode+lofsu) &
+                              - rvanca%Dmultipliers(1,2)*p_DA12(ia)*p_Dvector(J+ioffsetv)
+              FF(inode+lofsv) = FF(inode+lofsv) &
+                              - rvanca%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
+              
+              ! Whereever we find a DOF that couples to another DOF on the 
+              ! same element, we put that to both A-blocks of our local matrix.
+              DO k=1,nnvel
+                IF (j .EQ. IdofGlobal(k)) THEN
+                  AA (inode+lofsu,k+lofsv) = p_DA12(ia)*rvanca%Dmultipliers(1,2)
+                  AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanca%Dmultipliers(2,1)
+                  EXIT
+                END IF
+              END DO          
+            END DO
+          END IF
+          
+          ! Handle the 'off-diagonal' matrices A45 and A54 if they exist
+          IF (ASSOCIATED(p_KldA45)) THEN
+            ia1 = p_KldA45(idof)
+            ia2 = p_KldA45(idof+1)-1
+            DO ia = ia1,ia2
+              ! Calculate:
+              !
+              !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+              !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+              !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+              !   ( dl1 )   ( dl1 )   (  .   .   .   .  A45  .  ) ( l1 )
+              !   ( dl2 )   ( dl2 )   (  .   .   .  A54  .   .  ) ( l2 )
+              !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+              J = p_KcolA45(ia)
+              FF(inode+lofsl1) = FF(inode+lofsl1) &
+                              - rvanca%Dmultipliers(4,5)*p_DA45(ia)*p_Dvector(J+ioffsetl2)
+              FF(inode+lofsl2) = FF(inode+lofsl2) &
+                              - rvanca%Dmultipliers(5,4)*p_DA54(ia)*p_Dvector(J+ioffsetl1)
+              
+              ! Whereever we find a DOF that couples to another DOF on the 
+              ! same element, we put that to both A-blocks of our local matrix.
+              DO k=1,nnvel
+                IF (j .EQ. IdofGlobal(k)) THEN
+                  AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)*rvanca%Dmultipliers(4,5)
+                  AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanca%Dmultipliers(5,4)
+                  EXIT
+                END IF
+              END DO          
+            END DO
+          END IF
+                  
+          ! Process A33 if it exists
+                  
+          IF (ASSOCIATED(p_KdiagonalA33)) THEN
+
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   I1  .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+            !
+            ! IEL is the pressure DOF which we have to tackle.
+            
+            daux = rvanca%Dmultipliers(3,3)
+            FF(1+lofsp) = FF(1+lofsp) &
+                        - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
+            AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
+
+          END IF
+                  
+          ! Process A66 if it exists
+                  
+          IF (ASSOCIATED(p_KdiagonalA66)) THEN
+
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   I2 ) ( xi )
+            !
+            ! IEL is the pressure DOF which we have to tackle.
+            
+            daux = rvanca%Dmultipliers(6,6)
+            FF(1+lofsxi) = FF(1+lofsxi) &
+                        - daux*p_DA66(p_KdiagonalA66(IEL))*p_Dvector(IEL+ioffsetxi)
+            AA(1+lofsxi,1+lofsxi) = daux*p_DA66(p_KdiagonalA66(IEL))
+
+          END IF
+                  
+          ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
+          
+          ib1=p_KldB(idof)
+          ib2=p_KldB(idof+1)-1
+          DO ib = ib1,ib2
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .  B1   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .  B2   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .   .   .   .   .  B1  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .  B2  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            J = p_KcolB(ib)
+            
+            ! primal equation
+            daux = p_Dvector(j+ioffsetp) 
+            FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanca%Dmultipliers(1,3)
+            FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanca%Dmultipliers(2,3)
+
+            ! dual equation
+            daux2 = p_Dvector(j+ioffsetxi)
+            FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2 * rvanca%Dmultipliers(4,6)
+            FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanca%Dmultipliers(5,6)
+            
+            ! Don't incorporate the B-matrices into AA yet; this will come later!
+          END DO
+          
+          ! The mass matrix defect.
+          IF (ASSOCIATED(p_KldM)) THEN
+            ! We assume: multiplier of A(1,4) = multiplier of A(2,5)
+            daux = rvanca%Dmultipliers(1,4)
+            
+            ! We assume: multiplier of A(4,1) = multiplier of A(5,2)
+            daux2 = rvanca%Dmultipliers(4,1)
+            
+            ia1 = p_KldM(idof)
+            ia2 = p_KldM(idof+1)-1
+            DO ia = ia1,ia2
+
+              J = p_KcolM(ia)
+
+              ! Calculate:
+              !
+              !   ( du  ) = ( du  ) - (  .   .   .  aM   .   .  ) ( u  )
+              !   ( dv  )   ( dv  )   (  .   .   .   .  aM   .  ) ( v  )
+              !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+              !   ( dl1 )   ( dl1 )   ( bM   .   .   .   .   .  ) ( l1 )
+              !   ( dl2 )   ( dl2 )   (  .  bM   .   .   .   .  ) ( l2 )
+              !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+              FF(inode+lofsu) = FF(inode+lofsu)-daux*p_DM(ia)*p_Dvector(J+ioffsetl1)
+              FF(inode+lofsv) = FF(inode+lofsv)-daux*p_DM(ia)*p_Dvector(J+ioffsetl2)
+
+              FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DM(ia)*p_Dvector(J+ioffsetu)
+              FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DM(ia)*p_Dvector(J+ioffsetv)
+              
+              ! Whereever we find a DOF that couples to another DOF on the 
+              ! same element, we put that to both A-blocks of our local matrix.
+              DO k=1,nnvel
+                IF (j .EQ. IdofGlobal(k)) THEN
+                  AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
+                  AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
+                  
+                  AA (inode+lofsl1,k+lofsu) = daux2*p_DM(ia)
+                  AA (inode+lofsl2,k+lofsv) = daux2*p_DM(ia)
+                  ! AA (k+lofsl1,inode+lofsu) = daux2*p_DM(ia)
+                  ! AA (k+lofsl2,inode+lofsv) = daux2*p_DM(ia)
+                  EXIT
+                END IF
+              END DO          
+            END DO
+          END IF
+          
+          ! Ok, up to now, all loops are clean and vectoriseable. Now the only
+          ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
+          ! We have to find in the B-matrices the column that corresponds
+          ! to our element and pressure DOF IEL - which makes it necessary
+          ! to compare the column numbers in KcolB with IEL.
+          ! Remember: The column numbers in B correspond to the pressure-DOF's
+          ! and so to element numbers. 
+          !
+          ! Btw: Each row of B has at most two entries:
+          !
+          !      IEL                              IEL
+          !   |--------|             |--------|--------|
+          !   |        |             |        |        |
+          !   |   P1   |      or     |   P2   X   P1   |
+          !   |        |             |        |        |
+          ! --|---X----|--           |--------|--------|
+          !
+          ! Either two (if the velocity DOF is an edge with two neighbouring
+          ! elements) or one (if the velocity DOF is at an edge on the boundary
+          ! and there is no neighbour).
+          DO ib = ib1,ib2
+          
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   ( D1  D2   .   .   .   .  ) ( p  )
+            !   ( dl1 )   ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .  D1  D2   .  ) ( xi )
+            !
+            ! In AA, we simultaneously set up (locally):
+            !
+            !   (  .   .  B1   .   .   .  ) 
+            !   (  .   .  B2   .   .   .  ) 
+            !   ( D1  D2   .   .   .   .  ) 
+            !   (  .   .   .   .   .  B1  ) 
+            !   (  .   .   .   .   .  B2  ) 
+            !   (  .   .   .  D1  D2   .  ) 
+
+            IF (p_KcolB(ib) .EQ. IEL) THEN
+            
+              J = p_KcolB(ib)
+              
+              ! Get the entries in the B-matrices.
+              ! Primal equation
+              AA(inode+lofsu,1+lofsp) = p_DB1(ib) * rvanca%Dmultipliers(1,3)
+              AA(inode+lofsv,1+lofsp) = p_DB2(ib) * rvanca%Dmultipliers(2,3)
+
+              ! The same way, get DD1 and DD2.
+              ! Note that DDi has exacty the same matrix structrure as BBi and is noted
+              ! as 'transposed matrix' only because of the transposed-flag.
+              ! So we can use "ib" as index here to access the entry of DDi:
+              AA(1+lofsp,inode+lofsu) = p_DD1(ib) * rvanca%Dmultipliers(3,1)
+              AA(1+lofsp,inode+lofsv) = p_DD2(ib) * rvanca%Dmultipliers(3,2)
+
+              ! The same for the dual equation
+              AA(inode+lofsl1,1+lofsxi) = p_DB1(ib) * rvanca%Dmultipliers(4,6)
+              AA(inode+lofsl2,1+lofsxi) = p_DB2(ib) * rvanca%Dmultipliers(5,6)
+
+              AA(1+lofsxi,inode+lofsl1) = p_DD1(ib) * rvanca%Dmultipliers(6,4)
+              AA(1+lofsxi,inode+lofsl2) = p_DD2(ib) * rvanca%Dmultipliers(6,5)
+
+              ! Build the pressure entry in the local defect vector:
+              !   f_i = (f_i-Aui) - D_i pi
+              ! or more precisely (as D is roughly B^T):
+              !   f_i = (f_i-Aui) - (B^T)_i pi
+              FF(1+lofsp) = FF(1+lofsp) &
+                          - AA(1+lofsp,inode+lofsu)*p_Dvector(idof+ioffsetu) &
+                          - AA(1+lofsp,inode+lofsv)*p_Dvector(idof+ioffsetv)
+            
+              ! The same for the dual pressure
+              FF(1+lofsxi) = FF(1+lofsxi) &
+                          - AA(1+lofsxi,inode+lofsl1)*p_Dvector(idof+ioffsetl1) &
+                          - AA(1+lofsxi,inode+lofsl2)*p_Dvector(idof+ioffsetl2)
+            
+              ! Quit the loop - the other possible entry belongs to another 
+              ! element, not to the current one
+              EXIT
+            END IF
+          END DO ! ib
+          
+        END DO ! inode
+      
+        ! Now we make a defect-correction approach for this system:
+        !
+        !    x_new  =  x  +  P( \omega C^{-1} (f~ - A~ x) )
+        !                                     -----------
+        !                                        =d~
+        !
+        ! Here the 'projection' operator simply converts the small
+        ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
+        ! of the same size as x - what is easy using the number of
+        ! the DOF's on the element.
+        !
+        ! For C, we use our local AA, i.e. applying C^{-1} means to
+        ! solve the local system AA dd = FF for dd. The local defect dd is then
+        ! added back to the global solution vector.
+        
+        CALL DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+        
+        IF (ilapackInfo .EQ. 0) THEN
+          
+          ! Ok, we got the update vector in FF. Incorporate this now into our
+          ! solution vector with the update formula
+          !
+          !  x_{n+1} = x_n + domega * y
+          
+          DO inode=1,nnvel
+            ! Update of the primal velocity vectors
+            p_Dvector(idofGlobal(inode)+ioffsetu) &
+              = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
+            p_Dvector(idofGlobal(inode)+ioffsetv) &
+              = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+
+            ! Update of the dual velocity vectors
+            p_Dvector(idofGlobal(inode)+ioffsetl1) &
+              = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
+            p_Dvector(idofGlobal(inode)+ioffsetl2) &
+              = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
+          END DO
+          
+          p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                    domega * FF(1+lofsp)
+
+          p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
+                                    domega * FF(1+lofsxi)
+        
+        ELSE IF (ilapackInfo .LT. 0) THEN
+          
+          CALL output_line (&
+              'LAPACK(DGESV) solver failed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSOCQ1TQ0fullCoupCfFB')
+          
+        END IF
+
+        ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+        ! coarse grid with all boundaries = Dirichlet.
+        ! In this case, nothing must be changed in the vector!
+      
+      END DO ! iel
+
+    ! -------------------------------------------------------------------------      
+    CASE (1)
+      ! VANCA applied to 9x9 primal system
+
+      DO ielidx=1,SIZE(IelementList)
+      
+        ! Get the element number which is to be processed.
+        iel = IelementList(ielidx)
+      
+        ! Clear the 'primal local system matrix'.
+        DO ib=1,nnprimal
+          DO ia=1,nnprimal
+            AA(ia,ib) = 0.0_DP
+          END DO
+        END DO
+        
+        ! We now have the element
+        !                                               
+        ! +---------+                       +----3----+
+        ! |         |                       |         |
+        ! |   IEL   |   with DOF's          4    P    2      
+        ! |         |                       |    Q0   |
+        ! +---------+                       +----1----+
+        !                                               
+        !
+        ! Fetch the pressure P on the current element into FF.
+        ! The numbers of the DOF's coincide with the definition
+        ! in dofmapping.f90!
+      
+        ! Get the primal pressure
+        FF(1+lofsp) = p_Drhs(iel+ioffsetp)
+        
+        ! Get the velocity DOF's on the current element.
+        ! We assume: DOF 1..4 = edge-NVT.
+        ! That's the same implementation as in dofmapping.f90!
+        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+
+        ! Loop over all U-nodes of that element.
+        DO inode=1,nnvel
+        
+          ! Get the DOF we have to tackle:
+          idof = IdofGlobal(inode)
+          
+          ! Set FF initially to the value of the right hand
+          ! side vector that belongs to our current DOF corresponding
+          ! to inode.
+          
+          ! Primal equation
+          FF(inode+lofsu) = p_Drhs(idof+ioffsetu)
+          FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
+
+          ! What do we have at this point?                           
+          ! FF     : "local" RHS vector belonging to the DOF's on the
+          !          current element                                 
+          ! AA     : Diagonal entries of A belonging to these DOF's  
+          !                                                          
+          ! And at the moment:                                       
+          ! idof      : number of current DOF on element IEL            
+          ! inode     : "local" number of DOF on element IEL, i.e.      
+          !              number of the edge         
+          !                     
+
+          ! Extract those entries in the A-, B- and M-matrices to our local
+          ! matrix AA, which belong to DOF's in our current solution vector.
+          !
+          ! At first build: fi = fi-Aui
+          
+          ia1 = p_KldA11(idof)
+          ia2 = p_KldA11(idof+1)-1
+          DO ia = ia1,ia2
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - ( A11  .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .  A22  .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !                                                   ( l1 )
+            !                                                   ( l2 )
+            !                                                   ( xi )
+
+            J = p_KcolA11(ia)
+            
+            ! Primal equation:
+            FF(inode+lofsu) = FF(inode+lofsu) &
+                            - rvanca%Dmultipliers(1,1)*p_DA11(ia)*p_Dvector(J+ioffsetu)
+            FF(inode+lofsv) = FF(inode+lofsv) &
+                            - rvanca%Dmultipliers(2,2)*p_DA22(ia)*p_Dvector(J+ioffsetv)
+
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode+lofsu,k+lofsu) = p_DA11(ia)*rvanca%Dmultipliers(1,1)
+                AA (inode+lofsv,k+lofsv) = p_DA22(ia)*rvanca%Dmultipliers(2,2)
+                EXIT
+              END IF
+            END DO          
+          END DO
+
+          ! Handle the 'off-diagonal' matrices A12 and A21
+          
+          IF (ASSOCIATED(p_KldA12)) THEN
+            ia1 = p_KldA12(idof)
+            ia2 = p_KldA12(idof+1)-1
+            DO ia = ia1,ia2
+              ! Calculate:
+              !
+              !   ( du  ) = ( du  ) - (  .  A12  .   .   .   .  ) ( u  )
+              !   ( dv  )   ( dv  )   ( A21  .   .   .   .   .  ) ( v  )
+              !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+              !                                                   ( l1 )
+              !                                                   ( l2 )
+              !                                                   ( xi )
+
+              J = p_KcolA12(ia)
+              FF(inode+lofsu) = FF(inode+lofsu) &
+                              - rvanca%Dmultipliers(1,2)*p_DA12(ia)*p_Dvector(J+ioffsetv)
+              FF(inode+lofsv) = FF(inode+lofsv) &
+                              - rvanca%Dmultipliers(2,1)*p_DA21(ia)*p_Dvector(J+ioffsetu)
+              
+              ! Whereever we find a DOF that couples to another DOF on the 
+              ! same element, we put that to both A-blocks of our local matrix.
+              DO k=1,nnvel
+                IF (j .EQ. IdofGlobal(k)) THEN
+                  AA (inode+lofsu,k+lofsv) = p_DA12(ia)*rvanca%Dmultipliers(1,2)
+                  AA (inode+lofsv,k+lofsu) = p_DA21(ia)*rvanca%Dmultipliers(2,1)
+                  EXIT
+                END IF
+              END DO          
+            END DO
+          END IF
+          
+          ! Process A33 if it exists
+                  
+          IF (ASSOCIATED(p_KdiagonalA33)) THEN
+
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   I1  .   .   .  ) ( p  )
+            !                                                   ( l1 )
+            !                                                   ( l2 )
+            !                                                   ( xi )
+            !
+            ! IEL is the pressure DOF which we have to tackle.
+            
+            daux = rvanca%Dmultipliers(3,3)
+            FF(1+lofsp) = FF(1+lofsp) &
+                        - daux*p_DA33(p_KdiagonalA33(IEL))*p_Dvector(IEL+ioffsetp)
+            AA(1+lofsp,1+lofsp) = daux*p_DA33(p_KdiagonalA33(IEL))
+
+          END IF
+                  
+          ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
+          
+          ib1=p_KldB(idof)
+          ib2=p_KldB(idof+1)-1
+          DO ib = ib1,ib2
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .  B1   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .  B2   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+            !                                                   ( l1 )
+            !                                                   ( l2 )
+            !                                                   ( xi )
+
+            J = p_KcolB(ib)
+            
+            ! primal equation
+            daux = p_Dvector(j+ioffsetp) 
+            FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanca%Dmultipliers(1,3)
+            FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanca%Dmultipliers(2,3)
+
+            ! Don't incorporate the B-matrices into AA yet; this will come later!
+          END DO
+          
+          ! The mass matrix defect.
+          IF (ASSOCIATED(p_KldM)) THEN
+            ! We assume: multiplier of A(1,4) = multiplier of A(2,5)
+            daux = rvanca%Dmultipliers(1,4)
+            
+            ia1 = p_KldM(idof)
+            ia2 = p_KldM(idof+1)-1
+            DO ia = ia1,ia2
+
+              J = p_KcolM(ia)
+
+              ! Calculate:
+              !
+              !   ( du  ) = ( du  ) - (  .   .   .  aM   .   .  ) ( u  )
+              !   ( dv  )   ( dv  )   (  .   .   .   .  aM   .  ) ( v  )
+              !   ( dp  )   ( dp  )   (  .   .   .   .   .   .  ) ( p  )
+              !                                                   ( l1 )
+              !                                                   ( l2 )
+              !                                                   ( xi )
+
+              FF(inode+lofsu) = FF(inode+lofsu)-daux*p_DM(ia)*p_Dvector(J+ioffsetl1)
+              FF(inode+lofsv) = FF(inode+lofsv)-daux*p_DM(ia)*p_Dvector(J+ioffsetl2)
+
+              ! Whereever we find a DOF that couples to another DOF on the 
+              ! same element, we put that to both A-blocks of our local matrix.
+              DO k=1,nnvel
+                IF (j .EQ. IdofGlobal(k)) THEN
+                  AA (inode+lofsu,k+lofsl1) = daux*p_DM(ia)
+                  AA (inode+lofsv,k+lofsl2) = daux*p_DM(ia)
+                  EXIT
+                END IF
+              END DO          
+            END DO
+          END IF
+          
+          ! Ok, up to now, all loops are clean and vectoriseable. Now the only
+          ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
+          ! We have to find in the B-matrices the column that corresponds
+          ! to our element and pressure DOF IEL - which makes it necessary
+          ! to compare the column numbers in KcolB with IEL.
+          ! Remember: The column numbers in B correspond to the pressure-DOF's
+          ! and so to element numbers. 
+          !
+          ! Btw: Each row of B has at most two entries:
+          !
+          !      IEL                              IEL
+          !   |--------|             |--------|--------|
+          !   |        |             |        |        |
+          !   |   P1   |      or     |   P2   X   P1   |
+          !   |        |             |        |        |
+          ! --|---X----|--           |--------|--------|
+          !
+          ! Either two (if the velocity DOF is an edge with two neighbouring
+          ! elements) or one (if the velocity DOF is at an edge on the boundary
+          ! and there is no neighbour).
+          DO ib = ib1,ib2
+          
+            ! Calculate:
+            !
+            !   ( du  ) = ( du  ) - (  .   .   .   .   .   .  ) ( u  )
+            !   ( dv  )   ( dv  )   (  .   .   .   .   .   .  ) ( v  )
+            !   ( dp  )   ( dp  )   ( D1  D2   .   .   .   .  ) ( p  )
+            !                                                   ( l1 )
+            !                                                   ( l2 )
+            !                                                   ( xi )
+            !
+            ! In AA, we simultaneously set up (locally):
+            !
+            !   (  .   .  B1   .   .   .  ) 
+            !   (  .   .  B2   .   .   .  ) 
+            !   ( D1  D2   .   .   .   .  ) 
+            !   (  .   .   .   .   .   .  ) 
+            !   (  .   .   .   .   .   .  ) 
+            !   (  .   .   .   .   .   .  ) 
+
+            IF (p_KcolB(ib) .EQ. IEL) THEN
+            
+              J = p_KcolB(ib)
+              
+              ! Get the entries in the B-matrices.
+              ! Primal equation
+              AA(inode+lofsu,1+lofsp) = p_DB1(ib) * rvanca%Dmultipliers(1,3)
+              AA(inode+lofsv,1+lofsp) = p_DB2(ib) * rvanca%Dmultipliers(2,3)
+
+              ! The same way, get DD1 and DD2.
+              ! Note that DDi has exacty the same matrix structrure as BBi and is noted
+              ! as 'transposed matrix' only because of the transposed-flag.
+              ! So we can use "ib" as index here to access the entry of DDi:
+              AA(1+lofsp,inode+lofsu) = p_DD1(ib) * rvanca%Dmultipliers(3,1)
+              AA(1+lofsp,inode+lofsv) = p_DD2(ib) * rvanca%Dmultipliers(3,2)
+
+              ! Build the pressure entry in the local defect vector:
+              !   f_i = (f_i-Aui) - D_i pi
+              ! or more precisely (as D is roughly B^T):
+              !   f_i = (f_i-Aui) - (B^T)_i pi
+              FF(1+lofsp) = FF(1+lofsp) &
+                          - AA(1+lofsp,inode+lofsu)*p_Dvector(idof+ioffsetu) &
+                          - AA(1+lofsp,inode+lofsv)*p_Dvector(idof+ioffsetv)
+            
+              ! Quit the loop - the other possible entry belongs to another 
+              ! element, not to the current one
+              EXIT
+            END IF
+          END DO ! ib
+          
+        END DO ! inode
+      
+        ! Now we make a defect-correction approach for this system:
+        !
+        !    x_new  =  x  +  P( \omega C^{-1} (f~ - A~ x) )
+        !                                     -----------
+        !                                        =d~
+        !
+        ! Here the 'projection' operator simply converts the small
+        ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
+        ! of the same size as x - what is easy using the number of
+        ! the DOF's on the element.
+        !
+        ! For C, we use our local AA, i.e. applying C^{-1} means to
+        ! solve the local system AA dd = FF for dd. The local defect dd is then
+        ! added back to the global solution vector.
+        !
+        ! We only set up the primal equation, so we only have to solve a
+        ! 9x9 subsystem of the complete 18x18 system. Lapack can handle this
+        ! using the 'leading dimension'...
+        
+        CALL DGESV (nnprimal, 1, AA, nnld, Ipiv, FF(1:nnprimal), nnprimal, ilapackInfo)
+        
+        IF (ilapackInfo .EQ. 0) THEN
+          
+          ! Ok, we got the update vector in FF. Incorporate this now into our
+          ! solution vector with the update formula
+          !
+          !  x_{n+1} = x_n + domega * y
+          
+          DO inode=1,nnvel
+            ! Update of the primal velocity vectors
+            p_Dvector(idofGlobal(inode)+ioffsetu) &
+              = p_Dvector(idofGlobal(inode)+ioffsetu) + domega * FF(inode+lofsu)
+            p_Dvector(idofGlobal(inode)+ioffsetv) &
+              = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
+
+          END DO
+          
+          p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                    domega * FF(1+lofsp)
+
+        ELSE IF (ilapackInfo .LT. 0) THEN
+          
+          CALL output_line (&
+              'LAPACK(DGESV) solver failed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSOCQ1TQ0fullCoupCfFB')
+          
+        END IF
+
+        ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+        ! coarse grid with all boundaries = Dirichlet.
+        ! In this case, nothing must be changed in the vector!
+      
+      END DO ! iel
+  
+    ! -------------------------------------------------------------------------
+    CASE (2)
+      ! VANCA applied to 9x9 dual system
+
+      DO ielidx=1,SIZE(IelementList)
+      
+        ! Get the element number which is to be processed.
+        iel = IelementList(ielidx)
+      
+        ! Clear the 'dual local system matrix'.
+        DO ib=nnprimal+1,2*nnprimal
+          DO ia=nnprimal+1,2*nnprimal
+            AA(ia,ib) = 0.0_DP
+          END DO
+        END DO
+        
+        ! We now have the element
+        !                                               
+        ! +---------+                       +----3----+
+        ! |         |                       |         |
+        ! |   IEL   |   with DOF's          4    P    2      
+        ! |         |                       |    Q0   |
+        ! +---------+                       +----1----+
+        !                                               
+        !
+        ! Fetch the pressure P on the current element into FF.
+        ! The numbers of the DOF's coincide with the definition
+        ! in dofmapping.f90!
+      
+        ! Get the dual pressure
+        FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
+        
+        ! Get the velocity DOF's on the current element.
+        ! We assume: DOF 1..4 = edge-NVT.
+        ! That's the same implementation as in dofmapping.f90!
+        IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)-NVT
+
+        ! Loop over all U-nodes of that element.
+        DO inode=1,nnvel
+        
+          ! Get the DOF we have to tackle:
+          idof = IdofGlobal(inode)
+          
+          ! Set FF initially to the value of the right hand
+          ! side vector that belongs to our current DOF corresponding
+          ! to inode.
+          
+          ! dual equation
+          FF(inode+lofsl1) = p_Drhs(idof+ioffsetl1)
+          FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
+          
+          ! What do we have at this point?                           
+          ! FF     : "local" RHS vector belonging to the DOF's on the
+          !          current element                                 
+          ! AA     : Diagonal entries of A belonging to these DOF's  
+          !                                                          
+          ! And at the moment:                                       
+          ! idof      : number of current DOF on element IEL            
+          ! inode     : "local" number of DOF on element IEL, i.e.      
+          !              number of the edge         
+          !                     
+          ! At first build: fi = fi-Aui
+          
+          ia1 = p_KldA11(idof)
+          ia2 = p_KldA11(idof+1)-1
+          DO ia = ia1,ia2
+            ! Calculate:
+            !
+            !                                                   ( u  )
+            !                                                   ( v  )
+            !                                                   ( p  )
+            !   ( dl1 ) = ( dl1 )   (  .   .   .  A44  .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .  A55  .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            J = p_KcolA11(ia)
+            
+            ! dual equation
+            FF(inode+lofsl1) = FF(inode+lofsl1) &
+                            - rvanca%Dmultipliers(4,4)*p_DA44(ia)*p_Dvector(J+ioffsetl1)
+            FF(inode+lofsl2) = FF(inode+lofsl2) &
+                            - rvanca%Dmultipliers(5,5)*p_DA55(ia)*p_Dvector(J+ioffsetl2)
+            
+            ! Whereever we find a DOF that couples to another DOF on the 
+            ! same element, we put that to both A-blocks of our local matrix.
+            DO k=1,nnvel
+              IF (j .EQ. IdofGlobal(k)) THEN
+                AA (inode+lofsl1,k+lofsl1) = p_DA44(ia)*rvanca%Dmultipliers(4,4)
+                AA (inode+lofsl2,k+lofsl2) = p_DA55(ia)*rvanca%Dmultipliers(5,5)
+                EXIT
+              END IF
+            END DO          
+          END DO
+
+
+          ! Handle the 'off-diagonal' matrices A45 and A54 if they exist
+          IF (ASSOCIATED(p_KldA45)) THEN
+            ia1 = p_KldA45(idof)
+            ia2 = p_KldA45(idof+1)-1
+            DO ia = ia1,ia2
+              ! Calculate:
+              !
+              !                                                   ( u  )
+              !                                                   ( v  )
+              !                                                   ( p  )
+              !   ( dl1 ) = ( dl1 )   (  .   .   .   .  A45  .  ) ( l1 )
+              !   ( dl2 )   ( dl2 )   (  .   .   .  A54  .   .  ) ( l2 )
+              !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+              J = p_KcolA45(ia)
+              FF(inode+lofsl1) = FF(inode+lofsl1) &
+                              - rvanca%Dmultipliers(4,5)*p_DA45(ia)*p_Dvector(J+ioffsetl2)
+              FF(inode+lofsl2) = FF(inode+lofsl2) &
+                              - rvanca%Dmultipliers(5,4)*p_DA54(ia)*p_Dvector(J+ioffsetl1)
+              
+              ! Whereever we find a DOF that couples to another DOF on the 
+              ! same element, we put that to both A-blocks of our local matrix.
+              DO k=1,nnvel
+                IF (j .EQ. IdofGlobal(k)) THEN
+                  AA (inode+lofsl1,k+lofsl2) = p_DA45(ia)*rvanca%Dmultipliers(4,5)
+                  AA (inode+lofsl2,k+lofsl1) = p_DA54(ia)*rvanca%Dmultipliers(5,4)
+                  EXIT
+                END IF
+              END DO          
+            END DO
+          END IF
+                  
+          ! Process A66 if it exists
+                  
+          IF (ASSOCIATED(p_KdiagonalA66)) THEN
+
+            ! Calculate:
+            !
+            !                                                   ( u  )
+            !                                                   ( v  )
+            !                                                   ( p  )
+            !   ( dl1 ) = ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   I2 ) ( xi )
+            !
+            ! IEL is the pressure DOF which we have to tackle.
+            
+            daux = rvanca%Dmultipliers(6,6)
+            FF(1+lofsxi) = FF(1+lofsxi) &
+                        - daux*p_DA66(p_KdiagonalA66(IEL))*p_Dvector(IEL+ioffsetxi)
+            AA(1+lofsxi,1+lofsxi) = daux*p_DA66(p_KdiagonalA66(IEL))
+
+          END IF
+                  
+          ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
+          
+          ib1=p_KldB(idof)
+          ib2=p_KldB(idof+1)-1
+          DO ib = ib1,ib2
+            ! Calculate:
+            !
+            !                                                   ( u  )
+            !                                                   ( v  )
+            !                                                   ( p  )
+            !   ( dl1 ) = ( dl1 )   (  .   .   .   .   .  B1  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .  B2  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+            J = p_KcolB(ib)
+            
+            ! dual equation
+            daux2 = p_Dvector(j+ioffsetxi)
+            FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2 * rvanca%Dmultipliers(4,6)
+            FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanca%Dmultipliers(5,6)
+            
+            ! Don't incorporate the B-matrices into AA yet; this will come later!
+          END DO
+          
+          ! The mass matrix defect.
+          IF (ASSOCIATED(p_KldM)) THEN
+            ! We assume: multiplier of A(4,1) = multiplier of A(5,2)
+            daux2 = rvanca%Dmultipliers(4,1)
+            
+            ia1 = p_KldM(idof)
+            ia2 = p_KldM(idof+1)-1
+            DO ia = ia1,ia2
+
+              J = p_KcolM(ia)
+
+              ! Calculate:
+              !
+              !                                                   ( u  )
+              !                                                   ( v  )
+              !                                                   ( p  )
+              !   ( dl1 ) = ( dl1 )   ( bM   .   .   .   .   .  ) ( l1 )
+              !   ( dl2 )   ( dl2 )   (  .  bM   .   .   .   .  ) ( l2 )
+              !   ( dxi )   ( dxi )   (  .   .   .   .   .   .  ) ( xi )
+
+              FF(inode+lofsl1) = FF(inode+lofsl1)-daux2*p_DM(ia)*p_Dvector(J+ioffsetu)
+              FF(inode+lofsl2) = FF(inode+lofsl2)-daux2*p_DM(ia)*p_Dvector(J+ioffsetv)
+              
+              ! Whereever we find a DOF that couples to another DOF on the 
+              ! same element, we put that to both A-blocks of our local matrix.
+              DO k=1,nnvel
+                IF (j .EQ. IdofGlobal(k)) THEN
+                  AA (inode+lofsl1,k+lofsu) = daux2*p_DM(ia)
+                  AA (inode+lofsl2,k+lofsv) = daux2*p_DM(ia)
+                  EXIT
+                END IF
+              END DO          
+            END DO
+          END IF
+          
+          ! Ok, up to now, all loops are clean and vectoriseable. Now the only
+          ! somehow 'unclean' loop to determine the local B1, B2, D1 and D2.
+          ! We have to find in the B-matrices the column that corresponds
+          ! to our element and pressure DOF IEL - which makes it necessary
+          ! to compare the column numbers in KcolB with IEL.
+          ! Remember: The column numbers in B correspond to the pressure-DOF's
+          ! and so to element numbers. 
+          !
+          ! Btw: Each row of B has at most two entries:
+          !
+          !      IEL                              IEL
+          !   |--------|             |--------|--------|
+          !   |        |             |        |        |
+          !   |   P1   |      or     |   P2   X   P1   |
+          !   |        |             |        |        |
+          ! --|---X----|--           |--------|--------|
+          !
+          ! Either two (if the velocity DOF is an edge with two neighbouring
+          ! elements) or one (if the velocity DOF is at an edge on the boundary
+          ! and there is no neighbour).
+          DO ib = ib1,ib2
+          
+            ! Calculate:
+            !
+            !                                                   ( u  )
+            !                                                   ( v  )
+            !                                                   ( p  )
+            !   ( dl1 ) = ( dl1 )   (  .   .   .   .   .   .  ) ( l1 )
+            !   ( dl2 )   ( dl2 )   (  .   .   .   .   .   .  ) ( l2 )
+            !   ( dxi )   ( dxi )   (  .   .   .  D1  D2   .  ) ( xi )
+            !
+            ! In AA, we simultaneously set up (locally):
+            !
+            !   (  .   .   .   .   .   .  ) 
+            !   (  .   .   .   .   .   .  ) 
+            !   (  .   .   .   .   .   .  ) 
+            !   (  .   .   .   .   .  B1  ) 
+            !   (  .   .   .   .   .  B2  ) 
+            !   (  .   .   .  D1  D2   .  ) 
+
+            IF (p_KcolB(ib) .EQ. IEL) THEN
+            
+              J = p_KcolB(ib)
+              
+              ! Get the entries in the B-matrices.
+              ! Primal equation
+              AA(inode+lofsl1,1+lofsxi) = p_DB1(ib) * rvanca%Dmultipliers(4,6)
+              AA(inode+lofsl2,1+lofsxi) = p_DB2(ib) * rvanca%Dmultipliers(5,6)
+
+              ! The same way, get DD1 and DD2.
+              ! Note that DDi has exacty the same matrix structrure as BBi and is noted
+              ! as 'transposed matrix' only because of the transposed-flag.
+              ! So we can use "ib" as index here to access the entry of DDi:
+              AA(1+lofsxi,inode+lofsl1) = p_DD1(ib) * rvanca%Dmultipliers(6,4)
+              AA(1+lofsxi,inode+lofsl2) = p_DD2(ib) * rvanca%Dmultipliers(6,5)
+
+              ! Build the pressure entry in the local defect vector:
+              !   f_i = (f_i-Aui) - D_i pi
+              ! or more precisely (as D is roughly B^T):
+              !   f_i = (f_i-Aui) - (B^T)_i pi
+              FF(1+lofsxi) = FF(1+lofsxi) &
+                          - AA(1+lofsxi,inode+lofsl1)*p_Dvector(idof+ioffsetl1) &
+                          - AA(1+lofsxi,inode+lofsl2)*p_Dvector(idof+ioffsetl2)
+            
+              ! Quit the loop - the other possible entry belongs to another 
+              ! element, not to the current one
+              EXIT
+            END IF
+          END DO ! ib
+          
+        END DO ! inode
+      
+        ! Now we make a defect-correction approach for this system:
+        !
+        !    x_new  =  x  +  P( \omega C^{-1} (f~ - A~ x) )
+        !                                     -----------
+        !                                        =d~
+        !
+        ! Here the 'projection' operator simply converts the small
+        ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
+        ! of the same size as x - what is easy using the number of
+        ! the DOF's on the element.
+        !
+        ! For C, we use our local AA, i.e. applying C^{-1} means to
+        ! solve the local system AA dd = FF for dd. The local defect dd is then
+        ! added back to the global solution vector.
+        !
+        ! We only set up the primal equation, so we only have to solve a
+        ! 9x9 subsystem of the complete 18x18 system. Lapack can handle this
+        ! using the 'leading dimension'...
+        !
+        ! Note that we explicitely using the fact that AA(10+i*18,j) = AA(10,i+j),
+        ! so LAPACK will really work on the submatrix A(10:18,10:18) !
+        
+        CALL DGESV (nnprimal, 1, AA(nnprimal+1,nnprimal+1), nnld, &
+            Ipiv, FF(nnprimal+1), nnprimal, ilapackInfo)
+        
+        IF (ilapackInfo .EQ. 0) THEN
+          
+          ! Ok, we got the update vector in FF. Incorporate this now into our
+          ! solution vector with the update formula
+          !
+          !  x_{n+1} = x_n + domega * y
+          
+          DO inode=1,nnvel
+            ! Update of the dual velocity vectors
+            p_Dvector(idofGlobal(inode)+ioffsetl1) &
+              = p_Dvector(idofGlobal(inode)+ioffsetl1) + domega * FF(inode+lofsl1)
+            p_Dvector(idofGlobal(inode)+ioffsetl2) &
+              = p_Dvector(idofGlobal(inode)+ioffsetl2) + domega * FF(inode+lofsl2)
+          END DO
+          
+          p_Dvector(iel+ioffsetxi) = p_Dvector(iel+ioffsetxi) + &
+                                    domega * FF(1+lofsxi)
+        
+        ELSE IF (ilapackInfo .LT. 0) THEN
+          
+          CALL output_line (&
+              'LAPACK(DGESV) solver failed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'vanca_2DNSSOCQ1TQ0fullCoupCfFB')
+          
+        END IF
+
+        ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
+        ! coarse grid with all boundaries = Dirichlet.
+        ! In this case, nothing must be changed in the vector!
+      
+      END DO ! iel
+
+    END SELECT
 
   END SUBROUTINE
 
