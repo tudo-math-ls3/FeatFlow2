@@ -47,7 +47,7 @@ NLMIN              = 2
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 6
+NLMAX              = 5
 
 # ------------------------------------------------------------------------
 
@@ -98,13 +98,17 @@ iElementType       = 3
 # 0=Streamline Diffusion
 # 1=upwind
 # 2=unified edge oriented jump stabilisation
+# iUpwind1 holds for the primal equation, iUpwind2 for the dual one.
 
-iUpwind            = 0
+iUpwind1           = 0
+iUpwind2           = 0
 
 # Relaxation parameter for upwind/Streamline Diffusion/Jump stabilisation.
 # Standard values: Streamline diffusion=1.0, Upwind=0.1, Jump stabil=0.01
+# dUpsam1 holds for the primal equation, dUpsam2 for the dual one.
 
-dUpsam             = 0.0 1.0 0.1
+dUpsam1            = 0.0 1.0 0.1
+dUpsam2            = 0.0
 
 # ------------------------------------------------------------------------
 
@@ -225,4 +229,4 @@ itypeTargetFlow = 2
 # the target flow. The file must contain a solution at the same spatial
 # level as prescribed by NLMAX.
 
-stargetFlow = 'ns/solution6_0.05'
+stargetFlow = 'ns/solution5_0.025'
