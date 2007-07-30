@@ -581,7 +581,11 @@ CONTAINS
     cmatBuildType = BILF_MATC_ELEMENTBASED
     
     CALL parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'IUPWIND', i)
+                              'IUPWIND1', i)
+    IF (i .EQ. 2) cmatBuildType = BILF_MATC_EDGEBASED
+
+    CALL parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND2', i)
     IF (i .EQ. 2) cmatBuildType = BILF_MATC_EDGEBASED
   
     ! Initialise all levels...
@@ -931,11 +935,15 @@ CONTAINS
               p_rdiscretisation%RspatialDiscretisation(2),rlinform,.TRUE.,&
               rrhs%RvectorBlock(5),coeff_TARGET_y,&
               rproblem%rcollection)
-              
-    ! Switch the sign of the target velocity field because the RHS of the
-    ! dual equation is '-z'!
-    CALL lsyssc_scaleVector (rrhs%RvectorBlock(4),-1.0_DP)
-    CALL lsyssc_scaleVector (rrhs%RvectorBlock(5),-1.0_DP)
+      
+    ! Depending on the formulation, to get a reference dual velocity,
+    ! it might be necessary to switch the sign of the target velocity field 
+    ! because the RHS of the dual equation is '-z'!
+    ! Remember that it this case the signs of the mass matrices that couple
+    ! primal and dual velocity must be changed, too!
+    !
+    ! CALL lsyssc_scaleVector (rrhs%RvectorBlock(4),-1.0_DP)
+    ! CALL lsyssc_scaleVector (rrhs%RvectorBlock(5),-1.0_DP)
 
     ! Dual pressure RHS is =0.
     CALL lsyssc_clearVector(rrhs%RvectorBlock(6))

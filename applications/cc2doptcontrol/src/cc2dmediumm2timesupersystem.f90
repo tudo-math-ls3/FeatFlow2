@@ -715,9 +715,11 @@ CONTAINS
         rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => &
         rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%iupwind = collct_getvalue_int (rproblem%rcollection,'IUPWIND')
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%dupsam = collct_getvalue_real (rproblem%rcollection,'UPSAM')
+    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
+    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
+    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
+    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
 
     
     ! Take a pointer to the preallocated system matrix. Use that as space
@@ -1209,9 +1211,11 @@ CONTAINS
         rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => &
         rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%iupwind = collct_getvalue_int (rproblem%rcollection,'IUPWIND')
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%dupsam = collct_getvalue_real (rproblem%rcollection,'UPSAM')
+    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
+    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
+    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
+    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
     
     ! Loop through the substeps
     
@@ -1533,9 +1537,11 @@ CONTAINS
         rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => &
         rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%iupwind = collct_getvalue_int (rproblem%rcollection,'IUPWIND')
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%dupsam = collct_getvalue_real (rproblem%rcollection,'UPSAM')
+    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
+    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
+    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
+    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
     
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
@@ -2150,7 +2156,7 @@ CONTAINS
       ! Filter the defect for boundary conditions in space and time.
       ! Normally this is done before the preconditioning -- but by doing it
       ! afterwards, the initial conditions can be seen more clearly!
-      CALL c2d2_implementInitCondDefect (rd,rtempVector)
+      CALL c2d2_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
       CALL c2d2_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
       
       ! Add the defect: x = x + omega*d          

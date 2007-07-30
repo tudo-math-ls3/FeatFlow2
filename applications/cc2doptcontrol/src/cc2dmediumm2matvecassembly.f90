@@ -198,7 +198,8 @@ MODULE cc2dmediumm2matvecassembly
     ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
     ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
     ! constants. Standard is CCMASM_STAB_STREAMLINEDIFF.
-    INTEGER :: iupwind = CCMASM_STAB_STREAMLINEDIFF
+    INTEGER :: iupwind1 = CCMASM_STAB_STREAMLINEDIFF
+    INTEGER :: iupwind2 = CCMASM_STAB_STREAMLINEDIFF
     
     ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when 
     ! a nonlinearity is set up.
@@ -207,7 +208,8 @@ MODULE cc2dmediumm2matvecassembly
     ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and 
     ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of 
     ! 0.0 deactivates any stabilisation.
-    REAL(DP) :: dupsam = 0.0_DP
+    REAL(DP) :: dupsam1 = 0.0_DP
+    REAL(DP) :: dupsam2 = 0.0_DP
     
     ! MATRIX RESTRICTION: Parameter to activate matrix restriction.
     ! Can be used to generate parts of the matrices on coarse grids where the
@@ -974,6 +976,7 @@ CONTAINS
     ! local variables
     LOGICAL :: bshared
     INTEGER :: iupwind
+    REAL(DP) :: dupsam
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(t_jumpStabilisation) :: rjumpStabil
@@ -991,6 +994,8 @@ CONTAINS
         dtheta = rmatrixComponents%dtheta1
         dgamma = rmatrixComponents%dgamma1
         dnewton = rmatrixComponents%dnewton1
+        iupwind = rmatrixComponents%iupwind1
+        dupsam = rmatrixComponents%dupsam1
       ELSE
         ! Set the weights used here according to the primal equation.
         ! Set imatOffset=3 so the submatrix at position 4,4 is tackled.
@@ -1000,6 +1005,8 @@ CONTAINS
         dtheta = rmatrixComponents%dtheta2
         dgamma = rmatrixComponents%dgamma2
         dnewton = rmatrixComponents%dnewton2
+        iupwind = rmatrixComponents%iupwind2
+        dupsam = rmatrixComponents%dupsam2
       END IF
 
       ! Standard value for dvectorWeight is = -1.
@@ -1115,17 +1122,17 @@ CONTAINS
           STOP
         END IF
       
-        SELECT CASE (rmatrixComponents%iupwind)
+        SELECT CASE (iupwind)
         CASE (CCMASM_STAB_STREAMLINEDIFF)
           ! Set up the SD structure for the creation of the defect.
           ! There's not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rmatrixComponents%dnu
           
           ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = rmatrixComponents%dupsam
+          rstreamlineDiffusion%dupsam = dupsam
           
           ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
+          rstreamlineDiffusion%ddelta = dgamma
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = dnewton
@@ -1173,7 +1180,7 @@ CONTAINS
           rupwind%dnu = rmatrixComponents%dnu
           
           ! Set stabilisation parameter
-          rupwind%dupsam = rmatrixComponents%dupsam
+          rupwind%dupsam = dupsam
 
           ! Matrix weight
           rupwind%dtheta = dgamma
@@ -1212,7 +1219,7 @@ CONTAINS
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
+          rstreamlineDiffusion%ddelta = dgamma
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = dnewton
@@ -1263,7 +1270,7 @@ CONTAINS
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rmatrixComponents%dupsam
+          rjumpStabil%dgammastar = dupsam
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
@@ -1294,7 +1301,7 @@ CONTAINS
       
         ! That's the Stokes-case. Jump stabilisation is possible...
       
-        SELECT CASE (rmatrixComponents%iupwind)
+        SELECT CASE (iupwind)
         CASE (CCMASM_STAB_EDGEORIENTED)
           
           ! Set up the jump stabilisation structure.
@@ -1302,7 +1309,7 @@ CONTAINS
           rjumpStabil%dnu = rmatrixComponents%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rmatrixComponents%dupsam
+          rjumpStabil%dgammastar = dupsam
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
@@ -1759,7 +1766,7 @@ CONTAINS
 
     ! local variables
     LOGICAL :: bshared
-    INTEGER :: iupwind
+    INTEGER :: iupwind,dupsam
     TYPE(t_convUpwind) :: rupwind
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(T_jumpStabilisation) :: rjumpStabil
@@ -1777,6 +1784,8 @@ CONTAINS
         diota  = rmatrixComponents%diota1
         dgamma = rmatrixComponents%dgamma1
         dnewton = rmatrixComponents%dnewton1
+        iupwind = rmatrixComponents%iupwind1
+        dupsam = rmatrixComponents%dupsam1
       ELSE
         ! Set the weights used here according to the primal equation.
         ! Set imatOffset=3 so the submatrix at position 4,4 is tackled.
@@ -1786,6 +1795,8 @@ CONTAINS
         diota  = rmatrixComponents%diota2
         dgamma = rmatrixComponents%dgamma2
         dnewton = rmatrixComponents%dnewton2
+        iupwind = rmatrixComponents%iupwind2
+        dupsam = rmatrixComponents%dupsam2
       END IF
     
       ! Derive a temporary vector that contains only those velocity
@@ -1853,9 +1864,6 @@ CONTAINS
       ! That was easy -- the adventure begins now... The nonlinearity!
       IF (dgamma .NE. 0.0_DP) THEN
       
-        ! Type of stablilisation?
-        iupwind = rmatrixComponents%iupwind
-      
         SELECT CASE (iupwind)
         CASE (0)
           ! Set up the SD structure for the creation of the defect.
@@ -1863,10 +1871,10 @@ CONTAINS
           rstreamlineDiffusion%dnu = rmatrixComponents%dnu
           
           ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = rmatrixComponents%dupsam
+          rstreamlineDiffusion%dupsam = dupsam
           
           ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
+          rstreamlineDiffusion%ddelta = dgamma
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = dnewton
@@ -1889,7 +1897,7 @@ CONTAINS
           rupwind%dnu = rmatrixComponents%dnu
           
           ! Set stabilisation parameter
-          rupwind%dupsam = rmatrixComponents%dupsam
+          rupwind%dupsam = dupsam
 
           ! Matrix weight
           rupwind%dtheta = dgamma
@@ -1918,7 +1926,7 @@ CONTAINS
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%dtheta = dgamma
+          rstreamlineDiffusion%ddelta = dgamma
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = dnewton
@@ -1956,7 +1964,7 @@ CONTAINS
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rmatrixComponents%dupsam
+          rjumpStabil%dgammastar = dupsam
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
@@ -1985,9 +1993,6 @@ CONTAINS
       ELSE
       
         ! That's the Stokes-case. Jump stabilisation is possible...
-        !
-        ! Type of stablilisation?
-        iupwind = rmatrixComponents%iupwind
       
         SELECT CASE (iupwind)
         CASE (2)
@@ -1998,7 +2003,7 @@ CONTAINS
           rjumpStabil%dnu = rmatrixComponents%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rmatrixComponents%dupsam
+          rjumpStabil%dgammastar = dupsam
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight

@@ -421,6 +421,16 @@ CONTAINS
     ! condition between the primal and dual equation is decoupled, i.e.
     ! the dual equation gets independent from the primal one.
     REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
+    
+    ! This constant defines the type of equation. There are two equivalent
+    ! formulations of the dual equation which only differs in the sign
+    ! of the dual velocity.
+    ! A constant of "1" here means to use the formulation with "y-z" in
+    ! the RHS of the dual equation, while a constant of "-1" means to use the
+    ! formulation with "-(y-z)" there.
+    ! Note: If this is changed, a "-" sign must be implemented / removed from
+    ! the RHS, too!
+    REAL(DP), PARAMETER :: dequationType = -1.0_DP
 
     ! The first and last substep is a little bit special concerning
     ! the matrix!
@@ -510,7 +520,7 @@ CONTAINS
         
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (-1.0_DP) * (1.0_DP-dtheta)
+            (-dequationType) * (1.0_DP-dtheta)
             
       END IF
     
@@ -554,7 +564,7 @@ CONTAINS
         rmatrixComponents%dtau2 = 0.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+            dequationType * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
       ELSE IF (irelpos .EQ. 0) THEN    
@@ -589,9 +599,9 @@ CONTAINS
         rmatrixComponents%dtau2 = 1.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
+            dequationType * dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            dtheta * (-1.0_DP)
+            (-dequationType) * dtheta 
 
       ELSE IF (irelpos .EQ. 1) THEN
             
@@ -627,7 +637,7 @@ CONTAINS
         
         rmatrixComponents%dmu1 = 0.0_DP
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            (1.0_DP-dtheta) * (-1.0_DP)
+            (-dequationType) * (1.0_DP-dtheta) 
             
       END IF
     
@@ -750,7 +760,7 @@ CONTAINS
         rmatrixComponents%dtau2 = 0.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
+            dequationType * (1.0_DP-dtheta) / rspaceTimeDiscr%dalphaC
         rmatrixComponents%dmu2 = 0.0_DP
 
       ELSE IF (irelpos .EQ. 0) THEN    
@@ -785,13 +795,13 @@ CONTAINS
         rmatrixComponents%dtau2 = 1.0_DP
         
         rmatrixComponents%dmu1 = dprimalDualCoupling * &
-            dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
+            dequationType * dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
             
         ! Weight the mass matrix by GAMMA instead of delta(T).
         ! That's the only difference to the implementation above!
         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-            !dtheta * (-rspaceTimeDiscr%dtstep)
-            dtheta * (-rspaceTimeDiscr%dgammaC)
+            !dtheta * rspaceTimeDiscr%dtstep
+            (-dequationType) * dtheta * rspaceTimeDiscr%dgammaC
 
       END IF        
         
@@ -935,19 +945,6 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
     REAL(DP), DIMENSION(:), POINTER :: p_DxE1,p_DxE2,p_DxE3
     
-    ! If the following constant is set from 1.0 to 0.0, the primal system is
-    ! decoupled from the dual system!
-    REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
-    
-    ! If the following constant is set from 1.0 to 0.0, the dual system is
-    ! decoupled from the primal system!
-    REAL(DP), PARAMETER :: ddualPrimalCoupling = 1.0_DP
-    
-    ! If the following parameter is set from 1.0 to 0.0, the terminal
-    ! condition between the primal and dual equation is decoupled, i.e.
-    ! the dual equation gets independent from the primal one.
-    REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
-
     ! Level of the discretisation
     ilevel = rspaceTimeDiscr%ilevel
 
@@ -1039,9 +1036,11 @@ CONTAINS
         rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => &
         rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%iupwind = collct_getvalue_int (rproblem%rcollection,'IUPWIND')
+    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
+    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%dupsam = collct_getvalue_real (rproblem%rcollection,'UPSAM')
+    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
+    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
 
     ! If dnorm is specified, clear it.
     IF (PRESENT(dnorm)) THEN
@@ -1664,16 +1663,19 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE c2d2_implementInitCondDefect (rd, rtempvectorD)
+  SUBROUTINE c2d2_implementInitCondDefect (rspaceTimeDiscr, rd, rtempvectorD)
 
 !<description>
-  ! Implements the initial condition into a defect vector rd.
+  ! Implements the initial and terminal condition into a defect vector rd.
   ! Overwrites the rd of the first time step.
   !
   ! Does not implement boundary conditions!
 !</description>
 
 !<inputoutput>
+  ! Discretisation structure that corresponds to rx.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+
   ! A space-time vector containing the defect in the first subvector.
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rd
 
@@ -1698,6 +1700,26 @@ CONTAINS
     CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(3))
     
     CALL sptivec_setTimestepData(rd, 0, rtempVectorD)
+
+    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
+      ! That's a special case, we have the terminal condition "lambda(T)=0".
+      ! This case must be treated like the initial condition, i.e. the
+      ! dual defect in the last timestep must be overwritten by zero.
+      !
+      ! If gamma<>0, the terminal condition is implemented implicitely
+      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
+      ! play by the mass matrix term in the system matrix of the last timestep,
+      ! so this does not have to be treated explicitly.
+      
+      CALL sptivec_getTimestepData(rd, rd%ntimesteps, rtempVectorD)
+      
+      CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(4))
+      CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(5))
+      CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(6))
+      
+      CALL sptivec_setTimestepData(rd, rd%ntimesteps, rtempVectorD)
+      
+    END IF
 
   END SUBROUTINE
 

@@ -991,6 +991,11 @@ CONTAINS
     ! Local variables
     CHARACTER(SYS_STRLEN) :: sfile
     INTEGER :: i
+    
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx
+
+    CALL lsysbl_getbase_double (rtempVector,p_Dx)
 
     ! Loop over the files
     DO i=0,rx%ntimesteps
