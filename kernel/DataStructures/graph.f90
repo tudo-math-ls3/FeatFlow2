@@ -63,6 +63,9 @@
 !# 11.) grph_removeEdge
 !#      -> Remove edge from graph. Do nothing if edge does not exist.
 !#
+!# 12.) grph_infoGraph
+!#      -> Print information about the graph.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -70,6 +73,7 @@ MODULE graph
 
   USE fsystem
   USE storage
+  USE genoutput
   USE binarytree
   USE arraylist
   USE linearsystemscalar
@@ -88,6 +92,7 @@ MODULE graph
   PUBLIC :: grph_hasEdge
   PUBLIC :: grph_insertEdge
   PUBLIC :: grph_removeEdge
+  PUBLIC :: grph_infoGraph
 
 !<constants>
 !<constantblock description="Global format flags for graphs">
@@ -212,7 +217,7 @@ CONTAINS
       END IF
       
       ! Create array of lists for edges
-      CALL arrlst_createArraylist(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_INCREASING)
+      CALL arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_INCREASING)
 
     CASE(GRPH_GRAPHUNORDERED_DIRECTED)
       rgraph%cgraphFormat = GRPH_GRAPHUNORDERED_DIRECTED
@@ -225,7 +230,7 @@ CONTAINS
       END IF
       
       ! Create array of lists for edges
-      CALL arrlst_createArraylist(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_UNORDERED)
+      CALL arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_UNORDERED)
 
     CASE(GRPH_GRAPH7)
       rgraph%cgraphFormat = GRPH_GRAPH7
@@ -238,7 +243,7 @@ CONTAINS
       END IF
 
       ! Create array of lists for edges
-      CALL arrlst_createArraylist(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_CSR7)
+      CALL arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_CSR7)
 
     CASE(GRPH_GRAPH9)
       rgraph%cgraphFormat = GRPH_GRAPH9
@@ -251,10 +256,11 @@ CONTAINS
       END IF
 
       ! Create array of lists for edges
-      CALL arrlst_createArraylist(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_INCREASING)
+      CALL arrlst_createArrayList(rgraph%rEdges,nvtMax,nedgeMax,ST_INT,ARRAYLIST_INCREASING)
       
     CASE DEFAULT
-      PRINT *, "grph_createGraph: Invalid matrix format!"
+      CALL output_line('Invalid matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_createGraph')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_createGraph
@@ -325,14 +331,14 @@ CONTAINS
       CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       
       ! Create array of lists for edges
-      CALL arrlst_createArraylist(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_CSR7)
+      CALL arrlst_createArrayList(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_CSR7)
 
       ! Set pointers
       CALL lsyssc_getbase_Kld(rscalarMatrix,p_Kld)
       CALL lsyssc_getbase_Kcol(rscalarMatrix,p_Kcol)
 
       ! Fill list of edges
-      CALL arrlst_copyArraylistTable(p_Kcol,rgraph%rEdges,p_Kld)
+      CALL arrlst_copyArrayListTable(p_Kcol,rgraph%rEdges,p_Kld)
 
       ! Generate p_Key = array [1,2,3,...,NVT]
       CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
@@ -349,14 +355,14 @@ CONTAINS
       CALL btree_createTree(rgraph%rVertices,rgraph%NVT+1,ST_INT,0,0,0)
       
       ! Create array of lists for edges
-      CALL arrlst_createArraylist(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_INCREASING)
+      CALL arrlst_createArrayList(rgraph%rEdges,nvt,nedge,ST_INT,ARRAYLIST_INCREASING)
 
       ! Set pointers
       CALL lsyssc_getbase_Kld(rscalarMatrix,p_Kld)
       CALL lsyssc_getbase_Kcol(rscalarMatrix,p_Kcol)
 
       ! Fill list of edges
-      CALL arrlst_copyArraylistTable(p_Kcol,rgraph%rEdges,p_Kld)
+      CALL arrlst_copyArrayListTable(p_Kcol,rgraph%rEdges,p_Kld)
 
       ! Generate p_Key = array [1,2,3,...,NVT]
       CALL storage_new('grph_createGraphFromMatrix','p_Key',rgraph%NVT,ST_INT,&
@@ -367,7 +373,8 @@ CONTAINS
 
 
     CASE DEFAULT
-      PRINT *, "grph_createGraphFromMatrix: Invalid matrix format!"
+      CALL output_line('Invalid matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_createGraphFromMatrix')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_createGraphFromMatrix
@@ -392,7 +399,7 @@ CONTAINS
     CALL btree_releaseTree(rgraph%rVertices)
 
     ! Release array of lists for edges
-    CALL arrlst_releaseArraylist(rgraph%rEdges)
+    CALL arrlst_releaseArrayList(rgraph%rEdges)
 
     ! Reset data
     rgraph%cgraphFormat = GRPH_GRAPHUNDEFINED
@@ -437,24 +444,27 @@ CONTAINS
     SELECT CASE(rscalarMatrix%cmatrixFormat)
       
     CASE(LSYSSC_MATRIX7,LSYSSC_MATRIX7INTL)
-      IF (rgraph%cgraphFormat /= GRPH_GRAPH7) THEN
-        PRINT *, "grph_generateMatrix: Matrix/graph have incompatible format!"
+      IF (rgraph%cgraphFormat .NE. GRPH_GRAPH7) THEN
+        CALL output_line('Matrix/graph have incompatible format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
         CALL sys_halt()
       END IF
 
     CASE(LSYSSC_MATRIX9,LSYSSC_MATRIX9INTL)
-      IF (rgraph%cgraphFormat /= GRPH_GRAPH9) THEN
-        PRINT *, "grph_generateMatrix: Matrix/graph have incompatible format!"
+      IF (rgraph%cgraphFormat .NE. GRPH_GRAPH9) THEN
+        CALL output_line('Matrix/graph have incompatible format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
         CALL sys_halt()
       END IF
 
     CASE DEFAULT
-      PRINT *, "grph_generateMatrix: Unsupported matrix format!"
+      CALL output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_generateMatrix')
       CALL sys_halt()
     END SELECT
  
     ! Set number of edges = number of nonzero matrix entries
-    rscalarMatrix%NA    = rgraph%NEDGE
+    rscalarMatrix%NA = rgraph%NEDGE
     
     ! Set number of columns/rows. This is a little bit ugly because the
     ! number of vertices (NVT) may be different from the number of tables.
@@ -470,15 +480,15 @@ CONTAINS
     IF (rgraph%bisDense) THEN
       
       ! Convert array list to matrix
-      CALL arrlst_copyArraylistTable(rgraph%rEdges,rscalarMatrix%h_Kcol,rscalarMatrix%h_Kld)
+      CALL arrlst_copyArrayListTable(rgraph%rEdges,rscalarMatrix%h_Kcol,rscalarMatrix%h_Kld)
       
     ELSE
 
       ! Check if matrix is empty
-      IF ((rscalarMatrix%NEQ==0) .OR. rscalarMatrix%NA==0) RETURN
+      IF ((rscalarMatrix%NEQ .EQ. 0) .OR. rscalarMatrix%NA .EQ. 0) RETURN
 
       ! Convert array list step-by-step
-      IF (rscalarMatrix%h_Kld == ST_NOHANDLE) THEN
+      IF (rscalarMatrix%h_Kld .EQ. ST_NOHANDLE) THEN
         CALL storage_new('grph_generateMatrix','p_Kld',&
             rscalarMatrix%NEQ+1,ST_INT,rscalarMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
       ELSE
@@ -489,7 +499,7 @@ CONTAINS
         END IF
       END IF
 
-      IF (rscalarMatrix%h_Kcol == ST_NOHANDLE) THEN
+      IF (rscalarMatrix%h_Kcol .EQ. ST_NOHANDLE) THEN
         CALL storage_new('grph_generateMatrix','p_Kcol',&
             rscalarMatrix%NA,ST_INT,rscalarMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
       ELSE
@@ -562,18 +572,21 @@ CONTAINS
       ! local variables
       INTEGER(PREC_VECIDX)   :: ikey
 
+      ! Check if position is valid
+      IF (i .EQ. TNULL) RETURN
+
       ! Proceed with left child if it exists
-      IF (rgraph%rVertices%Kchild(TLEFT,i) /= TNULL)&
+      IF (rgraph%rVertices%Kchild(TLEFT,i) .NE. TNULL)&
           CALL inorderDense(rgraph%rVertices%Kchild(TLEFT,i))
 
       ! We are in the lucky position that itable = ikey
       ikey   = rgraph%rVertices%IKey(i)
-
+      
       WRITE(*,FMT='("Vertex number:" I5)') ikey
-      CALL arrlst_printArraylist(rgraph%rEdges,ikey)
-
+      CALL arrlst_printArrayList(rgraph%rEdges,ikey)
+        
       ! Proceed with right child if it exists
-      IF (rgraph%rVertices%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rgraph%rVertices%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL inorderDense(rgraph%rVertices%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDense
 
@@ -586,19 +599,22 @@ CONTAINS
       INTEGER(PREC_TABLEIDX) :: itable
       INTEGER(PREC_VECIDX)   :: ikey
 
+      ! Check if position is valid
+      IF (i .EQ. TNULL) RETURN
+
       ! Proceed with left child if it exists
-      IF (rgraph%rVertices%Kchild(TLEFT,i) /= TNULL)&
+      IF (rgraph%rVertices%Kchild(TLEFT,i) .NE. TNULL)&
           CALL inorderSparse(rgraph%rVertices%Kchild(TLEFT,i))
 
-      ! In general ikey /= itable
+      ! In general ikey != itable
       ikey   = rgraph%rVertices%IKey(i)
       itable = rgraph%rVertices%IData(1,i)
 
       WRITE(*,FMT='("Vertex number:" I5)') ikey
-      CALL arrlst_printArraylist(rgraph%rEdges,itable)
+      CALL arrlst_printArrayList(rgraph%rEdges,itable)
 
       ! Proceed with right child if it exists
-      IF (rgraph%rVertices%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rgraph%rVertices%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL inorderSparse(rgraph%rVertices%Kchild(TRIGHT,i))
     END SUBROUTINE inorderSparse
   END SUBROUTINE grph_printGraph
@@ -712,10 +728,11 @@ CONTAINS
     CASE(GRPH_GRAPH7,GRPH_GRAPH9,&
         GRPH_GRAPHORDERED_DIRECTED,&
         GRPH_GRAPHUNORDERED_DIRECTED)
-      CALL arrlst_prependToArraylist(rgraph%rEdges,itable,iVertex,iposEdge)
+      CALL arrlst_prependToArrayList(rgraph%rEdges,itable,iVertex,iposEdge)
       
     CASE DEFAULT
-      PRINT *, "grph_insertVertex: Unsupported graph format!"
+      CALL output_line('Unsupported graph format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_insertVertex')
       CALL sys_halt()
     END SELECT
     
@@ -764,7 +781,8 @@ CONTAINS
 
     ! Check if vertex is present in tree?
     IF (btree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-      PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
+      CALL output_line('Vertex does not exist in graph!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
       CALL sys_halt()
     END IF
 
@@ -783,7 +801,8 @@ CONTAINS
       SELECT CASE(rgraph%cgraphFormat)
         
       CASE(GRPH_GRAPHUNORDERED_DIRECTED,GRPH_GRAPHORDERED_DIRECTED)
-        PRINT *, "We cannot remove directed graphs at the moment!"
+        CALL output_line('We cannot remove directed graphs at the moment!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         CALL sys_halt()
       
       CASE(GRPH_GRAPH7,GRPH_GRAPH9)
@@ -798,41 +817,38 @@ CONTAINS
         !         can be eliminated in the first step. If the vertex should be 
         !         replaced by the last vertex, then the last vertex is 
         !         removed from the tree instead of vertex numbered iVertex.
-        
         IF (btree_deleteFromTree(rgraph%rVertices,&
             MERGE(ireplaceVertex,iVertex,bdoReplace)).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
+          CALL output_line('Vertex does not exist in graph!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           CALL sys_halt()
         END IF
-
+        
         ! Step 2: Loop through adjacency list of vertex iVertex and delete all 
-        !         edges (jVertex,iVertex) from the adjacency lists of jVertex.
+        !         edges (jVertex,iVertex) from the adjacency list of jVertex.
 
         ! Find position of first entry in adjacency list
-        iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,iVertex,.TRUE.)
-        DO WHILE(iposVertex /= ANULL)
+        iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.TRUE.)
+        DO WHILE(iposVertex .NE. ARRLST_NULL)
           
           ! Get number of adjacent vertex
           jVertex=rgraph%rEdges%IData(iposVertex)
 
           ! Get position of next entry in adjacency list
-          iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,iVertex,.FALSE.)
+          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.FALSE.)
           
-          ! Do nothing if both vertices are the same
-          IF (iVertex == jVertex) CYCLE
-
-          ! In addition, do nothing if the current vertex is identical to 
-          ! the replacement vertex. Otherwise, we would have to re-insert
-          ! it afterwards. Hence, it does not make sense to remove before.
-          IF (bdoReplace .AND. (ireplaceVertex == jVertex)) CYCLE
+          ! Do nothing if both vertices are the same. The adjacency list of
+          ! iVertex is removed/replaced anyway so we can leave it 'as is'
+          IF (iVertex .EQ. jVertex) CYCLE
 
           ! Remove vertex iVertex from adjacency list of vertex jVertex
-          IF (arrlst_deleteFromArraylist(rgraph%rEdges,jVertex,iVertex).EQ.&
+          IF (arrlst_deleteFromArrayList(rgraph%rEdges,jVertex,iVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
-            PRINT *, "grph_removeVertex: Unable to delete vertex from adjacency list!"
+            CALL output_line('Unable to delete vertex from adjacency list!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             CALL sys_halt()
           END IF
-            
+           
           ! Decrease number of edges by two; for the edge (iVertex,jVertex)
           ! and for the edge (jVertex,iVertex) that exists in an undirected graph
           rgraph%NEDGE = rgraph%NEDGE-2          
@@ -840,61 +856,74 @@ CONTAINS
         
         ! Now, vertex iVertex does no longer exist in any adjacency list.
         ! Check if replacement vertex needs to be moved to position iVertex.
-        IF (bdoReplace .AND. (iVertex /= ireplaceVertex)) THEN
+        IF (bdoReplace .AND. (iVertex .NE. ireplaceVertex)) THEN
+
+          ! Remove the trivial edge (ireplaceVertex,ireplaceVertex)
+          IF (arrlst_deleteFromArrayList(rgraph%rEdges,ireplaceVertex,ireplaceVertex).EQ.&
+              ARRAYLIST_NOT_FOUND) THEN
+            CALL output_line('Unable to delete vertex from adjacency list!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
+            CALL sys_halt()
+          END IF
           
-          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex and 
+          ! Swap adjacency list of vertices iVertex and ireplaceVertex
+          ! From now onward, the adjacencey list of the replacement vertex is
+          ! stored at position iVertex and vice versa. Keep this in mind!
+          CALL arrlst_swapArrayList(rgraph%rEdges,iVertex,ireplaceVertex)
+
+          ! Release adjacency list of vertex ireplaceVertex
+          CALL arrlst_releaseArrayList(rgraph%rEdges,ireplaceVertex)
+
+          ! Look for position of trivial edge (iVertex,iVertex)
+          IF (arrlst_searchInArrayList(rgraph%rEdges,iVertex,iVertex,ipred).EQ.&
+              ARRAYLIST_FOUND) THEN             
+            CALL output_line('Vertex already exists in adjacency list!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
+            CALL sys_halt()
+          END IF
+
+          ! Insert trivial edge (iVertex,iVertex) into adjacency list
+          CALL arrlst_insertIntoArrayList(rgraph%rEdges,iVertex,iVertex,ipred,ipos)
+
+          ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex 
+          !            (which is already stored at its new position iVertex) and 
           !            delete all edges (jVertex,ireplaceVertex) from the adjacency
           !            lists of jVertex. Afterwards, add the edge (jVertex,iVertex)
-          !            to the adjacency list of jVertex. Finally, swap adjacency 
-          !            list of vertices iVertex and ireplaceVertex.
+          !            to the adjacency list of jVertex.
 
           ! Find position of first entry in adjacency list
-          iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,ireplaceVertex,.TRUE.)
-          DO WHILE(iposVertex /= ANULL)
+          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.TRUE.)
+          DO WHILE(iposVertex .NE. ARRLST_NULL)
             
             ! Get number of adjacent vertex
             jVertex=rgraph%rEdges%IData(iposVertex)
 
             ! Get position of next entry in adjacency list
-            iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,ireplaceVertex,.FALSE.)
+            iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.FALSE.)
             
-            ! Do nothing if both vertices are the same. This situation required
-            ! special treatment (see below)
-            IF ((ireplaceVertex == jVertex) .OR. iVertex == jVertex) CYCLE
+            ! Do nothing if jVertex is identical iVertex
+            IF (iVertex .EQ. jVertex) CYCLE
             
-            ! Remove vertex lastVertex from adjacency list of vertex jVertex
-            IF (arrlst_deleteFromArraylist(rgraph%rEdges,jVertex,ireplaceVertex).EQ.&
+            ! Remove vertex ireplaceVertex from adjacency list of vertex jVertex
+            IF (arrlst_deleteFromArrayList(rgraph%rEdges,jVertex,ireplaceVertex).EQ.&
                 ARRAYLIST_NOT_FOUND) THEN
-              PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
+              CALL output_line('Unable to delete vertex from adjacency list!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               CALL sys_halt()
             END IF
-            
+
             ! Look for position of edge (jVertex,iVertex)
-            IF (arrlst_searchInArraylist(rgraph%rEdges,jVertex,&
-                iVertex,ipred).EQ.ARRAYLIST_FOUND) THEN
-              PRINT *, "grph_removeVertex: Vertex replacement already exists in adjacency list!"
+            IF (arrlst_searchInArrayList(rgraph%rEdges,jVertex,iVertex,ipred).EQ.&
+                ARRAYLIST_FOUND) THEN             
+              CALL output_line('Vertex already exists in adjacency list!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               CALL sys_halt()
             END IF
             
             ! Insert edge (jVertex,iVertex) into adjacency list
-            CALL arrlst_insertIntoArraylist(rgraph%rEdges,jVertex,iVertex,ipred,ipos)            
+            CALL arrlst_insertIntoArrayList(rgraph%rEdges,jVertex,iVertex,ipred,ipos)            
           END DO
-
-          ! Remove the trivial edge (ireplaceVertex,ireplaceVertex) from the adjacency
-          ! list. Note that the trivial edge (iVertex,iVertex) still exists and has
-          ! not been removed in the upper removal loop
-          IF (arrlst_deleteFromArraylist(rgraph%rEdges,ireplaceVertex,ireplaceVertex).EQ.&
-              ARRAYLIST_NOT_FOUND) THEN
-            PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
-            CALL sys_halt()
-          END IF
-
-          ! Swap adjacency list of vertices iVertex and ireplaceVertex
-          CALL arrlst_swapArraylist(rgraph%rEdges,iVertex,ireplaceVertex)
-
-          ! Release adjacency list of vertex ireplaceVertex
-          CALL arrlst_releaseArraylist(rgraph%rEdges,ireplaceVertex)
-          
+                  
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
           
@@ -904,7 +933,7 @@ CONTAINS
         ELSE
           
           ! Step 3(b): Release adjacency list of vertex iVertex
-          CALL arrlst_releaseArraylist(rgraph%rEdges,iVertex)
+          CALL arrlst_releaseArrayList(rgraph%rEdges,iVertex)
           
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
@@ -914,7 +943,8 @@ CONTAINS
         END IF
 
       CASE DEFAULT
-        PRINT *, "grph_removeVertex: Invalid graph format!"
+        CALL output_line('Invalid graph format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         CALL sys_halt()
       END SELECT
 
@@ -924,7 +954,8 @@ CONTAINS
       SELECT CASE(rgraph%cgraphFormat)
         
       CASE(GRPH_GRAPHUNORDERED_DIRECTED,GRPH_GRAPHORDERED_DIRECTED)
-        PRINT *, "We cannot remove directed graphs at the moment!"
+        CALL output_line('We cannot remove directed graphs at the moment!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         CALL sys_halt()
 
       CASE(GRPH_GRAPH7,GRPH_GRAPH9)
@@ -936,7 +967,8 @@ CONTAINS
         
         ! Get table for iVertex
         IF (btree_searchInTree(rgraph%rVertices,iVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
+          CALL output_line('Vertex does not exist in graph!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           CALL sys_halt()
         END IF
         ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -945,7 +977,8 @@ CONTAINS
         ! Get table for ireplaceVertex if required
         IF (bdoReplace) THEN
           IF (btree_searchInTree(rgraph%rVertices,ireplaceVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-            PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
+            CALL output_line('Vertex does not exist in graph!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             CALL sys_halt()
           END IF
           ipos          = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -962,7 +995,8 @@ CONTAINS
         
         IF (btree_deleteFromTree(rgraph%rVertices,&
             MERGE(ireplaceTable,iVertex,bdoReplace)).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
+          CALL output_line('Vertex does not exist in graph!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           CALL sys_halt()
         END IF
         
@@ -970,35 +1004,37 @@ CONTAINS
         !         edges (jVertex,iVertex) from the adjacency lists of jVertex.
         
         ! Find position of first entry in adjacency list
-        iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,itable,.TRUE.)
-        DO WHILE(iposVertex /= ANULL)
+        iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,itable,.TRUE.)
+        DO WHILE(iposVertex .NE. ARRLST_NULL)
           
           ! Get number of adjacent vertex
           jVertex=rgraph%rEdges%IData(iposVertex)
           
           ! Get position of next entry in adjacency list
-          iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,itable,.FALSE.)
+          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,itable,.FALSE.)
           
           ! Do nothing if both vertices are the same
-          IF (iVertex == jVertex) CYCLE
+          IF (iVertex .EQ. jVertex) CYCLE
 
           ! In addition, do nothing if the current vertex is identical to 
           ! the replacement vertex. Otherwise, we would have to re-insert
           ! it afterwards. Hence, it does not make sense to remove before.
-          IF (bdoReplace .AND. (ireplaceVertex == jVertex)) CYCLE
+          IF (bdoReplace .AND. (ireplaceVertex .EQ. jVertex)) CYCLE
 
           ! Get table for jVertex
           IF (btree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-            PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
+            CALL output_line('Vertex does not exist in graph!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             CALL sys_halt()
           END IF
           ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
           jtable = rgraph%rVertices%IData(1,ipos)
 
           ! Remove vertex iVertex from adjacency list of vertex jVertex
-          IF (arrlst_deleteFromArraylist(rgraph%rEdges,jtable,iVertex).EQ.&
+          IF (arrlst_deleteFromArrayList(rgraph%rEdges,jtable,iVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
-            PRINT *, "grph_removeVertex: Unable to delete vertex from adjacency list!"
+            CALL output_line('Unable to delete vertex from adjacency list!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             CALL sys_halt()
           END IF
           
@@ -1009,7 +1045,7 @@ CONTAINS
 
         ! Now, vertex iVertex does no longer exist in any adjacency list.
         ! Check if replacement vertex needs to be moved to position iVertex.
-        IF (bdoReplace .AND. (iVertex /= ireplaceVertex)) THEN
+        IF (bdoReplace .AND. (iVertex .NE. ireplaceVertex)) THEN
           
           ! Step 3(a): Loop through adjacency list of vertex ireplaceVertex and 
           !            delete all edges (jVertex,ireplaceVertex) from the adjacency
@@ -1018,59 +1054,63 @@ CONTAINS
           !            list of vertices iVertex and ireplaceVertex.
           
           ! Find position of first entry in adjacency list
-          iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,ireplaceTable,.TRUE.)
-          DO WHILE(iposVertex /= ANULL)
+          iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,ireplaceTable,.TRUE.)
+          DO WHILE(iposVertex .NE. ARRLST_NULL)
 
             ! Get number of adjacent vertex
             jVertex=rgraph%rEdges%IData(iposVertex)
             
             ! Get position of next entry in adjacency list
-            iposVertex=arrlst_getNextInArraylist(rgraph%rEdges,ireplaceTable,.FALSE.)
+            iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,ireplaceTable,.FALSE.)
             
             ! Do nothing if both vertices are the same. This situation required
             ! special treatment (see below)
-            IF ((ireplaceVertex == jVertex) .OR. iVertex == jVertex) CYCLE
+            IF ((ireplaceVertex .EQ. jVertex) .OR. iVertex .EQ. jVertex) CYCLE
             
             ! Get table for jVertex
             IF (btree_searchInTree(rgraph%rVertices,jVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-              PRINT *, "grph_removeVertex: Vertex does not exist in graph!"
+              CALL output_line('Vertex does not exist in graph!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               CALL sys_halt()
             END IF
             ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
             jtable = rgraph%rVertices%IData(1,ipos)
             
             ! Remove vertex lastVertex from adjacency list of vertex jVertex
-            IF (arrlst_deleteFromArraylist(rgraph%rEdges,jtable,ireplaceVertex).EQ.&
+            IF (arrlst_deleteFromArrayList(rgraph%rEdges,jtable,ireplaceVertex).EQ.&
                 ARRAYLIST_NOT_FOUND) THEN
-              PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
+              CALL output_line('Unable to update vertex in adjacency list!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               CALL sys_halt()
             END IF
             
             ! Look for position of edge (jVertex,iVertex)
-            IF (arrlst_searchInArraylist(rgraph%rEdges,jtable,&
+            IF (arrlst_searchInArrayList(rgraph%rEdges,jtable,&
                 iVertex,ipred).EQ.ARRAYLIST_FOUND) THEN
-              PRINT *, "grph_removeVertex: Vertex replacement already exists in adjacency list!"
+              CALL output_line('Vertex replacement already exists in adjacency list!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               CALL sys_halt()
             END IF
             
             ! Insert edge (jVertex,iVertex) into adjacency list
-            CALL arrlst_insertIntoArraylist(rgraph%rEdges,jtable,iVertex,ipred,ipos)            
+            CALL arrlst_insertIntoArrayList(rgraph%rEdges,jtable,iVertex,ipred,ipos)            
           END DO
 
           ! Remove the trivial edge (ireplaceVertex,ireplaceVertex) from the adjacency
           ! list. Note that the trivial edge (iVertex,iVertex) still exists and has
           ! not been removed in the upper removal loop
-          IF (arrlst_deleteFromArraylist(rgraph%rEdges,ireplaceTable,ireplaceVertex).EQ.&
+          IF (arrlst_deleteFromArrayList(rgraph%rEdges,ireplaceTable,ireplaceVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
-            PRINT *, "grph_removeVertex: Unable to update vertex in adjacency list!"
+            CALL output_line('Unable to update vertex in adjacency list!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             CALL sys_halt()
           END IF
 
           ! Swap adjacency list of vertices iVertex and ireplaceVertex
-          CALL arrlst_swapArraylist(rgraph%rEdges,itable,ireplaceTable)
+          CALL arrlst_swapArrayList(rgraph%rEdges,itable,ireplaceTable)
 
           ! Release adjacency list of vertex ireplaceVertex
-          CALL arrlst_releaseArraylist(rgraph%rEdges,ireplaceTable)
+          CALL arrlst_releaseArrayList(rgraph%rEdges,ireplaceTable)
           
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
@@ -1081,7 +1121,7 @@ CONTAINS
         ELSE
           
           ! Step 3(b): Release adjacency list of vertex iVertex
-          CALL arrlst_releaseArraylist(rgraph%rEdges,itable)
+          CALL arrlst_releaseArrayList(rgraph%rEdges,itable)
           
           ! Decrease number of vertices by one
           rgraph%NVT = rgraph%NVT-1
@@ -1091,7 +1131,8 @@ CONTAINS
         END IF
         
       CASE DEFAULT
-        PRINT *, "grph_removeVertex: Invalid graph format!"
+        CALL output_line('Invalid graph format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
         CALL sys_halt()
       END SELECT   
     END IF
@@ -1151,7 +1192,7 @@ CONTAINS
       itable = rgraph%rVertices%IData(1,ipos)
     END IF
 
-    bexists = (arrlst_searchInArraylist(rgraph%rEdges,itable,iToVertex,ipos).EQ.ARRAYLIST_FOUND)
+    bexists = (arrlst_searchInArrayList(rgraph%rEdges,itable,iToVertex,ipos).EQ.ARRAYLIST_FOUND)
 
     ! Return edge position if required
     IF (bexists .AND. PRESENT(iEdgePosition)) THEN
@@ -1206,10 +1247,10 @@ CONTAINS
       IF (rgraph%bisDense) THEN
         
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,iToVertex,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,iToVertex,&
             iFromVertex,ipred).EQ.ARRAYLIST_NOT_FOUND) THEN
           
-          CALL arrlst_appendToArraylist(rgraph%rEdges,iToVertex,iFromVertex,ipos)
+          CALL arrlst_appendToArrayList(rgraph%rEdges,iToVertex,iFromVertex,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
 
           IF (PRESENT(iToEdgePosition)) iToEdgePosition=ipos
@@ -1218,17 +1259,18 @@ CONTAINS
 
         ! Get table associated with vertex iToVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_insertEdge: Vertex does not exists!"
+          CALL output_line('Vertex does not exists!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,itable,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
             iFromVertex,ipred).EQ.ARRAYLIST_NOT_FOUND) THEN
           
-          CALL arrlst_appendToArraylist(rgraph%rEdges,itable,iFromVertex,ipos)
+          CALL arrlst_appendToArrayList(rgraph%rEdges,itable,iFromVertex,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
 
           IF (PRESENT(iToEdgePosition)) iToEdgePosition=ipos
@@ -1241,10 +1283,10 @@ CONTAINS
       IF (rgraph%bisDense) THEN
         
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,iToVertex,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,iToVertex,&
             iFromVertex,ipred).EQ.ARRAYLIST_NOT_FOUND) THEN
           
-          CALL arrlst_insertIntoArraylist(rgraph%rEdges,iToVertex,iFromVertex,ipred,ipos)
+          CALL arrlst_insertIntoArrayList(rgraph%rEdges,iToVertex,iFromVertex,ipred,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
 
           IF (PRESENT(iToEdgePosition)) iToEdgePosition=ipos
@@ -1253,17 +1295,18 @@ CONTAINS
 
         ! Get table associated with vertex iToVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_insertEdge: Vertex does not exists!"
+          CALL output_line('Vertex does not exists!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,itable,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
             iFromVertex,ipred).EQ.ARRAYLIST_NOT_FOUND) THEN
           
-          CALL arrlst_insertIntoArraylist(rgraph%rEdges,itable,iFromVertex,ipred,ipos)
+          CALL arrlst_insertIntoArrayList(rgraph%rEdges,itable,iFromVertex,ipred,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
 
           IF (PRESENT(iToEdgePosition)) iToEdgePosition=ipos
@@ -1276,20 +1319,20 @@ CONTAINS
       IF (rgraph%bisDense) THEN
 
         ! Insert entry iFromVertex into adjacency list of vertex iToVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,iToVertex,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,iToVertex,&
             iFromVertex,ipred).NE.ARRAYLIST_FOUND) THEN
 
-          CALL arrlst_insertIntoArraylist(rgraph%rEdges,iToVertex,iFromVertex,ipred,ipos)
+          CALL arrlst_insertIntoArrayList(rgraph%rEdges,iToVertex,iFromVertex,ipred,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
 
           IF (PRESENT(iToEdgePosition)) iToEdgePosition=ipos
         END IF
         
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,iFromVertex,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,iFromVertex,&
             iToVertex,ipred).EQ.ARRAYLIST_NOT_FOUND) THEN
           
-          CALL arrlst_insertIntoArraylist(rgraph%rEdges,iFromVertex,iToVertex,ipred,ipos)
+          CALL arrlst_insertIntoArrayList(rgraph%rEdges,iFromVertex,iToVertex,ipred,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
           
           IF (PRESENT(iFromEdgePosition)) iFromEdgePosition=ipos
@@ -1298,17 +1341,18 @@ CONTAINS
         
         ! Get table associated with vertex iToVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_insertEdge: Vertex does not exists!"
+          CALL output_line('Vertex does not exists!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
 
         ! Insert entry iFromVertex into adjacency list of vertex iToVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,itable,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
             iFromVertex,ipred).NE.ARRAYLIST_FOUND) THEN
           
-          CALL arrlst_insertIntoArraylist(rgraph%rEdges,itable,iFromVertex,ipred,ipos)
+          CALL arrlst_insertIntoArrayList(rgraph%rEdges,itable,iFromVertex,ipred,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
 
           IF (PRESENT(iToEdgePosition)) iToEdgePosition=ipos
@@ -1316,17 +1360,18 @@ CONTAINS
 
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_insertEdge: Vertex does not exists!"
+          CALL output_line('Vertex does not exists!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
-        IF (arrlst_searchInArraylist(rgraph%rEdges,itable,&
+        IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
             iToVertex,ipred).EQ.ARRAYLIST_NOT_FOUND) THEN
           
-          CALL arrlst_insertIntoArraylist(rgraph%rEdges,itable,iToVertex,ipred,ipos)
+          CALL arrlst_insertIntoArrayList(rgraph%rEdges,itable,iToVertex,ipred,ipos)
           rgraph%NEDGE = rgraph%NEDGE+1
 
           IF (PRESENT(iFromEdgePosition)) iFromEdgePosition=ipos
@@ -1335,7 +1380,8 @@ CONTAINS
 
       
     CASE DEFAULT
-      PRINT *, "grph_addEdge: Unsupported graph format!"
+      CALL output_line('Unsupported graph format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_insertEdge
@@ -1379,20 +1425,21 @@ CONTAINS
       IF (rgraph%bisDense) THEN
 
         ! Remove vertex iToVertex from table iFromVertex
-        IF (arrlst_deleteFromArraylist(rgraph%rEdges,iFromVertex,iToVertex)&
+        IF (arrlst_deleteFromArrayList(rgraph%rEdges,iFromVertex,iToVertex)&
             .EQ.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
       ELSE
 
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_insertEdge: Vertex does not exists!"
+          CALL output_line('Vertex does not exist!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
         
         ! Remove vertex iToVertex from table iFromVertex
-        IF (arrlst_deleteFromArraylist(rgraph%rEdges,itable,iToVertex)&
+        IF (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iToVertex)&
             .EQ.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
       END IF
 
@@ -1402,43 +1449,72 @@ CONTAINS
       IF (rgraph%bisDense) THEN
         
         ! Remove vertex iToVertex from table iFromVertex
-        IF (arrlst_deleteFromArraylist(rgraph%rEdges,iFromVertex,iToVertex)&
+        IF (arrlst_deleteFromArrayList(rgraph%rEdges,iFromVertex,iToVertex)&
             .EQ.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
 
         ! Remove vertex iFromVertex from table iToVertex
-        IF (arrlst_deleteFromArraylist(rgraph%rEdges,iToVertex,iFromVertex)&
+        IF (arrlst_deleteFromArrayList(rgraph%rEdges,iToVertex,iFromVertex)&
             .EQ.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
       ELSE
 
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iFromVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_insertEdge: Vertex does not exists!"
+          CALL output_line('Vertex does not exist!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
         
         ! Remove vertex iToVertex from table iFromVertex
-        IF (arrlst_deleteFromArraylist(rgraph%rEdges,itable,iToVertex)&
+        IF (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iToVertex)&
             .EQ.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
 
         ! Get table associated with vertex iFromVertex
         IF (btree_searchInTree(rgraph%rVertices,iToVertex,ipred).EQ.BTREE_NOT_FOUND) THEN
-          PRINT *, "grph_insertEdge: Vertex does not exists!"
+          CALL output_line('Vertex does not exist!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           CALL sys_halt()
         END IF
         ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         itable = rgraph%rVertices%IData(1,ipos)
 
         ! Remove vertex iFromVertex from table iToVertex
-        IF (arrlst_deleteFromArraylist(rgraph%rEdges,itable,iFromVertex)&
+        IF (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iFromVertex)&
             .EQ.ARRAYLIST_FOUND) rgraph%NEDGE = rgraph%NEDGE-1
       END IF
 
 
     CASE DEFAULT
-      PRINT *, "grph_removeEdge: Unsupported graph format!"
+      CALL output_line('Unsupported graph format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE grph_removeEdge
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE grph_infoGraph(rgraph)
+
+!<description>
+    ! This subroutine prints information about the grahp
+!</description>
+
+!<input>
+    ! graph
+    TYPE(t_graph), INTENT(IN) :: rgraph
+!</input>
+!</subroutine>
+
+    CALL output_line('Graph statistics:')
+    CALL output_line('-----------------')
+    CALL output_line('cgraphFormat: '//TRIM(sys_siL(rgraph%cgraphFormat,2)))
+    CALL output_line('bisDense:     '//MERGE('Yes','No ',rgraph%bisDense))
+    CALL output_line('NVT:          '//TRIM(sys_siL(rgraph%NVT,15)))
+    CALL output_line('NEDGE:        '//TRIM(sys_siL(rgraph%NEDGE,15)))
+    CALL output_line('')
+    
+  END SUBROUTINE grph_infoGraph
 END MODULE graph
