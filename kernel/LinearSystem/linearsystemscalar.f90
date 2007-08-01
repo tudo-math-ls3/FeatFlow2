@@ -16912,7 +16912,8 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX) :: isize
 
-    WRITE(*,FMT='(A)') '-------------------------'
+    CALL output_line ('ScalarMatrix:')
+    CALL output_line ('-------------')
     CALL output_line ('cmatrixFormat:           '//TRIM(sys_siL(rmatrix%cmatrixFormat,15)))
     CALL output_line ('cinterleavematrixFormat: '//TRIM(sys_siL(rmatrix%cinterleaveMatrixFormat,15)))
     CALL output_line ('cdataType:               '//TRIM(sys_siL(rmatrix%cdataType,15)))
@@ -16952,7 +16953,6 @@ CONTAINS
         CALL output_line ('Kdiagonl memory usage:   '//TRIM(sys_sdL(100/REAL(isize,DP)*(rmatrix%NCOLS+1),2))//'%')
       END IF
     END IF
-    WRITE(*,FMT='(A)')       '-------------------------'
   END SUBROUTINE lsyssc_infoMatrix
 
   ! ***************************************************************************
