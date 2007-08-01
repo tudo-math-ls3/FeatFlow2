@@ -178,7 +178,7 @@
 !# 50.) lsyssc_hasMatrixStructure
 !#      -> Check if a matrix has a structure in memory or not.
 !#
-!# 50.) lsyssc_hasMatrixContent
+!# 51.) lsyssc_hasMatrixContent
 !#      -> Check if a matrix has a content in memory or not.
 !#
 !# Sometimes useful auxiliary routines:
@@ -16912,15 +16912,15 @@ CONTAINS
     ! local variables
     INTEGER(PREC_MATIDX) :: isize
 
-    WRITE(*,FMT='(A)')       '-------------------------'
+    WRITE(*,FMT='(A)') '-------------------------'
     CALL output_line ('cmatrixFormat:           '//TRIM(sys_siL(rmatrix%cmatrixFormat,15)))
     CALL output_line ('cinterleavematrixFormat: '//TRIM(sys_siL(rmatrix%cinterleaveMatrixFormat,15)))
     CALL output_line ('cdataType:               '//TRIM(sys_siL(rmatrix%cdataType,15)))
     CALL output_line ('imatrixSpec:             '//TRIM(sys_siL(rmatrix%imatrixSpec,15)))
-    CALL output_line ('NA:                      '//TRIM(sys_siL(rmatrix%NA,0)))
-    CALL output_line ('NEQ:                     '//TRIM(sys_siL(rmatrix%NEQ,0)))
-    CALL output_line ('NCOLS:                   '//TRIM(sys_siL(rmatrix%NCOLS,0)))
-    CALL output_line ('NVAR:                    '//TRIM(sys_siL(rmatrix%NVAR,0)))
+    CALL output_line ('NA:                      '//TRIM(sys_siL(rmatrix%NA,15)))
+    CALL output_line ('NEQ:                     '//TRIM(sys_siL(rmatrix%NEQ,15)))
+    CALL output_line ('NCOLS:                   '//TRIM(sys_siL(rmatrix%NCOLS,15)))
+    CALL output_line ('NVAR:                    '//TRIM(sys_siL(rmatrix%NVAR,15)))
     CALL output_line ('dscaleFactor:            '//TRIM(sys_sdL(rmatrix%dscaleFactor,2)))
     CALL output_line ('isortStrategy:           '//TRIM(sys_siL(rmatrix%isortStrategy,15)))
     CALL output_line ('h_IsortPermutation:      '//TRIM(sys_siL(rmatrix%h_IsortPermutation,15)))
