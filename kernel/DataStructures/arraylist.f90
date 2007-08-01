@@ -12,76 +12,76 @@
 !# 1.) arrlst_createArrayList
 !#     -> Create an empty arraylist
 !#
-!# 2.) arrlst_releaseArrayList = t_arraylist_release /
-!#                               t_arraylist_release_table
+!# 2.) arrlst_releaseArrayList = arrlst_releaseArrayList /
+!#                               arrlst_releaseArrayList_table
 !#     -> Release an existing arraylist
 !#
-!# 3.) arrlst_resizeArrayList = t_arraylist_resize
+!# 3.) arrlst_resizeArrayList
 !#     -> Reallocate memory for an existing arraylist
 !#
-!# 4.) arrlst_copyArrayList = t_arraylist_copyfrom /
-!#                            t_arraylist_copyfromDble /
-!#                            t_arraylist_copyfromSngl /
-!#                            t_arraylist_copyfromInt /
-!#                            t_arraylist_copyto /
-!#                            t_arraylist_copytoDble /
-!#                            t_arraylist_copytoSngl /
-!#                            t_arraylist_copytoInt
+!# 4.) arrlst_copyArrayList = arrlst_copyFromArrayList /
+!#                            arrlst_copyFromArrayListDble /
+!#                            arrlst_copyFromArrayListSngl /
+!#                            arrlst_copyFromArrayListInt /
+!#                            arrlst_copyToArrayList /
+!#                            arrlst_copyToArrayListDble /
+!#                            arrlst_copyToArrayListSngl /
+!#                            arrlst_copyToArrayListInt
 !#     -> Copy data to/from an arraylist for a given table
 !#
-!# 5.) arrlst_copyArrayListTable = t_arraylist_copyfrom_table /
-!#                                 t_arraylist_copyfromDble_table /
-!#                                 t_arraylist_copyfromSngl_table /
-!#                                 t_arraylist_copyfromInt_table /
-!#                                 t_arraylist_copyto_table /
-!#                                 t_arraylist_copytoDble_table /
-!#                                 t_arraylist_copytoSngl_table /
-!#                                 t_arraylist_copytoInt_table
+!# 5.) arrlst_copyArrayListTable = arrlst_copyFromArrayList_table /
+!#                                 arrlst_copyFromArrayListDble_table /
+!#                                 arrlst_copyFromArrayListSngl_table /
+!#                                 arrlst_copyFromArrayListInt_table /
+!#                                 arrlst_copyToArrayList_table /
+!#                                 arrlst_copyToArrayListDble_table /
+!#                                 arrlst_copyToArrayListSngl_table /
+!#                                 arrlst_copyToArrayListInt_table
 !#     -> Copy data to/from an arraylist for a complete table
 !#        structure
 !#
 !# 6.) arrlst_swapArrayList
 !#     -> Swap two lists in the table
 !#
-!# 7.) arrlst_getFirstInArraylist
+!# 7.) arrlst_getFirstInArrayList
 !#     -> Get the position of the first item in arraylist
 !#
-!# 8.) arrlst_getLastInArraylist
+!# 8.) arrlst_getLastInArrayList
 !#     -> Get the position of the last item in arraylist
 !#
-!# 9.) arrlst_getNextInArraylist
+!# 9.) arrlst_getNextInArrayList
 !#     -> Get the position of the next item in arraylist
 !#
-!# 10.) arrlst_prependToArraylist = t_arraylist_prependDble /
-!#                                  t_arraylist prependSngl /
-!#                                  t_arraylist_prependInt
+!# 10.) arrlst_prependToArrayList = arrlst_prependToArrayListDble /
+!#                                  arrlst_prependToArrayListSngl /
+!#                                  arrlst_prependToArrayListInt
 !#     -> Prepend data to arraylist
 !#
-!# 11.) arrlst_appendToArrayist = t_arraylist_appendDble /
-!#                                t_arraylist_appendSngl /
-!#                                t_arraylist_appendInt
+!# 11.) arrlst_appendToArrayist = arrlst_appendToArrayListDble /
+!#                                arrlst_appendToArrayListSngl /
+!#                                arrlst_appendToArrayListInt
 !#      -> Append data to arraylist
 !#
-!# 12.) arrlst_insertIntoArraylist = t_arraylist_insertDble /
-!#                                   t_arraylist_insertSngl /
-!#                                   t_arraylist_insertInt
+!# 12.) arrlst_insertIntoArrayList = arrlst_insertIntoArrayListDble /
+!#                                   arrlst_insertIntoArrayListSngl /
+!#                                   arrlst_insertIntoArrayListInt
 !#      -> Insert data into arraylist
 !#
-!# 13.) arrlst_deleteFromArraylist = t_arraylist_deleteDble /
-!#                                   t_arraylist_deleteSngl /
-!#                                   t_arraylist_deleteInt
+!# 13.) arrlst_deleteFromArrayList = arrlst_deleteFromArrayListDble /
+!#                                   arrlst_deleteFromArrayListSngl /
+!#                                   arrlst_deleteFromArrayListInt
 !#      -> Delete data from arraylist
 !#
-!# 14.) arrlst_searchInArraylist = t_arraylist_searchDble /
-!#                                 t_arraylist_searchSngl /
-!#                                 t_arraylist_searchInt
+!# 14.) arrlst_searchInArrayList = arrlst_searchInArrayListDble /
+!#                                 arrlst_searchInArrayListSngl /
+!#                                 arrlst_searchInArrayListInt
 !#      -> Search for data in arraylist
 !#
-!# 15.) arrlst_printArraylist
+!# 15.) arrlst_printArrayList
 !#      -> Print content of arraylist
 !#
-!# 16.) arrlst_infoArraylist
-!#      -> Prit info about arraylist
+!# 16.) arrlst_infoArrayList
+!#      -> Print information about arraylist
 !#
 !# </purpose>
 !##############################################################################
@@ -89,26 +89,27 @@
 MODULE arraylist
   USE fsystem
   USE storage
+  USE genoutput
   IMPLICIT NONE
   
   PRIVATE
   PUBLIC :: t_arraylist
-  PUBLIC :: arrlst_createArraylist
-  PUBLIC :: arrlst_releaseArraylist
-  PUBLIC :: arrlst_resizeArraylist
-  PUBLIC :: arrlst_copyArraylist
-  PUBLIC :: arrlst_copyArraylistTable
-  PUBLIC :: arrlst_swapArraylist
-  PUBLIC :: arrlst_getFirstInArraylist
-  PUBLIC :: arrlst_getLastInArraylist
-  PUBLIC :: arrlst_getNextInArraylist
-  PUBLIC :: arrlst_prependToArraylist
-  PUBLIC :: arrlst_appendToArraylist
-  PUBLIC :: arrlst_insertIntoArraylist
-  PUBLIC :: arrlst_deleteFromArraylist
-  PUBLIC :: arrlst_searchInArraylist
-  PUBLIC :: arrlst_printArraylist
-  PUBLIC :: arrlst_infoArraylist
+  PUBLIC :: arrlst_createArrayList
+  PUBLIC :: arrlst_releaseArrayList
+  PUBLIC :: arrlst_resizeArrayList
+  PUBLIC :: arrlst_copyArrayList
+  PUBLIC :: arrlst_copyArrayListTable
+  PUBLIC :: arrlst_swapArrayList
+  PUBLIC :: arrlst_getFirstInArrayList
+  PUBLIC :: arrlst_getLastInArrayList
+  PUBLIC :: arrlst_getNextInArrayList
+  PUBLIC :: arrlst_prependToArrayList
+  PUBLIC :: arrlst_appendToArrayList
+  PUBLIC :: arrlst_insertIntoArrayList
+  PUBLIC :: arrlst_deleteFromArrayList
+  PUBLIC :: arrlst_searchInArrayList
+  PUBLIC :: arrlst_printArrayList
+  PUBLIC :: arrlst_infoArrayList
 
 !<constants>
 
@@ -151,19 +152,22 @@ MODULE arraylist
 !<constantblock description="Internal tags for arraylist status">
   
   ! Tag for empty arraylist
-  INTEGER, PARAMETER, PUBLIC :: ANULL =  0
+  INTEGER, PARAMETER, PUBLIC :: ARRLST_NULL =  0
 
-  ! Tag for next free position in storage
-  INTEGER, PARAMETER :: LFREE = 0
+  ! Tag for next free position in storage of arraylist
+  INTEGER, PARAMETER :: ARRLST_FREE = 0
 
-  ! Tag for head of arraylist
-  INTEGER, PARAMETER :: LHEAD = 1
+  ! Tag for head of each list
+  INTEGER, PARAMETER :: ARRLST_HEAD = 1
 
-  ! Tag for tail of arraylist
-  INTEGER, PARAMETER :: LTAIL = 2
+  ! Tag for tail of each list
+  INTEGER, PARAMETER :: ARRLST_TAIL = 2
 
-  ! Tag for last item stored in arraylist
-  INTEGER, PARAMETER :: LITEM = 3
+  ! Tag for last item stored in each list
+  INTEGER, PARAMETER :: ARRLST_ITEM = 3
+
+  ! Tag for number of entries stored in each list
+  INTEGER, PARAMETER :: ARRLST_NA   = 4
 
 !</constantblock>
 !</constants>
@@ -226,19 +230,19 @@ MODULE arraylist
     ! performance would be very poor.
     INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:,:), POINTER :: Ktable => NULL()
     
-    ! Arraylist structure
+    ! ArrayList structure
     ! NOTE: This array is introduced to increase performance (see above).
     INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:), POINTER :: Knext => NULL()
 
-    ! Arraylist data (Double)
+    ! ArrayList data (Double)
     ! NOTE: This array is introduced to increase performance (see above).
     REAL(DP), DIMENSION(:), POINTER :: DData => NULL()
 
-    ! Arraylist data (Single)
+    ! ArrayList data (Single)
     ! NOTE: This array is introduced to increase performance (see above).
     REAL(SP), DIMENSION(:), POINTER :: SData => NULL()
 
-    ! Arraylist data (Integer)
+    ! ArrayList data (Integer)
     ! NOTE: This array is introduced to increase performance (see above).
     INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:), POINTER :: IData => NULL()
   END TYPE t_arraylist
@@ -249,129 +253,62 @@ MODULE arraylist
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
-
-  INTERFACE arrlst_createArraylist
-    MODULE PROCEDURE t_arraylist_create
-  END INTERFACE
-
-  INTERFACE create_table ! internal use
-    MODULE PROCEDURE t_arraylist_create_table
-  END INTERFACE
   
-  INTERFACE arrlst_releaseArraylist
-    MODULE PROCEDURE t_arraylist_release
-    MODULE PROCEDURE t_arraylist_release_table
-  END INTERFACE
+  INTERFACE arrlst_releaseArrayList
+    MODULE PROCEDURE arrlst_releaseArrayList
+    MODULE PROCEDURE arrlst_releaseArrayList_table
+  END INTERFACE 
   
-  INTERFACE arrlst_resizeArraylist
-    MODULE PROCEDURE t_arraylist_resize
-  END INTERFACE
-  INTERFACE resize   ! internal use
-    MODULE PROCEDURE t_arraylist_resize
-  END INTERFACE
-  INTERFACE resize_table ! internal use
-    MODULE PROCEDURE t_arraylist_resize_table
-  END INTERFACE
-  
-  INTERFACE arrlst_copyArraylist
-    MODULE PROCEDURE t_arraylist_copyfrom
-    MODULE PROCEDURE t_arraylist_copyfromDble
-    MODULE PROCEDURE t_arraylist_copyfromSngl
-    MODULE PROCEDURE t_arraylist_copyfromInt
-    MODULE PROCEDURE t_arraylist_copyto
-    MODULE PROCEDURE t_arraylist_copytoDble
-    MODULE PROCEDURE t_arraylist_copytoSngl
-    MODULE PROCEDURE t_arraylist_copytoInt
+  INTERFACE arrlst_copyArrayList
+    MODULE PROCEDURE arrlst_copyFromArrayList
+    MODULE PROCEDURE arrlst_copyFromArrayListDble
+    MODULE PROCEDURE arrlst_copyFromArrayListSngl
+    MODULE PROCEDURE arrlst_copyFromArrayListInt
+    MODULE PROCEDURE arrlst_copyToArrayList
+    MODULE PROCEDURE arrlst_copyToArrayListDble
+    MODULE PROCEDURE arrlst_copyToArrayListSngl
+    MODULE PROCEDURE arrlst_copyToArrayListInt
   END INTERFACE
 
-  INTERFACE arrlst_copyArraylistTable
-    MODULE PROCEDURE t_arraylist_copyfrom_table
-    MODULE PROCEDURE t_arraylist_copyfromDble_table
-    MODULE PROCEDURE t_arraylist_copyfromSngl_table
-    MODULE PROCEDURE t_arraylist_copyfromInt_table
-    MODULE PROCEDURE t_arraylist_copyto_table
-    MODULE PROCEDURE t_arraylist_copytoDble_table
-    MODULE PROCEDURE t_arraylist_copytoSngl_table
-    MODULE PROCEDURE t_arraylist_copytoInt_table
+  INTERFACE arrlst_copyArrayListTable
+    MODULE PROCEDURE arrlst_copyFromArrayList_table
+    MODULE PROCEDURE arrlst_copyFromArrayListDble_table
+    MODULE PROCEDURE arrlst_copyFromArrayListSngl_table
+    MODULE PROCEDURE arrlst_copyFromArrayListInt_table
+    MODULE PROCEDURE arrlst_copyToArrayList_table
+    MODULE PROCEDURE arrlst_copyToArrayListDble_table
+    MODULE PROCEDURE arrlst_copyToArrayListSngl_table
+    MODULE PROCEDURE arrlst_copyToArrayListInt_table
   END INTERFACE
-  
-  INTERFACE arrlst_swapArraylist
-    MODULE PROCEDURE t_arraylist_swap
+    
+  INTERFACE arrlst_prependToArrayList
+    MODULE PROCEDURE arrlst_prependToArrayListDble
+    MODULE PROCEDURE arrlst_prependToArrayListSngl
+    MODULE PROCEDURE arrlst_prependToArrayListInt
   END INTERFACE
-  
-  INTERFACE arrlst_getFirstInArraylist
-    MODULE PROCEDURE t_arraylist_first
+   
+  INTERFACE arrlst_appendToArrayList
+    MODULE PROCEDURE arrlst_appendToArrayListDble
+    MODULE PROCEDURE arrlst_appendToArrayListSngl
+    MODULE PROCEDURE arrlst_appendToArrayListInt
   END INTERFACE
-  
-  INTERFACE arrlst_getLastInArraylist
-    MODULE PROCEDURE t_arraylist_last
+   
+  INTERFACE arrlst_insertIntoArrayList
+    MODULE PROCEDURE arrlst_insertIntoArrayListDble
+    MODULE PROCEDURE arrlst_insertIntoArrayListSngl
+    MODULE PROCEDURE arrlst_insertIntoArrayListInt
   END INTERFACE
-  
-  INTERFACE arrlst_getNextInArraylist
-    MODULE PROCEDURE t_arraylist_next
+ 
+  INTERFACE arrlst_deleteFromArrayList
+    MODULE PROCEDURE arrlst_deleteFromArrayListDble
+    MODULE PROCEDURE arrlst_deleteFromArrayListSngl
+    MODULE PROCEDURE arrlst_deleteFromArrayListInt
   END INTERFACE
-  
-  INTERFACE arrlst_prependToArraylist
-    MODULE PROCEDURE t_arraylist_prependDble
-    MODULE PROCEDURE t_arraylist_prependSngl
-    MODULE PROCEDURE t_arraylist_prependInt
-  END INTERFACE
-  INTERFACE prepend   ! internal use
-    MODULE PROCEDURE t_arraylist_prependDble
-    MODULE PROCEDURE t_arraylist_prependSngl
-    MODULE PROCEDURE t_arraylist_prependInt
-  END INTERFACE
-  
-  INTERFACE arrlst_appendToArraylist
-    MODULE PROCEDURE t_arraylist_appendDble
-    MODULE PROCEDURE t_arraylist_appendSngl
-    MODULE PROCEDURE t_arraylist_appendInt
-  END INTERFACE
-  INTERFACE append   ! internal use
-    MODULE PROCEDURE t_arraylist_appendDble
-    MODULE PROCEDURE t_arraylist_appendSngl
-    MODULE PROCEDURE t_arraylist_appendInt
-  END INTERFACE
-  
-  INTERFACE arrlst_insertIntoArraylist
-    MODULE PROCEDURE t_arraylist_insertDble
-    MODULE PROCEDURE t_arraylist_insertSngl
-    MODULE PROCEDURE t_arraylist_insertInt
-  END INTERFACE
-  INTERFACE insert   ! internal use
-    MODULE PROCEDURE t_arraylist_insertDble
-    MODULE PROCEDURE t_arraylist_insertSngl
-    MODULE PROCEDURE t_arraylist_insertInt
-  END INTERFACE
-
-  INTERFACE arrlst_deleteFromArraylist
-    MODULE PROCEDURE t_arraylist_deleteDble
-    MODULE PROCEDURE t_arraylist_deleteSngl
-    MODULE PROCEDURE t_arraylist_deleteInt
-  END INTERFACE
-  INTERFACE delete   ! internal use
-    MODULE PROCEDURE t_arraylist_deleteDble
-    MODULE PROCEDURE t_arraylist_deleteSngl
-    MODULE PROCEDURE t_arraylist_deleteInt
-  END INTERFACE
-  
-  INTERFACE arrlst_searchInArraylist
-    MODULE PROCEDURE t_arraylist_searchDble
-    MODULE PROCEDURE t_arraylist_searchSngl
-    MODULE PROCEDURE t_arraylist_searchInt
-  END INTERFACE
-  INTERFACE search   ! internal use
-    MODULE PROCEDURE t_arraylist_searchDble
-    MODULE PROCEDURE t_arraylist_searchSngl
-    MODULE PROCEDURE t_arraylist_searchInt
-  END INTERFACE
-  
-  INTERFACE arrlst_printArraylist
-    MODULE PROCEDURE t_arraylist_print
-  END INTERFACE
-
-  INTERFACE arrlst_infoArraylist
-    MODULE PROCEDURE t_arraylist_info
+    
+  INTERFACE arrlst_searchInArrayList
+    MODULE PROCEDURE arrlst_searchInArrayListDble
+    MODULE PROCEDURE arrlst_searchInArrayListSngl
+    MODULE PROCEDURE arrlst_searchInArrayListInt
   END INTERFACE
   
   ! ***************************************************************************
@@ -384,7 +321,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE t_arraylist_create(rarraylist,nntable,nna,carraylistFormat,cordering,dfactor)
+  SUBROUTINE arrlst_createArrayList(rarraylist,nntable,nna,carraylistFormat,cordering,dfactor)
 
 !<description>
     ! This subroutine creates a new arraylist
@@ -440,45 +377,45 @@ CONTAINS
     rarraylist%NRESIZE  = 0
 
     ! Allocate memory and associate pointers
-    Isize=(/3,nntable/)
-    CALL storage_new('t_arraylist_create','Ktable',Isize,&
+    Isize=(/4,nntable/)
+    CALL storage_new('arrlst_createArrayList','Ktable',Isize,&
         ST_INT,rarraylist%h_Ktable,ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%Ktable)
     
-    CALL storage_new('t_arraylist_create','Knext',LFREE,nna,ST_INT,&
+    CALL storage_new('arrlst_createArrayList','Knext',ARRLST_FREE,nna,ST_INT,&
         rarraylist%h_Knext,ST_NEWBLOCK_NOINIT)
     CALL storage_getbase_int(rarraylist%h_Knext,rarraylist%Knext)
 
     SELECT CASE(rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
-      CALL storage_new('t_arraylist_create','Data',nna,ST_DOUBLE,&
+      CALL storage_new('arrlst_createArrayList','Data',nna,ST_DOUBLE,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_double(rarraylist%h_Data,rarraylist%DData)
       
     CASE (ST_SINGLE)
-      CALL storage_new('t_arraylist_create','Data',nna,ST_SINGLE,&
+      CALL storage_new('arrlst_createArrayList','Data',nna,ST_SINGLE,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_single(rarraylist%h_Data,rarraylist%SData)
       
     CASE (ST_INT)
-      CALL storage_new('t_arraylist_create','Data',nna,ST_INT,&
+      CALL storage_new('arrlst_createArrayList','Data',nna,ST_INT,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
       CALL storage_getbase_int(rarraylist%h_Data,rarraylist%IData)
       
     CASE DEFAULT
-      PRINT *, 't_arraylist_create: Unsupported data format!'
+      PRINT *, 'arrlst_createArrayList: Unsupported data format!'
       CALL sys_halt()
     END SELECT
     
     ! Initialize list structures
-    rarraylist%Knext(LFREE)    = 1
-  END SUBROUTINE t_arraylist_create
+    rarraylist%Knext(ARRLST_FREE)    = 1
+  END SUBROUTINE arrlst_createArrayList
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_create_table(rarraylist,itable)
+  SUBROUTINE arrlst_createArrayList_table(rarraylist,itable)
 
 !<description>
     ! This subroutine creates new table entries up to position
@@ -500,26 +437,26 @@ CONTAINS
     
     ! Check if table number is valid
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_create_table: Invalid table number"
+      PRINT *, "arrlst_createArrayList_table: Invalid table number"
       CALL sys_halt()
     END IF
 
     ! Resize tables if required
-    IF (itable > rarraylist%NNTABLE) CALL resize_table(rarraylist,&
-        CEILING(itable*rarraylist%dfactor))
+    IF (itable > rarraylist%NNTABLE) CALL arrlst_resizeArrayList_table(&
+        rarraylist,CEILING(itable*rarraylist%dfactor))
     
     ! Initialize structures
-    rarraylist%Ktable(LHEAD:LITEM,rarraylist%NTABLE+1:itable) = ANULL
+    rarraylist%Ktable(ARRLST_HEAD:ARRLST_NA,rarraylist%NTABLE+1:itable) = ARRLST_NULL
 
     ! Set new table size
-    rarraylist%NTABLE=itable
-  END SUBROUTINE t_arraylist_create_table
+    rarraylist%NTABLE = MAX(rarraylist%NTABLE,itable)
+  END SUBROUTINE arrlst_createArrayList_table
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE t_arraylist_release(rarraylist)
+  SUBROUTINE arrlst_releaseArrayList(rarraylist)
 
 !<description>
     ! This subroutine releases an existing arraylist
@@ -548,13 +485,13 @@ CONTAINS
     rarraylist%NNA0        = 0
     rarraylist%dfactor     = 1.5_DP
     rarraylist%NRESIZE     = 0
-  END SUBROUTINE t_arraylist_release
+  END SUBROUTINE arrlst_releaseArrayList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_release_table(rarraylist,itable)
+  SUBROUTINE arrlst_releaseArrayList_table(rarraylist,itable)
 
 !<description>
     ! This subroutine releases a table from the arraylist
@@ -572,19 +509,27 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "t_arraylist_release_table: Invalid table number!"
+      PRINT *, "arrlst_releaseArrayList_table: Invalid table number!"
       CALL sys_halt()
     END IF
 
+    ! Decrease number of entries by the number of entries present 
+    ! in the table which is released
+    rarraylist%NA = rarraylist%NA - rarraylist%Ktable(ARRLST_NA,itable)
+
     ! Reset table
-    rarraylist%Ktable(LHEAD:LITEM,itable) = ANULL
-  END SUBROUTINE t_arraylist_release_table
+    rarraylist%Ktable(ARRLST_HEAD:ARRLST_NA,itable) = ARRLST_NULL
+
+    ! Decrease number of tables if the last table has been deleted
+    IF (itable .EQ. rarraylist%NTABLE)&
+        rarraylist%NTABLE = rarraylist%NTABLE-1
+  END SUBROUTINE arrlst_releaseArrayList_table
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE t_arraylist_resize(rarraylist,nna)
+  SUBROUTINE arrlst_resizeArrayList(rarraylist,nna)
 
 !<description>
     ! This subroutine reallocates memory for an existing list
@@ -602,12 +547,12 @@ CONTAINS
 !</subroutine>
     
     ! Set new size and increase counter
-    rarraylist%NNA=nna
-    rarraylist%NRESIZE=rarraylist%NRESIZE+1
+    rarraylist%NNA     = nna
+    rarraylist%NRESIZE = rarraylist%NRESIZE+1
 
-    CALL storage_realloc('t_arraylist_resize',LFREE,nna,&
+    CALL storage_realloc('arrlst_resizeArrayList',ARRLST_FREE,nna,&
         rarraylist%h_Knext,ST_NEWBLOCK_NOINIT,.TRUE.)
-    CALL storage_realloc('t_arraylist_resize',nna,&
+    CALL storage_realloc('arrlst_resizeArrayList',nna,&
         rarraylist%h_Data,ST_NEWBLOCK_NOINIT,.TRUE.)
     CALL storage_getbase_int(rarraylist%h_Knext,rarraylist%Knext)
 
@@ -622,16 +567,16 @@ CONTAINS
       CALL storage_getbase_int(rarraylist%h_Data,rarraylist%IData)
 
     CASE DEFAULT
-      PRINT *, 't_arraylist_resize: Unsupported data format!'
+      PRINT *, 'arrlst_resizeArrayList: Unsupported data format!'
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE t_arraylist_resize
+  END SUBROUTINE arrlst_resizeArrayList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_resize_table(rarraylist,nntable)
+  SUBROUTINE arrlst_resizeArrayList_table(rarraylist,nntable)
 
 !<description>
     ! This subroutine reallocates memory for the lookup table
@@ -649,23 +594,25 @@ CONTAINS
 !</subroutine>
 
     ! Set new size
-    rarraylist%NNTABLE=nntable
-    rarraylist%NRESIZE=rarraylist%NRESIZE+1
+    rarraylist%NNTABLE = nntable
+    rarraylist%NRESIZE = rarraylist%NRESIZE+1
 
-    CALL storage_realloc('t_arraylist_resize_table',nntable,&
+    CALL storage_realloc('arrlst_resizeArrayList_table',nntable,&
         rarraylist%h_Ktable,ST_NEWBLOCK_NOINIT,.TRUE.)
     CALL storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%Ktable)
 
-    rarraylist%Ktable(LHEAD,rarraylist%NTABLE+1:) = ANULL
-    rarraylist%Ktable(LTAIL,rarraylist%NTABLE+1:) = ANULL
-    rarraylist%Ktable(LITEM,rarraylist%NTABLE+1:) = LHEAD
-  END SUBROUTINE t_arraylist_resize_table
+!!$    It should not be necessary to clear all arrays
+!!$    rarraylist%Ktable(ARRLST_HEAD,rarraylist%NTABLE+1:) = ARRLST_NULL
+!!$    rarraylist%Ktable(ARRLST_TAIL,rarraylist%NTABLE+1:) = ARRLST_NULL
+!!$    rarraylist%Ktable(ARRLST_ITEM,rarraylist%NTABLE+1:) = ARRLST_HEAD
+!!$    rarraylist%Ktable(ARRLST_NA,  rarraylist%NTABLE+1:) = ARRLST_NULL
+  END SUBROUTINE arrlst_resizeArrayList_table
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfrom(rarraylist,itable,h_Data)
+  SUBROUTINE arrlst_copyFromArrayList(rarraylist,itable,h_Data)
 
 !<description>
     ! This subroutine copies the content of the list of a given table
@@ -693,13 +640,13 @@ CONTAINS
     INTEGER(I32) :: isize
 
     ! Transform the content of the list to h_Data
-    IF (h_Data == ST_NOHANDLE) THEN
-      CALL storage_new('t_arraylist_copyfrom','Data',rarraylist%na,&
+    IF (h_Data .EQ. ST_NOHANDLE) THEN
+      CALL storage_new('arrlst_copyFromArrayList','Data',rarraylist%NA,&
           rarraylist%carraylistFormat,h_Data,ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize(h_Data,isize)
-      IF (isize < rarraylist%na) THEN
-        CALL storage_realloc('t_arraylist_copyfrom',rarraylist%na,&
+      IF (isize < rarraylist%NA) THEN
+        CALL storage_realloc('arrlst_copyFromArrayList',rarraylist%NA,&
             h_Data,ST_NEWBLOCK_NOINIT,.FALSE.)
       END IF
     END IF
@@ -708,27 +655,27 @@ CONTAINS
     SELECT CASE(rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
       CALL storage_getbase_double(h_Data,p_DData)
-      CALL arrlst_copyArraylist(rarraylist,itable,p_DData)
+      CALL arrlst_copyArrayList(rarraylist,itable,p_DData)
       
     CASE (ST_SINGLE)
       CALL storage_getbase_single(h_Data,p_SData)
-      CALL arrlst_copyArraylist(rarraylist,itable,p_SData)
+      CALL arrlst_copyArrayList(rarraylist,itable,p_SData)
       
     CASE (ST_INT)
       CALL storage_getbase_int(h_Data,p_IData)
-      CALL arrlst_copyArraylist(rarraylist,itable,p_IData)
+      CALL arrlst_copyArrayList(rarraylist,itable,p_IData)
       
     CASE DEFAULT
-      PRINT *, 't_arraylist_copyfrom: Unsupported data format!'
+      PRINT *, 'arrlst_copyFromArrayList: Unsupported data format!'
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE t_arraylist_copyfrom
+  END SUBROUTINE arrlst_copyFromArrayList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfrom_table(rarraylist,h_Data,h_Table)
+  SUBROUTINE arrlst_copyFromArrayList_table(rarraylist,h_Data,h_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -759,25 +706,25 @@ CONTAINS
 
     ! Transform the content of the arraylist and the 
     ! table to h_Data and h_Table, respectively
-    IF (h_Table == ST_NOHANDLE) THEN
-      CALL storage_new('t_arraylist_copyfrom_table','Table',&
+    IF (h_Table .EQ. ST_NOHANDLE) THEN
+      CALL storage_new('arrlst_copyFromArrayList_table','Table',&
           rarraylist%NTABLE+1,ST_INT,h_Table,ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize(h_Table,isize)
       IF (isize < rarraylist%NTABLE+1) THEN
-        CALL storage_realloc('t_arraylist_copyfrom_table',&
+        CALL storage_realloc('arrlst_copyFromArrayList_table',&
             rarraylist%NTABLE+1,h_Table,ST_NEWBLOCK_NOINIT,.FALSE.)
       END IF
     END IF
     CALL storage_getbase_int(h_Table,p_Table)
     
-    IF (h_Data  == ST_NOHANDLE) THEN
-      CALL storage_new('t_arraylist_copyfrom_table','Data',&
+    IF (h_Data  .EQ. ST_NOHANDLE) THEN
+      CALL storage_new('arrlst_copyFromArrayList_table','Data',&
           rarraylist%NA,rarraylist%carraylistFormat,h_Data,ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize(h_Data,isize)
       IF (isize < rarraylist%NA) THEN
-        CALL storage_realloc('t_arraylist_copyfrom_table',&
+        CALL storage_realloc('arrlst_copyFromArrayList_table',&
             rarraylist%NA,h_Data,ST_NEWBLOCK_NOINIT,.FALSE.)
       END IF
     END IF
@@ -786,27 +733,27 @@ CONTAINS
     SELECT CASE(rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
       CALL storage_getbase_double(h_Data,p_DData)
-      CALL arrlst_copyArraylistTable(rarraylist,p_DData,p_Table)
+      CALL arrlst_copyArrayListTable(rarraylist,p_DData,p_Table)
 
     CASE (ST_SINGLE)
       CALL storage_getbase_single(h_Data,p_SData)
-      CALL arrlst_copyArraylistTable(rarraylist,p_SData,p_Table)
+      CALL arrlst_copyArrayListTable(rarraylist,p_SData,p_Table)
 
     CASE (ST_INT)
       CALL storage_getbase_int(h_Data,p_IData)
-      CALL arrlst_copyArraylistTable(rarraylist,p_IData,p_Table)
+      CALL arrlst_copyArrayListTable(rarraylist,p_IData,p_Table)
       
     CASE DEFAULT
-      PRINT *, 't_arraylist_copyfrom_table: Unsupported data format!'
+      PRINT *, 'arrlst_copyFromArrayList_table: Unsupported data format!'
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE t_arraylist_copyfrom_table
+  END SUBROUTINE arrlst_copyFromArrayList_table
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfromDble(rarraylist,itable,p_DData,ndata)
+  SUBROUTINE arrlst_copyFromArrayListDble(rarraylist,itable,p_DData,ndata)
 
 !<description>
     ! This subroutine copies the content of the list of the given
@@ -837,32 +784,32 @@ CONTAINS
 
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "t_arraylist_copyfromDble: Invalid table number"
+      PRINT *, "arrlst_copyFromArrayListDble: Invalid table number"
       CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_copyfromDble: Unsupported data format!"
+      PRINT *, "arrlst_copyFromArrayListDble: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     icount = 0
-    ipos = rarraylist%Ktable(LHEAD,itable)
+    ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
     DO
       icount = icount+1
       p_DData(icount) = rarraylist%DData(ipos)
-      IF (ipos == rarraylist%Ktable(LTAIL,itable)) EXIT
+      IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
       ipos = rarraylist%Knext(ipos)
     END DO
 
     IF (PRESENT(ndata)) ndata=icount
-  END SUBROUTINE t_arraylist_copyfromDble
+  END SUBROUTINE arrlst_copyFromArrayListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfromDble_table(rarraylist,p_DData,p_Table)
+  SUBROUTINE arrlst_copyFromArrayListDble_table(rarraylist,p_DData,p_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -890,12 +837,12 @@ CONTAINS
     ! Check if table array is valid
     ntable=SIZE(p_Table)-1
     IF (ntable /= rarraylist%NTABLE) THEN
-      PRINT *, "t_arraylist_copyfromDble_table: Invalid dimension of table array!"
+      PRINT *, "arrlst_copyFromArrayListDble_table: Invalid dimension of table array!"
       CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_copyfromDble_table: Unsupported data format!"
+      PRINT *, "arrlst_copyFromArrayListDble_table: Unsupported data format!"
       CALL sys_halt()
     END IF
 
@@ -903,22 +850,22 @@ CONTAINS
     DO itable=1,ntable
       p_Table(itable) = icount
       
-      ipos = rarraylist%Ktable(LHEAD,itable)
-      DO WHILE (ipos /= ANULL)
+      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+      DO WHILE (ipos /= ARRLST_NULL)
         p_DData(icount) = rarraylist%DData(ipos)
         icount = icount+1
-        IF (ipos == rarraylist%Ktable(LTAIL,itable)) EXIT
+        IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
         ipos = rarraylist%Knext(ipos)
       END DO
     END DO
     p_Table(ntable+1)=icount+1
-  END SUBROUTINE t_arraylist_copyfromDble_table
+  END SUBROUTINE arrlst_copyFromArrayListDble_table
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfromSngl(rarraylist,itable,p_SData,ndata)
+  SUBROUTINE arrlst_copyFromArrayListSngl(rarraylist,itable,p_SData,ndata)
 
 !<description>
     ! This subroutine copies the content of the list of the given
@@ -948,7 +895,7 @@ CONTAINS
 
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "t_arraylist_copyfromSngl: Invalid table number"
+      PRINT *, "arrlst_copyFromArrayListSngl: Invalid table number"
       CALL sys_halt()
     END IF
 
@@ -958,22 +905,22 @@ CONTAINS
     END IF
 
     icount = 0
-    ipos = rarraylist%Ktable(LHEAD,itable)
+    ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
     DO
       icount = icount+1
       p_SData(icount) = rarraylist%SData(ipos)
-      IF (ipos == rarraylist%Ktable(LTAIL,itable)) EXIT
+      IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
       ipos = rarraylist%Knext(ipos)
     END DO
 
     IF (PRESENT(ndata)) ndata=icount
-  END SUBROUTINE t_arraylist_copyfromSngl
+  END SUBROUTINE arrlst_copyFromArrayListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfromSngl_table(rarraylist,p_SData,p_Table)
+  SUBROUTINE arrlst_copyFromArrayListSngl_table(rarraylist,p_SData,p_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -1001,12 +948,12 @@ CONTAINS
     ! Check if table array is valid
     ntable=SIZE(p_Table)-1
     IF (ntable /= rarraylist%NTABLE) THEN
-      PRINT *, "t_arraylist_copyfromSngl_table: Invalid dimension of table array!"
+      PRINT *, "arrlst_copyFromArrayListSngl_table: Invalid dimension of table array!"
       CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_copyfromSngl_table: Unsupported data format!"
+      PRINT *, "arrlst_copyFromArrayListSngl_table: Unsupported data format!"
       CALL sys_halt()
     END IF
 
@@ -1014,22 +961,22 @@ CONTAINS
     DO itable=1,ntable
       p_Table(itable) = icount
       
-      ipos = rarraylist%Ktable(LHEAD,itable)
-      DO WHILE(ipos /= ANULL)
+      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+      DO WHILE(ipos /= ARRLST_NULL)
         p_SData(icount) = rarraylist%SData(ipos)
         icount = icount+1
-        IF (ipos == rarraylist%Ktable(LTAIL,itable)) EXIT
+        IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
         ipos = rarraylist%Knext(ipos)
       END DO
     END DO
     p_Table(ntable+1)=icount+1
-  END SUBROUTINE t_arraylist_copyfromSngl_table
+  END SUBROUTINE arrlst_copyFromArrayListSngl_table
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfromInt(rarraylist,itable,p_IData,ndata)
+  SUBROUTINE arrlst_copyFromArrayListInt(rarraylist,itable,p_IData,ndata)
 
 !<description>
     ! This subroutine copies the content of the list of the given
@@ -1060,32 +1007,32 @@ CONTAINS
 
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "t_arraylist_copyfromInt: Invalid table number"
+      PRINT *, "arrlst_copyFromArrayListInt: Invalid table number"
       CALL sys_halt()
     END IF
 
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_copyfromInt: Unsupported data format!"
+      PRINT *, "arrlst_copyFromArrayListInt: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     icount = 0
-    ipos = rarraylist%Ktable(LHEAD,itable)
+    ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
     DO
       icount = icount+1
       p_IData(icount) = rarraylist%IData(ipos)
-      IF (ipos == rarraylist%Ktable(LTAIL,itable)) EXIT
+      IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
       ipos = rarraylist%Knext(ipos)
     END DO
 
     IF (PRESENT(ndata)) ndata=icount
-  END SUBROUTINE t_arraylist_copyfromInt
+  END SUBROUTINE arrlst_copyFromArrayListInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyfromInt_table(rarraylist,p_IData,p_Table)
+  SUBROUTINE arrlst_copyFromArrayListInt_table(rarraylist,p_IData,p_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -1113,12 +1060,12 @@ CONTAINS
     ! Check if table array is valid
     ntable=SIZE(p_Table)-1
     IF (ntable /= rarraylist%NTABLE) THEN
-      PRINT *, "t_arraylist_copyfromInt_table: Invalid dimension of table array!"
+      PRINT *, "arrlst_copyFromArrayListInt_table: Invalid dimension of table array!"
       CALL sys_halt()
     END IF
     
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_copyfromInt_table: Unsupported data format!"
+      PRINT *, "arrlst_copyFromArrayListInt_table: Unsupported data format!"
       CALL sys_halt()
     END IF
 
@@ -1126,22 +1073,22 @@ CONTAINS
     DO itable=1,ntable
       p_Table(itable) = icount
       
-      ipos = rarraylist%Ktable(LHEAD,itable)
-      DO WHILE(ipos /= ANULL)
+      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+      DO WHILE(ipos /= ARRLST_NULL)
         p_IData(icount) = rarraylist%IData(ipos)
         icount=icount+1
-        IF (ipos == rarraylist%Ktable(LTAIL,itable)) EXIT
+        IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
         ipos = rarraylist%Knext(ipos)
       END DO
     END DO
     p_Table(ntable+1)=icount
-  END SUBROUTINE t_arraylist_copyfromInt_table
+  END SUBROUTINE arrlst_copyFromArrayListInt_table
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyto(h_DataSrc,itable,rarraylist)
+  SUBROUTINE arrlst_copyToArrayList(h_DataSrc,itable,rarraylist)
 
 !<description>
     ! This subroutine copies the content of the given handle to the
@@ -1171,28 +1118,28 @@ CONTAINS
     SELECT CASE (rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
       CALL storage_getbase_double(h_DataSrc,p_DData)
-      CALL arrlst_copyArraylist(p_DData,itable,rarraylist)
+      CALL arrlst_copyArrayList(p_DData,itable,rarraylist)
 
     CASE (ST_SINGLE)
       CALL storage_getbase_single(h_DataSrc,p_SData)
-      CALL arrlst_copyArraylist(p_SData,itable,rarraylist)
+      CALL arrlst_copyArrayList(p_SData,itable,rarraylist)
 
     CASE (ST_INT)
       CALL storage_getbase_int(h_DataSrc,p_IData)
-      CALL arrlst_copyArraylist(p_IData,itable,rarraylist)
+      CALL arrlst_copyArrayList(p_IData,itable,rarraylist)
       stop
 
     CASE DEFAULT
-      PRINT *, "t_arraylist_copy: Unsupported data format!"
+      PRINT *, "arrlst_copyArrayList: Unsupported data format!"
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE t_arraylist_copyto
+  END SUBROUTINE arrlst_copyToArrayList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copyto_table(h_DataSrc,rarraylist,h_Table)
+  SUBROUTINE arrlst_copyToArrayList_table(h_DataSrc,rarraylist,h_Table)
 
 !<description>
     ! This subroutine copies the content of the given handle to the
@@ -1227,27 +1174,27 @@ CONTAINS
     SELECT CASE (rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
       CALL storage_getbase_double(h_DataSrc,p_DData)
-      CALL arrlst_copyArraylistTable(p_DData,rarraylist,p_Table)
+      CALL arrlst_copyArrayListTable(p_DData,rarraylist,p_Table)
 
     CASE (ST_SINGLE)
       CALL storage_getbase_single(h_DataSrc,p_SData)
-      CALL arrlst_copyArraylistTable(p_SData,rarraylist,p_Table)
+      CALL arrlst_copyArrayListTable(p_SData,rarraylist,p_Table)
 
     CASE (ST_INT)
       CALL storage_getbase_int(h_DataSrc,p_IData)
-      CALL arrlst_copyArraylistTable(p_IData,rarraylist,p_Table)
+      CALL arrlst_copyArrayListTable(p_IData,rarraylist,p_Table)
 
     CASE DEFAULT
-      PRINT *, "t_arraylist_copy_table: Unsupported data format!"
+      PRINT *, "arrlst_copyArrayList_table: Unsupported data format!"
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE t_arraylist_copyto_table
+  END SUBROUTINE arrlst_copyToArrayList_table
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copytoDble(p_DDataSrc,itable,rarraylist)
+  SUBROUTINE arrlst_copyToArrayListDble(p_DDataSrc,itable,rarraylist)
 
 !<description>
     ! This subroutine copies the content of the given double array to
@@ -1272,20 +1219,20 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_copytoDble: Unsupported data format!"
+      PRINT *, "arrlst_copyToArrayListDble: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_DDataSrc)
-      CALL append(rarraylist,itable,p_DDataSrc(ipos),kpos)
+      CALL arrlst_appendToArrayList(rarraylist,itable,p_DDataSrc(ipos),kpos)
     END DO
-  END SUBROUTINE t_arraylist_copytoDble
+  END SUBROUTINE arrlst_copyToArrayListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copytoDble_table(p_DDataSrc,rarraylist,p_Table)
+  SUBROUTINE arrlst_copyToArrayListDble_table(p_DDataSrc,rarraylist,p_Table)
 
 !<description>
     ! This subroutine copies the content of the given double array to
@@ -1311,23 +1258,23 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_copytoDble_table: Unsupported data format!"
+      PRINT *, "arrlst_copyToArrayListDble_table: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ntable=SIZE(p_Table)-1
     DO itable=1,ntable
       DO ipos=p_Table(itable),p_Table(itable+1)-1
-        CALL append(rarraylist,itable,p_DDataSrc(ipos),kpos)
+        CALL arrlst_appendToArrayList(rarraylist,itable,p_DDataSrc(ipos),kpos)
       END DO
     END DO
-  END SUBROUTINE t_arraylist_copytoDble_table
+  END SUBROUTINE arrlst_copyToArrayListDble_table
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copytoSngl(p_SDataSrc,itable,rarraylist)
+  SUBROUTINE arrlst_copyToArrayListSngl(p_SDataSrc,itable,rarraylist)
 
 !<description>
     ! This subroutine copies the content of the given single array to
@@ -1352,20 +1299,20 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_copytoSngl: Unsupported data format!"
+      PRINT *, "arrlst_copyToArrayListSngl: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_SDataSrc)
-      CALL append(rarraylist,itable,p_SDataSrc(ipos),kpos)
+      CALL arrlst_appendToArrayList(rarraylist,itable,p_SDataSrc(ipos),kpos)
     END DO
-  END SUBROUTINE t_arraylist_copytoSngl
+  END SUBROUTINE arrlst_copyToArrayListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copytoSngl_table(p_SDataSrc,rarraylist,p_Table)
+  SUBROUTINE arrlst_copyToArrayListSngl_table(p_SDataSrc,rarraylist,p_Table)
 
 !<description>
     ! This subroutine copies the content of the given single array to
@@ -1391,23 +1338,23 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_copytoSngl_table: Unsupported data format!"
+      PRINT *, "arrlst_copyToArrayListSngl_table: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     ntable=SIZE(p_Table)-1
     DO itable=1,ntable
       DO ipos=p_Table(itable),p_Table(itable+1)-1
-        CALL append(rarraylist,itable,p_SDataSrc(ipos),kpos)
+        CALL arrlst_appendToArrayList(rarraylist,itable,p_SDataSrc(ipos),kpos)
       END DO
     END DO
-  END SUBROUTINE t_arraylist_copytoSngl_table
+  END SUBROUTINE arrlst_copyToArrayListSngl_table
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copytoInt(p_IDataSrc,itable,rarraylist)
+  SUBROUTINE arrlst_copyToArrayListInt(p_IDataSrc,itable,rarraylist)
 
 !<description>
     ! This subroutine copies the content of the given integer array
@@ -1432,20 +1379,20 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_copytoInt: Unsupported data format!"
+      PRINT *, "arrlst_copyToArrayListInt: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     DO ipos=1,SIZE(p_IDataSrc)
-      CALL append(rarraylist,itable,p_IDataSrc(ipos),kpos)
+      CALL arrlst_appendToArrayList(rarraylist,itable,p_IDataSrc(ipos),kpos)
     END DO
-  END SUBROUTINE t_arraylist_copytoInt
+  END SUBROUTINE arrlst_copyToArrayListInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_copytoInt_table(p_IDataSrc,rarraylist,p_Table)
+  SUBROUTINE arrlst_copyToArrayListInt_table(p_IDataSrc,rarraylist,p_Table)
 
 !<description>
     ! This subroutine copies the content of the given integer array
@@ -1471,23 +1418,23 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_copytoInt_table: Unsupported data format!"
+      PRINT *, "arrlst_copyToArrayListInt_table: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ntable=SIZE(p_Table)-1
     DO itable=1,ntable
       DO ipos=p_Table(itable),p_Table(itable+1)-1
-        CALL append(rarraylist,itable,p_IDataSrc(ipos),kpos)
+        CALL arrlst_appendToArrayList(rarraylist,itable,p_IDataSrc(ipos),kpos)
       END DO
     END DO
-  END SUBROUTINE t_arraylist_copytoInt_table
+  END SUBROUTINE arrlst_copyToArrayListInt_table
   
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE t_arraylist_swap(rarraylist,itable,jtable)
+  SUBROUTINE arrlst_swapArrayList(rarraylist,itable,jtable)
 
 !<description>
     ! This subroutine swaps two tables and the associated list in the
@@ -1505,27 +1452,30 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_ARRAYLISTIDX) :: ihead,itail,iitem
+    INTEGER(PREC_ARRAYLISTIDX) :: ihead,itail,iitem,ina
     
     ! Swap
-    ihead = rarraylist%Ktable(LHEAD,itable)
-    itail = rarraylist%Ktable(LTAIL,itable)
-    iitem = rarraylist%Ktable(LITEM,itable)
+    ihead = rarraylist%Ktable(ARRLST_HEAD,itable)
+    itail = rarraylist%Ktable(ARRLST_TAIL,itable)
+    iitem = rarraylist%Ktable(ARRLST_ITEM,itable)
+    ina   = rarraylist%Ktable(ARRLST_NA,  itable)
     
-    rarraylist%Ktable(LHEAD,itable) = rarraylist%Ktable(LHEAD,jtable)
-    rarraylist%Ktable(LTAIL,itable) = rarraylist%Ktable(LTAIL,jtable)
-    rarraylist%Ktable(LITEM,itable) = rarraylist%Ktable(LITEM,jtable)
+    rarraylist%Ktable(ARRLST_HEAD,itable) = rarraylist%Ktable(ARRLST_HEAD,jtable)
+    rarraylist%Ktable(ARRLST_TAIL,itable) = rarraylist%Ktable(ARRLST_TAIL,jtable)
+    rarraylist%Ktable(ARRLST_ITEM,itable) = rarraylist%Ktable(ARRLST_ITEM,jtable)
+    rarraylist%Ktable(ARRLST_NA,  itable) = rarraylist%Ktable(ARRLST_NA,  jtable)
 
-    rarraylist%Ktable(LHEAD,jtable) = ihead
-    rarraylist%Ktable(LTAIL,jtable) = itail
-    rarraylist%Ktable(LITEM,jtable) = iitem
-  END SUBROUTINE t_arraylist_swap
+    rarraylist%Ktable(ARRLST_HEAD,jtable) = ihead
+    rarraylist%Ktable(ARRLST_TAIL,jtable) = itail
+    rarraylist%Ktable(ARRLST_ITEM,jtable) = iitem
+    rarraylist%Ktable(ARRLST_NA,  jtable) = ina
+  END SUBROUTINE arrlst_swapArrayList
 
   ! ***************************************************************************
   
 !<function>
   
-  PURE FUNCTION t_arraylist_first(rarraylist,itable) RESULT(ipos)
+  PURE FUNCTION arrlst_getFirstInArrayList(rarraylist,itable) RESULT(ipos)
 
 !<description>
     ! This function returns the position of the first list item in
@@ -1552,14 +1502,14 @@ CONTAINS
       RETURN
     END IF
     
-    ipos=rarraylist%Knext(rarraylist%Ktable(LHEAD,itable))
-  END FUNCTION t_arraylist_first
+    ipos=rarraylist%Knext(rarraylist%Ktable(ARRLST_HEAD,itable))
+  END FUNCTION arrlst_getFirstInArrayList
 
   ! ***************************************************************************
   
 !<function>
   
-  PURE FUNCTION t_arraylist_last(rarraylist,itable) RESULT(ipos)
+  PURE FUNCTION arrlst_getLastInArrayList(rarraylist,itable) RESULT(ipos)
 
 !<description>
     ! This function returns the position of the last list item in the
@@ -1586,14 +1536,14 @@ CONTAINS
       RETURN
     END IF
     
-    ipos=rarraylist%Knext(rarraylist%Ktable(LTAIL,itable))
-  END FUNCTION t_arraylist_last
+    ipos=rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable))
+  END FUNCTION arrlst_getLastInArrayList
 
   ! ***************************************************************************
 
 !<function>
 
-  FUNCTION t_arraylist_next(rarraylist,itable,breset) RESULT(ipos)
+  FUNCTION arrlst_getNextInArrayList(rarraylist,itable,breset) RESULT(ipos)
 
 !<description>
     ! This function returns the position of the next free list item
@@ -1627,21 +1577,21 @@ CONTAINS
 
     ! Should we reset the item pointer?
     IF (breset) THEN
-      ipos = rarraylist%Ktable(LHEAD,itable)
-      rarraylist%Ktable(LITEM,itable) = ipos
+      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+      rarraylist%Ktable(ARRLST_ITEM,itable) = ipos
       RETURN
     END IF
 
     ! Get next item and increase item pointer
-    ipos = rarraylist%Knext(rarraylist%Ktable(LITEM,itable))
-    rarraylist%Ktable(LITEM,itable) = ipos
-  END FUNCTION t_arraylist_next
+    ipos = rarraylist%Knext(rarraylist%Ktable(ARRLST_ITEM,itable))
+    rarraylist%Ktable(ARRLST_ITEM,itable) = ipos
+  END FUNCTION arrlst_getNextInArrayList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_prependDble(rarraylist,itable,da,ipos)
+  SUBROUTINE arrlst_prependToArrayListDble(rarraylist,itable,da,ipos)
 
 !<description>
     ! This subroutine prepends a Double data to the list of the given
@@ -1669,50 +1619,51 @@ CONTAINS
     
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_prependDble: Unsupported data format!"
+      PRINT *, "arrlst_prependToArrayListDble: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_prependDble: Invalid table number!"
+      PRINT *, "arrlst_prependToArrayListDble: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
     
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
    
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%DData(ipos)          = da
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%DData(ipos)                = da
     ELSE
-      rarraylist%Knext(ipos)          = rarraylist%Ktable(LHEAD,itable)
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%DData(ipos)          = da
+      rarraylist%Knext(ipos)                = rarraylist%Ktable(ARRLST_HEAD,itable)
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%DData(ipos)                = da
     END IF
-  END SUBROUTINE t_arraylist_prependDble
+  END SUBROUTINE arrlst_prependToArrayListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_prependSngl(rarraylist,itable,sa,ipos)
+  SUBROUTINE arrlst_prependToArrayListSngl(rarraylist,itable,sa,ipos)
 
 !<description>
     ! This subroutine prepends a Single data to the list of a given
@@ -1740,50 +1691,51 @@ CONTAINS
     
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_prependSngl: Unsupported data format!"
+      PRINT *, "arrlst_prependToArrayListSngl: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_prependSngl: Invalid table number!"
+      PRINT *, "arrlst_prependToArrayListSngl: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+     rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%SData(ipos)          = sa
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%SData(ipos)                = sa
     ELSE
-      rarraylist%Knext(ipos)          = rarraylist%Ktable(LHEAD,itable)
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%SData(ipos)          = sa
+      rarraylist%Knext(ipos)                = rarraylist%Ktable(ARRLST_HEAD,itable)
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%SData(ipos)                = sa
     END IF
-  END SUBROUTINE t_arraylist_prependSngl
+  END SUBROUTINE arrlst_prependToArrayListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_prependInt(rarraylist,itable,ia,ipos)
+  SUBROUTINE arrlst_prependToArrayListInt(rarraylist,itable,ia,ipos)
 
 !<description>
     ! This subroutine prepends an Integer data to the list of a given
@@ -1811,50 +1763,51 @@ CONTAINS
     
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_prependInt: Unsupported data format!"
+      PRINT *, "arrlst_prependToArrayListInt: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_prependInt: Invalid table number!"
+      PRINT *, "arrlst_prependToArrayListInt: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+     rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%IData(ipos)          = ia
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%IData(ipos)                = ia
     ELSE
-      rarraylist%Knext(ipos)          = rarraylist%Ktable(LHEAD,itable)
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%IData(ipos)          = ia
+      rarraylist%Knext(ipos)                = rarraylist%Ktable(ARRLST_HEAD,itable)
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%IData(ipos)                = ia
     END IF
-  END SUBROUTINE t_arraylist_prependInt
+  END SUBROUTINE arrlst_prependToArrayListInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_appendDble(rarraylist,itable,da,ipos)
+  SUBROUTINE arrlst_appendToArrayListDble(rarraylist,itable,da,ipos)
 
 !<description>
     ! This subroutine appends a Double data to the list of a given
@@ -1882,51 +1835,52 @@ CONTAINS
     
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_appendDble: Unsupported data format!"
+      PRINT *, "arrlst_appendToArrayListDble: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_appendDble: Invalid table number!"
+      PRINT *, "arrlst_appendToArrayListDble: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
     
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%DData(ipos)          = da
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%DData(ipos)                = da
     ELSE
-      rarraylist%Knext(rarraylist%Ktable(LTAIL,itable)) = ipos
-      rarraylist%Ktable(LTAIL,itable)                   = ipos
-      rarraylist%Knext(ipos)                            = ANULL
-      rarraylist%DData(ipos)                            = da
+      rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable)) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable)                   = ipos
+      rarraylist%Knext(ipos)                                  = ARRLST_NULL
+      rarraylist%DData(ipos)                                  = da
     END IF
-  END SUBROUTINE t_arraylist_appendDble
+  END SUBROUTINE arrlst_appendToArrayListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_appendSngl(rarraylist,itable,sa,ipos)
+  SUBROUTINE arrlst_appendToArrayListSngl(rarraylist,itable,sa,ipos)
 
 !<description>
     ! This subroutine appends a Single data to the list of a given
@@ -1954,51 +1908,52 @@ CONTAINS
     
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_appendSngl: Unsupported data format!"
+      PRINT *, "arrlst_appendToArrayListSngl: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_appendSngl: Invalid table number!"
+      PRINT *, "arrlst_appendToArrayListSngl: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%SData(ipos)          = sa
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%SData(ipos)                = sa
     ELSE
-      rarraylist%Knext(rarraylist%Ktable(LTAIL,itable)) = ipos
-      rarraylist%Ktable(LTAIL,itable)                   = ipos
-      rarraylist%Knext(ipos)                            = ANULL
-      rarraylist%SData(ipos)                            = sa
+      rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable)) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable)                   = ipos
+      rarraylist%Knext(ipos)                                  = ARRLST_NULL
+      rarraylist%SData(ipos)                                  = sa
     END IF
-  END SUBROUTINE t_arraylist_appendSngl
+  END SUBROUTINE arrlst_appendToArrayListSngl
   
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_appendInt(rarraylist,itable,ia,ipos)
+  SUBROUTINE arrlst_appendToArrayListInt(rarraylist,itable,ia,ipos)
 
 !<description>
     ! This subroutine appends an Integer data to the list of a given
@@ -2026,51 +1981,52 @@ CONTAINS
     
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_appendInt: Unsupported data format!"
+      PRINT *, "arrlst_appendToArrayListInt: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_appendInt: Invalid table number!"
+      PRINT *, "arrlst_appendToArrayListInt: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%IData(ipos)          = ia
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%IData(ipos)                = ia
     ELSE
-      rarraylist%Knext(rarraylist%Ktable(LTAIL,itable)) = ipos
-      rarraylist%Ktable(LTAIL,itable)                   = ipos
-      rarraylist%Knext(ipos)                            = ANULL
-      rarraylist%IData(ipos)                            = ia
+      rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable)) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable)                   = ipos
+      rarraylist%Knext(ipos)                                  = ARRLST_NULL
+      rarraylist%IData(ipos)                                  = ia
     END IF
-  END SUBROUTINE t_arraylist_appendInt
+  END SUBROUTINE arrlst_appendToArrayListInt
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_insertDble(rarraylist,itable,da,ipred,ipos)
+  SUBROUTINE arrlst_insertIntoArrayListDble(rarraylist,itable,da,ipred,ipos)
 
 !<description>
     ! This subroutine inserts a new Double data into the list of a
@@ -2101,59 +2057,60 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_insertDble: Unsupported data format!"
+      PRINT *, "arrlst_insertIntoArrayListDble: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_insertDble: Invalid table number!"
+      PRINT *, "arrlst_insertIntoArrayListDble: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%DData(ipos)          = da
-    ELSEIF (ipred == rarraylist%Ktable(LTAIL,itable)) THEN
-      rarraylist%Knext(ipred)         = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%DData(ipos)          = da
-    ELSEIF (ipred < ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Knext(ipos)          = -ipred
-      rarraylist%DData(ipos)          = da
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%DData(ipos)                = da
+    ELSEIF (ipred .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) THEN
+      rarraylist%Knext(ipred)               = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%DData(ipos)                = da
+    ELSEIF (ipred < ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Knext(ipos)                = -ipred
+      rarraylist%DData(ipos)                = da
     ELSE
-      rarraylist%Knext(ipos)          = rarraylist%Knext(ipred)
-      rarraylist%Knext(ipred)         = ipos
-      rarraylist%DData(ipos)          = da
+      rarraylist%Knext(ipos)                = rarraylist%Knext(ipred)
+      rarraylist%Knext(ipred)               = ipos
+      rarraylist%DData(ipos)                = da
     END IF
-  END SUBROUTINE t_arraylist_insertDble
+  END SUBROUTINE arrlst_insertIntoArrayListDble
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_insertSngl(rarraylist,itable,sa,ipred,ipos)
+  SUBROUTINE arrlst_insertIntoArrayListSngl(rarraylist,itable,sa,ipred,ipos)
 
 !<description>
     ! This subroutine inserts a new Single data into the list of a
@@ -2184,59 +2141,60 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_insertSngl: Unsupported data format!"
+      PRINT *, "arrlst_insertIntoArrayListSngl: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_insertSngl: Invalid table number!"
+      PRINT *, "arrlst_insertIntoArrayListSngl: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos               = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%SData(ipos)          = sa
-    ELSEIF (ipred == rarraylist%Ktable(LTAIL,itable)) THEN
-      rarraylist%Knext(ipred)         = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%SData(ipos)          = sa
-    ELSEIF (ipred < ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Knext(ipos)          = -ipred
-      rarraylist%SData(ipos)          = sa
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%SData(ipos)                = sa
+    ELSEIF (ipred .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) THEN
+      rarraylist%Knext(ipred)               = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%SData(ipos)                = sa
+    ELSEIF (ipred < ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Knext(ipos)                = -ipred
+      rarraylist%SData(ipos)                = sa
     ELSE
-      rarraylist%Knext(ipos)          = rarraylist%Knext(ipred)
-      rarraylist%Knext(ipred)         = ipos
-      rarraylist%SData(ipos)          = sa
+      rarraylist%Knext(ipos)                = rarraylist%Knext(ipred)
+      rarraylist%Knext(ipred)               = ipos
+      rarraylist%SData(ipos)                = sa
     END IF
-  END SUBROUTINE t_arraylist_insertSngl
+  END SUBROUTINE arrlst_insertIntoArrayListSngl
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_insertInt(rarraylist,itable,ia,ipred,ipos)
+  SUBROUTINE arrlst_insertIntoArrayListInt(rarraylist,itable,ia,ipred,ipos)
 
 !<description>
     ! This subroutine inserts a new Integer data into the list of a
@@ -2267,59 +2225,60 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_insertInt: Unsupported data format!"
+      PRINT *, "arrlst_insertIntoArrayListInt: Unsupported data format!"
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "t_arraylist_insertInt: Invalid table number!"
+      PRINT *, "arrlst_insertIntoArrayListInt: Invalid table number!"
       CALL sys_halt()
     END IF
-    IF (rarraylist%NTABLE < itable) CALL create_table(rarraylist,itable)
+    IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    ipos = rarraylist%Knext(LFREE)
+    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
-      CALL resize(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
+      CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(LFREE) = ipos+1
+      rarraylist%Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(LFREE) = rarraylist%Knext(ipos)
+      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(LHEAD,itable) == ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%IData(ipos)          = ia
-    ELSEIF (ipred == rarraylist%Ktable(LTAIL,itable)) THEN
-      rarraylist%Knext(ipred)         = ipos
-      rarraylist%Ktable(LTAIL,itable) = ipos
-      rarraylist%Knext(ipos)          = ANULL
-      rarraylist%IData(ipos)          = ia
-    ELSEIF (ipred < ANULL) THEN
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Knext(ipos)          = -ipred
-      rarraylist%IData(ipos)          = ia
+    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%IData(ipos)                = ia
+    ELSEIF (ipred .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) THEN
+      rarraylist%Knext(ipred)               = ipos
+      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%Knext(ipos)                = ARRLST_NULL
+      rarraylist%IData(ipos)                = ia
+    ELSEIF (ipred < ARRLST_NULL) THEN
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Knext(ipos)                = -ipred
+      rarraylist%IData(ipos)                = ia
     ELSE
-      rarraylist%Knext(ipos)          = rarraylist%Knext(ipred)
-      rarraylist%Knext(ipred)         = ipos
-      rarraylist%IData(ipos)          = ia
+      rarraylist%Knext(ipos)                = rarraylist%Knext(ipred)
+      rarraylist%Knext(ipred)               = ipos
+      rarraylist%IData(ipos)                = ia
     END IF
-  END SUBROUTINE t_arraylist_insertInt
+  END SUBROUTINE arrlst_insertIntoArrayListInt
   
   ! ***************************************************************************
   
 !<function>
 
-  FUNCTION t_arraylist_deleteDble(rarraylist,itable,da) RESULT(f)
+  FUNCTION arrlst_deleteFromArrayListDble(rarraylist,itable,da) RESULT(f)
 
 !<description>
     ! This function deletes a Double data from the arraylist
@@ -2350,16 +2309,17 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_deleteDble: Unsupported data format!"
+      PRINT *, "arrlst_deleteFromArrayListDble: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     ! Search for data
-    f=search(rarraylist,itable,da,ipred)
-    IF (f == ARRAYLIST_NOT_FOUND) RETURN
+    f=arrlst_searchInArrayList(rarraylist,itable,da,ipred)
+    IF (f .EQ. ARRAYLIST_NOT_FOUND) RETURN
     
     ! Delete data
     rarraylist%NA = rarraylist%NA-1
+    rarraylist%Ktable(ARRLST_NA,itable) = rarraylist%Ktable(ARRLST_NA,itable)-1
 
     ! Are we first entry in list?
     IF (ipred < 0) THEN
@@ -2369,29 +2329,29 @@ CONTAINS
       ipos  = rarraylist%Knext(ipred)
       
       ! Update free position
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Knext(ipred)         = rarraylist%Knext(LFREE)
-      rarraylist%Knext(LFREE)         = -ipred
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Knext(ipred)               = rarraylist%Knext(ARRLST_FREE)
+      rarraylist%Knext(ARRLST_FREE)         = -ipred
 
     ELSE
 
       ! Get position
       ipos = rarraylist%Knext(ipred)
-      IF (rarraylist%Knext(ipred) == rarraylist%Ktable(LTAIL,itable))&
-          rarraylist%Ktable(LTAIL,itable)=ipred
+      IF (rarraylist%Knext(ipred) .EQ. rarraylist%Ktable(ARRLST_TAIL,itable))&
+          rarraylist%Ktable(ARRLST_TAIL,itable) = ipred
       
       ! Update free position
-      rarraylist%Knext(ipred) = rarraylist%Knext(ipos)
-      rarraylist%Knext(ipos)  = rarraylist%Knext(LFREE)
-      rarraylist%Knext(LFREE) = -ipos
+      rarraylist%Knext(ipred)       = rarraylist%Knext(ipos)
+      rarraylist%Knext(ipos)        = rarraylist%Knext(ARRLST_FREE)
+      rarraylist%Knext(ARRLST_FREE) = -ipos
     END IF
-  END FUNCTION t_arraylist_deleteDble
+  END FUNCTION arrlst_deleteFromArrayListDble
   
   ! ***************************************************************************
   
 !<function>
 
-  FUNCTION t_arraylist_deleteSngl(rarraylist,itable,sa) RESULT(f)
+  FUNCTION arrlst_deleteFromArrayListSngl(rarraylist,itable,sa) RESULT(f)
 
 !<description>
     ! This function deletes a Single data from the arraylist
@@ -2422,16 +2382,17 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_deleteSngl: Unsupported data format!"
+      PRINT *, "arrlst_deleteFromArrayListSngl: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     ! Search for data
-    f=search(rarraylist,itable,sa,ipred)
-    IF (f == ARRAYLIST_NOT_FOUND) RETURN
+    f=arrlst_searchInArrayList(rarraylist,itable,sa,ipred)
+    IF (f .EQ. ARRAYLIST_NOT_FOUND) RETURN
 
     ! Delete data
     rarraylist%NA = rarraylist%NA-1
+    rarraylist%Ktable(ARRLST_NA,itable) = rarraylist%Ktable(ARRLST_NA,itable)-1
     
     ! Are we first entry in list?
     IF (ipred < 0) THEN
@@ -2441,29 +2402,29 @@ CONTAINS
       ipos  = rarraylist%Knext(ipred)
       
       ! Update free position
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Knext(ipred)         = rarraylist%Knext(LFREE)
-      rarraylist%Knext(LFREE)         = -ipred
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Knext(ipred)         = rarraylist%Knext(ARRLST_FREE)
+      rarraylist%Knext(ARRLST_FREE)         = -ipred
       
     ELSE
       
       ! Get position
       ipos = rarraylist%Knext(ipred)
-      IF (rarraylist%Knext(ipred) == rarraylist%Ktable(LTAIL,itable))&
-          rarraylist%Ktable(LTAIL,itable)=ipred
+      IF (rarraylist%Knext(ipred) .EQ. rarraylist%Ktable(ARRLST_TAIL,itable))&
+          rarraylist%Ktable(ARRLST_TAIL,itable)=ipred
       
       ! Update free position
       rarraylist%Knext(ipred) = rarraylist%Knext(ipos)
-      rarraylist%Knext(ipos)  = rarraylist%Knext(LFREE)
-      rarraylist%Knext(LFREE) = -ipos
+      rarraylist%Knext(ipos)  = rarraylist%Knext(ARRLST_FREE)
+      rarraylist%Knext(ARRLST_FREE) = -ipos
     END IF
-  END FUNCTION t_arraylist_deleteSngl
+  END FUNCTION arrlst_deleteFromArrayListSngl
 
   ! ***************************************************************************
   
 !<function>
 
-  FUNCTION t_arraylist_deleteInt(rarraylist,itable,ia) RESULT(f)
+  FUNCTION arrlst_deleteFromArrayListInt(rarraylist,itable,ia) RESULT(f)
 
 !<description>
     ! This function deletes an Integer data from the arraylist
@@ -2494,16 +2455,17 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_deleteInt: Unsupported data format!"
+      PRINT *, "arrlst_deleteFromArrayListInt: Unsupported data format!"
       CALL sys_halt()
     END IF
 
     ! Search for data
-    f=search(rarraylist,itable,ia,ipred)
-    IF (f == ARRAYLIST_NOT_FOUND) RETURN
+    f=arrlst_searchInArrayList(rarraylist,itable,ia,ipred)
+    IF (f .EQ. ARRAYLIST_NOT_FOUND) RETURN
 
     ! Delete data
     rarraylist%NA = rarraylist%NA-1
+    rarraylist%Ktable(ARRLST_NA,itable) = rarraylist%Ktable(ARRLST_NA,itable)-1
 
     ! Are we first entry in list?
     IF (ipred < 0) THEN
@@ -2513,9 +2475,9 @@ CONTAINS
       ipos  = rarraylist%Knext(ipred)
 
       ! Update free position
-      rarraylist%Ktable(LHEAD,itable) = ipos
-      rarraylist%Knext(ipred)         = rarraylist%Knext(LFREE)
-      rarraylist%Knext(LFREE)         = -ipred
+      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%Knext(ipred)               = rarraylist%Knext(ARRLST_FREE)
+      rarraylist%Knext(ARRLST_FREE)         = -ipred
       
     ELSE
 
@@ -2523,21 +2485,21 @@ CONTAINS
       ipos = rarraylist%Knext(ipred)
 
       ! Check if last entry should be deleted
-      IF (rarraylist%Knext(ipred) == rarraylist%Ktable(LTAIL,itable))&
-          rarraylist%Ktable(LTAIL,itable)=ipred
+      IF (rarraylist%Knext(ipred) .EQ. rarraylist%Ktable(ARRLST_TAIL,itable))&
+          rarraylist%Ktable(ARRLST_TAIL,itable)=ipred
       
       ! Update free position
       rarraylist%Knext(ipred) = rarraylist%Knext(ipos)
-      rarraylist%Knext(ipos)  = rarraylist%Knext(LFREE)
-      rarraylist%Knext(LFREE) = -ipos
+      rarraylist%Knext(ipos)  = rarraylist%Knext(ARRLST_FREE)
+      rarraylist%Knext(ARRLST_FREE) = -ipos
     END IF
-  END FUNCTION t_arraylist_deleteInt
+  END FUNCTION arrlst_deleteFromArrayListInt
 
   ! ***************************************************************************
   
 !<function>
 
-  FUNCTION t_arraylist_searchDble(rarraylist,itable,da,ipred) RESULT(f)
+  FUNCTION arrlst_searchInArrayListDble(rarraylist,itable,da,ipred) RESULT(f)
 
 !<description>
     ! This function searches for a given Double data in the list of a
@@ -2571,7 +2533,7 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "t_arraylist_searchDble: Unsupported data format!"
+      PRINT *, "arrlst_searchInArrayListDble: Unsupported data format!"
       CALL sys_halt()
     END IF
 
@@ -2580,39 +2542,39 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) RETURN
-    ipred=-rarraylist%Ktable(LHEAD,itable)
+    ipred=-rarraylist%Ktable(ARRLST_HEAD,itable)
     
     ! Check if list is empty
-    IF (ipred == ANULL) RETURN
+    IF (ipred .EQ. ARRLST_NULL) RETURN
 
     ! Initialization
-    ihead=rarraylist%Ktable(LHEAD,itable)
-    itail=rarraylist%Ktable(LTAIL,itable)
+    ihead=rarraylist%Ktable(ARRLST_HEAD,itable)
+    itail=rarraylist%Ktable(ARRLST_TAIL,itable)
 
     ! What kind of ordering are we
     SELECT CASE(rarraylist%cordering)
     CASE (ARRAYLIST_UNORDERED)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) == da) THEN
+      IF (rarraylist%DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%DData(inext) == da) THEN
+        IF (rarraylist%DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (inext == itail) EXIT
+        IF (inext .EQ. itail) EXIT
         ipred=rarraylist%Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_INCREASING)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) == da) THEN
+      IF (rarraylist%DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(rarraylist%DData(ihead) > da) THEN
         RETURN
@@ -2621,7 +2583,7 @@ CONTAINS
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%DData(inext) == da) THEN
+        IF (rarraylist%DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
@@ -2632,7 +2594,7 @@ CONTAINS
     CASE (ARRAYLIST_DECREASING)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) == da) THEN
+      IF (rarraylist%DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(rarraylist%DData(ihead) < da) THEN
         RETURN
@@ -2641,7 +2603,7 @@ CONTAINS
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)     
-        IF (rarraylist%DData(inext) == da) THEN
+        IF (rarraylist%DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
@@ -2652,31 +2614,33 @@ CONTAINS
     CASE (ARRAYLIST_CSR7)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) == da) THEN
+      IF (rarraylist%DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
+      ELSEIF(ABS(itable-da) .LE. SYS_EPSREAL) THEN
+        RETURN
       END IF
       ipred=-ipred
       
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%DData(inext) == da) THEN
+        IF (rarraylist%DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
         IF (rarraylist%DData(inext) > da) EXIT
-        IF (rarraylist%Knext(ipred) == itail) THEN
+        IF (rarraylist%Knext(ipred) .EQ. itail) THEN
           ipred=rarraylist%Knext(ipred); EXIT
         END IF
         ipred=rarraylist%Knext(ipred)
       END DO
     END SELECT
-  END FUNCTION t_arraylist_searchDble
+  END FUNCTION arrlst_searchInArrayListDble
   
   ! ***************************************************************************
   
 !<function>
 
-  FUNCTION t_arraylist_searchSngl(rarraylist,itable,sa,ipred) RESULT(f)
+  FUNCTION arrlst_searchInArrayListSngl(rarraylist,itable,sa,ipred) RESULT(f)
 
 !<description>
     ! This function searches for a given Single data in the list of a
@@ -2710,7 +2674,7 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "t_arraylist_searchSngl: Unsupported data format!"
+      PRINT *, "arrlst_searchInArrayListSngl: Unsupported data format!"
       CALL sys_halt()
     END IF
 
@@ -2719,39 +2683,39 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) RETURN
-    ipred=-rarraylist%Ktable(LHEAD,itable)
+    ipred=-rarraylist%Ktable(ARRLST_HEAD,itable)
 
     ! Check if list is empty
-    IF (ipred == ANULL) RETURN
+    IF (ipred .EQ. ARRLST_NULL) RETURN
 
     ! Initialization
-    ihead=rarraylist%Ktable(LHEAD,itable)
-    itail=rarraylist%Ktable(LTAIL,itable)
+    ihead=rarraylist%Ktable(ARRLST_HEAD,itable)
+    itail=rarraylist%Ktable(ARRLST_TAIL,itable)
 
     ! What kind of ordering are we
     SELECT CASE(rarraylist%cordering)
     CASE (ARRAYLIST_UNORDERED)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) == sa) THEN
+      IF (rarraylist%SData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) == sa) THEN
+        IF (rarraylist%SData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (inext == itail) EXIT
+        IF (inext .EQ. itail) EXIT
         ipred=rarraylist%Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_INCREASING)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) == sa) THEN
+      IF (rarraylist%SData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(rarraylist%SData(ihead) > sa) THEN
         RETURN
@@ -2760,7 +2724,7 @@ CONTAINS
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) == sa) THEN
+        IF (rarraylist%SData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
@@ -2771,7 +2735,7 @@ CONTAINS
     CASE (ARRAYLIST_DECREASING)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) == sa) THEN
+      IF (rarraylist%SData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(rarraylist%SData(ihead) < sa) THEN
         RETURN
@@ -2780,7 +2744,7 @@ CONTAINS
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) == sa) THEN
+        IF (rarraylist%SData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
@@ -2791,31 +2755,33 @@ CONTAINS
     CASE (ARRAYLIST_CSR7)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) == sa) THEN
+      IF (rarraylist%SData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
+      ELSEIF(ABS(itable-sa) .LE. SYS_EPSREAL) THEN
+        RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) == sa) THEN
+        IF (rarraylist%SData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
         IF (rarraylist%SData(inext) > sa) EXIT
-        IF (rarraylist%Knext(ipred) == itail) THEN
+        IF (rarraylist%Knext(ipred) .EQ. itail) THEN
           ipred=rarraylist%Knext(ipred); EXIT
         END IF
         ipred=rarraylist%Knext(ipred)
       END DO
     END SELECT
-  END FUNCTION t_arraylist_searchSngl
+  END FUNCTION arrlst_searchInArrayListSngl
 
   ! ***************************************************************************
   
 !<function>
 
-  FUNCTION t_arraylist_searchInt(rarraylist,itable,ia,ipred) RESULT(f)
+  FUNCTION arrlst_searchInArrayListInt(rarraylist,itable,ia,ipred) RESULT(f)
 
 !<description>
     ! This function searches for a given Integer data in the list of
@@ -2849,7 +2815,7 @@ CONTAINS
 
     ! Check if list format is ok
     IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "t_arraylist_searchInt: Unsupported data format!"
+      PRINT *, "arrlst_searchInArrayListInt: Unsupported data format!"
       CALL sys_halt()
     END IF
 
@@ -2858,39 +2824,39 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) RETURN
-    ipred=-rarraylist%Ktable(LHEAD,itable)
+    ipred=-rarraylist%Ktable(ARRLST_HEAD,itable)
     
     ! Check if list is empty
-    IF (ipred == ANULL) RETURN
+    IF (ipred .EQ. ARRLST_NULL) RETURN
 
     ! Initialization
-    ihead=rarraylist%Ktable(LHEAD,itable)
-    itail=rarraylist%Ktable(LTAIL,itable)
+    ihead=rarraylist%Ktable(ARRLST_HEAD,itable)
+    itail=rarraylist%Ktable(ARRLST_TAIL,itable)
         
     ! What kind of ordering are we
     SELECT CASE(rarraylist%cordering)
     CASE (ARRAYLIST_UNORDERED)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) == ia) THEN
+      IF (rarraylist%IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) == ia) THEN
+        IF (rarraylist%IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
 
-        IF (inext == itail) EXIT
+        IF (inext .EQ. itail) EXIT
         ipred=rarraylist%Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_INCREASING)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) == ia) THEN
+      IF (rarraylist%IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(rarraylist%IData(ihead) > ia) THEN
         RETURN
@@ -2899,7 +2865,7 @@ CONTAINS
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) == ia) THEN
+        IF (rarraylist%IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
@@ -2910,7 +2876,7 @@ CONTAINS
     CASE (ARRAYLIST_DECREASING)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) == ia) THEN
+      IF (rarraylist%IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(rarraylist%IData(ihead) < ia) THEN
         RETURN
@@ -2919,7 +2885,7 @@ CONTAINS
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) == ia) THEN
+        IF (rarraylist%IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
@@ -2930,31 +2896,33 @@ CONTAINS
     CASE (ARRAYLIST_CSR7)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) == ia) THEN
+      IF (rarraylist%IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
+      ELSEIF(itable .EQ. ia) THEN
+        RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
         inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) == ia) THEN
+        IF (rarraylist%IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
         IF (rarraylist%IData(inext) > ia) EXIT
-        IF (rarraylist%Knext(ipred) == itail) THEN
+        IF (rarraylist%Knext(ipred) .EQ. itail) THEN
           ipred=rarraylist%Knext(ipred); EXIT
         END IF
         ipred=rarraylist%Knext(ipred)
       END DO
     END SELECT
-  END FUNCTION t_arraylist_searchInt
+  END FUNCTION arrlst_searchInArrayListInt
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE t_arraylist_print(rarraylist,itable)
+  SUBROUTINE arrlst_printArrayList(rarraylist,itable)
 
 !<description>
     ! This subroutine prints the content of the list
@@ -2987,13 +2955,13 @@ CONTAINS
         WRITE(*,FMT='(A,I5)') 'Table No.:',iitable
         WRITE(*,FMT='(A)',ADVANCE='NO') ' ->'
 
-        ipos  = rarraylist%Ktable(LHEAD,iitable)
-        IF (ipos == ANULL) CYCLE
-        itail = rarraylist%Ktable(LTAIL,iitable)
+        ipos  = rarraylist%Ktable(ARRLST_HEAD,iitable)
+        IF (ipos .EQ. ARRLST_NULL) CYCLE
+        itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
           WRITE(*,FMT='(I5,1X)',ADVANCE='NO') rarraylist%DData(ipos)
-          IF (ipos == itail) EXIT
+          IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
         PRINT *
@@ -3006,13 +2974,13 @@ CONTAINS
         WRITE(*,FMT='(A,I5)') 'Table No.:',iitable
         WRITE(*,FMT='(A)',ADVANCE='NO') ' ->'
         
-        ipos = rarraylist%Ktable(LHEAD,iitable)
-        IF (ipos == ANULL) CYCLE
-        itail = rarraylist%Ktable(LTAIL,iitable)
+        ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
+        IF (ipos .EQ. ARRLST_NULL) CYCLE
+        itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
           WRITE(*,FMT='(I5,1X)',ADVANCE='NO') rarraylist%SData(ipos)
-          IF (ipos == itail) EXIT
+          IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
         PRINT *
@@ -3025,29 +2993,29 @@ CONTAINS
         WRITE(*,FMT='(A,I5)') 'Table No.:',iitable
         WRITE(*,FMT='(A)',ADVANCE='NO') ' ->'
 
-        ipos = rarraylist%Ktable(LHEAD,iitable)
-        IF (ipos == ANULL) CYCLE
-        itail = rarraylist%Ktable(LTAIL,iitable)
+        ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
+        IF (ipos .EQ. ARRLST_NULL) CYCLE
+        itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
           WRITE(*,FMT='(I5,1X)',ADVANCE='NO') rarraylist%IData(ipos)
-          IF (ipos == itail) EXIT
+          IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
         PRINT *
       END DO
       
     CASE DEFAULT
-      PRINT *, "t_arraylist_print: Unsupported data type!"
+      PRINT *, "arrlst_printArrayList: Unsupported data type!"
       CALL sys_halt()
     END SELECT
-  END SUBROUTINE t_arraylist_print
+  END SUBROUTINE arrlst_printArrayList
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_arraylist_info(rarraylist)
+  SUBROUTINE arrlst_infoArrayList(rarraylist)
 
 !<description>
     ! This subroutine prints information about the arraylist
@@ -3059,24 +3027,30 @@ CONTAINS
 !</input>
 !</subroutine>
 
-    WRITE(*,FMT=*) ' Arraylist:'
-    WRITE(*,FMT=*) ' =========='
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Ktable =',rarraylist%h_Ktable
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Knext  =',rarraylist%h_Knext
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Data   =',rarraylist%h_Data
-    WRITE(*,*)
-    WRITE(*,FMT='(1X,A,1X,I8,3X,A,1X,I8,3X,A,3X,F5.1,A)') &
-        '  NA      =',rarraylist%NA,&
-        'NNA      =',rarraylist%NNA,&
-        'FILLING  =',100*rarraylist%NA/REAL(rarraylist%NNA,DP),'%'
-    WRITE(*,FMT='(1X,A,1X,I8,3X,A,1X,I8,3X,A,3X,F5.1,A)') &
-        '  NTABLE  =',rarraylist%NTABLE,&
-        'NNTABLE  =',rarraylist%NNTABLE,&
-        'FILLING  =',100*rarraylist%NTABLE/REAL(rarraylist%NNTABLE,DP)
-    WRITE(*,FMT='(1X,A,1X,I8,3X,A,2X,F7.1,A,1X,F7.1,A)') &
-        '  NRESIZE =',rarraylist%NRESIZE,&
-        'TABLE´s  =',100*rarraylist%NNTABLE/REAL(rarraylist%NNTABLE0,DP),&
-        '%  NNA´s    =',100*rarraylist%NNA/REAL(rarraylist%NNA0,DP),'%'
-    WRITE(*,*)
-  END SUBROUTINE t_arraylist_info
+    CALL output_line('Arraylist:')
+    CALL output_line('----------')
+    CALL output_line('NA:       '//TRIM(sys_siL(rarraylist%NA,15)))
+    CALL output_line('NNA:      '//TRIM(sys_siL(rarraylist%NNA,15)))
+    CALL output_line('NNA0:     '//TRIM(sys_siL(rarraylist%NNA0,15)))
+    CALL output_line('NTABLE:   '//TRIM(sys_siL(rarraylist%NTABLE,15)))
+    CALL output_line('NNTABLE:  '//TRIM(sys_siL(rarraylist%NNTABLE,15)))
+    CALL output_line('NNTABLE0: '//TRIM(sys_siL(rarraylist%NNTABLE0,15)))
+    CALL output_line('NRESIZE:  '//TRIM(sys_siL(rarraylist%NRESIZE,15)))
+    CALL output_line('dfactor:  '//TRIM(sys_sdL(rarraylist%dfactor,2)))
+    CALL output_line('h_Ktable: '//TRIM(sys_siL(rarraylist%h_Ktable,15)))
+    CALL output_line('h_Knext:  '//TRIM(sys_siL(rarraylist%h_Knext,15)))
+    CALL output_line('h_Data:   '//TRIM(sys_siL(rarraylist%h_Data,15)))
+
+    CALL output_line('Current data  memory usage: '//&
+        TRIM(sys_sdL(100*rarraylist%NA/REAL(rarraylist%NNA,DP),2))//'%')
+    CALL output_line('Current table memory usage: '//&
+        TRIM(sys_sdL(100*rarraylist%NTABLE/REAL(rarraylist%NNTABLE,DP),2))//'%')
+
+    CALL output_line('Total   data  memory usage: '//&
+        TRIM(sys_sdL(100*rarraylist%NNA/REAL(rarraylist%NNA0,DP),2))//'%')
+    CALL output_line('Total   table memory usage: '//&
+        TRIM(sys_sdL(100*rarraylist%NNTABLE/REAL(rarraylist%NNTABLE0,DP),2))//'%')
+    CALL output_line('')
+
+  END SUBROUTINE arrlst_infoArrayList
 END MODULE arraylist
