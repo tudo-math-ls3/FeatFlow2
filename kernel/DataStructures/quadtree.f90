@@ -33,7 +33,7 @@
 !#     -> Search data in quadtree
 !#
 !# 9.) qtree_printQuadtree
-!#     -> Write quadtree to file
+!#      -> Write quadtree to file
 !#
 !# 10.) qtree_infoQuadtree
 !#      -> Output info about quadtree
@@ -251,9 +251,7 @@ MODULE quadtree
 
   INTERFACE qtree_deleteFromQuadtree
     MODULE PROCEDURE t_quadtree_delete
-  END INTERFACE
-  INTERFACE delete   ! for internal use
-    MODULE PROCEDURE t_quadtree_delete
+    MODULE PROCEDURE t_quadtree_deleteByNumber
   END INTERFACE
   
   INTERFACE qtree_searchInQuadtree
@@ -771,27 +769,76 @@ CONTAINS
     f=search(rquadtree,Ddata,inode,ipos,ivt)
     
     ! What can we do from the searching
-    IF (f == QTREE_FOUND) THEN
+    IF (f .EQ. QTREE_FOUND) THEN
       
-      ! Remove item IVT from quad INODE
+      ! Remove item IVT from node INODE
       DO jpos=ipos+1,rquadtree%p_Knode(QTREE_STATUS,inode)
         rquadtree%p_Knode(jpos-1,inode) = rquadtree%p_Knode(jpos,inode)
       END DO
       rquadtree%p_Knode(rquadtree%p_Knode(QTREE_STATUS,inode),inode) = 0
       rquadtree%p_Knode(QTREE_STATUS,inode) = rquadtree%p_Knode(QTREE_STATUS,inode)-1
       
-      ! If IVT is not last item move last item NVT to position IVT
-      IF (ivt /= rquadtree%NVT) THEN
-        IF (search(rquadtree,rquadtree%p_Ddata(1:2,rquadtree%NVT),inode,ipos,jvt) == QTREE_FOUND) THEN
-          rquadtree%p_Ddata(:,ivt) = rquadtree%p_Ddata(:,rquadtree%NVT)
+      ! If IVT is not last item move last item to position IVT
+      IF (ivt .NE. rquadtree%NVT) THEN
+        IF (search(rquadtree,rquadtree%p_Ddata(1:2,rquadtree%NVT),inode,ipos,jvt)&
+            .EQ. QTREE_FOUND) THEN
+          rquadtree%p_Ddata(:,ivt)      = rquadtree%p_Ddata(:,rquadtree%NVT)
           rquadtree%p_Knode(ipos,inode) = ivt
         END IF
-        ivt=rquadtree%NVT
+
+        ! Set number of removed vertex
+        ivt = rquadtree%NVT
       END IF
+      
+      ! Decrease number of vertices
       rquadtree%NVT = rquadtree%NVT-1
     END IF
   END FUNCTION t_quadtree_delete
-  
+
+  ! ***************************************************************************
+
+!<function>
+
+  FUNCTION t_quadtree_deleteByNumber(rquadtree,ivt,ivtReplace) RESULT(f)
+
+!<description>
+    ! This function deletes vertex with number IVT from the quadtree
+!</description>
+
+!<input>
+    ! Number of the vertex to be deleted
+    INTEGER(PREC_QTREEIDX), INTENT(IN) :: ivt
+!</input>
+
+!<inputoutput>
+    ! quadtree
+    TYPE(t_quadtree), INTENT(INOUT) :: rquadtree
+!</inputoutput>
+
+!<output>
+    ! Number of the vertex that replaces the deleted vertex
+    INTEGER(PREC_QTREEIDX), INTENT(OUT) :: ivtReplace
+!</output>
+
+!<result>
+    ! Result of the deletion: QTREE_NOT_FOUND / QTREE_FOUND
+    INTEGER :: f
+!</result>
+!</function>
+
+    ! local variables
+    REAL(DP), DIMENSION(2) :: Ddata
+    
+    IF (ivt .LE. rquadtree%NVT) THEN
+      ! Get coordinates and invoke deletion routine
+      Ddata = rquadtree%p_Ddata(:,ivt)
+      f=qtree_deleteFromQuadtree(rquadtree,Ddata,ivtReplace)
+    ELSE
+      PRINT *, "t_quadtree_deleteByNumber: Invalid vertex number!"
+      CALL sys_halt()
+    END IF
+  END FUNCTION t_quadtree_deleteByNumber
+ 
   ! ***************************************************************************
 
 !<function>
