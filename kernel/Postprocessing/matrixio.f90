@@ -160,6 +160,11 @@ MODULE matrixio
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       ! Get the data arrays and write the matrix
+      IF (.NOT.lsyssc_hasMatrixContent(rmatrix)) THEN
+        CALL output_line('Matrix has no data',&
+            OU_CLASS_ERROR,OU_MODE_STD,'matio_writeMatrixHR')
+        CALL sys_halt()
+      END IF
       CALL lsyssc_getbase_double (rmatrix,p_Da)
       CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
       CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
@@ -385,7 +390,7 @@ MODULE matrixio
         k = Irow(i)+j
         p_DrowVec(Icol(k)) = Da(k)
       END DO
-      
+
       ! Write row i
       DO j=1, ncol-1
         dval = p_DrowVec(j)
