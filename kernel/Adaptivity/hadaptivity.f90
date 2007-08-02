@@ -88,6 +88,9 @@
 !# 22.) hadapt_writeGridSVG
 !#      -> write the adapted grid to file in SVG format
 !#
+!# 23.) hadapt_checkConsistency
+!#      -> check the internal consistency of dynamic data structures
+!#
 !# The following internal routines are available:
 !#
 !#  1.) add_vertex2D = add_vertex_atEdgeMidpoint2D /
@@ -108,41 +111,44 @@
 !#  5.) remove_element2D
 !#      -> remove an existing element from the adaptation data structure in 2D
 !#
-!#  6.) update_ElementNeighbors2D = update_ElemEdgeNeighbors2D /
-!#                                  update_ElemNeighbors2D
-!#      -> update the list of neighboring elements along a given edge in 2D
+!#  6.) update_ElementNeighbors2D = update_ElemNeighb2D_Common /
+!#                                  update_ElemNeighb2D_Divided
+!#      -> update the list of neighboring elements  in 2D
 !#
-!#  7.) refine_Tria2Tria
+!#  7.) update_AllElementNeighbors2D
+!#      -> update the lists of neighboring elements of ALL adjacent elements
+!#
+!#  8.) refine_Tria2Tria
 !#      -> refine a triangle by subdivision into two triangles
 !#
-!#  8.) refine_Tria3Tria
+!#  9.) refine_Tria3Tria
 !#      -> refine a triangle by subdivision into three triangles
 !#
-!#  9.) refine_Tria4Tria
+!# 10.) refine_Tria4Tria
 !#      -> refine a triangle by subdivision into four triangles
 !#
-!# 10.) refine_Quad2Quad
+!# 11.) refine_Quad2Quad
 !#      -> refine a quadrilateral by subdivision into two quadrilaterals
 !#
-!# 11.) refine_Quad3Tria
+!# 12.) refine_Quad3Tria
 !#      -> refine a quadrilateral by subdivision into three triangles
 !#
-!# 12.) refine_Quad4Tria
+!# 13.) refine_Quad4Tria
 !#      -> refine a quadrilateral by subdivision into four triangles
 !#
-!# 13.) refine_Quad4Quad
+!# 14.) refine_Quad4Quad
 !#      -> refine a quadrilateral by subdivision into four quadrilaterals
 !#
-!# 14.) convert_Tria2Tria
+!# 15.) convert_Tria2Tria
 !#      -> convert two neighboring triangles into four similar triangle
 !#
-!# 15.) convert_Quad2Quad
+!# 16.) convert_Quad2Quad
 !#      -> convert two neighboring quadrilaterals into four similar quadrilaterals
 !#
-!# 16.) convert_Quad3Tria
+!# 17.) convert_Quad3Tria
 !#      -> convert three neighboring triangles into four similar quadrilaterals
 !#
-!# 17.) convert_Quad4Tria
+!# 18.) convert_Quad4Tria
 !#      -> convert four neighboring triangles into four similar quadrilaterals
 !#
 !# 19.) coarsen_2Tria1Tria
@@ -345,6 +351,7 @@ MODULE hadaptivity
   PUBLIC :: hadapt_performAdaptation
   PUBLIC :: hadapt_info
   PUBLIC :: hadapt_writeGridSVG
+  PUBLIC :: hadapt_checkConsistency
 
 
 !<constants>
@@ -880,7 +887,7 @@ MODULE hadaptivity
     TYPE(t_btree), DIMENSION(:), POINTER :: rBoundary => NULL()
 
     ! Arraylist for elements-meeting-at-vertex structure
-    TYPE(t_arraylist) :: relementsAtVertex
+    TYPE(t_arraylist) :: rElementsAtVertex
   END TYPE t_hadapt
 
   !</typeblock> 
@@ -905,10 +912,10 @@ MODULE hadaptivity
     MODULE PROCEDURE add_elementTria
     MODULE PROCEDURE add_elementQuad
   END INTERFACE
-
+  
   INTERFACE update_ElementNeighbors2D
-    MODULE PROCEDURE update_ElemEdgeNeighbors2D
-    MODULE PROCEDURE update_ElemNeighbors2D
+    MODULE PROCEDURE update_ElemNeighb2D_Common
+!    MODULE PROCEDURE update_ElemNeighb2D_Divided
   END INTERFACE
 
 CONTAINS
@@ -2113,17 +2120,11 @@ CONTAINS
           CALL fcb_hadaptCallback(rcollection,&
           HADAPT_OPR_ADJUSTVERTEXDIM,(/nvt/),(/0/))
       
-      CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(0,0))
-      PAUSE
-
       ! Perform refinement
       CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
 
       ! Perform coarsening
       CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
-
-      CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(0,0))
-      PAUSE
 
       ! Adjust nodal property array
       CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
@@ -2143,6 +2144,8 @@ CONTAINS
       PRINT *, "hadapt_performAdaptation: Unsupported refinement strategy!"
       CALL sys_halt()
     END SELECT
+
+    CALL hadapt_checkConsistency(rhadapt)
 
   CONTAINS
 
@@ -2670,6 +2673,318 @@ CONTAINS
   END SUBROUTINE hadapt_writeGridSVG
 
   ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE hadapt_checkConsistency(rhadapt)
+
+!<description>
+    ! This subroutine checks the internal consistency of the dynamic data structures.
+    ! Note that this routine performs brute-force search, and hence, should not
+    ! be called in a productive environment. In is meant for debugging purposes
+    ! only. If an error occurs, it stop without possibility to resume.
+!</description>
+
+!<inputoutput>
+    ! adaptivity structure
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    INTEGER(PREC_ARRAYLISTIDX) :: ipos
+    INTEGER(PREC_VERTEXIDX)    :: ivt,idx
+    INTEGER(PREC_ELEMENTIDX)   :: iel,ielmid,jel,jelmid
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
+    INTEGER :: h_IelementsAtVertexIdx,h_IelementsAtVertex
+    INTEGER :: ive,jve,nve,mve
+    LOGICAL :: btest,bfound
+
+    ! Test #1: Consistency of element numbers
+    btest = (rhadapt%NEL .EQ. SUM(rhadapt%InelOfType))
+    CALL output_line('Test #1: Checking consistency of element numbers '//&
+        MERGE('PASSED','FAILED',btest))
+
+    ! Test #2: Vertex age must not exceed maximum refinement level
+    btest = .TRUE.
+    DO ivt=1,rhadapt%NVT
+      btest = btest .OR. (rhadapt%p_IvertexAge(ivt) .GT. rhadapt%NSUBDIVIDEMAX)
+    END DO
+    CALL output_line('Test #2: Checking maximum vertex age '//&
+        MERGE('PASSED','FAILED',btest))
+
+    ! Test #3: Check consistency of element neighbours
+    btest=.TRUE.
+    DO iel=1,rhadapt%NEL
+
+      ! Get number of vertices per element
+      nve = get_NVE(rhadapt,iel)
+      
+      ! Loop over all adjacent elements
+      DO ive=1,nve
+        jel    = rhadapt%p_IneighboursAtElement(ive,iel)
+        jelmid = rhadapt%p_ImidneighboursAtElement(ive,iel)
+
+        ! Do nothing if we are adjacent to the boundary
+        IF (jel*jelmid .EQ. 0) CYCLE
+        
+        ! Is neighboring element subdivided?
+        IF (jel .EQ. jelmid) THEN
+          
+          ! Get number of vertices per element
+          mve = get_NVE(rhadapt,jel)
+          
+          ! Find element IEL in adjacency list of JEL
+          bfound=.FALSE.
+          DO jve=1,mve
+            IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. &
+                rhadapt%p_ImidneighboursAtElement(jve,jel)) THEN
+              IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. iel) THEN
+                bfound=.TRUE.; EXIT
+              END IF
+            ELSE
+              IF (rhadapt%p_IneighboursAtElement(jve,jel)    .EQ. iel .OR.&
+                  rhadapt%p_ImidneighboursAtElement(jve,jel) .EQ. iel) THEN
+                bfound=.TRUE.; EXIT
+              END IF
+            END IF
+          END DO
+          btest = btest.AND.bfound
+
+          IF (.NOT.bfound) THEN
+            PRINT *, "FROM ELEMENT",iel
+            PRINT *, "LOOKIG INTO NEIGHBOUR",jel,jelmid
+            PRINT *, "    ADJACENCY LIST",rhadapt%p_IneighboursAtElement(:,jel)
+            PRINT *, "MID-ADJACENCY LIST",rhadapt%p_ImidneighboursAtElement(:,jel)
+            PAUSE
+          END IF
+          
+        ELSE
+
+          ! Get number of vertices per element
+          mve = get_NVE(rhadapt,jel)
+          
+          ! Find element IEL in adjacency list of JEL
+          bfound=.FALSE.
+          DO jve=1,mve
+            IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. &
+                rhadapt%p_ImidneighboursAtElement(jve,jel)) THEN
+              IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. iel) THEN
+                bfound=.TRUE.; EXIT
+              END IF
+            ELSE
+              IF (rhadapt%p_IneighboursAtElement(jve,jel)    .EQ. iel .OR.&
+                  rhadapt%p_ImidneighboursAtElement(jve,jel) .EQ. iel) THEN
+                bfound=.TRUE.; EXIT
+              END IF
+            END IF
+          END DO
+          btest = btest.AND.bfound
+
+          IF (.NOT.bfound) THEN
+            PRINT *, "FROM ELEMENT",iel
+            PRINT *, "LOOKIG INTO NEIGHBOUR",jel,jelmid
+            PRINT *, "    ADJACENCY LIST",rhadapt%p_IneighboursAtElement(:,jel)
+            PRINT *, "MID-ADJACENCY LIST",rhadapt%p_ImidneighboursAtElement(:,jel)
+            PAUSE
+          END IF
+
+          ! Get number of vertices per element
+          mve = get_NVE(rhadapt,jelmid)
+          
+          ! Find element IEL in adjacency list of JELMID
+          bfound=.FALSE.
+          DO jve=1,mve
+            IF (rhadapt%p_IneighboursAtElement(jve,jelmid) .EQ. &
+                rhadapt%p_ImidneighboursAtElement(jve,jelmid)) THEN
+              IF (rhadapt%p_IneighboursAtElement(jve,jelmid) .EQ. iel) THEN
+                bfound=.TRUE.; EXIT
+              END IF
+            ELSE
+              IF (rhadapt%p_IneighboursAtElement(jve,jelmid)    .EQ. iel .OR.&
+                  rhadapt%p_ImidneighboursAtElement(jve,jelmid) .EQ. iel) THEN
+                bfound=.TRUE.; EXIT
+              END IF
+            END IF
+          END DO
+          btest = btest.AND.bfound
+
+          IF (.NOT.bfound) THEN
+            PRINT *, "FROM ELEMENT",iel
+            PRINT *, "LOOKIG INTO NEIGHBOUR",jel,jelmid
+            PRINT *, "    ADJACENCY LIST",rhadapt%p_IneighboursAtElement(:,jel)
+            PRINT *, "MID-ADJACENCY LIST",rhadapt%p_ImidneighboursAtElement(:,jel)
+            PAUSE
+          END IF
+
+        END IF
+      END DO
+    END DO
+    CALL output_line('Test #3: Checking consistency of element neighbours '//&
+        MERGE('PASSED','FAILED',btest))
+    
+    ! Test #4: Check consistency of common vertices between two edges
+    btest=.TRUE.
+    DO iel=1,rhadapt%NEL
+
+      ! Get number of vertices per element
+      nve = get_NVE(rhadapt,iel)
+      
+      ! Loop over all adjacent elements
+      DO ive=1,nve
+        jel    = rhadapt%p_IneighboursAtElement(ive,iel)
+        jelmid = rhadapt%p_ImidneighboursAtElement(ive,iel)
+        
+        ! Do nothing if we are adjacent to the boundary
+        IF (jel*jelmid .EQ. 0) CYCLE
+        
+        ! Do nothing if there exists a temporal hanging node
+        IF (jel .NE. jelmid) CYCLE
+
+        ! Get number of vertices per element
+        mve = get_NVE(rhadapt,jel)
+
+        ! Find element IEL in adjacency list of JEL
+        bfound=.FALSE.
+        DO jve=1,mve
+          IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. &
+              rhadapt%p_ImidneighboursAtElement(jve,jel)) THEN
+            IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. iel) THEN
+              bfound=.TRUE.; EXIT
+            END IF
+          END IF
+        END DO
+        
+        ! If the common edge has been found, check the two endpoints
+        IF (bfound) THEN
+          bfound = ((rhadapt%p_IverticesAtElement(ive,iel) .EQ. &
+                     rhadapt%p_IverticesAtElement(MODULO(jve,mve)+1,jel)) .AND. &
+                     rhadapt%p_IverticesAtElement(MODULO(ive,nve)+1,iel) .EQ. &
+                     rhadapt%p_IverticesAtElement(jve,jel))
+        END IF
+        btest=btest.AND.bfound
+      END DO
+    END DO
+    CALL output_line('Test #4: Checking consistency of common vertices along edges '//&
+        MERGE('PASSED','FAILED',btest))
+
+    ! Test #5: Check consistency of element-meeting-at-vertex lists
+    btest=(rhadapt%rElementsAtVertex%NTABLE .EQ. rhadapt%NVT)
+    IF (btest) THEN
+      
+      ! Create index array
+      CALL storage_new('hadapt_checkConsistency','IelementAtVertexIdx',rhadapt%NVT+1,&
+          ST_INT,h_IelementsAtVertexIdx,ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int(h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+
+      ! Count number of elements meeting at vertex
+      DO iel=1,rhadapt%NEL
+
+        ! Get number of vertices per element
+        nve = get_NVE(rhadapt,iel)
+
+        ! Loop over corner vertices
+        DO ive=1,nve
+          ivt = rhadapt%p_IverticesAtElement(ive,iel)
+          p_IelementsAtVertexIdx(ivt+1) = p_IelementsAtVertexIdx(ivt+1)+1
+        END DO
+      END DO
+
+      ! Convert element couter into absolute position
+      p_IelementsAtVertexIdx(1)=1
+      DO ivt=2,rhadapt%NVT+1
+        p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt) + p_IelementsAtVertexIdx(ivt-1)
+      END DO
+
+      ! Create working array
+      CALL storage_new('hadapt_checkConsistency','IelementAtVertex',&
+          p_IelementsAtVertexIdx(rhadapt%NVT+1)-1,&
+          ST_INT,h_IelementsAtVertex,ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_int(h_IelementsAtVertex,p_IelementsAtVertex)
+
+      ! Retrieve the element numbers
+      DO iel=1,rhadapt%NEL
+
+        ! Get number of vertices per element
+        nve = get_NVE(rhadapt,iel)
+
+        ! Loop over corner vertices
+        DO ive=1,nve
+          ivt = rhadapt%p_IverticesAtElement(ive,iel)
+          idx = p_IelementsAtVertexIdx(ivt)
+          p_IelementsAtVertexIdx(ivt) = idx+1
+          p_IelementsAtVertex(idx)    = iel
+        END DO
+      END DO
+      
+      ! Restore index array
+      DO ivt=rhadapt%NVT+1,2,-1
+        p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt-1)
+      END DO
+      p_IelementsAtVertexIdx(1) = 1
+
+      ! Start to compare the temporal elements-meeting-at-vertex list
+      ! and the dynamic data structure from the adaptivity structure
+      DO ivt=1,rhadapt%NVT
+        
+        ! Get first entry in array list
+        ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex,ivt,.TRUE.)
+        
+        ! Repeat until there is no entry left in the array list
+        DO WHILE(ipos .NE. ARRLST_NULL)
+          
+          ! Get element number IEL
+          iel = rhadapt%rElementsAtVertex%IData(ipos)
+
+          ! Proceed to next entry in array list
+          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
+
+          ! Look for element IEL in temporal elements-meeting-at-vertex list
+          ! If it does exist, multiply its value by minus one so that it cannot
+          ! be found twice. At the end, all positive entries in the temporal
+          ! list are not present in the dynamic structure
+          bfound=.FALSE.
+          DO idx=p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
+            IF (p_IelementsAtVertex(idx) .EQ. iel) THEN
+              p_IelementsAtVertex(idx) = -p_IelementsAtVertex(idx)
+              bfound = .TRUE.
+              EXIT
+            END IF
+          END DO
+          btest=btest.AND.bfound
+!!$          IF (.NOT.bfound) THEN
+!!$            PRINT *, "Vertex",ivt
+!!$            CALL arrlst_printArrayList(rhadapt%rElementsAtVertex,ivt)
+!!$            PAUSE
+!!$          END IF
+        END DO
+      END DO
+      btest=btest.AND.ALL(p_IelementsAtVertex < 0)
+      CALL output_line('Test #5: Checking consistency of elements meeting at vertices '//&
+        MERGE('PASSED','FAILED',btest))
+
+!!$      IF (.NOT.btest) THEN
+!!$        DO ivt=1,rhadapt%NVT
+!!$          PRINT *, "Vertex",ivt
+!!$          DO idx=p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
+!!$            WRITE(*,FMT='(I5,1X)',ADVANCE='NO') p_IelementsAtVertex(idx)
+!!$          END DO
+!!$          PRINT *
+!!$        END DO
+!!$      END IF
+
+      ! Release auxiliary storage
+      CALL storage_free(h_IelementsAtVertexIdx)
+      CALL storage_free(h_IelementsAtVertex)
+    END IF
+    CALL output_line('Test #5: Checking consistency of element-meeting-at-vertex list '//&
+        MERGE('PASSED','FAILED',btest))
+    
+
+  END SUBROUTINE hadapt_checkConsistency
+
+  ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
 
@@ -2967,12 +3282,19 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_QTREEIDX)  :: iReplace
     INTEGER(PREC_VERTEXIDX) :: i1,i2
     INTEGER(PREC_TREEIDX)   :: ipred,ipos
     INTEGER :: ibct
 
-    ! Get last vertex and decrease number of vertices by one
-    ivtReplace  = rhadapt%NVT
+    ! Remove vertex from coordinates and get number of replacement vertex
+    IF (qtree_deleteFromQuadtree(rhadapt%rVertexCoordinates2D,&
+        ivt,ivtReplace) .EQ. QTREE_NOT_FOUND) THEN
+      PRINT *, "remove_vertex2D: Unable to delete vertex coordinates!"
+      CALL sys_halt()
+    END IF
+    
+    ! Decrease number of vertices by one
     rhadapt%NVT = rhadapt%NVT-1
     
     ! If IVT is a boundary node remove it from the boundary and
@@ -2985,7 +3307,7 @@ CONTAINS
       ! Find position of vertex IVT in boundary array
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivt,ipred) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
+        PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -2998,7 +3320,7 @@ CONTAINS
       ! First, set I2 as next neighboring of I1
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
+        PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3007,7 +3329,7 @@ CONTAINS
       ! Second, set I1 as previous neighbor of I2
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
+        PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3016,7 +3338,7 @@ CONTAINS
       ! And finally, delete IVT from the boundary
       IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivt) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex: Unable to delete vertex from boundary data structure"
+        PRINT *, "remove_vertex2D: Unable to delete vertex from boundary data structure"
         CALL sys_halt()
       END IF
     END IF
@@ -3035,7 +3357,7 @@ CONTAINS
 
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivtReplace,ipred) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
+          PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3053,7 +3375,7 @@ CONTAINS
         ! First, set IVT as next neighbor of I1
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
+          PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3062,7 +3384,7 @@ CONTAINS
         ! Second, set IVT as previous neighbor of I2
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to find vertex in boundary data structure"
+          PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3071,7 +3393,7 @@ CONTAINS
         ! Finally, delete IVTREPLACE from the boundary
         IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivtReplace) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex: Unable to delete vertex from the boundary data structure"
+          PRINT *, "remove_vertex2D: Unable to delete vertex from the boundary data structure"
           CALL sys_halt()
         END IF
       END IF
@@ -3079,10 +3401,20 @@ CONTAINS
       ! Copy data from node IVTREPLACE to node IVT
       rhadapt%p_InodalProperty(ivt) = rhadapt%p_InodalProperty(ivtReplace)
       rhadapt%p_IvertexAge(ivt)     = rhadapt%p_IvertexAge(ivtReplace)
+
+      ! Clear data for node IVTREPLACE
+      rhadapt%p_InodalProperty(ivtReplace) = 0
+      rhadapt%p_IvertexAge(ivtReplace)     = 0
+      
     ELSE
 
       ! IVT is the last vertex of the adaptivity structure
       ivtReplace = 0
+
+      ! Clear data for node IVT
+      rhadapt%p_InodalProperty(ivt) = 0
+      rhadapt%p_IvertexAge(ivt)     = 0
+      
     END IF
   END SUBROUTINE remove_vertex2D
 
@@ -3264,7 +3596,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_ELEMENTIDX) :: jel
+    INTEGER(PREC_ARRAYLISTIDX) :: ipos
+    INTEGER(PREC_VERTEXIDX)    :: ivt
+    INTEGER(PREC_ELEMENTIDX)   :: jel
     INTEGER :: ive,jve
     
     ! Replace element by the last element and delete last element
@@ -3286,7 +3620,8 @@ CONTAINS
     ! Check if we are the last element
     IF (iel .NE. ielReplace) THEN
       
-      ! Element is not the last one.
+      ! Element is not the last one. Then the element that should be removed must
+      ! have a smaller element number. If this is not the case, something is wrong.
       IF (iel > ielReplace) THEN
         PRINT *, "remove_element2D: Invalid element!"
         CALL sys_halt()
@@ -3297,25 +3632,51 @@ CONTAINS
       rhadapt%p_IneighboursAtElement(:,iel)    = rhadapt%p_IneighboursAtElement(:,ielReplace)
       rhadapt%p_ImidneighboursAtElement(:,iel) = rhadapt%p_ImidneighboursAtElement(:,ielReplace)
 
-      ! Update the adjacency list of surrounding elements
-      DO ive=1,get_NVE(rhadapt,iel)
+      ! The element which formally was labeled ielReplace is now labeled IEL.
+      ! This modification must be updated in the list of adjacent element
+      ! neighbors of all surrounding elements. Moreover, the modified element
+      ! number must be updated in the "elements-meeting-at-vertex" lists of the
+      ! corner nodes of element IEL. Both operations are performed below.
+      update: DO ive=1,get_NVE(rhadapt,iel)
         
-        ! Get element number of adjacent element jel
+        ! Get vertex number of corner node
+        ivt = rhadapt%p_IverticesAtElement(ive,iel)
+
+        ! Start with first element in "elements-meeting-at-vertex" list
+        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.TRUE.)
+        DO WHILE(ipos .NE. ARRLST_NULL)
+          
+          ! Check if element number corresponds to the replaced element
+          IF (rhadapt%rElementsAtVertex%IData(ipos) .EQ. ielReplace) THEN
+            rhadapt%rElementsAtVertex%IData(ipos)=iel
+            EXIT
+          END IF
+          
+          ! Proceed to next element in list
+          ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
+        END DO
+        
+        
+        ! Get element number of element JEL which is adjacent to IEL
         jel = rhadapt%p_IneighboursAtElement(ive,iel)
         
         ! Are we at the boundary?
         IF (jel .EQ. 0) CYCLE
 
         ! Find replacement element in adjacency list of element 
-        ! iel and update entry to new element 
+        ! IEL and update entry to new element number IEL
         DO jve=1,get_NVE(rhadapt,jel)
           IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. ielReplace) THEN
             rhadapt%p_IneighboursAtElement(jve,jel)    = iel
             rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
-            EXIT
+            CYCLE update
           END IF
         END DO
-      END DO
+
+        ! If the element could not be found, something is wrong
+        PRINT *, "remove_element2D: Unable to update element neighbor!"
+        CALL sys_halt()
+      END DO update
       
       ! Delete replacement element
       rhadapt%p_IverticesAtElement(:,ielReplace)      = 0
@@ -3341,54 +3702,54 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE update_ElemEdgeNeighbors2D(rhadapt,e0adj,e0midadj,e0,eadj,emidadj)
+  SUBROUTINE update_ElemNeighb2D_Common(rhadapt,jel,jelmid,iel0,iel,ielmid)
 
 !<description>
-    ! This subroutine updates the list of elements adjecent to another 
+    ! This subroutine updates the list of elements adjacent to another 
     ! element and the list of elements mid-adjacent to another element.
     !
     ! The situation is as follows:
     !
     !  +---------------------+            +---------------------+
     !  |                     |            |          .          |
-    !  |          E0         |            | EMIDADJ  .   EADJ   |
+    !  |        IEL0         |            |  IELMID  .   IEL    |
     !  |                     |            |          .          |
-    !  |                     |            |          |          |
-    !  |                     |            |          |          |
+    !  |                     |            |          .          |
+    !  |                     |            |          .          |
     !  +---------------------+    --->    +----------+----------+
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
-    !  |  E0ADJ   . E0MIDADJ |            | E0ADJ    . E0MIDADJ |
+    !  |    JEL   .  JELMID  |            |    JEL   .  JELMID  |
     !  |          .          |            |          .          |
     !  +---------------------+            +---------------------+
     !
-    ! "Sitting" on element E0 we want to update the elements lists:
+    ! "Sitting" on element IEL0 we want to update the element lists:
     !
-    ! 1) If E0 is located at the boundary then nothing needs to be done.
+    ! 1) If IEL0 is located at the boundary then nothing needs to be done.
     ! 2) If the adjacent element has not been subdivided, that is,
-    !    E0ADJ == E0MIDADJ then it suffices to update its adjacency
-    !    list for the entry E0 adopting the values EMIDADJ and EADJ.
+    !    JEL = JELMID then it suffices to update its adjacency
+    !    list for the entry IEL0 adopting the values IEL and IELMID.
     ! 3) If the adjacent element has been subdivided, that is,
-    !    E0ADJ /= E0MIDADJ then the adjacency list if each of these two 
-    !    elements is updated by the value EMIDADJ and EADJ, respectively.
+    !    JEL != JELMID then the adjacency list if each of these two 
+    !    elements is updated by the value IEL and IELMID, respectively.
 !</description>
 
 !<input>
     ! Number of the neighboring element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: e0adj
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: jel
 
     ! Number of the mid-neighboring element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: e0midadj
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: jelmid
 
     ! Number of the updated macro-element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: e0
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel0
 
     ! Number of the new neighboring element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: eadj
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
 
     ! Number of the new mid-neighboring element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: emidadj
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: ielmid
 !</input>
 
 !<inputoutput>
@@ -3399,130 +3760,235 @@ CONTAINS
     
     ! local variables
     INTEGER :: ive,nve
+    LOGICAL :: bfound
     
     ! Do nothing for elements adjacent to the boundary
-    IF (e0adj .EQ. 0 .OR. e0midadj .EQ. 0) RETURN
+    IF (jel*jelmid .EQ. 0) RETURN
 
     ! Check if adjacent and mid-adjacent elements are the same.
-    IF (e0adj .EQ. e0midadj) THEN
+    IF (jel .EQ. jelmid) THEN
 
       ! Case 1: Adjacent element has not been subdivided, that is, the 
       !         current edge contains a hanging node for the adjacent element.
-      
-      ! What kind of element is neighboring element?
-      nve = get_NVE(rhadapt,e0adj)
-      
-      ! Perform operations for elements/vertices?
-      IF (e0 < 0) THEN
-        
-        ! Check for vertices. Hence, loop over all entries in the
-        ! list of vertices for element E0ADJ and check if the value E0
-        ! is present. If this is the case, then update the corrseponding
-        ! entries in the lists of (mid-)adjacent element neighbors.
-        DO ive=1,nve
-          IF (rhadapt%p_IverticesAtElement(ive,e0adj) .EQ. e0) THEN
-            rhadapt%p_IneighboursAtElement(ive,e0adj)    = eadj
-            rhadapt%p_ImidneighboursAtElement(ive,e0adj) = emidadj
-            EXIT
-          END IF
-        END DO
+      bfound=.FALSE.
 
-      ELSE
-        
-        ! Check for elements. Hence, loop over all entries in the
-        ! list of adjacent elements for element E0ADJ and check if the value E0
-        ! is present. If this is the case, then update the corrseponding
-        ! entries in the lists of (mid-)adjacent element neighbors.
-        DO ive=1,nve
-          IF (rhadapt%p_IneighboursAtElement(ive,e0adj).EQ.e0) THEN
-            rhadapt%p_IneighboursAtElement(ive,e0adj)    = eadj
-            rhadapt%p_ImidneighboursAtElement(ive,e0adj) = emidadj
-            EXIT
-          END IF
-        END DO
-        
-      END IF
-                  
+      ! What kind of element is neighboring element?
+      nve = get_NVE(rhadapt,jel)
+      
+      ! Loop over all entries in the list of adjacent elements for element 
+      ! JEL and check if the value IEL0 is present. 
+      ! If this is the case, then update the corrseponding entries in the 
+      ! lists of (mid-)adjacent element neighbors.
+      DO ive=1,nve
+        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
+          rhadapt%p_IneighboursAtElement(ive,jel)    = iel
+          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          bfound=.TRUE.
+          EXIT
+        END IF
+      END DO
+                          
     ELSE
       
       ! Case 2: Adjacent element has already been subdivided.
+      bfound=.FALSE.
       
       ! What kind of element is neighboring element 
-      nve = get_NVE(rhadapt,e0adj)
+      nve = get_NVE(rhadapt,jel)
 
-      ! Perform operations for elements/vertices?
-      IF (e0 < 0) THEN
-        
-        ! Check for vertices. Hence, loop over all entries in the
-        ! list of vertices for element E0ADJ and check if the value E0
-        ! is present. If this is the case, then update the corrseponding
-        ! entries in the lists of (mid-)adjacent element neighbors.
-        DO ive=1,nve
-          IF (rhadapt%p_IverticesAtElement(ive,e0adj) .EQ. e0) THEN
-            rhadapt%p_IneighboursAtElement(ive,e0adj)    = emidadj
-            rhadapt%p_ImidneighboursAtElement(ive,e0adj) = emidadj
-            EXIT
-          END IF
-        END DO
-
-      ELSE
-        
-        ! Check for elements. Hence, loop over all entries in the
-        ! list of adjacent elements for element E0ADJ and check if the value E0
-        ! is present. If this is the case, then update the corrseponding
-        ! entries in the lists of (mid-)adjacent element neighbors.
-        DO ive=1,nve
-          IF (rhadapt%p_IneighboursAtElement(ive,e0adj).EQ.e0) THEN
-            rhadapt%p_IneighboursAtElement(ive,e0adj)    = emidadj
-            rhadapt%p_ImidneighboursAtElement(ive,e0adj) = emidadj
-            EXIT
-          END IF
-        END DO
-        
-      END IF
+      ! Loop over all entries in the list of adjacent elements for element
+      ! JEL and check if the value IEL0 is present. 
+      ! If this is the case,  then update the corrseponding entries in the 
+      ! lists of (mid-)adjacent element neighbors.
+      DO ive=1,nve
+        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
+          rhadapt%p_IneighboursAtElement(ive,jel)    = ielmid
+          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          bfound=.TRUE.
+          EXIT
+        END IF
+      END DO
       
       ! What kind of element is neighboring element 
-      nve = get_NVE(rhadapt,e0midadj)
+      nve = get_NVE(rhadapt,jelmid)
       
-      ! Perform operations for elements/vertices?
-      IF (e0 < 0) THEN
-        
-        ! Check for vertices. Hence, loop over all entries in the
-        ! list of vertices for element E0MIDADJ and check if the value E0
-        ! is present. If this is the case, then update the corrseponding
-        ! entries in the lists of (mid-)adjacent element neighbors.
-        DO ive=1,nve
-          IF (rhadapt%p_IverticesAtElement(ive,e0midadj) .EQ. e0) THEN
-            rhadapt%p_IneighboursAtElement(ive,e0midadj)    = eadj
-            rhadapt%p_ImidneighboursAtElement(ive,e0midadj) = eadj
-            EXIT
-          END IF
-        END DO
-
-      ELSE
-        
-        ! Check for elements. Hence, loop over all entries in the
-        ! list of adjacent elements for element E0MIDADJ and check if the value E0
-        ! is present. If this is the case, then update the corrseponding
-        ! entries in the lists of (mid-)adjacent element neighbors.
-        DO ive=1,nve
-          IF (rhadapt%p_IneighboursAtElement(ive,e0midadj).EQ.e0) THEN
-            rhadapt%p_IneighboursAtElement(ive,e0midadj)    = eadj
-            rhadapt%p_ImidneighboursAtElement(ive,e0midadj) = eadj
-            EXIT
-          END IF
-        END DO
-        
-      END IF
-
+      ! Loop over all entries in the list of adjacent elements for element
+      ! JELMID and check if the value IEL0 is present.
+      ! If this is the case, then update the corrseponding entries in the 
+      ! lists of (mid-)adjacent element neighbors.
+      DO ive=1,nve
+        IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
+          rhadapt%p_IneighboursAtElement(ive,jelmid)    = iel
+          rhadapt%p_ImidneighboursAtElement(ive,jelmid) = iel
+          bfound=.TRUE.
+          EXIT
+        END IF
+      END DO
     END IF
-  END SUBROUTINE update_ElemEdgeNeighbors2D
+
+    IF (.NOT.bfound) THEN
+      CALL output_line('Inconsistent adjacency lists!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_Common')
+      PRINT *, iel0,iel,ielmid,jel,jelmid
+      CALL sys_halt()
+    END IF
+  END SUBROUTINE update_ElemNeighb2D_Common
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE update_ElemNeighb2D_Divided(rhadapt,jel,jelmid,iel0,ielmid0,iel,ielmid)
+
+!<description>
+    ! This subroutine updates the list of elements adjacent to another 
+    ! element and the list of elements mid-adjacent to another element.
+    !
+    ! The situation is as follows:
+    !
+    !  +---------------------+            +---------------------+
+    !  |          .          |            |          .          |
+    !  |   IEL0   .  IELMID0 |            |  IELMID  .   IEL    |
+    !  |          .          |            |          .          |
+    !  |          .          |            |          .          |
+    !  |          .          |            |          .          |
+    !  +---------------------+    --->    +----------+----------+
+    !  |          .          |            |          .          |
+    !  |          .          |            |          .          |
+    !  |          .          |            |          .          |
+    !  |    JEL   .  JELMID  |            |    JEL   .  JELMID  |
+    !  |          .          |            |          .          |
+    !  +---------------------+            +---------------------+
+    !
+    ! If IEL0 and IELMID0 are the same, then thins subroutine is identical
+    ! to subroutine update_EkemNeighb2D_Common which is called in this case
+!</description>
+
+!<input>
+    ! Number of the neighboring element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: jel
+
+    ! Number of the mid-neighboring element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: jelmid
+
+    ! Number of the updated macro-element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel0
+
+    ! Number of the updated macro-element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: ielmid0
+
+    ! Number of the new neighboring element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+
+    ! Number of the new mid-neighboring element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: ielmid
+!</input>
+
+!<inputoutput>
+    ! Adaptive data structure
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    INTEGER :: ive,nve
+    LOGICAL :: bfound
+
+    ! Check if IEL0 and IELMID0 are the same. 
+    ! In this case call the corresponding subroutine
+    IF (iel0 .EQ. ielmid0) THEN
+      CALL update_ElemNeighb2D_Common(rhadapt,jel,jelmid,iel0,iel,ielmid)
+      RETURN
+    END IF
+
+    ! Do nothing for elements adjacent to the boundary
+    IF (jel*jelmid .EQ. 0) RETURN
+    
+    ! Check if adjacent and mid-adjacent elements are the same.
+    IF (jel .EQ. jelmid) THEN
+      
+      ! Case 1: Adjacent element has not been subdivided, that is, the 
+      !         current edge contains a hanging node for the adjacent element.
+      bfound=.FALSE.
+
+      ! What kind of element is neighboring element?
+      nve = get_NVE(rhadapt,jel)
+      
+      ! Loop over all entries in the list of adjacent elements for element 
+      ! JEL and check if the value IEL0 is present. 
+      ! If this is the case, then update the corrseponding entries in the 
+      ! lists of (mid-)adjacent element neighbors.
+      DO ive=1,nve
+        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
+          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          bfound=.TRUE.
+          EXIT
+        END IF
+      END DO
+
+      ! Loop over all entries in the list of mid-adjacent elements for element 
+      ! JEL and check if the value IEL0 is present. 
+      ! If this is the case, then update the corrseponding entries in the 
+      ! lists of (mid-)adjacent element neighbors.
+      DO ive=1,nve
+        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
+          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          bfound=.TRUE.
+          EXIT
+        END IF
+      END DO
+                          
+    ELSE
+      
+      ! Case 2: Adjacent element has already been subdivided.
+      bfound=.FALSE.
+      
+      ! What kind of element is neighboring element 
+      nve = get_NVE(rhadapt,jel)
+
+      ! Loop over all entries in the list of adjacent elements for element
+      ! JEL and check if the value IEL0 is present. 
+      ! If this is the case,  then update the corrseponding entries in the 
+      ! lists of (mid-)adjacent element neighbors.
+      DO ive=1,nve
+        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
+          rhadapt%p_IneighboursAtElement(ive,jel)    = ielmid
+          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          bfound=.TRUE.
+          EXIT
+        END IF
+      END DO
+      
+      ! What kind of element is neighboring element 
+      nve = get_NVE(rhadapt,jelmid)
+      
+      ! Loop over all entries in the list of adjacent elements for element
+      ! JELMID and check if the value IEL0 is present.
+      ! If this is the case, then update the corrseponding entries in the 
+      ! lists of (mid-)adjacent element neighbors.
+      DO ive=1,nve
+        IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
+          rhadapt%p_IneighboursAtElement(ive,jelmid)    = iel
+          rhadapt%p_ImidneighboursAtElement(ive,jelmid) = iel
+          bfound=.TRUE.
+          EXIT
+        END IF
+      END DO
+    END IF
+
+    IF (.NOT.bfound) THEN
+      CALL output_line('Inconsistent adjacency lists!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_Divided')
+      PRINT *, iel0,iel,ielmid,jel,jelmid
+      CALL sys_halt()
+    END IF
+  END SUBROUTINE update_ElemNeighb2D_Divided
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE update_ElemNeighbors2D(rhadapt,iel0,iel)
+  SUBROUTINE update_AllElementNeighbors2D(rhadapt,iel0,iel)
 
 !<description>
     ! This subroutine updates the list of elements adjacent to another elements.
@@ -3547,6 +4013,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_ELEMENTIDX) :: jel
     INTEGER :: ive,jve
+    LOGICAL :: bfound
 
     ! Loop over adjacent elements
     adjacent: DO ive=1,get_NVE(rhadapt,iel0)
@@ -3555,21 +4022,36 @@ CONTAINS
 
       ! Are we at the boundary?
       IF (jel .EQ. 0) CYCLE adjacent
-      
+
+      bfound=.FALSE.
+
       ! Find position of element IEL0 in adjacent element JEL
       DO jve=1,get_NVE(rhadapt,jel)
         IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(jve,jel) = iel
-          CYCLE adjacent
+          bfound = .TRUE.
+          EXIT
         END IF
       END DO
-      
+
+      ! Find position of element IEL0 in mid-adjacent element JEL
+      DO jve=1,get_NVE(rhadapt,jel)
+        IF (rhadapt%p_ImidneighboursAtElement(jve,jel) .EQ. iel0) THEN
+          rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
+          bfound = (bfound .AND. .TRUE.)
+          EXIT
+        END IF
+      END DO
+
       ! If the old element number was not found in adjacent element JEL
       ! then something went wrong and we should not proceed.
-      PRINT *, "update_ElemNeighbors2D: Inconsistent adjacency lists!"
-      CALL sys_halt()
+      IF (.NOT.bfound) THEN
+        CALL output_line('Inconsistent adjacency lists!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'update_AllElementNeighbors2D')
+        CALL sys_halt()
+      END IF
     END DO adjacent
-  END SUBROUTINE update_ElemNeighbors2D
+  END SUBROUTINE update_AllElementNeighbors2D
 
   ! ***************************************************************************
 
@@ -3799,7 +4281,7 @@ CONTAINS
       CALL add_element2D(rhadapt,i2,i5,i4,e2,nel0+2,e4,e2,nel0+2,e4)
       CALL add_element2D(rhadapt,i3,i4,i5,iel,nel0+1,e5,iel,nel0+1,e5)
       
-      ! Update list of nieghboring elements
+      ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel,nel0+1,iel)
       CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel,nel0+2,nel0+1)
             
@@ -4727,10 +5209,10 @@ CONTAINS
     CALL add_element2D(rhadapt,i4,i8,i9,i7,e4,iel,nel0+1,e3,e4,iel,nel0+1,e7)
 
     ! Update list of neighboring elements
-    CALL update_elementNeighbors2D(rhadapt,f4,f8,jel,nel0+1,jel)
-    CALL update_elementNeighbors2D(rhadapt,e4,e4,iel,iel,nel0+2)
-    CALL update_elementNeighbors2D(rhadapt,f1,f5,jel,nel0+1,nel0+1)
-    CALL update_elementNeighbors2D(rhadapt,e3,e7,iel,nel0+2,nel0+2)
+    CALL update_ElementNeighbors2D(rhadapt,f4,f8,jel,nel0+1,jel)
+    CALL update_ElementNeighbors2D(rhadapt,e4,e4,iel,iel,nel0+2)
+    CALL update_ElementNeighbors2D(rhadapt,f1,f5,jel,nel0+1,nel0+1)
+    CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel,nel0+2,nel0+2)
 
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,jel).EQ.&
@@ -5184,7 +5666,7 @@ CONTAINS
 
     ! Delete element JEL
     CALL remove_element2D(rhadapt,jel,ielReplace)
-    IF (ielReplace.NE.0) CALL update_ElementNeighbors2D(rhadapt,ielReplace,jel)
+    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,jel)
     
     ! Update element IEL
     CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e2,e3)
@@ -5293,13 +5775,13 @@ CONTAINS
 
     ! Delete elements IEL, IEL1 and IEL2
     CALL remove_element2D(rhadapt,iel,ielReplace)
-    IF (ielReplace.NE.0) CALL update_ElementNeighbors2D(rhadapt,ielReplace,iel)
+    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
 
     CALL remove_element2D(rhadapt,iel2,ielReplace)
-    IF (ielReplace.NE.0) CALL update_ElementNeighbors2D(rhadapt,ielReplace,iel2)
+    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel2)
 
     CALL remove_element2D(rhadapt,iel1,ielReplace)
-    IF (ielReplace.NE.0) CALL update_ElementNeighbors2D(rhadapt,ielReplace,iel1)
+    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel1)
 
     ! Update element IEL0
     CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e6)
@@ -5392,7 +5874,7 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX) :: iel0,iel1,iel2,e1,e2,e3,e4,e5,e6,ielReplace
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
-    
+
     ! Store vertex- and element-values of the three neighboring elements
     i4 = rhadapt%p_IverticesAtElement(1,iel)
     i5 = rhadapt%p_IverticesAtElement(2,iel)
@@ -5418,21 +5900,33 @@ CONTAINS
 
     ! Delete elements IEL, and IEL2
     CALL remove_element2D(rhadapt,iel,ielReplace)
-    IF (ielReplace.NE.0) CALL update_ElementNeighbors2D(rhadapt,ielReplace,iel)
+    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
 
     CALL remove_element2D(rhadapt,iel2,ielReplace)
-    IF (ielReplace.NE.0) CALL update_ElementNeighbors2D(rhadapt,ielReplace,iel2)
+    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel2)
     
     ! Which midpoint vertex should be kept?
     SELECT CASE(iloc)
-    CASE(1)
+    CASE(1)     
       ! Update elements IEL and IEL1
       CALL replace_element2D(rhadapt,iel0,i1,i4,i3,e1,iel1,e3,e1,iel1,e6)
       CALL replace_element2D(rhadapt,iel1,i2,i3,i4,e2,iel0,e4,e5,iel0,e4)
 
+      IF (iel.EQ.141) THEN
+        PRINT *, rhadapt%p_IneighboursAtElement(:,102)
+        PRINT *, rhadapt%p_ImidneighboursAtElement(:,102)
+        print *, "neigb",e3,iel2,iel0
+      END IF
+
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel2,iel0,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel0,iel2,iel0)
       CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel1,iel1)
+
+      IF (iel.EQ.141) THEN
+        PRINT *, rhadapt%p_IneighboursAtElement(:,102)
+        PRINT *, rhadapt%p_ImidneighboursAtElement(:,102)
+        stop
+      END IF
 
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
@@ -5440,14 +5934,15 @@ CONTAINS
         PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
         CALL sys_halt()
       END IF
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel0,ipos)
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel1,ipos)
+
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
         PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
         CALL sys_halt()
       END IF
-      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel0,ipos)
-      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel1,ipos)
-
+      
       ! Optionally, invoke callback routine
       IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
           CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA1,&
@@ -5459,10 +5954,10 @@ CONTAINS
       CALL replace_element2D(rhadapt,iel1,i3,i1,i5,e3,iel0,e5,e6,iel0,e5)
 
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e4,e4,iel1,iel0,iel0)
       CALL update_ElementNeighbors2D(rhadapt,e2,e2,iel1,iel0,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel1,iel1)
       CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel2,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e4,e4,iel1,iel0,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel1,iel1)
       CALL update_ElementNeighbors2D(rhadapt,e6,e6,iel0,iel1,iel1)
 
       ! Update list of elements meeting at vertices
@@ -5471,11 +5966,15 @@ CONTAINS
         PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
         CALL sys_halt()
       END IF
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel0,ipos)
+
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
         PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
         CALL sys_halt()
       END IF
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel1,ipos)
+
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
         PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
@@ -5487,9 +5986,8 @@ CONTAINS
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,iel0,ipos)
-      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel0,ipos)
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,iel1,ipos)
-      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel1,ipos)
+      
 
       ! Optionally, invoke callback routine
       IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
@@ -5498,28 +5996,43 @@ CONTAINS
 
     CASE(3)
       ! Update elements IEL and IEL1
-      CALL replace_element2D(rhadapt,iel0,i1,i2,i6,e1,iel1,e6,e4,iel1,e6)
-      CALL replace_element2D(rhadapt,iel1,i3,i6,i2,e3,iel0,e2,e3,iel0,e5)
+      CALL replace_element2D(rhadapt,iel0,i3,i6,i2,e3,iel1,e2,e3,iel1,e5)
+      CALL replace_element2D(rhadapt,iel1,i1,i2,i6,e1,iel0,e6,e4,iel0,e6)
 
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e4,e4,iel1,iel0,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel1,iel1)
-      CALL update_ElementNeighbors2D(rhadapt,e6,e6,iel2,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e1,e1,iel0,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e2,e2,iel1,iel0,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel2,iel0,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel0,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e6,e6,iel0,iel1,iel1)
 
       ! Update list of elements meeting at vertices
+      IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel0).EQ.&
+          ARRAYLIST_NOT_FOUND) THEN
+        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL sys_halt()
+      END IF
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,iel1,ipos)
+
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
         PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
         CALL sys_halt()
       END IF
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel0,ipos)
+      
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
         PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
         CALL sys_halt()
       END IF
-      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel0,ipos)
-      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel1,ipos)
+      IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel).EQ.&
+          ARRAYLIST_NOT_FOUND) THEN
+        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL sys_halt()
+      END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,iel1,ipos)
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel0,ipos)
 
       ! Optionally, invoke callback routine
       IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
@@ -7577,8 +8090,8 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: ivt,ivtReplace
     INTEGER :: ive
 
-    ! Check if dynamic data structures are o.k. and if 
-    ! cells are marked for coarsening
+    ! Check if dynamic data structures are o.k. and 
+    ! if  cells are marked for coarsening
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA .OR.&
         IAND(rhadapt%iSpec,HADAPT_MARKEDCOARSEN).NE.HADAPT_MARKEDCOARSEN) THEN
       PRINT *, "redgreen_coarsen: dynamic data structures are not generated &
@@ -7587,6 +8100,8 @@ CONTAINS
     END IF
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
     
+!    CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(0,0),3))
+
     ! Perform hierarchical red-green recoarsening
     DO iel=SIZE(p_Imarker),1,-1
       
@@ -7599,11 +8114,18 @@ CONTAINS
 
       CASE(MARK_CRS_2TRIA1TRIA_LEFT)
         CALL coarsen_2Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
-        
+
       CASE(MARK_CRS_4TRIA1TRIA)
         CALL coarsen_4Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_1)
+!!$        IF (iel .EQ. 141) THEN
+!!$          CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(0,0),3))
+!!$
+!!$          PRINT *, rhadapt%p_IneighboursAtElement(:,102)
+!!$          PRINT *, rhadapt%p_ImidneighboursAtElement(:,102)
+!!$          STOP
+!!$        END IF
         CALL coarsen_4Tria2Tria(rhadapt,iel,1,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_2)
@@ -7618,66 +8140,65 @@ CONTAINS
       END SELECT
     END DO
 
-    PRINT *, "Elemental removal is done"
+!    CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(0,0),3))
     
-    ! Loop over all vertices present in the triangulation before refinement
-    ! and check if they are free for vertex removal.
+    ! Loop over all vertices 1...NVT0 present in the triangulation before
+    ! refinement and check if they are free for vertex removal.
     DO ivt=rhadapt%NVT0,1,-1
-      IF (rhadapt%p_IvertexAge(ivt) .GT. 0) THEN
-
-        PRINT *, "Removing",ivt,"..."
-        CALL remove_vertex2D(rhadapt,ivt,ivtReplace)
-
-        ! If vertex has been replace, update vertex at element list
-        IF (ivtReplace .NE. 0) THEN
-
-          PRINT *, "... is replaced by",ivtReplace
-
-          CALL arrlst_printArrayList(rhadapt%rElementsAtVertex,ivtReplace)
-
-          ! Start with first element in list
-          ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivtReplace,.TRUE.)
-          DO WHILE(ipos .NE. ANULL)
-            jel=rhadapt%rElementsAtVertex%IData(ipos)
-
-            print *, "jel=",jel, rhadapt%p_IverticesAtElement(:,jel)
-
-            ! Look for vertex ivtReplace in element JEL and replace it by IVT
-            DO ive=1,get_NVE(rhadapt,jel)
-              IF (rhadapt%p_IverticesAtElement(ive,jel) .EQ. ivtReplace) THEN
-                rhadapt%p_IverticesAtElement(ive,jel) = ivt
-                GOTO 99
-              END IF
-            END DO
-            
-            PRINT *, "NOT FOUND"
-!            STOP
-
-99          continue
-
-            ! Proceed to next element
-            ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivtReplace,.FALSE.)
-          END DO
-
-          ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
-          CALL arrlst_swapArrayList(rhadapt%rElementsAtVertex,ivt,ivtReplace)
-          CALL arrlst_releaseArrayList(rhadapt%rElementsAtVertex,ivtReplace)
-
-        ELSE
-
-          PRINT *,"is last vertex"
-          ! Release table IVT
-          CALL arrlst_releaseArrayList(rhadapt%rElementsAtVertex,ivt)
-
-        END IF
+      
+      ! If the vertex is locked, then skip this vertex
+      IF (rhadapt%p_IvertexAge(ivt) .LE. 0) CYCLE
+      
+      ! Remove vertex physically. Note that this vertex is no longer associated
+      ! to any element. All associations have been removed in the above element
+      ! coarsening/conversion step. In order to prevent "holes" in the vertex list,
+      ! vertex IVT is replaced by the last vertex if it is not the last one itself.
+      CALL remove_vertex2D(rhadapt,ivt,ivtReplace)
+      
+      ! If vertex IVT was not the last one, update the "elements-meeting-at-vertex" list
+      IF (ivt .NE. ivtReplace) THEN
         
-        PAUSE        
-!        CALL fcb_removeVertex(ivt,ivtReplace)
+        ! Start with first element in "elements-meeting-at-vertex" list of the replaced vertex
+        ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivtReplace,.TRUE.)
+        update: DO WHILE(ipos .NE. ARRLST_NULL)
+          
+          ! Get element number JEL
+          jel=rhadapt%rElementsAtVertex%IData(ipos)
+          
+          ! Proceed to next element
+          ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivtReplace,.FALSE.)
+          
+          ! Look for vertex ivtReplace in element JEL and replace it by IVT
+          DO ive=1,get_NVE(rhadapt,jel)
+            IF (rhadapt%p_IverticesAtElement(ive,jel) .EQ. ivtReplace) THEN
+              rhadapt%p_IverticesAtElement(ive,jel) = ivt
+              CYCLE update
+            END IF
+          END DO
+          
+          ! If the replaced vertex ivtReplace could not be found in element JEL
+          ! something is wrong and we stop the simulation
+          CALL sys_halt()            
+        END DO update
+        
+        ! Swap tables IVT and ivtReplace in arraylist and release table ivtReplace
+        CALL arrlst_swapArrayList(rhadapt%rElementsAtVertex,ivt,ivtReplace)
+        CALL arrlst_releaseArrayList(rhadapt%rElementsAtVertex,ivtReplace)
+        
+      ELSE
+        
+        ! Release table IVT
+        CALL arrlst_releaseArrayList(rhadapt%rElementsAtVertex,ivt)
       END IF
+      
+      ! Optionally, invoke callback function
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+          CALL fcb_hadaptCallback(rcollection,&
+          HADAPT_OPR_REMOVEVERTEX,(/ivt,ivtReplace/),(/0/))
     END DO
-
-    PAUSE
-
+    
+!    CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(ibset(0,0),1),3))
+        
     ! Increase the number of recoarsening steps by one
     rhadapt%nCoarseningSteps = rhadapt%nCoarseningSteps+1
 
