@@ -1743,24 +1743,21 @@ CONTAINS
 !</description>
 
 !<input>
-  
   ! Source vector
   TYPE(t_vectorBlock),INTENT(IN) :: rx
-  
 !</input>
 
 !<inputoutput>
-  
   ! Destination vector
   TYPE(t_vectorBlock),INTENT(INOUT) :: ry
-  
 !</inputoutput>
   
 !</subroutine>
 
   ! local variables
   INTEGER :: h_Ddata, cdataType
-  INTEGER(I32) :: isize,NEQ
+  INTEGER(I32) :: isize,NEQ,i
+  INTEGER(PREC_VECIDX) :: ioffset
   LOGICAL :: bisCopy
   REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
   REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
@@ -1790,6 +1787,7 @@ CONTAINS
   h_Ddata = ry%h_Ddata
   cdataType = ry%cdataType
   bisCopy = ry%bisCopy
+  ioffset = ry%iidxFirstEntry
   p_rblocks => ry%RvectorBlock
   
   ! Then transfer all structural information of rx to ry.
@@ -1799,32 +1797,113 @@ CONTAINS
   ! Restore crucial data
   ry%h_Ddata = h_Ddata
   ry%bisCopy = bisCopy
+  ry%cdataType = cdataType
+  ry%iidxFirstEntry = ioffset
   ry%RvectorBlock => p_rblocks
   
   ! If necessary, allocate new memory for the blocks.
   IF (.NOT. ASSOCIATED(ry%RvectorBlock)) THEN
     ALLOCATE(ry%RvectorBlock(ry%nblocks))
   END IF
-  ry%RvectorBlock = rx%RvectorBlock
   
-  ! Restore the handle in all subvectors
-  ry%RvectorBlock(1:ry%nblocks)%h_Ddata = h_Ddata
-  ry%RvectorBlock(1:ry%nblocks)%cdataType = cdataType
+  ! Copy the block structure. Don't destroy crucial data.
+  DO i=1,SIZE(ry%RvectorBlock)
+    h_Ddata = ry%RvectorBlock(i)%h_Ddata
+    cdataType = ry%RvectorBlock(i)%cdataType
+    bisCopy = ry%RvectorBlock(i)%bisCopy
+    ioffset = ry%RvectorBlock(i)%iidxFirstEntry
+    
+    ! Transfer all structural information of rx to ry.
+    ! This automatically makes both vectors compatible to each other.
+    ry%RvectorBlock(i) = rx%RvectorBlock(i)
+    
+    ! Restore crucial data
+    ry%RvectorBlock(i)%h_Ddata = h_Ddata
+    ry%RvectorBlock(i)%bisCopy = bisCopy
+    ry%RvectorBlock(i)%cdataType = cdataType
+    ry%RvectorBlock(i)%iidxFirstEntry = ioffset 
+  END DO
   
   ! And finally copy the data. 
+  CALL lsysbl_copyVectorDirect (rx,ry)
+   
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE lsysbl_copyVectorDirect (rx,ry)
+  
+!<description>
+  ! Copies vector data: ry = rx.
+  ! Bypasses all structure checks. Directly copies data from rx to ry.
+  !
+  ! THIS ROUTINE IS USUALLY ONLY USED INTERNALLY! USE THIS ROUTINE WITH CARE!
+  ! USE IT ONLY IF YOU NEED SPEED, KNOWING WHAT YOU ARE DOING!
+  !
+  ! Under normal circumstances, use lsysbl_copyVector or lsysbl_duplicateVector!
+!</description>
+
+!<input>
+  ! Source vector
+  TYPE(t_vectorBlock),INTENT(IN) :: rx
+!</input>
+
+!<inputoutput>
+  ! Destination vector
+  TYPE(t_vectorBlock),INTENT(INOUT) :: ry
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER(PREC_VECIDX) :: NEQ
+  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
+  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
+  
+  ! Copy the data
+  NEQ = ry%NEQ
   SELECT CASE (rx%cdataType)
   CASE (ST_DOUBLE)
-    CALL lsysbl_getbase_double (rx,p_Dsource)
-    CALL lsysbl_getbase_double (ry,p_Ddest)
-    CALL lalg_copyVectorDble (p_Dsource(1:NEQ),p_Ddest(1:NEQ))
+    SELECT CASE (ry%cdataType)
+    CASE (ST_DOUBLE)
+      CALL lsysbl_getbase_double (rx,p_Dsource)
+      CALL lsysbl_getbase_double (ry,p_Ddest)
+      CALL lalg_copyVectorDble (p_Dsource(1:NEQ),p_Ddest(1:NEQ))
+      
+    CASE (ST_SINGLE)
+      CALL lsysbl_getbase_double (rx,p_Dsource)
+      CALL lsysbl_getbase_single (ry,p_Fdest)
+      CALL lalg_copyVectorDblSngl (p_Dsource(1:NEQ),p_Fdest(1:NEQ))
+      
+    CASE DEFAULT
+      CALL output_line ('Unsupported data type!', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVectorDirect')
+      CALL sys_halt()
+    END SELECT
     
   CASE (ST_SINGLE)
-    CALL lsysbl_getbase_single (rx,p_Fsource)
-    CALL lsysbl_getbase_single (ry,p_Fdest)
-    CALL lalg_copyVectorSngl (p_Fsource(1:NEQ),p_Fdest(1:NEQ))
+    SELECT CASE (ry%cdataType)
+    CASE (ST_DOUBLE)
+      CALL lsysbl_getbase_single (rx,p_Fsource)
+      CALL lsysbl_getbase_double (ry,p_Ddest)
+      CALL lalg_copyVectorSnglDbl (p_Fsource(1:NEQ),p_Ddest(1:NEQ))
+      
+    CASE (ST_SINGLE)
+      CALL lsysbl_getbase_single (rx,p_Fsource)
+      CALL lsysbl_getbase_single (ry,p_Fdest)
+      CALL lalg_copyVectorSngl (p_Fsource(1:NEQ),p_Fdest(1:NEQ))
+
+    CASE DEFAULT
+      CALL output_line ('Unsupported data type!', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVectorDirect')
+      CALL sys_halt()
+    END SELECT
 
   CASE DEFAULT
-    PRINT *,'lsysbl_copyVector: Unsupported data type!'
+    CALL output_line ('Unsupported data type!', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_copyVectorDirect')
     CALL sys_halt()
   END SELECT
    
@@ -3053,11 +3132,11 @@ CONTAINS
 
 !</subroutine>
 
-    INTEGER :: h_Ddata
+    INTEGER :: h_Ddata,i
     INTEGER(PREC_VECIDX) :: cdataType
     LOGICAL :: bisCopy
     TYPE(t_vectorScalar), DIMENSION(:), POINTER :: p_Rblocks
-    INTEGER(PREC_VECIDX) ::  isize
+    INTEGER(PREC_VECIDX) ::  isize,ioffset
 
     ! First the structure
 
@@ -3086,11 +3165,25 @@ CONTAINS
         DEALLOCATE(ry%RvectorBlock)
         ALLOCATE(ry%RvectorBlock(ry%nblocks))
       END IF
-      ry%RvectorBlock = rx%RvectorBlock
       
-      ! Restore the handle in all subvectors
-      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = h_Ddata
-      ry%RvectorBlock(1:ry%nblocks)%cdataType = cdataType
+      ! Copy the block structure. Don't destroy crucial data.
+      DO i=1,SIZE(ry%RvectorBlock)
+        h_Ddata = ry%RvectorBlock(i)%h_Ddata
+        cdataType = ry%RvectorBlock(i)%cdataType
+        bisCopy = ry%RvectorBlock(i)%bisCopy
+        ioffset = ry%RvectorBlock(i)%iidxFirstEntry
+        
+        ! Transfer all structural information of rx to ry.
+        ! This automatically makes both vectors compatible to each other.
+        ry%RvectorBlock(i) = rx%RvectorBlock(i)
+        
+        ! Restore crucial data
+        ry%RvectorBlock(i)%h_Ddata = h_Ddata
+        ry%RvectorBlock(i)%bisCopy = bisCopy
+        ry%RvectorBlock(i)%cdataType = cdataType
+        ry%RvectorBlock(i)%iidxFirstEntry = ioffset 
+      END DO
+
     END IF
     
     ! Now the content
@@ -3101,19 +3194,31 @@ CONTAINS
     
     CASE (LSYSSC_DUP_REMOVE)
       ! Release vector data
-      IF (ry%h_Ddata .NE. ST_NOHANDLE) &
+      IF ((.NOT. ry%bisCopy) .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) THEN
         CALL storage_free (ry%h_Ddata)
+      END IF
       ry%bisCopy = .FALSE.
+      ry%iidxFirstEntry = 1
+      
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ST_NOHANDLE
+      ry%RvectorBlock(1:ry%nblocks)%bisCopy = .FALSE.
+      ry%RvectorBlock(1:ry%nblocks)%iidxFirstEntry = 1
       
     CASE (LSYSSC_DUP_DISMISS)
       ! Dismiss data
       ry%h_Ddata = ST_NOHANDLE
       ry%bisCopy = .FALSE.
+      ry%iidxFirstEntry = 1
+      
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ST_NOHANDLE
+      ry%RvectorBlock(1:ry%nblocks)%bisCopy = .FALSE.
+      ry%RvectorBlock(1:ry%nblocks)%iidxFirstEntry = 1
     
     CASE (LSYSSC_DUP_SHARE)
       ! Share information. Release memory if necessary.
-      IF (ry%bisCopy .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) &
+      IF ((.NOT. ry%bisCopy) .AND. (ry%h_Ddata .NE. ST_NOHANDLE)) THEN
         CALL storage_free (ry%h_Ddata)
+      END IF
       ry%h_Ddata = rx%h_Ddata
       ry%cdataType = rx%cdataType
       ry%bisCopy = .TRUE.
@@ -3121,6 +3226,11 @@ CONTAINS
       ! Restore the handle in all subvectors
       ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
       ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+      ry%RvectorBlock(1:ry%nblocks)%bisCopy = .TRUE.
+      
+      ! Set the starting positions of all subvectors as well as the starting position
+      ! of ry to that of rx -- we now have the same handle as rx.
+      CALL updateIndex (ry,rx%iidxFirstEntry)
       
     CASE (LSYSSC_DUP_COPY)
       ! Copy information. If necessary, allocate new data -- by setting
@@ -3130,12 +3240,6 @@ CONTAINS
         ry%bisCopy = .FALSE.
       END IF
       
-      ! Some basic checks
-      IF ((ry%h_Ddata .NE. ST_NOHANDLE) .AND. (rx%cdataType .NE. ry%cdataType)) THEN
-        ! Release old data, allocate new.
-        CALL storage_free (ry%h_Ddata)
-      END IF
-      
       IF (ry%h_Ddata .NE. ST_NOHANDLE) THEN    
         CALL storage_getsize1D (ry%h_Ddata, isize)
         IF (isize .LT. rx%NEQ) THEN
@@ -3144,39 +3248,32 @@ CONTAINS
         END IF
       END IF
       
-      ry%cdataType = rx%cdataType
-      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
-    
-      ! Restore the handle in all subvectors
-      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
-      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+      ! Allocate memory if necessary.
+      IF (ry%h_Ddata .EQ. ST_NOHANDLE) &
+        CALL newMemory (rx,ry)
+      
+      ! Copy the data directly.
+      CALL lsysbl_copyVectorDirect (rx,ry)
     
     CASE (LSYSSC_DUP_COPYOVERWRITE)
     
       ! Some basic checks
-      IF ((ry%h_Ddata .NE. ST_NOHANDLE) .AND. (rx%cdataType .NE. ry%cdataType)) THEN
-        ! Release old data, allocate new.
-        CALL storage_free (ry%h_Ddata)
-      END IF
-      
       IF (ry%h_Ddata .NE. ST_NOHANDLE) THEN    
         CALL storage_getsize1D (ry%h_Ddata, isize)
         IF (isize .LT. rx%NEQ) THEN
           ! Reallocate by first releasing the data
           CALL storage_free (ry%h_Ddata)
+          ry%bisCopy = .FALSE.
         END IF
       END IF
       
       ! Copy information, regardless of whether ry is the owner or not.
-      ! If no memory is allocated, ry%h_Ddata is =ST_NOHANDLE and thus,
-      ! storage_copy will allocate memory!
+      ! Allocate memory if necessary.
+      IF (ry%h_Ddata .EQ. ST_NOHANDLE) &
+        CALL newMemory (rx,ry)
       
-      ry%cdataType = rx%cdataType
-      CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
-    
-      ! Restore the handle in all subvectors
-      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
-      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+      ! Copy the data directly.
+      CALL lsysbl_copyVectorDirect (rx,ry)
     
     CASE (LSYSSC_DUP_ASIS)
     
@@ -3188,6 +3285,15 @@ CONTAINS
         ry%h_Ddata = rx%h_Ddata
         ry%cdataType = rx%cdataType
         ry%bisCopy = .TRUE.
+
+        ! Set up the sub-blocks
+        ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
+        ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+        ry%RvectorBlock(1:ry%nblocks)%bisCopy = .TRUE.
+
+        ! Set the starting positions of all subvectors as well as the starting position
+        ! of ry to that of rx -- we now have the same handle as rx.
+        CALL updateIndex (ry,rx%iidxFirstEntry)
         
       ELSE
       
@@ -3199,12 +3305,6 @@ CONTAINS
           ry%bisCopy = .FALSE.
         END IF
         
-        ! Some basic checks
-        IF ((ry%h_Ddata .NE. ST_NOHANDLE) .AND. (rx%cdataType .NE. ry%cdataType)) THEN
-          ! Release old data, allocate new.
-          CALL storage_free (ry%h_Ddata)
-        END IF
-        
         IF (ry%h_Ddata .NE. ST_NOHANDLE) THEN    
           CALL storage_getsize1D (ry%h_Ddata, isize)
           IF (isize .LT. rx%NEQ) THEN
@@ -3213,36 +3313,85 @@ CONTAINS
           END IF
         END IF
         
-        ry%cdataType = rx%cdataType
-        CALL storage_copy (rx%h_Ddata,ry%h_Ddata)
+        ! Allocate memory if necessary.
+        IF (ry%h_Ddata .EQ. ST_NOHANDLE) &
+          CALL newMemory (rx,ry)
+        
+        ! Copy the data directly.
+        CALL lsysbl_copyVectorDirect (rx,ry)
 
       END IF
-      
-      ! Restore the handle in all subvectors
-      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
-      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
       
     CASE (LSYSSC_DUP_EMPTY)
     
       ! Allocate new memory if ry is empty. Don't initialise.
       ! If ry contains data, we don't have to do anything.
       IF (ry%h_Ddata .EQ. ST_NOHANDLE) THEN
-        ry%cdataType = rx%cdataType
-        CALL storage_new ('lsyssc_duplicateVector','vec-copy',rx%NEQ,&
-                          ry%cdataType, ry%h_Ddata, &
-                          ST_NEWBLOCK_NOINIT)
+        CALL newMemory (rx,ry)
       END IF
 
-      ! Restore the handle in all subvectors
-      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
-      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
-    
     CASE DEFAULT
     
       PRINT *,'lsysbl_duplicateVector: cdupContent unknown!'
       CALL sys_halt()
     
     END SELECT
+  
+  CONTAINS
+  
+    SUBROUTINE newMemory (rx,ry)
+    
+    ! Creates memory in ry for a vector in the same size and data type as rx.
+    
+    ! Source vector that specifies the structure
+    TYPE(t_vectorBlock), INTENT(IN) :: rx
+    
+    ! Destination vector. Memory is allocated here. Block structure is
+    ! not changed.
+    TYPE(t_vectorBlock), INTENT(INOUT) :: ry
+
+      INTEGER :: ioffset,i
+
+      ! Allocate memory   
+      ry%cdataType = rx%cdataType 
+      ry%bisCopy = .FALSE.
+      CALL storage_new ('lsyssc_duplicateVector','vec-copy',rx%NEQ,&
+                        ry%cdataType, ry%h_Ddata, ST_NEWBLOCK_NOINIT)
+      
+      ! Transfer the information of the new data source to the subvectors.
+      ry%RvectorBlock(1:ry%nblocks)%h_Ddata = ry%h_Ddata
+      ry%RvectorBlock(1:ry%nblocks)%cdataType = ry%cdataType
+      ry%RvectorBlock(1:ry%nblocks)%bisCopy = .TRUE.
+            
+      ! Create the starting positions of the subvectors.
+      CALL updateIndex (ry,1_PREC_VECIDX)
+    
+    END SUBROUTINE
+
+    ! ---------------------------------------------------------------
+
+    SUBROUTINE updateIndex (ry,iidxFirstEntry)
+    
+    ! Updates the index position in ry based on an initial position iidxFirstEntry
+    ! and the existing structure in ry.
+    
+    ! Vector whose subvectors should be corrected
+    TYPE(t_vectorBlock), INTENT(INOUT) :: ry
+    
+    ! New first position of the first subvector in the global data array.
+    INTEGER(PREC_VECIDX), INTENT(IN) :: iidxFirstEntry
+
+      INTEGER :: ioffset,i
+
+      ! Create the starting positions of the subvectors.
+      ry%iidxFirstEntry = iidxFirstEntry
+      ry%RvectorBlock(1)%iidxFirstEntry = iidxFirstEntry
+      DO i=2,ry%nblocks
+        ry%RvectorBlock(i)%iidxFirstEntry = ry%RvectorBlock(i-1)%iidxFirstEntry + &
+          ry%RvectorBlock(i-1)%NEQ
+      END DO
+    
+    END SUBROUTINE
   
   END SUBROUTINE
 
@@ -3750,7 +3899,8 @@ CONTAINS
   
   SUBROUTINE lsysbl_deriveSubmatrix (rsourceMatrix,rdestMatrix,&
                                      cdupStructure, cdupContent,&
-                                     ifirstBlock,ilastBlock)
+                                     ifirstBlock,ilastBlock,&
+                                     ifirstBlockY,ilastBlockY)
   
 !<description>
   ! This routine derives a block matrix as a subset of another block matrix.
@@ -3784,19 +3934,42 @@ CONTAINS
   !  does not maintain it. Therefore, copying a permutation in one of
   !  the submatrices means copying the corresponding handle. 
   !  The application must keep track of the permutations.
+  !
+  ! Remark 2: When ifirstBlockY,ilastBlockY is not specified, the routine
+  !  creates a matrix oriented at the diagonal:
+  !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlock:ilastBlock)
+  !  If ifirstBlockY,ilastBlockY is specified, the routine creates
+  !  a submatrix based on X/Y block coordinates. ifirstBlock,ilastBlock in this
+  !  case specify the X-coordinates in the block matrix while 
+  !  ifirstBlockY,ilastBlockY specify the Y-coordinates:
+  !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlockY:ilastBlockY)
 !</description>
   
 !<input>
   ! Source matrix.
   TYPE(t_matrixBlock), INTENT(IN)               :: rsourceMatrix
   
-  ! OPTIONAL: Number of the block in rsourceMatrix that should be put to 
+  ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to 
   ! position (1,1) into rdestMatrix. Default value is =1.
+  ! If ifirstBlockY is not specified, this also specifies the Y-coordinate,
+  ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockY) is put
+  ! to (1,1) of rdestMatrix.
   INTEGER, INTENT(IN), OPTIONAL :: ifirstBlock
 
-  ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
+  ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to 
   ! rdestMatrix. Default value is the number of blocks in rsourceMatrix.
+  ! If ilastBlockY is not specified, this also specifies the Y-coordinate,
+  ! thus the diagonal block rsourceMatrix (ilastBlock,ilastBlock) is put
+  ! to (ndiagBlocks,ndiagblocks) of rdestMatrix.
   INTEGER, INTENT(IN), OPTIONAL :: ilastBlock
+
+  ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to 
+  ! position (1,1) into rdestMatrix. Default value is ifirstBlock.
+  INTEGER, INTENT(IN), OPTIONAL :: ifirstBlockY
+
+  ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
+  ! rdestMatrix. Default value is ilastBlock.
+  INTEGER, INTENT(IN), OPTIONAL :: ilastBlockY
 
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -3868,17 +4041,21 @@ CONTAINS
   INTEGER, INTENT(IN)                            :: cdupContent
 !</input>
 
-!<output>
-  ! Destination matrix. Any previous data is discarded, so the
-  ! application must take care of that no allocated handles are inside here!
-  TYPE(t_matrixBlock), INTENT(OUT)            :: rdestMatrix
-!</output>  
+!<inputoutput>
+  ! Destination matrix. 
+  ! If the matrix exists and has exactly as many blocks as specified by
+  ! ifirstBlock/ilastBlock, the destination matrix is kept and overwritten
+  ! as specified by cdupStructure/cdubContent.
+  ! If the matrix exists but the block count does not match, the matrix
+  ! is released and recreated in the correct size.
+  TYPE(t_matrixBlock), INTENT(INOUT)            :: rdestMatrix
+!</inputoutput>  
 
 !</subroutine>
 
     ! local variables
     INTEGER(PREC_MATIDX) :: i,j
-    INTEGER :: ifirst, ilast
+    INTEGER :: ifirst, ilast, ifirstY, ilastY
     
     ! Evaluate the optional parameters
     ifirst = 1
@@ -3892,10 +4069,34 @@ CONTAINS
       ilast = MAX(MIN(ilast,ilastBlock),ifirst)
     END IF
     
+    ifirstY = ifirst
+    ilastY = ilast
+
+    IF (PRESENT(ifirstBlockY)) THEN
+      ifirstY = MIN(MAX(ifirstY,ifirstBlockY),ilastY)
+    END IF
+    
+    IF (PRESENT(ilastBlockY)) THEN
+      ilastY = MAX(MIN(ilastY,ilastBlockY),ifirstY)
+    END IF
+    
+    ! Currently, we only support square matrices -- this is a matter of change in the future!
+    IF ((ilastY-ilast) .NE. (ifirstY-ifirst)) THEN
+      PRINT *,'lsysbl_deriveSubmatrix: Currently, only square matrices are supported!'
+      STOP
+    END IF
+    
+    ! If the destination matrix has the correct size, leave it.
+    ! if not, release it and create a new one.
+    IF ((rdestMatrix%NEQ .NE. 0) .AND. (rdestMatrix%ndiagBlocks .NE. ilast-ifirst+1)) THEN
+      CALL lsysbl_releaseMatrix (rdestMatrix)
+    END IF
+    
     ! For every submatrix in the source matrix, call the 'scalar' variant
     ! of duplicateMatrix. 
-    ALLOCATE(rdestMatrix%RmatrixBlock((ilast-ifirst+1),(ilast-ifirst+1)))
-    DO j=ifirst,ilast
+    IF (rdestMatrix%NEQ .EQ. 0) &
+      CALL lsysbl_createEmptyMatrix(rdestMatrix,(ilastY-ifirstY+1))
+    DO j=ifirstY,ilastY
       DO i=ifirst,ilast
         IF (rsourceMatrix%RmatrixBlock(i,j)%cmatrixFormat .NE. LSYSSC_MATRIXUNDEFINED) THEN
         

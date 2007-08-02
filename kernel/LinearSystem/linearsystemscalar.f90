@@ -4136,6 +4136,7 @@ CONTAINS
       ! Restore crucial data
       ry%h_Ddata = h_Ddata
       ry%bisCopy = bisCopy
+      ry%cdataType = cdataType
       ry%iidxFirstEntry = ioffset 
     END IF
 

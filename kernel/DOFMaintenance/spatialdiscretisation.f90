@@ -41,6 +41,9 @@
 !#     -> Checks if a cubature formula is compatible to an element
 !#        distribution.
 !#
+!# 9.) spdiscr_duplicateDiscrSc
+!#     -> Copies a discretisation structure to another
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -541,8 +544,11 @@ CONTAINS
     rdestDiscr%ccomplexity            =  rsourceDiscr%ccomplexity          
     rdestDiscr%p_rboundary            => rsourceDiscr%p_rboundary          
     rdestDiscr%p_rtriangulation       => rsourceDiscr%p_rtriangulation     
-    rdestDiscr%p_rboundaryConditions  => rsourceDiscr%p_rboundaryConditions
-    rdestDiscr%ncomponents            =  rsourceDiscr%ncomponents          
+    rdestDiscr%ncomponents            =  ncount       
+
+    ! Boundary conditions cannot be transferred! They are depending on the
+    ! global system, which may shrink and take another form here!
+    NULLIFY(rdestDiscr%p_rboundaryConditions)
 
     ! Copy all substructures -- from ifirstBlock to ilastBlock
     rdestDiscr%RspatialDiscretisation(1:ncount) = &
@@ -1225,4 +1231,58 @@ CONTAINS
   
   END SUBROUTINE  
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_duplicateDiscrSc (rsourceDiscr, rdestDiscr, bshare)
+  
+!<description>
+  ! This routine creates a copy of the discretisation structure rsourceDiscr.
+  ! Depending on bshare, the destination structure rdestDiscr will either
+  ! obtain a 'simple' copy (i.e. sharing all handles and all information
+  ! with rsourceDiscr) or a separate copy (which costs memory for all the
+  ! element information!).
+!</description>
+
+!<input>
+  ! A source discretisation structure that should be used as template
+  TYPE(t_spatialDiscretisation), INTENT(IN) :: rsourceDiscr
+  
+  ! Whether the new discretisation structure should share its information
+  ! with rsourceDiscr.
+  ! =FALSE: Create a complete copy of rsourceDiscr which is independent
+  !  of rsourceDiscr.
+  ! =TRUE: The new discretisation will not be a complete new structure, but a
+  !  'derived' structure, i.e. it uses the same dynamic information
+  !  (handles and therefore element lists) as rsourceDiscr.
+  LOGICAL, INTENT(IN) :: bshare
+!</input>
+  
+!<output>
+  ! The new discretisation structure.
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+    ! Currently, this routine supports only bshare=TRUE!
+    IF (bshare) THEN
+    
+      ! Copy all information
+      rdestDiscr = rsourceDiscr
+    
+      ! Mark the new discretisation structure as 'copy', to prevent
+      ! the dynamic information to be released.
+      ! The dynamic information 'belongs' to rdiscrSource and not to the
+      ! newly created rdiscrDest!
+      rdestDiscr%bisCopy = .TRUE.
+      
+    ELSE
+      PRINT *,'spdiscr_duplicateDiscrSc: bshare=FALSE currently not supported!'
+      CALL sys_halt()
+    END IF
+  
+  END SUBROUTINE  
+  
 END MODULE
