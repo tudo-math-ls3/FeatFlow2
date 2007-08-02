@@ -373,7 +373,8 @@ CONTAINS
     ! Get pointers to the structures. For the vector, get the pointer from
     ! the storage management.
     
-    IF (rdbcStructure%h_DdirichletValues .EQ. ST_NOHANDLE) THEN
+    IF ((rdbcStructure%h_IdirichletDOFs .EQ. ST_NOHANDLE) .OR. &
+        (rdbcStructure%h_DdirichletValues .EQ. ST_NOHANDLE)) THEN
       CALL output_line('Dirichlet BC''s not correctly configured!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
       CALL output_line('Are the BC''s only configured for defect values?!?',&
@@ -381,15 +382,15 @@ CONTAINS
       CALL sys_halt()
     END IF
     
+    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
+    CALL storage_getbase_double2d(rdbcStructure%h_DdirichletValues,p_val)
+
     IF ((.NOT.ASSOCIATED(p_idx)).OR.(.NOT.ASSOCIATED(p_val))) THEN
       CALL output_line('DBC not configured',&
           OU_CLASS_ERROR,OU_MODE_STD,'vecfil_imposeDirichletFBC')
       CALL sys_halt()
     END IF
     
-    CALL storage_getbase_int(rdbcStructure%h_IdirichletDOFs,p_idx)
-    CALL storage_getbase_double2d(rdbcStructure%h_DdirichletValues,p_val)
-
     ! Impose the DOF value directly into the vector - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
     
