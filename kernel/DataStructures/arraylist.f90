@@ -403,7 +403,8 @@ CONTAINS
       CALL storage_getbase_int(rarraylist%h_Data,rarraylist%IData)
       
     CASE DEFAULT
-      PRINT *, 'arrlst_createArrayList: Unsupported data format!'
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_createArrayList')
       CALL sys_halt()
     END SELECT
     
@@ -437,7 +438,8 @@ CONTAINS
     
     ! Check if table number is valid
     IF (itable < 1) THEN
-      PRINT *, "arrlst_createArrayList_table: Invalid table number"
+      CALL output_line('Invalid table number',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_createArrayList_table')
       CALL sys_halt()
     END IF
 
@@ -468,9 +470,9 @@ CONTAINS
 !</subroutine>
 
     ! Release memory
-    IF (rarraylist%h_Ktable /= ST_NOHANDLE) CALL storage_free(rarraylist%h_Ktable)
-    IF (rarraylist%h_Knext /= ST_NOHANDLE)  CALL storage_free(rarraylist%h_Knext)
-    IF (rarraylist%h_Data /= ST_NOHANDLE)   CALL storage_free(rarraylist%h_Data)
+    IF (rarraylist%h_Ktable .NE. ST_NOHANDLE) CALL storage_free(rarraylist%h_Ktable)
+    IF (rarraylist%h_Knext .NE. ST_NOHANDLE)  CALL storage_free(rarraylist%h_Knext)
+    IF (rarraylist%h_Data .NE. ST_NOHANDLE)   CALL storage_free(rarraylist%h_Data)
     NULLIFY(rarraylist%Ktable,rarraylist%Knext,rarraylist%Ddata,&
         rarraylist%SData,rarraylist%IData)
 
@@ -509,7 +511,8 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "arrlst_releaseArrayList_table: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_releaseArrayList_table')
       CALL sys_halt()
     END IF
 
@@ -567,7 +570,8 @@ CONTAINS
       CALL storage_getbase_int(rarraylist%h_Data,rarraylist%IData)
 
     CASE DEFAULT
-      PRINT *, 'arrlst_resizeArrayList: Unsupported data format!'
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_resizeArrayList')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE arrlst_resizeArrayList
@@ -666,7 +670,8 @@ CONTAINS
       CALL arrlst_copyArrayList(rarraylist,itable,p_IData)
       
     CASE DEFAULT
-      PRINT *, 'arrlst_copyFromArrayList: Unsupported data format!'
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayList')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE arrlst_copyFromArrayList
@@ -718,7 +723,7 @@ CONTAINS
     END IF
     CALL storage_getbase_int(h_Table,p_Table)
     
-    IF (h_Data  .EQ. ST_NOHANDLE) THEN
+    IF (h_Data .EQ. ST_NOHANDLE) THEN
       CALL storage_new('arrlst_copyFromArrayList_table','Data',&
           rarraylist%NA,rarraylist%carraylistFormat,h_Data,ST_NEWBLOCK_NOINIT)
     ELSE
@@ -744,7 +749,8 @@ CONTAINS
       CALL arrlst_copyArrayListTable(rarraylist,p_IData,p_Table)
       
     CASE DEFAULT
-      PRINT *, 'arrlst_copyFromArrayList_table: Unsupported data format!'
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayList_table')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE arrlst_copyFromArrayList_table
@@ -784,12 +790,14 @@ CONTAINS
 
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "arrlst_copyFromArrayListDble: Invalid table number"
+      CALL output_line('Invalid table number',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDble')
       CALL sys_halt()
     END IF
     
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_copyFromArrayListDble: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDble')
       CALL sys_halt()
     END IF
 
@@ -836,13 +844,15 @@ CONTAINS
 
     ! Check if table array is valid
     ntable=SIZE(p_Table)-1
-    IF (ntable /= rarraylist%NTABLE) THEN
-      PRINT *, "arrlst_copyFromArrayListDble_table: Invalid dimension of table array!"
+    IF (ntable+1 < rarraylist%NTABLE) THEN
+      CALL output_line('Invalid dimension of table array!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDble_table')
       CALL sys_halt()
     END IF
     
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_copyFromArrayListDble_table: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListDble_table')
       CALL sys_halt()
     END IF
 
@@ -851,7 +861,7 @@ CONTAINS
       p_Table(itable) = icount
       
       ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
-      DO WHILE (ipos /= ARRLST_NULL)
+      DO WHILE (ipos .NE. ARRLST_NULL)
         p_DData(icount) = rarraylist%DData(ipos)
         icount = icount+1
         IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
@@ -895,12 +905,14 @@ CONTAINS
 
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "arrlst_copyFromArrayListSngl: Invalid table number"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSngl')
       CALL sys_halt()
     END IF
 
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "_arraylist_copyfromSngl: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSngl')
       CALL sys_halt()
     END IF
 
@@ -947,13 +959,15 @@ CONTAINS
 
     ! Check if table array is valid
     ntable=SIZE(p_Table)-1
-    IF (ntable /= rarraylist%NTABLE) THEN
-      PRINT *, "arrlst_copyFromArrayListSngl_table: Invalid dimension of table array!"
+    IF (ntable+1 < rarraylist%NTABLE) THEN
+      CALL output_line('Invalid dimension of table array!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSngl_table')
       CALL sys_halt()
     END IF
     
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_copyFromArrayListSngl_table: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListSngl_table')
       CALL sys_halt()
     END IF
 
@@ -962,7 +976,7 @@ CONTAINS
       p_Table(itable) = icount
       
       ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
-      DO WHILE(ipos /= ARRLST_NULL)
+      DO WHILE(ipos .NE. ARRLST_NULL)
         p_SData(icount) = rarraylist%SData(ipos)
         icount = icount+1
         IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
@@ -1007,12 +1021,14 @@ CONTAINS
 
     ! Check if table is valid
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) THEN
-      PRINT *, "arrlst_copyFromArrayListInt: Invalid table number"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListInt')
       CALL sys_halt()
     END IF
 
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_copyFromArrayListInt: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListInt')
       CALL sys_halt()
     END IF
 
@@ -1059,13 +1075,15 @@ CONTAINS
 
     ! Check if table array is valid
     ntable=SIZE(p_Table)-1
-    IF (ntable /= rarraylist%NTABLE) THEN
-      PRINT *, "arrlst_copyFromArrayListInt_table: Invalid dimension of table array!"
+    IF (ntable+1 < rarraylist%NTABLE) THEN
+      CALL output_line('Invalid dimension of table array!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListInt_table')
       CALL sys_halt()
     END IF
     
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_copyFromArrayListInt_table: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyFromArrayListInt_table')
       CALL sys_halt()
     END IF
 
@@ -1074,7 +1092,7 @@ CONTAINS
       p_Table(itable) = icount
       
       ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
-      DO WHILE(ipos /= ARRLST_NULL)
+      DO WHILE(ipos .NE. ARRLST_NULL)
         p_IData(icount) = rarraylist%IData(ipos)
         icount=icount+1
         IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
@@ -1130,7 +1148,8 @@ CONTAINS
       stop
 
     CASE DEFAULT
-      PRINT *, "arrlst_copyArrayList: Unsupported data format!"
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayList')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE arrlst_copyToArrayList
@@ -1185,7 +1204,8 @@ CONTAINS
       CALL arrlst_copyArrayListTable(p_IData,rarraylist,p_Table)
 
     CASE DEFAULT
-      PRINT *, "arrlst_copyArrayList_table: Unsupported data format!"
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayList_table')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE arrlst_copyToArrayList_table
@@ -1218,8 +1238,9 @@ CONTAINS
     ! local variables
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_copyToArrayListDble: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListDble')
       CALL sys_halt()
     END IF
     
@@ -1257,8 +1278,9 @@ CONTAINS
     INTEGER(PREC_TABLEIDX)     :: itable,ntable
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_copyToArrayListDble_table: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListDble_table')
       CALL sys_halt()
     END IF
     
@@ -1298,8 +1320,9 @@ CONTAINS
     ! local variables
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_copyToArrayListSngl: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListSngl')
       CALL sys_halt()
     END IF
     
@@ -1337,8 +1360,9 @@ CONTAINS
     INTEGER(PREC_TABLEIDX) :: itable,ntable
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_copyToArrayListSngl_table: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListSngl_table')
       CALL sys_halt()
     END IF
 
@@ -1378,8 +1402,9 @@ CONTAINS
     ! local variables
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_copyToArrayListInt: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListInt')
       CALL sys_halt()
     END IF
     
@@ -1417,8 +1442,9 @@ CONTAINS
     INTEGER(PREC_TABLEIDX) :: itable,ntable
     INTEGER(PREC_ARRAYLISTIDX) :: ipos,kpos
 
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_copyToArrayListInt_table: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_copyToArrayListInt_table')
       CALL sys_halt()
     END IF
     
@@ -1618,14 +1644,16 @@ CONTAINS
 !</subroutine>
     
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_prependToArrayListDble: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListDble')
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_prependToArrayListDble: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListDble')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -1690,14 +1718,16 @@ CONTAINS
 !</subroutine>
     
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_prependToArrayListSngl: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListSngl')
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_prependToArrayListSngl: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListSngl')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -1762,14 +1792,16 @@ CONTAINS
 !</subroutine>
     
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_prependToArrayListInt: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListInt')
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_prependToArrayListInt: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_prependToArrayListInt')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -1834,14 +1866,16 @@ CONTAINS
 !</subroutine>
     
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_appendToArrayListDble: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListDble')
       CALL sys_halt()
     END IF
 
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_appendToArrayListDble: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListDble')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -1907,14 +1941,16 @@ CONTAINS
 !</subroutine>
     
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_appendToArrayListSngl: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListSngl')
       CALL sys_halt()
     END IF
 
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_appendToArrayListSngl: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListSngl')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -1980,14 +2016,16 @@ CONTAINS
 !</subroutine>
     
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_appendToArrayListInt: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListInt')
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_appendToArrayListInt: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_appendToArrayListInt')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -2056,14 +2094,16 @@ CONTAINS
 !</subroutine>
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_insertIntoArrayListDble: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListDble')
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_insertIntoArrayListDble: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListDble')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -2140,14 +2180,16 @@ CONTAINS
 !</subroutine>
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_insertIntoArrayListSngl: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListSngl')
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_insertIntoArrayListSngl: Invalid table number!"
+      CALL output_line('Invalid table number',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListSngl')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -2224,14 +2266,16 @@ CONTAINS
 !</subroutine>
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_insertIntoArrayListInt: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListInt')
       CALL sys_halt()
     END IF
     
     ! Check if tables need to be created
     IF (itable < 1) THEN
-      PRINT *, "arrlst_insertIntoArrayListInt: Invalid table number!"
+      CALL output_line('Invalid table number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_insertIntoArrayListInt')
       CALL sys_halt()
     END IF
     IF (rarraylist%NTABLE < itable) CALL arrlst_createArrayList_table(rarraylist,itable)
@@ -2308,8 +2352,9 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipred,ipos
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_deleteFromArrayListDble: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_deleteFromArrayListDble')
       CALL sys_halt()
     END IF
 
@@ -2381,8 +2426,9 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipred,ipos
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_deleteFromArrayListSngl: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_deleteFromArrayListSngl')
       CALL sys_halt()
     END IF
 
@@ -2454,8 +2500,9 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipred,ipos
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_deleteFromArrayListInt: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_deleteFromArrayListInt')
       CALL sys_halt()
     END IF
 
@@ -2532,8 +2579,9 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ihead,itail,inext
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_DOUBLE) THEN
-      PRINT *, "arrlst_searchInArrayListDble: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_DOUBLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_searchInArrayListDble')
       CALL sys_halt()
     END IF
 
@@ -2673,8 +2721,9 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ihead,itail,inext
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_SINGLE) THEN
-      PRINT *, "arrlst_searchInArrayListSngl: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_SINGLE) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_searchInArrayListSngl')
       CALL sys_halt()
     END IF
 
@@ -2814,8 +2863,9 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ihead,itail,inext
 
     ! Check if list format is ok
-    IF (rarraylist%carraylistFormat /= ST_INT) THEN
-      PRINT *, "arrlst_searchInArrayListInt: Unsupported data format!"
+    IF (rarraylist%carraylistFormat .NE. ST_INT) THEN
+      CALL output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_searchInArrayListInt')
       CALL sys_halt()
     END IF
 
@@ -2949,64 +2999,72 @@ CONTAINS
 
     SELECT CASE (rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
+
+      CALL output_line('Array list:')
+      CALL output_line('-----------')
+
       ! Loop over all selected tables
       DO iitable=itable1,itable2
-        
-        WRITE(*,FMT='(A,I5)') 'Table No.:',iitable
-        WRITE(*,FMT='(A)',ADVANCE='NO') ' ->'
+        CALL output_line('Table number'//TRIM(sys_siL(iitable,15)))
+        CALL output_line('----------------------------------------')
 
         ipos  = rarraylist%Ktable(ARRLST_HEAD,iitable)
         IF (ipos .EQ. ARRLST_NULL) CYCLE
         itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(I5,1X)',ADVANCE='NO') rarraylist%DData(ipos)
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') sys_sdL(rarraylist%DData(ipos),8)
           IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
-        PRINT *
       END DO
       
     CASE (ST_SINGLE)
+
+      CALL output_line('Array list:')
+      CALL output_line('-----------')
+
       ! Loop over all selected tables
       DO iitable=itable1,itable2
-
-        WRITE(*,FMT='(A,I5)') 'Table No.:',iitable
-        WRITE(*,FMT='(A)',ADVANCE='NO') ' ->'
+        CALL output_line('Table number'//TRIM(sys_siL(iitable,15)))
+        CALL output_line('----------------------------------------')
         
         ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
         IF (ipos .EQ. ARRLST_NULL) CYCLE
         itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(I5,1X)',ADVANCE='NO') rarraylist%SData(ipos)
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') sys_sdL(REAL(rarraylist%SData(ipos),DP),8)
           IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
-        PRINT *
       END DO
       
     CASE (ST_INT)
+      
+      CALL output_line('Array list:')
+      CALL output_line('-----------')
+      
       ! Loop over all selected tables
       DO iitable=itable1,itable2
-
-        WRITE(*,FMT='(A,I5)') 'Table No.:',iitable
-        WRITE(*,FMT='(A)',ADVANCE='NO') ' ->'
+        CALL output_line('Table number'//TRIM(sys_siL(iitable,15)))
+        CALL output_line('----------------------------------------')
 
         ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
         IF (ipos .EQ. ARRLST_NULL) CYCLE
         itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(I5,1X)',ADVANCE='NO') rarraylist%IData(ipos)
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') sys_siL(rarraylist%IData(ipos),15)
           IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
-        PRINT *
+        WRITE(*,*)
       END DO
       
     CASE DEFAULT
-      PRINT *, "arrlst_printArrayList: Unsupported data type!"
+      CALL output_line('Unsupported data type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_printArrayList')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE arrlst_printArrayList
