@@ -498,14 +498,14 @@ CONTAINS
 !</subroutine>
 
     ! Release memory
-    IF (rtree%h_Key    /= ST_NOHANDLE) CALL storage_free(rtree%h_Key)
-    IF (rtree%h_Kbal   /= ST_NOHANDLE) CALL storage_free(rtree%h_Kbal)
-    IF (rtree%h_Kchild /= ST_NOHANDLE) CALL storage_free(rtree%h_Kchild)
-    IF (rtree%h_Kpath  /= ST_NOHANDLE) CALL storage_free(rtree%h_Kpath)
+    IF (rtree%h_Key    .NE. ST_NOHANDLE) CALL storage_free(rtree%h_Key)
+    IF (rtree%h_Kbal   .NE. ST_NOHANDLE) CALL storage_free(rtree%h_Kbal)
+    IF (rtree%h_Kchild .NE. ST_NOHANDLE) CALL storage_free(rtree%h_Kchild)
+    IF (rtree%h_Kpath  .NE. ST_NOHANDLE) CALL storage_free(rtree%h_Kpath)
 
-    IF (rtree%h_DData  /= ST_NOHANDLE) CALL storage_free(rtree%h_DDATA)
-    IF (rtree%h_FData  /= ST_NOHANDLE) CALL storage_free(rtree%h_FDATA)
-    IF (rtree%h_IData  /= ST_NOHANDLE) CALL storage_free(rtree%h_IDATA)
+    IF (rtree%h_DData  .NE. ST_NOHANDLE) CALL storage_free(rtree%h_DDATA)
+    IF (rtree%h_FData  .NE. ST_NOHANDLE) CALL storage_free(rtree%h_FDATA)
+    IF (rtree%h_IData  .NE. ST_NOHANDLE) CALL storage_free(rtree%h_IDATA)
 
     ! Reset tree
     rtree%ctreeFormat = ST_NOHANDLE
@@ -706,7 +706,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if tree has correct data format
-    IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_DOUBLE) THEN
       PRINT *, "t_tree_copyto_arrayDble: Invalid data format!"
       CALL sys_halt()
     END IF
@@ -719,12 +719,12 @@ CONTAINS
     ! Copy auxiliary arrays to the tree.
     IF (PRESENT(p_DData) .AND. rtree%isizeDble > 0) THEN
       CALL storage_getsize(rtree%h_DData,Isize)
-      IF ((rtree%isizeDble /= SIZE(p_DData,1)) .OR. (rtree%NA /= SIZE(p_DData,2))) THEN
+      IF ((rtree%isizeDble .NE. SIZE(p_DData,1)) .OR. (rtree%NA .NE. SIZE(p_DData,2))) THEN
         PRINT *, "t_tree_copyto_arrayDble: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arrayDble',rtree%NNA,rtree%h_DData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_double2D(rtree%h_DData,rtree%DData)
       END IF
@@ -734,12 +734,12 @@ CONTAINS
 
     IF (PRESENT(p_FData) .AND. rtree%isizeSngl > 0) THEN
       CALL storage_getsize(rtree%h_FData,Isize)
-      IF ((rtree%isizeSngl /= SIZE(p_FData,1)) .OR. (rtree%NA /= SIZE(p_FData,2))) THEN
+      IF ((rtree%isizeSngl .NE. SIZE(p_FData,1)) .OR. (rtree%NA .NE. SIZE(p_FData,2))) THEN
         PRINT *, "t_tree_copyto_arrayDble: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arrayDble',rtree%NNA,rtree%h_FData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_single2D(rtree%h_FData,rtree%FData)
       END IF
@@ -749,12 +749,12 @@ CONTAINS
 
     IF (PRESENT(p_IData) .AND. rtree%isizeInt > 0) THEN
       CALL storage_getsize(rtree%h_IData,Isize)
-      IF ((rtree%isizeInt /= SIZE(p_IData,1)) .OR. (rtree%NA /= SIZE(p_IData,2))) THEN
+      IF ((rtree%isizeInt .NE. SIZE(p_IData,1)) .OR. (rtree%NA .NE. SIZE(p_IData,2))) THEN
         PRINT *, "t_tree_copyto_arrayDble: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arrayDble',rtree%NNA,rtree%h_IData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_int2D(rtree%h_IData,rtree%IData)
       END IF
@@ -802,7 +802,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if tree has correct data format
-    IF (rtree%ctreeFormat /= ST_SINGLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_SINGLE) THEN
       PRINT *, "t_tree_copyto_arraySngl: Invalid data format!"
       CALL sys_halt()
     END IF
@@ -815,12 +815,12 @@ CONTAINS
     ! Copy auxiliary arrays to the tree.
     IF (PRESENT(p_DData) .AND. rtree%isizeDble > 0) THEN
       CALL storage_getsize(rtree%h_DData,Isize)
-      IF ((rtree%isizeDble /= SIZE(p_DData,1)) .OR. (rtree%NA /= SIZE(p_DData,2))) THEN
+      IF ((rtree%isizeDble .NE. SIZE(p_DData,1)) .OR. (rtree%NA .NE. SIZE(p_DData,2))) THEN
         PRINT *, "t_tree_copyto_arraySngl: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arraySngl',rtree%NNA,rtree%h_DData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_double2D(rtree%h_DData,rtree%DData)
       END IF
@@ -830,12 +830,12 @@ CONTAINS
     
     IF (PRESENT(p_FData) .AND. rtree%isizeSngl > 0) THEN
       CALL storage_getsize(rtree%h_FData,Isize)
-      IF ((rtree%isizeSngl /= SIZE(p_FData,1)) .OR. (rtree%NA /= SIZE(p_FData,2))) THEN
+      IF ((rtree%isizeSngl .NE. SIZE(p_FData,1)) .OR. (rtree%NA .NE. SIZE(p_FData,2))) THEN
         PRINT *, "t_tree_copyto_arraySngl: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arraySngl',rtree%NNA,rtree%h_FData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_single2D(rtree%h_FData,rtree%FData)
       END IF
@@ -845,12 +845,12 @@ CONTAINS
 
     IF (PRESENT(p_IData) .AND. rtree%isizeInt > 0) THEN
       CALL storage_getsize(rtree%h_IData,Isize)
-      IF ((rtree%isizeInt /= SIZE(p_IData,1)) .OR. (rtree%NA /= SIZE(p_IData,2))) THEN
+      IF ((rtree%isizeInt .NE. SIZE(p_IData,1)) .OR. (rtree%NA .NE. SIZE(p_IData,2))) THEN
         PRINT *, "t_tree_copyto_arraySngl: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arraySngl',rtree%NNA,rtree%h_IData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_int2D(rtree%h_IData,rtree%IData)
       END IF
@@ -898,7 +898,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if tree has correct data format
-    IF (rtree%ctreeFormat /= ST_INT) THEN
+    IF (rtree%ctreeFormat .NE. ST_INT) THEN
       PRINT *, "t_tree_copyto_arrayInt: Invalid data format!"
       CALL sys_halt()
     END IF
@@ -911,12 +911,12 @@ CONTAINS
     ! Copy auxiliary arrays to the tree.
     IF (PRESENT(p_DData) .AND. rtree%isizeDble > 0) THEN
       CALL storage_getsize(rtree%h_DData,Isize)
-      IF ((rtree%isizeDble /= SIZE(p_DData,1)) .OR. (rtree%NA /= SIZE(p_DData,2))) THEN
+      IF ((rtree%isizeDble .NE. SIZE(p_DData,1)) .OR. (rtree%NA .NE. SIZE(p_DData,2))) THEN
         PRINT *, "t_tree_copyto_arrayInt: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arrayInt',rtree%NNA,rtree%h_DData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_double2D(rtree%h_DData,rtree%DData)
       END IF
@@ -926,12 +926,12 @@ CONTAINS
     
     IF (PRESENT(p_FData) .AND. rtree%isizeSngl > 0) THEN
       CALL storage_getsize(rtree%h_FData,Isize)
-      IF ((rtree%isizeSngl /= SIZE(p_FData,1)) .OR. (rtree%NA /= SIZE(p_FData,2))) THEN
+      IF ((rtree%isizeSngl .NE. SIZE(p_FData,1)) .OR. (rtree%NA .NE. SIZE(p_FData,2))) THEN
         PRINT *, "t_tree_copyto_arrayInt: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arrayInt',rtree%NNA,rtree%h_FData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_single2D(rtree%h_FData,rtree%FData)
       END IF
@@ -941,12 +941,12 @@ CONTAINS
 
     IF (PRESENT(p_IData) .AND. rtree%isizeInt > 0) THEN
       CALL storage_getsize(rtree%h_IData,Isize)
-      IF ((rtree%isizeInt /= SIZE(p_IData,1)) .OR. (rtree%NA /= SIZE(p_IData,2))) THEN
+      IF ((rtree%isizeInt .NE. SIZE(p_IData,1)) .OR. (rtree%NA .NE. SIZE(p_IData,2))) THEN
         PRINT *, "t_tree_copyto_arrayInt: Invalid auxiliary data!"
         CALL sys_halt()
       END IF
       ! Do we have to reallocate memory?
-      IF (Isize(2) /= rtree%NNA) THEN
+      IF (Isize(2) .NE. rtree%NNA) THEN
         CALL storage_realloc('t_tree_copyto_arrayInt',rtree%NNA,rtree%h_IData,ST_NEWBLOCK_NOINIT)
         CALL storage_getbase_int2D(rtree%h_IData,rtree%IData)
       END IF
@@ -985,7 +985,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if handle needs to be (re-)allocated
-    IF (h_Key == ST_NOHANDLE) THEN
+    IF (h_Key .EQ. ST_NOHANDLE) THEN
       CALL storage_new('t_tree_copyfrom_key_handle','Key',rtree%NA,&
           rtree%ctreeFormat,h_Key,ST_NEWBLOCK_NOINIT)
     ELSE
@@ -1025,9 +1025,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderKeyDble(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderKeyDble(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderKeyDble(rtree%Kchild(TLEFT,i))
       j=j+1; p_DKey(j)=rtree%DKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderKeyDble(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderKeyDble(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderKeyDble
     
     !**************************************************************
@@ -1036,9 +1036,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderKeySngl(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderKeySngl(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderKeySngl(rtree%Kchild(TLEFT,i))
       j=j+1; p_FKey(j)=rtree%FKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderKeySngl(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderKeySngl(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderKeySngl
 
     !**************************************************************
@@ -1047,9 +1047,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderKeyInt(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderKeyInt(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderKeyInt(rtree%Kchild(TLEFT,i))
       j=j+1; p_IKey(j)=rtree%IKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderKeyInt(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderKeyInt(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderKeyInt
   END SUBROUTINE t_tree_copyfrom_key_handle
 
@@ -1078,7 +1078,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check data format
-    IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_DOUBLE) THEN
       PRINT *, "t_tree_copyfrom_key_arrayDble: Invalid data format!"
       CALL sys_halt()
     END IF
@@ -1102,9 +1102,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderKeyDble(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderKeyDble(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderKeyDble(rtree%Kchild(TLEFT,i))
       j=j+1; p_DKey(j)=rtree%DKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderKeyDble(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderKeyDble(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderKeyDble
   END SUBROUTINE t_tree_copyfrom_key_arrayDble
 
@@ -1133,7 +1133,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check data format
-    IF (rtree%ctreeFormat /= ST_SINGLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_SINGLE) THEN
       PRINT *, "t_tree_copyfrom_key_arraySngl: Invalid data format!"
       CALL sys_halt()
     END IF
@@ -1157,9 +1157,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderKeySngl(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderKeySngl(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderKeySngl(rtree%Kchild(TLEFT,i))
       j=j+1; p_FKey(j)=rtree%FKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderKeySngl(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderKeySngl(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderKeySngl
   END SUBROUTINE t_tree_copyfrom_key_arraySngl
 
@@ -1188,7 +1188,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check data format
-    IF (rtree%ctreeFormat /= ST_INT) THEN
+    IF (rtree%ctreeFormat .NE. ST_INT) THEN
       PRINT *, "t_tree_copyfrom_key_arrayInt: Invalid data format!"
       CALL sys_halt()
     END IF
@@ -1212,9 +1212,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderKeyInt(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderKeyInt(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderKeyInt(rtree%Kchild(TLEFT,i))
       j=j+1; p_IKey(j)=rtree%IKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderKeyInt(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderKeyInt(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderKeyInt
   END SUBROUTINE t_tree_copyfrom_key_arrayInt
 
@@ -1272,7 +1272,7 @@ CONTAINS
     INTEGER :: idimension,idatatype
     
     ! Check if handle is already associated
-    IF (h_Data == ST_NOHANDLE) THEN
+    IF (h_Data .EQ. ST_NOHANDLE) THEN
       
       ! Get second working dimension
       Isize(2)=rtree%NA
@@ -1357,7 +1357,7 @@ CONTAINS
 
       ! Check if data type is valid
       CALL storage_getdatatype(h_Data,idatatype)
-      IF (idatatype /= ctype) THEN
+      IF (idatatype .NE. ctype) THEN
         PRINT *, "t_tree_copyfrom_handle: Data type mismatch!"
         CALL sys_halt()
       END IF
@@ -1387,7 +1387,7 @@ CONTAINS
               CALL sys_halt()
             END IF
             CALL t_tree_copyfrom_arrayDble(rtree,p_DData,mask(1))
-          ELSEIF (rtree%isizeDble == 1) THEN
+          ELSEIF (rtree%isizeDble .EQ. 1) THEN
             CALL t_tree_copyfrom_arrayDble(rtree,p_DData,1)
           ELSE
             PRINT *, "t_tree_copyfrom_handle: A 1D-array was given but there&
@@ -1406,7 +1406,7 @@ CONTAINS
               CALL sys_halt()
             END IF
             CALL t_tree_copyfrom_arraySngl(rtree,p_FData,mask(1))
-          ELSEIF (rtree%isizeSngl == 1) THEN
+          ELSEIF (rtree%isizeSngl .EQ. 1) THEN
             CALL t_tree_copyfrom_arraySngl(rtree,p_FData,1)
           ELSE
             PRINT *, "t_tree_copyfrom_handle: A 1D-array was given but there&
@@ -1425,7 +1425,7 @@ CONTAINS
               CALL sys_halt()
             END IF
             CALL t_tree_copyfrom_arrayInt(rtree,p_IData,mask(1))
-          ELSEIF (rtree%isizeInt == 1) THEN
+          ELSEIF (rtree%isizeInt .EQ. 1) THEN
             CALL t_tree_copyfrom_arrayInt(rtree,p_IData,1)
           ELSE
             PRINT *, "t_tree_copyfrom_handle: A 1D-array was given but there&
@@ -1503,7 +1503,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if auxiliary double data is available
-    IF (rtree%isizeDble == 0) THEN
+    IF (rtree%isizeDble .EQ. 0) THEN
       PRINT *, "t_tree_copyfrom_arrayDble: No double data available!"
       CALL sys_halt()
     END IF
@@ -1533,9 +1533,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataDble(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataDble(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataDble(rtree%Kchild(TLEFT,i))
       j=j+1; p_DData(j)=rtree%DData(mask,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataDble(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataDble(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataDble
 
   END SUBROUTINE t_tree_copyfrom_arrayDble
@@ -1573,7 +1573,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if auxiliary double data is available
-    IF (rtree%isizeDble == 0) THEN
+    IF (rtree%isizeDble .EQ. 0) THEN
       PRINT *, "t_tree_copyfrom_arrayDble2D: No double data available!"
       CALL sys_halt()
     END IF
@@ -1588,7 +1588,7 @@ CONTAINS
     ! Copy the content to the array
     IF (PRESENT(mask)) THEN
       ! Check if given array has correct size in its first dimension
-      IF (Isize(1) /= SIZE(mask)) THEN
+      IF (Isize(1) .NE. SIZE(mask)) THEN
         PRINT *, "t_tree_copyfrom_arrayDble2D: Array dimensions do not match mask!"
         CALL sys_halt()
       END IF
@@ -1601,7 +1601,7 @@ CONTAINS
       j=0; CALL inorderDataDbleMask(rtree%Kchild(TRIGHT,TROOT))
     ELSE
       ! Check if given array has correct size in its first dimension
-      IF (Isize(1) /= rtree%isizeDble) THEN
+      IF (Isize(1) .NE. rtree%isizeDble) THEN
         PRINT *, "t_tree_copyfrom_arrayDble2D: Array too smalle!"
         CALL sys_halt()
       END IF
@@ -1618,9 +1618,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataDble(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataDble(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataDble(rtree%Kchild(TLEFT,i))
       j=j+1; p_DData(:,j)=rtree%DData(:,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataDble(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataDble(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataDble
 
     !**************************************************************
@@ -1629,9 +1629,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataDbleMask(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataDbleMask(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataDbleMask(rtree%Kchild(TLEFT,i))
       j=j+1; p_DData(:,j)=rtree%DData(mask,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataDbleMask(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataDbleMask(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataDbleMask
 
   END SUBROUTINE t_tree_copyfrom_arrayDble2D
@@ -1666,7 +1666,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if auxiliary single data is available
-    IF (rtree%isizeSngl == 0) THEN
+    IF (rtree%isizeSngl .EQ. 0) THEN
       PRINT *, "t_tree_copyfrom_arraySngl: No single data available!"
       CALL sys_halt()
     END IF
@@ -1696,9 +1696,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataSngl(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataSngl(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataSngl(rtree%Kchild(TLEFT,i))
       j=j+1; p_FData(j)=rtree%FData(mask,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataSngl(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataSngl(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataSngl
 
   END SUBROUTINE t_tree_copyfrom_arraySngl
@@ -1736,7 +1736,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if auxiliary single data is available
-    IF (rtree%isizeSngl == 0) THEN
+    IF (rtree%isizeSngl .EQ. 0) THEN
       PRINT *, "t_tree_copyfrom_arraySngl2D: No single data available!"
       CALL sys_halt()
     END IF
@@ -1751,7 +1751,7 @@ CONTAINS
     ! Copy the content to the array
     IF (PRESENT(mask)) THEN
       ! Check if given array has correct size in its first dimension
-      IF (Isize(1) /= SIZE(mask)) THEN
+      IF (Isize(1) .NE. SIZE(mask)) THEN
         PRINT *, "t_tree_copyfrom_arraySngl2D: Array dimensions do not match mask!"
         CALL sys_halt()
       END IF
@@ -1764,7 +1764,7 @@ CONTAINS
       j=0; CALL inorderDataSnglMask(rtree%Kchild(TRIGHT,TROOT))
     ELSE
       ! Check if given array has correct size in its first dimension
-      IF (Isize(1) /= rtree%isizeSngl) THEN
+      IF (Isize(1) .NE. rtree%isizeSngl) THEN
         PRINT *, "t_tree_copyfrom_arraySngl2D: Array too smalle!"
         CALL sys_halt()
       END IF
@@ -1781,9 +1781,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataSngl(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataSngl(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataSngl(rtree%Kchild(TLEFT,i))
       j=j+1; p_FData(:,j)=rtree%FData(:,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataSngl(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataSngl(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataSngl
 
     !**************************************************************
@@ -1792,9 +1792,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataSnglMask(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataSnglMask(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataSnglMask(rtree%Kchild(TLEFT,i))
       j=j+1; p_FData(:,j)=rtree%FData(mask,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataSnglMask(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataSnglMask(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataSnglMask
 
   END SUBROUTINE t_tree_copyfrom_arraySngl2D
@@ -1829,7 +1829,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if auxiliary integer data is available
-    IF (rtree%isizeInt == 0) THEN
+    IF (rtree%isizeInt .EQ. 0) THEN
       PRINT *, "t_tree_copyfrom_arrayInt: No integer data available!"
       CALL sys_halt()
     END IF
@@ -1859,9 +1859,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataInt(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataInt(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataInt(rtree%Kchild(TLEFT,i))
       j=j+1; p_IData(j)=rtree%IData(mask,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataInt(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataInt(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataInt
 
   END SUBROUTINE t_tree_copyfrom_arrayInt
@@ -1899,7 +1899,7 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: j
 
     ! Check if auxiliary integer data is available
-    IF (rtree%isizeInt == 0) THEN
+    IF (rtree%isizeInt .EQ. 0) THEN
       PRINT *, "t_tree_copyfrom_arrayInt2D: No integer data available!"
       CALL sys_halt()
     END IF
@@ -1914,7 +1914,7 @@ CONTAINS
     ! Copy the content to the array
     IF (PRESENT(mask)) THEN
       ! Check if given array has correct size in its first dimension
-      IF (Isize(1) /= SIZE(mask)) THEN
+      IF (Isize(1) .NE. SIZE(mask)) THEN
         PRINT *, "t_tree_copyfrom_arrayInt2D: Array dimensions do not match mask!"
         CALL sys_halt()
       END IF
@@ -1927,7 +1927,7 @@ CONTAINS
       j=0; CALL inorderDataIntMask(rtree%Kchild(TRIGHT,TROOT))
     ELSE
       ! Check if given array has correct size in its first dimension
-      IF (Isize(1) /= rtree%isizeInt) THEN
+      IF (Isize(1) .NE. rtree%isizeInt) THEN
         PRINT *, "t_tree_copyfrom_arrayInt2D: Array too smalle!"
         CALL sys_halt()
       END IF
@@ -1944,9 +1944,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataInt(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataInt(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataInt(rtree%Kchild(TLEFT,i))
       j=j+1; p_IData(:,j)=rtree%IData(:,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataInt(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataInt(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataInt
 
     !**************************************************************
@@ -1955,9 +1955,9 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDataIntMask(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) CALL inorderDataIntMask(rtree%Kchild(TLEFT,i))
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) CALL inorderDataIntMask(rtree%Kchild(TLEFT,i))
       j=j+1; p_IData(:,j)=rtree%IData(mask,i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) CALL inorderDataIntMask(rtree%Kchild(TRIGHT,i))
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) CALL inorderDataIntMask(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDataIntMask
 
   END SUBROUTINE t_tree_copyfrom_arrayInt2D
@@ -2003,19 +2003,19 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: ipos,jpos
     
     ! Check if tree format is ok
-    IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_DOUBLE) THEN
       PRINT *, 't_tree_insertDble: Unsupported data format!'
       CALL sys_halt()
     END IF
 
     ! Check if key is already stored in tree
-    IF (search(rtree,dkey,jpos) == BTREE_NOT_FOUND) THEN
+    IF (search(rtree,dkey,jpos) .EQ. BTREE_NOT_FOUND) THEN
       
       ! Adjust size and position
       rtree%na = rtree%na+1
       ipos     = rtree%Kchild(TFREE,TROOT)
 
-      IF (PRESENT(iposOpt)) iposOpt=ipos
+      IF (PRESENT(iposOpt)) iposOpt=ABS(ipos)
 
       ! Check if memory needs to be expanded
       IF (ABS(ipos) > rtree%nna) &
@@ -2097,19 +2097,19 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: ipos,jpos
     
     ! Check if tree format is ok
-    IF (rtree%ctreeFormat /= ST_SINGLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_SINGLE) THEN
       PRINT *, 't_tree_insertSngl: Unsupported data format!'
       CALL sys_halt()
     END IF
 
     ! Check if key is already stored in tree
-    IF (search(rtree,skey,jpos) == BTREE_NOT_FOUND) THEN
+    IF (search(rtree,skey,jpos) .EQ. BTREE_NOT_FOUND) THEN
       
       ! Adjust size and position
       rtree%na = rtree%na+1
       ipos     = rtree%Kchild(TFREE,TROOT)
 
-      IF (PRESENT(iposOpt)) iposOpt=ipos
+      IF (PRESENT(iposOpt)) iposOpt=ABS(ipos)
 
       ! Check if memory needs to be expanded
       IF (ABS(ipos) > rtree%nna) &
@@ -2191,19 +2191,19 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: ipos,jpos
     
     ! Check if tree format is ok
-    IF (rtree%ctreeFormat /= ST_INT) THEN
+    IF (rtree%ctreeFormat .NE. ST_INT) THEN
       PRINT *, 't_tree_insertInt: Unsupported data format!'
       CALL sys_halt()
     END IF
 
     ! Check if key is already stored in tree
-    IF (search(rtree,ikey,jpos) == BTREE_NOT_FOUND) THEN
+    IF (search(rtree,ikey,jpos) .EQ. BTREE_NOT_FOUND) THEN
       
       ! Adjust size and position
       rtree%na = rtree%na+1
       ipos     = rtree%Kchild(TFREE,TROOT)
 
-      IF (PRESENT(iposOpt)) iposOpt=ipos
+      IF (PRESENT(iposOpt)) iposOpt=ABS(ipos)
       
       ! Check if memory needs to be expanded
       IF (ABS(ipos) > rtree%nna) &
@@ -2285,7 +2285,7 @@ CONTAINS
         
       CASE (0) ! bal(v)=0
         rtree%Kbal(v) = -1
-        IF (v /= rtree%Kchild(TRIGHT,TROOT)) &
+        IF (v .NE. rtree%Kchild(TRIGHT,TROOT)) &
             CALL rebalanceAfterInsert(rtree,i-1)
         
       CASE (-1) ! bal(v)=-1
@@ -2301,7 +2301,7 @@ CONTAINS
           rtree%Kbal(x)          = rtree%Kbal(x)+1
           rtree%Kbal(v)          = -rtree%Kbal(x)
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = x
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
@@ -2318,7 +2318,7 @@ CONTAINS
           rtree%Kbal(x)          = -MAX(0,rtree%Kbal(w))
           rtree%Kbal(w)          = 0
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = w
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
@@ -2338,7 +2338,7 @@ CONTAINS
         
       CASE (0) ! bal(v)=0
         rtree%Kbal(v) = 1
-        IF (v /= rtree%Kchild(TRIGHT,TROOT))&
+        IF (v .NE. rtree%Kchild(TRIGHT,TROOT))&
             CALL rebalanceAfterInsert(rtree,i-1)
         
       CASE (1) ! bal(v)=1
@@ -2354,7 +2354,7 @@ CONTAINS
           rtree%Kbal(x)          = rtree%Kbal(x)-1
           rtree%Kbal(v)          = -rtree%Kbal(x)
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = x
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
@@ -2371,7 +2371,7 @@ CONTAINS
           rtree%Kbal(x)          = -MIN(0,rtree%Kbal(w))
           rtree%Kbal(w)          = 0
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = w
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
@@ -2406,7 +2406,7 @@ CONTAINS
 !</inputoutput>
 
 !<result>
-    ! Result of the deletion BTREE_NOUT_FOUND / BTREE_FOUND
+    ! Result of the deletion BTREE_NOT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2415,22 +2415,22 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: ipred,ipos,jpos
 
     ! Check if tree format is ok
-    IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_DOUBLE) THEN
       PRINT *, 't_tree_deleteDble: Unsupported data format!'
       CALL sys_halt()
     END IF
 
     ! Search for key
     f=search(rtree,dkey,ipred)
-    IF (f == BTREE_NOT_FOUND) RETURN
+    IF (f .EQ. BTREE_NOT_FOUND) RETURN
 
     ! Compute new dimensions
     rtree%na = rtree%na-1
     ipos     = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 
     ! Check if node to be deleted has two children.
-    IF ((rtree%Kchild(TLEFT,ipos) /= TNULL) .AND. &
-        (rtree%Kchild(TRIGHT,ipos) /= TNULL)) THEN
+    IF ((rtree%Kchild(TLEFT,ipos) .NE. TNULL) .AND. &
+        (rtree%Kchild(TRIGHT,ipos) .NE. TNULL)) THEN
       
       ! Descent in the left subtree of node IPOS always to the right
       ! until a node JPOS  without right child is found and
@@ -2441,7 +2441,7 @@ CONTAINS
         rtree%depth              = rtree%depth+1
         rtree%Kpath(rtree%depth) = ipred
         
-        IF (rtree%Kchild(TRIGHT,jpos) == TNULL) THEN
+        IF (rtree%Kchild(TRIGHT,jpos) .EQ. TNULL) THEN
           ! Change key
           rtree%DKey(ipos) = rtree%DKey(jpos)
 
@@ -2459,8 +2459,8 @@ CONTAINS
     ! Node to be deleted has less than two childen
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
     
-    IF (rtree%Kchild(TLEFT,ipos) == TNULL) THEN
-      IF (rtree%Kchild(TRIGHT,ipos) == TNULL) THEN
+    IF (rtree%Kchild(TLEFT,ipos) .EQ. TNULL) THEN
+      IF (rtree%Kchild(TRIGHT,ipos) .EQ. TNULL) THEN
         ! Node to be deleted is leaf: Nullify pointer to node and
         ! mark position in array as deleted
         rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred)) = TNULL
@@ -2508,7 +2508,7 @@ CONTAINS
 !</inputoutput>
 
 !<result>
-    ! Result of the deletion BTREE_NOUT_FOUND / BTREE_FOUND
+    ! Result of the deletion BTREE_NOT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2517,22 +2517,22 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: ipred,ipos,jpos
 
     ! Check if tree format is ok
-    IF (rtree%ctreeFormat /= ST_SINGLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_SINGLE) THEN
       PRINT *, 't_tree_deleteSngl: Unsupported data format!'
       CALL sys_halt()
     END IF
 
     ! Search for key
     f=search(rtree,skey,ipred)
-    IF (f == BTREE_NOT_FOUND) RETURN
+    IF (f .EQ. BTREE_NOT_FOUND) RETURN
 
     ! Compute new dimensions
     rtree%na = rtree%na-1
     ipos     = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 
     ! Check if node to be deleted has two children.
-    IF ((rtree%Kchild(TLEFT,ipos) /= TNULL) .AND. &
-        (rtree%Kchild(TRIGHT,ipos) /= TNULL)) THEN
+    IF ((rtree%Kchild(TLEFT,ipos) .NE. TNULL) .AND. &
+        (rtree%Kchild(TRIGHT,ipos) .NE. TNULL)) THEN
       
       ! Descent in the left subtree of node IPOS always to the right
       ! until a node JPOS  without right child is found and
@@ -2543,7 +2543,7 @@ CONTAINS
         rtree%depth              = rtree%depth+1
         rtree%Kpath(rtree%depth) = ipred
         
-        IF (rtree%Kchild(TRIGHT,jpos) == TNULL) THEN
+        IF (rtree%Kchild(TRIGHT,jpos) .EQ. TNULL) THEN
           ! Change key
           rtree%FKey(ipos) = rtree%FKey(jpos)
 
@@ -2561,8 +2561,8 @@ CONTAINS
     ! Node to be deleted has less than two childen
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
     
-    IF (rtree%Kchild(TLEFT,ipos) == TNULL) THEN
-      IF (rtree%Kchild(TRIGHT,ipos) == TNULL) THEN
+    IF (rtree%Kchild(TLEFT,ipos) .EQ. TNULL) THEN
+      IF (rtree%Kchild(TRIGHT,ipos) .EQ. TNULL) THEN
         ! Node to be deleted is leaf: Nullify pointer to node and
         ! mark position in array as deleted
         rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred)) = TNULL
@@ -2610,7 +2610,7 @@ CONTAINS
 !</inputoutput>
 
 !<result>
-    ! Result of the deletion BTREE_NOUT_FOUND / BTREE_FOUND
+    ! Result of the deletion BTREE_NOT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2619,22 +2619,22 @@ CONTAINS
     INTEGER(PREC_TREEIDX) :: ipred,ipos,jpos
 
     ! Check if tree format is ok
-    IF (rtree%ctreeFormat /= ST_INT) THEN
+    IF (rtree%ctreeFormat .NE. ST_INT) THEN
       PRINT *, 't_tree_deleteInt: Unsupported data format!'
       CALL sys_halt()
     END IF
 
     ! Search for key
     f=search(rtree,ikey,ipred)
-    IF (f == BTREE_NOT_FOUND) RETURN
+    IF (f .EQ. BTREE_NOT_FOUND) RETURN
 
     ! Compute new dimensions
     rtree%na = rtree%na-1
     ipos     = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 
     ! Check if node to be deleted has two children.
-    IF ((rtree%Kchild(TLEFT,ipos) /= TNULL) .AND. &
-        (rtree%Kchild(TRIGHT,ipos) /= TNULL)) THEN
+    IF ((rtree%Kchild(TLEFT,ipos) .NE. TNULL) .AND. &
+        (rtree%Kchild(TRIGHT,ipos) .NE. TNULL)) THEN
       
       ! Descent in the left subtree of node IPOS always to the right
       ! until a node JPOS  without right child is found and
@@ -2645,7 +2645,7 @@ CONTAINS
         rtree%depth              = rtree%depth+1
         rtree%Kpath(rtree%depth) = ipred
         
-        IF (rtree%Kchild(TRIGHT,jpos) == TNULL) THEN
+        IF (rtree%Kchild(TRIGHT,jpos) .EQ. TNULL) THEN
           ! Change key
           rtree%IKey(ipos) = rtree%IKey(jpos)
 
@@ -2663,8 +2663,8 @@ CONTAINS
     ! Node to be deleted has less than two childen
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
     
-    IF (rtree%Kchild(TLEFT,ipos) == TNULL) THEN
-      IF (rtree%Kchild(TRIGHT,ipos) == TNULL) THEN
+    IF (rtree%Kchild(TLEFT,ipos) .EQ. TNULL) THEN
+      IF (rtree%Kchild(TRIGHT,ipos) .EQ. TNULL) THEN
         ! Node to be deleted is leaf: Nullify pointer to node and
         ! mark position in array as deleted
         rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred)) = TNULL
@@ -2732,7 +2732,7 @@ CONTAINS
         
       CASE (-1) ! bal(v)=-1
         rtree%Kbal(v) = 0
-        IF (v /= rtree%Kchild(TRIGHT,TROOT))&
+        IF (v .NE. rtree%Kchild(TRIGHT,TROOT))&
             CALL rebalanceAfterDeletion(rtree,i-1)
         
       CASE (1) ! bal(v)=1
@@ -2751,7 +2751,7 @@ CONTAINS
           rtree%Kbal(x)          = -MIN(0,rtree%Kbal(w))
           rtree%Kbal(w)          = 0
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = w
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
@@ -2767,12 +2767,12 @@ CONTAINS
           rtree%Kbal(x)          = rtree%Kbal(x)-1
           rtree%Kbal(v)          = -rtree%Kbal(x)
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = x
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
                 ABS(rtree%Kpath(i-1))) = x
-            IF (xbal == 1) CALL rebalanceAfterDeletion(rtree,i-1)
+            IF (xbal .EQ. 1) CALL rebalanceAfterDeletion(rtree,i-1)
           END IF
           
         END SELECT
@@ -2788,7 +2788,7 @@ CONTAINS
         
       CASE (1) ! bal(v)=1
         rtree%Kbal(v) = 0
-        IF (v /= rtree%Kchild(TRIGHT,TROOT))&
+        IF (v .NE. rtree%Kchild(TRIGHT,TROOT))&
             CALL rebalanceAfterDeletion(rtree,i-1)
         
       CASE (-1) ! bal(v)=-1
@@ -2807,7 +2807,7 @@ CONTAINS
           rtree%Kbal(x)          = -MAX(0,rtree%Kbal(w))
           rtree%Kbal(w)          = 0
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = w
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
@@ -2823,12 +2823,12 @@ CONTAINS
           rtree%Kbal(x)          = rtree%Kbal(x)+1
           rtree%Kbal(v)          = -rtree%Kbal(x)
           
-          IF (v == rtree%Kchild(TRIGHT,TROOT)) THEN
+          IF (v .EQ. rtree%Kchild(TRIGHT,TROOT)) THEN
             rtree%Kchild(TRIGHT,TROOT) = x
           ELSE
             rtree%Kchild(MERGE(TLEFT,TRIGHT,rtree%Kpath(i-1) < 0),&
                 ABS(rtree%Kpath(i-1))) = x
-            IF (xbal == -1) CALL rebalanceAfterDeletion(rtree,i-1)
+            IF (xbal .EQ. -1) CALL rebalanceAfterDeletion(rtree,i-1)
           END IF
           
         END SELECT
@@ -2864,7 +2864,7 @@ CONTAINS
 !</output>
 
 !<result>
-    ! Result of the search BTREE_NOUT_FOUND / BTREE_FOUND
+    ! Result of the search BTREE_NOT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2874,7 +2874,7 @@ CONTAINS
     INTEGER :: dir
 
     ! Check if list format is ok
-    IF (rtree%ctreeFormat /= ST_DOUBLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_DOUBLE) THEN
       PRINT *, 't_tree_searchDble: Unsupported data format!'
       CALL sys_halt()
     END IF
@@ -2886,14 +2886,14 @@ CONTAINS
     rtree%depth = 0
     
     search: DO
-      IF (jpos == TNULL) THEN
-        ipos = MERGE(-ipos,ipos,dir == TLEFT)
+      IF (jpos .EQ. TNULL) THEN
+        ipos = MERGE(-ipos,ipos,dir .EQ. TLEFT)
         EXIT search
       END IF
       
-      IF (rtree%DKey(jpos) == dkey) THEN
+      IF (rtree%DKey(jpos) .EQ. dkey) THEN
         f    = BTREE_FOUND
-        ipos = MERGE(-ipos,ipos,dir == TLEFT)
+        ipos = MERGE(-ipos,ipos,dir .EQ. TLEFT)
         EXIT search
       END IF
       
@@ -2901,7 +2901,7 @@ CONTAINS
       dir                      = MERGE(TLEFT,TRIGHT,rtree%DKey(ipos) > dkey)
       jpos                     = rtree%Kchild(dir,ipos)
       rtree%depth              = rtree%depth+1
-      rtree%Kpath(rtree%depth) = MERGE(-ipos,ipos,dir == TLEFT)
+      rtree%Kpath(rtree%depth) = MERGE(-ipos,ipos,dir .EQ. TLEFT)
     END DO search
   END FUNCTION t_tree_searchDble
 
@@ -2931,7 +2931,7 @@ CONTAINS
 !</output>
 
 !<result>
-    ! Result of the search BTREE_NOUT_FOUND / BTREE_FOUND
+    ! Result of the search BTREE_NOT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -2941,7 +2941,7 @@ CONTAINS
     INTEGER :: dir
 
     ! Check if list format is ok
-    IF (rtree%ctreeFormat /= ST_SINGLE) THEN
+    IF (rtree%ctreeFormat .NE. ST_SINGLE) THEN
       PRINT *, 't_tree_searchSngl: Unsupported data format!'
       CALL sys_halt()
     END IF
@@ -2953,14 +2953,14 @@ CONTAINS
     rtree%depth = 0
     
     search: DO
-      IF (jpos == TNULL) THEN
-        ipos = MERGE(-ipos,ipos,dir == TLEFT)
+      IF (jpos .EQ. TNULL) THEN
+        ipos = MERGE(-ipos,ipos,dir .EQ. TLEFT)
         EXIT search
       END IF
       
-      IF (rtree%FKey(jpos) == skey) THEN
+      IF (rtree%FKey(jpos) .EQ. skey) THEN
         f    = BTREE_FOUND
-        ipos = MERGE(-ipos,ipos,dir == TLEFT)
+        ipos = MERGE(-ipos,ipos,dir .EQ. TLEFT)
         EXIT search
       END IF
       
@@ -2968,7 +2968,7 @@ CONTAINS
       dir                      = MERGE(TLEFT,TRIGHT,rtree%FKey(ipos) > skey)
       jpos                     = rtree%Kchild(dir,ipos)
       rtree%depth              = rtree%depth+1
-      rtree%Kpath(rtree%depth) = MERGE(-ipos,ipos,dir == TLEFT)
+      rtree%Kpath(rtree%depth) = MERGE(-ipos,ipos,dir .EQ. TLEFT)
     END DO search
   END FUNCTION t_tree_searchSngl
 
@@ -2998,7 +2998,7 @@ CONTAINS
 !</output>
 
 !<result>
-    ! Result of the search BTREE_NOUT_FOUND / BTREE_FOUND
+    ! Result of the search BTREE_NOT_FOUND / BTREE_FOUND
     INTEGER :: f
 !</result>
 !</function>
@@ -3008,7 +3008,7 @@ CONTAINS
     INTEGER :: dir
 
     ! Check if list format is ok
-    IF (rtree%ctreeFormat /= ST_INT) THEN
+    IF (rtree%ctreeFormat .NE. ST_INT) THEN
       PRINT *, 't_tree_searchInt: Unsupported data format!'
       CALL sys_halt()
     END IF
@@ -3020,14 +3020,14 @@ CONTAINS
     rtree%depth = 0
     
     search: DO
-      IF (jpos == TNULL) THEN
-        ipos = MERGE(-ipos,ipos,dir == TLEFT)
+      IF (jpos .EQ. TNULL) THEN
+        ipos = MERGE(-ipos,ipos,dir .EQ. TLEFT)
         EXIT search
       END IF
       
-      IF (rtree%IKey(jpos) == ikey) THEN
+      IF (rtree%IKey(jpos) .EQ. ikey) THEN
         f    = BTREE_FOUND
-        ipos = MERGE(-ipos,ipos,dir == TLEFT)
+        ipos = MERGE(-ipos,ipos,dir .EQ. TLEFT)
         EXIT search
       END IF
       
@@ -3035,7 +3035,7 @@ CONTAINS
       dir                      = MERGE(TLEFT,TRIGHT,rtree%IKey(ipos) > ikey)
       jpos                     = rtree%Kchild(dir,ipos)
       rtree%depth              = rtree%depth+1
-      rtree%Kpath(rtree%depth) = MERGE(-ipos,ipos,dir == TLEFT)
+      rtree%Kpath(rtree%depth) = MERGE(-ipos,ipos,dir .EQ. TLEFT)
     END DO search
   END FUNCTION t_tree_searchInt
 
@@ -3070,7 +3070,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TREEIDX) :: ipred
     
-    IF (search(rtree,dkey,ipred) /= BTREE_FOUND) THEN
+    IF (search(rtree,dkey,ipred) .NE. BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemDble: Unable to find item in tree"
       CALL sys_halt()
     END IF
@@ -3108,7 +3108,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TREEIDX) :: ipred
     
-    IF (search(rtree,skey,ipred) /= BTREE_FOUND) THEN
+    IF (search(rtree,skey,ipred) .NE. BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemSngl: Unable to find item in tree"
       CALL sys_halt()
     END IF
@@ -3146,13 +3146,13 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TREEIDX) :: ipred
     
-    IF (search(rtree,ikey,ipred) /= BTREE_FOUND) THEN
+    IF (search(rtree,ikey,ipred) .NE. BTREE_FOUND) THEN
       PRINT *, "t_tree_getitemInt: Unable to find item in tree"
       CALL sys_halt()
     END IF
     ipos = rtree%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
 
-    IF (ipos /= ikey) THEN
+    IF (ipos .NE. ikey) THEN
       WRITE(*,'(A,I5,A,I5,A)') 'Position',ipos,'and key',ikey,'are different'
       CALL sys_halt()
     END IF
@@ -3181,7 +3181,7 @@ CONTAINS
     SELECT CASE (op)
       
     CASE (BTREE_PREORDER)
-      IF (rtree%Kchild(TRIGHT,TROOT) /= TNULL) THEN
+      IF (rtree%Kchild(TRIGHT,TROOT) .NE. TNULL) THEN
         SELECT CASE(rtree%ctreeFormat)
         CASE (ST_DOUBLE)
           CALL preorderDble(rtree%Kchild(TRIGHT,TROOT))
@@ -3196,7 +3196,7 @@ CONTAINS
       END IF
       
     CASE (BTREE_INORDER)
-      IF (rtree%Kchild(TRIGHT,TROOT) /= TNULL) THEN
+      IF (rtree%Kchild(TRIGHT,TROOT) .NE. TNULL) THEN
         SELECT CASE(rtree%ctreeFormat)
         CASE (ST_DOUBLE)
           CALL inorderDble(rtree%Kchild(TRIGHT,TROOT))
@@ -3211,7 +3211,7 @@ CONTAINS
       END IF
       
     CASE (BTREE_POSTORDER)
-      IF (rtree%Kchild(TRIGHT,TROOT) /= TNULL) THEN
+      IF (rtree%Kchild(TRIGHT,TROOT) .NE. TNULL) THEN
         SELECT CASE(rtree%ctreeFormat)
         CASE (ST_DOUBLE)
           CALL postorderDble(rtree%Kchild(TRIGHT,TROOT))
@@ -3236,9 +3236,9 @@ CONTAINS
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
       PRINT *, rtree%DKey(i)
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL preorderDble(rtree%Kchild(TLEFT,i))
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL preorderDble(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE preorderDble
 
@@ -3249,9 +3249,9 @@ CONTAINS
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
       PRINT *, rtree%FKey(i)
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL preorderSngl(rtree%Kchild(TLEFT,i))
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL preorderSngl(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE preorderSngl
 
@@ -3262,9 +3262,9 @@ CONTAINS
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
       PRINT *, rtree%IKey(i)
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL preorderInt(rtree%Kchild(TLEFT,i))
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL preorderInt(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE preorderInt
 
@@ -3274,9 +3274,9 @@ CONTAINS
     RECURSIVE SUBROUTINE postorderDble(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL postorderDble(rtree%Kchild(TLEFT,i))
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL postorderDble(rtree%Kchild(TRIGHT,i))
       PRINT *, rtree%DKey(i)
     END SUBROUTINE postorderDble
@@ -3287,9 +3287,9 @@ CONTAINS
     RECURSIVE SUBROUTINE postorderSngl(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL postorderSngl(rtree%Kchild(TLEFT,i))
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL postorderSngl(rtree%Kchild(TRIGHT,i))
       PRINT *, rtree%FKey(i)
     END SUBROUTINE postorderSngl
@@ -3300,9 +3300,9 @@ CONTAINS
     RECURSIVE SUBROUTINE postorderInt(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL postorderInt(rtree%Kchild(TLEFT,i))
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL postorderInt(rtree%Kchild(TRIGHT,i))
       PRINT *, rtree%IKey(i)
     END SUBROUTINE postorderInt
@@ -3313,10 +3313,10 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderDble(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL inorderDble(rtree%Kchild(TLEFT,i))
       PRINT *, rtree%DKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL inorderDble(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderDble
 
@@ -3326,10 +3326,10 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderSngl(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL inorderSngl(rtree%Kchild(TLEFT,i))
       PRINT *, rtree%FKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL inorderSngl(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderSngl
 
@@ -3339,10 +3339,10 @@ CONTAINS
     RECURSIVE SUBROUTINE inorderInt(i)
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL)&
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL)&
           CALL inorderInt(rtree%Kchild(TLEFT,i))
       PRINT *, rtree%IKey(i)
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL)&
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL)&
           CALL inorderInt(rtree%Kchild(TRIGHT,i))
     END SUBROUTINE inorderInt
   END SUBROUTINE t_tree_print
@@ -3376,13 +3376,13 @@ CONTAINS
       INTEGER(PREC_TREEIDX), INTENT(IN) :: i
       INTEGER(PREC_TREEIDX) :: h,hl,hr
       
-      IF (rtree%Kchild(TLEFT,i) /= TNULL) THEN
+      IF (rtree%Kchild(TLEFT,i) .NE. TNULL) THEN
         hl = height(rtree%Kchild(TLEFT,i))
       ELSE
         hl = 0
       END IF
       
-      IF (rtree%Kchild(TRIGHT,i) /= TNULL) THEN
+      IF (rtree%Kchild(TRIGHT,i) .NE. TNULL) THEN
         hr = height(rtree%Kchild(TRIGHT,i))
       ELSE
         hr = 0

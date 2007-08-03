@@ -582,7 +582,7 @@ CONTAINS
       ! We are in the lucky position that itable = ikey
       ikey   = rgraph%rVertices%IKey(i)
       
-      WRITE(*,FMT='("Vertex number:" I5)') ikey
+      CALL output_line('Vertex number: '//TRIM(sys_siL(ikey,15)))
       CALL arrlst_printArrayList(rgraph%rEdges,ikey)
         
       ! Proceed with right child if it exists
@@ -610,7 +610,7 @@ CONTAINS
       ikey   = rgraph%rVertices%IKey(i)
       itable = rgraph%rVertices%IData(1,i)
 
-      WRITE(*,FMT='("Vertex number:" I5)') ikey
+      CALL output_line('Vertex number: '//TRIM(sys_siL(ikey,15)))
       CALL arrlst_printArrayList(rgraph%rEdges,itable)
 
       ! Proceed with right child if it exists
@@ -823,7 +823,7 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           CALL sys_halt()
         END IF
-        
+               
         ! Step 2: Loop through adjacency list of vertex iVertex and delete all 
         !         edges (jVertex,iVertex) from the adjacency list of jVertex.
 
@@ -851,13 +851,13 @@ CONTAINS
            
           ! Decrease number of edges by two; for the edge (iVertex,jVertex)
           ! and for the edge (jVertex,iVertex) that exists in an undirected graph
-          rgraph%NEDGE = rgraph%NEDGE-2          
+          rgraph%NEDGE = rgraph%NEDGE-1
         END DO
         
         ! Now, vertex iVertex does no longer exist in any adjacency list.
-        ! Check if replacement vertex needs to be moved to position iVertex.
+        ! Check if replacement vertex is different from iVertex.
         IF (bdoReplace .AND. (iVertex .NE. ireplaceVertex)) THEN
-
+          
           ! Remove the trivial edge (ireplaceVertex,ireplaceVertex)
           IF (arrlst_deleteFromArrayList(rgraph%rEdges,ireplaceVertex,ireplaceVertex).EQ.&
               ARRAYLIST_NOT_FOUND) THEN
@@ -902,7 +902,7 @@ CONTAINS
             iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.FALSE.)
             
             ! Do nothing if jVertex is identical iVertex
-            IF (iVertex .EQ. jVertex) CYCLE
+            IF (jVertex .EQ. iVertex) CYCLE
             
             ! Remove vertex ireplaceVertex from adjacency list of vertex jVertex
             IF (arrlst_deleteFromArrayList(rgraph%rEdges,jVertex,ireplaceVertex).EQ.&

@@ -3000,12 +3000,9 @@ CONTAINS
     SELECT CASE (rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
 
-      CALL output_line('Array list:')
-      CALL output_line('-----------')
-
       ! Loop over all selected tables
       DO iitable=itable1,itable2
-        CALL output_line('Table number'//TRIM(sys_siL(iitable,15)))
+        CALL output_line('Table number: '//TRIM(sys_siL(iitable,15)))
         CALL output_line('----------------------------------------')
 
         ipos  = rarraylist%Ktable(ARRLST_HEAD,iitable)
@@ -3013,7 +3010,7 @@ CONTAINS
         itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(A,",")',ADVANCE='NO') sys_sdL(rarraylist%DData(ipos),8)
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_sdL(rarraylist%DData(ipos),8))
           IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
@@ -3021,12 +3018,9 @@ CONTAINS
       
     CASE (ST_SINGLE)
 
-      CALL output_line('Array list:')
-      CALL output_line('-----------')
-
       ! Loop over all selected tables
       DO iitable=itable1,itable2
-        CALL output_line('Table number'//TRIM(sys_siL(iitable,15)))
+        CALL output_line('Table number: '//TRIM(sys_siL(iitable,15)))
         CALL output_line('----------------------------------------')
         
         ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
@@ -3034,7 +3028,7 @@ CONTAINS
         itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(A,",")',ADVANCE='NO') sys_sdL(REAL(rarraylist%SData(ipos),DP),8)
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_sdL(REAL(rarraylist%SData(ipos),DP),8))
           IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
@@ -3042,12 +3036,9 @@ CONTAINS
       
     CASE (ST_INT)
       
-      CALL output_line('Array list:')
-      CALL output_line('-----------')
-      
       ! Loop over all selected tables
       DO iitable=itable1,itable2
-        CALL output_line('Table number'//TRIM(sys_siL(iitable,15)))
+        CALL output_line('Table number: '//TRIM(sys_siL(iitable,15)))
         CALL output_line('----------------------------------------')
 
         ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
@@ -3055,7 +3046,7 @@ CONTAINS
         itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(A,",")',ADVANCE='NO') sys_siL(rarraylist%IData(ipos),15)
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_siL(rarraylist%IData(ipos),15))
           IF (ipos .EQ. itail) EXIT
           ipos = rarraylist%Knext(ipos)
         END DO
