@@ -915,7 +915,7 @@ MODULE hadaptivity
   
   INTERFACE update_ElementNeighbors2D
     MODULE PROCEDURE update_ElemNeighb2D_Common
-!    MODULE PROCEDURE update_ElemNeighb2D_Divided
+    MODULE PROCEDURE update_ElemNeighb2D_Divided
   END INTERFACE
 
 CONTAINS
@@ -994,7 +994,8 @@ CONTAINS
           rtriangulation%h_DvertexCoords,rtriangulation%NVT)
 
     CASE DEFAULT
-      PRINT *, "hadapt_initFromTriangulation: Invalid spatial dimension!"
+      CALL output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_initFromTriangulation')
       CALL sys_halt()
     END SELECT
 
@@ -1059,7 +1060,8 @@ CONTAINS
           rtriangulation%h_DvertexCoords,rtriangulation%NVT)
 
     CASE DEFAULT
-      PRINT *, "hadapt_generateRawMesh: Invalid spatial dimension!"
+      CALL output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_generateRawMesh')
       CALL sys_halt()
     END SELECT
 
@@ -1112,7 +1114,8 @@ CONTAINS
         CALL otree_releaseOctree(rhadapt%rVertexCoordinates3D)
 
       CASE DEFAULT
-        PRINT *, "hadapt_releaseAdaptation: Invalid spatial dimension!"
+        CALL output_line('Invalid spatial dimension!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_releaseAdaptation')
         CALL sys_halt()
       END SELECT
     END IF   
@@ -1200,8 +1203,9 @@ CONTAINS
     REAL(DP)                          :: xmin,xmax,ymin,ymax
 
     ! Check if handle is not empty
-    IF (h_DvertexCoords == ST_NOHANDLE) THEN
-      PRINT *, "hadapt_setVertexCoords2D: Invalid handle!"
+    IF (h_DvertexCoords .EQ. ST_NOHANDLE) THEN
+      CALL output_line('Invalid handle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVertexCoords2D')
       CALL sys_halt()
     END IF
 
@@ -1270,13 +1274,15 @@ CONTAINS
 
     ! Check if coordinates exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_COORDS).NE.HADAPT_HAS_COORDS) THEN
-      PRINT *, "hadapt_getVertexCoords2D: quadtree does not exist!"
+      CALL output_line('Quadtree does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords2D')
       CALL sys_halt()
     END IF
 
     ! Check if coordinates are given in 2D
-    IF (rhadapt%ndim /= NDIM2D) THEN
-      PRINT *, "hadapt_getVertexCoords2D: invalid spatial dimension!"
+    IF (rhadapt%ndim .NE. NDIM2D) THEN
+      CALL output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords2D')
       CALL sys_halt()
     END IF
 
@@ -1285,7 +1291,7 @@ CONTAINS
 
     ! Set dimension
     IF (PRESENT(ndim)) ndim=rhadapt%ndim
-    IF (PRESENT(nvt)) nvt=rhadapt%NVT
+    IF (PRESENT(nvt))  nvt=rhadapt%NVT
   END SUBROUTINE hadapt_getVertexCoords2D
   
   ! ***************************************************************************
@@ -1321,7 +1327,8 @@ CONTAINS
 
     ! Check if handle is not empty
     IF (h_DvertexCoords == ST_NOHANDLE) THEN
-      PRINT *, "hadapt_setVertexCoords3D: Invalid handle!"
+      CALL output_line('Invalid handle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVertexCoords3D')
       CALL sys_halt()
     END IF
 
@@ -1392,13 +1399,15 @@ CONTAINS
 
     ! Check if coordinates exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_COORDS).NE.HADAPT_HAS_COORDS) THEN
-      PRINT *, "hadapt_getVertexCoords3D: quadtree does not exist!"
+      CALL output_line('Octree does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords3D')
       CALL sys_halt()
     END IF
 
     ! Check if coordinates are given in 2D
-    IF (rhadapt%ndim /= NDIM3D) THEN
-      PRINT *, "hadapt_getVertexCoords3D: invalid spatial dimension!"
+    IF (rhadapt%ndim .NE. NDIM3D) THEN
+      CALL output_line('Invalid spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVertexCoords3D')
       CALL sys_halt()
     END IF
 
@@ -1437,7 +1446,8 @@ CONTAINS
 
     ! Check if handle is not empty
     IF (h_IverticesAtElement == ST_NOHANDLE) THEN
-      PRINT *, "hadapt_setVerticesAtElement: Invalid handle!"
+      CALL output_line('Invalid handle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVerticesAtElement')
       CALL sys_halt()
     END IF
 
@@ -1480,7 +1490,8 @@ CONTAINS
 
     ! Check if "vertices-at-element" array exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_VERTATELEM).NE.HADAPT_HAS_VERTATELEM) THEN
-      PRINT *, "hadapt_getVerticesAtElement: structure does not exist!"
+      CALL output_line('Structure does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getVerticesAtElement')
       CALL sys_halt()
     END IF
 
@@ -1520,7 +1531,8 @@ CONTAINS
 
     ! Check if handle is not empty
     IF (h_IneighboursAtElement == ST_NOHANDLE) THEN
-      PRINT *, "hadapt_setNeighboursAtElement: Invalid handle!"
+      CALL output_line('Invalid handle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNeighboursAtElement')
       CALL sys_halt()
     END IF
 
@@ -2122,6 +2134,8 @@ CONTAINS
       
       ! Perform refinement
       CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
+
+      CALL hadapt_writegridsvg(rhadapt,'mygrid',ibset(ibset(0,0),3))
 
       ! Perform coarsening
       CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
@@ -2751,14 +2765,6 @@ CONTAINS
             END IF
           END DO
           btest = btest.AND.bfound
-
-          IF (.NOT.bfound) THEN
-            PRINT *, "FROM ELEMENT",iel
-            PRINT *, "LOOKIG INTO NEIGHBOUR",jel,jelmid
-            PRINT *, "    ADJACENCY LIST",rhadapt%p_IneighboursAtElement(:,jel)
-            PRINT *, "MID-ADJACENCY LIST",rhadapt%p_ImidneighboursAtElement(:,jel)
-            PAUSE
-          END IF
           
         ELSE
 
@@ -2782,14 +2788,6 @@ CONTAINS
           END DO
           btest = btest.AND.bfound
 
-          IF (.NOT.bfound) THEN
-            PRINT *, "FROM ELEMENT",iel
-            PRINT *, "LOOKIG INTO NEIGHBOUR",jel,jelmid
-            PRINT *, "    ADJACENCY LIST",rhadapt%p_IneighboursAtElement(:,jel)
-            PRINT *, "MID-ADJACENCY LIST",rhadapt%p_ImidneighboursAtElement(:,jel)
-            PAUSE
-          END IF
-
           ! Get number of vertices per element
           mve = get_NVE(rhadapt,jelmid)
           
@@ -2809,14 +2807,6 @@ CONTAINS
             END IF
           END DO
           btest = btest.AND.bfound
-
-          IF (.NOT.bfound) THEN
-            PRINT *, "FROM ELEMENT",iel
-            PRINT *, "LOOKIG INTO NEIGHBOUR",jel,jelmid
-            PRINT *, "    ADJACENCY LIST",rhadapt%p_IneighboursAtElement(:,jel)
-            PRINT *, "MID-ADJACENCY LIST",rhadapt%p_ImidneighboursAtElement(:,jel)
-            PAUSE
-          END IF
 
         END IF
       END DO
@@ -2953,26 +2943,11 @@ CONTAINS
             END IF
           END DO
           btest=btest.AND.bfound
-!!$          IF (.NOT.bfound) THEN
-!!$            PRINT *, "Vertex",ivt
-!!$            CALL arrlst_printArrayList(rhadapt%rElementsAtVertex,ivt)
-!!$            PAUSE
-!!$          END IF
         END DO
       END DO
       btest=btest.AND.ALL(p_IelementsAtVertex < 0)
       CALL output_line('Test #5: Checking consistency of elements meeting at vertices '//&
         MERGE('PASSED','FAILED',btest))
-
-!!$      IF (.NOT.btest) THEN
-!!$        DO ivt=1,rhadapt%NVT
-!!$          PRINT *, "Vertex",ivt
-!!$          DO idx=p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
-!!$            WRITE(*,FMT='(I5,1X)',ADVANCE='NO') p_IelementsAtVertex(idx)
-!!$          END DO
-!!$          PRINT *
-!!$        END DO
-!!$      END IF
 
       ! Release auxiliary storage
       CALL storage_free(h_IelementsAtVertexIdx)
@@ -3290,7 +3265,8 @@ CONTAINS
     ! Remove vertex from coordinates and get number of replacement vertex
     IF (qtree_deleteFromQuadtree(rhadapt%rVertexCoordinates2D,&
         ivt,ivtReplace) .EQ. QTREE_NOT_FOUND) THEN
-      PRINT *, "remove_vertex2D: Unable to delete vertex coordinates!"
+      CALL output_line('Unable to delete vertex coordinates!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
       CALL sys_halt()
     END IF
     
@@ -3307,7 +3283,8 @@ CONTAINS
       ! Find position of vertex IVT in boundary array
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivt,ipred) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
+        CALL output_line('Unable to find vertex in boundary data structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3320,7 +3297,8 @@ CONTAINS
       ! First, set I2 as next neighboring of I1
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
+        CALL output_line('Unable to find left neighboring vertex in boundary data structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3329,7 +3307,8 @@ CONTAINS
       ! Second, set I1 as previous neighbor of I2
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
+        CALL output_line('Unable to find right neighboring vertex in boundary data structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
       ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3338,7 +3317,8 @@ CONTAINS
       ! And finally, delete IVT from the boundary
       IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivt) .EQ.&
           BTREE_NOT_FOUND) THEN
-        PRINT *, "remove_vertex2D: Unable to delete vertex from boundary data structure"
+        CALL output_line('Unable to delete vertex from boundary data structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
     END IF
@@ -3357,7 +3337,8 @@ CONTAINS
 
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),ivtReplace,ipred) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
+          CALL output_line('Unable to find replacement vertex in boundary data structure!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3375,7 +3356,8 @@ CONTAINS
         ! First, set IVT as next neighbor of I1
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
+          CALL output_line('Unable to find left neighboring vertex in boundary data structure!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3384,7 +3366,8 @@ CONTAINS
         ! Second, set IVT as previous neighbor of I2
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex2D: Unable to find vertex in boundary data structure"
+          CALL output_line('Unable to find right neighboring vertex in boundary data structure!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
         ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3393,7 +3376,8 @@ CONTAINS
         ! Finally, delete IVTREPLACE from the boundary
         IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivtReplace) .EQ.&
             BTREE_NOT_FOUND) THEN
-          PRINT *, "remove_vertex2D: Unable to delete vertex from the boundary data structure"
+          CALL output_line('Unable to delete vertex from the boundary data structure!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
       END IF
@@ -3601,8 +3585,15 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX)   :: jel
     INTEGER :: ive,jve
     
+    INTEGER, SAVE :: ielSave=0
+
     ! Replace element by the last element and delete last element
     ielReplace = rhadapt%NEL
+
+    IF (ielSave .EQ. iel) THEN
+      CALL hadapt_writegridsvg(rhadapt,'mygrid',ibset(ibset(0,0),3))
+    END IF
+    ielSave=iel
 
     ! Which kind of element are we?
     SELECT CASE(get_NVE(rhadapt,iel))
@@ -3613,7 +3604,8 @@ CONTAINS
       rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
 
     CASE DEFAULT
-      PRINT *, "remove_element2D: Invalid element type!"
+      CALL output_line('Invalid element type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
       CALL sys_halt()
     END SELECT
 
@@ -3623,24 +3615,20 @@ CONTAINS
       ! Element is not the last one. Then the element that should be removed must
       ! have a smaller element number. If this is not the case, something is wrong.
       IF (iel > ielReplace) THEN
-        PRINT *, "remove_element2D: Invalid element!"
+        CALL output_line('Number of replacement element must not be smaller than that of&
+            & the removed elements!',OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
         CALL sys_halt()
       END IF
-
-      ! Copy data from element ielReplaced to element iel
-      rhadapt%p_IverticesAtElement(:,iel)      = rhadapt%p_IverticesAtElement(:,ielReplace)
-      rhadapt%p_IneighboursAtElement(:,iel)    = rhadapt%p_IneighboursAtElement(:,ielReplace)
-      rhadapt%p_ImidneighboursAtElement(:,iel) = rhadapt%p_ImidneighboursAtElement(:,ielReplace)
 
       ! The element which formally was labeled ielReplace is now labeled IEL.
       ! This modification must be updated in the list of adjacent element
       ! neighbors of all surrounding elements. Moreover, the modified element
       ! number must be updated in the "elements-meeting-at-vertex" lists of the
       ! corner nodes of element IEL. Both operations are performed below.
-      update: DO ive=1,get_NVE(rhadapt,iel)
+      update: DO ive=1,get_NVE(rhadapt,ielReplace)
         
         ! Get vertex number of corner node
-        ivt = rhadapt%p_IverticesAtElement(ive,iel)
+        ivt = rhadapt%p_IverticesAtElement(ive,ielReplace)
 
         ! Start with first element in "elements-meeting-at-vertex" list
         ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.TRUE.)
@@ -3657,38 +3645,54 @@ CONTAINS
         END DO
         
         
-        ! Get element number of element JEL which is adjacent to IEL
-        jel = rhadapt%p_IneighboursAtElement(ive,iel)
+        ! Get element number of element JEL which is adjacent to ielReplace
+        jel = rhadapt%p_IneighboursAtElement(ive,ielReplace)
         
         ! Are we at the boundary?
         IF (jel .EQ. 0) CYCLE
 
-        ! Find replacement element in adjacency list of element 
-        ! IEL and update entry to new element number IEL
-        DO jve=1,get_NVE(rhadapt,jel)
-          IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. ielReplace) THEN
-            rhadapt%p_IneighboursAtElement(jve,jel)    = iel
-            rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
-            CYCLE update
-          END IF
-        END DO
+        ! We must consider the special case, that the removed element IEL
+        ! is adjacent to the replacement element ielReplace, that is IEL = JEL
+        IF (iel .EQ. jel) THEN
+          rhadapt%p_IneighboursAtElement(ive,jel)    = ielReplace
+          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielReplace
+          CYCLE update
+        ELSE
+          ! Find position of replacement element in adjacency list of 
+          ! element JEL and update entry to new element number IEL
+          DO jve=1,get_NVE(rhadapt,jel)
+            IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. ielReplace) THEN
+              rhadapt%p_IneighboursAtElement(jve,jel)    = iel
+              rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
+              CYCLE update
+            END IF
+          END DO
+        END IF
 
         ! If the element could not be found, something is wrong
-        PRINT *, "remove_element2D: Unable to update element neighbor!"
+        CALL output_line('Unable to update element neighbor!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
+        
+        CALL hadapt_writegridsvg(rhadapt,'mygrid',ibset(ibset(0,0),3))
         CALL sys_halt()
       END DO update
       
-      ! Delete replacement element
-      rhadapt%p_IverticesAtElement(:,ielReplace)      = 0
-      rhadapt%p_IneighboursAtElement(:,ielReplace)    = 0
-      rhadapt%p_ImidneighboursAtElement(:,ielReplace) = 0
+      ! Copy data from element ielReplace to element IEL
+      rhadapt%p_IverticesAtElement(:,iel)      = rhadapt%p_IverticesAtElement(:,ielReplace)
+      rhadapt%p_IneighboursAtElement(:,iel)    = rhadapt%p_IneighboursAtElement(:,ielReplace)
+      rhadapt%p_ImidneighboursAtElement(:,iel) = rhadapt%p_ImidneighboursAtElement(:,ielReplace)
+
+!!$      ! Delete replacement element
+!!$      rhadapt%p_IverticesAtElement(:,ielReplace)      = 0
+!!$      rhadapt%p_IneighboursAtElement(:,ielReplace)    = 0
+!!$      rhadapt%p_ImidneighboursAtElement(:,ielReplace) = 0
       
     ELSE
 
-      ! Delete element
-      rhadapt%p_IverticesAtElement(:,iel)      = 0
-      rhadapt%p_IneighboursAtElement(:,iel)    = 0
-      rhadapt%p_ImidneighboursAtElement(:,iel) = 0
+!!$      ! Delete element
+!!$      rhadapt%p_IverticesAtElement(:,iel)      = 0
+!!$      rhadapt%p_IneighboursAtElement(:,iel)    = 0
+!!$      rhadapt%p_ImidneighboursAtElement(:,iel) = 0
 
       ! Element iel is the last element
       ielReplace = 0
@@ -3820,7 +3824,7 @@ CONTAINS
         IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(ive,jelmid)    = iel
           rhadapt%p_ImidneighboursAtElement(ive,jelmid) = iel
-          bfound=.TRUE.
+          bfound=bfound.AND..TRUE.
           EXIT
         END IF
       END DO
@@ -3829,7 +3833,6 @@ CONTAINS
     IF (.NOT.bfound) THEN
       CALL output_line('Inconsistent adjacency lists!',&
           OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_Common')
-      PRINT *, iel0,iel,ielmid,jel,jelmid
       CALL sys_halt()
     END IF
   END SUBROUTINE update_ElemNeighb2D_Common
@@ -3848,7 +3851,7 @@ CONTAINS
     !
     !  +---------------------+            +---------------------+
     !  |          .          |            |          .          |
-    !  |   IEL0   .  IELMID0 |            |  IELMID  .   IEL    |
+    !  | IELMID0  .   IEL0   |            |  IELMID  .   IEL    |
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
@@ -3915,29 +3918,19 @@ CONTAINS
       nve = get_NVE(rhadapt,jel)
       
       ! Loop over all entries in the list of adjacent elements for element 
-      ! JEL and check if the value IEL0 is present. 
+      ! JEL and check if the value IEL0 or IELMID0 is present. 
       ! If this is the case, then update the corrseponding entries in the 
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
-        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
+        IF (rhadapt%p_IneighboursAtElement(ive,jel)    .EQ. iel0 .AND.&
+            rhadapt%p_ImidneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
+          rhadapt%p_IneighboursAtElement(ive,jel)    = iel
           rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
           bfound=.TRUE.
           EXIT
         END IF
       END DO
-
-      ! Loop over all entries in the list of mid-adjacent elements for element 
-      ! JEL and check if the value IEL0 is present. 
-      ! If this is the case, then update the corrseponding entries in the 
-      ! lists of (mid-)adjacent element neighbors.
-      DO ive=1,nve
-        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
-          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
-          bfound=.TRUE.
-          EXIT
-        END IF
-      END DO
-                          
+                
     ELSE
       
       ! Case 2: Adjacent element has already been subdivided.
@@ -3947,11 +3940,11 @@ CONTAINS
       nve = get_NVE(rhadapt,jel)
 
       ! Loop over all entries in the list of adjacent elements for element
-      ! JEL and check if the value IEL0 is present. 
+      ! JEL and check if the value IELMID0 is present. 
       ! If this is the case,  then update the corrseponding entries in the 
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
-        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
+        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
           rhadapt%p_IneighboursAtElement(ive,jel)    = ielmid
           rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
           bfound=.TRUE.
@@ -3970,7 +3963,7 @@ CONTAINS
         IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(ive,jelmid)    = iel
           rhadapt%p_ImidneighboursAtElement(ive,jelmid) = iel
-          bfound=.TRUE.
+          bfound=bfound.AND..TRUE.
           EXIT
         END IF
       END DO
@@ -3979,7 +3972,6 @@ CONTAINS
     IF (.NOT.bfound) THEN
       CALL output_line('Inconsistent adjacency lists!',&
           OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_Divided')
-      PRINT *, iel0,iel,ielmid,jel,jelmid
       CALL sys_halt()
     END IF
   END SUBROUTINE update_ElemNeighb2D_Divided
@@ -4015,6 +4007,9 @@ CONTAINS
     INTEGER :: ive,jve
     LOGICAL :: bfound
 
+    ! Check if the old element is still present in the triangulation
+    IF (iel0 > rhadapt%NEL) RETURN
+
     ! Loop over adjacent elements
     adjacent: DO ive=1,get_NVE(rhadapt,iel0)
       ! Get number of adjacent element
@@ -4023,6 +4018,7 @@ CONTAINS
       ! Are we at the boundary?
       IF (jel .EQ. 0) CYCLE adjacent
 
+      ! Initialize indicator
       bfound=.FALSE.
 
       ! Find position of element IEL0 in adjacent element JEL
@@ -5672,7 +5668,7 @@ CONTAINS
     CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e2,e3)
 
     ! Update list of neighboring elements
-    CALL update_ElementNeighbors2D(rhadapt,e4,e4,jel,iel,iel)
+    CALL update_ElementNeighbors2D(rhadapt,e1,e4,jel,iel,iel,iel)
     CALL update_ElementNeighbors2D(rhadapt,e2,e2,jel,iel,iel)
 
     ! Update list of elements meeting at vertices
@@ -5787,10 +5783,9 @@ CONTAINS
     CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e6)
 
     ! Update list of neighboring elements
-    CALL update_ElementNeighbors2D(rhadapt,e2,e2,iel1,iel0,iel0)
-    CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel2,iel0,iel0)
-    CALL update_ElementNeighbors2D(rhadapt,e4,e4,iel1,iel0,iel0)
-    CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel0,iel0)
+    CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel0,iel0)
+    CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel0,iel0)
+    CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel0,iel0)
 
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).EQ.&
@@ -5912,21 +5907,9 @@ CONTAINS
       CALL replace_element2D(rhadapt,iel0,i1,i4,i3,e1,iel1,e3,e1,iel1,e6)
       CALL replace_element2D(rhadapt,iel1,i2,i3,i4,e2,iel0,e4,e5,iel0,e4)
 
-      IF (iel.EQ.141) THEN
-        PRINT *, rhadapt%p_IneighboursAtElement(:,102)
-        PRINT *, rhadapt%p_ImidneighboursAtElement(:,102)
-        print *, "neigb",e3,iel2,iel0
-      END IF
-
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel0,iel2,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel1,iel1)
-
-      IF (iel.EQ.141) THEN
-        PRINT *, rhadapt%p_IneighboursAtElement(:,102)
-        PRINT *, rhadapt%p_ImidneighboursAtElement(:,102)
-        stop
-      END IF
+      CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel0,iel0)
 
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
@@ -5954,11 +5937,9 @@ CONTAINS
       CALL replace_element2D(rhadapt,iel1,i3,i1,i5,e3,iel0,e5,e6,iel0,e5)
 
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e2,e2,iel1,iel0,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel2,iel1,iel1)
-      CALL update_ElementNeighbors2D(rhadapt,e4,e4,iel1,iel0,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel1,iel1)
-      CALL update_ElementNeighbors2D(rhadapt,e6,e6,iel0,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel0,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel1,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel1,iel1)
 
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).EQ.&
@@ -6000,11 +5981,9 @@ CONTAINS
       CALL replace_element2D(rhadapt,iel1,i1,i2,i6,e1,iel0,e6,e4,iel0,e6)
 
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e1,e1,iel0,iel1,iel1)
-      CALL update_ElementNeighbors2D(rhadapt,e2,e2,iel1,iel0,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e3,e3,iel2,iel0,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e5,e5,iel2,iel0,iel0)
-      CALL update_ElementNeighbors2D(rhadapt,e6,e6,iel0,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel0,iel0)
+      CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel1,iel0)
 
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel0).EQ.&
@@ -8094,14 +8073,13 @@ CONTAINS
     ! if  cells are marked for coarsening
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA .OR.&
         IAND(rhadapt%iSpec,HADAPT_MARKEDCOARSEN).NE.HADAPT_MARKEDCOARSEN) THEN
-      PRINT *, "redgreen_coarsen: dynamic data structures are not generated &
-          &or no marker for coarsening is available!"
+      CALL output_line('Dynamic data structures are not generated &
+          &or no marker for coarsening is available!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
       CALL sys_halt()
     END IF
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
     
-!    CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(0,0),3))
-
     ! Perform hierarchical red-green recoarsening
     DO iel=SIZE(p_Imarker),1,-1
       
@@ -8119,13 +8097,6 @@ CONTAINS
         CALL coarsen_4Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_1)
-!!$        IF (iel .EQ. 141) THEN
-!!$          CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(0,0),3))
-!!$
-!!$          PRINT *, rhadapt%p_IneighboursAtElement(:,102)
-!!$          PRINT *, rhadapt%p_ImidneighboursAtElement(:,102)
-!!$          STOP
-!!$        END IF
         CALL coarsen_4Tria2Tria(rhadapt,iel,1,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_2)
@@ -8140,8 +8111,6 @@ CONTAINS
       END SELECT
     END DO
 
-!    CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(0,0),3))
-    
     ! Loop over all vertices 1...NVT0 present in the triangulation before
     ! refinement and check if they are free for vertex removal.
     DO ivt=rhadapt%NVT0,1,-1
@@ -8178,6 +8147,8 @@ CONTAINS
           
           ! If the replaced vertex ivtReplace could not be found in element JEL
           ! something is wrong and we stop the simulation
+          CALL output_line('Unable to find replacement vertex in element',&
+              OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
           CALL sys_halt()            
         END DO update
         
@@ -8190,14 +8161,12 @@ CONTAINS
         ! Release table IVT
         CALL arrlst_releaseArrayList(rhadapt%rElementsAtVertex,ivt)
       END IF
-      
+            
       ! Optionally, invoke callback function
       IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
           CALL fcb_hadaptCallback(rcollection,&
           HADAPT_OPR_REMOVEVERTEX,(/ivt,ivtReplace/),(/0/))
     END DO
-    
-!    CALL hadapt_writegridsvg(rhadapt,"mygrid",ibset(ibset(ibset(0,0),1),3))
         
     ! Increase the number of recoarsening steps by one
     rhadapt%nCoarseningSteps = rhadapt%nCoarseningSteps+1
