@@ -353,7 +353,6 @@ MODULE hadaptivity
   PUBLIC :: hadapt_writeGridSVG
   PUBLIC :: hadapt_checkConsistency
 
-
 !<constants>
 
 !<constantblock description="Global constants for grid modification operations">
@@ -1580,7 +1579,8 @@ CONTAINS
 
     ! Check if "neighbours-at-element" array exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_NEIGHATELEM).NE.HADAPT_HAS_NEIGHATELEM) THEN
-      PRINT *, "hadapt_getNeighboursAtElement: structure does not exist!"
+      CALL output_line('Structure does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getNeighboursAtElement')
       CALL sys_halt()
     END IF
 
@@ -1648,7 +1648,8 @@ CONTAINS
 
     ! Check if "InelOfType" array exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_NELOFTYPE).NE.HADAPT_HAS_NELOFTYPE) THEN
-      PRINT *, "hadapt_getNelOfType: structure does not exist!"
+      CALL output_line('Structure does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getNelOfType')
       CALL sys_halt()
     END IF
     
@@ -1703,7 +1704,8 @@ CONTAINS
     IF ((h_IboundaryCpIdx == ST_NOHANDLE) .OR.&
         (h_IverticesAtBoundary == ST_NOHANDLE) .OR.&
         (h_DvertexParameterValue == ST_NOHANDLE)) THEN
-      PRINT *, "hadapt_setNodalProperty: Invalid handle!"
+      CALL output_line('Invalid handle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setBoundary')
       CALL sys_halt()
     END IF
 
@@ -1830,7 +1832,8 @@ CONTAINS
 
     ! Check if boundary data exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_BOUNDARY).NE.HADAPT_HAS_BOUNDARY) THEN
-      PRINT *, "hadapt_getBoundary: structure does not exist!"
+      CALL output_line('Structure does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getBoundary')
       CALL sys_halt()
     END IF
 
@@ -1931,7 +1934,8 @@ CONTAINS
 
     ! Check if handle is not empty
     IF (h_InodalProperty == ST_NOHANDLE) THEN
-      PRINT *, "hadapt_setNodalProperty: Invalid handle!"
+      CALL output_line('Invalid handle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNodalProperty')
       CALL sys_halt()
     END IF
 
@@ -1967,7 +1971,8 @@ CONTAINS
 
     ! Check if "nodal property" list exits
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_NODALPROP).NE.HADAPT_HAS_NODALPROP) THEN
-      PRINT *, "hadapt_getNodalProperty: structure does not exist!"
+      CALL output_line('Structure does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_getNodalProperty')
       CALL sys_halt()
     END IF
 
@@ -2004,7 +2009,8 @@ CONTAINS
 
     ! Check if "vertices-at-element" list exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_VERTATELEM).NE.HADAPT_HAS_VERTATELEM) THEN
-      PRINT *, "hadapt_genElementsAtVertex: structure does not exist!"
+      CALL output_line('Structure does not exist!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_genElementsAtVertex')
       CALL sys_halt()
     END IF
 
@@ -2066,7 +2072,8 @@ CONTAINS
     
     ! Check if dynamic data structures are available
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA) THEN
-      PRINT *, "hadapt_performAdaptation: dynamic data structures are not generated!"
+      CALL output_line('Dynamic data structures are not generated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
       CALL sys_halt()
     END IF
 
@@ -2135,8 +2142,6 @@ CONTAINS
       ! Perform refinement
       CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
 
-      CALL hadapt_writegridsvg(rhadapt,'mygrid',ibset(ibset(0,0),3))
-
       ! Perform coarsening
       CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
 
@@ -2155,7 +2160,8 @@ CONTAINS
 
       
     CASE DEFAULT
-      PRINT *, "hadapt_performAdaptation: Unsupported refinement strategy!"
+      CALL output_line('Unsupported refinement strategy!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_performAdaptation')
       CALL sys_halt()
     END SELECT
 
@@ -2337,7 +2343,8 @@ CONTAINS
     
     ! Check if dynamic data structures generated
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA) THEN
-      PRINT *, "adapt_output_svg: dynamic data structures are not generated"
+      CALL output_line('Dynamic data structures are not generated',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridSVG')
       CALL sys_halt()
     END IF
     
@@ -2708,7 +2715,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_VERTEXIDX)    :: ivt,idx
-    INTEGER(PREC_ELEMENTIDX)   :: iel,ielmid,jel,jelmid
+    INTEGER(PREC_ELEMENTIDX)   :: iel,jel,jelmid
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
     INTEGER :: h_IelementsAtVertexIdx,h_IelementsAtVertex
@@ -3114,14 +3121,16 @@ CONTAINS
       
       ! Get parameter values of the boundary nodes
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
-        PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
+        CALL output_line('Unable to find first vertex in boudary data structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         CALL sys_halt()
       END IF
       ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       dvbdp1 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
       
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
-        PRINT *, "add_vertex: Unable to find vertex in boudary data structure!"
+        CALL output_line('Unable to find second vertex in boudary data structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         CALL sys_halt()
       END IF
       ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
@@ -3584,16 +3593,10 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)    :: ivt
     INTEGER(PREC_ELEMENTIDX)   :: jel
     INTEGER :: ive,jve
+    LOGICAL :: bfound
     
-    INTEGER, SAVE :: ielSave=0
-
     ! Replace element by the last element and delete last element
     ielReplace = rhadapt%NEL
-
-    IF (ielSave .EQ. iel) THEN
-      CALL hadapt_writegridsvg(rhadapt,'mygrid',ibset(ibset(0,0),3))
-    END IF
-    ielSave=iel
 
     ! Which kind of element are we?
     SELECT CASE(get_NVE(rhadapt,iel))
@@ -3632,49 +3635,57 @@ CONTAINS
 
         ! Start with first element in "elements-meeting-at-vertex" list
         ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.TRUE.)
-        DO WHILE(ipos .NE. ARRLST_NULL)
+        elem: DO WHILE(ipos .NE. ARRLST_NULL)
           
           ! Check if element number corresponds to the replaced element
           IF (rhadapt%rElementsAtVertex%IData(ipos) .EQ. ielReplace) THEN
             rhadapt%rElementsAtVertex%IData(ipos)=iel
-            EXIT
+            EXIT elem
           END IF
           
           ! Proceed to next element in list
           ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
-        END DO
-        
-        
+        END DO elem
+                
         ! Get element number of element JEL which is adjacent to ielReplace
         jel = rhadapt%p_IneighboursAtElement(ive,ielReplace)
-        
+
         ! Are we at the boundary?
         IF (jel .EQ. 0) CYCLE
 
         ! We must consider the special case, that the removed element IEL
         ! is adjacent to the replacement element ielReplace, that is IEL = JEL
         IF (iel .EQ. jel) THEN
-          rhadapt%p_IneighboursAtElement(ive,jel)    = ielReplace
-          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielReplace
+          !rhadapt%p_IneighboursAtElement(ive,jel)    = ielReplace
+          !rhadapt%p_ImidneighboursAtElement(ive,jel) = ielReplace
           CYCLE update
         ELSE
           ! Find position of replacement element in adjacency list of 
           ! element JEL and update entry to new element number IEL
+          bfound=.FALSE.
           DO jve=1,get_NVE(rhadapt,jel)
             IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. ielReplace) THEN
               rhadapt%p_IneighboursAtElement(jve,jel)    = iel
+ !             rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
+              bfound=.TRUE.
+            END IF
+          END DO
+          
+          DO jve=1,get_NVE(rhadapt,jel)
+            IF (rhadapt%p_ImidneighboursAtElement(jve,jel) .EQ. ielReplace) THEN
+!              rhadapt%p_IneighboursAtElement(jve,jel)    = iel
               rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
-              CYCLE update
+              bfound=bfound.AND..TRUE.
             END IF
           END DO
         END IF
 
         ! If the element could not be found, something is wrong
-        CALL output_line('Unable to update element neighbor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
-        
-        CALL hadapt_writegridsvg(rhadapt,'mygrid',ibset(ibset(0,0),3))
-        CALL sys_halt()
+        IF (.NOT.bfound) THEN
+          CALL output_line('Unable to update element neighbor!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
+          CALL sys_halt()
+        END IF
       END DO update
       
       ! Copy data from element ielReplace to element IEL
@@ -3909,7 +3920,7 @@ CONTAINS
     
     ! Check if adjacent and mid-adjacent elements are the same.
     IF (jel .EQ. jelmid) THEN
-      
+
       ! Case 1: Adjacent element has not been subdivided, that is, the 
       !         current edge contains a hanging node for the adjacent element.
       bfound=.FALSE.
@@ -4008,7 +4019,9 @@ CONTAINS
     LOGICAL :: bfound
 
     ! Check if the old element is still present in the triangulation
-    IF (iel0 > rhadapt%NEL) RETURN
+    IF (iel0 > rhadapt%NEL) THEN
+      RETURN
+    END IF
 
     ! Loop over adjacent elements
     adjacent: DO ive=1,get_NVE(rhadapt,iel0)
@@ -4118,7 +4131,8 @@ CONTAINS
       loc1=3; loc2=1; loc3=2
 
     CASE DEFAULT
-      PRINT *, "refine_Tria2Tria2: Invalid marker",imarker
+      CALL output_line('Invalid element marker',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria2Tria')
       CALL sys_halt()
     END SELECT
     
@@ -4151,7 +4165,8 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Tria2Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria2Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,nel0+1,ipos)
@@ -4232,7 +4247,8 @@ CONTAINS
       loc1=3; loc2=1; loc3=2
 
     CASE DEFAULT
-      PRINT *, "refine_Tria3Tria: Invalid marker",imarker
+      CALL output_line('Invalid element marker!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
       CALL sys_halt()
     END SELECT
 
@@ -4284,7 +4300,8 @@ CONTAINS
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "refine_Tria3Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel,ipos)
@@ -4316,7 +4333,8 @@ CONTAINS
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "refine_Tria3Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria3Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,nel0+1,ipos)
@@ -4419,14 +4437,16 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Tria4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,nel0+1,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Tria4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Tria4Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+2,ipos)
@@ -4509,7 +4529,8 @@ CONTAINS
       loc1=2; loc2=3; loc3=4; loc4=1
 
     CASE DEFAULT
-      PRINT *, "refine_Quad2Quad: Invalid marker",imarker
+      CALL output_line('Invalid element marker!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
       CALL sys_halt()
     END SELECT
     
@@ -4548,14 +4569,16 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad2Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,nel0+1,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad2Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad2Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+1,ipos)
@@ -4639,7 +4662,8 @@ CONTAINS
       loc1=4; loc2=1; loc3=2; loc4=3
 
     CASE DEFAULT
-      PRINT *, "refine_Quad3Tria: Invalid marker",imarker
+      CALL output_line('Invalid marker element!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       CALL sys_halt()
     END SELECT
     
@@ -4677,14 +4701,16 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad3Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,nel0+1,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad3Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad3Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+1,ipos)
@@ -4769,7 +4795,8 @@ CONTAINS
       loc1=4; loc2=1; loc3=2; loc4=3
 
     CASE DEFAULT
-      PRINT *, "refine_Quad4Tria: Invalid marker",imarker
+      CALL output_line('Invalid element marker!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       CALL sys_halt()
     END SELECT
 
@@ -4810,14 +4837,16 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,nel0+1,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+2,ipos)
@@ -4927,21 +4956,24 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad4Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,nel0+1,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad4Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+2,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "refine_Quad4Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'refine_Quad4Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,nel0+3,ipos)
@@ -5069,12 +5101,14 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Tria2Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Tria2Tria')
       CALL sys_halt()
     END IF
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,jel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Tria2Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Tria2Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+1,ipos)
@@ -5213,26 +5247,30 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,jel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad2Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,nel0+1,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad2Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,nel0+2,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i7,iel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad2Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       CALL sys_halt()
     END IF
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i7,jel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad2Quad: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad2Quad')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,nel0+1,ipos)
@@ -5373,26 +5411,30 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i3!",i3
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       CALL sys_halt()
     END IF
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel1).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i4!",i4
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       CALL sys_halt()
     END IF
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i4!",i4
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,nel0+1,ipos)
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel3).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad3Tria: Unable to delete element from vertex list i5!",i5
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad3Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,iel2,ipos)
@@ -5539,25 +5581,29 @@ CONTAINS
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel4).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       CALL sys_halt()
     END IF
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel4).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       CALL sys_halt()
     END IF
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel1).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       CALL sys_halt()
     END IF
 
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel3).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "convert_Quad4Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'convert_Quad4Tria')
       CALL sys_halt()
     END IF
     
@@ -5643,7 +5689,7 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
-    INTEGER(PREC_ELEMENTIDX) :: jel,e1,e2,e3,e4,ielReplace
+    INTEGER(PREC_ELEMENTIDX) :: jel,e1,e2,e3,e4,e5,e6,ielReplace
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4
 
     ! Get adjacent green elements
@@ -5660,26 +5706,31 @@ CONTAINS
     e2 = rhadapt%p_IneighboursAtElement(1,jel)
     e4 = rhadapt%p_IneighboursAtElement(3,jel)
 
-    ! Delete element JEL
-    CALL remove_element2D(rhadapt,jel,ielReplace)
-    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,jel)
+    e5 = rhadapt%p_ImidneighboursAtElement(1,jel)
+    e6 = rhadapt%p_ImidneighboursAtElement(3,iel)
+    
+    ! Update list of neighboring elements
+    CALL update_ElementNeighbors2D(rhadapt,e1,e4,jel,iel,iel,iel)
+    CALL update_ElementNeighbors2D(rhadapt,e2,e5,jel,iel,iel)
     
     ! Update element IEL
     CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e2,e3)
 
-    ! Update list of neighboring elements
-    CALL update_ElementNeighbors2D(rhadapt,e1,e4,jel,iel,iel,iel)
-    CALL update_ElementNeighbors2D(rhadapt,e2,e2,jel,iel,iel)
+    ! Delete element JEL
+    CALL remove_element2D(rhadapt,jel,ielReplace)
+    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,jel)   
 
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,jel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "coarsen_2Tria1Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
       CALL sys_halt()
     END IF
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,jel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "coarsen_2Tria1Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel,ipos)
@@ -5769,6 +5820,14 @@ CONTAINS
     e3 = rhadapt%p_IneighboursAtElement(1,iel2)
     e5 = rhadapt%p_IneighboursAtElement(3,iel2)
 
+    ! Update list of neighboring elements
+    CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel0,iel0)
+    CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel0,iel0)
+    CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel0,iel0)
+    
+    ! Update element IEL0
+    CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e6)
+
     ! Delete elements IEL, IEL1 and IEL2
     CALL remove_element2D(rhadapt,iel,ielReplace)
     IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
@@ -5779,23 +5838,17 @@ CONTAINS
     CALL remove_element2D(rhadapt,iel1,ielReplace)
     IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel1)
 
-    ! Update element IEL0
-    CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e6)
-
-    ! Update list of neighboring elements
-    CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel0,iel0)
-    CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel0,iel0)
-    CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel0,iel0)
-
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "coarsen_4Tria1Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
       CALL sys_halt()
     END IF
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
-      PRINT *, "coarsen_4Tria1Tria: Unable to delete element from vertex list!"
+      CALL output_line('Unable to delete element from vertex list!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel0,ipos)
@@ -5892,29 +5945,29 @@ CONTAINS
 
     e3 = rhadapt%p_IneighboursAtElement(1,iel2)
     e5 = rhadapt%p_IneighboursAtElement(3,iel2)
-
-    ! Delete elements IEL, and IEL2
-    CALL remove_element2D(rhadapt,iel,ielReplace)
-    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
-
-    CALL remove_element2D(rhadapt,iel2,ielReplace)
-    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel2)
     
     ! Which midpoint vertex should be kept?
     SELECT CASE(iloc)
     CASE(1)     
-      ! Update elements IEL and IEL1
-      CALL replace_element2D(rhadapt,iel0,i1,i4,i3,e1,iel1,e3,e1,iel1,e6)
-      CALL replace_element2D(rhadapt,iel1,i2,i3,i4,e2,iel0,e4,e5,iel0,e4)
-
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel1,iel1)
       CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel0,iel0)
 
+      ! Update elements IEL and IEL1
+      CALL replace_element2D(rhadapt,iel0,i1,i4,i3,e1,iel1,e3,e1,iel1,e6)
+      CALL replace_element2D(rhadapt,iel1,i2,i3,i4,e2,iel0,e4,e5,iel0,e4)
+      
+      ! Delete elements IEL, and IEL2
+      CALL remove_element2D(rhadapt,iel,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
+      CALL remove_element2D(rhadapt,iel2,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel2)
+      
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel0,ipos)
@@ -5922,7 +5975,8 @@ CONTAINS
 
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i4,iel).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       
@@ -5932,38 +5986,48 @@ CONTAINS
           (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
 
     CASE(2)
-      ! Update elements IEL and IEL1
-      CALL replace_element2D(rhadapt,iel0,i2,i5,i1,e2,iel1,e1,e2,iel1,e4)
-      CALL replace_element2D(rhadapt,iel1,i3,i1,i5,e3,iel0,e5,e6,iel0,e5)
-
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel0,iel0)
       CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel1,iel0)
       CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel1,iel1)
 
+      ! Update elements IEL and IEL1
+      CALL replace_element2D(rhadapt,iel0,i2,i5,i1,e2,iel1,e1,e2,iel1,e4)
+      CALL replace_element2D(rhadapt,iel1,i3,i1,i5,e3,iel0,e5,e6,iel0,e5)
+
+      ! Delete elements IEL, and IEL2
+      CALL remove_element2D(rhadapt,iel,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
+      CALL remove_element2D(rhadapt,iel2,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel2)
+
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,iel1).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel0,ipos)
 
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel1,ipos)
 
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i5,iel).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,iel0,ipos)
@@ -5976,38 +6040,48 @@ CONTAINS
           (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
 
     CASE(3)
-      ! Update elements IEL and IEL1
-      CALL replace_element2D(rhadapt,iel0,i3,i6,i2,e3,iel1,e2,e3,iel1,e5)
-      CALL replace_element2D(rhadapt,iel1,i1,i2,i6,e1,iel0,e6,e4,iel0,e6)
-
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel1,iel1)
       CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel0,iel0)
       CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel1,iel0)
+      
+      ! Update elements IEL and IEL1
+      CALL replace_element2D(rhadapt,iel0,i3,i6,i2,e3,iel1,e2,e3,iel1,e5)
+      CALL replace_element2D(rhadapt,iel1,i1,i2,i6,e1,iel0,e6,e4,iel0,e6)
+
+      ! Delete elements IEL, and IEL2
+      CALL remove_element2D(rhadapt,iel,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel)
+      CALL remove_element2D(rhadapt,iel2,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,iel2)
 
       ! Update list of elements meeting at vertices
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,iel0).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,iel1,ipos)
 
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,iel0,ipos)
       
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel2).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i6,iel).EQ.&
           ARRAYLIST_NOT_FOUND) THEN
-        PRINT *, "coarsen_4Tria2Tria: Unable to delete element from vertex list!"
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
         CALL sys_halt()
       END IF
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,iel1,ipos)
@@ -6019,7 +6093,8 @@ CONTAINS
           (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
 
     CASE DEFAULT
-      PRINT *, "coarsen_4Tria2Tria: Invalid position of midpoint vertex!"
+      CALL output_line('Invalid position of midpoint vertex!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
       CALL sys_halt()
     END SELECT
   END SUBROUTINE coarsen_4Tria2Tria
@@ -6061,7 +6136,8 @@ CONTAINS
 
     ! Check if dynamic data structures are generated and contain data
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA) THEN
-      PRINT *, "mark_refinement2D: dynamic data structures are not generated"
+      CALL output_line('Dynamic data structures are not generated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mark_refinement2D')
       CALL sys_halt()
     END IF
 
@@ -6268,14 +6344,16 @@ CONTAINS
     ! Check if dynamic data structures are generated and contain data
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA .OR.&
         IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE).NE.HADAPT_MARKEDREFINE) THEN
-      PRINT *, "redgreen_mark_coarsening2D: dynamic data structures are not &
-          & generated or no marker for grid refinement exists!"
+      CALL output_line('Dynamic data structures are not &
+          & generated or no marker for grid refinement exists!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
       CALL sys_halt()
     END IF
     
     ! Set pointers
     IF (rhadapt%h_Imarker == ST_NOHANDLE) THEN
-      PRINT *, "redgreen_mark_coarsening2D: marker array is not available"
+      CALL output_line('Marker array is not available!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
       CALL sys_halt()
     END IF
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
@@ -6306,7 +6384,8 @@ CONTAINS
         istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
 
       CASE DEFAULT
-        PRINT *, "redgreen_mark_coarsening2D: Invalid number of vertices per element!"
+        CALL output_line('Invalid number of vertices per element!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
         CALL sys_halt()
       END SELECT
       
@@ -6336,8 +6415,8 @@ CONTAINS
         ! adjacent to an inner red triangle in order to apply the algorithm.
 
       CASE(STATE_QUAD_RED1,STATE_QUAD_RED2,STATE_QUAD_RED3)
-        PRINT *, "redgreen_mark_coarsening2D: Theoretically, this state should &
-            & not appear. Please inform the author of this routine."
+        CALL output_line('This state should not appear!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
         CALL sys_halt()
 
       CASE(STATE_QUAD_RED4)
@@ -6478,11 +6557,13 @@ CONTAINS
         p_Imarker(iel) = MARK_CRS_GENERIC
 
       CASE(STATE_QUAD_HALF1,STATE_QUAD_HALF2)
-        PRINT *, "redgree_mark_coarsening2D: Not implemented yet."
+        CALL output_line('Not implemented yet!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
         CALL sys_halt()
 
       CASE DEFAULT
-        PRINT *, "redgreen_mark_coarsening2D: Invalid state",istate
+        CALL output_line('Invalid element state!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
         CALL sys_halt()
       END SELECT
     END DO
@@ -6539,7 +6620,8 @@ CONTAINS
           istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
 
         CASE DEFAULT
-          PRINT *, "redgreen_mark_coarsening2D: Invalid number of vertices per element!"
+          CALL output_line('Invalid number of vertices per element!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
           CALL sys_halt()
         END SELECT
         
@@ -6703,7 +6785,8 @@ CONTAINS
         istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
 
       CASE DEFAULT
-        PRINT *, "redgreen_mark_coarsening2D: Invalid number of vertices per element!"
+        CALL output_line('Invalid number of vertices per element!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
         CALL sys_halt()
       END SELECT
       
@@ -6890,7 +6973,8 @@ CONTAINS
             p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_4
 
           CASE DEFAULT
-            PRINT *, "redgreen_mark_coarsening2D: Invalid locking."
+            CALL output_line('Invalid locking pattern of vertices!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
             CALL sys_halt()
           END SELECT
           
@@ -6928,12 +7012,14 @@ CONTAINS
             p_Imarker(kel) = MARK_CRS_4QUAD2QUAD_24
 
           CASE DEFAULT
-            PRINT *, "redgreen_mark_coarsening2D: Invalid locking."
+            CALL output_line('Invalid locking pattern of vertices!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
             CALL sys_halt()
           END SELECT
           
         CASE DEFAULT
-          PRINT *, "redgreen_mark_coarsening2D: Invalid number of locked vertices!"
+          CALL output_line('Invalid number of locked vertices!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
           CALL sys_halt()
           
         END SELECT
@@ -7104,7 +7190,8 @@ CONTAINS
           istate         = redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
 
         CASE DEFAULT
-          PRINT *, "redgreen_mark_refinement2D: Invalid number of vertices per element!"
+          CALL output_line('Invalid number of vertices per element!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
           CALL sys_halt()
         END SELECT
 
@@ -7127,7 +7214,8 @@ CONTAINS
           ! or one of the opposite triangles resulting from Quad4Tria refinement.
           ! In all cases, the edge which connects the two nodes is opposite
           ! to the first local vertex. Hence, work must only be done for CASE(4)
-          PRINT *, "redgreen_mark_refinement2D: State 2 or 8 must not occur"
+          CALL output_line('These states must not occur!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
           CALL sys_halt()
           
         CASE(STATE_TRIA_OUTERINNER)
@@ -7348,7 +7436,8 @@ CONTAINS
         CASE(STATE_QUAD_HALF2)
           ! Theoretically, this state is not possible. In general, it has to be treated
           ! like state 21 = STATE_QUAD_HALF1
-          PRINT *, "redgreen_mark_refinement2D: State 11 must not occur"
+          CALL output_line('This state msut not occur!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
           CALL sys_halt()
           
         CASE(STATE_TRIA_GREENINNER)
@@ -7538,7 +7627,8 @@ CONTAINS
             IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel) = ibset(p_Imarker(lel),4)
 
           CASE DEFAULT
-            PRINT *, "redgreen_mark_refinement2D: Invalid state",istate,iel
+            CALL output_line('Invalid element state!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
             CALL sys_halt()
           END SELECT
 
@@ -7688,12 +7778,14 @@ CONTAINS
             IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),4)
 
           CASE DEFAULT
-            PRINT *, "redgreen_mark_refinement2D: Invalid state",istate,iel
+            CALL output_line('Invalid element state!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
             CALL sys_halt()
           END SELECT
           
         CASE DEFAULT
-          PRINT *, "redgreen_mark_refinement2D: Invalid state",istate,iel
+          CALL output_line('Invalid element state!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
           CALL sys_halt()
         END SELECT
 100     CONTINUE
@@ -7733,7 +7825,8 @@ CONTAINS
               p_Imarker(jel) = ibset(p_Imarker(jel),0)
 
             CASE DEFAULT
-              PRINT *, "redgreen_mark_refinement2D: Invalid number of vertices per element!"
+              CALL output_line('Invalid number of vertices per element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
               CALL sys_halt()
             END SELECT
 
@@ -7744,7 +7837,8 @@ CONTAINS
             END DO
 
             IF (jve > mve) THEN
-              PRINT *, "redgreen_mark_refinement2D: Unable to find element!"
+              CALL output_line('Unable to find element!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
               CALL sys_halt()
             END IF
 
@@ -7901,7 +7995,8 @@ CONTAINS
         END DO
 
       CASE DEFAULT
-        PRINT *, "mark_edge: Invalid number of vertices per element!"
+        CALL output_line('Invalid number of vertices per element!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'mark_edge')
         CALL sys_halt()
       END SELECT
     END SUBROUTINE mark_edge
@@ -7935,7 +8030,8 @@ CONTAINS
         END IF
       END DO
 
-      PRINT *, "ismarked_egde: Unable to find common edge!"
+      CALL output_line('Unable to find common egde!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ismarked_edge')
       CALL sys_halt()
     END FUNCTION ismarked_edge
   END SUBROUTINE redgreen_mark_refinement2D
@@ -7972,8 +8068,9 @@ CONTAINS
     ! cells are marked for refinement
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA .OR.&
         IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE).NE.HADAPT_MARKEDREFINE) THEN
-      PRINT *, "redgreen_refine: dynamic data structures are not generated &
-          &or no marker for refinement is available!"
+      CALL output_line('Dynamic data structures are not generated &
+          &or no marker for refinement is available!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'redgreen_refine')
       CALL sys_halt()
     END IF
     
@@ -8021,7 +8118,8 @@ CONTAINS
         rhadapt%nGreenElements = rhadapt%nGreenElements+4
 
       CASE DEFAULT
-        PRINT *, "redgreen_refine: Invalid refinement marker!"
+        CALL output_line('Invalid element refinement marker!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'redgreen_refine')
         CALL sys_halt()
       END SELECT
     END DO
@@ -8053,7 +8151,7 @@ CONTAINS
     OPTIONAL :: fcb_hadaptCallback
 !</input>
 
-!<inputoutptut>
+!<inputoutput>
     ! adativity structure
     TYPE(t_hadapt), INTENT(INOUT)               :: rhadapt
     
@@ -8082,7 +8180,7 @@ CONTAINS
     
     ! Perform hierarchical red-green recoarsening
     DO iel=SIZE(p_Imarker),1,-1
-      
+
       SELECT CASE(p_Imarker(iel))
       CASE(MARK_CRS_GENERIC:)
         ! Do nothing for elements ...
@@ -8095,18 +8193,19 @@ CONTAINS
 
       CASE(MARK_CRS_4TRIA1TRIA)
         CALL coarsen_4Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
-
+        
       CASE(MARK_CRS_4TRIA2TRIA_1)
         CALL coarsen_4Tria2Tria(rhadapt,iel,1,rcollection,fcb_hadaptCallback)
 
       CASE(MARK_CRS_4TRIA2TRIA_2)
         CALL coarsen_4Tria2Tria(rhadapt,iel,2,rcollection,fcb_hadaptCallback)
-
+     
       CASE(MARK_CRS_4TRIA2TRIA_3)
         CALL coarsen_4Tria2Tria(rhadapt,iel,3,rcollection,fcb_hadaptCallback)
 
       CASE DEFAULT
-        PRINT *, "redgreen_coarsen: Invalid recoarsening marker!",p_Imarker(iel)
+        CALL output_line('Invalid recoarsening marker!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
         CALL sys_halt()
       END SELECT
     END DO
