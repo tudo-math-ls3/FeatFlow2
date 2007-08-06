@@ -4767,10 +4767,10 @@ CONTAINS
       ! That's a command to all VANCA solvers. Are we meant?
       ! Check Iconfig(1) which specifies the VANCA subsolver group
       ! to be changed.
-      IF (ralterConfig%Iconfig(1) .EQ. rsolverNode%p_rsubnodeVANCA%csubtypeVANCA) THEN
+      IF (ralterConfig%Iconfig(1) .EQ. rsolverNode%p_rsubnodeVANCA%rvanca%csubtype) THEN
       
         ! Oops, we are meant. Set the VANCA variant as specified in Iconfig(2).
-        rsolverNode%p_rsubnodeVANCA%csubtypeVANCA = ralterConfig%Iconfig(2)
+        rsolverNode%p_rsubnodeVANCA%rvanca%csubtype = ralterConfig%Iconfig(2)
       
       END IF
     
