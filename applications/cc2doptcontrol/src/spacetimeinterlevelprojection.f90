@@ -335,6 +335,9 @@ CONTAINS
     !                         ^ \
     !                        /   \
     !                       +--1--+
+    !
+    ! But because this is a restriction of a Finite-Difference RHS vector,
+    ! the RHS must be divided by h/(h/2)=2 !
 
     ! We need two more temp vectors:
     !
@@ -362,7 +365,7 @@ CONTAINS
     !                         ^ \
     !                        /   \
     !                       +--1--+
-    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP,1.0_DP)
+    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
     
     ! Probably restrict the vector in space to the lower level.
     ! Save the result.
@@ -397,8 +400,8 @@ CONTAINS
       !                         /   \
       !                        +--1--+
       
-      CALL lsysbl_vectorLinearComb (rx1,rtempVecFine,0.5_DP,1.0_DP)
-      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP,1.0_DP)
+      CALL lsysbl_vectorLinearComb (rx1,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
+      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP)
       
       ! Probably restrict the vector in space to the lower level.
       ! Save the result.
@@ -429,7 +432,7 @@ CONTAINS
     !                         /   \
     !                        +--1--+
     
-    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP,1.0_DP)
+    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
     
     ! Probably restrict the vector in space to the lower level.
     ! Save the result.

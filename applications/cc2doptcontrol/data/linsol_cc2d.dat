@@ -46,7 +46,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 0
+ioutputLevel       = 0 3
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).
@@ -126,15 +126,17 @@ isolverType        = 54
 #
 # 21=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
 
-isolverSubtype     = 21
+isolverSubtype     = 21 5   # 21
 
 # Number of smoothing steps
 
-nsmoothingSteps    = 4
+nsmoothingSteps    = 8
 
 # Relaxation parameter
 
 domega             = 0.7 1.0
+
+ioutputLevel = 0
 
 # ========================================================================
 # The following section describes the parameters of the VANCA coarse grid
@@ -152,7 +154,7 @@ isolverType        = 1
 
 # Minimum number of steps
 
-nminIterations     = 1
+nminIterations     = 100
 
 # Maximum number of steps
 
@@ -171,7 +173,7 @@ depsAbs            = 0.01
 
 # Output level of the solver
 
-ioutputLevel       = 0
+ioutputLevel       = 0 2
 
 # VANCA preconditioner
 
@@ -190,8 +192,10 @@ isolverType        = 54
 # 0=2=general VANCA, 
 # 1=3=Simple Jacobi-like VANCA, 2D saddle-point problem, $\tilde Q_1/P_0$
 # discretisation
+#
+# 21=Full VANCA for 2D Navier-Stokes optimal control problem. 'Direct' method.
 
-isolverSubtype     = 21
+isolverSubtype     = 21 3  # 21
 
 # Relaxation parameter
 

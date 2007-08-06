@@ -43,17 +43,17 @@ sSolutionWrite     = 'ns/DX4'
 
 # minimum mg-level; <=0: Use level (NLMAX+NLMIN) as coarse grid
 
-NLMIN              = 2
+NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 5
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 
 # Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
 
-iequation    = 0
+iequation    = 1
 
 # Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
 
@@ -90,7 +90,7 @@ iBoundary          = 2
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 # (QP1  = Quadrilateral discontinuous P1 element)
 
-iElementType       = 3
+iElementType       = 6
 
 # ------------------------------------------------------------------------
 
@@ -229,4 +229,10 @@ itypeTargetFlow = 2
 # the target flow. The file must contain a solution at the same spatial
 # level as prescribed by NLMAX.
 
-stargetFlow = 'ns/solution5_0.025'
+stargetFlow = 'ns/lv4re0.025steps80/solution'
+
+# Granularity parameter for the filenames of the target flow.
+# =1 will read '.00000', '.00001', '.00002', etc.
+# =2 will read '.00000', '.00002', '.00004', etc.
+# =n will read '.00000', '.0000n', etc.
+itargetFlowDelta = 1

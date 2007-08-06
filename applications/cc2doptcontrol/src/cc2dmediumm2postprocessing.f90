@@ -474,6 +474,8 @@ CONTAINS
     ! Divergence
     TYPE(t_matrixScalar) :: rBmatrix
     TYPE(t_vectorScalar), TARGET :: rtempVector
+    
+    CHARACTER(SYS_STRLEN) :: sgmvName,stemp
 
     ! If we have a uniform discreisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
@@ -612,13 +614,18 @@ CONTAINS
     p_rtriangulation => &
       rvector%RvectorBlock(1)%p_rspatialDiscretisation%p_rtriangulation
     
+    ! Get GMV filename
+    CALL parlst_getvalue_string_direct (rproblem%rparamList, 'TIME-POSTPROCESSING', &
+                                        'sgmvFileName', stemp, 'gmv/u.gmv')
+    READ(stemp,*) sgmvName
+    
     ! Start UCD export to GMV file:
     CALL output_lbrk ()
     CALL output_line ('Writing GMV file: ' &
-        //'gmv/u.gmv.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+        //TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
     
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-        'gmv/u.gmv.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+        TRIM(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
     
     ! Write the configuration of the application as comment block
     ! to the output file.

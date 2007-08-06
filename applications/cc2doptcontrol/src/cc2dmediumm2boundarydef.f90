@@ -175,6 +175,13 @@ CONTAINS
     ! Set p_rboundaryConditions to NULL() to create a new structure on the heap.
     NULLIFY (rproblem%p_rboundaryConditions)
     CALL bcond_initBC (rproblem%p_rboundaryConditions,p_rboundary)
+
+    ! Separate BC's for primal and dual equations
+    NULLIFY (rproblem%p_rboundaryConditionsPrimal)
+    CALL bcond_initBC (rproblem%p_rboundaryConditionsPrimal,p_rboundary)
+
+    NULLIFY (rproblem%p_rboundaryConditionsDual)
+    CALL bcond_initBC (rproblem%p_rboundaryConditionsDual,p_rboundary)
     
     ! Get the expression/bc sections from the bondary condition block
     CALL parlst_querysection(rproblem%rparamList, 'BDEXPRESSIONS', p_rsection) 
@@ -326,44 +333,14 @@ CONTAINS
               IF (sbdex1 .NE. '') THEN
                 CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
                                                   1,rboundaryRegion,p_rbcRegion)
-                p_rbcRegion%stag = sbdex1
-
-                iexptyp = collct_getvalue_int (rcoll, sbdex1)
-                p_rbcRegion%ibdrexprtype = iexptyp
-
-                SELECT CASE (iexptyp)
-                CASE (0,2)
-                  ! Constant or parabolic profile
-                  p_rbcRegion%dtag = collct_getvalue_real (rproblem%rcollection, &
-                                    sbdex1, 0, SEC_SBDEXPRESSIONS)
-                CASE (-1)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  p_rbcRegion%itag = collct_getvalue_int (rproblem%rcollection, &
-                                     sbdex1, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
-
+                                                  
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
               END IF
               
               IF (sbdex2 .NE. '') THEN
                 CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
-                                                  2,rboundaryRegion,p_rbcRegion)
-                p_rbcRegion%stag = sbdex2
-
-                iexptyp = collct_getvalue_int (rcoll, sbdex2)
-                p_rbcRegion%ibdrexprtype = iexptyp
-
-                SELECT CASE (iexptyp)
-                CASE (0,2)
-                  p_rbcRegion%dtag = collct_getvalue_real (rproblem%rcollection, &
-                                     sbdex2, 0, SEC_SBDEXPRESSIONS)
-                CASE (-1)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  p_rbcRegion%itag = collct_getvalue_int (rproblem%rcollection, &
-                                     sbdex2, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
-
+                                                   2,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex2,rproblem%rcollection,rcoll,p_rbcRegion)
               END IF
               
               ! Boundary conditions for dual equation (subeqn. 4,5). Should be Dirichlet-0
@@ -372,43 +349,44 @@ CONTAINS
               IF (sbdex3 .NE. '') THEN
                 CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
                                                   4,rboundaryRegion,p_rbcRegion)
-                p_rbcRegion%stag = sbdex3
-
-                iexptyp = collct_getvalue_int (rcoll, sbdex2)
-                p_rbcRegion%ibdrexprtype = iexptyp
-
-                SELECT CASE (iexptyp)
-                CASE (0,2)
-                  p_rbcRegion%dtag = collct_getvalue_real (rproblem%rcollection, &
-                                     sbdex3, 0, SEC_SBDEXPRESSIONS)
-                CASE (-1)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  p_rbcRegion%itag = collct_getvalue_int (rproblem%rcollection, &
-                                     sbdex3, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
-
+                CALL setExpression (sbdex3,rproblem%rcollection,rcoll,p_rbcRegion)
               END IF
               
               IF (sbdex4 .NE. '') THEN
                 CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditions,&
                                                    5,rboundaryRegion,p_rbcRegion)
-                p_rbcRegion%stag = sbdex2
-
-                iexptyp = collct_getvalue_int (rcoll, sbdex2)
-                p_rbcRegion%ibdrexprtype = iexptyp
-
-                SELECT CASE (iexptyp)
-                CASE (0,2)
-                  p_rbcRegion%dtag = collct_getvalue_real (rproblem%rcollection, &
-                                     sbdex4, 0, SEC_SBDEXPRESSIONS)
-                CASE (-1)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  p_rbcRegion%itag = collct_getvalue_int (rproblem%rcollection, &
-                                     sbdex4, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
-
+                CALL setExpression (sbdex4,rproblem%rcollection,rcoll,p_rbcRegion)
+              END IF
+              
+              ! Now the same thing again, this time separately for primal and dual
+              ! variables.
+              ! This is necessary if a solver solves 3x3 subproblems with only primal
+              ! or only dual vectors.
+              
+              IF (sbdex1 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsPrimal,&
+                                                   1,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
+              END IF
+              
+              IF (sbdex2 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsPrimal,&
+                                                   2,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex2,rproblem%rcollection,rcoll,p_rbcRegion)
+              END IF
+              
+              ! Dual equation
+              
+              IF (sbdex3 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsDual,&
+                                                   1,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex3,rproblem%rcollection,rcoll,p_rbcRegion)
+              END IF
+              
+              IF (sbdex4 .NE. '') THEN
+                CALL bcond_newDirichletBConRealBD (rproblem%p_rboundaryConditionsDual,&
+                                                   2,rboundaryRegion,p_rbcRegion)
+                CALL setExpression (sbdex4,rproblem%rcollection,rcoll,p_rbcRegion)
               END IF
               
               ! If we have no-slip boundary conditions, the X- and Y-velocity
@@ -443,23 +421,13 @@ CONTAINS
                 CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditions,&
                                               IvelEqns,&
                                               rboundaryRegion,p_rbcRegion)          
-                p_rbcRegion%stag = sbdex1
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
 
-                iexptyp = collct_getvalue_int (rcoll, sbdex1)
-                p_rbcRegion%ibdrexprtype = iexptyp
-
-                SELECT CASE (iexptyp)
-                CASE (0,2)
-                  ! Constant or parabolic profile
-                  p_rbcRegion%dtag = collct_getvalue_real (rproblem%rcollection, &
-                                    sbdex1, 0, SEC_SBDEXPRESSIONS)
-                CASE (-1)
-                  ! Expression. Write the identifier for the expression
-                  ! as itag into the boundary condition structure.
-                  p_rbcRegion%itag = collct_getvalue_int (rproblem%rcollection, &
-                                     sbdex1, 0, SEC_SBDEXPRESSIONS)
-                END SELECT
-
+                ! Again for the pure primal equation.
+                CALL bcond_newPressureDropBConRealBD (rproblem%p_rboundaryConditionsPrimal,&
+                                              IvelEqns,&
+                                              rboundaryRegion,p_rbcRegion)          
+                CALL setExpression (sbdex1,rproblem%rcollection,rcoll,p_rbcRegion)
               END IF
               
               
@@ -500,6 +468,50 @@ CONTAINS
     
     ! Remove the temporary collection from memory.
     CALL collct_done (rcoll)
+
+  CONTAINS
+  
+    ! -------------------------------------------------------------------------
+  
+    SUBROUTINE setExpression (sexprName, rcollection, rexprTypeCollection, rbcRegion)
+    
+    ! Initialises a boundary condition region according to an expression.
+    ! sexprName is the name of an expression. The tags in rbcRegion are set
+    ! in such a way, that the callback routine for evaluating the boundary
+    ! can find the expression using the collection.
+    
+    ! Name of the expression
+    CHARACTER(LEN=*), INTENT(IN) :: sexprName
+    
+    ! Collection where to get information about the expression from
+    TYPE(t_collection), INTENT(INOUT) :: rcollection
+
+    ! Collection structure where the type of all expressions is saved to.
+    TYPE(t_collection), INTENT(INOUT) :: rexprTypeCollection
+    
+    ! Boundary condition region to be set up
+    TYPE(t_bcRegion), INTENT(INOUT) :: rbcRegion
+    
+      INTEGER :: iexptyp
+    
+      rbcRegion%stag = sexprName
+  
+      ! Get the expression type from rexprTypeCollection
+      iexptyp = collct_getvalue_int (rexprTypeCollection, sexprName)
+      rbcRegion%ibdrexprtype = iexptyp
+
+      SELECT CASE (iexptyp)
+      CASE (0,2)
+        rbcRegion%dtag = collct_getvalue_real (rcollection, &
+                           sexprName, 0, SEC_SBDEXPRESSIONS)
+      CASE (-1)
+        ! Expression. Write the identifier for the expression
+        ! as itag into the boundary condition structure.
+        rbcRegion%itag = collct_getvalue_int (rcollection, &
+                           sexprName, 0, SEC_SBDEXPRESSIONS)
+      END SELECT
+    
+   END SUBROUTINE 
 
   END SUBROUTINE  
   

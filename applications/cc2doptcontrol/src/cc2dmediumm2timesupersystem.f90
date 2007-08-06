@@ -758,7 +758,7 @@ CONTAINS
           
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            p_rmatrix,rmatrixComponents) 
+            p_rmatrix,rmatrixComponents,ctypePrimalDual=0) 
           
         ! Assemble the system matrix on level rspaceTimeDiscr%ilevel.
         ! Include the boundary conditions into the matrices.
@@ -781,7 +781,7 @@ CONTAINS
       
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            p_rmatrix,rmatrixComponents) 
+            p_rmatrix,rmatrixComponents,ctypePrimalDual=0) 
         
         CALL lsysbl_duplicateMatrix (&
             p_rmatrix,&
@@ -820,7 +820,7 @@ CONTAINS
 
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            p_rmatrix,rmatrixComponents) 
+            p_rmatrix,rmatrixComponents,ctypePrimalDual=0) 
         
         CALL lsysbl_duplicateMatrix (&
             p_rmatrix,rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -854,7 +854,7 @@ CONTAINS
             
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            p_rmatrix,rmatrixComponents) 
+            p_rmatrix,rmatrixComponents,ctypePrimalDual=0) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
         CALL insertMatrix (p_rmatrix,&
@@ -872,7 +872,7 @@ CONTAINS
 
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            p_rmatrix,rmatrixComponents) 
+            p_rmatrix,rmatrixComponents,ctypePrimalDual=0) 
         
         CALL lsysbl_duplicateMatrix (&
             p_rmatrix,rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -909,7 +909,7 @@ CONTAINS
       
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            p_rmatrix,rmatrixComponents) 
+            p_rmatrix,rmatrixComponents,ctypePrimalDual=0) 
         
         CALL lsysbl_duplicateMatrix (&
             p_rmatrix,rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -940,7 +940,7 @@ CONTAINS
         
         ! Assemble the matrix
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            p_rmatrix,rmatrixComponents) 
+            p_rmatrix,rmatrixComponents,ctypePrimalDual=0) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
         CALL insertMatrix (p_rmatrix,rglobalA,isubstep*6+1,isubstep*6+1)
@@ -1170,9 +1170,9 @@ CONTAINS
     ! If ry is not specified, share the vector content with rx, thus
     ! use ry=rx.
     IF (PRESENT(ry)) THEN
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector1,.FALSE.)
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector2,.FALSE.)
-      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector3,.FALSE.)
+      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval1,.FALSE.)
+      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval2,.FALSE.)
+      CALL lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorEval3,.FALSE.)
       
       ! Get the first three evaluation points
       CALL sptivec_getTimestepData(ry, 0, rtempVectorEval1)
@@ -1666,7 +1666,7 @@ CONTAINS
     !
     ! Initialise the preconditioner for the nonlinear iteration
     CALL c2d2_initPreconditioner (rproblem,&
-        rproblem%NLMIN,rproblem%NLMAX,rpreconditioner)
+        rproblem%NLMIN,rproblem%NLMAX,rpreconditioner,0)
     CALL c2d2_configPreconditioner (rproblem,rpreconditioner)
 
     ! Implement the bondary conditions into all initial solution vectors
@@ -1849,13 +1849,16 @@ CONTAINS
 !</subroutine>
 
     ! The nonlinear solver configuration
-    INTEGER :: isubstep,iglobIter,ierror,ilev,nsmSteps
+    INTEGER :: isubstep,iglobIter,ierror,ilev,ispacelev,nsmSteps,cspaceTimePreconditioner
+    INTEGER :: ilowerSpaceLevel,itemp
     LOGICAL :: bneumann
     REAL(DP), DIMENSION(4) :: Derror
     INTEGER(I32) :: nminIterations,nmaxIterations
     REAL(DP) :: depsRel,depsAbs,domega
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecond
+    TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondPrimal
+    TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondDual
     TYPE(t_sptiProjection), DIMENSION(SIZE(RspaceTimeDiscr)) :: RinterlevelProjection
     TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(SIZE(RspaceTimeDiscr)) :: &
         myRspaceTimeDiscr
@@ -1864,6 +1867,7 @@ CONTAINS
     ! A solver node that identifies our solver.
     TYPE(t_sptilsNode), POINTER :: p_rprecond,p_rsolverNode
     TYPE(t_sptilsNode), POINTER :: p_rmgSolver,p_rsmoother,p_rcgrSolver
+    TYPE(t_sptilsNode), POINTER :: p_rpresmoother,p_rpostsmoother
 
     REAL(DP) :: ddefNorm,dinitDefNorm
     
@@ -1904,10 +1908,14 @@ CONTAINS
     ! Implement the bondary conditions into all initial solution vectors
     CALL c2d2_implementBCsolution (rproblem,p_rspaceTimeDiscr,rx,rtempvectorX)
     
+    ! Type of preconditioner to use for smoothing/solving in time?
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+        'cspaceTimePreconditioner', cspaceTimePreconditioner, 0)
+    
     ! We set up a space-time preconditioner in the following configuration:
     ! Main Preconditioner: Multigrid
-    !     -> Presmoother:  Block Jacobi
-    !     -> Postsmoother: Block Jacobi
+    !     -> Presmoother:  Block Jacobi/GS
+    !     -> Postsmoother: Block Jacobi/GS
     !     -> CGr-Solver:   Defect correction
     !        -> Preconditioner: Block Jacobi
     !
@@ -1919,29 +1927,65 @@ CONTAINS
     ! Loop over the time levels.
     DO ilev=1,SIZE(RspatialPrecond)
     
-      ! Initialise the spatial preconditioner for Block Jacobi
-      ! (note: this is slightly expensive in terms of memory!
-      ! Probably we could use the same preconditioner for all levels,
-      ! but this has still to be implemeted and is a little bit harder!)
-      CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
-          MAX(rproblem%nlmin,rproblem%nlmax-SIZE(RspatialPrecond)+ilev),&
-          RspatialPrecond(ilev))
-      CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev))
-      
+      IF (RspaceTimeDiscr(ilev)%ilevel .LT. rproblem%NLMAX) THEN
+        ispacelev = MAX(rproblem%nlmin,rproblem%nlmax-SIZE(RspatialPrecond)+ilev)
+      ELSE
+        ispacelev = rproblem%nlmax
+      END IF
+      SELECT CASE (cspaceTimePreconditioner)
+      CASE (0)
+        ! Initialise the spatial preconditioner for Block Jacobi
+        ! (note: this is slightly expensive in terms of memory!
+        ! Probably we could use the same preconditioner for all levels,
+        ! but this has still to be implemeted and is a little bit harder!)
+        CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
+            ispacelev,&
+            RspatialPrecond(ilev),0)
+        CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev))
+         
+      CASE (1,2)
+        ! Initialise the spatial preconditioner for Block Gauss-Seidel
+        ! (note: this is slightly expensive in terms of memory!
+        ! Probably we could use the same preconditioner for all levels,
+        ! but this has still to be implemeted and is a little bit harder!)
+        CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
+            ispacelev,&
+            RspatialPrecondPrimal(ilev),1)
+        CALL c2d2_configPreconditioner (rproblem,RspatialPrecondPrimal(ilev))
+
+        CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
+            ispacelev,&
+            RspatialPrecondDual(ilev),2)
+        CALL c2d2_configPreconditioner (rproblem,RspatialPrecondDual(ilev))
+        
+      END SELECT
+
       ! Generate an interlevel projection structure for that level.
       ! Note that space restriction/prolongation must be switched off if
       ! we are on the spatial coarse mesh!
-      CALL sptipr_initProjection (&
-          rinterlevelProjection(ilev),&
+      IF (ilev .GT. 1) THEN
+        ilowerSpaceLevel = RspaceTimeDiscr(ilev-1)%ilevel
+      ELSE
+        ilowerSpaceLevel = ispacelev
+      END IF
+      CALL sptipr_initProjection (rinterlevelProjection(ilev),&
           RspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation,&
-          RspaceTimeDiscr(ilev)%ilevel .GT. rproblem%NLMIN)
-       
+          ilowerSpaceLevel .NE. ispacelev)
+         
       IF (ilev .EQ. 1) THEN
         ! ..., on the minimum level, create a coarse grid solver, ...
         NULLIFY(p_rsmoother)
+        NULLIFY(p_rpresmoother)
+        NULLIFY(p_rpostsmoother)
       
-        ! Block Jacobi preconditioner
-        CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+        SELECT CASE (cspaceTimePreconditioner)
+        CASE (0)
+          ! Block Jacobi preconditioner
+          CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+        CASE (1)
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,&
+              RspatialPrecondPrimal(ilev),RspatialPrecondDual(ilev))
+        END SELECT
         
         ! Defect correction solver
         CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
@@ -1970,10 +2014,30 @@ CONTAINS
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
             'nsmSteps', nsmSteps, 1)
 
-        CALL sptils_initBlockJacobi (rproblem,p_rsmoother,RspatialPrecond(ilev))
-        CALL sptils_convertToSmoother (p_rsmoother,nsmSteps,domega)
+        SELECT CASE (cspaceTimePreconditioner)
+        CASE (0)
+          ! Block Jacobi
+          CALL sptils_initBlockJacobi (rproblem,p_rsmoother,RspatialPrecond(ilev))
+        CASE (1)
+          ! Block Gauss-Seidel
+          CALL sptils_initBlockFBGS (rproblem,p_rsmoother,&
+              RspatialPrecondPrimal(ilev),RspatialPrecondDual(ilev))
+        END SELECT
+        
+        CALL sptils_convertToSmoother (p_rsmoother,nsmSteps*2**(SIZE(RspatialPrecond)-ilev),domega)
+        
+        ! Switch off smoothing is set that way in the DAT file
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
                                   'ioutputLevel', p_rsmoother%ioutputLevel, 1)
+
+        p_rpresmoother => p_rsmoother
+        p_rpostsmoother => p_rsmoother
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                  'ipresmoothing', itemp, 1)
+        IF (itemp .EQ. 0) NULLIFY(p_rpresmoother)
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                  'ipostsmoothing', itemp, 1)
+        IF (itemp .EQ. 0) NULLIFY(p_rpostsmoother)
 
         ! NULLIFY(p_rsmoother)
         NULLIFY(p_rcgrSolver)
@@ -1982,8 +2046,7 @@ CONTAINS
       ! ...; finally initialise the level with that       
       CALL sptils_setMultigridLevel (p_rmgSolver,ilev,&
                     rinterlevelProjection(ilev),&
-                    p_rsmoother,p_rsmoother,p_rcgrSolver)
-    
+                    p_rpresmoother,p_rpostsmoother,p_rcgrSolver)
     END DO
     
     ! Our main solver is MG now.
@@ -2018,14 +2081,11 @@ CONTAINS
         dof_igetNDofGlobBlock(myRspaceTimeDiscr(ilev)%p_rlevelInfo%p_rdiscretisation),&
         myRspaceTimeDiscr(ilev)%niterations)   
     END DO
-    
     ! Attach matrix information
     CALL sptils_setMatrices (p_rsolverNode,myRspaceTimeDiscr)
-    
     ! Initialise the space-time preconditioner
     CALL sptils_initStructure (p_rsolverNode,ierror)
     CALL sptils_initData (p_rsolverNode,ierror)
-    
     ddefNorm = 1.0_DP
     
     ! ---------------------------------------------------------------
@@ -2047,7 +2107,6 @@ CONTAINS
         rx, rd, ddefNorm)
         
     dinitDefNorm = ddefNorm
-    
     CALL output_separator (OU_SEP_EQUAL)
     CALL output_line ('Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))
     ! Value of the functional
@@ -2241,8 +2300,9 @@ CONTAINS
     
     ! Release the spatial preconditioner and temp vector on every level
     DO ilev=1,SIZE(RspatialPrecond)
+      CALL c2d2_donePreconditioner (RspatialPrecondPrimal(ilev))
+      CALL c2d2_donePreconditioner (RspatialPrecondDual(ilev))
       CALL c2d2_donePreconditioner (RspatialPrecond(ilev))
-
     END DO
 
     DO ilev=1,SIZE(RspatialPrecond)-1

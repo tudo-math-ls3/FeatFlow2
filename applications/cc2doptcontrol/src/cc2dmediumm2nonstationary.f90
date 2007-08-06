@@ -135,7 +135,7 @@ CONTAINS
     TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), ALLOCATABLE :: Rsupermatrix
     TYPE(t_spacetimeVector) :: rx,rd,rb
     TYPE(t_vectorBlock) :: rvectorTmp
-    INTEGER :: i
+    INTEGER :: i,ispacelevelcoupledtotimelevel
     INTEGER(I32) :: TIMENLMIN,TIMENLMAX
 
     ! Get the minimum and maximum time level from the parameter list    
@@ -144,20 +144,37 @@ CONTAINS
     CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
                               'TIMENLMAX',TIMENLMAX,1)
 
+    CALL parlst_getvalue_int (rproblem%rparamList,'TIME-DISCRETISATION',&
+        'ispacelevelcoupledtotimelevel',ispacelevelcoupledtotimelevel,1)
+
     ALLOCATE(Rsupermatrix(TIMENLMIN:TIMENLMAX))
 
     ! Initialise the supersystem on all levels
-    DO i=TIMENLMIN,TIMENLMAX
-      IF (i .EQ. TIMENLMAX) THEN
-        CALL c2d2_initParamsSupersystem (rproblem,i,&
-            MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-            Rsupermatrix(i), rx, rb, rd)
-      ELSE
-        CALL c2d2_initParamsSupersystem (rproblem,i,&
-            MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
-            Rsupermatrix(i))
-      END IF
-    END DO
+    IF (ispacelevelcoupledtotimelevel .EQ. 1) THEN
+      ! Space level NLMAX-i = Time level TIMENLMAX-i
+      DO i=TIMENLMIN,TIMENLMAX
+        IF (i .EQ. TIMENLMAX) THEN
+          CALL c2d2_initParamsSupersystem (rproblem,i,&
+              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+              Rsupermatrix(i), rx, rb, rd)
+        ELSE
+          CALL c2d2_initParamsSupersystem (rproblem,i,&
+              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+              Rsupermatrix(i))
+        END IF
+      END DO
+    ELSE
+      ! Everywhere the same space level
+      DO i=TIMENLMIN,TIMENLMAX
+        IF (i .EQ. TIMENLMAX) THEN
+          CALL c2d2_initParamsSupersystem (rproblem,i,&
+              rproblem%NLMAX,Rsupermatrix(i), rx, rb, rd)
+        ELSE
+          CALL c2d2_initParamsSupersystem (rproblem,i,&
+              rproblem%NLMAX,Rsupermatrix(i))
+        END IF
+      END DO
+    END IF
     
     ! Read the target flow -- stationary or nonstationary
     CALL c2d2_initTargetFlow (rproblem,Rsupermatrix(TIMENLMAX)%niterations)

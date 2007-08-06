@@ -851,8 +851,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE sptivec_loadFromFileSequence (rx,sfilename,istart,iend,bformatted,&
-      sdirectory)
+  SUBROUTINE sptivec_loadFromFileSequence (rx,sfilename,istart,iend,idelta,&
+      bformatted,sdirectory)
 
 !<description>
   ! This routine loads a space-time vector from a sequence of files on the
@@ -883,6 +883,10 @@ CONTAINS
   ! Number of the last file to be read in
   INTEGER, INTENT(IN) :: iend
   
+  ! Delta parameter that specifies how to increase the filename suffix.
+  ! Standard is =1.
+  INTEGER, INTENT(IN) :: idelta
+  
   ! Whether to read formatted or unformatted data from disc.
   LOGICAL, INTENT(IN) :: bformatted
 
@@ -909,7 +913,7 @@ CONTAINS
     DO i=istart,iend
     
       ! Form the filename
-      WRITE(sfile,sfilename) i
+      WRITE(sfile,sfilename) i*idelta
       
       ! Is the file there?
       INQUIRE(file=trim(sfile), exist=bexists)

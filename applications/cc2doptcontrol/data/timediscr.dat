@@ -22,7 +22,7 @@ dtimeInit = 0.0                           # TIMENS
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimeMax = 10.0                           # TIMEMX
+dtimeMax = 1.0                           # TIMEMX
 
 # ----------------------------------------------------------------------
 
@@ -36,7 +36,12 @@ TIMENLMIN = 1
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 2 # 5
+TIMENLMAX = 5 # 5
+
+# Whether space levels are coupled to time levels.
+# =0: Space level NLMAX is used on all time levels.
+# =1: Space level NLMAX-i = Time level TIMENLMAX-i
+ispacelevelcoupledtotimelevel = 1
 
 # ----------------------------------------------------------------------
 
@@ -46,7 +51,7 @@ nminIterations     = 1
 
 # Maximum number of steps
 
-nmaxIterations     = 5
+nmaxIterations     = 1
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -59,14 +64,14 @@ depsRel            = 1E-5 1E-8 0.001
 
 depsAbs            = 1E-8 0.001
 
-# General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
-# not used if MG is the linear solver.
+# General damping parameter when adding the preconditioned defect
+# to the solution in the nonlinear space-time iteration
 
 domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 3
+ioutputLevel       = 2 3
 
 # ----------------------------------------------------------------------
 
@@ -80,8 +85,17 @@ itimeStepScheme = 0                       # IFRSTP
 
 dtimeStepTheta = 1.0                      # THETA
 
+#####################
+[TIME-POSTPROCESSING]
+#####################
 
+# Filename prefix for GMV output.
+
+sgmvFileName = 'gmv/u3_1.gmv'
+
+################
 [TIME-MULTIGRID]
+################
 
 # Minimum number of time-MG sweeps per nonlinear time-iteration
 nminIterations = 1
@@ -102,31 +116,45 @@ depsAbs            = 1E-8
 
 # Output level of the solver
 
-ioutputLevel       = 2
+ioutputLevel       = 3
 
 # Cycle. 0=F-cycle, 1=V-cycle, 2=W-cycle
 
 icycle = 1
 
+# Type of space-time preconditioner to use in smoother / coarse grid solver.
+# =0: Block Jacobi.
+# =1: Block Forward-Backward Gauss-Seidel
 
+cspaceTimePreconditioner = 0
 
+###############
 [TIME-SMOOTHER]
+###############
 
 # Damping parameter
-domega = 1.0
+domega = 0.7
 
 # Number of smoothing steps
-nsmSteps = 1
+nsmSteps = 4
+
+# Switch smoothing on/off.
+# =1: do smoothing as pre- and/or postsmoother, respectively.
+# =0: don't do smoothing as pre- and/or postsmoother, respectively.
+ipresmoothing = 1
+ipostsmoothing = 1
 
 # Output level of the smoother
 
-ioutputLevel = 0
+ioutputLevel = 2
 
 
+#######################
 [TIME-COARSEGRIDSOLVER]
+#######################
 
 # Minimum number of time-iterations on the coarsest time-mesh
-nminIterations = 2
+nminIterations = 1
 
 # Maximum number of time-iterations on the coarsest time-mesh
 nmaxIterations = 100
@@ -143,7 +171,7 @@ depsRel            = 1E-8
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-8 
+depsAbs            = 1E-20
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 
@@ -151,4 +179,4 @@ ddivRel            = 1E20
 
 # Output level of the solver
 
-ioutputLevel = 0
+ioutputLevel = 3

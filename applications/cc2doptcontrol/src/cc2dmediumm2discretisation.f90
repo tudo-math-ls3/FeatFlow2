@@ -429,7 +429,24 @@ CONTAINS
           p_rdiscretisation%RspatialDiscretisation(2)
       p_rdiscretisation%RspatialDiscretisation(6) = &
           p_rdiscretisation%RspatialDiscretisation(3)
-
+          
+      ! -----------------------------------------------------------------------
+      ! Separated discretisation structures for primal and dual problem
+      ! -----------------------------------------------------------------------
+      ! Create a separate block discretisation structure, only for the primal
+      ! space. Make a copy of the one we have, i.e. reuse it.
+      ! Mark the substructures as being a copy from another discretisation structure,
+      ! sharing all information with part 1..3 of the global problem.
+      ALLOCATE (rproblem%RlevelInfo(i)%p_rdiscretisationPrimal)
+      CALL spdiscr_deriveBlockDiscr (rproblem%RlevelInfo(i)%p_rdiscretisation, &
+          rproblem%RlevelInfo(i)%p_rdiscretisationPrimal, 1,3)
+      
+      ! The same for the dual solution, sharing the discretisation with part 4..6
+      ! of the global equation.
+      ALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationDual)
+      CALL spdiscr_deriveBlockDiscr (rproblem%RlevelInfo(i)%p_rdiscretisation, &
+          rproblem%RlevelInfo(i)%p_rdiscretisationDual, 4,6)
+      
       ! -----------------------------------------------------------------------
       ! Mass matrices
       ! -----------------------------------------------------------------------
@@ -439,12 +456,9 @@ CONTAINS
       ! and replace the cubature-formula identifier by that which is to be
       ! used for the mass matrix.
       ALLOCATE(p_rdiscretisationMass)
-      p_rdiscretisationMass = p_rdiscretisation%RspatialDiscretisation(1)
+      CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscretisation(1),&
+          p_rdiscretisationMass,.TRUE.)
       
-      ! Mark the mass matrix discretisation structure as copy of another one -
-      ! to prevent accidental deallocation of memory.
-      p_rdiscretisationMass%bisCopy = .TRUE.
-
       CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                   'scubStokes',sstr,'')
       IF (sstr .EQ. '') THEN
@@ -513,6 +527,14 @@ CONTAINS
       ! Remove the discretisation from the heap.
       DEALLOCATE(p_rdiscretisation)
 
+      ! Release the block discretisation structures of the primal and dual
+      ! space.
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisationPrimal,.TRUE.)
+      DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationPrimal)
+      
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisationDual,.TRUE.)
+      DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationDual)
+      
       ! -----------------------------------------------------------------------
       ! Mass matrix problem
       ! -----------------------------------------------------------------------
@@ -692,6 +714,25 @@ CONTAINS
       ! only modules that 'know' the structure of the system matrix!
       CALL c2d2_allocSystemMatrix (rproblem,rproblem%RlevelInfo(i),&
           rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
+          
+      ! Create a reference to rpreallocatedSystemMatrix(1:3,1:3) to
+      ! rpreallocatedSystemMatrixPrimal, which is used as preallocated matrix
+      ! only for the primal system. Share all memory
+      CALL lsysbl_deriveSubmatrix (&
+          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
+          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3)
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal%p_rblockDiscretisation =>&
+          rproblem%RlevelInfo(i)%p_rdiscretisationPrimal
+          
+      ! And create a reference to rpreallocatedSystemMatrix(4:6,4:6) as submatrix
+      ! for the dual equation.
+      CALL lsysbl_deriveSubmatrix (&
+          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
+          rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6)
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual%p_rblockDiscretisation =>&
+          rproblem%RlevelInfo(i)%p_rdiscretisationDual
       
       ! -----------------------------------------------------------------------
       ! Temporary vectors
@@ -704,6 +745,13 @@ CONTAINS
         CALL lsysbl_createVecBlockIndMat (&
             rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix,&
             p_rtempVector,.FALSE.)
+            
+        ! The temp vectors for the primal and dual system share their memory
+        ! with that temp vector.
+        CALL lsysbl_deriveSubvector(p_rtempVector,&
+            rproblem%RlevelInfo(i)%rtempVectorPrimal,1,3,.TRUE.)
+        CALL lsysbl_deriveSubvector(p_rtempVector,&
+            rproblem%RlevelInfo(i)%rtempVectorDual,4,6,.TRUE.)
       END IF
       
     END DO
@@ -1175,7 +1223,9 @@ CONTAINS
 
     ! Release matrices and vectors on all levels
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Delete the system matrix.
+      ! Delete the system matrix / matrices.
+      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal)
+      CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual)
       CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix)
 
       ! If there is an existing mass matrix, release it.
@@ -1196,6 +1246,8 @@ CONTAINS
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.
       IF (i .LT. rproblem%NLMAX) THEN
+        CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorPrimal)
+        CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorDual)
         CALL lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector)
       END IF
       
@@ -1241,6 +1293,9 @@ CONTAINS
     CALL parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
         'stargetFlow',spar,'')
     READ(spar,*) rproblem%roptcontrol%stargetFlow
+
+    CALL parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
+        'itargetFlowDelta',rproblem%roptcontrol%itargetFlowDelta,1)
     
   END SUBROUTINE
 
@@ -1325,7 +1380,7 @@ CONTAINS
       CALL sptivec_loadFromFileSequence (&
           rproblem%roptcontrol%rtargetFlowNonstat,&
           '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
-          0,ntimesteps,.TRUE.)
+          0,ntimesteps,rproblem%roptcontrol%itargetFlowDelta,.TRUE.)
 
     END SELECT
 

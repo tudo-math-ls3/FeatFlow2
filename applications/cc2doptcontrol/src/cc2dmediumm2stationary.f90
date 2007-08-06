@@ -157,7 +157,7 @@ CONTAINS
     
     ! Initialise the preconditioner for the nonlinear iteration
     CALL c2d2_initPreconditioner (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
-        rpreconditioner)
+        rpreconditioner,0)
     CALL c2d2_configPreconditioner (rproblem,rpreconditioner)
         
     ! Print out the value of the optimal control functional for the

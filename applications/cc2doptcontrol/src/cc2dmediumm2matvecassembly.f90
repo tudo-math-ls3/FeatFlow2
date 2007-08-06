@@ -274,7 +274,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE c2d2_assembleMatrix (coperation,cmatrixType,rmatrix,rmatrixComponents,&
-      rvector,rfineMatrix)
+      rvector,rfineMatrix,ctypePrimalDual)
 
 !<description>
   ! This routine assembles a global matrix. The caller must initialise the 
@@ -360,6 +360,11 @@ CONTAINS
   ! Rannacher-Turek element if cells are too anisotropic).
   TYPE(t_matrixBlock), INTENT(IN), OPTIONAL :: rfineMatrix
   
+  ! What to assemble.
+  ! =0: assemble both, primal and dual parts (1:6,1:6) of the system
+  ! =1: assemble only primal parts of the system (1:3,1:6)
+  ! =2: assemble only dual parts of the system (4:6,1:6)
+  INTEGER, INTENT(IN) :: ctypePrimalDual
 !</input>
 
 !<inputoutput>
@@ -415,127 +420,135 @@ CONTAINS
       !    (               B1^T B2^T I  ) 
       !
       ! With some multiplication factors in front of the matrices.
-      !
-      ! Primal equation
-      ! ---------------
-      ! Assemble rows 1..3 of the block matrix:
-      !
-      !    ( A11  A12  B1  M/a          ) 
-      !    ( A21  A22  B2       M/a     ) 
-      !    ( B1^T B2^T I                )
-      !
-      ! 1.) Assemble the velocity submatrix
-      !
-      !    ( A11  A12   .    .    .    . ) 
-      !    ( A21  A22   .    .    .      ) 
-      !    (  .    .    .    .    .    . )
+      
+      IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 1)) THEN
+      
+        ! Primal equation
+        ! ---------------
+        ! Assemble rows 1..3 of the block matrix:
+        !
+        !    ( A11  A12  B1  M/a          ) 
+        !    ( A21  A22  B2       M/a     ) 
+        !    ( B1^T B2^T I                )
+        !
+        ! 1.) Assemble the velocity submatrix
+        !
+        !    ( A11  A12   .    .    .    . ) 
+        !    ( A21  A22   .    .    .      ) 
+        !    (  .    .    .    .    .    . )
 
-      CALL assembleVelocityBlocks (.FALSE.,&
-          rmatrixComponents,rmatrix,rvector,1.0_DP)
-      
-      ! Include the mass matrix blocks
-      !
-      !    (  .    .    .    M    .    . ) 
-      !    (  .    .    .    .    M    . ) 
-      !    (  .    .    .    .    .    . )
-      
-      CALL assembleMassBlocks (1,4,rmatrixComponents,rmatrix)
-      
-      ! 3.) Initialise the weights for the idenity- and B-matrices
-      !
-      !    (  .    .   B1    .    .    . ) 
-      !    (  .    .   B2    .    .    . ) 
-      !    ( B1^T B2^T  I    .    .    . )
-      
-      CALL assembleGradientMatrices (.FALSE.,rmatrixComponents,rmatrix,&
-        IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
+        CALL assembleVelocityBlocks (.FALSE.,&
+            rmatrixComponents,rmatrix,rvector,1.0_DP)
+        
+        ! Include the mass matrix blocks
+        !
+        !    (  .    .    .    M    .    . ) 
+        !    (  .    .    .    .    M    . ) 
+        !    (  .    .    .    .    .    . )
+        
+        CALL assembleMassBlocks (1,4,rmatrixComponents,rmatrix)
+        
+        ! 3.) Initialise the weights for the idenity- and B-matrices
+        !
+        !    (  .    .   B1    .    .    . ) 
+        !    (  .    .   B2    .    .    . ) 
+        !    ( B1^T B2^T  I    .    .    . )
+        
+        CALL assembleGradientMatrices (.FALSE.,rmatrixComponents,rmatrix,&
+          IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
 
-      ! 2.) Initialise the weights for the B-matrices
-      !
-      !    (  .    .   B1  ) 
-      !    (  .    .   B2  ) 
-      !    ( B1^T B2^T  I  )
+        ! 2.) Initialise the weights for the B-matrices
+        !
+        !    (  .    .   B1  ) 
+        !    (  .    .   B2  ) 
+        !    ( B1^T B2^T  I  )
+        
+        ! Initialise the weights for the B/B^T matrices
+        rmatrix%RmatrixBlock(1,3)%dscaleFactor = rmatrixComponents%deta1
+        rmatrix%RmatrixBlock(2,3)%dscaleFactor = rmatrixComponents%deta1
+        
+        rmatrix%RmatrixBlock(3,1)%dscaleFactor = rmatrixComponents%dtau1
+        rmatrix%RmatrixBlock(3,2)%dscaleFactor = rmatrixComponents%dtau1
+        
+        ! Initialise the weights of the mass matrices
+        rmatrix%RmatrixBlock(1,4)%dscaleFactor = rmatrixComponents%dmu1
+        rmatrix%RmatrixBlock(2,5)%dscaleFactor = rmatrixComponents%dmu1
+        
+        ! Switch the I-matrix in the continuity equation on/off.
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure,&
+            rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrix%RmatrixBlock(3,3)%dscaleFactor = rmatrixComponents%dkappa1
       
-      ! Initialise the weights for the B/B^T matrices
-      rmatrix%RmatrixBlock(1,3)%dscaleFactor = rmatrixComponents%deta1
-      rmatrix%RmatrixBlock(2,3)%dscaleFactor = rmatrixComponents%deta1
-      
-      rmatrix%RmatrixBlock(3,1)%dscaleFactor = rmatrixComponents%dtau1
-      rmatrix%RmatrixBlock(3,2)%dscaleFactor = rmatrixComponents%dtau1
-      
-      ! Initialise the weights of the mass matrices
-      rmatrix%RmatrixBlock(1,4)%dscaleFactor = rmatrixComponents%dmu1
-      rmatrix%RmatrixBlock(2,5)%dscaleFactor = rmatrixComponents%dmu1
-      
-      ! Switch the I-matrix in the continuity equation on/off.
-      CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure,&
-          rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      rmatrix%RmatrixBlock(3,3)%dscaleFactor = rmatrixComponents%dkappa1
-      
-      ! Dual equation
-      ! ---------------
-      ! Assemble rows 1..3 of the block matrix:
-      !
-      !    (  M    .    .  A44  A45  B1 ) 
-      !    (  .    M    .  A54  A55  B2 ) 
-      !    (  .    .    .  B1^T B2^T I  ) 
-      !
-      ! 1.) Assemble the velocity submatrix
-      !
-      !    (  .    .    .   A44  A45   . ) 
-      !    (  .    .    .   A54  A55   . ) 
-      !    (  .    .    .    .    .    . )
-      !
-      ! Note that the Newton part (if assembled) is set up with the
-      ! primal velocity! The weight is taken from the GAMMA parameter
-      ! and switches of the assembly of Newton. Actually, it's not
-      ! a 'Newton' matrix but the adjoint of the nonlinearity
-      ! which is assembled here...
-      
-      CALL assembleVelocityBlocks (.TRUE.,&
-          rmatrixComponents,rmatrix,rvector,1.0_DP)
-
-      ! In case dgamma2=0, switch off the A45/A54 matrices as we haven't
-      ! assembled them.
-      IF (rmatrixComponents%dgamma2 .NE. 0.0_DP) THEN
-        rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
-        rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
-      ELSE
-        rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
-        rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
       END IF
       
-      ! 2.) Include the mass matrix blocks
-      !
-      !    (  M    .    .    .    .    .  ) 
-      !    (  .    M    .    .    .    .  ) 
-      !    (  .    .    .    .    .    .  )
+      IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 2)) THEN
       
-      CALL assembleMassBlocks (4,1,rmatrixComponents,rmatrix)
+        ! Dual equation
+        ! ---------------
+        ! Assemble rows 1..3 of the block matrix:
+        !
+        !    (  M    .    .  A44  A45  B1 ) 
+        !    (  .    M    .  A54  A55  B2 ) 
+        !    (  .    .    .  B1^T B2^T I  ) 
+        !
+        ! 1.) Assemble the velocity submatrix
+        !
+        !    (  .    .    .   A44  A45   . ) 
+        !    (  .    .    .   A54  A55   . ) 
+        !    (  .    .    .    .    .    . )
+        !
+        ! Note that the Newton part (if assembled) is set up with the
+        ! primal velocity! The weight is taken from the GAMMA parameter
+        ! and switches of the assembly of Newton. Actually, it's not
+        ! a 'Newton' matrix but the adjoint of the nonlinearity
+        ! which is assembled here...
+        
+        CALL assembleVelocityBlocks (.TRUE.,&
+            rmatrixComponents,rmatrix,rvector,1.0_DP)
+
+        ! In case dgamma2=0, switch off the A45/A54 matrices as we haven't
+        ! assembled them.
+        IF (rmatrixComponents%dgamma2 .NE. 0.0_DP) THEN
+          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
+          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
+        ELSE
+          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
+          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
+        END IF
+        
+        ! 2.) Include the mass matrix blocks
+        !
+        !    (  M    .    .    .    .    .  ) 
+        !    (  .    M    .    .    .    .  ) 
+        !    (  .    .    .    .    .    .  )
+        
+        CALL assembleMassBlocks (4,1,rmatrixComponents,rmatrix)
+        
+        ! 3.) Initialise the weights for the idenity- and B-matrices
+        !
+        !    ( .    .    .    .    .   B1 ) 
+        !    ( .    .    .    .    .   B2 ) 
+        !    ( .    .    .   B1^T B2^T  I )
+        CALL assembleGradientMatrices (.TRUE.,rmatrixComponents,rmatrix,&
+          IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
+    
+        ! Initialise the weights for the B/B^T matrices
+        rmatrix%RmatrixBlock(4,6)%dscaleFactor = rmatrixComponents%deta2
+        rmatrix%RmatrixBlock(5,6)%dscaleFactor = rmatrixComponents%deta2
+        
+        rmatrix%RmatrixBlock(6,4)%dscaleFactor = rmatrixComponents%dtau2
+        rmatrix%RmatrixBlock(6,5)%dscaleFactor = rmatrixComponents%dtau2
+        
+        ! Initialise the weights of the mass matrices
+        rmatrix%RmatrixBlock(4,1)%dscaleFactor = rmatrixComponents%dmu2
+        rmatrix%RmatrixBlock(5,2)%dscaleFactor = rmatrixComponents%dmu2
+        
+        ! Switch the I-matrix in the dual continuity equation on/off.
+        CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure,&
+            rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        rmatrix%RmatrixBlock(6,6)%dscaleFactor = rmatrixComponents%dkappa2
       
-      ! 3.) Initialise the weights for the idenity- and B-matrices
-      !
-      !    ( .    .    .    .    .   B1 ) 
-      !    ( .    .    .    .    .   B2 ) 
-      !    ( .    .    .   B1^T B2^T  I )
-      CALL assembleGradientMatrices (.TRUE.,rmatrixComponents,rmatrix,&
-        IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
-  
-      ! Initialise the weights for the B/B^T matrices
-      rmatrix%RmatrixBlock(4,6)%dscaleFactor = rmatrixComponents%deta2
-      rmatrix%RmatrixBlock(5,6)%dscaleFactor = rmatrixComponents%deta2
-      
-      rmatrix%RmatrixBlock(6,4)%dscaleFactor = rmatrixComponents%dtau2
-      rmatrix%RmatrixBlock(6,5)%dscaleFactor = rmatrixComponents%dtau2
-      
-      ! Initialise the weights of the mass matrices
-      rmatrix%RmatrixBlock(4,1)%dscaleFactor = rmatrixComponents%dmu2
-      rmatrix%RmatrixBlock(5,2)%dscaleFactor = rmatrixComponents%dmu2
-      
-      ! Switch the I-matrix in the dual continuity equation on/off.
-      CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixIdentityPressure,&
-          rmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      rmatrix%RmatrixBlock(6,6)%dscaleFactor = rmatrixComponents%dkappa2
+      END IF
       
       ! Matrix restriction
       ! ---------------------------------------------------
@@ -547,31 +560,42 @@ CONTAINS
       ! This helps to stabilise the solver if there are elements in the
       ! mesh with high aspect ratio.
       IF (PRESENT(rfineMatrix)) THEN
-        CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
-            rmatrix%RmatrixBlock(1,1), &
-            rmatrixComponents%iadaptiveMatrices, &
-            rmatrixComponents%dadmatthreshold)
-            
-        IF (.NOT. lsyssc_isMatrixContentShared(&
-            rfineMatrix%RmatrixBlock(1,1),rfineMatrix%RmatrixBlock(2,2))) THEN
-          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
+      
+        ! Primal system:
+        IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 1)) THEN
+      
+          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(1,1), &
               rmatrix%RmatrixBlock(1,1), &
               rmatrixComponents%iadaptiveMatrices, &
               rmatrixComponents%dadmatthreshold)
+              
+          IF (.NOT. lsyssc_isMatrixContentShared(&
+              rfineMatrix%RmatrixBlock(1,1),rfineMatrix%RmatrixBlock(2,2))) THEN
+            CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(2,2), &
+                rmatrix%RmatrixBlock(1,1), &
+                rmatrixComponents%iadaptiveMatrices, &
+                rmatrixComponents%dadmatthreshold)
+          END IF
+          
         END IF
+        
+        ! Dual system
+        IF ((ctypePrimalDual .EQ. 0) .OR. (ctypePrimalDual .EQ. 2)) THEN
 
-        CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(4,4), &
-            rmatrix%RmatrixBlock(4,4), &
-            rmatrixComponents%iadaptiveMatrices, &
-            rmatrixComponents%dadmatthreshold)
-            
-        IF (.NOT. lsyssc_isMatrixContentShared(&
-          rmatrix%RmatrixBlock(4,4),rmatrix%RmatrixBlock(5,5))) THEN
-          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(5,5), &
-              rmatrix%RmatrixBlock(5,5), &
+          CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(4,4), &
+              rmatrix%RmatrixBlock(4,4), &
               rmatrixComponents%iadaptiveMatrices, &
               rmatrixComponents%dadmatthreshold)
+              
+          IF (.NOT. lsyssc_isMatrixContentShared(&
+            rmatrix%RmatrixBlock(4,4),rmatrix%RmatrixBlock(5,5))) THEN
+            CALL mrest_matrixRestrictionEX3Y (rfineMatrix%RmatrixBlock(5,5), &
+                rmatrix%RmatrixBlock(5,5), &
+                rmatrixComponents%iadaptiveMatrices, &
+                rmatrixComponents%dadmatthreshold)
+          END IF
         END IF
+        
       END IF
 
     END IF

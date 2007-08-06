@@ -102,6 +102,13 @@ CONTAINS
       ! and inform the discretisation which analytic boundary conditions to use:
       p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditions
 
+      ! The same for the pure primal and dual equation.
+      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisationPrimal
+      p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditionsPrimal
+
+      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisationDual
+      p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditionsDual
+
     END DO
     
   END SUBROUTINE
@@ -138,6 +145,8 @@ CONTAINS
   ! A pointer to the system matrix and the RHS vector as well as 
   ! the discretisation
   TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+  TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationPrimal
+  TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationDual
 
   ! Pointer to structure for saving discrete BC's:
   TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
@@ -153,6 +162,8 @@ CONTAINS
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
       p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      p_rdiscretisationPrimal => rproblem%RlevelInfo(i)%p_rdiscretisationPrimal
+      p_rdiscretisationDual => rproblem%RlevelInfo(i)%p_rdiscretisationDual
       
       ! For the discrete problem, we need a discrete version of the above
       ! boundary conditions. So we have to discretise them.
@@ -177,6 +188,14 @@ CONTAINS
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
                                  .FALSE.,getBoundaryValues, &
                                  rproblem%rcollection)
+        CALL bcasm_discretiseBC (p_rdiscretisationPrimal, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCPrimal, &
+                                 .FALSE.,getBoundaryValues, &
+                                 rproblem%rcollection)
+        CALL bcasm_discretiseBC (p_rdiscretisationDual, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCDual, &
+                                 .FALSE.,getBoundaryValues, &
+                                 rproblem%rcollection)
       ELSE
         ! Calculate BC's for matrix assembly, defect vector assembly and
         ! solution. The latter one is needed for the implementation of
@@ -184,6 +203,16 @@ CONTAINS
         ! is discretised!
         CALL bcasm_discretiseBC (p_rdiscretisation, &
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
+                                 .FALSE.,getBoundaryValues, &
+                                 rproblem%rcollection,&
+                                 BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseBC (p_rdiscretisationPrimal, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCPrimal, &
+                                 .FALSE.,getBoundaryValues, &
+                                 rproblem%rcollection,&
+                                 BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseBC (p_rdiscretisationDual, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCDual, &
                                  .FALSE.,getBoundaryValues, &
                                  rproblem%rcollection,&
                                  BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
@@ -196,6 +225,12 @@ CONTAINS
         CALL bcasm_discretiseFBC (p_rdiscretisation,&
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
                                   getBoundaryValuesFBC,rproblem%rcollection)
+        CALL bcasm_discretiseFBC (p_rdiscretisationPrimal,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCPrimal,.FALSE., &
+                                  getBoundaryValuesFBC,rproblem%rcollection)
+        CALL bcasm_discretiseFBC (p_rdiscretisationDual,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCDual,.FALSE., &
+                                  getBoundaryValuesFBC,rproblem%rcollection)
       ELSE
         ! Calculate BC's for matrix assembly, defect vector assembly and
         ! solution. The latter one is needed for the implementation of
@@ -203,6 +238,14 @@ CONTAINS
         ! is discretised!
         CALL bcasm_discretiseFBC (p_rdiscretisation,&
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,.FALSE., &
+                                  getBoundaryValuesFBC,rproblem%rcollection,&
+                                  BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseFBC (p_rdiscretisationPrimal,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCPrimal,.FALSE., &
+                                  getBoundaryValuesFBC,rproblem%rcollection,&
+                                  BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseFBC (p_rdiscretisationDual,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCDual,.FALSE., &
                                   getBoundaryValuesFBC,rproblem%rcollection,&
                                   BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
       END IF
@@ -224,6 +267,28 @@ CONTAINS
       rproblem%RlevelInfo(i)%rpreallocatedSystemMatrix%p_rdiscreteBCfict => &
           p_rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
+      
+      ! The same for the 'pseudo' matrices corresponding to the primal and dual system.
+      !
+      ! Primal:
+      p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBCPrimal
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal%p_rdiscreteBC => p_rdiscreteBC
+      rproblem%RlevelInfo(i)%rtempVectorPrimal%p_rdiscreteBC => p_rdiscreteBC
+      
+      p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBCDual
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal%p_rdiscreteBCfict => &
+          p_rdiscreteFBC
+      rproblem%RlevelInfo(i)%rtempVectorPrimal%p_rdiscreteBCfict => p_rdiscreteFBC
+
+      ! Dual:
+      p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBCDual
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual%p_rdiscreteBC => p_rdiscreteBC
+      rproblem%RlevelInfo(i)%rtempVectorPrimal%p_rdiscreteBC => p_rdiscreteBC
+      
+      p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBCDual
+      rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual%p_rdiscreteBCfict => &
+          p_rdiscreteFBC
+      rproblem%RlevelInfo(i)%rtempVectorDual%p_rdiscreteBCfict => p_rdiscreteFBC
       
     END DO
 
@@ -277,6 +342,8 @@ CONTAINS
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationPrimal
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationDual
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
@@ -288,6 +355,8 @@ CONTAINS
       ! From the matrix or the RHS we have access to the discretisation and the
       ! analytic boundary conditions.
       p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+      p_rdiscretisationPrimal => rproblem%RlevelInfo(i)%p_rdiscretisationPrimal
+      p_rdiscretisationDual => rproblem%RlevelInfo(i)%p_rdiscretisationDual
       
       ! For the discrete problem, we need a discrete version of the above
       ! boundary conditions. So we have to discretise them.
@@ -315,6 +384,14 @@ CONTAINS
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
                                 bforce,getBoundaryValues, &
                                 rproblem%rcollection)
+        CALL bcasm_discretiseBC (p_rdiscretisationPrimal, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCPrimal, &
+                                bforce,getBoundaryValues, &
+                                rproblem%rcollection)
+        CALL bcasm_discretiseBC (p_rdiscretisationDual, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCDual, &
+                                bforce,getBoundaryValues, &
+                                rproblem%rcollection)
       ELSE
         ! Calculate BC's for matrix assembly, defect vector assembly and
         ! solution. The latter one is needed for the implementation of
@@ -322,6 +399,16 @@ CONTAINS
         ! is discretised!
         CALL bcasm_discretiseBC (p_rdiscretisation, &
                                  rproblem%RlevelInfo(i)%p_rdiscreteBC, &
+                                bforce,getBoundaryValues, &
+                                rproblem%rcollection,&
+                                BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseBC (p_rdiscretisationPrimal, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCPrimal, &
+                                bforce,getBoundaryValues, &
+                                rproblem%rcollection,&
+                                BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseBC (p_rdiscretisationDual, &
+                                 rproblem%RlevelInfo(i)%p_rdiscreteBCDual, &
                                 bforce,getBoundaryValues, &
                                 rproblem%rcollection,&
                                 BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
@@ -333,6 +420,12 @@ CONTAINS
         CALL bcasm_discretiseFBC (p_rdiscretisation,&
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,bforce, &
                                   getBoundaryValuesFBC,rproblem%rcollection)
+        CALL bcasm_discretiseFBC (p_rdiscretisationPrimal,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCPrimal,bforce, &
+                                  getBoundaryValuesFBC,rproblem%rcollection)
+        CALL bcasm_discretiseFBC (p_rdiscretisationDual,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCDual,bforce, &
+                                  getBoundaryValuesFBC,rproblem%rcollection)
       ELSE
         ! Calculate BC's for matrix assembly, defect vector assembly and
         ! solution. The latter one is needed for the implementation of
@@ -340,6 +433,14 @@ CONTAINS
         ! is discretised!
         CALL bcasm_discretiseFBC (p_rdiscretisation,&
                                   rproblem%RlevelInfo(i)%p_rdiscreteFBC,bforce, &
+                                  getBoundaryValuesFBC,rproblem%rcollection,&
+                                  BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseFBC (p_rdiscretisationPrimal,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCPrimal,bforce, &
+                                  getBoundaryValuesFBC,rproblem%rcollection,&
+                                  BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
+        CALL bcasm_discretiseFBC (p_rdiscretisationDual,&
+                                  rproblem%RlevelInfo(i)%p_rdiscreteFBCDual,bforce, &
                                   getBoundaryValuesFBC,rproblem%rcollection,&
                                   BCASM_DISCFORDEFMAT+BCASM_DISCFORSOL)
       END IF
@@ -471,12 +572,18 @@ CONTAINS
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
       ! Release our discrete version of the boundary conditions
       CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
+      CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBCPrimal)
+      CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBCDual)
       
       ! as well as the discrete version of the BC's for fictitious boundaries
       CALL bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      CALL bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBCPrimal)
+      CALL bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBCDual)
 
       ! ...and also the corresponding analytic description.
       CALL bcond_doneBC (rproblem%p_rboundaryConditions)
+      CALL bcond_doneBC (rproblem%p_rboundaryConditionsPrimal)
+      CALL bcond_doneBC (rproblem%p_rboundaryConditionsDual)
     END DO
     
     ! Remove the Neumann flag from the collection

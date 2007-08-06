@@ -51,6 +51,14 @@ MODULE cc2dmediumm2basic
     ! (size of subvectors in the solution vector, trial/test functions,...)
     TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
+    ! An object specifying the block discretisation structure only for the
+    ! primal space.
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationPrimal
+
+    ! An object specifying the block discretisation structure only for the
+    ! dual space.
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisationDual
+
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
     TYPE(t_matrixScalar) :: rmatrixTemplateFEM
@@ -79,6 +87,14 @@ MODULE cc2dmediumm2basic
     ! can be found in the module cc2dmediumm2matvecassembly.
     TYPE(t_matrixBlock) :: rpreallocatedSystemMatrix
     
+    ! This is a reference to rpreallocatedSystemMatrix(1:3,1:3), which realises
+    ! the pure primal system.
+    TYPE(t_matrixBlock) :: rpreallocatedSystemMatrixPrimal
+    
+    ! This is a reference to rpreallocatedSystemMatrix(4:6,4:6), which realises
+    ! the pure dual system.
+    TYPE(t_matrixBlock) :: rpreallocatedSystemMatrixDual
+    
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar) :: rmatrixStokes
     
@@ -91,14 +107,32 @@ MODULE cc2dmediumm2basic
     ! B2-matrix for that specific level. 
     TYPE(t_matrixScalar) :: rmatrixB2
 
-    ! matrix on lower levels.
+    ! Temp vector for the full system.
     TYPE(t_vectorBlock) :: rtempVector
+    
+    ! Reference ro rtempVector(1:3), which corresponds to the primal solution.
+    TYPE(t_vectorBlock) :: rtempVectorPrimal
 
-    ! A variable describing the discrete boundary conditions fo the velocity
+    ! Reference ro rtempVector(4:6), which corresponds to the dual solution.
+    TYPE(t_vectorBlock) :: rtempVectorDual
+
+    ! A variable describing the discrete boundary conditions for the velocity
     TYPE(t_discreteBC), POINTER :: p_rdiscreteBC
   
     ! A structure for discrete fictitious boundary conditions
     TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBC
+    
+    ! A variable describing the discrete boundary conditions for the primal velocity
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBCprimal
+
+    ! A variable describing the discrete boundary conditions for the dual velocity
+    TYPE(t_discreteBC), POINTER :: p_rdiscreteBCdual
+  
+    ! A structure for discrete fictitious boundary conditions (primal solution)
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBCprimal
+
+    ! A structure for discrete fictitious boundary conditions (dual solution)
+    TYPE(t_discreteFBC), POINTER :: p_rdiscreteFBCdual
     
     ! Mass matrix
     TYPE(t_matrixScalar) :: rmatrixMass
@@ -171,6 +205,10 @@ MODULE cc2dmediumm2basic
     ! Solution vector containing a nonstationary target flow.
     ! Only used if itypeTargetFlow = 2
     TYPE(t_spaceTimeVector) :: rtargetFlowNonstat
+    
+    ! Target flow granilarity for the filenames of a nonstationary target flow.
+    ! Specifies how the number in the filename is increased.
+    INTEGER :: itargetFlowDelta = 1
   
   END TYPE
 
@@ -221,6 +259,14 @@ MODULE cc2dmediumm2basic
 
     ! A variable describing the analytic boundary conditions.    
     TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditions
+
+    ! A variable describing the analytic boundary conditions for the primal
+    ! equation.
+    TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditionsPrimal
+
+    ! A variable describing the analytic boundary conditions for the dual
+    ! equation.
+    TYPE(t_boundaryConditions), POINTER   :: p_rboundaryConditionsDual
 
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER           :: p_rsolverNode

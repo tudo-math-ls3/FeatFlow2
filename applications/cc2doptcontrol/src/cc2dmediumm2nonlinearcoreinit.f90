@@ -196,10 +196,10 @@ CONTAINS
 
     IF (.NOT. rproblem%bdecoupledXY) THEN    
       CALL c2d2_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
-        rmatrix,rmatrixAssembly)
+        rmatrix,rmatrixAssembly,ctypePrimalDual=0)
     ELSE
       CALL c2d2_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_DECOUPLED,&
-        rmatrix,rmatrixAssembly)
+        rmatrix,rmatrixAssembly,ctypePrimalDual=0)
     END IF
                                   
     ! That's it, all submatrices are set up.
@@ -210,7 +210,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_initPreconditioner (rproblem,nlmin,nlmax,rpreconditioner)
+  SUBROUTINE c2d2_initPreconditioner (rproblem,nlmin,nlmax,rpreconditioner,ctypePrimalDual)
   
 !<description>
   ! Initialises the given spatial preconditioner structure rpreconditioner.
@@ -234,6 +234,12 @@ CONTAINS
   ! by the preconditioner. This is the level where the preconditioner is to be
   ! applied!
   INTEGER, INTENT(IN) :: nlmax
+  
+  ! Type identifier for the preconditioner.
+  ! =0: Preconditioner for the full primal-dual (6x6) system.
+  ! =1: Preconditioner for the primal (3x3) system.
+  ! =2: Preconditioner for the dual (3x3) system.
+  INTEGER, INTENT(IN) :: ctypePrimalDual
 !</input>
 
 !<output>
@@ -251,11 +257,20 @@ CONTAINS
     ! Basic initialisation of the nonlinenar iteration structure.
     CALL c2d2_createPreconditioner (rpreconditioner,nlmin,nlmax)    
     
+    rpreconditioner%ctypePrimalDual = ctypePrimalDual
+    
     ! Assign the matrix pointers in the nonlinear iteration structure to
     ! all our matrices that we want to use.
     DO ilevel = nlmin,nlmax
+    
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrix => &
-        rproblem%RlevelInfo(ilevel)%rpreallocatedSystemMatrix
+        rproblem%RlevelInfo(ilevel)%rpreallocatedSystemMatrix  
+
+      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixPrimal => &
+        rproblem%RlevelInfo(ilevel)%rpreallocatedSystemMatrixPrimal  
+
+      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixDual => &
+        rproblem%RlevelInfo(ilevel)%rpreallocatedSystemMatrixDual  
         
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrixStokes => &
         rproblem%RlevelInfo(ilevel)%rmatrixStokes
@@ -277,32 +292,60 @@ CONTAINS
 
     END DO
       
-    ! Set up a filter that modifies the block vectors/matrix
-    ! according to boundary conditions.
-    ALLOCATE(rpreconditioner%p_RfilterChain(4))
-    
-    ! Initialise the first filter of the filter chain as boundary
-    ! implementation filter for defect vectors:
-    rpreconditioner%p_RfilterChain(1)%ifilterType = &
-        FILTER_DISCBCDEFREAL
+    SELECT CASE (ctypePrimalDual)
+    CASE (0)
+      ! Set up a filter that modifies the block vectors/matrix
+      ! according to boundary conditions.
+      ALLOCATE(rpreconditioner%p_RfilterChain(4))
+      
+      ! Initialise the first filter of the filter chain as boundary
+      ! implementation filter for defect vectors:
+      rpreconditioner%p_RfilterChain(1)%ifilterType = &
+          FILTER_DISCBCDEFREAL
 
-    ! The second filter filters for boundary conditions of fictitious boundary
-    ! components
-    rpreconditioner%p_RfilterChain(2)%ifilterType = &
-        FILTER_DISCBCDEFFICT
-    
-    ! Do we have Neumann boundary?
-    bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
-    rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
-    IF (.NOT. bneumann) THEN
-      ! Pure Dirichlet problem -- Neumann boundary for the pressure.
-      ! Filter the pressure to avoid indefiniteness.
-      rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_TOL20
-      rpreconditioner%p_RfilterChain(3)%itoL20component = NDIM2D+1
+      ! The second filter filters for boundary conditions of fictitious boundary
+      ! components
+      rpreconditioner%p_RfilterChain(2)%ifilterType = &
+          FILTER_DISCBCDEFFICT
+      
+      ! Do we have Neumann boundary?
+      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+      rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      IF (.NOT. bneumann) THEN
+        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+        ! Filter the pressure to avoid indefiniteness.
+        rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_TOL20
+        rpreconditioner%p_RfilterChain(3)%itoL20component = NDIM2D+1
 
-      rpreconditioner%p_RfilterChain(4)%ifilterType = FILTER_TOL20
-      rpreconditioner%p_RfilterChain(4)%itoL20component = 2*(NDIM2D+1)
-    END IF
+        rpreconditioner%p_RfilterChain(4)%ifilterType = FILTER_TOL20
+        rpreconditioner%p_RfilterChain(4)%itoL20component = 2*(NDIM2D+1)
+      END IF
+      
+    CASE (1:2)
+      ! Set up a filter that modifies the block vectors/matrix
+      ! according to boundary conditions -- pure primal or dual system, resp.
+      ALLOCATE(rpreconditioner%p_RfilterChain(3))
+      
+      ! Initialise the first filter of the filter chain as boundary
+      ! implementation filter for defect vectors:
+      rpreconditioner%p_RfilterChain(1)%ifilterType = &
+          FILTER_DISCBCDEFREAL
+
+      ! The second filter filters for boundary conditions of fictitious boundary
+      ! components
+      rpreconditioner%p_RfilterChain(2)%ifilterType = &
+          FILTER_DISCBCDEFFICT
+      
+      ! Do we have Neumann boundary?
+      bneumann = collct_getvalue_int (rproblem%rcollection, 'INEUMANN') .EQ. YES
+      rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      IF (.NOT. bneumann) THEN
+        ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+        ! Filter the pressure to avoid indefiniteness.
+        rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_TOL20
+        rpreconditioner%p_RfilterChain(3)%itoL20component = NDIM2D+1
+      END IF
+    END SELECT
       
   END SUBROUTINE
 
@@ -338,8 +381,14 @@ CONTAINS
       ! Release the preconditioner matrix on every level
       DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
         CALL lsysbl_releaseMatrix ( &
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal)
+        CALL lsysbl_releaseMatrix ( &
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual)
+        CALL lsysbl_releaseMatrix ( &
           rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
         DEALLOCATE(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
+        DEALLOCATE(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal)
+        DEALLOCATE(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual)
       END DO
       
       ! Release the temporary vector(s)
@@ -424,7 +473,15 @@ CONTAINS
       
       ! Get a pointer to the discretsation structure on the level
       ! where the preconditioner should act
-      p_rdiscretisation => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation
+      ! The preconditioner type decides on which discretisation structure we use.
+      SELECT CASE (rpreconditioner%ctypePrimalDual)
+      CASE (0)
+        p_rdiscretisation => rproblem%RlevelInfo(NLMAX)%p_rdiscretisation
+      CASE (1)
+        p_rdiscretisation => rproblem%RlevelInfo(NLMAX)%p_rdiscretisationPrimal
+      CASE (2)
+        p_rdiscretisation => rproblem%RlevelInfo(NLMAX)%p_rdiscretisationDual
+      END SELECT
       
       ! Figure out the name of the section that contains the information
       ! about the linear subsolver. Ask the parameter list from the INI/DAT file
@@ -448,7 +505,7 @@ CONTAINS
       ! Initialise the projection structure with data from the INI/DAT
       ! files. This allows to configure prolongation/restriction.
       CALL c2d2_getProlRest (rpreconditioner%p_rprojection, &
-          rproblem%rparamList,  'CC-PROLREST')
+          rproblem%rparamList,  'CC-PROLREST', rpreconditioner%ctypePrimalDual)
       
       ! Initialise the linear subsolver using the parameters from the INI/DAT
       ! files, the prepared filter chain and the interlevel projection structure.
@@ -590,10 +647,17 @@ CONTAINS
           IF (.NOT. ASSOCIATED(rpreconditioner%RcoreEquation(i)%&
               p_rmatrixPreconditioner)) THEN
             ALLOCATE(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
+            ALLOCATE(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal)
+            ALLOCATE(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual)
           ELSE
+            CALL lsysbl_releaseMatrix (rpreconditioner%RcoreEquation(i)%&
+                p_rmatrixPreconditionerPrimal)
+            CALL lsysbl_releaseMatrix (rpreconditioner%RcoreEquation(i)%&
+                p_rmatrixPreconditionerDual)
             CALL lsysbl_releaseMatrix (rpreconditioner%RcoreEquation(i)%&
                 p_rmatrixPreconditioner)
           END IF
+          
           p_rmatrixPreconditioner => &
               rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner
         
@@ -676,6 +740,39 @@ CONTAINS
             END IF
             
           END IF
+
+          ! Create a 3x3 subsystem corresponding to the primal equation
+          CALL lsysbl_deriveSubmatrix (p_rmatrixPreconditioner,&
+              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal,&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,1,3)
+              
+          ! Create a 3x3 subsystem corresponding to the dual equation
+          CALL lsysbl_deriveSubmatrix (p_rmatrixPreconditioner,&
+              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual,&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,4,6)
+
+          ! Set pointers to discretisation structure and boundary conditions
+          ! for the primal subsystem
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal%p_rblockDiscretisation =>&
+            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal%p_rblockDiscretisation
+
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal%p_rdiscreteBC =>&
+            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal%p_rdiscreteBC
+
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal%p_rdiscreteBCfict =>&
+            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixPrimal%p_rdiscreteBCfict
+              
+          ! Set pointers to discretisation structure and boundary conditions
+          ! for the dual subsystem
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual%p_rblockDiscretisation =>&
+            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual%p_rblockDiscretisation
+
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual%p_rdiscreteBC =>&
+            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual%p_rdiscreteBC
+
+          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual%p_rdiscreteBCfict =>&
+            rproblem%RlevelInfo(i)%rpreallocatedSystemMatrixDual%p_rdiscreteBCfict
+              
         END DO
         
       END IF
@@ -704,9 +801,22 @@ CONTAINS
       ! For this purpose, copy the matrix structures from the preconditioner
       ! matrices to Rmatrix.
       DO i=NLMIN,NLMAX
-        CALL lsysbl_duplicateMatrix ( &
-          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
-          Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        ! The ctypePrimalDual flag decides on which matrix is used for
+        ! preconditioning -- the whole or the primal submatrix or the dual submatrix.
+        SELECT CASE (rpreconditioner%ctypePrimalDual)
+        CASE (0)
+          CALL lsysbl_duplicateMatrix ( &
+            rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
+            Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CASE (1)
+          CALL lsysbl_duplicateMatrix ( &
+            rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal, &
+            Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        CASE (2)
+          CALL lsysbl_duplicateMatrix ( &
+            rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual, &
+            Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        END SELECT
       END DO
       
       CALL linsol_setMatrices(&
@@ -743,7 +853,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE c2d2_getProlRest (rprojection, rparamList, sname)
+  SUBROUTINE c2d2_getProlRest (rprojection, rparamList, sname, ctypePrimalDual)
   
 !<description>
   ! Initialises an existing interlevel projection structure rprojection
@@ -758,6 +868,12 @@ CONTAINS
   ! Name of the section in the parameter list containing the parameters
   ! of the prolongation/restriction.
   CHARACTER(LEN=*), INTENT(IN) :: sname
+  
+  ! Type of equation.
+  ! =0: full primal-dual system with 6 subvectors
+  ! =1: only primal system
+  ! =2: only dual system
+  INTEGER, INTENT(IN) :: ctypePrimalDual
 !</input>
 
 !<output>
@@ -794,6 +910,13 @@ CONTAINS
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolongationOrder  = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%irestrictionOrder   = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%iinterpolationOrder = i1
+      
+      ! If there's a dual equation involved, initialise that one, too.
+      IF (ctypePrimalDual .GT. 0) THEN
+        rprojection%RscalarProjection(:,4:6)%iprolongationOrder  = i1
+        rprojection%RscalarProjection(:,4:6)%irestrictionOrder   = i1
+        rprojection%RscalarProjection(:,4:6)%iinterpolationOrder = i1
+      END IF
     END IF
 
     ! Prolongation/restriction order for pressure
@@ -804,6 +927,13 @@ CONTAINS
       rprojection%RscalarProjection(:,NDIM2D+1)%iprolongationOrder  = i1
       rprojection%RscalarProjection(:,NDIM2D+1)%irestrictionOrder   = i1
       rprojection%RscalarProjection(:,NDIM2D+1)%iinterpolationOrder = i1
+      
+      ! If there's a dual equation involved, initialise that one, too.
+      IF (ctypePrimalDual .GT. 0) THEN
+        rprojection%RscalarProjection(:,6)%iprolongationOrder  = i1
+        rprojection%RscalarProjection(:,6)%irestrictionOrder   = i1
+        rprojection%RscalarProjection(:,6)%iinterpolationOrder = i1
+      END IF
     END IF
     
     ! Prolongation/restriction variant for velocity components
@@ -813,6 +943,12 @@ CONTAINS
     IF (i1 .NE. -1) THEN
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolVariant  = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%irestVariant  = i1
+
+      ! If there's a dual equation involved, initialise that one, too.
+      IF (ctypePrimalDual .GT. 0) THEN
+        rprojection%RscalarProjection(:,4:6)%iprolVariant  = i1
+        rprojection%RscalarProjection(:,4:6)%irestVariant  = i1
+      END IF
     END IF
     
     ! Aspect-ratio indicator in case of Q1~ discretisation
@@ -822,6 +958,12 @@ CONTAINS
     IF (i1 .NE. 1) THEN
       rprojection%RscalarProjection(:,1:NDIM2D)%iprolARIndicatorEX3Y  = i1
       rprojection%RscalarProjection(:,1:NDIM2D)%irestARIndicatorEX3Y  = i1
+      
+      ! If there's a dual equation involved, initialise that one, too.
+      IF (ctypePrimalDual .GT. 0) THEN
+        rprojection%RscalarProjection(:,4:6)%iprolARIndicatorEX3Y  = i1
+        rprojection%RscalarProjection(:,4:6)%irestARIndicatorEX3Y  = i1
+      END IF
     END IF
 
     ! Aspect-ratio bound for switching to constant prolongation/restriction
@@ -831,6 +973,12 @@ CONTAINS
     IF (d1 .NE. 20.0_DP) THEN
       rprojection%RscalarProjection(:,1:NDIM2D)%dprolARboundEX3Y  = d1
       rprojection%RscalarProjection(:,1:NDIM2D)%drestARboundEX3Y  = d1
+      
+      ! If there's a dual equation involved, initialise that one, too.
+      IF (ctypePrimalDual .GT. 0) THEN
+        rprojection%RscalarProjection(:,4:6)%dprolARboundEX3Y  = d1
+        rprojection%RscalarProjection(:,4:6)%drestARboundEX3Y  = d1
+      END IF
     END IF
 
   END SUBROUTINE
@@ -1022,7 +1170,8 @@ CONTAINS
         ! -----------------------------------------------------------
         ! Optimal control problem extension
         ! -----------------------------------------------------------
-        ! Put a reference to the transposed B-matrices also to the
+        ! If there's a dual eqation involved, 
+        ! put a reference to the transposed B-matrices also to the
         ! dual equation part.
         CALL lsyssc_duplicateMatrix ( &
             p_rmatrix%RmatrixBlock(3,1),p_rmatrix%RmatrixBlock(6,4), &
@@ -1031,6 +1180,14 @@ CONTAINS
         CALL lsyssc_duplicateMatrix ( &
             p_rmatrix%RmatrixBlock(3,2),p_rmatrix%RmatrixBlock(6,5), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            
+        ! Create references to the primal and dual diagonal subsystem 
+        CALL lsysbl_deriveSubmatrix (p_rmatrix,&
+            rpreconditioner%RcoreEquation(ilev)%p_rmatrixPrimal,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,1,3)
+        CALL lsysbl_deriveSubmatrix (p_rmatrix,&
+            rpreconditioner%RcoreEquation(ilev)%p_rmatrixDual,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE,4,6)
       
       END DO
       
@@ -1135,15 +1292,18 @@ CONTAINS
         ! -----------------------------------------------------------
         ! Optimal control problem extension
         ! -----------------------------------------------------------
-        ! Put a reference to the non-transposed B-matrices also to the
+        ! If there's a dual equation involved,
+        ! put a reference to the non-transposed B-matrices also to the
         ! dual equation part.
-        CALL lsyssc_duplicateMatrix ( &
-            p_rmatrix%RmatrixBlock(3,1),p_rmatrix%RmatrixBlock(6,4), &
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        IF (p_rmatrix%ndiagBlocks .GT. 3) THEN
+          CALL lsyssc_duplicateMatrix ( &
+              p_rmatrix%RmatrixBlock(3,1),p_rmatrix%RmatrixBlock(6,4), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-        CALL lsyssc_duplicateMatrix ( &
-            p_rmatrix%RmatrixBlock(3,2),p_rmatrix%RmatrixBlock(6,5), &
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          CALL lsyssc_duplicateMatrix ( &
+              p_rmatrix%RmatrixBlock(3,2),p_rmatrix%RmatrixBlock(6,5), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        END IF
 
       END IF
 

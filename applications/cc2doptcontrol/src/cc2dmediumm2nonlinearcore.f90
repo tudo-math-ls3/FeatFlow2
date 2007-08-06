@@ -223,6 +223,12 @@ MODULE cc2dmediumm2nonlinearcore
     ! The (linearised) system matrix for that specific level. 
     TYPE(t_matrixBlock), POINTER :: p_rmatrix => NULL()
 
+    ! The primal part of the (linearised) system matrix for that specific level. 
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPrimal => NULL()
+
+    ! The dual part of the (linearised) system matrix for that specific level. 
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixDual => NULL()
+
     ! Stokes matrix for that specific level (=nu*Laplace)
     TYPE(t_matrixScalar), POINTER :: p_rmatrixStokes => NULL()
 
@@ -249,6 +255,12 @@ MODULE cc2dmediumm2nonlinearcore
     ! nonlinear iteration and used e.g. if a linear solver (Multigrid) is
     ! used for preconditioning.
     TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditioner => NULL()
+    
+    ! A reference to p_rmatrixPreconditioner(1:3,1:3)
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditionerPrimal => NULL()
+    
+    ! A reference to p_rmatrixPreconditioner(4:6,4:6)
+    TYPE(t_matrixBlock), POINTER :: p_rmatrixPreconditionerDual => NULL()
   
   END TYPE
 
@@ -268,6 +280,12 @@ MODULE cc2dmediumm2nonlinearcore
     ! preconditioning with inverse mass matrix, CCPREC_LINEARSOLVER for solving a linear
     ! system, CCPREC_NEWTON for a Newton iteration,...)
     INTEGER :: ctypePreconditioning = CCPREC_NONE
+    
+    ! Target equation where the preconditioner is allowed to be applied to.
+    ! =0: full primal-dual (6x6) system
+    ! =1: primal (3x3) system
+    ! =2: dual (3x3) system
+    INTEGER :: ctypePrimalDual = 0
     
     ! Minimum discretisation level
     INTEGER :: NLMIN = 0
@@ -429,6 +447,8 @@ CONTAINS
     LOGICAL :: bassembleNewton
     TYPE(t_matrixBlock), DIMENSION(:), ALLOCATABLE :: Rmatrices
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+    TYPE(t_linsol_alterSolverConfig) :: ralterSolver
+    TYPE(t_vectorBlock) :: rsubvectorD
 
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
@@ -476,11 +496,45 @@ CONTAINS
         ! This simply informs the solver about possible new scaling factors
         ! in the matrices in case they have changed...
         ALLOCATE(Rmatrices(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
-        DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
-          CALL lsysbl_duplicateMatrix ( &
-            rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
-            Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        END DO
+        
+        ! Either attach the full system matrix or the primal or dual submatrix
+        SELECT CASE (rpreconditioner%ctypePrimalDual)
+        CASE (0)
+          DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
+            CALL lsysbl_duplicateMatrix ( &
+              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
+              Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          END DO
+          
+        CASE (1)
+          DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
+            CALL lsysbl_duplicateMatrix ( &
+              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerPrimal, &
+              Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+              
+            ! Overwrite the data of the matrix with the data of the submatrix
+            ! in the full 6x6 preconditioner matrix.
+            ! Ths overwrites the data handes and multiplication factor.
+            CALL lsysbl_deriveSubmatrix ( &
+              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
+              Rmatrices(i), LSYSSC_DUP_IGNORE,LSYSSC_DUP_SHARE,1,3)
+          END DO
+        
+        CASE (2)
+          DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
+            CALL lsysbl_duplicateMatrix ( &
+              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditionerDual, &
+              Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+            ! Overwrite the data of the matrix with the data of the submatrix
+            ! in the full 6x6 preconditioner matrix.
+            ! Ths overwrites the data handes and multiplication factor.
+            CALL lsysbl_deriveSubmatrix ( &
+              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
+              Rmatrices(i), LSYSSC_DUP_IGNORE,LSYSSC_DUP_SHARE,4,6)
+          END DO
+        
+        END SELECT
         
         ! DEBUG!!!
         !CALL matio_writeBlockMatrixHR (Rmatrices(rpreconditioner%NLMIN), 'matrix',&
@@ -494,6 +548,12 @@ CONTAINS
         !      RmatrixBlock(4,1)%h_Da,p_Ddata)
         !END DO
             
+
+        ! Initialise data of the solver. This in fact performs a numeric
+        ! factorisation of the matrices in UMFPACK-like solvers.
+        CALL linsol_initData (p_rsolverNode, ierror)
+        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
+        
         ! The solver got the matrices; clean up Rmatrices, it was only of temporary
         ! nature...
         DO i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
@@ -501,17 +561,106 @@ CONTAINS
         END DO
         DEALLOCATE(Rmatrices)
 
-        ! Initialise data of the solver. This in fact performs a numeric
-        ! factorisation of the matrices in UMFPACK-like solvers.
-        CALL linsol_initData (p_rsolverNode, ierror)
-        IF (ierror .NE. LINSOL_ERR_NOERROR) STOP
-        
-        ! Finally solve the system. As we want to solve Ax=b with
-        ! b being the real RHS and x being the real solution vector,
-        ! we use linsol_solveAdaptively. If b is a defect
-        ! RHS and x a defect update to be added to a solution vector,
-        ! we would have to use linsol_precondDefect instead.
-        CALL linsol_precondDefect (p_rsolverNode,rd)
+        ! Check the preconditioner. Do we have a full-space preconditioner
+        ! or one that has to be applied either only to the primal or to the
+        ! dual system?
+        SELECT CASE (rpreconditioner%ctypePrimalDual)
+        CASE (0)
+          ! Full system
+          !
+          ! Solve the system. As we want to solve Ax=b with
+          ! b being the real RHS and x being the real solution vector,
+          ! we use linsol_solveAdaptively. If b is a defect
+          ! RHS and x a defect update to be added to a solution vector,
+          ! we would have to use linsol_precondDefect instead.
+          CALL linsol_precondDefect (p_rsolverNode,rd)
+
+        CASE (1)
+          ! Primal system
+          !
+          ! The matrix looks like
+          !
+          !  ( A   B   M      )
+          !  ( B^T            )
+          !  ( M       A    B )
+          !  (         B^T    )
+          !
+          ! We only process the primal matrix here:
+          !
+          !  ( A   B )
+          !  ( B^T   )
+          !
+          ! The dual equation is treated as RHS. So subtract M*dual-vector from the
+          ! iteration vector, corresponding to the upper right submatrix.
+          !
+          !  (         M      )  =: M~
+          !  (                )
+          !  (                )
+          !  (                )
+          !
+          ! Subtract: d=d-M~x, so M*dual is subtracted from the primal defect.
+          
+          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
+          !    rx%RvectorBlock(4),rd%RvectorBlock(1),-rmatrixComponents%dmu1,1.0_DP)
+          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
+          !    rx%RvectorBlock(5),rd%RvectorBlock(2),-rmatrixComponents%dmu1,1.0_DP)
+          
+          ! Create a subvector that resembles the primal defect
+          CALL lsysbl_deriveSubvector (rd,rsubvectorD,1,3,.TRUE.)
+          
+          ! Solve the system. As we want to solve Ax=b with
+          ! b being the real RHS and x being the real solution vector,
+          ! we use linsol_solveAdaptively. If b is a defect
+          ! RHS and x a defect update to be added to a solution vector,
+          ! we would have to use linsol_precondDefect instead.
+          CALL linsol_precondDefect (p_rsolverNode,rsubvectorD)
+          
+          ! Release the temp vector again
+          CALL lsysbl_releaseVector (rsubvectorD)
+
+        CASE (2)
+          ! Dual system
+          !
+          ! The matrix looks like
+          !
+          !  ( A   B   M      )
+          !  ( B^T            )
+          !  ( M       A    B )
+          !  (         B^T    )
+          !
+          ! We only process the primal matrix here:
+          !
+          !  ( A   B )
+          !  ( B^T   )
+          !
+          ! The dual equation is treated as RHS. So subtract M*dual-vector from the
+          ! iteration vector, corresponding to the upper right submatrix.
+          !
+          !  (                )  =: M~
+          !  (                )
+          !  ( M              )
+          !  (                )
+          !
+          ! Subtract: d=d-M~x, so M*dual is subtracted from the primal defect.
+          
+          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
+          !    rx%RvectorBlock(1),rd%RvectorBlock(4),-rmatrixComponents%dmu2,1.0_DP)
+          !CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass,&
+          !    rx%RvectorBlock(2),rd%RvectorBlock(5),-rmatrixComponents%dmu2,1.0_DP)
+          
+          ! Create a subvector that resembles the primal defect
+          CALL lsysbl_deriveSubvector (rd,rsubvectorD,4,6,.TRUE.)
+          
+          ! Solve the system. As we want to solve Ax=b with
+          ! b being the real RHS and x being the real solution vector,
+          ! we use linsol_solveAdaptively. If b is a defect
+          ! RHS and x a defect update to be added to a solution vector,
+          ! we would have to use linsol_precondDefect instead.
+          CALL linsol_precondDefect (p_rsolverNode,rsubvectorD)
+          
+          ! Release the temp vector again
+          CALL lsysbl_releaseVector (rsubvectorD)
+        END SELECT
         
         ! Release the numeric factorisation of the matrix.
         ! We don't release the symbolic factorisation, as we can use them
@@ -667,10 +816,12 @@ CONTAINS
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           IF (ilev .EQ. rpreconditioner%NLMAX) THEN
             CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,p_rvectorCoarse)
+                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,&
+                ctypePrimalDual=rpreconditioner%ctypePrimalDual)
           ELSE
             CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine)
+                p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine,&
+                ctypePrimalDual=rpreconditioner%ctypePrimalDual)
           END IF
 
           ! Boundary conditions
