@@ -165,7 +165,7 @@ MODULE scalarpde
   !
   ! 1.) itermCount = 1                     -> 2 additive terms     
   ! 2.) BconstantCoeff = true              -> constant coefficients
-  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient      
+  ! 3.) Dcoefficients(1)  = 1.0            -> 1st coefficient (actually not used)     
   ! 4.) Idescriptors(1,1) = DER_FUNC       -> f in the 1st term    
   ! 5.) Idescriptors(2,1) = DER_FUNC       -> v in the 1st term    
   
@@ -178,6 +178,12 @@ MODULE scalarpde
     ! The descriptor itself is a DER_xxxx derivatrive
     ! identifier (c.f. module 'derivatives').
     INTEGER, DIMENSION(SCPDE_NNAB) :: Idescriptors = DER_FUNC
+    
+    ! Constant coefficients in front of each additive terms in the linear form.
+    ! Note: This array is not used by the framework! Nevertheless, it can be
+    ! used by the main program to pass parameters from the main program to
+    ! callback routines.
+    REAL(DP), DIMENSION(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
     
   END TYPE
   
