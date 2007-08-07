@@ -2635,8 +2635,11 @@ CONTAINS
     rvector%RvectorBlock = rtemplateVec%RvectorBlock
     
     ! Relocate the starting indices of the subvectors.
+    ! Correct the handles of the subvectors since they point to
+    ! the data of rtemplateVec because of the previous copy-command.
     n = istart
     DO i=1,rvector%nblocks
+      rvector%RvectorBlock(i)%h_Ddata = h_Ddata
       rvector%RvectorBlock(i)%iidxFirstEntry = n
       n = n + rvector%RvectorBlock(i)%NEQ
     END DO
