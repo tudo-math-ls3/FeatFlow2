@@ -243,6 +243,7 @@ MODULE collection
   USE filtersupport
   USE fparser
   USE genoutput
+  USE geometry
   
   IMPLICIT NONE
 
@@ -349,8 +350,11 @@ MODULE collection
   ! Double precision REAL value type array
   INTEGER, PARAMETER :: COLLCT_REALARR      = 22
 
+  ! Geometry object
+  INTEGER, PARAMETER :: COLLCT_GEOMETRY     = 24
+
   ! The collection structure itself
-  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 23
+  INTEGER, PARAMETER :: COLLCT_COLLECTION   = 25
 
 !</constantblock>
 
@@ -417,6 +421,9 @@ MODULE collection
 
     ! Pointer to a domain
     TYPE(t_boundary), POINTER      :: p_rboundary => NULL()
+
+    ! Pointer to a geometry object
+    TYPE(t_geometryObject), POINTER :: p_rgeometry => NULL()
 
     ! Pointer to scalar boundary conditions
     TYPE(t_boundaryConditions), POINTER      :: p_rboundaryConditions => NULL()
@@ -3376,6 +3383,68 @@ CONTAINS
   
 !<function>
 
+  FUNCTION collct_getvalue_geom (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) RESULT(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a geometry object.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+!</result>
+  
+  TYPE(t_geometryObject), POINTER :: value
+
+!<input>
+    
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  LOGICAL, INTENT(OUT), OPTIONAL :: bexists
+
+!</output>
+
+!</function>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+
+  ! Get the pointer to the parameter
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_GEOMETRY,&
+                              .FALSE.,p_rvalue, ilevel, bexists, ssectionName)
+
+  ! Return the quantity
+  IF (ASSOCIATED(p_rvalue)) THEN
+    value => p_rvalue%p_rgeometry
+  ELSE
+    NULLIFY(value)
+  END IF
+
+  END FUNCTION
+
+  ! ***************************************************************************
+  
+!<function>
+
   FUNCTION collct_getvalue_fchn (rcollection, sparameter, &
                                  ilevel, ssectionName, bexists) RESULT(value)
 !<description>
@@ -4799,6 +4868,67 @@ CONTAINS
   
   ! Set the value
   p_rvalue%p_rparser => value
+
+  END SUBROUTINE
+
+! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE collct_setvalue_geom (rcollection, sparameter, value, badd, &
+                                   ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parametre name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  TYPE(t_collection), INTENT(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  CHARACTER(LEN=*), INTENT(IN) :: sparameter
+  
+  ! The value of the parameter.
+  TYPE(t_geometryObject), INTENT(IN), TARGET :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  LOGICAL, INTENT(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  INTEGER, INTENT(IN), OPTIONAL :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_collctValue), POINTER :: p_rvalue
+  LOGICAL :: bexists
+
+  ! Get the pointer to the parameter. Add the parameter if necessary
+  CALL collct_getvalue_struc (rcollection, sparameter, COLLCT_GEOMETRY,&
+                              badd,p_rvalue, ilevel, bexists, ssectionName)
+  
+  ! Set the value
+  p_rvalue%p_rgeometry => value
 
   END SUBROUTINE
 
