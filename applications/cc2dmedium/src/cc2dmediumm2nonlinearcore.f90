@@ -1895,6 +1895,12 @@ CONTAINS
         ELSE
           bconvergence = .FALSE.
         END IF
+
+        IF ((ddelU .LT. SYS_EPSREAL*1E2_DP) .AND. &
+            (ddelP .LT. SYS_EPSREAL*1E2_DP)) THEN
+          ! We are hard on machine exactness, so stop the iteraton
+          bconvergence =.TRUE.
+        END IF
         
         ! Print residual information
         CALL output_line ( &
