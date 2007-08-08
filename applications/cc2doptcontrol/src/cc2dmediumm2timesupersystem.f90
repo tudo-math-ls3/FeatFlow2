@@ -1933,7 +1933,7 @@ CONTAINS
         ispacelev = rproblem%nlmax
       END IF
       SELECT CASE (cspaceTimePreconditioner)
-      CASE (0)
+      CASE (0,2)
         ! Initialise the spatial preconditioner for Block Jacobi
         ! (note: this is slightly expensive in terms of memory!
         ! Probably we could use the same preconditioner for all levels,
@@ -1943,7 +1943,7 @@ CONTAINS
             RspatialPrecond(ilev),0)
         CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev))
          
-      CASE (1,2)
+      CASE (1)
         ! Initialise the spatial preconditioner for Block Gauss-Seidel
         ! (note: this is slightly expensive in terms of memory!
         ! Probably we could use the same preconditioner for all levels,
@@ -1982,13 +1982,24 @@ CONTAINS
         CASE (0)
           ! Block Jacobi preconditioner
           CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+
+          ! Defect correction solver
+          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
+          
         CASE (1)
           CALL sptils_initBlockFBGS (rproblem,p_rprecond,&
               RspatialPrecondPrimal(ilev),RspatialPrecondDual(ilev))
+
+          ! Defect correction solver
+          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
+          
+        CASE (2)
+          ! CG with Block Jacobi as preconditioner
+          CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+
+          ! CG solver        
+          CALL sptils_initCG (rproblem,p_rcgrSolver,p_rprecond)
         END SELECT
-        
-        ! Defect correction solver
-        CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
         
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
             'nminIterations', p_rcgrSolver%nminIterations, 1)
@@ -2002,6 +2013,9 @@ CONTAINS
                                     'domega', p_rcgrSolver%domega, 1.0_DP)
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'ddivRel', p_rcgrSolver%ddivRel, 1.0_DP)
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                             'istoppingCriterion', p_rcgrSolver%istoppingCriterion, 0)
+
 
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
             'ioutputLevel', p_rcgrSolver%ioutputLevel, 100)
@@ -2022,9 +2036,13 @@ CONTAINS
           ! Block Gauss-Seidel
           CALL sptils_initBlockFBGS (rproblem,p_rsmoother,&
               RspatialPrecondPrimal(ilev),RspatialPrecondDual(ilev))
+        CASE (2)
+          ! CG with Block Jacobi as preconditioner
+          CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+          CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
         END SELECT
         
-        CALL sptils_convertToSmoother (p_rsmoother,nsmSteps*2**(SIZE(RspatialPrecond)-ilev),domega)
+        CALL sptils_convertToSmoother (p_rsmoother,nsmSteps,domega)
         
         ! Switch off smoothing is set that way in the DAT file
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
@@ -2062,9 +2080,11 @@ CONTAINS
                              'icycle', p_rmgSolver%p_rsubnodeMultigrid%icycle, 0)
     CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
                                 'depsRel', p_rmgSolver%depsRel, 1E-5_DP)
-    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+    CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-MULTIGRID', &
                                 'depsAbs', p_rmgSolver%depsAbs, 1E-5_DP)
-
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+                             'istoppingCriterion', p_rmgSolver%istoppingCriterion, 0)
+    
     ! Initialise the space-time coupled Block-Jacobi preconditioner.
     ! Attach the spatial preconditioner which is applied to each block.
     ! CALL sptils_initBlockJacobi (rproblem,p_rsolverNode,rspatialPrecond)

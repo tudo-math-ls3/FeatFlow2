@@ -150,7 +150,19 @@ CONTAINS
     ALLOCATE(Rsupermatrix(TIMENLMIN:TIMENLMAX))
 
     ! Initialise the supersystem on all levels
-    IF (ispacelevelcoupledtotimelevel .EQ. 1) THEN
+    SELECT CASE (ispacelevelcoupledtotimelevel)
+    CASE (0)
+      ! Everywhere the same space level
+      DO i=TIMENLMIN,TIMENLMAX
+        IF (i .EQ. TIMENLMAX) THEN
+          CALL c2d2_initParamsSupersystem (rproblem,i,&
+              rproblem%NLMAX,Rsupermatrix(i), rx, rb, rd)
+        ELSE
+          CALL c2d2_initParamsSupersystem (rproblem,i,&
+              rproblem%NLMAX,Rsupermatrix(i))
+        END IF
+      END DO
+    CASE (1) 
       ! Space level NLMAX-i = Time level TIMENLMAX-i
       DO i=TIMENLMIN,TIMENLMAX
         IF (i .EQ. TIMENLMAX) THEN
@@ -163,18 +175,21 @@ CONTAINS
               Rsupermatrix(i))
         END IF
       END DO
-    ELSE
-      ! Everywhere the same space level
+    CASE (2)
+      ! Space level NLMAX-i = Time level TIMENLMAX-i,
+      ! but no restriction in time
       DO i=TIMENLMIN,TIMENLMAX
         IF (i .EQ. TIMENLMAX) THEN
-          CALL c2d2_initParamsSupersystem (rproblem,i,&
-              rproblem%NLMAX,Rsupermatrix(i), rx, rb, rd)
+          CALL c2d2_initParamsSupersystem (rproblem,TIMENLMAX,&
+              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+              Rsupermatrix(i), rx, rb, rd)
         ELSE
-          CALL c2d2_initParamsSupersystem (rproblem,i,&
-              rproblem%NLMAX,Rsupermatrix(i))
+          CALL c2d2_initParamsSupersystem (rproblem,TIMENLMAX,&
+              MAX(rproblem%NLMIN,rproblem%NLMAX-(TIMENLMAX-i)),&
+              Rsupermatrix(i))
         END IF
       END DO
-    END IF
+    END SELECT
     
     ! Read the target flow -- stationary or nonstationary
     CALL c2d2_initTargetFlow (rproblem,Rsupermatrix(TIMENLMAX)%niterations)

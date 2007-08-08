@@ -229,34 +229,62 @@ CONTAINS
     ! Save that vector as initial vector on the fine grid.
     CALL sptivec_setTimestepData (rfineVector, 0, rx3)
     
-    ! Now, loop through the time steps.
-    DO istep = 1,rcoarseVector%ntimesteps
-      ! rx3 was the vector from the last timestep. Shift it to rx1 and load
-      ! the vector for the new timestep in rx3
-      CALL lsysbl_copyVector (rx3,rx1)
+    IF (rcoarseVector%ntimesteps .NE. rfineVector%ntimesteps) THEN
+      
+      ! Prolongation in time.
+      !
+      ! Loop through the time steps.
+      DO istep = 1,rcoarseVector%ntimesteps
+    
+        ! rx3 was the vector from the last timestep. Shift it to rx1 and load
+        ! the vector for the new timestep in rx3
+        CALL lsysbl_copyVector (rx3,rx1)
 
+        IF (rprojection%bspaceTimeSimultaneously) THEN
+          ! Space + time
+          CALL sptivec_getTimestepData (rcoarseVector, istep, rtempVecCoarse)
+          CALL mlprj_performProlongation (rprojection%rspatialProjection,rtempVecCoarse, &
+                                          rx3,rtempVecFineScalar)
+        ELSE
+          ! Only time
+          CALL sptivec_getTimestepData (rcoarseVector, istep, rx3)
+        END IF
+        
+        ! Save that vector as new vector on the fine grid.
+        CALL sptivec_setTimestepData (rfineVector, 2*istep, rx3)
+        
+        ! In the temp vector, create the interpolation between rx1 and rx3.
+        ! THat's the prolongated vector.
+        CALL lsysbl_copyVector (rx1,rtempVecFine)
+        CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP,0.5_DP)
+
+        ! Save that vector as new vector on the fine grid.
+        CALL sptivec_setTimestepData (rfineVector, 2*istep-1, rtempVecFine)
+      
+      END DO
+      
+    ELSE
+    
       IF (rprojection%bspaceTimeSimultaneously) THEN
-        ! Space + time
-        CALL sptivec_getTimestepData (rcoarseVector, istep, rtempVecCoarse)
-        CALL mlprj_performProlongation (rprojection%rspatialProjection,rtempVecCoarse, &
-                                        rx3,rtempVecFineScalar)
-      ELSE
-        ! Only time
-        CALL sptivec_getTimestepData (rcoarseVector, istep, rx3)
-      END IF
       
-      ! Save that vector as new vector on the fine grid.
-      CALL sptivec_setTimestepData (rfineVector, 2*istep, rx3)
-      
-      ! In the temp vector, create the interpolation between rx1 and rx3.
-      ! THat's the prolongated vector.
-      CALL lsysbl_copyVector (rx1,rtempVecFine)
-      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP,0.5_DP)
+        ! Prolongation only in space. 
+    
+        ! Loop through the time steps.
+        DO istep = 1,rcoarseVector%ntimesteps
+    
+          ! Space prolongation
+          CALL sptivec_getTimestepData (rcoarseVector, istep, rtempVecCoarse)
+          CALL mlprj_performProlongation (rprojection%rspatialProjection,rtempVecCoarse, &
+                                          rx3,rtempVecFineScalar)
 
-      ! Save that vector as new vector on the fine grid.
-      CALL sptivec_setTimestepData (rfineVector, 2*istep-1, rtempVecFine)
-      
-    END DO
+          ! Save that vector as new vector on the fine grid.
+          CALL sptivec_setTimestepData (rfineVector, istep, rx3)
+
+        END DO
+
+      END IF
+    
+    END IF
     
     ! Release the temp vectors
     CALL lsyssc_releaseVector (rtempVecFineScalar)
@@ -356,96 +384,122 @@ CONTAINS
     CALL lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
     CALL lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
        
-    ! Load timestep 0,1 (fine grid) into the temp vectors.
-    CALL sptivec_getTimestepData (rfineVector, 0, rtempVecFine)
-    CALL sptivec_getTimestepData (rfineVector, 1, rx3)
+    IF (rcoarseVector%ntimesteps .NE. rfineVector%ntimesteps) THEN       
     
-    ! Perform restriction for the first time step.
-    !                          X <--1/2-- x
-    !                         ^ \
-    !                        /   \
-    !                       +--1--+
-    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
-    
-    ! Probably restrict the vector in space to the lower level.
-    ! Save the result.
-    IF (rprojection%bspaceTimeSimultaneously) THEN
-      ! Space + time
-      CALL mlprj_performRestriction (rprojection%rspatialProjection,rtempVecCoarse, &
-                                     rtempVecFine,rx1Scalar)
-      CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecCoarse)
-    ELSE
-      ! Only time
-      CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecFine)
-    END IF
-    
-    ! Loop through the time steps -- on the coarse grid!
-    DO istep = 1,rcoarseVector%ntimesteps-1
-    
-      ! rx3 was the 'right inner fine grid node x' in the above picture.
-      ! Copy it to rx1, so it gets the new 'left inner fine grid node x'
-      ! and load the new 'right inner fine grid node x' to rx1
-      ! as well as the 'inner fine grid node X' to rtempVecFine.
-      CALL lsysbl_copyVector (rx3,rx1)
+      ! Load timestep 0,1 (fine grid) into the temp vectors.
+      CALL sptivec_getTimestepData (rfineVector, 0, rtempVecFine)
+      CALL sptivec_getTimestepData (rfineVector, 1, rx3)
       
-      CALL sptivec_getTimestepData (rfineVector,2*istep, rtempVecFine)
-      CALL sptivec_getTimestepData (rfineVector,2*istep+1, rx3)
-      
-      ! In rtempVecFine, create the restriction of the fine grid vectors
-      ! rx1 and rx3 according to
-      !
-      ! Timestep:    n-1          n          n+1        (fine grid)
-      !              rx3 --1/2--> X <--1/2-- rx3
-      !             (old)        ^ \
-      !                         /   \
-      !                        +--1--+
-      
-      CALL lsysbl_vectorLinearComb (rx1,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
-      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP)
+      ! Perform restriction for the first time step.
+      !                          X <--1/2-- x
+      !                         ^ \
+      !                        /   \
+      !                       +--1--+
+      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
       
       ! Probably restrict the vector in space to the lower level.
       ! Save the result.
       IF (rprojection%bspaceTimeSimultaneously) THEN
         ! Space + time
         CALL mlprj_performRestriction (rprojection%rspatialProjection,rtempVecCoarse, &
-                                       rtempVecFine,rx1Scalar)
-        CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
+                                      rtempVecFine,rx1Scalar)
+        CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecCoarse)
       ELSE
         ! Only time
-        CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecFine)
+        CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecFine)
+      END IF
+      
+      ! Loop through the time steps -- on the coarse grid!
+      DO istep = 1,rcoarseVector%ntimesteps-1
+      
+        ! rx3 was the 'right inner fine grid node x' in the above picture.
+        ! Copy it to rx1, so it gets the new 'left inner fine grid node x'
+        ! and load the new 'right inner fine grid node x' to rx1
+        ! as well as the 'inner fine grid node X' to rtempVecFine.
+        CALL lsysbl_copyVector (rx3,rx1)
+        
+        CALL sptivec_getTimestepData (rfineVector,2*istep, rtempVecFine)
+        CALL sptivec_getTimestepData (rfineVector,2*istep+1, rx3)
+        
+        ! In rtempVecFine, create the restriction of the fine grid vectors
+        ! rx1 and rx3 according to
+        !
+        ! Timestep:    n-1          n          n+1        (fine grid)
+        !              rx3 --1/2--> X <--1/2-- rx3
+        !             (old)        ^ \
+        !                         /   \
+        !                        +--1--+
+        
+        CALL lsysbl_vectorLinearComb (rx1,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
+        CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP)
+        
+        ! Probably restrict the vector in space to the lower level.
+        ! Save the result.
+        IF (rprojection%bspaceTimeSimultaneously) THEN
+          ! Space + time
+          CALL mlprj_performRestriction (rprojection%rspatialProjection,rtempVecCoarse, &
+                                        rtempVecFine,rx1Scalar)
+          CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
+        ELSE
+          ! Only time
+          CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecFine)
+        END IF
+      
+      END DO
+
+      ! Last time step.
+
+      ! rx3 is now the new 'left inner fine grid node x'.
+      ! Load the 'inner fine grid node X' to rtempVecFine.
+      CALL sptivec_getTimestepData (rfineVector,2*rcoarseVector%ntimesteps, rtempVecFine)
+      
+      ! In rtempVecFine, create the restriction of the fine grid vectors
+      ! rx1 and rx3 according to
+      !
+      ! Timestep:    n-1          n       (fine grid)
+      !              rx3 --1/2--> X             
+      !                          ^ \
+      !                         /   \
+      !                        +--1--+
+      
+      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
+      
+      ! Probably restrict the vector in space to the lower level.
+      ! Save the result.
+      IF (rprojection%bspaceTimeSimultaneously) THEN
+        ! Space + time
+        CALL mlprj_performRestriction (&
+            rprojection%rspatialProjection,rtempVecCoarse, rtempVecFine,rx1Scalar)
+        CALL sptivec_setTimestepData (rcoarseVector, &
+            rcoarseVector%ntimesteps, rtempVecCoarse)
+      ELSE
+        ! Only time
+        CALL sptivec_setTimestepData (rcoarseVector, &
+            rcoarseVector%ntimesteps, rtempVecFine)
+      END IF
+      
+    ELSE
+    
+      IF (rprojection%bspaceTimeSimultaneously) THEN
+      
+        ! Restriction only in space.
+        !
+        ! Loop through the time steps
+        DO istep = 0,rcoarseVector%ntimesteps
+        
+          ! Load the data
+          CALL sptivec_getTimestepData (rfineVector,istep, rtempVecFine)
+
+          ! Process the restriction and save the data to the coarse vector.
+          CALL mlprj_performRestriction (&
+              rprojection%rspatialProjection,rtempVecCoarse, rtempVecFine,rx1Scalar)
+              
+          CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
+        
+        END DO
+      
       END IF
     
-    END DO
-
-    ! Last time step.
-
-    ! rx3 is now the new 'left inner fine grid node x'.
-    ! Load the 'inner fine grid node X' to rtempVecFine.
-    CALL sptivec_getTimestepData (rfineVector,2*rcoarseVector%ntimesteps, rtempVecFine)
-    
-    ! In rtempVecFine, create the restriction of the fine grid vectors
-    ! rx1 and rx3 according to
-    !
-    ! Timestep:    n-1          n       (fine grid)
-    !              rx3 --1/2--> X             
-    !                          ^ \
-    !                         /   \
-    !                        +--1--+
-    
-    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.5_DP/2.0_DP,1.0_DP/2.0_DP)
-    
-    ! Probably restrict the vector in space to the lower level.
-    ! Save the result.
-    IF (rprojection%bspaceTimeSimultaneously) THEN
-      ! Space + time
-      CALL mlprj_performRestriction (&
-          rprojection%rspatialProjection,rtempVecCoarse, rtempVecFine,rx1Scalar)
-      CALL sptivec_setTimestepData (rcoarseVector, &
-          rcoarseVector%ntimesteps, rtempVecCoarse)
-    ELSE
-      ! Only time
-      CALL sptivec_setTimestepData (rcoarseVector, &
-          rcoarseVector%ntimesteps, rtempVecFine)
     END IF
 
     ! Release the temp vectors
@@ -541,96 +595,122 @@ CONTAINS
     CALL lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
     CALL lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
        
-    ! Load timestep 0,1 (fine grid) into the temp vectors.
-    CALL sptivec_getTimestepData (rfineVector, 0, rtempVecFine)
-    CALL sptivec_getTimestepData (rfineVector, 1, rx3)
-    
-    ! Perform restriction for the first time step.
-    !                          X <--1/4-- x
-    !                         ^ \
-    !                        /   \
-    !                       +-3/4-+
-    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,1._DP/4._DP,3._DP/4._DP)
-    
-    ! Probably restrict the vector in space to the lower level.
-    ! Save the result.
-    IF (rprojection%bspaceTimeSimultaneously) THEN
-      ! Space + time
-      CALL mlprj_performInterpolation (rprojection%rspatialProjection,rtempVecCoarse, &
-                                       rtempVecFine,rx1Scalar)
-      CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecCoarse)
-    ELSE
-      ! Only time
-      CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecFine)
-    END IF
-    
-    ! Loop through the time steps -- on the coarse grid!
-    DO istep = 1,rcoarseVector%ntimesteps-1
-    
-      ! rx3 was the 'right inner fine grid node x' in the above picture.
-      ! Copy it to rx1, so it gets the new 'left inner fine grid node x'
-      ! and load the new 'right inner fine grid node x' to rx1
-      ! as well as the 'inner fine grid node X' to rtempVecFine.
-      CALL lsysbl_copyVector (rx3,rx1)
+    IF (rcoarseVector%ntimesteps .NE. rfineVector%ntimesteps) THEN       
+      ! Load timestep 0,1 (fine grid) into the temp vectors.
+      CALL sptivec_getTimestepData (rfineVector, 0, rtempVecFine)
+      CALL sptivec_getTimestepData (rfineVector, 1, rx3)
       
-      CALL sptivec_getTimestepData (rfineVector,2*istep, rtempVecFine)
-      CALL sptivec_getTimestepData (rfineVector,2*istep+1, rx3)
-      
-      ! In rtempVecFine, create the restriction of the fine grid vectors
-      ! rx1 and rx3 according to
-      !
-      ! Timestep:    n-1          n          n+1        (fine grid)
-      !              rx3 --1/4--> X <--1/4-- rx3
-      !             (old)        ^ \
-      !                         /   \
-      !                        +-1/2-+
-      
-      CALL lsysbl_vectorLinearComb (rx1,rtempVecFine,0.25_DP,0.5_DP)
-      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.25_DP,1.0_DP)
+      ! Perform restriction for the first time step.
+      !                          X <--1/4-- x
+      !                         ^ \
+      !                        /   \
+      !                       +-3/4-+
+      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,1._DP/4._DP,3._DP/4._DP)
       
       ! Probably restrict the vector in space to the lower level.
       ! Save the result.
       IF (rprojection%bspaceTimeSimultaneously) THEN
         ! Space + time
         CALL mlprj_performInterpolation (rprojection%rspatialProjection,rtempVecCoarse, &
-                                         rtempVecFine,rx1Scalar)
-        CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
+                                        rtempVecFine,rx1Scalar)
+        CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecCoarse)
       ELSE
         ! Only time
-        CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecFine)
+        CALL sptivec_setTimestepData (rcoarseVector, 0, rtempVecFine)
+      END IF
+      
+      ! Loop through the time steps -- on the coarse grid!
+      DO istep = 1,rcoarseVector%ntimesteps-1
+      
+        ! rx3 was the 'right inner fine grid node x' in the above picture.
+        ! Copy it to rx1, so it gets the new 'left inner fine grid node x'
+        ! and load the new 'right inner fine grid node x' to rx1
+        ! as well as the 'inner fine grid node X' to rtempVecFine.
+        CALL lsysbl_copyVector (rx3,rx1)
+        
+        CALL sptivec_getTimestepData (rfineVector,2*istep, rtempVecFine)
+        CALL sptivec_getTimestepData (rfineVector,2*istep+1, rx3)
+        
+        ! In rtempVecFine, create the restriction of the fine grid vectors
+        ! rx1 and rx3 according to
+        !
+        ! Timestep:    n-1          n          n+1        (fine grid)
+        !              rx3 --1/4--> X <--1/4-- rx3
+        !             (old)        ^ \
+        !                         /   \
+        !                        +-1/2-+
+        
+        CALL lsysbl_vectorLinearComb (rx1,rtempVecFine,0.25_DP,0.5_DP)
+        CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,0.25_DP,1.0_DP)
+        
+        ! Probably restrict the vector in space to the lower level.
+        ! Save the result.
+        IF (rprojection%bspaceTimeSimultaneously) THEN
+          ! Space + time
+          CALL mlprj_performInterpolation (rprojection%rspatialProjection,rtempVecCoarse, &
+                                          rtempVecFine,rx1Scalar)
+          CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
+        ELSE
+          ! Only time
+          CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecFine)
+        END IF
+      
+      END DO
+
+      ! Last time step.
+
+      ! rx3 is now the new 'left inner fine grid node x'.
+      ! Load the 'inner fine grid node X' to rtempVecFine.
+      CALL sptivec_getTimestepData (rfineVector,2*rcoarseVector%ntimesteps, rtempVecFine)
+      
+      ! In rtempVecFine, create the restriction of the fine grid vectors
+      ! rx1 and rx3 according to
+      !
+      ! Timestep:    n-1          n       (fine grid)
+      !              rx3 --1/4--> X             
+      !                          ^ \
+      !                         /   \
+      !                        +-3/4-+
+      
+      CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,1._DP/4._DP,3._DP/4._DP)
+      
+      ! Probably restrict the vector in space to the lower level.
+      ! Save the result.
+      IF (rprojection%bspaceTimeSimultaneously) THEN
+        ! Space + time
+        CALL mlprj_performInterpolation (&
+            rprojection%rspatialProjection,rtempVecCoarse, rtempVecFine,rx1Scalar)
+        CALL sptivec_setTimestepData (rcoarseVector, &
+            rcoarseVector%ntimesteps, rtempVecCoarse)
+      ELSE
+        ! Only time
+        CALL sptivec_setTimestepData (rcoarseVector, &
+            rcoarseVector%ntimesteps, rtempVecFine)
+      END IF
+
+    ELSE
+    
+      IF (rprojection%bspaceTimeSimultaneously) THEN
+      
+        ! Interpolation only in space.
+      
+        !
+        ! Loop through the time steps
+        DO istep = 0,rcoarseVector%ntimesteps
+        
+          ! Load the data
+          CALL sptivec_getTimestepData (rfineVector,istep, rtempVecFine)
+
+          ! Process the restriction and save the data to the coarse vector.
+          CALL mlprj_performInterpolation (&
+              rprojection%rspatialProjection,rtempVecCoarse, rtempVecFine,rx1Scalar)
+              
+          CALL sptivec_setTimestepData (rcoarseVector, istep, rtempVecCoarse)
+        
+        END DO
+
       END IF
     
-    END DO
-
-    ! Last time step.
-
-    ! rx3 is now the new 'left inner fine grid node x'.
-    ! Load the 'inner fine grid node X' to rtempVecFine.
-    CALL sptivec_getTimestepData (rfineVector,2*rcoarseVector%ntimesteps, rtempVecFine)
-    
-    ! In rtempVecFine, create the restriction of the fine grid vectors
-    ! rx1 and rx3 according to
-    !
-    ! Timestep:    n-1          n       (fine grid)
-    !              rx3 --1/4--> X             
-    !                          ^ \
-    !                         /   \
-    !                        +-3/4-+
-    
-    CALL lsysbl_vectorLinearComb (rx3,rtempVecFine,1._DP/4._DP,3._DP/4._DP)
-    
-    ! Probably restrict the vector in space to the lower level.
-    ! Save the result.
-    IF (rprojection%bspaceTimeSimultaneously) THEN
-      ! Space + time
-      CALL mlprj_performInterpolation (&
-          rprojection%rspatialProjection,rtempVecCoarse, rtempVecFine,rx1Scalar)
-      CALL sptivec_setTimestepData (rcoarseVector, &
-          rcoarseVector%ntimesteps, rtempVecCoarse)
-    ELSE
-      ! Only time
-      CALL sptivec_setTimestepData (rcoarseVector, &
-          rcoarseVector%ntimesteps, rtempVecFine)
     END IF
 
     ! Release the temp vectors

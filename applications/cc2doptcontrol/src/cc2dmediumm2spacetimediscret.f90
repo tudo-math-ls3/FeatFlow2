@@ -1056,11 +1056,15 @@ CONTAINS
           rproblem%rtimedependence%dtimeInit + isubstep*rspaceTimeDiscr%dtstep
 
       ! Get the part of rd which is to be modified.
-      CALL sptivec_getTimestepData(rd, isubstep, rtempVectorD)
-      
-      ! If cy <> 1, multiply rtempVectorD by that.
-      IF (cy .NE. 1.0_DP) THEN
-        CALL lsysbl_scaleVector (rtempVectorD,cy)
+      IF (cy .NE. 0.0_DP) THEN
+        CALL sptivec_getTimestepData(rd, isubstep, rtempVectorD)
+        
+        ! If cy <> 1, multiply rtempVectorD by that.
+        IF (cy .NE. 1.0_DP) THEN
+          CALL lsysbl_scaleVector (rtempVectorD,cy)
+        END IF
+      ELSE
+        CALL lsysbl_clearVector (rtempVectorD)
       END IF
 
       ! -----

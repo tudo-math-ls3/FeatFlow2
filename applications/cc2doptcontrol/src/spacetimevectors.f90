@@ -92,9 +92,10 @@ MODULE spacetimevectors
     ! Standard is the current directory.
     CHARACTER(SYS_STRLEN) :: sdirectory = './'
     
-    ! If this flag is YES, the vector is assumed to be empty (initialised with 0).
-    ! A vector is empty if it's new and if it's cleared by clearVector.
-    INTEGER(I32), DIMENSION(:), POINTER :: p_Izero => NULL()
+    ! This flag defines a scaling factor for each substep. The scaling is applied
+    ! when a subvector is read and is reset to 1.0 if a subvector is saved.
+    ! The whole vector is zero if it's new and if it's cleared by clearVector.
+    REAL(DP), DIMENSION(:), POINTER :: p_Dscale => NULL()
     
     ! Number of equations in each subvector of the 'global time-step vector'.
     INTEGER(PREC_VECIDX) :: NEQ = 0
@@ -157,9 +158,9 @@ CONTAINS
     IF (PRESENT(sdirectory)) rspaceTimeVector%sdirectory = sdirectory
     rspaceTimeVector%ntimesteps = ntimesteps
     ALLOCATE(rspaceTimeVector%p_IdataHandleList(0:ntimesteps))
-    ALLOCATE(rspaceTimeVector%p_Izero(0:ntimesteps))
+    ALLOCATE(rspaceTimeVector%p_Dscale(0:ntimesteps))
     rspaceTimeVector%p_IdataHandleList(:) = ST_NOHANDLE
-    rspaceTimeVector%p_Izero(:) = YES
+    rspaceTimeVector%p_Dscale(:) = 0.0_DP
     
     rspaceTimeVector%NEQ = NEQ
     
@@ -216,7 +217,7 @@ CONTAINS
     END IF
 
     DEALLOCATE(rspaceTimeVector%p_IdataHandleList)
-    DEALLOCATE(rspaceTimeVector%p_Izero)
+    DEALLOCATE(rspaceTimeVector%p_Dscale)
 
     ! Initialise with default values.
     rspaceTimeVector = rspaceTimeVectorTempl
@@ -281,8 +282,8 @@ CONTAINS
     CALL storage_getbase_double (rspaceTimeVector%p_IdataHandleList(isubvector),p_Ddest)
     CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
 
-    ! After a setTimestepData, the vector cannot be assumed to be a zero vector.
-    rspaceTimeVector%p_Izero(isubvector) = NO
+    ! After a setTimestepData, the scale factor is 1.0.
+    rspaceTimeVector%p_Dscale(isubvector) = 1.0_DP
 
   END SUBROUTINE
 
@@ -328,9 +329,9 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-    IF (rspaceTimeVector%p_Izero(isubvector) .EQ. YES) THEN
-      ! The vector is a zero vector
-      CALL storage_clear (rvector%h_Ddata)
+    IF (rspaceTimeVector%p_Dscale(isubvector) .EQ. 0.0_DP) THEN
+     ! The vector is a zero vector
+      CALL lsysbl_clearVector (rvector)
       RETURN
     END IF
 
@@ -349,6 +350,11 @@ CONTAINS
         p_Dsource)
     CALL lsysbl_getbase_double (rvector,p_Ddest)
     CALL lalg_copyVectorDble (p_Dsource,p_Ddest)
+    
+    ! Scale the vector?
+    IF (rspaceTimeVector%p_Dscale(isubvector) .NE. 1.0_DP) THEN
+      CALL lalg_scaleVectorDble (p_Ddest,rspaceTimeVector%p_Dscale(isubvector))
+    END IF
 
   END SUBROUTINE
 
@@ -477,11 +483,10 @@ CONTAINS
     ! and write out again.
     DO i=0,rx%ntimesteps
       
-      IF (rx%p_Izero(i) .EQ. YES) THEN
-        ry%p_Izero(i) = YES
+      IF (rx%p_Dscale(i) .EQ. 0.0_DP) THEN
+        ry%p_Dscale(i) = 0.0_DP
       ELSE
         CALL sptivec_getTimestepData (rx, i, rxBlock)
-        CALL sptivec_getTimestepData (ry, i, ryBlock)
 
         CALL lsysbl_copyVector (rxBlock,ryBlock)
 
@@ -495,6 +500,81 @@ CONTAINS
     CALL lsysbl_releaseVector (rxBlock)
       
   END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<function>
+  
+  REAL(DP) FUNCTION sptivec_scalarProduct (rx, ry)
+  
+!<description>
+  ! Calculates a scalar product of two block vectors.
+  ! Both vectors must be compatible to each other (same size, sorting 
+  ! strategy,...).
+!</description>
+
+!<input>
+  ! First source vector
+  TYPE(t_spacetimeVector), INTENT(IN)   :: rx
+
+  ! Second source vector
+  TYPE(t_spacetimeVector), INTENT(IN)   :: ry
+!</input>
+
+!<result>
+  ! The scalar product (rx,ry) of the two block vectors.
+!</result>
+
+!</function>
+
+    INTEGER :: i
+    INTEGER(PREC_VECIDX), DIMENSION(1) :: Isize
+    REAL(DP) :: dres
+    TYPE(t_vectorBlock) :: rxBlock,ryBlock
+    
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dy
+    
+    IF (rx%NEQ .NE. ry%NEQ) THEN
+      PRINT *,'Space-time vectors have different size!'
+      STOP
+    END IF
+
+    IF (rx%ntimesteps .NE. ry%ntimesteps) THEN
+      PRINT *,'Space-time vectors have different number of timesteps!'
+      STOP
+    END IF
+    
+    Isize(1) = rx%NEQ
+
+    ! Allocate a 'little bit' of memory for the subvectors
+    CALL lsysbl_createVecBlockDirect (rxBlock,Isize,.FALSE.)
+    CALL lsysbl_createVecBlockDirect (ryBlock,Isize,.FALSE.)
+    
+    ! DEBUG!!!
+    CALL lsysbl_getbase_double (rxBlock,p_Dx)
+    CALL lsysbl_getbase_double (ryBlock,p_Dy)
+
+    ! Loop through the substeps, load the data in, perform the scalar product.
+    dres = 0.0_DP
+    DO i=0,rx%ntimesteps
+      
+      IF ((rx%p_Dscale(i) .NE. 0.0_DP) .AND. (ry%p_Dscale(i) .NE. 0.0_DP)) THEN
+        CALL sptivec_getTimestepData (rx, i, rxBlock)
+        CALL sptivec_getTimestepData (ry, i, ryBlock)
+        
+        dres = dres + lsysbl_scalarProduct (rxBlock,ryBlock)
+      END IF
+
+    END DO
+
+    ! Release temp memory    
+    CALL lsysbl_releaseVector (ryBlock)
+    CALL lsysbl_releaseVector (rxBlock)
+      
+    sptivec_scalarProduct = dres
+      
+  END FUNCTION
 
   ! ***************************************************************************
 
@@ -534,7 +614,7 @@ CONTAINS
     
     ! Loop through the substeps, load the data in, sum up to the norm.
     DO i=0,rx%ntimesteps
-      IF (rx%p_Izero(i) .NE. YES) THEN
+      IF (rx%p_Dscale(i) .NE. 0.0_DP) THEN
         CALL sptivec_getTimestepData (rx, i, rxBlock)
         
         SELECT CASE (cnorm)
@@ -578,9 +658,62 @@ CONTAINS
 
 !</subroutine>
 
+    ! Local variables
+    !!REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    !!INTEGER :: i
+    !!
+    ! Loop over the files
+    !!DO i=0,rx%ntimesteps
+    !!
+    !!  ! Get the data and set to a defined value.
+    !!  CALL storage_getbase_double (rx%p_IdataHandleList(i),p_Ddata)
+    !!  p_Ddata(:) = 0.0_DP
+    !!
+    !!END DO
+
     ! Simply set the "empty" flag to TRUE.
     ! When restoreing data with getTimestepData, that routine will return a zero vector.
-    rx%p_Izero(:) = YES
+    rx%p_Dscale(:) = 0.0_DP
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sptivec_scaleVector (rx,dscale)
+
+!<description>
+  ! Scales a vector by dscale.
+!</desctiprion>
+
+!<input>
+  ! Scaling factor.
+  REAL(DP), INTENT(IN) :: dscale
+!</input>
+
+!<inputoutput>
+  ! Vector to be scaled.
+  TYPE(t_spacetimeVector), INTENT(INOUT)   :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    ! Local variables
+    !!REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    !!INTEGER :: i
+    !!
+    ! Loop over the files
+    !!DO i=0,rx%ntimesteps
+    !!
+    !!  ! Get the data and set to a defined value.
+    !!  CALL storage_getbase_double (rx%p_IdataHandleList(i),p_Ddata)
+    !!  p_Ddata(:) = dscale*p_Ddata(:)
+    !!
+    !!END DO
+
+    ! Scale the scaling factors of all subvectors with dscale.
+    rx%p_Dscale(:) = rx%p_Dscale(:) * dscale
 
   END SUBROUTINE
 
@@ -732,8 +865,8 @@ CONTAINS
       CALL collct_setvalue_intarr (rcollection,TRIM(sname)//'_NTST',&
           rx%p_IdataHandleList,.TRUE.,ilevel,ssection)
       
-      CALL collct_setvalue_intarr (rcollection,TRIM(sname)//'_ZERO',&
-          rx%p_Izero,.TRUE.,ilevel,ssection)
+      CALL collct_setvalue_realarr (rcollection,TRIM(sname)//'_SCALE',&
+          rx%p_Dscale,.TRUE.,ilevel,ssection)
 
       ! Otherwise the pointers are NULL()!
     END IF
@@ -795,8 +928,8 @@ CONTAINS
       CALL collct_getvalue_intarr (rcollection,TRIM(sname)//'_NTST',&
           rx%p_IdataHandleList,ilevel,ssection)
 
-      CALL collct_getvalue_intarr (rcollection,TRIM(sname)//'_ZERO',&
-          rx%p_Izero,ilevel,ssection)
+      CALL collct_getvalue_realarr (rcollection,TRIM(sname)//'_SCALE',&
+          rx%p_Dscale,ilevel,ssection)
     END IF
 
   END SUBROUTINE
@@ -833,7 +966,7 @@ CONTAINS
     CALL collct_deleteValue (rcollection,TRIM(sname)//'_DIR',&
         ilevel,ssection)
 
-    CALL collct_deleteValue (rcollection,TRIM(sname)//'_ZERO',&
+    CALL collct_deleteValue (rcollection,TRIM(sname)//'_SCALE',&
         ilevel,ssection)
   
     CALL collct_deleteValue (rcollection,TRIM(sname)//'_NEQ',&
@@ -941,8 +1074,8 @@ CONTAINS
     
     END DO
     
-    ! The vector is not zero.
-    rx%p_Izero(:) = NO
+    ! The vector is scaled by 1.0.
+    rx%p_Dscale(:) = 1.0_DP
     
     ! Remove the temp vector
     CALL lsyssc_releaseVector (rvector)
@@ -1058,7 +1191,7 @@ CONTAINS
       ! Get the data and set to a defined value.
       CALL storage_getbase_double (rx%p_IdataHandleList(i),p_Ddata)
       p_Ddata(:) = dvalue
-      rx%p_Izero(i) = NO
+      rx%p_Dscale(i) = 1.0_DP
 
     END DO
     
