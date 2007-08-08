@@ -546,6 +546,10 @@ CONTAINS
     CALL parlst_getvalue_int (p_rsection, 'iresNorm', &
                               p_rsolverNode%iresNorm, p_rsolverNode%iresNorm)
 
+    CALL parlst_getvalue_int (p_rsection, 'istoppingCriterion', &
+                              p_rsolverNode%istoppingCriterion, &
+                              p_rsolverNode%istoppingCriterion)
+
     CALL parlst_getvalue_int (p_rsection, 'ioutputLevel', &
                               p_rsolverNode%ioutputLevel, p_rsolverNode%ioutputLevel)
 
