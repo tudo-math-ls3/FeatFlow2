@@ -100,13 +100,21 @@ MODULE nonlinearsolver
   INTEGER, PARAMETER :: NLSOL_PREC_LINSOL   = 3
 !</constantblock>
 
-!<constantblock description="Identifiers for stopping criteria">
+!<constantblock description="Identifiers for stopping criterium istoppingCrterium.">
 
   ! Use standard stopping criterion.
   ! If depsRel>0: use relative stopping criterion.
   ! If depsAbs>0: use abs stopping criterion.
-  ! If both are > 0: use both, i.e. stop if both criteria hold
-  INTEGER, PARAMETER :: NLSOL_STOP_STANDARD = 0
+  ! If both are > 0: use both, i.e. the iteration stops when both,
+  !    the relative AND the absolute stopping criterium holds
+  INTEGER, PARAMETER :: NLSOL_STOP_STANDARD     = 0
+
+  ! Use 'minimum' stopping criterion.
+  ! If depsRel>0: use relative stopping criterion.
+  ! If depsAbs>0: use abs stopping criterion.
+  ! If both are > 0: use one of them, i.e. the iteration stops when the
+  !    either the relative OR the absolute stopping criterium holds
+  INTEGER, PARAMETER :: NLSOL_STOP_ONEOF        = 1
   
 !</constantblock>
 
@@ -223,8 +231,12 @@ MODULE nonlinearsolver
     REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DdivAbs = SYS_INFINITY
 
     ! INPUT PARAMETER: 
-    ! Type of stopping criterion to use. One of the
-    ! NLSOL_CALL sys_halt()_xxxx constants.
+    ! Type of stopping criterion to use for standard convergence test. One of the
+    ! NLSOL_STOP_xxxx constants.
+    ! Note: This parameter is only evaluated in the stanard convergence test.
+    ! If the caller of the nonlinear solver specifies a callback routine fcb_resNormCheck
+    ! for checking the convergence, that callback routine must implement its own
+    ! logic to handle relative and absolute convrgence criteria!
     INTEGER                    :: istoppingCriterion = NLSOL_STOP_STANDARD
 
     ! INPUT PARAMETER: 
@@ -334,45 +346,88 @@ CONTAINS
   
 !</function>
 
-  ! local variables
-  INTEGER :: i
+    ! local variables
+    INTEGER :: i
+    LOGICAL :: bok
 
-  ! Calculate the norm of the vector or take the one given
-  ! as parameter
-  IF (PRESENT(rdef)) THEN
-    DvecNorm = lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm)
-    WHERE (.NOT.((DvecNorm .GE. 1D-99) .AND. (DvecNorm .LE. 1D99))) 
-      DvecNorm = 0.0_DP
-    END WHERE
-  END IF
-  
-  loutput = .TRUE.
-  
-  DO i=1,nblocks
-    ! Absolute convergence criterion? Check the norm directly.
-    IF (rsolverNode%DepsAbs(i) .NE. 0.0_DP) THEN
-      IF (DvecNorm(i) .GT. rsolverNode%DepsAbs(i)) THEN
-        loutput = .FALSE.
-        RETURN
-      END IF
+    ! Calculate the norm of the vector or take the one given
+    ! as parameter
+    IF (PRESENT(rdef)) THEN
+      DvecNorm = lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm)
+      WHERE (.NOT.((DvecNorm .GE. 1D-99) .AND. (DvecNorm .LE. 1D99))) 
+        DvecNorm = 0.0_DP
+      END WHERE
     END IF
+  
+    SELECT CASE (rsolverNode%istoppingCriterion)
     
-    ! Relative convergence criterion? Multiply with initial residuum
-    ! and check the norm. 
-    ! If the initial defect is 0, this rule is not to be applied!
-    ! (May happen in the first step of 'flow around cylinder'
-    !  where we have only convection in the X-direction, not in the Y-direction
-    !  and a still fluid.)
-    IF ((rsolverNode%DepsRel(i) .NE. 0.0_DP) .AND. &
-        (rsolverNode%dinitialDefect(i) .GT. SYS_EPSREAL)) THEN
-      IF (DvecNorm(i) .GT. &
-          rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i)) THEN
-        loutput = .FALSE.
-        RETURN
+    CASE (LINSOL_STOP_ONEOF)
+      ! Iteration stops if either the absolute or the relative criterium holds.
+      loutput = .FALSE.
+      
+      ! Absolute convergence criterion? Check the norm directly.
+      IF (rsolverNode%DepsAbs(i) .NE. 0.0_DP) THEN
+        bok = .FALSE.
+        DO i=1,nblocks
+          bok = bok .OR. (.NOT. (DvecNorm(i) .GT. rsolverNode%DepsAbs(i)))
+        END DO
+        IF (bok) THEN
+          loutput = .FALSE.
+          RETURN
+        END IF
       END IF
-    END IF
+        
+      ! Relative convergence criterion? Multiply with initial residuum
+      ! and check the norm. 
+      ! If the initial defect is 0, this rule is not to be applied!
+      ! (May happen in the first step of 'flow around cylinder'
+      !  where we have only convection in the X-direction, not in the Y-direction
+      !  and a still fluid.)
+      IF ((rsolverNode%DepsRel(i) .NE. 0.0_DP) .AND. &
+          (rsolverNode%dinitialDefect(i) .GT. SYS_EPSREAL)) THEN
+        bok = .FALSE.
+        DO i=1,nblocks
+          bok = bok .OR. (.NOT. (DvecNorm(i) .GT. &
+              rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i))) 
+        END DO
+        IF (bok) THEN
+          loutput = .FALSE.
+          RETURN
+        END IF
+        
+      END IF
     
-  END DO ! i
+    CASE DEFAULT
+      ! Standard stopping criterion.
+      ! Iteration stops if both the absolute and the relative criterium holds.
+      loutput = .TRUE.
+      
+      DO i=1,nblocks
+        ! Absolute convergence criterion? Check the norm directly.
+        IF (rsolverNode%DepsAbs(i) .NE. 0.0_DP) THEN
+          IF (DvecNorm(i) .GT. rsolverNode%DepsAbs(i)) THEN
+            loutput = .FALSE.
+            RETURN
+          END IF
+        END IF
+        
+        ! Relative convergence criterion? Multiply with initial residuum
+        ! and check the norm. 
+        ! If the initial defect is 0, this rule is not to be applied!
+        ! (May happen in the first step of 'flow around cylinder'
+        !  where we have only convection in the X-direction, not in the Y-direction
+        !  and a still fluid.)
+        IF ((rsolverNode%DepsRel(i) .NE. 0.0_DP) .AND. &
+            (rsolverNode%dinitialDefect(i) .GT. SYS_EPSREAL)) THEN
+          IF (DvecNorm(i) .GT. &
+              rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i)) THEN
+            loutput = .FALSE.
+            RETURN
+          END IF
+        END IF
+        
+      END DO ! i
+    END SELECT
   
   END FUNCTION
   

@@ -509,13 +509,21 @@ MODULE linearsolver
 
 ! *****************************************************************************
 
-!<constantblock description="Identifiers for stopping criteria">
+!<constantblock description="Identifiers for stopping criterium istoppingCriterion.">
 
   ! Use standard stopping criterion.
   ! If depsRel>0: use relative stopping criterion.
   ! If depsAbs>0: use abs stopping criterion.
-  ! If both are > 0: use both, i.e. stop if both criteria hold
+  ! If both are > 0: use both, i.e. the iteration stops when both,
+  !    the relative AND the absolute stopping criterium holds
   INTEGER, PARAMETER :: LINSOL_STOP_STANDARD     = 0
+
+  ! Use 'minimum' stopping criterion.
+  ! If depsRel>0: use relative stopping criterion.
+  ! If depsAbs>0: use abs stopping criterion.
+  ! If both are > 0: use one of them, i.e. the iteration stops when the
+  !    either the relative OR the absolute stopping criterium holds
+  INTEGER, PARAMETER :: LINSOL_STOP_ONEOF        = 1
   
 !</constantblock>
 
@@ -2197,22 +2205,52 @@ CONTAINS
       dvecNorm = lsysbl_vectorNorm (rdef,rsolverNode%iresNorm)
     END IF
     
-    loutput = .TRUE.
+    SELECT CASE (rsolverNode%istoppingCriterion)
     
-    ! Absolute convergence criterion? Check the norm directly.
-    IF (rsolverNode%depsAbs .NE. 0.0_DP) THEN
-      IF (dvecNorm .GT. rsolverNode%depsAbs) THEN
-        loutput = .FALSE.
+    CASE (LINSOL_STOP_ONEOF)
+      ! Iteration stops if either the absolute or the relative criterium holds.
+      loutput = .FALSE.
+      
+      ! Absolute convergence criterion? Check the norm directly.
+      IF (rsolverNode%depsAbs .NE. 0.0_DP) THEN
+        IF (.NOT. (dvecNorm .GT. rsolverNode%depsAbs)) THEN
+          loutput = .TRUE.
+          RETURN
+        END IF
       END IF
-    END IF
+      
+      ! Relative convergence criterion? Multiply with initial residuum
+      ! and check the norm. 
+      IF (rsolverNode%depsRel .NE. 0.0_DP) THEN
+        IF (.NOT. &
+            (dvecNorm .GT. rsolverNode%depsRel * rsolverNode%dinitialDefect)) THEN
+          loutput = .TRUE.
+          RETURN
+        END IF
+      END IF
     
-    ! Relative convergence criterion? Multiply with initial residuum
-    ! and check the norm. 
-    IF (rsolverNode%depsRel .NE. 0.0_DP) THEN
-      IF (dvecNorm .GT. rsolverNode%depsRel * rsolverNode%dinitialDefect) THEN
-        loutput = .FALSE.
+    CASE DEFAULT
+      ! Standard stopping criterion.
+      ! Iteration stops if both the absolute and the relative criterium holds.
+      loutput = .TRUE.
+      
+      ! Absolute convergence criterion? Check the norm directly.
+      IF (rsolverNode%depsAbs .NE. 0.0_DP) THEN
+        IF (dvecNorm .GT. rsolverNode%depsAbs) THEN
+          loutput = .FALSE.
+          RETURN
+        END IF
       END IF
-    END IF
+      
+      ! Relative convergence criterion? Multiply with initial residuum
+      ! and check the norm. 
+      IF (rsolverNode%depsRel .NE. 0.0_DP) THEN
+        IF (dvecNorm .GT. rsolverNode%depsRel * rsolverNode%dinitialDefect) THEN
+          loutput = .FALSE.
+          RETURN
+        END IF
+      END IF
+    END SELECT
     
   END FUNCTION
   
