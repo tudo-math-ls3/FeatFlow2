@@ -26,18 +26,24 @@ nminIterations     = 2
 
 # Maximum number of steps
 
-nmaxIterations     = 10
+nmaxIterations     = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-4 1E-8 0.001
+depsRel            = 1E-10 1E-8 0.001
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-4 0.001
+depsAbs            = 1E-14 0.001
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
 
 # General damping parameter for linear solver (e.g. for Jacobi,SSOR,...); 
 # not used if MG is the linear solver.
@@ -163,17 +169,23 @@ nmaxIterations     = 1000
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-5 #0.01
+depsRel            = 1E-11 #0.01
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 0.01
+depsAbs            = 1E-14
 
 # Output level of the solver
 
 ioutputLevel       = 0 2
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
 
 # VANCA preconditioner
 

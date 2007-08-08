@@ -36,12 +36,14 @@ TIMENLMIN = 1
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 5 # 5
+TIMENLMAX = 2 # 5
 
 # Whether space levels are coupled to time levels.
-# =0: Space level NLMAX is used on all time levels.
-# =1: Space level NLMAX-i = Time level TIMENLMAX-i
-ispacelevelcoupledtotimelevel = 1
+# =0: MG only in time: Space level NLMAX is used on all time levels.
+# =1: MG in time and space: Space level NLMAX-i = Time level TIMENLMAX-i
+# =2: MG only in space: Time level TIMENLMAX-i has the same number of time 
+#     steps as time level TIMENLMAX, but uses space level NLMAX-i
+ispacelevelcoupledtotimelevel = 2
 
 # ----------------------------------------------------------------------
 
@@ -101,18 +103,24 @@ sgmvFileName = 'gmv/u3_1.gmv'
 nminIterations = 1
 
 # Maximum number of time-MG sweeps per nonlinear time-iteration
-nmaxIterations = 5
+nmaxIterations = 100
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-5 
+depsRel            = 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-8 
+depsAbs            = 1E-15
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
 
 # Output level of the solver
 
@@ -125,6 +133,7 @@ icycle = 1
 # Type of space-time preconditioner to use in smoother / coarse grid solver.
 # =0: Block Jacobi.
 # =1: Block Forward-Backward Gauss-Seidel
+# =2: CG
 
 cspaceTimePreconditioner = 0
 
@@ -157,7 +166,7 @@ ioutputLevel = 2
 nminIterations = 1
 
 # Maximum number of time-iterations on the coarsest time-mesh
-nmaxIterations = 100
+nmaxIterations = 1000
 
 # Damping parameter
 domega = 1.0
@@ -165,13 +174,13 @@ domega = 1.0
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
 
-depsRel            = 1E-8 
+depsRel            = 1E-10 
 
 # Limit for residuals, i.e. absolute error on finest grid; 
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-20
+depsAbs            = 1E-15
 
 # Maximum relative residual before the iteration is treated as 'divergent'
 
@@ -180,3 +189,9 @@ ddivRel            = 1E20
 # Output level of the solver
 
 ioutputLevel = 3
+
+# Type of stopping criterion.
+# =0: Relative AND absolute stopping criterion must hold.
+# =1: Relative OR absolute stopping criterion must hold.
+
+istoppingCriterion = 1
