@@ -32,11 +32,11 @@ dtimeMax = 1.0                           # TIMEMX
 niterations = 5                          # NITNS
 
 # Minimum level in time.
-TIMENLMIN = 1
+TIMENLMIN = 2
 
 # Maximum level in time. The calculation is done on this time
 # level combined with the maximum space level NLMAX.
-TIMENLMAX = 2 # 5
+TIMENLMAX = 3 # 5
 
 # Whether space levels are coupled to time levels.
 # =0: MG only in time: Space level NLMAX is used on all time levels.
@@ -142,7 +142,7 @@ cspaceTimePreconditioner = 0
 ###############
 
 # Damping parameter
-domega = 0.7
+domega = 1.0 0.7
 
 # Number of smoothing steps
 nsmSteps = 4
@@ -169,7 +169,7 @@ nminIterations = 1
 nmaxIterations = 1000
 
 # Damping parameter
-domega = 1.0
+domega = 0.7 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations

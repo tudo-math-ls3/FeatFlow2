@@ -37,7 +37,7 @@ depsRel            = 1E-10 1E-8 0.001
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-14 0.001
+depsAbs            = 1E-12 0.001
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
@@ -52,7 +52,7 @@ domega             = 1.0
 
 # Output level of the solver
 
-ioutputLevel       = 0 3
+ioutputLevel       = 0 2 3
 
 # How to check residuals.
 # =0: Check in Euclidian norm (like in old CC).

@@ -47,7 +47,7 @@ NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 4
+NLMAX              = 3
 
 # ------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 400.0 1000.0 000.0
+RE                 = 400.0 0.0025 1000.0 000.0
 
 # Type of right hand side. 
 # 0=zero, 1=steady inhomog., 2=nonsteady force
@@ -229,10 +229,10 @@ itypeTargetFlow = 2
 # the target flow. The file must contain a solution at the same spatial
 # level as prescribed by NLMAX.
 
-stargetFlow = 'ns/lv4re0.025steps80/solution'
+stargetFlow = 'ns/lv3re0.025steps80/solution'
 
 # Granularity parameter for the filenames of the target flow.
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
-itargetFlowDelta = 8
+itargetFlowDelta = 4
