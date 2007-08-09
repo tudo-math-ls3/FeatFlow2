@@ -25,35 +25,206 @@
 !#  5.) geom_init_polygon
 !#      -> Creates a 2D polygon object.
 !#
-!#  6.) geom_done
-!#      -> Releases a geometry object (including subobjects)
+!#  6.) geom_init_composed
+!#      -> Creates a composed object.
 !#
-!#  7.) geom_moveto
+!#  7.) geom_composed_addNode
+!#      -> Adds an existing geometry object into a composed one.
+!#
+!#  8.) geom_composed_updateBndApprox
+!#      -> Updates the boundary approximation for a composed object.
+!#
+!#  9.) geom_done
+!#      -> Releases a geometry object (including its subobjects).
+!#
+!# 10.) geom_moveto
 !#      -> Moves the origin of a 2D/3D object to a specified point.
 !#
-!#  8.) geom_rotate2D
+!# 11.) geom_rotate2D
 !#      -> Overwrites the rotation and scaling factor of a 2D object.
 !#
-!#  9.) geom_isInGeometry
+!# 12.) geom_isInGeometry
 !#      -> Checks whether a given point is inside a geometry object.
 !#
-!# 10.) geom_isInGeometryArray
+!# 13.) geom_isInGeometryArray
 !#      -> Checks whether an array of given points is inside a geometry object.
 !#
-!# 11.) geom_projectToBoundary
+!# 14.) geom_projectToBoundary
 !#      -> Projects a point onto the boundary of a geometry object.
 !#
-!# 12.) geom_calcSignedDistance
+!# 15.) geom_calcSignedDistance
 !#      -> Calculates the shortest signed distance between a given point
 !#         and a geometry object.
 !#
-!# 13.) geom_calcSignedDistanceArray
+!# 16.) geom_calcSignedDistanceArray
 !#      -> Calculates the shortest signed distance between an array of given
 !#         points and a geometry object.
 !#
-!# 14.) geom_polygonise
+!# 17.) geom_polygonise
 !#      -> Converts a (non-composed) geometry object to a polygon and
 !#         optionally converts the vertices into world coordinates.
+!#
+!# Remark:
+!# This module contains a lot more routines, which however are not meant to
+!# be called by the user, e.g. routines which are called by wrapper routines
+!# listed above or routines which are needed for the boundary approximation
+!# of a composed object.
+!#
+!# 
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+!# Composed Geometry Objects
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+!# I. General information
+!# ----------------------
+!# Composed geometry objects are build up as a tree structure here. Every inner
+!# node of the tree is a quantor (union or intersection) and every leaf of the
+!# tree is an analytic geometry object.
+!#
+!# Let's take a look at a simple example:
+!#
+!#        +------+    +------+
+!#        |      |    |      |
+!#        |   +--+    +--+   |
+!#        |   |          |   |
+!#        |   |          |   |
+!#        |   |          |   |
+!#        |   |          |   |
+!#        |   +----------+   |
+!#        |                  |
+!#        +------------------+
+!#
+!# The figure above is made of 3 analytic objects:
+!#                                                        R
+!#                S_1                                   +----+
+!#        +------------------+                          |    |
+!#        |                  |           S_2            |    |
+!#        |                  |       +----------+       |    |
+!#        |                  |       |          |       +----+
+!#        |                  |       |          |
+!#        |                  |       |          |
+!#        |                  |       |          |
+!#        |                  |       +----------+
+!#        |                  |
+!#        +------------------+
+!#
+!# One possible tree for the figure above would look like this:
+!#
+!#      INTERSECTION
+!#           |
+!#     +-----+------------+
+!#     |                  |
+!#    S_1        COMPLEMENT of UNION
+!#                        |
+!#                  +-----+-----+
+!#                  |           |
+!#                 S_2          R
+!#
+!#
+!#
+!# II. Creating composed geometry objects
+!# --------------------------------------
+!# To create a geometry object, you need to build up the tree in bottom-up
+!# order, i.e. you first create the analytic geometry objects and connect them
+!# using composed objects using the geom_composed_addNode routine.
+!#
+!# Here's the code for the creation of the tree above:
+!#
+!# <code>
+!#  1. TYPE(t_geometryObject) :: S, R, SR, S_SR
+!#  2.
+!#  3. ! create a small square with edge length of 0.4 around (0.5, 0.5)
+!#  4. CALL geom_init_square(S, 0.4_DP, (/0.5_DP, 0.5_DP/))
+!#  5. 
+!#  6. ! create a rectangle with edge lengths of (0.2, 0.4) around (0.5, 0.775)
+!#  7. CALL geom_init_rectangle(R, (/0.2_DP, 0.4_DP/), (/0.5_DP, 0.775_DP/))
+!#  8. 
+!#  9. ! create the COMPLEMENT of a UNION-node with 2 children
+!# 10. CALL geom_init_composed(SR, 2, GEOM_COMP_TYPE_OR, .TRUE.)
+!# 11. 
+!# 12. ! add S and R to the UNION-node
+!# 13. CALL geom_composed_addNode(SR, S, 1)
+!# 14. CALL geom_composed_addNode(SR, R, 2)
+!# 15. 
+!# 16. ! create a big square with edge length of 0.7 around (0.5, 0.5)
+!# 17. CALL geom_init_square(S, 0.7_DP, (/0.5_DP, 0.5_DP/))
+!# 18.
+!# 19. ! create an INTERSECTION-node with 2 children
+!# 20. CALL geom_init_composed(S_SR, 2, GEOM_COMP_TYPE_AND)
+!# 21.  
+!# 22. ! add S and SR to the INTERSECTION-node
+!# 23. CALL geom_composed_addNode(S_SR,  S, 1)
+!# 24. CALL geom_composed_addNode(S_SR, SR, 2)
+!# 25.
+!# 26. ! do something with our composed object...
+!# 27. CALL foobar(S_SR)
+!# 28.
+!# 29. ! IMPORTANT: destroy the composed object afterwards
+!# 30. CALL geom_done(S_SR)
+!#</code>
+!#
+!# There is something important to say about the geom_composed_addNode routine:
+!# After calling geom_composed_addNode, the object that is passed as the
+!# sub-object is set undefined.
+!# In the code above, in line(s)
+!#  1 -  3  S is undefined
+!#       4  S is defined as the small square
+!#  5 - 12  S represents the small square
+!#      13  S is passed to geom_composed_addNode
+!# 14 - 16  S is undefined
+!#      17  S is defined as the big square
+!# 18 - 22  S represents the big square
+!#      23  S is passed to geom_composed_addNode
+!# 24 - 30  S is undefined
+!#
+!#
+!# III. Some hints about adding objects into the tree
+!# --------------------------------------------------
+!# If you plan to call the inside-outside-test or distance calculation routines
+!# on a composed object, it is recommended to add the sub-objects for which the
+!# inside-outside-test is cheap to calculate before the sub-objects for which
+!# it is expensive to calculate.
+!#
+!# Here's a small list for all analytic geometry objects and a rating of how
+!# expensive the inside-outside-test routines are (++ = cheap, -- = expensive): 
+!# Circle..........: ++
+!# Ellipse.........:  +
+!# Square..........:  +
+!# Rectangle.......:  +
+!# Convex Polygon..:  -
+!# General Polygon.: --
+!# Composed Object.: worst of its sub-objects
+!#
+!#
+!# IV. Boundary approximation
+!# --------------------------
+!# Unlike other analytic geometry objects (e.g. circles, squares, etc.)
+!# the boundary of a composed object is described by a set of points, which are
+!# an approximation of the composed object's boundary.
+!# These points are used for the distance calculation and boundary projection
+!# of a composed object.
+!# The boundary approximation is calculated at the first call of a distance
+!# calculation or boundary projection routine, or optionally if the user calls
+!# the geom_composed_updateBndApprox routine manually.
+!# The geom_composed_updateBndApprox routine MUST be called, if there have been
+!# made changes in the composed object tree (except for rotation / scaling /
+!# translation of the root object) AFTER a boundary approximation has been
+!# calculated / updated.
+!# When calling the geom_composed_updateBndApprox routine, you can pass a
+!# tolerance parameter to the routine which controls the quality of the
+!# boundary approximation. If no custom tolerance parameter is passed, 0.01 is
+!# used as a default parameter. When using a custom tolerance, it is
+!# recommended to set the tolerance parameter between 10e-5 and 10e-2.
+!# Choosing a small tolerance will result in a better approximation of the
+!# composed object's boundary, however, it will also increase the number of
+!# points used for the approximation which results in higher memory cost and
+!# longer calculation time for distance calculation and boundary projection.
+!#
+!# Remark:
+!# The inside-outside-test does not use the boundary approximation.
+!#
+!# Remark:
+!# The boundary approximation is automatically destroyed when the root object
+!# is destroyed.
 !#
 !# </purpose>
 !##############################################################################
@@ -104,11 +275,14 @@ MODULE geometry
 
 !<constantblock description="Composed type identifiers">
 
+  ! No composed object
+  INTEGER, PARAMETER :: GEOM_COMP_TYPE_NONE = 0
+
   ! Union of objects
-  INTEGER, PARAMETER :: GEOM_COMP_TYPE_OR = 1
+  INTEGER, PARAMETER :: GEOM_COMP_TYPE_OR   = 1
   
   ! Intersection of objects
-  INTEGER, PARAMETER :: GEOM_COMP_TYPE_AND = 2
+  INTEGER, PARAMETER :: GEOM_COMP_TYPE_AND  = 2
   
 !</constantblock>
 
@@ -119,18 +293,47 @@ MODULE geometry
 !<types>
 !<typeblock>
 
-  ! This structure realises the subnode for the composed geometry object.
+  ! This stucture realises a boundary approximation, which is needed for
+  ! distance calculation and boundary projection of composed geometry objects.
+  TYPE t_boundaryApprox
   
+    ! Approximation tolerance
+    REAL(DP) :: dtolerance = 0.0_DP
+    
+    ! Number of allocated vertices
+    INTEGER :: nvertsAllocated = 0
+  
+    ! Number of vertices used for the boundary approximation
+    INTEGER :: nverts = 0
+    
+    ! A handle for the vertice vector
+    INTEGER :: h_Dverts = ST_NOHANDLE
+    
+    ! An array for the vertice vector
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dverts => NULL()
+    
+  END TYPE
+  
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+
+  ! This structure realises the subnode for the composed geometry object.
   TYPE t_geometryComposed
   
     ! Type of composed object. One of the GEOM_COMP_TYPE_XXXX constants.
-    INTEGER :: ccomposedType
+    INTEGER :: ccomposedType = GEOM_COMP_TYPE_NONE
     
     ! Number of sub-objects in the composed object.
-    INTEGER :: nsubObjects
+    INTEGER :: nsubObjects = 0
     
     ! An array of sub-objects with are composed.
-    TYPE(t_geometryObject), DIMENSION(:), POINTER :: p_RsubObjects
+    TYPE(t_geometryObject), DIMENSION(:), POINTER :: p_RsubObjects => NULL()
+    
+    ! A pointer to a boundary-approximation structure
+    TYPE(t_boundaryApprox), POINTER :: p_rboundaryApprox => NULL()
     
   END TYPE
   
@@ -141,11 +344,10 @@ MODULE geometry
 !<typeblock>
 
   ! This structure realises the subnode for the circle object.
-  
   TYPE t_geometryCircle
     
     ! Radius of the circle. Must be positive.
-    REAL(DP) :: dradius
+    REAL(DP) :: dradius = 0.0_DP
     
   END TYPE
   
@@ -159,7 +361,7 @@ MODULE geometry
   TYPE t_geometrySquare
   
     ! Length of each edge of the square. Must be positive.
-    REAL(DP) :: dlength
+    REAL(DP) :: dlength = 0.0_DP
     
   END TYPE
 
@@ -173,7 +375,7 @@ MODULE geometry
   TYPE t_geometryEllipse
   
     ! X- and Y-radius of the ellipse. Must be positive.
-    REAL(DP), DIMENSION(2) :: Dradius
+    REAL(DP), DIMENSION(2) :: Dradii = (/ 0.0_DP, 0.0_DP /)
     
   END TYPE
 
@@ -188,7 +390,7 @@ MODULE geometry
   
     ! Lengths of the horizontal and vertical edges of the rectangle. Must be
     ! positive.
-    REAL(DP), DIMENSION(2) :: Dlength
+    REAL(DP), DIMENSION(2) :: Dlength = (/ 0.0_DP, 0.0_DP /)
     
   END TYPE
 
@@ -201,11 +403,11 @@ MODULE geometry
   ! This structure realises the subnode for the polygon object.
   TYPE t_geometryPolygon
 
-    ! Polygon type. One of the GEOM_POLYGON_XXXX constants defined above.
-    INTEGER :: npolyType
+    ! The polygon's type. One of the GEOM_POLYGON_XXXX constants defined above.
+    INTEGER :: npolyType = GEOM_POLYGON_GENERAL
 
-    ! Polygon vertices
-    REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices
+    ! A pointer to the polygon's vertices
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Dvertices => NULL()
 
   END TYPE
 
@@ -235,7 +437,7 @@ MODULE geometry
     !TYPE(t_coordinateSystem3D) :: rcoord3D
     
     ! A boolean which tells us whether the geometry object is inverted or not.
-    LOGICAL                    :: binverted
+    LOGICAL                    :: binverted = .FALSE.
     
     ! Structure for the composed geometry object
     TYPE(t_geometryComposed)   :: rcomposed
@@ -366,6 +568,9 @@ CONTAINS
   ! Allocate sub-objects
   ALLOCATE(rgeomObject%rcomposed%p_RsubObjects(nsubObjects))
   
+  ! Allocate boundary approximation structure
+  ALLOCATE(rgeomObject%rcomposed%p_rboundaryApprox)
+  
   ! That's it
   
 END SUBROUTINE
@@ -436,7 +641,7 @@ END SUBROUTINE
 !</description>
 
 !<input>
-  ! The circle against that the point is to be tested.
+  ! The object against that the point is to be tested.
   TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
@@ -454,6 +659,7 @@ END SUBROUTINE
   ! The relative coordinates
   REAL(DP), DIMENSION(3) :: DrelCoords
   
+  ! some other temporary variables
   INTEGER(I32) :: i, iisInSubObject
   
     ! Transform to local coordinate system
@@ -506,7 +712,525 @@ END SUBROUTINE
     ! That's it
 
   END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_composed_prjToBoundary(rgeomObject, Dcoords, Dproj)
   
+!<description>
+  ! This routine projects a point onto the boundary of a composed object.
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  ! The array must hold at least 2 entries for a 2D object, and at least 3
+  ! entries for a 3D object.
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! The coordinates of the boundary projection.
+  ! The array must hold at least 2 entries for a 2D object, and at least 3
+  ! entries for a 3D object.
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dproj
+  
+!</output>
+
+!</subroutine>
+  
+  ! Some temporary variables
+  REAL(DP), DIMENSION(2) :: DcoordsRef, Dray
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dverts
+  REAL(DP) :: dminDist, ddist
+  INTEGER :: iminDist, i
+  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+
+    ! Get boundary approximation
+    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+    
+    ! Check if we already have a boundary approximation vector
+    IF(p_rbndApprox%h_Dverts .EQ. ST_NOHANDLE) THEN
+    
+      ! Update the boundary approximation for this object
+      CALL geom_composed_updateBndApprox(rgeomObject)
+
+    END IF
+    
+    ! Get vertice vector
+    p_Dverts => p_rbndApprox%p_Dverts
+    
+    ! Transform point to relative coordinate system
+    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    
+    ! Get vector from point to boundary
+    Dray = DcoordsRef - p_Dverts(1:2, 1)
+    
+    ! Calculate distance
+    dminDist = Dray(1)**2 + Dray(2)**2
+    iminDist = 1
+
+    ! Go through all points of our boundary projection
+    DO i = 2, p_rbndApprox%nverts
+    
+      ! Get vector from point to boundary
+      Dray = DcoordsRef - p_Dverts(1:2, i)
+      
+      ! Calculate distance
+      ddist = Dray(1)**2 + Dray(2)**2
+      
+      IF (ddist .LT. dminDist) THEN
+        dminDist = ddist
+        iminDist = i
+      END IF
+    
+    END DO
+    
+    ! Transform projection to world coordinates
+    CALL bgeom_transformPoint2D(rgeomObject%rcoord2D, p_Dverts(1:2, &
+                                iminDist), Dproj)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_composed_calcSignDist (rgeomObject, Dcoords, ddistance)
+
+!<description>
+  ! This routine calculates the signed distance of a given point and a 
+  ! composed geometry object.
+!</description>
+
+!<input>
+  ! The composed object
+  TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  REAL(DP), DIMENSION(:), INTENT(IN)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! The shortest signed distance between the point and the object's boundary.
+  REAL(DP),               INTENT(OUT) :: ddistance
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  REAL(DP), DIMENSION(2) :: DcoordsRef, Dray
+  REAL(DP), DIMENSION(:,:), POINTER :: p_Dverts
+  REAL(DP) :: dminDist, ddist
+  INTEGER :: i, iInside
+  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+
+    ! Get boundary approximation
+    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+
+    ! Check if we already have a boundary approximation vector
+    IF(p_rbndApprox%h_Dverts .EQ. ST_NOHANDLE) THEN
+    
+      ! Update the boundary approximation for this object
+      CALL geom_composed_updateBndApprox(rgeomObject)
+      
+    END IF
+    
+    ! Get boundary approximation vector
+    p_Dverts => p_rbndApprox%p_Dverts
+
+    ! Transform point to relative coordinate system
+    CALL bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
+    
+    ! Get vector from point to boundary
+    Dray = DcoordsRef - p_Dverts(1:2, 1)
+    
+    ! Calculate distance
+    dminDist = Dray(1)**2 + Dray(2)**2
+
+    ! Go through all points of our boundary projection
+    DO i = 2, rgeomObject%rcomposed%p_rboundaryApprox%nverts
+    
+      ! Get vector from point to boundary
+      Dray = DcoordsRef - p_Dverts(1:2, i)
+      
+      ! Calculate distance
+      ddist = Dray(1)**2 + Dray(2)**2
+      
+      IF (ddist .LT. dminDist) THEN
+        dminDist = ddist
+      END IF
+    
+    END DO
+    
+    ! Get square root of distance
+    ddistance = SQRT(dminDist)
+    
+    CALL geom_composed_isInGeometry(rgeomObject, Dcoords, iInside)
+    
+    ! Maybe the composed object is inverted?
+    IF (iInside .EQ. 1) THEN
+      ddistance = -ddistance
+    END IF
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  RECURSIVE SUBROUTINE geom_composed_getNAV(rgeomObject, dtolerance, nverts)
+  
+!<description>
+  ! Calculates the number of vertices needed to approximate the composed
+  ! object's boundary with a desired tolerance.
+!</description>
+
+!<input>
+  ! The composed object
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > EPS
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The number of vertices needed.
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  INTEGER :: nsubVerts, i, h_Dverts
+  REAL(DP) :: drelTol
+  TYPE(t_geometryObject), POINTER :: p_rsubObject
+  
+    ! Maybe we already have an boundary approximation?
+    h_Dverts = rgeomObject%rcomposed%p_rboundaryApprox%h_Dverts
+    
+    ! If yes, then we can return the number of allocated vertices
+    IF (h_Dverts .NE. ST_NOHANDLE) THEN
+    
+      nverts = rgeomObject%rcomposed%p_rboundaryApprox%nverts
+
+      RETURN
+
+    END IF
+
+    ! Initialise output
+    nverts = 0
+    
+    ! Go through all sub-objects
+    DO i = 1, rgeomObject%rcomposed%nsubObjects
+      
+      ! Get i-th sub-object
+      p_rsubObject => rgeomObject%rcomposed%p_RsubObjects(i)
+      
+      ! Calculate tolerance
+      !IF (p_rsubObject%ndimension .EQ. NDIM3D) THEN
+      !  drelTol = dtolerance / p_rsubObject%rcoord3D%dscalingFactor
+      !ELSE
+        drelTol = dtolerance / p_rsubObject%rcoord2D%dscalingFactor
+      !END IF
+            
+      ! Get number of vertices for sub-object
+      CALL geom_getNumApproxVerts(p_rsubObject, drelTol, nsubVerts)
+      
+      ! Add vertices
+      nverts = nverts + nsubVerts
+    
+    END DO
+    
+    ! That's it
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  RECURSIVE SUBROUTINE geom_composed_getBndApprox(rgeomObject, dtolerance, &
+                                                  Dverts, nverts)
+
+!<description>
+  ! Calculates the boundary approximation vertices for the composed object.
+!</description>
+
+!<input>
+  ! The composed
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > SYS_EPS.
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The vertice array.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  
+  ! Number of vertices created
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  INTEGER :: i, j, k, io, nsubverts, nmaxverts, ctype
+  INTEGER, DIMENSION(:), ALLOCATABLE :: Iinout
+  REAL(DP) :: dsubtol
+  REAL(DP), DIMENSION(2) :: DmyVert
+  TYPE(t_geometryObject), POINTER :: p_rsubObject
+  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+  
+    ! Get boundary approximation
+    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+    IF (p_rbndApprox%h_Dverts .NE. ST_NOHANDLE) THEN
+    
+      ! Simply copy the vertices of the boundary approximation
+      nverts = p_rbndApprox%nverts
+      
+      DO i = 1, nverts
+        Dverts(:, i) = p_rbndApprox%p_Dverts(:, i)
+      END DO
+      
+      ! And destroy our boundary approximation
+      CALL storage_free(p_rbndApprox%h_Dverts)
+      p_rbndApprox%nverts = 0
+      p_rbndApprox%nvertsAllocated = 0
+      p_rbndApprox%p_Dverts => NULL()
+      
+      ! Exit here
+      RETURN
+    
+    END IF
+  
+    ! Get composed object's type
+    ctype = rgeomObject%rcomposed%ccomposedType
+  
+    ! Get number of vertices
+    CALL geom_composed_getNAV(rgeomObject, dtolerance, nmaxverts)
+    
+    ! Allocate integer array for inside-outside-test
+    ALLOCATE(Iinout(nmaxverts))
+    
+    nverts = 0
+    
+    ! Now go through all our objects
+    DO i = 1, rgeomObject%rcomposed%nsubObjects
+    
+      ! Get i-th sub-object
+      p_rsubObject => rgeomObject%rcomposed%p_RsubObjects(i)
+    
+      ! Calculate tolerance for sub-object
+      dsubtol = dtolerance / p_rsubObject%rcoord2D%dscalingFactor
+    
+      ! Get vertices of i-th sub-object
+      CALL geom_getBoundaryApprox(p_rsubObject, dsubtol, &
+                                  Dverts(:, nverts+1:), nsubverts)
+      
+      ! A-priori all vertices of this object belong to the composed object's
+      ! boundary
+      DO j = nverts + 1, nverts + nsubverts
+        ! A-priori this vertice belongs to our boundary
+        Iinout(j) = 1
+        
+        ! Transform vertice to our coordinate system
+        CALL bgeom_transformPoint2D(p_rsubObject%rcoord2D, Dverts(1:2, j), &
+                                    DmyVert)
+        Dverts(1:2, j) = DmyVert
+        
+      END DO
+      
+      ! Now perform inside-outside test with all other sub-objects
+      DO k = 1, rgeomObject%rcomposed%nsubObjects
+      
+        ! Skip i-th sub-object
+        IF (k .NE. i) THEN
+        
+          ! Loop through all vertices of i-th sub-object
+          DO j = nverts + 1, nverts + nsubverts
+          
+            ! If this point is already out, then skip it
+            IF (Iinout(j) .NE. 0) THEN
+          
+              ! Perform inside-outside-test
+              CALL geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(k), &
+                                   Dverts(1:2, j), io)
+
+              ! If this is a UNION-quantor node and the point is inside the
+              ! object, or if this node is a INTERSECT-quantor node and the
+              ! point is outside, then we can kick it
+              IF (((ctype .EQ. GEOM_COMP_TYPE_OR) .AND. (io .EQ. 1)) .OR. &
+                  ((ctype .EQ. GEOM_COMP_TYPE_AND) .AND. (io .EQ. 0))) THEN
+                Iinout(j) = 0
+              END IF
+            
+            END IF
+            
+          END DO
+        
+        END IF
+      
+      END DO
+      
+      ! Increment vertice offset
+      nverts = nverts + nsubverts
+    
+    END DO
+    
+    ! Now we need to compress the vertice vector, or in other words:
+    ! We will kick out all vertices which do not belong to the boundary of
+    ! this composed object.
+    j = 0
+    i = 1
+    DO WHILE (i+j .LE. nverts)
+      
+      IF (Iinout(i+j) .NE. 0) THEN
+      
+        IF (j .GT. 0) THEN
+          ! copy vertice
+          Dverts(1:2,i) = Dverts(1:2,i+j)
+        END IF
+      
+        ! increment destination index
+        i = i+1
+      ELSE
+        ! vertice has been kicked
+        ! increment source index
+        j = j+1
+      END IF
+      
+    END DO
+    
+    ! Print some debug info
+    !PRINT *, 'Boundary Approx: ', nmaxverts, ' vertices allocated'
+    !PRINT *, 'Boundary Approx: ', nverts, ' vertices created'
+    !PRINT *, 'Boundary Approx: ', j, ' vertices kicked'
+    !PRINT *, 'Boundary Approx: ', (i-1), ' vertices left'
+    
+    ! Remember how many vertices we have
+    nverts = i-1
+    
+    ! Deallocate integer array
+    DEALLOCATE(Iinout)
+    
+    ! That's it
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_composed_updateBndApprox(rgeomObject, dtolerance)
+
+!<description>
+  ! This routine updates the boundary approximation of the composed object.
+!</description>
+
+!<input>
+  ! OPTIONAL: The tolerance for the boundary approximation.
+  ! If not present, 10e-2 is used.
+  REAL(DP), OPTIONAL, INTENT(IN) :: dtolerance  
+!</input>
+
+!<input>
+  ! The composed object
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+!</input>
+
+  ! Some temporary variables
+  REAL(DP) :: dTol
+  INTEGER :: nvertsNeeded, nvertsUsed, h_Dverts
+  INTEGER, DIMENSION(2) :: DmyDim
+  TYPE(t_boundaryApprox), POINTER :: p_rbndApprox
+
+    ! Make sure this is a composed object
+    IF (rgeomObject%ctype .NE. GEOM_COMPOSED) RETURN
+    
+    ! Get tolerance
+    dTol = 1E-2_DP
+    IF (PRESENT(dtolerance)) THEN
+      IF ((dtolerance .GT. 1E-8_DP) .AND. (dtolerance .LE. 1E-1_DP)) THEN
+        dTol = dtolerance
+      END IF
+    END IF
+
+    ! Get a pointer to the boundary approximation
+    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+
+    ! Backup boundary approximation vertice handle
+    h_Dverts = p_rbndApprox%h_Dverts
+    
+    ! And remove it from the structure
+    p_rbndApprox%h_Dverts = ST_NOHANDLE
+
+    ! Get number of vertices needed for tolerance
+    CALL geom_composed_getNAV(rgeomObject, dTol, nvertsNeeded)
+    
+    ! Do we already have a boundary approximation?
+    IF (h_Dverts .NE. ST_NOHANDLE) THEN
+    
+      ! Do we need to re-allocate the array?
+      IF (p_rbndApprox%nvertsAllocated .LT. nvertsNeeded) THEN
+      
+        ! Reallocate array
+        CALL storage_realloc('geom_composed_updateBndApprox', nvertsNeeded, &
+                             h_Dverts, ST_NEWBLOCK_NOINIT, .FALSE.)
+        
+        ! Store allocated size
+        p_rbndApprox%nvertsAllocated = nvertsNeeded
+        
+      END IF
+      
+    ELSE
+        
+      ! Allocate some space for us
+      DmyDim(1) = 2
+      DmyDim(2) = nvertsNeeded
+      CALL storage_new2D('geom_composed_updateBndApprox', 'Dverts', &
+                         DmyDim, ST_DOUBLE, h_Dverts, ST_NEWBLOCK_NOINIT)
+
+      ! Store allocated size
+      p_rbndApprox%nvertsAllocated = nvertsNeeded
+
+    END IF
+    
+    ! Get the vertice vector
+    CALL storage_getbase_double2D(h_Dverts, p_rbndApprox%p_Dverts)
+    
+    ! Get the object's boundary approximation
+    CALL geom_composed_getBndApprox(rgeomObject, dTol, p_rbndApprox%p_Dverts, &
+                                    nvertsUsed)
+    
+    ! Store tolerance and number of used vertices
+    p_rbndApprox%dtolerance = dTol
+    p_rbndApprox%nverts = nvertsUsed
+    p_rbndApprox%h_Dverts = h_Dverts
+    
+    ! Check if we have allocated more than 200% of the vertices we use.
+    IF ((2 * nvertsUsed) .LE. p_rbndApprox%nvertsAllocated) THEN
+    
+      ! Reallocate array
+      CALL storage_realloc('geom_composed_updateBndApprox', nvertsUsed, &
+                           p_rbndApprox%h_Dverts, ST_NEWBLOCK_NOINIT, .TRUE.)
+      
+      ! Remember we have reallocated the array
+     p_rbndApprox%nvertsAllocated = nvertsUsed
+      
+    END IF
+    
+    ! That's it
+    
+  END SUBROUTINE
+    
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! *= 2D Circle Routines                                                    =*
@@ -868,6 +1592,101 @@ END SUBROUTINE
 
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE geom_circle_getNAV(rgeomObject, dtolerance, nverts)
+  
+!<description>
+  ! Calculates the number of vertices needed to approximate the circle's
+  ! boundary with a desired tolerance.
+!</description>
+
+!<input>
+  ! The circle
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > EPS
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The number of vertices needed.
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! The length of the boundary
+  REAL(DP) :: dboundLen
+  
+    ! The length of the boundary is 2 * radius * PI
+    dboundLen = 2.0_DP * rgeomObject%rcircle%dradius * SYS_PI
+    
+    ! The number of vertices is simply the boundary length divided by the
+    ! tolerance
+    nverts = INT(dboundLen / dtolerance)
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_circle_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+
+!<description>
+  ! Calculates the boundary approximation vertices for the circle.
+!</description>
+
+!<input>
+  ! The circle
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > SYS_EPS.
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The vertice array.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  
+  ! Number of vertices created
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  REAL(DP) :: dangle, drad, dstep
+  INTEGER :: i
+  
+    ! Get circle radius
+    drad = rgeomObject%rcircle%dradius
+    
+    ! Get number of vertices to allocate
+    CALL geom_circle_getNAV(rgeomObject, dtolerance, nverts)
+
+    ! Calculate angle delta    
+    dstep = (2.0_DP * SYS_PI) / REAL(nverts, DP)
+    
+    ! Loop though all vertices
+    DO i = 1, nverts
+    
+      ! Calculate angle
+      dangle = REAL(i-1, DP) * dstep
+    
+      ! Calculate point
+      Dverts(1, i) = drad * COS(dangle)
+      Dverts(2, i) = drad * SIN(dangle)
+      
+    END DO
+    
+    ! That's it
+  
+  END SUBROUTINE
+
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! *= 2D Square Routines                                                    =*
@@ -1303,6 +2122,116 @@ END SUBROUTINE
   END SUBROUTINE
   
   ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE geom_square_getNAV(rgeomObject, dtolerance, nverts)
+  
+!<description>
+  ! Calculates the number of vertices needed to approximate the square's
+  ! boundary with a desired tolerance.
+!</description>
+
+!<input>
+  ! The square
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > EPS
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The number of vertices needed.
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! The length of the boundary
+  REAL(DP) :: dboundLen
+  
+    ! The length of the boundary is 4 * edge_length
+    dboundLen = 4.0_DP * rgeomObject%rsquare%dlength
+    
+    ! The number of vertices is simply the boundary length divided by the
+    ! tolerance
+    nverts = INT(dboundLen / dtolerance) + 4
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_square_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+
+!<description>
+  ! Calculates the boundary approximation vertices for the square.
+!</description>
+
+!<input>
+  ! The square
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > SYS_EPS.
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The vertice array.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  
+  ! Number of vertices created
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  REAL(DP) :: dedge
+  INTEGER :: i, nvpe
+  
+    ! Get square's edge length
+    dedge = rgeomObject%rsquare%dlength
+    
+    ! Calculate number of vertices per edge
+    nvpe = INT(dedge / dtolerance)
+    
+    ! Get half of square's edge length
+    dedge = 0.5_DP * dedge
+
+    ! Edge 1
+    DO i = 1, nvpe
+      Dverts(1, i) = dedge
+      Dverts(2, i) = -dedge + (REAL(i-1, DP) * dtolerance)
+    END DO
+    
+    ! Edge 2
+    DO i = 1, nvpe
+      Dverts(1, nvpe + i) = dedge - (REAL(i-1, DP) * dtolerance)
+      Dverts(2, nvpe + i) = dedge
+    END DO
+
+    ! Edge 3
+    DO i = 1, nvpe
+      Dverts(1, 2*nvpe + i) = -dedge
+      Dverts(2, 2*nvpe + i) = dedge - (REAL(i-1, DP) * dtolerance)
+    END DO
+    
+    ! Edge 4
+    DO i = 1, nvpe
+      Dverts(1, 3*nvpe + i) = -dedge + (REAL(i-1, DP) * dtolerance)
+      Dverts(2, 3*nvpe + i) = -dedge
+    END DO
+    
+    ! Store number of vertices written
+    nverts = 4 * nvpe
+    
+    ! That's it
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! *= 2D Ellipse Routines                                                   =*
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
@@ -1310,7 +2239,7 @@ END SUBROUTINE
   
 !<subroutine>
 
-  SUBROUTINE geom_init_ellipse_indirect(rgeomObject, rcoordSys, Dradius, &
+  SUBROUTINE geom_init_ellipse_indirect(rgeomObject, rcoordSys, Dradii, &
                                         binverted)
 
 !<description>
@@ -1321,8 +2250,8 @@ END SUBROUTINE
   ! A 2D coordinate system for the ellipse.
   TYPE(t_coordinateSystem2D),  INTENT(IN)  :: rcoordSys
   
-  ! An array holding the X- and Y-radiuses for the ellipse.
-  REAL(DP), DIMENSION(:),      INTENT(IN)  :: Dradius
+  ! An array holding the X- and Y-radii for the ellipse.
+  REAL(DP), DIMENSION(:),      INTENT(IN)  :: Dradii
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
@@ -1354,8 +2283,8 @@ END SUBROUTINE
       rgeomObject%binverted = .FALSE.
     END IF
     
-    ! Store the X- and Y-radius of the ellipse
-    rgeomObject%rellipse%Dradius = Dradius(1:2)
+    ! Store the X- and Y-radii of the ellipse
+    rgeomObject%rellipse%Dradii = Dradii(1:2)
     
     ! That's it!
   
@@ -1365,7 +2294,7 @@ END SUBROUTINE
 
 !<subroutine>
 
-  SUBROUTINE geom_init_ellipse_direct(rgeomObject, Dradius, Dorigin, &
+  SUBROUTINE geom_init_ellipse_direct(rgeomObject, Dradii, Dorigin, &
                                       drotation, dscalingFactor, binverted)
 
 !<description>
@@ -1373,8 +2302,8 @@ END SUBROUTINE
 !</description>
 
 !<input>
-  ! A array holding the X- and Y-radiuses for the ellipse.
-  REAL(DP), DIMENSION(:),            INTENT(IN)  :: Dradius
+  ! A array holding the X- and Y-radii for the ellipse.
+  REAL(DP), DIMENSION(:),            INTENT(IN)  :: Dradii
   
   ! OPTIONAL: The origin of the ellipse.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
@@ -1420,7 +2349,7 @@ END SUBROUTINE
     END IF
     
     ! Store the X- and Y-radius of the ellipse
-    rgeomObject%rellipse%Dradius = Dradius(1:2)
+    rgeomObject%rellipse%Dradii = Dradii(1:2)
     
     ! That's it!
   
@@ -1466,8 +2395,8 @@ END SUBROUTINE
 
     ! And scale the coordinates by the inverses of our radiuses.
     ! By doing this, we "transform" our ellipse into a circle with radius 1
-    DrelCoords(1) = DrelCoords(1) / rgeomObject%rellipse%Dradius(1)
-    DrelCoords(2) = DrelCoords(2) / rgeomObject%rellipse%Dradius(2)
+    DrelCoords(1) = DrelCoords(1) / rgeomObject%rellipse%Dradii(1)
+    DrelCoords(2) = DrelCoords(2) / rgeomObject%rellipse%Dradii(2)
     
     ! Now check the length of our resulting point
     IF ((DrelCoords(1)**2 + DrelCoords(2)**2) .LE. 1.0_DP) THEN
@@ -1545,9 +2474,9 @@ END SUBROUTINE
   ! mirroring factors
   REAL(DP), DIMENSION(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
 
-    ! Get the ellipse's X- and Y-radius
-    dradX = rgeomObject%rellipse%Dradius(1)
-    dradY = rgeomObject%rellipse%Dradius(2)
+    ! Get the ellipse's X- and Y-radii
+    dradX = rgeomObject%rellipse%Dradii(1)
+    dradY = rgeomObject%rellipse%Dradii(2)
   
     ! First we need to transform the point's coordinates into the ellipse's
     ! local coordinate system.
@@ -1860,8 +2789,8 @@ END SUBROUTINE
     dstep = (SYS_PI * 2.0_DP) / REAL(ndesiredVerticeCount, DP)
     
     ! Get radius
-    dradiusX = rgeomObject%rellipse%Dradius(1)
-    dradiusY = rgeomObject%rellipse%Dradius(2)
+    dradiusX = rgeomObject%rellipse%Dradii(1)
+    dradiusY = rgeomObject%rellipse%Dradii(2)
   
     ! Allocate desired number of vertices
     Isize = (/ 2, ndesiredVerticeCount /)
@@ -1883,6 +2812,146 @@ END SUBROUTINE
     
     END DO
 
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE geom_ellipse_getNAV(rgeomObject, dtolerance, nverts, &
+                                      dcircumference)
+  
+!<description>
+  ! Calculates the number of vertices needed to approximate the ellipse's
+  ! boundary with a desired tolerance.
+!</description>
+
+!<input>
+  ! The ellipse
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > EPS
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The number of vertices needed.
+  INTEGER, INTENT(OUT) :: nverts
+  
+  ! OPTIONAL: An approximation of the ellipse's circumference.
+  REAL(DP), OPTIONAL, INTENT(OUT) :: dcircumference
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  REAL(DP) :: dalpha, dbeta, dlambda, dtheta, domega, dr1, dr2
+
+  ! The length of the boundary
+  REAL(DP) :: dboundLen
+  
+    ! The boundary length of an ellipse cannot be calculated analytically,
+    ! therefore, we will use the approximation of Ramanujan here.
+  
+    ! Get the radii
+    dr1 = rgeomObject%rellipse%Dradii(1)
+    dr2 = rgeomObject%rellipse%Dradii(2)
+
+    ! Calculate alpha and beta    
+    IF (dr1 .LT. dr2) THEN
+      dalpha = dr2
+      dbeta = dr1
+    ELSE
+      dalpha = dr1
+      dbeta = dr2
+    END IF
+    
+    ! Calculate lambda
+    dlambda = (dalpha - dbeta) / (dalpha + dbeta)
+    
+    ! Calculate theta
+    dtheta = 3.0_DP * dlambda**2
+    
+    ! Calculate omega
+    domega = 1.0_DP + (dtheta / (10.0_DP + SQRT(4.0_DP - dtheta)))
+  
+    ! The approximative length of the boundary
+    dboundLen = SYS_PI * (dalpha + dbeta) * domega
+    
+    ! The number of vertices is simply the boundary length divided by the
+    ! tolerance
+    nverts = INT(dboundLen / dtolerance)
+    
+    ! Return circumference if desired
+    IF (PRESENT(dcircumference)) THEN
+      dcircumference = dboundlen
+    END IF
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_ellipse_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+
+!<description>
+  ! Calculates the boundary approximation vertices for the ellipse.
+!</description>
+
+!<input>
+  ! The ellipse
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > SYS_EPS.
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The vertice array.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  
+  ! Number of vertices created
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  REAL(DP) :: dangle, dradX, dradY, dcf, dSin, dCos
+  INTEGER :: i
+  
+    ! Get elipse's radii
+    dradX = rgeomObject%rellipse%Dradii(1)
+    dradY = rgeomObject%rellipse%Dradii(2)
+    
+    ! Get number of vertices to allocate
+    CALL geom_ellipse_getNAV(rgeomObject, dtolerance, nverts, dcf)
+    
+    ! Special thanks to Dr. Marcus Stiemer and Manuel Jaraczewski for their
+    ! help with the following piece of code...
+    
+    ! Calculate angle delta    
+    dangle = 0.0_DP
+    
+    ! Loop though all vertices
+    DO i = 1, nverts
+    
+      ! Calculate SIN and COS
+      dCos = COS(dangle)
+      dSin = SIN(dangle)
+    
+      ! Calculate point
+      Dverts(1, i) = dradX * dCos
+      Dverts(2, i) = dradY * dSin
+      
+      ! Update angle
+      dangle = dangle + dtolerance / SQRT((dradX*dSin)**2 + (dradY*dCos)**2)
+    
+    END DO
+
+    ! That's it
+  
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -2292,6 +3361,122 @@ END SUBROUTINE
     
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE geom_rect_getNAV(rgeomObject, dtolerance, nverts)
+  
+!<description>
+  ! Calculates the number of vertices needed to approximate the rectangle's
+  ! boundary with a desired tolerance.
+!</description>
+
+!<input>
+  ! The rectangle
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > EPS
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The number of vertices needed.
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! The length of the boundary
+  REAL(DP) :: dboundLen
+  
+    ! The length of the boundary is 2 * (X_edge_length + Y_edge_length)
+    dboundLen = 2.0_DP * (rgeomObject%rrectangle%Dlength(1) + &
+                          rgeomObject%rrectangle%Dlength(2))
+    
+    ! The number of vertices is simply the boundary length divided by the
+    ! tolerance
+    nverts = INT(dboundLen / dtolerance) + 4
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_rect_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+
+!<description>
+  ! Calculates the boundary approximation vertices for the rectangle.
+!</description>
+
+!<input>
+  ! The rectangle
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > SYS_EPS.
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The vertice array.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  
+  ! Number of vertices created
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  REAL(DP) :: dedgeX, dedgeY
+  INTEGER :: i, nvpeX, nvpeY, off
+  
+    ! Get rectangle's edge lengths
+    dedgeX = rgeomObject%rrectangle%Dlength(1)
+    dedgeY = rgeomObject%rrectangle%Dlength(2)
+    
+    ! Calculate number of vertices per edge
+    nvpeX = INT(dedgeX / dtolerance)
+    nvpeY = INT(dedgeY / dtolerance)
+    
+    ! Get half of rectangle's edge lengths
+    dedgeX = 0.5_DP * dedgeX
+    dedgeY = 0.5_DP * dedgeY
+
+    ! Edge 1
+    DO i = 1, nvpeY
+      Dverts(1, i) = dedgeX
+      Dverts(2, i) = -dedgeY + (REAL(i-1, DP) * dtolerance)
+    END DO
+    
+    ! Edge 2
+    DO i = 1, nvpeX
+      Dverts(1, nvpeY + i) = dedgeX - (REAL(i-1, DP) * dtolerance)
+      Dverts(2, nvpeY + i) = dedgeY
+    END DO
+
+    ! Edge 3
+    off = nvpeX + nvpeY
+    DO i = 1, nvpeY
+      Dverts(1, off + i) = -dedgeX
+      Dverts(2, off + i) = dedgeY - (REAL(i-1, DP) * dtolerance)
+    END DO
+    
+    ! Edge 4
+    off = nvpeX + 2*nvpeY
+    DO i = 1, nvpeX
+      Dverts(1, off + i) = -dedgeX + (REAL(i-1, DP) * dtolerance)
+      Dverts(2, off + i) = -dedgeY
+    END DO
+    
+    ! Store number of vertices written
+    nverts = 2 * (nvpeX + nvpeY)
+    
+    ! That's it
+  
+  END SUBROUTINE
+
   ! ***************************************************************************
   ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
   ! *= 2D Polygon Routines                                                   =*
@@ -2950,9 +4135,173 @@ END SUBROUTINE
     
     END DO
     
-    
   END SUBROUTINE
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE geom_polygon_getNAV(rgeomObject, dtolerance, nverts)
+  
+!<description>
+  ! Calculates the number of vertices needed to approximate the polygon's
+  ! boundary with a desired tolerance.
+!</description>
+
+!<input>
+  ! The rectangle
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > EPS
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The number of vertices needed.
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! The length of the boundary
+  REAL(DP) :: dboundLen
+  
+  ! The bounds of the polygon
+  INTEGER :: lb, ub, i
+  
+  ! The polygon's vertices
+  REAL(DP), DIMENSION(2) :: Dedge
+  
+    ! Get the polygon's bounds  
+    lb = LBOUND(rgeomObject%rpolygon%p_Dvertices, 2)
+    ub = UBOUND(rgeomObject%rpolygon%p_Dvertices, 2);
+    
+    ! Get last edge
+    Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, lb) &
+          - rgeomObject%rpolygon%p_Dvertices(1:2, ub)
+    
+    ! Add edge's length
+    dboundLen = SQRT(Dedge(1)**2 + Dedge(2)**2)
+    
+    ! Go through all other edges
+    DO i = lb, ub-1
+    
+      ! Get i-th edge
+      Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, i+1) &
+            - rgeomObject%rpolygon%p_Dvertices(1:2, i)
+            
+      ! Add edge's length
+      dboundLen = dboundLen + SQRT(Dedge(1)**2 + Dedge(2)**2)
+      
+    END DO
+  
+    
+    ! The number of vertices is simply the boundary length divided by the
+    ! tolerance
+    nverts = INT(dboundLen / dtolerance) + ub - lb + 1
+    
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE geom_polygon_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+
+!<description>
+  ! Calculates the boundary approximation vertices for the polygon.
+!</description>
+
+!<input>
+  ! The polygon
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > SYS_EPS.
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The vertice array.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  
+  ! Number of vertices created
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+  ! Some temporary variables
+  REAL(DP) :: dlen, dalpha
+  REAL(DP), DIMENSION(2) :: Dedge, DlastVert
+  INTEGER :: i, j, nvpe, lb, ub
+  
+    ! Get the polygon's bounds  
+    lb = LBOUND(rgeomObject%rpolygon%p_Dvertices, 2)
+    ub = UBOUND(rgeomObject%rpolygon%p_Dvertices, 2);
+    
+    ! Get last edge
+    Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, lb) &
+          - rgeomObject%rpolygon%p_Dvertices(1:2, ub)
+    
+    ! Get last vertice
+    DlastVert = rgeomObject%rpolygon%p_Dvertices(1:2, ub)
+
+    ! Get edge's length
+    dlen = SQRT(Dedge(1)**2 + Dedge(2)**2)
+    
+    ! Calculate number of vertices for this edge
+    nvpe = INT(dlen / dtolerance)
+    
+    ! Loop through this edge's vertices
+    DO j = 1, nvpe
+    
+      ! Calculate interpolation factor
+      dalpha = REAL(j-1, DP) * dtolerance / dlen
+      
+      ! Store vertice
+      Dverts(1:2, j) = DlastVert + dalpha * Dedge
+    
+    END DO
+    
+    ! Update number of vertices written
+    nverts = nvpe
+    
+    ! Loop through all other edges
+    DO i = lb, ub-1
+    
+      ! Get i-th edge
+      Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, i+1) &
+            - rgeomObject%rpolygon%p_Dvertices(1:2, i)
+      
+      ! Get last vertice
+      DlastVert = rgeomObject%rpolygon%p_Dvertices(1:2, i)
+
+      ! Get edge's length
+      dlen = SQRT(Dedge(1)**2 + Dedge(2)**2)
+      
+      ! Calculate number of vertices for this edge
+      nvpe = INT(dlen / dtolerance)
+      
+      ! Loop through this edge's vertices
+      DO j = 1, nvpe
+      
+        ! Calculate interpolation factor
+        dalpha = REAL(j-1, DP) * dtolerance / dlen
+        
+        ! Store vertice
+        Dverts(1:2, nverts + j) = DlastVert + dalpha * Dedge
+      
+      END DO
+      
+      ! Update number of vertices written
+      nverts = nverts + nvpe
+      
+    END DO
+
+    ! That's it
+  
+  END SUBROUTINE
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -3186,8 +4535,8 @@ END SUBROUTINE
    ! Check what type of object we have and call the object's corresponding
    ! subroutine.
    SELECT CASE(rgeomObject%ctype)
-   !CASE (GEOM_COMPOSED)
-     !CALL geom_composed_prjToBoundary(rgeomObject, Dcoords, Dproj)
+   CASE (GEOM_COMPOSED)
+     CALL geom_composed_prjToBoundary(rgeomObject, Dcoords, Dproj)
    CASE (GEOM_CIRCLE)
      CALL geom_circle_prjToBoundary(rgeomObject, Dcoords, Dproj)
    CASE (GEOM_SQUARE)
@@ -3241,8 +4590,8 @@ END SUBROUTINE
    ! Check what type of object we have and call the object's corresponding
    ! subroutine.
    SELECT CASE(rgeomObject%ctype)
-   !CASE (GEOM_COMPOSED)
-     !CALL geom_composed_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   CASE (GEOM_COMPOSED)
+     CALL geom_composed_calcSignDist(rgeomObject, Dcoords, ddistance)
    CASE (GEOM_CIRCLE)
      CALL geom_circle_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    CASE (GEOM_SQUARE)
@@ -3336,7 +4685,7 @@ END SUBROUTINE
 !</description>
 
 !<input>
-  ! The geometry object to calculate the distance from.
+  ! The geometry object to polygonise.
   TYPE(t_geometryObject), INTENT(IN)  :: rgeomObject
   
   ! OPTIONAL: Decides whether the coordinates of the polygon should be world
@@ -3361,7 +4710,7 @@ END SUBROUTINE
 
 !</subroutine>
 
-  ! Desired vertice count
+  ! Desired vertice count and other temporary variables
   INTEGER :: ndVC, i, ub, lb
   
   ! The polygon's vertices
@@ -3437,7 +4786,7 @@ END SUBROUTINE
   RECURSIVE SUBROUTINE geom_done(rgeomObject)
 
 !<description>
-  ! This routine releases allocated buffer from a geometry object
+  ! This routine releases allocated buffer from a geometry object.
   
 !</description>
 
@@ -3449,7 +4798,8 @@ END SUBROUTINE
 
 !</subroutine>
 
-  INTEGER :: i
+  ! Some temporary variables
+  INTEGER :: i, h_Dverts
 
     ! If the object is composed, we have some work to do...
     IF(rgeomObject%ctype .EQ. GEOM_COMPOSED) THEN
@@ -3464,6 +4814,15 @@ END SUBROUTINE
       
       ! Deallocate object array
       DEALLOCATE(rgeomObject%rcomposed%p_RsubObjects)
+      
+      ! Destroy boundary approximation
+      h_Dverts = rgeomObject%rcomposed%p_rboundaryApprox%h_Dverts
+      IF (h_Dverts .NE. ST_NOHANDLE) THEN
+        CALL storage_free(h_Dverts)
+      END IF
+      
+      ! Deallocate boundary approximation structure
+      DEALLOCATE(rgeomObject%rcomposed%p_rboundaryApprox)
     
     END IF
 
@@ -3473,5 +4832,100 @@ END SUBROUTINE
     ! That's it
   
   END SUBROUTINE
+
+  ! ***************************************************************************
   
+!<subroutine>
+
+  RECURSIVE SUBROUTINE geom_getNumApproxVerts(rgeomObject, dtolerance, nverts)
+  
+!<description>
+  ! This routine calculates the number of vertices needed to approximate the
+  ! object's boundary at a desired tolerance.
+  
+  ! This routine is just a wrapper for the geom_XXXX_getNAV routines.
+!</description>
+
+!<input>
+  ! The geometry object
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The tolerance. Must be > EPS
+  REAL(DP), INTENT(IN) :: dtolerance
+  
+!</input>
+
+!<output>
+  ! The number of vertices for the boundary approximation
+  INTEGER, INTENT(OUT) :: nverts
+  
+!</output>
+
+!</subroutine>
+
+    SELECT CASE(rgeomObject%ctype)
+    CASE (GEOM_COMPOSED)
+      CALL geom_composed_getNAV(rgeomObject, dtolerance, nverts)
+    CASE (GEOM_CIRCLE)
+      CALL geom_circle_getNAV(rgeomObject, dtolerance, nverts)
+    CASE (GEOM_SQUARE)
+      CALL geom_square_getNAV(rgeomObject, dtolerance, nverts)
+    CASE (GEOM_ELLIPSE)
+      CALL geom_ellipse_getNAV(rgeomObject, dtolerance, nverts)
+    CASE (GEOM_RECT)
+      CALL geom_rect_getNAV(rgeomObject, dtolerance, nverts)
+    CASE (GEOM_POLYGON)
+      CALL geom_polygon_getNAV(rgeomObject, dtolerance, nverts)
+    
+    END SELECT
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  RECURSIVE SUBROUTINE geom_getBoundaryApprox(rgeomObject, dtolerance, &
+                                              Dverts, nverts)
+  
+!<description>
+  ! Calculates the boundary approximation vertices for a geometry object.
+  ! This routine is just a wrapper for the geom_XXXX_getBndApprox routines.
+!</description>
+
+!<input>
+  ! The composed object
+  TYPE(t_geometryObject), INTENT(IN) :: rgeomObject
+  
+  ! The desired tolerance. Must be > SYS_EPS.
+  REAL(DP), INTENT(IN) :: dtolerance
+!</input>
+
+!<output>
+  ! The vertice array.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dverts
+  
+  ! Number of vertices created
+  INTEGER, INTENT(OUT) :: nverts
+!</output>
+
+!</subroutine>
+
+    SELECT CASE(rgeomObject%ctype)
+    CASE (GEOM_COMPOSED)
+      CALL geom_composed_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    CASE (GEOM_CIRCLE)
+      CALL geom_circle_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    CASE (GEOM_SQUARE)
+      CALL geom_square_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    CASE (GEOM_ELLIPSE)
+      CALL geom_ellipse_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    CASE (GEOM_RECT)
+      CALL geom_rect_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    CASE (GEOM_POLYGON)
+      CALL geom_polygon_getBndApprox(rgeomObject, dtolerance, Dverts, nverts)
+    END SELECT
+    
+  END SUBROUTINE
+    
 END MODULE
