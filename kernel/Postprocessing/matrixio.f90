@@ -16,8 +16,12 @@
 !#     -> Writes a block matrix in human readable form into a text file
 !#
 !# 3.) matio_spyMatrix
-!#     -> Writes a scalar matrix into a file which can be visualized
-!#        by means of the MATLAB command SPY
+!#     -> Writes a scalar matrix in CSR format into a file which can be 
+!#        visualized by means of the MATLAB command SPY
+!#
+!# 4.) matio_spyBlockMatrix
+!#     -> Writes a block matrix in CSR format into a file which can be 
+!#        visualized by means of the MATLAB command SPY
 !#
 !# The following auxiliary functions can be found here:
 !#
@@ -172,11 +176,13 @@ MODULE matrixio
                                       rmatrix%NEQ, rmatrix%NEQ, sarray, &
                                       bnoZero, ifile, sfile, sformat)
     CASE DEFAULT
-      PRINT *,'matio_writeFullMatrix: Unsupported matrix precision.'
+      CALL output_line ('Unsupported matrix precision!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
       CALL sys_halt()
     END SELECT
   CASE DEFAULT
-    PRINT *,'matio_writeFullMatrix: Unknown matrix format.'
+    CALL output_line ('Unknown matrix format!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
     CALL sys_halt()
   END SELECT
     
@@ -236,8 +242,8 @@ MODULE matrixio
     IF (ifile .EQ. 0) THEN
       CALL io_openFileForWriting(sfile, cf, SYS_REPLACE)
       IF (cf .EQ. -1) THEN
-        PRINT *, 'matio_writeFullMatrix: Could not open file '// &
-                 trim(sfile)
+        CALL output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
         CALL sys_halt()
       END IF
     ELSE
@@ -345,8 +351,8 @@ MODULE matrixio
     IF (ifile .EQ. 0) THEN
       CALL io_openFileForWriting(sfile, cf, SYS_REPLACE)
       IF (cf .EQ. -1) THEN
-        PRINT *, 'matio_writeFullMatrix: Could not open file '// &
-                 trim(sfile)
+        CALL output_line ('Could not open file '//trim(sfile), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'matio_writeFullMatrix')
         CALL sys_halt()
       END IF
     ELSE
@@ -420,11 +426,65 @@ MODULE matrixio
 
 !<subroutine>
 
-  SUBROUTINE matio_spyMatrix(sfilename,smatrixName,rmatrix,bdata,cstatus)
+  SUBROUTINE matio_spyBlockMatrix(sfilename,smatrixName,rmatrix,bdata,cstatus,dthreshold)
 
 !<description>
-    ! Writes a scalar matrix to file so that its sparsity structure
-    ! can be visualized in MATLAB by means of the spy command
+    ! Writes a block matrix in CSR format to a file so that its sparsity structure
+    ! can be visualized in MATLAB by means of the spy command.
+    ! If the matrix contains entries, the entries are written to the file
+    ! as well, so the matrix can be used as sparse matrix for arbitrary purposes.
+!</description>
+
+!<input>
+    ! file name of the MATLAB file without fileextension
+    CHARACTER(LEN=*), INTENT(IN) :: sfileName
+    
+    ! name of the matrix in MATLAB file
+    CHARACTER(LEN=*), INTENT(IN) :: smatrixName
+
+    ! Source matrix
+    TYPE(t_matrixBlock), INTENT(IN) :: rmatrix
+    
+    ! Whether to spy the real data of the matrix or only its sparsity
+    ! pattern
+    LOGICAL, INTENT(IN) :: bdata
+
+    ! OPTIONAL: status of file
+    INTEGER, INTENT(IN), OPTIONAL :: cstatus
+
+    ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for beter visualisation.
+    ! If not present, a default of 1E-12 is assumed.
+    REAL(DP), INTENT(IN), OPTIONAL :: dthreshold
+!</input>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_matrixBlock) :: rtempMatrix
+
+    ! We have to create a global matrix first!
+    CALL glsys_assembleGlobal (rmatrix,rtempMatrix,.TRUE.,.TRUE.)
+                              
+    ! Write matrix to the file
+    CALL matio_spyMatrix(sfilename,smatrixName,rtempMatrix%RmatrixBlock(1,1),&
+        bdata,cstatus,dthreshold)
+
+    ! Release the temporary matrix
+    CALL lsysbl_releaseMatrix (rtempMatrix)
+
+  END SUBROUTINE 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE matio_spyMatrix(sfilename,smatrixName,rmatrix,bdata,cstatus,dthreshold)
+
+!<description>
+    ! Writes a scalar matrix in CSR format to a file so that its sparsity structure
+    ! can be visualized in MATLAB by means of the spy command.
+    ! If the matrix contains entries, the entries are written to the file
+    ! as well, so the matrix can be used as sparse matrix for arbitrary purposes.
 !</description>
 
 !<input>
@@ -443,6 +503,11 @@ MODULE matrixio
 
     ! OPTIONAL: status of file
     INTEGER, INTENT(IN), OPTIONAL :: cstatus
+
+    ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
+    ! value is below this threshold are replaced by 0.0 for beter visualisation.
+    ! If not present, a default of 1E-12 is assumed.
+    REAL(DP), INTENT(IN), OPTIONAL :: dthreshold
 !</input>
 !</subroutine>
     
@@ -451,7 +516,12 @@ MODULE matrixio
     REAL(SP), DIMENSION(:), POINTER :: Fa
     INTEGER(I32), DIMENSION(:), POINTER :: Kld,Kcol
     INTEGER :: iunit,ieq
+    REAL(DP) :: dthres
     CHARACTER(LEN=10) :: cstat,cpos
+
+    ! Replace small values by zero
+    dthres = 1E-12_DP
+    IF (PRESENT(dthreshold)) dthres = dthreshold
 
     ! Set file status if required
     IF (PRESENT(cstatus)) THEN
@@ -489,11 +559,14 @@ MODULE matrixio
           CALL lsyssc_getbase_double(rmatrix,Da)
           SELECT CASE(rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIXD)
-            CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,Kld,Kcol,Da)
+            CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
+                Kld,Kcol,Da,dthres)
           CASE (LSYSSC_MATRIX1)
-            CALL do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,rmatrix%NVAR,Kld,Kcol,Da)
+            CALL do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
+                rmatrix%NVAR,Kld,Kcol,Da,dthres)
           CASE DEFAULT
-            PRINT *, 'lsyssc_spyMatrix: Unsupported interleave matrix type!'
+            CALL output_line ('Unsupported interleave matrix type!', &
+                              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
             CALL sys_halt()
           END SELECT
           WRITE(UNIT=iunit,FMT=30)
@@ -503,17 +576,21 @@ MODULE matrixio
           CALL lsyssc_getbase_single(rmatrix,Fa)
           SELECT CASE(rmatrix%cinterleavematrixFormat)
           CASE (LSYSSC_MATRIXD)
-            CALL do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,Kld,Kcol,Fa)
+            CALL do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
+                Kld,Kcol,Fa,dthres)
           CASE (LSYSSC_MATRIX1)
-            CALL do_spy_mat79mat1_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,rmatrix%NVAR,Kld,Kcol,Fa)
+            CALL do_spy_mat79mat1_single(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
+                rmatrix%NVAR,Kld,Kcol,Fa,dthres)
           CASE DEFAULT
-            PRINT *, 'lsyssc_spyMatrix: Unsupported interleave matrix type!'
+            CALL output_line ('Unsupported interleave matrix type!', &
+                              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
             CALL sys_halt()
           END SELECT
           WRITE(UNIT=iunit,FMT=30)
 
         CASE DEFAULT
-          PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+          CALL output_line ('Unsupported matrix type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
           CALL sys_halt()
         END SELECT
         
@@ -523,11 +600,14 @@ MODULE matrixio
         WRITE(UNIT=iunit,FMT=10)
         SELECT CASE(rmatrix%cinterleavematrixFormat)
         CASE (LSYSSC_MATRIXD)
-          CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,Kld,Kcol)
+          CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
+              Kld,Kcol)
         CASE (LSYSSC_MATRIX1)
-          CALL do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,rmatrix%NVAR,Kld,Kcol)
+          CALL do_spy_mat79mat1_double(rmatrix%NEQ,rmatrix%NCOLS,rmatrix%NVAR,&
+              rmatrix%NVAR,Kld,Kcol)
         CASE DEFAULT
-          PRINT *, 'lsyssc_spyMatrix: Unsupported interleave matrix type!'
+          CALL output_line ('Unsupported interleave matrix type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
           CALL sys_halt()
         END SELECT
         WRITE(UNIT=iunit,FMT=30)
@@ -544,17 +624,18 @@ MODULE matrixio
         CASE (ST_DOUBLE)
           WRITE(UNIT=iunit,FMT=10)
           CALL lsyssc_getbase_double(rmatrix,Da)
-          CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Da)
+          CALL do_spy_mat79matD_double(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Da,dthres)
           WRITE(UNIT=iunit,FMT=30)
 
         CASE (ST_SINGLE)
           WRITE(UNIT=iunit,FMT=10)
           CALL lsyssc_getbase_single(rmatrix,Fa)
-          CALL do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Fa)
+          CALL do_spy_mat79matD_single(rmatrix%NEQ,rmatrix%NCOLS,1,Kld,Kcol,Fa,dthres)
           WRITE(UNIT=iunit,FMT=30)
           
         CASE DEFAULT
-          PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+          CALL output_line ('Unsupported matrix type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
           CALL sys_halt()
         END SELECT
 
@@ -575,7 +656,9 @@ MODULE matrixio
           WRITE(UNIT=iunit,FMT=10)
           CALL lsyssc_getbase_double(rmatrix,Da)
           DO ieq=1,rmatrix%NEQ
-            WRITE(UNIT=iunit,FMT=20) ieq,ieq,Da(ieq)
+            IF (ABS(Da(ieq)) .GE. dthres) THEN
+              WRITE(UNIT=iunit,FMT=20) ieq,ieq,Da(ieq)
+            END IF
           END DO
           WRITE(UNIT=iunit,FMT=30)
 
@@ -583,12 +666,15 @@ MODULE matrixio
           WRITE(UNIT=iunit,FMT=10)
           CALL lsyssc_getbase_single(rmatrix,Fa)
           DO ieq=1,rmatrix%NEQ
-            WRITE(UNIT=iunit,FMT=20) ieq,ieq,Fa(ieq)
+            IF (ABS(Fa(ieq)) .GE. dthres) THEN
+              WRITE(UNIT=iunit,FMT=20) ieq,ieq,Fa(ieq)
+            END IF
           END DO
           WRITE(UNIT=iunit,FMT=30)
 
         CASE DEFAULT
-          PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+          CALL output_line ('Unsupported matrix type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
           CALL sys_halt()
         END SELECT
         
@@ -611,17 +697,18 @@ MODULE matrixio
         CASE (ST_DOUBLE)
           WRITE(UNIT=iunit,FMT=10)
           CALL lsyssc_getbase_double(rmatrix,Da)
-          CALL do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS,Da)
+          CALL do_spy_mat1_double(rmatrix%NEQ,rmatrix%NCOLS,Da,dthres)
           WRITE(UNIT=iunit,FMT=30)
 
         CASE (ST_SINGLE)
           WRITE(UNIT=iunit,FMT=10)
           CALL lsyssc_getbase_single(rmatrix,Fa)
-          CALL do_spy_mat1_single(rmatrix%NEQ,rmatrix%NCOLS,Fa)
+          CALL do_spy_mat1_single(rmatrix%NEQ,rmatrix%NCOLS,Fa,dthres)
           WRITE(UNIT=iunit,FMT=30)
 
         CASE DEFAULT
-          PRINT *, 'lsyssc_spyMatrix: Unsupported matrix type!'
+          CALL output_line ('Unsupported matrix type!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
           CALL sys_halt()
         END SELECT
         
@@ -635,7 +722,8 @@ MODULE matrixio
       END IF
       
     CASE DEFAULT
-      PRINT *, 'lsyssc_spyMatrix: Unsoppurted matrix format!'
+      CALL output_line ('Unsupported matrix format!', &
+                         OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_spyMatrix')
       CALL sys_halt()
       
     END SELECT
@@ -656,21 +744,25 @@ MODULE matrixio
     !**************************************************************
     ! SPY CSR matrix in double precision
     
-    SUBROUTINE do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da)
+    SUBROUTINE do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da,dthres)
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
       INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
       INTEGER, INTENT(IN)                             :: nvar
       REAL(DP), DIMENSION(nvar,*), INTENT(IN), OPTIONAL :: Da
+      REAL(DP), INTENT(IN), OPTIONAL :: dthres
+      REAL(DP) :: ddata
       INTEGER :: ieq,ild,ivar
-
       
       IF (PRESENT(Da)) THEN
         DO ieq=1,neq
           DO ild=Kld(ieq),Kld(ieq+1)-1
             DO ivar=1,nvar
-              WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
-                  (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),Da(ivar,ild)
+              ddata = Da(ivar,ild)
+              IF (ABS(ddata) .GE. dthres) THEN
+                WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
+                    (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),ddata
+              END IF
             END DO
           END DO
         END DO
@@ -689,20 +781,25 @@ MODULE matrixio
     !**************************************************************
     ! SPY CSR matrix in single precision
     
-    SUBROUTINE do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa)
+    SUBROUTINE do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa,dthres)
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
       INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
       INTEGER, INTENT(IN)                             :: nvar
       REAL(SP), DIMENSION(nvar,*), INTENT(IN), OPTIONAL :: Fa
+      REAL(DP), INTENT(IN), OPTIONAL :: dthres
+      REAL(SP) :: fdata
       INTEGER :: ieq,ild,ivar
 
       IF (PRESENT(Fa)) THEN
         DO ieq=1,neq
           DO ild=Kld(ieq),Kld(ieq+1)-1
             DO ivar=1,nvar
-              WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
-                  (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),Fa(ivar,ild)
+              fdata = Fa(ivar,ild)
+              IF (ABS(fdata) .GE. dthres) THEN
+                WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
+                    (ivar-1)*neq+ieq,(ivar-1)*ncols+Kcol(ild),fdata
+              END IF
             END DO
           END DO
         END DO
@@ -721,12 +818,14 @@ MODULE matrixio
     !**************************************************************
     ! SPY CSR matrix in double precision
     
-    SUBROUTINE do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da)
+    SUBROUTINE do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da,dthres)
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
       INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
       INTEGER, INTENT(IN)                             :: nvar,mvar
       REAL(DP), DIMENSION(nvar,mvar,*), INTENT(IN), OPTIONAL :: Da
+      REAL(DP), INTENT(IN), OPTIONAL :: dthres
+      REAL(DP) :: ddata
       INTEGER :: ieq,ild,ivar,jvar
 
       IF (PRESENT(Da)) THEN
@@ -734,8 +833,11 @@ MODULE matrixio
           DO ild=Kld(ieq),Kld(ieq+1)-1
             DO jvar=1,nvar ! local column index
               DO ivar=1,mvar ! local row index
-                WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
-                    (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),Da(ivar,jvar,ild)
+                ddata = Da(ivar,jvar,ild)
+                IF (ABS(ddata) .GE. dthres) THEN
+                  WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
+                      (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),ddata
+                END IF
               END DO
             END DO
           END DO
@@ -757,12 +859,14 @@ MODULE matrixio
     !**************************************************************
     ! SPY CSR matrix in double precision
     
-    SUBROUTINE do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa)
+    SUBROUTINE do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa,dthres)
       INTEGER(PREC_MATIDX), DIMENSION(:), INTENT(IN)  :: Kld
       INTEGER(PREC_VECIDX), DIMENSION(:), INTENT(IN)  :: Kcol
       INTEGER(PREC_VECIDX), INTENT(IN)                :: neq,ncols
       INTEGER, INTENT(IN)                             :: nvar,mvar
       REAL(SP), DIMENSION(nvar,mvar,*), INTENT(IN), OPTIONAL :: Fa
+      REAL(DP), INTENT(IN), OPTIONAL :: dthres
+      REAL(SP) :: fdata
       INTEGER :: ieq,ild,ivar,jvar
 
       IF (PRESENT(Fa)) THEN
@@ -770,8 +874,11 @@ MODULE matrixio
           DO ild=Kld(ieq),Kld(ieq+1)-1
             DO jvar=1,nvar ! local column index
               DO ivar=1,mvar ! local row index
-                WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
-                    (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),Fa(ivar,jvar,ild)
+                fdata = Fa(ivar,jvar,ild)
+                IF (ABS(fdata) .GE. dthres) THEN
+                  WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
+                      (ivar-1)*neq+ieq,(jvar-1)*ncols+Kcol(ild),fdata
+                END IF
               END DO
             END DO
           END DO
@@ -793,16 +900,21 @@ MODULE matrixio
     !**************************************************************
     ! SPY full matrix in double precision
     
-    SUBROUTINE do_spy_mat1_double(neq,ncols,Da)
+    SUBROUTINE do_spy_mat1_double(neq,ncols,Da,dthres)
       INTEGER(PREC_VECIDX), INTENT(IN) :: neq,ncols
       REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Da
+      REAL(DP), INTENT(IN), OPTIONAL :: dthres
+      REAL(DP) :: ddata
       INTEGER :: ieq,icol
 
       IF (PRESENT(Da)) THEN
         DO ieq=1,neq
           DO icol=1,ncols
-            WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
-                ieq,icol,Da(ncols*(ieq-1)+icol)
+            ddata = Da(ncols*(ieq-1)+icol)
+            IF (ABS(ddata) .GE. dthres) THEN
+              WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
+                  ieq,icol,ddata
+            END IF
           END DO
         END DO
       ELSE
@@ -818,16 +930,21 @@ MODULE matrixio
     !**************************************************************
     ! SPY full matrix in single precision
     
-    SUBROUTINE do_spy_mat1_single(neq,ncols,Fa)
+    SUBROUTINE do_spy_mat1_single(neq,ncols,Fa,dthres)
       INTEGER(PREC_VECIDX), INTENT(IN) :: neq,ncols
       REAL(SP), DIMENSION(:), INTENT(IN), OPTIONAL :: Fa
+      REAL(DP), INTENT(IN), OPTIONAL :: dthres
+      REAL(SP) :: fdata
       INTEGER :: ieq,icol
 
       IF (PRESENT(Fa)) THEN
         DO ieq=1,neq
           DO icol=1,ncols
-            WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
-                ieq,icol,Fa(ncols*(ieq-1)+icol)
+            fdata = Fa(ncols*(ieq-1)+icol)
+            IF (ABS(fdata) .GE. dthres) THEN
+              WRITE(UNIT=iunit,FMT='(I10,1X,I10,1X,E15.8,";")') &
+                  ieq,icol,Fa(ncols*(ieq-1)+icol)
+            END IF
           END DO
         END DO
       ELSE
