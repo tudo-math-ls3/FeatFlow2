@@ -954,7 +954,7 @@ CONTAINS
     CALL parlst_getvalue_double(rparlist,ssection,"dcoarseningTolerance",rhadapt%dcoarseningTolerance)
 
     ! Initialize data
-    rhadapt%iSpec = HADAPT_HAS_PARAMETERS
+    rhadapt%iSpec=HADAPT_HAS_PARAMETERS
   END SUBROUTINE hadapt_initFromParameterlist
 
   ! ***************************************************************************
@@ -980,7 +980,7 @@ CONTAINS
 !</subroutine>
 
     ! Set dimension
-    rhadapt%ndim = rtriangulation%ndim
+    rhadapt%ndim=rtriangulation%ndim
 
     ! Set coordinates
     SELECT CASE(rhadapt%ndim)
@@ -1046,7 +1046,7 @@ CONTAINS
 !</subroutine>
 
     ! Get dimensions
-    rtriangulation%ndim = rhadapt%ndim
+    rtriangulation%ndim=rhadapt%ndim
 
     ! Get coordinates
     SELECT CASE(rhadapt%ndim)
@@ -1217,13 +1217,13 @@ CONTAINS
     CALL storage_getbase_double2D(h_DvertexCoords,p_DvertexCoords,nvt)
 
     ! Get outer bounding-box of vertex coordinates
-    xmin = MINVAL(p_DvertexCoords(1,:))
-    xmax = MAXVAL(p_DvertexCoords(1,:))
-    ymin = MINVAL(p_DvertexCoords(2,:))
-    ymax = MAXVAL(p_DvertexCoords(2,:))
+    xmin=MINVAL(p_DvertexCoords(1,:))
+    xmax=MAXVAL(p_DvertexCoords(1,:))
+    ymin=MINVAL(p_DvertexCoords(2,:))
+    ymax=MAXVAL(p_DvertexCoords(2,:))
     
     ! Estimate number of initial quadrilaterals
-    nnode = INT(0.5_DP*nvt)
+    nnode=INT(0.5_DP*nvt)
 
     ! Create quadtree for vertices
     CALL qtree_createQuadtree(rhadapt%rVertexCoordinates2D,nvt,&
@@ -1236,8 +1236,8 @@ CONTAINS
     rhadapt%iSpec=IOR(rhadapt%iSpec,HADAPT_HAS_COORDS)
 
     ! Set dimensions
-    rhadapt%ndim = NDIM2D
-    rhadapt%NVT  = nvt
+    rhadapt%ndim=NDIM2D
+    rhadapt%NVT =nvt
   END SUBROUTINE hadapt_setVertexCoords2D
 
   ! ***************************************************************************
@@ -1325,7 +1325,7 @@ CONTAINS
     REAL(DP)                          :: xmin,xmax,ymin,ymax,zmin,zmax
 
     ! Check if handle is not empty
-    IF (h_DvertexCoords == ST_NOHANDLE) THEN
+    IF (h_DvertexCoords .EQ. ST_NOHANDLE) THEN
       CALL output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVertexCoords3D')
       CALL sys_halt()
@@ -1340,15 +1340,15 @@ CONTAINS
     CALL storage_getbase_double2D(h_DvertexCoords,p_DvertexCoords,nvt)
 
     ! Get outer bounding-box of vertex coordinates
-    xmin = MINVAL(p_DvertexCoords(1,:))
-    xmax = MAXVAL(p_DvertexCoords(1,:))
-    ymin = MINVAL(p_DvertexCoords(2,:))
-    ymax = MAXVAL(p_DvertexCoords(2,:))
-    zmin = MINVAL(p_DvertexCoords(3,:))
-    zmax = MAXVAL(p_DvertexCoords(3,:))
+    xmin=MINVAL(p_DvertexCoords(1,:))
+    xmax=MAXVAL(p_DvertexCoords(1,:))
+    ymin=MINVAL(p_DvertexCoords(2,:))
+    ymax=MAXVAL(p_DvertexCoords(2,:))
+    zmin=MINVAL(p_DvertexCoords(3,:))
+    zmax=MAXVAL(p_DvertexCoords(3,:))
     
     ! Estimate number of initial quadrilaterals
-    nnode = INT(0.5_DP*nvt)
+    nnode=INT(0.5_DP*nvt)
 
     ! Create octree for vertices
     CALL otree_createOctree(rhadapt%rVertexCoordinates3D,nvt,&
@@ -1361,8 +1361,8 @@ CONTAINS
     rhadapt%iSpec=IOR(rhadapt%iSpec,HADAPT_HAS_COORDS)
 
     ! Set dimensions
-    rhadapt%ndim = NDIM3D
-    rhadapt%NVT  = nvt
+    rhadapt%ndim=NDIM3D
+    rhadapt%NVT =nvt
   END SUBROUTINE hadapt_setVertexCoords3D
 
   ! ***************************************************************************
@@ -1444,13 +1444,13 @@ CONTAINS
 !</subroutine>
 
     ! Check if handle is not empty
-    IF (h_IverticesAtElement == ST_NOHANDLE) THEN
+    IF (h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setVerticesAtElement')
       CALL sys_halt()
     END IF
 
-    rhadapt%h_IverticesAtElement = h_IverticesAtElement
+    rhadapt%h_IverticesAtElement=h_IverticesAtElement
     CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
         rhadapt%p_IverticesAtElement)
     
@@ -1458,7 +1458,7 @@ CONTAINS
     rhadapt%iSpec=IOR(rhadapt%iSpec,HADAPT_HAS_VERTATELEM)
 
     ! Set dimensions
-    rhadapt%NEL  = nel
+    rhadapt%NEL =nel
   END SUBROUTINE hadapt_setVerticesAtElement
 
   ! ***************************************************************************
@@ -1500,7 +1500,7 @@ CONTAINS
         CALL storage_free(h_IverticesAtElement)
 
     ! Assign handle
-    h_IverticesAtElement = rhadapt%h_IverticesAtElement
+    h_IverticesAtElement=rhadapt%h_IverticesAtElement
 
     ! Set dimensions
     IF(PRESENT(nel))   nel=rhadapt%NEL
@@ -1529,13 +1529,13 @@ CONTAINS
 !</subroutine>
 
     ! Check if handle is not empty
-    IF (h_IneighboursAtElement == ST_NOHANDLE) THEN
+    IF (h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
       CALL output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNeighboursAtElement')
       CALL sys_halt()
     END IF
 
-    rhadapt%h_IneighboursAtElement = h_IneighboursAtElement
+    rhadapt%h_IneighboursAtElement=h_IneighboursAtElement
     CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
         rhadapt%p_IneighboursAtElement)
     
@@ -1590,7 +1590,7 @@ CONTAINS
         CALL storage_free(h_IneighboursAtElement)
 
     ! Assign handle
-    h_IneighboursAtElement = rhadapt%h_IneighboursAtElement
+    h_IneighboursAtElement=rhadapt%h_IneighboursAtElement
 
     ! Set dimensions
     IF(PRESENT(nel))   nel=rhadapt%NEL
@@ -1618,7 +1618,7 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
-    rhadapt%InelOfType = InelOfType
+    rhadapt%InelOfType=InelOfType
 
     ! Set specifier for InelOfType
     rhadapt%iSpec=IOR(rhadapt%iSpec,HADAPT_HAS_NELOFTYPE)
@@ -1701,9 +1701,9 @@ CONTAINS
     INTEGER :: ioff,lvbd,ivbdStart,ivbdEnd,ibct,h_IneighboursAtBoundary
     
     ! Check if handle are not empty
-    IF ((h_IboundaryCpIdx == ST_NOHANDLE) .OR.&
-        (h_IverticesAtBoundary == ST_NOHANDLE) .OR.&
-        (h_DvertexParameterValue == ST_NOHANDLE)) THEN
+    IF ((h_IboundaryCpIdx .EQ. ST_NOHANDLE) .OR.&
+        (h_IverticesAtBoundary .EQ. ST_NOHANDLE) .OR.&
+        (h_DvertexParameterValue .EQ. ST_NOHANDLE)) THEN
       CALL output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setBoundary')
       CALL sys_halt()
@@ -1738,33 +1738,33 @@ CONTAINS
     DO ibct=1,nbct
 
       ! Create a separate search tree for each boundary component
-      lvbd = p_IboundaryCpIdx(ibct+1)-p_IboundaryCpIdx(ibct)
+      lvbd=p_IboundaryCpIdx(ibct+1)-p_IboundaryCpIdx(ibct)
       CALL btree_createTree(rhadapt%rBoundary(ibct),lvbd,ST_INT,1,0,2)
 
       ! Set subdimensions
-      ivbdStart = ioff+1
-      ivbdEnd   = ioff+lvbd
-      ioff      = ioff+lvbd
+      ivbdStart=ioff+1
+      ivbdEnd  =ioff+lvbd
+      ioff     =ioff+lvbd
 
       ! Fill auxiliary working array p_IneighboursAtBoundary
       ! For each item ivbd we have:
       !   p_IneighboursAtBoundary(BdrPrev,ivbd) -> previous neighbour of ivbd
       !   p_IneighboursAtBoundary(BdrNext,ivbd) -> following neighbour of ivbd
-      p_IneighboursAtBoundary(BdrPrev,ivbdStart)           = p_IverticesAtBoundary(ivbdEnd)
-      p_IneighboursAtBoundary(BdrPrev,ivbdStart+1:ivbdEnd) = p_IverticesAtBoundary(ivbdStart:ivbdEnd-1)
-      p_IneighboursAtBoundary(BdrNext,ivbdStart:ivbdEnd-1) = p_IverticesAtBoundary(ivbdStart+1:ivbdEnd)
-      p_IneighboursAtBoundary(BdrPrev,ivbdEnd)             = p_IverticesAtBoundary(ivbdStart)
+      p_IneighboursAtBoundary(BdrPrev,ivbdStart)          =p_IverticesAtBoundary(ivbdEnd)
+      p_IneighboursAtBoundary(BdrPrev,ivbdStart+1:ivbdEnd)=p_IverticesAtBoundary(ivbdStart:ivbdEnd-1)
+      p_IneighboursAtBoundary(BdrNext,ivbdStart:ivbdEnd-1)=p_IverticesAtBoundary(ivbdStart+1:ivbdEnd)
+      p_IneighboursAtBoundary(BdrPrev,ivbdEnd)            =p_IverticesAtBoundary(ivbdStart)
 
       ! Fill search tree
       CALL btree_copyToTree(p_IverticesAtBoundary(ivbdStart:ivbdEnd),rhadapt%rBoundary(ibct),&
-          p_DData = p_DvertexParameterValue2D(:,ivbdStart:ivbdEnd),&
-          p_IData = p_IneighboursAtBoundary(:,ivbdStart:ivbdEnd))
+          p_DData=p_DvertexParameterValue2D(:,ivbdStart:ivbdEnd),&
+          p_IData=p_IneighboursAtBoundary(:,ivbdStart:ivbdEnd))
     END DO
     
     ! Set dimensions
-    rhadapt%NBCT  = nbct
-    rhadapt%NVBD  = nvbd
-    rhadapt%NVBD0 = nvbd
+    rhadapt%NBCT =nbct
+    rhadapt%NVBD =nvbd
+    rhadapt%NVBD0=nvbd
 
     ! Free auxiliary storage
     CALL storage_free(h_IneighboursAtBoundary)
@@ -1844,7 +1844,7 @@ CONTAINS
 
     ! Check if the arrays p_IboundaryCpIdx, p_IverticesAtBoundary and 
     ! p_DvertexParameterValue have correct dimension
-    IF (h_IboundaryCpIdx == ST_NOHANDLE) THEN
+    IF (h_IboundaryCpIdx .EQ. ST_NOHANDLE) THEN
       CALL storage_new('hadapt_getBoundary','p_IboundaryCpIdx',&
           rhadapt%NBCT+1,ST_INT,h_IboundaryCpIdx,ST_NEWBLOCK_NOINIT)
     ELSE
@@ -1855,7 +1855,7 @@ CONTAINS
       END IF
     END IF
 
-    IF (h_IverticesAtBoundary == ST_NOHANDLE) THEN
+    IF (h_IverticesAtBoundary .EQ. ST_NOHANDLE) THEN
       CALL storage_new('hadapt_getBoundary','p_IverticesAtBoundary',&
           rhadapt%NVBD,ST_INT,h_IverticesAtBoundary,ST_NEWBLOCK_NOINIT)
     ELSE
@@ -1866,7 +1866,7 @@ CONTAINS
       END IF
     END IF
 
-    IF (h_DvertexParameterValue == ST_NOHANDLE) THEN
+    IF (h_DvertexParameterValue .EQ. ST_NOHANDLE) THEN
       CALL storage_new('hadapt_getBoundary','p_DvertexParameterValue',&
           rhadapt%NVBD,ST_DOUBLE,h_DvertexParameterValue,ST_NEWBLOCK_NOINIT)
     ELSE
@@ -1883,19 +1883,19 @@ CONTAINS
     CALL storage_getbase_double(h_DvertexParameterValue,p_DvertexParameterValue,rhadapt%NVBD)
 
     ! Initialization
-    p_IboundaryCpIdx(1) = 1
-    ioff = 0
+    p_IboundaryCpIdx(1)=1
+    ioff=0
 
     DO ibct=1,rhadapt%NBCT
       
       ! Set subdimensions
-      lvbd      = rhadapt%rBoundary(ibct)%NA
-      ivbdStart = ioff+1
-      ivbdEnd   = ioff+lvbd
-      ioff      = ioff+lvbd
+      lvbd     =rhadapt%rBoundary(ibct)%NA
+      ivbdStart=ioff+1
+      ivbdEnd  =ioff+lvbd
+      ioff     =ioff+lvbd
 
       ! Set index for next boundary component
-      p_IboundaryCpIdx(ibct+1) = ioff+1
+      p_IboundaryCpIdx(ibct+1)=ioff+1
 
       ! Get static boundary data from tree
       CALL btree_copyFromTreeKey(rhadapt%rBoundary(ibct),p_IverticesAtBoundary(ivbdStart:ivbdEnd))
@@ -1933,13 +1933,13 @@ CONTAINS
 !</subroutine>
 
     ! Check if handle is not empty
-    IF (h_InodalProperty == ST_NOHANDLE) THEN
+    IF (h_InodalProperty .EQ. ST_NOHANDLE) THEN
       CALL output_line('Invalid handle!',&
           OU_CLASS_ERROR,OU_MODE_STD,'hadapt_setNodalProperty')
       CALL sys_halt()
     END IF
 
-    rhadapt%h_InodalProperty = h_InodalProperty
+    rhadapt%h_InodalProperty=h_InodalProperty
     CALL storage_getbase_int(rhadapt%h_InodalProperty,rhadapt%p_InodalProperty)
     
     ! Set specifier for InodalProperty
@@ -1982,7 +1982,7 @@ CONTAINS
         CALL storage_free(h_InodalProperty)
 
     ! Assign handle
-    h_InodalProperty = rhadapt%h_InodalProperty
+    h_InodalProperty=rhadapt%h_InodalProperty
   END SUBROUTINE hadapt_getNodalProperty
 
   ! ***************************************************************************
@@ -2079,15 +2079,15 @@ CONTAINS
 
     ! Initialize initial dimensions
     CALL storage_getsize(rhadapt%h_IverticesAtElement,Isize)
-    rhadapt%NELMAX      = Isize(2)
+    rhadapt%NELMAX     =Isize(2)
     CALL storage_getsize(rhadapt%h_IneighboursAtElement,Isize)
-    rhadapt%NELMAX      = MIN(rhadapt%NELMAX,Isize(2))
+    rhadapt%NELMAX     =MIN(rhadapt%NELMAX,Isize(2))
 
-    rhadapt%InelOfType0 = rhadapt%InelOfType
-    rhadapt%NVT0        = rhadapt%NVT
-    rhadapt%NEL0        = rhadapt%NEL
-    rhadapt%NVBD0       = rhadapt%NVBD
-    rhadapt%increaseNVT = 0
+    rhadapt%InelOfType0=rhadapt%InelOfType
+    rhadapt%NVT0       =rhadapt%NVT
+    rhadapt%NEL0       =rhadapt%NEL
+    rhadapt%NVBD0      =rhadapt%NVBD
+    rhadapt%increaseNVT=0
     
     ! What kind of grid refinement should be performed
     SELECT CASE(rhadapt%irefinementStrategy)
@@ -2102,12 +2102,16 @@ CONTAINS
       ! Mark additional elements to restore conformity
       CALL redgreen_mark_refinement2D(rhadapt,rcollection,fcb_hadaptCallback)
 
+      CALL hadapt_writegridsvg(rhadapt,'mygrid')
+
       ! Mark element for recoarsening based on indicator function
       CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
 
+      CALL hadapt_writegridsvg(rhadapt,'mygrid')
+
       ! Compute new dimensions
-      nvt = rhadapt%NVT+rhadapt%increaseNVT
-      nel = NumberOfElements(rhadapt)
+      nvt=rhadapt%NVT+rhadapt%increaseNVT
+      nel=NumberOfElements(rhadapt)
 
       ! Adjust vertex age array and nodal property array
       CALL storage_realloc('hadapt_performAdaptation',nvt,&
@@ -2142,8 +2146,12 @@ CONTAINS
       ! Perform refinement
       CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
 
+      CALL hadapt_writegridsvg(rhadapt,'mygrid')
+
       ! Perform coarsening
       CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
+
+      CALL hadapt_writegridsvg(rhadapt,'mygrid')
 
       ! Adjust nodal property array
       CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
@@ -2186,7 +2194,7 @@ CONTAINS
       CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
       
       ! Initialize number of elements by current number
-      nel = rhadapt%NEL0
+      nel=rhadapt%NEL0
       
       ! Loop over all elements and check marker
       DO iel=1,rhadapt%NEL0
@@ -2285,7 +2293,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE hadapt_writeGridSVG(rhadapt,coutputFile,cinfo,width,height)
+  SUBROUTINE hadapt_writeGridSVG(rhadapt,coutputFile,width,height)
 
 !<description>
     ! This subroutine outputs the current state of the adapted grid stored
@@ -2295,16 +2303,6 @@ CONTAINS
 !<input>
     ! Output file name w/o suffix .svg
     CHARACTER(LEN=*), INTENT(IN)     :: coutputFile
-
-    ! Format bitvector: determined additional output
-    ! BIT0 : output vertices
-    ! BIT1 : output vertex numbers
-    ! BIT2 : output vertex age
-    ! BIT3 : output element numbers
-    ! BIT4 : output element state
-    ! BIT5 : output element marker
-    ! BIT6 : output adjacency numbers
-    INTEGER, INTENT(IN) :: cinfo
 
     ! OPTIONAL: Width of the generated file
     INTEGER, INTENT(IN), OPTIONAL :: width
@@ -2320,25 +2318,24 @@ CONTAINS
 !</subroutine>
 
     ! local parameters
-    INTEGER, PARAMETER :: defaultwidth  = 3000
-    INTEGER, PARAMETER :: defaultheight = 3000
-    INTEGER, PARAMETER :: xoff = 100
-    INTEGER, PARAMETER :: yoff = 100
-
-    CHARACTER(LEN=*), PARAMETER :: font_family     = "Verdana"
-    CHARACTER(LEN=*), PARAMETER :: font_size       = "64"
-    CHARACTER(LEN=*), PARAMETER :: font_size_small = "14"
+    INTEGER, PARAMETER :: defaultwidth  = 1280
+    INTEGER, PARAMETER :: defaultheight = 1024
+    INTEGER, PARAMETER :: xoffset       = 100
+    INTEGER, PARAMETER :: yoffset       = 100
+    INTEGER, PARAMETER :: font_size     = 18
+    INTEGER, PARAMETER :: colsep        = 10
+    INTEGER, PARAMETER :: linesep       = 32
+    CHARACTER(LEN=*), PARAMETER :: font_family = "Arial"
     
     ! local variables
     REAL(DP), DIMENSION(2*NDIM2D) :: bbox
-    REAL(DP) :: x0,y0,xdim,ydim,xscale,yscale,xmid,ymid
-    INTEGER :: xsize,ysize
-    INTEGER, DIMENSION(:), POINTER                     :: p_Imarker
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: Kadj,Kmidadj
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_MAXNVE2D) :: Kvert
+    REAL(DP) :: x0,y0,xdim,ydim,dscale
+    
+    INTEGER, DIMENSION(:), POINTER :: p_Imarker
     INTEGER(PREC_VERTEXIDX)  :: ivt
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: iunit,ive,nve,istate
+    INTEGER(PREC_ARRAYLISTIDX):: ipos
+    INTEGER :: xsize,ysize,iunit,ive,nve,istate
     INTEGER, SAVE :: iout=0
     
     ! Check if dynamic data structures generated
@@ -2355,13 +2352,16 @@ CONTAINS
     CALL io_openFileForWriting(TRIM(ADJUSTL(coutputFile))//'.'//&
         TRIM(sys_siL(iout,5))//'.svg',iunit,SYS_REPLACE,bformatted=.TRUE.)
     
-    ! Write XML-header to file
-    WRITE(iunit,FMT='(A)') '<?xml version="1.0" encoding="utf-8" standalone="no"?>'
+    ! Write prolog, XML-declaration, document type declaration)
+    WRITE(iunit,FMT='(A)') '<?xml version="1.0" encoding="utf-8" standalone="yes"?>'
+    WRITE(iunit,FMT='(A)') '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN"'
+    WRITE(iunit,FMT='(A)') ' "http://www.w3.org/Graphics/SVG/1.0/DTD/svg11.dtd">'
+    WRITE(iunit,FMT='(A)')
     WRITE(iunit,FMT='(A)') '<!-- Created with Featflow2 (http://www.featflow.de/) -->'
-    WRITE(iunit,FMT='(A)') '<svg'
-    WRITE(iunit,FMT='(A)') ' xmlns:svg="http://www.w3.org/2000/svg"'
+    WRITE(iunit,FMT='(A)')
+    WRITE(iunit,FMT='(A)') '<svg version="1.0"'
     WRITE(iunit,FMT='(A)') ' xmlns="http://www.w3.org/2000/svg"'
-    WRITE(iunit,FMT='(A)') ' version="1.0"'
+    WRITE(iunit,FMT='(A)') ' xmlns:xlink="http://www.w3.org/1999/xlink"'
     
     IF (PRESENT(width)) THEN
       xsize=width
@@ -2376,21 +2376,155 @@ CONTAINS
     END IF
 
     ! Determine bounding box
-    bbox   = qtree_getBoundingBox(rhadapt%rVertexCoordinates2D)
-    xdim   = bbox(3)-bbox(1); x0 = bbox(1)
-    ydim   = bbox(4)-bbox(2); y0 = bbox(2)
-    xscale = xsize*MIN(1._DP,xdim/ydim)/xdim
-    yscale = ysize*MIN(1._DP,xdim/ydim)/ydim
+    bbox  =qtree_getBoundingBox(rhadapt%rVertexCoordinates2D)
+    xdim  =bbox(3)-bbox(1); x0=bbox(1)
+    ydim  =bbox(4)-bbox(2); y0=bbox(2)
+    dscale=MIN(xsize/xdim,ysize/ydim)
 
     ! Set height and width of image
-    WRITE(iunit,FMT='(A)') ' width="100%" height="100%" viewBox="0 0 '//&
-        TRIM(sys_siL(INT(xscale*xdim)+2*xoff,10))//' '//&
-        TRIM(sys_siL(INT(yscale*ydim)+2*yoff,10))//'" xml:space="preserve">'
+    WRITE(iunit,FMT='(A)') ' width="100%" height="100%" xml:space="preserve"'
+    WRITE(iunit,FMT='(A)') ' viewBox="'//&
+        TRIM(sys_siL(-xoffset,10))//' '//&
+        TRIM(sys_siL(-yoffset,10))//' '//&
+        TRIM(sys_siL(2*xoffset+xsize,10))//' '//&
+        TRIM(sys_siL(2*yoffset+ysize,10))//'">'
+
+    ! Write embedded java-scripts to file
+    WRITE(iunit,FMT='(A)') '<defs>'
+    WRITE(iunit,FMT='(A)') '<script type="text/javascript">'
+    WRITE(iunit,FMT='(A)') '<![CDATA['
+
+    WRITE(iunit,FMT='(A)') '  function ShowVertexInfo(evt,ivt,age,elems) {'
+    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    WRITE(iunit,FMT='(A)') '    var x=evt.clientX; var y=evt.clientY;'
+    WRITE(iunit,FMT='(A)') '    var m=svgdoc.getScreenCTM();'
+    WRITE(iunit,FMT='(A)') '    var p=svgdoc.createSVGPoint();'
+    WRITE(iunit,FMT='(A)') '    p.x=evt.clientX; p.y=evt.clientY;'
+    WRITE(iunit,FMT='(A)') '    p=p.matrixTransform(m.inverse());'
+    WRITE(iunit,FMT='(A)') '    p.x=p.x+15; p.y=p.y+15;'
+
+    WRITE(iunit,FMT='(A)') '    var vinfo=svgdoc.getElementById("vinfo");'
+    WRITE(iunit,FMT='(A)') '    var vinfo_box=svgdoc.getElementById("vinfo_box");'
+    WRITE(iunit,FMT='(A)') '    var vinfo_text1=svgdoc.getElementById("vinfo_text1");'
+    WRITE(iunit,FMT='(A)') '    var vinfo_text2=svgdoc.getElementById("vinfo_text2");'
+    WRITE(iunit,FMT='(A)') '    var vinfo_text3=svgdoc.getElementById("vinfo_text3");'
+    WRITE(iunit,FMT='(A)') '    var vinfo_text4=svgdoc.getElementById("vinfo_text4");'
+    WRITE(iunit,FMT='(A)') '    var vinfo_text5=svgdoc.getElementById("vinfo_text5");'
+    WRITE(iunit,FMT='(A)') '    var vinfo_text6=svgdoc.getElementById("vinfo_text6");'
+    
+    WRITE(iunit,FMT='(A)') '    vinfo_box.setAttribute("x",p.x);'
+    WRITE(iunit,FMT='(A)') '    vinfo_box.setAttribute("y",p.y);'
+    WRITE(iunit,FMT='(A)') '    vinfo_text1.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text1.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text2.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text2.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text3.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text3.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text4.setAttribute("x",p.x+vinfo_text1.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    vinfo_text4.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text4.firstChild.nodeValue = ivt;'
+    WRITE(iunit,FMT='(A)') '    vinfo_text5.setAttribute("x",p.x+vinfo_text2.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    vinfo_text5.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text5.firstChild.nodeValue = age;'
+    WRITE(iunit,FMT='(A)') '    vinfo_text6.setAttribute("x",p.x+vinfo_text3.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    vinfo_text6.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    vinfo_text6.firstChild.nodeValue = elems;'
+
+    WRITE(iunit,FMT='(A)') '    var textlen = vinfo_text1.getComputedTextLength()+vinfo_text4.getComputedTextLength();'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text2.getComputedTextLength()+vinfo_text5.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text3.getComputedTextLength()+vinfo_text6.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    vinfo_box.setAttribute("width",textlen+30);'
+
+    WRITE(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: visible");'
+    WRITE(iunit,FMT='(A)') '  }'
+    
+    WRITE(iunit,FMT='(A)') '  function HideVertexInfo() {'
+    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    WRITE(iunit,FMT='(A)') '    var vinfo=svgdoc.getElementById("vinfo");'
+    WRITE(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: hidden");'
+    WRITE(iunit,FMT='(A)') '  }'
+
+    WRITE(iunit,FMT='(A)') '  function ShowElementInfo(evt,iel,state,marker,kadj,kmidadj,kvert) {'
+    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    WRITE(iunit,FMT='(A)') '    var x=evt.clientX; var y=evt.clientY;'
+    WRITE(iunit,FMT='(A)') '    var m=svgdoc.getScreenCTM();'
+    WRITE(iunit,FMT='(A)') '    var p=svgdoc.createSVGPoint();'
+    WRITE(iunit,FMT='(A)') '    p.x=evt.clientX; p.y=evt.clientY;'
+    WRITE(iunit,FMT='(A)') '    p=p.matrixTransform(m.inverse());'
+    WRITE(iunit,FMT='(A)') '    p.x=p.x+15; p.y=p.y+15;'
+
+    WRITE(iunit,FMT='(A)') '    var einfo=svgdoc.getElementById("einfo");'
+    WRITE(iunit,FMT='(A)') '    var einfo_box=svgdoc.getElementById("einfo_box");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text1=svgdoc.getElementById("einfo_text1");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text2=svgdoc.getElementById("einfo_text2");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text3=svgdoc.getElementById("einfo_text3");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text4=svgdoc.getElementById("einfo_text4");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text5=svgdoc.getElementById("einfo_text5");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text6=svgdoc.getElementById("einfo_text6");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text7=svgdoc.getElementById("einfo_text7");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text8=svgdoc.getElementById("einfo_text8");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text9=svgdoc.getElementById("einfo_text9");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text10=svgdoc.getElementById("einfo_text10");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text11=svgdoc.getElementById("einfo_text11");'
+    WRITE(iunit,FMT='(A)') '    var einfo_text12=svgdoc.getElementById("einfo_text12");'
+    
+    WRITE(iunit,FMT='(A)') '    einfo_box.setAttribute("x",p.x);'
+    WRITE(iunit,FMT='(A)') '    einfo_box.setAttribute("y",p.y);'
+    WRITE(iunit,FMT='(A)') '    einfo_text1.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text1.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text2.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text2.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text3.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text3.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text4.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text4.setAttribute("y",p.y+4*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text5.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text5.setAttribute("y",p.y+5*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text6.setAttribute("x",p.x+'//TRIM(sys_siL(colsep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text6.setAttribute("y",p.y+6*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text7.setAttribute("x",p.x+einfo_text1.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    einfo_text7.setAttribute("y",p.y+'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text7.firstChild.nodeValue = iel;'
+    WRITE(iunit,FMT='(A)') '    einfo_text8.setAttribute("x",p.x+einfo_text2.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    einfo_text8.setAttribute("y",p.y+2*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text8.firstChild.nodeValue = state;'
+    WRITE(iunit,FMT='(A)') '    einfo_text9.setAttribute("x",p.x+einfo_text3.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    einfo_text9.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text9.firstChild.nodeValue = marker;'
+    WRITE(iunit,FMT='(A)') '    einfo_text10.setAttribute("x",p.x+einfo_text4.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    einfo_text10.setAttribute("y",p.y+4*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text10.firstChild.nodeValue = kadj;'
+    WRITE(iunit,FMT='(A)') '    einfo_text11.setAttribute("x",p.x+einfo_text5.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    einfo_text11.setAttribute("y",p.y+5*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text11.firstChild.nodeValue = kmidadj;'
+    WRITE(iunit,FMT='(A)') '    einfo_text12.setAttribute("x",p.x+einfo_text6.getComputedTextLength()+20);'
+    WRITE(iunit,FMT='(A)') '    einfo_text12.setAttribute("y",p.y+6*'//TRIM(sys_siL(linesep,10))//');'
+    WRITE(iunit,FMT='(A)') '    einfo_text12.firstChild.nodeValue = kvert;'
+
+    WRITE(iunit,FMT='(A)') '    var textlen = einfo_text1.getComputedTextLength()+einfo_text7.getComputedTextLength();'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text2.getComputedTextLength()+einfo_text8.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text3.getComputedTextLength()+einfo_text9.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text4.getComputedTextLength()+einfo_text10.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text5.getComputedTextLength()+einfo_text11.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text6.getComputedTextLength()+einfo_text12.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    einfo_box.setAttribute("width",textlen+30);'
+
+    WRITE(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: visible");'
+    WRITE(iunit,FMT='(A)') '  }'
+
+    WRITE(iunit,FMT='(A)') '  function HideElementInfo() {'
+    WRITE(iunit,FMT='(A)') '    var svgdoc=document.documentElement;'
+    WRITE(iunit,FMT='(A)') '    var einfo=svgdoc.getElementById("einfo");'
+    WRITE(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: hidden");'
+    WRITE(iunit,FMT='(A)') '  }'
+    WRITE(iunit,FMT='(A)') ']]>'
+    WRITE(iunit,FMT='(A)') '</script>'
+    WRITE(iunit,FMT='(A)') '</defs>'
        
     !---------------------------------------------------------------------------
     ! Output all elements
     !---------------------------------------------------------------------------
-    IF (IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE).EQ.HADAPT_MARKEDREFINE .OR.&
+    IF (IAND(rhadapt%iSpec,HADAPT_MARKEDREFINE) .EQ.HADAPT_MARKEDREFINE .OR.&
         IAND(rhadapt%iSpec,HADAPT_MARKEDCOARSEN).EQ.HADAPT_MARKEDCOARSEN) THEN
 
       ! Set pointer to marker
@@ -2400,14 +2534,9 @@ CONTAINS
       DO iel=1,rhadapt%NEL
         
         ! Get number of vertices per elements
-        nve = get_NVE(rhadapt,iel)
-
-        ! Get local data
-        Kvert(1:nve)   = rhadapt%p_IverticesAtElement(1:nve,iel)
-        Kadj(1:nve)    = rhadapt%p_IneighboursAtElement(1:nve,iel)
-        Kmidadj(1:nve) = rhadapt%p_ImidneighboursAtElement(1:nve,iel)
-        
-        IF (iel <= rhadapt%NEL0) THEN
+        nve=get_NVE(rhadapt,iel)
+                
+        IF (iel .LE. rhadapt%NEL0) THEN
 
           ! What kind of element are we?
           SELECT CASE(p_Imarker(iel))
@@ -2416,7 +2545,7 @@ CONTAINS
           CASE(MARK_ASIS_TRIA,MARK_ASIS_QUAD)
             WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
                 '" fill="white" stroke="black" stroke-width="1"'
-
+            
           ! Element is marked for green refinement
           CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3,&
                MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,MARK_REF_QUAD3TRIA_3,&
@@ -2454,93 +2583,69 @@ CONTAINS
                 '" fill="hotpink" stroke="black" stroke-width="1"'
           END SELECT
 
+          ! Write data which is common to all elements
+          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+              TRIM(sys_siL(iel,10))//''','''//&
+              TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+              TRIM(sys_siL(p_Imarker(iel),5))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          
         ELSE
-
-          ! For all new elements no marker is available
+          
+          ! For all new elements there si no marker available
           WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
               '" fill="white" stroke="black" stroke-width="1"'
+          
+          ! Write data which is common to all elements
+          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+              TRIM(sys_siL(iel,10))//''','''//&
+              TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+              TRIM(sys_siL(0,5))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          
         END IF
                
         ! Each element is a polygon made up from 3/4 points
         WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
         DO ive=1,nve
-          xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))-x0
-          ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))-y0
+          xdim=qtree_getX(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(ive,iel))-x0
+          ydim=qtree_getY(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(ive,iel))-y0
           WRITE(iunit,FMT='(A)',ADVANCE='NO') &
-              TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
-              TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//' '
+              TRIM(sys_siL(INT(dscale*xdim),10))//','//&
+              TRIM(sys_siL(ysize-INT(dscale*ydim),10))//' '
         END DO
         
         ! And of course, the polygone must be closed !
-        xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1))-x0
-        ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1))-y0
+        xdim=qtree_getX(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(1,iel))-x0
+        ydim=qtree_getY(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(1,iel))-y0
         WRITE(iunit,FMT='(A)') &
-            TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
-            TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//'"/>'
-        
-        ! Output elemental data
-        IF (btest(cinfo,3) .OR.&
-            btest(cinfo,4) .OR.&
-            btest(cinfo,5)) THEN
-          
-          ! Determine state of element
-          SELECT CASE(nve)
-          CASE(TRIA_NVETRI2D)
-            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-x0
-            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-y0
-            istate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+            TRIM(sys_siL(INT(dscale*xdim),10))//','//&
+            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//'"/>'       
 
-          CASE(TRIA_NVEQUAD2D)
-            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-x0
-            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-y0
-            istate = redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
-          END SELECT
-          
-          ! What data should be written?
-          IF (btest(cinfo,3)) THEN
-            
-            ! Write element number
-            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
-                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
-                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
-                TRIM(sys_siL(iel,9))//'</text>'
-            
-          ELSEIF (btest(cinfo,4)) THEN
-            
-            ! Write element state
-            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
-                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
-                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
-                TRIM(sys_siL(istate,3))//'</text>'
-            
-          ELSEIF (btest(cinfo,5)) THEN
-            
-            ! Write element marker
-            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
-                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
-                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
-                TRIM(sys_siL(p_Imarker(iel),3))//'</text>'
-          END IF
-        END IF
-        
-        ! Output adjacency information?
-        IF (btest(cinfo,6)) THEN
-          xmid = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-x0
-          ymid = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-y0
-          
-          DO ive=1,nve
-            xdim = (2*qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))+xmid)/3._DP
-            ydim = (2*qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))+ymid)/3._DP
-            WRITE(iunit,FMT='(A)') ' <text x="'//TRIM(sys_siL(xoff+INT(xscale*xdim),9))//&
-                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size_small//&
-                '" text-anchor="middle" fill="sienne">'//&
-                TRIM(sys_siL(Kadj(ive),9))//","//TRIM(sys_siL(Kmidadj(ive),9))//'</text>'
-          END DO
-        END IF
       END DO
       
     ELSE
@@ -2549,145 +2654,145 @@ CONTAINS
       DO iel=1,rhadapt%NEL
 
         ! Get number of vertices per element
-        nve = get_NVE(rhadapt,iel)
+        nve=get_NVE(rhadapt,iel)
         
-        ! Get local data
-        Kvert(1:nve)   = rhadapt%p_IverticesAtElement(1:nve,iel)
-        Kadj(1:nve)    = rhadapt%p_IneighboursAtElement(1:nve,iel)
-        Kmidadj(1:nve) = rhadapt%p_ImidneighboursAtElement(1:nve,iel)
-        
-        ! Start new element ...
+        ! For all new elements there si no marker available
         WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
-            '" fill="white" stroke="black" stroke-width="1" '
+            '" fill="white" stroke="black" stroke-width="1"'
+        
+        WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+            TRIM(sys_siL(iel,10))//''','''//&
+            TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''',''0'')" '//&
+            'onmouseout="HideElementInfo()" style="cursor: help"'
+        
+        ! Each element is a polygon made up from 3/4 points
         WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
+        DO ive=1,nve
+          xdim=qtree_getX(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(ive,iel))-x0
+          ydim=qtree_getY(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(ive,iel))-y0
+          WRITE(iunit,FMT='(A)',ADVANCE='NO') &
+              TRIM(sys_siL(INT(dscale*xdim),10))//','//&
+              TRIM(sys_siL(ysize-INT(dscale*ydim),10))//' '
+        END DO
         
-        ! Output vertices of element if required
-        IF (btest(cinfo,0)) THEN
-          DO ive=1,nve
-            xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))-x0
-            ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))-y0
-            WRITE(iunit,FMT='(A)',ADVANCE='NO') &
-                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
-                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//' '
-          END DO
-          
-          ! The first vertex is also the last vertex
-          xdim = qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1))-x0
-          ydim = qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1))-y0
-          WRITE(iunit,FMT='(A)') &
-              TRIM(sys_siL(xoff+INT(xscale*xdim),9))//','//&
-              TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//'"/>'
-        END IF
-
-        ! Output elemental data
-        IF (btest(cinfo,3) .OR.&
-            btest(cinfo,4)) THEN
-          
-          ! Determine state of element
-          SELECT CASE(nve)
-          CASE(TRIA_NVETRI2D)
-            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-x0
-            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:3)))/3._DP-y0
-            istate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
-          
-          CASE(TRIA_NVEQUAD2D)
-            xdim   = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-x0
-            ydim   = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:4)))/4._DP-y0
-            istate = redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
-          END SELECT
-          
-          ! What data should be written?
-          IF (btest(cinfo,3)) THEN
-            
-            ! Write element number
-            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
-                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
-                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
-                TRIM(sys_siL(iel,9))//'</text>'
-            
-          ELSEIF(btest(cinfo,4)) THEN
-
-            ! Write element state
-            WRITE(iunit,FMT='(A)') '<text id="nel'//TRIM(sys_siL(iel,9))//&
-                '" x="'//TRIM(sys_siL( xoff+INT(xscale*xdim),9))//&
-                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
-                TRIM(sys_siL(istate,3))//'</text>'
-          END IF
-        END IF
+        ! And of course, the polygone must be closed !
+        xdim=qtree_getX(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(1,iel))-x0
+        ydim=qtree_getY(rhadapt%rVertexCoordinates2D,rhadapt%p_IverticesAtElement(1,iel))-y0
+        WRITE(iunit,FMT='(A)') &
+            TRIM(sys_siL(INT(dscale*xdim),10))//','//&
+            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//'"/>'       
         
-        ! Output adjacency information?
-        IF (btest(cinfo,6)) THEN
-          xmid = SUM(qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-x0
-          ymid = SUM(qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(1:nve)))/REAL(nve,DP)-y0
-          
-          DO ive=1,nve
-            xdim = (2*qtree_getX(rhadapt%rVertexCoordinates2D,Kvert(ive))+xmid)/3._DP
-            ydim = (2*qtree_getY(rhadapt%rVertexCoordinates2D,Kvert(ive))+ymid)/3._DP
-            WRITE(iunit,FMT='(A)') ' <text x="'//TRIM(sys_siL(xoff+INT(xscale*xdim),9))//&
-                '" y="'//TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size_small//&
-                '" text-anchor="middle" fill="sienne">'//&
-                TRIM(sys_siL(Kadj(ive),9))//","//TRIM(sys_siL(Kmidadj(ive),9))//'</text>'
-          END DO
-        END IF
       END DO
     END IF
-    
-    ! Output nodal data
-    IF (btest(cinfo,0) .OR.&
-        btest(cinfo,1) .OR.&
-        btest(cinfo,2)) THEN
+         
+    ! Loop over all vertices
+    DO ivt=1,qtree_getsize(rhadapt%rVertexCoordinates2D)     
+      xdim=qtree_getX(rhadapt%rVertexCoordinates2D,ivt)-x0
+      ydim=qtree_getY(rhadapt%rVertexCoordinates2D,ivt)-y0
       
-      ! Loop over all vertices
-      DO ivt=1,qtree_getsize(rhadapt%rVertexCoordinates2D)
-       
-        xdim = qtree_getX(rhadapt%rVertexCoordinates2D,ivt)-x0
-        ydim = qtree_getY(rhadapt%rVertexCoordinates2D,ivt)-y0
+      ! Write vertices as points?
+      IF (rhadapt%p_IvertexAge(ivt) > 0) THEN
+        WRITE(iunit,FMT='(A)') '<circle id="vt'//TRIM(sys_siL(ivt,10))//'" cx="'//&
+            TRIM(sys_siL(INT(dscale*xdim),10))//'" cy="'//&
+            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//&
+            '" r="2pt" fill="white" stroke="black" stroke-width="1pt"'
+      ELSE
+        WRITE(iunit,FMT='(A)') '<circle id="vt'//TRIM(sys_siL(ivt,10))//'" cx="'//&
+            TRIM(sys_siL(INT(dscale*xdim),10))//'" cy="'//&
+            TRIM(sys_siL(ysize-INT(dscale*ydim),10))//&
+            '" r="2pt" fill="black" stroke="black" stroke-width="1pt"'
+      END IF
+      
+      ! Write data which is common to all vertices
+      WRITE(iunit,FMT='(A)',ADVANCE='NO') ' onmousemove="ShowVertexInfo(evt,'''//&
+          TRIM(sys_siL(ivt,10))//''','''//&
+          TRIM(sys_siL(rhadapt%p_IvertexAge(ivt),5))//''','''
+      
+      ! Generate list of elements meeting at vertex
+      ipos=arrlst_getNextInArrayList(rhadapt%rElementsAtVertex,ivt,.TRUE.)
+      DO WHILE(ipos .NE. ARRLST_NULL)
+        ! Get element number IEL
+        iel=rhadapt%rElementsAtVertex%IData(ipos)
         
-        ! Write vertices as points?
-        IF (btest(cinfo,0)) THEN
-          IF (rhadapt%p_IvertexAge(ivt) > 0) THEN
-            WRITE(iunit,FMT='(A)') '<circle cx="'//&
-                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" cy="'//&
-                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" r="15"  fill="white" stroke="black" stroke-width="3"/>'
-          ELSE
-            WRITE(iunit,FMT='(A)') '<circle cx="'//&
-                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" cy="'//&
-                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" r="15"  fill="black" stroke="black" stroke-width="1"/>'
-          END IF
-        END IF
-        
-        IF (btest(cinfo,1)) THEN
-          ! Write vertex number?
-          WRITE(iunit,FMT='(A)') '<text x="'//&
-              TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" y="'//&
-              TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-              '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
-              TRIM(sys_siL(ivt,9))//'</text>'
-          
-        ELSEIF (btest(cinfo,2)) THEN
-          ! Write vertex age?
-          IF (rhadapt%p_IvertexAge(ivt) > 0) THEN
-            WRITE(iunit,FMT='(A)') '<text x="'//&
-                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" y="'//&
-                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="black">'//&
-                TRIM(sys_siL(rhadapt%p_IvertexAge(ivt),3))//'</text>'
-          ELSE
-            WRITE(iunit,FMT='(A)') '<text x="'//&
-                TRIM(sys_siL(xoff+INT(xscale*xdim),9))//'" y="'//&
-                TRIM(sys_siL(ysize+yoff-INT(yscale*ydim),9))//&
-                '" font-family="'//font_family//'" font-size="'//font_size//'" fill="fuchsia">'//&
-                TRIM(sys_siL(-rhadapt%p_IvertexAge(ivt),3))//'</text>'
-          END IF
+        ! Proceed to next entry in array list
+        ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
+
+        IF (ipos .NE. ARRLST_NULL) THEN
+          WRITE(iunit,FMT='(A)',ADVANCE='NO') TRIM(sys_siL(iel,10))//','
+        ELSE
+          WRITE(iunit,FMT='(A)',ADVANCE='NO') TRIM(sys_siL(iel,10))
         END IF
       END DO
-    END IF
-    
+      WRITE(iunit,FMT='(A)') ''')"'
+      WRITE(iunit,FMT='(A)') ' onmouseout="HideVertexInfo()" style="cursor: help"/>'
+    END DO
+
+
+    ! Output info boxes
+    WRITE(iunit,FMT='(A)') '<g id="vinfo" style="visibility: hidden">'
+    WRITE(iunit,FMT='(A)') '  <rect id="vinfo_box"  x="0" y="0" width="200" height="110"'
+    WRITE(iunit,FMT='(A)') '        style="fill: #FFFFCC; stroke: #000000; stroke-width: 0.5px;"/>'
+    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text1" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black">Vertex number:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text2" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black">Vertex age:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text3" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black">Elements meeting at vertex:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text4" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black">null</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text5" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black">null</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="vinfo_text6" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black">null</text>'
+    WRITE(iunit,FMT='(A)') '</g>'
+
+    WRITE(iunit,FMT='(A)') '<g id="einfo" style="visibility: hidden">'
+    WRITE(iunit,FMT='(A)') '  <rect id="einfo_box"  x="0" y="0" width="200" height="210"'
+    WRITE(iunit,FMT='(A)') '        style="fill: #FFFFCC; stroke: #000000; stroke-width: 0.5px;"/>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text1" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black">Element number:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text2" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">Element state:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text3" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">Element marker:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text4" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">Element neighbours:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text5" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">Element mid-neighbours:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text6" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">Element vertices:</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text7" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">null</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text8" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">null</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text9" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">null</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text10" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">null</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text11" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">null</text>'
+    WRITE(iunit,FMT='(A)') '  <text id="einfo_text12" x="0" y="0" style="font-size:'//&
+        TRIM(sys_siL(font_size,3))//'pt;font-family:'//TRIM(ADJUSTL(font_family))//&
+        ';stroke:black;">null</text>'
+    WRITE(iunit,FMT='(A)') '</g>'
+
     ! Close XML-file
     WRITE(iunit,FMT='(A)') '</svg>'
     CLOSE(iunit)
@@ -2723,14 +2828,14 @@ CONTAINS
     LOGICAL :: btest,bfound
 
     ! Test #1: Consistency of element numbers
-    btest = (rhadapt%NEL .EQ. SUM(rhadapt%InelOfType))
+    btest=(rhadapt%NEL .EQ. SUM(rhadapt%InelOfType))
     CALL output_line('Test #1: Checking consistency of element numbers '//&
         MERGE('PASSED','FAILED',btest))
 
     ! Test #2: Vertex age must not exceed maximum refinement level
-    btest = .TRUE.
+    btest=.TRUE.
     DO ivt=1,rhadapt%NVT
-      btest = btest .OR. (rhadapt%p_IvertexAge(ivt) .GT. rhadapt%NSUBDIVIDEMAX)
+      btest=btest .OR. (rhadapt%p_IvertexAge(ivt) .GT. rhadapt%NSUBDIVIDEMAX)
     END DO
     CALL output_line('Test #2: Checking maximum vertex age '//&
         MERGE('PASSED','FAILED',btest))
@@ -2740,12 +2845,12 @@ CONTAINS
     DO iel=1,rhadapt%NEL
 
       ! Get number of vertices per element
-      nve = get_NVE(rhadapt,iel)
+      nve=get_NVE(rhadapt,iel)
       
       ! Loop over all adjacent elements
       DO ive=1,nve
-        jel    = rhadapt%p_IneighboursAtElement(ive,iel)
-        jelmid = rhadapt%p_ImidneighboursAtElement(ive,iel)
+        jel   =rhadapt%p_IneighboursAtElement(ive,iel)
+        jelmid=rhadapt%p_ImidneighboursAtElement(ive,iel)
 
         ! Do nothing if we are adjacent to the boundary
         IF (jel*jelmid .EQ. 0) CYCLE
@@ -2754,7 +2859,7 @@ CONTAINS
         IF (jel .EQ. jelmid) THEN
           
           ! Get number of vertices per element
-          mve = get_NVE(rhadapt,jel)
+          mve=get_NVE(rhadapt,jel)
           
           ! Find element IEL in adjacency list of JEL
           bfound=.FALSE.
@@ -2771,12 +2876,12 @@ CONTAINS
               END IF
             END IF
           END DO
-          btest = btest.AND.bfound
+          btest=btest.AND.bfound
           
         ELSE
 
           ! Get number of vertices per element
-          mve = get_NVE(rhadapt,jel)
+          mve=get_NVE(rhadapt,jel)
           
           ! Find element IEL in adjacency list of JEL
           bfound=.FALSE.
@@ -2793,10 +2898,10 @@ CONTAINS
               END IF
             END IF
           END DO
-          btest = btest.AND.bfound
+          btest=btest.AND.bfound
 
           ! Get number of vertices per element
-          mve = get_NVE(rhadapt,jelmid)
+          mve=get_NVE(rhadapt,jelmid)
           
           ! Find element IEL in adjacency list of JELMID
           bfound=.FALSE.
@@ -2813,7 +2918,7 @@ CONTAINS
               END IF
             END IF
           END DO
-          btest = btest.AND.bfound
+          btest=btest.AND.bfound
 
         END IF
       END DO
@@ -2826,12 +2931,12 @@ CONTAINS
     DO iel=1,rhadapt%NEL
 
       ! Get number of vertices per element
-      nve = get_NVE(rhadapt,iel)
+      nve=get_NVE(rhadapt,iel)
       
       ! Loop over all adjacent elements
       DO ive=1,nve
-        jel    = rhadapt%p_IneighboursAtElement(ive,iel)
-        jelmid = rhadapt%p_ImidneighboursAtElement(ive,iel)
+        jel   =rhadapt%p_IneighboursAtElement(ive,iel)
+        jelmid=rhadapt%p_ImidneighboursAtElement(ive,iel)
         
         ! Do nothing if we are adjacent to the boundary
         IF (jel*jelmid .EQ. 0) CYCLE
@@ -2840,7 +2945,7 @@ CONTAINS
         IF (jel .NE. jelmid) CYCLE
 
         ! Get number of vertices per element
-        mve = get_NVE(rhadapt,jel)
+        mve=get_NVE(rhadapt,jel)
 
         ! Find element IEL in adjacency list of JEL
         bfound=.FALSE.
@@ -2855,7 +2960,7 @@ CONTAINS
         
         ! If the common edge has been found, check the two endpoints
         IF (bfound) THEN
-          bfound = ((rhadapt%p_IverticesAtElement(ive,iel) .EQ. &
+          bfound=((rhadapt%p_IverticesAtElement(ive,iel) .EQ. &
                      rhadapt%p_IverticesAtElement(MODULO(jve,mve)+1,jel)) .AND. &
                      rhadapt%p_IverticesAtElement(MODULO(ive,nve)+1,iel) .EQ. &
                      rhadapt%p_IverticesAtElement(jve,jel))
@@ -2879,19 +2984,19 @@ CONTAINS
       DO iel=1,rhadapt%NEL
 
         ! Get number of vertices per element
-        nve = get_NVE(rhadapt,iel)
+        nve=get_NVE(rhadapt,iel)
 
         ! Loop over corner vertices
         DO ive=1,nve
-          ivt = rhadapt%p_IverticesAtElement(ive,iel)
-          p_IelementsAtVertexIdx(ivt+1) = p_IelementsAtVertexIdx(ivt+1)+1
+          ivt=rhadapt%p_IverticesAtElement(ive,iel)
+          p_IelementsAtVertexIdx(ivt+1)=p_IelementsAtVertexIdx(ivt+1)+1
         END DO
       END DO
 
       ! Convert element couter into absolute position
       p_IelementsAtVertexIdx(1)=1
       DO ivt=2,rhadapt%NVT+1
-        p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt) + p_IelementsAtVertexIdx(ivt-1)
+        p_IelementsAtVertexIdx(ivt)=p_IelementsAtVertexIdx(ivt) + p_IelementsAtVertexIdx(ivt-1)
       END DO
 
       ! Create working array
@@ -2904,38 +3009,38 @@ CONTAINS
       DO iel=1,rhadapt%NEL
 
         ! Get number of vertices per element
-        nve = get_NVE(rhadapt,iel)
+        nve=get_NVE(rhadapt,iel)
 
         ! Loop over corner vertices
         DO ive=1,nve
-          ivt = rhadapt%p_IverticesAtElement(ive,iel)
-          idx = p_IelementsAtVertexIdx(ivt)
-          p_IelementsAtVertexIdx(ivt) = idx+1
-          p_IelementsAtVertex(idx)    = iel
+          ivt=rhadapt%p_IverticesAtElement(ive,iel)
+          idx=p_IelementsAtVertexIdx(ivt)
+          p_IelementsAtVertexIdx(ivt)=idx+1
+          p_IelementsAtVertex(idx)   =iel
         END DO
       END DO
       
       ! Restore index array
       DO ivt=rhadapt%NVT+1,2,-1
-        p_IelementsAtVertexIdx(ivt) = p_IelementsAtVertexIdx(ivt-1)
+        p_IelementsAtVertexIdx(ivt)=p_IelementsAtVertexIdx(ivt-1)
       END DO
-      p_IelementsAtVertexIdx(1) = 1
+      p_IelementsAtVertexIdx(1)=1
 
       ! Start to compare the temporal elements-meeting-at-vertex list
       ! and the dynamic data structure from the adaptivity structure
       DO ivt=1,rhadapt%NVT
         
         ! Get first entry in array list
-        ipos = arrlst_getNextInArrayList(rhadapt%rElementsAtVertex,ivt,.TRUE.)
+        ipos=arrlst_getNextInArrayList(rhadapt%rElementsAtVertex,ivt,.TRUE.)
         
         ! Repeat until there is no entry left in the array list
         DO WHILE(ipos .NE. ARRLST_NULL)
           
           ! Get element number IEL
-          iel = rhadapt%rElementsAtVertex%IData(ipos)
+          iel=rhadapt%rElementsAtVertex%IData(ipos)
 
           ! Proceed to next entry in array list
-          ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
+          ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
 
           ! Look for element IEL in temporal elements-meeting-at-vertex list
           ! If it does exist, multiply its value by minus one so that it cannot
@@ -2944,8 +3049,8 @@ CONTAINS
           bfound=.FALSE.
           DO idx=p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
             IF (p_IelementsAtVertex(idx) .EQ. iel) THEN
-              p_IelementsAtVertex(idx) = -p_IelementsAtVertex(idx)
-              bfound = .TRUE.
+              p_IelementsAtVertex(idx)=-p_IelementsAtVertex(idx)
+              bfound=.TRUE.
               EXIT
             END IF
           END DO
@@ -2999,14 +3104,14 @@ CONTAINS
 !</function
 
     ! Are we in 2D or 3D?
-    IF (rhadapt%ndim == NDIM2D) THEN
+    IF (rhadapt%ndim .EQ. NDIM2D) THEN
       
       ! Do we have quadrilaterals in the triangulation?
       IF (rhadapt%InelOfType(TRIA_NVEQUAD2D).EQ.0) THEN
 
         ! There are no quadrilaterals in the current triangulation.
         ! Hence, return TRIA_NVETRI2D by default.
-        nve = TRIA_NVETRI2D
+        nve=TRIA_NVETRI2D
         
       ELSE
         
@@ -3015,9 +3120,9 @@ CONTAINS
         ! vertices-at-element list is nonzero then TRIA_NVEQUAD2D vertices
         ! are present in the current element. Otherwise return TRIA_NVETRI2D.
         IF (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D,iel).EQ.0) THEN
-          nve = TRIA_NVETRI2D
+          nve=TRIA_NVETRI2D
         ELSE
-          nve = TRIA_NVEQUAD2D
+          nve=TRIA_NVEQUAD2D
         END IF
         
       END IF
@@ -3079,62 +3184,62 @@ CONTAINS
     INTEGER                     :: ibct
     
     ! Get coordinates of edge vertices
-    x1 = qtree_getX(rhadapt%rVertexCoordinates2D,i1)
-    y1 = qtree_getY(rhadapt%rVertexCoordinates2D,i1)
-    x2 = qtree_getX(rhadapt%rVertexCoordinates2D,i2)
-    y2 = qtree_getY(rhadapt%rVertexCoordinates2D,i2)
+    x1=qtree_getX(rhadapt%rVertexCoordinates2D,i1)
+    y1=qtree_getY(rhadapt%rVertexCoordinates2D,i1)
+    x2=qtree_getX(rhadapt%rVertexCoordinates2D,i2)
+    y2=qtree_getY(rhadapt%rVertexCoordinates2D,i2)
 
     ! Compute coordinates of new vertex 
-    Dcoord = 0.5_DP*(/x1+x2,y1+y2/)
+    Dcoord=0.5_DP*(/x1+x2,y1+y2/)
 
     ! Search for vertex coordinates in quadtree: 
     ! If the vertex already exists, e.g., it was added when the adjacent element
     ! was refined, then nothing needs to be done for this vertex
     IF (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D,&
-        Dcoord,inode,ipos,i12) == QTREE_FOUND) RETURN
+        Dcoord,inode,ipos,i12) .EQ. QTREE_FOUND) RETURN
     
     ! Otherwise, update number of vertices
-    rhadapt%NVT = rhadapt%NVT+1
-    i12         = rhadapt%NVT
+    rhadapt%NVT=rhadapt%NVT+1
+    i12        =rhadapt%NVT
     
     ! Set age of vertex
-    rhadapt%p_IvertexAge(i12) = &
+    rhadapt%p_IvertexAge(i12)=&
         1+MAX(ABS(rhadapt%p_IvertexAge(i1)),ABS(rhadapt%p_IvertexAge(i2)))
     
     ! Set nodal property
-    IF (e1 == 0) THEN
-      rhadapt%p_InodalProperty(i12) = rhadapt%p_InodalProperty(i1)
+    IF (e1 .EQ. 0) THEN
+      rhadapt%p_InodalProperty(i12)=rhadapt%p_InodalProperty(i1)
     ELSE
-      rhadapt%p_InodalProperty(i12) = 0
+      rhadapt%p_InodalProperty(i12)=0
     END IF
     
     ! Add new entry to vertex coordinates
     CALL qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,i12,Dcoord,inode)
     
     ! Are we at the boundary?
-    IF (e1 == 0) THEN
+    IF (e1 .EQ. 0) THEN
       ! Increment number of boundary nodes
-      rhadapt%NVBD = rhadapt%NVBD+1
+      rhadapt%NVBD=rhadapt%NVBD+1
       
       ! Get number of boundary component
-      ibct = rhadapt%p_InodalProperty(i1)
+      ibct=rhadapt%p_InodalProperty(i1)
       
       ! Get parameter values of the boundary nodes
-      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) == BTREE_NOT_FOUND) THEN
+      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i1,ipred) .EQ. BTREE_NOT_FOUND) THEN
         CALL output_line('Unable to find first vertex in boudary data structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         CALL sys_halt()
       END IF
-      ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      dvbdp1 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
+      ipos  =rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      dvbdp1=rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
       
-      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) == BTREE_NOT_FOUND) THEN
+      IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ. BTREE_NOT_FOUND) THEN
         CALL output_line('Unable to find second vertex in boudary data structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         CALL sys_halt()
       END IF
-      ipos   = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      dvbdp2 = rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
+      ipos  =rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      dvbdp2=rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
       
       ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
       IF (dvbdp2 <= dvbdp1) dvbdp2=CEILING(dvbdp1)
@@ -3191,38 +3296,38 @@ CONTAINS
     INTEGER(PREC_QTREEIDX) :: inode,ipos
     
     ! Compute coordinates of new vertex
-    x1 = qtree_getX(rhadapt%rVertexCoordinates2D,i1)
-    y1 = qtree_getY(rhadapt%rVertexCoordinates2D,i1)
-    x2 = qtree_getX(rhadapt%rVertexCoordinates2D,i2)
-    y2 = qtree_getY(rhadapt%rVertexCoordinates2D,i2)
-    x3 = qtree_getX(rhadapt%rVertexCoordinates2D,i3)
-    y3 = qtree_getY(rhadapt%rVertexCoordinates2D,i3)
-    x4 = qtree_getX(rhadapt%rVertexCoordinates2D,i4)
-    y4 = qtree_getY(rhadapt%rVertexCoordinates2D,i4)
+    x1=qtree_getX(rhadapt%rVertexCoordinates2D,i1)
+    y1=qtree_getY(rhadapt%rVertexCoordinates2D,i1)
+    x2=qtree_getX(rhadapt%rVertexCoordinates2D,i2)
+    y2=qtree_getY(rhadapt%rVertexCoordinates2D,i2)
+    x3=qtree_getX(rhadapt%rVertexCoordinates2D,i3)
+    y3=qtree_getY(rhadapt%rVertexCoordinates2D,i3)
+    x4=qtree_getX(rhadapt%rVertexCoordinates2D,i4)
+    y4=qtree_getY(rhadapt%rVertexCoordinates2D,i4)
 
-    x21 = x2-x1; x31 = x3-x1; x24 = x2-x4
-    y21 = y2-y1; y31 = y3-y1; y24 = y2-y4
-    alpha = (x21*y24-y21*x24)/(x31*y24-y31*x24)
+    x21=x2-x1; x31=x3-x1; x24=x2-x4
+    y21=y2-y1; y31=y3-y1; y24=y2-y4
+    alpha=(x21*y24-y21*x24)/(x31*y24-y31*x24)
     
-    Dcoord = (/x1+alpha*x31,y1+alpha*y31/)
+    Dcoord=(/x1+alpha*x31,y1+alpha*y31/)
 
     ! Search for vertex coordinates in quadtree
     IF (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D,&
-        Dcoord,inode,ipos,i5) == QTREE_NOT_FOUND) THEN
+        Dcoord,inode,ipos,i5) .EQ. QTREE_NOT_FOUND) THEN
       
       ! Update number of vertices
-      rhadapt%NVT = rhadapt%NVT+1
-      i5             = rhadapt%NVT
+      rhadapt%NVT=rhadapt%NVT+1
+      i5            =rhadapt%NVT
       
       ! Set age of vertex
-      rhadapt%p_IvertexAge(I5) = &
+      rhadapt%p_IvertexAge(I5)=&
           1+MAX(ABS(rhadapt%p_IvertexAge(i1)),&
                 ABS(rhadapt%p_IvertexAge(i2)),&
                 ABS(rhadapt%p_IvertexAge(i3)),&
                 ABS(rhadapt%p_IvertexAge(i4)))
 
       ! Set nodal property
-      rhadapt%p_InodalProperty(i5) = 0
+      rhadapt%p_InodalProperty(i5)=0
       
       ! Add new entry to DCORVG
       CALL qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,i5,Dcoord,inode)
@@ -3280,11 +3385,11 @@ CONTAINS
     END IF
     
     ! Decrease number of vertices by one
-    rhadapt%NVT = rhadapt%NVT-1
+    rhadapt%NVT=rhadapt%NVT-1
     
     ! If IVT is a boundary node remove it from the boundary and
     ! connect its boundary neighbors with each other
-    ibct = rhadapt%p_InodalProperty(ivt)
+    ibct=rhadapt%p_InodalProperty(ivt)
     
     ! Are we at the boundary?
     IF (ibct .NE. 0) THEN
@@ -3296,11 +3401,11 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
-      ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       
       ! Get the two boundary neighbors: I1 <- IVT -> I2
-      i1 = rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)
-      i2 = rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
+      i1=rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)
+      i2=rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
       
       ! Connect the boundary neighbors with each other: I1 <=> I2
       ! First, set I2 as next neighboring of I1
@@ -3310,8 +3415,8 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
-      ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      rhadapt%rBoundary(ibct)%IData(BdrNext,ipos) = i2
+      ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)=i2
       
       ! Second, set I1 as previous neighbor of I2
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
@@ -3320,8 +3425,8 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
-      ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos) = i1
+      ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)=i1
       
       ! And finally, delete IVT from the boundary
       IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivt) .EQ.&
@@ -3339,7 +3444,7 @@ CONTAINS
       ! If IVTREPLACE is a boundary node then remove IVTREPLACE from the boundary
       ! vector, insert IVT into the boundary vector instead, and connect the
       ! boundary neighbors of IVTREPLACE with IVT
-      ibct = rhadapt%p_InodalProperty(ivtReplace)
+      ibct=rhadapt%p_InodalProperty(ivtReplace)
 
       ! Are we at the boundary?
       IF (ibct .NE. 0) THEN
@@ -3350,7 +3455,7 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
-        ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         
         ! Insert IVT into the boundary vector
         CALL btree_insertIntoTree(rhadapt%rBoundary(ibct),ivt,&
@@ -3358,8 +3463,8 @@ CONTAINS
             Ddata=rhadapt%rBoundary(ibct)%DData(:,ipos))
         
         ! Get the two boundary neighbors: I1 <- IVTREPLACE -> I2
-        i1 = rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)
-        i2 = rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
+        i1=rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)
+        i2=rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
         
         ! Connect the boundary neighbors with IVT: I1 <- IVT -> I2
         ! First, set IVT as next neighbor of I1
@@ -3369,8 +3474,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
-        ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        rhadapt%rBoundary(ibct)%IData(BdrNext,ipos) = ivt
+        ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)=ivt
         
         ! Second, set IVT as previous neighbor of I2
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
@@ -3379,8 +3484,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
-        ipos = rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos) = ivt
+        ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)=ivt
         
         ! Finally, delete IVTREPLACE from the boundary
         IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivtReplace) .EQ.&
@@ -3392,21 +3497,21 @@ CONTAINS
       END IF
       
       ! Copy data from node IVTREPLACE to node IVT
-      rhadapt%p_InodalProperty(ivt) = rhadapt%p_InodalProperty(ivtReplace)
-      rhadapt%p_IvertexAge(ivt)     = rhadapt%p_IvertexAge(ivtReplace)
+      rhadapt%p_InodalProperty(ivt)=rhadapt%p_InodalProperty(ivtReplace)
+      rhadapt%p_IvertexAge(ivt)    =rhadapt%p_IvertexAge(ivtReplace)
 
       ! Clear data for node IVTREPLACE
-      rhadapt%p_InodalProperty(ivtReplace) = 0
-      rhadapt%p_IvertexAge(ivtReplace)     = 0
+      rhadapt%p_InodalProperty(ivtReplace)=0
+      rhadapt%p_IvertexAge(ivtReplace)    =0
       
     ELSE
 
       ! IVT is the last vertex of the adaptivity structure
-      ivtReplace = 0
+      ivtReplace=0
 
       ! Clear data for node IVT
-      rhadapt%p_InodalProperty(ivt) = 0
-      rhadapt%p_IvertexAge(ivt)     = 0
+      rhadapt%p_InodalProperty(ivt)=0
+      rhadapt%p_IvertexAge(ivt)    =0
       
     END IF
   END SUBROUTINE remove_vertex2D
@@ -3443,9 +3548,9 @@ CONTAINS
 !</subroutine
 
     ! Replace triangular element
-    rhadapt%p_IverticesAtElement(:,ipos)      = (/i1,i2,i3,0/)
-    rhadapt%p_IneighboursAtElement(:,ipos)    = (/e1,e2,e3,0/)
-    rhadapt%p_ImidneighboursAtElement(:,ipos) = (/e4,e5,e6,0/)    
+    rhadapt%p_IverticesAtElement(:,ipos)     =(/i1,i2,i3,0/)
+    rhadapt%p_IneighboursAtElement(:,ipos)   =(/e1,e2,e3,0/)
+    rhadapt%p_ImidneighboursAtElement(:,ipos)=(/e4,e5,e6,0/)    
   END SUBROUTINE replace_elementTria
 
   ! ***************************************************************************
@@ -3480,9 +3585,9 @@ CONTAINS
 !</subroutine
 
     ! Replace quadrilateral element
-    rhadapt%p_IverticesAtElement(:,ipos)      = (/i1,i2,i3,i4/)
-    rhadapt%p_IneighboursAtElement(:,ipos)    = (/e1,e2,e3,e4/)
-    rhadapt%p_ImidneighboursAtElement(:,ipos) = (/e5,e6,e7,e8/)
+    rhadapt%p_IverticesAtElement(:,ipos)     =(/i1,i2,i3,i4/)
+    rhadapt%p_IneighboursAtElement(:,ipos)   =(/e1,e2,e3,e4/)
+    rhadapt%p_ImidneighboursAtElement(:,ipos)=(/e5,e6,e7,e8/)
   END SUBROUTINE replace_elementQuad
 
   ! ***************************************************************************
@@ -3514,12 +3619,12 @@ CONTAINS
 !</subroutine
     
     ! Increase number of elements and number of triangles
-    rhadapt%NEL = rhadapt%NEL+1
-    rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)+1
+    rhadapt%NEL=rhadapt%NEL+1
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+1
 
-    rhadapt%p_IverticesAtElement(:,rhadapt%NEL)      = (/i1,i2,i3,0/)
-    rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)    = (/e1,e2,e3,0/)
-    rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL) = (/e4,e5,e6,0/)
+    rhadapt%p_IverticesAtElement(:,rhadapt%NEL)     =(/i1,i2,i3,0/)
+    rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)   =(/e1,e2,e3,0/)
+    rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL)=(/e4,e5,e6,0/)
   END SUBROUTINE add_elementTria
 
   ! ***************************************************************************
@@ -3551,12 +3656,12 @@ CONTAINS
 !</subroutine
     
     ! Increase number of elements and number of quadrilaterals
-    rhadapt%NEL   = rhadapt%NEL+1
-    rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
+    rhadapt%NEL  =rhadapt%NEL+1
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
 
-    rhadapt%p_IverticesAtElement(:,rhadapt%NEL)      = (/i1,i2,i3,i4/)
-    rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)    = (/e1,e2,e3,e4/)
-    rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL) = (/e5,e6,e7,e8/)
+    rhadapt%p_IverticesAtElement(:,rhadapt%NEL)     =(/i1,i2,i3,i4/)
+    rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)   =(/e1,e2,e3,e4/)
+    rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL)=(/e5,e6,e7,e8/)
   END SUBROUTINE add_elementQuad
 
   ! ***************************************************************************
@@ -3596,15 +3701,15 @@ CONTAINS
     LOGICAL :: bfound
     
     ! Replace element by the last element and delete last element
-    ielReplace = rhadapt%NEL
+    ielReplace=rhadapt%NEL
 
     ! Which kind of element are we?
     SELECT CASE(get_NVE(rhadapt,iel))
     CASE(TRIA_NVETRI2D)
-      rhadapt%InelOfType(TRIA_NVETRI2D) = rhadapt%InelOfType(TRIA_NVETRI2D)-1
+      rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)-1
 
     CASE(TRIA_NVEQUAD2D)
-      rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
+      rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
 
     CASE DEFAULT
       CALL output_line('Invalid element type!',&
@@ -3631,10 +3736,10 @@ CONTAINS
       update: DO ive=1,get_NVE(rhadapt,ielReplace)
         
         ! Get vertex number of corner node
-        ivt = rhadapt%p_IverticesAtElement(ive,ielReplace)
+        ivt=rhadapt%p_IverticesAtElement(ive,ielReplace)
 
         ! Start with first element in "elements-meeting-at-vertex" list
-        ipos = arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.TRUE.)
+        ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.TRUE.)
         elem: DO WHILE(ipos .NE. ARRLST_NULL)
           
           ! Check if element number corresponds to the replaced element
@@ -3648,16 +3753,16 @@ CONTAINS
         END DO elem
                 
         ! Get element number of element JEL which is adjacent to ielReplace
-        jel = rhadapt%p_IneighboursAtElement(ive,ielReplace)
+        jel=rhadapt%p_IneighboursAtElement(ive,ielReplace)
 
         ! Are we at the boundary?
         IF (jel .EQ. 0) CYCLE
 
         ! We must consider the special case, that the removed element IEL
-        ! is adjacent to the replacement element ielReplace, that is IEL = JEL
+        ! is adjacent to the replacement element ielReplace, that is IEL=JEL
         IF (iel .EQ. jel) THEN
-          !rhadapt%p_IneighboursAtElement(ive,jel)    = ielReplace
-          !rhadapt%p_ImidneighboursAtElement(ive,jel) = ielReplace
+          !rhadapt%p_IneighboursAtElement(ive,jel)   =ielReplace
+          !rhadapt%p_ImidneighboursAtElement(ive,jel)=ielReplace
           CYCLE update
         ELSE
           ! Find position of replacement element in adjacency list of 
@@ -3665,16 +3770,16 @@ CONTAINS
           bfound=.FALSE.
           DO jve=1,get_NVE(rhadapt,jel)
             IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. ielReplace) THEN
-              rhadapt%p_IneighboursAtElement(jve,jel)    = iel
- !             rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
+              rhadapt%p_IneighboursAtElement(jve,jel)   =iel
+ !             rhadapt%p_ImidneighboursAtElement(jve,jel)=iel
               bfound=.TRUE.
             END IF
           END DO
           
           DO jve=1,get_NVE(rhadapt,jel)
             IF (rhadapt%p_ImidneighboursAtElement(jve,jel) .EQ. ielReplace) THEN
-!              rhadapt%p_IneighboursAtElement(jve,jel)    = iel
-              rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
+!              rhadapt%p_IneighboursAtElement(jve,jel)   =iel
+              rhadapt%p_ImidneighboursAtElement(jve,jel)=iel
               bfound=bfound.AND..TRUE.
             END IF
           END DO
@@ -3689,28 +3794,28 @@ CONTAINS
       END DO update
       
       ! Copy data from element ielReplace to element IEL
-      rhadapt%p_IverticesAtElement(:,iel)      = rhadapt%p_IverticesAtElement(:,ielReplace)
-      rhadapt%p_IneighboursAtElement(:,iel)    = rhadapt%p_IneighboursAtElement(:,ielReplace)
-      rhadapt%p_ImidneighboursAtElement(:,iel) = rhadapt%p_ImidneighboursAtElement(:,ielReplace)
+      rhadapt%p_IverticesAtElement(:,iel)     =rhadapt%p_IverticesAtElement(:,ielReplace)
+      rhadapt%p_IneighboursAtElement(:,iel)   =rhadapt%p_IneighboursAtElement(:,ielReplace)
+      rhadapt%p_ImidneighboursAtElement(:,iel)=rhadapt%p_ImidneighboursAtElement(:,ielReplace)
 
 !!$      ! Delete replacement element
-!!$      rhadapt%p_IverticesAtElement(:,ielReplace)      = 0
-!!$      rhadapt%p_IneighboursAtElement(:,ielReplace)    = 0
-!!$      rhadapt%p_ImidneighboursAtElement(:,ielReplace) = 0
+!!$      rhadapt%p_IverticesAtElement(:,ielReplace)     =0
+!!$      rhadapt%p_IneighboursAtElement(:,ielReplace)   =0
+!!$      rhadapt%p_ImidneighboursAtElement(:,ielReplace)=0
       
     ELSE
 
 !!$      ! Delete element
-!!$      rhadapt%p_IverticesAtElement(:,iel)      = 0
-!!$      rhadapt%p_IneighboursAtElement(:,iel)    = 0
-!!$      rhadapt%p_ImidneighboursAtElement(:,iel) = 0
+!!$      rhadapt%p_IverticesAtElement(:,iel)     =0
+!!$      rhadapt%p_IneighboursAtElement(:,iel)   =0
+!!$      rhadapt%p_ImidneighboursAtElement(:,iel)=0
 
       ! Element iel is the last element
-      ielReplace = 0
+      ielReplace=0
     END IF
 
     ! Decrease number of elements
-    rhadapt%NEL = rhadapt%NEL-1
+    rhadapt%NEL=rhadapt%NEL-1
   END SUBROUTINE remove_element2D
 
   ! ***************************************************************************
@@ -3788,7 +3893,7 @@ CONTAINS
       bfound=.FALSE.
 
       ! What kind of element is neighboring element?
-      nve = get_NVE(rhadapt,jel)
+      nve=get_NVE(rhadapt,jel)
       
       ! Loop over all entries in the list of adjacent elements for element 
       ! JEL and check if the value IEL0 is present. 
@@ -3796,8 +3901,8 @@ CONTAINS
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
-          rhadapt%p_IneighboursAtElement(ive,jel)    = iel
-          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          rhadapt%p_IneighboursAtElement(ive,jel)   =iel
+          rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
           bfound=.TRUE.
           EXIT
         END IF
@@ -3809,7 +3914,7 @@ CONTAINS
       bfound=.FALSE.
       
       ! What kind of element is neighboring element 
-      nve = get_NVE(rhadapt,jel)
+      nve=get_NVE(rhadapt,jel)
 
       ! Loop over all entries in the list of adjacent elements for element
       ! JEL and check if the value IEL0 is present. 
@@ -3817,15 +3922,15 @@ CONTAINS
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
-          rhadapt%p_IneighboursAtElement(ive,jel)    = ielmid
-          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          rhadapt%p_IneighboursAtElement(ive,jel)   =ielmid
+          rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
           bfound=.TRUE.
           EXIT
         END IF
       END DO
       
       ! What kind of element is neighboring element 
-      nve = get_NVE(rhadapt,jelmid)
+      nve=get_NVE(rhadapt,jelmid)
       
       ! Loop over all entries in the list of adjacent elements for element
       ! JELMID and check if the value IEL0 is present.
@@ -3833,8 +3938,8 @@ CONTAINS
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
-          rhadapt%p_IneighboursAtElement(ive,jelmid)    = iel
-          rhadapt%p_ImidneighboursAtElement(ive,jelmid) = iel
+          rhadapt%p_IneighboursAtElement(ive,jelmid)   =iel
+          rhadapt%p_ImidneighboursAtElement(ive,jelmid)=iel
           bfound=bfound.AND..TRUE.
           EXIT
         END IF
@@ -3926,7 +4031,7 @@ CONTAINS
       bfound=.FALSE.
 
       ! What kind of element is neighboring element?
-      nve = get_NVE(rhadapt,jel)
+      nve=get_NVE(rhadapt,jel)
       
       ! Loop over all entries in the list of adjacent elements for element 
       ! JEL and check if the value IEL0 or IELMID0 is present. 
@@ -3935,8 +4040,8 @@ CONTAINS
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jel)    .EQ. iel0 .AND.&
             rhadapt%p_ImidneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
-          rhadapt%p_IneighboursAtElement(ive,jel)    = iel
-          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          rhadapt%p_IneighboursAtElement(ive,jel)   =iel
+          rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
           bfound=.TRUE.
           EXIT
         END IF
@@ -3948,7 +4053,7 @@ CONTAINS
       bfound=.FALSE.
       
       ! What kind of element is neighboring element 
-      nve = get_NVE(rhadapt,jel)
+      nve=get_NVE(rhadapt,jel)
 
       ! Loop over all entries in the list of adjacent elements for element
       ! JEL and check if the value IELMID0 is present. 
@@ -3956,15 +4061,15 @@ CONTAINS
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
-          rhadapt%p_IneighboursAtElement(ive,jel)    = ielmid
-          rhadapt%p_ImidneighboursAtElement(ive,jel) = ielmid
+          rhadapt%p_IneighboursAtElement(ive,jel)   =ielmid
+          rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
           bfound=.TRUE.
           EXIT
         END IF
       END DO
       
       ! What kind of element is neighboring element 
-      nve = get_NVE(rhadapt,jelmid)
+      nve=get_NVE(rhadapt,jelmid)
       
       ! Loop over all entries in the list of adjacent elements for element
       ! JELMID and check if the value IEL0 is present.
@@ -3972,8 +4077,8 @@ CONTAINS
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
-          rhadapt%p_IneighboursAtElement(ive,jelmid)    = iel
-          rhadapt%p_ImidneighboursAtElement(ive,jelmid) = iel
+          rhadapt%p_IneighboursAtElement(ive,jelmid)   =iel
+          rhadapt%p_ImidneighboursAtElement(ive,jelmid)=iel
           bfound=bfound.AND..TRUE.
           EXIT
         END IF
@@ -4026,7 +4131,7 @@ CONTAINS
     ! Loop over adjacent elements
     adjacent: DO ive=1,get_NVE(rhadapt,iel0)
       ! Get number of adjacent element
-      jel = rhadapt%p_IneighboursAtElement(ive,iel0)
+      jel=rhadapt%p_IneighboursAtElement(ive,iel0)
 
       ! Are we at the boundary?
       IF (jel .EQ. 0) CYCLE adjacent
@@ -4037,8 +4142,8 @@ CONTAINS
       ! Find position of element IEL0 in adjacent element JEL
       DO jve=1,get_NVE(rhadapt,jel)
         IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. iel0) THEN
-          rhadapt%p_IneighboursAtElement(jve,jel) = iel
-          bfound = .TRUE.
+          rhadapt%p_IneighboursAtElement(jve,jel)=iel
+          bfound=.TRUE.
           EXIT
         END IF
       END DO
@@ -4046,8 +4151,8 @@ CONTAINS
       ! Find position of element IEL0 in mid-adjacent element JEL
       DO jve=1,get_NVE(rhadapt,jel)
         IF (rhadapt%p_ImidneighboursAtElement(jve,jel) .EQ. iel0) THEN
-          rhadapt%p_ImidneighboursAtElement(jve,jel) = iel
-          bfound = (bfound .AND. .TRUE.)
+          rhadapt%p_ImidneighboursAtElement(jve,jel)=iel
+          bfound=(bfound .AND. .TRUE.)
           EXIT
         END IF
       END DO
@@ -4137,19 +4242,19 @@ CONTAINS
     END SELECT
     
     ! Store vertex- and element-values of the current element
-    i1 = rhadapt%p_IverticesAtElement(loc1,iel)
-    i2 = rhadapt%p_IverticesAtElement(loc2,iel)
-    i3 = rhadapt%p_IverticesAtElement(loc3,iel)
+    i1=rhadapt%p_IverticesAtElement(loc1,iel)
+    i2=rhadapt%p_IverticesAtElement(loc2,iel)
+    i3=rhadapt%p_IverticesAtElement(loc3,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(loc1,iel)
-    e2 = rhadapt%p_IneighboursAtElement(loc2,iel)
-    e3 = rhadapt%p_IneighboursAtElement(loc3,iel)
-    e4 = rhadapt%p_ImidneighboursAtElement(loc1,iel)
-    e5 = rhadapt%p_ImidneighboursAtElement(loc2,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(loc3,iel)
+    e1=rhadapt%p_IneighboursAtElement(loc1,iel)
+    e2=rhadapt%p_IneighboursAtElement(loc2,iel)
+    e3=rhadapt%p_IneighboursAtElement(loc3,iel)
+    e4=rhadapt%p_ImidneighboursAtElement(loc1,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(loc2,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(loc3,iel)
     
     ! Store values before refinement
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
     
     ! Add one new vertex I4 at the midpoint of edge (I1,I2).
     CALL add_vertex2D(rhadapt,i1,i2,e1,i4,rcollection,fcb_hadaptCallback)
@@ -4253,34 +4358,34 @@ CONTAINS
     END SELECT
 
     ! Store vertex- and element-values of the current element
-    i1 = rhadapt%p_IverticesAtElement(loc1,iel)
-    i2 = rhadapt%p_IverticesAtElement(loc2,iel)
-    i3 = rhadapt%p_IverticesAtElement(loc3,iel)
+    i1=rhadapt%p_IverticesAtElement(loc1,iel)
+    i2=rhadapt%p_IverticesAtElement(loc2,iel)
+    i3=rhadapt%p_IverticesAtElement(loc3,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(loc1,iel)
-    e2 = rhadapt%p_IneighboursAtElement(loc2,iel)
-    e3 = rhadapt%p_IneighboursAtElement(loc3,iel)
-    e4 = rhadapt%p_ImidneighboursAtElement(loc1,iel)
-    e5 = rhadapt%p_ImidneighboursAtElement(loc2,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(loc3,iel)
+    e1=rhadapt%p_IneighboursAtElement(loc1,iel)
+    e2=rhadapt%p_IneighboursAtElement(loc2,iel)
+    e3=rhadapt%p_IneighboursAtElement(loc3,iel)
+    e4=rhadapt%p_ImidneighboursAtElement(loc1,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(loc2,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(loc3,iel)
     
     ! Store values before refinement
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
     
     ! Add two new vertices I4 and I5 at the midpoint of edges (I1,I2) and (I2,I3).
     CALL add_vertex2D(rhadapt,i1,i2,e1,i4,rcollection,fcb_hadaptCallback)
     CALL add_vertex2D(rhadapt,i2,i3,e2,i5,rcollection,fcb_hadaptCallback)
     
     ! Compute the length of edges (I1,I2) and (I2,I3)
-    x = qtree_getX(rhadapt%rVertexCoordinates2D,i1)-&
+    x=qtree_getX(rhadapt%rVertexCoordinates2D,i1)-&
         qtree_getX(rhadapt%rVertexCoordinates2D,i2)
-    y = qtree_getY(rhadapt%rVertexCoordinates2D,i1)-&
+    y=qtree_getY(rhadapt%rVertexCoordinates2D,i1)-&
         qtree_getY(rhadapt%rVertexCoordinates2D,i2)
     dlen12=SQRT(x*x+y*y)
 
-    x = qtree_getX(rhadapt%rVertexCoordinates2D,i2)-&
+    x=qtree_getX(rhadapt%rVertexCoordinates2D,i2)-&
         qtree_getX(rhadapt%rVertexCoordinates2D,i3)
-    y = qtree_getY(rhadapt%rVertexCoordinates2D,i2)-&
+    y=qtree_getY(rhadapt%rVertexCoordinates2D,i2)-&
         qtree_getY(rhadapt%rVertexCoordinates2D,i3)
     dlen23=SQRT(x*x+y*y)
     
@@ -4403,19 +4508,19 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
     
     ! Store vertex- and element-values of the current element
-    i1 = rhadapt%p_IverticesAtElement(1,iel)
-    i2 = rhadapt%p_IverticesAtElement(2,iel)
-    i3 = rhadapt%p_IverticesAtElement(3,iel)
+    i1=rhadapt%p_IverticesAtElement(1,iel)
+    i2=rhadapt%p_IverticesAtElement(2,iel)
+    i3=rhadapt%p_IverticesAtElement(3,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e2 = rhadapt%p_IneighboursAtElement(2,iel)
-    e3 = rhadapt%p_IneighboursAtElement(3,iel)
-    e4 = rhadapt%p_ImidneighboursAtElement(1,iel)
-    e5 = rhadapt%p_ImidneighboursAtElement(2,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(3,iel)
+    e1=rhadapt%p_IneighboursAtElement(1,iel)
+    e2=rhadapt%p_IneighboursAtElement(2,iel)
+    e3=rhadapt%p_IneighboursAtElement(3,iel)
+    e4=rhadapt%p_ImidneighboursAtElement(1,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(2,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(3,iel)
         
     ! Store values before refinement
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
     
     ! Add three new vertices I4,I5 and I6 at the midpoint of edges (I1,I2),
     ! (I2,I3) and (I1,I3), respectively. 
@@ -4535,22 +4640,22 @@ CONTAINS
     END SELECT
     
     ! Store vertex- and element-values of the current element
-    i1 = rhadapt%p_IverticesAtElement(loc1,iel)
-    i2 = rhadapt%p_IverticesAtElement(loc2,iel)
-    i3 = rhadapt%p_IverticesAtElement(loc3,iel)
-    i4 = rhadapt%p_IverticesAtElement(loc4,iel)
+    i1=rhadapt%p_IverticesAtElement(loc1,iel)
+    i2=rhadapt%p_IverticesAtElement(loc2,iel)
+    i3=rhadapt%p_IverticesAtElement(loc3,iel)
+    i4=rhadapt%p_IverticesAtElement(loc4,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(loc1,iel)
-    e2 = rhadapt%p_IneighboursAtElement(loc2,iel)
-    e3 = rhadapt%p_IneighboursAtElement(loc3,iel)
-    e4 = rhadapt%p_IneighboursAtElement(loc4,iel)
-    e5 = rhadapt%p_ImidneighboursAtElement(loc1,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(loc2,iel)
-    e7 = rhadapt%p_ImidneighboursAtElement(loc3,iel)
-    e8 = rhadapt%p_ImidneighboursAtElement(loc4,iel)
+    e1=rhadapt%p_IneighboursAtElement(loc1,iel)
+    e2=rhadapt%p_IneighboursAtElement(loc2,iel)
+    e3=rhadapt%p_IneighboursAtElement(loc3,iel)
+    e4=rhadapt%p_IneighboursAtElement(loc4,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(loc1,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(loc2,iel)
+    e7=rhadapt%p_ImidneighboursAtElement(loc3,iel)
+    e8=rhadapt%p_ImidneighboursAtElement(loc4,iel)
     
     ! Store values before refinement
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
     
     ! Add two new vertices I5 and I6 at the midpoint of edges (I1,I2) and
     ! (I3,I4), respectively.
@@ -4668,22 +4773,22 @@ CONTAINS
     END SELECT
     
     ! Store vertex- and element-values of the current element
-    i1 = rhadapt%p_IverticesAtElement(loc1,iel)
-    i2 = rhadapt%p_IverticesAtElement(loc2,iel)
-    i3 = rhadapt%p_IverticesAtElement(loc3,iel)
-    i4 = rhadapt%p_IverticesAtElement(loc4,iel)
+    i1=rhadapt%p_IverticesAtElement(loc1,iel)
+    i2=rhadapt%p_IverticesAtElement(loc2,iel)
+    i3=rhadapt%p_IverticesAtElement(loc3,iel)
+    i4=rhadapt%p_IverticesAtElement(loc4,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(loc1,iel)
-    e2 = rhadapt%p_IneighboursAtElement(loc2,iel)
-    e3 = rhadapt%p_IneighboursAtElement(loc3,iel)
-    e4 = rhadapt%p_IneighboursAtElement(loc4,iel)
-    e5 = rhadapt%p_ImidneighboursAtElement(loc1,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(loc2,iel)
-    e7 = rhadapt%p_ImidneighboursAtElement(loc3,iel)
-    e8 = rhadapt%p_ImidneighboursAtElement(loc4,iel)
+    e1=rhadapt%p_IneighboursAtElement(loc1,iel)
+    e2=rhadapt%p_IneighboursAtElement(loc2,iel)
+    e3=rhadapt%p_IneighboursAtElement(loc3,iel)
+    e4=rhadapt%p_IneighboursAtElement(loc4,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(loc1,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(loc2,iel)
+    e7=rhadapt%p_ImidneighboursAtElement(loc3,iel)
+    e8=rhadapt%p_ImidneighboursAtElement(loc4,iel)
 
     ! Store values before refinement
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
     
     ! Add one new vertex I5 it the midpoint of edge (I1,I2)
     CALL add_vertex2D(rhadapt,i1,i2,e1,i5,rcollection,fcb_hadaptCallback)
@@ -4801,22 +4906,22 @@ CONTAINS
     END SELECT
 
     ! Store vertex- and element-values of the current element
-    i1 = rhadapt%p_IverticesAtElement(loc1,iel)
-    i2 = rhadapt%p_IverticesAtElement(loc2,iel)
-    i3 = rhadapt%p_IverticesAtElement(loc3,iel)
-    i4 = rhadapt%p_IverticesAtElement(loc4,iel)
+    i1=rhadapt%p_IverticesAtElement(loc1,iel)
+    i2=rhadapt%p_IverticesAtElement(loc2,iel)
+    i3=rhadapt%p_IverticesAtElement(loc3,iel)
+    i4=rhadapt%p_IverticesAtElement(loc4,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(loc1,iel)
-    e2 = rhadapt%p_IneighboursAtElement(loc2,iel)
-    e3 = rhadapt%p_IneighboursAtElement(loc3,iel)
-    e4 = rhadapt%p_IneighboursAtElement(loc4,iel)
-    e5 = rhadapt%p_ImidneighboursAtElement(loc1,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(loc2,iel)
-    e7 = rhadapt%p_ImidneighboursAtElement(loc3,iel)
-    e8 = rhadapt%p_ImidneighboursAtElement(loc4,iel)
+    e1=rhadapt%p_IneighboursAtElement(loc1,iel)
+    e2=rhadapt%p_IneighboursAtElement(loc2,iel)
+    e3=rhadapt%p_IneighboursAtElement(loc3,iel)
+    e4=rhadapt%p_IneighboursAtElement(loc4,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(loc1,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(loc2,iel)
+    e7=rhadapt%p_ImidneighboursAtElement(loc3,iel)
+    e8=rhadapt%p_ImidneighboursAtElement(loc4,iel)
     
     ! Store values before refinement
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
     
     ! Add new vertices I5 and I6 at the midpoint of edges (I1,I2) and
     ! (I2,I3), respectively.
@@ -4916,22 +5021,22 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6,i7,i8,i9
     
     ! Store vertex- and element-values of the current element
-    i1 = rhadapt%p_IverticesAtElement(1,iel)
-    i2 = rhadapt%p_IverticesAtElement(2,iel)
-    i3 = rhadapt%p_IverticesAtElement(3,iel)
-    i4 = rhadapt%p_IverticesAtElement(4,iel)
+    i1=rhadapt%p_IverticesAtElement(1,iel)
+    i2=rhadapt%p_IverticesAtElement(2,iel)
+    i3=rhadapt%p_IverticesAtElement(3,iel)
+    i4=rhadapt%p_IverticesAtElement(4,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e2 = rhadapt%p_IneighboursAtElement(2,iel)
-    e3 = rhadapt%p_IneighboursAtElement(3,iel)
-    e4 = rhadapt%p_IneighboursAtElement(4,iel)
-    e5 = rhadapt%p_ImidneighboursAtElement(1,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(2,iel)
-    e7 = rhadapt%p_ImidneighboursAtElement(3,iel)
-    e8 = rhadapt%p_ImidneighboursAtElement(4,iel)
+    e1=rhadapt%p_IneighboursAtElement(1,iel)
+    e2=rhadapt%p_IneighboursAtElement(2,iel)
+    e3=rhadapt%p_IneighboursAtElement(3,iel)
+    e4=rhadapt%p_IneighboursAtElement(4,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(1,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(2,iel)
+    e7=rhadapt%p_ImidneighboursAtElement(3,iel)
+    e8=rhadapt%p_ImidneighboursAtElement(4,iel)
 
     ! Store values before refinement
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
     
     ! Add five new vertices I5,I6,I7,I8 and I9 at the midpoint of edges
     ! (I1,I2), (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
@@ -5055,33 +5160,33 @@ CONTAINS
 
     ! Make sure that IEL < JEL
     IF (iel1 < iel2) THEN
-      iel = iel1; jel = iel2
+      iel=iel1; jel=iel2
     ELSE
-      iel = iel2; jel = iel1
+      iel=iel2; jel=iel1
     END IF
 
     ! Find local positions of element iel from is state
-    i1 = rhadapt%p_IverticesAtElement(1,iel)
-    i4 = rhadapt%p_IverticesAtElement(2,iel)
-    i3 = rhadapt%p_IverticesAtElement(3,iel)
+    i1=rhadapt%p_IverticesAtElement(1,iel)
+    i4=rhadapt%p_IverticesAtElement(2,iel)
+    i3=rhadapt%p_IverticesAtElement(3,iel)
     
-    e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e3 = rhadapt%p_IneighboursAtElement(3,iel)
+    e1=rhadapt%p_IneighboursAtElement(1,iel)
+    e3=rhadapt%p_IneighboursAtElement(3,iel)
     
-    e7 = rhadapt%p_ImidneighboursAtElement(1,iel)
-    e6 = rhadapt%p_ImidneighboursAtElement(3,iel)
+    e7=rhadapt%p_ImidneighboursAtElement(1,iel)
+    e6=rhadapt%p_ImidneighboursAtElement(3,iel)
 
     ! Find local positions of element jel from is state
-    i2 = rhadapt%p_IverticesAtElement(1,jel)
+    i2=rhadapt%p_IverticesAtElement(1,jel)
     
-    e2 = rhadapt%p_IneighboursAtElement(1,jel)
-    e4 = rhadapt%p_IneighboursAtElement(3,jel)
+    e2=rhadapt%p_IneighboursAtElement(1,jel)
+    e4=rhadapt%p_IneighboursAtElement(3,jel)
     
-    e5 = rhadapt%p_ImidneighboursAtElement(1,jel)
-    e8 = rhadapt%p_ImidneighboursAtElement(3,jel)
+    e5=rhadapt%p_ImidneighboursAtElement(1,jel)
+    e8=rhadapt%p_ImidneighboursAtElement(3,jel)
     
     ! Store values before conversion
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
 
     ! Add two new vertices I5 and I6 at the midpoint of edges (I2,I3)
     ! and (I1,I3), respectively.
@@ -5121,12 +5226,12 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+2,ipos)
 
     ! "Lock" all vertices
-    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
+    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
+    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
+    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
+    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
+    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
+    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
     
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
@@ -5192,39 +5297,39 @@ CONTAINS
 
     ! Make sure that IEL < JEL
     IF (iel1 < iel2) THEN
-      iel = iel1; jel = iel2
+      iel=iel1; jel=iel2
     ELSE
-      iel = iel2; jel = iel1
+      iel=iel2; jel=iel1
     END IF
 
     ! Find local positions of element iel
-    i1 = rhadapt%p_IverticesAtElement(1,iel)
-    i5 = rhadapt%p_IverticesAtElement(2,iel)
-    i7 = rhadapt%p_IverticesAtElement(3,iel)
-    i4 = rhadapt%p_IverticesAtElement(4,iel)
+    i1=rhadapt%p_IverticesAtElement(1,iel)
+    i5=rhadapt%p_IverticesAtElement(2,iel)
+    i7=rhadapt%p_IverticesAtElement(3,iel)
+    i4=rhadapt%p_IverticesAtElement(4,iel)
 
-    e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e3 = rhadapt%p_IneighboursAtElement(3,iel)
-    e4 = rhadapt%p_IneighboursAtElement(4,iel)
+    e1=rhadapt%p_IneighboursAtElement(1,iel)
+    e3=rhadapt%p_IneighboursAtElement(3,iel)
+    e4=rhadapt%p_IneighboursAtElement(4,iel)
     
-    e5 = rhadapt%p_ImidneighboursAtElement(1,iel)
-    e7 = rhadapt%p_ImidneighboursAtElement(3,iel)
-    e8 = rhadapt%p_ImidneighboursAtElement(4,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(1,iel)
+    e7=rhadapt%p_ImidneighboursAtElement(3,iel)
+    e8=rhadapt%p_ImidneighboursAtElement(4,iel)
 
     ! Find local positions of element jel
-    i2 = rhadapt%p_IverticesAtElement(4,jel)
-    i3 = rhadapt%p_IverticesAtElement(1,jel)
+    i2=rhadapt%p_IverticesAtElement(4,jel)
+    i3=rhadapt%p_IverticesAtElement(1,jel)
 
-    f1 = rhadapt%p_IneighboursAtElement(1,jel)   
-    f3 = rhadapt%p_IneighboursAtElement(3,jel)
-    f4 = rhadapt%p_IneighboursAtElement(4,jel)
+    f1=rhadapt%p_IneighboursAtElement(1,jel)   
+    f3=rhadapt%p_IneighboursAtElement(3,jel)
+    f4=rhadapt%p_IneighboursAtElement(4,jel)
     
-    f5 = rhadapt%p_ImidneighboursAtElement(1,jel)
-    f7 = rhadapt%p_ImidneighboursAtElement(3,jel)
-    f8 = rhadapt%p_ImidneighboursAtElement(4,jel)
+    f5=rhadapt%p_ImidneighboursAtElement(1,jel)
+    f7=rhadapt%p_ImidneighboursAtElement(3,jel)
+    f8=rhadapt%p_ImidneighboursAtElement(4,jel)
 
     ! Store values before conversion
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
 
     ! Add two new vertices I6, I8, and I9 at the midpoint of edges (I2,I3),
     ! (I1,I4) and (I1,I2), respectively.
@@ -5287,15 +5392,15 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,nel0+2,ipos)
 
     ! "Lock" all vertices
-    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
-    rhadapt%p_IvertexAge(i7) = -ABS(rhadapt%p_IvertexAge(i7))
-    rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
-    rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
+    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
+    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
+    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
+    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
+    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
+    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
+    rhadapt%p_IvertexAge(i7)=-ABS(rhadapt%p_IvertexAge(i7))
+    rhadapt%p_IvertexAge(i8)=-ABS(rhadapt%p_IvertexAge(i8))
+    rhadapt%p_IvertexAge(i9)=-ABS(rhadapt%p_IvertexAge(i9))
 
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
@@ -5363,32 +5468,32 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6,i7,i8,i9
 
     ! Get local data from element iel1
-    i1 = rhadapt%p_IverticesAtElement(1,iel1)
-    i5 = rhadapt%p_IverticesAtElement(2,iel1)
-    i4 = rhadapt%p_IverticesAtElement(3,iel1)
+    i1=rhadapt%p_IverticesAtElement(1,iel1)
+    i5=rhadapt%p_IverticesAtElement(2,iel1)
+    i4=rhadapt%p_IverticesAtElement(3,iel1)
 
-    e1 = rhadapt%p_IneighboursAtElement(1,iel1)
-    e4 = rhadapt%p_IneighboursAtElement(3,iel1)
+    e1=rhadapt%p_IneighboursAtElement(1,iel1)
+    e4=rhadapt%p_IneighboursAtElement(3,iel1)
 
-    e9 = rhadapt%p_ImidneighboursAtElement(1,iel1)
-    e8 = rhadapt%p_ImidneighboursAtElement(3,iel1)
+    e9=rhadapt%p_ImidneighboursAtElement(1,iel1)
+    e8=rhadapt%p_ImidneighboursAtElement(3,iel1)
     
     ! Get local data from element iel2
-    i2 = rhadapt%p_IverticesAtElement(1,iel2)
-    i3 = rhadapt%p_IverticesAtElement(2,iel2)
+    i2=rhadapt%p_IverticesAtElement(1,iel2)
+    i3=rhadapt%p_IverticesAtElement(2,iel2)
     
-    e2 = rhadapt%p_IneighboursAtElement(1,iel2)
-    e5 = rhadapt%p_IneighboursAtElement(3,iel2)
+    e2=rhadapt%p_IneighboursAtElement(1,iel2)
+    e5=rhadapt%p_IneighboursAtElement(3,iel2)
 
-    e6 = rhadapt%p_ImidneighboursAtElement(1,iel2)
+    e6=rhadapt%p_ImidneighboursAtElement(1,iel2)
     e10= rhadapt%p_ImidneighboursAtElement(3,iel2)
 
     ! Get local data from element iel3
-    e3 = rhadapt%p_IneighboursAtElement(2,iel3)
-    e7 = rhadapt%p_ImidneighboursAtElement(2,iel3)
+    e3=rhadapt%p_IneighboursAtElement(2,iel3)
+    e7=rhadapt%p_ImidneighboursAtElement(2,iel3)
     
     ! Store values before conversion
-    nel0 = rhadapt%NEL
+    nel0=rhadapt%NEL
 
     ! Add four new vertices I6,I7,I8 and I9 at the midpoint of edges 
     ! (I2,I3), (I3,I4) and (I1,I4) and at the center of element IEL
@@ -5449,19 +5554,19 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,nel0+1,ipos)
 
     ! Finally, adjust numbers of triangles/quadrilaterals
-    rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-3
-    rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+3
+    rhadapt%InelOfType(TRIA_NVETRI2D) =rhadapt%InelOfType(TRIA_NVETRI2D)-3
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)+3
 
     ! "Lock" all vertices
-    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
-    rhadapt%p_IvertexAge(i7) = -ABS(rhadapt%p_IvertexAge(i7))
-    rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
-    rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
+    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
+    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
+    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
+    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
+    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
+    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
+    rhadapt%p_IvertexAge(i7)=-ABS(rhadapt%p_IvertexAge(i7))
+    rhadapt%p_IvertexAge(i8)=-ABS(rhadapt%p_IvertexAge(i8))
+    rhadapt%p_IvertexAge(i9)=-ABS(rhadapt%p_IvertexAge(i9))
     
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
@@ -5533,33 +5638,33 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6,i7,i8,i9
     
     ! Get local data from element iel1
-    i1 = rhadapt%p_IverticesAtElement(1,iel1)
-    i5 = rhadapt%p_IverticesAtElement(2,iel1)
-    i4 = rhadapt%p_IverticesAtElement(3,iel1)
+    i1=rhadapt%p_IverticesAtElement(1,iel1)
+    i5=rhadapt%p_IverticesAtElement(2,iel1)
+    i4=rhadapt%p_IverticesAtElement(3,iel1)
 
-    e1 = rhadapt%p_IneighboursAtElement(1,iel1)
-    e4 = rhadapt%p_IneighboursAtElement(3,iel1)
+    e1=rhadapt%p_IneighboursAtElement(1,iel1)
+    e4=rhadapt%p_IneighboursAtElement(3,iel1)
 
-    e9 = rhadapt%p_ImidneighboursAtElement(1,iel1)
-    e8 = rhadapt%p_ImidneighboursAtElement(3,iel1)
+    e9=rhadapt%p_ImidneighboursAtElement(1,iel1)
+    e8=rhadapt%p_ImidneighboursAtElement(3,iel1)
     
     ! Get local data from element iel2
-    i2 = rhadapt%p_IverticesAtElement(1,iel2)
-    i6 = rhadapt%p_IverticesAtElement(2,iel2)
+    i2=rhadapt%p_IverticesAtElement(1,iel2)
+    i6=rhadapt%p_IverticesAtElement(2,iel2)
 
-    e2 = rhadapt%p_IneighboursAtElement(1,iel2)
-    e5 = rhadapt%p_IneighboursAtElement(3,iel2)
+    e2=rhadapt%p_IneighboursAtElement(1,iel2)
+    e5=rhadapt%p_IneighboursAtElement(3,iel2)
 
     e11= rhadapt%p_ImidneighboursAtElement(1,iel2)
     e10= rhadapt%p_ImidneighboursAtElement(3,iel2)
 
     ! Get local data from element iel3
-    i3 = rhadapt%p_IverticesAtElement(1,iel3)
+    i3=rhadapt%p_IverticesAtElement(1,iel3)
 
-    e3 = rhadapt%p_IneighboursAtElement(1,iel3)
-    e6 = rhadapt%p_IneighboursAtElement(3,iel3)
+    e3=rhadapt%p_IneighboursAtElement(1,iel3)
+    e6=rhadapt%p_IneighboursAtElement(3,iel3)
 
-    e7 = rhadapt%p_ImidneighboursAtElement(1,iel3)
+    e7=rhadapt%p_ImidneighboursAtElement(1,iel3)
     e12= rhadapt%p_ImidneighboursAtElement(3,iel3)
     
     ! Add three new vertices I7, I8 and I9 at the midpoint of edges
@@ -5617,19 +5722,19 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i9,iel4,ipos)
 
     ! Finally, adjust numbers of triangles/quadrilaterals
-    rhadapt%InelOfType(TRIA_NVETRI2D)  = rhadapt%InelOfType(TRIA_NVETRI2D)-4
-    rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)+4
+    rhadapt%InelOfType(TRIA_NVETRI2D) =rhadapt%InelOfType(TRIA_NVETRI2D)-4
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)+4
 
     ! "Lock" all vertices
-    rhadapt%p_IvertexAge(i1) = -ABS(rhadapt%p_IvertexAge(i1))
-    rhadapt%p_IvertexAge(i2) = -ABS(rhadapt%p_IvertexAge(i2))
-    rhadapt%p_IvertexAge(i3) = -ABS(rhadapt%p_IvertexAge(i3))
-    rhadapt%p_IvertexAge(i4) = -ABS(rhadapt%p_IvertexAge(i4))
-    rhadapt%p_IvertexAge(i5) = -ABS(rhadapt%p_IvertexAge(i5))
-    rhadapt%p_IvertexAge(i6) = -ABS(rhadapt%p_IvertexAge(i6))
-    rhadapt%p_IvertexAge(i7) = -ABS(rhadapt%p_IvertexAge(i7))
-    rhadapt%p_IvertexAge(i8) = -ABS(rhadapt%p_IvertexAge(i8))
-    rhadapt%p_IvertexAge(i9) = -ABS(rhadapt%p_IvertexAge(i9))
+    rhadapt%p_IvertexAge(i1)=-ABS(rhadapt%p_IvertexAge(i1))
+    rhadapt%p_IvertexAge(i2)=-ABS(rhadapt%p_IvertexAge(i2))
+    rhadapt%p_IvertexAge(i3)=-ABS(rhadapt%p_IvertexAge(i3))
+    rhadapt%p_IvertexAge(i4)=-ABS(rhadapt%p_IvertexAge(i4))
+    rhadapt%p_IvertexAge(i5)=-ABS(rhadapt%p_IvertexAge(i5))
+    rhadapt%p_IvertexAge(i6)=-ABS(rhadapt%p_IvertexAge(i6))
+    rhadapt%p_IvertexAge(i7)=-ABS(rhadapt%p_IvertexAge(i7))
+    rhadapt%p_IvertexAge(i8)=-ABS(rhadapt%p_IvertexAge(i8))
+    rhadapt%p_IvertexAge(i9)=-ABS(rhadapt%p_IvertexAge(i9))
 
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
@@ -5693,21 +5798,21 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4
 
     ! Get adjacent green elements
-    jel = rhadapt%p_IneighboursAtElement(2,iel)
+    jel=rhadapt%p_IneighboursAtElement(2,iel)
 
     ! Store vertex- and element values of the two elements
-    i1 = rhadapt%p_IverticesAtElement(1,iel)
-    i4 = rhadapt%p_IverticesAtElement(2,iel)
-    i3 = rhadapt%p_IverticesAtElement(3,iel)
-    i2 = rhadapt%p_IverticesAtElement(1,jel)
+    i1=rhadapt%p_IverticesAtElement(1,iel)
+    i4=rhadapt%p_IverticesAtElement(2,iel)
+    i3=rhadapt%p_IverticesAtElement(3,iel)
+    i2=rhadapt%p_IverticesAtElement(1,jel)
     
-    e1 = rhadapt%p_IneighboursAtElement(1,iel)
-    e3 = rhadapt%p_IneighboursAtElement(3,iel)
-    e2 = rhadapt%p_IneighboursAtElement(1,jel)
-    e4 = rhadapt%p_IneighboursAtElement(3,jel)
+    e1=rhadapt%p_IneighboursAtElement(1,iel)
+    e3=rhadapt%p_IneighboursAtElement(3,iel)
+    e2=rhadapt%p_IneighboursAtElement(1,jel)
+    e4=rhadapt%p_IneighboursAtElement(3,jel)
 
-    e5 = rhadapt%p_ImidneighboursAtElement(1,jel)
-    e6 = rhadapt%p_ImidneighboursAtElement(3,iel)
+    e5=rhadapt%p_ImidneighboursAtElement(1,jel)
+    e6=rhadapt%p_ImidneighboursAtElement(3,iel)
     
     ! Update list of neighboring elements
     CALL update_ElementNeighbors2D(rhadapt,e1,e4,jel,iel,iel,iel)
@@ -5798,27 +5903,27 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
 
     ! Store vertex- and element-values of the three neighboring elements
-    i4 = rhadapt%p_IverticesAtElement(1,iel)
-    i5 = rhadapt%p_IverticesAtElement(2,iel)
-    i6 = rhadapt%p_IverticesAtElement(3,iel)
+    i4=rhadapt%p_IverticesAtElement(1,iel)
+    i5=rhadapt%p_IverticesAtElement(2,iel)
+    i6=rhadapt%p_IverticesAtElement(3,iel)
     
-    iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-    iel2 = rhadapt%p_IneighboursAtElement(2,iel)
-    iel0 = rhadapt%p_IneighboursAtElement(3,iel)
+    iel1=rhadapt%p_IneighboursAtElement(1,iel)
+    iel2=rhadapt%p_IneighboursAtElement(2,iel)
+    iel0=rhadapt%p_IneighboursAtElement(3,iel)
     
-    i1 = rhadapt%p_IverticesAtElement(1,iel0)
-    i2 = rhadapt%p_IverticesAtElement(1,iel1)
-    i3 = rhadapt%p_IverticesAtElement(1,iel2)
+    i1=rhadapt%p_IverticesAtElement(1,iel0)
+    i2=rhadapt%p_IverticesAtElement(1,iel1)
+    i3=rhadapt%p_IverticesAtElement(1,iel2)
 
     ! Store values of the elements adjacent to the resulting macro element
-    e1 = rhadapt%p_IneighboursAtElement(1,iel0)
-    e6 = rhadapt%p_IneighboursAtElement(3,iel0)
+    e1=rhadapt%p_IneighboursAtElement(1,iel0)
+    e6=rhadapt%p_IneighboursAtElement(3,iel0)
 
-    e2 = rhadapt%p_IneighboursAtElement(1,iel1)
-    e4 = rhadapt%p_IneighboursAtElement(3,iel1)
+    e2=rhadapt%p_IneighboursAtElement(1,iel1)
+    e4=rhadapt%p_IneighboursAtElement(3,iel1)
 
-    e3 = rhadapt%p_IneighboursAtElement(1,iel2)
-    e5 = rhadapt%p_IneighboursAtElement(3,iel2)
+    e3=rhadapt%p_IneighboursAtElement(1,iel2)
+    e5=rhadapt%p_IneighboursAtElement(3,iel2)
 
     ! Update list of neighboring elements
     CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel0,iel0)
@@ -5924,27 +6029,27 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
 
     ! Store vertex- and element-values of the three neighboring elements
-    i4 = rhadapt%p_IverticesAtElement(1,iel)
-    i5 = rhadapt%p_IverticesAtElement(2,iel)
-    i6 = rhadapt%p_IverticesAtElement(3,iel)
+    i4=rhadapt%p_IverticesAtElement(1,iel)
+    i5=rhadapt%p_IverticesAtElement(2,iel)
+    i6=rhadapt%p_IverticesAtElement(3,iel)
     
-    iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-    iel2 = rhadapt%p_IneighboursAtElement(2,iel)
-    iel0 = rhadapt%p_IneighboursAtElement(3,iel)
+    iel1=rhadapt%p_IneighboursAtElement(1,iel)
+    iel2=rhadapt%p_IneighboursAtElement(2,iel)
+    iel0=rhadapt%p_IneighboursAtElement(3,iel)
     
-    i1 = rhadapt%p_IverticesAtElement(1,iel0)
-    i2 = rhadapt%p_IverticesAtElement(1,iel1)
-    i3 = rhadapt%p_IverticesAtElement(1,iel2)
+    i1=rhadapt%p_IverticesAtElement(1,iel0)
+    i2=rhadapt%p_IverticesAtElement(1,iel1)
+    i3=rhadapt%p_IverticesAtElement(1,iel2)
 
     ! Store values of the elements adjacent to the resulting macro element
-    e1 = rhadapt%p_IneighboursAtElement(1,iel0)
-    e6 = rhadapt%p_IneighboursAtElement(3,iel0)
+    e1=rhadapt%p_IneighboursAtElement(1,iel0)
+    e6=rhadapt%p_IneighboursAtElement(3,iel0)
 
-    e2 = rhadapt%p_IneighboursAtElement(1,iel1)
-    e4 = rhadapt%p_IneighboursAtElement(3,iel1)
+    e2=rhadapt%p_IneighboursAtElement(1,iel1)
+    e4=rhadapt%p_IneighboursAtElement(3,iel1)
 
-    e3 = rhadapt%p_IneighboursAtElement(1,iel2)
-    e5 = rhadapt%p_IneighboursAtElement(3,iel2)
+    e3=rhadapt%p_IneighboursAtElement(1,iel2)
+    e5=rhadapt%p_IneighboursAtElement(3,iel2)
     
     ! Which midpoint vertex should be kept?
     SELECT CASE(iloc)
@@ -6154,7 +6259,7 @@ CONTAINS
     ! Set state of all vertices to "free". Note that vertices of the
     ! initial triangulation are always "locked", i.e. have no positive age.
     DO ivt=1,SIZE(rhadapt%p_IvertexAge)
-      rhadapt%p_IvertexAge(ivt) = ABS(rhadapt%p_IvertexAge(ivt))
+      rhadapt%p_IvertexAge(ivt)=ABS(rhadapt%p_IvertexAge(ivt))
     END DO
 
     ! Loop over all elements and mark those for which
@@ -6164,37 +6269,37 @@ CONTAINS
       IF (p_Dindicator(iel) .GT. rhadapt%drefinementTolerance) THEN
         
         ! Mark element for refinement
-        Kvert = rhadapt%p_IverticesAtElement(:,iel)
-        Kadj  = rhadapt%p_IneighboursAtElement(:,iel)
+        Kvert=rhadapt%p_IverticesAtElement(:,iel)
+        Kadj =rhadapt%p_IneighboursAtElement(:,iel)
 
         ! An element can only be refined, if all of its vertices do
         ! not exceed the number of admissible subdivision steps.
         ! So, check the element type and loop over the 3 or 4 vertices.
-        IF (Kvert(4) == 0) THEN
+        IF (Kvert(4) .EQ. 0) THEN
           
           ! If triangle has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
           IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:3))).EQ.&
               rhadapt%NSUBDIVIDEMAX)) THEN
-            p_Imarker(iel) = MARK_ASIS
+            p_Imarker(iel)=MARK_ASIS
             
             ! According to the indicator, this element should be refined. Since the 
             ! maximum admissible refinement level has been reached no refinement 
             ! was performed. At the same time, all vertices of the element should
             ! be "locked" to prevent this element from coarsening
             DO ive=1,3
-              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
+              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
             END DO
             
             CYCLE mark
           END IF
           
           ! Otherwise, we can mark the triangle for refinement
-          p_Imarker(iel) = MARK_REF_TRIA4TRIA
+          p_Imarker(iel)=MARK_REF_TRIA4TRIA
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,3
-            rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
           END DO
           
           ! Update number of new vertices. In principle, we can increase the number of 
@@ -6203,11 +6308,11 @@ CONTAINS
           ! refinement previously. Hence, a new vertex is only added, if the edge
           ! is connected to the boundary or if the adjacent element has not been marked.
           DO ive=1,3
-            IF (Kadj(ive)==0) THEN
-              rhadapt%increaseNVT = rhadapt%increaseNVT+1
+            IF (Kadj(ive).EQ.0) THEN
+              rhadapt%increaseNVT=rhadapt%increaseNVT+1
             ELSEIF((p_Imarker(Kadj(ive)) .NE. MARK_REF_TRIA4TRIA) .AND.&
                    (p_Imarker(Kadj(ive)) .NE. MARK_REF_QUAD4QUAD)) THEN
-              rhadapt%increaseNVT = rhadapt%increaseNVT+1
+              rhadapt%increaseNVT=rhadapt%increaseNVT+1
             END IF
           END DO
         ELSE
@@ -6216,44 +6321,44 @@ CONTAINS
           ! then enforce no further refinement of this element
           IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:4))).EQ.&
               rhadapt%NSUBDIVIDEMAX)) THEN
-            p_Imarker(iel) = MARK_ASIS
+            p_Imarker(iel)=MARK_ASIS
 
             ! According to the indicator, this element should be refined. Since the 
             ! maximum admissible refinement level has been reached no refinement 
             ! was performed. At the same time, all vertices of the element should
             ! be "locked" to prevent this element from coarsening
             DO ive=1,4
-              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
+              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
             END DO
 
             CYCLE mark
           END IF
           
           ! Otherwise, we can mark the quadrilateral for refinement
-          p_Imarker(iel) = MARK_REF_QUAD4QUAD
+          p_Imarker(iel)=MARK_REF_QUAD4QUAD
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,4
-            rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
           END DO
           
           ! Update number of new vertices
           DO ive=1,4
-            IF (Kadj(ive)==0) THEN
-              rhadapt%increaseNVT = rhadapt%increaseNVT+1
+            IF (Kadj(ive).EQ.0) THEN
+              rhadapt%increaseNVT=rhadapt%increaseNVT+1
             ELSEIF((p_Imarker(Kadj(ive)) .NE. MARK_REF_TRIA4TRIA) .AND.&
                    (p_Imarker(Kadj(ive)) .NE. MARK_REF_QUAD4QUAD)) THEN
-              rhadapt%increaseNVT = rhadapt%increaseNVT+1
+              rhadapt%increaseNVT=rhadapt%increaseNVT+1
             END IF
           END DO
 
           ! And don't forget the new vertex in the interior of the quadrilateral
-          rhadapt%increaseNVT = rhadapt%increaseNVT+1
+          rhadapt%increaseNVT=rhadapt%increaseNVT+1
         END IF
         
       ELSE
         ! Unmark element for refinement
-        p_Imarker(iel) = MARK_ASIS
+        p_Imarker(iel)=MARK_ASIS
       END IF
     END DO mark
 
@@ -6351,7 +6456,7 @@ CONTAINS
     END IF
     
     ! Set pointers
-    IF (rhadapt%h_Imarker == ST_NOHANDLE) THEN
+    IF (rhadapt%h_Imarker .EQ. ST_NOHANDLE) THEN
       CALL output_line('Marker array is not available!',&
           OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
       CALL sys_halt()
@@ -6370,10 +6475,10 @@ CONTAINS
           p_Imarker(iel) .NE. MARK_ASIS_QUAD) CYCLE
 
       ! Get number of vertices per element
-      nve = get_NVE(rhadapt,iel)
+      nve=get_NVE(rhadapt,iel)
 
       ! Get local data for element iel
-      Kvert(1:nve) = rhadapt%p_IverticesAtElement(1:nve,iel)
+      Kvert(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
 
       ! Get state of current element
       SELECT CASE(nve)
@@ -6427,18 +6532,18 @@ CONTAINS
 
           ! If this is not the case, then "lock" all of its four nodes
           DO ive=1,TRIA_NVEQUAD2D
-            i = rhadapt%p_IverticesAtElement(ive,iel)
-            rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+            i=rhadapt%p_IverticesAtElement(ive,iel)
+            rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
           END DO
         ELSE
 
           ! Otherwise, "lock" only the node from the macro element.
           ! Due to the refinement strategy, this is the first vertex.
-          i = rhadapt%p_IverticesAtElement(1,iel)
-          rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+          i=rhadapt%p_IverticesAtElement(1,iel)
+          rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
           ! Provisionally, mark element for generic coarsening
-          p_Imarker(iel) = MARK_CRS_GENERIC
+          p_Imarker(iel)=MARK_CRS_GENERIC
         END IF
 
       CASE(STATE_TRIA_REDINNER)
@@ -6449,13 +6554,13 @@ CONTAINS
           
           ! If this is not the case, then "lock" all of its three nodes
           DO ive=1,TRIA_NVETRI2D
-            i = rhadapt%p_IverticesAtElement(ive,iel)
-            rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+            i=rhadapt%p_IverticesAtElement(ive,iel)
+            rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
           END DO
 
         ELSE
           ! Otherwise, mark element for generic coarsening
-          p_Imarker(iel) = MARK_CRS_GENERIC
+          p_Imarker(iel)=MARK_CRS_GENERIC
         END IF
 
       CASE(STATE_TRIA_OUTERINNER)
@@ -6464,8 +6569,8 @@ CONTAINS
         
         ! Are we outer red triangle that was not created during the 
         ! red-green marking routine as a result of element conversion?
-        jel    = rhadapt%p_IneighboursAtElement(2,iel)
-        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(&
+        jel   =rhadapt%p_IneighboursAtElement(2,iel)
+        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
                  rhadapt%p_IverticesAtElement(1:3,jel)))
         
         IF (jstate .EQ. STATE_TRIA_REDINNER) THEN
@@ -6475,29 +6580,29 @@ CONTAINS
 
             ! If this is not the case, then "lock" all of its three nodes
             DO ive=1,TRIA_NVETRI2D
-              i = rhadapt%p_IverticesAtElement(ive,iel)
-              rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+              i=rhadapt%p_IverticesAtElement(ive,iel)
+              rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
             END DO
           ELSE
             
             ! Otherwise, "lock" only the node from the macro element.
             ! Due to the refinement strategy, this is the first vertex.
-            i = rhadapt%p_IverticesAtElement(1,iel)
-            rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+            i=rhadapt%p_IverticesAtElement(1,iel)
+            rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
             ! Provisionally, mark element for generic coarsening
-            p_Imarker(iel) = MARK_CRS_GENERIC
+            p_Imarker(iel)=MARK_CRS_GENERIC
           END IF
         ELSE
           
           ! We are an inner green triangle resulting from a 1-quad : 4-tria
           ! refinement. By construction, the first vertex belongs to the macro
           ! element and, consequently, has to be "locked" from removal
-          i = rhadapt%p_IverticesAtElement(1,iel)
-          rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+          i=rhadapt%p_IverticesAtElement(1,iel)
+          rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
           ! Provisionally, mark element for generic coarsening
-          p_Imarker(iel) = MARK_CRS_GENERIC
+          p_Imarker(iel)=MARK_CRS_GENERIC
         END IF
 
         !-----------------------------------------------------------------------
@@ -6519,27 +6624,27 @@ CONTAINS
         ! Element IEL is right green triangle resulting from a 1-tria : 2-tria
         ! refinement. Here, the third vertex is the one which was last inserted.
         ! Hence, the first vertex is older then the third one by construction.
-        i = rhadapt%p_IverticesAtElement(1,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
-        i = rhadapt%p_IverticesAtElement(2,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
         ! Provisionally, mark element for generic coarsening
-        p_Imarker(iel) = MARK_CRS_GENERIC
+        p_Imarker(iel)=MARK_CRS_GENERIC
         
       CASE(STATE_TRIA_GREENOUTER_LEFT)
         ! Element IEL is left green triangle resulting from a 1-tria : 2-tria
         ! refinement. Here, the second vertex is the one which was last insrted.
         ! Hence, the first vertex is older than the second one by construction.
-        i = rhadapt%p_IverticesAtElement(1,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
-        i = rhadapt%p_IverticesAtElement(3,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
         ! Provisionally, mark element for generic coarsening
-        p_Imarker(iel) = MARK_CRS_GENERIC
+        p_Imarker(iel)=MARK_CRS_GENERIC
 
       CASE(STATE_TRIA_GREENINNER)
         ! Element IEL is the inner green triangle resulting from a 1-quad :
@@ -6547,14 +6652,14 @@ CONTAINS
         ! introduced one which is the youngest vertex of the element. Hence,
         ! "lock" both the second and the third vertex which belong to the
         ! original macro element which was a quadrilateral
-        i = rhadapt%p_IverticesAtElement(2,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
         
-        j = rhadapt%p_IverticesAtElement(3,iel)
-        rhadapt%p_IvertexAge(j) = -ABS(rhadapt%p_IvertexAge(j))
+        j=rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(j)=-ABS(rhadapt%p_IvertexAge(j))
 
         ! Provisionally, mark element for generic coarsening
-        p_Imarker(iel) = MARK_CRS_GENERIC
+        p_Imarker(iel)=MARK_CRS_GENERIC
 
       CASE(STATE_QUAD_HALF1,STATE_QUAD_HALF2)
         CALL output_line('Not implemented yet!',&
@@ -6564,6 +6669,8 @@ CONTAINS
       CASE DEFAULT
         CALL output_line('Invalid element state!',&
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
+        PRINT *, iel
+        CALL hadapt_writegridsvg(rhadapt,'mygrid')
         CALL sys_halt()
       END SELECT
     END DO
@@ -6582,9 +6689,9 @@ CONTAINS
     ! of all surrounding elements. In order to prevent this recursion, we make 
     ! use of a do-while loop which is terminated of no more vertices are touched.
 
-    isModified = .TRUE.
+    isModified=.TRUE.
     DO WHILE(isModified)
-      isModified = .FALSE.
+      isModified=.FALSE.
 
       ! Loop over all elements (from the initial triangulation + those which
       ! have been created during the conversion of green into red elements)
@@ -6594,10 +6701,10 @@ CONTAINS
         IF (p_Imarker(iel) .NE. MARK_CRS_GENERIC) CYCLE
 
         ! Get number of vertices per element
-        nve = get_NVE(rhadapt,iel)
+        nve=get_NVE(rhadapt,iel)
         
         ! Get local data for element iel
-        Kvert(1:nve) = rhadapt%p_IverticesAtElement(1:nve,iel)
+        Kvert(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
 
         ! Check if all vertices of the element are locked then delete element
         ! from the list of removable elements. This could also be done in the
@@ -6607,7 +6714,7 @@ CONTAINS
         ! a large number of elements can be filtered out by this check in advance
         ! so that no detailed investigation of their vertices is required.
         IF (ALL(rhadapt%p_IvertexAge(Kvert(1:nve)).LE.0)) THEN
-          p_Imarker(iel) = MERGE(MARK_ASIS_TRIA,MARK_ASIS_QUAD,nve == 3)
+          p_Imarker(iel)=MERGE(MARK_ASIS_TRIA,MARK_ASIS_QUAD,nve .EQ. 3)
           CYCLE
         END IF
         
@@ -6637,11 +6744,11 @@ CONTAINS
             ! Lock all other vertices. Note that the first vertiex and the third
             ! one are already locked, so that we have to consider vertices 2 and 4
             DO ive=2,4,2
-              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
             END DO
 
             ! Delete element from list of removable elements
-            p_Imarker(iel) = MARK_ASIS_QUAD
+            p_Imarker(iel)=MARK_ASIS_QUAD
             
             ! We modified some vertex in this iteration
             isModified=.TRUE.
@@ -6653,19 +6760,19 @@ CONTAINS
                  rhadapt%p_IvertexAge(Kvert(4)) .LE. 0) THEN
             
             ! Check the midpoint of the counterclockwise neighboring element
-            jel = rhadapt%p_IneighboursAtElement(2,iel)
-            i   = rhadapt%p_IverticesAtElement(2,jel)
+            jel=rhadapt%p_IneighboursAtElement(2,iel)
+            i  =rhadapt%p_IverticesAtElement(2,jel)
             IF (rhadapt%p_IvertexAge(i) .LE. 0) THEN
               
               ! Lock all vertices of element IEL. Due to the fact that the interior
               ! vertex is locked, the nodes of all other quadrilaterals will be
               ! locked in the next loop of phase 2.
               DO ive=1,TRIA_NVEQUAD2D
-                rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+                rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
               END DO
 
               ! Delete element from list of removable elements
-              p_Imarker(iel) = MARK_ASIS_QUAD
+              p_Imarker(iel)=MARK_ASIS_QUAD
               
               ! We modified some vertex in this iteration
               isModified=.TRUE.
@@ -6673,19 +6780,19 @@ CONTAINS
             END IF
 
             ! Check the midpoint of the clockwise neighboring element
-            jel = rhadapt%p_IneighboursAtElement(3,iel)
-            i   = rhadapt%p_IverticesAtElement(4,jel)
+            jel=rhadapt%p_IneighboursAtElement(3,iel)
+            i  =rhadapt%p_IverticesAtElement(4,jel)
             IF (rhadapt%p_IvertexAge(i) .LE. 0) THEN
               
               ! Lock all vertices of element IEL. Due to the fact that the interior
               ! vertex is locked, the nodes of all other quadrilaterals will be
               ! locked in the next loop of phase 2.
               DO ive=1,TRIA_NVEQUAD2D
-                rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+                rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
               END DO
 
               ! Delete element from list of removable elements
-              p_Imarker(iel) = MARK_ASIS_QUAD
+              p_Imarker(iel)=MARK_ASIS_QUAD
               
               ! We modified some vertex in this iteration
               isModified=.TRUE.
@@ -6697,7 +6804,7 @@ CONTAINS
           ! Element IEL is inner red triangle of a 1-tria : 4-tria refinement.
           
           ! Determine number of locked vertices of the inner triangle.
-          icount = 0
+          icount=0
           DO ive=1,TRIA_NVETRI2D
             IF (rhadapt%p_IvertexAge(Kvert(ive)) .LE. 0) icount=icount+1
           END DO
@@ -6705,18 +6812,18 @@ CONTAINS
           ! If exactly two vertices are locked, then "lock" the third one, too.
           IF (icount .EQ. 2) THEN
             DO ive=1,TRIA_NVETRI2D
-              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
             END DO
             
             ! Delete element from list of removable elements
-            p_Imarker(iel) = MARK_ASIS
+            p_Imarker(iel)=MARK_ASIS
             
             ! We modified some vertex in this iteration
             isModified=.TRUE.
             
           ELSEIF(icount .EQ. 3) THEN
             ! Delete element from list of removable elements
-            p_Imarker(iel) = MARK_ASIS
+            p_Imarker(iel)=MARK_ASIS
           END IF
 
         CASE(STATE_TRIA_GREENOUTER_RIGHT)
@@ -6727,11 +6834,11 @@ CONTAINS
             
             ! Lock all other vertices
             DO ive=1,2
-              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
             END DO
             
             ! Delete element from list of removable elements              
-            p_Imarker(iel) = MARK_ASIS
+            p_Imarker(iel)=MARK_ASIS
             
             ! We modified some vertex in this iteration
             isModified=.TRUE.
@@ -6745,11 +6852,11 @@ CONTAINS
             
             ! Lock all other vertices
             DO ive=1,3,2
-              rhadapt%p_IvertexAge(Kvert(ive)) = -ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
             END DO
             
             ! Delete element from list of removable elements              
-            p_Imarker(iel) = MARK_ASIS
+            p_Imarker(iel)=MARK_ASIS
             
             ! We modified some vertex in this iteration
             isModified=.TRUE.
@@ -6771,10 +6878,10 @@ CONTAINS
       IF (p_Imarker(iel) .NE. MARK_CRS_GENERIC) CYCLE
 
       ! Get number of vertices per element
-      nve = get_NVE(rhadapt,iel)
+      nve=get_NVE(rhadapt,iel)
 
       ! Get local data for element iel
-      Kvert(1:nve) = rhadapt%p_IverticesAtElement(1:nve,iel)
+      Kvert(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
       
       ! Get state of current element
       SELECT CASE(nve)
@@ -6800,13 +6907,13 @@ CONTAINS
         ! triangle is locked, then the inner red tiangle together with its three
         ! neighboring elements can be convertec into two green triangles.
         IF (rhadapt%p_IvertexAge(Kvert(1)) .LE. 0) THEN
-          p_Imarker(iel) = MARK_CRS_4TRIA2TRIA_1
+          p_Imarker(iel)=MARK_CRS_4TRIA2TRIA_1
         ELSEIF(rhadapt%p_IvertexAge(Kvert(2)) .LE. 0) THEN
-          p_Imarker(iel) = MARK_CRS_4TRIA2TRIA_2
+          p_Imarker(iel)=MARK_CRS_4TRIA2TRIA_2
         ELSEIF(rhadapt%p_IvertexAge(Kvert(3)) .LE. 0) THEN
-          p_Imarker(iel) = MARK_CRS_4TRIA2TRIA_3
+          p_Imarker(iel)=MARK_CRS_4TRIA2TRIA_3
         ELSE
-          p_Imarker(iel) = MARK_CRS_4TRIA1TRIA
+          p_Imarker(iel)=MARK_CRS_4TRIA1TRIA
         END IF
         
       CASE(STATE_TRIA_GREENINNER)
@@ -6817,27 +6924,27 @@ CONTAINS
         IF (rhadapt%p_IvertexAge(Kvert(1)) .LE. 0) THEN
           
           ! Delete element from list of removable elements              
-          p_Imarker(iel) = MARK_ASIS
+          p_Imarker(iel)=MARK_ASIS
         ELSE
 
           ! Mark element for recoarsening together with its two neighbors
-          p_Imarker(iel) = MARK_CRS_3TRIA1QUAD
+          p_Imarker(iel)=MARK_CRS_3TRIA1QUAD
         END IF
         
       CASE(STATE_TRIA_GREENOUTER_LEFT)
         ! If this is the left green triangle of a 1-tria : 2-tria refinement then
         ! get the element number of the corresponding right triangle and mark the
         ! element with the smaller number for refinement
-        jel = rhadapt%p_IneighboursAtElement(2,iel)
-        Kvert(1:3)  = rhadapt%p_IverticesAtElement(1:3,jel)
-        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        jel=rhadapt%p_IneighboursAtElement(2,iel)
+        Kvert(1:3) =rhadapt%p_IverticesAtElement(1:3,jel)
+        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
         IF (jstate .EQ. STATE_TRIA_GREENOUTER_RIGHT) THEN
           
           ! Which is the element with smaller number?
           IF (iel < jel) THEN
-            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_LEFT
+            p_Imarker(iel)=MARK_CRS_2TRIA1TRIA_LEFT
           ELSE
-            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_RIGHT
+            p_Imarker(iel)=MARK_CRS_2TRIA1TRIA_RIGHT
           END IF
         END IF
         
@@ -6861,15 +6968,15 @@ CONTAINS
       CASE(STATE_TRIA_OUTERINNER)
         ! If this is the inner green tiangle of a 1-quad : 4-tria refinement then
         ! mark the element for 4-tria : 1-quad or 4-tria : 3-tria coarsening.
-        jel = rhadapt%p_IneighboursAtElement(2,iel)
-        KvertJ(1:3) = rhadapt%p_IverticesAtElement(1:3,jel)
-        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(KvertJ(1:3)))
+        jel=rhadapt%p_IneighboursAtElement(2,iel)
+        KvertJ(1:3)=rhadapt%p_IverticesAtElement(1:3,jel)
+        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(KvertJ(1:3)))
         
         ! Are we green triangle of a 1-quad : 4-tria refinement?
         IF (jstate .EQ. STATE_TRIA_OUTERINNER) THEN
 
           ! Which of elements IEL and JEL is the "most inner" one?
-          kel = rhadapt%p_IneighboursAtElement(1,iel)
+          kel=rhadapt%p_IneighboursAtElement(1,iel)
 
           IF (redgreen_getStateTria(rhadapt%p_IvertexAge(&
               rhadapt%p_IverticesAtElement(1:3,kel))).EQ.&
@@ -6877,21 +6984,21 @@ CONTAINS
             
             ! Element IEL is the "most inner" element
             IF (rhadapt%p_IvertexAge(Kvert(2)).LE.0) THEN
-              p_Imarker(iel) = MARK_CRS_4TRIA3TRIA_RIGHT
+              p_Imarker(iel)=MARK_CRS_4TRIA3TRIA_RIGHT
             ELSEIF(rhadapt%p_IvertexAge(Kvert(3)).LE.0) THEN
-              p_Imarker(iel) = MARK_CRS_4TRIA3TRIA_LEFT
+              p_Imarker(iel)=MARK_CRS_4TRIA3TRIA_LEFT
             ELSE
-              p_Imarker(iel) = MARK_CRS_4TRIA1QUAD
+              p_Imarker(iel)=MARK_CRS_4TRIA1QUAD
             END IF
 
           ELSE
             ! Element JEL is the "most inner" element
             IF (rhadapt%p_IvertexAge(KvertJ(2)).LE.0) THEN
-              p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_RIGHT
+              p_Imarker(jel)=MARK_CRS_4TRIA3TRIA_RIGHT
             ELSEIF(rhadapt%p_IvertexAge(KvertJ(3)).LE.0) THEN
-              p_Imarker(jel) = MARK_CRS_4TRIA3TRIA_LEFT
+              p_Imarker(jel)=MARK_CRS_4TRIA3TRIA_LEFT
             ELSE
-              p_Imarker(jel) = MARK_CRS_4TRIA1QUAD
+              p_Imarker(jel)=MARK_CRS_4TRIA1QUAD
             END IF   
           END IF
         END IF
@@ -6906,36 +7013,36 @@ CONTAINS
         ! IEL visit the "right" neighbor and compare its element number to
         ! the smallest element number currently available. Start with IEL.
         
-        jel = iel
-        kel = iel
-        ishift = 0
+        jel=iel
+        kel=iel
+        ishift=0
         
         ! In the same loop, determine those vertices (exlcuding the interior
         ! vertex) which are connected to two adjacent quadilaterals that are locked
         IF (rhadapt%p_IvertexAge(Kvert(2)).LE.0) THEN
-          iVertexLocked = ibset(0,0)
-          icount        = 1
+          iVertexLocked=ibset(0,0)
+          icount       =1
         ELSE
-          iVertexLocked = 0
-          icount        = 0
+          iVertexLocked=0
+          icount       =0
         END IF
 
         ! Ok, loop over all remaining elements (counterclockwise)
         DO ive=1,3
           
           ! Get counterclockwise neighboring element
-          jel = rhadapt%p_IneighboursAtElement(2,jel)
+          jel=rhadapt%p_IneighboursAtElement(2,jel)
           
           ! Is its second vertex locked?
           IF (rhadapt%p_IvertexAge(rhadapt%p_IverticesAtElement(2,jel)).LE.0) THEN
-            iVertexLocked = ibset(iVertexLocked,ive)
-            icount        = icount+1
+            iVertexLocked=ibset(iVertexLocked,ive)
+            icount       =icount+1
           END IF
           
           ! Do we have a new smallest element number?
           IF (jel < kel) THEN
-            kel    = jel
-            ishift = ive
+            kel   =jel
+            ishift=ive
           END IF
         END DO
 
@@ -6943,7 +7050,7 @@ CONTAINS
         SELECT CASE(icount)
         CASE(0)
           ! Simply, mark element with smallest number for 4-quad : 1-quad coarsening
-          p_Imarker(kel) = MARK_CRS_4QUAD1QUAD
+          p_Imarker(kel)=MARK_CRS_4QUAD1QUAD
 
         CASE(1)
           ! Ok, the four red quadrilaterals have to be converted into three triangles.
@@ -6956,21 +7063,21 @@ CONTAINS
           ! element with the smallest number, then ishift=0. Let us perform a 
           ! cyclic bit-shift by the value ishift of iVertexLocked so that afterwards
           ! the first bit corresponds to the element with the minimum number.
-          IF (ishift.NE.0) iVertexLocked = ISHFTC(iVertexLocked,ishift,TRIA_MAXNVE2D)
+          IF (ishift.NE.0) iVertexLocked=ISHFTC(iVertexLocked,ishift,TRIA_MAXNVE2D)
 
           ! Which vertex is locked?
           SELECT CASE(iVertexLocked)
           CASE(1)
-            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_1
+            p_Imarker(kel)=MARK_CRS_4QUAD3TRIA_1
 
           CASE(2)
-            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_2
+            p_Imarker(kel)=MARK_CRS_4QUAD3TRIA_2
 
           CASE(4)
-            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_3
+            p_Imarker(kel)=MARK_CRS_4QUAD3TRIA_3
 
           CASE(8)
-            p_Imarker(kel) = MARK_CRS_4QUAD3TRIA_4
+            p_Imarker(kel)=MARK_CRS_4QUAD3TRIA_4
 
           CASE DEFAULT
             CALL output_line('Invalid locking pattern of vertices!',&
@@ -6989,27 +7096,27 @@ CONTAINS
           ! element with the smallest number, then ishift=0. Let us perform a 
           ! cyclic bit-shift by the value ishift of iVertexLocked so that afterwards
           ! the first bit corresponds to the element with the minimum number.
-          IF (ishift.NE.0) iVertexLocked = ISHFTC(iVertexLocked,ishift,TRIA_MAXNVE2D)
+          IF (ishift.NE.0) iVertexLocked=ISHFTC(iVertexLocked,ishift,TRIA_MAXNVE2D)
           
           ! Which vertices are locked?
           SELECT CASE(iVertexLocked)
           CASE(3)
-            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_12
+            p_Imarker(kel)=MARK_CRS_4QUAD4TRIA_12
             
           CASE(6)
-            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_23
+            p_Imarker(kel)=MARK_CRS_4QUAD4TRIA_23
 
           CASE(9)
-            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_34
+            p_Imarker(kel)=MARK_CRS_4QUAD4TRIA_34
 
           CASE(12)
-            p_Imarker(kel) = MARK_CRS_4QUAD4TRIA_14
+            p_Imarker(kel)=MARK_CRS_4QUAD4TRIA_14
 
           CASE(5)
-            p_Imarker(kel) = MARK_CRS_4QUAD2QUAD_13
+            p_Imarker(kel)=MARK_CRS_4QUAD2QUAD_13
 
           CASE(10)
-            p_Imarker(kel) = MARK_CRS_4QUAD2QUAD_24
+            p_Imarker(kel)=MARK_CRS_4QUAD2QUAD_24
 
           CASE DEFAULT
             CALL output_line('Invalid locking pattern of vertices!',&
@@ -7087,8 +7194,8 @@ CONTAINS
     IF (rhadapt%nGreenElements > 0) THEN
 
       ! Predict new dimensions for the worst case
-      nvt = CEILING(rhadapt%NVT0+1.5*rhadapt%nGreenElements)
-      nel = rhadapt%NEL0+2*rhadapt%nGreenElements
+      nvt=CEILING(rhadapt%NVT0+1.5*rhadapt%nGreenElements)
+      nel=rhadapt%NEL0+2*rhadapt%nGreenElements
 
       ! Adjust nodal/elemental arrays
       CALL storage_realloc('redgreen_mark_refinement2D',nvt,&
@@ -7140,7 +7247,7 @@ CONTAINS
     ! elements have to be checked, if conformity is violated. In order to prevent this
     ! (expensive) check to be performed for all elements again and again, only those
     ! elements are investigated for which the modifier p_Imodified is active, i.e.
-    ! p_Imodified(iel) == imodifier. In order to pre-select elements for investigation
+    ! p_Imodified(iel) .EQ. imodifier. In order to pre-select elements for investigation
     ! in the next loop, p_Imodified(iel) is set to -imodifier and the modifier is reversed
     ! after each iteration. This complicated step is necessary for the following reason:
     ! If one element with mediate number initially is not marked but gets marked for
@@ -7155,15 +7262,15 @@ CONTAINS
     imodifier=1
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
     DO iel=1,rhadapt%NEL0
-      IF (p_Imarker(iel) .NE. MARK_ASIS) p_Imodified(iel) = imodifier
+      IF (p_Imarker(iel) .NE. MARK_ASIS) p_Imodified(iel)=imodifier
     END DO
 
-    isConform = .FALSE.
+    isConform=.FALSE.
     conformity: DO
       
       ! If conformity is guaranteed for all cells, then exit
       IF (isConform) EXIT conformity
-      isConform = .TRUE.
+      isConform=.TRUE.
       
       ! Otherwise, loop over all elements present in the initial grid (IEL <= NEL0)
       ! which are modified and mark their neighbors for further refinement 
@@ -7174,20 +7281,20 @@ CONTAINS
         IF (p_Imodified(iel) .NE. imodifier) CYCLE
 
         ! Get number of vertices per element
-        nve = get_NVE(rhadapt,iel)
+        nve=get_NVE(rhadapt,iel)
         
         ! Get local data for element iel
-        Kvert(1:nve)   = rhadapt%p_IverticesAtElement(1:nve,iel)
+        Kvert(1:nve)  =rhadapt%p_IverticesAtElement(1:nve,iel)
       
         ! Are we triangular or quadrilateral element?
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
-          p_Imarker(iel) = ibclr(p_Imarker(iel),0)
-          istate         = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+          p_Imarker(iel)=ibclr(p_Imarker(iel),0)
+          istate        =redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
 
         CASE(TRIA_NVEQUAD2D)
-          p_Imarker(iel) = ibset(p_Imarker(iel),0)
-          istate         = redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+          p_Imarker(iel)=ibset(p_Imarker(iel),0)
+          istate        =redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
 
         CASE DEFAULT
           CALL output_line('Invalid number of vertices per element!',&
@@ -7224,7 +7331,7 @@ CONTAINS
           ! refinement. This can be easily checked. If the opposite element is not 
           ! an inner red triangle (14), then the element IEL and its opposite neighbor 
           ! make up the inner "diamond" resulting from a Quad4Tria refinement. 
-          jel = rhadapt%p_IneighboursAtElement(2,iel)
+          jel=rhadapt%p_IneighboursAtElement(2,iel)
        
           ! First, we need to check a special case. If the second edge of element IEL
           ! has two different neighbors, then the original neighbor along this edge
@@ -7233,7 +7340,7 @@ CONTAINS
           IF (jel .NE. rhadapt%p_ImidneighboursAtElement(2,iel)) GOTO 100
           
           ! Otherwise, determine the state of the edge neighbor JEL
-          jstate = redgreen_getState(rhadapt,jel)
+          jstate=redgreen_getState(rhadapt,jel)
           
           IF (jstate .EQ. STATE_TRIA_OUTERINNER) THEN
             ! We know that element IEL and JEL make up the inner "diamond" resulting
@@ -7243,17 +7350,17 @@ CONTAINS
               
               ! To begin with, we need to find the two missing triangles KEL and LEL
               ! which make up the original quadrilateral
-              kel = rhadapt%p_IneighboursAtElement(1,iel)
-              lel = rhadapt%p_IneighboursAtElement(3,iel)
+              kel=rhadapt%p_IneighboursAtElement(1,iel)
+              lel=rhadapt%p_IneighboursAtElement(3,iel)
 
               ! Mark the edge of the element adjacent to KEL for subdivision
-              iel1 = rhadapt%p_IneighboursAtElement(3,kel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(3,kel)
+              iel1=rhadapt%p_IneighboursAtElement(3,kel)
+              iel2=rhadapt%p_ImidneighboursAtElement(3,kel)
               IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(kel,iel1)
               
               ! Mark the edge of the element adjacent to LEL for subdivision
-              iel1 = rhadapt%p_IneighboursAtElement(1,lel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,lel)
+              iel1=rhadapt%p_IneighboursAtElement(1,lel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,lel)
               IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
               ! Now, we can physically convert the four triangles into four quadrilaterals
@@ -7261,54 +7368,54 @@ CONTAINS
               isConform=.FALSE.
 
               ! All four elements have to be converted from triangles to quadrilaterals.
-              p_Imarker(iel) = ibset(0,0)
+              p_Imarker(iel)=ibset(0,0)
 
               ! The second and third edge of KEL must be unmarked. Moreover, the first edge is
               ! marked for refinement if and only if it is also marked from the adjacent element
-              iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
+              iel1=rhadapt%p_IneighboursAtElement(1,kel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
               IF (ismarked_edge(iel1,iel2,kel)) THEN
-                p_Imarker(kel) = ibset(ibset(0,1),0)
+                p_Imarker(kel)=ibset(ibset(0,1),0)
               ELSE
-                p_Imarker(kel) = ibset(0,0)
+                p_Imarker(kel)=ibset(0,0)
               END IF
 
               ! The second and third edge of JEL must be unmarked. 
-              p_Imarker(jel) = ibset(0,0)
+              p_Imarker(jel)=ibset(0,0)
 
               ! The fourth edge is only marked if it is also marked from the adjacent element
-              iel1 = rhadapt%p_IneighboursAtElement(4,jel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(4,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),4)
+              iel1=rhadapt%p_IneighboursAtElement(4,jel)
+              iel2=rhadapt%p_ImidneighboursAtElement(4,jel)
+              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),4)
               
               ! The first edge is only marked if it is also marked from the adjacent element
-              iel1 = rhadapt%p_IneighboursAtElement(1,jel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),1)
+              iel1=rhadapt%p_IneighboursAtElement(1,jel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
+              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
               
               ! The first, second and third edge of LEL must be unmarked.
-              p_Imarker(lel) = ibset(0,0)
+              p_Imarker(lel)=ibset(0,0)
 
               ! The fourth edge is only marked if it is also marked from the adjacent element
-              iel1 = rhadapt%p_IneighboursAtElement(4,lel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(4,lel)
-              IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel) = ibset(p_Imarker(lel),4)
+              iel1=rhadapt%p_IneighboursAtElement(4,lel)
+              iel2=rhadapt%p_ImidneighboursAtElement(4,lel)
+              IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel)=ibset(p_Imarker(lel),4)
               
             ELSE
 
               ! To begin with, we need to find the two missing triangles KEL and LEL
               ! which make up the original quadrilateral
-              kel  = rhadapt%p_IneighboursAtElement(1,jel)
-              lel  = rhadapt%p_IneighboursAtElement(3,jel)
+              kel =rhadapt%p_IneighboursAtElement(1,jel)
+              lel =rhadapt%p_IneighboursAtElement(3,jel)
 
               ! Mark the edge of the element adjacent to KEL for subdivision
-              iel1 = rhadapt%p_IneighboursAtElement(3,kel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(3,kel)
+              iel1=rhadapt%p_IneighboursAtElement(3,kel)
+              iel2=rhadapt%p_ImidneighboursAtElement(3,kel)
               IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(kel,iel1)
 
               ! Mark the edge of the element adjacent to LEL for subdivision
-              iel1 = rhadapt%p_IneighboursAtElement(1,lel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,lel)
+              iel1=rhadapt%p_IneighboursAtElement(1,lel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,lel)
               IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
               ! Now, we can physically convert the four triangles into four quadrilaterals
@@ -7316,38 +7423,38 @@ CONTAINS
               isConform=.FALSE.
 
               ! All four elements have to be converted from triangles to quadrilaterals.
-              p_Imarker(jel) = ibset(0,0)
+              p_Imarker(jel)=ibset(0,0)
 
               ! The second and third edge of KEL must be unmarked. Moreover, the first edge is
               ! marked for refinement if and only if it is also marked from the adjacent element.
-              iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
+              iel1=rhadapt%p_IneighboursAtElement(1,kel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
               IF (ismarked_edge(iel1,iel2,kel)) THEN
-                p_Imarker(kel) = ibset(ibset(0,1),0)
+                p_Imarker(kel)=ibset(ibset(0,1),0)
               ELSE
-                p_Imarker(kel) = ibset(0,0)
+                p_Imarker(kel)=ibset(0,0)
               END IF
 
               ! The second and third edge of IEL must be unmarked.
-              p_Imarker(iel) = ibset(0,0)
+              p_Imarker(iel)=ibset(0,0)
 
               ! The fourth edge is only marked if it is also marked from the adjacent element
-              iel1 = rhadapt%p_IneighboursAtElement(4,iel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(4,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),4)
+              iel1=rhadapt%p_IneighboursAtElement(4,iel)
+              iel2=rhadapt%p_ImidneighboursAtElement(4,iel)
+              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),4)
               
               ! The first edge is only marked if it is also marked from the adjacent element              
-              iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),1)
+              iel1=rhadapt%p_IneighboursAtElement(1,iel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
+              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
                       
               ! The first, second and third edge of LEL must be unmarked.
-              p_Imarker(lel) = ibset(0,0)
+              p_Imarker(lel)=ibset(0,0)
               
               ! The fourth edge is only marked if it is also marked from the adjacent element              
-              iel1 = rhadapt%p_IneighboursAtElement(4,lel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(4,lel)
-              IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel) = ibset(p_Imarker(lel),4)
+              iel1=rhadapt%p_IneighboursAtElement(4,lel)
+              iel2=rhadapt%p_ImidneighboursAtElement(4,lel)
+              IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel)=ibset(p_Imarker(lel),4)
 
             END IF
           END IF
@@ -7356,16 +7463,16 @@ CONTAINS
           ! Element is quadrilateral that results from a Quad2Quad refinement.
           ! Due to our orientation convention the other "halved" element is 
           ! adjacent to the second edge. 
-          jel = rhadapt%p_IneighboursAtElement(2,iel)
+          jel=rhadapt%p_IneighboursAtElement(2,iel)
 
           ! Mark the fourth edge of elements IEL for subdivision
-          iel1 = rhadapt%p_IneighboursAtElement(4,iel)
-          iel2 = rhadapt%p_ImidneighboursAtElement(4,iel)
+          iel1=rhadapt%p_IneighboursAtElement(4,iel)
+          iel2=rhadapt%p_ImidneighboursAtElement(4,iel)
           IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
 
           ! Mark the fourth edge of elements JEL for subdivision
-          iel1 = rhadapt%p_IneighboursAtElement(4,jel)
-          iel2 = rhadapt%p_ImidneighboursAtElement(4,jel)
+          iel1=rhadapt%p_IneighboursAtElement(4,jel)
+          iel2=rhadapt%p_ImidneighboursAtElement(4,jel)
           IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
           
           ! Now, we can physically convert the two quadrilaterals into four quadrilaterals
@@ -7382,60 +7489,60 @@ CONTAINS
           ! check if IEL<JEL or vice versa and transfer some markers from elements
           ! IEL, JEL to the new elements NEL0+1, NEL0+2. In addition, we have to
           ! remove some markers from elements IEL and JEL afterwards(!!!)
-          p_Imarker(iel) = ibset(0,0)
-          p_Imarker(jel) = ibset(0,0)
-          p_Imarker(kel) = ibset(0,0)
-          p_Imarker(lel) = ibset(0,0)
+          p_Imarker(iel)=ibset(0,0)
+          p_Imarker(jel)=ibset(0,0)
+          p_Imarker(kel)=ibset(0,0)
+          p_Imarker(lel)=ibset(0,0)
           
           ! Which element is smaller?
           IF (iel < jel) THEN
-            kel =  rhadapt%p_IneighboursAtElement(2,jel)
-            lel =  rhadapt%p_IneighboursAtElement(3,iel)
+            kel= rhadapt%p_IneighboursAtElement(2,jel)
+            lel= rhadapt%p_IneighboursAtElement(3,iel)
             
-            iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
-            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
+            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
 
-            iel1 = rhadapt%p_IneighboursAtElement(4,jel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,jel)
-            IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,jel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,jel)
+            IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),4)
 
-            iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),1)
 
-            iel1 = rhadapt%p_IneighboursAtElement(4,lel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,lel)
-            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel) = ibset(p_Imarker(lel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,lel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,lel)
+            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel)=ibset(p_Imarker(lel),4)
 
           ELSE
-            kel =  rhadapt%p_IneighboursAtElement(2,iel)
-            lel =  rhadapt%p_IneighboursAtElement(3,jel)
+            kel= rhadapt%p_IneighboursAtElement(2,iel)
+            lel= rhadapt%p_IneighboursAtElement(3,jel)
 
-            iel1 = rhadapt%p_IneighboursAtElement(1,jel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,jel)
-            IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,jel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
+            IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
 
-            iel1 = rhadapt%p_IneighboursAtElement(4,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,iel)
-            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,iel)
+            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),4)
 
-            iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),1)
 
-            iel1 = rhadapt%p_IneighboursAtElement(4,lel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,lel)
-            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel) = ibset(p_Imarker(lel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,lel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,lel)
+            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel)=ibset(p_Imarker(lel),4)
           END IF
           
           ! Finally, mark as quadrilaterals
-          p_Imarker(lel) = ibset(p_Imarker(lel),0)
-          p_Imarker(kel) = ibset(p_Imarker(kel),0)
+          p_Imarker(lel)=ibset(p_Imarker(lel),0)
+          p_Imarker(kel)=ibset(p_Imarker(kel),0)
          
         CASE(STATE_QUAD_HALF2)
           ! Theoretically, this state is not possible. In general, it has to be treated
-          ! like state 21 = STATE_QUAD_HALF1
+          ! like state 21=STATE_QUAD_HALF1
           CALL output_line('This state msut not occur!',&
               OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_refinement2D')
           CALL sys_halt()
@@ -7443,22 +7550,22 @@ CONTAINS
         CASE(STATE_TRIA_GREENINNER)
           ! We are processing a green triangle. Due to our refinement convention, element IEL
           ! can only be the inner triangle resulting from a Quad3Tria refinement.
-          jel = rhadapt%p_IneighboursAtElement(3,iel)
-          kel = rhadapt%p_IneighboursAtElement(1,iel)
+          jel=rhadapt%p_IneighboursAtElement(3,iel)
+          kel=rhadapt%p_IneighboursAtElement(1,iel)
 
           ! To begin with, we need to mark the edges of the adjacent elements for subdivision.
-          iel1 = rhadapt%p_IneighboursAtElement(2,iel)
-          iel2 = rhadapt%p_ImidneighboursAtElement(2,iel)
+          iel1=rhadapt%p_IneighboursAtElement(2,iel)
+          iel2=rhadapt%p_ImidneighboursAtElement(2,iel)
           IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
           
           ! Mark the edge of the element adjacent to JEL for subdivision
-          iel1 = rhadapt%p_IneighboursAtElement(3,jel)
-          iel2 = rhadapt%p_ImidneighboursAtElement(3,jel)
+          iel1=rhadapt%p_IneighboursAtElement(3,jel)
+          iel2=rhadapt%p_ImidneighboursAtElement(3,jel)
           IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
 
           ! Mark the edge of the element adjacent to KEL for subdivision
-          iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-          iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
+          iel1=rhadapt%p_IneighboursAtElement(1,kel)
+          iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
           IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(kel,iel1)
 
           ! Now, we can physically convert the three elements IEL,JEL and KEL
@@ -7468,25 +7575,25 @@ CONTAINS
           
           ! The new element NEL0+1 has zero marker by construction but that of IEL must
           ! be nullified. The markers for the modified triangles also need to be adjusted.
-          p_Imarker(iel) = ibset(0,0)
-          p_Imarker(jel) = ibset(0,0)
-          p_Imarker(kel) = ibset(0,0)
+          p_Imarker(iel)=ibset(0,0)
+          p_Imarker(jel)=ibset(0,0)
+          p_Imarker(kel)=ibset(0,0)
 
           ! The first edge is only marked if it is also marked from the adjacent element              
-          iel1 = rhadapt%p_IneighboursAtElement(1,jel)
-          iel2 = rhadapt%p_ImidneighboursAtElement(1,jel)
-          IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),1)
+          iel1=rhadapt%p_IneighboursAtElement(1,jel)
+          iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
+          IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
           
           ! The fourth edge is only marked if it is also marked from the adjacent element              
-          iel1 = rhadapt%p_IneighboursAtElement(4,kel)
-          iel2 = rhadapt%p_ImidneighboursAtElement(4,kel)
-          IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),4)
+          iel1=rhadapt%p_IneighboursAtElement(4,kel)
+          iel2=rhadapt%p_ImidneighboursAtElement(4,kel)
+          IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),4)
           
         CASE(STATE_TRIA_GREENOUTER_LEFT)
           ! We are processing a green triangle. Here, we have to consider several cases.
           ! First, let us find out the state of the neighboring element JEL.
-          jel    = rhadapt%p_IneighboursAtElement(2,iel)
-          jstate = redgreen_getState(rhadapt,jel)
+          jel   =rhadapt%p_IneighboursAtElement(2,iel)
+          jstate=redgreen_getState(rhadapt,jel)
 
           ! What state is element JEL
           SELECT CASE(jstate)
@@ -7497,13 +7604,13 @@ CONTAINS
 
             ! To begin with, we need to mark the edges of the elements adjacent 
             ! to IEL and JEL for subdivision. 
-            iel1 = rhadapt%p_IneighboursAtElement(3,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(3,iel)
+            iel1=rhadapt%p_IneighboursAtElement(3,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
             
             ! The same procedure must be applied to the neighbor of element JEL
-            iel1 = rhadapt%p_IneighboursAtElement(1,jel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,jel)
+            iel1=rhadapt%p_IneighboursAtElement(1,jel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
             
             ! Now, we can physically convert the two elements IEL and JEL into four similar triangles
@@ -7512,26 +7619,26 @@ CONTAINS
             
             ! The new elements NEL0+1 and NEL0+2 have zero markers by construction.
             ! The markers for the modified elements IEL and JEL need to be adjusted.
-            p_Imarker(iel) = 0
-            p_Imarker(jel) = 0
+            p_Imarker(iel)=0
+            p_Imarker(jel)=0
             
             ! Which is the smaller elements?
             IF (iel < jel) THEN
-              iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),1)
+              iel1=rhadapt%p_IneighboursAtElement(1,iel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
+              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
               
-              iel1 = rhadapt%p_IneighboursAtElement(3,jel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(3,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),3)
+              iel1=rhadapt%p_IneighboursAtElement(3,jel)
+              iel2=rhadapt%p_ImidneighboursAtElement(3,jel)
+              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),3)
             ELSE
-              iel1 = rhadapt%p_IneighboursAtElement(1,jel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),1)
+              iel1=rhadapt%p_IneighboursAtElement(1,jel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
+              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
               
-              iel1 = rhadapt%p_IneighboursAtElement(3,iel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(3,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),3)
+              iel1=rhadapt%p_IneighboursAtElement(3,iel)
+              iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
+              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),3)
             END IF
           
           CASE(STATE_TRIA_GREENINNER)
@@ -7540,23 +7647,23 @@ CONTAINS
 
             ! To begin with, we need to mark the edges of the elements adjacent to IEL,
             ! JEL and KEL for subdivision. Let us start with the third neighbor of IEL.
-            iel1 = rhadapt%p_IneighboursAtElement(3,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(3,iel)
+            iel1=rhadapt%p_IneighboursAtElement(3,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
 
             ! The same procedure must be applied to the second neighbor of element JEL
-            iel1 = rhadapt%p_IneighboursAtElement(2,jel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(2,jel)
+            iel1=rhadapt%p_IneighboursAtElement(2,jel)
+            iel2=rhadapt%p_ImidneighboursAtElement(2,jel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
             
             ! And again, the same procedure must be applied to the first neighbor of 
             ! element KEL which is the first neighbor of JEL, whereby KEL needs to 
             ! be found in the dynamic data structure first
-            kel = rhadapt%p_IneighboursAtElement(1,jel)
+            kel=rhadapt%p_IneighboursAtElement(1,jel)
             
             ! Ok, now we can proceed to its first neighbor
-            iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
+            iel1=rhadapt%p_IneighboursAtElement(1,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(kel,iel1)
             
             ! Now, we can physically convert the three elements IEL,JEL and KEL
@@ -7566,34 +7673,34 @@ CONTAINS
             
             ! The new element NEL0+1 has zero marker by construction but that of JEL must 
             ! be nullified. The markers for the modified triangles also need to be adjusted.
-            p_Imarker(iel) = ibset(0,0)
-            p_Imarker(jel) = ibset(0,0)
-            p_Imarker(kel) = ibset(0,0)
+            p_Imarker(iel)=ibset(0,0)
+            p_Imarker(jel)=ibset(0,0)
+            p_Imarker(kel)=ibset(0,0)
 
             ! The first edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
-            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
+            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
 
             ! The fourth edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(4,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),4)
            
           CASE(STATE_TRIA_OUTERINNER)
             ! Element IEL and JEL are the result of a Quad4Tria refinement, whereby
             ! element JEL is the inner triangles  and IEL is its right neighbor.
-            kel = rhadapt%p_IneighboursAtElement(2,jel)
-            lel = rhadapt%p_IneighboursAtElement(3,jel)
+            kel=rhadapt%p_IneighboursAtElement(2,jel)
+            lel=rhadapt%p_IneighboursAtElement(3,jel)
 
             ! Mark the edge of the element adjacent to IEL for subdivision
-            iel1 = rhadapt%p_IneighboursAtElement(3,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(3,iel)
+            iel1=rhadapt%p_IneighboursAtElement(3,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
             
             ! Mark the edge of the element adjacent to LEL for subdivision
-            iel1 = rhadapt%p_IneighboursAtElement(1,lel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,lel)
+            iel1=rhadapt%p_IneighboursAtElement(1,lel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,lel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
             ! Now, we can physically convert the four triangles into four quadrilaterals
@@ -7601,30 +7708,30 @@ CONTAINS
             isConform=.FALSE.
             
             ! All four elements have to be converted from triangles to quadrilaterals.
-            p_Imarker(iel) = ibset(0,0)
-            p_Imarker(jel) = ibset(0,0)
-            p_Imarker(kel) = ibset(0,0)
-            p_Imarker(lel) = ibset(0,0)
+            p_Imarker(iel)=ibset(0,0)
+            p_Imarker(jel)=ibset(0,0)
+            p_Imarker(kel)=ibset(0,0)
+            p_Imarker(lel)=ibset(0,0)
             
             ! The first edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
-            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
+            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
 
             ! The fourth edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(4,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),4)
 
             ! The first edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),1)
 
             ! The fourth edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(4,lel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,lel)
-            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel) = ibset(p_Imarker(lel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,lel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,lel)
+            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel)=ibset(p_Imarker(lel),4)
 
           CASE DEFAULT
             CALL output_line('Invalid element state!',&
@@ -7635,8 +7742,8 @@ CONTAINS
         CASE(STATE_TRIA_GREENOUTER_RIGHT)
           ! We are processing a green triangle. Here, we have to consider several cases.
           ! First, let us find out the state of the neighboring element JEL.
-          jel    = rhadapt%p_IneighboursAtElement(2,iel)
-          jstate = redgreen_getState(rhadapt,jel)
+          jel   =rhadapt%p_IneighboursAtElement(2,iel)
+          jstate=redgreen_getState(rhadapt,jel)
           
           ! What state is element JEL
           SELECT CASE(jstate)
@@ -7647,13 +7754,13 @@ CONTAINS
             
             ! To begin with, we need to mark the edges of the elements adjacent
             ! to IEL and JEL for subdivision.
-            iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
+            iel1=rhadapt%p_IneighboursAtElement(1,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
             
             ! The same procedure must be applied to the neighbor of element JEL
-            iel1 = rhadapt%p_IneighboursAtElement(3,jel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(3,jel)
+            iel1=rhadapt%p_IneighboursAtElement(3,jel)
+            iel2=rhadapt%p_ImidneighboursAtElement(3,jel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
             
             ! Now, we can physically convert the two elements IEL and JEL into four similar triangles
@@ -7662,26 +7769,26 @@ CONTAINS
             
             ! The new elements NEL0+1 and NEL0+2 have zero markers by construction.
             ! The markers for the modified elements IEL and JEL need to be adjusted
-            p_Imarker(iel) = 0
-            p_Imarker(jel) = 0
+            p_Imarker(iel)=0
+            p_Imarker(jel)=0
             
             ! Whis is the smaller element?
             IF (iel < jel) THEN
-              iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),1)
+              iel1=rhadapt%p_IneighboursAtElement(1,iel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
+              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
               
-              iel1 = rhadapt%p_IneighboursAtElement(3,jel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(3,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),3)
+              iel1=rhadapt%p_IneighboursAtElement(3,jel)
+              iel2=rhadapt%p_ImidneighboursAtElement(3,jel)
+              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),3)
             ELSE
-              iel1 = rhadapt%p_IneighboursAtElement(1,jel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(1,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel) = ibset(p_Imarker(jel),1)
+              iel1=rhadapt%p_IneighboursAtElement(1,jel)
+              iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
+              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
               
-              iel1 = rhadapt%p_IneighboursAtElement(3,iel)
-              iel2 = rhadapt%p_ImidneighboursAtElement(3,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),3)
+              iel1=rhadapt%p_IneighboursAtElement(3,iel)
+              iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
+              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),3)
             END IF
 
 
@@ -7691,23 +7798,23 @@ CONTAINS
 
             ! To begin with, we need to mark the edges of the elements adjacent to IEL,
             ! JEL and KEL for subdivision. Let us start with the firth neighbor of IEL.
-            iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
+            iel1=rhadapt%p_IneighboursAtElement(1,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
 
             ! The same procedure must be applied to the second neighbor of element JEL
-            iel1 = rhadapt%p_IneighboursAtElement(2,jel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(2,jel)
+            iel1=rhadapt%p_IneighboursAtElement(2,jel)
+            iel2=rhadapt%p_ImidneighboursAtElement(2,jel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(jel,iel1)
 
             ! And again, the same procedure must be applied to the third neighbor of 
             ! element KEL which is the third neighbor of JEL, whereby KEL needs to 
             ! be found in the dynamic data structure first
-            kel = rhadapt%p_IneighboursAtElement(3,jel)
+            kel=rhadapt%p_IneighboursAtElement(3,jel)
 
             ! Ok, now we can proceed to its first neighbor
-            iel1 = rhadapt%p_IneighboursAtElement(3,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(3,kel)
+            iel1=rhadapt%p_IneighboursAtElement(3,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(3,kel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(kel,iel1)
 
             ! Now, we can physically convert the three elements IEL,JEL and KEL
@@ -7717,34 +7824,34 @@ CONTAINS
             
             ! The new element NEL0+1 has zero marker by construction but that of JEL must
             ! be nullified. The markers for the modified triangles also need to be adjusted.
-            p_Imarker(iel) = ibset(0,0)
-            p_Imarker(jel) = ibset(0,0)
-            p_Imarker(kel) = ibset(0,0)
+            p_Imarker(iel)=ibset(0,0)
+            p_Imarker(jel)=ibset(0,0)
+            p_Imarker(kel)=ibset(0,0)
 
             ! The first edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),1)
 
             ! The fourth edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(4,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,iel)
-            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,iel)
+            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),4)
             
           CASE(STATE_TRIA_OUTERINNER)
             ! Element IEL and JEL are the result of a Quad4Tria refinement, whereby
             ! element JEL is the inner triangles  and IEL is its left neighbor.
-            kel = rhadapt%p_IneighboursAtElement(2,jel)
-            lel = rhadapt%p_IneighboursAtElement(1,jel)
+            kel=rhadapt%p_IneighboursAtElement(2,jel)
+            lel=rhadapt%p_IneighboursAtElement(1,jel)
 
             ! Mark the edge of the element adjacent to IEL for subdivision
-            iel1 = rhadapt%p_IneighboursAtElement(1,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,iel)
+            iel1=rhadapt%p_IneighboursAtElement(1,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(iel,iel1)
 
             ! Mark the edge of the element adjacent to LEL for subdivision
-            iel1 = rhadapt%p_IneighboursAtElement(3,lel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(3,lel)
+            iel1=rhadapt%p_IneighboursAtElement(3,lel)
+            iel2=rhadapt%p_ImidneighboursAtElement(3,lel)
             IF (iel1*iel2 .NE. 0 .AND. iel1 .EQ. iel2) CALL mark_edge(lel,iel1)
 
             ! Now, we can physically convert the four triangles into four quadrilaterals
@@ -7752,30 +7859,30 @@ CONTAINS
             isConform=.FALSE.
             
             ! All four elements have to be converted from triangles to quadrilaterals.
-            p_Imarker(iel) = ibset(0,0)
-            p_Imarker(jel) = ibset(0,0)
-            p_Imarker(kel) = ibset(0,0)
-            p_Imarker(lel) = ibset(0,0)
+            p_Imarker(iel)=ibset(0,0)
+            p_Imarker(jel)=ibset(0,0)
+            p_Imarker(kel)=ibset(0,0)
+            p_Imarker(lel)=ibset(0,0)
 
             ! The first edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(1,lel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,lel)
-            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel) = ibset(p_Imarker(lel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,lel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,lel)
+            IF (ismarked_edge(iel1,iel2,lel)) p_Imarker(lel)=ibset(p_Imarker(lel),1)
 
             ! The fourth edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(4,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),4)
 
             ! The first edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(1,kel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(1,kel)
-            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel) = ibset(p_Imarker(kel),1)
+            iel1=rhadapt%p_IneighboursAtElement(1,kel)
+            iel2=rhadapt%p_ImidneighboursAtElement(1,kel)
+            IF (ismarked_edge(iel1,iel2,kel)) p_Imarker(kel)=ibset(p_Imarker(kel),1)
 
             ! The fourth edge is only marked if it is also marked from the adjacent element
-            iel1 = rhadapt%p_IneighboursAtElement(4,iel)
-            iel2 = rhadapt%p_ImidneighboursAtElement(4,iel)
-            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel) = ibset(p_Imarker(iel),4)
+            iel1=rhadapt%p_IneighboursAtElement(4,iel)
+            iel2=rhadapt%p_ImidneighboursAtElement(4,iel)
+            IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),4)
 
           CASE DEFAULT
             CALL output_line('Invalid element state!',&
@@ -7810,19 +7917,19 @@ CONTAINS
             
             ! Check if the current edge is located at the boundary, 
             ! than nothing needs to be done
-            jel = rhadapt%p_IneighboursAtElement(ive,iel)
+            jel=rhadapt%p_IneighboursAtElement(ive,iel)
             IF (jel .EQ. 0) CYCLE
             
             ! Get number of vertices per element
-            mve = get_NVE(rhadapt,jel)
+            mve=get_NVE(rhadapt,jel)
             
             ! Are we triangular or quadrilateral element?
             SELECT CASE(mve)
             CASE(TRIA_NVETRI2D)
-              p_Imarker(jel) = ibclr(p_Imarker(jel),0)
+              p_Imarker(jel)=ibclr(p_Imarker(jel),0)
 
             CASE(TRIA_NVEQUAD2D)
-              p_Imarker(jel) = ibset(p_Imarker(jel),0)
+              p_Imarker(jel)=ibset(p_Imarker(jel),0)
 
             CASE DEFAULT
               CALL output_line('Invalid number of vertices per element!',&
@@ -7833,7 +7940,7 @@ CONTAINS
             ! Now, we need to find the local position of element IEL in the
             ! adjacency list of the nieghboring element JEL
             DO jve=1,mve
-              IF (rhadapt%p_IneighboursAtElement(jve,jel) == iel) EXIT
+              IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. iel) EXIT
             END DO
 
             IF (jve > mve) THEN
@@ -7846,22 +7953,22 @@ CONTAINS
             ! guarantee conformity for the edge shared by IEL and JEL.
             ! Otherwise, this edge needs to be marked "looking" from JEL
             IF (.NOT.btest(p_Imarker(jel),jve)) THEN
-              p_Imarker(jel) = ibset(p_Imarker(jel),jve)
-              isConform      = .FALSE.
+              p_Imarker(jel)=ibset(p_Imarker(jel),jve)
+              isConform     =.FALSE.
               IF (p_Imodified(jel) .NE. imodifier) p_Imodified(jel)= -imodifier
             END IF
 
             ! Finally, "lock" all vertices of element JEL
-            Kvert(1:mve) = rhadapt%p_IverticesAtElement(1:mve,jel)
-            rhadapt%p_IvertexAge(Kvert(1:mve)) = -ABS(rhadapt%p_IvertexAge(Kvert(1:mve)))
+            Kvert(1:mve)=rhadapt%p_IverticesAtElement(1:mve,jel)
+            rhadapt%p_IvertexAge(Kvert(1:mve))=-ABS(rhadapt%p_IvertexAge(Kvert(1:mve)))
           END IF
         END DO
       END DO
       
       ! Note that the number of elements (and vertices) may have changed
       ! due to conversion of green into red elements. Hence, adjust dimensions.
-      rhadapt%NEL0 = rhadapt%NEL
-      rhadapt%NVT0 = rhadapt%NVT
+      rhadapt%NEL0=rhadapt%NEL
+      rhadapt%NVT0=rhadapt%NVT
 
       !--------------------------------------------------------------
       ! We don't want to have elements with two and/or three divided edges, 
@@ -7869,34 +7976,34 @@ CONTAINS
       ! As a remedy, these elements are filtered and marked for red refinement.
       !--------------------------------------------------------------
       DO iel=1,rhadapt%NEL0
-        IF (p_Imodified(iel)*imodifier == 0) CYCLE
+        IF (p_Imodified(iel)*imodifier .EQ. 0) CYCLE
         
         ! What type of element are we?
         SELECT CASE(p_Imarker(iel))
         CASE(MARK_REF_TRIA3TRIA_12,MARK_REF_TRIA3TRIA_13,MARK_REF_TRIA3TRIA_23)
           ! Blue refinement for triangles is not allowed.
           ! Hence, mark triangle for red refinement
-          p_Imarker(iel)         =  MARK_REF_TRIA4TRIA
-          p_Imodified(iel)       = -imodifier
-          isConform              = .FALSE.
-          rhadapt%increaseNVT    =  rhadapt%increaseNVT+1
+          p_Imarker(iel)        = MARK_REF_TRIA4TRIA
+          p_Imodified(iel)      =-imodifier
+          isConform             =.FALSE.
+          rhadapt%increaseNVT   = rhadapt%increaseNVT+1
           
         CASE(MARK_REF_QUADBLUE_123,MARK_REF_QUADBLUE_412,&
             MARK_REF_QUADBLUE_341,MARK_REF_QUADBLUE_234)
           ! Blue refinement for quadrilaterals is not allowed. 
           ! Hence, mark quadrilateral for red refinement
-          p_Imarker(iel)         =  MARK_REF_QUAD4QUAD
-          p_Imodified(iel)       = -imodifier
-          isConform              = .FALSE.
-          rhadapt%increaseNVT    =  rhadapt%increaseNVT+2
+          p_Imarker(iel)        = MARK_REF_QUAD4QUAD
+          p_Imodified(iel)      =-imodifier
+          isConform             =.FALSE.
+          rhadapt%increaseNVT   = rhadapt%increaseNVT+2
 
         CASE DEFAULT
-          p_Imodified(iel) = (p_Imodified(iel)-imodifier)/2
+          p_Imodified(iel)=(p_Imodified(iel)-imodifier)/2
         END SELECT
       END DO
       
       ! Reverse modifier
-      imodifier = -imodifier
+      imodifier=-imodifier
     END DO conformity
 
     ! As a last step, lock all vertices of those elements which are marked for refinement
@@ -7905,40 +8012,40 @@ CONTAINS
       ! What type of element are we?
       SELECT CASE(p_Imarker(iel))
       CASE(MARK_REF_TRIA2TRIA_1)
-        i = rhadapt%p_IverticesAtElement(3,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
         
       CASE(MARK_REF_TRIA2TRIA_2)
-        i = rhadapt%p_IverticesAtElement(1,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
       CASE(MARK_REF_TRIA2TRIA_3)
-        i = rhadapt%p_IverticesAtElement(2,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
       CASE(MARK_REF_QUAD3TRIA_1)
-        i = rhadapt%p_IverticesAtElement(3,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-        i = rhadapt%p_IverticesAtElement(4,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(4,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
         
       CASE(MARK_REF_QUAD3TRIA_2)
-        i = rhadapt%p_IverticesAtElement(1,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-        i = rhadapt%p_IverticesAtElement(4,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(4,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
       CASE(MARK_REF_QUAD3TRIA_3)
-        i = rhadapt%p_IverticesAtElement(1,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-        i = rhadapt%p_IverticesAtElement(2,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(1,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
 
       CASE(MARK_REF_QUAD3TRIA_4)
-        i = rhadapt%p_IverticesAtElement(2,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
-        i = rhadapt%p_IverticesAtElement(3,iel)
-        rhadapt%p_IvertexAge(i) = -ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(2,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
+        i=rhadapt%p_IverticesAtElement(3,iel)
+        rhadapt%p_IvertexAge(i)=-ABS(rhadapt%p_IvertexAge(i))
       END SELECT
     END DO
       
@@ -7964,11 +8071,11 @@ CONTAINS
       INTEGER :: ive,nve
 
       ! Get number of vertices per element
-      nve = get_NVE(rhadapt,jel)
+      nve=get_NVE(rhadapt,jel)
 
       ! Get local data
-      Kvert(1:nve) = rhadapt%p_IverticesAtElement(1:nve,jel)
-      Kadj(1:nve)  = rhadapt%p_IneighboursAtElement(1:nve,jel)
+      Kvert(1:nve)=rhadapt%p_IverticesAtElement(1:nve,jel)
+      Kadj(1:nve) =rhadapt%p_IneighboursAtElement(1:nve,jel)
       
       ! Find local position of element IEL in adjacency list of JEL
       SELECT CASE(nve)
@@ -7976,9 +8083,9 @@ CONTAINS
         ! Triangular elements
         DO ive=1,nve
           IF (Kadj(ive) .EQ. iel) THEN
-            p_Imarker(jel) = ibclr(ibset(p_Imarker(jel),ive),0)
+            p_Imarker(jel)=ibclr(ibset(p_Imarker(jel),ive),0)
             isConform      =.FALSE.
-            IF (p_Imodified(jel) .NE. imodifier) p_Imodified(jel) = -imodifier
+            IF (p_Imodified(jel) .NE. imodifier) p_Imodified(jel)=-imodifier
             EXIT
           END IF
         END DO
@@ -7987,9 +8094,9 @@ CONTAINS
         ! Quadrilateral element
         DO ive=1,nve
           IF (Kadj(ive) .EQ. iel) THEN
-            p_Imarker(jel) = ibset(ibset(p_Imarker(jel),ive),0)
+            p_Imarker(jel)=ibset(ibset(p_Imarker(jel),ive),0)
             isConform      =.FALSE.
-            IF (p_Imodified(jel) .NE. imodifier) p_Imodified(jel) = -imodifier
+            IF (p_Imodified(jel) .NE. imodifier) p_Imodified(jel)=-imodifier
             EXIT
           END IF
         END DO
@@ -8025,7 +8132,7 @@ CONTAINS
       ! Loop over all edges of element IEL and try to find neighbor JEL
       DO ive=1,get_NVE(rhadapt,iel)
         IF (rhadapt%p_IneighboursAtElement(ive,iel) .EQ. jel) THEN
-          bismarked = btest(p_Imarker(iel),ive)
+          bismarked=btest(p_Imarker(iel),ive)
           RETURN
         END IF
       END DO
@@ -8090,32 +8197,38 @@ CONTAINS
       CASE(MARK_REF_TRIA4TRIA)
         ! Red refinement triangle
         CALL refine_Tria4Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
-        
+        p_Imarker(iel)=MARK_ASIS        
+
       CASE(MARK_REF_QUAD4QUAD)
         ! Red refinement quadrilateral
         CALL refine_Quad4Quad(rhadapt,iel,rcollection,fcb_hadaptCallback)
+        p_Imarker(iel)=MARK_ASIS
         
       CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3)   
         ! Green refinement triangle
         CALL refine_Tria2Tria(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
-        rhadapt%nGreenElements = rhadapt%nGreenElements+2
+        rhadapt%nGreenElements=rhadapt%nGreenElements+2
+        p_Imarker(iel)=MARK_ASIS
         
       CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,&
            MARK_REF_QUAD3TRIA_3,MARK_REF_QUAD3TRIA_4)
         ! Green refinement quadrilateral
         CALL refine_Quad3Tria(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
-        rhadapt%nGreenElements = rhadapt%nGreenElements+3
+        rhadapt%nGreenElements=rhadapt%nGreenElements+3
+        p_Imarker(iel)=MARK_ASIS
         
       CASE(MARK_REF_QUAD2QUAD_13,MARK_REF_QUAD2QUAD_24)
         ! Green refinement quadrilateral
         CALL refine_Quad2Quad(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
-        rhadapt%nGreenElements = rhadapt%nGreenElements+2
+        rhadapt%nGreenElements=rhadapt%nGreenElements+2
+        p_Imarker(iel)=MARK_ASIS
 
       CASE(MARK_REF_QUAD4TRIA_12,MARK_REF_QUAD4TRIA_23,&
            MARK_REF_QUAD4TRIA_34,MARK_REF_QUAD4TRIA_14)
         ! Green refinement quadrilateral
         CALL refine_Quad4Tria(rhadapt,iel,p_Imarker(iel),rcollection,fcb_hadaptCallback)
-        rhadapt%nGreenElements = rhadapt%nGreenElements+4
+        rhadapt%nGreenElements=rhadapt%nGreenElements+4
+        p_Imarker(iel)=MARK_ASIS
 
       CASE DEFAULT
         CALL output_line('Invalid element refinement marker!',&
@@ -8125,13 +8238,13 @@ CONTAINS
     END DO
 
     ! Increase the number of refinement steps by one
-    rhadapt%nRefinementSteps = rhadapt%nRefinementSteps+1
+    rhadapt%nRefinementSteps=rhadapt%nRefinementSteps+1
     
     ! Refinement has been performed.
-    rhadapt%iSpec = IOR(rhadapt%ispec,HADAPT_REFINED)
+    rhadapt%iSpec=IOR(rhadapt%ispec,HADAPT_REFINED)
     
     ! Hence, the markers are no longer valid
-    rhadapt%iSpec = IAND(rhadapt%iSpec,NOT(HADAPT_MARKEDREFINE))
+    rhadapt%iSpec=IAND(rhadapt%iSpec,NOT(HADAPT_MARKEDREFINE))
   END SUBROUTINE redgreen_refine
 
 
@@ -8239,7 +8352,7 @@ CONTAINS
           ! Look for vertex ivtReplace in element JEL and replace it by IVT
           DO ive=1,get_NVE(rhadapt,jel)
             IF (rhadapt%p_IverticesAtElement(ive,jel) .EQ. ivtReplace) THEN
-              rhadapt%p_IverticesAtElement(ive,jel) = ivt
+              rhadapt%p_IverticesAtElement(ive,jel)=ivt
               CYCLE update
             END IF
           END DO
@@ -8268,13 +8381,13 @@ CONTAINS
     END DO
         
     ! Increase the number of recoarsening steps by one
-    rhadapt%nCoarseningSteps = rhadapt%nCoarseningSteps+1
+    rhadapt%nCoarseningSteps=rhadapt%nCoarseningSteps+1
 
     ! Coarsening has been performed.
-    rhadapt%iSpec = IOR(rhadapt%ispec,HADAPT_COARSENED)
+    rhadapt%iSpec=IOR(rhadapt%ispec,HADAPT_COARSENED)
     
     ! Hence, the markers are no longer valid
-    rhadapt%iSpec = IAND(rhadapt%iSpec,NOT(HADAPT_MARKEDCOARSEN))
+    rhadapt%iSpec=IAND(rhadapt%iSpec,NOT(HADAPT_MARKEDCOARSEN))
   END SUBROUTINE redgreen_coarsen
 
   ! ***************************************************************************
@@ -8307,7 +8420,7 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: Kvert
     
     ! Get local data
-    Kvert = rhadapt%p_IverticesAtElement(1:4,iel)
+    Kvert=rhadapt%p_IverticesAtElement(1:4,iel)
 
     ! Are we triangular or quadrilateral element?
     IF (Kvert(4).EQ.0) THEN
@@ -8345,7 +8458,7 @@ CONTAINS
     INTEGER :: ive,ipos
 
     ! Reset state
-    istate = 0
+    istate=0
     
     ! Check if triangle belongs to the initial triangulation. Then nothing
     ! needs to be done. Otherwise, perform additional checks
@@ -8364,7 +8477,7 @@ CONTAINS
         END IF
       END DO
       
-      ! If ISTATE = 0, then there must be one youngest vertex which is returned
+      ! If ISTATE=0, then there must be one youngest vertex which is returned
       ! but with negative sign. In this case the state of the triangle cannot be
       ! uniquely determined.
       ! Otherwise, either all nodes have the same age (1110 : inner red triangle)
@@ -8387,7 +8500,7 @@ CONTAINS
     END IF
 
     ! Mark state for triangle
-    istate = ibclr(istate,0)
+    istate=ibclr(istate,0)
   END FUNCTION redgreen_getStateTria
 
   ! ***************************************************************************
@@ -8416,7 +8529,7 @@ CONTAINS
     INTEGER :: ive
 
     ! Reset state
-    istate = 0
+    istate=0
 
     ! Check if quadrilateral belongs to the initial triangulation. Then nothing
     ! needs to be done. Otherwise, perform additional checks.
@@ -8428,13 +8541,13 @@ CONTAINS
       DO ive=1,4
         IF (ABS(IvertexAge(ive)) .EQ. ABS(IvertexAge(MOD(ive,4)+1))) THEN
           ! Edge connects two nodes with the same age
-          istate = ibset(istate,ive)
+          istate=ibset(istate,ive)
         END IF
       END DO
     END IF
 
     ! Mark state for quadrilateral
-    istate = ibset(istate,0)
+    istate=ibset(istate,0)
   END FUNCTION redgreen_getStateQuad
 
   ! ***************************************************************************
@@ -8463,15 +8576,15 @@ CONTAINS
     
     ! Are we triangular or quadrilateral?
     IF (btest(istate,0)) THEN
-      inewstate = ishft(istate,-1)
-      inewstate = ishftc(inewstate,irotate,4)
-      inewstate = ishft(inewstate,1)
-      inewstate = ibset(inewstate,0)
+      inewstate=ishft(istate,-1)
+      inewstate=ishftc(inewstate,irotate,4)
+      inewstate=ishft(inewstate,1)
+      inewstate=ibset(inewstate,0)
     ELSE
-      inewstate = ishft(istate,-1)
-      inewstate = ishftc(inewstate,irotate,3)
-      inewstate = ishft(inewstate,1)
-      inewstate = ibclr(inewstate,0)
+      inewstate=ishft(istate,-1)
+      inewstate=ishftc(inewstate,irotate,3)
+      inewstate=ishft(inewstate,1)
+      inewstate=ibclr(inewstate,0)
     END IF
   END FUNCTION redgreen_rotateState
 
@@ -8495,9 +8608,9 @@ CONTAINS
 !!$      SELECT CASE(ind)
 !!$      CASE(NODE)
 !!$         DO iel=1,mg%nel
-!!$            IF (search(TT_elem,iel,ipred) == TFOUND) THEN
-!!$               ipos  = TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert = TT_elem%kb(ELivert1:ELivert3,ipos)
+!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
+!!$               ipos =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+!!$               kvert=TT_elem%kb(ELivert1:ELivert3,ipos)
 !!$               
 !!$               IF (SUM(dind(kvert)) > 3*tol) THEN
 !!$                  d(1)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,2/))),TQ_dcorvg%dcorvg(2,kvert((/1,2/))))
@@ -8512,9 +8625,9 @@ CONTAINS
 !!$         
 !!$      CASE(ELEMENT)
 !!$         DO iel=1,mg%nel
-!!$            IF (search(TT_elem,iel,ipred) == TFOUND) THEN
-!!$               ipos  = TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert = TT_elem%kb(ELivert1:ELivert3,ipos)
+!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
+!!$               ipos =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+!!$               kvert=TT_elem%kb(ELivert1:ELivert3,ipos)
 !!$               
 !!$               IF (dind(iel) > tol) THEN
 !!$             !     d(1)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,2/))),TQ_dcorvg%dcorvg(2,kvert((/1,2/))))
@@ -8546,11 +8659,11 @@ CONTAINS
 !!$         mg%nel=TT_elem%na
 !!$         ALLOCATE(r(mg%nel)); r=.FALSE.
 !!$         DO iel=1,mg%nel
-!!$            IF (search(TT_elem,iel,ipred) == TFOUND) THEN
-!!$               ipos    = TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert   = TT_elem%kb(ELivert1:ELivert3,ipos)
-!!$               kadj    = TT_elem%kb(ELiadj1:ELiadj3,ipos)
-!!$               kmidadj = TT_elem%kb(ELimidadj1:ELimidadj3,ipos)
+!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
+!!$               ipos   =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+!!$               kvert  =TT_elem%kb(ELivert1:ELivert3,ipos)
+!!$               kadj   =TT_elem%kb(ELiadj1:ELiadj3,ipos)
+!!$               kmidadj=TT_elem%kb(ELimidadj1:ELimidadj3,ipos)
 !!$
 !!$               IF (ANY(kadj/=kmidadj)) THEN
 !!$                  r(iel)=.TRUE.; bmod=.TRUE.
@@ -8563,11 +8676,11 @@ CONTAINS
 !!$         DO iel=1,TT_elem%na
 !!$            IF (.NOT.r(iel)) CYCLE
 !!$
-!!$            IF (search(TT_elem,iel,ipred) == TFOUND) THEN
-!!$               ipos    = TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert   = TT_elem%kb(ELivert1:ELivert3,ipos)
-!!$               kadj    = TT_elem%kb(ELiadj1:ELiadj3,ipos)
-!!$               kmidadj = TT_elem%kb(ELimidadj1:ELimidadj3,ipos)
+!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
+!!$               ipos   =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+!!$               kvert  =TT_elem%kb(ELivert1:ELivert3,ipos)
+!!$               kadj   =TT_elem%kb(ELiadj1:ELiadj3,ipos)
+!!$               kmidadj=TT_elem%kb(ELimidadj1:ELimidadj3,ipos)
 !!$
 !!$    !           d(1)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,2/))),TQ_dcorvg%dcorvg(2,kvert((/1,2/))))
 !!$    !           d(2)=seglength(TQ_dcorvg%dcorvg(1,kvert((/2,3/))),TQ_dcorvg%dcorvg(2,kvert((/2,3/))))
