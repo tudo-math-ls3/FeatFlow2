@@ -34,61 +34,68 @@
 !#  4.) hadapt_releaseAdaptation
 !#      -> Release all internal adaptation structures
 !#
-!#  5.) hadapt_setVertexCoords2D
+!#  5.) hadapt_duplicateAdaptation
+!#      -> Create a duplicate / backup of an adaptivity structure.
+!#
+!#  6.) hadapt_restoreAdaptation
+!#      -> Restores an adaptivity structure previously backed up with 
+!#         hadapt_duplicateAdapation
+!#
+!#  7.) hadapt_setVertexCoords2D
 !#      -> Set the coordinates of vertices to the adaptivity structure in 2D
 !#
-!#  6.) hadapt_getVertexCoords2D
+!#  8.) hadapt_getVertexCoords2D
 !#      -> Get the coordinates of vertices from the adaptivity structure in 2D
 !#
-!#  7.) hadapt_setVertexCoords3D
+!#  9.) hadapt_setVertexCoords3D
 !#      -> Set the coordinates of vertices to the adaptivity structure in 3D
 !#
-!#  8.) hadapt_getVertexCoords3D
+!# 10.) hadapt_getVertexCoords3D
 !#      -> Get the coordinates of vertices from the adaptivity structure in 3D
 !#
-!#  9.) hadapt_setVerticesAtElement
+!# 11.) hadapt_setVerticesAtElement
 !#      -> Set the "vertices-at-element" structure to the adaptivity structure
 !#
-!# 10.) hadapt_getVerticesAtElement
+!# 12.) hadapt_getVerticesAtElement
 !#      -> Get the "vertices-at-element" structure from the adaptivity structure
 !#
-!# 11.) hadapt_setNeighboursAtElement
+!# 13.) hadapt_setNeighboursAtElement
 !#      -> Set the "neighbours-at-element" structure to the adaptivity structure
 !#
-!# 12.) hadapt_getNeighboursAtElement
+!# 14.) hadapt_getNeighboursAtElement
 !#      -> Get the "neighbours-at-element" structure from the adaptivity structure
 !#
-!# 13.) hadapt_setNelOfType
+!# 15.) hadapt_setNelOfType
 !#      -> Set the "InelOfType" array to the adaptivity structure
 !#
-!# 14.) hadapt_getNelOfType
+!# 16.) hadapt_getNelOfType
 !#      -> Get the "InelOfType" array from the adaptivity structure
 !#
-!# 15.) hadapt_setBoundary
+!# 17.) hadapt_setBoundary
 !#      -> Set the boundary structure to the adaptivity structure
 !#
-!# 16.) hadapt_getBoundary
+!# 18.) hadapt_getBoundary
 !#      -> Get the boundary structure form the adaptivity structure
 !#
-!# 17.) hadapt_setNodalProperty
+!# 19.) hadapt_setNodalProperty
 !#      -> Set the "nodal property" list to the adaptivity structure
 !#
-!# 18.) hadapt_getNodalProperty
+!# 20.) hadapt_getNodalProperty
 !#      -> Get the "nodal property" list from the adaptivity structure
 !#
-!# 19.) hadapt_genElementsAtVertex
+!# 21.) hadapt_genElementsAtVertex
 !#      -> Generate the "elements-at-vertex" data structure
 !#
-!# 20.) hadapt_performAdaptation
+!# 22.) hadapt_performAdaptation
 !#      -> perform one step of grid adaptation
 !#
-!# 21.) hadapt_info
+!# 23.) hadapt_info
 !#      -> output information about the adaptivity structure
 !#
-!# 22.) hadapt_writeGridSVG
+!# 24.) hadapt_writeGridSVG
 !#      -> write the adapted grid to file in SVG format
 !#
-!# 23.) hadapt_checkConsistency
+!# 25.) hadapt_checkConsistency
 !#      -> check the internal consistency of dynamic data structures
 !#
 !# The following internal routines are available:
@@ -335,6 +342,8 @@ MODULE hadaptivity
   PUBLIC :: hadapt_initFromTriangulation
   PUBLIC :: hadapt_generateRawMesh
   PUBLIC :: hadapt_releaseAdaptation
+  PUBLIC :: hadapt_duplicateAdaptation
+  PUBLIC :: hadapt_restoreAdaptation
   PUBLIC :: hadapt_setVertexCoords2D
   PUBLIC :: hadapt_getVertexCoords2D
   PUBLIC :: hadapt_setVerticesAtElement
@@ -422,6 +431,7 @@ MODULE hadaptivity
 
 !</constantblock>
 
+
 !<constantblock description="Global flags for grid refinement/coarsening">
 
   ! No refinement
@@ -437,6 +447,7 @@ MODULE hadaptivity
   INTEGER, PARAMETER :: HADAPT_LONGESTEDGE           = 2
 
 !</constantblock>
+
 
 !<constantblock description="Bitfield identifiers for state of adaptation">
 
@@ -494,6 +505,7 @@ MODULE hadaptivity
   INTEGER, PARAMETER :: HADAPT_COARSENED             = 2**12
 
 !</constantblock>
+
 
 !<constantblock description="Constants for element marker">
 
@@ -654,6 +666,7 @@ MODULE hadaptivity
   
 !</constant>
 
+
 !<constantblock description="Constants for element states">
 
   ! Triangle from the root triangulation
@@ -691,6 +704,7 @@ MODULE hadaptivity
 
 !</constantblock>
 
+
 !<constantblock description="Constants for grid adaptation">
   
   ! Array position of the boundary
@@ -701,6 +715,22 @@ MODULE hadaptivity
 
   ! Array position of the next boundary vertex
   INTEGER, PARAMETER :: BdrNext  = 2
+
+!</constantblock>
+
+
+!<constantblock description="Duplication flags. Specifies which information is
+!                            shared between adaptivity structures">
+
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IMARKER                 = 2** 0
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IVERTEXAGE              = 2** 1
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_INODALPROPERTY          = 2** 2
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IVERTICESATELEMENT      = 2** 3
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_INEIGHBOURSATELEMENT    = 2** 4
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT = 2** 5
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_RVERTEXCOORDINATES      = 2** 6
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_RBOUNDARY               = 2** 7
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_RELEMENTSATVERTEX       = 2** 8
 
 !</constantblock>
 
@@ -719,6 +749,15 @@ MODULE hadaptivity
   TYPE, PUBLIC :: t_hadapt
     ! Format Tag: Specifies the state of adaptation
     INTEGER :: iSpec                                 = HADAPT_UNDEFINED
+
+    ! Duplication flag. Bitfield that indicates which information is
+    ! shared with another adaptivity structure.
+    ! When a bit is set to 1, the corresponding array is
+    ! maintained by another adaptivity structure and must
+    ! not be deleted by hadapt_releaseAdaptation. 
+    ! When the bit is 0, the array is a real copy of another array 
+    ! and must be deleted in hadapt_releaseAdaptation.
+    INTEGER(I32) :: iduplicationFlag                 = 0
 
     ! Tag: Specified the strategy for grid refinement
     INTEGER :: irefinementStrategy                   = HADAPT_NOREFINEMENT
@@ -979,6 +1018,9 @@ CONTAINS
 !</inputoutput>
 !</subroutine>
 
+    ! Initialize duplication flag
+    rhadapt%iduplicationFlag=0
+
     ! Set dimension
     rhadapt%ndim=rtriangulation%ndim
 
@@ -1101,7 +1143,10 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(I32) :: idupflag
     INTEGER :: ibct
+
+    idupflag = rhadapt%iduplicationFlag
 
     ! Check if quadtree exists
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_COORDS).EQ.HADAPT_HAS_COORDS) THEN
@@ -1132,10 +1177,12 @@ CONTAINS
     CALL arrlst_releaseArraylist(rhadapt%relementsAtVertex)
 
     ! Release storage which is no longer in use
-    IF (rhadapt%h_Imarker /= ST_NOHANDLE)    CALL storage_free(rhadapt%h_Imarker)
-    IF (rhadapt%h_IvertexAge /= ST_NOHANDLE) CALL storage_free(rhadapt%h_IvertexAge)
-    IF (rhadapt%h_ImidneighboursAtElement /= ST_NOHANDLE)&
-        CALL storage_free(rhadapt%h_ImidneighboursAtElement)
+    CALL checkAndRelease(idupflag, HADAPT_SHARE_IMARKER,&
+        rhadapt%h_Imarker)
+    CALL checkAndRelease(idupflag, HADAPT_SHARE_IVERTEXAGE,&
+        rhadapt%h_IvertexAge)
+    CALL checkAndRelease(idupflag, HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT,&
+        rhadapt%h_ImidneighboursAtElement)
     
     ! Nullify "performance-pointers"
     NULLIFY(rhadapt%p_IvertexAge)
@@ -1168,7 +1215,374 @@ CONTAINS
     rhadapt%NELMAX           = 0
     rhadapt%InelOfType       = 0
     rhadapt%InelOfType0      = 0
+
+  CONTAINS
+    
+    SUBROUTINE checkAndRelease (idupFlag,ibitfield,ihandle)
+      INTEGER(I32), INTENT(IN) :: ibitfield
+      INTEGER(I32), INTENT(IN) :: idupFlag
+      INTEGER, INTENT(INOUT) :: ihandle
+      
+      IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
+        IF (ihandle .NE. ST_NOHANDLE) CALL storage_free(ihandle)
+      ELSE
+        ihandle = ST_NOHANDLE
+      END IF
+      
+    END SUBROUTINE checkAndRelease
   END SUBROUTINE hadapt_releaseAdaptation
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE hadapt_duplicateAdaptation(rhadapt,rhadaptBackup,&
+      iduplicationFlag,bupdate)
+
+!<description>
+    ! This subroutine makes a copy of an adaptivity structure in memory. The 
+    ! variable iduplicationFlag decides on which arrays are copied in memory
+    ! and which are not.
+    !
+    ! By setting the corresponding bit in iduplicationFlag to 0, the array is
+    ! duplicated in memory, and any change to the new array will not harm
+    ! the original one.
+    ! By setting a flag HADAPT_SHARE_xxxx in iduplicationFlag, the corresponding 
+    ! array is not duplicated. The handle of the original structure is simply put
+    ! into the new structure to make the information accessable. Then this array
+    ! is shared between two adaptivity structures!
+!</description>
+
+!<input>
+    ! The source structure which provides all information
+    TYPE(t_hadapt), INTENT(IN) :: rhadapt
+
+    ! Bitfield that decides which handles are a copy of another structure, thus 
+    ! which arrays are shared between the new and the old structure. 
+    ! The bitfield contains a combination of HADAPT_SHARE_xxxx constants. Every 
+    ! information whose flag is set in iduplicationFlag is shared between rhadapt
+    ! and rhadaptBackup.
+    ! Therefore e.g., iduplicationFlag=0 copies all arrays from rhadapt in memory,
+    ! while HADAPT_SHARE_ALL will copy nothing, but will share everything between 
+    ! rhadapt and rhadaptBackup.
+    INTEGER(I32), INTENT(IN)   :: iduplicationFlag
+  
+    ! OPTIONAL. Defines how to create the backup.
+    ! = .FALSE.: Treat rhadaptBackup as empty destination structure. If necessary, 
+    !    information in rhadaptBackup is released. rhadaptBackup is rebuild 
+    !    according to rhadapt and iduplicationFlag. 
+    !    This is the standard setting if bupdate is not specified.
+    ! = .TRUE. : Treat rhadaptBackup as existing copy of rhadapt which has to be 
+    !    updated. Recover all arrays of rhadaptBackup by those of rhadapt.
+    !    (I.e. those arrays which were duplicated by a previous
+    !    call to iduplicationFlag with IUPD=0.)
+    !    iduplicationFlag can used to specify which data do copy
+    !    from rhadapt to rhadaptBackup. It is OR'ed with rhadaptBackup%iduplicationFlag 
+    !    to get the actual duplication flag. This leads to the following interpretation
+    !    of iduplicationFlag:
+    !     =0:  Copy all data that was copied previously. This is the usual setting.
+    !    <>0:  Copy all arrays where the corresponding flag in iduplicationFlag is not
+    !          set and which exist as duplicates. Arrays corresponding to flags which
+    !          are set or where the handles in rhadapt and rhadaptBackup coincide 
+    !          are not touched.
+    LOGICAL, INTENT(IN), OPTIONAL     :: bupdate
+!</input>
+
+!<inputoutput>
+    ! The destination structure which receives the information
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadaptBackup
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(I32) :: idupFlag
+    LOGICAL :: bupd
+
+    bupd = .FALSE.
+    IF (PRESENT(bupdate)) bupd = bupdate
+    
+    IF (.NOT. bupd) THEN
+      ! Release any old data.
+      CALL hadapt_releaseAdaptation(rhadaptBackup)
+
+      rhadaptBackup%iSpec                = rhadapt%iSpec
+      rhadaptBackup%iRefinementStrategy  = rhadapt%iRefinementStrategy
+      rhadaptBackup%iCoarseningStrategy  = rhadapt%iCoarseningStrategy
+      rhadaptBackup%NSUBDIVIDEMAX        = rhadapt%NSUBDIVIDEMAX
+      rhadaptBackup%nRefinementSteps     = rhadapt%nRefinementSteps
+      rhadaptBackup%nCoarseningSteps     = rhadapt%nCoarseningSteps
+      rhadaptBackup%nSmoothingSteps      = rhadapt%nSmoothingSteps
+      rhadaptBackup%drefinementTolerance = rhadapt%dRefinementTolerance
+      rhadaptBackup%dCoarseningTolerance = rhadapt%dCoarseningTolerance
+      rhadaptBackup%ndim                 = rhadapt%ndim
+      rhadaptBackup%NVT0                 = rhadapt%NVT0
+      rhadaptBackup%NVT                  = rhadapt%NVT
+      rhadaptBackup%increaseNVT          = rhadapt%increaseNVT
+      rhadaptBackup%NVBD0                = rhadapt%NVBD0
+      rhadaptBackup%NVBD                 = rhadapt%NVBD
+      rhadaptBackup%NBCT                 = rhadapt%NBCT
+      rhadaptBackup%NEL0                 = rhadapt%NEL0
+      rhadaptBackup%NEL                  = rhadapt%NEL
+      rhadaptBackup%NELMAX               = rhadapt%NELMAX
+      rhadaptBackup%nGreenElements       = rhadapt%nGreenElements
+      rhadaptBackup%InelOfType0          = rhadapt%InelOfType0
+      rhadaptBackup%InelOfType           = rhadapt%InelOfType
+
+      ! Decide on iduplicationFlag which arrays to copy
+      rhadaptBackup%iduplicationFlag = iduplicationFlag
+      idupFlag = iduplicationFlag
+
+    ELSE
+
+      ! Create a bitfiled what to copy by ORing iduplicationFlag with what
+      ! we have in rhadaptBackup. That way, only arrays that exist as real
+      ! duplicates are copied from rhadapt to rhadaptBackup.
+
+      idupFlag = IOR(iduplicationFlag,rhadaptBackup%iduplicationFlag)
+
+    END IF
+
+    ! Call checkAndCopy for all components. This will either copy the handle
+    ! or allocate new memory and copy the content of the component.
+
+    ! Bit   0: Imarker
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMARKER,&
+        rhadapt%h_Imarker,&
+        rhadaptBackup%h_Imarker)
+
+    ! Bit   1: IvertexAge
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTEXAGE,&
+        rhadapt%h_IvertexAge,&
+        rhadaptBackup%h_IvertexAge)
+    CALL storage_getbase_int(rhadaptBackup%h_IvertexAge,&
+        rhadaptBackup%p_IvertexAge)
+
+    ! Bit   2: InodalProperty
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INODALPROPERTY,&
+        rhadapt%h_InodalProperty,&
+        rhadaptBackup%h_InodalProperty)
+    CALL storage_getbase_int(rhadaptBackup%h_InodalProperty,&
+        rhadaptBackup%p_InodalProperty)
+
+    ! Bit   3: IverticesAtElement
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTICESATELEMENT,&
+        rhadapt%h_IverticesAtElement,&
+        rhadaptBackup%h_IverticesAtElement)
+    CALL storage_getbase_int2D(rhadaptBackup%h_IverticesAtElement,&
+        rhadaptBackup%p_IverticesAtElement)
+
+    ! Bit   4: IneighboursAtElement
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHBOURSATELEMENT,&
+        rhadapt%h_IneighboursAtElement,&
+        rhadaptBackup%h_IneighboursAtElement)
+    CALL storage_getbase_int2D(rhadaptBackup%h_IneighboursAtElement,&
+        rhadaptBackup%p_IneighboursAtElement)
+
+    ! Bit   5: ImidneighboursAtElement
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT,&
+        rhadapt%h_ImidneighboursAtElement,&
+        rhadaptBackup%h_ImidneighboursAtElement)
+    CALL storage_getbase_int2D(rhadaptBackup%h_ImidneighboursAtElement,&
+        rhadaptBackup%p_ImidneighboursAtElement)
+
+    ! Bit   6: rVertexCoordinates
+    IF (IAND(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .NE.&
+        HADAPT_SHARE_RVERTEXCOORDINATES) THEN
+      
+      SELECT CASE(rhadaptBackup%ndim)
+      CASE(NDIM2D)
+        CALL qtree_duplicateQuadtree(rhadapt%rVertexCoordinates2D,&
+            rhadaptBackup%rVertexCoordinates2D)
+      CASE(NDIM3D)
+        CALL otree_duplicateOctree(rhadapt%rVertexCoordinates3D,&
+            rhadaptBackup%rVertexCoordinates3D)
+      CASE DEFAULT
+        CALL output_line('Invalid spatial dimension!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_duplicateAdaptation')
+        CALL sys_halt()
+      END SELECT
+    END IF
+        
+    ! Bit   7: rBoundary
+    
+    ! Bit   8: rElementsAtVertex
+    IF (IAND(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .NE.&
+        HADAPT_SHARE_RELEMENTSATVERTEX) THEN
+      CALL arrlst_duplicateArrayList(rhadapt%rElementsAtVertex,&
+          rhadaptBackup%rElementsAtVertex)
+    END IF
+
+  CONTAINS
+    
+    SUBROUTINE checkAndCopy (idupFlag,ibitfield,isourcehandle,idesthandle)
+      
+      ! Checks if idupFlag has all bits ibitfield set.
+      ! If yes, idesthandle is set to isourcehandle.
+      ! Otherwise, the memory behind isourcehandle is duplicated in memory
+      ! and idesthandle receives the handle to the new memory block.
+      
+      INTEGER(I32), INTENT(IN) :: ibitfield
+      INTEGER(I32), INTENT(IN) :: idupFlag
+      INTEGER, INTENT(IN) :: isourcehandle
+      INTEGER, INTENT(INOUT) :: idesthandle
+      
+      IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
+        IF (isourcehandle .NE. ST_NOHANDLE) THEN
+          CALL storage_copy(isourcehandle,idesthandle)
+        END IF
+      ELSE
+        idesthandle = isourcehandle
+      END IF
+      
+    END SUBROUTINE checkAndCopy
+  END SUBROUTINE hadapt_duplicateAdaptation
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE hadapt_restoreAdaptation(rhadaptBackup,rhadapt)
+
+!<description>
+    ! This subroutine restares data of an adaptivity structure. All information
+    ! arrays which are not shared between rhadaptBackup and another adaptivity
+    ! structure is copied (back) to rhadapt.
+!</description>
+
+!<input>
+    ! Backup of an adaptivity structure
+    TYPE(t_hadapt), INTENT(IN) :: rhadaptBackup
+!</input>
+
+!<inputoutput>
+    ! Destination adaptivity structure
+    ! All components where a duplicates exist in rhadaptBackup are copied
+    ! to rhadapt, overwriting the old information arrays.
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER(I32) :: idupFlag
+  
+    idupFlag = rhadapt%iduplicationFlag
+
+    rhadapt%iSpec                = rhadaptBackup%iSpec
+    rhadapt%iRefinementStrategy  = rhadaptBackup%iRefinementStrategy
+    rhadapt%iCoarseningStrategy  = rhadaptBackup%iCoarseningStrategy
+    rhadapt%NSUBDIVIDEMAX        = rhadaptBackup%NSUBDIVIDEMAX
+    rhadapt%nRefinementSteps     = rhadaptBackup%nRefinementSteps
+    rhadapt%nCoarseningSteps     = rhadaptBackup%nCoarseningSteps
+    rhadapt%nSmoothingSteps      = rhadaptBackup%nSmoothingSteps
+    rhadapt%drefinementTolerance = rhadaptBackup%dRefinementTolerance
+    rhadapt%dCoarseningTolerance = rhadaptBackup%dCoarseningTolerance
+    rhadapt%ndim                 = rhadaptBackup%ndim
+    rhadapt%NVT0                 = rhadaptBackup%NVT0
+    rhadapt%NVT                  = rhadaptBackup%NVT
+    rhadapt%increaseNVT          = rhadaptBackup%increaseNVT
+    rhadapt%NVBD0                = rhadaptBackup%NVBD0
+    rhadapt%NVBD                 = rhadaptBackup%NVBD
+    rhadapt%NBCT                 = rhadaptBackup%NBCT
+    rhadapt%NEL0                 = rhadaptBackup%NEL0
+    rhadapt%NEL                  = rhadaptBackup%NEL
+    rhadapt%NELMAX               = rhadaptBackup%NELMAX
+    rhadapt%nGreenElements       = rhadaptBackup%nGreenElements
+    rhadapt%InelOfType0          = rhadaptBackup%InelOfType0
+    rhadapt%InelOfType           = rhadaptBackup%InelOfType
+
+    ! Call checkAndCopy for all components. This will either copy the handle
+    ! or allocate new memory and copy the content of the component.
+    
+    ! Bit   0: Imarker
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMARKER,&
+        rhadapt%h_Imarker,&
+        rhadaptBackup%h_Imarker)
+   
+    ! Bit   1: IvertexAge
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTEXAGE,&
+        rhadapt%h_IvertexAge,&
+        rhadaptBackup%h_IvertexAge)
+    CALL storage_getbase_int(rhadapt%h_IvertexAge,&
+        rhadapt%p_IvertexAge)
+
+    ! Bit   2: InodalProperty
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INODALPROPERTY,&
+        rhadapt%h_InodalProperty,&
+        rhadaptBackup%h_InodalProperty)
+    CALL storage_getbase_int(rhadapt%h_InodalProperty,&
+        rhadapt%p_InodalProperty)
+
+    ! Bit   3: IverticesAtElement
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IVERTICESATELEMENT,&
+        rhadapt%h_IverticesAtElement,&
+        rhadaptBackup%h_IverticesAtElement)
+    CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
+        rhadapt%p_IverticesAtElement)
+
+    ! Bit   4: IneighboursAtElement
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHBOURSATELEMENT,&
+        rhadapt%h_IneighboursAtElement,&
+        rhadaptBackup%h_IneighboursAtElement)
+    CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
+        rhadapt%p_IneighboursAtElement)
+
+    ! Bit   5: ImidneighboursAtElement
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT,&
+        rhadapt%h_ImidneighboursAtElement,&
+        rhadaptBackup%h_ImidneighboursAtElement)
+    CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
+        rhadapt%p_ImidneighboursAtElement)
+
+    ! Bit   6: rVertexCoordinates
+    IF (IAND(idupFlag, HADAPT_SHARE_RVERTEXCOORDINATES) .NE.&
+        HADAPT_SHARE_RVERTEXCOORDINATES) THEN
+      
+      SELECT CASE(rhadaptBackup%ndim)
+      CASE(NDIM2D)
+        CALL qtree_restoreQuadtree(rhadaptBackup%rVertexCoordinates2D,&
+            rhadapt%rVertexCoordinates2D)
+      CASE(NDIM3D)
+        CALL otree_restoreOctree(rhadaptBackup%rVertexCoordinates3D,&
+            rhadapt%rVertexCoordinates3D)
+      CASE DEFAULT
+        CALL output_line('Invalid spatial dimension!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_restoreAdaptation')
+        CALL sys_halt()
+      END SELECT
+    END IF
+
+    ! Bit   7: rBoundary
+
+    ! Bit   8: rElementsAtVertex
+    IF (IAND(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .NE.&
+        HADAPT_SHARE_RELEMENTSATVERTEX) THEN
+      CALL arrlst_restoreArrayList(rhadaptBackup%rElementsAtVertex,&
+          rhadapt%rElementsAtVertex)
+    END IF
+  
+  CONTAINS
+    
+    SUBROUTINE checkAndCopy (idupFlag,ibitfield,idesthandle,isourcehandle)
+      
+      ! Checks if idupFlag has all bits ibitfield set.
+      ! If not, the memory behind isourcehandle is copied to idesthandle
+      ! overwriting all previous information.
+      
+      INTEGER(I32), INTENT(IN) :: ibitfield
+      INTEGER(I32), INTENT(IN) :: idupFlag
+      INTEGER, INTENT(IN) :: isourcehandle
+      INTEGER, INTENT(INOUT) :: idesthandle
+      
+      IF (IAND(idupFlag,ibitfield) .NE. ibitfield) THEN
+        IF (isourcehandle .NE. ST_NOHANDLE) THEN
+          CALL storage_copy(isourcehandle,idesthandle)
+        END IF
+      END IF
+      
+    END SUBROUTINE checkAndCopy
+  END SUBROUTINE hadapt_restoreAdaptation
 
   ! ***************************************************************************
 
@@ -2095,20 +2509,16 @@ CONTAINS
 
       
     CASE (HADAPT_REDGREEN)   ! Red-green grid refinement
-
+      
       ! Mark elements for refinement based on indicator function
       CALL mark_refinement2D(rhadapt,rindicator)
-
+      
       ! Mark additional elements to restore conformity
       CALL redgreen_mark_refinement2D(rhadapt,rcollection,fcb_hadaptCallback)
-
-      CALL hadapt_writegridsvg(rhadapt,'mygrid')
-
+      
       ! Mark element for recoarsening based on indicator function
       CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
-
-      CALL hadapt_writegridsvg(rhadapt,'mygrid')
-
+      
       ! Compute new dimensions
       nvt=rhadapt%NVT+rhadapt%increaseNVT
       nel=NumberOfElements(rhadapt)
@@ -2146,12 +2556,13 @@ CONTAINS
       ! Perform refinement
       CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
 
-      CALL hadapt_writegridsvg(rhadapt,'mygrid')
-
       ! Perform coarsening
       CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
+      
+      PAUSE
 
-      CALL hadapt_writegridsvg(rhadapt,'mygrid')
+  !    PRINT *, "Recoarsening done"
+  !    CALL hadapt_checkConsistency(rhadapt)
 
       ! Adjust nodal property array
       CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
@@ -2335,7 +2746,7 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: ivt
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(PREC_ARRAYLISTIDX):: ipos
-    INTEGER :: xsize,ysize,iunit,ive,nve,istate
+    INTEGER :: xsize,ysize,iunit,ive,nve
     INTEGER, SAVE :: iout=0
     
     ! Check if dynamic data structures generated
@@ -2430,9 +2841,12 @@ CONTAINS
     WRITE(iunit,FMT='(A)') '    vinfo_text6.setAttribute("y",p.y+3*'//TRIM(sys_siL(linesep,10))//');'
     WRITE(iunit,FMT='(A)') '    vinfo_text6.firstChild.nodeValue = elems;'
 
-    WRITE(iunit,FMT='(A)') '    var textlen = vinfo_text1.getComputedTextLength()+vinfo_text4.getComputedTextLength();'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text2.getComputedTextLength()+vinfo_text5.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text3.getComputedTextLength()+vinfo_text6.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    var textlen = vinfo_text1.getComputedTextLength()+&
+        &vinfo_text4.getComputedTextLength();'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text2.getComputedTextLength()&
+        &+vinfo_text5.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text3.getComputedTextLength()&
+        &+vinfo_text6.getComputedTextLength());'
     WRITE(iunit,FMT='(A)') '    vinfo_box.setAttribute("width",textlen+30);'
 
     WRITE(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: visible");'
@@ -2501,12 +2915,18 @@ CONTAINS
     WRITE(iunit,FMT='(A)') '    einfo_text12.setAttribute("y",p.y+6*'//TRIM(sys_siL(linesep,10))//');'
     WRITE(iunit,FMT='(A)') '    einfo_text12.firstChild.nodeValue = kvert;'
 
-    WRITE(iunit,FMT='(A)') '    var textlen = einfo_text1.getComputedTextLength()+einfo_text7.getComputedTextLength();'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text2.getComputedTextLength()+einfo_text8.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text3.getComputedTextLength()+einfo_text9.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text4.getComputedTextLength()+einfo_text10.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text5.getComputedTextLength()+einfo_text11.getComputedTextLength());'
-    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text6.getComputedTextLength()+einfo_text12.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    var textlen = einfo_text1.getComputedTextLength()+&
+        &einfo_text7.getComputedTextLength();'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text2.getComputedTextLength()+&
+        &einfo_text8.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text3.getComputedTextLength()+&
+        &einfo_text9.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text4.getComputedTextLength()+&
+        &einfo_text10.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text5.getComputedTextLength()+&
+        &einfo_text11.getComputedTextLength());'
+    WRITE(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text6.getComputedTextLength()+&
+        &einfo_text12.getComputedTextLength());'
     WRITE(iunit,FMT='(A)') '    einfo_box.setAttribute("width",textlen+30);'
 
     WRITE(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: visible");'
@@ -2625,7 +3045,7 @@ CONTAINS
               TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
               TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
               TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: crosshair"'
           
         END IF
                
@@ -2712,7 +3132,7 @@ CONTAINS
       ipos=arrlst_getNextInArrayList(rhadapt%rElementsAtVertex,ivt,.TRUE.)
       DO WHILE(ipos .NE. ARRLST_NULL)
         ! Get element number IEL
-        iel=rhadapt%rElementsAtVertex%IData(ipos)
+        iel=rhadapt%rElementsAtVertex%p_IData(ipos)
         
         ! Proceed to next entry in array list
         ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
@@ -2825,12 +3245,16 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
     INTEGER :: h_IelementsAtVertexIdx,h_IelementsAtVertex
     INTEGER :: ive,jve,nve,mve
-    LOGICAL :: btest,bfound
+    LOGICAL :: btestall,btest,bfound
+
+    ! Initiaization
+    btestall=.TRUE.
 
     ! Test #1: Consistency of element numbers
     btest=(rhadapt%NEL .EQ. SUM(rhadapt%InelOfType))
     CALL output_line('Test #1: Checking consistency of element numbers '//&
         MERGE('PASSED','FAILED',btest))
+    btestall=btestall.AND.btest
 
     ! Test #2: Vertex age must not exceed maximum refinement level
     btest=.TRUE.
@@ -2839,6 +3263,7 @@ CONTAINS
     END DO
     CALL output_line('Test #2: Checking maximum vertex age '//&
         MERGE('PASSED','FAILED',btest))
+    btestall=btestall.AND.btest
 
     ! Test #3: Check consistency of element neighbours
     btest=.TRUE.
@@ -2851,6 +3276,12 @@ CONTAINS
       DO ive=1,nve
         jel   =rhadapt%p_IneighboursAtElement(ive,iel)
         jelmid=rhadapt%p_ImidneighboursAtElement(ive,iel)
+
+        ! Check that adjacent element number is not larger than the
+        ! total number of elements present in the triangulation
+        IF (jel > rhadapt%NEL .OR. jelmid > rhadapt%NEL) THEN
+          btest=.FALSE.; CYCLE
+        END IF
 
         ! Do nothing if we are adjacent to the boundary
         IF (jel*jelmid .EQ. 0) CYCLE
@@ -2925,7 +3356,8 @@ CONTAINS
     END DO
     CALL output_line('Test #3: Checking consistency of element neighbours '//&
         MERGE('PASSED','FAILED',btest))
-    
+    btestall=btestall.AND.btest
+
     ! Test #4: Check consistency of common vertices between two edges
     btest=.TRUE.
     DO iel=1,rhadapt%NEL
@@ -2938,6 +3370,12 @@ CONTAINS
         jel   =rhadapt%p_IneighboursAtElement(ive,iel)
         jelmid=rhadapt%p_ImidneighboursAtElement(ive,iel)
         
+        ! Check that adjacent element number is not larger than the
+        ! total number of elements present in the triangulation
+        IF (jel > rhadapt%NEL .OR. jelmid > rhadapt%NEL) THEN
+          btest=.FALSE.; CYCLE
+        END IF
+
         ! Do nothing if we are adjacent to the boundary
         IF (jel*jelmid .EQ. 0) CYCLE
         
@@ -2955,8 +3393,18 @@ CONTAINS
             IF (rhadapt%p_IneighboursAtElement(jve,jel) .EQ. iel) THEN
               bfound=.TRUE.; EXIT
             END IF
+          ELSE
+            ! Do nothing if there exists a temporal hanging node
+            CYCLE
           END IF
         END DO
+
+        IF (.NOT.bfound) THEN
+          PRINT *, iel,jel,rhadapt%NEL
+          PRINT *, rhadapt%p_IneighboursAtElement(:,jel)
+          PRINT *, rhadapt%p_ImidneighboursAtElement(:,jel)
+          PRINT *, "------"
+        END IF
         
         ! If the common edge has been found, check the two endpoints
         IF (bfound) THEN
@@ -2970,6 +3418,7 @@ CONTAINS
     END DO
     CALL output_line('Test #4: Checking consistency of common vertices along edges '//&
         MERGE('PASSED','FAILED',btest))
+    btestall=btestall.AND.btest
 
     ! Test #5: Check consistency of element-meeting-at-vertex lists
     btest=(rhadapt%rElementsAtVertex%NTABLE .EQ. rhadapt%NVT)
@@ -3037,7 +3486,7 @@ CONTAINS
         DO WHILE(ipos .NE. ARRLST_NULL)
           
           ! Get element number IEL
-          iel=rhadapt%rElementsAtVertex%IData(ipos)
+          iel=rhadapt%rElementsAtVertex%p_IData(ipos)
 
           ! Proceed to next entry in array list
           ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
@@ -3064,11 +3513,15 @@ CONTAINS
       ! Release auxiliary storage
       CALL storage_free(h_IelementsAtVertexIdx)
       CALL storage_free(h_IelementsAtVertex)
-    END IF
-    CALL output_line('Test #5: Checking consistency of element-meeting-at-vertex list '//&
-        MERGE('PASSED','FAILED',btest))
-    
+    ELSE
 
+      CALL output_line('Test #5: Checking consistency of element-meeting-at-vertex list '//&
+          MERGE('PASSED','FAILED',btest))
+    END IF
+    btestall=btestall.AND.btest
+
+    ! Terminate if some test failed
+    IF (.NOT.btestall) CALL sys_halt()
   END SUBROUTINE hadapt_checkConsistency
 
   ! ***************************************************************************
@@ -3128,8 +3581,7 @@ CONTAINS
       END IF
 
     ELSE
-      
-      
+
     END IF
   END FUNCTION get_NVE
 
@@ -3230,16 +3682,16 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         CALL sys_halt()
       END IF
-      ipos  =rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      dvbdp1=rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
+      ipos  =rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      dvbdp1=rhadapt%rBoundary(ibct)%p_DData(BdrValue,ipos)
       
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ. BTREE_NOT_FOUND) THEN
         CALL output_line('Unable to find second vertex in boudary data structure!',&
             OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         CALL sys_halt()
       END IF
-      ipos  =rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      dvbdp2=rhadapt%rBoundary(ibct)%DData(BdrValue,ipos)
+      ipos  =rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      dvbdp2=rhadapt%rBoundary(ibct)%p_DData(BdrValue,ipos)
       
       ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
       IF (dvbdp2 <= dvbdp1) dvbdp2=CEILING(dvbdp1)
@@ -3371,7 +3823,6 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_QTREEIDX)  :: iReplace
     INTEGER(PREC_VERTEXIDX) :: i1,i2
     INTEGER(PREC_TREEIDX)   :: ipred,ipos
     INTEGER :: ibct
@@ -3401,11 +3852,11 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
-      ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      ipos=rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
       
       ! Get the two boundary neighbors: I1 <- IVT -> I2
-      i1=rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)
-      i2=rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
+      i1=rhadapt%rBoundary(ibct)%p_IData(BdrPrev,ipos)
+      i2=rhadapt%rBoundary(ibct)%p_IData(BdrNext,ipos)
       
       ! Connect the boundary neighbors with each other: I1 <=> I2
       ! First, set I2 as next neighboring of I1
@@ -3415,8 +3866,8 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
-      ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)=i2
+      ipos=rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      rhadapt%rBoundary(ibct)%p_IData(BdrNext,ipos)=i2
       
       ! Second, set I1 as previous neighbor of I2
       IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
@@ -3425,8 +3876,8 @@ CONTAINS
             OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
         CALL sys_halt()
       END IF
-      ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)=i1
+      ipos=rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      rhadapt%rBoundary(ibct)%p_IData(BdrPrev,ipos)=i1
       
       ! And finally, delete IVT from the boundary
       IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivt) .EQ.&
@@ -3455,16 +3906,16 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
-        ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        ipos=rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
         
         ! Insert IVT into the boundary vector
         CALL btree_insertIntoTree(rhadapt%rBoundary(ibct),ivt,&
-            Idata=rhadapt%rBoundary(ibct)%IData(:,ipos),&
-            Ddata=rhadapt%rBoundary(ibct)%DData(:,ipos))
+            Idata=rhadapt%rBoundary(ibct)%p_IData(:,ipos),&
+            Ddata=rhadapt%rBoundary(ibct)%p_DData(:,ipos))
         
         ! Get the two boundary neighbors: I1 <- IVTREPLACE -> I2
-        i1=rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)
-        i2=rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)
+        i1=rhadapt%rBoundary(ibct)%p_IData(BdrPrev,ipos)
+        i2=rhadapt%rBoundary(ibct)%p_IData(BdrNext,ipos)
         
         ! Connect the boundary neighbors with IVT: I1 <- IVT -> I2
         ! First, set IVT as next neighbor of I1
@@ -3474,8 +3925,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
-        ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        rhadapt%rBoundary(ibct)%IData(BdrNext,ipos)=ivt
+        ipos=rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        rhadapt%rBoundary(ibct)%p_IData(BdrNext,ipos)=ivt
         
         ! Second, set IVT as previous neighbor of I2
         IF (btree_searchInTree(rhadapt%rBoundary(ibct),i2,ipred) .EQ.&
@@ -3484,8 +3935,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
           CALL sys_halt()
         END IF
-        ipos=rhadapt%rBoundary(ibct)%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        rhadapt%rBoundary(ibct)%IData(BdrPrev,ipos)=ivt
+        ipos=rhadapt%rBoundary(ibct)%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        rhadapt%rBoundary(ibct)%p_IData(BdrPrev,ipos)=ivt
         
         ! Finally, delete IVTREPLACE from the boundary
         IF (btree_deleteFromTree(rhadapt%rBoundary(ibct),ivtReplace) .EQ.&
@@ -3743,8 +4194,8 @@ CONTAINS
         elem: DO WHILE(ipos .NE. ARRLST_NULL)
           
           ! Check if element number corresponds to the replaced element
-          IF (rhadapt%rElementsAtVertex%IData(ipos) .EQ. ielReplace) THEN
-            rhadapt%rElementsAtVertex%IData(ipos)=iel
+          IF (rhadapt%rElementsAtVertex%p_IData(ipos) .EQ. ielReplace) THEN
+            rhadapt%rElementsAtVertex%p_IData(ipos)=iel
             EXIT elem
           END IF
           
@@ -5796,6 +6247,7 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX) :: jel,e1,e2,e3,e4,e5,e6,ielReplace
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4
+    INTEGER :: istate
 
     ! Get adjacent green elements
     jel=rhadapt%p_IneighboursAtElement(2,iel)
@@ -5813,18 +6265,41 @@ CONTAINS
 
     e5=rhadapt%p_ImidneighboursAtElement(1,jel)
     e6=rhadapt%p_ImidneighboursAtElement(3,iel)
-    
+
     ! Update list of neighboring elements
     CALL update_ElementNeighbors2D(rhadapt,e1,e4,jel,iel,iel,iel)
     CALL update_ElementNeighbors2D(rhadapt,e2,e5,jel,iel,iel)
+
+    ! The resultint triangle will possess one of the states STATE_TRIA_OUTERINNERx, whereby
+    ! x can be blank, 1 or 2. Due to our refinement convention, the two states x=1 and x=2
+    ! should not appear, that is, local numbering of the resulting triangle starts at the
+    ! vertex which is opposite to the inner red triangle. To this end, we check the state of
+    ! the provisional triangle (I1,I2,I3) and transform th orientation accordingly.
+    istate = redgreen_getstateTria(rhadapt%p_IvertexAge((/i1,i2,i3/)))
     
-    ! Update element IEL
-    CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e2,e3)
+    SELECT CASE(istate)
+    CASE(STATE_TRIA_OUTERINNER,STATE_TRIA_REDINNER)
+      ! Update element IEL = (I1,I2,I3)
+      CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e5,e6)
+
+    CASE(STATE_TRIA_OUTERINNER2)
+      ! Update element IEL = (I2,I3,I1)
+      CALL replace_element2D(rhadapt,iel,i2,i3,i1,e2,e3,e1,e5,e6,e4)
+      
+    CASE(STATE_TRIA_OUTERINNER1)
+      ! Update element IEL = (I3,I1,I2)
+      CALL replace_element2D(rhadapt,iel,i3,i1,i2,e3,e1,e2,e6,e4,e5)
+
+    CASE DEFAULT
+      CALL output_line('Invalid state of resulting triangle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+      CALL sys_halt()
+    END SELECT
 
     ! Delete element JEL
     CALL remove_element2D(rhadapt,jel,ielReplace)
     IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,jel)   
-
+    
     ! Update list of elements meeting at vertices
     IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,jel).EQ.&
         ARRAYLIST_NOT_FOUND) THEN
@@ -5839,7 +6314,7 @@ CONTAINS
       CALL sys_halt()
     END IF
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel,ipos)
-
+    
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
         CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2TRIA1TRIA,&
@@ -6279,7 +6754,7 @@ CONTAINS
           
           ! If triangle has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:3))).EQ.&
+          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D))).EQ.&
               rhadapt%NSUBDIVIDEMAX)) THEN
             p_Imarker(iel)=MARK_ASIS
             
@@ -6319,7 +6794,7 @@ CONTAINS
           
           ! If quadrilateral has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:4))).EQ.&
+          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVEQUAD2D))).EQ.&
               rhadapt%NSUBDIVIDEMAX)) THEN
             p_Imarker(iel)=MARK_ASIS
 
@@ -6483,10 +6958,10 @@ CONTAINS
       ! Get state of current element
       SELECT CASE(nve)
       CASE(TRIA_NVETRI2D)
-        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
 
       CASE(TRIA_NVEQUAD2D)
-        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVEQUAD2D)))
 
       CASE DEFAULT
         CALL output_line('Invalid number of vertices per element!',&
@@ -6571,7 +7046,7 @@ CONTAINS
         ! red-green marking routine as a result of element conversion?
         jel   =rhadapt%p_IneighboursAtElement(2,iel)
         jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-                 rhadapt%p_IverticesAtElement(1:3,jel)))
+                 rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)))
         
         IF (jstate .EQ. STATE_TRIA_REDINNER) THEN
           
@@ -6669,8 +7144,6 @@ CONTAINS
       CASE DEFAULT
         CALL output_line('Invalid element state!',&
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
-        PRINT *, iel
-        CALL hadapt_writegridsvg(rhadapt,'mygrid')
         CALL sys_halt()
       END SELECT
     END DO
@@ -6721,10 +7194,10 @@ CONTAINS
         ! Get state of current element
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
-          istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+          istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
 
         CASE(TRIA_NVEQUAD2D)
-          istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+          istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVEQUAD2D)))
 
         CASE DEFAULT
           CALL output_line('Invalid number of vertices per element!',&
@@ -6886,10 +7359,10 @@ CONTAINS
       ! Get state of current element
       SELECT CASE(nve)
       CASE(TRIA_NVETRI2D)
-        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
 
       CASE(TRIA_NVEQUAD2D)
-        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVEQUAD2D)))
 
       CASE DEFAULT
         CALL output_line('Invalid number of vertices per element!',&
@@ -6936,8 +7409,8 @@ CONTAINS
         ! get the element number of the corresponding right triangle and mark the
         ! element with the smaller number for refinement
         jel=rhadapt%p_IneighboursAtElement(2,iel)
-        Kvert(1:3) =rhadapt%p_IverticesAtElement(1:3,jel)
-        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        Kvert(1:TRIA_NVETRI2D) =rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
+        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
         IF (jstate .EQ. STATE_TRIA_GREENOUTER_RIGHT) THEN
           
           ! Which is the element with smaller number?
@@ -6953,8 +7426,8 @@ CONTAINS
 !!$        ! get the element number of the corresponding left triangle and mark the
 !!$        ! element with the smaller number for refinement
 !!$        jel = rhadapt%p_IneighboursAtElement(2,iel)
-!!$        Kvert(1:3)  = rhadapt%p_IverticesAtElement(1:3,jel)
-!!$        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+!!$        Kvert(1:TRIA_NVETRI2D)  = rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
+!!$        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
 !!$        IF (jstate .EQ. STATE_TRIA_GREENOUTER_LEFT) THEN
 !!$          
 !!$          ! Which is the element with smaller number?
@@ -6969,8 +7442,8 @@ CONTAINS
         ! If this is the inner green tiangle of a 1-quad : 4-tria refinement then
         ! mark the element for 4-tria : 1-quad or 4-tria : 3-tria coarsening.
         jel=rhadapt%p_IneighboursAtElement(2,iel)
-        KvertJ(1:3)=rhadapt%p_IverticesAtElement(1:3,jel)
-        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(KvertJ(1:3)))
+        KvertJ(1:TRIA_NVETRI2D)=rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
+        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(KvertJ(1:TRIA_NVETRI2D)))
         
         ! Are we green triangle of a 1-quad : 4-tria refinement?
         IF (jstate .EQ. STATE_TRIA_OUTERINNER) THEN
@@ -6979,7 +7452,7 @@ CONTAINS
           kel=rhadapt%p_IneighboursAtElement(1,iel)
 
           IF (redgreen_getStateTria(rhadapt%p_IvertexAge(&
-              rhadapt%p_IverticesAtElement(1:3,kel))).EQ.&
+              rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,kel))).EQ.&
               STATE_TRIA_GREENOUTER_LEFT) THEN
             
             ! Element IEL is the "most inner" element
@@ -7290,11 +7763,11 @@ CONTAINS
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
           p_Imarker(iel)=ibclr(p_Imarker(iel),0)
-          istate        =redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+          istate        =redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
 
         CASE(TRIA_NVEQUAD2D)
           p_Imarker(iel)=ibset(p_Imarker(iel),0)
-          istate        =redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+          istate        =redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVEQUAD2D)))
 
         CASE DEFAULT
           CALL output_line('Invalid number of vertices per element!',&
@@ -8139,6 +8612,10 @@ CONTAINS
 
       CALL output_line('Unable to find common egde!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ismarked_edge')
+      PRINT *, iel,ielmid,jel
+      PRINT *, rhadapt%p_IneighboursAtElement(:,iel)
+      PRINT *, rhadapt%p_IneighboursAtElement(:,jel)
+      CALL hadapt_writegridsvg(rhadapt,'mygrid')
       CALL sys_halt()
     END FUNCTION ismarked_edge
   END SUBROUTINE redgreen_mark_refinement2D
@@ -8344,7 +8821,7 @@ CONTAINS
         update: DO WHILE(ipos .NE. ARRLST_NULL)
           
           ! Get element number JEL
-          jel=rhadapt%rElementsAtVertex%IData(ipos)
+          jel=rhadapt%rElementsAtVertex%p_IData(ipos)
           
           ! Proceed to next element
           ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivtReplace,.FALSE.)
@@ -8416,17 +8893,34 @@ CONTAINS
 !</result>
 !</function>
 
-    ! local variables
-    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: Kvert
-    
-    ! Get local data
-    Kvert=rhadapt%p_IverticesAtElement(1:4,iel)
+    ! Are we in 2D or 3D?
+    IF (rhadapt%ndim .EQ. NDIM2D) THEN
+      
+      ! Do we have quadrilaterals in the triangulation?
+      IF (rhadapt%InelOfType(TRIA_NVEQUAD2D).EQ.0) THEN
+        
+        ! There are no quadrilaterals in the current triangulation.
+        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
+            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel)))
+        
+      ELSE
 
-    ! Are we triangular or quadrilateral element?
-    IF (Kvert(4).EQ.0) THEN
-      istate=redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:3)))
+        ! There are quadrilaterals and possible also triangles in
+        ! the current triangulation. If the last entry of the vertices
+        ! at element list is nonzero then the current element is a 
+        ! quadrilateral. Otherwise, we are dealing with  a triangle
+        IF (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D,iel).EQ.0) THEN
+          istate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
+            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel)))
+        ELSE
+          istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(&
+            rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel)))
+        END IF
+
+      END IF
+
     ELSE
-      istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:4)))
+      
     END IF
   END FUNCTION redgreen_getState
 
@@ -8445,7 +8939,7 @@ CONTAINS
 
 !<input>
     ! Age of the three vertices
-    INTEGER, DIMENSION(3), INTENT(IN) :: IvertexAge
+    INTEGER, DIMENSION(TRIA_NVETRI2D), INTENT(IN) :: IvertexAge
 !</input>
 
 !<result>
@@ -8467,8 +8961,8 @@ CONTAINS
       ! Check if any two vertices have the same age and mark that edge.
       ! In addition, determine the largest age and its position
       ipos=1
-      DO ive=1,3
-        IF (ABS(IvertexAge(ive)) .EQ. ABS(IvertexAge(MOD(ive,3)+1))) THEN
+      DO ive=1,TRIA_NVETRI2D
+        IF (ABS(IvertexAge(ive)) .EQ. ABS(IvertexAge(MOD(ive,TRIA_NVETRI2D)+1))) THEN
           ! Edge connects two nodes with the same age
           istate=ibset(istate,ive)
         ELSEIF (ABS(IvertexAge(ive)) .GT. ABS(IvertexAge(ipos))) THEN
@@ -8516,7 +9010,7 @@ CONTAINS
 
 !<input>
     ! Age of the four vertices
-    INTEGER, DIMENSION(4), INTENT(IN) :: IvertexAge
+    INTEGER, DIMENSION(TRIA_NVEQUAD2D), INTENT(IN) :: IvertexAge
 !</input>
 
 !<result>
@@ -8538,8 +9032,8 @@ CONTAINS
       ! Check if any two vertices have the same age and mark that edge.
       ! After this procedure, ISTATE must be different from 0 and a unique
       ! state for the quadrilateral has been determined.
-      DO ive=1,4
-        IF (ABS(IvertexAge(ive)) .EQ. ABS(IvertexAge(MOD(ive,4)+1))) THEN
+      DO ive=1,TRIA_NVEQUAD2D
+        IF (ABS(IvertexAge(ive)) .EQ. ABS(IvertexAge(MOD(ive,TRIA_NVEQUAD2D)+1))) THEN
           ! Edge connects two nodes with the same age
           istate=ibset(istate,ive)
         END IF
