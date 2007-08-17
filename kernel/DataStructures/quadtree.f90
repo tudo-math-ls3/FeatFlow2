@@ -50,6 +50,12 @@
 !# 14.) qtree_getY
 !#      -> Return the Y-value at a given position
 !#
+!# 15.) qtree_duplicateQuadtree
+!#      -> Create a duplicate / backup of a quadtree
+!#
+!# 16.) qtree_restoreQuadtree
+!#      -> Restore a quadtree from a previous backup
+!#
 !# For the internal use the following routines are available:
 !#
 !# 1.) resizeNVT
@@ -82,6 +88,8 @@ MODULE quadtree
   PUBLIC :: qtree_getBoundingBox
   PUBLIC :: qtree_getX
   PUBLIC :: qtree_getY
+  PUBLIC :: qtree_duplicateQuadtree
+  PUBLIC :: qtree_restoreQuadtree
 
 !<constants>
 
@@ -342,67 +350,6 @@ CONTAINS
     rquadtree%NVT    = 0
     rquadtree%NRESIZE= 0
   END SUBROUTINE qtree_releaseQuadtree
-  
-  !************************************************************************
-  
-!<subroutine>
-  
-  SUBROUTINE qtree_resizeNVT(rquadtree,nnvt)
-
-!<description>
-    ! This subroutine reallocates memory for an existing quadtree
-!</description>
-
-!<input>
-    ! New number of vertices that should be stored in the quadtree
-    INTEGER(PREC_QTREEIDX), INTENT(IN) :: nnvt
-!</input>
-
-!<inputoutput>
-    ! quadtree that should be resized
-    TYPE(t_quadtree) :: rquadtree
-!</inputoutput>
-!</subroutine>
-
-    CALL storage_realloc('qtree_resizeNVT',&
-        nnvt,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_getbase_double2D(rquadtree%h_Ddata,rquadtree%p_Ddata)
-    
-    rquadtree%NNVT   = nnvt
-    rquadtree%NRESIZE=rquadtree%NRESIZE+1
-  END SUBROUTINE qtree_resizeNVT
-
-  !************************************************************************
-  
-!<subroutine>
-  
-  SUBROUTINE qtree_resizeNNODE(rquadtree,nnnode)
-
-!<description>
-    ! This subroutine reallocates memory for an existing quadtree
-!</description>
-
-!<input>
-    ! New number of quads that should be stored in the quadtree
-    INTEGER(PREC_QTREEIDX), INTENT(IN) :: nnnode
-!</input>
-
-!<inputoutput>
-    ! quadtree that should be resized
-    TYPE(t_quadtree) :: rquadtree
-!</inputoutput>
-!</subroutine>
-
-    CALL storage_realloc('qtree_resizeNNODE',&
-        nnnode,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_realloc('qtree_resizeNNODE',&
-        nnnode,rquadtree%h_Knode,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_getbase_double2D(rquadtree%h_Dbbox,rquadtree%p_Dbbox)
-    CALL storage_getbase_int2D(rquadtree%h_Knode,   rquadtree%p_Knode)
-    
-    rquadtree%NNNODE = nnnode
-    rquadtree%NRESIZE=rquadtree%NRESIZE+1
-  END SUBROUTINE qtree_resizeNNODE
 
   !************************************************************************
 
@@ -599,7 +546,7 @@ CONTAINS
     
     ! Check if there is enough space left in the nodal component of the quadtree
     IF (rquadtree%NVT == rquadtree%NNVT)&
-        CALL qtree_resizeNVT(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNVT))
+        CALL resizeNVT(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNVT))
     
     ! Update values and add new entry recursively
     rquadtree%NVT            = rquadtree%NVT+1
@@ -619,7 +566,7 @@ CONTAINS
       IF (rquadtree%p_Knode(QTREE_STATUS,inode) == QTREE_MAX) THEN
         
         IF (rquadtree%nnode+QTREE_MAX > rquadtree%nnnode)&
-            CALL qtree_resizeNNODE(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNNODE))
+            CALL resizeNNODE(rquadtree,CEILING(rquadtree%dfactor*rquadtree%NNNODE))
         
         ! Quad is full and needs to be refined into four new quads
         xmin = rquadtree%p_Dbbox(QTREE_XMIN,inode)
@@ -994,17 +941,23 @@ CONTAINS
 !</input>
 !</subroutine>
 
-    WRITE(*,FMT=*) ' Quadtree:'
-    WRITE(*,FMT=*) ' ========='
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Ddata =',rquadtree%h_Ddata
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Dbbox =',rquadtree%h_Dbbox
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Knode =',rquadtree%h_Knode
+    CALL output_line('Quadtree:')
+    CALL output_line('---------')
+    CALL output_line('NVT:     '//TRIM(sys_siL(rquadtree%NVT,15)))
+    CALL output_line('NNVT:    '//TRIM(sys_siL(rquadtree%NNVT,15)))
+    CALL output_line('NNODE:   '//TRIM(sys_siL(rquadtree%NNODE,15)))
+    CALL output_line('NNNODE:  '//TRIM(sys_siL(rquadtree%NNNODE,15)))
+    CALL output_line('NRESIZE: '//TRIM(sys_siL(rquadtree%NRESIZE,5)))
+    CALL output_line('dfactor: '//TRIM(sys_sdL(rquadtree%dfactor,2)))
+    CALL output_line('h_Ddata: '//TRIM(sys_siL(rquadtree%h_Ddata,15)))
+    CALL output_line('h_Dbbox: '//TRIM(sys_siL(rquadtree%h_Dbbox,15)))
+    CALL output_line('h_Knode: '//TRIM(sys_siL(rquadtree%h_Knode,15)))
+    CALL output_lbrk()
     WRITE(*,*)
-    WRITE(*,FMT='(1X,A,1X,I8,3X,A,1X,I8)') '  NVT     =',rquadtree%NVT,'NNVT     =',rquadtree%NNVT
-    WRITE(*,FMT='(1X,A,1X,I8,3X,A,1X,I8)') '  NNODE   =',rquadtree%NNODE,'NNNODE   =',rquadtree%NNNODE
-    WRITE(*,FMT='(1X,A,1X,I8,A,4X,F5.1,A,4X,F5.1,A)') '  NRESIZE =',rquadtree%NRESIZE, "   QUADS    =", &
-        100*rquadtree%NNODE/REAL(rquadtree%NNNODE,DP),'%  FILLING  =',100*rquadtree%NVT/REAL(rquadtree%NNVT,DP),'%'
-    WRITE(*,*)
+    CALL output_line('Current data memory usage: '//&
+        TRIM(sys_sdL(100*rquadtree%NVT/REAL(rquadtree%NNVT,DP),2))//'%')
+    CALL output_line('Current ndoe memory usage: '//&
+        TRIM(sys_sdL(100*rquadtree%NNODE/REAL(rquadtree%NNNODE,DP),2))//'%')
   END SUBROUTINE qtree_infoQuadtree
 
   !************************************************************************
@@ -1121,4 +1074,148 @@ CONTAINS
 
     y=rquadtree%p_Ddata(2,ivt)
   END FUNCTION qtree_getY
+
+  !************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE qtree_duplicateQuadtree(rquadtree,rquadtreeBackup)
+
+!<description>
+    ! This subroutine makes a copy of a quadtree in memory.
+    ! It does not make sense to share some information between quadtrees,
+    ! so each vectors is physically copied from the source quadtree
+    ! to the destination quadtree.
+!</description>
+
+!<input>
+    ! Source quadtree
+    TYPE(t_quadtree), INTENT(IN) :: rquadtree
+!</input>
+
+!<inputoutput>
+    ! Destination quadtree
+    TYPE(t_quadtree), INTENT(INOUT) :: rquadtreeBackup
+!</inputoutput>
+!</subroutine>
+
+    ! Release backup quadtree
+    CALL qtree_releaseQuadtree(rquadtreeBackup)
+
+    ! Copy all data
+    rquadtreeBackup = rquadtree
+
+    ! Reset handles
+    rquadtreeBackup%h_Ddata = ST_NOHANDLE
+    rquadtreeBackup%h_Dbbox = ST_NOHANDLE
+    rquadtreeBackup%h_Knode = ST_NOHANDLE
+
+    ! Copy storage blocks
+    IF (rquadtree%h_Ddata .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(rquadtree%h_Ddata,rquadtreeBackup%h_Ddata)
+      CALL storage_getbase_double2D(rquadtreeBackup%h_Ddata,&
+          rquadtreeBackup%p_Ddata)
+    END IF
+
+    IF (rquadtree%h_Dbbox .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(rquadtree%h_Dbbox,rquadtreeBackup%h_Dbbox)
+      CALL storage_getbase_double2D(rquadtreeBackup%h_Dbbox,&
+          rquadtreeBackup%p_Dbbox)
+    END IF
+
+    IF (rquadtree%h_Knode .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(rquadtree%h_Knode,rquadtreeBackup%h_Knode)
+      CALL storage_getbase_int2D(rquadtreeBackup%h_Knode,&
+          rquadtreeBackup%p_Knode)
+    END IF
+  END SUBROUTINE qtree_duplicateQuadtree
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE qtree_restoreQuadtree(rquadtreeBackup,rquadtree)
+
+!<description>
+    ! This subroutine restores a quadtree from a previous backup.
+!</description>
+
+!<input>
+    ! Backup of an quadtree
+    TYPE(t_quadtree), INTENT(IN) :: rquadtreeBackup
+!</input>
+
+!<inputoutput>
+    ! Destination quadtree
+    TYPE(t_quadtree), INTENT(INOUT) :: rquadtree
+!</inputoutput>
+!</subroutine>
+
+    ! Release quadtree
+    CALL qtree_releaseQuadtree(rquadtree)
+
+    ! Duplicate the backup
+    CALL qtree_duplicateQuadtree(rquadtreeBackup,rquadtree)
+  END SUBROUTINE qtree_restoreQuadtree
+
+  !************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE resizeNVT(rquadtree,nnvt)
+
+!<description>
+    ! This subroutine reallocates memory for an existing quadtree
+!</description>
+
+!<input>
+    ! New number of vertices that should be stored in the quadtree
+    INTEGER(PREC_QTREEIDX), INTENT(IN) :: nnvt
+!</input>
+
+!<inputoutput>
+    ! quadtree that should be resized
+    TYPE(t_quadtree) :: rquadtree
+!</inputoutput>
+!</subroutine>
+
+    CALL storage_realloc('resizeNVT',&
+        nnvt,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_getbase_double2D(rquadtree%h_Ddata,rquadtree%p_Ddata)
+    
+    rquadtree%NNVT   = nnvt
+    rquadtree%NRESIZE=rquadtree%NRESIZE+1
+  END SUBROUTINE resizeNVT
+
+  !************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE resizeNNODE(rquadtree,nnnode)
+
+!<description>
+    ! This subroutine reallocates memory for an existing quadtree
+!</description>
+
+!<input>
+    ! New number of quads that should be stored in the quadtree
+    INTEGER(PREC_QTREEIDX), INTENT(IN) :: nnnode
+!</input>
+
+!<inputoutput>
+    ! quadtree that should be resized
+    TYPE(t_quadtree) :: rquadtree
+!</inputoutput>
+!</subroutine>
+
+    CALL storage_realloc('resizeNNODE',&
+        nnnode,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_realloc('resizeNNODE',&
+        nnnode,rquadtree%h_Knode,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_getbase_double2D(rquadtree%h_Dbbox,rquadtree%p_Dbbox)
+    CALL storage_getbase_int2D(rquadtree%h_Knode,   rquadtree%p_Knode)
+    
+    rquadtree%NNNODE = nnnode
+    rquadtree%NRESIZE=rquadtree%NRESIZE+1
+  END SUBROUTINE resizeNNODE
 END MODULE quadtree

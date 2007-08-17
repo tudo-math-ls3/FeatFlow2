@@ -66,6 +66,12 @@
 !# 12.) grph_infoGraph
 !#      -> Print information about the graph.
 !#
+!# 13.) grph_duplicateGraph
+!#      -> Create a duplicate / backup of a graph.
+!#
+!# 14.) grph_restoreGraph
+!#      -> Restores a graph previously backed up with grph_duplicateGraph
+!#
 !# </purpose>
 !##############################################################################
 
@@ -93,6 +99,8 @@ MODULE graph
   PUBLIC :: grph_insertEdge
   PUBLIC :: grph_removeEdge
   PUBLIC :: grph_infoGraph
+  PUBLIC :: grph_duplicateGraph
+  PUBLIC :: grph_restoreGraph
 
 !<constants>
 !<constantblock description="Global format flags for graphs">
@@ -524,8 +532,8 @@ CONTAINS
 
         ! Check if vertex with number ieq exists
         IF (btree_searchInTree(rgraph%rVertices,ieq,ipred).EQ.BTREE_FOUND) THEN
-          ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-          itable = rgraph%rVertices%IData(1,ipos)
+          ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+          itable = rgraph%rVertices%p_IData(1,ipos)
 
           ! Restore row from table
           CALL arrlst_copyArrayList(rgraph%rEdges,itable,p_Kcol(ia:),ncols)
@@ -555,9 +563,9 @@ CONTAINS
 
     ! Are we dense graph?
     IF (rgraph%bisDense) THEN
-      CALL inorderDense(rgraph%rVertices%Kchild(TRIGHT,TROOT))
+      CALL inorderDense(rgraph%rVertices%p_Kchild(TRIGHT,TROOT))
     ELSE
-      CALL inorderSparse(rgraph%rVertices%Kchild(TRIGHT,TROOT))
+      CALL inorderSparse(rgraph%rVertices%p_Kchild(TRIGHT,TROOT))
     END IF
 
   CONTAINS
@@ -576,18 +584,18 @@ CONTAINS
       IF (i .EQ. TNULL) RETURN
 
       ! Proceed with left child if it exists
-      IF (rgraph%rVertices%Kchild(TLEFT,i) .NE. TNULL)&
-          CALL inorderDense(rgraph%rVertices%Kchild(TLEFT,i))
+      IF (rgraph%rVertices%p_Kchild(TLEFT,i) .NE. TNULL)&
+          CALL inorderDense(rgraph%rVertices%p_Kchild(TLEFT,i))
 
       ! We are in the lucky position that itable = ikey
-      ikey   = rgraph%rVertices%IKey(i)
+      ikey   = rgraph%rVertices%p_IKey(i)
       
       CALL output_line('Vertex number: '//TRIM(sys_siL(ikey,15)))
       CALL arrlst_printArrayList(rgraph%rEdges,ikey)
         
       ! Proceed with right child if it exists
-      IF (rgraph%rVertices%Kchild(TRIGHT,i) .NE. TNULL)&
-          CALL inorderDense(rgraph%rVertices%Kchild(TRIGHT,i))
+      IF (rgraph%rVertices%p_Kchild(TRIGHT,i) .NE. TNULL)&
+          CALL inorderDense(rgraph%rVertices%p_Kchild(TRIGHT,i))
     END SUBROUTINE inorderDense
 
      !**************************************************************
@@ -603,19 +611,19 @@ CONTAINS
       IF (i .EQ. TNULL) RETURN
 
       ! Proceed with left child if it exists
-      IF (rgraph%rVertices%Kchild(TLEFT,i) .NE. TNULL)&
-          CALL inorderSparse(rgraph%rVertices%Kchild(TLEFT,i))
+      IF (rgraph%rVertices%p_Kchild(TLEFT,i) .NE. TNULL)&
+          CALL inorderSparse(rgraph%rVertices%p_Kchild(TLEFT,i))
 
       ! In general ikey != itable
-      ikey   = rgraph%rVertices%IKey(i)
-      itable = rgraph%rVertices%IData(1,i)
+      ikey   = rgraph%rVertices%p_IKey(i)
+      itable = rgraph%rVertices%p_IData(1,i)
 
       CALL output_line('Vertex number: '//TRIM(sys_siL(ikey,15)))
       CALL arrlst_printArrayList(rgraph%rEdges,itable)
 
       ! Proceed with right child if it exists
-      IF (rgraph%rVertices%Kchild(TRIGHT,i) .NE. TNULL)&
-          CALL inorderSparse(rgraph%rVertices%Kchild(TRIGHT,i))
+      IF (rgraph%rVertices%p_Kchild(TRIGHT,i) .NE. TNULL)&
+          CALL inorderSparse(rgraph%rVertices%p_Kchild(TRIGHT,i))
     END SUBROUTINE inorderSparse
   END SUBROUTINE grph_printGraph
 
@@ -662,7 +670,7 @@ CONTAINS
 
     ! Return vertex position if required
     IF (bexists .AND. PRESENT(iVertexPosition)) THEN
-      iVertexPosition = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      iVertexPosition = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
     END IF
   END FUNCTION grph_hasVertex
 
@@ -832,7 +840,7 @@ CONTAINS
         DO WHILE(iposVertex .NE. ARRLST_NULL)
           
           ! Get number of adjacent vertex
-          jVertex=rgraph%rEdges%IData(iposVertex)
+          jVertex=rgraph%rEdges%p_IData(iposVertex)
 
           ! Get position of next entry in adjacency list
           iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.FALSE.)
@@ -896,7 +904,7 @@ CONTAINS
           DO WHILE(iposVertex .NE. ARRLST_NULL)
             
             ! Get number of adjacent vertex
-            jVertex=rgraph%rEdges%IData(iposVertex)
+            jVertex=rgraph%rEdges%p_IData(iposVertex)
 
             ! Get position of next entry in adjacency list
             iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,iVertex,.FALSE.)
@@ -971,8 +979,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
           CALL sys_halt()
         END IF
-        ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos   = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
         
         ! Get table for ireplaceVertex if required
         IF (bdoReplace) THEN
@@ -981,8 +989,8 @@ CONTAINS
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             CALL sys_halt()
           END IF
-          ipos          = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-          ireplaceTable = rgraph%rVertices%IData(1,ipos)
+          ipos          = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+          ireplaceTable = rgraph%rVertices%p_IData(1,ipos)
         ELSE
           ireplaceTable=0
         END IF
@@ -1008,7 +1016,7 @@ CONTAINS
         DO WHILE(iposVertex .NE. ARRLST_NULL)
           
           ! Get number of adjacent vertex
-          jVertex=rgraph%rEdges%IData(iposVertex)
+          jVertex=rgraph%rEdges%p_IData(iposVertex)
           
           ! Get position of next entry in adjacency list
           iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,itable,.FALSE.)
@@ -1027,8 +1035,8 @@ CONTAINS
                 OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
             CALL sys_halt()
           END IF
-          ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-          jtable = rgraph%rVertices%IData(1,ipos)
+          ipos   = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+          jtable = rgraph%rVertices%p_IData(1,ipos)
 
           ! Remove vertex iVertex from adjacency list of vertex jVertex
           IF (arrlst_deleteFromArrayList(rgraph%rEdges,jtable,iVertex).EQ.&
@@ -1058,7 +1066,7 @@ CONTAINS
           DO WHILE(iposVertex .NE. ARRLST_NULL)
 
             ! Get number of adjacent vertex
-            jVertex=rgraph%rEdges%IData(iposVertex)
+            jVertex=rgraph%rEdges%p_IData(iposVertex)
             
             ! Get position of next entry in adjacency list
             iposVertex=arrlst_getNextInArrayList(rgraph%rEdges,ireplaceTable,.FALSE.)
@@ -1073,8 +1081,8 @@ CONTAINS
                   OU_CLASS_ERROR,OU_MODE_STD,'grph_removeVertex')
               CALL sys_halt()
             END IF
-            ipos   = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-            jtable = rgraph%rVertices%IData(1,ipos)
+            ipos   = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+            jtable = rgraph%rVertices%p_IData(1,ipos)
             
             ! Remove vertex lastVertex from adjacency list of vertex jVertex
             IF (arrlst_deleteFromArrayList(rgraph%rEdges,jtable,ireplaceVertex).EQ.&
@@ -1188,8 +1196,8 @@ CONTAINS
         bexists = .FALSE.
         RETURN
       END IF
-      ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-      itable = rgraph%rVertices%IData(1,ipos)
+      ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+      itable = rgraph%rVertices%p_IData(1,ipos)
     END IF
 
     bexists = (arrlst_searchInArrayList(rgraph%rEdges,itable,iToVertex,ipos).EQ.ARRAYLIST_FOUND)
@@ -1263,8 +1271,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
-        ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
         IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
@@ -1299,8 +1307,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
-        ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
         IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
@@ -1345,8 +1353,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
-        ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Insert entry iFromVertex into adjacency list of vertex iToVertex
         IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
@@ -1364,8 +1372,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_insertEdge')
           CALL sys_halt()
         END IF
-        ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Insert entry iToVertex into adjacency list of vertex iFromVertex
         IF (arrlst_searchInArrayList(rgraph%rEdges,itable,&
@@ -1435,8 +1443,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           CALL sys_halt()
         END IF
-        ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
         
         ! Remove vertex iToVertex from table iFromVertex
         IF (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iToVertex)&
@@ -1463,8 +1471,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           CALL sys_halt()
         END IF
-        ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
         
         ! Remove vertex iToVertex from table iFromVertex
         IF (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iToVertex)&
@@ -1476,8 +1484,8 @@ CONTAINS
               OU_CLASS_ERROR,OU_MODE_STD,'grph_removeEdge')
           CALL sys_halt()
         END IF
-        ipos = rgraph%rVertices%Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-        itable = rgraph%rVertices%IData(1,ipos)
+        ipos = rgraph%rVertices%p_Kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
+        itable = rgraph%rVertices%p_IData(1,ipos)
 
         ! Remove vertex iFromVertex from table iToVertex
         IF (arrlst_deleteFromArrayList(rgraph%rEdges,itable,iFromVertex)&
@@ -1514,7 +1522,77 @@ CONTAINS
     CALL output_line('bisDense:     '//MERGE('Yes','No ',rgraph%bisDense))
     CALL output_line('NVT:          '//TRIM(sys_siL(rgraph%NVT,15)))
     CALL output_line('NEDGE:        '//TRIM(sys_siL(rgraph%NEDGE,15)))
-    CALL output_line('')
-    
+    CALL output_lbrk()    
   END SUBROUTINE grph_infoGraph
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE grph_duplicateGraph(rgraph,rgraphBackup)
+
+!<description>
+    ! This subroutine makes a copy of a graph in memory.
+    ! It does not make sense to share some information between graphs,
+    ! so each vectors is physically copied from the source graph
+    ! to the destination graph.
+!</description>
+
+!<input>
+    ! Source graph
+    TYPE(t_graph), INTENT(IN) :: rgraph
+!</input>
+
+!<inputoutput>
+    ! Destination graph
+    TYPE(t_graph), INTENT(INOUT) :: rgraphBackup
+!</inputoutput>
+!</subroutine>
+
+    ! Release backup graph
+    CALL grph_releaseGraph(rgraphBackup)
+
+    ! Copy all data
+    rgraphBackup = rgraph
+
+    CALL btree_duplicateTree(rgraph%rVertices,rgraphBackup%rVertices)
+    CALL arrlst_duplicateArrayList(rgraph%rEdges,rgraphBackup%rEdges)
+  END SUBROUTINE grph_duplicateGraph
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE grph_restoreGraph(rgraphBackup,rgraph)
+
+!<description>
+    ! This subroutine restores a graph from a previous backup.
+    ! The format of both graphs must be the same.
+!</description>
+
+!<input>
+    ! Backup of a graph
+    TYPE(t_graph), INTENT(IN) :: rgraphBackup
+!</input>
+
+!<inputoutput>
+    ! Destination graph
+    TYPE(t_graph), INTENT(INOUT) :: rgraph
+!</inputoutput>
+!</subroutine>
+
+    ! Check that both graphs are compatible
+    IF (rgraph%cgraphFormat .NE. rgraphBackup%cgraphFormat .OR.&
+        rgraph%bisDense     .NE. rgraphBackup%bisDense) THEN
+      CALL output_line('Incompatible graphs!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'grph_restoreGraph')
+      CALL sys_halt()
+    END IF
+
+    ! Release graph
+    CALL grph_releaseGraph(rgraph)
+
+    ! Duplicate the backup
+    CALL grph_duplicateGraph(rgraphBackup,rgraph)
+  END SUBROUTINE grph_restoreGraph
 END MODULE graph

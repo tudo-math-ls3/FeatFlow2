@@ -83,6 +83,11 @@
 !# 16.) arrlst_infoArrayList
 !#      -> Print information about arraylist
 !#
+!# 17.) arrlst_duplicateArrayList
+!#      -> Create a duplicate / backup of an arraylist.
+!#
+!# 18.) arrlst_restoreArrayList
+!#      -> Restore an arraylist from a previous backup
 !# </purpose>
 !##############################################################################
 
@@ -110,16 +115,18 @@ MODULE arraylist
   PUBLIC :: arrlst_searchInArrayList
   PUBLIC :: arrlst_printArrayList
   PUBLIC :: arrlst_infoArrayList
+  PUBLIC :: arrlst_duplicateArrayList
+  PUBLIC :: arrlst_restoreArrayList
 
 !<constants>
 
 !<constantblock description="KIND values for list data">
 
   ! kind value for indices in arraylist
-  INTEGER, PARAMETER, PUBLIC :: PREC_ARRAYLISTIDX = I32
+  INTEGER, PARAMETER, PUBLIC :: PREC_ARRAYLISTIDX    = I32
 
   ! kind value for indices in table
-  INTEGER, PARAMETER, PUBLIC :: PREC_TABLEIDX = I32
+  INTEGER, PARAMETER, PUBLIC :: PREC_TABLEIDX        = I32
 
 !</constantblock>
 
@@ -152,22 +159,22 @@ MODULE arraylist
 !<constantblock description="Internal tags for arraylist status">
   
   ! Tag for empty arraylist
-  INTEGER, PARAMETER, PUBLIC :: ARRLST_NULL =  0
+  INTEGER, PARAMETER, PUBLIC :: ARRLST_NULL          =  0
 
   ! Tag for next free position in storage of arraylist
-  INTEGER, PARAMETER :: ARRLST_FREE = 0
+  INTEGER, PARAMETER :: ARRLST_FREE                  = 0
 
   ! Tag for head of each list
-  INTEGER, PARAMETER :: ARRLST_HEAD = 1
+  INTEGER, PARAMETER :: ARRLST_HEAD                  = 1
 
   ! Tag for tail of each list
-  INTEGER, PARAMETER :: ARRLST_TAIL = 2
+  INTEGER, PARAMETER :: ARRLST_TAIL                  = 2
 
   ! Tag for last item stored in each list
-  INTEGER, PARAMETER :: ARRLST_ITEM = 3
+  INTEGER, PARAMETER :: ARRLST_ITEM                  = 3
 
   ! Tag for number of entries stored in each list
-  INTEGER, PARAMETER :: ARRLST_NA   = 4
+  INTEGER, PARAMETER :: ARRLST_NA                    = 4
 
 !</constantblock>
 !</constants>
@@ -228,23 +235,23 @@ MODULE arraylist
     ! should not be touched by the user. However, if the handle would
     ! be dereferenced for each operation such as search, delete,
     ! performance would be very poor.
-    INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:,:), POINTER :: Ktable => NULL()
+    INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:,:), POINTER :: p_Ktable => NULL()
     
     ! ArrayList structure
     ! NOTE: This array is introduced to increase performance (see above).
-    INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:), POINTER :: Knext => NULL()
+    INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:), POINTER ::   p_Knext => NULL()
 
     ! ArrayList data (Double)
     ! NOTE: This array is introduced to increase performance (see above).
-    REAL(DP), DIMENSION(:), POINTER :: DData => NULL()
+    REAL(DP), DIMENSION(:), POINTER ::                     p_DData => NULL()
 
     ! ArrayList data (Single)
     ! NOTE: This array is introduced to increase performance (see above).
-    REAL(SP), DIMENSION(:), POINTER :: SData => NULL()
+    REAL(SP), DIMENSION(:), POINTER ::                     p_FData => NULL()
 
     ! ArrayList data (Integer)
     ! NOTE: This array is introduced to increase performance (see above).
-    INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:), POINTER :: IData => NULL()
+    INTEGER(PREC_ARRAYLISTIDX), DIMENSION(:), POINTER ::   p_IData => NULL()
   END TYPE t_arraylist
   
 !</typeblock>
@@ -380,27 +387,27 @@ CONTAINS
     Isize=(/4,nntable/)
     CALL storage_new('arrlst_createArrayList','Ktable',Isize,&
         ST_INT,rarraylist%h_Ktable,ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%Ktable)
+    CALL storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%p_Ktable)
     
     CALL storage_new('arrlst_createArrayList','Knext',ARRLST_FREE,nna,ST_INT,&
         rarraylist%h_Knext,ST_NEWBLOCK_NOINIT)
-    CALL storage_getbase_int(rarraylist%h_Knext,rarraylist%Knext)
+    CALL storage_getbase_int(rarraylist%h_Knext,rarraylist%p_Knext)
 
     SELECT CASE(rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
       CALL storage_new('arrlst_createArrayList','Data',nna,ST_DOUBLE,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_double(rarraylist%h_Data,rarraylist%DData)
+      CALL storage_getbase_double(rarraylist%h_Data,rarraylist%p_DData)
       
     CASE (ST_SINGLE)
       CALL storage_new('arrlst_createArrayList','Data',nna,ST_SINGLE,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_single(rarraylist%h_Data,rarraylist%SData)
+      CALL storage_getbase_single(rarraylist%h_Data,rarraylist%p_FData)
       
     CASE (ST_INT)
       CALL storage_new('arrlst_createArrayList','Data',nna,ST_INT,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
-      CALL storage_getbase_int(rarraylist%h_Data,rarraylist%IData)
+      CALL storage_getbase_int(rarraylist%h_Data,rarraylist%p_IData)
       
     CASE DEFAULT
       CALL output_line('Unsupported data format!',&
@@ -409,7 +416,7 @@ CONTAINS
     END SELECT
     
     ! Initialize list structures
-    rarraylist%Knext(ARRLST_FREE)    = 1
+    rarraylist%p_Knext(ARRLST_FREE)    = 1
   END SUBROUTINE arrlst_createArrayList
   
   ! ***************************************************************************
@@ -448,7 +455,7 @@ CONTAINS
         rarraylist,CEILING(itable*rarraylist%dfactor))
     
     ! Initialize structures
-    rarraylist%Ktable(ARRLST_HEAD:ARRLST_NA,rarraylist%NTABLE+1:itable) = ARRLST_NULL
+    rarraylist%p_Ktable(ARRLST_HEAD:ARRLST_NA,rarraylist%NTABLE+1:itable) = ARRLST_NULL
 
     ! Set new table size
     rarraylist%NTABLE = MAX(rarraylist%NTABLE,itable)
@@ -473,8 +480,8 @@ CONTAINS
     IF (rarraylist%h_Ktable .NE. ST_NOHANDLE) CALL storage_free(rarraylist%h_Ktable)
     IF (rarraylist%h_Knext .NE. ST_NOHANDLE)  CALL storage_free(rarraylist%h_Knext)
     IF (rarraylist%h_Data .NE. ST_NOHANDLE)   CALL storage_free(rarraylist%h_Data)
-    NULLIFY(rarraylist%Ktable,rarraylist%Knext,rarraylist%Ddata,&
-        rarraylist%SData,rarraylist%IData)
+    NULLIFY(rarraylist%p_Ktable,rarraylist%p_Knext,rarraylist%p_DData,&
+        rarraylist%p_FData,rarraylist%p_IData)
 
     ! Reset list
     rarraylist%carraylistFormat = ST_NOHANDLE
@@ -518,10 +525,10 @@ CONTAINS
 
     ! Decrease number of entries by the number of entries present 
     ! in the table which is released
-    rarraylist%NA = rarraylist%NA - rarraylist%Ktable(ARRLST_NA,itable)
+    rarraylist%NA = rarraylist%NA - rarraylist%p_Ktable(ARRLST_NA,itable)
 
     ! Reset table
-    rarraylist%Ktable(ARRLST_HEAD:ARRLST_NA,itable) = ARRLST_NULL
+    rarraylist%p_Ktable(ARRLST_HEAD:ARRLST_NA,itable) = ARRLST_NULL
 
     ! Decrease number of tables if the last table has been deleted
     IF (itable .EQ. rarraylist%NTABLE)&
@@ -557,17 +564,17 @@ CONTAINS
         rarraylist%h_Knext,ST_NEWBLOCK_NOINIT,.TRUE.)
     CALL storage_realloc('arrlst_resizeArrayList',nna,&
         rarraylist%h_Data,ST_NEWBLOCK_NOINIT,.TRUE.)
-    CALL storage_getbase_int(rarraylist%h_Knext,rarraylist%Knext)
+    CALL storage_getbase_int(rarraylist%h_Knext,rarraylist%p_Knext)
 
     SELECT CASE(rarraylist%carraylistFormat)
     CASE (ST_DOUBLE)
-      CALL storage_getbase_double(rarraylist%h_Data,rarraylist%DData)
+      CALL storage_getbase_double(rarraylist%h_Data,rarraylist%p_DData)
 
     CASE (ST_SINGLE)
-      CALL storage_getbase_single(rarraylist%h_Data,rarraylist%SData)
+      CALL storage_getbase_single(rarraylist%h_Data,rarraylist%p_FData)
 
     CASE (ST_INT)
-      CALL storage_getbase_int(rarraylist%h_Data,rarraylist%IData)
+      CALL storage_getbase_int(rarraylist%h_Data,rarraylist%p_IData)
 
     CASE DEFAULT
       CALL output_line('Unsupported data format!',&
@@ -603,13 +610,13 @@ CONTAINS
 
     CALL storage_realloc('arrlst_resizeArrayList_table',nntable,&
         rarraylist%h_Ktable,ST_NEWBLOCK_NOINIT,.TRUE.)
-    CALL storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%Ktable)
+    CALL storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%p_Ktable)
 
 !!$    It should not be necessary to clear all arrays
-!!$    rarraylist%Ktable(ARRLST_HEAD,rarraylist%NTABLE+1:) = ARRLST_NULL
-!!$    rarraylist%Ktable(ARRLST_TAIL,rarraylist%NTABLE+1:) = ARRLST_NULL
-!!$    rarraylist%Ktable(ARRLST_ITEM,rarraylist%NTABLE+1:) = ARRLST_HEAD
-!!$    rarraylist%Ktable(ARRLST_NA,  rarraylist%NTABLE+1:) = ARRLST_NULL
+!!$    rarraylist%p_Ktable(ARRLST_HEAD,rarraylist%NTABLE+1:) = ARRLST_NULL
+!!$    rarraylist%p_Ktable(ARRLST_TAIL,rarraylist%NTABLE+1:) = ARRLST_NULL
+!!$    rarraylist%p_Ktable(ARRLST_ITEM,rarraylist%NTABLE+1:) = ARRLST_HEAD
+!!$    rarraylist%p_Ktable(ARRLST_NA,  rarraylist%NTABLE+1:) = ARRLST_NULL
   END SUBROUTINE arrlst_resizeArrayList_table
 
   ! ***************************************************************************
@@ -639,7 +646,7 @@ CONTAINS
     
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: p_DData
-    REAL(SP), DIMENSION(:), POINTER :: p_SData
+    REAL(SP), DIMENSION(:), POINTER :: p_FData
     INTEGER,  DIMENSION(:), POINTER :: p_IData
     INTEGER(I32) :: isize
 
@@ -662,8 +669,8 @@ CONTAINS
       CALL arrlst_copyArrayList(rarraylist,itable,p_DData)
       
     CASE (ST_SINGLE)
-      CALL storage_getbase_single(h_Data,p_SData)
-      CALL arrlst_copyArrayList(rarraylist,itable,p_SData)
+      CALL storage_getbase_single(h_Data,p_FData)
+      CALL arrlst_copyArrayList(rarraylist,itable,p_FData)
       
     CASE (ST_INT)
       CALL storage_getbase_int(h_Data,p_IData)
@@ -705,7 +712,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TABLEIDX), DIMENSION(:), POINTER :: p_Table
     REAL(DP), DIMENSION(:), POINTER :: p_DData
-    REAL(SP), DIMENSION(:), POINTER :: p_SData
+    REAL(SP), DIMENSION(:), POINTER :: p_FData
     INTEGER,  DIMENSION(:), POINTER :: p_IData
     INTEGER(I32) :: isize
 
@@ -741,8 +748,8 @@ CONTAINS
       CALL arrlst_copyArrayListTable(rarraylist,p_DData,p_Table)
 
     CASE (ST_SINGLE)
-      CALL storage_getbase_single(h_Data,p_SData)
-      CALL arrlst_copyArrayListTable(rarraylist,p_SData,p_Table)
+      CALL storage_getbase_single(h_Data,p_FData)
+      CALL arrlst_copyArrayListTable(rarraylist,p_FData,p_Table)
 
     CASE (ST_INT)
       CALL storage_getbase_int(h_Data,p_IData)
@@ -802,12 +809,12 @@ CONTAINS
     END IF
 
     icount = 0
-    ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+    ipos = rarraylist%p_Ktable(ARRLST_HEAD,itable)
     DO
       icount = icount+1
-      p_DData(icount) = rarraylist%DData(ipos)
-      IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
-      ipos = rarraylist%Knext(ipos)
+      p_DData(icount) = rarraylist%p_DData(ipos)
+      IF (ipos .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) EXIT
+      ipos = rarraylist%p_Knext(ipos)
     END DO
 
     IF (PRESENT(ndata)) ndata=icount
@@ -860,12 +867,12 @@ CONTAINS
     DO itable=1,ntable
       p_Table(itable) = icount
       
-      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+      ipos = rarraylist%p_Ktable(ARRLST_HEAD,itable)
       DO WHILE (ipos .NE. ARRLST_NULL)
-        p_DData(icount) = rarraylist%DData(ipos)
+        p_DData(icount) = rarraylist%p_DData(ipos)
         icount = icount+1
-        IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
-        ipos = rarraylist%Knext(ipos)
+        IF (ipos .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) EXIT
+        ipos = rarraylist%p_Knext(ipos)
       END DO
     END DO
     p_Table(ntable+1)=icount+1
@@ -875,7 +882,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyFromArrayListSngl(rarraylist,itable,p_SData,ndata)
+  SUBROUTINE arrlst_copyFromArrayListSngl(rarraylist,itable,p_FData,ndata)
 
 !<description>
     ! This subroutine copies the content of the list of the given
@@ -892,7 +899,7 @@ CONTAINS
 
 !<inputoutput>
     ! double array
-    REAL(SP), DIMENSION(:), INTENT(INOUT) :: p_SData
+    REAL(SP), DIMENSION(:), INTENT(INOUT) :: p_FData
 !</inputoutput>
 
 !<output>
@@ -917,12 +924,12 @@ CONTAINS
     END IF
 
     icount = 0
-    ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+    ipos = rarraylist%p_Ktable(ARRLST_HEAD,itable)
     DO
       icount = icount+1
-      p_SData(icount) = rarraylist%SData(ipos)
-      IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
-      ipos = rarraylist%Knext(ipos)
+      p_FData(icount) = rarraylist%p_FData(ipos)
+      IF (ipos .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) EXIT
+      ipos = rarraylist%p_Knext(ipos)
     END DO
 
     IF (PRESENT(ndata)) ndata=icount
@@ -932,7 +939,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyFromArrayListSngl_table(rarraylist,p_SData,p_Table)
+  SUBROUTINE arrlst_copyFromArrayListSngl_table(rarraylist,p_FData,p_Table)
 
 !<description>
     ! This subroutine copies the content of the table and all lists
@@ -946,7 +953,7 @@ CONTAINS
 
 !<inputoutput>
     ! single array
-    REAL(SP), DIMENSION(:), INTENT(INOUT)               :: p_SData
+    REAL(SP), DIMENSION(:), INTENT(INOUT)               :: p_FData
 
     ! table array
     INTEGER(PREC_TABLEIDX), DIMENSION(:), INTENT(INOUT) :: p_Table
@@ -975,12 +982,12 @@ CONTAINS
     DO itable=1,ntable
       p_Table(itable) = icount
       
-      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+      ipos = rarraylist%p_Ktable(ARRLST_HEAD,itable)
       DO WHILE(ipos .NE. ARRLST_NULL)
-        p_SData(icount) = rarraylist%SData(ipos)
+        p_FData(icount) = rarraylist%p_FData(ipos)
         icount = icount+1
-        IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
-        ipos = rarraylist%Knext(ipos)
+        IF (ipos .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) EXIT
+        ipos = rarraylist%p_Knext(ipos)
       END DO
     END DO
     p_Table(ntable+1)=icount+1
@@ -1033,12 +1040,12 @@ CONTAINS
     END IF
 
     icount = 0
-    ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+    ipos = rarraylist%p_Ktable(ARRLST_HEAD,itable)
     DO
       icount = icount+1
-      p_IData(icount) = rarraylist%IData(ipos)
-      IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
-      ipos = rarraylist%Knext(ipos)
+      p_IData(icount) = rarraylist%p_IData(ipos)
+      IF (ipos .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) EXIT
+      ipos = rarraylist%p_Knext(ipos)
     END DO
 
     IF (PRESENT(ndata)) ndata=icount
@@ -1091,12 +1098,12 @@ CONTAINS
     DO itable=1,ntable
       p_Table(itable) = icount
       
-      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
+      ipos = rarraylist%p_Ktable(ARRLST_HEAD,itable)
       DO WHILE(ipos .NE. ARRLST_NULL)
-        p_IData(icount) = rarraylist%IData(ipos)
+        p_IData(icount) = rarraylist%p_IData(ipos)
         icount=icount+1
-        IF (ipos .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) EXIT
-        ipos = rarraylist%Knext(ipos)
+        IF (ipos .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) EXIT
+        ipos = rarraylist%p_Knext(ipos)
       END DO
     END DO
     p_Table(ntable+1)=icount
@@ -1129,7 +1136,7 @@ CONTAINS
     
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: p_DData
-    REAL(SP), DIMENSION(:), POINTER :: p_SData
+    REAL(SP), DIMENSION(:), POINTER :: p_FData
     INTEGER,  DIMENSION(:), POINTER :: p_IData
     
     ! Transform the content of h_Data to the list
@@ -1139,8 +1146,8 @@ CONTAINS
       CALL arrlst_copyArrayList(p_DData,itable,rarraylist)
 
     CASE (ST_SINGLE)
-      CALL storage_getbase_single(h_DataSrc,p_SData)
-      CALL arrlst_copyArrayList(p_SData,itable,rarraylist)
+      CALL storage_getbase_single(h_DataSrc,p_FData)
+      CALL arrlst_copyArrayList(p_FData,itable,rarraylist)
 
     CASE (ST_INT)
       CALL storage_getbase_int(h_DataSrc,p_IData)
@@ -1183,7 +1190,7 @@ CONTAINS
     ! local variables
     INTEGER(PREC_TABLEIDX), DIMENSION(:), POINTER :: p_Table
     REAL(DP), DIMENSION(:), POINTER :: p_DData
-    REAL(SP), DIMENSION(:), POINTER :: p_SData
+    REAL(SP), DIMENSION(:), POINTER :: p_FData
     INTEGER,  DIMENSION(:), POINTER :: p_IData
     
     ! Set pointer to table
@@ -1196,8 +1203,8 @@ CONTAINS
       CALL arrlst_copyArrayListTable(p_DData,rarraylist,p_Table)
 
     CASE (ST_SINGLE)
-      CALL storage_getbase_single(h_DataSrc,p_SData)
-      CALL arrlst_copyArrayListTable(p_SData,rarraylist,p_Table)
+      CALL storage_getbase_single(h_DataSrc,p_FData)
+      CALL arrlst_copyArrayListTable(p_FData,rarraylist,p_Table)
 
     CASE (ST_INT)
       CALL storage_getbase_int(h_DataSrc,p_IData)
@@ -1296,7 +1303,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyToArrayListSngl(p_SDataSrc,itable,rarraylist)
+  SUBROUTINE arrlst_copyToArrayListSngl(p_FDataSrc,itable,rarraylist)
 
 !<description>
     ! This subroutine copies the content of the given single array to
@@ -1305,7 +1312,7 @@ CONTAINS
 
 !<input>
     ! pointer to the data
-    REAL(SP), DIMENSION(:), INTENT(IN) :: p_SDataSrc
+    REAL(SP), DIMENSION(:), INTENT(IN) :: p_FDataSrc
 
     ! number of table
     INTEGER(PREC_TABLEIDX), INTENT(IN) :: itable
@@ -1326,8 +1333,8 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-    DO ipos=1,SIZE(p_SDataSrc)
-      CALL arrlst_appendToArrayList(rarraylist,itable,p_SDataSrc(ipos),kpos)
+    DO ipos=1,SIZE(p_FDataSrc)
+      CALL arrlst_appendToArrayList(rarraylist,itable,p_FDataSrc(ipos),kpos)
     END DO
   END SUBROUTINE arrlst_copyToArrayListSngl
 
@@ -1335,7 +1342,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE arrlst_copyToArrayListSngl_table(p_SDataSrc,rarraylist,p_Table)
+  SUBROUTINE arrlst_copyToArrayListSngl_table(p_FDataSrc,rarraylist,p_Table)
 
 !<description>
     ! This subroutine copies the content of the given single array to
@@ -1344,7 +1351,7 @@ CONTAINS
 
 !<input>
     ! pointer to the data
-    REAL(SP), DIMENSION(:), INTENT(IN)               :: p_SDataSrc
+    REAL(SP), DIMENSION(:), INTENT(IN)               :: p_FDataSrc
 
     ! pointer to the table
     INTEGER(PREC_TABLEIDX), DIMENSION(:), INTENT(IN) :: p_Table
@@ -1369,7 +1376,7 @@ CONTAINS
     ntable=SIZE(p_Table)-1
     DO itable=1,ntable
       DO ipos=p_Table(itable),p_Table(itable+1)-1
-        CALL arrlst_appendToArrayList(rarraylist,itable,p_SDataSrc(ipos),kpos)
+        CALL arrlst_appendToArrayList(rarraylist,itable,p_FDataSrc(ipos),kpos)
       END DO
     END DO
   END SUBROUTINE arrlst_copyToArrayListSngl_table
@@ -1481,20 +1488,20 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ihead,itail,iitem,ina
     
     ! Swap
-    ihead = rarraylist%Ktable(ARRLST_HEAD,itable)
-    itail = rarraylist%Ktable(ARRLST_TAIL,itable)
-    iitem = rarraylist%Ktable(ARRLST_ITEM,itable)
-    ina   = rarraylist%Ktable(ARRLST_NA,  itable)
+    ihead = rarraylist%p_Ktable(ARRLST_HEAD,itable)
+    itail = rarraylist%p_Ktable(ARRLST_TAIL,itable)
+    iitem = rarraylist%p_Ktable(ARRLST_ITEM,itable)
+    ina   = rarraylist%p_Ktable(ARRLST_NA,  itable)
     
-    rarraylist%Ktable(ARRLST_HEAD,itable) = rarraylist%Ktable(ARRLST_HEAD,jtable)
-    rarraylist%Ktable(ARRLST_TAIL,itable) = rarraylist%Ktable(ARRLST_TAIL,jtable)
-    rarraylist%Ktable(ARRLST_ITEM,itable) = rarraylist%Ktable(ARRLST_ITEM,jtable)
-    rarraylist%Ktable(ARRLST_NA,  itable) = rarraylist%Ktable(ARRLST_NA,  jtable)
+    rarraylist%p_Ktable(ARRLST_HEAD,itable) = rarraylist%p_Ktable(ARRLST_HEAD,jtable)
+    rarraylist%p_Ktable(ARRLST_TAIL,itable) = rarraylist%p_Ktable(ARRLST_TAIL,jtable)
+    rarraylist%p_Ktable(ARRLST_ITEM,itable) = rarraylist%p_Ktable(ARRLST_ITEM,jtable)
+    rarraylist%p_Ktable(ARRLST_NA,  itable) = rarraylist%p_Ktable(ARRLST_NA,  jtable)
 
-    rarraylist%Ktable(ARRLST_HEAD,jtable) = ihead
-    rarraylist%Ktable(ARRLST_TAIL,jtable) = itail
-    rarraylist%Ktable(ARRLST_ITEM,jtable) = iitem
-    rarraylist%Ktable(ARRLST_NA,  jtable) = ina
+    rarraylist%p_Ktable(ARRLST_HEAD,jtable) = ihead
+    rarraylist%p_Ktable(ARRLST_TAIL,jtable) = itail
+    rarraylist%p_Ktable(ARRLST_ITEM,jtable) = iitem
+    rarraylist%p_Ktable(ARRLST_NA,  jtable) = ina
   END SUBROUTINE arrlst_swapArrayList
 
   ! ***************************************************************************
@@ -1528,7 +1535,7 @@ CONTAINS
       RETURN
     END IF
     
-    ipos=rarraylist%Knext(rarraylist%Ktable(ARRLST_HEAD,itable))
+    ipos=rarraylist%p_Knext(rarraylist%p_Ktable(ARRLST_HEAD,itable))
   END FUNCTION arrlst_getFirstInArrayList
 
   ! ***************************************************************************
@@ -1562,7 +1569,7 @@ CONTAINS
       RETURN
     END IF
     
-    ipos=rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable))
+    ipos=rarraylist%p_Knext(rarraylist%p_Ktable(ARRLST_TAIL,itable))
   END FUNCTION arrlst_getLastInArrayList
 
   ! ***************************************************************************
@@ -1603,14 +1610,14 @@ CONTAINS
 
     ! Should we reset the item pointer?
     IF (breset) THEN
-      ipos = rarraylist%Ktable(ARRLST_HEAD,itable)
-      rarraylist%Ktable(ARRLST_ITEM,itable) = ipos
+      ipos = rarraylist%p_Ktable(ARRLST_HEAD,itable)
+      rarraylist%p_Ktable(ARRLST_ITEM,itable) = ipos
       RETURN
     END IF
 
     ! Get next item and increase item pointer
-    ipos = rarraylist%Knext(rarraylist%Ktable(ARRLST_ITEM,itable))
-    rarraylist%Ktable(ARRLST_ITEM,itable) = ipos
+    ipos = rarraylist%p_Knext(rarraylist%p_Ktable(ARRLST_ITEM,itable))
+    rarraylist%p_Ktable(ARRLST_ITEM,itable) = ipos
   END FUNCTION arrlst_getNextInArrayList
 
   ! ***************************************************************************
@@ -1660,30 +1667,30 @@ CONTAINS
     
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+    rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
    
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%DData(ipos)                = da
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_DData(ipos)                = da
     ELSE
-      rarraylist%Knext(ipos)                = rarraylist%Ktable(ARRLST_HEAD,itable)
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%DData(ipos)                = da
+      rarraylist%p_Knext(ipos)                = rarraylist%p_Ktable(ARRLST_HEAD,itable)
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_DData(ipos)                = da
     END IF
   END SUBROUTINE arrlst_prependToArrayListDble
 
@@ -1734,30 +1741,30 @@ CONTAINS
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-     rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+     rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%SData(ipos)                = sa
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_FData(ipos)                = sa
     ELSE
-      rarraylist%Knext(ipos)                = rarraylist%Ktable(ARRLST_HEAD,itable)
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%SData(ipos)                = sa
+      rarraylist%p_Knext(ipos)                = rarraylist%p_Ktable(ARRLST_HEAD,itable)
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_FData(ipos)                = sa
     END IF
   END SUBROUTINE arrlst_prependToArrayListSngl
 
@@ -1808,30 +1815,30 @@ CONTAINS
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-     rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+     rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%IData(ipos)                = ia
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_IData(ipos)                = ia
     ELSE
-      rarraylist%Knext(ipos)                = rarraylist%Ktable(ARRLST_HEAD,itable)
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%IData(ipos)                = ia
+      rarraylist%p_Knext(ipos)                = rarraylist%p_Ktable(ARRLST_HEAD,itable)
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_IData(ipos)                = ia
     END IF
   END SUBROUTINE arrlst_prependToArrayListInt
 
@@ -1882,31 +1889,31 @@ CONTAINS
     
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+    rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%DData(ipos)                = da
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_DData(ipos)                = da
     ELSE
-      rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable)) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable)                   = ipos
-      rarraylist%Knext(ipos)                                  = ARRLST_NULL
-      rarraylist%DData(ipos)                                  = da
+      rarraylist%p_Knext(rarraylist%p_Ktable(ARRLST_TAIL,itable)) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable)                   = ipos
+      rarraylist%p_Knext(ipos)                                  = ARRLST_NULL
+      rarraylist%p_DData(ipos)                                  = da
     END IF
   END SUBROUTINE arrlst_appendToArrayListDble
 
@@ -1957,31 +1964,31 @@ CONTAINS
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+    rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%SData(ipos)                = sa
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_FData(ipos)                = sa
     ELSE
-      rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable)) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable)                   = ipos
-      rarraylist%Knext(ipos)                                  = ARRLST_NULL
-      rarraylist%SData(ipos)                                  = sa
+      rarraylist%p_Knext(rarraylist%p_Ktable(ARRLST_TAIL,itable)) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable)                   = ipos
+      rarraylist%p_Knext(ipos)                                  = ARRLST_NULL
+      rarraylist%p_FData(ipos)                                  = sa
     END IF
   END SUBROUTINE arrlst_appendToArrayListSngl
   
@@ -2032,31 +2039,31 @@ CONTAINS
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+    rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%IData(ipos)                = ia
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_IData(ipos)                = ia
     ELSE
-      rarraylist%Knext(rarraylist%Ktable(ARRLST_TAIL,itable)) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable)                   = ipos
-      rarraylist%Knext(ipos)                                  = ARRLST_NULL
-      rarraylist%IData(ipos)                                  = ia
+      rarraylist%p_Knext(rarraylist%p_Ktable(ARRLST_TAIL,itable)) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable)                   = ipos
+      rarraylist%p_Knext(ipos)                                  = ARRLST_NULL
+      rarraylist%p_IData(ipos)                                  = ia
     END IF
   END SUBROUTINE arrlst_appendToArrayListInt
 
@@ -2110,39 +2117,39 @@ CONTAINS
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+    rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%DData(ipos)                = da
-    ELSEIF (ipred .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) THEN
-      rarraylist%Knext(ipred)               = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%DData(ipos)                = da
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_DData(ipos)                = da
+    ELSEIF (ipred .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) THEN
+      rarraylist%p_Knext(ipred)               = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_DData(ipos)                = da
     ELSEIF (ipred < ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Knext(ipos)                = -ipred
-      rarraylist%DData(ipos)                = da
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Knext(ipos)                = -ipred
+      rarraylist%p_DData(ipos)                = da
     ELSE
-      rarraylist%Knext(ipos)                = rarraylist%Knext(ipred)
-      rarraylist%Knext(ipred)               = ipos
-      rarraylist%DData(ipos)                = da
+      rarraylist%p_Knext(ipos)                = rarraylist%p_Knext(ipred)
+      rarraylist%p_Knext(ipred)               = ipos
+      rarraylist%p_DData(ipos)                = da
     END IF
   END SUBROUTINE arrlst_insertIntoArrayListDble
 
@@ -2196,39 +2203,39 @@ CONTAINS
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+    rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos               = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%SData(ipos)                = sa
-    ELSEIF (ipred .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) THEN
-      rarraylist%Knext(ipred)               = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%SData(ipos)                = sa
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_FData(ipos)                = sa
+    ELSEIF (ipred .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) THEN
+      rarraylist%p_Knext(ipred)               = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_FData(ipos)                = sa
     ELSEIF (ipred < ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Knext(ipos)                = -ipred
-      rarraylist%SData(ipos)                = sa
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Knext(ipos)                = -ipred
+      rarraylist%p_FData(ipos)                = sa
     ELSE
-      rarraylist%Knext(ipos)                = rarraylist%Knext(ipred)
-      rarraylist%Knext(ipred)               = ipos
-      rarraylist%SData(ipos)                = sa
+      rarraylist%p_Knext(ipos)                = rarraylist%p_Knext(ipred)
+      rarraylist%p_Knext(ipred)               = ipos
+      rarraylist%p_FData(ipos)                = sa
     END IF
   END SUBROUTINE arrlst_insertIntoArrayListSngl
 
@@ -2282,39 +2289,39 @@ CONTAINS
 
     ! Check if list needs to be enlarged
     rarraylist%NA = rarraylist%NA+1
-    rarraylist%Ktable(ARRLST_NA,itable) =  rarraylist%Ktable(ARRLST_NA,itable)+1
-    ipos = rarraylist%Knext(ARRLST_FREE)
+    rarraylist%p_Ktable(ARRLST_NA,itable) =  rarraylist%p_Ktable(ARRLST_NA,itable)+1
+    ipos = rarraylist%p_Knext(ARRLST_FREE)
     IF (ABS(ipos) > rarraylist%NNA) THEN
       CALL arrlst_resizeArrayList(rarraylist,CEILING(rarraylist%dfactor*rarraylist%NNA))
     END IF
     
     ! Set next free position
     IF (ipos > 0) THEN
-      rarraylist%Knext(ARRLST_FREE) = ipos+1
+      rarraylist%p_Knext(ARRLST_FREE) = ipos+1
     ELSE
       ipos = ABS(ipos)
-      rarraylist%Knext(ARRLST_FREE) = rarraylist%Knext(ipos)
+      rarraylist%p_Knext(ARRLST_FREE) = rarraylist%p_Knext(ipos)
     END IF
     
     ! Set head, tail and data
-    IF (rarraylist%Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%IData(ipos)                = ia
-    ELSEIF (ipred .EQ. rarraylist%Ktable(ARRLST_TAIL,itable)) THEN
-      rarraylist%Knext(ipred)               = ipos
-      rarraylist%Ktable(ARRLST_TAIL,itable) = ipos
-      rarraylist%Knext(ipos)                = ARRLST_NULL
-      rarraylist%IData(ipos)                = ia
+    IF (rarraylist%p_Ktable(ARRLST_HEAD,itable) .EQ. ARRLST_NULL) THEN
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_IData(ipos)                = ia
+    ELSEIF (ipred .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable)) THEN
+      rarraylist%p_Knext(ipred)               = ipos
+      rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipos
+      rarraylist%p_Knext(ipos)                = ARRLST_NULL
+      rarraylist%p_IData(ipos)                = ia
     ELSEIF (ipred < ARRLST_NULL) THEN
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Knext(ipos)                = -ipred
-      rarraylist%IData(ipos)                = ia
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Knext(ipos)                = -ipred
+      rarraylist%p_IData(ipos)                = ia
     ELSE
-      rarraylist%Knext(ipos)                = rarraylist%Knext(ipred)
-      rarraylist%Knext(ipred)               = ipos
-      rarraylist%IData(ipos)                = ia
+      rarraylist%p_Knext(ipos)                = rarraylist%p_Knext(ipred)
+      rarraylist%p_Knext(ipred)               = ipos
+      rarraylist%p_IData(ipos)                = ia
     END IF
   END SUBROUTINE arrlst_insertIntoArrayListInt
   
@@ -2364,31 +2371,31 @@ CONTAINS
     
     ! Delete data
     rarraylist%NA = rarraylist%NA-1
-    rarraylist%Ktable(ARRLST_NA,itable) = rarraylist%Ktable(ARRLST_NA,itable)-1
+    rarraylist%p_Ktable(ARRLST_NA,itable) = rarraylist%p_Ktable(ARRLST_NA,itable)-1
 
     ! Are we first entry in list?
     IF (ipred < 0) THEN
 
       ! Get position
       ipred = -ipred
-      ipos  = rarraylist%Knext(ipred)
+      ipos  = rarraylist%p_Knext(ipred)
       
       ! Update free position
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Knext(ipred)               = rarraylist%Knext(ARRLST_FREE)
-      rarraylist%Knext(ARRLST_FREE)         = -ipred
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Knext(ipred)               = rarraylist%p_Knext(ARRLST_FREE)
+      rarraylist%p_Knext(ARRLST_FREE)         = -ipred
 
     ELSE
 
       ! Get position
-      ipos = rarraylist%Knext(ipred)
-      IF (rarraylist%Knext(ipred) .EQ. rarraylist%Ktable(ARRLST_TAIL,itable))&
-          rarraylist%Ktable(ARRLST_TAIL,itable) = ipred
+      ipos = rarraylist%p_Knext(ipred)
+      IF (rarraylist%p_Knext(ipred) .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable))&
+          rarraylist%p_Ktable(ARRLST_TAIL,itable) = ipred
       
       ! Update free position
-      rarraylist%Knext(ipred)       = rarraylist%Knext(ipos)
-      rarraylist%Knext(ipos)        = rarraylist%Knext(ARRLST_FREE)
-      rarraylist%Knext(ARRLST_FREE) = -ipos
+      rarraylist%p_Knext(ipred)       = rarraylist%p_Knext(ipos)
+      rarraylist%p_Knext(ipos)        = rarraylist%p_Knext(ARRLST_FREE)
+      rarraylist%p_Knext(ARRLST_FREE) = -ipos
     END IF
   END FUNCTION arrlst_deleteFromArrayListDble
   
@@ -2438,31 +2445,31 @@ CONTAINS
 
     ! Delete data
     rarraylist%NA = rarraylist%NA-1
-    rarraylist%Ktable(ARRLST_NA,itable) = rarraylist%Ktable(ARRLST_NA,itable)-1
+    rarraylist%p_Ktable(ARRLST_NA,itable) = rarraylist%p_Ktable(ARRLST_NA,itable)-1
     
     ! Are we first entry in list?
     IF (ipred < 0) THEN
       
       ! Get position
       ipred = -ipred
-      ipos  = rarraylist%Knext(ipred)
+      ipos  = rarraylist%p_Knext(ipred)
       
       ! Update free position
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Knext(ipred)         = rarraylist%Knext(ARRLST_FREE)
-      rarraylist%Knext(ARRLST_FREE)         = -ipred
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Knext(ipred)         = rarraylist%p_Knext(ARRLST_FREE)
+      rarraylist%p_Knext(ARRLST_FREE)         = -ipred
       
     ELSE
       
       ! Get position
-      ipos = rarraylist%Knext(ipred)
-      IF (rarraylist%Knext(ipred) .EQ. rarraylist%Ktable(ARRLST_TAIL,itable))&
-          rarraylist%Ktable(ARRLST_TAIL,itable)=ipred
+      ipos = rarraylist%p_Knext(ipred)
+      IF (rarraylist%p_Knext(ipred) .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable))&
+          rarraylist%p_Ktable(ARRLST_TAIL,itable)=ipred
       
       ! Update free position
-      rarraylist%Knext(ipred) = rarraylist%Knext(ipos)
-      rarraylist%Knext(ipos)  = rarraylist%Knext(ARRLST_FREE)
-      rarraylist%Knext(ARRLST_FREE) = -ipos
+      rarraylist%p_Knext(ipred) = rarraylist%p_Knext(ipos)
+      rarraylist%p_Knext(ipos)  = rarraylist%p_Knext(ARRLST_FREE)
+      rarraylist%p_Knext(ARRLST_FREE) = -ipos
     END IF
   END FUNCTION arrlst_deleteFromArrayListSngl
 
@@ -2512,33 +2519,33 @@ CONTAINS
 
     ! Delete data
     rarraylist%NA = rarraylist%NA-1
-    rarraylist%Ktable(ARRLST_NA,itable) = rarraylist%Ktable(ARRLST_NA,itable)-1
+    rarraylist%p_Ktable(ARRLST_NA,itable) = rarraylist%p_Ktable(ARRLST_NA,itable)-1
 
     ! Are we first entry in list?
     IF (ipred < 0) THEN
 
       ! Get position
       ipred = -ipred
-      ipos  = rarraylist%Knext(ipred)
+      ipos  = rarraylist%p_Knext(ipred)
 
       ! Update free position
-      rarraylist%Ktable(ARRLST_HEAD,itable) = ipos
-      rarraylist%Knext(ipred)               = rarraylist%Knext(ARRLST_FREE)
-      rarraylist%Knext(ARRLST_FREE)         = -ipred
+      rarraylist%p_Ktable(ARRLST_HEAD,itable) = ipos
+      rarraylist%p_Knext(ipred)               = rarraylist%p_Knext(ARRLST_FREE)
+      rarraylist%p_Knext(ARRLST_FREE)         = -ipred
       
     ELSE
 
       ! Get position
-      ipos = rarraylist%Knext(ipred)
+      ipos = rarraylist%p_Knext(ipred)
 
       ! Check if last entry should be deleted
-      IF (rarraylist%Knext(ipred) .EQ. rarraylist%Ktable(ARRLST_TAIL,itable))&
-          rarraylist%Ktable(ARRLST_TAIL,itable)=ipred
+      IF (rarraylist%p_Knext(ipred) .EQ. rarraylist%p_Ktable(ARRLST_TAIL,itable))&
+          rarraylist%p_Ktable(ARRLST_TAIL,itable)=ipred
       
       ! Update free position
-      rarraylist%Knext(ipred) = rarraylist%Knext(ipos)
-      rarraylist%Knext(ipos)  = rarraylist%Knext(ARRLST_FREE)
-      rarraylist%Knext(ARRLST_FREE) = -ipos
+      rarraylist%p_Knext(ipred) = rarraylist%p_Knext(ipos)
+      rarraylist%p_Knext(ipos)  = rarraylist%p_Knext(ARRLST_FREE)
+      rarraylist%p_Knext(ARRLST_FREE) = -ipos
     END IF
   END FUNCTION arrlst_deleteFromArrayListInt
 
@@ -2590,79 +2597,79 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) RETURN
-    ipred=-rarraylist%Ktable(ARRLST_HEAD,itable)
+    ipred=-rarraylist%p_Ktable(ARRLST_HEAD,itable)
     
     ! Check if list is empty
     IF (ipred .EQ. ARRLST_NULL) RETURN
 
     ! Initialization
-    ihead=rarraylist%Ktable(ARRLST_HEAD,itable)
-    itail=rarraylist%Ktable(ARRLST_TAIL,itable)
+    ihead=rarraylist%p_Ktable(ARRLST_HEAD,itable)
+    itail=rarraylist%p_Ktable(ARRLST_TAIL,itable)
 
     ! What kind of ordering are we
     SELECT CASE(rarraylist%cordering)
     CASE (ARRAYLIST_UNORDERED)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) .EQ. da) THEN
+      IF (rarraylist%p_DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%DData(inext) .EQ. da) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
         IF (inext .EQ. itail) EXIT
-        ipred=rarraylist%Knext(ipred)
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_INCREASING)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) .EQ. da) THEN
+      IF (rarraylist%p_DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
-      ELSEIF(rarraylist%DData(ihead) > da) THEN
+      ELSEIF(rarraylist%p_DData(ihead) > da) THEN
         RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%DData(inext) .EQ. da) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%DData(inext) > da) EXIT
-        ipred=rarraylist%Knext(ipred)
+        IF (rarraylist%p_DData(inext) > da) EXIT
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_DECREASING)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) .EQ. da) THEN
+      IF (rarraylist%p_DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
-      ELSEIF(rarraylist%DData(ihead) < da) THEN
+      ELSEIF(rarraylist%p_DData(ihead) < da) THEN
         RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)     
-        IF (rarraylist%DData(inext) .EQ. da) THEN
+        inext = rarraylist%p_Knext(ipred)     
+        IF (rarraylist%p_DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%DData(inext) < da) EXIT
-        ipred=rarraylist%Knext(ipred)
+        IF (rarraylist%p_DData(inext) < da) EXIT
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_CSR7)
 
       ! Check first item separately
-      IF (rarraylist%DData(ihead) .EQ. da) THEN
+      IF (rarraylist%p_DData(ihead) .EQ. da) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(ABS(itable-da) .LE. SYS_EPSREAL) THEN
         RETURN
@@ -2670,16 +2677,16 @@ CONTAINS
       ipred=-ipred
       
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%DData(inext) .EQ. da) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_DData(inext) .EQ. da) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%DData(inext) > da) EXIT
-        IF (rarraylist%Knext(ipred) .EQ. itail) THEN
-          ipred=rarraylist%Knext(ipred); EXIT
+        IF (rarraylist%p_DData(inext) > da) EXIT
+        IF (rarraylist%p_Knext(ipred) .EQ. itail) THEN
+          ipred=rarraylist%p_Knext(ipred); EXIT
         END IF
-        ipred=rarraylist%Knext(ipred)
+        ipred=rarraylist%p_Knext(ipred)
       END DO
     END SELECT
   END FUNCTION arrlst_searchInArrayListDble
@@ -2732,79 +2739,79 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) RETURN
-    ipred=-rarraylist%Ktable(ARRLST_HEAD,itable)
+    ipred=-rarraylist%p_Ktable(ARRLST_HEAD,itable)
 
     ! Check if list is empty
     IF (ipred .EQ. ARRLST_NULL) RETURN
 
     ! Initialization
-    ihead=rarraylist%Ktable(ARRLST_HEAD,itable)
-    itail=rarraylist%Ktable(ARRLST_TAIL,itable)
+    ihead=rarraylist%p_Ktable(ARRLST_HEAD,itable)
+    itail=rarraylist%p_Ktable(ARRLST_TAIL,itable)
 
     ! What kind of ordering are we
     SELECT CASE(rarraylist%cordering)
     CASE (ARRAYLIST_UNORDERED)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) .EQ. sa) THEN
+      IF (rarraylist%p_FData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) .EQ. sa) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_FData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
         IF (inext .EQ. itail) EXIT
-        ipred=rarraylist%Knext(ipred)
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_INCREASING)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) .EQ. sa) THEN
+      IF (rarraylist%p_FData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
-      ELSEIF(rarraylist%SData(ihead) > sa) THEN
+      ELSEIF(rarraylist%p_FData(ihead) > sa) THEN
         RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) .EQ. sa) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_FData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%SData(inext) > sa) EXIT
-        ipred=rarraylist%Knext(ipred)
+        IF (rarraylist%p_FData(inext) > sa) EXIT
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_DECREASING)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) .EQ. sa) THEN
+      IF (rarraylist%p_FData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
-      ELSEIF(rarraylist%SData(ihead) < sa) THEN
+      ELSEIF(rarraylist%p_FData(ihead) < sa) THEN
         RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) .EQ. sa) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_FData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%SData(inext) < sa) EXIT
-        ipred=rarraylist%Knext(ipred)
+        IF (rarraylist%p_FData(inext) < sa) EXIT
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_CSR7)
 
       ! Check first item separately
-      IF (rarraylist%SData(ihead) .EQ. sa) THEN
+      IF (rarraylist%p_FData(ihead) .EQ. sa) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(ABS(itable-sa) .LE. SYS_EPSREAL) THEN
         RETURN
@@ -2812,16 +2819,16 @@ CONTAINS
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%SData(inext) .EQ. sa) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_FData(inext) .EQ. sa) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%SData(inext) > sa) EXIT
-        IF (rarraylist%Knext(ipred) .EQ. itail) THEN
-          ipred=rarraylist%Knext(ipred); EXIT
+        IF (rarraylist%p_FData(inext) > sa) EXIT
+        IF (rarraylist%p_Knext(ipred) .EQ. itail) THEN
+          ipred=rarraylist%p_Knext(ipred); EXIT
         END IF
-        ipred=rarraylist%Knext(ipred)
+        ipred=rarraylist%p_Knext(ipred)
       END DO
     END SELECT
   END FUNCTION arrlst_searchInArrayListSngl
@@ -2874,79 +2881,79 @@ CONTAINS
 
     ! Check if table exists
     IF (itable < 1 .OR. itable > rarraylist%NTABLE) RETURN
-    ipred=-rarraylist%Ktable(ARRLST_HEAD,itable)
+    ipred=-rarraylist%p_Ktable(ARRLST_HEAD,itable)
     
     ! Check if list is empty
     IF (ipred .EQ. ARRLST_NULL) RETURN
 
     ! Initialization
-    ihead=rarraylist%Ktable(ARRLST_HEAD,itable)
-    itail=rarraylist%Ktable(ARRLST_TAIL,itable)
+    ihead=rarraylist%p_Ktable(ARRLST_HEAD,itable)
+    itail=rarraylist%p_Ktable(ARRLST_TAIL,itable)
         
     ! What kind of ordering are we
     SELECT CASE(rarraylist%cordering)
     CASE (ARRAYLIST_UNORDERED)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) .EQ. ia) THEN
+      IF (rarraylist%p_IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) .EQ. ia) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
 
         IF (inext .EQ. itail) EXIT
-        ipred=rarraylist%Knext(ipred)
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_INCREASING)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) .EQ. ia) THEN
+      IF (rarraylist%p_IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
-      ELSEIF(rarraylist%IData(ihead) > ia) THEN
+      ELSEIF(rarraylist%p_IData(ihead) > ia) THEN
         RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) .EQ. ia) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%IData(inext) > ia) EXIT
-        ipred=rarraylist%Knext(ipred)
+        IF (rarraylist%p_IData(inext) > ia) EXIT
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_DECREASING)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) .EQ. ia) THEN
+      IF (rarraylist%p_IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
-      ELSEIF(rarraylist%IData(ihead) < ia) THEN
+      ELSEIF(rarraylist%p_IData(ihead) < ia) THEN
         RETURN
       END IF
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) .EQ. ia) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%IData(inext) < ia) EXIT
-        ipred=rarraylist%Knext(ipred)
+        IF (rarraylist%p_IData(inext) < ia) EXIT
+        ipred=rarraylist%p_Knext(ipred)
       END DO
       
     CASE (ARRAYLIST_CSR7)
 
       ! Check first item separately
-      IF (rarraylist%IData(ihead) .EQ. ia) THEN
+      IF (rarraylist%p_IData(ihead) .EQ. ia) THEN
         f=ARRAYLIST_FOUND; RETURN
       ELSEIF(itable .EQ. ia) THEN
         RETURN
@@ -2954,16 +2961,16 @@ CONTAINS
       ipred=-ipred
 
       DO WHILE(ipred.NE.itail)
-        inext = rarraylist%Knext(ipred)
-        IF (rarraylist%IData(inext) .EQ. ia) THEN
+        inext = rarraylist%p_Knext(ipred)
+        IF (rarraylist%p_IData(inext) .EQ. ia) THEN
           f=ARRAYLIST_FOUND; EXIT
         END IF
         
-        IF (rarraylist%IData(inext) > ia) EXIT
-        IF (rarraylist%Knext(ipred) .EQ. itail) THEN
-          ipred=rarraylist%Knext(ipred); EXIT
+        IF (rarraylist%p_IData(inext) > ia) EXIT
+        IF (rarraylist%p_Knext(ipred) .EQ. itail) THEN
+          ipred=rarraylist%p_Knext(ipred); EXIT
         END IF
-        ipred=rarraylist%Knext(ipred)
+        ipred=rarraylist%p_Knext(ipred)
       END DO
     END SELECT
   END FUNCTION arrlst_searchInArrayListInt
@@ -3005,14 +3012,14 @@ CONTAINS
         CALL output_line('Table number: '//TRIM(sys_siL(iitable,15)))
         CALL output_line('----------------------------------------')
 
-        ipos  = rarraylist%Ktable(ARRLST_HEAD,iitable)
+        ipos  = rarraylist%p_Ktable(ARRLST_HEAD,iitable)
         IF (ipos .EQ. ARRLST_NULL) CYCLE
-        itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
+        itail = rarraylist%p_Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_sdL(rarraylist%DData(ipos),8))
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_sdL(rarraylist%p_DData(ipos),8))
           IF (ipos .EQ. itail) EXIT
-          ipos = rarraylist%Knext(ipos)
+          ipos = rarraylist%p_Knext(ipos)
         END DO
       END DO
       
@@ -3023,14 +3030,14 @@ CONTAINS
         CALL output_line('Table number: '//TRIM(sys_siL(iitable,15)))
         CALL output_line('----------------------------------------')
         
-        ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
+        ipos = rarraylist%p_Ktable(ARRLST_HEAD,iitable)
         IF (ipos .EQ. ARRLST_NULL) CYCLE
-        itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
+        itail = rarraylist%p_Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_sdL(REAL(rarraylist%SData(ipos),DP),8))
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_sdL(REAL(rarraylist%p_FData(ipos),DP),8))
           IF (ipos .EQ. itail) EXIT
-          ipos = rarraylist%Knext(ipos)
+          ipos = rarraylist%p_Knext(ipos)
         END DO
       END DO
       
@@ -3041,14 +3048,14 @@ CONTAINS
         CALL output_line('Table number: '//TRIM(sys_siL(iitable,15)))
         CALL output_line('----------------------------------------')
 
-        ipos = rarraylist%Ktable(ARRLST_HEAD,iitable)
+        ipos = rarraylist%p_Ktable(ARRLST_HEAD,iitable)
         IF (ipos .EQ. ARRLST_NULL) CYCLE
-        itail = rarraylist%Ktable(ARRLST_TAIL,iitable)
+        itail = rarraylist%p_Ktable(ARRLST_TAIL,iitable)
         
         DO
-          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_siL(rarraylist%IData(ipos),15))
+          WRITE(*,FMT='(A,",")',ADVANCE='NO') TRIM(sys_siL(rarraylist%p_IData(ipos),15))
           IF (ipos .EQ. itail) EXIT
-          ipos = rarraylist%Knext(ipos)
+          ipos = rarraylist%p_Knext(ipos)
         END DO
         WRITE(*,*)
       END DO
@@ -3089,7 +3096,7 @@ CONTAINS
     CALL output_line('h_Ktable: '//TRIM(sys_siL(rarraylist%h_Ktable,15)))
     CALL output_line('h_Knext:  '//TRIM(sys_siL(rarraylist%h_Knext,15)))
     CALL output_line('h_Data:   '//TRIM(sys_siL(rarraylist%h_Data,15)))
-
+    CALL output_lbrk()
     CALL output_line('Current data  memory usage: '//&
         TRIM(sys_sdL(100*rarraylist%NA/REAL(rarraylist%NNA,DP),2))//'%')
     CALL output_line('Current table memory usage: '//&
@@ -3099,7 +3106,115 @@ CONTAINS
         TRIM(sys_sdL(100*rarraylist%NNA/REAL(rarraylist%NNA0,DP),2))//'%')
     CALL output_line('Total   table memory usage: '//&
         TRIM(sys_sdL(100*rarraylist%NNTABLE/REAL(rarraylist%NNTABLE0,DP),2))//'%')
-    CALL output_line('')
-
+    CALL output_lbrk()
   END SUBROUTINE arrlst_infoArrayList
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE arrlst_duplicateArrayList(rarraylist,rarraylistBackup)
+
+!<description>
+    ! This subroutine makes a copy of an arraylist in memory.
+    ! It does not make sense to share some information between arraylists,
+    ! so each vectors is physically copied from the source arraylist
+    ! to the destination arraylist.
+!</description>
+
+!<input>
+    ! Source arraylist
+    TYPE(t_arraylist), INTENT(IN) :: rarraylist
+!</input>
+
+!<inputoutput>
+    ! Destination arraylist
+    TYPE(t_arraylist), INTENT(INOUT) :: rarraylistBackup
+!</inputoutput>
+!</subroutine>
+
+    ! Release backup arraylist
+    CALL arrlst_releaseArrayList(rarraylistBackup)
+
+    ! Copy all data
+    rarraylistBackup = rarraylist
+
+    ! Reset handles
+    rarraylistBackup%h_Ktable = ST_NOHANDLE
+    rarraylistBackup%h_Knext  = ST_NOHANDLE
+    rarraylistBackup%h_Data   = ST_NOHANDLE
+
+    ! Copy storage blocks
+    IF (rarraylist%h_Ktable .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(rarraylist%h_Ktable,&
+          rarraylistBackup%h_Ktable)
+      CALL storage_getbase_int2D(rarraylistBackup%h_Ktable,&
+          rarraylistBackup%p_Ktable)
+    END IF
+
+    IF (rarraylist%h_Knext .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(rarraylist%h_Knext,&
+          rarraylistBackup%h_Knext)
+      CALL storage_getbase_int(rarraylistBackup%h_Knext,&
+          rarraylistBackup%p_Knext)
+    END IF
+
+    IF (rarraylist%h_Data .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(rarraylist%h_Data,&
+          rarraylistBackup%h_Data)
+
+      SELECT CASE(rarraylistBackup%carraylistFormat)
+      CASE(ST_DOUBLE)
+        CALL storage_getbase_double(rarraylistBackup%h_Data,&
+            rarraylistBackup%p_DData)
+      CASE(ST_SINGLE)
+        CALL storage_getbase_single(rarraylistBackup%h_Data,&
+            rarraylistBackup%p_FData)
+      CASE(ST_INT)
+        CALL storage_getbase_int(rarraylistBackup%h_Data,&
+            rarraylistBackup%p_IData)
+      CASE DEFAULT
+        CALL output_line('Unsupported data format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'arrlst_duplicateArrayList')
+        CALL sys_halt()
+      END SELECT
+    END IF
+  END SUBROUTINE arrlst_duplicateArrayList
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE arrlst_restoreArrayList(rarraylistBackup,rarraylist)
+
+!<description>
+    ! This subroutine restores an arraylist from a previous backup.
+    ! The format and ordering of both arraylists must be the same.
+!</description>
+
+!<input>
+    ! Backup of an arraylist
+    TYPE(t_arraylist), INTENT(IN) :: rarraylistBackup
+!</input>
+
+!<inputoutput>
+    ! Destination arraylist
+    TYPE(t_arraylist), INTENT(INOUT) :: rarraylist
+!</inputoutput>
+!</subroutine>
+
+    ! Check that both arraylists are compatible
+    IF (rarraylist%carraylistFormat .NE. rarraylistBackup%carraylistFormat .OR.&
+        rarraylist%cordering        .NE. rarraylistBackup%cordering) THEN
+      CALL output_line('Incompatible arraylists!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_restoreArrayList')
+      CALL sys_halt()
+    END IF
+
+    ! Release arraylist
+    CALL arrlst_releaseArrayList(rarraylist)
+
+    ! Duplicate the backup
+    CALL arrlst_duplicateArrayList(rarraylistBackup,rarraylist)
+  END SUBROUTINE arrlst_restoreArrayList
 END MODULE arraylist

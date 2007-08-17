@@ -32,26 +32,35 @@
 !# 8.) otree_searchInOctree
 !#     -> Search data in octree
 !#
-!# 9.) otree_printOctree
-!#     -> Write octree to file
+!# 9.) otree_getDirection
+!#     -> Get direction for the next node
 !#
-!# 10.) otree_infoOctree
+!# 10.) otree_printOctree
+!#      -> Write octree to file
+!#
+!# 11.) otree_infoOctree
 !#      -> Output info about octree
 !#
-!# 11.) otree_getsize
+!# 12.) otree_getsize
 !#      -> Return number of vertices in octree
 !#
-!# 12.) otree_getBoundingBox
+!# 13.) otree_getBoundingBox
 !#      -> Return the outer bounding box
 !#
-!# 13.) otree_getX
+!# 14.) otree_getX
 !#      -> Return the X-value at a given position
 !#
-!# 14.) otree_getY
+!# 15.) otree_getY
 !#      -> Return the Y-value at a given position
 !#
-!# 15.) otree_getZ
+!# 16.) otree_getZ
 !#      -> Return the Z-value at a given position
+!#
+!# 17.) otree_duplicateOctree
+!#      -> Create a duplicate / backup of an octree
+!#
+!# 18.) otree_restoreOctree
+!#      -> Restore an octree from a previous backup
 !#
 !# For the internal use the following routines are available:
 !#
@@ -67,6 +76,7 @@
 MODULE octree
   USE fsystem
   USE storage
+  USE genoutput
   IMPLICIT NONE
   
   PRIVATE
@@ -78,6 +88,7 @@ MODULE octree
   PUBLIC :: otree_insertIntoOctree
   PUBLIC :: otree_deleteFromOctree
   PUBLIC :: otree_searchInOctree
+  PUBLIC :: otree_getDirection
   PUBLIC :: otree_printOctree
   PUBLIC :: otree_infoOctree
   PUBLIC :: otree_getsize
@@ -85,6 +96,8 @@ MODULE octree
   PUBLIC :: otree_getX
   PUBLIC :: otree_getY
   PUBLIC :: otree_getZ
+  PUBLIC :: otree_duplicateOctree
+  PUBLIC :: otree_restoreOctree
 
 !<constants>
 
@@ -245,84 +258,15 @@ MODULE octree
   
 !</typeblock>
 !</types>
-
-  INTERFACE otree_createOctree
-    MODULE PROCEDURE t_octree_create
-  END INTERFACE
-  
-  INTERFACE otree_releaseOctree
-    MODULE PROCEDURE t_octree_release
-  END INTERFACE
   
   INTERFACE otree_copyToOctree
-    MODULE PROCEDURE t_octree_copyto_handle
-    MODULE PROCEDURE t_octree_copyto_array
+    MODULE PROCEDURE otree_copyToOctree_handle
+    MODULE PROCEDURE otree_copyToOctree_array
   END INTERFACE
 
   INTERFACE otree_copyFromOctree
-    MODULE PROCEDURE t_octree_copyfrom_handle
-    MODULE PROCEDURE t_octree_copyfrom_array
-  END INTERFACE
-  
-  INTERFACE otree_insertIntoOctree
-    MODULE PROCEDURE t_octree_insert
-  END INTERFACE
-  INTERFACE insert   ! for internal use
-    MODULE PROCEDURE t_octree_insert
-  END INTERFACE
-
-  INTERFACE otree_deleteFromOctree
-    MODULE PROCEDURE t_octree_delete
-  END INTERFACE
-  INTERFACE delete   ! for internal use
-    MODULE PROCEDURE t_octree_delete
-  END INTERFACE
-  
-  INTERFACE otree_searchInOctree
-    MODULE PROCEDURE t_octree_search
-  END INTERFACE
-  INTERFACE search   ! for internal use
-    MODULE PROCEDURE t_octree_search
-  END INTERFACE
-  
-  INTERFACE direction   ! for internal use
-    MODULE PROCEDURE t_octree_direction
-  END INTERFACE
-
-  INTERFACE otree_printOctree
-    MODULE PROCEDURE t_octree_print
-  END INTERFACE
-
-  INTERFACE otree_infoOctree
-    MODULE PROCEDURE t_octree_info
-  END INTERFACE
-  
-  INTERFACE otree_getsize
-    MODULE PROCEDURE t_octree_getsize
-  END INTERFACE
-
-  INTERFACE otree_getBoundingBox
-    MODULE PROCEDURE t_octree_getboundingbox
-  END INTERFACE
-
-  INTERFACE otree_getX
-    MODULE PROCEDURE t_octree_getxvalue
-  END INTERFACE
-
-  INTERFACE otree_getY
-    MODULE PROCEDURE t_octree_getyvalue
-  END INTERFACE
-
-  INTERFACE otree_getZ
-    MODULE PROCEDURE t_octree_getzvalue
-  END INTERFACE
-
-  INTERFACE resizeNVT
-    MODULE PROCEDURE t_octree_resize_nvt
-  END INTERFACE
-
-  INTERFACE resizeNNODE
-    MODULE PROCEDURE t_octree_resize_nnode
+    MODULE PROCEDURE otree_copyFromOctree_handle
+    MODULE PROCEDURE otree_copyFromOctree_array
   END INTERFACE
 
 CONTAINS
@@ -331,7 +275,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE t_octree_create(roctree,nnvt,nnnode,xmin,ymin,zmin,xmax,ymax,zmax,dfactor)
+  SUBROUTINE otree_createOctree(roctree,nnvt,nnnode,xmin,ymin,zmin,xmax,ymax,zmax,dfactor)
   
 !<description>
     ! This subroutine creates a new octree.
@@ -371,11 +315,11 @@ CONTAINS
     roctree%NRESIZE = 0
     
     ! Allocate memory and associate pointers
-    CALL storage_new('t_octree_create', 'p_Ddata', (/3,nnvt/),&
+    CALL storage_new('otree_createOctree', 'p_Ddata', (/3,nnvt/),&
         ST_DOUBLE, roctree%h_Ddata, ST_NEWBLOCK_ZERO)
-    CALL storage_new('t_octree_create', 'p_Dbbox', (/6,nnnode/),&
+    CALL storage_new('otree_createOctree', 'p_Dbbox', (/6,nnnode/),&
         ST_DOUBLE, roctree%h_Dbbox, ST_NEWBLOCK_ZERO)
-    CALL storage_new('t_octree_create', 'p_Knode', (/11,nnnode/),&
+    CALL storage_new('otree_createOctree', 'p_Knode', (/11,nnnode/),&
         ST_INT, roctree%h_Knode, ST_NEWBLOCK_ZERO)
     CALL storage_getbase_double2D(roctree%h_Ddata,roctree%p_Ddata)
     CALL storage_getbase_double2D(roctree%h_Dbbox,roctree%p_Dbbox)
@@ -394,13 +338,13 @@ CONTAINS
     roctree%p_Dbbox(OTREE_XMAX,1) = xmax
     roctree%p_Dbbox(OTREE_YMAX,1) = ymax
     roctree%p_Dbbox(OTREE_ZMAX,1) = zmax
-  END SUBROUTINE t_octree_create
+  END SUBROUTINE otree_createOctree
 
   !************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE t_octree_release(roctree)
+  SUBROUTINE otree_releaseOctree(roctree)
 
 !<description>
     ! This subroutine releases an existing octree
@@ -424,71 +368,13 @@ CONTAINS
     roctree%NNODE  = 0
     roctree%NVT    = 0
     roctree%NRESIZE= 0
-  END SUBROUTINE t_octree_release
-  
-  !************************************************************************
-  
-!<subroutine>
-  
-  SUBROUTINE t_octree_resize_nvt(roctree,nnvt)
-
-!<description>
-    ! This subroutine reallocates memory for an existing octree
-!</description>
-
-!<input>
-    ! New number of vertices that should be stored in the octree
-    INTEGER(PREC_OTREEIDX), INTENT(IN) :: nnvt
-!</input>
-
-!<inputoutput>
-    ! Octree that should be resized
-    TYPE(t_octree) :: roctree
-!</inputoutput>
-!</subroutine>
-
-    CALL storage_realloc('t_octree_resize_nvt', nnvt,roctree%h_Ddata,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_getbase_double2D(roctree%h_Ddata,roctree%p_Ddata)
-    
-    roctree%NNVT   = nnvt
-    roctree%NRESIZE=roctree%NRESIZE+1
-  END SUBROUTINE t_octree_resize_nvt
-
-  !************************************************************************
-  
-!<subroutine>
-  
-  SUBROUTINE t_octree_resize_nnode(roctree,nnnode)
-
-!<description>
-    ! This subroutine reallocates memory for an existing octree
-!</description>
-
-!<input>
-    ! New number of nodes that should be stored in the octree
-    INTEGER(PREC_OTREEIDX), INTENT(IN) :: nnnode
-!</input>
-
-!<inputoutput>
-    ! Octree that should be resized
-    TYPE(t_octree) :: roctree
-!</inputoutput>
-!</subroutine>
-
-    CALL storage_realloc('t_octree_resize_nnode',nnnode,roctree%h_Dbbox,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_realloc('t_octree_resize_nnode',nnnode,roctree%h_Knode,ST_NEWBLOCK_ZERO,.TRUE.)
-    CALL storage_getbase_double2D(roctree%h_Dbbox,roctree%p_Dbbox)
-    CALL storage_getbase_int2D(roctree%h_Knode,   roctree%p_Knode)
-    
-    roctree%NNNODE = nnnode
-    roctree%NRESIZE=roctree%NRESIZE+1
-  END SUBROUTINE t_octree_resize_nnode
+  END SUBROUTINE otree_releaseOctree
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE t_octree_copyfrom_handle(roctree,h_Ddata)
+  SUBROUTINE otree_copyFromOctree_handle(roctree,h_Ddata)
 
 !<description>
     ! This subroutine copies the content of the octree to a handle.
@@ -515,12 +401,12 @@ CONTAINS
     ! Check if handle is associated
     IF (h_Ddata == ST_NOHANDLE) THEN
       Isize = (/3,roctree%NVT/)
-      CALL storage_new('t_octree_copyfrom_handle','p_Ddata',&
+      CALL storage_new('otree_copyFromOctree_handle','p_Ddata',&
           Isize, ST_DOUBLE, h_Ddata, ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize(h_Ddata,Isize)
       IF (Isize(2) < roctree%NVT) THEN
-        CALL storage_realloc('t_octree_copyfrom_handle',&
+        CALL storage_realloc('otree_copyFromOctree_handle',&
             roctree%NVT, h_Ddata, ST_NEWBLOCK_NOINIT, .FALSE.)
       END IF
     END IF
@@ -531,13 +417,13 @@ CONTAINS
 
     ! Copy data
     CALL DCOPY(3*roctree%NVT, p_DdataTmp, 1, p_Ddata, 1)
-  END SUBROUTINE t_octree_copyfrom_handle
+  END SUBROUTINE otree_copyFromOctree_handle
 
   !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_octree_copyfrom_array(roctree,p_Ddata)
+  SUBROUTINE otree_copyFromOctree_array(roctree,p_Ddata)
 
 !<description>
     ! This subroutine copies the content of the octree to an array.
@@ -562,7 +448,8 @@ CONTAINS
     ! Check size of array
     Isize = SHAPE(p_Ddata)
     IF (Isize(1) /= 3 .OR. Isize(2) < roctree%NVT) THEN
-      PRINT *, "t_octree_copyfrom_array: Array too small!"
+      CALL output_line('Array too small!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'otree_copyFromOctree_array')
       CALL sys_halt()
     END IF
 
@@ -571,13 +458,13 @@ CONTAINS
 
     ! Copy data
     CALL DCOPY(3*roctree%NVT, p_DdataTmp, 1, p_Ddata, 1)
-  END SUBROUTINE t_octree_copyfrom_array
+  END SUBROUTINE otree_copyFromOctree_array
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE t_octree_copyto_handle(h_Ddata,roctree)
+  SUBROUTINE otree_copyToOctree_handle(h_Ddata,roctree)
 
 !<description>
     ! This subroutine copies the content of a handle to the octree.
@@ -601,21 +488,22 @@ CONTAINS
     ! Set pointer and check its shape
     CALL storage_getbase_double2D(h_Ddata,p_Ddata)
     IF (SIZE(p_Ddata,1) /= 3) THEN
-      PRINT *, "t_octree_copyto_handle: First dimension of array must be 3!"
+      CALL output_line('First dimension of array must be 3!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'otree_copyToOctree_handle')
       CALL sys_halt()
     END IF
     
     DO ivt=1,SIZE(p_Ddata,2)
-      IF (search(roctree,p_Ddata(:,ivt),inode,ipos,jvt) == OTREE_NOT_FOUND)&
-          CALL insert(roctree,ivt,p_Ddata(:,ivt),inode)
+      IF (otree_searchInOctree(roctree,p_Ddata(:,ivt),inode,ipos,jvt) == OTREE_NOT_FOUND)&
+          CALL otree_insertIntoOctree(roctree,ivt,p_Ddata(:,ivt),inode)
     END DO
-  END SUBROUTINE t_octree_copyto_handle
+  END SUBROUTINE otree_copyToOctree_handle
 
   !************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE t_octree_copyto_array(p_Ddata,roctree)
+  SUBROUTINE otree_copyToOctree_array(p_Ddata,roctree)
 
 !<description>
     ! This subroutine copies the content of an array to the octree.
@@ -636,21 +524,22 @@ CONTAINS
     INTEGER(PREC_OTREEIDX) :: ivt,jvt,inode,ipos
     
     IF (SIZE(p_Ddata,1) /= 3) THEN
-      PRINT *, "t_octree_copyto_handle: First dimension of array must be 3!"
+      CALL output_line('First dimension of array must be 3!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'otree_copyToOctree_array')
       CALL sys_halt()
     END IF
 
     DO ivt=1,SIZE(p_Ddata,2)
-      IF (search(roctree,p_Ddata(:,ivt),inode,ipos,jvt) == OTREE_NOT_FOUND)&
-          CALL insert(roctree,ivt,p_Ddata(:,ivt),inode)
+      IF (otree_searchInOctree(roctree,p_Ddata(:,ivt),inode,ipos,jvt) == OTREE_NOT_FOUND)&
+          CALL otree_insertIntoOctree(roctree,ivt,p_Ddata(:,ivt),inode)
     END DO
-  END SUBROUTINE t_octree_copyto_array
+  END SUBROUTINE otree_copyToOctree_array
 
   !************************************************************************
   
 !<subroutine>
   
-  SUBROUTINE t_octree_insert(roctree,ivt,Ddata,inode)
+  SUBROUTINE otree_insertIntoOctree(roctree,ivt,Ddata,inode)
 
 !<description>
     ! This subroutine inserts a new coordinate item into the octree
@@ -763,7 +652,7 @@ CONTAINS
         ! Add the eight values from INODE to the eight new nodes
         ! NNODE+1:NNODE+8 recursively
         DO i=1,OTREE_MAX
-          jnode=nnode+direction(roctree,roctree%p_Ddata(:,roctree%p_Knode(i,inode)),inode)
+          jnode=nnode+otree_getDirection(roctree,roctree%p_Ddata(:,roctree%p_Knode(i,inode)),inode)
           CALL insert(roctree%p_Knode(i,inode),jnode)
         END DO
         
@@ -774,7 +663,7 @@ CONTAINS
             nnode+OTREE_SEB,nnode+OTREE_NEB/)
         
         ! Add the new entry to the next position recursively
-        jnode = nnode+direction(roctree,roctree%p_Ddata(:,ivt),inode)
+        jnode = nnode+otree_getDirection(roctree,roctree%p_Ddata(:,ivt),inode)
         CALL insert(ivt,jnode)
         
       ELSE
@@ -784,13 +673,13 @@ CONTAINS
         roctree%p_Knode(roctree%p_Knode(OTREE_STATUS,inode),inode) = ivt
       END IF
     END SUBROUTINE insert
-  END SUBROUTINE t_octree_insert
+  END SUBROUTINE otree_insertIntoOctree
   
   ! ***************************************************************************
   
 !<function>
   
-  FUNCTION t_octree_delete(roctree,Ddata,ivt) RESULT(f)
+  FUNCTION otree_deleteFromOctree(roctree,Ddata,ivt) RESULT(f)
 
 !<description>
     ! This function deletes an item from the octree
@@ -821,7 +710,7 @@ CONTAINS
     INTEGER :: inode,ipos,jpos,jvt
     
     ! Search for the given coordinates
-    f=search(roctree,Ddata,inode,ipos,ivt)
+    f=otree_searchInOctree(roctree,Ddata,inode,ipos,ivt)
     
     ! What can we do from the searching
     IF (f == OTREE_FOUND) THEN
@@ -835,7 +724,7 @@ CONTAINS
       
       ! If IVT is not last item move last item NVT to position IVT
       IF (ivt /= roctree%NVT) THEN
-        IF (search(roctree,roctree%p_Ddata(1:3,roctree%NVT),inode,ipos,jvt) == OTREE_FOUND) THEN
+        IF (otree_searchInOctree(roctree,roctree%p_Ddata(1:3,roctree%NVT),inode,ipos,jvt) == OTREE_FOUND) THEN
           roctree%p_Ddata(:,ivt) = roctree%p_Ddata(:,roctree%NVT)
           roctree%p_Knode(ipos,inode) = ivt
         END IF
@@ -843,13 +732,13 @@ CONTAINS
       END IF
       roctree%NVT = roctree%NVT-1
     END IF
-  END FUNCTION t_octree_delete
+  END FUNCTION otree_deleteFromOctree
   
   ! ***************************************************************************
 
 !<function>
   
-  FUNCTION t_octree_search(roctree,Ddata,inode,ipos,ivt) RESULT(f)
+  FUNCTION otree_searchInOctree(roctree,Ddata,inode,ipos,ivt) RESULT(f)
 
 !<description>
     ! This subroutine searches for given coordinates in the octree
@@ -896,7 +785,7 @@ CONTAINS
       IF (roctree%p_Knode(OTREE_STATUS,inode) == OTREE_SUBDIV) THEN
         
         ! Node is subdivided. Compute child INODE which to look recursively.
-        inode = roctree%p_Knode(direction(roctree,Ddata,inode),inode)
+        inode = roctree%p_Knode(otree_getDirection(roctree,Ddata,inode),inode)
         f=search(inode,ipos,ivt)
         
       ELSE
@@ -912,13 +801,13 @@ CONTAINS
         
       END IF
     END FUNCTION search
-  END FUNCTION t_octree_search
+  END FUNCTION otree_searchInOctree
 
   !************************************************************************
   
 !<function>
   
-  PURE FUNCTION t_octree_direction(roctree,Ddata,inode) RESULT(d)
+  PURE FUNCTION otree_getDirection(roctree,Ddata,inode) RESULT(d)
 
 !<description>
     ! This subroutine determines the direction to preceed w.r.t. Ddata
@@ -986,13 +875,13 @@ CONTAINS
       END IF
 
     END IF
-  END FUNCTION t_octree_direction
+  END FUNCTION otree_getDirection
 
   !************************************************************************
   
 !<subroutine>
 
-  SUBROUTINE t_octree_print(roctree,cfilename)
+  SUBROUTINE otree_printOctree(roctree,cfilename)
 
 !<description>
     ! This subroutine writes the content of the octree to a file
@@ -1065,13 +954,13 @@ CONTAINS
 10    FORMAT(6E15.6E3)
 20    FORMAT(3E15.6E3)
     END SUBROUTINE print
-  END SUBROUTINE t_octree_print
+  END SUBROUTINE otree_printOctree
 
   !************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE t_octree_info(roctree)
+  SUBROUTINE otree_infoOctree(roctree)
 
 !<description>
     ! This subroutine outputs statistical info about the octree
@@ -1083,24 +972,30 @@ CONTAINS
 !</input>
 !</subroutine>
 
-    WRITE(*,FMT=*) ' Octree:'
-    WRITE(*,FMT=*) ' ======='
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Ddata =',roctree%h_Ddata
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Dbbox =',roctree%h_Dbbox
-    WRITE(*,FMT='(1X,A,1X,I5)') '  h_Knode =',roctree%h_Knode
+    CALL output_line('Octree:')
+    CALL output_line('-------')
+    CALL output_line('NVT:     '//TRIM(sys_siL(roctree%NVT,15)))
+    CALL output_line('NNVT:    '//TRIM(sys_siL(roctree%NNVT,15)))
+    CALL output_line('NNODE:   '//TRIM(sys_siL(roctree%NNODE,15)))
+    CALL output_line('NNNODE:  '//TRIM(sys_siL(roctree%NNNODE,15)))
+    CALL output_line('NRESIZE: '//TRIM(sys_siL(roctree%NRESIZE,5)))
+    CALL output_line('dfactor: '//TRIM(sys_sdL(roctree%dfactor,2)))
+    CALL output_line('h_Ddata: '//TRIM(sys_siL(roctree%h_Ddata,15)))
+    CALL output_line('h_Dbbox: '//TRIM(sys_siL(roctree%h_Dbbox,15)))
+    CALL output_line('h_Knode: '//TRIM(sys_siL(roctree%h_Knode,15)))
+    CALL output_lbrk()
     WRITE(*,*)
-    WRITE(*,FMT='(1X,A,1X,I8,3X,A,1X,I8)') '  NVT     =',roctree%NVT,'NNVT     =',roctree%NNVT
-    WRITE(*,FMT='(1X,A,1X,I8,3X,A,1X,I8)') '  NNODE   =',roctree%NNODE,'NNNODE   =',roctree%NNNODE
-    WRITE(*,FMT='(1X,A,1X,I8,A,4X,F5.1,A,4X,F5.1,A)') '  NRESIZE =',roctree%NRESIZE, "   NODES    =", &
-        100*roctree%NNODE/REAL(roctree%NNNODE,DP),'%  FILLING  =',100*roctree%NVT/REAL(roctree%NNVT,DP),'%'
-    WRITE(*,*)
-  END SUBROUTINE t_octree_info
+    CALL output_line('Current data memory usage: '//&
+        TRIM(sys_sdL(100*roctree%NVT/REAL(roctree%NNVT,DP),2))//'%')
+    CALL output_line('Current ndoe memory usage: '//&
+        TRIM(sys_sdL(100*roctree%NNODE/REAL(roctree%NNNODE,DP),2))//'%')
+  END SUBROUTINE otree_infoOctree
 
   !************************************************************************
 
 !<function>
 
-  PURE FUNCTION t_octree_getsize(roctree) RESULT(nvt)
+  PURE FUNCTION otree_getSize(roctree) RESULT(nvt)
 
 !<description>
     ! This function returns the number of vertices stored in the octree
@@ -1118,13 +1013,13 @@ CONTAINS
 !</function>
 
     nvt=roctree%NVT
-  END FUNCTION t_octree_getsize
+  END FUNCTION otree_getSize
 
   !************************************************************************
 
 !<function>
 
-  FUNCTION t_octree_getboundingbox(roctree,inode) RESULT(bbox)
+  FUNCTION otree_getBoundingBox(roctree,inode) RESULT(bbox)
     
 !<description>
     ! This function returns the bounding box of the specified node.
@@ -1147,20 +1042,21 @@ CONTAINS
     
     IF (PRESENT(inode)) THEN
       IF (inode > roctree%NVT) THEN
-        PRINT *, "t_octree_getboundingbox: node number exceeds octree dimension"
+        CALL output_line('Node number exceeds octree dimension!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'otree_getBoundingBox')
         CALL sys_halt()
       END IF
       bbox=roctree%p_Dbbox(OTREE_XMIN:OTREE_ZMAX,inode)
     ELSE
       bbox=roctree%p_Dbbox(OTREE_XMIN:OTREE_ZMAX,1)
     END IF
-  END FUNCTION t_octree_getboundingbox
+  END FUNCTION otree_getBoundingBox
 
   !************************************************************************
 
 !<function>
 
-  ELEMENTAL FUNCTION t_octree_getXvalue(roctree,ivt) RESULT(x)
+  ELEMENTAL FUNCTION otree_getX(roctree,ivt) RESULT(x)
 
 !<description>
     ! This function returns the X-value at the given position.
@@ -1180,13 +1076,13 @@ CONTAINS
 !</function>
 
     x=roctree%p_Ddata(1,ivt)
-  END FUNCTION t_octree_getXvalue
+  END FUNCTION otree_getX
 
   !************************************************************************
 
 !<function>
 
-  ELEMENTAL FUNCTION t_octree_getYvalue(roctree,ivt) RESULT(y)
+  ELEMENTAL FUNCTION otree_getY(roctree,ivt) RESULT(y)
 
 !<description>
     ! This function returns the Y-value at the given position.
@@ -1206,13 +1102,13 @@ CONTAINS
 !</function>
 
     y=roctree%p_Ddata(2,ivt)
-  END FUNCTION t_octree_getYvalue
+  END FUNCTION otree_getY
 
   !************************************************************************
 
 !<function>
 
-  ELEMENTAL FUNCTION t_octree_getZvalue(roctree,ivt) RESULT(z)
+  ELEMENTAL FUNCTION otree_getZ(roctree,ivt) RESULT(z)
 
 !<description>
     ! This function returns the Z-value at the given position.
@@ -1232,5 +1128,147 @@ CONTAINS
 !</function>
 
     z=roctree%p_Ddata(3,ivt)
-  END FUNCTION t_octree_getZvalue
+  END FUNCTION otree_getZ
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE otree_duplicateOctree(roctree,roctreeBackup)
+
+!<description>
+    ! This subroutine makes a copy of an octree in memory.
+    ! It does not make sense to share some information between octrees,
+    ! so each vectors is physically copied from the source octree
+    ! to the destination octree.
+!</description>
+
+!<input>
+    ! Source octree
+    TYPE(t_octree), INTENT(IN) :: roctree
+!</input>
+
+!<inputoutput>
+    ! Destination octree
+    TYPE(t_octree), INTENT(INOUT) :: roctreeBackup
+!</inputoutput>
+!</subroutine>
+
+    ! Release backup octree
+    CALL otree_releaseOctree(roctreeBackup)
+
+    ! Copy all data
+    roctreeBackup = roctree
+
+    ! Reset handles
+    roctreeBackup%h_Ddata = ST_NOHANDLE
+    roctreeBackup%h_Dbbox = ST_NOHANDLE
+    roctreeBackup%h_Knode = ST_NOHANDLE
+
+    ! Copy storage blocks
+    IF (roctree%h_Ddata .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(roctree%h_Ddata,roctreeBackup%h_Ddata)
+      CALL storage_getbase_double2D(roctreeBackup%h_Ddata,&
+          roctreeBackup%p_Ddata)
+    END IF
+
+    IF (roctree%h_Dbbox .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(roctree%h_Dbbox,roctreeBackup%h_Dbbox)
+      CALL storage_getbase_double2D(roctreeBackup%h_Dbbox,&
+          roctreeBackup%p_Dbbox)
+    END IF
+
+    IF (roctree%h_Knode .NE. ST_NOHANDLE) THEN
+      CALL storage_copy(roctree%h_Knode,roctreeBackup%h_Knode)
+      CALL storage_getbase_int2D(roctreeBackup%h_Knode,&
+          roctreeBackup%p_Knode)
+    END IF
+  END SUBROUTINE otree_duplicateOctree
+
+  !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE otree_restoreOctree(roctreeBackup,roctree)
+
+!<description>
+    ! This subroutine restores an octree from a previous backup.
+!</description>
+
+!<input>
+    ! Backup of an octree
+    TYPE(t_octree), INTENT(IN) :: roctreeBackup
+!</input>
+
+!<inputoutput>
+    ! Destination octree
+    TYPE(t_octree), INTENT(INOUT) :: roctree
+!</inputoutput>
+!</subroutine>
+
+    ! Release octree
+    CALL otree_releaseOctree(roctree)
+
+    ! Duplicate the backup
+    CALL otree_duplicateOctree(roctreeBackup,roctree)
+  END SUBROUTINE otree_restoreOctree
+
+  !************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE resizeNVT(roctree,nnvt)
+
+!<description>
+    ! This subroutine reallocates memory for an existing octree
+!</description>
+
+!<input>
+    ! New number of vertices that should be stored in the octree
+    INTEGER(PREC_OTREEIDX), INTENT(IN) :: nnvt
+!</input>
+
+!<inputoutput>
+    ! Octree that should be resized
+    TYPE(t_octree) :: roctree
+!</inputoutput>
+!</subroutine>
+
+    CALL storage_realloc('resizeNVT', nnvt,roctree%h_Ddata,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_getbase_double2D(roctree%h_Ddata,roctree%p_Ddata)
+    
+    roctree%NNVT   = nnvt
+    roctree%NRESIZE=roctree%NRESIZE+1
+  END SUBROUTINE resizeNVT
+  
+  !************************************************************************
+  
+!<subroutine>
+  
+  SUBROUTINE resizeNNODE(roctree,nnnode)
+
+!<description>
+    ! This subroutine reallocates memory for an existing octree
+!</description>
+
+!<input>
+    ! New number of nodes that should be stored in the octree
+    INTEGER(PREC_OTREEIDX), INTENT(IN) :: nnnode
+!</input>
+
+!<inputoutput>
+    ! Octree that should be resized
+    TYPE(t_octree) :: roctree
+!</inputoutput>
+!</subroutine>
+
+    CALL storage_realloc('resizeNNODE',nnnode,roctree%h_Dbbox,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_realloc('resizeNNODE',nnnode,roctree%h_Knode,ST_NEWBLOCK_ZERO,.TRUE.)
+    CALL storage_getbase_double2D(roctree%h_Dbbox,roctree%p_Dbbox)
+    CALL storage_getbase_int2D(roctree%h_Knode,   roctree%p_Knode)
+    
+    roctree%NNNODE = nnnode
+    roctree%NRESIZE=roctree%NRESIZE+1
+  END SUBROUTINE resizeNNODE
 END MODULE octree
+
