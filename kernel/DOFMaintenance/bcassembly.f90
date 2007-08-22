@@ -56,7 +56,7 @@
 !#     -> Returns indices in the boundary vertex array which vertices
 !#        lie in a boundary region
 !#
-!# 1.) bcasm_getEdgesInBCregion
+!# 2.) bcasm_getEdgesInBCregion
 !#     -> Returns indices in the boundary vertex array which edges
 !#        lie in a boundary region
 !#

@@ -35,6 +35,10 @@
 !#         They must be implemented separately, as they are a special type
 !#         of boundary conditions.
 !#
+!#  4.) matfil_normaliseToL20
+!#      -> Adds a row to a matrix containing 'ones'. This implements the
+!#         explicit condition "int_{\Omega} v = 0" into a matrix.
+!#
 !# Auxiliary routines:
 !#
 !#  1.) matfil_imposeDirichletBC
@@ -445,6 +449,146 @@ CONTAINS
   
   END IF
   
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE matfil_normaliseToL20 (rmatrix,istartColumn,iendColumn)
+  
+!<description>
+  ! Modifies a scalar matrix to add an additional equation which implements
+  ! $int_{\Omega) v = 0$ for all $v$. This adds another row to the matrix
+  ! which sums up all vector entries when being applied to a vector.
+  ! Note that this produces a rectangular matrix with NROW+1 rows in comparison
+  ! to the original one!
+  !
+  ! This filter can be used e.g. to impose the condition $int_{\Omega) v = 0$
+  ! to a matrix which is passed to an external linear solver (like UMFPACK)
+  ! which cannot use filtering to cope with indefiniteness!
+  !
+  ! WARNING: UNTESTED!!!
+!</description>
+
+!<input>
+  ! OPTIONAL: Start column in the matrix.
+  ! This parameter can specify where to start the vector sum.
+  ! If not specified, 1 is assumed.
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: istartColumn
+
+  ! OPTIONAL: End column in the matrix.
+  ! This parameter can specify where to end the vector sum.
+  ! If not specified, rmatrix%NCOLS is assumed.
+  INTEGER(PREC_VECIDX), INTENT(IN), OPTIONAL :: iendColumn
+!</input>
+
+!<inputoutput>
+  ! The matrix which is to be modified.
+  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrix
+!</inputoutput>
+  
+!</subroutine>
+    
+    ! Local variables
+    TYPE(t_matrixScalar) :: rmatrixTemp
+    INTEGER(PREC_VECIDX) :: irowLen,istart,iend,i
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    INTEGER(PREC_MATIDX), DIMENSION(:), POINTER :: p_Kld,p_Kdiagonal
+    INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
+    
+    ! Matrix must not be transposed
+    IF (IAND(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .NE. 0) THEN
+      CALL output_line (&
+          'Virtually transposed matrices not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'matfil_normaliseToL20')
+      CALL sys_halt()
+    END IF
+
+    ! Only double precision supported.
+    IF (rmatrix%cdataType .NE. ST_DOUBLE) THEN
+      CALL output_line (&
+          'Only double precision matrices supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'matfil_normaliseToL20')
+      CALL sys_halt()
+    END IF
+    
+    ! If structure and/or content is shared, duplicate the matrix to
+    ! make the entries belong to rmatrix.
+    IF (lsyssc_isMatrixStructureShared(rmatrix) .AND. &
+        lsyssc_isMatrixContentShared(rmatrix)) THEN
+      rmatrixTemp = rmatrix
+      CALL lsyssc_duplicateMatrix (rmatrixTemp,rmatrix,LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+    ELSE IF (lsyssc_isMatrixStructureShared(rmatrix)) THEN
+      rmatrixTemp = rmatrix
+      CALL lsyssc_duplicateMatrix (rmatrixTemp,rmatrix,LSYSSC_DUP_COPY,LSYSSC_DUP_IGNORE)
+    ELSE IF (lsyssc_isMatrixContentShared(rmatrix)) THEN
+      rmatrixTemp = rmatrix
+      CALL lsyssc_duplicateMatrix (rmatrixTemp,rmatrix,LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPY)
+    END IF
+    
+    ! Length of the row
+    istart = 1
+    iend = rmatrix%NCOLS
+    
+    IF (PRESENT(istartColumn)) &
+      istart = MAX(istart,MIN(istartColumn,rmatrix%NCOLS))
+
+    IF (PRESENT(iendColumn)) &
+      iend = MAX(istart,MIN(iendColumn,rmatrix%NCOLS))
+      
+    irowLen = iend-istart+1
+    
+    ! Add another row to the matrix
+    CALL lsyssc_resizeMatrixDirect (rmatrix, rmatrix%NEQ+1_PREC_VECIDX, &
+        rmatrix%NCOLS, rmatrix%NA+irowLen, .FALSE.)
+        
+    rmatrix%NEQ = rmatrix%NEQ + 1
+    rmatrix%NA = rmatrix%NA+irowLen
+    
+    ! Add a row containing "1". TOgether with a RHS "0",
+    ! this implements "sum_j a_ij v_j = 0".
+    CALL lsyssc_getbase_double (rmatrix,p_Ddata)
+    SELECT CASE (rmatrix%cmatrixFormat)
+    CASE (LSYSSC_MATRIX1)
+      istart = istart + rmatrix%NEQ * rmatrix%NCOLS
+      iend = iend + rmatrix%NEQ * rmatrix%NCOLS
+      DO i=istart,iend
+        p_Ddata(i) = 1.0_DP
+      END DO
+      
+    CASE (LSYSSC_MATRIX7)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      
+      ! New Kld entry
+      p_Kld(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ) + irowLen
+      
+      ! Insert the new row
+      DO i=p_Kld(rmatrix%NEQ),p_Kld(rmatrix%NEQ+1)-1
+        p_Ddata(i) = 1.0_DP
+        p_Kcol(i) = istart + (p_Kld(rmatrix%NEQ)-i)
+      END DO
+    
+    CASE (LSYSSC_MATRIX9)
+      CALL lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kld)
+      CALL lsyssc_getbase_Kld (rmatrix,p_Kdiagonal)
+      
+      ! New Kld entry
+      p_Kld(rmatrix%NEQ+1) = p_Kld(rmatrix%NEQ) + irowLen
+      
+      ! Insert the new row
+      DO i=p_Kld(rmatrix%NEQ),p_Kld(rmatrix%NEQ+1)-1
+        p_Ddata(i) = 1.0_DP
+        p_Kcol(i) = istart + (p_Kld(rmatrix%NEQ)-i)
+      END DO
+      
+      ! New Kdiagonal entry
+      p_Kdiagonal(rmatrix%NEQ) = p_Kld(rmatrix%NEQ) + rmatrix%NCOLS-istart
+    
+    END SELECT
+
   END SUBROUTINE
   
   ! ***************************************************************************
