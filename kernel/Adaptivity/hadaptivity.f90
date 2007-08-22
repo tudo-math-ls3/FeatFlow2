@@ -1406,6 +1406,7 @@ CONTAINS
         
     ! Bit   7: rBoundary
     
+    
     ! Bit   8: rElementsAtVertex
     IF (IAND(idupFlag, HADAPT_SHARE_RELEMENTSATVERTEX) .NE.&
         HADAPT_SHARE_RELEMENTSATVERTEX) THEN
@@ -2483,7 +2484,11 @@ CONTAINS
     INTEGER(I32), DIMENSION(2) :: Isize
     INTEGER(PREC_VERTEXIDX)    :: nvt
     INTEGER(PREC_ELEMENTIDX)   :: nel
+
+    INTEGER, SAVE :: irun=0
     
+    irun=irun+1
+
     ! Check if dynamic data structures are available
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA) THEN
       CALL output_line('Dynamic data structures are not generated!',&
@@ -2493,9 +2498,9 @@ CONTAINS
 
     ! Initialize initial dimensions
     CALL storage_getsize(rhadapt%h_IverticesAtElement,Isize)
-    rhadapt%NELMAX     =Isize(2)
+    rhadapt%NELMAX=Isize(2)
     CALL storage_getsize(rhadapt%h_IneighboursAtElement,Isize)
-    rhadapt%NELMAX     =MIN(rhadapt%NELMAX,Isize(2))
+    rhadapt%NELMAX=MIN(rhadapt%NELMAX,Isize(2))
 
     rhadapt%InelOfType0=rhadapt%InelOfType
     rhadapt%NVT0       =rhadapt%NVT
@@ -2512,13 +2517,13 @@ CONTAINS
       
       ! Mark elements for refinement based on indicator function
       CALL mark_refinement2D(rhadapt,rindicator)
-      
+
       ! Mark additional elements to restore conformity
       CALL redgreen_mark_refinement2D(rhadapt,rcollection,fcb_hadaptCallback)
-      
+
       ! Mark element for recoarsening based on indicator function
       CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
-      
+
       ! Compute new dimensions
       nvt=rhadapt%NVT+rhadapt%increaseNVT
       nel=NumberOfElements(rhadapt)
@@ -2556,14 +2561,11 @@ CONTAINS
       ! Perform refinement
       CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
 
-      ! Perform coarsening
-      CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
+!!$      ! Perform coarsening
+!!$      CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
       
-      PAUSE
-
-  !    PRINT *, "Recoarsening done"
-  !    CALL hadapt_checkConsistency(rhadapt)
-
+!!$      CALL hadapt_writegridsvg(rhadapt,'mygrid')
+      
       ! Adjust nodal property array
       CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
           rhadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
@@ -3045,7 +3047,7 @@ CONTAINS
               TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
               TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
               TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: crosshair"'
+          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
           
         END IF
                
@@ -3080,10 +3082,24 @@ CONTAINS
         WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
             '" fill="white" stroke="black" stroke-width="1"'
         
+        ! Write data which is common to all elements
         WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
             TRIM(sys_siL(iel,10))//''','''//&
-            TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''',''0'')" '//&
-            'onmouseout="HideElementInfo()" style="cursor: help"'
+            TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+            TRIM(sys_siL(0,5))//''','''//&
+            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+            TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+            TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+        WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
         
         ! Each element is a polygon made up from 3/4 points
         WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
@@ -3144,7 +3160,7 @@ CONTAINS
         END IF
       END DO
       WRITE(iunit,FMT='(A)') ''')"'
-      WRITE(iunit,FMT='(A)') ' onmouseout="HideVertexInfo()" style="cursor: help"/>'
+      WRITE(iunit,FMT='(A)') ' onmouseout="HideVertexInfo()" style="cursor: crosshair"/>'
     END DO
 
 
@@ -3308,6 +3324,13 @@ CONTAINS
             END IF
           END DO
           btest=btest.AND.bfound
+
+          IF (.NOT.bfound) THEN
+            PRINT *, "1. Looking for",iel,"in element",jel,"total number",rhadapt%NEL
+            PRINT *, rhadapt%p_IneighboursAtElement(:,jel)
+            PRINT *, rhadapt%p_ImidneighboursAtElement(:,jel)
+            PRINT *, "------"
+          END IF
           
         ELSE
 
@@ -3331,6 +3354,13 @@ CONTAINS
           END DO
           btest=btest.AND.bfound
 
+          IF (.NOT.bfound) THEN
+            PRINT *, "2. Looking for",iel,"in element",jel,"total number",rhadapt%NEL
+            PRINT *, rhadapt%p_IneighboursAtElement(:,jel)
+            PRINT *, rhadapt%p_ImidneighboursAtElement(:,jel)
+            PRINT *, "------"
+          END IF
+
           ! Get number of vertices per element
           mve=get_NVE(rhadapt,jelmid)
           
@@ -3350,6 +3380,13 @@ CONTAINS
             END IF
           END DO
           btest=btest.AND.bfound
+
+          IF (.NOT.bfound) THEN
+            PRINT *, "3. Looking for",iel,"in element",jelmid,"total number",rhadapt%NEL
+            PRINT *, rhadapt%p_IneighboursAtElement(:,jelmid)
+            PRINT *, rhadapt%p_ImidneighboursAtElement(:,jelmid)
+            PRINT *, "------"
+          END IF
 
         END IF
       END DO
@@ -3520,8 +3557,8 @@ CONTAINS
     END IF
     btestall=btestall.AND.btest
 
-    ! Terminate if some test failed
-    IF (.NOT.btestall) CALL sys_halt()
+!!$    ! Terminate if some test failed
+!!$    IF (.NOT.btestall) CALL sys_halt()
   END SUBROUTINE hadapt_checkConsistency
 
   ! ***************************************************************************
@@ -4339,24 +4376,34 @@ CONTAINS
     ! Check if adjacent and mid-adjacent elements are the same.
     IF (jel .EQ. jelmid) THEN
 
-      ! Case 1: Adjacent element has not been subdivided, that is, the 
-      !         current edge contains a hanging node for the adjacent element.
+      ! Case 1: Adjacent element has not been subdivided.
       bfound=.FALSE.
 
       ! What kind of element is neighboring element?
       nve=get_NVE(rhadapt,jel)
       
-      ! Loop over all entries in the list of adjacent elements for element 
-      ! JEL and check if the value IEL0 is present. 
-      ! If this is the case, then update the corrseponding entries in the 
-      ! lists of (mid-)adjacent element neighbors.
+      ! Loop over all entries in the list of adjacent and/or mid-adjacent
+      ! elements for element JEL and check if the value IEL0 is present. 
+      ! The situation may occur that element IEL0 is only adjacent to one
+      ! "half" of the edge of element JEL. This may be the case, if element
+      ! IEL0 was a green triangle which has already been subdivided in the
+      ! marking procedure, whiereby element JEL is marked for red refinement.
+      ! In order to consider this situation we are looking for element IEL0
+      ! both in the list of adjacent and mid-adjacent elements of JEL.
+      ! It suffices if IEL0 is found in one of these lists.
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(ive,jel)   =iel
+          bfound=.TRUE.
+        END IF
+
+        IF (rhadapt%p_ImidneighboursAtElement(ive,jel) .EQ. iel0) THEN
           rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
           bfound=.TRUE.
-          EXIT
         END IF
+        
+        ! Exit if IEL0 has been found in the (mid-)adjacency list.
+        IF (bfound) EXIT
       END DO
                           
     ELSE
@@ -4539,6 +4586,8 @@ CONTAINS
     IF (.NOT.bfound) THEN
       CALL output_line('Inconsistent adjacency lists!',&
           OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_Divided')
+      PRINT *, jel,jelmid,iel0,ielmid0
+      CALL hadapt_writegridSVG(rhadapt,'mygrid')
       CALL sys_halt()
     END IF
   END SUBROUTINE update_ElemNeighb2D_Divided
@@ -4706,6 +4755,10 @@ CONTAINS
     
     ! Store values before refinement
     nel0=rhadapt%NEL
+
+    IF (iel.EQ.481 .AND. imarker.EQ.8) THEN
+      CALL hadapt_writegridSVG(rhadapt,'mygrid')
+    END IF
     
     ! Add one new vertex I4 at the midpoint of edge (I1,I2).
     CALL add_vertex2D(rhadapt,i1,i2,e1,i4,rcollection,fcb_hadaptCallback)
@@ -5557,7 +5610,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE convert_Tria2Tria(rhadapt,iel1,iel2,rcollection,fcb_hadaptCallback)
+  SUBROUTINE convert_Tria2Tria(rhadapt,iel,jel,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two neighboring triangles into one triangle 
@@ -5583,11 +5636,11 @@ CONTAINS
 !</description>
 
 !<input>
-    ! Number of first element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel1
+    ! Number of first (left) element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
 
-    ! Number of second element
-    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel2
+    ! Number of second (right) element
+    INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: jel
 
     ! Callback function
     include 'intf_hadaptcallback.inc'
@@ -5605,16 +5658,9 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
-    INTEGER(PREC_ELEMENTIDX) :: nel0,iel,jel
+    INTEGER(PREC_ELEMENTIDX) :: nel0
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
     INTEGER(PREC_ELEMENTIDX) :: e1,e2,e3,e4,e5,e6,e7,e8
-
-    ! Make sure that IEL < JEL
-    IF (iel1 < iel2) THEN
-      iel=iel1; jel=iel2
-    ELSE
-      iel=iel2; jel=iel1
-    END IF
 
     ! Find local positions of element iel from is state
     i1=rhadapt%p_IverticesAtElement(1,iel)
@@ -6197,7 +6243,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE coarsen_2Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
+  SUBROUTINE coarsen_2Tria1Tria(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines two triangles resulting from a 1-tria : 2-tria
@@ -6229,6 +6275,9 @@ CONTAINS
     ! Element number of the inner red triangle
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
 
+    ! Identifiert for element marker
+    INTEGER, INTENT(IN)                  :: imarker
+
     ! callback routines
     include 'intf_hadaptcallback.inc'
     OPTIONAL :: fcb_hadaptCallback
@@ -6249,76 +6298,164 @@ CONTAINS
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4
     INTEGER :: istate
 
-    ! Get adjacent green elements
-    jel=rhadapt%p_IneighboursAtElement(2,iel)
-
-    ! Store vertex- and element values of the two elements
-    i1=rhadapt%p_IverticesAtElement(1,iel)
-    i4=rhadapt%p_IverticesAtElement(2,iel)
-    i3=rhadapt%p_IverticesAtElement(3,iel)
-    i2=rhadapt%p_IverticesAtElement(1,jel)
-    
-    e1=rhadapt%p_IneighboursAtElement(1,iel)
-    e3=rhadapt%p_IneighboursAtElement(3,iel)
-    e2=rhadapt%p_IneighboursAtElement(1,jel)
-    e4=rhadapt%p_IneighboursAtElement(3,jel)
-
-    e5=rhadapt%p_ImidneighboursAtElement(1,jel)
-    e6=rhadapt%p_ImidneighboursAtElement(3,iel)
-
-    ! Update list of neighboring elements
-    CALL update_ElementNeighbors2D(rhadapt,e1,e4,jel,iel,iel,iel)
-    CALL update_ElementNeighbors2D(rhadapt,e2,e5,jel,iel,iel)
-
-    ! The resultint triangle will possess one of the states STATE_TRIA_OUTERINNERx, whereby
-    ! x can be blank, 1 or 2. Due to our refinement convention, the two states x=1 and x=2
-    ! should not appear, that is, local numbering of the resulting triangle starts at the
-    ! vertex which is opposite to the inner red triangle. To this end, we check the state of
-    ! the provisional triangle (I1,I2,I3) and transform th orientation accordingly.
-    istate = redgreen_getstateTria(rhadapt%p_IvertexAge((/i1,i2,i3/)))
-    
-    SELECT CASE(istate)
-    CASE(STATE_TRIA_OUTERINNER,STATE_TRIA_REDINNER)
-      ! Update element IEL = (I1,I2,I3)
-      CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e5,e6)
-
-    CASE(STATE_TRIA_OUTERINNER2)
-      ! Update element IEL = (I2,I3,I1)
-      CALL replace_element2D(rhadapt,iel,i2,i3,i1,e2,e3,e1,e5,e6,e4)
+    ! Are we left or right triangle?
+    SELECT CASE(imarker)
       
-    CASE(STATE_TRIA_OUTERINNER1)
-      ! Update element IEL = (I3,I1,I2)
-      CALL replace_element2D(rhadapt,iel,i3,i1,i2,e3,e1,e2,e6,e4,e5)
+    CASE(MARK_CRS_2TRIA1TRIA_LEFT)
+      
+      ! Get right-adjacent green elements
+      jel=rhadapt%p_IneighboursAtElement(2,iel)
+      
+      ! Store vertex- and element values of the two elements
+      i1=rhadapt%p_IverticesAtElement(1,iel)
+      i4=rhadapt%p_IverticesAtElement(2,iel)
+      i3=rhadapt%p_IverticesAtElement(3,iel)
+      i2=rhadapt%p_IverticesAtElement(1,jel)
+      
+      e1=rhadapt%p_IneighboursAtElement(1,iel)
+      e3=rhadapt%p_IneighboursAtElement(3,iel)
+      e2=rhadapt%p_IneighboursAtElement(1,jel)
+      e4=rhadapt%p_IneighboursAtElement(3,jel)
+      
+      e5=rhadapt%p_ImidneighboursAtElement(1,jel)
+      e6=rhadapt%p_ImidneighboursAtElement(3,iel)
+      
+      ! Update list of neighboring elements
+      CALL update_ElementNeighbors2D(rhadapt,e1,e4,jel,iel,iel,iel)
+      CALL update_ElementNeighbors2D(rhadapt,e2,e5,jel,iel,iel)
+      
+      ! The resulting triangle will possess one of the states STATE_TRIA_OUTERINNERx, whereby
+      ! x can be blank, 1 or 2. Due to our refinement convention, the two states x=1 and x=2
+      ! should not appear, that is, local numbering of the resulting triangle starts at the
+      ! vertex which is opposite to the inner red triangle. To this end, we check the state of
+      ! the provisional triangle (I1,I2,I3) and transform th orientation accordingly.
+      istate = redgreen_getstateTria(rhadapt%p_IvertexAge((/i1,i2,i3/)))
+      
+      SELECT CASE(istate)
+      CASE(STATE_TRIA_ROOT,&
+           STATE_TRIA_OUTERINNER,&
+           STATE_TRIA_REDINNER)
+        ! Update element IEL = (I1,I2,I3)
+        CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e5,e6)
+        
+      CASE(STATE_TRIA_OUTERINNER2)
+        ! Update element IEL = (I2,I3,I1)
+        CALL replace_element2D(rhadapt,iel,i2,i3,i1,e2,e3,e1,e5,e6,e4)
+        
+      CASE(STATE_TRIA_OUTERINNER1)
+        ! Update element IEL = (I3,I1,I2)
+        CALL replace_element2D(rhadapt,iel,i3,i1,i2,e3,e1,e2,e6,e4,e5)
+        
+      CASE DEFAULT
+        CALL output_line('Invalid state of resulting triangle!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        CALL sys_halt()
+      END SELECT
+      
+      ! Delete element JEL
+      CALL remove_element2D(rhadapt,jel,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,jel)   
+      
+      ! Update list of elements meeting at vertices
+      IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,jel).EQ.&
+          ARRAYLIST_NOT_FOUND) THEN
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        CALL sys_halt()
+      END IF
+      IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,jel).EQ.&
+          ARRAYLIST_NOT_FOUND) THEN
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        CALL sys_halt()
+      END IF
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel,ipos)
+      
+      ! Optionally, invoke callback routine
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2TRIA1TRIA,&
+          (/i1,i2,i3,i4/),(/e1,e2,e3,e4/))
+
+    CASE(MARK_CRS_2TRIA1TRIA_RIGHT)
+
+      ! Get left-adjacent green elements
+      jel=rhadapt%p_IneighboursAtElement(2,iel)
+
+      ! Store vertex- and element values of the two elements
+      i1=rhadapt%p_IverticesAtElement(1,jel)
+      i4=rhadapt%p_IverticesAtElement(2,jel)
+      i3=rhadapt%p_IverticesAtElement(3,jel)
+      i2=rhadapt%p_IverticesAtElement(1,iel)
+      
+      e1=rhadapt%p_IneighboursAtElement(1,jel)
+      e3=rhadapt%p_IneighboursAtElement(3,jel)
+      e2=rhadapt%p_IneighboursAtElement(1,iel)
+      e4=rhadapt%p_IneighboursAtElement(3,iel)
+      
+      e5=rhadapt%p_ImidneighboursAtElement(1,iel)
+      e6=rhadapt%p_ImidneighboursAtElement(3,jel)
+
+      ! Update list of neighboring elements
+      CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel,jel,iel,iel)
+      CALL update_ElementNeighbors2D(rhadapt,e3,e6,jel,iel,iel)
+
+      ! The resultint triangle will possess one of the states STATE_TRIA_OUTERINNERx, whereby
+      ! x can be blank, 1 or 2. Due to our refinement convention, the two states x=1 and x=2
+      ! should not appear, that is, local numbering of the resulting triangle starts at the
+      ! vertex which is opposite to the inner red triangle. To this end, we check the state of
+      ! the provisional triangle (I1,I2,I3) and transform th orientation accordingly.
+      istate = redgreen_getstateTria(rhadapt%p_IvertexAge((/i1,i2,i3/)))
+      
+      SELECT CASE(istate)
+      CASE(STATE_TRIA_ROOT,&
+           STATE_TRIA_OUTERINNER,&
+           STATE_TRIA_REDINNER)
+        ! Update element IEL = (I1,I2,I3)
+        CALL replace_element2D(rhadapt,iel,i1,i2,i3,e1,e2,e3,e4,e5,e6)
+        
+      CASE(STATE_TRIA_OUTERINNER2)
+        ! Update element IEL = (I2,I3,I1)
+        CALL replace_element2D(rhadapt,iel,i2,i3,i1,e2,e3,e1,e5,e6,e4)
+        
+      CASE(STATE_TRIA_OUTERINNER1)
+        ! Update element IEL = (I3,I1,I2)
+        CALL replace_element2D(rhadapt,iel,i3,i1,i2,e3,e1,e2,e6,e4,e5)
+        
+      CASE DEFAULT
+        CALL output_line('Invalid state of resulting triangle!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        CALL sys_halt()
+      END SELECT
+
+      ! Delete element JEL
+      CALL remove_element2D(rhadapt,jel,ielReplace)
+      IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,jel)   
+      
+      ! Update list of elements meeting at vertices
+      IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i1,jel).EQ.&
+          ARRAYLIST_NOT_FOUND) THEN
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        CALL sys_halt()
+      END IF
+      IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,jel).EQ.&
+          ARRAYLIST_NOT_FOUND) THEN
+        CALL output_line('Unable to delete element from vertex list!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
+        CALL sys_halt()
+      END IF
+      CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i1,iel,ipos)
+      
+      ! Optionally, invoke callback routine
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
+          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2TRIA1TRIA,&
+          (/i1,i2,i3,i4/),(/e1,e2,e3,e4/))
 
     CASE DEFAULT
-      CALL output_line('Invalid state of resulting triangle!',&
+      CALL output_line('Invalid element marker!',&
           OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
       CALL sys_halt()
     END SELECT
-
-    ! Delete element JEL
-    CALL remove_element2D(rhadapt,jel,ielReplace)
-    IF (ielReplace.NE.0) CALL update_AllElementNeighbors2D(rhadapt,ielReplace,jel)   
-    
-    ! Update list of elements meeting at vertices
-    IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i2,jel).EQ.&
-        ARRAYLIST_NOT_FOUND) THEN
-      CALL output_line('Unable to delete element from vertex list!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
-      CALL sys_halt()
-    END IF
-    IF (arrlst_deleteFromArraylist(rhadapt%relementsAtVertex,i3,jel).EQ.&
-        ARRAYLIST_NOT_FOUND) THEN
-      CALL output_line('Unable to delete element from vertex list!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_2Tria1Tria')
-      CALL sys_halt()
-    END IF
-    CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,iel,ipos)
-    
-    ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2TRIA1TRIA,&
-        (/i1,i2,i3,i4/),(/e1,e2,e3,e4/))
   END SUBROUTINE coarsen_2Tria1Tria
 
   ! ***************************************************************************
@@ -6376,6 +6513,7 @@ CONTAINS
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX) :: iel0,iel1,iel2,e1,e2,e3,e4,e5,e6,ielReplace
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
+    INTEGER                  :: istate
 
     ! Store vertex- and element-values of the three neighboring elements
     i4=rhadapt%p_IverticesAtElement(1,iel)
@@ -6405,8 +6543,37 @@ CONTAINS
     CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel0,iel0)
     CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel0,iel0)
     
-    ! Update element IEL0
-    CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e6)
+    ! The resulting triangle will posses one of the states STATE_TRIA_REDINNER or
+    ! STATE_TRIA_OUTERINNERx, whereby x can be blank, 1 or 2. Due to our refinement 
+    ! convention, the two states x=1 and x=2 should not appear, that is, local
+    ! numbering of the resulting triangle starts at the vertex which is opposite 
+    ! to the inner red triangle. To this end, we check the state of the provisional
+    ! triangle (I1,I2,I3) and transform th orientation accordingly.
+    istate=redgreen_getstateTria(rhadapt%p_IvertexAge((/i1,i2,i3/)))
+    
+    SELECT CASE(istate)
+    CASE(STATE_TRIA_ROOT,&
+         STATE_TRIA_OUTERINNER,&
+         STATE_TRIA_REDINNER)
+      ! Update element IEL0=(I1,I2,I3)
+      CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e6)
+      
+    CASE(STATE_TRIA_OUTERINNER1)
+      ! Update element IEL0=(I3,I1,I2)
+      CALL replace_element2D(rhadapt,iel0,i3,i1,i2,e3,e1,e2,e6,e4,e5)
+
+    CASE(STATE_TRIA_OUTERINNER2)
+      ! Update element IEL0=(I2,I3,I1)
+      CALL replace_element2D(rhadapt,iel,i2,i3,i1,e2,e3,e1,e5,e6,e4)
+
+    CASE DEFAULT
+      CALL output_line('Invalid state of resulting triangle!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria1Tria')
+      CALL sys_halt()
+    END SELECT
+
+!!$    ! Update element IEL0
+!!$    CALL replace_element2D(rhadapt,iel0,i1,i2,i3,e1,e2,e3,e4,e5,e6)
 
     ! Delete elements IEL, IEL1 and IEL2
     CALL remove_element2D(rhadapt,iel,ielReplace)
@@ -6444,13 +6611,13 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE coarsen_4Tria2Tria(rhadapt,iel,iloc,rcollection,fcb_hadaptCallback)
+  SUBROUTINE coarsen_4Tria2Tria(rhadapt,iel,imarker,rcollection,fcb_hadaptCallback)
 
 !<description>
     ! This subroutine combines four triangles resulting from a
     ! 1-tria : 4-tria refinement into two green triangle.
     ! The local position (node 1,2,3 of the interior element) of the midpoint 
-    ! vertex that should be  kept is denoted by iloc. 
+    ! vertex that should be kept is identified by the marker imarker. 
     ! By definition, iel is the number of the inner red triangle.
     ! Be warned, this numbering convention is not checked since the
     ! routine is only called internally and cannot be used from outside.
@@ -6481,8 +6648,8 @@ CONTAINS
     ! Element number of the inner red triangle
     INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
 
-    ! Relative position of the midpoint vertex that is kept
-    INTEGER, INTENT(IN) :: iloc
+    ! Identifiert for element marker
+    INTEGER, INTENT(IN)                  :: imarker
 
     ! callback routines
     include 'intf_hadaptcallback.inc'
@@ -6527,8 +6694,8 @@ CONTAINS
     e5=rhadapt%p_IneighboursAtElement(3,iel2)
     
     ! Which midpoint vertex should be kept?
-    SELECT CASE(iloc)
-    CASE(1)     
+    SELECT CASE(imarker)
+    CASE(MARK_CRS_4TRIA2TRIA_1)     
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel1,iel1)
       CALL update_ElementNeighbors2D(rhadapt,e3,e6,iel0,iel2,iel0,iel0)
@@ -6565,7 +6732,7 @@ CONTAINS
           CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA1,&
           (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
 
-    CASE(2)
+    CASE(MARK_CRS_4TRIA2TRIA_2)
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel0,iel0)
       CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel1,iel0)
@@ -6619,7 +6786,7 @@ CONTAINS
           CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA2,&
           (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
 
-    CASE(3)
+    CASE(MARK_CRS_4TRIA2TRIA_3)
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e1,e4,iel1,iel0,iel1,iel1)
       CALL update_ElementNeighbors2D(rhadapt,e2,e5,iel2,iel1,iel0,iel0)
@@ -6708,7 +6875,7 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER    :: p_Dindicator
     INTEGER, DIMENSION(:), POINTER     :: p_Imarker
-    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: Kvert
+    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: p_IverticesAtElement
     INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: Kadj
     INTEGER(PREC_VERTEXIDX)  :: ivt
     INTEGER(PREC_ELEMENTIDX) :: iel
@@ -6744,17 +6911,17 @@ CONTAINS
       IF (p_Dindicator(iel) .GT. rhadapt%drefinementTolerance) THEN
         
         ! Mark element for refinement
-        Kvert=rhadapt%p_IverticesAtElement(:,iel)
+        p_IverticesAtElement=rhadapt%p_IverticesAtElement(:,iel)
         Kadj =rhadapt%p_IneighboursAtElement(:,iel)
 
         ! An element can only be refined, if all of its vertices do
         ! not exceed the number of admissible subdivision steps.
         ! So, check the element type and loop over the 3 or 4 vertices.
-        IF (Kvert(4) .EQ. 0) THEN
+        IF (p_IverticesAtElement(4) .EQ. 0) THEN
           
           ! If triangle has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D))).EQ.&
+          IF (ANY(ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D))).EQ.&
               rhadapt%NSUBDIVIDEMAX)) THEN
             p_Imarker(iel)=MARK_ASIS
             
@@ -6763,7 +6930,7 @@ CONTAINS
             ! was performed. At the same time, all vertices of the element should
             ! be "locked" to prevent this element from coarsening
             DO ive=1,3
-              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
+              rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=-ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive))) 
             END DO
             
             CYCLE mark
@@ -6774,7 +6941,7 @@ CONTAINS
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,3
-            rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=-ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
           END DO
           
           ! Update number of new vertices. In principle, we can increase the number of 
@@ -6794,7 +6961,7 @@ CONTAINS
           
           ! If quadrilateral has reached maximum number of refinement levels,
           ! then enforce no further refinement of this element
-          IF (ANY(ABS(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVEQUAD2D))).EQ.&
+          IF (ANY(ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVEQUAD2D))).EQ.&
               rhadapt%NSUBDIVIDEMAX)) THEN
             p_Imarker(iel)=MARK_ASIS
 
@@ -6803,7 +6970,7 @@ CONTAINS
             ! was performed. At the same time, all vertices of the element should
             ! be "locked" to prevent this element from coarsening
             DO ive=1,4
-              rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive))) 
+              rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=-ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive))) 
             END DO
 
             CYCLE mark
@@ -6814,7 +6981,7 @@ CONTAINS
           
           ! Moreover, we have to "lock" its vertices from recoarsening
           DO ive=1,4
-            rhadapt%p_IvertexAge(Kvert(ive))=-ABS(rhadapt%p_IvertexAge(Kvert(ive)))
+            rhadapt%p_IvertexAge(p_IverticesAtElement(ive))=-ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(ive)))
           END DO
           
           ! Update number of new vertices
@@ -7144,6 +7311,8 @@ CONTAINS
       CASE DEFAULT
         CALL output_line('Invalid element state!',&
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_mark_coarsening2D')
+        CALL hadapt_writegridSVG(rhadapt,'mygrid')
+        PRINT *, istate,iel
         CALL sys_halt()
       END SELECT
     END DO
@@ -7417,26 +7586,26 @@ CONTAINS
           IF (iel < jel) THEN
             p_Imarker(iel)=MARK_CRS_2TRIA1TRIA_LEFT
           ELSE
-            p_Imarker(iel)=MARK_CRS_2TRIA1TRIA_RIGHT
+            p_Imarker(jel)=MARK_CRS_2TRIA1TRIA_RIGHT
           END IF
         END IF
         
-!!$      CASE(STATE_TRIA_GREENOUTER_RIGHT)
-!!$        ! If this is the right green triangle of a 1-tria : 2-tria refinement then
-!!$        ! get the element number of the corresponding left triangle and mark the
-!!$        ! element with the smaller number for refinement
-!!$        jel = rhadapt%p_IneighboursAtElement(2,iel)
-!!$        Kvert(1:TRIA_NVETRI2D)  = rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
-!!$        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
-!!$        IF (jstate .EQ. STATE_TRIA_GREENOUTER_LEFT) THEN
-!!$          
-!!$          ! Which is the element with smaller number?
-!!$          IF (iel < jel) THEN
-!!$            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_RIGHT
-!!$          ELSE
-!!$            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_LEFT
-!!$          END IF
-!!$        END IF
+      CASE(STATE_TRIA_GREENOUTER_RIGHT)
+        ! If this is the right green triangle of a 1-tria : 2-tria refinement then
+        ! get the element number of the corresponding left triangle and mark the
+        ! element with the smaller number for refinement
+        jel = rhadapt%p_IneighboursAtElement(2,iel)
+        Kvert(1:TRIA_NVETRI2D)  = rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
+        jstate = redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
+        IF (jstate .EQ. STATE_TRIA_GREENOUTER_LEFT) THEN
+          
+          ! Which is the element with smaller number?
+          IF (iel < jel) THEN
+            p_Imarker(iel) = MARK_CRS_2TRIA1TRIA_RIGHT
+          ELSE
+            p_Imarker(jel) = MARK_CRS_2TRIA1TRIA_LEFT
+          END IF
+        END IF
         
       CASE(STATE_TRIA_OUTERINNER)
         ! If this is the inner green tiangle of a 1-quad : 4-tria refinement then
@@ -7641,7 +7810,7 @@ CONTAINS
 
     ! local variables
     INTEGER, DIMENSION(:), POINTER :: p_Imarker,p_Imodified
-    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: Kvert
+    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: p_IverticesAtElement
     INTEGER(PREC_VERTEXIDX)  :: i,nvt
     INTEGER(PREC_ELEMENTIDX) :: nel,iel,jel,kel,lel,iel1,iel2
     INTEGER :: ive,jve,nve,mve,istate,jstate
@@ -7740,7 +7909,7 @@ CONTAINS
 
     isConform=.FALSE.
     conformity: DO
-      
+
       ! If conformity is guaranteed for all cells, then exit
       IF (isConform) EXIT conformity
       isConform=.TRUE.
@@ -7757,17 +7926,19 @@ CONTAINS
         nve=get_NVE(rhadapt,iel)
         
         ! Get local data for element iel
-        Kvert(1:nve)  =rhadapt%p_IverticesAtElement(1:nve,iel)
+        p_IverticesAtElement(1:nve)=rhadapt%p_IverticesAtElement(1:nve,iel)
       
         ! Are we triangular or quadrilateral element?
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
           p_Imarker(iel)=ibclr(p_Imarker(iel),0)
-          istate        =redgreen_getStateTria(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVETRI2D)))
+          istate        =redgreen_getStateTria(&
+              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D)))
 
         CASE(TRIA_NVEQUAD2D)
           p_Imarker(iel)=ibset(p_Imarker(iel),0)
-          istate        =redgreen_getStateQuad(rhadapt%p_IvertexAge(Kvert(1:TRIA_NVEQUAD2D)))
+          istate        =redgreen_getStateQuad(&
+              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVEQUAD2D)))
 
         CASE DEFAULT
           CALL output_line('Invalid number of vertices per element!',&
@@ -8096,7 +8267,7 @@ CONTAINS
             p_Imarker(jel)=0
             
             ! Which is the smaller elements?
-            IF (iel < jel) THEN
+!            IF (iel < jel) THEN
               iel1=rhadapt%p_IneighboursAtElement(1,iel)
               iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
               IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
@@ -8104,15 +8275,15 @@ CONTAINS
               iel1=rhadapt%p_IneighboursAtElement(3,jel)
               iel2=rhadapt%p_ImidneighboursAtElement(3,jel)
               IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),3)
-            ELSE
-              iel1=rhadapt%p_IneighboursAtElement(1,jel)
-              iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
-              
-              iel1=rhadapt%p_IneighboursAtElement(3,iel)
-              iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),3)
-            END IF
+!!$            ELSE
+!!$              iel1=rhadapt%p_IneighboursAtElement(1,jel)
+!!$              iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
+!!$              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
+!!$              
+!!$              iel1=rhadapt%p_IneighboursAtElement(3,iel)
+!!$              iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
+!!$              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),3)
+!!$            END IF
           
           CASE(STATE_TRIA_GREENINNER)
             ! Element IEL and JEL are the result of a Quad3Tria refinement, whereby
@@ -8246,15 +8417,15 @@ CONTAINS
             p_Imarker(jel)=0
             
             ! Whis is the smaller element?
-            IF (iel < jel) THEN
-              iel1=rhadapt%p_IneighboursAtElement(1,iel)
-              iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
-              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
-              
-              iel1=rhadapt%p_IneighboursAtElement(3,jel)
-              iel2=rhadapt%p_ImidneighboursAtElement(3,jel)
-              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),3)
-            ELSE
+!!$            IF (iel < jel) THEN
+!!$              iel1=rhadapt%p_IneighboursAtElement(1,iel)
+!!$              iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
+!!$              IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
+!!$              
+!!$              iel1=rhadapt%p_IneighboursAtElement(3,jel)
+!!$              iel2=rhadapt%p_ImidneighboursAtElement(3,jel)
+!!$              IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),3)
+!!$            ELSE
               iel1=rhadapt%p_IneighboursAtElement(1,jel)
               iel2=rhadapt%p_ImidneighboursAtElement(1,jel)
               IF (ismarked_edge(iel1,iel2,jel)) p_Imarker(jel)=ibset(p_Imarker(jel),1)
@@ -8262,7 +8433,7 @@ CONTAINS
               iel1=rhadapt%p_IneighboursAtElement(3,iel)
               iel2=rhadapt%p_ImidneighboursAtElement(3,iel)
               IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),3)
-            END IF
+!!$            END IF
 
 
           CASE(STATE_TRIA_GREENINNER)
@@ -8432,8 +8603,9 @@ CONTAINS
             END IF
 
             ! Finally, "lock" all vertices of element JEL
-            Kvert(1:mve)=rhadapt%p_IverticesAtElement(1:mve,jel)
-            rhadapt%p_IvertexAge(Kvert(1:mve))=-ABS(rhadapt%p_IvertexAge(Kvert(1:mve)))
+            p_IverticesAtElement(1:mve)=rhadapt%p_IverticesAtElement(1:mve,jel)
+            rhadapt%p_IvertexAge(p_IverticesAtElement(1:mve))=&
+                -ABS(rhadapt%p_IvertexAge(p_IverticesAtElement(1:mve)))
           END IF
         END DO
       END DO
@@ -8539,23 +8711,17 @@ CONTAINS
       INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: jel
 
       ! local variables
-      INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: Kvert
-      INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: Kadj
       INTEGER :: ive,nve
 
       ! Get number of vertices per element
       nve=get_NVE(rhadapt,jel)
-
-      ! Get local data
-      Kvert(1:nve)=rhadapt%p_IverticesAtElement(1:nve,jel)
-      Kadj(1:nve) =rhadapt%p_IneighboursAtElement(1:nve,jel)
       
       ! Find local position of element IEL in adjacency list of JEL
       SELECT CASE(nve)
       CASE(TRIA_NVETRI2D)
         ! Triangular elements
         DO ive=1,nve
-          IF (Kadj(ive) .EQ. iel) THEN
+          IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel) THEN
             p_Imarker(jel)=ibclr(ibset(p_Imarker(jel),ive),0)
             isConform      =.FALSE.
             IF (p_Imodified(jel) .NE. imodifier) p_Imodified(jel)=-imodifier
@@ -8566,7 +8732,7 @@ CONTAINS
       CASE(TRIA_NVEQUAD2D)
         ! Quadrilateral element
         DO ive=1,nve
-          IF (Kadj(ive) .EQ. iel) THEN
+          IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel) THEN
             p_Imarker(jel)=ibset(ibset(p_Imarker(jel),ive),0)
             isConform      =.FALSE.
             IF (p_Imodified(jel) .NE. imodifier) p_Imodified(jel)=-imodifier
@@ -8609,12 +8775,9 @@ CONTAINS
           RETURN
         END IF
       END DO
-
+      
       CALL output_line('Unable to find common egde!',&
           OU_CLASS_ERROR,OU_MODE_STD,'ismarked_edge')
-      PRINT *, iel,ielmid,jel
-      PRINT *, rhadapt%p_IneighboursAtElement(:,iel)
-      PRINT *, rhadapt%p_IneighboursAtElement(:,jel)
       CALL hadapt_writegridsvg(rhadapt,'mygrid')
       CALL sys_halt()
     END FUNCTION ismarked_edge
@@ -8778,24 +8941,28 @@ CONTAINS
         ! - that are only marked for generic recoarsening
         ! - that are marked for refinement.
 
-      CASE(MARK_CRS_2TRIA1TRIA_LEFT)
-        CALL coarsen_2Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
+      CASE(MARK_CRS_2TRIA1TRIA_LEFT,&
+           MARK_CRS_2TRIA1TRIA_RIGHT)
+        CALL coarsen_2Tria1Tria(rhadapt,iel,p_Imarker(iel),&
+            rcollection,fcb_hadaptCallback)
+        p_Imarker(iel)=MARK_ASIS
 
       CASE(MARK_CRS_4TRIA1TRIA)
-        CALL coarsen_4Tria1Tria(rhadapt,iel,rcollection,fcb_hadaptCallback)
-        
-      CASE(MARK_CRS_4TRIA2TRIA_1)
-        CALL coarsen_4Tria2Tria(rhadapt,iel,1,rcollection,fcb_hadaptCallback)
+        CALL coarsen_4Tria1Tria(rhadapt,iel,&
+            rcollection,fcb_hadaptCallback)
+        p_Imarker(iel)=MARK_ASIS
 
-      CASE(MARK_CRS_4TRIA2TRIA_2)
-        CALL coarsen_4Tria2Tria(rhadapt,iel,2,rcollection,fcb_hadaptCallback)
-     
-      CASE(MARK_CRS_4TRIA2TRIA_3)
-        CALL coarsen_4Tria2Tria(rhadapt,iel,3,rcollection,fcb_hadaptCallback)
+      CASE(MARK_CRS_4TRIA2TRIA_1,&
+           MARK_CRS_4TRIA2TRIA_2,&
+           MARK_CRS_4TRIA2TRIA_3)
+        CALL coarsen_4Tria2Tria(rhadapt,iel,p_Imarker(iel),&
+            rcollection,fcb_hadaptCallback)
+        p_Imarker(iel)=MARK_ASIS
 
       CASE DEFAULT
         CALL output_line('Invalid recoarsening marker!',&
             OU_CLASS_ERROR,OU_MODE_STD,'redgreen_coarsen')
+        CALL hadapt_writegridSVG(rhadapt,'mygrid')
         CALL sys_halt()
       END SELECT
     END DO
