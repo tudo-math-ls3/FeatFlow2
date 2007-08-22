@@ -1583,7 +1583,7 @@ CONTAINS
 
     ! Check that both graphs are compatible
     IF (rgraph%cgraphFormat .NE. rgraphBackup%cgraphFormat .OR.&
-        rgraph%bisDense     .NE. rgraphBackup%bisDense) THEN
+        rgraph%bisDense     .NEQV. rgraphBackup%bisDense) THEN
       CALL output_line('Incompatible graphs!',&
           OU_CLASS_ERROR,OU_MODE_STD,'grph_restoreGraph')
       CALL sys_halt()
