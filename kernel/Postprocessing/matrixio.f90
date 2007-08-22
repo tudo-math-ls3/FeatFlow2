@@ -433,13 +433,18 @@ MODULE matrixio
     ! can be visualized in MATLAB by means of the spy command.
     ! If the matrix contains entries, the entries are written to the file
     ! as well, so the matrix can be used as sparse matrix for arbitrary purposes.
+    !
+    ! To load a matrix written out by this routine, one has simply to type the name
+    ! of the ".m"-file that is written out. MATLAB will read the file and
+    ! create a sparse matrix with the name smatrixName in memory.
 !</description>
 
 !<input>
-    ! file name of the MATLAB file without fileextension
+    ! File name of the MATLAB file without fileextension. A ".m" is appended.
     CHARACTER(LEN=*), INTENT(IN) :: sfileName
     
-    ! name of the matrix in MATLAB file
+    ! Name of the matrix in MATLAB file. This will be the name of the
+    ! variable containing the matrix data when reading the file into matlab.
     CHARACTER(LEN=*), INTENT(IN) :: smatrixName
 
     ! Source matrix
@@ -485,13 +490,18 @@ MODULE matrixio
     ! can be visualized in MATLAB by means of the spy command.
     ! If the matrix contains entries, the entries are written to the file
     ! as well, so the matrix can be used as sparse matrix for arbitrary purposes.
+    !
+    ! To load a matrix written out by this routine, one has simply to type the name
+    ! of the ".m"-file that is written out. MATLAB will read the file and
+    ! create a sparse matrix with the name smatrixName in memory.
 !</description>
 
 !<input>
-    ! file name of the MATLAB file without fileextension
+    ! File name of the MATLAB file without fileextension. A ".m" is appended.
     CHARACTER(LEN=*), INTENT(IN) :: sfileName
     
-    ! name of the matrix in MATLAB file
+    ! Name of the matrix in MATLAB file. This will be the name of the
+    ! variable containing the matrix data when reading the file into matlab.
     CHARACTER(LEN=*), INTENT(IN) :: smatrixName
 
     ! Source matrix
