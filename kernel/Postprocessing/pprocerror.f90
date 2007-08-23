@@ -491,7 +491,7 @@ CONTAINS
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC,&
                Dcoefficients(:,1:IELmax-IELset+1_I32,2))        
           
-          ! Subtracttion of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
+          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
@@ -556,7 +556,7 @@ CONTAINS
                ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_DERIV_Y,&
                Dcoefficients(:,1:IELmax-IELset+1_I32,4))        
           
-          ! Subtracttion of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
+          ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,

@@ -254,6 +254,19 @@ MODULE triangulation
 
 !</constantblock>
   
+!<constantblock description="Flags to be specified as cflags in the refinement routines.">
+  
+  ! After refinement, those points of quad elements on the fine mesh which 
+  ! were formally element midpoints on the coarse mesh were recalculated
+  ! by taking the mean of the corners.
+  ! This helps avoiding tangled elements when there is a 'hole' in the domain.
+  INTEGER(I32), PARAMETER :: TRIA_R2LV_AVERAGEMIDPOINTS  = 2**0
+
+  ! Standard parameter settings for 2-level refinement
+  INTEGER(I32), PARAMETER :: TRIA_R2LV_STANDARD = TRIA_R2LV_AVERAGEMIDPOINTS
+
+!</constantblock>
+  
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between triangulation structures">
 
@@ -438,18 +451,24 @@ MODULE triangulation
     INTEGER        :: h_DvertexCoords = ST_NOHANDLE
     
     ! Vertices Adjacent to an Element.
-    ! Handle to h_IverticesAtElement=array [1..TRIA_MAXNVE2D,1..NEL] of integer
+    ! Handle to h_IverticesAtElement=array [1..NVE,1..NEL] of integer
     ! For each element the node numbers of the corner-vertices
     ! in mathematically positive sense.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     INTEGER        :: h_IverticesAtElement = ST_NOHANDLE
 
     ! Edges Adjacent to an Element.
     ! Handle to 
-    !       p_RedgesAtElement = array [1..TRIA_MAXNME2D,1..NEL] of integer
+    !       p_RedgesAtElement = array [1..NVE,1..NEL] of integer
     ! For each element the node numbers of the edges following the
     ! corner vertices in mathematically positive sense.
     ! This is the old KMID array.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IedgesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! To be able to distinguish a number of an edge from a vertex number, 
     ! edges are numbered in the range NVT+1..NVT+NMT. 
     INTEGER        :: h_IedgesAtElement = ST_NOHANDLE
@@ -3870,7 +3889,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE tria_quickRefine2LevelOrdering(nfine,rtriangulation,rboundary)
+  SUBROUTINE tria_quickRefine2LevelOrdering(nfine,rtriangulation,rboundary,cflags)
 
 !<description>
   ! This routine refines the given mesh rsourceTriangulation according to
@@ -3893,6 +3912,11 @@ CONTAINS
   ! If specified, the coordinates of the new boundary vertices are
   ! recomputed according to the analytic boundary.
   TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+
+  ! OPTIONAL: Bitfield of TRIA_R2LV_xxxx constants that allow to specify
+  ! options for the refinement. If not specified, TRIA_R2LV_STANDARD
+  ! is used as default.
+  INTEGER(I32), INTENT(IN), OPTIONAL :: cflags
 !</input>
 
 !<inputoutput>
@@ -3933,7 +3957,8 @@ CONTAINS
       END IF
      
       ! Refine the mesh, replace the source mesh.
-      CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary)
+      CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary,&
+          cflags=cflags)
           
     END DO
     
@@ -3944,7 +3969,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE tria_refine2LevelOrdering(&
-      rsourceTriangulation,rdestTriangulation,rboundary)
+      rsourceTriangulation,rdestTriangulation,rboundary,cflags)
 
 !<description>
   ! This routine refines the given mesh rsourceTriangulation according to
@@ -3962,6 +3987,11 @@ CONTAINS
   ! If specified, the coordinates of the new boundary vertices are
   ! recomputed according to the analytic boundary.
   TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+  
+  ! OPTIONAL: Bitfield of TRIA_R2LV_xxxx constants that allow to specify
+  ! options for the refinement. If not specified, TRIA_R2LV_STANDARD
+  ! is used as default.
+  INTEGER(I32), INTENT(IN), OPTIONAL :: cflags
 !</input>
 
 !<inputoutput>
@@ -3980,6 +4010,10 @@ CONTAINS
 !</subroutine>
  
     TYPE(t_triangulation) :: rdestTria
+    INTEGER(I32) :: cflagsAct
+    
+    cflagsAct = TRIA_R2LV_STANDARD
+    IF (PRESENT(cflags)) cflagsAct = cflags
     
     ! Call the correct submethod depending on the dimension.
     SELECT CASE (rsourceTriangulation%ndim)
@@ -3991,6 +4025,12 @@ CONTAINS
       
       ! Refine the boundary
       CALL tria_refineBdry2lv2D(rsourceTriangulation,rdestTria,rboundary)
+      
+      IF (IAND(cflagsAct,TRIA_R2LV_AVERAGEMIDPOINTS) .NE. 0) THEN
+        ! Recalculate corner points of quads that were element midpoints
+        ! on the coarse mesh.
+        CALL tria_averageMidpoints2D(rsourceTriangulation,rdestTria)
+      END IF
       
     CASE (NDIM3D)
     
@@ -4514,6 +4554,116 @@ CONTAINS
         END IF
         
       END IF
+    
+    END SUBROUTINE
+
+    ! ---------------------------------------------------------------
+  
+    SUBROUTINE tria_averageMidpoints2D(rsourceTriangulation,rdestTriangulation)
+
+    ! The follwing function corrects the grid on domains where non-linear/
+    ! curved boundary segments are used. 
+    ! When a boundary segment of the domain is a line, new boundary nodes
+    ! are automatically positioned on the boundary. But when the boundary
+    ! is a curve, a new boundary vertex is not automatically on the
+    ! boundary, but it first has tobe moved to there. This is already
+    ! performed in the refinement routine XSB0X. Unfortunately this
+    ! procedure can lead to very anisotropic elements near the boundary,
+    ! depending on how sharp the curved boundary is.
+    !
+    ! tria_averageMidpoints2D now tries to reduce these effects of anisotropy. 
+    ! The element midpoint of the coarser element (which is at the same time 
+    ! the vertex where all the four finer elements meet) is taken as the 
+    ! average of the four edge midpoints that arise from natural refinement.
+
+    ! The source triangulation specifying the coarse mesh
+    TYPE(t_triangulation), INTENT(IN) :: rsourceTriangulation
+
+    ! Destination triangulation that specifies the fine mesh after
+    ! 2-level refinement
+    TYPE(t_triangulation), INTENT(INOUT) :: rdestTriangulation
+
+      ! local variables
+      INTEGER :: i
+      REAL(DP) :: dx,dy
+      INTEGER(PREC_ELEMENTIDX) :: iel,ivtoffset !,ielbd
+      !INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtBoundaryCoarse
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementCoarse
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElementFine
+      INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElementCoarse
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoordsFine
+      INTEGER(PREC_VERTEXIDX) :: ipt
+
+      ! The approach is simple:
+      !    
+      ! o----------o----------o
+      ! \          \          |
+      ! |\         \          | 
+      ! | \      -> \         |
+      ! |  o---------o--------o   Averaging of the element midpoint by 
+      ! | /      -> /         |   interpolation
+      ! |/         /          |
+      ! /          /          |
+      ! o----------o----------o
+      !
+      ! Actually, we only have to tackle the elements on the boundary of the coarse
+      ! mesh. Loop over them. Some midpoints may be calculated
+      ! twice that way, but we don't care...
+      !
+      ! Unfortunately, due to the incompleteness of the triangulation structure,
+      ! this approach does not work for mixed mesh. We have to loop through
+      ! all elements on the coarse mesh to find the numbers of the quads :-(
+      
+      CALL storage_getbase_int2d (rsourceTriangulation%h_IverticesAtElement,&
+          p_IverticesAtElementCoarse)
+          
+      ! If this is a pure triangle mesh, there is nothing to do.
+      IF (UBOUND(p_IverticesAtElementCoarse,1) .LE. TRIA_NVETRI2D) RETURN
+      
+      ! CALL storage_getbase_int (rsourceTriangulation%h_IelementsAtBoundary,&
+      !     p_IelementsAtBoundaryCoarse)
+
+      CALL storage_getbase_int2d (rsourceTriangulation%h_IedgesAtElement,&
+          p_IedgesAtElementCoarse)
+      CALL storage_getbase_int2d (rdestTriangulation%h_IverticesAtElement,&
+          p_IverticesAtElementFine)
+      CALL storage_getbase_double2d (rdestTriangulation%h_DvertexCoords,&
+          p_DvertexCoordsFine)
+
+      ivtoffset = rsourceTriangulation%NVT + rsourceTriangulation%NMT
+      
+      DO iel = 1,rsourceTriangulation%NEL
+
+        ! Get the element number of the coarse mesh element
+        ! iel = p_IelementsAtBoundaryCoarse(ielbd)
+      
+        ! Triangle or quad?
+        IF (p_IverticesAtElementCoarse(TRIA_NVEQUAD2D,iel) .NE. 0) THEN
+        
+          ! New quad. Increase ivtoffset, this is then the number of the
+          ! point that was the midpoint in the coarse mesh.
+          ivtoffset = ivtoffset + 1
+        
+          ! Ok, that's a quad. The midpoint must be recalculated.
+          ! We do this based on the 'edge midpoints' which are now
+          ! vertices in the fine mesh. The coordinates of these points
+          ! may differ from the coordinates calculated by linear 
+          ! interpolation due to boundary adjustment!
+          dx = 0.0_DP
+          dy = 0.0_DP
+          DO i=1,TRIA_NVEQUAD2D
+            ipt = p_IedgesAtElementCoarse(i,iel)
+            dx = dx + p_DvertexCoordsFine(1,ipt)
+            dy = dy + p_DvertexCoordsFine(2,ipt)
+          END DO
+          
+          ! Save the vertex coordinates. 
+          p_DvertexCoordsFine(1,ivtoffset) = 0.25_DP*dx
+          p_DvertexCoordsFine(2,ivtoffset) = 0.25_DP*dy
+        
+        END IF
+      
+      END DO
     
     END SUBROUTINE
 

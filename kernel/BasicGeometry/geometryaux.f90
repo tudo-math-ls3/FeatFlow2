@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains low level auxiliary functions for geometric
-!# objects like triangles, quads or similar.
+!# objects like lines, triangles, quads or similar.
 !#
 !# The following routines can be found here:
 !#
@@ -18,6 +18,21 @@
 !# 3.) gaux_getArea_quad2D
 !#     -> Calculate the area of a 2D quadrilateral
 !#
+!# 4.) gaux_isIntersection_ray2D
+!#     -> Checks if two rays in 2D intersect
+!#
+!# 5.) gaux_getIntersection_ray2D
+!#     -> Calculates the intersection point of two rays (if they intersect)
+!#
+!# 6.) gaux_isInElement_quad2D
+!#     -> Checks if a point is inside of a 2D quadrilateral
+!#
+!# 7.) gaux_isInElement_tri2D
+!#     -> Checks if a point is inside of a 2D triangle
+!#
+!# 8.) gaux_getBarycentricCoords_tri2D
+!#     -> Calculates the barycentric coordinates of a point relative
+!#        to a specified triangle in 2D
 !# </purpose>
 !##############################################################################
 
@@ -239,4 +254,346 @@ CONTAINS
                            (Dpoints(2,3) - Dpoints(2,1) ) )
                            
   END FUNCTION gaux_getArea_quad2D
+
+!************************************************************************
+
+!<subroutine>
+  
+  ELEMENTAL SUBROUTINE gaux_isIntersection_ray2D(&
+      dx1,dy1,dx2,dy2,dx3,dy3,dx4,dy4, bintersect)
+  
+!<description>
+  ! Checks whether the two 2D rays given by (x1,y1)->(x2,y2) and 
+  ! (x3,y3)->(x4,y4) intersect.
+!</description>
+
+!<input>
+  ! First point on ray 1.
+  REAL(DP), INTENT(IN) :: dx1,dy1
+  
+  ! A second point on ray 1. Must be different to (dx1,dy1)
+  REAL(DP), INTENT(IN) :: dx2,dy2
+  
+  ! First point on ray 2.
+  REAL(DP), INTENT(IN) :: dx3,dy3
+  
+  ! A second point on ray 2. Must be different to (dx3,dy3)
+  REAL(DP), INTENT(IN) :: dx4,dy4
+!</input>
+
+!<result>
+  ! TRUE if the two rays intersect. FALSE otherwise.
+  LOGICAL, INTENT(OUT) :: bintersect
+!</result>
+
+!</subroutine>
+
+    ! local variables: aux parameters
+    REAL(DP) :: daux1, daux2, daux3, daux4
+
+    ! position of point 3 with respect to line between 1 and 2
+
+    daux3 = (dx2-dx1)*(dy3-dy1) - (dy2-dy1)*(dx3-dx1)
+
+    ! position of point 4 with respect to line between 1 and 2
+
+    daux4 = (dx2-dx1)*(dy4-dy1) - (dy2-dy1)*(dx4-dx1)
+
+    ! position of point 1 with respect to line between 3 and 4
+
+    daux1 = (dx4-dx3)*(dy1-dy3) - (dy4-dy3)*(dx1-dx3)
+
+    ! position of point 2 with respect to line between 3 and 4
+
+    daux2 = (dx4-dx3)*(dy2-dy3) - (dy4-dy3)*(dx2-dx3)
+
+    ! Determine if the lines truely intersect by checking the sign
+
+    bintersect = ((daux3*daux4 .LE. 0.0_DP) .AND. &
+                  (daux1*daux2 .LE. 0.0_DP)) 
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+  
+  ELEMENTAL SUBROUTINE gaux_getIntersection_ray2D(&
+      dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect)
+  
+!<description>
+  ! Calculates the intersection point of two 2D rays given by 
+  ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4).
+!</description>
+
+!<input>
+  ! First point on ray 1.
+  REAL(DP), INTENT(IN) :: dx0,dy0
+  
+  ! A second point on ray 1. Must be different to (dx1,dy1)
+  REAL(DP), INTENT(IN) :: dx1,dy1
+  
+  ! First point on ray 2.
+  REAL(DP), INTENT(IN) :: dx2,dy2
+  
+  ! A second point on ray 2. Must be different to (dx3,dy3)
+  REAL(DP), INTENT(IN) :: dx3,dy3
+!</input>
+
+!<result>
+  ! Intersection point.
+  ! If the two rays do not intersect or are identical, this is set to (0,0).
+  REAL(DP), INTENT(OUT) :: dx,dy
+
+  ! Returns the type of intersection between the rays.
+  ! =-1: The rays are the same
+  ! = 0: The rays don't intersect.
+  ! = 1: The rays intersect in exactly one point.
+  INTEGER, INTENT(OUT) :: iintersect
+!</result>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: ddet,da
+
+    ! Initial setting of the destination point
+    dx = 0.0_DP
+    dy = 0.0_DP
+    iintersect = 0
+    
+    ! We have (hopefully) the situation
+    !            
+    !               (X1,Y1)
+    !                  |
+    !                  |
+    !  (X2,Y2) --------+--------- (X3,Y3)
+    !                  |
+    !                  |
+    !               (X0,Y0)
+    !
+    ! and want to calculate the intersection point. This means
+    ! we have to solve the linear system
+    !
+    !  ( X1-X0  X2-X3 ) * (a) = ( X2-X0 )
+    !  ( Y1-Y0  Y2-Y3 )   (b)   ( Y2-Y0 )
+    !
+    ! to get the "parameter" values a,b along the two lines where
+    ! the intersection occurres.
+    !
+    ! The determinant of the system is:
+
+    ddet = dx1*dy2-dx1*dy3-dx0*dy2+dx0*dy3-dy1*dx2+dy1*dx3+dy0*dx2-dy0*dx3 
+       
+    ! If it's =0, the lines are the same or completely different...
+        
+    IF (ddet .EQ. 0.0_DP) THEN
+       
+      ! If the vector (X2,Y2)->(X0,Y0) is linear dependent to
+      ! (X2,Y2)->(X3,Y3), the lines are the same.
+
+      ddet = -dy0*dx2-dx3*dy2+dy0*dx3+dx2*dy3+dx0*dy2-dx0*dy3
+       
+      IF (ddet .EQ. 0.0_DP) THEN
+        iintersect = -1
+      END IF
+     
+    ELSE
+
+      ! There is an intersection point. Calculate one of the 
+      ! "parameter" values along the two lines.
+
+      da = (dy0*dx2+dx3*dy2-dy0*dx3-dx2*dy3-dx0*dy2+dx0*dy3) / ddet
+        
+      !  The intersection point is then
+
+      dx = da*dx1 + (1.0_DP-da)*dx
+      dy = da*dy1 + (1.0_DP-da)*dy
+      
+      iintersect = 1
+       
+    END IF
+      
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+  
+  PURE SUBROUTINE gaux_isInElement_quad2D(dx,dy,DcornerCoords,binside)
+  
+!<description>
+  ! Checks if a point (dx,dy) is inside of a 2D quadrilateral element
+  ! given by the corners DcornerCoords.
+!</description>
+
+!<input>
+  ! Point to check
+  REAL(DP), INTENT(IN) :: dx,dy
+  
+  ! Array with coordinates of the four corner points of the element.
+  ! The corners must be ordered in counterclockwise order.
+  !
+  ! Note: For performance reasons, this array is defined as
+  !   explicit array of dimension (2,4). As this deactivates array
+  !   checking in Fortran, the caller must take care to specify exactly
+  !   this type of array here!
+  REAL(DP), DIMENSION(2,4), INTENT(IN) :: DcornerCoords
+!</input>
+
+!<result>
+  ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
+  LOGICAL, INTENT(OUT) :: binside
+!</result>
+
+!</subroutine>
+
+    ! local variables
+
+    INTEGER, PARAMETER :: NVE = 4
+    INTEGER, DIMENSION(4), PARAMETER :: Inext = (/2,3,4,1/)
+    REAL(DP) :: dxmid,dymid,dxdist,dydist,dxnormal,dynormal
+    INTEGER :: ive,ive2
+    REAL(DP) :: dsproduct
+      
+    binside = .TRUE.
+
+    ! Compute edge-midpoints and normal vectors to the four
+    ! edges on element IEL
+
+    DO ive=1,NVE
+
+      ive2 = Inext(ive)   ! Use of Inext avoids a division by avoiding MOD!
+
+      ! compute midpoints of element edges
+
+      dxmid = 0.5_DP*(DcornerCoords(1,ive) + DcornerCoords(1,ive2))
+      dymid = 0.5_DP*(DcornerCoords(2,ive) + DcornerCoords(2,ive2))
+
+      ! compute normal vectors to element edges
+
+      dxnormal =  DcornerCoords(2,ive2) - DcornerCoords(2,ive)
+      dynormal = -DcornerCoords(1,ive2) + DcornerCoords(1,ive)
+
+      ! compute vectors from edge midpoints to node 'ivt'
+
+      dxdist = dx - dxmid
+      dydist = dy - dymid
+
+      ! Check whether 'ivt' belongs to element 'iel' or not by
+      ! multiplying distance vectors with corresponding normal vectors.
+      ! The sign of this scalar product determines whether we are
+      ! 'left' or 'right' of the edge (because of the cosine formula).
+      ! If the point is "righthand" of all four edges, it's inside 
+      ! of the element.
+
+      dsproduct = dxdist*dxnormal + dydist*dynormal
+
+      ! Actually we have to check against <=0, but it's more advisable
+      ! to check against something that is 'near' 0 in terms
+      ! of machine exactness...
+      binside = binside .AND. (dsproduct .LE. dsproduct*100.0_DP)
+
+    END DO
+    
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+  
+  PURE SUBROUTINE gaux_getBarycentricCoords_tri2D(&
+      DcornerCoords,dx,dy,dxi1,dxi2,dxi3)
+  
+!<description>
+  ! Calculates the barycentric coordinates (dxi1,dxi2,dxi3) of a
+  ! point (dx,dy) relative to a 2D triangular element specified by
+  ! the coordinates of the three corners in DcornerCoords.
+!</description>
+
+!<input>
+  ! Point in real coordinates
+  REAL(DP), INTENT(IN) :: dx,dy
+  
+  ! Array with coordinates of the three corner points of the element.
+  ! The corners must be ordered in counterclockwise order.
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: DcornerCoords
+!</input>
+
+!<result>
+  ! The barycentric coordinates of (dx,dy) relative to the element
+  ! specified by DcornerCoords.
+  REAL(DP), INTENT(OUT) :: dxi1,dxi2,dxi3
+!</result>
+
+!</subroutine>
+
+    ! local variables
+    REAL(DP) :: DAX, DAY, DBX, DBY, DCX, DCY, DDET
+
+    DAX = DcornerCoords(1, 1) 
+    DAY = DcornerCoords(2, 1)
+    DBX = DcornerCoords(1, 2)
+    DBY = DcornerCoords(2, 2)
+    DCX = DcornerCoords(1, 3)
+    DCY = DcornerCoords(2, 3)
+    
+    ! Example where to find this formula here:
+    ! http://home.t-online.de/home/nagel.klaus/matdir/bary.htm 
+    
+    DDET = 1.0_DP / ( DAX*(DBY-DCY) + DBX*(DCY-DAY) + DCX*(DAY-DBY) )
+    dxi1 = (dx*(DBY-DCY)+DBX*(DCY-dy)+DCX*(dy-DBY)) * DDET 
+    dxi2 = (DAX*(dy-DCY)+dx*(DCY-DAY)+DCX*(DAY-dy)) * DDET
+    dxi3 = (DAX*(DBY-dy)+DBX*(dy-DAY)+dx*(DAY-DBY)) * DDET
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+  
+  PURE SUBROUTINE gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
+  
+!<description>
+  ! Checks if a point (dx,dy) is inside of a 2D triangular element
+  ! given by the corners DcornerCoords.
+!</description>
+
+!<input>
+  ! Point to check
+  REAL(DP), INTENT(IN) :: dx,dy
+  
+  ! Array with coordinates of the four corner points of the element.
+  ! The corners must be ordered in counterclockwise order.
+  !
+  ! Note: For performance reasons, this array is defined as
+  !   explicit array of dimension (2,4). As this deactivates array
+  !   checking in Fortran, the caller must take care to specify exactly
+  !   this type of array here!
+  REAL(DP), DIMENSION(2,4), INTENT(IN) :: DcornerCoords
+!</input>
+
+!<result>
+  ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
+  LOGICAL, INTENT(OUT) :: binside
+!</result>
+
+!</subroutine>
+
+    REAL(DP) :: dxi1,dxi2,dxi3
+
+    ! We use barycentric coordinates for that task.
+    ! Calculate the barycentric coordinates of the point relative
+    ! to the element specified by DcornerCoords.
+    CALL gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,&
+        dxi1,dxi2,dxi3)
+
+    ! If all barycentric coordinates are in the range [0..1],
+    ! we are inside of the element
+    binside = (dxi1 .GE. 0.0_DP) .AND. (dxi1 .LE. 1.0_DP) .AND. &
+              (dxi2 .GE. 0.0_DP) .AND. (dxi2 .LE. 1.0_DP) .AND. &
+              (dxi3 .GE. 0.0_DP) .AND. (dxi3 .LE. 1.0_DP) 
+
+  END SUBROUTINE
+
 END MODULE

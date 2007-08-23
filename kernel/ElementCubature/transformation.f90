@@ -749,24 +749,24 @@ CONTAINS
       IF (.NOT. PRESENT(DpointsReal)) THEN
       
         ! Prepare the calculation of the Jacobi determinants
-        CALL trafo_calcJacPrepare2(Dcoords, DjacPrep)
+        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
         
         ! Loop over the points
         DO ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
-          CALL trafo_calcJac2 (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+          CALL trafo_calcJac (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
                                DpointsRef(1,ipt),DpointsRef(2,ipt))
         END DO ! ipt
       
       ELSE
 
         ! Prepare the calculation of the Jacobi determinants
-        CALL trafo_calcJacPrepare2(Dcoords, DjacPrep)
+        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
         
         ! Loop over the points
         DO ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
-          CALL trafo_calcTrafo2 (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+          CALL trafo_calcTrafo (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
                                  DpointsRef(1,ipt),DpointsRef(2,ipt), &
                                  DpointsReal(1,ipt),DpointsReal(2,ipt))
         END DO ! ipt
@@ -977,12 +977,12 @@ CONTAINS
         ! Loop over the elements
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
-          CALL trafo_calcJacPrepare2(Dcoords(:,:,iel), DjacPrep)
+          CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
           
           ! Loop over the points
           DO ipt=1,npointsPerEl
             ! Calculate the Jacobian matrix and determinant
-            CALL trafo_calcJac2 (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+            CALL trafo_calcJac (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
                                 DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel))
           END DO ! ipt
           
@@ -993,12 +993,12 @@ CONTAINS
         ! Loop over the elements
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
-          CALL trafo_calcJacPrepare2(Dcoords(:,:,iel), DjacPrep)
+          CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
           
           ! Loop over the points
           DO ipt=1,npointsPerEl
             ! Calculate the Jacobian matrix and determinant
-            CALL trafo_calcTrafo2 (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+            CALL trafo_calcTrafo (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
                                   DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel), &
                                   DpointsReal(1,ipt,iel),DpointsReal(2,ipt,iel))
           END DO ! ipt
@@ -1098,7 +1098,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcJacPrepare2(Dcoords, DjacPrep)
+  PURE SUBROUTINE trafo_calcJacPrepare(Dcoords, DjacPrep)
   
 !<description>
   ! Calculate auxiliary Jacobian factors for standard quadrilateral.
@@ -1133,7 +1133,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcTrafo2 (Dcoord,DjacPrep,Djac,ddetj, &
+  PURE SUBROUTINE trafo_calcTrafo (Dcoord,DjacPrep,Djac,ddetj, &
                                    dparx,dpary,dxreal,dyreal)
 
 !<description>
@@ -1153,7 +1153,7 @@ CONTAINS
 
 !<input>
   
-  ! Coordinates of the fout points forming the element.
+  ! Coordinates of the four points forming the element.
   ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
@@ -1219,7 +1219,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcJac2 (Dcoord,DjacPrep,Djac,ddetj,dparx,dpary)
+  PURE SUBROUTINE trafo_calcJac (Dcoord,DjacPrep,Djac,ddetj,dparx,dpary)
 
 !<description>
   ! Calculate Jacobian determinant of mapping from reference- to
@@ -1236,7 +1236,7 @@ CONTAINS
 !</description>  
 
 !<input>
-  ! Coordinates of the fout points forming the element.
+  ! Coordinates of the four points forming the element.
   ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
@@ -1296,7 +1296,7 @@ CONTAINS
 !</description>  
 
 !<input>
-  ! Coordinates of the fout points forming the element.
+  ! Coordinates of the four points forming the element.
   ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
@@ -1469,5 +1469,141 @@ CONTAINS
     END IF
   
   END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_calcBackTrafo (Dcoord, &
+                                       dparx,dpary,dxreal,dyreal)
+
+!<description>
+  ! This subroutine is to find the coordinates on the reference
+  ! element (dparx,dpary) for a given point (dxreal,dyreal) 
+  ! in real coordinates.
+  !
+  ! Remark: This is a difficult task, as usually in FEM codes the
+  ! parameter values (dparx,dpary) are known and one wants to obtain 
+  ! the real coordinates.
+  !
+  ! Inverting the bilinear trafo in a straightforward manner by using 
+  ! pq-formula does not work very well, as it is numerically unstable.
+  ! For parallelogram-shaped elements, one would have to introduce a
+  ! special treatment. For nearly parallelogram-shaped elements, this 
+  ! can cause a crash as the argument of the square root can become 
+  ! negative due to rounding errors. In the case of points near
+  ! the element borders, we divide nearly 0/0.
+  !
+  ! Therefore, we have implemented the algorithm described in
+  !
+  ! [Introduction to Finite Element Methods, Carlos Felippa,
+  !  Department of Aerospace Engineering Sciences and Center for 
+  !  Aerospace Structures, http://titan.colorado.edu/courses.d/IFEM.d/]
+  !
+  ! Note: For the transformation of coordinates to the barycentric
+  ! coordinate system for triangles, one can use 
+  ! gaux_getBarycentricCoords_tri2D.
+!</description>  
+
+!<input>
+  ! Coordinates of the four points forming the element.
+  ! Dcoord(1,.) = x-coordinates,
+  ! Dcoord(2,.) = y-coordinates.
+  ! DIMENSION(#space dimensions,NVE)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoord 
   
+  ! Coordinates of a point on the real element
+  REAL(DP), INTENT(IN) :: dxreal,dyreal
+!</input>
+  
+!<output>
+  ! Coordinates of a point on the reference element
+  REAL(DP), INTENT(OUT) :: dparx,dpary
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+
+    REAL(DP) :: X1,X2,X3,X4,Y1,Y2,Y3,Y4,XB,YB,XCX,YCX,XCE,YCE
+    REAL(DP) :: A,J1,J2,X0,Y0,BXI,BETA,CXI,XP0,YP0,CETA
+    REAL(DP) :: ROOT1,ROOT2,XIP1,XIP2,ETAP1,ETAP2,D1,D2
+
+    ! Get nodal x-coordinates
+    X1 = Dcoord(1,1)
+    X2 = Dcoord(1,2)
+    X3 = Dcoord(1,3)
+    X4 = Dcoord(1,4)
+
+    ! Get nodal y-coordinates
+    Y1 = DCOORD(2,1)
+    Y2 = DCOORD(2,2)
+    Y3 = DCOORD(2,3)
+    Y4 = DCOORD(2,4)
+
+    XB = X1-X2+X3-X4
+    YB = Y1-Y2+Y3-Y4
+
+    XCX = X1+X2-X3-X4
+    YCX = Y1+Y2-Y3-Y4
+
+    XCE = X1-X2-X3+X4
+    YCE = Y1-Y2-Y3+Y4
+
+    A = 0.5*((X3-X1)*(Y4-Y2)-(X4-X2)*(Y3-Y1))
+
+    J1 = (X3-X4)*(Y1-Y2)-(X1-X2)*(Y3-Y4)
+    J2 = (X2-X3)*(Y1-Y4)-(X1-X4)*(Y2-Y3)
+
+    X0 = 0.25*(X1+X2+X3+X4)
+    Y0 = 0.25*(Y1+Y2+Y3+Y4)
+
+    XP0 = dxreal-X0
+    YP0 = dyreal-Y0
+
+    BXI  =  A-XP0*YB+YP0*XB
+    BETA = -A-XP0*YB+YP0*XB
+
+    CXI  = XP0*YCX-YP0*XCX
+    CETA = XP0*YCE-YP0*XCE
+
+    ROOT1 = -SQRT(BXI**2-2.0*J1*CXI)-BXI
+    ROOT2 =  SQRT(BXI**2-2.0*J1*CXI)-BXI
+    IF (ROOT1 .NE. 0.0_DP) THEN
+      XIP1 = 2.0*CXI/ROOT1
+    ELSE
+      XIP1 = 1E15_DP
+    END IF
+    IF (ROOT2 .NE. 0.0_DP) THEN
+      XIP2 = 2.0_DP*CXI/ROOT2
+    ELSE
+      XIP2 = 1E15_DP
+    END IF
+
+    ROOT1 =  SQRT(BETA**2+2.0_DP*J2*CETA)-BETA
+    ROOT2 = -SQRT(BETA**2+2.0_DP*J2*CETA)-BETA
+    IF (ROOT1 .NE. 0.0_DP) THEN
+      ETAP1 = 2.0_DP*CETA/ROOT1
+    ELSE
+      ETAP1 = 1E15_DP
+    END IF
+    IF (ROOT2 .NE. 0.0_DP) THEN
+      ETAP2 = 2.0_DP*CETA/ROOT2
+    ELSE
+      ETAP2 = 1E15_DP
+    END IF
+
+    D1 = SQRT(XIP1**2+ETAP1**2)
+    D2 = SQRT(XIP2**2+ETAP2**2)
+
+    IF (D1 .LT. D2) THEN
+      dparx = XIP1
+      dpary = ETAP1
+    ELSE
+      dparx = XIP2
+      dpary = ETAP2
+    END IF
+  
+  END SUBROUTINE
+
 END MODULE 
