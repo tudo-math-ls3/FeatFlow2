@@ -180,12 +180,6 @@ CONTAINS
     REAL(DP), DIMENSION(3) :: Dnorms1,Dnorms2
     INTEGER(PREC_VECIDX), DIMENSION(3) :: Cnorms
     TYPE(t_timeError),TARGET :: rtimeErrorLocal
-    TYPE(t_timeError), POINTER :: p_rtimeError
-
-    ! Write the results of the time error analysis either to the local analysis
-    ! block or to the one given as parameter.
-    p_rtimeError => rtimeErrorLocal
-    IF (PRESENT(rtimeError)) p_rtimeError => rtimeError
 
     ! Calculate d:=u2-u1
     CALL lsysbl_vectorLinearComb (rSolution,rpredSolution,1.0_DP,-1.0_DP,rauxVector)
@@ -203,11 +197,11 @@ CONTAINS
 
     dtmp = SQRT( 0.5_DP * (Dnorms2(1)**2+Dnorms2(2)**2) )
     IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
-    p_rtimeError%drelUL2 = SQRT(0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) / dtmp
+    rtimeErrorLocal%drelUL2 = SQRT(0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) / dtmp
 
     dtmp = Dnorms2(3)
     IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
-    p_rtimeError%drelPL2 = Dnorms1(3) / dtmp
+    rtimeErrorLocal%drelPL2 = Dnorms1(3) / dtmp
     
     ! ||d||_max
     Cnorms = LINALG_NORMMAX
@@ -216,33 +210,35 @@ CONTAINS
 
     dtmp = MAX(Dnorms2(1),Dnorms2(2))
     IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
-    p_rtimeError%drelUmax = MAX(Dnorms1(1),Dnorms1(2)) / dtmp
+    rtimeErrorLocal%drelUmax = MAX(Dnorms1(1),Dnorms1(2)) / dtmp
 
     dtmp = Dnorms2(3)
     IF (dtmp .EQ. 0.0_DP) dtmp=1.0_DP
-    p_rtimeError%drelPmax = Dnorms1(3) / dtmp
+    rtimeErrorLocal%drelPmax = Dnorms1(3) / dtmp
     
     ! Get the value of the error functional J(.)
     SELECT CASE (ctimeErrorControl)
     CASE DEFAULT
-      dtimeerror = p_rtimeError%drelUL2
+      dtimeerror = rtimeErrorLocal%drelUL2
     CASE (TNRM_LMAX)
-      dtimeerror = p_rtimeError%drelUmax
+      dtimeerror = rtimeErrorLocal%drelUmax
     CASE (TNRM_P2U)
-      dtimeerror = p_rtimeError%drelPL2
+      dtimeerror = rtimeErrorLocal%drelPL2
     CASE (TNRM_PMAX)
-      dtimeerror = p_rtimeError%drelPmax
+      dtimeerror = rtimeErrorLocal%drelPmax
     CASE (TNRM_L2UP2U)
-      dtimeerror = MAX(p_rtimeError%drelUL2,p_rtimeError%drelPL2)
+      dtimeerror = MAX(rtimeErrorLocal%drelUL2,rtimeErrorLocal%drelPL2)
     CASE (TNRM_L2MAXPMAX)
-      dtimeerror = MAX(p_rtimeError%drelUmax,p_rtimeError%drelPmax)
+      dtimeerror = MAX(rtimeErrorLocal%drelUmax,rtimeErrorLocal%drelPmax)
     CASE (TNRM_MAX)
-      dtimeerror = MAX(p_rtimeError%drelUL2,p_rtimeError%drelPL2,&
-                       p_rtimeError%drelUmax,p_rtimeError%drelPmax)
+      dtimeerror = MAX(rtimeErrorLocal%drelUL2,rtimeErrorLocal%drelPL2,&
+                       rtimeErrorLocal%drelUmax,rtimeErrorLocal%drelPmax)
     CASE (TNRM_MIN)
-      dtimeerror = MIN(p_rtimeError%drelUL2,p_rtimeError%drelPL2,&
-                       p_rtimeError%drelUmax,p_rtimeError%drelPmax)
+      dtimeerror = MIN(rtimeErrorLocal%drelUL2,rtimeErrorLocal%drelPL2,&
+                       rtimeErrorLocal%drelUmax,rtimeErrorLocal%drelPmax)
     END SELECT
+    
+    IF (PRESENT(rtimeError)) rtimeError = rtimeError
     
   END FUNCTION
 
