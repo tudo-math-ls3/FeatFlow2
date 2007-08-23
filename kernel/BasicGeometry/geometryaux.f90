@@ -18,8 +18,8 @@
 !# 3.) gaux_getArea_quad2D
 !#     -> Calculate the area of a 2D quadrilateral
 !#
-!# 4.) gaux_isIntersection_ray2D
-!#     -> Checks if two rays in 2D intersect
+!# 4.) gaux_isIntersection_line2D
+!#     -> Checks if two (finite) lines in 2D intersect
 !#
 !# 5.) gaux_getIntersection_ray2D
 !#     -> Calculates the intersection point of two rays (if they intersect)
@@ -259,12 +259,12 @@ CONTAINS
 
 !<subroutine>
   
-  ELEMENTAL SUBROUTINE gaux_isIntersection_ray2D(&
+  ELEMENTAL SUBROUTINE gaux_isIntersection_line2D(&
       dx1,dy1,dx2,dy2,dx3,dy3,dx4,dy4, bintersect)
   
 !<description>
-  ! Checks whether the two 2D rays given by (x1,y1)->(x2,y2) and 
-  ! (x3,y3)->(x4,y4) intersect.
+  ! Checks whether the two 2D lines given by the start/endpoints 
+  ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4) intersect each other.
 !</description>
 
 !<input>

@@ -30,7 +30,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90 \
 	stdoperators.f90 sort.f90 quadtree.f90 l2projection.f90 \
 	pprocgradients.f90 geometry.f90 mprimitives.f90 \
 	hadaptivity.f90 list.f90 binarytree.f90 arraylist.f90 \
-	graph.f90 octree.f90
+	graph.f90 octree.f90 triasearch.f90
 
 # Include HDF5 subsystem if required
 ifeq ($(HDF5),YES)
