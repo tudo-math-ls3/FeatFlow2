@@ -1142,7 +1142,7 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE evalFunctionScalar (Stack, Comp, Val, EvalErrType, Res)
+  SUBROUTINE evalFunctionScalar (Stack, Comp, Val, EvalErrType, res)
 
 !<description>
     ! Evaluate bytecode for the values passed in array Val(:). Note, this subroutine
@@ -1168,7 +1168,7 @@ CONTAINS
     INTEGER, INTENT(OUT) :: EvalErrType
 
     ! Evaluated function
-    REAL(DP) :: res
+    REAL(DP), INTENT(OUT) :: res
 !</output>
 !</subroutine>
 

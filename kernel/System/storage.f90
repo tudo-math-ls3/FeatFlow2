@@ -1136,7 +1136,7 @@ CONTAINS
 !<output>
 
   ! Handle of the memory block.
-  INTEGER :: ihandle
+  INTEGER, INTENT(OUT) :: ihandle
 
 !</output>
 
@@ -1256,7 +1256,7 @@ CONTAINS
 !<output>
 
   ! Handle of the memory block.
-  INTEGER :: ihandle
+  INTEGER, INTENT(OUT) :: ihandle
 
 !</output>
 
