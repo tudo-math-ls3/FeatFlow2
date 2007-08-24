@@ -23,35 +23,50 @@
 !#        specify the transformation from the reference to the real element
 !#        (=number of degrees of freedom of the transformation formula)
 !#
-!# 6.) trafo_calctrafo_mult
+!# 6.) trafo_calctrafo
+!#     -> Calculates the transformation of one point (from reference to the 
+!#        real element).
+!#        Supports triangular and quadrilateral mapping.
+!#
+!# 7.) trafo_calctrafo_mult
 !#     -> Calculates the transformation for multiple points on one element.
 !#        Supports triangular and quadrilateral mapping.
 !#
-!# 7.) trafo_calctrafo_sim
+!# 8.) trafo_calctrafo_sim
 !#     -> Calculate the transformation for multiple points on multiple
 !#        elements. Supports triangular and quadrilateral mapping.
 !#
-!# 8.) trafo_calcJacPrepare
+!# 10.) trafo_calcJacPrepare
 !#     -> calculates auxiliary Jacobian factors for the transformation
 !#        from a reference quadrilateral to a real quadrilateral
 !#
-!# 9.) trafo_calcJac
+!# 10.) trafo_calcJac
 !#     -> calculates the Jacobian matrix + Jacobian determinant of the mapping
 !#        from  the reference to a real quadrilateral element
 !#
-!# 10.) trafo_calcRealCoords
+!# 11.) trafo_calcRealCoords
 !#      -> maps a point from the reference element to the real element
 !#
-!# 11.) trafo_calcTrafo
+!# 12.) trafo_calcTrafo_quad2d
 !#      -> calculates the Jacobian matrix + Jacobian determinant of the mapping
 !#         from  the reference to a real quadrilateral element
 !#       -> maps a point from the reference element to the real element
-!#      (so performing the same task as elem_calcJac and elem_calcRealCoords
+!#      (so performing the same task as trafo_calcJac and trafo_calcRealCoords
 !#       in one routine)
 !#
-!# 12.) trafo_mapCubPts1Dto2DRefQuad
+!# 13.) trafo_mapCubPts1Dto2DRefQuad
 !#      -> Maps a set of 1D cubature point coordinates on the reference 
 !#         interval to an edge of the 2D reference quadrilateral.
+!#
+!# 14.) trafo_calcBackTrafo_quad2d
+!#      -> Find the coordinates on the reference element 
+!#         for a given point in real world coordinates
+!# 
+!# 15.) trafo_calcRefCoords
+!#      -> For a given point in world coordinates and an element, this 
+!#         routine calculates the coordinates of the point on the reference
+!#         element.
+!#         Supports triangular and quadrilateral mapping.
 !#
 !#  FAQ - Some explainations
 !# --------------------------
@@ -122,6 +137,15 @@ MODULE transformation
 
   ! Number of entries in the array with the auxiliary Jacobian factors in 2D
   INTEGER, PARAMETER :: TRAFO_NAUXJAC2D = 4
+
+!</constantblock>
+
+
+!<constantblock description="Coordinate system constants.">
+
+  ! Maximum number of dimensions on reference elements.
+  ! =4 for Tethrahedrons with barycentric coordinates in 3D
+  INTEGER, PARAMETER :: TRAFO_MAXDIMREFCOORD = NDIM3D+1
 
 !</constantblock>
 
@@ -585,6 +609,178 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE trafo_calctrafo (ctrafoType,Dcoords,&
+                              DpointRef,Djac,Ddetj,DpointReal)
+!<description>
+  ! General transformation.
+  !
+  ! The aim of this routine is to calculate the transformation between the
+  ! reference element for one point. The element is given
+  ! as a list of corner points in Dcoords.
+  !
+  ! For the point DpointsRef, the following information is calculated:
+  ! 1.) Determinant of the mapping from the reference to the real element,
+  ! 2.) the Jacobian matrix of the mapping,
+  ! 3.) if the parameter DpointsReal is present: coordinates of the mapped
+  !     points on the real element(s).
+!</description>
+
+!<input>
+  ! ID of transformation to calculate
+  INTEGER(I32), INTENT(IN) :: ctrafoType
+
+  ! Coordinates of the corners of the element
+  !  Dcoord(1,i) = x-coordinates of corner i on an element, 
+  !  Dcoord(2,i) = y-coordinates of corner i on an element.
+  ! DIMENSION(#space dimensions,NVE)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoords
+
+  ! Coordinates of the point on the reference element 
+  !  DpointRef(1) = x-coordinates of point i on an element, 
+  !  DpointRef(2) = y-coordinates of point i on an element.
+  ! DIMENSION(#space dimension)
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DpointRef
+!</input>
+
+!<output>
+  ! The Jacobian matrix of the mapping for each point.
+  ! DIMENSION(number of entries in the matrix,npointsPerEl)
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Djac
+  
+  ! Jacobian determinant of the mapping.
+  ! DIMENSION(npointsPerEl)
+  REAL(DP), INTENT(OUT) :: ddetj
+  
+  ! OPTIONAL: Array receiving the coordinates of the points in DpointRef,
+  ! mapped from the reference element to the real element.
+  ! If not specified, they are not computed.
+  ! DIMENSION(#space dimension,npointsPerEl)
+  REAL(DP), DIMENSION(:), INTENT(OUT), OPTIONAL :: DpointReal
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  REAL(DP) :: dax, day, dbx, dby, dcx, dcy
+  
+  ! auxiliary factors for the bilinear quad mapping
+  REAL(DP), DIMENSION(TRAFO_NAUXJAC2D) :: DjacPrep
+  
+  ! What type of transformation do we have? First decide on the dimension,
+  ! then on the actual ID.
+  SELECT CASE (trafo_igetDimension(ctrafoType))
+  
+  CASE (NDIM2D)
+    ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
+    ! ID how to transform.
+  
+    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    
+    CASE (TRAFO_ID_LINSIMPLEX)
+
+      ! 2D simplex -> linear triangular transformation.
+      !
+      ! Calculate with or without coordinates?
+      IF (.NOT. PRESENT(DpointReal)) THEN
+      
+        ! Calculate the Jacobian matrix and determinant.
+        !
+        ! Example where to find information about barycentric coordinates:
+        ! http://mathworld.wolfram.com/BarycentricCoordinates.html
+        !
+        ! The determinant is simply the polygonal area of the parallelogram
+        ! given by the two vectors (c-a,b-a); c.f.
+        !
+        ! http://mathworld.wolfram.com/Parallelogram.html
+        
+        dax = Dcoords(1, 1)
+        day = Dcoords(2, 1)
+        dbx = Dcoords(1, 2)
+        dby = Dcoords(2, 2)
+        dcx = Dcoords(1, 3)
+        dcy = Dcoords(2, 3)
+        
+        Djac(1)=dbx-dax
+        Djac(2)=dby-day
+        Djac(3)=dcx-dax
+        Djac(4)=dcy-day
+        
+        ddetj = Djac(1)*Djac(4) - Djac(2)*Djac(3)
+        
+      ELSE
+
+        ! Calculate the Jacobian matrix and determinant.
+        !
+        ! Example where to find information about barycentric coordinates:
+        ! http://mathworld.wolfram.com/BarycentricCoordinates.html
+        !
+        ! The determinant is simply the polygonal area of the parallelogram
+        ! given by the two vectors (c-a,b-a); c.f.
+        !
+        ! http://mathworld.wolfram.com/Parallelogram.html
+        
+        dax = Dcoords(1, 1)
+        day = Dcoords(2, 1)
+        dbx = Dcoords(1, 2)
+        dby = Dcoords(2, 2)
+        dcx = Dcoords(1, 3)
+        dcy = Dcoords(2, 3)
+        
+        Djac(1)=dbx-dax
+        Djac(2)=dby-day
+        Djac(3)=dcx-dax
+        Djac(4)=dcy-day
+        
+        ddetj = Djac(1)*Djac(4) - Djac(2)*Djac(3)
+        
+        ! Ok, that was easy. It's slightly more complicated to get
+        ! the matrix...
+        ! But as long as the matrix is not needed, we skip the calculation -
+        ! this might be done in a future implementation!
+        !
+        ! Calculation of the real coordinates is also easy.
+        DpointReal(1) = DpointRef(1)*dax &
+                            + DpointRef(2)*dbx &
+                            + DpointRef(3)*dcx 
+        DpointReal(2) = DpointRef(1)*day &
+                            + DpointRef(2)*dby &
+                            + DpointRef(3)*dcy 
+          
+      END IF
+          
+    CASE (TRAFO_ID_MLINCUBE)
+    
+      ! Calculate with or without coordinates?
+      IF (.NOT. PRESENT(DpointReal)) THEN
+      
+        ! Prepare the calculation of the Jacobi determinants
+        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
+        
+        ! Calculate the Jacobian matrix and determinant
+        CALL trafo_calcJac (Dcoords,DjacPrep,Djac(:),ddetj, &
+                              DpointRef(1),DpointRef(2))
+      
+      ELSE
+
+        ! Prepare the calculation of the Jacobi determinants
+        CALL trafo_calcJacPrepare(Dcoords, DjacPrep)
+        
+        ! Calculate the Jacobian matrix and determinant
+        CALL trafo_calcTrafo_quad2d (Dcoords,DjacPrep,Djac(:),ddetj, &
+                                DpointRef(1),DpointRef(2), &
+                                DpointReal(1),DpointReal(2))
+      END IF
+      
+    END SELECT
+    
+  END SELECT
+
+  END SUBROUTINE
+
+! **********************************************************************
+
+!<subroutine>
+
   SUBROUTINE trafo_calctrafo_mult (ctrafoType,npointsPerEl,Dcoords,&
                                    DpointsRef,Djac,Ddetj,DpointsReal)
 !<description>
@@ -766,7 +962,7 @@ CONTAINS
         ! Loop over the points
         DO ipt=1,npointsPerEl
           ! Calculate the Jacobian matrix and determinant
-          CALL trafo_calcTrafo (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
+          CALL trafo_calcTrafo_quad2d (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
                                  DpointsRef(1,ipt),DpointsRef(2,ipt), &
                                  DpointsReal(1,ipt),DpointsReal(2,ipt))
         END DO ! ipt
@@ -998,7 +1194,7 @@ CONTAINS
           ! Loop over the points
           DO ipt=1,npointsPerEl
             ! Calculate the Jacobian matrix and determinant
-            CALL trafo_calcTrafo (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
+            CALL trafo_calcTrafo_quad2d (Dcoords(:,:,iel),DjacPrep,Djac(:,ipt,iel),Ddetj(ipt,iel), &
                                   DpointsRef(1,ipt,iel),DpointsRef(2,ipt,iel), &
                                   DpointsReal(1,ipt,iel),DpointsReal(2,ipt,iel))
           END DO ! ipt
@@ -1055,8 +1251,8 @@ CONTAINS
 ! the corners of the quadrilateral, not of the current point. So they
 ! are constant for all points we want to map from the reference
 ! element to the real one. We call them here "auxiliary Jacobian factors".
-! They can be calculated with elem_calcJacPrepare in advance for all points that
-! have to be mapped. To be more exact, elem_calcJacPrepare calculates:
+! They can be calculated with trafo_calcJacPrepare in advance for all points that
+! have to be mapped. To be more exact, trafo_calcJacPrepare calculates:
 !
 !  J1 = 1/2 * (-x1 - x2 + x3 - x4)
 !  J2 = 1/2 * ( x1 - x2 + x3 - x4)
@@ -1133,7 +1329,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcTrafo (Dcoord,DjacPrep,Djac,ddetj, &
+  PURE SUBROUTINE trafo_calcTrafo_quad2d (Dcoord,DjacPrep,Djac,ddetj, &
                                    dparx,dpary,dxreal,dyreal)
 
 !<description>
@@ -1147,7 +1343,7 @@ CONTAINS
   ! determinant is dependent of the point.
   !
   ! Before this routine can be called, the auxiliary factors DjacPrep
-  ! have to be calculated with elem_calcJacPrepare for the 
+  ! have to be calculated with trafo_calcJacPrepare for the 
   ! considered element.
 !</description>  
 
@@ -1161,7 +1357,7 @@ CONTAINS
   
   ! Auxiliary constants for the considered element with
   ! coordinates in Dcoord; have to be computed previously
-  ! by elem_calcJacPrepare.
+  ! by trafo_calcJacPrepare.
   ! DIMENSION(TRAFO_NAUXJAC2D)
   REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
   
@@ -1226,13 +1422,13 @@ CONTAINS
   ! real element.
   !
   ! This routine only calculates the Jacobian determinant of the
-  ! mapping. This is on contrast to elem_calcRealCoords, which not only 
+  ! mapping. This is on contrast to trafo_calcRealCoords, which not only 
   ! calculates this determinant but also maps the point. So this routine
   ! can be used to speed up the code if the coordinates of the
   ! mapped point already exist.
   !
   ! Before this routine can be called, the auxiliary factors DJF
-  ! have to be calculated with elem_calcJacPrepare for the considered element.
+  ! have to be calculated with trafo_calcJacPrepare for the considered element.
 !</description>  
 
 !<input>
@@ -1244,7 +1440,7 @@ CONTAINS
   
   ! Auxiliary constants for the considered element with
   ! coordinates in Dcoord; have to be computed previously
-  ! by elem_calcJacPrepare.
+  ! by trafo_calcJacPrepare.
   ! DIMENSION(TRAFO_NAUXJAC2D)
   REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
   
@@ -1286,13 +1482,13 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcRealCoords2 (Dcoord,DjacPrep,dparx,dpary,dxreal,dyreal)
+  PURE SUBROUTINE trafo_calcRealCoords (Dcoord,DjacPrep,dparx,dpary,dxreal,dyreal)
 
 !<description>
   ! This subroutine computes the real coordinates of a point which 
   ! is given by parameter values (dparx,dpary) on the reference element. 
   ! It is assumed that the array DjacPrep was initialised before using
-  ! with elem_calcJacPrepare.
+  ! with trafo_calcJacPrepare.
 !</description>  
 
 !<input>
@@ -1304,7 +1500,7 @@ CONTAINS
   
   ! Auxiliary constants for the considered element with
   ! coordinates in Dcoord; have to be computed previously
-  ! by elem_calcJacPrepare.
+  ! by trafo_calcJacPrepare.
   ! DIMENSION(TRAFO_NAUXJAC2D)
   REAL(DP), DIMENSION(:), INTENT(IN) :: DjacPrep
   
@@ -1474,8 +1670,8 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcBackTrafo (Dcoord, &
-                                       dparx,dpary,dxreal,dyreal)
+  PURE SUBROUTINE trafo_calcBackTrafo_quad2d (Dcoord, &
+     dxreal,dyreal,dparx,dpary)
 
 !<description>
   ! This subroutine is to find the coordinates on the reference
@@ -1603,6 +1799,74 @@ CONTAINS
       dparx = XIP2
       dpary = ETAP2
     END IF
+  
+  END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_calcRefCoords (ctrafoType,Dcoord,Dpoint,DparPoint)
+
+!<description>
+  ! This subroutine finds the coordinates on the reference
+  ! element DparPoint for a given point Dpoint in real coordinates.
+!</description>  
+
+!<input>
+  ! ID of transformation to calculate. This specifies the format of the
+  ! destination array DparPoint (dimension, if to use barycentric 
+  ! coordinates etc.)
+  INTEGER(I32), INTENT(IN) :: ctrafoType
+  
+  ! Coordinates of the points forming the element.
+  ! DIMENSION(1..ndim,1..nve)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoord
+
+  ! Coordinates of the point in world coordinates.
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+!</input>
+  
+!<output>
+  ! Coordinates of the point in coordinates on there reference element.
+  ! (The format depends on the type of coordinate on the reference element
+  !  and is specified via ctrafoType.)
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: DparPoint
+!</output>
+  
+!</subroutine>
+
+    ! What type of transformation do we have? First decide on the dimension,
+    ! then on the actual ID.
+    SELECT CASE (trafo_igetDimension(ctrafoType))
+    
+    CASE (NDIM2D)
+      ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
+      ! ID how to transform.
+    
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+      
+        ! 2D simplex -> linear triangular transformation.
+        !
+        ! Call the corresponding routine in geometryaux to calculate
+        ! the barycentric coordinates to Dpoint.
+        CALL gaux_getBarycentricCoords_tri2D(&
+          Dcoord,Dpoint(1),Dpoint(2),DparPoint(1),DparPoint(2),DparPoint(3))      
+          
+      CASE (TRAFO_ID_MLINCUBE)
+      
+        ! Bilinear transformation for cubic-shaped elements 
+        ! -> Bilinear quadrilateral transformation.
+        !
+        ! Call the back transformation routine from above.
+        CALL trafo_calcBackTrafo_quad2d (Dcoord, &
+            Dpoint(1),Dpoint(2),DparPoint(1),DparPoint(2))
+        
+      END SELECT ! actual ID
+    
+    END SELECT ! Dimension
   
   END SUBROUTINE
 
