@@ -16,66 +16,78 @@
 !#  1.) ucd_startGMV
 !#      -> Starts a new GMV output file
 !#
-!#  2.) ucd_setAlternativeSource
+!#  2.) ucd_startAVS
+!#      -> Starts a new AVS output file
+!#
+!#  3.) ucd_startVTK
+!#      -> Starts a new VTK output file
+!#
+!#  4.) ucd_setAlternativeSource
 !#      -> Allows to specify an alternative source file for parts of a
 !#         triangulation or the whole triangulation. (Saves disc space
 !#         if a sequence of output files are written.)
 !#
-!#  3.) ucd_addVariableVertexBased / ucd_addVariableElementBased
+!#  5.) ucd_addVariableVertexBased / ucd_addVariableElementBased
 !#      -> Add a vertex- or element-based data vector to the output.
 !#
-!#  4.) ucd_setVertexMaterial
+!#  6.) ucd_addVarVertBasedVec
+!#      -> Add a vertex-based velocity vector to the output.
+!#
+!#  7.) ucd_setVertexMaterial
 !#      -> Allows to specify for every vertex/node (corner vertex, edge 
 !#         midpoint,...) a material id.
 !#
-!#  5.) ucd_setCellMaterial
+!#  8.) ucd_setCellMaterial
 !#      -> Allows to specify for every cell a material id.
 !#
-!#  6.) ucd_setMaterials
+!#  9.) ucd_setMaterials
 !#      -> Allows to specify material names for the material id's that
 !#         are assigned to cells/vertices in ucd_setVertexMaterial and
 !#         ucd_setCellMaterial, respectively.
 !#
-!#  7.) ucd_setTracers
+!# 10.) ucd_setTracers
 !#      -> Specify tracers by (X,Y) or (X,Y,Z) coordinates
 !#
-!#  8.) ucd_addTracerVariable
+!# 11.) ucd_addTracerVariable
 !#      -> Adds a tracer variable, i.e. a named value for every tracer.
 !#
-!#  9.) ucd_removeTracers
+!# 12.) ucd_removeTracers
 !#      -> Removes all tracer information.
 !#
-!# 10.) ucd_setSimulationTime
+!# 13.) ucd_setSimulationTime
 !#      -> Specify simulation time.
 !#
-!# 11.) ucd_addPolygon
+!# 14.) ucd_addPolygon
 !#      -> Adds a point-array as polygon of line-segments to the output.
 !#
-!# 12.) ucd_addCommentLine
+!# 15.) ucd_addCommentLine
 !#      -> Add a comment line.
 !#
-!# 13.) ucd_addParameterList
+!# 16.) ucd_addParameterList
 !#      -> Add a configuration parameter list as comments to the output.
 !#
-!# 14.) ucd_setOutputNumberFormat
+!# 17.) ucd_setOutputNumberFormat
 !#      -> Allows to specify a custom format of double precision numbers 
 !#         in the output file.
 !#
-!# 15.) ucd_write
+!# 18.) ucd_write
 !#      -> Writes the output file to the hard disc, closes the file.
 !#
-!# 16.) ucd_release
+!# 19.) ucd_release
 !#      -> Releases a UCD export structure that was created by ucd_startXXXX.
 !#
-!# To write a file (GMV, AVS, MATLAB or what else), one has to use the
+!# To write a file (GMV, AVS, VTK, MATLAB or what else), one has to use the
 !# following sequence of commands:
 !#
-!# a) ucd_startGMV      - Create an output structure for a file
+!# a) ucd_startXXXX     - Create an output structure for a file
 !#
 !# b) ucd_addVariableVertexBased  
 !#                      - Add a variable consisting of values in vertices
 !#    ucd_addVariableElementBased 
 !#                      - Add a variable consisting of values in elements
+!#    ucd_addVarVertBasedVec
+!#                      - Add a velocity vector variable consisting of values
+!#                        in vertices
 !#
 !# c) ucd_setAlternativeSource 
 !#                      - Optional: Set an alternative input file for parts
@@ -109,6 +121,32 @@ MODULE ucd
   IMPLICIT NONE
 
 !<constants>
+
+!<constantblock description="Output format types">
+
+  ! No output format
+  INTEGER, PARAMETER :: UCD_FORMAT_NONE = 0
+  
+  ! GMV file format
+  INTEGER, PARAMETER :: UCD_FORMAT_GMV  = 1
+  
+  ! AVS/Express file format (ASCII)
+  INTEGER, PARAMETER :: UCD_FORMAT_AVS  = 2
+  
+  ! Visualization Toolkit (VTK) file format (ASCII)
+  INTEGER, PARAMETER :: UCD_FORMAT_VTK  = 3
+  
+!</constantblock>
+
+!<constantblock description="Parameter constants for the VTK exporter">
+
+  ! Export vector components as scalars
+  INTEGER, PARAMETER :: UCD_PARAM_VTK_VECTOR_TO_SCALAR = 2**0
+  
+  ! Use quadratic cell elements when possible
+  INTEGER, PARAMETER :: UCD_PARAM_VTK_USE_QUADRATIC    = 2**1
+
+!</constantblock>
 
 !<constantblock description="Constants for the cflags variable in ucd_startXXXX. Bitfield.">
 
@@ -166,6 +204,67 @@ MODULE ucd
 
 !</constantblock>
 
+!<constantblock description="Cell type constants for VTK exporter">
+
+  ! A single vertex
+  INTEGER, PARAMETER :: VTK_VERTEX                         =  1
+  
+  ! A set of vertices
+  INTEGER, PARAMETER :: VTK_POLY_VERTEX                    =  2
+  
+  ! A line
+  INTEGER, PARAMETER :: VTK_LINE                           =  3
+  
+  ! A line strip
+  INTEGER, PARAMETER :: VTK_POLY_LINE                      =  4
+  
+  ! A triangle
+  INTEGER, PARAMETER :: VTK_TRIANGLE                       =  5
+  
+  ! A triangle strip
+  INTEGER, PARAMETER :: VTK_TRIANGLE_STRIP                 =  6
+  
+  ! A polygon
+  INTEGER, PARAMETER :: VTK_POLYGON                        =  7
+  
+  ! A pixel
+  INTEGER, PARAMETER :: VTK_PIXEL                          =  8
+  
+  ! A quadrilateral
+  INTEGER, PARAMETER :: VTK_QUAD                           =  9
+  
+  ! A tetrahedron
+  INTEGER, PARAMETER :: VTK_TETRA                          = 10
+  
+  ! A voxel (cube)
+  INTEGER, PARAMETER :: VTK_VOXEL                          = 11
+  
+  ! A hexahedron
+  INTEGER, PARAMETER :: VTK_HEXAHEDRON                     = 12
+  
+  ! A wedge
+  INTEGER, PARAMETER :: VTK_WEDGE                          = 13
+  
+  ! A pyramid
+  INTEGER, PARAMETER :: VTK_PYRAMID                        = 14
+  
+  ! A quadratic edge
+  INTEGER, PARAMETER :: VTK_QUADRATIC_EDGE                 = 21
+  
+  ! A quadratic triangle
+  INTEGER, PARAMETER :: VTK_QUADRATIC_TRIANGLE             = 22
+  
+  ! A quadratic quadrilateral
+  INTEGER, PARAMETER :: VTK_QUADRATIC_QUAD                 = 23
+  
+  ! A quadratic tetrahedron
+  INTEGER, PARAMETER :: VTK_QUADRATIC_TETRA                = 24
+  
+  ! A quadratic hexahedron
+  INTEGER, PARAMETER :: VTK_QUADRATIC_HEXAHEDRON           = 25
+
+!</constantblock>
+  
 !</constants>
 
   
@@ -181,8 +280,12 @@ MODULE ucd
   
     PRIVATE
     
-    ! Output format. 0=undefined, 1=GMV, 2=AVS, 3=MATLAB
-    INTEGER :: coutputFormat = 0
+    ! Output format. One of the UCD_FORMAT_XXXX constants.
+    INTEGER :: coutputFormat = UCD_FORMAT_NONE
+    
+    ! Parameters for output routines. A combination of UCD_PARAM_XXX_YYYY,
+    ! where XXX specifies the output format.
+    INTEGER :: cparam = 0
     
     ! Name of the output file
     CHARACTER(LEN=SYS_STRLEN) :: sfilename = ""
@@ -202,6 +305,9 @@ MODULE ucd
     ! Number of currently attached tracer data fields
     INTEGER :: ntracerVariables  = 0
     
+    ! Number of currently attached variable vectors
+    INTEGER :: nvectors = 0
+
     ! The simulation time. =SYS_INFINITY if no simulation time is specified
     REAL(DP) :: dsimulationTime  = SYS_INFINITY
     
@@ -209,11 +315,13 @@ MODULE ucd
     CHARACTER(LEN=SYS_STRLEN) :: ssimTimeFormat = "(F20.5)"
     
     ! Format of the output of double-precision numbers. Fortran format string.
-    CHARACTER(LEN=SYS_STRLEN) :: sdataFormat = "(E15.8)"
-    
+    CHARACTER(LEN=SYS_STRLEN) :: sdataFormat = "(E16.8)"
     
     ! An array containing the names of all the variables
     CHARACTER(LEN=SYS_NAMELEN), DIMENSION(:), POINTER :: p_SvariableNames => NULL()
+    
+    ! An array containing the names of all the variable vectors
+    CHARACTER(LEN=SYS_NAMELEN), DIMENSION(:), POINTER :: p_SvarVecNames => NULL()
     
     ! Filename of file containing point coordinates.
     ! ""=no alternative source file.
@@ -234,6 +342,10 @@ MODULE ucd
     ! A pointer to an array that specifies whether a variable is vertex based (1)
     ! or cell based (0).
     INTEGER, DIMENSION(:), POINTER :: p_IvariableBase => NULL()
+    
+    ! A pointer to an array that specifies the components of a vector variable.
+    ! The first dimension of this vector is always 4.
+    INTEGER, DIMENSION(:,:), POINTER :: p_Ivectors => NULL()
     
     ! A pointer to a list of handles of double precision pointers. 
     ! p_Hvariables(I) points to the data of variable I.
@@ -299,11 +411,286 @@ MODULE ucd
   
 !</typeblock>
 
+!<typeblock>
+
+  ! This structure is used for mesh refinement which is needed by some
+  ! export routines. This structure is not meant to be used outside this
+  ! module.
+
+  TYPE t_ucdRefine
+  
+    ! Number of additional vertices
+    INTEGER :: nvertices = 0
+    
+    ! Number of additional cells
+    INTEGER :: ncells = 0
+    
+    ! Handle to additional vertice array
+    INTEGER :: h_DvertexCoords = ST_NOHANDLE
+    
+    ! Handle to additional cell array
+    INTEGER :: h_IverticesAtElement = ST_NOHANDLE
+
+  END TYPE
+
+!</typeblock>
+
 !</types>
 
-  PRIVATE :: ucd_moreVariables, ucd_morePolygons, ucd_moreTracerVariables
+  PRIVATE :: ucd_moreVariables, ucd_moreVectors, ucd_morePolygons, &
+      ucd_moreTracerVariables, ucd_refine
 
 CONTAINS
+
+!************************************************************************
+
+!<subroutine>
+  SUBROUTINE ucd_refine(rrefine, rtria, cflags)
+  
+!<description>
+  ! This routine calculates the mesh refinement of a given triangulation
+  ! and a combination of UCD_FLAG_XXXX flags.
+  ! This routine is not meant to be called from outside this module.
+!</description>
+
+!<input>
+  ! Specification of the underlying triangulation.
+  TYPE(t_triangulation), INTENT(IN) :: rtria
+  
+  ! Bitfield that specifies the output.
+  INTEGER(I32), INTENT(IN) :: cflags
+!</input>
+
+!<output>
+  ! A mesh refinement
+  TYPE(t_ucdRefine), INTENT(OUT) :: rrefine
+!</output>
+
+!</subroutine>
+
+    ! Some local variables
+    INTEGER :: i,j,k,ivt,off,numNewElem
+    REAL(DP) :: dx
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords, p_DnewVerts
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertsAtEdge
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_InewVertsAtElement
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertsAtElement
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER, DIMENSION(2) :: I_dim
+    LOGICAL :: bedgeMids, belemMids, brefined
+    
+    ! Initialize vertice / cell counts
+    rrefine%nvertices = 0
+    rrefine%ncells = 0
+    
+    ! Do we need to write edge / element midpoints?
+    brefined  = (IAND(cflags,UCD_FLAG_ONCEREFINED) .NE. 0)
+    belemMids = (IAND(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. brefined
+    bedgeMids = (IAND(cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .OR. &
+                (IAND(cflags,UCD_FLAG_USEEDGEMIDPOINTS) .NE. 0) .OR. brefined
+    
+    ! If we use element midpoints or if the mesh is refines, we need to add
+    ! the number of elements
+    IF (belemMids) THEN
+        
+      rrefine%nvertices = rtria%NEL
+      
+    END IF
+    
+    ! Do we need to add edge midpoints?
+    IF (bedgeMids) THEN
+        
+        rrefine%nvertices = rrefine%nvertices + rtria%NMT
+    
+    END IF
+    
+    ! If we do not allocate any vertices, we can leave this routine here
+    IF (rrefine%nvertices .EQ. 0) RETURN
+    
+    ! Otherwise allocate the vertices
+    IF (rtria%ndim .EQ. NDIM2D) THEN
+      I_dim(1) = 2
+    ELSE
+      I_dim(1) = 3
+    END IF
+    I_dim(2) = rrefine%nvertices
+    
+    CALL storage_new2D("ucd_refine", "p_Dvertices", I_dim, ST_DOUBLE, &
+        rrefine%h_DvertexCoords, ST_NEWBLOCK_ZERO)
+
+    ! And get a pointer to them
+    CALL storage_getbase_double2D(rrefine%h_DvertexCoords, p_DnewVerts)
+    
+    ! Get pointers to the triangulation's arrays
+    CALL storage_getbase_double2D(rtria%h_DvertexCoords, p_DvertexCoords)
+    CALL storage_getbase_int2D(rtria%h_IverticesAtEdge, p_IvertsAtEdge)
+    CALL storage_getbase_int2D(rtria%h_IedgesAtElement, p_IedgesAtElement)
+    CALL storage_getbase_int2D(rtria%h_IverticesAtElement, p_IvertsAtElement)
+    
+    ! Calculate the vertices
+    off = 0
+    IF (bedgeMids) THEN
+      DO i = 1, rtria%NMT
+        DO j = 1, UBOUND(p_DvertexCoords, 1)
+          p_DnewVerts(j, i) = 0.5_DP * &
+                             (p_DvertexCoords(j, p_IvertsAtEdge(1, i)) + &
+                              p_DvertexCoords(j, p_IvertsAtEdge(2, i)))
+        END DO
+      END DO
+      ! remember we already wrote some vertices
+      off = rtria%NMT
+    END IF
+    
+    ! Calculate element midpoints?
+    IF (belemMids) THEN
+    
+      ! Go through all elements...
+      DO i = 1, rtria%NEL
+      
+        ! ...and all coordinates...
+        DO j = 1, UBOUND(p_DvertexCoords, 1)
+        
+          dx = 0.0_DP
+          
+          ! ...and through every vertex of the element
+          DO k = 1, UBOUND(p_IvertsAtElement, 1)
+          
+            ivt = p_IvertsAtElement(k, i)
+          
+            ! Does this element only have k-1 vertices?
+            IF (ivt .EQ. 0) EXIT
+          
+            dx = dx + p_DvertexCoords(j, ivt)
+            
+          END DO
+          
+          ! Store element midpoint
+          p_DnewVerts(j, off+i) = dx / REAL(k-1, DP)
+          
+        END DO
+        
+      END DO
+      
+    END IF
+    
+    ! Do we also need to refine the elements?
+    ! If not, then we can return here
+    IF (.NOT. brefined) RETURN
+    
+    ! We first need to count the number of elements we will create for the
+    ! refinement...
+    ! Since we work in 2D here, every refinement takes 4 new elements...
+    ! TODO: This code may need to be replaced for 3D grids...
+    numNewElem = rtria%NEL * 4
+    
+    ! Allocate elements
+    I_dim(1) = 4
+    I_dim(2) = numNewElem
+    CALL storage_new2D("ucd_refine", "p_DnewVertsAtElement", I_dim, &
+        ST_INT, rrefine%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
+
+    ! And get a pointer to them
+    CALL storage_getbase_int2D(rrefine%h_IverticesAtElement, p_InewVertsAtElement)
+
+    ! Now go through all elements
+    DO i = 1, rtria%NEL
+    
+      ! Count the number of vertices for this element
+      DO k = 1, UBOUND(p_IvertsAtElement, 1)
+        IF (p_IvertsAtElement(k, i) .EQ. 0) EXIT
+      END DO
+      
+      ! Now this element has k-1 vertices
+      k = k - 1
+      
+      SELECT CASE(k)
+      CASE (3)
+        ! Let a coarse grid triangle have 3 vertices (1, 2, 3) and 3 edges
+        ! (a, b, c), then it will be refined into 4 new triangles (I, J, K, L)
+        !
+        !        1                        1
+        !       / \                      / \
+        !      /   \                    / J \
+        !     a     c        ==>       a-----c
+        !    /       \                / \ I / \
+        !   /         \              / K \ / L \
+        !  2-----b-----3            2-----b-----3
+        !
+        ! The triangles are indexed as follows:
+        ! I => IEL
+        ! J => NEL + 3*(IEL - 1) + 1
+        ! K => NEL + 3*(IEL - 1) + 2
+        ! L => NEL + 3*(IEL - 1) + 3
+        ! Triangle I
+        p_InewVertsAtElement(1, i) = rtria%NVT + p_IedgesAtElement(1, i)
+        p_InewVertsAtElement(2, i) = rtria%NVT + p_IedgesAtElement(2, i)
+        p_InewVertsAtElement(3, i) = rtria%NVT + p_IedgesAtElement(3, i)
+        ! Triangle J
+        j = rtria%NEL + 3*i - 2
+        p_InewVertsAtElement(1, j) = p_IvertsAtElement(1, i)
+        p_InewVertsAtElement(2, j) = rtria%NVT + p_IedgesAtElement(1, i)
+        p_InewVertsAtElement(3, j) = rtria%NVT + p_IedgesAtElement(3, i)
+        ! Triangle K
+        j = j + 1
+        p_InewVertsAtElement(1, j) = p_IvertsAtElement(2, i)
+        p_InewVertsAtElement(2, j) = rtria%NVT + p_IedgesAtElement(2, i)
+        p_InewVertsAtElement(3, j) = rtria%NVT + p_IedgesAtElement(1, i)
+        ! Triangle L
+        j = j + 1
+        p_InewVertsAtElement(1, j) = p_IvertsAtElement(3, i)
+        p_InewVertsAtElement(2, j) = rtria%NVT + p_IedgesAtElement(3, i)
+        p_InewVertsAtElement(3, j) = rtria%NVT + p_IedgesAtElement(2, i)
+
+      CASE (4)
+        ! Let a coarse grid quadrilateral have 4 vertices (1, 2, 3, 4), 4 edges
+        ! (a, b, c, d) and a midpoint (m), then it will be refined into 4 new
+        ! quadrilaterals (I, J, K, L)
+        !
+        !  1---d---4           1---d---4
+        !  |       |           | I | L |
+        !  a   m   c    ==>    a---m---c
+        !  |       |           | J | K |
+        !  2---b---3           2---b---3
+        !
+        ! The quadrilaterals are indexed as follows:
+        ! I => IEL
+        ! J => NEL + 3*(IEL - 1) + 1
+        ! K => NEL + 3*(IEL - 1) + 2
+        ! L => NEL + 3*(IEL - 1) + 3
+        
+        ! Get the element's mid-point offset
+        ivt = rtria%NVT + off + i
+        ! Quad I
+        p_InewVertsAtElement(1, i) = p_IvertsAtElement(1, i)
+        p_InewVertsAtElement(2, i) = rtria%NVT + p_IedgesAtElement(1, i)
+        p_InewVertsAtElement(3, i) = ivt
+        p_InewVertsAtElement(4, i) = rtria%NVT + p_IedgesAtElement(4, i)
+        ! Quad J
+        j = rtria%NEL + 3*i - 2
+        p_InewVertsAtElement(1, j) = p_IvertsAtElement(2, i)
+        p_InewVertsAtElement(2, j) = rtria%NVT + p_IedgesAtElement(2, i)
+        p_InewVertsAtElement(3, j) = ivt
+        p_InewVertsAtElement(4, j) = rtria%NVT + p_IedgesAtElement(1, i)
+        ! Quad K
+        j = j+1
+        p_InewVertsAtElement(1, j) = p_IvertsAtElement(3, i)
+        p_InewVertsAtElement(2, j) = rtria%NVT + p_IedgesAtElement(3, i)
+        p_InewVertsAtElement(3, j) = ivt
+        p_InewVertsAtElement(4, j) = rtria%NVT + p_IedgesAtElement(2, i)
+        ! Quad L
+        j = j+1
+        p_InewVertsAtElement(1, j) = p_IvertsAtElement(4, i)
+        p_InewVertsAtElement(2, j) = rtria%NVT + p_IedgesAtElement(4, i)
+        p_InewVertsAtElement(3, j) = ivt
+        p_InewVertsAtElement(4, j) = rtria%NVT + p_IedgesAtElement(3, i)
+        
+      END SELECT
+    
+    END DO
+    
+    ! That's it
+    
+  END SUBROUTINE
 
 !************************************************************************
 
@@ -339,10 +726,143 @@ CONTAINS
     ! Most of the things in rexport is initialised by INTENT(OUT) with standard
     ! values automatically. We only have to initialise minor things.
     
-    rexport%coutputFormat = 1
+    rexport%coutputFormat = UCD_FORMAT_GMV
     rexport%cflags = cflags
     rexport%sfilename = sfilename
     rexport%p_rtriangulation => rtriangulation
+    
+    ! How many vertices do we have in the trangulation that have to be 
+    ! filled with values?
+    rexport%nvertices = rtriangulation%NVT
+    rexport%ncells = rtriangulation%NEL
+    
+    IF ((IAND(cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_USEEDGEMIDPOINTS) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+      rexport%nvertices = rexport%nvertices + rtriangulation%NMT
+    END IF
+
+    IF ((IAND(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+      rexport%nvertices = rexport%nvertices + rtriangulation%NEL
+      IF (rtriangulation%NDIM .EQ. NDIM2D) THEN
+        rexport%ncells = rtriangulation%NEL*4
+      ELSE
+        rexport%ncells = rtriangulation%NEL*8
+      END IF
+    END IF
+  
+  END SUBROUTINE
+  
+!************************************************************************
+
+!<subroutine>
+  SUBROUTINE ucd_startAVS (rexport,cflags,rtriangulation,sfilename)
+ 
+!<description>
+  ! Initialises the UCD output to a file sfilename. A UCD export structure
+  ! rexport is created that specifies that file. This structure must be
+  ! passed to all UCD output routines.
+!</description>
+ 
+!<input>
+  ! Filename of the AVS file
+  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  
+  ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
+  INTEGER(I32), INTENT(IN) :: cflags
+  
+  ! Specification of the underlying triangulation. A pointer to this
+  ! object is saved until the otput is finished.
+  TYPE(t_triangulation), INTENT(IN), TARGET :: rtriangulation
+!</input>
+  
+!<output>
+  ! An UCD export structure which collects information about the output.
+  ! Must be passed to all export subroutines.
+  TYPE(t_ucdExport), INTENT(OUT) :: rexport
+!</output>
+ 
+!</subroutine>
+
+    ! Most of the things in rexport is initialised by INTENT(OUT) with standard
+    ! values automatically. We only have to initialise minor things.
+    
+    rexport%coutputFormat = UCD_FORMAT_AVS
+    rexport%cflags = cflags
+    rexport%sfilename = sfilename
+    rexport%p_rtriangulation => rtriangulation
+    
+    ! How many vertices do we have in the trangulation that have to be 
+    ! filled with values?
+    rexport%nvertices = rtriangulation%NVT
+    rexport%ncells = rtriangulation%NEL
+    
+    IF ((IAND(cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_USEEDGEMIDPOINTS) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+      rexport%nvertices = rexport%nvertices + rtriangulation%NMT
+    END IF
+
+    IF ((IAND(cflags,UCD_FLAG_USEELEMENTMIDPOINTS) .NE. 0) .OR. &
+        (IAND(cflags,UCD_FLAG_ONCEREFINED) .NE. 0)) THEN
+      rexport%nvertices = rexport%nvertices + rtriangulation%NEL
+      IF (rtriangulation%NDIM .EQ. NDIM2D) THEN
+        rexport%ncells = rtriangulation%NEL*4
+      ELSE
+        rexport%ncells = rtriangulation%NEL*8
+      END IF
+    END IF
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE ucd_startVTK (rexport,cflags,rtriangulation,sfilename,cparam)
+ 
+!<description>
+  ! Initialises the UCD output to a file sfilename. A UCD export structure
+  ! rexport is created that specifies that file. This structure must be
+  ! passed to all UCD output routines.
+!</description>
+ 
+!<input>
+  ! Filename of the VTK file
+  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+  
+  ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
+  INTEGER(I32), INTENT(IN) :: cflags
+  
+  ! Specification of the underlying triangulation. A pointer to this
+  ! object is saved until the otput is finished.
+  TYPE(t_triangulation), INTENT(IN), TARGET :: rtriangulation
+  
+  ! OPTIONAL: Parameters for the VTK exporter
+  INTEGER, OPTIONAL, INTENT(IN) :: cparam
+!</input>
+  
+!<output>
+  ! An UCD export structure which collects information about the output.
+  ! Must be passed to all export subroutines.
+  TYPE(t_ucdExport), INTENT(OUT) :: rexport
+!</output>
+ 
+!</subroutine>
+
+    ! Most of the things in rexport is initialised by INTENT(OUT) with standard
+    ! values automatically. We only have to initialise minor things.
+    
+    rexport%coutputFormat = UCD_FORMAT_VTK
+    rexport%cflags = cflags
+    rexport%sfilename = sfilename
+    rexport%p_rtriangulation => rtriangulation
+    
+    ! Do we have any parameters?
+    IF (PRESENT(cparam)) THEN
+      rexport%cparam = cparam
+    END IF
     
     ! How many vertices do we have in the trangulation that have to be 
     ! filled with values?
@@ -389,11 +909,14 @@ CONTAINS
     
     IF (ASSOCIATED(rexport%p_Scomments)) DEALLOCATE(rexport%p_Scomments)
 
-    IF (ASSOCIATED(rexport%p_SvariableNames )) DEALLOCATE(rexport%p_SvariableNames )
+    IF (ASSOCIATED(rexport%p_SvariableNames)) DEALLOCATE(rexport%p_SvariableNames)
     IF (ASSOCIATED(rexport%p_IvariableSpec)) DEALLOCATE(rexport%p_IvariableSpec)
     IF (ASSOCIATED(rexport%p_IvariableBase)) DEALLOCATE(rexport%p_IvariableBase)
     
-    IF (ASSOCIATED(rexport%p_Hvariables   )) THEN
+    IF (ASSOCIATED(rexport%p_SvarVecNames)) DEALLOCATE(rexport%p_SvarVecNames)
+    IF (ASSOCIATED(rexport%p_Ivectors)) DEALLOCATE(rexport%p_Ivectors)
+    
+    IF (ASSOCIATED(rexport%p_Hvariables)) THEN
       DO i=1,rexport%nvariables
         IF (rexport%p_Hvariables(i) .NE. ST_NOHANDLE) &
           CALL storage_free (rexport%p_Hvariables(i))
@@ -419,6 +942,7 @@ CONTAINS
     IF (ASSOCIATED(rexport%SvertexMaterials)) DEALLOCATE(rexport%SvertexMaterials)
     IF (ASSOCIATED(rexport%ScellMaterials)) DEALLOCATE(rexport%ScellMaterials)
     
+    rexport%nvectors          = 0
     rexport%nvariables        = 0
     rexport%npolygons         = 0
     
@@ -478,7 +1002,7 @@ CONTAINS
 
 !</subroutine>
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_setAlternativeSource: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -540,7 +1064,7 @@ CONTAINS
 
 !</subroutine>
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_setMaterials: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -592,7 +1116,7 @@ CONTAINS
   INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
   INTEGER(PREC_ELEMENTIDX) :: NEL
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_setCellMaterial: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -666,7 +1190,7 @@ CONTAINS
   INTEGER(PREC_EDGEIDX) :: NMT
   INTEGER(PREC_VERTEXIDX) :: NVT
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_setVertexMaterial: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -759,10 +1283,15 @@ CONTAINS
       END IF
     END IF
 
-    IF (rexport%coutputFormat .EQ. 1) THEN
-      ! Start the GMV output
+    ! Start the output
+    SELECT CASE(rexport%coutputFormat)
+    CASE (UCD_FORMAT_GMV)
       CALL ucd_writeGMV (rexport)
-    END IF
+    CASE (UCD_FORMAT_AVS)
+      CALL ucd_writeAVS (rexport)
+    CASE (UCD_FORMAT_VTK)
+      CALL ucd_writeVTK (rexport)
+    END SELECT
     
     IF (rexport%sfilename .NE. '') THEN
       ! Close the file if it was opened previously.
@@ -1459,6 +1988,668 @@ CONTAINS
       
     END SUBROUTINE
 
+    !****************************************************************
+    
+    SUBROUTINE ucd_writeAVS (rexport)
+
+    ! Specific output routine for AVS output. Writes the whole
+    ! structure to the output channel that was opened in the ucd_startAVS
+    ! subroutine before.
+    
+    ! The export structure with all information
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+    ! local variables
+    INTEGER :: mfile,i,j,k, num_ndata, num_cdata, ncells, nverts, &
+        lenTemp, ivt1, ivt2
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords, p_DvertexRefined, &
+        p_Ddata2D
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER, DIMENSION(:), POINTER :: p_IcellMaterial
+    REAL(DP), DIMENSION(1:3) :: Dvert
+    CHARACTER(LEN=SYS_STRLEN) :: sdl
+    TYPE(t_ucdRefine) :: rrefine
+      
+      ! Get file unit and export format
+      mfile = rexport%iunit
+      sdl = rexport%sdataFormat
+      
+      ! Calculate grid refinement
+      CALL ucd_refine(rrefine, rexport%p_rtriangulation, rexport%cflags)
+      
+      ! Get refined vertices
+      IF (rrefine%h_DvertexCoords .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_double2d (rrefine%h_DvertexCoords, p_DvertexRefined)
+      ELSE
+        p_DvertexRefined => NULL()
+      END IF
+
+      ! If the mesh is to be refined, then we take the refined elements,
+      ! otherwise we use the elements from the triangulation
+      IF (rrefine%h_IverticesAtElement .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_int2d (rrefine%h_IverticesAtElement, &
+            p_IverticesAtElement)
+        ncells = rrefine%ncells
+      ELSE
+        CALL storage_getbase_int2d (rexport%p_rtriangulation%h_IverticesAtElement,&
+            p_IverticesAtElement)
+        ncells = rexport%p_rtriangulation%NEL
+      END IF
+
+      ! Get corner vertices
+      CALL storage_getbase_double2d (rexport%p_Rtriangulation%h_DvertexCoords,&
+          p_DvertexCoords)
+      nverts = rexport%p_rtriangulation%NVT + rrefine%nvertices
+      
+      ! Get cell materials, if specified
+      IF(rexport%hIcellMaterial .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_int (rexport%hIcellMaterial, p_IcellMaterial)
+      ELSE
+        p_IcellMaterial => NULL()
+      END IF
+      
+      ! First we need to count how many vertex-based and how many element-based
+      ! variables we have.
+      num_ndata = 0
+      num_cdata = 0
+      DO i = 1, rexport%nvariables
+      
+        IF (rexport%p_IvariableBase(i) .EQ. 0) THEN
+          num_cdata = num_cdata + 1
+        ELSE
+          num_ndata = num_ndata + 1
+        END IF
+        
+      END DO
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write the AVS header
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      WRITE(mfile, '(5I10)') nverts, ncells, num_ndata, num_cdata, 0
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write vertice coordinates
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      IF (UBOUND(p_DvertexCoords,1) .EQ. 3) THEN
+        ! 3D coordinates
+        
+        ! Write corner vertices
+        DO i=1, rexport%p_Rtriangulation%NVT
+          WRITE(mfile, '(I10,3E16.7)') i, p_DvertexCoords(1:3, i)
+        END DO
+        
+        ! Write refined vertices
+        j = rexport%p_Rtriangulation%NVT
+        DO i=1, rrefine%nvertices
+          WRITE(mfile, '(I10,3E16.7)') j+i, p_DvertexRefined(1:3, i)
+        END DO
+        
+      ELSE
+        ! 2D coordinates
+        
+        ! Write corner vertices
+        DO i=1, rexport%p_Rtriangulation%NVT
+          WRITE(mfile, '(I10,3E16.7)') i, p_DvertexCoords(1:2, i), 0.0_DP
+        END DO
+
+        ! Write refined vertices
+        j = rexport%p_Rtriangulation%NVT
+        DO i=1, rrefine%nvertices
+          WRITE(mfile, '(I10,3E16.7)') j+i, p_DvertexRefined(1:2, i), 0.0_DP
+        END DO
+        
+      END IF
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write elements
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      DO j=1, ncells
+      
+        ! Count the number of vertices on that element
+        DO i=1,UBOUND(p_IverticesAtElement,1)
+          IF (p_IverticesAtElement(i,j) .EQ. 0) EXIT
+        END DO
+        
+        ! Do we have cell materials?
+        k = 1
+        !IF (ASSOCIATED(p_IcellMaterial)) k = p_IcellMaterial(j)
+        
+        ! We have i-1 vertices on that element -- so what is it?
+        SELECT CASE (i-1)
+        CASE (3)
+          ! Triangle
+          WRITE(mfile, '(2I10,A,3I10)') j, k, ' tri', &
+              p_IverticesAtElement(1:3,j)
+          
+        CASE (4)
+          ! Quad
+          WRITE(mfile, '(2I10,A,4I10)') j, k, ' quad', &
+              p_IverticesAtElement(1:4,j)
+          
+        CASE DEFAULT
+          PRINT *,'Invalid element!'
+          
+        END SELECT
+        
+      END DO
+      
+      ! We do not need the mesh refinement anymore, so destroy it
+      IF (rrefine%h_DvertexCoords .NE. ST_NOHANDLE) THEN
+        CALL storage_free(rrefine%h_DvertexCoords)
+      END IF
+      IF (rrefine%h_IverticesAtElement .NE. ST_NOHANDLE) THEN
+        CALL storage_free(rrefine%h_IverticesAtElement)
+      END IF
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write node variable info
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      WRITE(mfile, '(I10)', ADVANCE='NO') num_ndata
+      DO i=1, num_ndata
+        WRITE(mfile, '(A)', ADVANCE='NO') " 1"
+      END DO
+      WRITE(mfile, '(A)') ""
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write node variable names
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      DO i=1, rexport%nvariables
+      
+        ! If this is a node variable, write its name
+        IF (rexport%p_IvariableBase(i) .EQ. 1) THEN
+          WRITE(mfile, '(A,A)') &
+             sys_charreplace(TRIM(rexport%p_SvariableNames(i)), ' ', '_'), &
+             ", nounit"
+        END IF
+      
+      END DO
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write node variables
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      IF (num_ndata .GT. 0) THEN
+        
+        ! Write all vertices
+        DO i=1, rexport%nvertices
+          
+          ! Write vertice index
+          WRITE(mfile, '(I10)', ADVANCE='NO') i
+          
+          ! Write all variable values
+          DO j=1, rexport%nvariables
+            
+            IF (rexport%p_IvariableBase(j) .EQ. 1) THEN
+              CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+              WRITE(mfile, sdl, ADVANCE='NO') p_Ddata(i)
+            END IF
+          
+          END DO
+          
+          ! Write a line break
+          WRITE(mfile, '(A)') ""
+          
+        END DO
+        
+      END IF
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write cell variable info
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      WRITE(mfile, '(I10)', ADVANCE='NO') num_cdata
+      DO i=1, num_cdata
+        WRITE(mfile, '(A)', ADVANCE='NO') " 1"
+      END DO
+      WRITE(mfile, '(A)') ""
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write cell variable names
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      DO i=1, rexport%nvariables
+      
+        ! If this is a element variable, write its name
+        IF (rexport%p_IvariableBase(i) .EQ. 0) THEN
+          WRITE(mfile, '(A,A)') &
+             sys_charreplace(TRIM(rexport%p_SvariableNames(i)), ' ', '_'), &
+             ", nounit"
+        END IF
+      
+      END DO
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write cell variables
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      IF (num_cdata .GT. 0) THEN
+        
+        ! Write all cells
+        DO i=1, rexport%ncells
+          
+          ! Write cell index
+          WRITE(mfile, '(I10)', ADVANCE='NO') i
+          
+          ! Write all variable values
+          DO j=1, rexport%nvariables
+            
+            IF (rexport%p_IvariableBase(j) .EQ. 0) THEN
+              CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
+              WRITE(mfile, sdl, ADVANCE='NO') p_Ddata(i)
+            END IF
+          
+          END DO
+          
+          ! Write a line break
+          WRITE(mfile, '(A)') ""
+          
+        END DO
+        
+      END IF
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write comments
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      DO i=1, rexport%ncommentBufSize
+        
+        ! Write a comment identifier
+        WRITE(mfile, '(A)', ADVANCE='NO') "# "
+        
+        ! Write comment line
+        WRITE(mfile, '(A)') rexport%p_Scomments(i)
+        
+      END DO
+      
+    END SUBROUTINE
+
+    !****************************************************************
+    
+    SUBROUTINE ucd_writeVTK (rexport)
+
+    ! Specific output routine for VTK output. Writes the whole
+    ! structure to the output channel that was opened in the ucd_startVTK
+    ! subroutine before.
+    
+    ! The export structure with all information
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+    ! local variables
+    INTEGER :: mfile,i,j,k,jy,jz,num_ndata,num_cdata,ncls,nverts,ncells
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords, p_DvertexRefined, &
+        p_Ddata2D
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata, p_Dx, p_Dy, p_Dz
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+    INTEGER, DIMENSION(:), ALLOCATABLE :: p_InumVertsPerCell
+    REAL(DP), DIMENSION(1:3) :: Dvert
+    CHARACTER(LEN=SYS_STRLEN) :: sdl
+    LOGICAL :: bQuadratic, bVec2Sc
+    TYPE(t_ucdRefine) :: rrefine
+      
+      ! Get file unit and export format
+      mfile = rexport%iunit
+      sdl = rexport%sdataFormat
+          
+      ! Calculate grid refinement
+      CALL ucd_refine(rrefine, rexport%p_rtriangulation, rexport%cflags)
+      
+      ! Get refined vertices
+      IF (rrefine%h_DvertexCoords .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_double2d (rrefine%h_DvertexCoords, p_DvertexRefined)
+      ELSE
+        p_DvertexRefined => NULL()
+      END IF
+      
+      ! If the mesh is to be refined, then we take the refined elements,
+      ! otherwise we use the elements from the triangulation
+      IF (rrefine%h_IverticesAtElement .NE. ST_NOHANDLE) THEN
+        CALL storage_getbase_int2d (rrefine%h_IverticesAtElement, &
+            p_IverticesAtElement)
+        ncells = rrefine%ncells
+      ELSE
+        CALL storage_getbase_int2d (rexport%p_rtriangulation%h_IverticesAtElement,&
+            p_IverticesAtElement)
+        ncells = rexport%p_rtriangulation%NEL
+      END IF
+
+      ! Get corner vertices
+      CALL storage_getbase_double2d (rexport%p_rtriangulation%h_DvertexCoords,&
+          p_DvertexCoords)
+      nverts = rexport%p_rtriangulation%NVT + rrefine%nvertices
+      
+      ! Get edges of elements (needed for quadratic cells)
+      CALL storage_getbase_int2d (rexport%p_rtriangulation%h_IedgesAtElement,&
+          p_IedgesAtElement)
+
+      ! First we need to count how many vertex-based and how many element-based
+      ! variables we have.
+      num_ndata = 0
+      num_cdata = 0
+      DO i = 1, rexport%nvariables
+      
+        IF (rexport%p_IvariableBase(i) .EQ. 0) THEN
+          num_cdata = num_cdata + 1
+        ELSE
+          num_ndata = num_ndata + 1
+        END IF
+        
+      END DO
+      
+      ! Should we write vector components as scalars?
+      bVec2Sc = (IAND(rexport%cparam, UCD_PARAM_VTK_VECTOR_TO_SCALAR) .NE. 0)
+
+      ! Are we going to write quadratic elements?
+      bQuadratic = (IAND(rexport%cflags,UCD_FLAG_ONCEREFINED) .EQ. 0) .AND. &
+                   (IAND(rexport%cflags,UCD_FLAG_BULBQUADRATIC) .NE. 0) .AND. &
+                   (IAND(rexport%cparam,UCD_PARAM_VTK_USE_QUADRATIC) .NE. 0)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write VTK header
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      WRITE(mfile, '(A)') "# vtk DataFile Version 2.0"
+      WRITE(mfile, '(A)') "Generated by FEATFlow 2.x"
+      WRITE(mfile, '(A)') "ASCII"
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write Dataset header
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! By default, our grid is unstructured
+      WRITE(mfile, '(A)') "DATASET UNSTRUCTURED_GRID"
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write vertices
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      WRITE(mfile, '(A,I10,A)') "POINTS", nverts, " double"
+      
+      ! Do we have 2D or 3D points?
+      IF (UBOUND(p_DvertexCoords,1) .EQ. 3) THEN
+        ! 3D coordinates
+        
+        ! Write corner vertices
+        DO i=1, rexport%p_Rtriangulation%NVT
+          WRITE(mfile, '(3E16.7)') p_DvertexCoords(1:3, i)
+        END DO
+        
+        ! Write refined vertices
+        DO i=1, rrefine%nvertices
+          WRITE(mfile, '(3E16.7)') p_DvertexRefined(1:3, i)
+        END DO
+        
+      ELSE
+        ! 2D coordinates
+        
+        ! Write corner vertices
+        DO i=1, rexport%p_Rtriangulation%NVT
+          WRITE(mfile, '(3E16.7)') p_DvertexCoords(1:2, i), 0.0_DP
+        END DO
+
+        ! Write refined vertices
+        DO i=1, rrefine%nvertices
+          WRITE(mfile, '(3E16.7)') p_DvertexRefined(1:2, i), 0.0_DP
+        END DO
+
+      END IF
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write cells
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! First we need to count the number of vertices per cell and the total
+      ! number of integers needed for the cell index list
+      ncls = 0
+      ALLOCATE(p_InumVertsPerCell(ncells))
+      DO j = 1, ncells
+      
+        ! Count the number of vertices on that element
+        DO i=1,UBOUND(p_IverticesAtElement,1)
+          IF (p_IverticesAtElement(i,j) .EQ. 0) EXIT
+        END DO
+        
+        ! Store number of vertices
+        p_InumVertsPerCell(j) = i-1
+        
+        ! Store the number of vertices for this element + 1
+        IF (bQuadratic) THEN
+          ncls = ncls + 2*i - 1
+        ELSE
+          ncls = ncls + i
+        END IF
+        
+      END DO
+      
+      ! Write cells
+      WRITE(mfile, '(A, 2I10)') "CELLS", ncells, ncls
+
+      ! Should we write quadratic cells?
+      IF (bQuadratic) THEN
+      
+        ! Get offset of first edge-midpoint-vertice
+        k = rexport%p_rtriangulation%NVT - 1
+
+        DO j=1, ncells
+        
+          SELECT CASE (p_InumVertsPerCell(j))
+          CASE (3)
+            ! Quadratic triangle
+            WRITE(mfile, '(7I10)') 6,(p_IverticesAtElement(1,j)-1), &
+                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
+                k + p_IedgesAtElement(1,j), k + p_IedgesAtElement(2,j), &
+                k + p_IedgesAtElement(3,j)
+            
+          CASE (4)
+            ! Quadratic quadrilateral
+            WRITE(mfile, '(9I10)') 8, (p_IverticesAtElement(1,j)-1), &
+                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
+                (p_IverticesAtElement(4,j)-1), k + p_IedgesAtElement(1,j), &
+                k + p_IedgesAtElement(2,j), k + p_IedgesAtElement(3,j), &
+                k + p_IedgesAtElement(4,j)
+            
+          CASE DEFAULT
+            PRINT *,'Invalid element!'
+          END SELECT
+          
+        END DO
+
+        ! Write cell types
+        WRITE(mfile, '(A, I10)') "CELL_TYPES", ncells
+        DO j=1, ncells
+          SELECT CASE (p_InumVertsPerCell(j))
+          CASE (3)
+            ! quadratic triangle
+            WRITE(mfile, '(I4)') VTK_QUADRATIC_TRIANGLE
+            
+          CASE (4)
+            ! quadratic quadrilateral
+            WRITE(mfile, '(I4)') VTK_QUADRATIC_QUAD
+            
+          END SELECT
+        END DO
+
+      ELSE
+
+        DO j=1, ncells
+        
+          SELECT CASE (p_InumVertsPerCell(j))
+          CASE (3)
+            ! triangle
+            WRITE(mfile, '(4I10)') 3, (p_IverticesAtElement(1,j)-1), &
+                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1)
+
+          CASE (4)
+            ! quadrilateral
+            WRITE(mfile, '(5I10)') 4, (p_IverticesAtElement(1,j)-1), &
+                (p_IverticesAtElement(2,j)-1), (p_IverticesAtElement(3,j)-1), &
+                (p_IverticesAtElement(4,j)-1)
+            
+          CASE DEFAULT
+            PRINT *,'Invalid element!'
+          END SELECT
+          
+        END DO
+
+        ! Write cell types
+        WRITE(mfile, '(A, I10)') "CELL_TYPES", ncells
+        DO j=1, ncells
+          SELECT CASE (p_InumVertsPerCell(j))
+          CASE (3)
+            ! Triangle
+            WRITE(mfile, '(I4)') VTK_TRIANGLE
+            
+          CASE (4)
+            ! Quadrilateral
+            WRITE(mfile, '(I4)') VTK_QUAD
+            
+          END SELECT
+        END DO
+
+      END IF
+      
+      ! Now we do not need the vertice counts anymore
+      DEALLOCATE(p_InumVertsPerCell)
+      
+      ! We also do not need the mesh refinement anymore, so destroy it
+      IF (rrefine%h_DvertexCoords .NE. ST_NOHANDLE) THEN
+        CALL storage_free(rrefine%h_DvertexCoords)
+      END IF
+      IF (rrefine%h_IverticesAtElement .NE. ST_NOHANDLE) THEN
+        CALL storage_free(rrefine%h_IverticesAtElement)
+      END IF
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write vertex variables
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Go through all variables
+      IF (num_ndata .GT. 0) THEN
+      
+        WRITE(mfile, '(A,I10)') "POINT_DATA", nverts
+      
+        ! Loop through all variables
+        DO j=1, rexport%nvariables
+        
+          ! Is it vertex- or element-based?
+          IF (rexport%p_IvariableBase(j) .NE. 1) CYCLE
+            
+          ! Is the value scalar?
+          IF ((rexport%p_IvariableSpec(j) .NE. UCD_VAR_STANDARD) .AND. &
+              (.NOT. bVec2Sc)) CYCLE
+            
+          ! Print some stuff
+          WRITE(mfile, '(A,A,A)') "SCALARS ", &
+              sys_charreplace(TRIM(rexport%p_SvariableNames(j)),' ', '_'), &
+                " double 1"
+          WRITE(mfile, '(A)') "LOOKUP_TABLE default"
+          
+          ! Go for the data
+          CALL storage_getbase_double (rexport%p_Hvariables(j), p_Ddata)
+          
+          ! Write the data
+          DO i=1, UBOUND(p_Ddata,1)
+            WRITE(mfile, sdl) p_Ddata(i)
+          END DO
+            
+        END DO
+        
+        ! Should we write vectors?
+        IF (.NOT. bVec2Sc) THEN
+        
+          ! Loop through all vectors
+          DO j=1, rexport%nvectors
+          
+            ! Is this a vertex-based vector?
+            IF(rexport%p_Ivectors(1,j) .NE. 1) CYCLE
+        
+            p_Dx => NULL()
+            p_Dy => NULL()
+            p_Dz => NULL()
+
+            ! Go for the X, Y and Z coordinates
+            i = rexport%p_Ivectors(2,j)
+            CALL storage_getbase_double (rexport%p_Hvariables(i), p_Dx)
+            i = rexport%p_Ivectors(3,j)
+            IF (i .NE. 0) THEN
+              CALL storage_getbase_double (rexport%p_Hvariables(i), p_Dy)
+            END IF
+            i = rexport%p_Ivectors(4,j)
+            IF (i .NE. 0) THEN
+              CALL storage_getbase_double (rexport%p_Hvariables(i), p_Dz)
+            END IF
+            
+            ! Make sure we have at least the X-coordinate
+
+            IF (.NOT. ASSOCIATED(p_Dx)) THEN
+              PRINT *, "Error: Variable vector ", j, " does not have X-coordinates!"
+              ! Try next vector
+              CYCLE
+            END IF
+            
+            ! Print the stuff
+            WRITE(mfile,'(A,A,A)') "VECTORS ", &
+                sys_charreplace(TRIM(rexport%p_SvarVecNames(j)), ' ', '_'), &
+                  " double"
+            
+            ! Write the vector
+            DO i = 1, UBOUND(p_Dx, 1)
+            
+              ! Write X-coord
+              WRITE(mfile, sdl, ADVANCE='NO') p_Dx(i)
+              
+              ! Write Y-coord
+              IF (ASSOCIATED(p_Dy)) THEN
+                WRITE(mfile, sdl, ADVANCE='NO') p_Dy(i)
+              ELSE
+                WRITE(mfile, sdl, ADVANCE='NO') 0.0_DP
+              END IF
+              
+              ! Write Z-coord
+              IF (ASSOCIATED(p_Dz)) THEN
+                WRITE(mfile, sdl, ADVANCE='NO') p_Dz(i)
+              ELSE
+                WRITE(mfile, sdl, ADVANCE='NO') 0.0_DP
+              END IF
+              
+              ! Write a new line
+              WRITE(mfile, '(A)') ""
+              
+            END DO
+            
+          END DO
+           
+        END IF
+        
+      END IF
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Write cell variables
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Go through all variables
+      IF (num_cdata .GT. 0) THEN
+      
+        WRITE(mfile, '(A,I10)') "CELL_DATA", ncells
+      
+        ! Loop through all variables
+        DO j=1, rexport%nvariables
+        
+          ! Is it vertex- or element-based?
+          IF (rexport%p_IvariableBase(j) .NE. 0) CYCLE
+          
+          ! Print some stuff
+          WRITE(mfile,'(A,A,A)') "SCALARS ", &
+              sys_charreplace(TRIM(rexport%p_SvariableNames(j)),' ','_'),&
+                " double 1"
+          WRITE(mfile, '(A)') "LOOKUP_TABLE default"
+          
+          ! Go for the data
+          CALL storage_getbase_double (rexport%p_Hvariables(j), p_Ddata)
+          
+          ! Write variable data
+          DO i=1, UBOUND(p_Ddata,1)
+            WRITE(mfile, sdl) p_Ddata(i)
+          END DO
+          
+        END DO
+        
+      END IF
+      
+      ! That's it
+
+    END SUBROUTINE
+    
   END SUBROUTINE
 
 !************************************************************************
@@ -1515,6 +2706,48 @@ CONTAINS
       DEALLOCATE(rexport%p_SvariableNames)
     END IF
     rexport%p_SvariableNames => p_SvariableNames
+
+  END SUBROUTINE
+
+!************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ucd_moreVectors (rexport)
+
+!<description>
+  ! (Re)allocates memory for vector variables. Increases the number of
+  ! available variables in the export structure.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure which is to be tackled.
+  TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER, DIMENSION(:,:), POINTER :: p_Ivectors
+    CHARACTER(LEN=SYS_NAMELEN), DIMENSION(:), POINTER :: p_SvarVecNames
+    INTEGER :: nsize
+    
+    nsize = 0
+    IF (ASSOCIATED(rexport%p_Ivectors)) &
+      nsize = SIZE(rexport%p_Ivectors)
+
+    ALLOCATE(p_Ivectors(4,nsize+16))
+    IF (ASSOCIATED(rexport%p_Ivectors)) THEN
+      p_Ivectors(:,1:nsize) = rexport%p_Ivectors(:,:)
+      DEALLOCATE(rexport%p_Ivectors)
+    END IF
+    rexport%p_Ivectors => p_Ivectors
+      
+    ALLOCATE(p_SvarVecNames(nsize+16))
+    IF (ASSOCIATED(rexport%p_SvarVecNames)) THEN
+      p_SvarVecNames(1:nsize) = rexport%p_SvarVecNames
+      DEALLOCATE(rexport%p_SvarVecNames)
+    END IF
+    rexport%p_SvarVecNames => p_SvarVecNames
 
   END SUBROUTINE
 
@@ -1621,14 +2854,14 @@ CONTAINS
   ! Standard value=UCD_VAR_STANDARD.
   INTEGER(I32), INTENT(IN) :: cvarSpec
   
-  ! DdataVert(I) os the value of the variable in vertex I of the triangulation.
+  ! DdataVert(I) is the value of the variable in vertex I of the triangulation.
   REAL(DP), DIMENSION(:), INTENT(IN) :: DdataVert
 
-  ! OPTIONAL: DdataMid(I) os the value of the variable in edge midpoint I of 
+  ! OPTIONAL: DdataMid(I) is the value of the variable in edge midpoint I of 
   ! the triangulation. Must be specified if DdataElem is specified!
   REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataMid
 
-  ! OPTIONAL: DdataElem(I) os the value of the variable in element midpoint I of 
+  ! OPTIONAL: DdataElem(I) is the value of the variable in element midpoint I of 
   ! the triangulation.
   REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataElem
 !</input>
@@ -1643,7 +2876,7 @@ CONTAINS
       CALL sys_halt()
     END IF
     
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_addVariableVertexBased: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -1706,7 +2939,107 @@ CONTAINS
     END IF    
 
   END SUBROUTINE
+!************************************************************************
+  
+!<subroutine>
 
+  SUBROUTINE ucd_addVarVertBasedVec (rexport, sname, DdataVert_X, &
+      DdataVert_Y, DdataVert_Z, DdataMid_X, DdataMid_Y, DdataMid_Z, &
+      DdataElem_X, DdataElem_Y, DdataElem_Z)
+
+!<description>
+  ! Adds variable vector data to the ouput file identified by rexport, based
+  ! on vertices.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the vector.
+  CHARACTER(LEN=*), INTENT(IN) :: sname
+  
+  ! The variable for the X-component of the corner vertices.
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DdataVert_X
+  
+  ! OPTIONAL: The data array for the Y-component of the corner vertices.
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataVert_Y
+
+  ! OPTIONAL: The data array for the Z-component of the corner vertices.
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataVert_Z
+
+  ! OPTIONAL: DdataMid_X/Y/Z(I) is the X/Y/Z-coordinate of the variable in
+  ! edge midpoint I of the triangulation. Must be specified if DdataElem
+  ! is specified!
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataMid_X
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataMid_Y
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataMid_Z
+
+  ! OPTIONAL: DdataElem_X/Y/Z(I) is the X/Y/Z-coordinate of the variable in
+  ! element midpoint I of the triangulation.
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataElem_X
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataElem_Y
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataElem_Z
+!</input>
+
+!</subroutine>
+
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
+      PRINT *,'ucd_addVariableVertexBased: Export structure not initialised!'
+      CALL sys_halt()
+    END IF
+    
+    ! Let's create a new vector first
+    IF (.NOT. ASSOCIATED(rexport%p_Ivectors)) THEN
+      CALL ucd_moreVectors(rexport)
+    ENDIF
+    
+    IF (rexport%nvectors .GE. SIZE(rexport%p_Ivectors, 2)) THEN
+      CALL ucd_moreVectors(rexport)
+    END IF
+    
+    ! Increment vector count and store its name
+    rexport%nvectors = rexport%nvectors + 1
+    rexport%p_SvarVecNames(rexport%nvectors) = sname
+    
+    ! This vector is vertex-based
+    rexport%p_Ivectors(1,rexport%nvectors) = 1
+    
+    ! There must be an X-component, so add it first
+    CALL ucd_addVariableVertexBased(rexport, TRIM(sname)//'_X', &
+        UCD_VAR_XVELOCITY, DdataVert_X, DdataMid_X, dDataElem_X)
+    
+    rexport%p_Ivectors(2,rexport%nvectors) = rexport%nvariables
+    
+    ! Is there an Y-component?
+    IF (PRESENT(DdataVert_Y)) THEN
+
+      CALL ucd_addVariableVertexBased(rexport, TRIM(sname)//'_Y', &
+          UCD_VAR_YVELOCITY, DdataVert_Y, DdataMid_Y, dDataElem_Y)
+      
+      rexport%p_Ivectors(3,rexport%nvectors) = rexport%nvariables
+   
+    ELSE
+      rexport%p_Ivectors(3,rexport%nvectors) = 0
+    END IF
+    
+    ! Is there an Z-component?
+    IF (PRESENT(DdataVert_Z)) THEN
+
+      CALL ucd_addVariableVertexBased(rexport, TRIM(sname)//'_Z', &
+          UCD_VAR_ZVELOCITY, DdataVert_Z, DdataMid_Z, dDataElem_Z)
+      
+      rexport%p_Ivectors(4,rexport%nvectors) = rexport%nvariables
+   
+    ELSE
+      rexport%p_Ivectors(4,rexport%nvectors) = 0
+    END IF
+    
+    ! That's it
+  
+  END SUBROUTINE
 !************************************************************************
   
 !<subroutine>
@@ -1742,7 +3075,7 @@ CONTAINS
     REAL(DP) :: dv
     INTEGER(PREC_ELEMENTIDX) :: iel
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_addVariableElementBased: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -1834,7 +3167,7 @@ CONTAINS
     REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata
     INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_addPolygon: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -1899,7 +3232,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(2) :: Ilength
     REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_setTracers: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -1990,7 +3323,7 @@ CONTAINS
     ! local variables
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_addTracerVariable: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -2055,7 +3388,7 @@ CONTAINS
 
     CHARACTER(LEN=SYS_STRLEN) :: stext
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_addTracerVariable: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -2105,7 +3438,7 @@ CONTAINS
 
     CHARACTER(LEN=SYS_STRLEN) :: stext
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_setOutputNumberFormat: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -2151,7 +3484,7 @@ CONTAINS
     CHARACTER, DIMENSION(:), POINTER :: p_sbuf
     INTEGER :: i
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_addCommentLine: Export structure not initialised!'
       CALL sys_halt()
     END IF
@@ -2206,7 +3539,7 @@ CONTAINS
 
     CHARACTER, DIMENSION(:), POINTER :: p_sbuf,p_sparams
 
-    IF (rexport%coutputFormat .EQ. 0) THEN
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
       PRINT *,'ucd_addParameterList: Export structure not initialised!'
       CALL sys_halt()
     END IF
