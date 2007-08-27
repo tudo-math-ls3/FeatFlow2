@@ -622,10 +622,12 @@ CONTAINS
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
     
-    CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, &
-        p_Ddata(1:p_rtriangulation%NVT))
-    CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, &
-        p_Ddata2(1:p_rtriangulation%NVT))
+    ! CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, &
+    !     p_Ddata(1:p_rtriangulation%NVT))
+    ! CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, &
+    !     p_Ddata2(1:p_rtriangulation%NVT))
+    CALL ucd_addVarVertBasedVec (rexport,'velocity',&
+        p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
     
     ! Write pressure
     CALL lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
