@@ -31,7 +31,7 @@
 !#      -> Add a vertex- or element-based data vector to the output.
 !#
 !#  6.) ucd_addVarVertBasedVec
-!#      -> Add a vertex-based velocity vector to the output.
+!#      -> Add a vertex-based vector to the output.
 !#
 !#  7.) ucd_setVertexMaterial
 !#      -> Allows to specify for every vertex/node (corner vertex, edge 
@@ -86,7 +86,7 @@
 !#    ucd_addVariableElementBased 
 !#                      - Add a variable consisting of values in elements
 !#    ucd_addVarVertBasedVec
-!#                      - Add a velocity vector variable consisting of values
+!#                      - Add a vector variable consisting of values
 !#                        in vertices
 !#
 !# c) ucd_setAlternativeSource 
@@ -1349,17 +1349,20 @@ CONTAINS
         WRITE(mfile,'(A)') 'comments'
         
         i = 1
+        ! Find the end of the first line
         DO j=i,rexport%ncommentBufSize
           IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
         END DO
         
+        ! Write out all lines, one after the other
         DO WHILE (j .LE. rexport%ncommentBufSize)
-          ! Write the line, continue with the next
+          ! Write the line (character i..j-1), continue with the next
           DO k=i,j-1
             WRITE(mfile,'(A)',ADVANCE='NO') rexport%p_Scomments(k)
           END DO
           WRITE(mfile,'(A)')
           
+          ! Continue after the NEWLINE character, find the next NEWLINE.
           i = j+1
           DO j=i,rexport%ncommentBufSize
             IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
@@ -2247,16 +2250,35 @@ CONTAINS
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Write comments
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-      DO i=1, rexport%ncommentBufSize
+      IF (rexport%ncommentBufSize .GT. 0) THEN
         
-        ! Write a comment identifier
-        WRITE(mfile, '(A)', ADVANCE='NO') "# "
+        i = 1
+        ! Find the end of the first line
+        DO j=i,rexport%ncommentBufSize
+          IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
+        END DO
         
-        ! Write comment line
-        WRITE(mfile, '(A)') rexport%p_Scomments(i)
+        ! Write out all lines, one after the other
+        DO WHILE (j .LE. rexport%ncommentBufSize)
+          ! Write a comment identifier
+          WRITE(mfile, '(A)', ADVANCE='NO') "# "
+
+          ! Write the line (character i..j-1), continue with the next
+          DO k=i,j-1
+            WRITE(mfile,'(A)',ADVANCE='NO') rexport%p_Scomments(k)
+          END DO
+          WRITE(mfile,'(A)')
+          
+          ! Continue after the NEWLINE character, find the next NEWLINE.
+          i = j+1
+          DO j=i,rexport%ncommentBufSize
+            IF (rexport%p_Scomments(j) .EQ. NEWLINE) EXIT
+          END DO
         
-      END DO
+        END DO
       
+      END IF
+
     END SUBROUTINE
 
     !****************************************************************
