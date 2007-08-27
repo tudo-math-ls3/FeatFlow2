@@ -16,7 +16,7 @@
 # 0=disabled
 # 1=GMV
 # 2=AVS
-# 3=Paraview
+# 3=Paraview (VTK)
 # 4=Matlab
 
 ioutputUCD = 1
