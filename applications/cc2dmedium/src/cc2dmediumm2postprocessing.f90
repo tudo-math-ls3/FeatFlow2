@@ -594,6 +594,12 @@ CONTAINS
     SELECT CASE (ioutputUCD)
     CASE (1)
       CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
+
+    CASE (2)
+      CALL ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
+          
+    CASE (3)
+      CALL ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
           
     CASE DEFAULT
       CALL output_line ('Invalid UCD ooutput type.', &
