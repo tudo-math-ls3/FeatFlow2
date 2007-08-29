@@ -144,11 +144,6 @@ CONTAINS
     CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(1)%rtriangulation, &
         rproblem%p_rboundary)
     
-
-    
-    ! The TRIAS(,)-array is now part pf the triangulation structure,
-    ! we don't need it anymore.
-    
   END SUBROUTINE
 
   ! ***************************************************************************
