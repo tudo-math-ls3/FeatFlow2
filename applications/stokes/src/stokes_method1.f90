@@ -833,6 +833,12 @@ CONTAINS
     ! Create a temporary vector we need that for some preparation.
     CALL lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .FALSE.)
     
+    ! Now we have to build up the level information for multigrid.
+    !
+    ! At first, initialise a standard interlevel projection structure. We
+    ! can use the same structure for all levels.
+    CALL mlprj_initProjectionMat (rprojection,p_rmatrix)
+    
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
     ! a filter chain. As the linear solver does not work with 
@@ -848,12 +854,6 @@ CONTAINS
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
     CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
-    
-    ! Now we have to build up the level information for multigrid.
-    !
-    ! At first, initialise a standard interlevel projection structure. We
-    ! can use the same structure for all levels.
-    CALL mlprj_initProjectionMat (rprojection,p_rmatrix)
     
     ! Then set up smoothers / coarse grid solver:
     DO i=ilvmin,ilvmax
@@ -916,6 +916,9 @@ CONTAINS
     
     ! Release the solver node and all subnodes attached to it (if at all):
     CALL linsol_releaseSolver (p_rsolverNode)
+    
+    ! Release the multilevel projection structure again.
+    CALL mlprj_doneProjection (rprojection)
     
     ! Release the temporary vector
     CALL lsysbl_releaseVector (rtempBlock)
