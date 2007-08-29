@@ -11,7 +11,7 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I./src/triangulation -I./src -I./include
 
 # The f90 source files 
-SRC +=  burgers1d_callback.f90 burgers1d_method5.f90 \
+SRC =  burgers1d_callback.f90 burgers1d_method5.f90 \
         burgers1d_method6.f90 burgers1d.f90
 
 # include the standart kernel sources
