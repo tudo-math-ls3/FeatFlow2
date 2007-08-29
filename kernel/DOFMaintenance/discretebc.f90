@@ -141,7 +141,7 @@ MODULE discretebc
     ! List of all velocity components in the PDE that take part on
     ! the slip boundary conditions.
     ! (e.g. 1=X-velocity, 2=Y-velocity or similar)
-    INTEGER, DIMENSION(SPDISC_MAXEQUATIONS) :: Icomponents        = 0
+    INTEGER, DIMENSION(:), POINTER          :: Icomponents        => NULL()
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
     INTEGER(PREC_DOFIDX)               :: nDOF              = 0
@@ -182,7 +182,7 @@ MODULE discretebc
     ! Each of the 1..ncomponents entries in the vector specifies a component
     ! in the solution vector that is modified (e.g. 1=X-velocity, 2=Y-velocity 
     ! or similar)
-    INTEGER, DIMENSION(SPDISC_MAXEQUATIONS) :: Icomponents        = 0
+    INTEGER, DIMENSION(:), POINTER     :: Icomponents        => NULL()
     
     ! Number of DOF's in the arrays below; may be different from the length of 
     ! the array!

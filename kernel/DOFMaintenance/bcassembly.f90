@@ -1932,6 +1932,7 @@ CONTAINS
   ! Which components of the solution vector are affected by this boundary
   ! condition?
   p_rpressureDropBCs%ncomponents = rbcRegion%nequations
+  ALLOCATE(p_rpressureDropBCs%Icomponents(1:NDIM2D))
   p_rpressureDropBCs%Icomponents(1:NDIM2D) = rbcRegion%Iequations(1:NDIM2D)
   
   ! We have to deal with all DOF's on the boundary. This is highly element
@@ -2076,13 +2077,16 @@ CONTAINS
 
 !</subroutine>
 
-  ! Release what is associated
-  
-  rdiscreteBCPD%nDOF = 0
-  IF (rdiscreteBCPD%h_IpressureDropDOFs .NE. ST_NOHANDLE) &
-    CALL storage_free(rdiscreteBCPD%h_IpressureDropDOFs)
-  IF (rdiscreteBCPD%h_Dmodifier .NE. ST_NOHANDLE) &
-    CALL storage_free(rdiscreteBCPD%h_Dmodifier)
+    ! Release what is associated
+    
+    rdiscreteBCPD%nDOF = 0
+    IF (rdiscreteBCPD%h_IpressureDropDOFs .NE. ST_NOHANDLE) &
+      CALL storage_free(rdiscreteBCPD%h_IpressureDropDOFs)
+    IF (rdiscreteBCPD%h_Dmodifier .NE. ST_NOHANDLE) &
+      CALL storage_free(rdiscreteBCPD%h_Dmodifier)
+      
+    DEALLOCATE(rdiscreteBCPD%Icomponents)
+    rdiscreteBCPD%ncomponents = 0
 
   END SUBROUTINE
 
@@ -2196,6 +2200,7 @@ CONTAINS
   ! Which components of the solution vector are affected by this boundary
   ! condition?
   p_rslipBCs%ncomponents = rbcRegion%nequations
+  ALLOCATE(p_rslipBCs%Icomponents(1:NDIM2D))
   p_rslipBCs%Icomponents(1:NDIM2D) = rbcRegion%Iequations(1:NDIM2D)
   
   ! We have to deal with all DOF's on the boundary. This is highly element
@@ -2325,13 +2330,16 @@ CONTAINS
 
 !</subroutine>
 
-  ! Release what is associated
-  
-  rdiscreteBCSlip%nDOF = 0
-  IF (rdiscreteBCSlip%h_IslipDOFs .NE. ST_NOHANDLE) &
-    CALL storage_free(rdiscreteBCSlip%h_IslipDOFs)
-  IF (rdiscreteBCSlip%h_DnormalVectors .NE. ST_NOHANDLE) &
-    CALL storage_free(rdiscreteBCSlip%h_DnormalVectors)
+    ! Release what is associated
+    
+    rdiscreteBCSlip%nDOF = 0
+    IF (rdiscreteBCSlip%h_IslipDOFs .NE. ST_NOHANDLE) &
+      CALL storage_free(rdiscreteBCSlip%h_IslipDOFs)
+    IF (rdiscreteBCSlip%h_DnormalVectors .NE. ST_NOHANDLE) &
+      CALL storage_free(rdiscreteBCSlip%h_DnormalVectors)
+
+    DEALLOCATE(rdiscreteBCSlip%Icomponents)
+    rdiscreteBCSlip%ncomponents = 0
 
   END SUBROUTINE
 
@@ -2705,6 +2713,7 @@ CONTAINS
     
     nequations = rbcRegion%nequations
     p_rdirichletFBCs%ncomponents = nequations
+    ALLOCATE(p_rdirichletFBCs%Icomponents(1:nequations))
     p_rdirichletFBCs%Icomponents(1:nequations) = rbcRegion%Iequations(1:nequations)
     
     ! Allocate memory for intermediate values
@@ -2925,15 +2934,16 @@ CONTAINS
 
 !</subroutine>
 
-  ! Release what is associated
-  
-  rdiscreteFBCDirichlet%nDOF = 0
-  rdiscreteFBCDirichlet%Icomponents = 0
-  rdiscreteFBCDirichlet%ncomponents = 0
-  IF (rdiscreteFBCDirichlet%h_DdirichletValues .NE. ST_NOHANDLE) &
-    CALL storage_free(rdiscreteFBCDirichlet%h_DdirichletValues)
-  IF (rdiscreteFBCDirichlet%h_IdirichletDOFs .NE. ST_NOHANDLE) &
-    CALL storage_free(rdiscreteFBCDirichlet%h_IdirichletDOFs)
+    ! Release what is associated
+    
+    rdiscreteFBCDirichlet%nDOF = 0
+    IF (rdiscreteFBCDirichlet%h_DdirichletValues .NE. ST_NOHANDLE) &
+      CALL storage_free(rdiscreteFBCDirichlet%h_DdirichletValues)
+    IF (rdiscreteFBCDirichlet%h_IdirichletDOFs .NE. ST_NOHANDLE) &
+      CALL storage_free(rdiscreteFBCDirichlet%h_IdirichletDOFs)
+
+    DEALLOCATE(rdiscreteFBCDirichlet%Icomponents)
+    rdiscreteFBCDirichlet%ncomponents = 0
 
   END SUBROUTINE
   

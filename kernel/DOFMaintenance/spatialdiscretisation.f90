@@ -42,7 +42,10 @@
 !#        distribution.
 !#
 !# 9.) spdiscr_duplicateDiscrSc
-!#     -> Copies a discretisation structure to another
+!#     -> Copies a spatial discretisation structure to another
+!# 
+!# 10.) spdiscr_duplicateDiscrBlock
+!#      -> Copies a block discretisation structure to another
 !# 
 !# </purpose>
 !##############################################################################
@@ -57,6 +60,7 @@ MODULE spatialdiscretisation
   USE transformation
   USE element
   USE cubature
+  USE genoutput
   
   IMPLICIT NONE
   
@@ -75,17 +79,6 @@ MODULE spatialdiscretisation
   ! Mixed discretisation: Elements of different FE spaces, arbitrary mixed.
   INTEGER, PARAMETER :: SPDISC_MIXED     = 2
 
-!</constantblock>
-
-!<constantblock>
-
-  ! Maximum number of different FE spaces mixed in one discretisation.
-  INTEGER, PARAMETER :: SPDISC_MAXFESPACES = 8
-
-  ! Maximum number of solution components (i.e. scalar equation in the 
-  ! PDE) that are supported simultaneously.
-  INTEGER, PARAMETER :: SPDISC_MAXEQUATIONS = 16
-  
 !</constantblock>
 
 !</constants>
@@ -217,12 +210,11 @@ MODULE spatialdiscretisation
     
     ! Number of different FE spaces mixed in this discretisation.
     ! This is the number of elements occupied in RelementDisttribution.
-    ! Must be <= SPDISC_MAXFESPACES!
     INTEGER                          :: inumFESpaces           = 0
     
     ! List of element distribution structures for every element type
     ! that is used in the discretisation.
-    TYPE(t_elementDistribution), DIMENSION(SPDISC_MAXFESPACES) :: RelementDistribution
+    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: RelementDistribution => NULL()
     
   END TYPE
   
@@ -276,8 +268,7 @@ MODULE spatialdiscretisation
     ! A list of up to ncomponents scalar spatial discretisation structures.
     ! Each structure corresponds to one solution component and defines
     ! trial-/test-functions, complexity of the discretisation etc.
-    TYPE(t_spatialDiscretisation), &
-      DIMENSION(SPDISC_MAXEQUATIONS)    :: RspatialDiscretisation
+    TYPE(t_spatialDiscretisation), DIMENSION(:), POINTER :: RspatialDiscretisation => NULL()
     
   END TYPE
   
@@ -342,7 +333,8 @@ CONTAINS
   END IF
   
   IF (.NOT. bcompatible) THEN
-    PRINT *,'Element and cubature formula not compatible!'
+    CALL output_line ('Element and cubature formula not compatible!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_checkCubature')  
     CALL sys_halt()
   END IF
   
@@ -378,7 +370,8 @@ CONTAINS
 
     IF (PRESENT(ndim)) THEN
       IF (ndim .NE. NDIM2D) THEN
-        PRINT *,'spdiscr_getLumpCubature: Only 2D supported.'
+        CALL output_line ('Only 2D supported.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_getLumpCubature')  
         CALL sys_halt()
       END IF
     END IF
@@ -466,7 +459,9 @@ CONTAINS
   ELSE
     NULLIFY(rblockDiscr%p_rboundaryConditions)
   END IF
+
   rblockDiscr%ncomponents            = ncomponents
+  ALLOCATE(rblockDiscr%RspatialDiscretisation(ncomponents))
 
   ! That's it.  
   
@@ -510,19 +505,24 @@ CONTAINS
   
 !<output>
   ! The discretisation structure to be initialised.
+  ! Any old existing information in rdestDiscr is released if necessary.
   TYPE(t_blockDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
 !</output>
   
 !</subroutine>
 
     ! local variables
-    INTEGER :: ifirst, ilast, ncount
+    INTEGER :: ifirst, ilast, ncount, i
     
     ! Check that the source discretisation structure is valid.
     IF (rsourceDiscr%ndimension .LE. 0) THEN
-      PRINT *,'spdiscr_deriveBlockDiscr: Source structure invalid!'
+      CALL output_line ('Source structure invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveBlockDiscr')  
       CALL sys_halt()
     END IF
+
+   ! Release old information if present
+    CALL spdiscr_releaseBlockDiscr(rdestDiscr,.TRUE.)
 
     ! Evaluate the optional parameters
     ifirst = 1
@@ -545,21 +545,22 @@ CONTAINS
     rdestDiscr%p_rboundary            => rsourceDiscr%p_rboundary          
     rdestDiscr%p_rtriangulation       => rsourceDiscr%p_rtriangulation     
     rdestDiscr%ncomponents            =  ncount       
-
+    
     ! Boundary conditions cannot be transferred! They are depending on the
     ! global system, which may shrink and take another form here!
     NULLIFY(rdestDiscr%p_rboundaryConditions)
 
-    ! Copy all substructures -- from ifirstBlock to ilastBlock
-    rdestDiscr%RspatialDiscretisation(1:ncount) = &
-      rsourceDiscr%RspatialDiscretisation(ifirstBlock:ilastBlock)
+    ! Copy all substructures -- from ifirstBlock to ilastBlock.
+    ! Use spdiscr_duplicateDiscrSc which savely copies the scalar discretisation
+    ! structures. We set bshare=.TRUE. here, so the information is shared
+    ! between the source and destination structure; the dynamic information 
+    ! 'belongs' to rdiscrSource and not to the newly created rdiscrDest!
+    ALLOCATE(rdestDiscr%RspatialDiscretisation(ncount))
+    DO i=1,ncount
+      CALL spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscretisation(ifirst+i-1), &
+          rdestDiscr%RspatialDiscretisation(i), .TRUE.)
+    END DO
       
-    ! Mark the scalar discretisation structures as 'being a copy of something'.
-    ! This is to prevent the dynamic information to be released.
-    ! The dynamic information 'belongs' to rdiscrSource and not to the
-    ! newly created rdiscrDest!
-    rdestDiscr%RspatialDiscretisation(1:ncount)%bisCopy = .TRUE.
-
     END SUBROUTINE  
   
   ! ***************************************************************************
@@ -573,12 +574,12 @@ CONTAINS
 !</description>
 
 !<input>
-  ! Release substructures.
+  ! OPTIONAL: Release substructures.
   ! If set to TRUE, the memory of all scalar spatial discretisation structures
-  !   in rblockDiscr is also released from memory.
+  !   in rblockDiscr is also released from memory. This is the standard setting.
   ! Is set to FALSE, only rblockDiscr is cleaned up, the substructures
   !   are ignored.
-  LOGICAL, INTENT(IN) :: breleaseSubstruc
+  LOGICAL, INTENT(IN), OPTIONAL :: breleaseSubstruc
 !</input>
 
 !<inputoutput>
@@ -590,6 +591,10 @@ CONTAINS
 
   ! local variables
   INTEGER :: i
+  LOGICAL :: brelsub
+  
+  brelsub = .TRUE.
+  IF (PRESENT(breleaseSubstruc)) brelsub = breleaseSubstruc
 
   ! Cut the connection to the other structures
   NULLIFY(rblockDiscr%p_rtriangulation)
@@ -597,11 +602,13 @@ CONTAINS
   NULLIFY(rblockDiscr%p_rboundaryConditions)
   
   ! Release substructures?
-  IF (breleaseSubstruc) THEN
+  IF (brelsub) THEN
     DO i=1,rblockDiscr%ncomponents
       CALL spdiscr_releaseDiscr (rblockDiscr%RspatialDiscretisation(i))
     END DO
   END IF
+  IF (ASSOCIATED(rblockDiscr%RspatialDiscretisation)) &
+    DEALLOCATE(rblockDiscr%RspatialDiscretisation)
   rblockDiscr%ncomponents = 0
 
   ! Structure not initialised anymore
@@ -685,6 +692,7 @@ CONTAINS
   
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces           = 1
+  ALLOCATE(rspatialDiscr%RelementDistribution(rspatialDiscr%inumFESpaces))
   p_relementDistr => rspatialDiscr%RelementDistribution(1)
   
   ! Initialise test and trial space for that block
@@ -842,6 +850,7 @@ CONTAINS
   
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces           = 2
+  ALLOCATE(rspatialDiscr%RelementDistribution(rspatialDiscr%inumFESpaces))
   p_relementDistrTria => rspatialDiscr%RelementDistribution(1)
   p_relementDistrQuad => rspatialDiscr%RelementDistribution(2)
   
@@ -966,6 +975,8 @@ CONTAINS
   
 !<output>
   ! The discretisation structure to be initialised.
+  ! Any old existing discretisation information in rdestDiscr
+  ! is released if necessary.
   TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
 !</output>
   
@@ -977,16 +988,21 @@ CONTAINS
   
   ! Check that the source discretisation structure is valid.
   IF (rsourceDiscr%ndimension .LE. 0) THEN
-    PRINT *,'spdiscr_deriveSimpleDiscr: Source structure invalid!'
+    CALL output_line ('Source structure invalid!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')  
     CALL sys_halt()
   END IF
   
   ! Check that the discretisation structure is really uniform.
   ! More complex situations are not supported by this routine.
   IF (rsourceDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
-    PRINT *,'spdiscr_deriveSimpleDiscr only supports uniform discretisations!'
+    CALL output_line ('Only uniform discretisations supported!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_deriveSimpleDiscr')  
     CALL sys_halt()
   END IF
+  
+  ! Release old information if present
+  CALL spdiscr_releaseDiscr(rdestDiscr)
   
   ! Check the cubature formula against the element distribution.
   ! This stops the program if this is not fulfilled.
@@ -995,6 +1011,9 @@ CONTAINS
   ! Copy the source structure to the destination.
   ! This copies all handles and hence all dynamic information
   rdestDiscr = rsourceDiscr
+  
+  ! Allocate a new element distribution
+  ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
   
   ! Change the element type of all trial functions to ieltyp
   rdestDiscr%RelementDistribution(1)%itrialElement = ieltyp
@@ -1115,6 +1134,7 @@ CONTAINS
 
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces = 1
+  ALLOCATE(rspatialDiscr%RelementDistribution(rspatialDiscr%inumFESpaces))
   p_relementDistr => rspatialDiscr%RelementDistribution(1)
   
   ! Initialise test and trial space for that block
@@ -1129,8 +1149,10 @@ CONTAINS
   ctrafoTest = elem_igetTrafoType(ieltypTrial)
   
   IF (p_relementDistr%ctrafoType .NE. ctrafoTest) THEN
-    PRINT *,'spdiscr_initDiscr_combined: Elements incompatible due to different'
-    PRINT *,'transformation between reference and real element!'
+    CALL output_line ('Elements incompatible due to different', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_initDiscr_combined')  
+    CALL output_line ('transformation between reference and real element!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_initDiscr_combined')  
     CALL sys_halt()
   END IF
   
@@ -1224,6 +1246,8 @@ CONTAINS
   END IF
   
   ! No FE-spaces in here anymore...
+  IF (ASSOCIATED(rspatialDiscr%RelementDistribution)) &
+    DEALLOCATE(rspatialDiscr%RelementDistribution)
   rspatialDiscr%inumFESpaces = 0
   
   ! Structure not initialised anymore
@@ -1249,28 +1273,42 @@ CONTAINS
   ! A source discretisation structure that should be used as template
   TYPE(t_spatialDiscretisation), INTENT(IN) :: rsourceDiscr
   
-  ! Whether the new discretisation structure should share its information
+  ! OPTIONAL: Whether the new discretisation structure should share its information
   ! with rsourceDiscr.
   ! =FALSE: Create a complete copy of rsourceDiscr which is independent
   !  of rsourceDiscr.
   ! =TRUE: The new discretisation will not be a complete new structure, but a
   !  'derived' structure, i.e. it uses the same dynamic information
   !  (handles and therefore element lists) as rsourceDiscr.
-  LOGICAL, INTENT(IN) :: bshare
+  ! If not specified, TRUE is assumed.
+  LOGICAL, INTENT(IN), OPTIONAL :: bshare
 !</input>
   
 !<output>
-  ! The new discretisation structure.
+  ! The new discretisation structure. Any old existing information in rdestDiscr
+  ! is released if necessary.
   TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
 !</output>
   
 !</subroutine>
 
+    LOGICAL :: bshr
+    
+    bshr = .TRUE.
+    IF (PRESENT(bshare)) bshr = bshare
+
+    ! Release old information if present
+    CALL spdiscr_releaseDiscr(rdestDiscr)
+
     ! Currently, this routine supports only bshare=TRUE!
-    IF (bshare) THEN
+    IF (bshr) THEN
     
       ! Copy all information
       rdestDiscr = rsourceDiscr
+      
+      ! Duplicate the element distribution structure
+      ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
+      rdestDiscr%RelementDistribution = rsourceDiscr%RelementDistribution
     
       ! Mark the new discretisation structure as 'copy', to prevent
       ! the dynamic information to be released.
@@ -1279,10 +1317,88 @@ CONTAINS
       rdestDiscr%bisCopy = .TRUE.
       
     ELSE
-      PRINT *,'spdiscr_duplicateDiscrSc: bshare=FALSE currently not supported!'
+      CALL output_line ('bshare=FALSE currently not supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_duplicateDiscrSc')  
       CALL sys_halt()
     END IF
   
+  END SUBROUTINE  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_duplicateDiscrBlock (rsourceDiscr, rdestDiscr, bshare)
+  
+!<description>
+  ! This routine creates a copy of the dblock iscretisation structure rsourceDiscr.
+  ! Depending on bshare, the destination structure rdestDiscr will either
+  ! obtain a 'simple' copy (i.e. sharing all handles and all information
+  ! with rsourceDiscr) or a separate copy (which costs memory for all the
+  ! element information in all the blocks!).
+  !
+  ! The routine does a similar job as  
+  ! spdiscr_deriveBlockDiscr(rsourceDiscr,rdestDiscr), but in contrast,
+  ! discretisation specific information like boundary conditions are copied, too.
+!</description>
+
+!<input>
+  ! A source discretisation structure that should be used as template
+  TYPE(t_blockDiscretisation), INTENT(IN) :: rsourceDiscr
+  
+  ! OPTIONAL: Whether the new discretisation structure should share its information
+  ! with rsourceDiscr.
+  ! =FALSE: Create a complete copy of rsourceDiscr which is independent
+  !  of rsourceDiscr.
+  ! =TRUE: The new discretisation will not be a complete new structure, but a
+  !  'derived' structure, i.e. it uses the same dynamic information
+  !  (handles and therefore element lists) as rsourceDiscr.
+  ! If not specified, TRUE is assumed.
+  LOGICAL, INTENT(IN), OPTIONAL :: bshare
+!</input>
+  
+!<output>
+  ! The new discretisation structure. Any old existing information in rdestDiscr
+  ! is released if necessary.
+  TYPE(t_blockDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+    LOGICAL :: bshr
+    INTEGER :: i
+    
+    bshr = .TRUE.
+    IF (PRESENT(bshare)) bshr = bshare
+
+    ! Release old information if present
+    CALL spdiscr_releaseBlockDiscr(rdestDiscr,.TRUE.)
+
+    ! Check that the source discretisation structure is valid.
+    IF (rsourceDiscr%ndimension .LE. 0) THEN
+      CALL output_line ('Source structure invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_duplicateBlockDiscr')  
+      CALL sys_halt()
+    END IF
+    
+    ! At first, derive a new block discretisation strucutr
+
+    ! Copy all information from the source discretisation structure containing
+    ! all basic information.
+    CALL spdiscr_deriveBlockDiscr(rsourceDiscr,rdestDiscr)
+    
+    ! Now add the missing information. Boundary conditions:
+    rdestDiscr%p_rboundaryConditions => rsourceDiscr%p_rboundaryConditions
+    
+    ! Concerning the substructures, at the moment we share the information.
+    ! If bshare = false, we have to create copies.
+    IF (.NOT. bshr) THEN
+      DO i=1,rsourceDiscr%ncomponents
+        CALL spdiscr_duplicateDiscrSc (rsourceDiscr%RspatialDiscretisation(i), &
+            rdestDiscr%RspatialDiscretisation(i), .FALSE.)
+      END DO
+    END IF
+
   END SUBROUTINE  
   
 END MODULE

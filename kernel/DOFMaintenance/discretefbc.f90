@@ -93,7 +93,7 @@ MODULE discretefbc
     
     ! A list of 1..ncomponents components of the equation, this discrete BC 
     ! is specified for (e.g. [1 2] = X-velocity(1) + Y-velocity(2))
-    INTEGER, DIMENSION(BC_MAXEQUATIONS) :: Icomponents       = 0
+    INTEGER, DIMENSION(:), POINTER      :: Icomponents       => NULL()
     
     ! Number of Dirichlet nodes; may be different from the length of the array!
     INTEGER(PREC_DOFIDX)                :: nDOF              = 0

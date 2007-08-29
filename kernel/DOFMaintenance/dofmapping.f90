@@ -87,7 +87,7 @@ CONTAINS
 !</function>
 
   INTEGER(I32) :: ieltyp
-  INTEGER(I32), DIMENSION(SPDISC_MAXFESPACES) :: IelTypes
+  INTEGER(I32), DIMENSION(2) :: IelTypes
 
   dof_igetNDofGlob = 0
 
@@ -374,7 +374,7 @@ CONTAINS
     INTEGER(I32), DIMENSION(:), POINTER :: p_IelementCounter
     TYPE(t_triangulation), POINTER :: p_rtriangulation     
     INTEGER(I32) :: ieltype
-    INTEGER(I32), DIMENSION(SPDISC_MAXFESPACES) :: IelTypes
+    INTEGER(I32), DIMENSION(2) :: IelTypes
 
     ! 3D currently not supported
     IF (rdiscretisation%ndimension .NE. NDIM2D) THEN

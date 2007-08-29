@@ -1058,27 +1058,27 @@ CONTAINS
   
 !</subroutine>
 
-  INTEGER :: cdata,i,inum
-  INTEGER(PREC_VECIDX), DIMENSION(SPDISC_MAXEQUATIONS) :: Isize
+  INTEGER :: cdata,i
+  INTEGER(PREC_VECIDX), DIMENSION(MAX(1,rblockDiscretisation%ncomponents)) :: Isize
   
   cdata = ST_DOUBLE
   IF (PRESENT(cdataType)) cdata = cdataType
   
   ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
   ! of all the subblocks.
+  Isize(1) = 0             ! Initialisation in case ncomponents=0
   DO i=1,rblockDiscretisation%ncomponents
     Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
   END DO
-  inum = MIN(SPDISC_MAXEQUATIONS,rblockDiscretisation%ncomponents)
   
   ! Create a new vector with that block structure
-  CALL lsysbl_createVecBlockDirect (rx, Isize(1:inum), bclear, cdataType)
+  CALL lsysbl_createVecBlockDirect (rx, Isize(:), bclear, cdataType)
   
   ! Initialise further data of the block vector
   rx%p_rblockDiscretisation => rblockDiscretisation
   
   ! Initialise further data in the subblocks
-  DO i=1,inum
+  DO i=1,rblockDiscretisation%ncomponents
     rx%RvectorBlock(i)%p_rspatialDiscretisation => &
       rblockDiscretisation%RspatialDiscretisation(i)
   END DO
@@ -1114,17 +1114,17 @@ CONTAINS
   
 !</subroutine>
 
-  INTEGER :: i,inum
+  INTEGER :: i
   INTEGER(PREC_VECIDX) :: NEQ
-  INTEGER(PREC_VECIDX), DIMENSION(SPDISC_MAXEQUATIONS) :: Isize
+  INTEGER(PREC_VECIDX), DIMENSION(MAX(1,rblockDiscretisation%ncomponents)) :: Isize
   
   ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
   ! of all the subblocks.
+  Isize(1) = 0             ! Initialisation in case ncomponents=0
   DO i=1,rblockDiscretisation%ncomponents
     Isize(i) = dof_igetNDofGlob(rblockDiscretisation%RspatialDiscretisation(i))
   END DO
-  inum = MIN(SPDISC_MAXEQUATIONS,rblockDiscretisation%ncomponents)
-  NEQ = SUM(Isize(1:inum))
+  NEQ = SUM(Isize(:))
   
   ! The 'INTENT(OUT)' already initialised the structure with the most common
   ! values. What is still missing, we now initialise:

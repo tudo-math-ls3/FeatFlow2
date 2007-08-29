@@ -271,8 +271,8 @@ MODULE multilevelprojection
   
     ! A list of t_interlevelProjectionScalar structures for every
     ! equation and every element distribution in the discretisation.
-    TYPE(t_interlevelProjectionScalar), &
-      DIMENSION(SPDISC_MAXFESPACES,SPDISC_MAXEQUATIONS) :: RscalarProjection
+    ! DIMENSION(1..#FE-spaces, 1..#equations)
+    TYPE(t_interlevelProjectionScalar), DIMENSION(:,:), POINTER :: RscalarProjection => NULL()
   
   END TYPE
   
@@ -314,11 +314,17 @@ CONTAINS
   
 !</subroutine>
 
-  ! local variables
-  ! ...
-  ! At the moment, there is nothing here to be precomputed.
-  ! In a later implementation, this might change if a special prolongation/
-  ! restriction needs to precalculate a prolongation/restriction matrix.
+    INTEGER :: nFEspaces,nequations,i
+    
+    ! Get the max. number of FE-spaces and the number of equations
+    nequations = SIZE(RspatialDiscretisation)
+    nFEspaces = 0
+    DO i=1,nequations
+      nFEspaces = MAX(nFEspaces,RspatialDiscretisation(i)%inumFESpaces)
+    END DO
+
+    ! Allocate spatial discretisation structures for all the subblocks
+    ALLOCATE(rprojection%RscalarProjection(nFEspaces,nequations))
     
   END SUBROUTINE
   
@@ -410,8 +416,7 @@ CONTAINS
 
     ! Set up an array of discretisation structures for all the equations
     DO i=1,rvector%nblocks
-      Rdiscr(i) = &
-        rvector%RvectorBlock(i)%p_rspatialDiscretisation
+      Rdiscr(i) = rvector%RvectorBlock(i)%p_rspatialDiscretisation
     END DO
 
     ! Call the standard initialisation routine
@@ -498,8 +503,9 @@ CONTAINS
   
 !</subroutine>
 
-  ! As in the current implementation there is nothing to initialise,
-  ! there's also nothing to clean up!
+    ! Release allocated memory
+    IF (ASSOCIATED(rprojection%RscalarProjection)) &
+      DEALLOCATE(rprojection%RscalarProjection)
 
   END SUBROUTINE
   

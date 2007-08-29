@@ -118,6 +118,12 @@ MODULE nonlinearsolver
   
 !</constantblock>
 
+!<constantblock description="Other constants.">
+  ! Maximum number of equations supported by the standard error control routine
+  ! when checking convergence/divergence criteria.
+  INTEGER, PARAMETER :: NLSOL_MAXEQUATIONSERROR = 16
+!</constantblock>
+
 !</constants>
 
 ! *****************************************************************************
@@ -165,13 +171,13 @@ MODULE nonlinearsolver
     ! Norm of initial residuum for each subvector of the given block vector.
     ! Only valid, if the fcb_resNormCheck callback procedure is not specified
     ! in the call to the solver, otherwise undefined!
-    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS)  :: DinitialDefect
+    REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR)  :: DinitialDefect
 
     ! OUTPUT PARAMETER:
     ! Norm of final residuum for each subvector of the given block vector.
     ! Only valid, if the fcb_resNormCheck callback procedure is not specified
     ! in the call to the solver, otherwise undefined!
-    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS)  :: DfinalDefect
+    REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR)  :: DfinalDefect
 
     ! OUTPUT PARAMETER:
     ! Total time for nonlinear solver
@@ -198,7 +204,7 @@ MODULE nonlinearsolver
     !   !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion; standard = 1E-5
     ! Remark: don't set depsAbs=depsRel=0!
-    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DepsRel = 1E-5_DP
+    REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR) :: DepsRel = 1E-5_DP
 
     ! INPUT PARAMETER:
     ! Standard absolute stopping criterion for each subvector of a block vector. 
@@ -208,7 +214,7 @@ MODULE nonlinearsolver
     !   !!defect!! < EPSREL.
     ! =0: ignore, use relative stopping criterion; standard = 1E-5
     ! Remark: don't set depsAbs=depsRel=0!
-    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DepsAbs = 1E-5_DP
+    REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR) :: DepsAbs = 1E-5_DP
 
     ! INPUT PARAMETER:
     ! Standard relative divergence criterion for each subvector of a block vector. 
@@ -218,7 +224,7 @@ MODULE nonlinearsolver
     !   !!defect!! >= DIVREL * !!initial defect!!
     ! A value of SYS_INFINITY disables the relative divergence check.
     ! standard = 1E3
-    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DdivRel = 1E3_DP
+    REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR) :: DdivRel = 1E3_DP
 
     ! INPUT PARAMETER:
     ! Standard absolute divergence criterion for each subvector of a block vector. 
@@ -228,7 +234,7 @@ MODULE nonlinearsolver
     !   !!defect!! >= DIVABS
     ! A value of SYS_INFINITY disables the absolute divergence check.
     ! standard = SYS_INFINITY
-    REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DdivAbs = SYS_INFINITY
+    REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR) :: DdivAbs = SYS_INFINITY
 
     ! INPUT PARAMETER: 
     ! Type of stopping criterion to use for standard convergence test. One of the
@@ -251,7 +257,7 @@ MODULE nonlinearsolver
     ! For every subvector: Type of norm to use in the residual checking 
     ! (cf. linearalgebra.f90).
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
-    INTEGER, DIMENSION(SPDISC_MAXEQUATIONS) :: IresNorm = 2
+    INTEGER, DIMENSION(NLSOL_MAXEQUATIONSERROR) :: IresNorm = 2
     
     ! INPUT PARAMETER: Output level
     ! This determines the output level of the solver.
@@ -294,7 +300,7 @@ CONTAINS
 
 !<function>
   
-  LOGICAL FUNCTION nlsol_testConvergence (rsolverNode, DvecNorm, nblocks, rdef) &
+  LOGICAL FUNCTION nlsol_testConvergence (rsolverNode, DvecNorm, nvectorblocks, rdef) &
           RESULT(loutput)
   
 !<description>
@@ -323,7 +329,7 @@ CONTAINS
   TYPE(t_nlsolNode), INTENT(IN) :: rsolverNode
   
   ! Number of blocks in the solution vector/equation
-  INTEGER, INTENT(IN) :: nblocks
+  INTEGER, INTENT(IN) :: nvectorblocks
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the subvectors is returned in DvecNorm.
@@ -347,8 +353,10 @@ CONTAINS
 !</function>
 
     ! local variables
-    INTEGER :: i
+    INTEGER :: i,nblocks
     LOGICAL :: bok
+
+    nblocks = MIN(NLSOL_MAXEQUATIONSERROR,nvectorblocks)
 
     ! Calculate the norm of the vector or take the one given
     ! as parameter
@@ -435,7 +443,7 @@ CONTAINS
 
 !<function>
   
-  LOGICAL FUNCTION nlsol_testDivergence (rsolverNode, DvecNorm, nblocks, rdef) &
+  LOGICAL FUNCTION nlsol_testDivergence (rsolverNode, DvecNorm, nvectorblocks, rdef) &
           RESULT(loutput)
   
 !<description>
@@ -463,7 +471,7 @@ CONTAINS
   TYPE(t_nlsolNode), INTENT(IN) :: rsolverNode
   
   ! Number of blocks in the solution vector/equation
-  INTEGER, INTENT(IN) :: nblocks
+  INTEGER, INTENT(IN) :: nvectorblocks
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the subvectors is returned in DvecNorm.
@@ -487,7 +495,9 @@ CONTAINS
 !</function>
 
   ! local variables
-  INTEGER :: i
+  INTEGER :: i,nblocks
+
+  nblocks = MIN(NLSOL_MAXEQUATIONSERROR,nvectorblocks)
 
   ! Calculate the norm of the vector if not given
   ! as parameter
@@ -810,9 +820,10 @@ CONTAINS
   ! local variables
   TYPE(t_collection), POINTER :: p_rcollection
   INTEGER :: ite,i
-  REAL(DP), DIMENSION(SPDISC_MAXEQUATIONS) :: DvecNorm
+  REAL(DP), DIMENSION(NLSOL_MAXEQUATIONSERROR) :: DvecNorm
   TYPE(t_vectorBlock) :: rtemp
   REAL(DP) :: domega
+  INTEGER :: nblocks
   LOGICAL :: bconvergence,bdivergence,bsuccess
   
     ! Do we have a collection?
@@ -834,6 +845,10 @@ CONTAINS
     
     ite = 0
     rsolverNode%icurrentIteration = ite
+
+    ! The standard convergence/divergence test supports only up to 
+    ! NLSOL_MAXEQUATIONSERROR equations.
+    nblocks = MIN(rb%nblocks,NLSOL_MAXEQUATIONSERROR)
     
     ! Initial test for convergence/divergence.
     IF (PRESENT(fcb_resNormCheck)) THEN
@@ -842,20 +857,20 @@ CONTAINS
     ELSE
       ! Calculate the norm of the defect:
       DvecNorm = 0.0_DP
-      DvecNorm = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:rd%nblocks))
+      DvecNorm = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm(1:nblocks))
       WHERE (.NOT.((DvecNorm .GE. 1D-99) .AND. (DvecNorm .LE. 1D99))) 
         DvecNorm = 0.0_DP
       END WHERE
       rsolverNode%DinitialDefect = DvecNorm
       rsolverNode%DfinalDefect = DvecNorm
       
-      bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, rd%nblocks)
-      bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
+      bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, nblocks)
+      bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, nblocks)
       
       IF (rsolverNode%ioutputLevel .GE. 2) THEN
         CALL output_line ('NLSOL: Iteration '//&
              TRIM(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.TRUE.)
-        DO i=1,rb%nblocks
+        DO i=1,nblocks
           CALL output_line (' '//TRIM(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.TRUE.)
         END DO
         CALL output_lbrk()
@@ -942,19 +957,19 @@ CONTAINS
             CALL fcb_resNormCheck (ite,rx,rb,rd,bconvergence,bdivergence,p_rcollection)
           ELSE
             ! Calculate the norm of the defect:
-            DvecNorm(1:rd%nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
+            DvecNorm(1:nblocks) = lsysbl_vectorNormBlock (rd,rsolverNode%IresNorm)
             WHERE (.NOT.((DvecNorm .GE. 1E-99_DP) .AND. (DvecNorm .LE. 1E99_DP))) 
               DvecNorm = 0.0_DP
             END WHERE
             rsolverNode%DfinalDefect = DvecNorm
             
-            bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, rd%nblocks)
-            bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, rd%nblocks)
+            bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, nblocks)
+            bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, nblocks)
 
             IF (rsolverNode%ioutputLevel .GE. 2) THEN
               CALL output_line ('NLSOL: Iteration '//&
                   TRIM(sys_siL(ite,10))//', !!RES!! =',bnolinebreak=.TRUE.)
-              DO i=1,rb%nblocks
+              DO i=1,nblocks
                 CALL output_line (' '//TRIM(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.TRUE.)
               END DO
               CALL output_lbrk()
