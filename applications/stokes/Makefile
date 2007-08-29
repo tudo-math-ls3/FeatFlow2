@@ -11,7 +11,7 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I./src/triangulation -I./src -I./include
 
 # The f90 source files 
-SRC +=  stokes_callback.f90 stokes_method1.f90 stokes_method2.f90 \
+SRC =  stokes_callback.f90 stokes_method1.f90 stokes_method2.f90 \
         stokes.f90
 
 # include the standart kernel sources
