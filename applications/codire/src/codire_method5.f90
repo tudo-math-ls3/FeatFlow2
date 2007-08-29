@@ -149,12 +149,6 @@ CONTAINS
   ! local variables
   INTEGER :: i
   
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
-    ! Variable for a filename:  
-    CHARACTER(LEN=60) :: CFILE
-
     ! Initialise the level in the problem structure
     rproblem%ilvmin = ilvmin
     rproblem%ilvmax = ilvmax
@@ -165,31 +159,26 @@ CONTAINS
     NULLIFY(rproblem%p_rboundary)
     CALL boundary_read_prm(rproblem%p_rboundary, './pre/QUAD.prm')
         
-    ! Remark that this does not read in the parametrisation for FEAT 1.x.
-    ! Unfortunately we still need it for creating the initial triangulation!
-    ! Therefore, read the file again wihh FEAT 1.x routines.
-    IMESH = 1
-    CFILE = './pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
-
-    ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level ilvmin/ilvmax.
-    ! This will probably modify ilvmin/ilvmax in case of a level
-    ! shift, i.e. if ilvmax > ilvmin+9 !
-    ! After this routine, we have to rely on ilvmin/ilvmax in the
-    ! problem structure rather than those in the parameters.
-    CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,0,CFILE)
+    ! Now read in the basic triangulation.
+    CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
+        './pre/QUAD.tri', rproblem%p_rboundary)
     
-    ! ... and create a FEAT 2.0 triangulation for that. Until the point where
-    ! we recreate the triangulation routines, this method has to be used
-    ! to get a triangulation.
-    DO i=rproblem%ilvmin,rproblem%ilvmax
-      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%rtriangulation)
+    ! Refine the mesh up to the minimum level
+    CALL tria_quickRefine2LevelOrdering(rproblem%ilvmin-1,&
+        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%p_rboundary)
+    
+    ! Create information about adjacencies and everything one needs from
+    ! a triangulation. Afterwards, we have the coarse mesh.
+    CALL tria_initStandardMeshFromRaw (&
+        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%p_rboundary)
+    
+    ! Now, refine to level up to nlmax.
+    DO i=rproblem%ilvmin+1,rproblem%ilvmax
+      CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
+          rproblem%RlevelInfo(i)%rtriangulation, rproblem%p_rboundary)
+      CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
+          rproblem%p_rboundary)
     END DO
-    
-    ! The TRIAS(,)-array is now part pf the triangulation structure,
-    ! we don't need it anymore.
     
   END SUBROUTINE
 
@@ -1045,27 +1034,14 @@ CONTAINS
   ! local variables
   INTEGER :: i
 
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
-
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
-      ! Release the old FEAT 1.x handles.
-      ! Get the old triangulation structure of level ilv from the
-      ! FEAT2.0 triangulation:
-      TRIAS(:,i) = rproblem%RlevelInfo(i)%rtriangulation%Itria
-      CALL DNMTRI (i,i,TRIAS)
-      
-      ! then the FEAT 2.0 stuff...
+      ! Release the triangulation
       CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)
     
-    ! Don't forget to throw away the old FEAT 1.0 boundary definition!
-    CALL DISPAR
-
   END SUBROUTINE
 
   ! ***************************************************************************

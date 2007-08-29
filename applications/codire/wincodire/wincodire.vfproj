@@ -1,73 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="8.10" ProjectIdGuid="{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}">
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="9.10" ProjectIdGuid="{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}">
 	<Platforms>
 		<Platform Name="Win32"/></Platforms>
 	<Configurations>
-		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" Command="$(TargetPath)" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\..">
+		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\..">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" CompileOnly="true"/>
+				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/wincodire.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/wincodire.pdb" SubSystem="subSystemConsole" AdditionalDependencies="../libgoto_p4_512-r0.94.lib"/>
-				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
-		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" Command="$(TargetPath)" WorkingDirectory="$(ProjectDir)\..">
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
+				<Tool Name="VFPreLinkEventTool"/></Configuration>
+		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" WorkingDirectory="$(ProjectDir)\..">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" InlineFunctionExpansion="expandAnySuitable" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" CompileOnly="true"/>
+				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFLinkerTool" MustRebuild="true" OutputFile="$(OUTDIR)/wincodire.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole" AdditionalDependencies="libgoto_p4_1024-r0.94.lib"/>
-				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
+				<Tool Name="VFPreLinkEventTool"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<Filter Name="f77">
-		<Filter Name="geometry">
-		<File RelativePath="..\src\geometry\qtrafo.f"/></Filter>
-		<Filter Name="Misc">
-		<File RelativePath="..\src\misc\condoutput.f"/>
-		<File RelativePath="..\src\misc\dstrings1.f"/>
-		<File RelativePath="..\src\misc\dstrings2.f"/>
-		<File RelativePath="..\src\misc\dstrings3.f"/>
-		<File RelativePath="..\src\misc\dstringsaux.f"/>
-		<File RelativePath="..\src\misc\heapsort.f"/>
-		<File RelativePath="..\src\misc\invert.f"/></Filter>
-		<Filter Name="Parametrization">
-		<File RelativePath="..\src\parametrization\inipar.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\parq2d.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\parq2domega.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\parq2dwrap.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\parametrization\rdparm.f"/></Filter>
-		<Filter Name="Triangulation">
-		<File RelativePath="..\src\triangulation\initria.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\triangulation\inmtri.f">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\triangulation\quad2tri.f"/>
-		<File RelativePath="..\src\triangulation\structria.f"/>
-		<File RelativePath="..\src\triangulation\triutil2d.f"/></Filter></Filter>
 		<Filter Name="f90">
-		<File RelativePath="..\src\codire.f90">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\codire_callback.f90">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
-		<File RelativePath="..\src\codire_method3.f90">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool"/></FileConfiguration></File>
+		<File RelativePath="..\src\codire.f90"/>
+		<File RelativePath="..\src\codire_callback.f90"/>
+		<File RelativePath="..\src\codire_method3.f90"/>
 		<File RelativePath="..\src\codire_method5.f90"/></Filter></Filter>
 		<Filter Name="Header Files" Filter="fi;fd">
 		<File RelativePath="..\include\arnbmat.inc"/>
