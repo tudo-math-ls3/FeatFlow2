@@ -83,9 +83,6 @@ CONTAINS
     ! the linear solver.
     TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
     
-    ! An interlevel projection structure for changing levels
-    TYPE(t_interlevelProjectionBlock) :: rprojection
-
     ! One level of multigrid
     TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo
     
@@ -102,18 +99,18 @@ CONTAINS
     ! which implements Dirichlet-conditions into a defect vector.
     rproblem%RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
+    ! Now we have to build up the level information for multigrid.
+    !
+    ! At first, initialise a standard interlevel projection structure. We
+    ! can use the same structure for all levels.
+    CALL mlprj_initProjectionDiscr (rproblem%rprojection,&
+         rproblem%RlevelInfo(ilvmax)%p_rdiscretisation)
+    
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     p_RfilterChain => rproblem%RfilterChain
     CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
-    
-    ! Now we have to build up the level information for multigrid.
-    !
-    ! At first, initialise a standard interlevel projection structure. We
-    ! can use the same structure for all levels.
-    CALL mlprj_initProjectionDiscr (rprojection,&
-         rproblem%RlevelInfo(ilvmax)%p_rdiscretisation)
     
     ! Then set up smoothers / coarse grid solver:
     DO i=ilvmin,ilvmax
@@ -147,7 +144,7 @@ CONTAINS
       END IF
     
       ! Add the level.
-      CALL linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, rprojection,&
+      CALL linsol_addMultigridLevel (p_rlevelInfo,p_rsolverNode, rproblem%rprojection,&
                                      p_rsmoother,p_rsmoother,p_rcoarseGridSolver)
     END DO
     
@@ -196,6 +193,9 @@ CONTAINS
     ! Release the solver node and all subnodes attached to it (if at all):
     CALL linsol_releaseSolver (rproblem%p_rsolverNode)
     
+    ! Release the multilevel projection structure.
+    CALL mlprj_doneProjection (rproblem%rprojection)
+
   END SUBROUTINE
 
 END MODULE

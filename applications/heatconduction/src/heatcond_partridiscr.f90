@@ -215,8 +215,7 @@ CONTAINS
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
       ! Delete the block discretisation together with the associated
       ! scalar spatial discretisations....
-      CALL spdiscr_releaseBlockDiscr(&
-                   rproblem%RlevelInfo(i)%p_rdiscretisation, .TRUE.)
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
       
       ! and remove the allocated block discretisation structure from the heap.
       DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisation)

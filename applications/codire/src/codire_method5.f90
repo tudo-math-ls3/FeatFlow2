@@ -771,17 +771,17 @@ CONTAINS
     ! which implements Dirichlet-conditions into a defect vector.
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
-    ! Create a Multigrid-solver. Attach the above filter chain
-    ! to the solver, so that the solver automatically filters
-    ! the vector during the solution process.
-    p_RfilterChain => RfilterChain
-    CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
-    
     ! Now we have to build up the level information for multigrid.
     !
     ! At first, initialise a standard interlevel projection structure. We
     ! can use the same structure for all levels.
     CALL mlprj_initProjectionMat (rprojection,p_rmatrix)
+    
+    ! Create a Multigrid-solver. Attach the above filter chain
+    ! to the solver, so that the solver automatically filters
+    ! the vector during the solution process.
+    p_RfilterChain => RfilterChain
+    CALL linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
     
     ! Then set up smoothers / coarse grid solver:
     DO i=ilvmin,ilvmax
@@ -854,6 +854,9 @@ CONTAINS
     
     ! Release the solver node and all subnodes attached to it (if at all):
     CALL linsol_releaseSolver (p_rsolverNode)
+    
+    ! Release the multilevel projection structure.
+    CALL mlprj_doneProjection (rprojection)
     
     ! Unsort the vectors again in case they were resorted before calling 
     ! the solver.
@@ -1014,8 +1017,7 @@ CONTAINS
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
       ! Delete the block discretisation together with the associated
       ! scalar spatial discretisations....
-      CALL spdiscr_releaseBlockDiscr(&
-                   rproblem%RlevelInfo(i)%p_rdiscretisation, .TRUE.)
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
       
       ! and remove the allocated block discretisation structure from the heap.
       DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisation)

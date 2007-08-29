@@ -97,7 +97,7 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    rprjDiscretisation = p_rvector%p_rblockDiscretisation
+    CALL spdiscr_duplicateDiscrBlock(p_rvector%p_rblockDiscretisation,rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
                  p_rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
@@ -168,15 +168,11 @@ CONTAINS
     ! Release the auxiliary vector
     CALL lsysbl_releaseVector (rprjVector)
     
+    ! Release the discretisation structure.
+    CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
+    
     ! Throw away the discrete BC's - not used anymore.
     CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
-    
-    ! Release the auxiliary discretisation structure.
-    ! We only release the two substructures we manually created before.
-    ! The large structure must not be released - it's a copy of 
-    ! another one.
-    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(1))
-    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(2))
     
   END SUBROUTINE
 

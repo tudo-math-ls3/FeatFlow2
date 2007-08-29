@@ -19,7 +19,7 @@
 !#
 !#    $$  u_y  +  u*u_x  -  \nu u_xx  =  0,   u(x,0) = sin(Pi*x)  $$
 !#
-!# For Solving this in the domain $\Omega$, we follow the usual w3ay:
+!# For Solving this in the domain $\Omega$, we follow the usual way:
 !# The tasks of reading the domain, creating triangulations, discretisation,
 !# solving, postprocessing and creanup into different subroutines. 
 !# The communication between these subroutines is done using an 
@@ -60,10 +60,6 @@ MODULE burgers1d_method5
   
   IMPLICIT NONE
   
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NNLEV = 9
-  
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
@@ -92,10 +88,7 @@ MODULE burgers1d_method5
 
   TYPE t_problem
   
-    ! Minimum refinement level; = Level i in RlevelInfo
-    INTEGER :: ilvmin
-    
-    ! Maximum refinement level
+    ! Maximum refinement level = level where the system is solved
     INTEGER :: ilvmax
 
     ! An object for saving the domain:
@@ -113,7 +106,7 @@ MODULE burgers1d_method5
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by LV!
-    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
+    TYPE(t_problem_lvl) :: rlevelInfo
     
     ! A collection structure with problem-dependent data
     TYPE(t_collection) :: rcollection
@@ -155,15 +148,6 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i
-  
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
-    ! Variable for a filename:  
-    CHARACTER(LEN=60) :: CFILE
-
     ! Initialise the level in the problem structure
     rproblem%ilvmax = ilvmax
     
@@ -177,31 +161,18 @@ CONTAINS
     NULLIFY(rproblem%p_rboundary)
     CALL boundary_read_prm(rproblem%p_rboundary, './pre/QUAD.prm')
         
-    ! Remark that this does not read in the parametrisation for FEAT 1.x.
-    ! Unfortunately we still need it for creating the initial triangulation!
-    ! Therefore, read the file again wihh FEAT 1.x routines.
-    IMESH = 1
-    CFILE = './pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
-
-    ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level ilvmin/ilvmax.
-    ! This will probably modify ilvmin/ilvmax in case of a level
-    ! shift, i.e. if ilvmax > ilvmin+9 !
-    ! After this routine, we have to rely on ilvmin/ilvmax in the
-    ! problem structure ratzher than those in the parameters.
-    CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,0,CFILE)
+    ! Now read in the basic triangulation.
+    CALL tria_readTriFile2D (rproblem%rlevelInfo%rtriangulation, &
+        './pre/QUAD.tri', rproblem%p_rboundary)
     
-    ! ... and create a FEAT 2.0 triangulation for that. Until the point where
-    ! we recreate the triangulation routines, this method has to be used
-    ! to get a triangulation.
-    ! Set p_rtriangulation to NULL() to create a new structure on the heap.
-    i = rproblem%ilvmax
-    CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%rtriangulation)
+    ! Refine the mesh up to the maximum level
+    CALL tria_quickRefine2LevelOrdering(rproblem%ilvmax-1,&
+        rproblem%rlevelInfo%rtriangulation,rproblem%p_rboundary)
     
-    ! The TRIAS(,)-array is now part pf the triangulation structure,
-    ! we don't need it anymore.
+    ! Create information about adjacencies and everything one needs from
+    ! a triangulation. Afterwards, we have the coarse mesh.
+    CALL tria_initStandardMeshFromRaw (&
+        rproblem%rlevelInfo%rtriangulation,rproblem%p_rboundary)
     
   END SUBROUTINE
 
@@ -240,7 +211,7 @@ CONTAINS
     ! Ask the problem structure to give us the boundary and triangulation.
     ! We need it for the discretisation.
     p_rboundary => rproblem%p_rboundary
-    p_rtriangulation => rproblem%RlevelInfo(i)%rtriangulation
+    p_rtriangulation => rproblem%rlevelInfo%rtriangulation
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -251,7 +222,7 @@ CONTAINS
                                    
     ! Save the discretisation structure to our local LevelInfo structure
     ! for later use.
-    rproblem%RlevelInfo(i)%p_rdiscretisation => p_rdiscretisation
+    rproblem%rlevelInfo%p_rdiscretisation => p_rdiscretisation
 
     ! p_rdiscretisation%Rdiscretisations is a list of scalar 
     ! discretisation structures for every component of the solution vector.
@@ -303,9 +274,9 @@ CONTAINS
     i=rproblem%ilvmax
       
     ! Ask the problem structure to give us the discretisation structure
-    p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+    p_rdiscretisation => rproblem%rlevelInfo%p_rdiscretisation
     
-    p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
+    p_rmatrix => rproblem%rlevelInfo%rmatrix
     
     ! Initialise the block matrix with default values based on
     ! the discretisation.
@@ -421,8 +392,6 @@ CONTAINS
     ! A pointer to the domain
     TYPE(t_boundary), POINTER :: p_rboundary
     
-    INTEGER :: i
-  
     ! Get the domain from the problem structure
     p_rboundary => rproblem%p_rboundary
 
@@ -483,10 +452,8 @@ CONTAINS
       
     ! Install these boundary conditions into all discretisation structure
                                
-    i=rproblem%ilvmax
-      
     ! Ask the problem structure to give us the discretisation structure and
-    p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
+    p_rdiscretisation => rproblem%rlevelInfo%p_rdiscretisation
     
     ! inform the discretisation which analytic boundary conditions to use:
     p_rdiscretisation%p_rboundaryConditions => rproblem%p_rboundaryConditions
@@ -526,7 +493,7 @@ CONTAINS
     ilvmax=rproblem%ilvmax
     
     ! Get our matrix from the problem structure.
-    p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
+    p_rmatrix => rproblem%rlevelInfo%rmatrix
     
     ! From the matrix or the RHS we have access to the discretisation and the
     ! analytic boundary conditions.
@@ -543,15 +510,15 @@ CONTAINS
     ! values on the boundary. We pass our collection structure as well
     ! to this routine, so the callback routine has access to everything what is
     ! in the collection.
-    NULLIFY(rproblem%RlevelInfo(ilvmax)%p_rdiscreteBC)
+    NULLIFY(rproblem%rlevelInfo%p_rdiscreteBC)
     CALL bcasm_discretiseBC (p_rdiscretisation,&
-                             rproblem%RlevelInfo(ilvmax)%p_rdiscreteBC, &
+                             rproblem%rlevelInfo%p_rdiscreteBC, &
                              .FALSE.,getBoundaryValues,rproblem%rcollection)
                               
     ! Hang the pointer into the vectors and the matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.
-    p_rdiscreteBC => rproblem%RlevelInfo(ilvmax)%p_rdiscreteBC
+    p_rdiscreteBC => rproblem%rlevelInfo%p_rdiscreteBC
     
     p_rmatrix%p_rdiscreteBC => p_rdiscreteBC
       
@@ -778,7 +745,6 @@ CONTAINS
   
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
     INTEGER :: ierror
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
   
@@ -849,7 +815,7 @@ CONTAINS
     CALL linsol_initUMFPACK4 (p_rsolverNode)
 
     ! Get the system matrix on the finest level...
-    p_rmatrix => rproblem%RlevelInfo(rproblem%ilvmax)%rmatrix
+    p_rmatrix => rproblem%rlevelInfo%rmatrix
 
     ! And associate it to the solver
     Rmatrices = (/p_rmatrix/)
@@ -971,7 +937,7 @@ CONTAINS
     ilvmax=rproblem%ilvmax
       
     ! Delete the matrix
-    CALL lsysbl_releaseMatrix (rproblem%RlevelInfo(ilvmax)%rmatrix)
+    CALL lsysbl_releaseMatrix (rproblem%rlevelInfo%rmatrix)
 
     ! Delete the variables from the collection.
     CALL collct_deletevalue (rproblem%rcollection,'SYSTEMMAT',ilvmax)
@@ -1014,7 +980,7 @@ CONTAINS
     ilvmax=rproblem%ilvmax
       
     ! Release our discrete version of the boundary conditions
-    CALL bcasm_releaseDiscreteBC (rproblem%RlevelInfo(ilvmax)%p_rdiscreteBC)
+    CALL bcasm_releaseDiscreteBC (rproblem%rlevelInfo%p_rdiscreteBC)
 
     ! ...and also the corresponding analytic description.
     CALL bcond_doneBC (rproblem%p_rboundaryConditions)
@@ -1046,11 +1012,10 @@ CONTAINS
       
     ! Delete the block discretisation together with the associated
     ! scalar spatial discretisations....
-    CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(ilvmax)%p_rdiscretisation, &
-                                   .TRUE.)
+    CALL spdiscr_releaseBlockDiscr(rproblem%rlevelInfo%p_rdiscretisation)
 
     ! and remove the allocated block discretisation structure from the heap.
-    DEALLOCATE(rproblem%RlevelInfo(ilvmax)%p_rdiscretisation)
+    DEALLOCATE(rproblem%rlevelInfo%p_rdiscretisation)
     
   END SUBROUTINE
     
@@ -1071,31 +1036,13 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: ilvmax
-
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
-    ilvmax=rproblem%ilvmax
-      
-    ! Release the old FEAT 1.x handles.
-    ! Get the old triangulation structure of level ilv from the
-    ! FEAT2.0 triangulation:
-    TRIAS(:,ilvmax) = rproblem%RlevelInfo(ilvmax)%rtriangulation%Itria
-    CALL DNMTRI (ilvmax,ilvmax,TRIAS)
-    
-    ! then the FEAT 2.0 stuff...
-    CALL tria_done (rproblem%RlevelInfo(ilvmax)%rtriangulation)
+    ! Release the triangulation
+    CALL tria_done (rproblem%rlevelInfo%rtriangulation)
     
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)
     
-    ! Don't forget to throw away the old FEAT 1.0 boundary definition!
-    CALL DISPAR
-    
     CALL collct_deleteValue(rproblem%rcollection,'NLMAX')
-    CALL collct_deleteValue(rproblem%rcollection,'NLMIN')
 
   END SUBROUTINE
 
@@ -1140,12 +1087,11 @@ CONTAINS
     
     ! Ok, let's start. 
     !
+    ! We want to solve our Laplace problem on level...
+    NLMAX = 7
+    
     ! Allocate the problem structure -- it's rather large
     ALLOCATE(p_rproblem)
-    
-    ! We want to solve our Laplace problem on level...
-
-    NLMAX = 7
     
     ! Initialise the collection
     CALL collct_init (p_rproblem%rcollection)
@@ -1154,7 +1100,7 @@ CONTAINS
     END DO
 
     ! So now the different steps - one after the other.
-    !
+    
     ! Initialisation.
     CALL b1d5_initParamTriang (NLMAX,p_rproblem)
     CALL b1d5_initDiscretisation (p_rproblem)    
@@ -1176,7 +1122,7 @@ CONTAINS
     CALL b1d5_doneBC (p_rproblem)
     CALL b1d5_doneDiscretisation (p_rproblem)
     CALL b1d5_doneParamTriang (p_rproblem)
-
+    
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *
     PRINT *,'Remaining collection statistics:'

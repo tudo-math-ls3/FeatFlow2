@@ -422,7 +422,7 @@ CONTAINS
     
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    CALL spdiscr_releaseBlockDiscr(rdiscretisation, .TRUE.)
+    CALL spdiscr_releaseBlockDiscr(rdiscretisation)
     
     ! Release the triangulation. 
     CALL tria_done (rtriangulation)

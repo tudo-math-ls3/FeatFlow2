@@ -361,7 +361,7 @@ CONTAINS
     !
     ! Step 1: Create a discretisation structure for Q1, based on our
     ! previous discretisation structure:
-    rprjDiscretisation=rvectorBlock%p_rblockDiscretisation
+    CALL spdiscr_duplicateDiscrBlock(rvectorBlock%p_rblockDiscretisation,rprjDiscretisation)
     CALL spdiscr_deriveSimpleDiscrSc (&
                  rvectorBlock%p_rblockDiscretisation%RspatialDiscretisation(1), &
                  EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscretisation(1))
@@ -412,6 +412,9 @@ CONTAINS
     ! Release the block matrix/vectors rprjVector
     CALL lsysbl_releaseVector(rprjVector)
     
+    ! Release the discretisation structure.
+    CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
+    
     ! -------------------------------------------------------------------------
     ! Projection and GMV export finished.
     ! -------------------------------------------------------------------------
@@ -456,7 +459,7 @@ CONTAINS
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    CALL spdiscr_releaseBlockDiscr(rdiscretisation, .TRUE.)
+    CALL spdiscr_releaseBlockDiscr(rdiscretisation)
 
     ! Release the triangulation. 
     CALL tria_done (rtriangulation)

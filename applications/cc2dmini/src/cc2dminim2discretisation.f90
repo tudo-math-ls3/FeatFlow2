@@ -140,11 +140,9 @@ CONTAINS
                     
         ! ...and copy this structure also to the discretisation structure
         ! of the 2nd component (Y-velocity). This needs no additional memory, 
-        ! as both structures will share the same dynamic information afterwards,
-        ! but we have to be careful when releasing the discretisation structures
-        ! at the end of the program!
-        p_rdiscretisation%RspatialDiscretisation(2) = &
-          p_rdiscretisation%RspatialDiscretisation(1)
+        ! as both structures will share the same dynamic information afterwards.
+        CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscretisation(1),&
+            p_rdiscretisation%RspatialDiscretisation(2))
     
         ! For the pressure (3rd component), we set up a separate discretisation 
         ! structure, as this uses different finite elements for trial and test
@@ -180,32 +178,15 @@ CONTAINS
 
 !</subroutine>
 
-  ! local variables
-  INTEGER :: i
-  TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
+    ! local variables
+    INTEGER :: i
 
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Before we remove the block discretisation structure, remember that
-      ! we copied the scalar discretisation structure for the X-velocity
-      ! to the Y-velocity.
-      ! To prevent errors or wrong deallocation, we manually release the
-      ! spatial discretisation structures of each of the components.
-      p_rDiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-
-      ! Remove spatial discretisation structure of the velocity:
-      CALL spdiscr_releaseDiscr(p_rdiscretisation%RspatialDiscretisation(1))
-      
-      ! Don't remove that of the Y-velocity; there is none :)
-      !
-      ! Remove the discretisation structure of the pressure.
-      CALL spdiscr_releaseDiscr(p_rdiscretisation%RspatialDiscretisation(3))
-      
-      ! Finally remove the block discretisation structure. Don't release
-      ! the substructures again.
-      CALL spdiscr_releaseBlockDiscr(p_rdiscretisation,.FALSE.)
+      ! Rremove the block discretisation structure and all the substructures.
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
       
       ! Remove the discretisation from the heap.
-      DEALLOCATE(p_rdiscretisation)
+      DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisation)
     END DO
     
   END SUBROUTINE

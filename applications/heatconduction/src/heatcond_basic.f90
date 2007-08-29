@@ -107,6 +107,9 @@ MODULE heatcond_basic
     ! A solver node that accepts parameters for the linear solver    
     TYPE(t_linsolNode), POINTER :: p_rsolverNode
     
+    ! An interlevel projection structure for changing levels
+    TYPE(t_interlevelProjectionBlock) :: rprojection
+
     ! A filter chain to filter vectors during the solution process
     TYPE(t_filterChain), DIMENSION(1) :: RfilterChain
 

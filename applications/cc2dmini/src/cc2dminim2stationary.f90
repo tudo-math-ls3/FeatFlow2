@@ -1149,6 +1149,9 @@ CONTAINS
       ! from memory.
       CALL linsol_releaseSolver (rpreconditioner%p_rsolverNode)
       
+      ! Release the ultilevel projection structure.
+      CALL mlprj_doneProjection (rpreconditioner%rprojection)
+      
     CASE DEFAULT
       
       ! Unknown preconditioner

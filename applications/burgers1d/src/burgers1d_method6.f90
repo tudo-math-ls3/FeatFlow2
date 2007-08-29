@@ -63,10 +63,6 @@ MODULE burgers1d_method6
   
   IMPLICIT NONE
   
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NNLEV = 9
-  
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
@@ -119,7 +115,7 @@ MODULE burgers1d_method6
 
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. 
-    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
+    TYPE(t_problem_lvl), DIMENSION(:), POINTER :: RlevelInfo
     
     ! A collection structure with problem-dependent data
     TYPE(t_collection) :: rcollection
@@ -167,9 +163,6 @@ CONTAINS
   ! local variables
   INTEGER :: i
   
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
     ! Variable for a filename:  
     CHARACTER(LEN=60) :: CFILE
 
@@ -188,32 +181,26 @@ CONTAINS
     NULLIFY(rproblem%p_rboundary)
     CALL boundary_read_prm(rproblem%p_rboundary, './pre/QUAD.prm')
         
-    ! Remark that this does not read in the parametrisation for FEAT 1.x.
-    ! Unfortunately we still need it for creating the initial triangulation!
-    ! Therefore, read the file again wihh FEAT 1.x routines.
-    IMESH = 1
-    CFILE = './pre/QUAD.prm'
-    CALL GENPAR (.TRUE.,IMESH,CFILE)
-
-    ! Now read in the triangulation - in FEAT 1.x syntax.
-    ! Refine it to level ilvmin/ilvmax.
-    ! This will probably modify ilvmin/ilvmax in case of a level
-    ! shift, i.e. if ilvmax > ilvmin+9 !
-    ! After this routine, we have to rely on ilvmin/ilvmax in the
-    ! problem structure ratzher than those in the parameters.
-    CFILE = './pre/QUAD.tri'
-    CALL INMTRI (2,TRIAS,rproblem%ilvmin,rproblem%ilvmax,0,0,CFILE)
+    ! Now read in the basic triangulation.
+    CALL tria_readTriFile2D (rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation, &
+        './pre/QUAD.tri', rproblem%p_rboundary)
     
-    ! ... and create a FEAT 2.0 triangulation for that. Until the point where
-    ! we recreate the triangulation routines, this method has to be used
-    ! to get a triangulation.
-    ! Set p_rtriangulation to NULL() to create a new structure on the heap.
-    DO i=rproblem%ilvmin,rproblem%ilvmax
-      CALL tria_wrp_tria2Structure(TRIAS(:,i),rproblem%RlevelInfo(i)%rtriangulation)
+    ! Refine the mesh up to the minimum level
+    CALL tria_quickRefine2LevelOrdering(rproblem%ilvmin-1,&
+        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%p_rboundary)
+    
+    ! Create information about adjacencies and everything one needs from
+    ! a triangulation. Afterwards, we have the coarse mesh.
+    CALL tria_initStandardMeshFromRaw (&
+        rproblem%RlevelInfo(rproblem%ilvmin)%rtriangulation,rproblem%p_rboundary)
+    
+    ! Now, refine to level up to nlmax.
+    DO i=rproblem%ilvmin+1,rproblem%ilvmax
+      CALL tria_refine2LevelOrdering (rproblem%RlevelInfo(i-1)%rtriangulation,&
+          rproblem%RlevelInfo(i)%rtriangulation, rproblem%p_rboundary)
+      CALL tria_initStandardMeshFromRaw (rproblem%RlevelInfo(i)%rtriangulation,&
+          rproblem%p_rboundary)
     END DO
-    
-    ! The TRIAS(,)-array is now part pf the triangulation structure,
-    ! we don't need it anymore.
     
   END SUBROUTINE
 
@@ -1032,7 +1019,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(rproblem%ilvmax) :: Rmatrices
 
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
@@ -1050,6 +1037,14 @@ CONTAINS
     ! Min/Max level?
     ilvmin = rproblem%ilvmin
     ilvmax = rproblem%ilvmax
+    
+    ! Now we have to build up the level information for multigrid.
+    !
+    ! At first, initialise a standard interlevel projection structure. We
+    ! can use the same structure for all levels. Therefore it's enough
+    ! to initialise one structure using the RHS vector on the finest
+    ! level to specify the shape of the PDE-discretisation.
+    CALL mlprj_initProjectionVec (rprojection,rproblem%rrhs)
     
     ! For solving the problem, we need to invoke a nonlinear solver.
     ! This nonlinear solver 
@@ -1091,14 +1086,6 @@ CONTAINS
     p_rsolverNode%depsAbs = 0.0_DP
     p_rsolverNode%nminIterations = 2
     p_rsolverNode%nmaxIterations = 10
-    
-    ! Now we have to build up the level information for multigrid.
-    !
-    ! At first, initialise a standard interlevel projection structure. We
-    ! can use the same structure for all levels. Therefore it's enough
-    ! to initialise one structure using the RHS vector on the finest
-    ! level to specify the shape of the PDE-discretisation.
-    CALL mlprj_initProjectionVec (rprojection,rproblem%rrhs)
     
     ! Add the interlevel projection structure to the collection; we can
     ! use it later for setting up nonlinear matrices.
@@ -1230,6 +1217,9 @@ CONTAINS
     ! Clean up the linear solver, release all memory, remove the solver node
     ! from memory.
     CALL linsol_releaseSolver (p_rsolverNode)
+    
+    ! Release the multilevel projection structure.
+    CALL mlprj_doneProjection (rprojection)
     
     CALL output_lbrk()
     CALL output_line ('Nonlinear solver statistics')
@@ -1395,8 +1385,7 @@ CONTAINS
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
       ! Delete the block discretisation together with the associated
       ! scalar spatial discretisations....
-      CALL spdiscr_releaseBlockDiscr(&
-                   rproblem%RlevelInfo(i)%p_rdiscretisation, .TRUE.)
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
      
       ! and remove the allocated block discretisation structure from the heap.
       DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisation)
@@ -1424,26 +1413,13 @@ CONTAINS
   ! local variables
   INTEGER :: i
 
-    ! For compatibility to old F77: an array accepting a set of triangulations
-    INTEGER, DIMENSION(SZTRIA,NNLEV) :: TRIAS
-
-
     DO i=rproblem%ilvmax,rproblem%ilvmin,-1
-      ! Release the old FEAT 1.x handles.
-      ! Get the old triangulation structure of level ilv from the
-      ! FEAT2.0 triangulation:
-      TRIAS(:,i) = rproblem%RlevelInfo(i)%rtriangulation%Itria
-      CALL DNMTRI (i,i,TRIAS)
-      
-      ! then the FEAT 2.0 stuff...
+      ! Release the triangulation
       CALL tria_done (rproblem%RlevelInfo(i)%rtriangulation)
     END DO
     
     ! Finally release the domain.
     CALL boundary_release (rproblem%p_rboundary)
-    
-    ! Don't forget to throw away the old FEAT 1.0 boundary definition!
-    CALL DISPAR
     
     CALL collct_deleteValue(rproblem%rcollection,'NLMAX')
     CALL collct_deleteValue(rproblem%rcollection,'NLMIN')
@@ -1493,14 +1469,15 @@ CONTAINS
     
     ! Ok, let's start. 
     !
-    ! Allocate the problem structure -- it's rather large
-    ALLOCATE(p_rproblem)
-
     ! We want to solve our Laplace problem on level...
 
     NLMIN = 3
     NLMAX = 7
     
+    ! Allocate the problem structure -- it's rather large
+    ALLOCATE(p_rproblem)
+    ALLOCATE(p_rproblem%RlevelInfo(1:NLMAX))
+
     ! Initialise the collection
     CALL collct_init (p_rproblem%rcollection)
     DO i=1,NLMAX
@@ -1508,7 +1485,7 @@ CONTAINS
     END DO
 
     ! So now the different steps - one after the other.
-    !
+    
     ! Initialisation. 
     CALL b1d6_initParamTriang (NLMIN,NLMAX,p_rproblem)
     CALL b1d6_initDiscretisation (p_rproblem)    
@@ -1530,7 +1507,7 @@ CONTAINS
     CALL b1d6_doneBC (p_rproblem)
     CALL b1d6_doneDiscretisation (p_rproblem)
     CALL b1d6_doneParamTriang (p_rproblem)
-
+    
     ! Print some statistical data about the collection - anything forgotten?
     PRINT *
     PRINT *,'Remaining collection statistics:'
@@ -1541,6 +1518,7 @@ CONTAINS
     ! Finally release the collection and the problem structure.
     CALL collct_done (p_rproblem%rcollection)
     
+    DEALLOCATE(p_rproblem%RlevelInfo)
     DEALLOCATE(p_rproblem)
     
   END SUBROUTINE

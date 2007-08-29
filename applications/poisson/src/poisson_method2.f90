@@ -762,7 +762,7 @@ CONTAINS
     p_rdiscretisation => collct_getvalue_bldiscr(rcollection,'DISCR2D')
     
     ! Delete the discretisation...
-    CALL spdiscr_releaseBlockDiscr(p_rdiscretisation,.TRUE.)
+    CALL spdiscr_releaseBlockDiscr(p_rdiscretisation)
     
     ! remove the allocated block discretisation structure
     DEALLOCATE(p_rdiscretisation)

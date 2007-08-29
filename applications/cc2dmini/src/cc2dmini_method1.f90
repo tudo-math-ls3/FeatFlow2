@@ -269,11 +269,9 @@ CONTAINS
                   
       ! ...and copy this structure also to the discretisation structure
       ! of the 2nd component (Y-velocity). This needs no additional memory, 
-      ! as both structures will share the same dynamic information afterwards,
-      ! but we have to be careful when releasing the discretisation structures
-      ! at the end of the program!
-      p_rdiscretisation%RspatialDiscretisation(2) = &
-        p_rdiscretisation%RspatialDiscretisation(1)
+      ! as both structures will share the same dynamic information afterwards.
+      CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscretisation(1),&
+          p_rdiscretisation%RspatialDiscretisation(2))
   
       ! For the pressure (3rd component), we set up a separate discretisation 
       ! structure, as this uses different finite elements for trial and test
@@ -1508,6 +1506,14 @@ CONTAINS
     p_rvector => rproblem%rvector
     p_rmatrix => rproblem%RlevelInfo(ilvmax)%rmatrix
     
+    ! Now we have to build up the level information for multigrid.
+    !
+    ! At first, initialise a standard interlevel projection structure. We
+    ! can use the same structure for all levels. Therefore it's enough
+    ! to initialise one structure using the RHS vector on the finest
+    ! level to specify the shape of the PDE-discretisation.
+    CALL mlprj_initProjectionVec (rprojection,rproblem%rrhs)
+    
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
     ! a filter chain. As the linear solver does not work with 
@@ -1534,14 +1540,6 @@ CONTAINS
     p_rsolverNode%depsAbs = 0.0_DP
     p_rsolverNode%nminIterations = 2
     p_rsolverNode%nmaxIterations = 10
-    
-    ! Now we have to build up the level information for multigrid.
-    !
-    ! At first, initialise a standard interlevel projection structure. We
-    ! can use the same structure for all levels. Therefore it's enough
-    ! to initialise one structure using the RHS vector on the finest
-    ! level to specify the shape of the PDE-discretisation.
-    CALL mlprj_initProjectionVec (rprojection,rproblem%rrhs)
     
     ! Add the interlevel projection structure to the collection; we can
     ! use it later for setting up nonlinear matrices.
@@ -1652,6 +1650,9 @@ CONTAINS
     ! from memory.
     CALL linsol_releaseSolver (p_rsolverNode)
     
+    ! Release the multilevel projection structure.
+    CALL mlprj_doneProjection (rprojection)
+    
     PRINT *
     PRINT *,'Nonlinear solver statistics'
     PRINT *,'---------------------------'
@@ -1718,7 +1719,7 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    rprjDiscretisation = p_rvector%p_rblockDiscretisation
+    CALL spdiscr_duplicateDiscrBlock(p_rvector%p_rblockDiscretisation,rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
                  p_rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &
@@ -1786,15 +1787,11 @@ CONTAINS
     ! Release the auxiliary vector
     CALL lsysbl_releaseVector (rprjVector)
     
+    ! Release the discretisation structure.
+    CALL spdiscr_releaseBlockDiscr (rprjDiscretisation)
+    
     ! Throw away the discrete BC's - not used anymore.
     CALL bcasm_releaseDiscreteBC (p_rdiscreteBC)
-    
-    ! Release the auxiliary discretisation structure.
-    ! We only release the two substructures we manually created before.
-    ! The large structure must not be released - it's a copy of 
-    ! another one.
-    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(1))
-    CALL spdiscr_releaseDiscr (rprjDiscretisation%RspatialDiscretisation(2))
     
   END SUBROUTINE
 
@@ -1900,30 +1897,13 @@ CONTAINS
 
   ! local variables
   INTEGER :: i
-  TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Before we remove the block discretisation structure, remember that
-      ! we copied the scalar discretisation structure for the X-velocity
-      ! to the Y-velocity.
-      ! To prevent errors or wrong deallocation, we manually release the
-      ! spatial discretisation structures of each of the components.
-      p_rDiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-
-      ! Remove spatial discretisation structure of the velocity:
-      CALL spdiscr_releaseDiscr(p_rdiscretisation%RspatialDiscretisation(1))
-      
-      ! Don't remove that of the Y-velocity; there is none :)
-      !
-      ! Remove the discretisation structure of the pressure.
-      CALL spdiscr_releaseDiscr(p_rdiscretisation%RspatialDiscretisation(3))
-      
-      ! Finally remove the block discretisation structure. Don't release
-      ! the substructures again.
-      CALL spdiscr_releaseBlockDiscr(p_rdiscretisation,.FALSE.)
+      ! Remove the block discretisation structure and all the substructures.
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation)
       
       ! Remove the discretisation from the heap.
-      DEALLOCATE(p_rdiscretisation)
+      DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisation)
     END DO
     
   END SUBROUTINE
