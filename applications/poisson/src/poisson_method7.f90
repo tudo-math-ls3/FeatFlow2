@@ -361,7 +361,7 @@ CONTAINS
     !
     ! Step 1: Create a discretisation structure for Q1, based on our
     ! previous discretisation structure:
-    CALL spdiscr_duplicateDiscrBlock(rvectorBlock%p_rblockDiscretisation,rprjDiscretisation)
+    CALL spdiscr_duplicateBlockDiscr(rvectorBlock%p_rblockDiscretisation,rprjDiscretisation)
     CALL spdiscr_deriveSimpleDiscrSc (&
                  rvectorBlock%p_rblockDiscretisation%RspatialDiscretisation(1), &
                  EL_Q1, CUB_G2X2, rprjDiscretisation%RspatialDiscretisation(1))

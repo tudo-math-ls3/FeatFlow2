@@ -980,7 +980,7 @@ CONTAINS
     ! structure and modifying the discretisation structures of the
     ! two velocity subvectors:
     
-    CALL spdiscr_duplicateDiscrBlock (p_rvector%p_rblockDiscretisation,rprjDiscretisation)
+    CALL spdiscr_duplicateBlockDiscr (p_rvector%p_rblockDiscretisation,rprjDiscretisation)
     
     CALL spdiscr_deriveSimpleDiscrSc (&
                  p_rvector%p_rblockDiscretisation%RspatialDiscretisation(1), &

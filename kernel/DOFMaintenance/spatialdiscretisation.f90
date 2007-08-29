@@ -44,7 +44,7 @@
 !# 9.) spdiscr_duplicateDiscrSc
 !#     -> Copies a spatial discretisation structure to another
 !# 
-!# 10.) spdiscr_duplicateDiscrBlock
+!# 10.) spdiscr_duplicateBlockDiscr
 !#      -> Copies a block discretisation structure to another
 !# 
 !# </purpose>
@@ -1328,7 +1328,7 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE spdiscr_duplicateDiscrBlock (rsourceDiscr, rdestDiscr, bshare)
+  SUBROUTINE spdiscr_duplicateBlockDiscr (rsourceDiscr, rdestDiscr, bshare)
   
 !<description>
   ! This routine creates a copy of the dblock iscretisation structure rsourceDiscr.
