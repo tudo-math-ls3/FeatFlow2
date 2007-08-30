@@ -6971,12 +6971,43 @@ CONTAINS
       CALL sys_halt()
     END IF
 
+    ! Primal and dual B- and D-matrices must share the same data.
+    ! The matrices may be switched off by dscaleFactor=0, but they must have the
+    ! same data arrays! Just for 'efficiency'...
     IF ((rmatrix%RmatrixBlock(5,6)%NA .NE. rmatrix%RmatrixBlock(6,5)%NA) .OR. &
         (rmatrix%RmatrixBlock(5,6)%NEQ .NE. rmatrix%RmatrixBlock(6,5)%NCOLS)) THEN
       CALL output_line ('Structure of B2 and B2^T different!',&
           OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
       CALL sys_halt()
     END IF      
+    
+    IF (.NOT. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(1,3),rmatrix%RmatrixBlock(4,6))) THEN
+      CALL output_line ('Content of primal and dual B1-matrix not shared!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      CALL sys_halt()
+    END IF
+
+    IF (.NOT. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(2,3),rmatrix%RmatrixBlock(5,6))) THEN
+      CALL output_line ('Content of primal and dual B2-matrix not shared!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      CALL sys_halt()
+    END IF
+  
+    IF (.NOT. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(3,1),rmatrix%RmatrixBlock(6,4))) THEN
+      CALL output_line ('Content of primal and dual D1-matrix not shared!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      CALL sys_halt()
+    END IF
+
+    IF (.NOT. lsyssc_isMatrixContentShared( &
+        rmatrix%RmatrixBlock(3,2),rmatrix%RmatrixBlock(6,5))) THEN
+      CALL output_line ('Content of primal and dual D2-matrix not shared!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'vanca_init2DNavierStokesOptC')
+      CALL sys_halt()
+    END IF
   
     ! Fill the output structure with data of the matrices.
     CALL lsyssc_getbase_double(rmatrix%RmatrixBlock(1,3),&
