@@ -47,7 +47,7 @@ NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 3
+NLMAX              = 2
 
 # ------------------------------------------------------------------------
 
@@ -213,6 +213,7 @@ dalphaC = 0.01 # 1.0
 dgammaC = 0.0  # 1.0
 
 # Type of target flow.
+# =-1: zero target flow
 # =0: analytically given
 # =1: stationary flow as prescribed by a solution vector read in from a file.
 #     The filename is stargetFlow below.
@@ -222,17 +223,33 @@ dgammaC = 0.0  # 1.0
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
+# =3: like =1, but in ilevelTargetFlow an arbitrary level may be specified.
+# =4: like =4, but in ilevelTargetFlow an arbitrary level may be specified.
 
 itypeTargetFlow = 2
+
+# Refinement level of the coarse mesh corresponding to the target flow vector.
+# This may exceed the level bound specified by NLMAX, so it's allowed to specify
+# a target flow on a level higher than NLMAX!
+# Only valid if itypeTargetFlow =3 or =4.
+
+ilevelTargetFlow = 2
 
 # If itypeTargetFlow = 1, this is the filename of a file on disc containing
 # the target flow. The file must contain a solution at the same spatial
 # level as prescribed by NLMAX.
 
-stargetFlow = 'ns/lv3re0.025steps80/solution'
+stargetFlow = 'ns/lv2re0.025steps80/solution'
 
 # Granularity parameter for the filenames of the target flow.
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
-itargetFlowDelta = 4
+itargetFlowDelta = 1
+
+# Formulation of the Space-time problem.
+# =0: usual formulation as specified in the DFG applicance
+# =1: Formulation for the generation of reference results from papers
+# The two formulations differ in a "-"-sign in front of the dual velocity.
+ispaceTimeFormulation = 0
+
