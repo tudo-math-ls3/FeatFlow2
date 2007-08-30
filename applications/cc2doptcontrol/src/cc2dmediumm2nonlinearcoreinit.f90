@@ -604,7 +604,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(rpreconditioner%NLMAX) :: Rmatrices
     
     ! Pointer to the template FEM matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTempateFEM
@@ -1014,7 +1014,7 @@ CONTAINS
 
   ! An array for the system matrix(matrices) during the initialisation of
   ! the linear solver.
-  TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+  TYPE(t_matrixBlock), DIMENSION(rpreconditioner%NLMAX) :: Rmatrices
   TYPE(t_linsolNode), POINTER :: p_rsolverNode
     
     ! At first, ask the parameters in the INI/DAT file which type of 

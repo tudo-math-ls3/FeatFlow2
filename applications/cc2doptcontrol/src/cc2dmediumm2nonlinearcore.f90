@@ -418,7 +418,7 @@ CONTAINS
     ! preconditioning.
     TYPE(t_ccspatialPreconditioner), INTENT(INOUT) :: rpreconditioner
 
-    ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
+    ! Defect vector b-A(rx)x. This must be replaced by J^{-1} rd by a preconditioner.
     TYPE(t_vectorBlock), INTENT(INOUT)            :: rd
 
     ! Ccollection structure of the application.

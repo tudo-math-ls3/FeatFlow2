@@ -664,19 +664,6 @@ CONTAINS
     
     REAL(DP), DIMENSION(:),POINTER :: p_Dx, p_Db, p_Dd
 
-    ! If the following constant is set from 1.0 to 0.0, the primal system is
-    ! decoupled from the dual system!
-    REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
-    
-    ! If the following constant is set from 1.0 to 0.0, the dual system is
-    ! decoupled from the primal system!
-    REAL(DP), PARAMETER :: ddualPrimalCoupling = 1.0_DP
-    
-    ! If the following parameter is set from 1.0 to 0.0, the terminal
-    ! condition between the primal and dual equation is decoupled, i.e.
-    ! the dual equation gets independent from the primal one.
-    REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
-
     ilevel = rspaceTimeDiscr%ilevel
     
     ! Theta-scheme identifier.
@@ -1117,19 +1104,6 @@ CONTAINS
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
     
-    ! If the following constant is set from 1.0 to 0.0, the primal system is
-    ! decoupled from the dual system!
-    REAL(DP), PARAMETER :: dprimalDualCoupling = 1.0_DP
-    
-    ! If the following constant is set from 1.0 to 0.0, the dual system is
-    ! decoupled from the primal system!
-    REAL(DP), PARAMETER :: ddualPrimalCoupling = 1.0_DP
-    
-    ! If the following parameter is set from 1.0 to 0.0, the terminal
-    ! condition between the primal and dual equation is decoupled, i.e.
-    ! the dual equation gets independent from the primal one.
-    REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
-
     ! Level of the discretisation
     ilevel = rspaceTimeDiscr%ilevel
 
@@ -1849,8 +1823,8 @@ CONTAINS
 !</subroutine>
 
     ! The nonlinear solver configuration
-    INTEGER :: isubstep,iglobIter,ierror,ilev,ispacelev,nsmSteps,cspaceTimePreconditioner
-    INTEGER :: ilowerSpaceLevel,itemp
+    INTEGER :: isubstep,iglobIter,ierror,ilev,ispacelev,nsmSteps,cspaceTimeSmoother
+    INTEGER :: ilowerSpaceLevel,itemp,ctypeCoarseGridSolver,i
     LOGICAL :: bneumann
     REAL(DP), DIMENSION(4) :: Derror
     INTEGER(I32) :: nminIterations,nmaxIterations
@@ -1908,15 +1882,19 @@ CONTAINS
     ! Implement the bondary conditions into all initial solution vectors
     CALL c2d2_implementBCsolution (rproblem,p_rspaceTimeDiscr,rx,rtempvectorX)
     
-    ! Type of preconditioner to use for smoothing/solving in time?
-    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
-        'cspaceTimePreconditioner', cspaceTimePreconditioner, 0)
-    
-    ! We set up a space-time preconditioner in the following configuration:
+    ! Type of smoother to use?
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+        'cspaceTimeSmoother', cspaceTimeSmoother, 0)
+        
+    ! Type of coarse grid solver?
+    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                            'ctypeCoarseGridSolver', ctypeCoarseGridSolver, 0)
+  
+    ! We set up a space-time preconditioner, e.g. in the following configuration:
     ! Main Preconditioner: Multigrid
     !     -> Presmoother:  Block Jacobi/GS
     !     -> Postsmoother: Block Jacobi/GS
-    !     -> CGr-Solver:   Defect correction
+    !     -> CGr-Solver:   Defect correction (or UMFPACK)
     !        -> Preconditioner: Block Jacobi
     !
     ! So we start creating the main solver: Multigrid.
@@ -1932,15 +1910,21 @@ CONTAINS
       ELSE
         ispacelev = rproblem%nlmax
       END IF
-      SELECT CASE (cspaceTimePreconditioner)
-      CASE (0,2)
+      
+      IF (ilev .EQ. 1) THEN
+        i = ctypeCoarseGridSolver
+      ELSE
+        i = cspaceTimeSmoother
+      END IF
+      
+      SELECT CASE (i)
+      CASE (0,2,4,5)
         ! Initialise the spatial preconditioner for Block Jacobi
         ! (note: this is slightly expensive in terms of memory!
         ! Probably we could use the same preconditioner for all levels,
         ! but this has still to be implemeted and is a little bit harder!)
         CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
-            ispacelev,&
-            RspatialPrecond(ilev),0)
+            ispacelev,RspatialPrecond(ilev),0)
         CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev))
          
       CASE (1)
@@ -1949,13 +1933,11 @@ CONTAINS
         ! Probably we could use the same preconditioner for all levels,
         ! but this has still to be implemeted and is a little bit harder!)
         CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
-            ispacelev,&
-            RspatialPrecondPrimal(ilev),1)
+            ispacelev,RspatialPrecondPrimal(ilev),1)
         CALL c2d2_configPreconditioner (rproblem,RspatialPrecondPrimal(ilev))
 
         CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
-            ispacelev,&
-            RspatialPrecondDual(ilev),2)
+            ispacelev,RspatialPrecondDual(ilev),2)
         CALL c2d2_configPreconditioner (rproblem,RspatialPrecondDual(ilev))
         
       END SELECT
@@ -1978,7 +1960,7 @@ CONTAINS
         NULLIFY(p_rpresmoother)
         NULLIFY(p_rpostsmoother)
       
-        SELECT CASE (cspaceTimePreconditioner)
+        SELECT CASE (ctypeCoarseGridSolver)
         CASE (0)
           ! Block Jacobi preconditioner
           CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
@@ -1999,6 +1981,30 @@ CONTAINS
 
           ! CG solver        
           CALL sptils_initCG (rproblem,p_rcgrSolver,p_rprecond)
+          
+        CASE (3)
+          ! UMFACK Gauss elimination
+          CALL sptils_initUMFPACK4 (rproblem,p_rcgrSolver)
+
+        CASE (4)
+          ! Block Gauss Seidel preconditioner
+          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                      'domegaPrecond', domega, 1.0_DP)
+
+          CALL sptils_initBlockSOR (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
+
+          ! Defect correction solver
+          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
+
+        CASE (5)
+          ! Block Gauss Seidel preconditioner
+          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                      'domegaPrecond', domega, 1.0_DP)
+
+          CALL sptils_initBlockVANCA (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
+
+          ! Defect correction solver
+          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
         END SELECT
         
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
@@ -2013,22 +2019,22 @@ CONTAINS
                                     'domega', p_rcgrSolver%domega, 1.0_DP)
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'ddivRel', p_rcgrSolver%ddivRel, 1.0_DP)
-    CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
-                             'istoppingCriterion', p_rcgrSolver%istoppingCriterion, 0)
-
+        CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                'istoppingCriterion', p_rcgrSolver%istoppingCriterion, 0)
 
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
             'ioutputLevel', p_rcgrSolver%ioutputLevel, 100)
-        p_rprecond%ioutputLevel = p_rcgrSolver%ioutputLevel-2
+        IF (ASSOCIATED(p_rprecond)) &
+          p_rprecond%ioutputLevel = p_rcgrSolver%ioutputLevel-2
         
       ELSE
-        ! ... on higher levels, create a Block Jacobi smoother, ...
+        ! ... on higher levels, create a smoother, ...
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
                                     'domega', domega, 1.0_DP)
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
             'nsmSteps', nsmSteps, 1)
 
-        SELECT CASE (cspaceTimePreconditioner)
+        SELECT CASE (cspaceTimeSmoother)
         CASE (0)
           ! Block Jacobi
           CALL sptils_initBlockJacobi (rproblem,p_rsmoother,RspatialPrecond(ilev))
@@ -2040,6 +2046,12 @@ CONTAINS
           ! CG with Block Jacobi as preconditioner
           CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
           CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
+        CASE (4)
+          ! Block Gauss-Seidel
+          CALL sptils_initBlockSOR (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
+        CASE (5)
+          ! Block VANCA
+          CALL sptils_initBlockVANCA (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
         END SELECT
         
         CALL sptils_convertToSmoother (p_rsmoother,nsmSteps,domega)
@@ -2235,8 +2247,8 @@ CONTAINS
       ! Filter the defect for boundary conditions in space and time.
       ! Normally this is done before the preconditioning -- but by doing it
       ! afterwards, the initial conditions can be seen more clearly!
-      CALL c2d2_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
-      CALL c2d2_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL c2d2_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
+      !CALL c2d2_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
       
       ! Add the defect: x = x + omega*d          
       CALL sptivec_vectorLinearComb (rd,rx,domega,1.0_DP)
@@ -2264,6 +2276,10 @@ CONTAINS
       CALL c2d2_assembleSpaceTimeDefect (rproblem, p_rspaceTimeDiscr, &
           rx, rd, ddefNorm)
           
+      ! Filter the defect for boundary conditions in space and time.
+      CALL c2d2_implementInitCondDefect (p_rspaceTimeDiscr,rd,rtempVector)
+      CALL c2d2_implementBCdefect (rproblem,p_rspaceTimeDiscr,rd,rtempVector)
+      
       CALL output_separator (OU_SEP_EQUAL)
       CALL output_line ('Iteration: '//sys_si(iglobIter,10)//&
           ' Defect of supersystem: '//sys_sdEP(ddefNorm,20,10))

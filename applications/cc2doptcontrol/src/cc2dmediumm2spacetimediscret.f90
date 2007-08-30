@@ -430,7 +430,11 @@ CONTAINS
     ! formulation with "-(y-z)" there.
     ! Note: If this is changed, a "-" sign must be implemented / removed from
     ! the RHS, too!
-    REAL(DP), PARAMETER :: dequationType = -1.0_DP
+    REAL(DP) :: dequationType
+    
+    dequationType = 1.0_DP
+    IF (rproblem%roptcontrol%ispaceTimeFormulation .NE. 0) &
+      dequationType = -1.0_DP
 
     ! The first and last substep is a little bit special concerning
     ! the matrix!
@@ -480,10 +484,10 @@ CONTAINS
         !
         ! rmatrixComponents%dmu1 = dprimalDualCoupling * &
         !     dtheta * 1.0_DP / rspaceTimeDiscr%dalphaC
-        ! rmatrixComponents%dmu2 = ddualPrimalCoupling * &
-        !     dtheta * (-1.0_DP)
+         rmatrixComponents%dmu2 = ddualPrimalCoupling * &
+             dtheta * (-1.0_DP)
         rmatrixComponents%dmu1 = 0.0_DP
-        rmatrixComponents%dmu2 = 0.0_DP
+        !rmatrixComponents%dmu2 = 0.0_DP
                     
       ELSE IF (irelpos .EQ. 1) THEN
       
@@ -1388,28 +1392,28 @@ CONTAINS
         CALL lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
         CALL lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 
-!        CALL lsyssc_vectorLinearComb (&
-!            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
-!            dtheta,(1.0_DP-dtheta),&
-!            rtempVectorRHS%RvectorBlock(4))
-!        CALL lsyssc_vectorLinearComb (&                                                   
-!            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
-!            dtheta,(1.0_DP-dtheta),&
-!            rtempVectorRHS%RvectorBlock(5))
-!        ! Pressure is fully implicit
-!        CALL lsyssc_vectorLinearComb (&                                                   
-!            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
-!            dtheta,(1.0_DP-dtheta),&
-!            rtempVectorRHS%RvectorBlock(6))
+        CALL lsyssc_vectorLinearComb (&
+            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
+            dtheta,(1.0_DP-dtheta),&
+            rtempVectorRHS%RvectorBlock(4))
+        CALL lsyssc_vectorLinearComb (&                                                   
+            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
+            dtheta,(1.0_DP-dtheta),&
+            rtempVectorRHS%RvectorBlock(5))
+        ! Pressure is fully implicit
+        CALL lsyssc_vectorLinearComb (&                                                   
+            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
+            dtheta,(1.0_DP-dtheta),&
+            rtempVectorRHS%RvectorBlock(6))
 
         ! In the 0'th timestep, there is no RHS in the dual equation!
         ! That is because of the initial condition, which fixes the primal solution
         ! => dual solution has no influence on the primal one
         ! => setting up a dual RHS in not meaningful as the dual RHS cannot
         !    influence the primal solution
-        CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(4))
-        CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(5))
-        CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(6))
+        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(4))
+        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(5))
+        !CALL lsyssc_clearVector (rtempVectorRHS%RvectorBlock(6))
             
       ELSE IF (isubstep .LT. rspaceTimeDiscr%niterations) THEN
       
@@ -1698,11 +1702,7 @@ CONTAINS
     ! Overwrite the primal defect with 0 -- as the solution must not be changed.
     ! This realises the inital condition.
     CALL sptivec_getTimestepData(rd, 0, rtempVectorD)
-    
-    CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(1))
-    CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(2))
-    CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(3))
-    
+    CALL c2d2_implementInitCondDefSingle (rspaceTimeDiscr, rtempVectorD)
     CALL sptivec_setTimestepData(rd, 0, rtempVectorD)
 
     IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
@@ -1717,9 +1717,7 @@ CONTAINS
       
       CALL sptivec_getTimestepData(rd, rd%ntimesteps, rtempVectorD)
       
-      CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(4))
-      CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(5))
-      CALL lsyssc_clearVector(rtempVectorD%RvectorBlock(6))
+      CALL c2d2_implementTermCondDefSingle (rspaceTimeDiscr, rtempvectorD)
       
       CALL sptivec_setTimestepData(rd, rd%ntimesteps, rtempVectorD)
       
@@ -1727,6 +1725,88 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE c2d2_implementInitCondDefSingle (rspaceTimeDiscr, rd)
+
+!<description>
+  ! Implements the initial condition into a defect vector rd,
+  ! representing the defect in the first timestep.
+  !
+  ! Does not implement boundary conditions!
+!</description>
+
+!<inputoutput>
+  ! Discretisation structure that corresponds to rx.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+
+  ! A vector containing the defect in the first subvector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
+!</inputoutput>
+
+!</subroutine>
+
+    REAL(DP) :: dtheta
+    REAL(DP), DIMENSION(:),POINTER :: p_Db
+    
+    ! DEBUG!!!    
+    CALL lsysbl_getbase_double (rd,p_Db)
+    
+    CALL lsyssc_clearVector(rd%RvectorBlock(1))
+    CALL lsyssc_clearVector(rd%RvectorBlock(2))
+    CALL lsyssc_clearVector(rd%RvectorBlock(3))
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE c2d2_implementTermCondDefSingle (rspaceTimeDiscr, rd)
+
+!<description>
+  ! Implements the terminal condition into a defect vector rd,
+  ! representing the defect in the last timestep.
+  !
+  ! Does not implement boundary conditions!
+!</description>
+
+!<inputoutput>
+  ! Discretisation structure that corresponds to rx.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+
+  ! A vector containing the defect in the last subvector.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
+!</inputoutput>
+
+!</subroutine>
+
+    REAL(DP) :: dtheta
+    REAL(DP), DIMENSION(:),POINTER :: p_Db
+    
+    ! DEBUG!!!    
+    CALL lsysbl_getbase_double (rd,p_Db)
+
+    IF (rspaceTimeDiscr%dgammaC .EQ. 0.0_DP) THEN
+      ! That's a special case, we have the terminal condition "lambda(T)=0".
+      ! This case must be treated like the initial condition, i.e. the
+      ! dual defect in the last timestep must be overwritten by zero.
+      !
+      ! If gamma<>0, the terminal condition is implemented implicitely
+      ! by the equation "lambda(T)=gamma(y(T)-z(T))" which comes into
+      ! play by the mass matrix term in the system matrix of the last timestep,
+      ! so this does not have to be treated explicitly.
+      
+      CALL lsyssc_clearVector(rd%RvectorBlock(4))
+      CALL lsyssc_clearVector(rd%RvectorBlock(5))
+      CALL lsyssc_clearVector(rd%RvectorBlock(6))
+      
+    END IF
+
+  END SUBROUTINE
+  
   ! ***************************************************************************
   
 !<subroutine>
@@ -1859,6 +1939,66 @@ CONTAINS
       CALL sptivec_setTimestepData(rd, isubstep, rtempVector)
       
     END DO
+    
+    CALL lsysbl_releaseVector(rtempVector)
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE c2d2_implementBCdefectSingle (rproblem,isubstep,rspaceTimeDiscr,rd)
+
+!<description>
+  ! Implements the boundary conditions at timestep isubstep into the defect rd.
+!</description>
+
+!<input>
+  ! Problem structure of the main problem.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
+  
+  ! Discretisation structure that corresponds to rx.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rspaceTimeDiscr
+
+!</input>
+
+!<inputoutput>
+  ! A space-time vector with the solution where the BC's should be implemented to.
+  TYPE(t_vectorBlock), INTENT(INOUT) :: rd
+!</inputoutput>
+
+!</subroutine>
+
+    INTEGER :: isubstep
+    TYPE(t_vectorBlock) :: rtempVector
+    
+    CALL lsysbl_duplicateVector(rd,rtempVector,&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+
+    ! Current point in time
+    rproblem%rtimedependence%dtime = &
+        rproblem%rtimedependence%dtimeInit + &
+        isubstep*rspaceTimeDiscr%dtstep
+    rproblem%rtimedependence%itimestep = isubstep
+
+    ! -----
+    ! Discretise the boundary conditions at the new point in time -- 
+    ! if the boundary conditions are nonconstant in time!
+    IF (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .NE. 0) THEN
+      CALL c2d2_updateDiscreteBC (rproblem, .FALSE.)
+    END IF
+    
+    CALL c2d2_implementBC (rproblem,rdefect=rtempVector)
+    
+    ! In the very first time step, we have the initial condition for the
+    ! solution. The defect is =0 there!
+    IF (isubstep .EQ. 0) THEN
+      CALL lsyssc_clearVector (rd%RvectorBlock(1))
+      CALL lsyssc_clearVector (rd%RvectorBlock(2))
+      CALL lsyssc_clearVector (rd%RvectorBlock(3))
+    END IF
     
     CALL lsysbl_releaseVector(rtempVector)
 

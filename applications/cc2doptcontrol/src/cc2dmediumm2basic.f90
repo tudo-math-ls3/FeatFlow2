@@ -35,9 +35,6 @@ MODULE cc2dmediumm2basic
   
   IMPLICIT NONE
   
-  ! Maximum allowed level in this application.
-  INTEGER, PARAMETER :: NNLEV = 9
-  
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
@@ -193,17 +190,35 @@ MODULE cc2dmediumm2basic
     ! Type of target flow.
     ! =0: analytically given.
     ! =1: stationary solution, read from file.
+    ! =2: nonstationary solution, read from a sequence of files.
+    ! =3: stationary solution, read from file. Arbitrary level.
+    ! =4: nonstationary solution, read from a sequence of files. Arbitrary level.
     INTEGER :: itypeTargetFlow = 0
+    
+    ! Formulation of the Space-time problem.
+    ! =0: usual formulation as specified in the DFG applicance
+    ! =1: Formulation for the generation of reference results from papers
+    ! The two formulations differ in a "-"-sign in front of the dual velocity.
+    INTEGER :: ispaceTimeFormulation = 0
   
     ! Name of the file with the target flow
     CHARACTER(SYS_STRLEN) :: stargetFlow = ''
     
+    ! Refinement level of the target flow.
+    INTEGER :: ilevelTargetFlow = 0
+    
+    ! Underlying mesh for the target flow if itypeTargetFlow<>0.
+    TYPE(t_triangulation), POINTER :: p_rtriangulation => NULL()
+    
+    ! Discretisation structure specifying the discretisation of the
+    TYPE(t_blockDiscretisation), POINTER :: p_rdiscrTargetFlow => NULL()
+    
     ! Solution vector containing a stationary target flow.
-    ! Only used if itypeTargetFlow = 1.
+    ! Only used if itypeTargetFlow <> 0.
     TYPE(t_vectorBlock) :: rtargetFlow
   
     ! Solution vector containing a nonstationary target flow.
-    ! Only used if itypeTargetFlow = 2
+    ! Only used if itypeTargetFlow = 2 or 4
     TYPE(t_spaceTimeVector) :: rtargetFlowNonstat
     
     ! Target flow granilarity for the filenames of a nonstationary target flow.
@@ -248,7 +263,7 @@ MODULE cc2dmediumm2basic
         
     ! An object for saving the domain:
     TYPE(t_boundary), POINTER :: p_rboundary
-
+    
     ! Flag indicating if the X- and Y-velocity is decoupled (i.e. yield different 
     ! matrices). This is the case e.g. for no-slip boundary conditions
     ! where then implementation of the BC's into the first velocity
@@ -274,7 +289,7 @@ MODULE cc2dmediumm2basic
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by NLMAX!
-    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
+    TYPE(t_problem_lvl), DIMENSION(:), POINTER :: RlevelInfo
     
     ! Type of simulation.
     ! =0: stationary simulation.

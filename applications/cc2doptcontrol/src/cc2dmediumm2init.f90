@@ -147,6 +147,9 @@ CONTAINS
     CALL collct_setvalue_int (rproblem%rcollection,'NLMIN',ilvmin,.TRUE.)
     CALL collct_setvalue_int (rproblem%rcollection,'NLMAX',ilvmax,.TRUE.)
     
+    ! Allocate memory for the levels
+    ALLOCATE(rproblem%RlevelInfo(1:ilvmax))
+    
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     CALL parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iEquation',i1,0)
@@ -209,6 +212,9 @@ CONTAINS
 
     ! Optimal control
     CALL c2d2_doneOptControl(rproblem)
+
+    ! Release memory of the level specification
+    DEALLOCATE(rproblem%RlevelInfo)
 
     ! Remove information about boundary conditions
     CALL collct_deleteValue(rproblem%rcollection,'IBOUNDARY')

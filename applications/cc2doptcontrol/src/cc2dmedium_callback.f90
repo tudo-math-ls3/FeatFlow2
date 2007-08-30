@@ -102,6 +102,7 @@ MODULE cc2dmedium_callback
   USE mprimitives
   USE feevaluation
   USE spacetimevectors
+  USE triasearch
   
   USE cc2dmediumm2basic
   USE cc2dmediumm2boundarydef
@@ -161,7 +162,8 @@ CONTAINS
     
     ! In case the target vector changes in time, load the current target
     ! from the space-time vector.    
-    IF (rproblem%roptcontrol%itypeTargetFlow .EQ. 2) THEN
+    IF ((rproblem%roptcontrol%itypeTargetFlow .EQ. 2) .OR. &
+        (rproblem%roptcontrol%itypeTargetFlow .EQ. 4))  THEN
       IF (rproblem%roptcontrol%rtargetFlowNonstat%ntimesteps .GT. 0) THEN
         CALL sptivec_getTimestepData (rproblem%roptcontrol%rtargetFlowNonstat, &
             rproblem%rtimedependence%itimeStep, rproblem%roptcontrol%rtargetFlow)
@@ -448,6 +450,7 @@ CONTAINS
     END IF
     
     Dcoefficients(:,:,:) = 0.0_DP
+    !Dcoefficients(1,:,:) = Dpoints(1,:,:)
     !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
     !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
     !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
@@ -541,6 +544,7 @@ CONTAINS
     END IF
     
     Dcoefficients(:,:,:) = 0.0_DP
+    !Dcoefficients(1,:,:) = -Dpoints(2,:,:)
     !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
     !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
     !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
@@ -819,9 +823,14 @@ CONTAINS
 !</subroutine>
 
     REAL(DP) :: dtime,dtimeMax
-    INTEGER :: itimedependence,itypeTargetFlow,ieltype
+    INTEGER :: itimedependence,itypeTargetFlow,ieltype,i,j
     TYPE(t_vectorBlock), POINTER :: p_rvector
     TYPE(t_spaceTimeVector) :: rspaceTimeVector
+    
+    INTEGER(PREC_ELEMENTIDX) :: iel,NEL
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: DvaluesAct
+    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DpointsAct
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: IelementsAct
     
     ! DEBUG!!!
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
@@ -862,6 +871,9 @@ CONTAINS
     IF (itimedependence .NE. 0) THEN  
     
       SELECT CASE (itypeTargetFlow)
+      CASE (-1)
+        ! Zero target flow
+        Dvalues(:,:) = 0.0_DP
       CASE (0)
         ! Analytically given target flow
     
@@ -877,7 +889,7 @@ CONTAINS
         !IF (dtime .gt. 10._DP) THEN
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
         !END IF
-      CASE (1:)
+      CASE (1:2)
         ! Target flow is specified by a block vector.
         !
         ! Fetch the block vector from the collection
@@ -903,11 +915,56 @@ CONTAINS
             ieltype, IdofsTest, npointsPerElement,  nelements, &
             Dpoints, DER_FUNC, Dvalues)
         
+      CASE (3:4)
+        ! Target flow is specified by a block vector.
+        !
+        ! Fetch the block vector from the collection
+        p_rvector => collct_getvalue_vec (p_rcollection,'TARGETFLOW')
+        
+        ! For every point, find the element of an element nearby the point.
+        ! The evaluation routine uses this as hint to speed up the evaluation.
+        ALLOCATE(IelementsAct(npointsPerElement*nelements))
+        ALLOCATE(DpointsAct(NDIM2D,npointsPerElement*nelements))
+        ALLOCATE(DvaluesAct(npointsPerElement*nelements))
+        NEL = rdiscretisation%p_rtriangulation%NEL
+        DO i=0,nelements-1
+          DO j=1,npointsPerElement
+            iel = rdomainIntSubset%p_Ielements(i+1)
+            
+            ! If the FE function is evaluated on a level higher than the
+            ! discretisation allows, the element number may be out of bounds.
+            ! Reduce it by dividing by 4 which simulates coarsening for a mesh
+            ! which is refined by 2-level ordering.
+            DO WHILE (iel .GT. NEL)
+              iel = iel / 4
+            END DO
+            
+            IelementsAct(i*npointsPerElement+j) = iel
+            
+            DpointsAct(1,i*npointsPerElement+j) = Dpoints(1,j,i+1)
+            DpointsAct(2,i*npointsPerElement+j) = Dpoints(2,j,i+1)
+          END DO
+        END DO
+        
+        ! Evaluate at the given points - X-coordinate
+        CALL fevl_evaluate (DER_FUNC, DvaluesAct, p_rvector%RvectorBlock(1), &
+          DpointsAct, IelementsHint=IelementsAct)
+          
+        DO i=0,nelements-1
+          DO j=1,npointsPerElement
+            Dvalues(j,i+1) = DvaluesAct(i*npointsPerElement+j)
+          END DO
+        END DO
+        
+        DEALLOCATE(IelementsAct)
+        DEALLOCATE(DpointsAct)
+        DEALLOCATE(DvaluesAct)
+        
       CASE DEFAULT
         Dvalues(:,:) = Dpoints(1,:,:)
       END SELECT
     END IF
-
+  
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -984,8 +1041,13 @@ CONTAINS
 !</subroutine>
 
     REAL(DP) :: dtime,dtimeMax
-    INTEGER :: itimedependence,itypeTargetFlow,ieltype
+    INTEGER :: itimedependence,itypeTargetFlow,ieltype,i,j
     TYPE(t_vectorBlock), POINTER :: p_rvector
+
+    INTEGER(PREC_ELEMENTIDX) :: iel,NEL
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: DvaluesAct
+    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DpointsAct
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: IelementsAct
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -1021,6 +1083,9 @@ CONTAINS
     IF (itimedependence .NE. 0) THEN  
     
       SELECT CASE (itypeTargetFlow)
+      CASE (-1)
+        ! Zero target flow
+        Dvalues(:,:) = 0.0_DP
       CASE (0)
         ! Analytically given target flow
     
@@ -1036,7 +1101,7 @@ CONTAINS
         !IF (dtime .gt. 10._DP) THEN
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
         !END IF
-      CASE (1:)
+      CASE (1:2)
         ! Target flow is specified by a block vector.
         !
         ! Fetch the block vector from the collection
@@ -1058,6 +1123,51 @@ CONTAINS
             rdomainIntSubset%p_Djac, rdomainIntSubset%p_Ddetj, &
                   ieltype, IdofsTest, npointsPerElement,  nelements, &
                   Dpoints, DER_FUNC, Dvalues)
+        
+      CASE (3:4)
+        ! Target flow is specified by a block vector.
+        !
+        ! Fetch the block vector from the collection
+        p_rvector => collct_getvalue_vec (p_rcollection,'TARGETFLOW')
+        
+        ! For every point, find the element of an element nearby the point.
+        ! The evaluation routine uses this as hint to speed up the evaluation.
+        ALLOCATE(IelementsAct(npointsPerElement*nelements))
+        ALLOCATE(DpointsAct(NDIM2D,npointsPerElement*nelements))
+        ALLOCATE(DvaluesAct(npointsPerElement*nelements))
+        NEL = rdiscretisation%p_rtriangulation%NEL
+        DO i=0,nelements-1
+          DO j=1,npointsPerElement
+            iel = rdomainIntSubset%p_Ielements(i+1)
+            
+            ! If the FE function is evaluated on a level higher than the
+            ! discretisation allows, the element number may be out of bounds.
+            ! Reduce it by dividing by 4 which simulates coarsening for a mesh
+            ! which is refined by 2-level ordering.
+            DO WHILE (iel .GT. NEL)
+              iel = iel / 4
+            END DO
+            
+            IelementsAct(i*npointsPerElement+j) = iel
+            
+            DpointsAct(1,i*npointsPerElement+j) = Dpoints(1,j,i+1)
+            DpointsAct(2,i*npointsPerElement+j) = Dpoints(2,j,i+1)
+          END DO
+        END DO
+        
+        ! Evaluate at the given points - Y-coordinate
+        CALL fevl_evaluate (DER_FUNC, DvaluesAct, p_rvector%RvectorBlock(2), &
+          DpointsAct, IelementsHint=IelementsAct)
+          
+        DO i=0,nelements-1
+          DO j=1,npointsPerElement
+            Dvalues(j,i+1) = DvaluesAct(i*npointsPerElement+j)
+          END DO
+        END DO
+        
+        DEALLOCATE(IelementsAct)
+        DEALLOCATE(DpointsAct)
+        DEALLOCATE(DvaluesAct)
         
       CASE DEFAULT
         Dvalues(:,:) = -Dpoints(2,:,:)

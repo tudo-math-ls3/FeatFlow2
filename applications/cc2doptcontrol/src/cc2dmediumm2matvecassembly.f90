@@ -529,8 +529,37 @@ CONTAINS
         !    ( .    .    .    .    .   B1 ) 
         !    ( .    .    .    .    .   B2 ) 
         !    ( .    .    .   B1^T B2^T  I )
-        CALL assembleGradientMatrices (.TRUE.,rmatrixComponents,rmatrix,&
-          IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
+        
+        ! Should we assemble only the dual equation?
+        IF (ctypePrimalDual .EQ. 2) THEN
+          CALL assembleGradientMatrices (.TRUE.,rmatrixComponents,rmatrix,&
+            IAND(coperation,CMASM_QUICKREFERENCES) .NE. 0)
+        ELSE
+        
+          ! The B/B^T-matrices themself share their structure and data with
+          ! those of the primal equation. This is possible as long as the
+          ! type of boundary conditions are the same, as then implementing the
+          ! BC's into the B/B^T-matrices of the primal equation will affect
+          ! those of the dual equation as well and vice versa
+          ! (in total the BC's are then implemented 2x into the same matrices
+          ! which needs a little bit more time but not much).
+          !
+          ! Furthermore, the VANCA preconditioner can only handle the
+          ! situation where the B/B^T matrices of the dual equation share their
+          ! data with that of the primal one...
+          CALL lsyssc_duplicateMatrix ( &
+              rmatrix%Rmatrixblock(1,3),rmatrix%Rmatrixblock(4,6), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          CALL lsyssc_duplicateMatrix ( &
+              rmatrix%Rmatrixblock(2,3),rmatrix%Rmatrixblock(5,6), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          CALL lsyssc_duplicateMatrix ( &
+              rmatrix%Rmatrixblock(3,1),rmatrix%Rmatrixblock(6,4), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          CALL lsyssc_duplicateMatrix ( &
+              rmatrix%Rmatrixblock(3,2),rmatrix%Rmatrixblock(6,5), &
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        END IF
     
         ! Initialise the weights for the B/B^T matrices
         rmatrix%RmatrixBlock(4,6)%dscaleFactor = rmatrixComponents%deta2
@@ -994,7 +1023,7 @@ CONTAINS
     ! GAMMA <> 0; can be omitted if GAMMA=0.
     TYPE(t_vectorBlock), OPTIONAL :: rvector
     
-    ! Weight for the velocity vector; standard = -1.
+    ! Weight for the velocity vector; standard = 1.
     REAL(DP), INTENT(IN), OPTIONAL :: dvectorWeight
     
     ! local variables
@@ -1583,6 +1612,11 @@ CONTAINS
     TYPE(t_vectorBlock), POINTER :: p_ry
     TYPE(t_matrixBlock) :: rmatrix
     
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dd
+    
+    CALL lsysbl_getbase_double (rd,p_Dd)
+    
     dcx = 1.0_DP
     IF (PRESENT(cx)) dcx = cx
     
@@ -1687,8 +1721,8 @@ CONTAINS
     ! equation. In both cases, we specify the primal velocity p_ry
     ! as velocity field (!).
 
-    CALL assembleVelocityDefect (.FALSE.,rmatrixComponents,rmatrix,rx,rd,p_ry,dcx)
-    CALL assembleVelocityDefect (.TRUE.,rmatrixComponents,rmatrix,rx,rd,p_ry,dcx)
+    CALL assembleVelocityDefect (.FALSE.,rmatrixComponents,rmatrix,rx,rd,dcx,p_ry,1.0_DP)
+    CALL assembleVelocityDefect (.TRUE.,rmatrixComponents,rmatrix,rx,rd,dcx,p_ry,1.0_DP)
     
     ! Now, we treat all the remaining blocks. Let's see what is missing:
     !
@@ -1745,7 +1779,7 @@ CONTAINS
   CONTAINS
 
     SUBROUTINE assembleVelocityDefect (bdualEquation,rmatrixComponents,&
-        rmatrix,rvector,rdefect,rvelocityVector,dvectorWeight)
+        rmatrix,rvector,rdefect,dcx,rvelocityVector,dvectorWeight)
         
     ! Assembles the velocity defect in the block matrix rmatrix at position
     ! itop..itop+1 in the velocity vector. rdefect must have been initialised
@@ -1756,9 +1790,9 @@ CONTAINS
     !       A := dalpha*M + dtheta*Laplace + dgamma*N(p_rvector) +
     !            dnewton*N*(p_rvector)
     !
-    ! and c=dvectorWeight, the routine will construct
+    ! the routine will construct
     !
-    !       rdefect = rdefect - c A rvector
+    !       rdefect = rdefect - dcx * (dtheta A rvector)
     
     ! Whether to set up the primal or the dual equation.
     ! FALSE=primal, TRUE=dual equation.
@@ -1780,7 +1814,10 @@ CONTAINS
     ! Is overwritten by the defect vector in the velocity subsystem.
     TYPE(t_vectorBlock), INTENT(INOUT) :: rdefect
     
-    ! Weight for the velocity vector; usually = 1.0
+    ! Multiplication factor for the whole operator A*rvector
+    REAL(DP), INTENT(IN) :: dcx
+    
+    ! Weight for the velocity vector rvelocityVector; usually = 1.0
     REAL(DP), INTENT(IN) :: dvectorWeight
     
     ! Velocity vector field that should be used for the assembly of the
@@ -1799,14 +1836,19 @@ CONTAINS
     INTEGER :: imatOffset
     REAL(DP) :: dalpha, dtheta, dnewton, diota, dgamma
     
+    ! DEBUG!!!
+    REAL(DP), DIMENSION(:), POINTER :: p_Dd
+    
+    CALL lsysbl_getbase_double (rdefect,p_Dd)
+    
       IF (.NOT. bdualEquation) THEN
         ! Set the weights used here according to the primal equation.
         ! Set imatOffset=0 so the submatrix at position 1,1 is tackled.
         imatOffset = 0
         dalpha = rmatrixComponents%dalpha1
-        dtheta = rmatrixComponents%dtheta1
+        dtheta = rmatrixComponents%dtheta1 
         diota  = rmatrixComponents%diota1
-        dgamma = rmatrixComponents%dgamma1
+        dgamma = rmatrixComponents%dgamma1 
         dnewton = rmatrixComponents%dnewton1
         iupwind = rmatrixComponents%iupwind1
         dupsam = rmatrixComponents%dupsam1
@@ -1815,7 +1857,7 @@ CONTAINS
         ! Set imatOffset=3 so the submatrix at position 4,4 is tackled.
         imatOffset = 3
         dalpha = rmatrixComponents%dalpha2
-        dtheta = rmatrixComponents%dtheta2
+        dtheta = rmatrixComponents%dtheta2 
         diota  = rmatrixComponents%diota2
         dgamma = rmatrixComponents%dgamma2
         dnewton = rmatrixComponents%dnewton2
@@ -1848,12 +1890,12 @@ CONTAINS
         CALL lsyssc_vectorLinearComb (&
             rvector%RvectorBlock(imatOffset+1), &
             rdefect%RvectorBlock(imatOffset+1), &
-            -diota, 1.0_DP)
+            -diota*dcx, 1.0_DP)
 
         CALL lsyssc_vectorLinearComb (&
             rvector%RvectorBlock(imatOffset+2), &
             rdefect%RvectorBlock(imatOffset+2), &
-            -diota, 1.0_DP)
+            -diota*dcx, 1.0_DP)
       END IF
 
       ! ---------------------------------------------------
@@ -1862,12 +1904,12 @@ CONTAINS
         CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
             rvector%RvectorBlock(imatOffset+1), &
             rdefect%RvectorBlock(imatOffset+1), &
-            -dalpha, 1.0_DP)
+            -dalpha*dcx, 1.0_DP)
 
         CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixMass, &
             rvector%RvectorBlock(imatOffset+2), &
             rdefect%RvectorBlock(imatOffset+2), &
-            -dalpha, 1.0_DP)
+            -dalpha*dcx, 1.0_DP)
       END IF
       
       ! ---------------------------------------------------
@@ -1876,12 +1918,12 @@ CONTAINS
         CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
             rvector%RvectorBlock(imatOffset+1), &
             rdefect%RvectorBlock(imatOffset+1), &
-            -dtheta, 1.0_DP)
+            -dtheta*dcx, 1.0_DP)
 
         CALL lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixStokes, &
             rvector%RvectorBlock(imatOffset+2), &
             rdefect%RvectorBlock(imatOffset+2), &
-            -dtheta, 1.0_DP)
+            -dtheta*dcx, 1.0_DP)
       END IF
       
       ! ---------------------------------------------------
@@ -1898,10 +1940,10 @@ CONTAINS
           rstreamlineDiffusion%dupsam = dupsam
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta = dgamma
+          rstreamlineDiffusion%ddelta = dgamma*dcx
           
           ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = dnewton
+          rstreamlineDiffusion%dnewton = dnewton*dcx
           
           ! Call the SD method to calculate the defect of the nonlinearity.
           ! As rrhsTemp shares its entries with rdefect, the result is
@@ -1924,7 +1966,7 @@ CONTAINS
           rupwind%dupsam = dupsam
 
           ! Matrix weight
-          rupwind%dtheta = dgamma
+          rupwind%dtheta = dgamma*dcx
           
           ! Call the upwind method to calculate the nonlinear defect.
           CALL conv_upwind2d (rtempVector, rtempVector, &
@@ -1950,10 +1992,10 @@ CONTAINS
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Matrix weight
-          rstreamlineDiffusion%ddelta = dgamma
+          rstreamlineDiffusion%ddelta = dgamma*dcx
           
           ! Weight for the Newtop part; =0 deactivates Newton.
-          rstreamlineDiffusion%dnewton = dnewton
+          rstreamlineDiffusion%dnewton = dnewton*dcx
           
           IF (dnewton .EQ. 0.0_DP) THEN
 
@@ -1992,7 +2034,7 @@ CONTAINS
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
-          rjumpStabil%dtheta = dgamma
+          rjumpStabil%dtheta = dgamma * dcx
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -2031,7 +2073,7 @@ CONTAINS
           rjumpStabil%dgamma = rjumpStabil%dgammastar
           
           ! Matrix weight
-          rjumpStabil%dtheta = dgamma
+          rjumpStabil%dtheta = dgamma * dcx
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any

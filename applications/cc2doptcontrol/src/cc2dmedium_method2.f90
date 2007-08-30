@@ -112,10 +112,7 @@ CONTAINS
     
     ! Initialise the collection
     CALL collct_init (p_rproblem%rcollection)
-    DO i=1,NNLEV
-      CALL collct_addlevel_all (p_rproblem%rcollection)
-    END DO
-    
+
     ! Initialise the parameter list object. This creates an empty parameter list.
     CALL parlst_init (p_rproblem%rparamList)
     
@@ -144,6 +141,10 @@ CONTAINS
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     CALL c2d2_initParameters (p_rproblem)
+    
+    DO i=1,p_rproblem%NLMAX
+      CALL collct_addlevel_all (p_rproblem%rcollection)
+    END DO
     
     ! So now the different steps - one after the other.
     !
