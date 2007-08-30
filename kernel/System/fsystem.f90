@@ -46,6 +46,9 @@
 !#         this routine will stop the program by a floating point exception,
 !#         which prints the stack trace to the terminal on some compilers.
 !# 
+!# 11.) sys_permute
+!#      -> Compute a random permutation of a given sequence
+!#
 !#  ... (documentation incomplete)
 !# </purpose>
 !##############################################################################
@@ -249,6 +252,52 @@ MODULE fsystem
   END INTERFACE
 
 CONTAINS
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE sys_permute(k,Idata)
+
+!<description>
+    ! This routine computes the permutation of the initial set Idata
+    ! that corresponds to the factoriodic number k.
+!</description>
+
+!<input>
+    ! factoriodic number
+    INTEGER(I32), INTENT(IN) :: k
+!</input>
+
+!<inputoutput>
+    ! initial and permuted set
+    INTEGER(I32), DIMENSION(:), INTENT(INOUT) :: Idata
+!</inputoutput>
+!</subroutine>
+  
+    ! local variables
+    INTEGER(I64) :: factorial
+    INTEGER(I32) :: i,j,iswap
+    
+    DO j=2,SIZE(Idata)
+
+      IF (j-1 .LT. k) THEN
+        factorial = 0._I64
+      ELSEIF(j-1 .EQ. k) THEN
+        factorial = 1._I64
+      ELSE
+        factorial=k+1
+        DO i=k+2,j-1
+          factorial=factorial*i
+        END DO
+      END IF
+      
+      i = j-MOD(factorial,j)
+      iswap    = Idata(j)
+      Idata(j) = Idata(i)
+      IData(i) = iswap
+    END DO
+  END SUBROUTINE sys_permute
 
 !************************************************************************
 
