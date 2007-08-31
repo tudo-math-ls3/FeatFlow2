@@ -43,11 +43,11 @@ sSolutionWrite     = 'ns/DX4'
 
 # minimum mg-level; <=0: Use level (NLMAX+NLMIN) as coarse grid
 
-NLMIN              = 1
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 2
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 
@@ -226,26 +226,26 @@ dgammaC = 0.0  # 1.0
 # =3: like =1, but in ilevelTargetFlow an arbitrary level may be specified.
 # =4: like =4, but in ilevelTargetFlow an arbitrary level may be specified.
 
-itypeTargetFlow = 2
+itypeTargetFlow = 4
 
 # Refinement level of the coarse mesh corresponding to the target flow vector.
 # This may exceed the level bound specified by NLMAX, so it's allowed to specify
 # a target flow on a level higher than NLMAX!
 # Only valid if itypeTargetFlow =3 or =4.
 
-ilevelTargetFlow = 2
+ilevelTargetFlow = 5
 
 # If itypeTargetFlow = 1, this is the filename of a file on disc containing
 # the target flow. The file must contain a solution at the same spatial
 # level as prescribed by NLMAX.
 
-stargetFlow = 'ns/lv2re0.025steps80/solution'
+stargetFlow = 'ns/lv5re0.025steps80/solution'
 
 # Granularity parameter for the filenames of the target flow.
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
-itargetFlowDelta = 2
+itargetFlowDelta = 4
 
 # Formulation of the Space-time problem.
 # =0: usual formulation as specified in the DFG applicance

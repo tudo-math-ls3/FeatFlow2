@@ -186,12 +186,6 @@ MODULE cc2dmediumm2spacetimesolver
   ! to each diagonal block of the coupled space-time system.
   INTEGER, PARAMETER :: SPTILS_ALG_BLOCKJACOBI   = 2
   
-  ! Block Forward-Backward Gauss-Seidel preconditioner which applies a 
-  ! spatial preconditioner to each diagonal block of the 
-  ! coupled space-time system, calculating once all primal and once
-  ! all dual problems
-  INTEGER, PARAMETER :: SPTILS_ALG_BLOCKFBGS     = 3
-
   ! Block Gauss-Seidel preconditioner
   INTEGER, PARAMETER :: SPTILS_ALG_BLOCKSOR      = 4
   
@@ -201,8 +195,8 @@ MODULE cc2dmediumm2spacetimesolver
   ! UMFPACK solver
   INTEGER, PARAMETER :: SPTILS_ALG_UMFPACK4      = 11
 
-  ! Block VANCA solver
-  INTEGER, PARAMETER :: SPTILS_ALG_BLOCKVANCA    = 12
+  ! Block orward-Backward Gauss-Seidel solver
+  INTEGER, PARAMETER :: SPTILS_ALG_BLOCKFBGS    = 12
 
   ! Multigrid iteration
   INTEGER, PARAMETER :: SPTILS_ALG_MULTIGRID     = 9
@@ -422,9 +416,6 @@ MODULE cc2dmediumm2spacetimesolver
     ! Pointer to a structure for the block Jacobi preconditioner
     TYPE(t_sptilsSubnodeBlockJacobi), POINTER     :: p_rsubnodeBlockJacobi => NULL()
 
-    ! Pointer to a structure for the block forward-backward Gauss-Seidel preconditioner
-    TYPE(t_sptilsSubnodeBlockFBGS), POINTER       :: p_rsubnodeBlockFBGS => NULL()
-
     ! Pointer to a structure for the block Gauss-Seidel preconditioner
     TYPE(t_sptilsSubnodeBlockSOR), POINTER         :: p_rsubnodeBlockSOR => NULL()
 
@@ -435,7 +426,7 @@ MODULE cc2dmediumm2spacetimesolver
     TYPE(t_sptilsSubnodeUMFPACK4), POINTER        :: p_rsubnodeUMFPACK4 => NULL()
 
     ! Pointer to a structure for the UMFPACK4 preconditioner
-    TYPE(t_sptilsSubnodeBlockVANCA), POINTER       :: p_rsubnodeBlockVANCA => NULL()
+    TYPE(t_sptilsSubnodeBlockFBGS), POINTER       :: p_rsubnodeBlockFBGS => NULL()
 
   END TYPE
   
@@ -513,27 +504,6 @@ MODULE cc2dmediumm2spacetimesolver
 
 !<typeblock>
   
-  ! This structure realises the subnode for the Block Forward-Backward
-  ! Gauss-Seidel solver.
-  
-  TYPE t_sptilsSubnodeBlockFBGS
-
-    ! Pointer to a spatial preconditioner structure that defines the
-    ! preconditioning in each substep of the primal system.
-    TYPE(t_ccspatialPreconditioner), POINTER :: p_rspatialPreconditionerPrimal
-
-    ! Pointer to a spatial preconditioner structure that defines the
-    ! preconditioning in each substep of the dual system.
-    TYPE(t_ccspatialPreconditioner), POINTER :: p_rspatialPreconditionerDual
-    
-  END TYPE
-  
-!</typeblock>
-
-! *****************************************************************************
-
-!<typeblock>
-  
   ! This structure realises the subnode for the Block Gauss-Seidel solver.
   
   TYPE t_sptilsSubnodeBlockSOR
@@ -552,7 +522,7 @@ MODULE cc2dmediumm2spacetimesolver
   
   ! This structure realises the subnode for the Block Gauss-Seidel solver.
   
-  TYPE t_sptilsSubnodeBlockVANCA
+  TYPE t_sptilsSubnodeBlockFBGS
 
     ! Pointer to a spatial preconditioner structure that defines the
     ! preconditioning in each substep.
@@ -758,12 +728,10 @@ CONTAINS
     CALL sptils_setMatrixCG (rsolverNode,Rmatrices)
   CASE (SPTILS_ALG_BLOCKJACOBI)
     CALL sptils_setMatrixBlockJacobi (rsolverNode,Rmatrices)
-  CASE (SPTILS_ALG_BLOCKFBGS)
-    CALL sptils_setMatrixBlockFBGS (rsolverNode,Rmatrices)
   CASE (SPTILS_ALG_BLOCKSOR)
     CALL sptils_setMatrixBlockSOR (rsolverNode,Rmatrices)
-  CASE (SPTILS_ALG_BLOCKVANCA)
-    CALL sptils_setMatrixBlockVANCA (rsolverNode,Rmatrices)
+  CASE (SPTILS_ALG_BLOCKFBGS)
+    CALL sptils_setMatrixBlockFBGS (rsolverNode,Rmatrices)
   CASE (SPTILS_ALG_MULTIGRID)
     CALL sptils_setMatrixMultigrid (rsolverNode,Rmatrices)
   CASE DEFAULT
@@ -812,12 +780,10 @@ CONTAINS
       CALL sptils_initStructureCG (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_initStructureBlockJacobi (rsolverNode,ierror)
-    CASE (SPTILS_ALG_BLOCKFBGS)
-      CALL sptils_initStructureBlockFBGS (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKSOR)
       CALL sptils_initStructureBlockSOR (rsolverNode,ierror)
-    CASE (SPTILS_ALG_BLOCKVANCA)
-      CALL sptils_initStructureBlockVANCA (rsolverNode,ierror)
+    CASE (SPTILS_ALG_BLOCKFBGS)
+      CALL sptils_initStructureBlockFBGS (rsolverNode,ierror)
     CASE (SPTILS_ALG_MULTIGRID)
       CALL sptils_initStructureMultigrid (rsolverNode,ierror)
     CASE (SPTILS_ALG_UMFPACK4)
@@ -869,12 +835,10 @@ CONTAINS
       CALL sptils_initDataCG (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_initDataBlockJacobi (rsolverNode,ierror)
-    CASE (SPTILS_ALG_BLOCKFBGS)
-      CALL sptils_initDataBlockFBGS (rsolverNode,ierror)
     CASE (SPTILS_ALG_BLOCKSOR)
       CALL sptils_initDataBlockSOR (rsolverNode,ierror)
-    CASE (SPTILS_ALG_BLOCKVANCA)
-      CALL sptils_initDataBlockVANCA (rsolverNode,ierror)
+    CASE (SPTILS_ALG_BLOCKFBGS)
+      CALL sptils_initDataBlockFBGS (rsolverNode,ierror)
     CASE (SPTILS_ALG_MULTIGRID)
       CALL sptils_initDataMultigrid (rsolverNode,ierror)
     CASE (SPTILS_ALG_UMFPACK4)
@@ -983,12 +947,10 @@ CONTAINS
       CALL sptils_doneDataCG (rsolverNode)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_doneDataBlockJacobi (rsolverNode)
-    CASE (SPTILS_ALG_BLOCKFBGS)
-      CALL sptils_doneDataBlockFBGS (rsolverNode)
     CASE (SPTILS_ALG_BLOCKSOR)
       CALL sptils_doneDataBlockSOR (rsolverNode)
-    CASE (SPTILS_ALG_BLOCKVANCA)
-      CALL sptils_doneDataBlockVANCA (rsolverNode)
+    CASE (SPTILS_ALG_BLOCKFBGS)
+      CALL sptils_doneDataBlockFBGS (rsolverNode)
     CASE (SPTILS_ALG_MULTIGRID)
       CALL sptils_doneDataMultigrid (rsolverNode)
     CASE (SPTILS_ALG_UMFPACK4)
@@ -1025,12 +987,10 @@ CONTAINS
       CALL sptils_doneStructureCG (rsolverNode)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_doneStructureBlockJacobi (rsolverNode)
-    CASE (SPTILS_ALG_BLOCKFBGS)
-      CALL sptils_doneStructureBlockFBGS (rsolverNode)
     CASE (SPTILS_ALG_BLOCKSOR)
       CALL sptils_doneStructureBlockSOR (rsolverNode)
-    CASE (SPTILS_ALG_BLOCKVANCA)
-      CALL sptils_doneStructureBlockVANCA (rsolverNode)
+    CASE (SPTILS_ALG_BLOCKFBGS)
+      CALL sptils_doneStructureBlockFBGS (rsolverNode)
     CASE (SPTILS_ALG_MULTIGRID)
       CALL sptils_doneStructureMultigrid (rsolverNode)
     CASE (SPTILS_ALG_UMFPACK4)
@@ -1084,12 +1044,10 @@ CONTAINS
       CALL sptils_doneCG (p_rsolverNode)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_doneBlockJacobi (p_rsolverNode)
-    CASE (SPTILS_ALG_BLOCKFBGS)
-      CALL sptils_doneBlockFBGS (p_rsolverNode)
     CASE (SPTILS_ALG_BLOCKSOR)
       CALL sptils_doneBlockSOR (p_rsolverNode)
-    CASE (SPTILS_ALG_BLOCKVANCA)
-      CALL sptils_doneBlockVANCA (p_rsolverNode)
+    CASE (SPTILS_ALG_BLOCKFBGS)
+      CALL sptils_doneBlockFBGS (p_rsolverNode)
     CASE (SPTILS_ALG_MULTIGRID)
       CALL sptils_doneMultigrid (p_rsolverNode)
     CASE (SPTILS_ALG_UMFPACK4)
@@ -1328,12 +1286,10 @@ CONTAINS
       CALL sptils_precCG (rsolverNode,rd)
     CASE (SPTILS_ALG_BLOCKJACOBI)
       CALL sptils_precBlockJacobi (rsolverNode,rd)
-    CASE (SPTILS_ALG_BLOCKFBGS)
-      CALL sptils_precBlockFBGS (rsolverNode,rd)
     CASE (SPTILS_ALG_BLOCKSOR)
       CALL sptils_precBlockSOR (rsolverNode,rd)
-    CASE (SPTILS_ALG_BLOCKVANCA)
-      CALL sptils_precBlockVANCA (rsolverNode,rd)
+    CASE (SPTILS_ALG_BLOCKFBGS)
+      CALL sptils_precBlockFBGS (rsolverNode,rd)
     CASE (SPTILS_ALG_MULTIGRID)
       CALL sptils_precMultigrid (rsolverNode,rd)
     CASE (SPTILS_ALG_UMFPACK4)
@@ -1952,7 +1908,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_initBlockJacobi (rproblem,p_rsolverNode,rspatialPrecond)
+  RECURSIVE SUBROUTINE sptils_initBlockJacobi (rproblem,p_rsolverNode,domega,rspatialPrecond)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the block Jacobi preconditioner.
@@ -1963,6 +1919,9 @@ CONTAINS
   ! A pointer to this is saved in the solver node, so the problem structure
   ! must not be released before the solver node is released.
   TYPE(t_problem), TARGET :: rproblem
+  
+  ! Damping parameter
+  REAL(DP), INTENT(IN) :: domega
   
   ! A spatial preconditioner structure that defines how to perform the preconditioning
   ! in each substep. A pointer to this is noted in p_rsolverNode, so rspatialPrecond
@@ -1987,6 +1946,8 @@ CONTAINS
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = SPTILS_ABIL_DIRECT
 
+    p_rsolverNode%domega = domega
+    
     ! Allocate a subnode for our solver.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
@@ -2698,7 +2659,7 @@ CONTAINS
           rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
 
       IF (rsolverNode%ioutputLevel .GE. 1) THEN
-        CALL output_line ('Space-Time-Block-Gauss-Seidel preconditioning of timestep: '//&
+        CALL output_line ('Space-Time-Block-SOR preconditioning of timestep: '//&
             TRIM(sys_siL(isubstep,10))//&
             ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
       END IF
@@ -2772,17 +2733,17 @@ CONTAINS
   END SUBROUTINE
 
 ! *****************************************************************************
-! Block VANCA preconditioner
+! Block FBGS preconditioner
 ! *****************************************************************************
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_initBlockVANCA (rproblem,p_rsolverNode,&
+  RECURSIVE SUBROUTINE sptils_initBlockFBGS (rproblem,p_rsolverNode,&
       domega,rspatialPrecond)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the block 
-  ! VANCA preconditioner.
+  ! FBGS preconditioner.
 !</description>
   
 !<input>
@@ -2791,7 +2752,7 @@ CONTAINS
   ! must not be released before the solver node is released.
   TYPE(t_problem), TARGET :: rproblem
   
-  ! Relaxation parameter. =1.0: Full block VANCA.
+  ! Relaxation parameter. =1.0: Full block FBGS.
   REAL(DP), INTENT(IN) :: domega
   
   ! A spatial preconditioner structure that defines how to perform the preconditioning
@@ -2813,7 +2774,7 @@ CONTAINS
     CALL sptils_initSolverGeneral(rproblem,p_rsolverNode)
     
     ! Initialise the type of the solver
-    p_rsolverNode%calgorithm = SPTILS_ALG_BLOCKVANCA
+    p_rsolverNode%calgorithm = SPTILS_ALG_BLOCKFBGS
     
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = 0
@@ -2824,10 +2785,10 @@ CONTAINS
     ! Allocate a subnode for our solver.
     ! This initialises most of the variables with default values appropriate
     ! to this solver.
-    ALLOCATE(p_rsolverNode%p_rsubnodeBlockVANCA)
+    ALLOCATE(p_rsolverNode%p_rsubnodeBlockFBGS)
     
     ! Attach the preconditioner if given. 
-    p_rsolverNode%p_rsubnodeBlockVANCA%p_rspatialPreconditioner => &
+    p_rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner => &
         rspatialPrecond
     
   END SUBROUTINE
@@ -2836,7 +2797,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_doneBlockVANCA (rsolverNode)
+  RECURSIVE SUBROUTINE sptils_doneBlockFBGS (rsolverNode)
   
 !<description>
   ! This routine releases all temporary memory for the solver 
@@ -2855,7 +2816,7 @@ CONTAINS
     CALL sptils_doneStructureBlockSOR (rsolverNode)
     
     ! Release the subnode structure
-    DEALLOCATE(rsolverNode%p_rsubnodeBlockVANCA)
+    DEALLOCATE(rsolverNode%p_rsubnodeBlockFBGS)
   
   END SUBROUTINE
   
@@ -2863,7 +2824,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_setMatrixBlockVANCA (rsolverNode,Rmatrices)
+  RECURSIVE SUBROUTINE sptils_setMatrixBlockFBGS (rsolverNode,Rmatrices)
   
 !<description>
   ! This routine is called if the system matrix changes.
@@ -2893,7 +2854,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_initStructureBlockVANCA (rsolverNode,ierror)
+  RECURSIVE SUBROUTINE sptils_initStructureBlockFBGS (rsolverNode,ierror)
   
 !<description>
   ! Solver preparation. Perform symbolic factorisation (not of the defect
@@ -2915,7 +2876,7 @@ CONTAINS
 !</subroutine>
     
     ! Allocate memory for a temp vector.
-    CALL sptivec_initVector (rsolverNode%p_rsubnodeBlockVANCA%rtempVector,&
+    CALL sptivec_initVector (rsolverNode%p_rsubnodeBlockFBGS%rtempVector,&
         dof_igetNDofGlobBlock(rsolverNode%rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation),&
         rsolverNode%rspaceTimeDiscr%niterations)
 
@@ -2928,7 +2889,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_initDataBlockVANCA (rsolverNode, ierror)
+  RECURSIVE SUBROUTINE sptils_initDataBlockFBGS (rsolverNode, ierror)
   
 !<description>
   ! Calls the initData subroutine of the subsolver.
@@ -2960,7 +2921,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_doneDataBlockVANCA (rsolverNode)
+  RECURSIVE SUBROUTINE sptils_doneDataBlockFBGS (rsolverNode)
   
 !<description>
   ! Calls the doneData subroutine of the subsolver.
@@ -2982,7 +2943,7 @@ CONTAINS
 
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_doneStructureBlockVANCA (rsolverNode)
+  RECURSIVE SUBROUTINE sptils_doneStructureBlockFBGS (rsolverNode)
   
 !<description>
   ! Calls the doneStructure subroutine of the subsolver.
@@ -2998,8 +2959,8 @@ CONTAINS
   
 !</subroutine>
 
-    IF (rsolverNode%p_rsubnodeBlockVANCA%rtempVector%ntimesteps .NE. 0) &
-      CALL sptivec_releaseVector(rsolverNode%p_rsubnodeBlockVANCA%rtempVector)
+    IF (rsolverNode%p_rsubnodeBlockFBGS%rtempVector%ntimesteps .NE. 0) &
+      CALL sptivec_releaseVector(rsolverNode%p_rsubnodeBlockFBGS%rtempVector)
 
   END SUBROUTINE
   
@@ -3007,7 +2968,7 @@ CONTAINS
   
 !<subroutine>
   
-  RECURSIVE SUBROUTINE sptils_precBlockVANCA (rsolverNode,rd)
+  RECURSIVE SUBROUTINE sptils_precBlockFBGS (rsolverNode,rd)
   
 !<description>
   ! Applies the Block Jacobi preconditioner $P \approx A$ to the defect 
@@ -3123,7 +3084,7 @@ CONTAINS
         collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM2')
 
     ! ----------------------------------------------------------------------
-    ! We use a Block-VANCA scheme for preconditioning.
+    ! We use a Block-FBGS scheme for preconditioning.
     !
     ! This is an iterative approach that performs nminIterations global
     ! defect correction steps.
@@ -3170,7 +3131,7 @@ CONTAINS
     ! We repeat this process nminIteration times to get a new preconditioned
     ! defect ( x,l ) which then replaces rd.
     
-    p_rx   => rsolverNode%p_rsubnodeBlockVANCA%rtempVector
+    p_rx   => rsolverNode%p_rsubnodeBlockFBGS%rtempVector
     
     ! Ok, let's start. Initial solution is zero.
     CALL sptivec_clearVector (p_rx)
@@ -3202,7 +3163,7 @@ CONTAINS
             rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
 
         IF (rsolverNode%ioutputLevel .GE. 1) THEN
-          CALL output_line ('Space-Time-Block-VANCA preconditioning of timestep: '//&
+          CALL output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
               TRIM(sys_siL(isubstep,10))//&
               ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
         END IF
@@ -3274,7 +3235,7 @@ CONTAINS
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         CALL c2d2_precondDefect (&
-            rsolverNode%p_rsubnodeBlockVANCA%p_rspatialPreconditioner,&
+            rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
             rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
       
@@ -3312,7 +3273,7 @@ CONTAINS
             rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
 
         IF (rsolverNode%ioutputLevel .GE. 1) THEN
-          CALL output_line ('Space-Time-Block-VANCA preconditioning of timestep: '//&
+          CALL output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
               TRIM(sys_siL(isubstep,10))//&
               ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
         END IF
@@ -3384,7 +3345,7 @@ CONTAINS
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         CALL c2d2_precondDefect (&
-            rsolverNode%p_rsubnodeBlockVANCA%p_rspatialPreconditioner,&
+            rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
             rmatrixComponents,&
             rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
       
@@ -3418,499 +3379,6 @@ CONTAINS
     CALL lsysbl_releaseVector (rtempVectorX3)
     CALL lsysbl_releaseVector (rtempVectorX2)
     CALL lsysbl_releaseVector (rtempVectorX1)
-    
-  END SUBROUTINE
-
-! *****************************************************************************
-! Block Forward-Backward Gauss-Seidel preconditioner
-! *****************************************************************************
-
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_initBlockFBGS (rproblem,p_rsolverNode,&
-      rspatialPrecondPrimal,rspatialPrecondDual)
-  
-!<description>
-  ! Creates a t_sptilsNode solver structure for the block Forward-Backward
-  ! Gauss Seidel preconditioner.
-!</description>
-  
-!<input>
-  ! The problem structure that defines the problem.
-  ! A pointer to this is saved in the solver node, so the problem structure
-  ! must not be released before the solver node is released.
-  TYPE(t_problem), TARGET :: rproblem
-  
-  ! A spatial preconditioner structure that defines how to perform the preconditioning
-  ! in each substep when preconditioning the primal solution. 
-  ! A pointer to this is noted in p_rsolverNode, so rspatialPrecond
-  ! should not be released before the solver is destroyed.
-  TYPE(t_ccspatialPreconditioner), INTENT(IN), TARGET :: rspatialPrecondPrimal
-
-  ! A spatial preconditioner structure that defines how to perform the preconditioning
-  ! in each substep when preconditioning the dual solution. 
-  ! A pointer to this is noted in p_rsolverNode, so rspatialPrecond
-  ! should not be released before the solver is destroyed.
-  TYPE(t_ccspatialPreconditioner), INTENT(IN), TARGET :: rspatialPrecondDual
-!</input>
-  
-!<output>
-  ! A pointer to a t_sptilsNode structure. Is set by the routine, any previous
-  ! value of the pointer is destroyed.
-  TYPE(t_sptilsNode), POINTER         :: p_rsolverNode
-!</output>
-  
-!</subroutine>
-  
-    ! Create a default solver structure
-    CALL sptils_initSolverGeneral(rproblem,p_rsolverNode)
-    
-    ! Initialise the type of the solver
-    p_rsolverNode%calgorithm = SPTILS_ALG_BLOCKFBGS
-    
-    ! Initialise the ability bitfield with the ability of this solver:
-    p_rsolverNode%ccapability = SPTILS_ABIL_DIRECT
-
-    ! Allocate a subnode for our solver.
-    ! This initialises most of the variables with default values appropriate
-    ! to this solver.
-    ALLOCATE(p_rsolverNode%p_rsubnodeBlockFBGS)
-    
-    ! Attach the preconditioner if given. 
-    p_rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditionerPrimal => &
-        rspatialPrecondPrimal
-    p_rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditionerDual => &
-        rspatialPrecondDual
-    
-  END SUBROUTINE
-
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_doneBlockFBGS (rsolverNode)
-  
-!<description>
-  ! This routine releases all temporary memory for the efect correction solver 
-  ! from the heap.
-!</description>
-  
-!<inputoutput>
-  ! The t_sptilsNode structure which is to be cleaned up.
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
-!</inputoutput>
-  
-!</subroutine>
-  
-    ! Release memory if still associated
-    CALL sptils_doneDataBlockFBGS (rsolverNode)
-    CALL sptils_doneStructureBlockFBGS (rsolverNode)
-    
-    ! Release the subnode structure
-    DEALLOCATE(rsolverNode%p_rsubnodeBlockJacobi)
-  
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_setMatrixBlockFBGS (rsolverNode,Rmatrices)
-  
-!<description>
-  ! This routine is called if the system matrix changes.
-  ! The routine calls sptils_setMatrices for the preconditioner
-  ! to inform also that one about the change of the matrix pointer.
-!</description>
-  
-!<input>
-  ! An array of system matrices which is simply passed to the initialisation 
-  ! routine of the preconditioner.
-  TYPE(t_ccoptSpaceTimeDiscretisation), DIMENSION(:), INTENT(IN) :: Rmatrices
-!</input>
-  
-!<inputoutput>
-  ! The t_sptilsNode structure of the solver
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
-!</inputoutput>
-  
-!</subroutine>
-
-    ! Do we have a preconditioner given? If yes, call the general initialisation
-    ! routine to initialise it.
-    
-  END SUBROUTINE
-
-! ***************************************************************************
-
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_initStructureBlockFBGS (rsolverNode,ierror)
-  
-!<description>
-  ! Solver preparation. Perform symbolic factorisation (not of the defect
-  ! correcion solver, but of subsolvers). Allocate temporary memory.
-!</description>
-  
-!<inputoutput>
-  ! The t_sptilsNode structure 
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
-!</inputoutput>
-  
-!<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
-  ! SPTILS_ERR_NOERROR indicates that an error happened during the
-  ! initialisation phase.
-  INTEGER, INTENT(OUT) :: ierror
-!</output>
-  
-!</subroutine>
-    
-    ! A-priori we have no error...
-    ierror = SPTILS_ERR_NOERROR
-    
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_initDataBlockFBGS (rsolverNode, ierror)
-  
-!<description>
-  ! Calls the initData subroutine of the subsolver.
-  ! Maybe the subsolver needs that...
-  ! The routine is declared RECURSIVE to get a clean interaction
-  ! with sptils_initData.
-!</description>
-  
-!<inputoutput>
-  ! The t_sptilsNode structure 
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
-!</inputoutput>
-  
-!<output>
-  ! One of the SPTILS_ERR_XXXX constants. A value different to 
-  ! SPTILS_ERR_NOERROR indicates that an error happened during the
-  ! initialisation phase.
-  INTEGER, INTENT(OUT) :: ierror
-!</output>
-
-!</subroutine>
-
-    ! A-priori we have no error...
-    ierror = SPTILS_ERR_NOERROR
-
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_doneDataBlockFBGS (rsolverNode)
-  
-!<description>
-  ! Calls the doneData subroutine of the subsolver.
-  ! Maybe the subsolver needs that...
-  ! The routine is declared RECURSIVE to get a clean interaction
-  ! with sptils_doneData.
-!</description>
-  
-!<inputoutput>
-  ! The t_sptilsNode structure 
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
-!</inputoutput>
-  
-!</subroutine>
-
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_doneStructureBlockFBGS (rsolverNode)
-  
-!<description>
-  ! Calls the doneStructure subroutine of the subsolver.
-  ! Maybe the subsolver needs that...
-  ! The routine is declared RECURSIVE to get a clean interaction
-  ! with sptils_doneStructure.
-!</description>
-  
-!<inputoutput>
-  ! The t_sptilsNode structure 
-  TYPE(t_sptilsNode), INTENT(INOUT)         :: rsolverNode
-!</inputoutput>
-  
-!</subroutine>
-
-  END SUBROUTINE
-  
-  ! ***************************************************************************
-  
-!<subroutine>
-  
-  RECURSIVE SUBROUTINE sptils_precBlockFBGS (rsolverNode,rd)
-  
-!<description>
-  ! Applies the Block Jacobi preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
-  ! rd will be overwritten by the preconditioned defect.
-  !
-  ! The term 'Block Jacobi' means that a spatial preconditioner is applied
-  ! to the diagonal block of each time step in the global space-time
-  ! system. Usually, this spatial preconditioner is a linear solver
-  ! (multigrid or whatever). More precisely, any spatial preconditioner that
-  ! can be used with c2d2_precondDefect is suitable.
-  !
-  ! The matrix must have been attached to the system before calling
-  ! this routine, and the initStructure/initData routines
-  ! must have been called to prepare the solver for solving
-  ! the problem.
-!</description>
-  
-!<inputoutput>
-  ! The t_sptilsNode structure of the solver
-  TYPE(t_sptilsNode), INTENT(INOUT), TARGET :: rsolverNode
-
-  ! On call to this routine: The defect vector to be preconditioned.
-  ! Will be overwritten by the preconditioned defect.
-  TYPE(t_spacetimeVector), INTENT(INOUT)    :: rd
-!</inputoutput>
-  
-!</subroutine>
-
-    ! local variables
-    INTEGER :: isubstep
-    REAL(DP) :: dtheta,dtstep
-    LOGICAL :: bsuccess
-    TYPE(t_ccmatrixComponents) :: rmatrixComponents
-    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
-    TYPE(t_vectorBlock) :: rtempVectorD,rtempVectorX,rtempVectorDold
-    
-    ! DEBUG!!!
-    REAL(DP), DIMENSION(:), POINTER :: p_Dx,p_Dd
-        
-    ! Get a pointer to the space-time discretisation structure that defines
-    ! how to apply the global system matrix.
-    p_rspaceTimeDiscr => rsolverNode%rspaceTimeDiscr
-    
-    dtheta = rsolverNode%p_rproblem%rtimedependence%dtimeStepTheta
-    dtstep = p_rspaceTimeDiscr%dtstep
-
-    ! Create temp vectors for X, B and D.
-    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
-        rtempVectorD,.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
-        rtempVectorDold,.TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
-        rtempVectorX,.TRUE.)
-        
-    ! Attach the boundary conditions to the temp vectors.
-    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorX%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorX%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-        
-    rmatrixComponents%dnu = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM2')
-
-    ! ----------------------------------------------------------------------
-    ! We use a block-Jacobi scheme for preconditioning...
-    !
-    ! For this purpose, loop through the substeps -- from start to the end.
-    ! This is the 'forward' sweep.
-    
-    ! Like the typical Gauss Seidel, we have a system of the form
-    !
-    !   A        x1 = d1 
-    !   M A      x2   d2 
-    !     M A    x3   d3 
-    !       M A  x4   d4 
-    !
-    ! which is solved by the formula
-    !
-    !   x1 = A^-1  d1        
-    !   x2 = A^-1 (d2 - M x1)
-    !   x3 = A^-1 (d3 - M x2)
-    !   x4 = A^-1 (d4 - M x3)
-    !
-    ! Load the solution of the 0'th timestep, it does not have to be changed
-    ! (as it's the initial condition!).
-    CALL sptivec_getTimestepData (rd, 0, rtempVectorDold)
-    
-    DO isubstep = 1,p_rspaceTimeDiscr%niterations
-    
-      ! Current time step?
-      rsolverNode%p_rproblem%rtimedependence%dtime = &
-          rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
-
-      IF (rsolverNode%ioutputLevel .GE. 1) THEN
-        CALL output_line ('Space-Time-Block-Gauss-Seidel preconditioning of timestep: '//&
-            TRIM(sys_siL(isubstep,10))//&
-            ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
-      END IF
-    
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
-          .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
-      END IF
-
-      ! DEBUG!!!      
-      CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-      CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
-
-      ! Read in the RHS/solution/defect vector of the current timestep.
-      ! If no solution is specified, we have a linear problem and thus
-      ! the content of rtempVector is not relevant; actually it's even
-      ! zero by initialisation.
-      IF (ASSOCIATED(p_rspaceTimeDiscr%p_rsolution)) THEN
-        CALL sptivec_getTimestepData (p_rspaceTimeDiscr%p_rsolution, &
-            isubstep, rtempVectorX)
-      END IF
-      CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
-
-      ! Is this the first timestep or not?
-      IF (isubstep .GT. 0) THEN
-      
-        ! Create dnew = dnew - M dold according to the Gauss Seidel formula
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
-          isubstep,-1,rmatrixComponents)
-          
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorDold,rtempVectorD)
-        
-      END IF
-
-      ! Set up the matrix weights for the diagonal matrix
-      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
-        isubstep,0,rmatrixComponents)
-        
-      ! Perform preconditioning of the primal spatial defect with the method 
-      ! provided by the core equation module.
-      CALL c2d2_precondDefect (&
-          rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditionerPrimal,&
-          rmatrixComponents,&
-          rtempVectorD,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
-    
-      ! Save back the preconditioned defect.
-      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorD)
-      
-      ! Save the result to the "old" vector for the next timestep
-      CALL lsysbl_copyVector (rtempVectorD,rtempVectorDold)
-      
-    END DO
-
-    ! After that, the backward sweep -- from end to the start.
-    ! Like the typical Gauss Seidel for upper tridiagonal matrices, 
-    ! we have a system of the form
-    !
-    !   A M      x1 = d1 
-    !     A M    x2   d2 
-    !       A M  x3   d3 
-    !         A  x4   d4
-    !
-    ! which is solved by the formula
-    !
-    !   x4 = A^-1  d4
-    !   x3 = A^-1 (d3 - M x4)
-    !   x2 = A^-1 (d2 - M x3)
-    !   x1 = A^-1 (d1 - M x2)
-
-    DO isubstep = p_rspaceTimeDiscr%niterations,0,-1
-    
-      ! Current time step?
-      rsolverNode%p_rproblem%rtimedependence%dtime = &
-          rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
-
-      IF (rsolverNode%ioutputLevel .GE. 1) THEN
-        CALL output_line ('Space-Time-Block-Gauss-Seidel preconditioning of timestep: '//&
-            TRIM(sys_siL(isubstep,10))//&
-            ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
-      END IF
-    
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      IF (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
-          .NE. 0) THEN
-        CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
-      END IF
-
-      ! DEBUG!!!      
-      !CALL lsysbl_getbase_double (rtempVectorX,p_Dx)
-      !CALL lsysbl_getbase_double (rtempVectorD,p_Dd)
-
-      ! Read in the RHS/solution/defect vector of the current timestep.
-      ! If no solution is specified, we have a linear problem and thus
-      ! the content of rtempVector is not relevant; actually it's even
-      ! zero by initialisation.
-      IF (ASSOCIATED(p_rspaceTimeDiscr%p_rsolution)) THEN
-        CALL sptivec_getTimestepData (p_rspaceTimeDiscr%p_rsolution, &
-            isubstep, rtempVectorX)
-      END IF
-      CALL sptivec_getTimestepData (rd, isubstep, rtempVectorD)
-
-      ! Is this the last timestep or not?
-      IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
-      
-        ! Create dnew = dnew - M dold according to the Gauss Seidel formula
-        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
-          isubstep,1,rmatrixComponents)
-          
-        CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorDold,rtempVectorD)
-        
-      END IF
-
-      ! Set up the matrix weights for the diagonal matrix
-      CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
-        isubstep,0,rmatrixComponents)
-        
-      ! Perform preconditioning of the spatial dual defect with the method provided by the
-      ! core equation module.
-      CALL c2d2_precondDefect (&
-          rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditionerDual,&
-          rmatrixComponents,&
-          rtempVectorD,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
-    
-      ! Save back the preconditioned defect.
-      CALL sptivec_setTimestepData (rd, isubstep, rtempVectorD)
-      
-      ! Save the result to the "old" vector for the next timestep
-      CALL lsysbl_copyVector (rtempVectorD,rtempVectorDold)
-
-    END DO
-    
-    CALL lsysbl_releaseVector (rtempVectorX)
-    CALL lsysbl_releaseVector (rtempVectorDold)
-    CALL lsysbl_releaseVector (rtempVectorD)
     
   END SUBROUTINE
 

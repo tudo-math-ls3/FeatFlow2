@@ -1828,7 +1828,7 @@ CONTAINS
     LOGICAL :: bneumann
     REAL(DP), DIMENSION(4) :: Derror
     INTEGER(I32) :: nminIterations,nmaxIterations
-    REAL(DP) :: depsRel,depsAbs,domega
+    REAL(DP) :: depsRel,depsAbs,domega,domegaPrecond
     TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecond
     TYPE(t_ccspatialPreconditioner), DIMENSION(SIZE(RspaceTimeDiscr)) :: RspatialPrecondPrimal
@@ -1918,7 +1918,7 @@ CONTAINS
       END IF
       
       SELECT CASE (i)
-      CASE (0,2,4,5)
+      CASE (0,1,2,3,4)
         ! Initialise the spatial preconditioner for Block Jacobi
         ! (note: this is slightly expensive in terms of memory!
         ! Probably we could use the same preconditioner for all levels,
@@ -1927,19 +1927,6 @@ CONTAINS
             ispacelev,RspatialPrecond(ilev),0)
         CALL c2d2_configPreconditioner (rproblem,RspatialPrecond(ilev))
          
-      CASE (1)
-        ! Initialise the spatial preconditioner for Block Gauss-Seidel
-        ! (note: this is slightly expensive in terms of memory!
-        ! Probably we could use the same preconditioner for all levels,
-        ! but this has still to be implemeted and is a little bit harder!)
-        CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
-            ispacelev,RspatialPrecondPrimal(ilev),1)
-        CALL c2d2_configPreconditioner (rproblem,RspatialPrecondPrimal(ilev))
-
-        CALL c2d2_initPreconditioner (rproblem,rproblem%nlmin,&
-            ispacelev,RspatialPrecondDual(ilev),2)
-        CALL c2d2_configPreconditioner (rproblem,RspatialPrecondDual(ilev))
-        
       END SELECT
 
       ! Generate an interlevel projection structure for that level.
@@ -1959,52 +1946,47 @@ CONTAINS
         NULLIFY(p_rsmoother)
         NULLIFY(p_rpresmoother)
         NULLIFY(p_rpostsmoother)
-      
+
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'domega', domega, 1.0_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'domegaPrecond', domegaPrecond, 1.0_DP)
+        
         SELECT CASE (ctypeCoarseGridSolver)
         CASE (0)
           ! Block Jacobi preconditioner
-          CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockJacobi (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
 
           ! Defect correction solver
           CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
           
         CASE (1)
-          CALL sptils_initBlockFBGS (rproblem,p_rprecond,&
-              RspatialPrecondPrimal(ilev),RspatialPrecondDual(ilev))
+          ! Block SOR preconditioner
+          CALL sptils_initBlockSOR (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+
+          ! Defect correction solver
+          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
+
+        CASE (2)
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
 
           ! Defect correction solver
           CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
           
-        CASE (2)
+        CASE (3)
           ! CG with Block Jacobi as preconditioner
-          CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockJacobi (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
 
           ! CG solver        
           CALL sptils_initCG (rproblem,p_rcgrSolver,p_rprecond)
           
-        CASE (3)
+        CASE (4)
           ! UMFACK Gauss elimination
           CALL sptils_initUMFPACK4 (rproblem,p_rcgrSolver)
 
-        CASE (4)
-          ! Block Gauss Seidel preconditioner
-          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
-                                      'domegaPrecond', domega, 1.0_DP)
-
-          CALL sptils_initBlockSOR (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
-
-          ! Defect correction solver
-          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
-
-        CASE (5)
-          ! Block Gauss Seidel preconditioner
-          CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
-                                      'domegaPrecond', domega, 1.0_DP)
-
-          CALL sptils_initBlockVANCA (rproblem,p_rprecond,domega,RspatialPrecond(ilev))
-
-          ! Defect correction solver
-          CALL sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
+        CASE DEFAULT
+          PRINT *,'Unknown solver: ',ctypeCoarseGridSolver
+          STOP
         END SELECT
         
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
@@ -2015,8 +1997,6 @@ CONTAINS
                                     'depsRel', p_rcgrSolver%depsRel, 1E-5_DP)
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'depsAbs', p_rcgrSolver%depsAbs, 1E-5_DP)
-        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
-                                    'domega', p_rcgrSolver%domega, 1.0_DP)
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'ddivRel', p_rcgrSolver%ddivRel, 1.0_DP)
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
@@ -2031,27 +2011,32 @@ CONTAINS
         ! ... on higher levels, create a smoother, ...
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
                                     'domega', domega, 1.0_DP)
+        CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                    'domegaPrecond', domegaPrecond, 1.0_DP)
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
             'nsmSteps', nsmSteps, 1)
 
         SELECT CASE (cspaceTimeSmoother)
         CASE (0)
           ! Block Jacobi
-          CALL sptils_initBlockJacobi (rproblem,p_rsmoother,RspatialPrecond(ilev))
+          CALL sptils_initBlockJacobi (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
         CASE (1)
-          ! Block Gauss-Seidel
-          CALL sptils_initBlockFBGS (rproblem,p_rsmoother,&
-              RspatialPrecondPrimal(ilev),RspatialPrecondDual(ilev))
+          ! Block SOR
+          CALL sptils_initBlockSOR (rproblem,p_rsmoother,domegaPrecond,RspatialPrecond(ilev))
         CASE (2)
+          ! Block Forward-Backward Gauss-Seidel
+          CALL sptils_initBlockFBGS (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
+        CASE (3)
           ! CG with Block Jacobi as preconditioner
-          CALL sptils_initBlockJacobi (rproblem,p_rprecond,RspatialPrecond(ilev))
+          CALL sptils_initBlockJacobi (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
           CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
         CASE (4)
-          ! Block Gauss-Seidel
-          CALL sptils_initBlockSOR (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
-        CASE (5)
-          ! Block VANCA
-          CALL sptils_initBlockVANCA (rproblem,p_rsmoother,domega,RspatialPrecond(ilev))
+          ! CG with Block Jacobi as preconditioner
+          CALL sptils_initBlockFBGS (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+          CALL sptils_initCG (rproblem,p_rsmoother,p_rprecond)
+        CASE DEFAULT
+          PRINT *,'Unknown smoother: ',cspaceTimeSmoother
+          STOP
         END SELECT
         
         CALL sptils_convertToSmoother (p_rsmoother,nsmSteps,domega)
