@@ -245,7 +245,7 @@ stargetFlow = 'ns/lv2re0.025steps80/solution'
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
-itargetFlowDelta = 1
+itargetFlowDelta = 2
 
 # Formulation of the Space-time problem.
 # =0: usual formulation as specified in the DFG applicance

@@ -3080,6 +3080,12 @@ CONTAINS
     CALL lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation,&
         rtempVectorSol,.TRUE.)
         
+    ! DEBUG!!!      
+    CALL lsysbl_getbase_double (rtempVectorX1,p_Dx1)
+    CALL lsysbl_getbase_double (rtempVectorX2,p_Dx2)
+    CALL lsysbl_getbase_double (rtempVectorX3,p_Dx3)
+    CALL lsysbl_getbase_double (rtempVectorRHS,p_Dd)
+        
     ! Attach the boundary conditions to the temp vectors.
     rtempVectorD2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorD2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
@@ -3178,6 +3184,120 @@ CONTAINS
       CALL c2d2_implementBCdefect (rsolverNode%p_rproblem,&
          p_rspaceTimeDiscr,p_rx,rtempVectorRHS)
 
+      ! -----
+      ! Backward in time
+      ! -----
+
+      ! Load the RHS and solution of the 0th timestep.
+      CALL sptivec_getTimestepData (rd, p_rspaceTimeDiscr%niterations, rtempVectorD2)
+      
+      ! Current iterate
+      CALL sptivec_getTimestepData (p_rx, p_rspaceTimeDiscr%niterations, rtempVectorX2)
+
+      ! Loop through the substeps we have to update
+      DO isubstep = p_rspaceTimeDiscr%niterations,0,-1
+      
+        ! Current time step?
+        rsolverNode%p_rproblem%rtimedependence%dtime = &
+            rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
+
+        IF (rsolverNode%ioutputLevel .GE. 1) THEN
+          CALL output_line ('Space-Time-Block-VANCA preconditioning of timestep: '//&
+              TRIM(sys_siL(isubstep,10))//&
+              ', Time: '//TRIM(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+        END IF
+      
+        ! -----
+        ! Discretise the boundary conditions at the new point in time -- 
+        ! if the boundary conditions are nonconstant in time!
+        IF (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
+            .NE. 0) THEN
+          CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
+        END IF
+
+        ! The RHS which is put into the preconditioner is set up in 
+        ! rtempVectorRHS to prevent rtempVectorD2 from getting destroyed.
+        CALL lsysbl_copyVector (rtempVectorD2,rtempVectorRHS)
+        
+        ! Is this the first timestep or not?
+        IF (isubstep .GT. 0) THEN
+        
+          ! Read the RHS and solution of the next timestep
+          CALL sptivec_getTimestepData (rd, isubstep-1, rtempVectorD1)
+          CALL sptivec_getTimestepData (p_rx, isubstep-1, rtempVectorX1)
+
+          ! Create d2 = RHS - Mx1 
+          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+            isubstep,-1,rmatrixComponents)
+            
+          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX1,rtempVectorRHS)
+          
+        END IF
+
+        ! Is this the last timestep or not?
+        IF (isubstep .LT. p_rspaceTimeDiscr%niterations) THEN
+          
+          ! Create d2 = RHS - Ml3 
+          CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+            isubstep,1,rmatrixComponents)
+            
+          CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX3,rtempVectorRHS)
+          
+        END IF
+
+        ! Read in the solution vector of the current timestep (for nonlinear problems).
+        IF (ASSOCIATED(p_rspaceTimeDiscr%p_rsolution)) THEN
+          CALL sptivec_getTimestepData (p_rspaceTimeDiscr%p_rsolution, &
+              isubstep, rtempVectorSol)
+        END IF
+
+        ! Set up the matrix weights for the diagonal matrix
+        CALL c2d2_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeDiscr,dtheta,&
+          isubstep,0,rmatrixComponents)
+          
+        ! Create d2 = RHS - A(solution) X2
+        CALL c2d2_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
+            1.0_DP,rtempVectorSol)
+            
+        ! Filter the defect for BC's and initial conditions if necessary
+        IF (isubstep .EQ. 0) THEN
+          CALL c2d2_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
+        ELSE IF (isubstep .EQ. p_rspaceTimeDiscr%niterations) THEN
+          CALL c2d2_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorRHS)
+        END IF
+
+        CALL c2d2_implementBCdefectSingle (&
+            rsolverNode%p_rproblem,isubstep,p_rspaceTimeDiscr,rtempVectorRHS)
+        
+        ! Ok, we have the local defect.
+        !
+        ! Perform preconditioning of the spatial defect with the method 
+        ! provided by the core equation module.
+        CALL c2d2_precondDefect (&
+            rsolverNode%p_rsubnodeBlockVANCA%p_rspatialPreconditioner,&
+            rmatrixComponents,&
+            rtempVectorRHS,rtempVectorSol,bsuccess,rsolverNode%p_rproblem%rcollection)      
+      
+        ! Add that defect to the current solution -- damped by domega.
+        CALL lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
+            rsolverNode%domega,1.0_DP)
+      
+        ! Save the new solution.
+        CALL sptivec_setTimestepData (p_rx, isubstep, rtempVectorX2)
+        
+        ! Shift the RHS/solution vectors: 1 -> 2 -> 3
+        CALL lsysbl_copyVector (rtempVectorD2,rtempVectorD3)
+        CALL lsysbl_copyVector (rtempVectorD1,rtempVectorD2)
+
+        CALL lsysbl_copyVector (rtempVectorX2,rtempVectorX3)
+        CALL lsysbl_copyVector (rtempVectorX1,rtempVectorX2)
+
+      END DO
+      
+      ! -----
+      ! Forward in time
+      ! -----
+
       ! Load the RHS and solution of the 0th timestep.
       CALL sptivec_getTimestepData (rd, 0, rtempVectorD2)
       
@@ -3204,12 +3324,6 @@ CONTAINS
             .NE. 0) THEN
           CALL c2d2_updateDiscreteBC (rsolverNode%p_rproblem, .FALSE.)
         END IF
-
-        ! DEBUG!!!      
-        CALL lsysbl_getbase_double (rtempVectorX1,p_Dx1)
-        CALL lsysbl_getbase_double (rtempVectorX2,p_Dx2)
-        CALL lsysbl_getbase_double (rtempVectorX3,p_Dx3)
-        CALL lsysbl_getbase_double (rtempVectorRHS,p_Dd)
 
         ! The RHS which is put into the preconditioner is set up in 
         ! rtempVectorRHS to prevent rtempVectorD2 from getting destroyed.
@@ -3289,7 +3403,7 @@ CONTAINS
         CALL lsysbl_copyVector (rtempVectorX3,rtempVectorX2)
 
       END DO
-      
+
     END DO ! iiteration
     
     ! Overwrite the rd by our solution.
