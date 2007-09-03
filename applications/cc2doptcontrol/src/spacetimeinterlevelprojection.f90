@@ -130,7 +130,7 @@ CONTAINS
   ! A space/time interlevel projection structure that configures the 
   ! prolongation/restriction in space/time. 
   ! The structure is cleaned up.
-  TYPE(t_sptiProjection), INTENT(OUT) :: rprojection
+  TYPE(t_sptiProjection), INTENT(INOUT) :: rprojection
 !</output>
 
 !</inputoutput>

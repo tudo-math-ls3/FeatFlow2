@@ -482,14 +482,12 @@ CONTAINS
       ! Variable 1 = x-velocity  -->  Variable 4 = dual x-velocity
       ! Variable 2 = y-velocity  -->  Variable 5 = dual y-velocity
       ! Variable 3 = pressure    -->  Variable 6 = dual pressure
-      ! As we simply copy the structures, we have to be careful when releasing
-      ! the structures at the end of the program!
-      p_rdiscretisation%RspatialDiscretisation(4) = &
-          p_rdiscretisation%RspatialDiscretisation(1)
-      p_rdiscretisation%RspatialDiscretisation(5) = &
-          p_rdiscretisation%RspatialDiscretisation(2)
-      p_rdiscretisation%RspatialDiscretisation(6) = &
-          p_rdiscretisation%RspatialDiscretisation(3)
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(1),&
+                                     p_rdiscretisation%RspatialDiscretisation(4))
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(2),&
+                                     p_rdiscretisation%RspatialDiscretisation(5))
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(3),&
+                                     p_rdiscretisation%RspatialDiscretisation(6))
           
       ! -----------------------------------------------------------------------
       ! Separated discretisation structures for primal and dual problem
@@ -517,7 +515,7 @@ CONTAINS
       ! and replace the cubature-formula identifier by that which is to be
       ! used for the mass matrix.
       ALLOCATE(p_rdiscretisationMass)
-      CALL spdiscr_duplicateDiscrSc(p_rdiscretisation%RspatialDiscretisation(1),&
+      CALL spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscretisation(1),&
           p_rdiscretisationMass,.TRUE.)
       
       CALL parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
@@ -559,34 +557,13 @@ CONTAINS
 
   ! local variables
   INTEGER :: i
-  TYPE(t_blockDiscretisation), POINTER :: p_rdiscretisation
 
     DO i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Before we remove the block discretisation structure, remember that
-      ! we copied the scalar discretisation structure for the X-velocity
-      ! to the Y-velocity.
-      ! To prevent errors or wrong deallocation, we manually release the
-      ! spatial discretisation structures of each of the components.
-      p_rdiscretisation => rproblem%RlevelInfo(i)%p_rdiscretisation
-
-      ! Remove spatial discretisation structure of the velocity:
-      CALL spdiscr_releaseDiscr(p_rdiscretisation%RspatialDiscretisation(1))
-      
-      ! Don't remove that of the Y-velocity; there is none :)
-      !
-      ! Remove the discretisation structure of the pressure.
-      CALL spdiscr_releaseDiscr(p_rdiscretisation%RspatialDiscretisation(3))
-      
-      ! Don't remove the discretisation structures for the dual variables;
-      ! they had been the same as for the primal variables and were
-      ! released already!
-      !
-      ! Finally remove the block discretisation structure. Don't release
-      ! the substructures again.
-      CALL spdiscr_releaseBlockDiscr(p_rdiscretisation,.FALSE.)
+      ! Remove the main block discretisation structure. 
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisation,.TRUE.)
       
       ! Remove the discretisation from the heap.
-      DEALLOCATE(p_rdiscretisation)
+      DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisation)
 
       ! Release the block discretisation structures of the primal and dual
       ! space.
@@ -601,8 +578,7 @@ CONTAINS
       ! -----------------------------------------------------------------------
 
       ! Release the mass matrix discretisation.
-      ! Don't release the content as we created it as a copy of the Stokes
-      ! discretisation structure.
+      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisationMass,.TRUE.)
       DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationMass)
 
     END DO
@@ -1539,8 +1515,12 @@ CONTAINS
       NULLIFY(rproblem%roptcontrol%p_rdiscrTargetFlow)
     ELSE
       ! Release the allocated triangulation/discretisation
+      
       CALL spdiscr_releaseBlockDiscr(rproblem%roptcontrol%p_rdiscrTargetFlow,.TRUE.)
+      DEALLOCATE(rproblem%roptcontrol%p_rdiscrTargetFlow)
+      
       CALL tria_done(rproblem%roptcontrol%p_rtriangulation)
+      DEALLOCATE(rproblem%roptcontrol%p_rtriangulation)
     END IF
 
   END SUBROUTINE
