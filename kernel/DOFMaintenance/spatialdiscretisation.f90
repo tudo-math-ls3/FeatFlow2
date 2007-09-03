@@ -603,9 +603,11 @@ CONTAINS
   
   ! Release substructures?
   IF (brelsub) THEN
-    DO i=1,rblockDiscr%ncomponents
-      CALL spdiscr_releaseDiscr (rblockDiscr%RspatialDiscretisation(i))
-    END DO
+    IF (ASSOCIATED(rblockDiscr%RspatialDiscretisation)) THEN
+      DO i=1,rblockDiscr%ncomponents
+        CALL spdiscr_releaseDiscr (rblockDiscr%RspatialDiscretisation(i))
+      END DO
+    END IF
   END IF
   IF (ASSOCIATED(rblockDiscr%RspatialDiscretisation)) &
     DEALLOCATE(rblockDiscr%RspatialDiscretisation)
