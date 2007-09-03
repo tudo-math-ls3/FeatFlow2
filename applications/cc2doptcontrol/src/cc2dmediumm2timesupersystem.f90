@@ -1946,6 +1946,7 @@ CONTAINS
         NULLIFY(p_rsmoother)
         NULLIFY(p_rpresmoother)
         NULLIFY(p_rpostsmoother)
+        NULLIFY(p_rprecond)
 
         CALL parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'domega', domega, 1.0_DP)
