@@ -276,8 +276,7 @@ CONTAINS
 !</subroutine>
   
     ! local variables
-    INTEGER(I64) :: factorial
-    INTEGER(I32) :: i,j,iswap
+    INTEGER(I32) :: factorial,i,j,iswap
     
     DO j=2,SIZE(Idata)
 
