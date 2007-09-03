@@ -578,7 +578,7 @@ CONTAINS
       ! -----------------------------------------------------------------------
 
       ! Release the mass matrix discretisation.
-      CALL spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%p_rdiscretisationMass,.TRUE.)
+      CALL spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%p_rdiscretisationMass)
       DEALLOCATE(rproblem%RlevelInfo(i)%p_rdiscretisationMass)
 
     END DO
