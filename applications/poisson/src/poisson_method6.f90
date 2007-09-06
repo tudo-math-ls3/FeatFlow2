@@ -21,6 +21,7 @@
 MODULE poisson_method6
 
   USE fsystem
+  USE genoutput
   USE storage
   USE linearsolver
   USE boundary

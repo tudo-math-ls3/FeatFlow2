@@ -14,7 +14,7 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
 SRC =   poisson_callback.f90 poisson_method1.f90 \
         poisson_method2.f90 poisson_method3.f90 poisson_method4.f90 \
         poisson_method5.f90 poisson_method6.f90 poisson_method7.f90 \
-        poisson.f90
+        poisson_method8.f90 poisson.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk

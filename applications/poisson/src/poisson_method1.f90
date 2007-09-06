@@ -12,6 +12,7 @@
 MODULE poisson_method1
 
   USE fsystem
+  USE genoutput
   USE storage
   USE linearsolver
   USE boundary
@@ -25,6 +26,7 @@ MODULE poisson_method1
   USE spatialdiscretisation
   USE ucd
   USE pprocerror
+  USE genoutput
     
   USE poisson_callback
   
@@ -119,16 +121,16 @@ CONTAINS
     ! Ok, let's start. 
     !
     ! We want to solve our Laplace problem on level...
-    NLMAX = 3
+    NLMAX = 7
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     ! Set p_rboundary to NULL to create a new structure on the heap.
     NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, './pre/square_01x01_quadtrias.prm')
+    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, './pre/square_01x01_quadtrias.tri', p_rboundary)
+    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', p_rboundary)
     
     ! Refine it.
     CALL tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,p_rboundary)
@@ -147,12 +149,8 @@ CONTAINS
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
-    !CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-    !                               EL_E013,CUB_G2X2,rtriangulation, p_rboundary)
-    !CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
-    !                               EL_P2,CUB_G3_T,rtriangulation, p_rboundary)
-    CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
-                                    EL_P2,EL_Q2,CUB_G3_T,CUB_G2X2,rtriangulation, p_rboundary)
+    CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+                                   EL_E011,CUB_G2X2,rtriangulation, p_rboundary)
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -310,8 +308,7 @@ CONTAINS
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
     NULLIFY(p_rpreconditioner)
-    !CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
-    CALL linsol_initUMFPACK4 (p_rsolverNode)
+    CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -357,11 +354,11 @@ CONTAINS
     ! Calculate the error to the reference function.
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
                        getReferenceFunction)
-    PRINT *,'L2-error: ',derror
+    CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
                        getReferenceFunction)
-    PRINT *,'H1-error: ',derror
+    CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.

@@ -6,6 +6,7 @@
 !# <purpose>
 !# This module is a demonstation program how to solve a simple Laplace
 !# problem with constant coefficients on a simple domain.
+!#
 !# The module is the same as poisson_method1 but with different element
 !# implementation that is, EL_EM30. The different focuses on writing the
 !# solution vector into the way that GMV can read it.
@@ -15,6 +16,7 @@
 MODULE poisson_method7
 
   USE fsystem
+  USE genoutput
   USE storage
   USE linearsolver
   USE boundary
@@ -422,11 +424,11 @@ CONTAINS
     ! Calculate the error to the reference function.
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
                        getReferenceFunction)
-    PRINT *,'L2-error: ',derror
+    CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
     CALL pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
                        getReferenceFunction)
-    PRINT *,'H1-error: ',derror
+    CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.

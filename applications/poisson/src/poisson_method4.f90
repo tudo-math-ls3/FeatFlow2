@@ -24,6 +24,7 @@
 MODULE poisson_method4
 
   USE fsystem
+  USE genoutput
   USE storage
   USE linearsolver
   USE boundary
@@ -749,11 +750,11 @@ CONTAINS
     ! Calculate the error to the reference function.
     CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_L2ERROR,derror,&
                        getReferenceFunction)
-    PRINT *,'L2-error: ',derror
+    CALL output_line ('L2-error: ' // sys_sdEL(derror,10) )
 
     CALL pperr_scalar (p_rvector%RvectorBlock(1),PPERR_H1ERROR,derror,&
                        getReferenceFunction)
-    PRINT *,'H1-error: ',derror
+    CALL output_line ('H1-error: ' // sys_sdEL(derror,10) )
     
   END SUBROUTINE
 
@@ -940,10 +941,10 @@ CONTAINS
     CALL pm4_doneParamTriang (rproblem)
 
     ! Print some statistical data about the collection - anything forgotten?
-    PRINT *
-    PRINT *,'Remaining collection statistics:'
-    PRINT *,'--------------------------------'
-    PRINT *
+    CALL output_lbrk ()
+    CALL output_line ('Remaining collection statistics:')
+    CALL output_line ('--------------------------------')
+    CALL output_lbrk ()
     CALL collct_printStatistics (rproblem%rcollection)
     
     ! Finally release the collection.

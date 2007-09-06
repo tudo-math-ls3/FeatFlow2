@@ -52,6 +52,7 @@ PROGRAM poisson
   USE poisson_method5
   USE poisson_method6
   USE poisson_method7
+  USE poisson_method8
   
   IMPLICIT NONE
   
@@ -59,6 +60,10 @@ PROGRAM poisson
   ! Initialise system-wide settings:
   
   CALL system_init()
+  
+  ! Initialise the output system. Write the program output to screen as
+  ! well as to the file 'log/output.txt'.
+  CALL output_init ('./log/output.txt')
 
   ! The very second thing in every program: 
   ! Initialise the FEAT 2.0 storage management: 
@@ -105,6 +110,12 @@ PROGRAM poisson
   CALL output_line ('Calculating Laplace-Problem with method 7')
   CALL output_line ('-----------------------------------------')
   CALL poisson7
+
+  ! Call the problem to solve. Poisson 8:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 8')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson8
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
