@@ -61,6 +61,9 @@
 !#      -> For all edges in a triangulation, calculate the coordinates 
 !#         of a number of points on each edge
 !#
+!# 13.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
+!#      -> Get the number of vertices/edges on an element
+!#
 !# Auxiliary routines:
 !#
 !# 1.) tria_readRawTriangulation2D
@@ -674,6 +677,11 @@ MODULE triangulation
 !</typeblock>
   
 !</types>
+
+  INTERFACE tria_getNVE
+    MODULE PROCEDURE tria_getNVE_direct
+    MODULE PROCEDURE tria_getNVE_indirect
+  END INTERFACE
 
 CONTAINS
 
@@ -2415,6 +2423,81 @@ CONTAINS
 
   END FUNCTION
 
+  ! ***************************************************************************
+
+!<function>
+
+  PURE INTEGER FUNCTION tria_getNVE_indirect (IvertEdgAtElement,iel)
+  
+!<description>
+  ! This routine calculates the number of vertices/edges on element iel.
+!</description>
+
+!<input>
+  ! This may be either the IverticesAtElement or the IedgesAtElement
+  ! array of a triangulation
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IvertEdgAtElement
+  
+  ! Number of the element whose NVE should be calculated
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+!</input>
+
+!<result>
+  ! Number of vertices on element iel.
+!</result>
+
+!</subroutine>
+
+    INTEGER :: i
+
+    DO i=UBOUND(IvertEdgAtElement,1),1,-1
+      IF (IvertEdgAtElement(i,iel) .NE. 0) THEN
+        tria_getNVE_indirect = i
+        RETURN
+      END IF
+    END DO
+  
+  END FUNCTION
+
+  ! ***************************************************************************
+
+!<function>
+
+  INTEGER FUNCTION tria_getNVE_direct (rtriangulation,iel)
+  
+!<description>
+  ! This routine calculates the number of vertices/edges on element iel.
+!</description>
+
+!<input>
+  ! Triangulation structure
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+  
+  ! Number of the element whose NVE should be calculated
+  INTEGER(PREC_ELEMENTIDX), INTENT(IN) :: iel
+!</input>
+
+!<result>
+  ! Number of vertices on element iel.
+!</result>
+
+!</subroutine>
+
+    INTEGER :: i
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    
+    CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+
+    DO i=UBOUND(p_IverticesAtElement,1),1,-1
+      IF (p_IverticesAtElement(i,iel) .NE. 0) THEN
+        tria_getNVE_direct = i
+        RETURN
+      END IF
+    END DO
+  
+  END FUNCTION
+
 !************************************************************************
 
 !<subroutine>
@@ -2437,7 +2520,7 @@ CONTAINS
 
     ! Local variables
     INTEGER :: ive,nnve
-    INTEGER(PREC_VERTEXIDX) :: ivt,isize
+    INTEGER(PREC_VERTEXIDX) :: ivt,isize,isize2
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
     INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
@@ -2509,8 +2592,8 @@ CONTAINS
           INT(isize,I32), ST_INT, &
           rtriangulation%h_IelementsAtVertex, ST_NEWBLOCK_NOINIT)
     ELSE
-      CALL storage_getsize (rtriangulation%h_IelementsAtVertex, isize)
-      IF (isize .NE. isize) THEN
+      CALL storage_getsize (rtriangulation%h_IelementsAtVertex, isize2)
+      IF (isize .NE. isize2) THEN
         ! If the size is wrong, reallocate memory.
         CALL storage_realloc ('tria_genElementsAtVertex2D', &
             INT(isize,I32), rtriangulation%h_IelementsAtVertex, &
@@ -2813,10 +2896,10 @@ CONTAINS
           rtriangulation%h_IelementsAtEdge, ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize2D (rtriangulation%h_IelementsAtEdge, Isize)
-      IF (Isize(2) .NE. rtriangulation%NEL) THEN
+      IF (Isize(2) .NE. rtriangulation%NMT) THEN
         ! If the size is wrong, reallocate memory.
         CALL storage_realloc ('tria_genElementsAtEdge2D', &
-            rtriangulation%NEL, rtriangulation%h_IelementsAtEdge, &
+            rtriangulation%NMT, rtriangulation%h_IelementsAtEdge, &
             ST_NEWBLOCK_NOINIT, .FALSE.)
       END IF
     END IF
@@ -2928,10 +3011,10 @@ CONTAINS
           rtriangulation%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
     ELSE
       CALL storage_getsize2D (rtriangulation%h_IverticesAtEdge, Isize)
-      IF (Isize(2) .NE. rtriangulation%NEL) THEN
+      IF (Isize(2) .NE. rtriangulation%NMT) THEN
         ! If the size is wrong, reallocate memory.
         CALL storage_realloc ('tria_genVerticesAtEdge2D', &
-            rtriangulation%NEL, rtriangulation%h_IverticesAtEdge, &
+            rtriangulation%NMT, rtriangulation%h_IverticesAtEdge, &
             ST_NEWBLOCK_NOINIT, .FALSE.)
       END IF
     END IF
@@ -3037,6 +3120,7 @@ CONTAINS
         CALL storage_realloc ('tria_genEdgesAtElement2D', &
             rtriangulation%NEL, rtriangulation%h_IedgesAtElement, &
             ST_NEWBLOCK_NOINIT, .FALSE.)
+        Isize(2) = rtriangulation%NEL
       END IF
     END IF
     
@@ -3149,7 +3233,7 @@ CONTAINS
     
     ! Do we have (enough) memory for that array?
     CALL storage_getsize (rtriangulation%h_InodalProperty, isize)
-    IF (Isize .NE. rtriangulation%NVT+rtriangulation%NMT) THEN
+    IF (isize .NE. rtriangulation%NVT+rtriangulation%NMT) THEN
       ! If the size is wrong, reallocate memory.
       ! Copy the old content as we mustn't destroy the old nodal property
       ! tags of the vertices.
