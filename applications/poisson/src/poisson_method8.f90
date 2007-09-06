@@ -134,7 +134,7 @@ CONTAINS
     ! 2.) the maximum refinement level of the h-adaptive refinement routines.
     ! This is relative to NLMIN: Starting from level NLMIN, the h-adaptivity
     ! routines refine the mesh up to NLMAXhRefinement times.
-    NLMAXhRefinement = 6
+    NLMAXhRefinement = 2
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
@@ -157,12 +157,19 @@ CONTAINS
     rhadapt%nsubdividemax = NLMAXhRefinement
     rhadapt%irefinementStrategy = 1
     rhadapt%icoarseningStrategy = 1
+    
+    ! The following tolerance values are the bounds for the monitor function
+    ! gethadaptMonitorFunction below. If this monitor function returns a value
+    ! > drefinementTolerance to an element, that element is refined.
+    ! A value < dcoarseningTolerance on the other hand results in coarsening.
     rhadapt%drefinementTolerance = 1.0
     rhadapt%dcoarseningTolerance = 0.01
     CALL hadapt_initFromTriangulation(rhadapt,rtriangulation)
 
-    ! Define a monitor function
-    DO ilev=1,1!NLMAXhRefinement
+    DO ilev=1,NLMAXhRefinement
+      ! Define a monitor function that guides the mesh adaption.
+      ! As stated before, that function has to refurn an indicator value for every
+      ! element whether to refine that element or to do coarsening.
       CALL lsyssc_createVector(rindicator,rtriangulation%NEL,.TRUE.)
       CALL gethadaptMonitorFunction(rtriangulation,rindicator)
       

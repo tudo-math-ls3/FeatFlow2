@@ -582,31 +582,75 @@ CONTAINS
 
   END SUBROUTINE
 
+  ! ***************************************************************************
+  ! Only for POISSON_METHOD8: Monitor function for adaptive grid refinement
+  
+!<subroutine>
+
   SUBROUTINE gethadaptMonitorFunction(rtriangulation,rindicator)
-    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
-    TYPE(t_vectorScalar), INTENT(INOUT) :: rindicator
+  
+!<description>
+  ! This routine defines a 'monitor function' for the adaptive grid refinement
+  ! with the h-adaptivity refinement strategy. rindicator is a vector with
+  ! NEL entries for all the elements in the triangulation. The routine must
+  ! fill each entry with a value that tells the h-adaptivity routines whether
+  ! to refine that element or not.
+!</descrition>
+  
+!<input>
+  ! The triangulation structure of the underlying mesh which is to be refined
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+!</input>
+    
+!</inputoutput>
+  ! An indicator vector. Entry i in the vector rindicatir that tells the 
+  ! mesh adaption routines whether to refine element i or to do coarsening
+  ! with it. A value > 1.0 will refine element i, a value < 0.01 will result
+  ! in coarsening -- as specified during the initialisation of the
+  ! mesh refinement in the main program.
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rindicator
+
+!</subroutine>
 
     ! local variables
     REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
     REAL(DP), DIMENSION(:), POINTER   :: p_Dindicator
     INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER :: nve
+    INTEGER :: ive
+    REAL(DP) :: distance
 
-    REAL(DP), PARAMETER :: x0=0.5, y0=0.5, r0=0.3, r1=0.2
+    ! In this example, we do adaptive refinement to a ring.
+    ! (x0,y0) defines the midpoint of the ring.
+    REAL(DP), PARAMETER :: x0=0.5, y0=0.5
+    
+    ! r0 defines the radius of the inner circle, r1 the radius of the
+    ! outer circle that define the ring.
+    REAL(DP), PARAMETER :: r0=0.2, r1=0.3
 
-    CALL lsyssc_getbase_double(rindicator,p_Dindicator)
+    ! Get information about the mesh.
     CALL storage_getbase_double2d(rtriangulation%h_DvertexCoords,p_DvertexCoords)
     CALL storage_getbase_int2D(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+
+    ! Get the array of the indicator function.
+    CALL lsyssc_getbase_double(rindicator,p_Dindicator)
     
     DO iel=1,rtriangulation%NEL
-      nve=3!MERGE(3,4,p_IverticesAtElement(4,iel) .EQ. 0)
-      IF (ANY(SQRT( (p_DvertexCoords(1,p_IverticesAtElement(1:nve,iel))-x0)**2 +&
-          &         (p_DvertexCoords(2,p_IverticesAtElement(1:nve,iel))-y0)**2 ) .LE. r0).AND.&
-          ANY(SQRT( (p_DvertexCoords(1,p_IverticesAtElement(1:nve,iel))-x0)**2 +&
-          &         (p_DvertexCoords(2,p_IverticesAtElement(1:nve,iel))-y0)**2 ) .GE. r1))&
+      ! Loop through the vertices on the element.
+      ! If at least one corner vertex of the the element iel is inside 
+      ! of the ring, refine it.
+      DO ive = 1,tria_getNVE(p_IverticesAtElement,iel)
+        ! Distance to the center of the ring
+        distance = &
+            SQRT( (p_DvertexCoords(1,p_IverticesAtElement(ive,iel))-x0)**2 + &
+                  (p_DvertexCoords(2,p_IverticesAtElement(ive,iel))-y0)**2 )
+          
+        IF ((distance .GE. r0) .AND. (distance  .LE. r1)) THEN
           p_Dindicator(iel) = 2.0
+        END IF
+      END DO
     END DO
+    
   END SUBROUTINE gethadaptMonitorFunction
 
 END MODULE
