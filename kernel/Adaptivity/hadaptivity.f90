@@ -758,8 +758,8 @@ MODULE hadaptivity
   INTEGER(I32), PARAMETER :: HADAPT_SHARE_IVERTEXAGE              = 2** 1
   INTEGER(I32), PARAMETER :: HADAPT_SHARE_INODALPROPERTY          = 2** 2
   INTEGER(I32), PARAMETER :: HADAPT_SHARE_IVERTICESATELEMENT      = 2** 3
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_INEIGHBOURSATELEMENT    = 2** 4
-  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT = 2** 5
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_INEIGHATELEMENT         = 2** 4
+  INTEGER(I32), PARAMETER :: HADAPT_SHARE_IMIDNEIGHATELEMENT      = 2** 5
   INTEGER(I32), PARAMETER :: HADAPT_SHARE_RVERTEXCOORDINATES      = 2** 6
   INTEGER(I32), PARAMETER :: HADAPT_SHARE_RBOUNDARY               = 2** 7
   INTEGER(I32), PARAMETER :: HADAPT_SHARE_RELEMENTSATVERTEX       = 2** 8
@@ -1214,7 +1214,7 @@ CONTAINS
         rhadapt%h_Imarker)
     CALL checkAndRelease(idupflag, HADAPT_SHARE_IVERTEXAGE,&
         rhadapt%h_IvertexAge)
-    CALL checkAndRelease(idupflag, HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT,&
+    CALL checkAndRelease(idupflag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
         rhadapt%h_ImidneighboursAtElement)
     
     ! Nullify "performance-pointers"
@@ -1406,14 +1406,14 @@ CONTAINS
         rhadaptBackup%p_IverticesAtElement)
 
     ! Bit   4: IneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHBOURSATELEMENT,&
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHATELEMENT,&
         rhadapt%h_IneighboursAtElement,&
         rhadaptBackup%h_IneighboursAtElement)
     CALL storage_getbase_int2D(rhadaptBackup%h_IneighboursAtElement,&
         rhadaptBackup%p_IneighboursAtElement)
 
     ! Bit   5: ImidneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT,&
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
         rhadapt%h_ImidneighboursAtElement,&
         rhadaptBackup%h_ImidneighboursAtElement)
     CALL storage_getbase_int2D(rhadaptBackup%h_ImidneighboursAtElement,&
@@ -1556,14 +1556,14 @@ CONTAINS
         rhadapt%p_IverticesAtElement)
 
     ! Bit   4: IneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHBOURSATELEMENT,&
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_INEIGHATELEMENT,&
         rhadapt%h_IneighboursAtElement,&
         rhadaptBackup%h_IneighboursAtElement)
     CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
         rhadapt%p_IneighboursAtElement)
 
     ! Bit   5: ImidneighboursAtElement
-    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHBOURSATELEMENT,&
+    CALL checkAndCopy(idupFlag, HADAPT_SHARE_IMIDNEIGHATELEMENT,&
         rhadapt%h_ImidneighboursAtElement,&
         rhadaptBackup%h_ImidneighboursAtElement)
     CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
