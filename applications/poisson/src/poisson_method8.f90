@@ -30,6 +30,7 @@ MODULE poisson_method8
   USE spatialdiscretisation
   USE ucd
   USE pprocerror
+  USE hadaptivity
     
   USE poisson_callback
   
@@ -102,6 +103,11 @@ CONTAINS
     ! the linear solver.
     TYPE(t_matrixBlock), DIMENSION(1) :: Rmatrices
 
+    ! Adaptivity structure
+    TYPE(t_hadapt) :: rhadapt
+    TYPE(t_vectorScalar) :: rindicator
+    INTEGER :: ilev
+
     ! NLMIN defines the pre-refinement level of the coarse mesh.
     INTEGER :: NLMIN
     
@@ -134,13 +140,40 @@ CONTAINS
     ! it to rboundary.
     ! Set p_rboundary to NULL to create a new structure on the heap.
     NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
+    CALL boundary_read_prm(p_rboundary, './pre/TRIA.prm')
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', p_rboundary)
+    CALL tria_readTriFile2D (rtriangulation, './pre/TRIA.tri', p_rboundary)
     
     ! Refine it to get the coarse mesh.
     CALL tria_quickRefine2LevelOrdering (NLMIN-1,rtriangulation,p_rboundary)
+    
+    ! Create information about adjacencies and everything one needs from
+    ! a triangulation.
+    CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
+
+    ! Prepare h-adaptivity
+    rhadapt%iSpec=2**1
+    rhadapt%nsubdividemax = NLMAXhRefinement
+    rhadapt%irefinementStrategy = 1
+    rhadapt%icoarseningStrategy = 1
+    rhadapt%drefinementTolerance = 1.0
+    rhadapt%dcoarseningTolerance = 0.01
+    CALL hadapt_initFromTriangulation(rhadapt,rtriangulation)
+
+    ! Define a monitor function
+    DO ilev=1,1!NLMAXhRefinement
+      CALL lsyssc_createVector(rindicator,rtriangulation%NEL,.TRUE.)
+      CALL gethadaptMonitorFunction(rtriangulation,rindicator)
+      
+      ! Perform one step h-adaptivity
+      CALL hadapt_performAdaptation(rhadapt,rindicator)
+      CALL lsyssc_releaseVector(rindicator)
+    END DO
+
+    ! Generate raw mesh from adaptivity structure
+    CALL hadapt_generateRawMesh(rhadapt,rtriangulation)
+
     
     ! Create information about adjacencies and everything one needs from
     ! a triangulation.

@@ -582,4 +582,31 @@ CONTAINS
 
   END SUBROUTINE
 
+  SUBROUTINE gethadaptMonitorFunction(rtriangulation,rindicator)
+    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rindicator
+
+    ! local variables
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+    REAL(DP), DIMENSION(:), POINTER   :: p_Dindicator
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER :: nve
+
+    REAL(DP), PARAMETER :: x0=0.5, y0=0.5, r0=0.3, r1=0.2
+
+    CALL lsyssc_getbase_double(rindicator,p_Dindicator)
+    CALL storage_getbase_double2d(rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    CALL storage_getbase_int2D(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    
+    DO iel=1,rtriangulation%NEL
+      nve=3!MERGE(3,4,p_IverticesAtElement(4,iel) .EQ. 0)
+      IF (ANY(SQRT( (p_DvertexCoords(1,p_IverticesAtElement(1:nve,iel))-x0)**2 +&
+          &         (p_DvertexCoords(2,p_IverticesAtElement(1:nve,iel))-y0)**2 ) .LE. r0).AND.&
+          ANY(SQRT( (p_DvertexCoords(1,p_IverticesAtElement(1:nve,iel))-x0)**2 +&
+          &         (p_DvertexCoords(2,p_IverticesAtElement(1:nve,iel))-y0)**2 ) .GE. r1))&
+          p_Dindicator(iel) = 2.0
+    END DO
+  END SUBROUTINE gethadaptMonitorFunction
+
 END MODULE

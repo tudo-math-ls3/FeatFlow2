@@ -59,7 +59,7 @@ PROGRAM poisson
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
   
-  CALL system_init()
+  CALL system_init(); sys_haltmode=SYS_HALT_THROWFPE
   
   ! Initialise the output system. Write the program output to screen as
   ! well as to the file 'log/output.txt'.
@@ -68,6 +68,8 @@ PROGRAM poisson
   ! The very second thing in every program: 
   ! Initialise the FEAT 2.0 storage management: 
   CALL storage_init(999, 100)
+
+  goto 10
 
   ! Call the problem to solve. Poisson 1:
   CALL output_lbrk ()
@@ -112,7 +114,7 @@ PROGRAM poisson
   CALL poisson7
 
   ! Call the problem to solve. Poisson 8:
-  CALL output_lbrk ()
+10 CALL output_lbrk ()
   CALL output_line ('Calculating Laplace-Problem with method 8')
   CALL output_line ('-----------------------------------------')
   CALL poisson8
