@@ -175,12 +175,16 @@ CONTAINS
       
       ! Perform one step h-adaptivity
       CALL hadapt_performAdaptation(rhadapt,rindicator)
+      
+      ! Release the indicator vector again
       CALL lsyssc_releaseVector(rindicator)
+
+      ! Generate raw mesh from adaptivity structure
+      CALL hadapt_generateRawMesh(rhadapt,rtriangulation)
     END DO
-
-    ! Generate raw mesh from adaptivity structure
-    CALL hadapt_generateRawMesh(rhadapt,rtriangulation)
-
+    
+    ! Release the adaptivity structure
+    CALL hadapt_releaseAdaptation(rhadapt)
     
     ! Create information about adjacencies and everything one needs from
     ! a triangulation.
