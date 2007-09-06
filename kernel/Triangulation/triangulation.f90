@@ -3210,7 +3210,7 @@ CONTAINS
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_VERTEXIDX) :: Isize
+    INTEGER(PREC_VERTEXIDX) :: isize,ivt
 
     ! Is everything here we need?
     IF (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) THEN
@@ -3249,6 +3249,10 @@ CONTAINS
     CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IverticesAtElement)
     CALL storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
         p_IneighboursAtElement)
+        
+    ! Initialise the nodal property with 0 by default.
+    CALL lalg_clearVectorInt (&
+        p_InodalProperty(rtriangulation%NVT+1:rtriangulation%NVT+rtriangulation%NMT))
     
     ! Loop through all elements and all edges on the elements
     DO iel = 1,UBOUND(p_IedgesAtElement,2)
@@ -3259,21 +3263,18 @@ CONTAINS
         ! in a quad mesh e.g.
         IF (p_IedgesAtElement(ive,iel) .EQ. 0) EXIT
         
+        ! The edge nodal property is initialised with 0 by default -- inner edge.
         ! Is there a neighbour? If yes, we have an inner edge. If not, this is 
-        ! a boundary edge.
-        ! Note that by checking "neighbour > iel", we simultaneously check two things:
-        ! 1.) Is there a neighbour at all? (neighbour <> 0)
-        ! 2.) Has the neighbour a greater number? If not, we treated that
-        !     edge already before and don't have to tackle it again.
-        IF (p_IneighboursAtElement(ive,iel) .GT. iel) THEN
+        ! a boundary edge. 
+        IF (p_IneighboursAtElement(ive,iel) .EQ. 0) THEN
         
           ! Get the number of the boundary component from the vertex preceeding
-          ! the edge and store it as information for the edge.
+          ! the edge and store it as information for the edge. 
           p_InodalProperty(p_IedgesAtElement(ive,iel)) = &
               p_InodalProperty(p_IverticesAtElement(ive,iel))
         
         END IF
-      
+        
       END DO
       
     END DO
@@ -4012,6 +4013,7 @@ CONTAINS
 !</subroutine>
  
     INTEGER :: ifine
+    INTEGER(I32) :: isize
 
     ! Refine nfine times:
     DO ifine = 1,nfine
@@ -4027,7 +4029,8 @@ CONTAINS
         CALL tria_genEdgesAtElement2D      (rtriangulation)
       IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) &
         CALL tria_genVerticesAtEdge2D      (rtriangulation)
-      IF (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) &
+      CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
+      IF (isize .LE. rtriangulation%NVT) &
         CALL tria_genEdgeNodalProperty2D   (rtriangulation)
 
       CALL tria_sortBoundaryVertices2D   (rtriangulation)
