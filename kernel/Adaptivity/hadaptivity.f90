@@ -6424,6 +6424,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX)   :: iel1,e1,e2,e3,e4,e5,e6,jel,ielRemove,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4
     INTEGER :: istate
+    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
           
     ! Get right-adjacent green elements
     iel1=rhadapt%p_IneighboursAtElement(2,iel)
@@ -6464,7 +6465,8 @@ CONTAINS
     ! should not appear, that is, local numbering of the resulting triangle starts at the
     ! vertex which is opposite to the inner red triangle. To this end, we check the state of
     ! the provisional triangle (I1,I2,I3) and transform th orientation accordingly.
-    istate = redgreen_getstateTria(rhadapt%p_IvertexAge((/i1,i2,i3/)))
+    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge((/i1,i2,i3/))
+    istate = redgreen_getstateTria(IvertexAge(1:TRIA_NVETRI2D))
     
     SELECT CASE(istate)
     CASE(STATE_TRIA_OUTERINNER,&
@@ -6588,6 +6590,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6
     INTEGER                    :: istate
+    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
 
     ! Retrieve patch of elements
     iel2=rhadapt%p_IneighboursAtElement(1,iel)
@@ -6631,7 +6634,8 @@ CONTAINS
     ! numbering of the resulting triangle starts at the vertex which is opposite 
     ! to the inner red triangle. To this end, we check the state of the provisional
     ! triangle (I1,I2,I3) and transform the orientation accordingly.
-    istate=redgreen_getstateTria(rhadapt%p_IvertexAge((/i1,i2,i3/)))
+    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge((/i1,i2,i3/))
+    istate=redgreen_getstateTria(IvertexAge(1:TRIA_NVETRI2D))
     
     SELECT CASE(istate)
     CASE(STATE_TRIA_OUTERINNER,&
@@ -8906,6 +8910,7 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX) :: iel,jel,kel
     INTEGER :: ive,nve,istate,jstate,ivertexLock
     LOGICAL :: isModified
+    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
 
     ! Check if dynamic data structures are generated and contain data
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA .OR.&
@@ -8968,12 +8973,14 @@ CONTAINS
       ! Get state of current element
       SELECT CASE(nve)
       CASE(TRIA_NVETRI2D)
-        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D)))
+        IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+            p_IverticesAtElement(1:TRIA_NVETRI2D))
+        istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
       CASE(TRIA_NVEQUAD2D)
-        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVEQUAD2D)))
+        IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
+            p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+        istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
       CASE DEFAULT
         CALL output_line('Invalid number of vertices per element!',&
@@ -9060,8 +9067,9 @@ CONTAINS
         ! Are we outer red triangle that was not created during the 
         ! red-green marking routine as a result of element conversion?
         jel   =rhadapt%p_IneighboursAtElement(2,iel)
-        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-                 rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)))
+        IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+                 rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel))
+        jstate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
         
         IF (jstate .EQ. STATE_TRIA_REDINNER) THEN
           
@@ -9229,12 +9237,14 @@ CONTAINS
         ! Get state of current element
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
-          istate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-              p_IverticesAtElement(1:TRIA_NVETRI2D)))
+          IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+              p_IverticesAtElement(1:TRIA_NVETRI2D))
+          istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
         CASE(TRIA_NVEQUAD2D)
-          istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(&
-              p_IverticesAtElement(1:TRIA_NVEQUAD2D)))
+          IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
+              p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+          istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
         CASE DEFAULT
           CALL output_line('Invalid number of vertices per element!',&
@@ -9406,12 +9416,14 @@ CONTAINS
       ! Get state of current element
       SELECT CASE(nve)
       CASE(TRIA_NVETRI2D)
-        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D)))
+        IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+            p_IverticesAtElement(1:TRIA_NVETRI2D))
+        istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
       CASE(TRIA_NVEQUAD2D)
-        istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVEQUAD2D)))
+        IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
+            p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+        istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
       CASE DEFAULT
         CALL output_line('Invalid number of vertices per element!',&
@@ -9447,9 +9459,11 @@ CONTAINS
         ! We have to considered several situations depending on the state
         ! of the adjacent element that shares the second edge.
         jel=rhadapt%p_IneighboursAtElement(2,iel)
-        p_IverticesAtElement(1:TRIA_NVETRI2D) = rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
-        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D)))
+        p_IverticesAtElement(1:TRIA_NVETRI2D) = &
+            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
+        IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+            p_IverticesAtElement(1:TRIA_NVETRI2D))
+        jstate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
         
         ! What is the state of the "second-edge" neighbor?
         SELECT CASE(jstate)
@@ -9537,9 +9551,11 @@ CONTAINS
         ! from a 1-quad : 4-tria refinement and all vertices of the left outer 
         ! green triangle are locked, then the above CASE will never be reached.
         jel=rhadapt%p_IneighboursAtElement(2,iel)
-        p_IverticesAtElement(1:TRIA_NVETRI2D) = rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
-        jstate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-            p_IverticesAtElement(1:TRIA_NVETRI2D)))
+        p_IverticesAtElement(1:TRIA_NVETRI2D) = &
+            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,jel)
+        IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+            p_IverticesAtElement(1:TRIA_NVETRI2D))
+        jstate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
         
         ! What is the state of the "second-edge" neighbor?
         SELECT CASE(jstate)
@@ -9824,6 +9840,7 @@ CONTAINS
     INTEGER :: ive,jve,nve,mve,istate,jstate,kstate
     INTEGER :: h_Imodified,imodifier
     LOGICAL :: isConform
+    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
     
     !--------------------------------------------------------------------------
     ! At the moment, only those cells are marked for regular refinementfor which 
@@ -9940,13 +9957,15 @@ CONTAINS
         SELECT CASE(nve)
         CASE(TRIA_NVETRI2D)
           p_Imarker(iel)=ibclr(p_Imarker(iel),0)
-          istate        =redgreen_getStateTria(&
-              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D)))
+          IvertexAge(1:TRIA_NVETRI2D) = &
+              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D))
+          istate        =redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
 
         CASE(TRIA_NVEQUAD2D)
           p_Imarker(iel)=ibset(p_Imarker(iel),0)
-          istate        =redgreen_getStateQuad(&
-              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVEQUAD2D)))
+          IvertexAge(1:TRIA_NVEQUAD2D) = &
+              rhadapt%p_IvertexAge(p_IverticesAtElement(1:TRIA_NVEQUAD2D))
+          istate        =redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
 
         CASE DEFAULT
           CALL output_line('Invalid number of vertices per element!',&
@@ -11082,6 +11101,8 @@ CONTAINS
 !</result>
 !</function>
 
+    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
+
     ! Are we in 2D or 3D?
     IF (rhadapt%ndim .EQ. NDIM2D) THEN
       
@@ -11089,8 +11110,9 @@ CONTAINS
       IF (rhadapt%InelOfType(TRIA_NVEQUAD2D).EQ.0) THEN
         
         ! There are no quadrilaterals in the current triangulation.
-        istate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel)))
+        IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel))
+        istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
         
       ELSE
 
@@ -11099,11 +11121,13 @@ CONTAINS
         ! at element list is nonzero then the current element is a 
         ! quadrilateral. Otherwise, we are dealing with  a triangle
         IF (rhadapt%p_IverticesAtElement(TRIA_NVEQUAD2D,iel).EQ.0) THEN
-          istate=redgreen_getStateTria(rhadapt%p_IvertexAge(&
-            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel)))
+          IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(&
+            rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel)) 
+          istate=redgreen_getStateTria(IvertexAge(1:TRIA_NVETRI2D))
         ELSE
-          istate=redgreen_getStateQuad(rhadapt%p_IvertexAge(&
-            rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel)))
+          IvertexAge(1:TRIA_NVEQUAD2D) = rhadapt%p_IvertexAge(&
+            rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel)) 
+          istate=redgreen_getStateQuad(IvertexAge(1:TRIA_NVEQUAD2D))
         END IF
 
       END IF

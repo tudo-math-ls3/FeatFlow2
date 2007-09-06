@@ -249,7 +249,7 @@ MODULE quadtree
  
   INTERFACE qtree_deleteFromQuadtree
     MODULE PROCEDURE qtree_deleteFromQuadtree
-    MODULE PROCEDURE qtree_deleteFromQuadtreeByNumber
+    MODULE PROCEDURE qtree_deleteFromQtreeByNumber
   END INTERFACE
   
 CONTAINS
@@ -285,6 +285,8 @@ CONTAINS
 !</output>
 !</subroutine>
     
+    INTEGER(I32), DIMENSION(2) :: Isize
+    
     ! Set factor
     IF (PRESENT(dfactor)) THEN
       IF (dfactor > 1_DP) rquadtree%dfactor=dfactor
@@ -298,12 +300,15 @@ CONTAINS
     rquadtree%NRESIZE= 0
     
     ! Allocate memory and associate pointers
+    Isize = (/2,nnvt/)
     CALL storage_new('qtree_createQuadtree','p_Ddata',&
-        (/2,nnvt/),ST_DOUBLE,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO)
+        Isize,ST_DOUBLE,rquadtree%h_Ddata,ST_NEWBLOCK_ZERO)
+    Isize = (/4,nnnode/)
     CALL storage_new('qtree_createQuadtree','p_Dbbox',&
-        (/4,nnnode/),ST_DOUBLE,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO)
+        Isize,ST_DOUBLE,rquadtree%h_Dbbox,ST_NEWBLOCK_ZERO)
+    Isize = (/7,nnnode/)
     CALL storage_new('qtree_createQuadtree','p_Knode',&
-        (/7,nnnode/),ST_INT,rquadtree%h_Knode,ST_NEWBLOCK_ZERO)
+        Isize,ST_INT,rquadtree%h_Knode,ST_NEWBLOCK_ZERO)
     CALL storage_getbase_double2D(rquadtree%h_Ddata,rquadtree%p_Ddata)
     CALL storage_getbase_double2D(rquadtree%h_Dbbox,rquadtree%p_Dbbox)
     CALL storage_getbase_int2D(rquadtree%h_Knode,   rquadtree%p_Knode)
@@ -561,7 +566,7 @@ CONTAINS
     RECURSIVE SUBROUTINE insert(ivt,inode)
       INTEGER(PREC_QTREEIDX), INTENT(IN) :: ivt,inode
       REAL(DP) :: xmin,ymin,xmax,ymax,xmid,ymid
-      INTEGER(PREC_QTREEIDX) :: i,jnode,nnode
+      INTEGER(PREC_QTREEIDX) :: i,jnode,nnode,knode
       
       IF (rquadtree%p_Knode(QTREE_STATUS,inode) == QTREE_MAX) THEN
         
@@ -607,7 +612,8 @@ CONTAINS
         ! Add the four values from INODE to the four new quads 
         ! NNODE+1:NNODE+4 recursively
         DO i=1,QTREE_MAX
-          jnode=nnode+qtree_getDirection(rquadtree,rquadtree%p_Ddata(:,rquadtree%p_Knode(i,inode)),inode)
+          knode = rquadtree%p_Knode(i,inode)
+          jnode=nnode+qtree_getDirection(rquadtree,rquadtree%p_Ddata(:,knode),inode)
           CALL insert(rquadtree%p_Knode(i,inode),jnode)
         END DO
         
@@ -696,7 +702,7 @@ CONTAINS
 
 !<function>
 
-  FUNCTION qtree_deleteFromQuadtreeByNumber(rquadtree,ivt,ivtReplace) RESULT(f)
+  FUNCTION qtree_deleteFromQtreeByNumber(rquadtree,ivt,ivtReplace) RESULT(f)
 
 !<description>
     ! This function deletes vertex with number IVT from the quadtree
@@ -732,10 +738,10 @@ CONTAINS
       f=qtree_deleteFromQuadtree(rquadtree,Ddata,ivtReplace)
     ELSE
       CALL output_line('Invalid vertex number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQuadtreeByNumber')
+          OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQtreeByNumber')
       CALL sys_halt()
     END IF
-  END FUNCTION qtree_deleteFromQuadtreeByNumber
+  END FUNCTION qtree_deleteFromQtreeByNumber
  
   ! ***************************************************************************
 
