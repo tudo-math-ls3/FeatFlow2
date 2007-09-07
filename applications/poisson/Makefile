@@ -6,10 +6,6 @@ FEATFLOW=../..
 # include compiler definitions
 include $(FEATFLOW)/Globals.mk
 
-OPTFLAGS  = -fpe0 -traceback
-OPTFLAGSF = -g -CB -g  -warn unused
-OPTFLAGSC = -g
-
 # application include dirs
 INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
         -I./src/triangulation -I./src -I./include
