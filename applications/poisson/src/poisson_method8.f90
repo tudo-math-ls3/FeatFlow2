@@ -134,7 +134,7 @@ CONTAINS
     ! 2.) the maximum refinement level of the h-adaptive refinement routines.
     ! This is relative to NLMIN: Starting from level NLMIN, the h-adaptivity
     ! routines refine the mesh up to NLMAXhRefinement times.
-    NLMAXhRefinement = 2
+    NLMAXhRefinement = 6
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
