@@ -2543,12 +2543,18 @@ CONTAINS
 
       
     CASE (HADAPT_REDGREEN)       ! Red-green grid refinement
+
+      CALL hadapt_writegridSvg(rhadapt,'mygrid')
       
       ! Mark elements for refinement based on indicator function
       CALL mark_refinement2D(rhadapt,rindicator)
 
+      CALL hadapt_writegridSvg(rhadapt,'mygrid')
+
       ! Mark additional elements to restore conformity
       CALL redgreen_mark_refinement2D(rhadapt,rcollection,fcb_hadaptCallback)
+
+      CALL hadapt_writegridSvg(rhadapt,'mygrid')
 
       ! Mark element for recoarsening based on indicator function
       CALL redgreen_mark_coarsening2D(rhadapt,rindicator)
@@ -2592,6 +2598,8 @@ CONTAINS
 
       ! Perform coarsening
       CALL redgreen_coarsen(rhadapt,rcollection,fcb_hadaptCallback)
+
+      CALL hadapt_writegridSvg(rhadapt,'mygrid')
 
       ! Adjust nodal property array
       CALL storage_realloc('hadapt_performAdaptation',rhadapt%NVT,&
@@ -3031,26 +3039,48 @@ CONTAINS
             WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
                 '" fill="hotpink" stroke="black" stroke-width="1"'
           END SELECT
-
-          ! Write data which is common to all elements
-          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-              TRIM(sys_siL(iel,10))//''','''//&
-              TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
-              TRIM(sys_siL(p_Imarker(iel),5))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
           
+          ! Write data which is common to all elements
+          SELECT CASE(nve)
+          CASE(TRIA_NVETRI2D)
+            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                TRIM(sys_siL(iel,10))//''','''//&
+                TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+                TRIM(sys_siL(p_Imarker(iel),5))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(0,10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(0,10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(0,10))//''')"'
+            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+
+          CASE(TRIA_NVEQUAD2D)
+            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                TRIM(sys_siL(iel,10))//''','''//&
+                TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+                TRIM(sys_siL(p_Imarker(iel),5))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          END SELECT
+
         ELSE
           
           ! For all new elements there si no marker available
@@ -3058,23 +3088,45 @@ CONTAINS
               '" fill="white" stroke="black" stroke-width="1"'
           
           ! Write data which is common to all elements
-          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-              TRIM(sys_siL(iel,10))//''','''//&
-              TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
-              TRIM(sys_siL(0,5))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-              TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          SELECT CASE(nve)
+          CASE(TRIA_NVETRI2D)
+            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                TRIM(sys_siL(iel,10))//''','''//&
+                TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+                TRIM(sys_siL(0,5))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(0,10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(0,10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(0,10))//''')"'
+            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+
+          CASE(TRIA_NVEQUAD2D)
+            WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+                TRIM(sys_siL(iel,10))//''','''//&
+                TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+                TRIM(sys_siL(0,5))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+                TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+            WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          END SELECT
           
         END IF
                
@@ -3108,25 +3160,47 @@ CONTAINS
         ! For all new elements there si no marker available
         WRITE(iunit,FMT='(A)') '<polygon id="el'//TRIM(sys_siL(iel,9))//&
             '" fill="white" stroke="black" stroke-width="1"'
-        
+
         ! Write data which is common to all elements
-        WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
-            TRIM(sys_siL(iel,10))//''','''//&
-            TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
-            TRIM(sys_siL(0,5))//''','''//&
-            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
-            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
-            TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
-            TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
-        WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+        SELECT CASE(nve)
+        CASE(TRIA_NVETRI2D)
+          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+              TRIM(sys_siL(iel,10))//''','''//&
+              TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+              TRIM(sys_siL(0,5))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(0,10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(0,10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(0,10))//''')"'
+          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+          
+        CASE(TRIA_NVEQUAD2D)
+          WRITE(iunit,FMT='(A)') ' onmousemove="ShowElementInfo(evt,'''//&
+              TRIM(sys_siL(iel,10))//''','''//&
+              TRIM(sys_siL(redgreen_getState(rhadapt,iel),4))//''','''//&
+              TRIM(sys_siL(0,5))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IneighboursAtElement(4,iel),10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_ImidneighboursAtElement(4,iel),10))//''','''//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(1,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(2,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(3,iel),10))//','//&
+              TRIM(sys_siL(rhadapt%p_IverticesAtElement(4,iel),10))//''')"'
+          WRITE(iunit,FMT='(A)') ' onmouseout="HideElementInfo()" style="cursor: help"'
+        END SELECT
         
         ! Each element is a polygon made up from 3/4 points
         WRITE(iunit,FMT='(A)',ADVANCE='NO') ' points="'
@@ -3814,7 +3888,12 @@ CONTAINS
       
       ! Update number of vertices
       rhadapt%NVT=rhadapt%NVT+1
-      i5            =rhadapt%NVT
+      i5         =rhadapt%NVT
+
+      IF (i5.GT.SIZE(rhadapt%p_IvertexAge)) THEN
+        CALL hadapt_writegridSvg(rhadapt,'mygrid')
+        STOP
+      END IF
       
       ! Set age of vertex
       rhadapt%p_IvertexAge(I5)=&
@@ -10635,7 +10714,8 @@ CONTAINS
         
         ! What type of element are we?
         SELECT CASE(p_Imarker(iel))
-        CASE(MARK_REF_TRIA3TRIA_12,MARK_REF_TRIA3TRIA_13,MARK_REF_TRIA3TRIA_23)
+        CASE(MARK_REF_TRIA3TRIA_12,MARK_REF_TRIA3TRIA_13,&
+             MARK_REF_TRIA3TRIA_23)
           ! Blue refinement for triangles is not allowed.
           ! Hence, mark triangle for red refinement
           p_Imarker(iel)        = MARK_REF_TRIA4TRIA
@@ -10644,7 +10724,7 @@ CONTAINS
           rhadapt%increaseNVT   = rhadapt%increaseNVT+1
           
         CASE(MARK_REF_QUADBLUE_123,MARK_REF_QUADBLUE_412,&
-            MARK_REF_QUADBLUE_341,MARK_REF_QUADBLUE_234)
+             MARK_REF_QUADBLUE_341,MARK_REF_QUADBLUE_234)
           ! Blue refinement for quadrilaterals is not allowed. 
           ! Hence, mark quadrilateral for red refinement
           p_Imarker(iel)        = MARK_REF_QUAD4QUAD
