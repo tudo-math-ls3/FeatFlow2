@@ -3210,7 +3210,7 @@ CONTAINS
     INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
     INTEGER :: ive
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_VERTEXIDX) :: isize,ivt
+    INTEGER(PREC_VERTEXIDX) :: isize
 
     ! Is everything here we need?
     IF (rtriangulation%h_InodalProperty .EQ. ST_NOHANDLE) THEN
@@ -3246,7 +3246,7 @@ CONTAINS
     ! Get the arrays.
     CALL storage_getbase_int (rtriangulation%h_InodalProperty,p_InodalProperty)
     CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
-    CALL storage_getbase_int2D (rtriangulation%h_IedgesAtElement,p_IverticesAtElement)
+    CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     CALL storage_getbase_int2D (rtriangulation%h_IneighboursAtElement,&
         p_IneighboursAtElement)
         
