@@ -257,7 +257,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-ifc),yes)
 CC=icc
-CPP=icc
+CPP=icpc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo
