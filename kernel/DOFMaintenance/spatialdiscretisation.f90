@@ -900,10 +900,10 @@ CONTAINS
           
     CALL storage_getbase_int (p_relementDistrTria%h_IelementList,p_Iarray)
     
-    IF (UBOUND(p_IverticesAtElement,1) .GE. 4) THEN
+    IF (UBOUND(p_IverticesAtElement,1) .GE. TRIA_NVEQUAD2D) THEN
       ! There are quads and probably triangles in the mesh
       DO i=1,rtriangulation%NEL
-        IF (p_IverticesAtElement(4,i) .EQ. 0) THEN
+        IF (p_IverticesAtElement(TRIA_NVEQUAD2D,i) .EQ. 0) THEN
           j = j+1
           p_Iarray(j) = i
         END IF
