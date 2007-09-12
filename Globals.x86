@@ -103,7 +103,8 @@ endif
 
 ifeq ($(call match,$(ID),pc-(athlon.?.?|athlon|opteron)-(linux|cygwin_nt?.?)-ifc),yes)
 CC=icc
-FC=icpc
+CPP=icpc
+FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
