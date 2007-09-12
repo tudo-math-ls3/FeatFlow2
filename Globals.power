@@ -16,6 +16,7 @@ OPTFLAGS  = -O3 -maltivec -mabi=altivec -ffast-math -fexpensive-optimizations \
 -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -pipe
 CCFLAGS   = -pipe
+CPPFLAGS   = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 
@@ -43,12 +44,14 @@ endif
 # Apple mac/osx with gcc/gfort 4.0
 ifeq ($(ID),power_macintosh-ppc_7450-darwin)
 CC=gcc
+CC=g++
 FC=gfortran
 OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec \
 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -pipe -J$(MODDIR) -I$(MODDIR)
 CCFLAGS   = -pipe
+CPPFLAGS   = -pipe
 LDFLAGS   = -bind_at_load
 BLASLIB   = -faltivec -framework Accelerate
 LAPACKLIB = -faltivec -framework Accelerate
@@ -57,10 +60,12 @@ endif
 # Apple mac/osx with absoft 8 compiler
 ifeq ($(ID),power_macintosh-ppc_7450-darwin-absoft)
 CC=cc
+CPP=c++
 FC=/Applications/Absoft/bin/f90
 OPTFLAGS  = 
 FCFLAGS   = -s -N1 -N109
 CCFLAGS   = 
+CPPFLAGS   = 
 LDFLAGS   = 
 BLASLIB   = -unixlib
 LAPACKLIB = -unixlib
@@ -69,12 +74,14 @@ endif
 # Apple mac/osx with gcc/g95 3.x
 ifeq ($(ID),power_macintosh-ppc_7450-darwin-gcc3)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec \
 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
+CPPFLAGS   = -pipe
 LDFLAGS   = 
 BLASLIB   = 
 LAPACKLIB = 
@@ -87,6 +94,7 @@ FC=/opt/ibmcmp/xlf/8.1/bin/f90
 OPTFLAGS  = -O4
 FCFLAGS   = 
 CCFLAGS   = 
+CPPFLAGS   = 
 BLASLIB   = 
 LAPACKLIB = 
 endif

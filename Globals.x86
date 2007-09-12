@@ -13,6 +13,7 @@ FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
+CPPFLAGS   = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 1
@@ -31,6 +32,7 @@ OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
 OPTFLAGSFDEBUG = -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
+CPPFLAGS   = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -41,28 +43,33 @@ ifeq ($(FFCPU),k6)
 OPTFLAGS  += -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 ifeq ($(FFCORE),k6)
 FCFLAGS   += -march=k6
-FCFLAGS   += -march=k6
+CCFLAGS   += -march=k6
+CPPFLAGS   += -march=k6
 endif
 ifeq ($(FFCORE),k6-2)
 FCFLAGS   += -march=k6-2
-FCFLAGS   += -march=k6-2
+CCFLAGS   += -march=k6-2
+CPPFLAGS   += -march=k6-2
 endif
 ifeq ($(FFCORE),k6-3)
 FCFLAGS   += -march=k6-3
-FCFLAGS   += -march=k6-3
+CCFLAGS   += -march=k6-3
+CPPFLAGS   += -march=k6-3
 endif
 endif
 
 ifeq ($(FFCPU),athlon)
 OPTFLAGS  += -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   += -march=athlon
-FCFLAGS   += -march=athlon
+CCFLAGS   += -march=athlon
+CPPFLAGS   += -march=athlon
 endif
 
 ifeq ($(FFCPU),athlonxp)
 OPTFLAGS  += -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
 FCFLAGS   += -march=athlon-xp
-FCFLAGS   += -march=athlon-xp
+CCFLAGS   += -march=athlon-xp
+CPPFLAGS   += -march=athlon-xp
 endif
 
 ifeq ($(FFCPU),athlon64)
@@ -73,7 +80,8 @@ OPTFLAGS  += -mmmx -msse -msse2 -m3dnow -ffinite-math-only -fgcse \
 -fsched-interblock -frerun-loop-opt -frerun-cse-after-loop \
 -freorder-functions
 FCFLAGS   += -march=athlon64
-FCFLAGS   += -march=athlon64
+CCFLAGS   += -march=athlon64
+CPPFLAGS   += -march=athlon64
 endif
 
 ifeq ($(FFCPU),opteron)
@@ -83,7 +91,8 @@ OPTFLAGS  += -mmmx -msse -msse2 -m3dnow -mfpmath=sse  -fomit-frame-pointer \
 -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays -fsched-interblock \
 -frerun-loop-opt -frerun-cse-after-loop -freorder-functions
 FCFLAGS   += -march=opteron
-FCFLAGS   += -march=opteron
+CCFLAGS   += -march=opteron
+CPPFLAGS   += -march=opteron
 endif
 endif
 
@@ -155,6 +164,7 @@ FC=sunf90
 OPTFLAGS  = -fast -O5 
 FCFLAGS   = -moddir=$(MODDIR)
 CCFLAGS   =
+CPPFLAGS   =
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -173,6 +183,7 @@ OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations -fprefetch-loop-array
 OPTFLAGSFDEBUG = -ftrace=full
 FCFLAGS   = -pipe -fmod=$(MODDIR)
 CCFLAGS   = -pipe
+CPPFLAGS   = -pipe
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
@@ -182,30 +193,35 @@ ifeq ($(FFCPU),pentium)
 OPTFLAGS  += -mfpmath=sse
 FCFLAGS   += -march=pentium
 CCFLAGS   += -march=pentium
+CPPFLAGS   += -march=pentium
 endif
 
 ifeq ($(FFCPU),pentiumpro)
 OPTFLAGS  += -mfpmath=sse
 FCFLAGS   += -march=pentiumpro
 CCFLAGS   += -march=pentiumpro
+CPPFLAGS   += -march=pentiumpro
 endif
 
 ifeq ($(FFCPU),pentium2)
 OPTFLAGS  += -mfpmath=sse
 FCFLAGS   += -march=pentium2
 CCFLAGS   += -march=pentium2
+CPPFLAGS   += -march=pentium2
 endif
 
 ifeq ($(FFCPU),pentium3)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse
 FCFLAGS   += -march=pentium3
 CCFLAGS   += -march=pentium3
+CPPFLAGS   += -march=pentium3
 endif
 
 ifeq ($(FFCPU),pentiumm)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse #-mfpmath=sse2
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
+CPPFLAGS   += -march=pentium-m
 endif
 
 ifeq ($(FFCPU),pentium4)
@@ -213,6 +229,7 @@ ifeq ($(FFCORE),northwood)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2
 FCFLAGS   += -march=pentium4
 CCFLAGS   += -march=pentium4
+CPPFLAGS   += -march=pentium4
 endif
 ifeq ($(FFCORE),prescott)
 OPTFLAGS  += -mfpmath=mmx -mfpmath=sse -mfpmath=sse2 -mfpmath=sse3
@@ -225,12 +242,14 @@ ifeq ($(FFCPU),core)
 OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=pentium-m
 CCFLAGS   += -march=pentium-m
+CPPFLAGS   += -march=pentium-m
 endif
 
 ifeq ($(FFCPU),core2)
 OPTFLAGS  += -mmmx -msse -msse2 -msse3
 FCFLAGS   += -march=nocona
 CCFLAGS   += -march=nocona
+CPPFLAGS   += -march=nocona
 endif
 endif
 
@@ -247,6 +266,7 @@ AR=xiar
 OPTFLAGS  = -O3 -ipo
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
 CCFLAGS   = -vec-report0
+CPPFLAGS   = -vec-report0
 LDFLAGS   = -lsvml
 BLASLIB   = 
 LAPACKLIB = 
@@ -290,6 +310,7 @@ FC=sunf90
 OPTFLAGS  = -fast -O5 
 FCFLAGS   = -moddir=$(MODDIR)
 CCFLAGS   =
+CPPFLAGS   =
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0

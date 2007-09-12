@@ -16,6 +16,7 @@ FC=f90
 OPTFLAGS  = -fast -arch host
 FCFLAGS   = -module $(MODDIR)
 CCFLAGS   = 
+CPPFLAGS   = 
 BLASLIB   = -ldxml
 LAPACKLIB = -ldxml
 # BLASLIB=LAPACKLIB enforces to use a single combined library for
