@@ -12,6 +12,7 @@
 
 ifeq ($(call match,$(ID),sun4u-sparcv[789]-sunos),yes)
 CC=cc
+CPP=c++
 FC=f95
 OPTFLAGS  = -fast 
 FCFLAGS   = -xarch=native -moddir=$(MODDIR) -M$(LIBDIR) -M$(MODDIR)
@@ -36,6 +37,7 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv[789]-sunos-g95),yes)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays

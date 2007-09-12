@@ -7,7 +7,8 @@
 
 # Standard compiler settings for pc systems
 ifeq ($(call match,$(ID),pc-*),yes)
-CC=gcc	     
+CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -pipe -fmod=$(MODDIR)
@@ -24,6 +25,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-(k.|athlon.?.?|opteron)-(linux|cygwin_nt?.?)),yes)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations
 OPTFLAGSFDEBUG = -ftrace=full
@@ -92,7 +94,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-(athlon.?.?|athlon|opteron)-(linux|cygwin_nt?.?)-ifc),yes)
 CC=icc
-FC=ifort
+FC=icpc
 AR=xiar
 OPTFLAGS  = -O3 -ipo
 FCFLAGS   = -cm -fpe0 -vec-report0 -module $(MODDIR)
@@ -128,6 +130,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-(k.?|athlon.?.?|opteron)-(linux|cygwin_nt?.?)-pgi),yes)
 CC=gcc
+CPP=g++
 FC=pgf90
 OPTFLAGS  = -fastsse -O4 
 FCFLAGS   = -module $(MODDIR)
@@ -164,6 +167,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-(pentium?.?|core?.?)-(linux|cygwin_nt?.?)),yes)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m32 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
 OPTFLAGSFDEBUG = -ftrace=full
@@ -237,6 +241,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-(pentium?.?|core?.?)-linux-ifc),yes)
 CC=icc
+CPP=icpc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo

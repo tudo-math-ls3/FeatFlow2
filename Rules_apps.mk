@@ -22,14 +22,17 @@ MODDIR=obj/$(ID)
 OBJ=$(filter %.o,$(SRC:%.f=$(OBJDIR)/%.o)) 
 OBJ+=$(filter %.o,$(SRC:%.f90=$(OBJDIR)/%.o))
 OBJ+=$(filter %.o,$(SRC:%.c=$(OBJDIR)/%.o))
+OBJ+=$(filter %.o,$(SRC:%.cpp=$(OBJDIR)/%.o))
 
 CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(OPTFLAGSC) $(INCDIR) $(DEFS)
+CPPCOMP=$(CPP) $(CPPFLAGS) $(OPTFLAGS) $(OPTFLAGSCPP) $(INCDIR) $(DEFS)
 FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 
 ETAGS=$(filter %.o,$(SRC:%.f=$(OBJDIR)/%.o))
 ETAGS+=$(filter %.o,$(SRC:%.f90=$(OBJDIR)/%.o))
 ETAGS+=$(filter %.o,$(SRC:%.c=$(OBJDIR)/%.o))
+ETAGS+=$(filter %.o,$(SRC:%.cpp=$(OBJDIR)/%.o))
 
 # If the BLASLIB is not defined add the included blas to the libs.
 # If the LAPACKLIB is not defined add the included lapack to the libs.
@@ -61,6 +64,9 @@ $(OBJDIR)/%.o $(MODDIR)/%.mod : %.f90
 
 $(OBJDIR)/%.o : %.c
 	$(CCOMP) -c -o $@ $<
+
+$(OBJDIR)/%.o : %.cpp
+	$(CPPCOMP) -c -o $@ $<
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)

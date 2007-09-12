@@ -108,11 +108,20 @@ endif
 # detect a known machine, the machine-specific configuration branch
 # (see below) is used.
 #
-# Featflow needs an f90-compiler as well as a C-compiler. 
+# Featflow needs an f90-compiler as well as a C-compiler.
+#
+# The following entries are defined:
+# FC = Fortran 77 and 90 compiler
+# CC = ANSI C compiler
+# CPP= C++ compiler. If set to "", this defaults to CC
+# LD = linker (usually same as the Fortran Compiler) 
+# AR = library creation tool (archiver)
+# ARC=  for C libraries, if undifined AR is used
 ########################################################################
 
 FC=f90     # Fortran 90 compiler
 CC=cc      # ANSI C compiler
+CPP=       # C++ compiler. Defaults to CC if not defined
 LD=$(FC)   # linker (usually same as the Fortran Compiler) 
 AR=ar      # library creation tool (archiver)
 ARC=       # for C libraries, if undifined AR is used
@@ -136,6 +145,10 @@ OPTFLAGSF=
 
 OPTFLAGSC=
 
+# special compiler optimization flags for C++ compiler
+
+OPTFLAGSCPP=
+
 # standard flags applied when 'make debug' is executed,
 # for both, Fortran and C compiler
 
@@ -151,6 +164,11 @@ OPTFLAGSFDEBUG=
 
 OPTFLAGSCDEBUG= 
 
+# standard flags applied when 'make debug' is executed,
+# for C++ compiler; additionally to OPTFLAGSDEBUG!
+
+OPTFLAGSCPPDEBUG= 
+
 # general compiler options for Fortran compiler:
 
 FCFLAGS=
@@ -158,6 +176,10 @@ FCFLAGS=
 # general compiler options for C compiler:
 
 CCFLAGS=
+
+# general compiler options for C++ compiler:
+
+CPPFLAGS=
 
 # list of featflow included libs to be build by the top level make
 # feat2d, feat3d and sysutils required, include lapack and blas if necessary
@@ -269,12 +291,21 @@ ifeq "$(ARC)" ""
 ARC := $(AR)
 endif
 
+# Default C++ compiler is the CC compiler
+
+ifeq "$(CPP)" ""
+CPP := $(CC)
+OPTFLAGSCPP:=$(OPTFLAGSC)
+CPPFLAGS:=$(CCFLAGS)
+endif
+
 ########################################################################
 # hack debug flags if 'make debug' is applied
 ########################################################################
 
 debug: OPTFLAGS=$(OPTFLAGSDEBUG)
 debug: OPTFLAGSC=$(OPTFLAGSCDEBUG)
+debug: OPTFLAGSCPP=$(OPTFLAGSCPPDEBUG)
 debug: OPTFLAGSF=$(OPTFLAGSFDEBUG)
 
 ########################################################################
@@ -283,6 +314,7 @@ debug: OPTFLAGSF=$(OPTFLAGSFDEBUG)
 ########################################################################
 
 FCC:=$(shell (which $(CC) 2>/dev/null || echo "$(CC) not found !!"))
+FCPP:=$(shell (which $(CPP) 2>/dev/null || echo "$(CPP) not found !!"))
 FFC:=$(shell (which $(FC) 2>/dev/null || echo "$(FC) not found !!"))
 ARF:=$(shell (which $(AR) 2>/dev/null || echo "$(AR) not found !!"))
 ARC:=$(shell (which $(ARC) 2>/dev/null || echo "$(ARC) not found !!"))
@@ -292,23 +324,27 @@ ARC:=$(shell (which $(ARC) 2>/dev/null || echo "$(ARC) not found !!"))
 	@echo 
 	@echo 'Compilers to be used:'
 	@echo '  C compiler:        ' $(FCC)
+	@echo '  C++ compiler:      ' $(FCPP)
 	@echo '  Fortran compiler:  ' $(FFC)
 	@echo '  F-Library archiver:' $(ARF)
 	@echo '  C-Library archiver:' $(ARC)
 	@echo
 	@echo 'Flags to be used:'
-	@echo '  OPTFLAGS      =' $(OPTFLAGS)
-	@echo '  OPTFLAGSC     =' $(OPTFLAGSC)
-	@echo '  OPTFLAGSF     =' $(OPTFLAGSC)
-	@echo '  OPTFLAGSDEBUG =' $(OPTFLAGSDEBUG)
-	@echo '  OPTFLAGSCDEBUG=' $(OPTFLAGSCDEBUG)
-	@echo '  OPTFLAGSFDEBUG=' $(OPTFLAGSFDEBUG)
-	@echo '  FCFLAGS       =' $(FCFLAGS)
-	@echo '  CCFLAGS       =' $(CCFLAGS)
-	@echo '  BUILDLIB      =' $(BUILDLIB)
-	@echo '  BLASLIB       =' $(if $(BLASLIB),$(BLASLIB),"(standard BLAS, included in installation package)")
+	@echo '  OPTFLAGS        =' $(OPTFLAGS)
+	@echo '  OPTFLAGSC       =' $(OPTFLAGSC)
+	@echo '  OPTFLAGSCPP     =' $(OPTFLAGSCPP)
+	@echo '  OPTFLAGSF       =' $(OPTFLAGSC)
+	@echo '  OPTFLAGSDEBUG   =' $(OPTFLAGSDEBUG)
+	@echo '  OPTFLAGSCDEBUG  =' $(OPTFLAGSCDEBUG)
+	@echo '  OPTFLAGSCPPDEBUG=' $(OPTFLAGSCPPDEBUG)
+	@echo '  OPTFLAGSFDEBUG  =' $(OPTFLAGSFDEBUG)
+	@echo '  FCFLAGS         =' $(FCFLAGS)
+	@echo '  CCFLAGS         =' $(CCFLAGS)
+	@echo '  CPPFLAGS        =' $(CPPFLAGS)
+	@echo '  BUILDLIB        =' $(BUILDLIB)
+	@echo '  BLASLIB         =' $(if $(BLASLIB),$(BLASLIB),"(standard BLAS, included in installation package)")
 ifeq "$(LAPACKLIB)" ""
-	@echo '  LAPACKLIB     = (standard LAPACK, included in installation package)'
+	@echo '  LAPACKLIB       = (standard LAPACK, included in installation package)'
 else
 ifeq "$(LAPACKLIB)" "$(BLASLIB)"
 			@echo '  LAPACKLIB= (Shared BLAS/LAPACK)'
@@ -316,8 +352,8 @@ else
 			@echo '  LAPACKLIB= ' $(LAPACKLIB)
 endif
 endif
-	@echo '  LDLIBS        =' $(LDLIBS)
-	@echo '  LDFLAGS       =' $(LDFLAGS)
+	@echo '  LDLIBS          =' $(LDLIBS)
+	@echo '  LDFLAGS         =' $(LDFLAGS)
 	@echo 
 	@(if [ ! -x "$(FCC)" ] ; then echo 'Please edit Globals.mk to specify your C compiler' ; exit 1; fi)
 	@(if [ ! -x "$(FFC)" ] ; then echo 'Please edit Globals.mk to specify your Fortran compiler' ; exit 1; fi)

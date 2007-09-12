@@ -11,6 +11,7 @@
 
 ifeq ($(call match,$(ID),ia64-itanium.?-linux),yes)
 CC=cc
+CPP=c++
 FC=f90
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
 -funroll-loops -fprefetch-loop-arrays
@@ -27,6 +28,7 @@ endif
 
 ifeq ($(call match,$(ID),ia64-itanium.?-linux-ifc),yes)
 CC=icc
+CPP=icpc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -fast
@@ -42,6 +44,7 @@ endif
 ########################################################################
 ifeq ($(ID),hpia64-hppa-hpux)
 CC=cc
+CPP=c++
 FC=f90
 OPTFLAGS  = +O4 +Ofaster +U77
 FCFLAGS   = 
@@ -56,6 +59,7 @@ endif
 ########################################################################
 ifeq ($(ID),hp9000800-hppa-hpux)
 CC=cc
+CPP=c++
 FC=f90
 OPTFLAGS  = +O4 +Ofaster +U77
 FCFLAGS   = 

@@ -8,6 +8,7 @@
 # Standard compiler settings for pc64 systems
 ifeq ($(call match,$(ID),pc64-*),yes)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -pipe -fmod=$(MODDIR)
@@ -23,6 +24,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)),yes)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -pipe -fmod=$(MODDIR)
@@ -63,6 +65,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-ifc),yes)
 CC=icc
+CPP=icpc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo
@@ -154,8 +157,8 @@ endif
 ########################################################################
 
 ifeq ($(ID),pc64-opteron-linux-gcc4)
-CC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gcc
-FC=/home/user/hron/nobackup/apps/gfortran/irun/bin/gfortran
+CC=gcc
+FC=gfortran
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -march=opteron -pipe -J$(MODDIR) -I$(MODDIR)
 CCFLAGS   = -march=opteron -pipe
@@ -168,6 +171,7 @@ endif
 # IFORT compiler, standard BLAS, large arrays > 2GB
 ifeq ($(ID),pc64-opteron-linux-ifclarge)
 CC=/usr/local/icce/bin/icc
+CPP=/usr/local/icce/bin/icpc
 FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=medium  -module $(MODDIR)
@@ -182,6 +186,7 @@ endif
 # High precision: 128 bit double, 64 bit integer
 ifeq ($(ID),pc64-opteron-linux-ifclargeprec)
 CC=/usr/local/icce/bin/icc
+CC=/usr/local/icce/bin/icpc
 FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 -module $(MODDIR)
@@ -194,6 +199,7 @@ endif
 # GCC compiler, standard BLAS, large arrays > 2GB
 ifeq ($(ID),pc64-opteron-linux-gcclarge)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=medium -m64 -fmod=$(MODDIR)

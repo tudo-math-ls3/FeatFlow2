@@ -23,8 +23,10 @@ SRC=$(SRCLIST:%=$(SRCDIR)/%)
 OBJ=$(filter %.o,$(SRCLIST:%.f=$(OBJDIR)/%.o)) 
 OBJ+=$(filter %.o,$(SRCLIST:%.f90=$(OBJDIR)/%.o))
 OBJ+=$(filter %.o,$(SRCLIST:%.c=$(OBJDIR)/%.o))
+OBJ+=$(filter %.o,$(SRCLIST:%.cpp=$(OBJDIR)/%.o))
 
 CCOMP=$(CC) $(CCFLAGS) $(OPTFLAGS) $(OPTFLAGSC) $(INCDIR) $(DEFS)
+CPPCOMP=$(CPP) $(CPPFLAGS) $(OPTFLAGS) $(OPTFLAGSCPP) $(INCDIR) $(DEFS)
 FCOMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 F90COMP=$(FC) $(FCFLAGS) $(OPTFLAGS) $(OPTFLAGSF) $(INCDIR) $(DEFS)
 
@@ -51,6 +53,9 @@ $(OBJDIR)/%.o $(MODDIR)/%.mod : $(SRCDIR)/%.f90
 
 $(OBJDIR)/%.o : $(SRCDIR)/%.c
 	$(CCOMP) -c -o $@ $<
+
+$(OBJDIR)/%.o : $(SRCDIR)/%.cpp
+	$(CPPCOMP) -c -o $@ $<
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
