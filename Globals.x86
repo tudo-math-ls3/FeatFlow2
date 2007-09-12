@@ -161,6 +161,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-(k.?|athlon.?.?|opteron)-(linux|cygwin_nt?.?)-sun),yes)
 CC=suncc
+CPP=suncc
 FC=sunf90
 OPTFLAGS  = -fast -O5 
 FCFLAGS   = -moddir=$(MODDIR)
@@ -307,6 +308,7 @@ endif
 
 ifeq ($(call match,$(ID),pc-(pentium?.?|core?.?)-linux-sun),yes)
 CC=suncc
+CPP=suncc
 FC=sunf90
 OPTFLAGS  = -fast -O5 
 FCFLAGS   = -moddir=$(MODDIR)

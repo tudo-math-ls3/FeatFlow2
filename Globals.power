@@ -11,6 +11,7 @@
 
 ifeq ($(call match,$(ID),pcc64-power.?-linux),yes)
 CC=gcc
+CPP=g++
 FC=gfortran
 OPTFLAGS  = -O3 -maltivec -mabi=altivec -ffast-math -fexpensive-optimizations \
 -fomit-frame-pointer -funroll-loops -fprefetch-loop-arrays
@@ -44,7 +45,7 @@ endif
 # Apple mac/osx with gcc/gfort 4.0
 ifeq ($(ID),power_macintosh-ppc_7450-darwin)
 CC=gcc
-CC=g++
+CPP=g++
 FC=gfortran
 OPTFLAGS  = -mtune=G4 -mcpu=G4 -O3 -maltivec -mabi=altivec \
 -ffast-math -fexpensive-optimizations -fomit-frame-pointer \
@@ -90,6 +91,7 @@ endif
 # Apple mac/osx with IBM compilers
 ifeq ($(ID),power_macintosh-ppc_7450-darwin-xlf)
 CC=/opt/ibmcmp/vac/6.0/bin/xlc
+CPP=/opt/ibmcmp/vac/6.0/bin/xlc
 FC=/opt/ibmcmp/xlf/8.1/bin/f90
 OPTFLAGS  = -O4
 FCFLAGS   = 

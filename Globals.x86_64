@@ -101,6 +101,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-pgi),yes)
 CC=pgcc
+CPP=pgcc
 FC=pgf95
 OPTFLAGS  = -fastsse -O4
 FCFLAGS   = -module $(MODDIR)
@@ -125,6 +126,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-path),yes)
 CC=pathcc
+CPP=pathcc
 FC=pathf90
 OPTFLAGS  = -Ofast
 FCFLAGS   = -pipe
@@ -150,6 +152,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-(athlon64|opteron)-(linux|cygwin_nt?.?)-sun),yes)
 CC=suncc
+CPP=suncc
 FC=sunf90
 OPTFLAGS  = -fast -O5 
 FCFLAGS   = -moddir=$(MODDIR)
@@ -167,7 +170,7 @@ endif
 
 ifeq ($(ID),pc64-opteron-linux-gcc4)
 CC=gcc
-CC=g++
+CPP=g++
 FC=gfortran
 OPTFLAGS  = -O3 -ffast-math -fexpensive-optimizations
 FCFLAGS   = -march=opteron -pipe -J$(MODDIR) -I$(MODDIR)
@@ -198,7 +201,7 @@ endif
 # High precision: 128 bit double, 64 bit integer
 ifeq ($(ID),pc64-opteron-linux-ifclargeprec)
 CC=/usr/local/icce/bin/icc
-CC=/usr/local/icce/bin/icpc
+CPP=/usr/local/icce/bin/icpc
 FC=/usr/local/ifce/bin/ifort
 OPTFLAGS  = 
 FCFLAGS   = -mcmodel=large -integer_size 64 -double_size 128 -real_size 64 -module $(MODDIR)
@@ -229,6 +232,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)),yes)
 CC=gcc
+CPP=g++
 FC=g95
 OPTFLAGS  = -O3 -m64 -ffast-math -fexpensive-optimizations -fprefetch-loop-arrays
 FCFLAGS   = -pipe -fmod=$(MODDIR)
@@ -253,6 +257,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-ifc),yes)
 CC=icc
+CPP=icc
 FC=ifort
 AR=xiar
 OPTFLAGS  = -O3 -ipo
@@ -278,6 +283,7 @@ endif
 
 ifeq ($(call match,$(ID),pc64-core2-(linux|cygwin_nt?.?)-sun),yes)
 CC=suncc
+CPP=suncc
 FC=sunf90
 OPTFLAGS  = -fast -O5 
 FCFLAGS   = -moddir=$(MODDIR)
