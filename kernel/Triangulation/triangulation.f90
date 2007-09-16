@@ -15,100 +15,110 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) tria_wrp_tria2Structure
-!#     -> Wrapper. Create a FEAT 2.0 triangulation structure from a
-!#        FEAT 1.x triangulation structure.
+!#  1.) tria_wrp_tria2Structure
+!#      -> Wrapper. Create a FEAT 2.0 triangulation structure from a
+!#         FEAT 1.x triangulation structure.
 !#
-!# 2.) tria_readTriFile2D
-!#     -> Reads a .TRI file and creates a 'raw' mesh with only basic 
-!#        information.
+!#  2.) tria_readTriFile1D
+!#      -> Reads a .TRI file and creates a 'raw' 1D mesh with only basic 
+!#         information.
 !#
-!# 3.) tria_initStandardMeshFromRaw
-!#     -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
-!#        (as set up by tria_readTriFile2D e.g.) to a standard mesh.
+!#  3.) tria_readTriFile2D
+!#      -> Reads a .TRI file and creates a 'raw' 2D mesh with only basic 
+!#         information.
 !#
-!# 4.) tria_refine2LevelOrdering
-!#     -> Refines a mesh according to the 2-level ordering algorithm.
-!#        Creates a 'raw' fine mesh from a 'standard' coarse mesh.
+!#  4.) tria_initStandardMeshFromRaw
+!#      -> Generates all standard arrays for a mesh, i.e. converts a 'raw' mesh
+!#         (as set up by tria_readTriFile2D e.g.) to a standard mesh.
 !#
-!# 5.) tria_compress2LevelOrdHierarchy
-!#     -> Can be used to compress a mesh hierarchy created with the 2-level
-!#        ordering. Saves memory. Shares vertex coordinates between fine
-!#        and coarse mesh.
+!#  5.) tria_refine2LevelOrdering
+!#      -> Refines a mesh according to the 2-level ordering algorithm.
+!#         Creates a 'raw' fine mesh from a 'standard' coarse mesh.
 !#
-!# 6.) tria_quickRefine2LevelOrdering
-!#     -> Refines a mesh multiple times according to the 2-level ordering 
-!#        algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
-!#        coarse mesh.
+!#  6.) tria_compress2LevelOrdHierarchy
+!#      -> Can be used to compress a mesh hierarchy created with the 2-level
+!#         ordering. Saves memory. Shares vertex coordinates between fine
+!#         and coarse mesh.
 !#
-!# 7.) tria_done
-!#     -> Cleans up a triangulation structure, releases memory from the heap.
+!#  7.) tria_quickRefine2LevelOrdering
+!#      -> Refines a mesh multiple times according to the 2-level ordering 
+!#         algorithm. Creates a 'raw' fine mesh from a 'raw' or 'standard' 
+!#         coarse mesh.
 !#
-!# 8.) tria_rawGridToTri
-!#     -> Converts a raw mesh into a triangular mesh.
+!#  8.) tria_done
+!#      -> Cleans up a triangulation structure, releases memory from the heap.
 !#
-!# 9.) tria_duplicate
-!#     -> Creates a duplicate / backup of a triangulation.
-!#        Some information may be shared between two triangulation structures.
+!#  9.) tria_rawGridToTri
+!#      -> Converts a raw mesh into a triangular mesh.
 !#
-!# 10.) tria_restore
+!# 10.) tria_duplicate
+!#      -> Creates a duplicate / backup of a triangulation.
+!#         Some information may be shared between two triangulation structures.
+!#
+!# 11.) tria_restore
 !#      -> Restores a triangulation previously backed up with tria_backup.
 !#
-!# 11.) tria_searchBoundaryNode
+!# 12.) tria_searchBoundaryNode
 !#      -> Search for the position of a boundary vertex / edge on the boundary.
 !#
-!# 12.) tria_getPointsOnEdge
+!# 13.) tria_getPointsOnEdge
 !#      -> For all edges in a triangulation, calculate the coordinates 
 !#         of a number of points on each edge
 !#
-!# 13.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
+!# 14.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
 !#      -> Get the number of vertices/edges on an element
 !#
 !# Auxiliary routines:
 !#
-!# 1.) tria_readRawTriangulation2D
-!#     -> Reads basic data from a TRI file.
+!#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
+!#      -> Reads basic data from a TRI file.
 !#
-!# 2.) tria_genRawBoundary2D
+!#  2.) tria_genRawBoundary2D
 !#     -> Generates basic information about boundary vertices.
 !#
-!# 3.) tria_sortBoundaryVertices2D
-!#     -> Sorts the boundary vertices for increasing parameter values.
+!#  3.) tria_sortBoundaryVertices2D
+!#      -> Sorts the boundary vertices for increasing parameter values.
 !#
-!# 4.) tria_genElementsAtVertex2D
-!#     -> Generates the IelementsAtVertex array for a 2D triangulation
+!#  4.) tria_genElementsAtVertex2D
+!#      -> Generates the IelementsAtVertex array for a 2D triangulation
 !#
-!# 5.) tria_genNeighboursAtElement2D
-!#     -> Generates the IneighboursAtElement array for a 2D triangulation
+!#  5.) tria_genNeighboursAtElement1D
+!#      -> Generates the IneighboursAtElement array for a 1D triangulation
 !#
-!# 6.) tria_genEdgesAtElement2D
-!#     -> Generates the IedgesAtElement array for a 2D triangulation
+!#  6.) tria_genNeighboursAtElement2D
+!#      -> Generates the IneighboursAtElement array for a 2D triangulation
 !#
-!# 7.) tria_genElementsAtEdge2D
-!#     -> Generates the IelementsAtEdge array for a 2D triangulation
+!#  7.) tria_genEdgesAtElement2D
+!#      -> Generates the IedgesAtElement array for a 2D triangulation
 !#
-!# 8.) tria_genVerticesAtEdge2D
-!#     -> Generates the IverticesAtEdge array for a 2D triangulation
+!#  8.) tria_genElementsAtEdge2D
+!#      -> Generates the IelementsAtEdge array for a 2D triangulation
 !#
-!# 9.) tria_genEdgeNodalProperty2D
-!#     -> Generates the InodalProperty array part for all edges
+!#  9.) tria_genVerticesAtEdge2D
+!#      -> Generates the IverticesAtEdge array for a 2D triangulation
 !#
-!# 10.) tria_genElementVolume2D
+!# 10.) tria_genEdgeNodalProperty2D
+!#      -> Generates the InodalProperty array part for all edges
+!#
+!# 11.) tria_genElementVolume1D
+!#      -> Generates the DelementVolume array for a 1D triangulation
+!#
+!# 12.) tria_genElementVolume2D
 !#      -> Generates the DelementVolume array for a 2D triangulation
 !#
-!# 11.) tria_genElementsAtBoundary2D
+!# 13.) tria_genElementsAtBoundary2D
 !#      -> Generates the IelementsAtBoundary array for a 2D triangulation
 !#
-!# 12.) tria_genEdgesAtBoundary2D
+!# 14.) tria_genEdgesAtBoundary2D
 !#      -> Generates the IedgesAtBoundary array for a 2D triangulation
 !#
-!# 13.) tria_genEdgeParameterValue2D
+!# 15.) tria_genEdgeParameterValue2D
 !#      -> Generates the DedgeParameterValue array for a 2D triangulatioon
 !# 
-!# 14.) tria_genBoundaryVertexPos2D
+!# 16.) tria_genBoundaryVertexPos2D
 !#      -> Generates the IboundaryVertexPos2D array for a 2D triangulatioon
 !#
-!# 15.) tria_genBoundaryEdgePos2D
+!# 17.) tria_genBoundaryEdgePos2D
 !#      -> Generates the IboundaryEdgePos2D array for a 2D triangulatioon
 !#
 !#
@@ -220,6 +230,9 @@ MODULE triangulation
   ! Maximum number of vertices per element supported by the triangulation
   ! module. Currently, this is 8 which is the case for 3D hexahedral meshes.
   INTEGER, PARAMETER :: TRIA_MAXNVE   = 8
+  
+  ! Maximum number of corner-vertices in each 1D element.
+  INTEGER, PARAMETER :: TRIA_MAXNVE1D = 2
 
   ! Maximum number of corner-vertices in each 2D element.
   ! We set this to 4 to allow triangle and quadrilateral element shapes.
@@ -227,11 +240,14 @@ MODULE triangulation
   ! isoparametric elements!
   ! This is the old NNVE.
   INTEGER, PARAMETER :: TRIA_MAXNVE2D = 4
-
-  ! Maximum number of edges in each element.
+  
+  ! Maximum number of edges in each 2D element.
   ! We set this to 4 to allow triangle and quadrilateral element shapes.
   ! This is the old NNVE, too.
   INTEGER, PARAMETER :: TRIA_MAXNME2D = TRIA_MAXNVE2D
+  
+  ! Number of vertices per line element in 1D.
+  INTEGER, PARAMETER :: TRIA_NVELINE1D = 2
   
   ! Number of vertices per element for triangular element shapes in 2D.
   INTEGER, PARAMETER :: TRIA_NVETRI2D  = 3
@@ -304,25 +320,36 @@ MODULE triangulation
 !<types>
 
 !<typeblock>
-  
-  ! Each element consists of at most TRIA_MAXNVE2D points.
+
+  ! Each 1D element consitst of at most TRIA_MAXNVE1D points.
   ! Each point has a number, which is usually an integer value.
+  TYPE t_elementCorners1D
+    INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE1D) :: Icorners
+  END TYPE
   
+  ! Each 2D element consists of at most TRIA_MAXNVE2D points.
+  ! Each point has a number, which is usually an integer value.
   TYPE t_elementCorners2D
     INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: Icorners
   END TYPE
 
-  ! Each element contains at most TRIA_MAXNME2D edges.
+  ! Each 2D element contains at most TRIA_MAXNME2D edges.
   ! Each edge has a number, which is usually an integer value.
-  
   TYPE t_elementEdges2D
     INTEGER(PREC_EDGEIDX), DIMENSION(TRIA_MAXNME2D) :: Iedges
   END TYPE
   
-  ! Each element contains at most NMAXEDGES neighbour elements,
+  ! Each 1D element contains at most TRIA_MAXNVE1D neighbour elements,
+  ! each meeting the element in a vertice.
+  ! Each neighbour element has a number, which is usually an integer value.
+  TYPE t_elementNeighbours1D
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE1D) :: Ineighbours
+  END TYPE
+  
+  
+  ! Each 2D element contains at most NMAXEDGES neighbour elements,
   ! each meeting the element in an edge.
   ! Each neighbour element has a number, which is usually an integer value.
-  
   TYPE t_elementNeighbours2D
     INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNME2D) :: Ineighbours
   END TYPE
@@ -371,7 +398,8 @@ MODULE triangulation
     INTEGER(I32)             :: iduplicationFlag
   
     ! Dimension of the triangulation.
-    ! NDIM2D=2D triangulation, NDIM2D=3D triangulation, 0=not initialised
+    ! NDIM1D=1D triangulation, NDIM2D=2D triangulation
+    ! NDIM2D=3D triangulation, 0=not initialised
     INTEGER                  :: ndim = 0
   
     ! Number of points in the domain corresponding to corners of elements;
@@ -399,6 +427,7 @@ MODULE triangulation
     INTEGER             :: NMBD = 0
     
     ! Number of elements with a defined number of vertices per element.
+    ! InelOfType(TRIA_NVELINE1D) = number of lines in the mesh (1D).
     ! InelOfType(TRIA_NVETRI2D)  = number of triangles in the mesh (2D).
     ! InelOfType(TRIA_NVEQUAD2D) = number of quads in the mesh (2D).
     INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE) :: InelOfType = 0
@@ -437,8 +466,10 @@ MODULE triangulation
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
     ! with
     !   p_DvertexCoords(1,.) = X-coordinate.
+    ! for 1D meshes,
+    !   p_DvertexCoords(1,.) = X-coordinate.
     !   p_DvertexCoords(2,.) = Y-coordinate.
-    ! fo 2D meshes and
+    ! for 2D meshes and
     !   p_DvertexCoords(1,.) = X-coordinate.
     !   p_DvertexCoords(2,.) = Y-coordinate.
     !   p_DvertexCoords(3,.) = Z-coordinate.
@@ -2248,6 +2279,181 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE tria_readTriFile1D(rtriangulation, sfilename, rboundary)
+
+!<description>
+  ! This routine reads a .TRI file of a 1D triangulation into memory
+  ! and creates a 'raw' triangulation (i.e. a triangulation that contains
+  ! only basic information, see below). 
+  !
+  ! The triangulation structure rtriangulation is initialised with the data 
+  ! from the file. The parameter sfilename gives the name of the .prm 
+  ! file to read.
+  !
+  ! This reads only the very basic information that is needed to create
+  ! the coarse grid. No information about boundary points, subdivisions
+  ! or whatever is created.
+  ! The following arrays / information tags will be initialised:
+  !
+  ! NEL,NVT,NMT,NBCT,NVBD,InelOfType,
+  ! DvertexCoords, IverticesAtElement, InodalProperty, 
+  ! IboundaryCpIdx, IverticesAtBoundary, DvertexParameterValue.
+  ! The nodal property array InodalProperty contains only the data for the
+  ! vertices of the triangulation.
+  ! The arrays IverticesAtBoundary and DvertexParameterValue are sorted
+  ! for the boundary component (according to IboundaryCpIdx) but not 
+  ! for the parameter value.
+  !
+  ! The triangulation structure rtriangulation must be empty. All previous
+  ! information in this structure (if there is any) is lost!
+!</description>
+
+!<input>
+  ! The name of the .prm file to read.
+  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+
+  ! OPTIONAL: An rboundary object specifying the underlying domain.
+  ! If not specified, the routine assumes that the TRI file does not specify
+  ! boundary parameter values, i.e. the point coordinates in the TRI file
+  ! are all real coordinates. The array DvertexParameterValue is not
+  ! generated in this case.
+  TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+! </input>
+  
+!<output>
+  ! Triangulation structure, to be filled with data
+  TYPE(t_triangulation), INTENT(OUT) :: rtriangulation
+!</output>
+  
+!</subroutine>
+
+    ! Input channel for reading
+    INTEGER :: iunit
+    
+    ! Open the file
+    CALL io_openFileForReading(sfilename, iunit)
+
+    ! We create a 1D triangulation here.
+    rtriangulation%ndim = NDIM1D
+
+    ! Read the basic mesh
+    CALL tria_readRawTriangulation1D (iunit,rtriangulation)
+
+    ! Create the basic boundary information
+    CALL tria_genRawBoundary2D (rtriangulation,rboundary)
+
+    ! Close the file, finish
+    CLOSE(iunit)
+
+  END SUBROUTINE
+  
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_readRawTriangulation1D (iunit,rtriangulation)
+
+!<description>  
+  ! Auxiliary routine of tria_readTriFile1D.
+  ! Reads basic information from a triangulation file into rtriangulation.
+  ! That means, the following information arrays / tags are initialised:
+  ! NEL,NVT,NMT,NBCT,InelOfType,
+  ! DvertexCoords, IverticesAtElement and InodalProperty.
+  ! The data is read from the file without being changed!
+!</description>
+  
+!<input>
+  ! Unit number of the file to be read
+  INTEGER, INTENT(IN) :: iunit
+!</input>
+  
+!<inputoutput> 
+  ! Triangulation to be initialised with basic data.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+
+!</subroutine>
+
+    ! Local variables
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata2D
+    INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
+    INTEGER(I32), DIMENSION(:), POINTER :: p_Idata
+    INTEGER(I32) :: ivt, iel
+    INTEGER :: ive, nve
+    INTEGER(I32), DIMENSION(2) :: Isize
+    
+    ! The first two lines in the file are comments.
+    READ(iunit,*)
+    READ(iunit,*)
+    
+    ! Read NEL,NVT,NMT,NVE,NBCT from the file
+    ! and store this information in the structure.
+    READ (iunit,*) rtriangulation%NEL,rtriangulation%NVT,rtriangulation%NMT,&
+        NVE,rtriangulation%NBCT    
+
+    ! Comment: 'DCORVG'
+    READ (iunit,*)
+
+    ! Allocate memory for the basic arrays on the heap
+    Isize = (/NDIM1D,INT(rtriangulation%NVT,I32)/)
+    CALL storage_new2D ('tria_read_tri1D', 'DCORVG', Isize, ST_DOUBLE, &
+        rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointers to the coordinate array
+    CALL storage_getbase_double2D(&
+        rtriangulation%h_DvertexCoords,p_Ddata2D)
+        
+    ! Read the data from the file, store it in the array.
+    !READ (iunit,*) ((p_Ddata2D(idim,ivt),idim=1,NDIM1D), ivt=1,rtriangulation%NVT)
+    READ (iunit,*) (p_Ddata2D(1,ivt), ivt=1, rtriangulation%NVT)
+
+    ! Comment: 'KVERT'
+    READ (iunit,*)
+
+    ! Allocate memory for IverticesAtElement
+    Isize = (/nve,INT(rtriangulation%NEL,I32)/)
+    CALL storage_new2D ('tria_read_tri1D', 'KVERT', Isize, ST_INT, &
+        rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+        
+    ! Get the pointer to the IverticesAtElement array and read the array
+    CALL storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement,p_Idata2D)
+
+    READ (iunit,*) ((p_Idata2D(ive,iel),ive=1,nve), iel=1,rtriangulation%NEL)
+
+    ! Loop through the elements and determine how many elements
+    ! of each element type we have.
+    rtriangulation%InelOfType(:) = 0
+    DO iel=1,rtriangulation%nel
+      DO ive=nve,1,-1
+        IF (p_Idata2D(ive,iel) .NE. 0) THEN
+          rtriangulation%InelOfType(ive) = rtriangulation%InelOfType(ive)+1
+          EXIT
+        END IF
+      END DO
+    END DO
+
+    ! Comment: 'KNPR'
+    READ (iunit,*)
+
+    ! Allocate memory for InodalProperty 
+    CALL storage_new ('tria_read_tri1D', 'KNPR', &
+        INT(rtriangulation%NVT,I32), ST_INT, &
+        rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+    
+    ! Get the pointer to the InodalProperty array
+    CALL storage_getbase_int(&
+        rtriangulation%h_InodalProperty,p_Idata)
+
+    ! Read the data
+    READ (iunit,*) (p_Idata(ivt),ivt=1,rtriangulation%NVT)
+
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
   SUBROUTINE tria_initStandardMeshFromRaw(rtriangulation,rboundary)
 
 !<description>
@@ -2278,7 +2484,15 @@ CONTAINS
 
     SELECT CASE (rtriangulation%ndim)
     CASE (NDIM1D)
-    
+      ! Generate all standard arrays for 1D meshes.
+      CALL tria_genElementsAtVertex2D    (rtriangulation)
+      CALL tria_genNeighboursAtElement1D (rtriangulation)
+      CALL tria_genElementVolume1D       (rtriangulation)
+
+      CALL tria_sortBoundaryVertices2D   (rtriangulation)
+      CALL tria_genElementsAtBoundary2D  (rtriangulation)
+      CALL tria_genBoundaryVertexPos2D   (rtriangulation)
+       
     CASE (NDIM2D)
       ! Generate all standard arrays for 2D meshes.
       CALL tria_genElementsAtVertex2D    (rtriangulation)
@@ -2622,7 +2836,7 @@ CONTAINS
         ! are triangles in a quad mesh e.g.
         IF (ivt .EQ. 0) EXIT
         
-        ! Remembner the element number and increase the pointer in the
+        ! Remember the element number and increase the pointer in the
         ! elements-adjacent-to-that-vertex list.
         p_IelementsAtVertex( p_Iaux1(ivt) ) = iel
         p_Iaux1(ivt) = p_Iaux1(ivt)+1
@@ -2634,6 +2848,112 @@ CONTAINS
 
   END SUBROUTINE
     
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_genNeighboursAtElement1D(rtriangulation)
+
+!<description>
+  ! This routine generates the array IneighboursAtElement (KADJ). 
+  ! For this purpose, the following arrays are used:
+  ! IverticesAtElement, IelementsAtVertexIdx.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    INTEGER :: nnve
+    INTEGER(I32), DIMENSION(2) :: Isize
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    
+    INTEGER(PREC_ELEMENTIDX) :: iel1, iel2, ivi1, ivi2
+    INTEGER(PREC_VERTEXIDX) :: ivt, ive
+    
+    nnve = tria_getNNVE(rtriangulation)
+
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) THEN
+      Isize = (/nnve,INT(rtriangulation%NEL,I32)/)
+      CALL storage_new2D ('tria_genNeighboursAtElement2D', 'KADJ', &
+          Isize, ST_INT, &
+          rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize2D (rtriangulation%h_IneighboursAtElement, Isize)
+      IF (Isize(2) .NE. rtriangulation%NEL) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_genNeighboursAtElement2D', &
+            rtriangulation%NEL, rtriangulation%h_IneighboursAtElement, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    ! Fill the array with 0. We overwrite only those positions <> 0.
+    CALL storage_clear (rtriangulation%h_IneighboursAtElement)
+    
+    ! Get the array which is to be filled with data.
+    CALL storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
+        p_IneighboursAtElement)
+        
+    ! Get some data arrays about the vertices.
+    CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+   
+    ! Get the index array that tells us how many elements are adjacent to
+    ! each vertex.
+    CALL storage_getbase_int (rtriangulation%h_IelementsAtVertexIdx,&
+        p_IelementsAtVertexIdx)
+    CALL storage_getbase_int (rtriangulation%h_IelementsAtVertex,&
+        p_IelementsAtVertex)
+
+    ! We have to look at all vertices to find neighbouring information.
+    !
+    ! Loop through all vertices.
+    DO ive = 1, rtriangulation%NVT
+    
+      ! Get both elements at this vertice
+      ivi1 = p_IelementsAtVertexIdx(ive)
+      ivi2 = p_IelementsAtVertexIdx(ive+1)
+      
+      ! If (ivi2 - ivi1) < 2, then we have no neighbour elements on
+      ! this vertice
+      IF ((ivi2 - ivi1) .LT. 2) CYCLE
+      
+      ! Get indices of elements on this vertice
+      iel1 = p_IelementsAtVertex(ivi1)
+      iel2 = p_IelementsAtVertex(ivi1+1)
+      
+      ! Add iel2 as a neighbour to iel1
+      DO ivt = 1, nnve
+        IF (p_IverticesAtElement(ivt, iel1) .EQ. ive) THEN
+          p_IneighboursAtElement(ivt, iel1) = iel2
+          EXIT
+        END IF
+      END DO
+    
+      ! Add iel1 as a neighbour to iel2
+      DO ivt = 1, nnve
+        IF (p_IverticesAtElement(ivt, iel2) .EQ. ive) THEN
+          p_IneighboursAtElement(ivt, iel2) = iel1
+          EXIT
+        END IF
+      END DO
+
+    END DO ! ive
+    
+    ! That's it
+
+  END SUBROUTINE
+  
 !************************************************************************
 
 !<subroutine>
@@ -3279,6 +3599,91 @@ CONTAINS
       
     END DO
 
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tria_genElementVolume1D(rtriangulation)
+
+!<description>
+  ! This routine generates the element volume array DelementVolume (DAREA). 
+  ! For this purpose, the following arrays are used:
+  ! DvertexCoordinates, IverticesAtElement.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+    REAL(DP), DIMENSION(:), POINTER :: p_DelementVolume
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_ELEMENTIDX) :: isize
+    REAL(DP) :: dtotalVolume
+    REAL(DP), DIMENSION(TRIA_MAXNVE1D) :: Dpoints
+    INTEGER :: ive
+
+    ! Is everything here we need?
+    IF (rtriangulation%h_DvertexCoords .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('h_DvertexCoords not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
+      CALL sys_halt()
+    END IF
+
+    IF (rtriangulation%h_IverticesAtElement .EQ. ST_NOHANDLE) THEN
+      CALL output_line ('IverticesAtElement  not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume2D')
+      CALL sys_halt()
+    END IF
+    
+    ! Do we have (enough) memory for that array?
+    IF (rtriangulation%h_DelementVolume .EQ. ST_NOHANDLE) THEN
+      CALL storage_new ('tria_genElementVolume1D', 'DAREA', &
+          INT(rtriangulation%NEL+1,I32), ST_DOUBLE, &
+          rtriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
+    ELSE
+      CALL storage_getsize (rtriangulation%h_DelementVolume, isize)
+      IF (isize .NE. rtriangulation%NEL+1) THEN
+        ! If the size is wrong, reallocate memory.
+        CALL storage_realloc ('tria_genElementVolume1D', &
+            INT(rtriangulation%NEL+1,I32), rtriangulation%h_DelementVolume, &
+            ST_NEWBLOCK_NOINIT, .FALSE.)
+      END IF
+    END IF
+    
+    ! Get the arrays
+    CALL storage_getbase_double2D (rtriangulation%h_DvertexCoords,&
+        p_DvertexCoords)
+    CALL storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    CALL storage_getbase_double (rtriangulation%h_DelementVolume,&
+        p_DelementVolume)
+        
+    dtotalVolume = 0.0_DP
+        
+    ! Calculate the element volume for all elements
+    DO iel=1,rtriangulation%NEL
+    
+      ! line element
+      DO ive=1,TRIA_NVELINE1D
+        Dpoints(ive) = p_DvertexCoords(1,p_IverticesAtElement(ive,iel))
+      END DO
+      p_DelementVolume(iel) = ABS(Dpoints(1) - Dpoints(2))
+      
+      dtotalVolume = dtotalVolume+p_DelementVolume(iel)
+    END DO
+    
+    ! Store the total volume in the last element of DelementVolume
+    p_DelementVolume(rtriangulation%NEL+1) = dtotalVolume
+    
   END SUBROUTINE
 
 !************************************************************************
@@ -3983,7 +4388,7 @@ CONTAINS
   !
   ! rtriangulation can be either a 'raw' mesh (as read from a .TRI
   ! file) or a 'standard' mesh. The mesh is overwritten by the refined
-  ! one. The resulting mesh will be a 'raw' mesh), i.e. the caller must 
+  ! one. The resulting mesh will be a 'raw' mesh, i.e. the caller must 
   ! add further information to it with routines like 
   ! tria_initStandardMeshFromRaw!
 !</description>
@@ -4015,39 +4420,66 @@ CONTAINS
     INTEGER :: ifine
     INTEGER(I32) :: isize
 
-    ! Refine nfine times:
-    DO ifine = 1,nfine
-    
-      ! Create missing arrays in the source mesh.
-      ! Create only those arrays we need to make the refinement process
-      ! as fast as possible.
-      IF (rtriangulation%h_IelementsAtVertex .EQ. ST_NOHANDLE) &
-        CALL tria_genElementsAtVertex2D    (rtriangulation)
-      IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) &
-        CALL tria_genNeighboursAtElement2D (rtriangulation)
-      IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) &
-        CALL tria_genEdgesAtElement2D      (rtriangulation)
-      IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) &
-        CALL tria_genVerticesAtEdge2D      (rtriangulation)
-      CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
-      IF (isize .LE. rtriangulation%NVT) &
-        CALL tria_genEdgeNodalProperty2D   (rtriangulation)
+    SELECT CASE(rtriangulation%ndim)
+    CASE (NDIM1D)
+      ! Refine nfine times:
+      DO ifine = 1,nfine
+      
+        ! Create missing arrays in the source mesh.
+        ! Create only those arrays we need to make the refinement process
+        ! as fast as possible.
+        IF (rtriangulation%h_IelementsAtVertex .EQ. ST_NOHANDLE) &
+          CALL tria_genElementsAtVertex2D    (rtriangulation)
+        IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) &
+          CALL tria_genNeighboursAtElement2D (rtriangulation)
 
-      CALL tria_sortBoundaryVertices2D   (rtriangulation)
-      IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) &
-        CALL tria_genElementsAtBoundary2D  (rtriangulation)
-      IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) &
-        CALL tria_genEdgesAtBoundary2D     (rtriangulation)
-      IF (PRESENT(rboundary) .AND. &
-          (rtriangulation%h_DedgeParameterValue .EQ. ST_NOHANDLE)) THEN
-        CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
-      END IF
-     
-      ! Refine the mesh, replace the source mesh.
-      CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary,&
-          cflags=cflags)
-          
-    END DO
+        CALL tria_sortBoundaryVertices2D   (rtriangulation)
+
+        IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) &
+          CALL tria_genElementsAtBoundary2D  (rtriangulation)
+       
+        ! Refine the mesh, replace the source mesh.
+        CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary,&
+            cflags=cflags)
+            
+      END DO
+
+    CASE (NDIM2D)
+      ! Refine nfine times:
+      DO ifine = 1,nfine
+      
+        ! Create missing arrays in the source mesh.
+        ! Create only those arrays we need to make the refinement process
+        ! as fast as possible.
+        IF (rtriangulation%h_IelementsAtVertex .EQ. ST_NOHANDLE) &
+          CALL tria_genElementsAtVertex2D    (rtriangulation)
+        IF (rtriangulation%h_IneighboursAtElement .EQ. ST_NOHANDLE) &
+          CALL tria_genNeighboursAtElement2D (rtriangulation)
+        IF (rtriangulation%h_IedgesAtElement .EQ. ST_NOHANDLE) &
+          CALL tria_genEdgesAtElement2D      (rtriangulation)
+        IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) &
+          CALL tria_genVerticesAtEdge2D      (rtriangulation)
+        CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
+        IF (isize .LE. rtriangulation%NVT) &
+          CALL tria_genEdgeNodalProperty2D   (rtriangulation)
+
+        CALL tria_sortBoundaryVertices2D   (rtriangulation)
+        IF (rtriangulation%h_IelementsAtBoundary .EQ. ST_NOHANDLE) &
+          CALL tria_genElementsAtBoundary2D  (rtriangulation)
+        IF (rtriangulation%h_IedgesAtBoundary .EQ. ST_NOHANDLE) &
+          CALL tria_genEdgesAtBoundary2D     (rtriangulation)
+        IF (PRESENT(rboundary) .AND. &
+            (rtriangulation%h_DedgeParameterValue .EQ. ST_NOHANDLE)) THEN
+          CALL tria_genEdgeParameterValue2D  (rtriangulation,rboundary)
+        END IF
+       
+        ! Refine the mesh, replace the source mesh.
+        CALL tria_refine2LevelOrdering(rtriangulation,rboundary=rboundary,&
+            cflags=cflags)
+            
+      END DO
+      
+    END SELECT
     
   END SUBROUTINE
 
@@ -4105,6 +4537,8 @@ CONTAINS
     ! Call the correct submethod depending on the dimension.
     SELECT CASE (rsourceTriangulation%ndim)
     CASE (NDIM1D)
+      ! Refine the basic mesh
+      CALL tria_refineMesh2lv1D(rsourceTriangulation,rdestTria)
     
     CASE (NDIM2D)
       ! Refine the basic mesh
@@ -4138,6 +4572,145 @@ CONTAINS
 
   CONTAINS
 
+    ! ---------------------------------------------------------------
+  
+    SUBROUTINE tria_refineMesh2lv1D(rsourceTriangulation,rdestTriangulation)
+
+    ! This routine refines the given 1D mesh rsourceTriangulation according to
+    ! the 2-level ordering algorithm. The refined mesh is saved in 
+    ! rdestTriangulation. There will be no correction of boundary
+    ! vertices. Boundary parameter values are not handled here!
+
+    ! The source triangulation to be refined
+    TYPE(t_triangulation), INTENT(INOUT) :: rsourceTriangulation
+
+    ! Destination triangulation structure that receives the refined mesh. 
+    TYPE(t_triangulation), INTENT(OUT) :: rdestTriangulation
+    
+      ! local variables
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DcoordSource
+      REAL(DP), DIMENSION(:,:), POINTER :: p_DcoordDest
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementSource
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IvertAtElementDest
+      INTEGER(PREC_ELEMENTIDX) :: iel,iel2
+      INTEGER(PREC_VERTEXIDX) :: ivt1,ivt2, ivtoffset, ivt
+      INTEGER(I32), DIMENSION(2) :: Isize
+      INTEGER :: nnve, ive
+      REAL(DP) :: x,y
+      
+      ! Get the arrays with information of the source mesh.
+      CALL storage_getbase_double2D (rsourceTriangulation%h_DvertexCoords,&
+          p_DcoordSource)
+      CALL storage_getbase_int2D (rsourceTriangulation%h_IverticesAtElement,&
+          p_IvertAtElementSource)
+      
+      ! The 2-level ordering has the following properties:
+      !
+      ! - Vertices in the coarse mesh are vertices in the fine mesh 
+      !   with the same number. Coordinates of coarse mesh vertices
+      !   stay unchanged in the fine mesh.
+      ! - Line midpoints in the coarse mesh become vertices in the
+      !   fine mesh. They are appended to the vertices from the
+      !   coarse mesh
+      
+      nnve = tria_getNNVE(rsourceTriangulation)
+      
+      ! Initialise the basic mesh data in rdestTriangulation:
+      
+      ! 1D mesh
+      rdestTriangulation%ndim = NDIM1D
+      
+      ! Every element is divided into 2 subelements
+      rdestTriangulation%NEL = 2 * rsourceTriangulation%NEL
+      rdestTriangulation%InelOfType(:) = 2 * rsourceTriangulation%InelOfType(:)
+
+      ! We expect NVT+NEL new points.
+      rdestTriangulation%NVT = rsourceTriangulation%NVT + &
+                               rsourceTriangulation%NEL
+      
+      ! Allocate memory for the new vertex coordinates and
+      ! get the pointers to the coordinate array
+      Isize = (/NDIM1D,INT(rdestTriangulation%NVT,I32)/)
+      CALL storage_new2D ('tria_refineMesh2lv1D', 'DCORVG', Isize, ST_DOUBLE, &
+          rdestTriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+      CALL storage_getbase_double2D(&
+          rdestTriangulation%h_DvertexCoords,p_DcoordDest)
+      
+      ! Ok, let's start the refinement. In the first step, we copy the
+      ! corner coordinates of the coarse mesh to the fine mesh; they
+      ! don't change during the refinement.
+      DO ivt=1,rsourceTriangulation%NVT
+        p_DcoordDest(1,ivt) = p_DcoordSource(1,ivt)
+      END DO
+      
+      ! Each line produces an line midpoint which is stored as new
+      ! point in the fine mesh. To calculate the coordinates, take
+      ! the mean of the coordinates in the coarse mesh.
+      ivtoffset = rsourceTriangulation%NVT
+      DO iel=1, rsourceTriangulation%NEL
+        ivt1 = p_IvertAtElementSource (1,iel)
+        ivt2 = p_IvertAtElementSource (2,iel)
+        p_DcoordDest(1,ivtoffset+iel) = &
+            0.5_DP * ( p_DcoordSource (1,ivt1) + p_DcoordSource (1,ivt2) )
+      END DO
+      
+      ! Allocate memory for IverticesAtElement and get a pointer to it.
+      ! Fill the array with zero, so we won't have problems when mixing
+      ! triangles into a quad mesh.
+      Isize = (/nnve,INT(rdestTriangulation%NEL,I32)/)
+      CALL storage_new2D ('tria_refineMesh2lv2D', 'KVERT', Isize, ST_INT, &
+          rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
+      CALL storage_getbase_int2D(&
+          rdestTriangulation%h_IverticesAtElement,p_IvertAtElementDest)
+    
+      ! Look at the following line element with local and global vertex numbers:
+      !
+      !   1                   2
+      !  X---------------------X
+      ! 101        IEL        102
+      !
+      ! The two-level ordering refinement strategy says now:
+      !  - The vertex numbers in the coarse grid are transferred to the fine grid
+      !    without change.
+      !  - The element numbers in the coarse grid define the vertex numbers of the
+      !    element midpoints in the fine grid.
+      !  - The line element number IEL in the coarse grid is transferred
+      !    to the subelement at local vertex 1. The other element
+      !    gets the element number NEL+IEL.
+      !
+      ! In the above picture, we therefore have:
+      !
+      !   1        2 1        2
+      !  X----------X----------X
+      ! 101  IEL1  201  IEL2  102
+      !
+      ! IEL1 = IEL
+      ! IEL2 = NEL+IEL
+      
+      DO iel = 1,rsourceTriangulation%NEL
+    
+        ! Determine number of subelements.
+        iel2 = rsourceTriangulation%NEL + iel
+        
+        ! IEL1
+        p_IvertAtElementDest(1,iel) = p_IvertAtElementSource(1, iel)
+        p_IvertAtElementDest(1,iel) = ivtoffset + iel
+        
+        ! IEL2
+        p_IvertAtElementDest(1,iel2) = ivtoffset + iel
+        p_IvertAtElementDest(1,iel2) = p_IvertAtElementSource(2, iel)
+      
+      END DO
+      
+      
+      ! The last step of setting up the raw mesh on the finer level:
+      ! Set up InodalProperty. But that's the most easiest thing: Simply
+      ! copy the nodal property array from the coarse mesh to the fine mesh.
+      CALL storage_copy (rsourceTriangulation%h_InodalProperty,&
+          rdestTriangulation%h_InodalProperty)
+    
+    END SUBROUTINE
+    
     ! ---------------------------------------------------------------
   
     SUBROUTINE tria_refineMesh2lv2D(rsourceTriangulation,rdestTriangulation)
