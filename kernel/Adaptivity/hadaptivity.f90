@@ -95,7 +95,10 @@
 !# 24.) hadapt_writeGridSVG
 !#      -> write the adapted grid to file in SVG format
 !#
-!# 25.) hadapt_checkConsistency
+!# 25.) hadapt_writeGridGMV
+!#      -> write the adapted grid to file in GMV format
+!#
+!# 26.) hadapt_checkConsistency
 !#      -> check the internal consistency of dynamic data structures
 !#
 !# The following internal routines are available:
@@ -118,8 +121,8 @@
 !#  5.) remove_element2D
 !#      -> remove an existing element from the adaptation data structure in 2D
 !#
-!#  6.) update_ElementNeighbors2D = update_ElemNeighb2D_Common /
-!#                                  update_ElemNeighb2D_Divided
+!#  6.) update_ElementNeighbors2D = update_ElemNeighb2D_1to2 /
+!#                                  update_ElemNeighb2D_2to2
 !#      -> update the list of neighboring elements  in 2D
 !#
 !#  7.) update_AllElementNeighbors2D
@@ -387,6 +390,7 @@ MODULE hadaptivity
   PUBLIC :: hadapt_performAdaptation
   PUBLIC :: hadapt_info
   PUBLIC :: hadapt_writeGridSVG
+  PUBLIC :: hadapt_writeGridGMV
   PUBLIC :: hadapt_checkConsistency
 
 !<constants>
@@ -984,8 +988,8 @@ MODULE hadaptivity
   END INTERFACE
   
   INTERFACE update_ElementNeighbors2D
-    MODULE PROCEDURE update_ElemNeighb2D_Common
-    MODULE PROCEDURE update_ElemNeighb2D_Divided
+    MODULE PROCEDURE update_ElemNeighb2D_1to2
+    MODULE PROCEDURE update_ElemNeighb2D_2to2
   END INTERFACE
 
 CONTAINS
@@ -2514,6 +2518,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: Ielements
+    INTEGER(PREC_VERTEXIDX), DIMENSION(1) :: Ivertices
     INTEGER(I32), DIMENSION(2) :: Isize
     INTEGER(PREC_VERTEXIDX)    :: nvt
     INTEGER(PREC_ELEMENTIDX)   :: nel
@@ -2583,9 +2589,11 @@ CONTAINS
           rhadapt%p_ImidneighboursAtElement)
 
       ! Adjust dimension of solution vector
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,&
-          HADAPT_OPR_ADJUSTVERTEXDIM,(/nvt/),(/0/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/nvt/); Ielements=(/0/)
+        CALL fcb_hadaptCallback(rcollection,&
+            HADAPT_OPR_ADJUSTVERTEXDIM,Ivertices,Ielements)
+      END IF
 
       ! Perform refinement
       CALL redgreen_refine(rhadapt,rcollection,fcb_hadaptCallback)
@@ -2598,19 +2606,13 @@ CONTAINS
           rhadapt%h_InodalProperty,ST_NEWBLOCK_NOINIT,.TRUE.)
       
 
-    CASE (HADAPT_LONGESTEDGE)   ! Bisection of longest edge
-
-
-      if (rhadapt%NEL >= 32290) then
-        print *, redgreen_getstate(rhadapt,32290)
-        pause
-      end if
-
-      ! Mark elements for refinement based on indicator function
-      CALL mark_refinement2D(rhadapt,rindicator)
-      
-      ! Perform refinement
-      CALL bisection_refine(rhadapt)
+!!$    CASE (HADAPT_LONGESTEDGE)   ! Bisection of longest edge
+!!$
+!!$      ! Mark elements for refinement based on indicator function
+!!$      CALL mark_refinement2D(rhadapt,rindicator)
+!!$      
+!!$      ! Perform refinement
+!!$      CALL bisection_refine(rhadapt)
 
       
     CASE DEFAULT
@@ -2647,7 +2649,10 @@ CONTAINS
         
         SELECT CASE(p_Imarker(iel))
         CASE(MARK_REF_TRIA2TRIA_1,MARK_REF_TRIA2TRIA_2,MARK_REF_TRIA2TRIA_3,&
-             MARK_REF_QUAD2QUAD_13,MARK_REF_QUAD2QUAD_24)
+             MARK_REF_QUAD2QUAD_13,MARK_REF_QUAD2QUAD_24,MARK_CRS_2QUAD3TRIA)
+          ! Interestingly enought, the coarsening of 2 quadrilaterals into three
+          ! triangles which reduces the number of vertices by one also increases
+          ! the number of elements by one which has to be taken into account here.
           nel=nel+1
 
         CASE(MARK_REF_QUAD3TRIA_1,MARK_REF_QUAD3TRIA_2,MARK_REF_QUAD3TRIA_3,&
@@ -3230,12 +3235,12 @@ CONTAINS
         WRITE(iunit,FMT='(A)') '<circle id="vt'//TRIM(sys_siL(ivt,10))//'" cx="'//&
             TRIM(sys_siL(INT(dscale*xdim),10))//'" cy="'//&
             TRIM(sys_siL(ysize-INT(dscale*ydim),10))//&
-            '" r="2pt" fill="white" stroke="black" stroke-width="1pt"'
+            '" r="0pt" fill="white" stroke="black" stroke-width="1pt"'
       ELSE
         WRITE(iunit,FMT='(A)') '<circle id="vt'//TRIM(sys_siL(ivt,10))//'" cx="'//&
             TRIM(sys_siL(INT(dscale*xdim),10))//'" cy="'//&
             TRIM(sys_siL(ysize-INT(dscale*ydim),10))//&
-            '" r="2pt" fill="black" stroke="black" stroke-width="1pt"'
+            '" r="0pt" fill="black" stroke="black" stroke-width="1pt"'
       END IF
       
       ! Write data which is common to all vertices
@@ -3337,6 +3342,113 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE hadapt_writeGridGMV(rhadapt,coutputFile)
+
+!<description>
+    ! This subroutine outputs the current state of the adapted grid stored
+    ! in the dynamic data structure to a given file in GMV format.
+!</description>
+
+!<input>
+    ! Output file name w/o suffix .gmv
+    CHARACTER(LEN=*), INTENT(IN)     :: coutputFile
+!</input>
+
+!<inputoutput>
+    ! Adaptive data structure
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+!</inputoutput>
+!</subroutine>
+    
+    ! local parameters
+    INTEGER(PREC_VERTEXIDX) :: ivt
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER :: iunit,nve
+    INTEGER, SAVE :: iout=0
+
+    ! Check if dynamic data structures generated
+    IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA) THEN
+      CALL output_line('Dynamic data structures are not generated',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridSVG')
+      CALL sys_halt()
+    END IF
+    
+    ! Increment the sample number
+    iout=iout+1
+
+    ! Open output file for writing
+    CALL io_openFileForWriting(TRIM(ADJUSTL(coutputFile))//'.'//&
+        TRIM(sys_siL(iout,5))//'.gmv',iunit,SYS_REPLACE,bformatted=.TRUE.)
+    WRITE(UNIT=iunit,FMT='(A)') 'gmvinput ascii'
+
+    ! Write vertices to output file
+    WRITE(UNIT=iunit,FMT=*) 'nodes ', rhadapt%NVT
+    DO ivt=1,qtree_getsize(rhadapt%rVertexCoordinates2D)
+      WRITE(UNIT=iunit,FMT=10) qtree_getX(rhadapt%rVertexCoordinates2D,ivt)
+    END DO
+    DO ivt=1,qtree_getsize(rhadapt%rVertexCoordinates2D)
+      WRITE(UNIT=iunit,FMT=10) qtree_getY(rhadapt%rVertexCoordinates2D,ivt)
+    END DO
+    DO ivt=1,qtree_getsize(rhadapt%rVertexCoordinates2D)
+      WRITE(UNIT=iunit,FMT=10) 0._DP
+    END DO
+
+    ! Write cells to output file
+    WRITE(UNIT=iunit,FMT=*) 'cells ', rhadapt%NEL
+    DO iel=1,rhadapt%NEL
+      nve=get_NVE(rhadapt,iel)
+      SELECT CASE(nve)
+      CASE(TRIA_NVETRI2D)
+        WRITE(UNIT=iunit,FMT=*) 'tri 3'
+        WRITE(UNIT=iunit,FMT=20) rhadapt%p_IverticesAtElement(1:TRIA_NVETRI2D,iel)
+
+      CASE(TRIA_NVEQUAD2D)
+        WRITE(UNIT=iunit,FMT=*) 'quad 4'
+        WRITE(UNIT=iunit,FMT=30) rhadapt%p_IverticesAtElement(1:TRIA_NVEQUAD2D,iel)
+        
+      CASE DEFAULT
+        CALL output_line('Invalid element type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'hadapt_writeGridGMV')
+        CALL sys_halt()
+      END SELECT
+    END DO
+
+    ! Write velocity to output file
+    WRITE(UNIT=iunit,FMT=*) 'velocity 1'
+    DO ivt=1,rhadapt%NVT
+      WRITE(UNIT=iunit,FMT=10) 0._DP
+      WRITE(UNIT=iunit,FMT=10) 0._DP
+      WRITE(UNIT=iunit,FMT=10) 0._DP
+    END DO
+
+    ! Write variable
+    WRITE(UNIT=iunit,FMT=*) 'variable'
+    WRITE(UNIT=iunit,FMT=*) 'vert_age 1'
+
+    DO ivt=1,SIZE(rhadapt%p_IvertexAge)
+      WRITE(UNIT=iunit,FMT=40) rhadapt%p_IvertexAge(ivt)
+    END DO
+    DO ivt=SIZE(rhadapt%p_IvertexAge)+1,rhadapt%NVT
+      WRITE(UNIT=iunit,FMT=40) -99999
+    END DO
+
+    WRITE(UNIT=iunit,FMT=*) 'endvars'
+    WRITE(UNIT=iunit,FMT=*) 'probtime ', 0._DP
+    WRITE(UNIT=iunit,FMT=*) 'endgmv'
+
+    ! Close output file
+    CLOSE(iunit)
+
+10  FORMAT(E15.6E3)
+20  FORMAT(3(1X,I8))
+30  FORMAT(4(1X,I8))
+40  FORMAT(I8)
+  END SUBROUTINE hadapt_writeGridGMV
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE hadapt_checkConsistency(rhadapt)
 
 !<description>
@@ -3394,7 +3506,7 @@ CONTAINS
         END IF
 
         ! Do nothing if we are adjacent to the boundary
-        IF (jel*jelmid .EQ. 0) CYCLE
+        IF (jel .EQ. 0 .OR. jelmid .EQ. 0) CYCLE
         
         ! Is neighboring element subdivided?
         IF (jel .EQ. jelmid) THEN
@@ -3419,11 +3531,6 @@ CONTAINS
           END DO
           btest=btest.AND.bfound
           
-          IF (.NOT.bfound) THEN
-            PRINT *, "CASE1:",iel,"not found in element",jel
-            PAUSE
-          END IF
-          
         ELSE
 
           ! Get number of vertices per element
@@ -3446,11 +3553,6 @@ CONTAINS
           END DO
           btest=btest.AND.bfound
 
-          IF (.NOT.bfound) THEN
-            PRINT *, "CASE2(a):",iel,"not found in element",jel
-            PAUSE
-          END IF
-
           ! Get number of vertices per element
           mve=get_NVE(rhadapt,jelmid)
           
@@ -3470,11 +3572,6 @@ CONTAINS
             END IF
           END DO
           btest=btest.AND.bfound
-          
-          IF (.NOT.bfound) THEN
-            PRINT *, "CASE2(b):",iel,"not found in element",jelmid
-            PAUSE
-          END IF
 
         END IF
       END DO
@@ -3501,7 +3598,7 @@ CONTAINS
         END IF
 
         ! Do nothing if we are adjacent to the boundary
-        IF (jel*jelmid .EQ. 0) CYCLE
+        IF (jel .EQ. 0 .OR. jelmid .EQ. 0) CYCLE
         
         ! Do nothing if there exists a temporal hanging node
         IF (jel .NE. jelmid) CYCLE
@@ -3625,26 +3722,6 @@ CONTAINS
       btest=btest.AND.ALL(p_IelementsAtVertex < 0)
       CALL output_line('Test #5: Checking consistency of elements meeting at vertices '//&
         MERGE('PASSED','FAILED',btest))
-
-      IF (.NOT.btest) THEN
-        DO ivt=1,rhadapt%NVT
-          PRINT *, "Vertex",ivt
-          PRINT *, "Is connected to..."
-          ipos=arrlst_getNextInArrayList(rhadapt%rElementsAtVertex,ivt,.TRUE.)
-          DO WHILE(ipos .GT. ARRLST_NULL)
-            iel=rhadapt%rElementsAtVertex%p_IData(ipos)
-            WRITE(*,FMT='(A)',ADVANCE="NO") TRIM(sys_siL(iel,10))//","
-            ipos=arrlst_getNextInArraylist(rhadapt%rElementsAtVertex,ivt,.FALSE.)
-          END DO
-          PRINT *
-          PRINT *, "Should be connected to..."
-          DO idx=p_IelementsAtVertexIdx(ivt),p_IelementsAtVertexIdx(ivt+1)-1
-            WRITE(*,FMT='(A)',ADVANCE="NO") TRIM(sys_siL(ABS(p_IelementsAtVertex(idx)),10))//","
-          END DO
-
-          PAUSE
-        END DO
-      END IF
 
       ! Release auxiliary storage
       CALL storage_free(h_IelementsAtVertexIdx)
@@ -3838,10 +3915,11 @@ CONTAINS
     END IF
       
     ! Optionally, invoke callback function
-    Ivertices=(/i12,i1,i2/); Ielements=(/0/)
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,&
-        HADAPT_OPR_INSERTVERTEXEDGE,Ivertices,Ielements)
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i12,i1,i2/); Ielements=(/0/)
+      CALL fcb_hadaptCallback(rcollection,&
+          HADAPT_OPR_INSERTVERTEXEDGE,Ivertices,Ielements)
+    END IF
   END SUBROUTINE add_vertex_atEdgeMidpoint2D
 
   ! ***************************************************************************
@@ -3881,6 +3959,8 @@ CONTAINS
 
     ! local variables
     REAL(DP), DIMENSION(NDIM2D) :: Dcoord
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: Ielements
+    INTEGER(PREC_VERTEXIDX), DIMENSION(5)  :: Ivertices
     REAL(DP) :: x1,y1,x2,y2,x3,y3,x4,y4,x21,y21,x31,y31,x24,y24,alpha
     INTEGER(PREC_QTREEIDX) :: inode,ipos
     
@@ -3907,11 +3987,6 @@ CONTAINS
       ! Update number of vertices
       rhadapt%NVT=rhadapt%NVT+1
       i5         =rhadapt%NVT
-
-      IF (i5.GT.SIZE(rhadapt%p_IvertexAge)) THEN
-        CALL hadapt_writegridSvg(rhadapt,'mygrid')
-        STOP
-      END IF
       
       ! Set age of vertex
       rhadapt%p_IvertexAge(I5)=&
@@ -3928,9 +4003,11 @@ CONTAINS
     END IF
     
     ! Optionally, invoke callback function
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,&
-        HADAPT_OPR_INSERTVERTEXCENTR,(/i5,i1,i2,i3,i4/),(/0/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i5,i1,i2,i3,i4/); Ielements=(/0/)
+      CALL fcb_hadaptCallback(rcollection,&
+          HADAPT_OPR_INSERTVERTEXCENTR,Ivertices,Ielements)
+    END IF
   END SUBROUTINE add_vertex_atElementCenter2D
 
   ! ***************************************************************************
@@ -4450,7 +4527,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE update_ElemNeighb2D_Common(rhadapt,jel,jelmid,iel0,iel,ielmid)
+  SUBROUTINE update_ElemNeighb2D_1to2(rhadapt,jel,jelmid,iel0,iel,ielmid)
 
 !<description>
     ! This subroutine updates the list of elements adjacent to another 
@@ -4460,15 +4537,15 @@ CONTAINS
     !
     !  +---------------------+            +---------------------+
     !  |                     |            |          .          |
-    !  |        IEL0         |            |  IELMID  .   IEL    |
     !  |                     |            |          .          |
+    !  |        IEL0         |            |  IELMID  .    IEL   |
     !  |                     |            |          .          |
     !  |                     |            |          .          |
     !  +---------------------+    --->    +----------+----------+
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
+    !  |    JEL   .  JELMID  |            |   JEL    .  JELMID  |
     !  |          .          |            |          .          |
-    !  |    JEL   .  JELMID  |            |    JEL   .  JELMID  |
     !  |          .          |            |          .          |
     !  +---------------------+            +---------------------+
     !
@@ -4508,16 +4585,16 @@ CONTAINS
     
     ! local variables
     INTEGER :: ive,nve
-    LOGICAL :: bfound
-    
+    LOGICAL :: bfound1,bfound2,bfound
+
     ! Do nothing for elements adjacent to the boundary
-    IF (jel*jelmid .EQ. 0) RETURN
+    IF (jel .EQ. 0 .OR. jelmid .EQ. 0) RETURN
 
     ! Check if adjacent and mid-adjacent elements are the same.
     IF (jel .EQ. jelmid) THEN
 
       ! Case 1: Adjacent element has not been subdivided.
-      bfound=.FALSE.
+      bfound1=.FALSE.; bfound2=.FALSE.
 
       ! What kind of element is neighboring element?
       nve=get_NVE(rhadapt,jel)
@@ -4534,22 +4611,24 @@ CONTAINS
       DO ive=1,nve
         IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(ive,jel)=iel
-          bfound=.TRUE.
+          bfound1=.TRUE.
         END IF
 
         IF (rhadapt%p_ImidneighboursAtElement(ive,jel) .EQ. iel0) THEN
           rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
-          bfound=.TRUE.
+          bfound2=.TRUE.
         END IF
         
-        ! Exit if IEL0 has been found in the (mid-)adjacency list.
+        ! Exit if IEL0 has been found in the either the adjacency or the 
+        ! mid-adjacency list of element JEL.
+        bfound=bfound1.OR.bfound2
         IF (bfound) EXIT
       END DO
-                          
+
     ELSE
       
       ! Case 2: Adjacent element has already been subdivided.
-      bfound=.FALSE.
+      bfound1=.FALSE.; bfound2=.FALSE.
       
       ! What kind of element is neighboring element 
       nve=get_NVE(rhadapt,jel)
@@ -4562,7 +4641,7 @@ CONTAINS
         IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(ive,jel)   =ielmid
           rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
-          bfound=.TRUE.
+          bfound1=.TRUE.
           EXIT
         END IF
       END DO
@@ -4578,24 +4657,28 @@ CONTAINS
         IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(ive,jelmid)   =iel
           rhadapt%p_ImidneighboursAtElement(ive,jelmid)=iel
-          bfound=bfound.AND..TRUE.
+          bfound2=.TRUE.
           EXIT
         END IF
       END DO
+
+      ! Check success of both searches
+      bfound=bfound1.AND.bfound2
+
     END IF
 
     IF (.NOT.bfound) THEN
       CALL output_line('Inconsistent adjacency lists!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_Common')
+          OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_1to2')
       CALL sys_halt()
     END IF
-  END SUBROUTINE update_ElemNeighb2D_Common
+  END SUBROUTINE update_ElemNeighb2D_1to2
 
   ! ***************************************************************************
 
 !<subroutine>
   
-  SUBROUTINE update_ElemNeighb2D_Divided(rhadapt,jel,jelmid,iel0,ielmid0,iel,ielmid)
+  SUBROUTINE update_ElemNeighb2D_2to2(rhadapt,jel,jelmid,iel0,ielmid0,iel,ielmid)
 
 !<description>
     ! This subroutine updates the list of elements adjacent to another 
@@ -4605,20 +4688,20 @@ CONTAINS
     !
     !  +---------------------+            +---------------------+
     !  |          .          |            |          .          |
-    !  | IELMID0  .   IEL0   |            |  IELMID  .   IEL    |
     !  |          .          |            |          .          |
+    !  | IELMID0  .   IEL0   |            | IELMID   .   IEL    |
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
     !  +---------------------+    --->    +----------+----------+
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
+    !  |    JEL   .  JELMID  |            |    JEL   .   JELMID |
     !  |          .          |            |          .          |
-    !  |    JEL   .  JELMID  |            |    JEL   .  JELMID  |
     !  |          .          |            |          .          |
     !  +---------------------+            +---------------------+
     !
     ! If IEL0 and IELMID0 are the same, then thins subroutine is identical
-    ! to subroutine update_EkemNeighb2D_Common which is called in this case
+    ! to subroutine update_EkemNeighb2D_1to2 which is called in this case
 !</description>
 
 !<input>
@@ -4649,17 +4732,17 @@ CONTAINS
     
     ! local variables
     INTEGER :: ive,nve
-    LOGICAL :: bfound
+    LOGICAL :: bfound1,bfound2,bfound
     
     ! Check if IEL0 and IELMID0 are the same. 
     ! In this case call the corresponding subroutine
     IF (iel0 .EQ. ielmid0) THEN
-      CALL update_ElemNeighb2D_Common(rhadapt,jel,jelmid,iel0,iel,ielmid)
+      CALL update_ElemNeighb2D_1to2(rhadapt,jel,jelmid,iel0,iel,ielmid)
       RETURN
     END IF
 
     ! Do nothing for elements adjacent to the boundary
-    IF (jel*jelmid .EQ. 0) RETURN
+    IF (jel .EQ. 0 .OR. jelmid .EQ. 0) RETURN
     
     ! Check if adjacent and mid-adjacent elements are the same.
     IF (jel .EQ. jelmid) THEN
@@ -4688,7 +4771,7 @@ CONTAINS
     ELSE
       
       ! Case 2: Adjacent element has already been subdivided.
-      bfound=.FALSE.
+      bfound1=.FALSE.; bfound2=.FALSE.
       
       ! What kind of element is neighboring element 
       nve=get_NVE(rhadapt,jel)
@@ -4698,10 +4781,11 @@ CONTAINS
       ! If this is the case,  then update the corrseponding entries in the 
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
-        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
+        IF (rhadapt%p_IneighboursAtElement(ive,jel) .EQ. ielmid0 .AND.&
+            rhadapt%p_ImidneighboursAtElement(ive,jel) .EQ. ielmid0) THEN
           rhadapt%p_IneighboursAtElement(ive,jel)   =ielmid
           rhadapt%p_ImidneighboursAtElement(ive,jel)=ielmid
-          bfound=.TRUE.
+          bfound1=.TRUE.
           EXIT
         END IF
       END DO
@@ -4714,37 +4798,24 @@ CONTAINS
       ! If this is the case, then update the corrseponding entries in the 
       ! lists of (mid-)adjacent element neighbors.
       DO ive=1,nve
-        IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
+        IF (rhadapt%p_IneighboursAtElement(ive,jelmid) .EQ. iel0 .AND.&
+            rhadapt%p_ImidneighboursAtElement(ive,jelmid) .EQ. iel0) THEN
           rhadapt%p_IneighboursAtElement(ive,jelmid)   =iel
           rhadapt%p_ImidneighboursAtElement(ive,jelmid)=iel
-          bfound=bfound.AND..TRUE.
+          bfound2=.TRUE.
           EXIT
         END IF
       END DO
 
+      bfound=bfound1.AND.bfound2
     END IF
 
     IF (.NOT.bfound) THEN
       CALL output_line('Inconsistent adjacency lists!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_Divided')
-      print *, jel,jelmid
-      print *, iel0,ielmid0
-      print *, iel,ielmid
-      print *, "---"
-      print *, rhadapt%p_IverticesAtElement(:,iel0)
-      print *, rhadapt%p_IneighboursAtElement(:,iel0)
-      print *, rhadapt%p_ImidneighboursAtElement(:,iel0)
-      print *, "---"
-      print *, rhadapt%p_IverticesAtElement(:,ielmid0)
-      print *, rhadapt%p_IneighboursAtElement(:,ielmid0)
-      print *, rhadapt%p_ImidneighboursAtElement(:,ielmid0)
-      print *, "---"
-      print *, rhadapt%p_IverticesAtElement(:,jel)
-      print *, rhadapt%p_IneighboursAtElement(:,jel)
-      print *, rhadapt%p_ImidneighboursAtElement(:,jel)
+          OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_2to2')
       CALL sys_halt()
     END IF
-  END SUBROUTINE update_ElemNeighb2D_Divided
+  END SUBROUTINE update_ElemNeighb2D_2to2
 
   ! ***************************************************************************
 
@@ -4876,6 +4947,8 @@ CONTAINS
 !</subroutine>
     
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(6) :: Ielements
+    INTEGER(PREC_VERTEXIDX), DIMENSION(4)  :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4
@@ -4944,9 +5017,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA2TRIA,&
-        (/i1,i2,i3,i4/),(/e1,e2,e3,e4,e5,e6/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4/); Ielements=(/e1,e2,e3,e4,e5,e6/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA2TRIA,&
+         Ivertices,Ielements)
+    END IF
   END SUBROUTINE refine_Tria2Tria
 
   ! ***************************************************************************
@@ -5005,6 +5080,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(5) :: Ielements
+    INTEGER(PREC_VERTEXIDX), DIMENSION(5)  :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5
@@ -5094,9 +5171,11 @@ CONTAINS
 
 
       ! Optionally, invoke callback routine
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA3TRIA12,&
-          (/i1,i2,i3,i4,i5/),(/e1,e2,e3,e4,e5/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/i1,i2,i3,i4,i5/); Ielements=(/e1,e2,e3,e4,e5/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA3TRIA12,&
+            Ivertices,Ielements)
+      END IF
       
     ELSE
       
@@ -5131,9 +5210,11 @@ CONTAINS
 
 
       ! Optionally, invoke callback routine
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA3TRIA23,&
-          (/i1,i2,i3,i4,i5/),(/e1,e2,e3,e4,e5/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/i1,i2,i3,i4,i5/); Ielements=(/e1,e2,e3,e4,e5/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA3TRIA23,&
+            Ivertices,Ielements)
+      END IF
     END IF
   END SUBROUTINE refine_Tria3Tria
 
@@ -5188,10 +5269,12 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(6) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(6) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6
-    
+
     ! Store vertex- and element-values of the current element
     i1=rhadapt%p_IverticesAtElement(1,iel)
     i2=rhadapt%p_IverticesAtElement(2,iel)
@@ -5207,7 +5290,7 @@ CONTAINS
         
     ! Store total number of elements before refinement
     nel0=rhadapt%NEL
-    
+
 
     ! Add three new vertices I4,I5 and I6 at the midpoint of edges (I1,I2),
     ! (I2,I3) and (I1,I3), respectively. 
@@ -5264,9 +5347,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA4TRIA,&
-        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_TRIA4TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE refine_Tria4Tria
 
   ! ***************************************************************************
@@ -5324,6 +5409,8 @@ CONTAINS
 !</subroutine>    
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(6) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6
@@ -5402,9 +5489,11 @@ CONTAINS
     
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD2QUAD,&
-        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD2QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE refine_Quad2Quad
 
   ! ***************************************************************************
@@ -5462,6 +5551,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(5) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5
@@ -5549,9 +5640,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD3TRIA,&
-        (/i1,i2,i3,i4,i5/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD3TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE refine_Quad3Tria
   
 ! ***************************************************************************
@@ -5573,7 +5666,7 @@ CONTAINS
     !
     !    initial quadrilateral      subdivided quadrilateral
     !
-    !     i4 (e6)      (e3) i3          i4 (e6)     (e3) i3
+    !     i4 (e7)      (e3) i3          i4 (e7)     (e3) i3
     !      +----------------+            +---------------+
     !      |                |            |\\\\          *|
     ! (e4) |                | (e6)  (e4) | \*  \\\ nel+2 | (e6)
@@ -5609,6 +5702,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(6) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6
@@ -5700,9 +5795,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD4TRIA,&
-        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD4TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE refine_Quad4Tria
     
     ! ***************************************************************************
@@ -5756,6 +5853,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -5841,9 +5940,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) &
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD4QUAD,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_REF_QUAD4QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE refine_Quad4Quad
   
   ! ***************************************************************************
@@ -5866,12 +5967,12 @@ CONTAINS
     !           /|\                        /*\
     !     (e3) / | \ (e5)            (e3) /   \ (e5)
     !         /  |  \                    /nel+1\
-    !        /   |   \        ->      i7+-------+i6
+    !        /   |   \        ->      i6+-------+i5
     !       /    |    \                / \nel+2/ \
     ! (e6) / iel | jel \ (e2)    (e6) /   \   /   \ (e2)
     !     /*     |     *\            /* iel\*/jel *\
     !    +-------+-------+          +-------+-------+
-    !   i1(e1,e7)i5(e4,e8)i2       i1(e1,e7)i5(e4,e8)i2
+    !   i1(e1,e7)i4(e4,e8)i2       i1(e1,e7)i4(e4,e8)i2
     !
 !</description>
 
@@ -5897,6 +5998,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(6) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
@@ -5973,9 +6076,11 @@ CONTAINS
     
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_TRIA2TRIA,&
-        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_TRIA2TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE convert_Tria2Tria
 
 ! ***************************************************************************
@@ -5994,7 +6099,7 @@ CONTAINS
     !
     !     initial quadrilateral      subdivided quadrilateral
     !
-    !     i4(e7,e3)i7(f5,f5)i3         i4(e7,e3)i7(f5,f1)i3
+    !     i4(e7,e3)i7(f5,f1)i3         i4(e7,e3)i7(f5,f1)i3
     !      +-------+-------+            +-------+-------+
     !      |       |      *|            |*      |      *|
     ! (e4) |       |       | (f8)  (e4) | nel+2 | nel+1 | (f8)
@@ -6030,6 +6135,8 @@ CONTAINS
 !</subroutine>
     
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e3,e4,e5,e7,e8,f1,f3,f4,f5,f7,f8
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -6134,9 +6241,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD2QUAD,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,f4,f1,e4,f3,f8,e3,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,f4,f1,e4,f3,f8,e3,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD2QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE convert_Quad2Quad
 
    ! ***************************************************************************
@@ -6194,6 +6303,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: nel0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -6299,9 +6410,11 @@ CONTAINS
     
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD3TRIA,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD3TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE convert_Quad3Tria
 
   ! ***************************************************************************
@@ -6363,6 +6476,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -6463,9 +6578,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD4TRIA,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CVT_QUAD4TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE convert_Quad4Tria
 
   ! ***************************************************************************
@@ -6494,14 +6611,14 @@ CONTAINS
     !            i3                        i3
     !            +                         +
     !           /|\                       / \
-    !          / | \                     /   \
+    !     (e3) / | \ (e5)           (e3) /   \ (e5)
     !         /  |  \                   /     \
-    !  (e3)  /   |   \  (e2)  ->  (e3) /       \ (e2)
+    !        /   |   \        ->       /       \
     !       /    |    \               /   jel   \
-    !      / iel | iel1\             /           \
-    !     /*     |      \           /*            \
+    ! (e6) / iel | iel1\ (e2)   (e6) /           \ (e2)
+    !     /*     |     *\           /*            \
     !    +-------+-------+         +---------------+
-    !    i1 (e1) i4 (e4) i2        i1     (e1)     i2
+    !    i1 (e1) i4 (e4) i2        i1 (e1)    (e4) i2
     !
 !</description>
 
@@ -6524,6 +6641,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: Ivertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(3) :: ImacroVertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,e1,e2,e3,e4,e5,e6,jel,ielRemove,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4
@@ -6568,8 +6688,9 @@ CONTAINS
     ! x can be blank, 1 or 2. Due to our refinement convention, the two states x=1 and x=2
     ! should not appear, that is, local numbering of the resulting triangle starts at the
     ! vertex which is opposite to the inner red triangle. To this end, we check the state of
-    ! the provisional triangle (I1,I2,I3) and transform th orientation accordingly.
-    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge((/i1,i2,i3/))
+    ! the provisional triangle (I1,I2,I3) and transform the orientation accordingly.
+    ImacroVertices=(/i1,i2,i3/)
+    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(ImacroVertices)
     istate = redgreen_getstateTria(IvertexAge(1:TRIA_NVETRI2D))
     
     SELECT CASE(istate)
@@ -6638,9 +6759,11 @@ CONTAINS
     END IF
     
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2TRIA1TRIA,&
-        (/i1,i2,i3,i4/),(/e1,e2,e3,e4/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4/); Ielements=(/e1,e2,e3,e4/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2TRIA1TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_2Tria1Tria
 
   ! ***************************************************************************
@@ -6689,7 +6812,10 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(6) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(6) :: Ivertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(3) :: ImacroVertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6
@@ -6738,7 +6864,8 @@ CONTAINS
     ! numbering of the resulting triangle starts at the vertex which is opposite 
     ! to the inner red triangle. To this end, we check the state of the provisional
     ! triangle (I1,I2,I3) and transform the orientation accordingly.
-    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge((/i1,i2,i3/))
+    ImacroVertices=(/i1,i2,i3/)
+    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(ImacroVertices)
     istate=redgreen_getstateTria(IvertexAge(1:TRIA_NVETRI2D))
     
     SELECT CASE(istate)
@@ -6805,9 +6932,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA1TRIA,&
-        (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA1TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_4Tria1Tria
 
   ! ***************************************************************************
@@ -6869,7 +6998,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(6) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(6) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX) :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel1,jel2,ielReplace
     INTEGER(PREC_VERTEXIDX)  :: i1,i2,i3,i4,i5,i6
@@ -6980,9 +7111,11 @@ CONTAINS
 
 
       ! Optionally, invoke callback routine
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA1,&
-          (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA1,&
+            Ivertices,Ielements)
+      END IF
 
 
     CASE(MARK_CRS_4TRIA2TRIA_2)
@@ -7057,9 +7190,11 @@ CONTAINS
 
 
       ! Optionally, invoke callback routine
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA2,&
-          (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements(/e1,e2,e3,e4,e5,e6/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA2,&
+            Ivertices,Ielements)
+      END IF
 
 
     CASE(MARK_CRS_4TRIA2TRIA_3)
@@ -7136,9 +7271,11 @@ CONTAINS
       
 
       ! Optionally, invoke callback routine
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA3,&
-          (/i1,i2,i3,i4,i5,i6/),(/e1,e2,e3,e4,e5,e6/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA3,&
+            Ivertices,Ielements)
+      END IF
 
 
     CASE DEFAULT
@@ -7198,7 +7335,10 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -7250,7 +7390,8 @@ CONTAINS
     ! should not appear, that is, local numbering of the resulting quadrilateral
     ! starts at the oldest vertex. to this end, we check the state of the 
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge((/i1,i2,i3,i4/)))
+    ImacroVertices=(/i1,i2,i3,i4/)
+    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices)
 
     SELECT CASE(istate)
     CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -7326,9 +7467,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD1QUAD,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD1QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_4Quad1Quad
 
   ! ***************************************************************************
@@ -7381,7 +7524,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements    
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel1,jel2,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -7507,9 +7652,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD2QUAD,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD2QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_4Quad2Quad
 
   ! ***************************************************************************
@@ -7562,7 +7709,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_ELEMENTIDX)   :: jel1,jel2,jel3,ielReplace
@@ -7675,9 +7824,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD3TRIA,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD3TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_4Quad3Tria
 
   ! ***************************************************************************
@@ -7732,6 +7883,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -7785,9 +7938,11 @@ CONTAINS
     
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD4TRIA,&
-        (/i1,i2,i3,i4,i5,i6,i7,i8,i9/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD4TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_4Quad4Tria
     
   ! ***************************************************************************
@@ -7840,6 +7995,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(8) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,e1,e2,e3,e4,e5,e6,e7,e8,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i7
@@ -7873,7 +8031,7 @@ CONTAINS
       
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,iel,iel,iel)
-      CALL update_ElementNeighbors2D(rhadapt,e2,e6,iel1,iel1,iel,iel)
+      CALL update_ElementNeighbors2D(rhadapt,e2,e6,iel1,iel,iel)
       CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel,iel1,iel,iel)
 
 
@@ -7882,7 +8040,8 @@ CONTAINS
       ! should not appear, that is, local numbering of the resulting quadrilateral
       ! starts at the oldest vertex. to this end, we check the state of the 
       ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-      istate=redgreen_getstateQuad(rhadapt%p_IvertexAge((/i1,i2,i3,i4/)))
+      ImacroVertices=(/i1,i2,i3,i4/)
+      istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
       
       SELECT CASE(istate)
       CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -7936,14 +8095,15 @@ CONTAINS
       ! Update list of neighboring elements
       CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,iel,iel1,iel1)
       CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel,iel1,iel1,iel1)
-      CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel,iel,iel1,iel1)
+      CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel,iel1,iel1)
       
       ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
       ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
       ! should not appear, that is, local numbering of the resulting quadrilateral
       ! starts at the oldest vertex. to this end, we check the state of the 
       ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-      istate=redgreen_getstateQuad(rhadapt%p_IvertexAge((/i1,i2,i3,i4/)))
+      ImacroVertices=(/i1,i2,i3,i4/)
+      istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
       
       SELECT CASE(istate)
       CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -7996,9 +8156,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD1QUAD,&
-        (/i1,i2,i3,i4,i5,0,i7,0/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,0,i7,0/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD1QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_2Quad1Quad
 
   ! ***************************************************************************
@@ -8053,6 +8215,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(8) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,nel0,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i7
@@ -8100,9 +8264,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD3TRIA,&
-        (/i1,i2,i3,i4,i5,0,i7,0/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5,0,i7,0/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD3TRIA,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_2Quad3Tria
     
   ! ***************************************************************************
@@ -8149,7 +8315,10 @@ CONTAINS
 !</subroutine>
     
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(3) :: IsortedElements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(5) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5
@@ -8186,16 +8355,17 @@ CONTAINS
 
     ! Update list of neighboring elements
     CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel2,iel1,jel,jel)
-    CALL update_ElementNeighbors2D(rhadapt,e2,e6,iel2,iel2,jel,jel)
-    CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel,iel,jel,jel)
-    CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel1,iel1,jel,jel)
+    CALL update_ElementNeighbors2D(rhadapt,e2,e6,iel2,jel,jel)
+    CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel,jel,jel)
+    CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel1,jel,jel)
 
     ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
     ! whereby x can be 1,2,3 and 4. Die to our refinement convention, x=1,2,3
     ! should not appear, that is, local numbering of the resulting quadrilateral
     ! starts at the oldest vertex. to this end, we check the state of the 
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge((/i1,i2,i3,i4/)))
+    ImacroVertices=(/i1,i2,i3,i4/)
+    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
 
     SELECT CASE(istate)
     CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -8278,9 +8448,11 @@ CONTAINS
 
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_3TRIA1QUAD,&
-        (/i1,i2,i3,i4,i5/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,i5/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_3TRIA1QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_3Tria1Quad
 
   ! ***************************************************************************
@@ -8329,7 +8501,10 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(8) :: Ivertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i6,i7
@@ -8368,10 +8543,10 @@ CONTAINS
 
     
     ! Update list of neighboring elements
-    CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,iel1,jel,jel)
+    CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,jel,jel)
     CALL update_ElementNeighbors2D(rhadapt,e2,e6,iel2,iel1,jel,jel)
     CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel3,iel2,jel,jel)
-    CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel3,iel3,jel,jel)
+    CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel3,jel,jel)
 
 
     ! The resulting quadrilateral will posses one of the states STATES_QUAD_REDx,
@@ -8379,7 +8554,8 @@ CONTAINS
     ! should not appear, that is, local numbering of the resulting quadrilateral
     ! starts at the oldest vertex. to this end, we check the state of the 
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge((/i1,i2,i3,i4/)))
+    ImacroVertices=(/i1,i2,i3,i4/)
+    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
 
     SELECT CASE(istate)
     CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -8467,9 +8643,11 @@ CONTAINS
     
 
     ! Optionally, invoke callback routine
-    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA1QUAD,&
-        (/i1,i2,i3,i4,0,i6,i7,0/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+    IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+      Ivertices=(/i1,i2,i3,i4,0,i6,i7,0/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+      CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA1QUAD,&
+          Ivertices,Ielements)
+    END IF
   END SUBROUTINE coarsen_4Tria1Quad
 
   ! ***************************************************************************
@@ -8521,7 +8699,9 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(8) :: Ivertices
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     INTEGER(PREC_ELEMENTIDX)   :: jel1,jel2,jel3,ielReplace
@@ -8564,10 +8744,10 @@ CONTAINS
     SELECT CASE(imarker)
     CASE(MARK_CRS_4TRIA3TRIA_RIGHT)
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,iel1,jel1,jel1)
+      CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,jel1,jel1)
       CALL update_ElementNeighbors2D(rhadapt,e2,e6,iel2,iel1,jel2,jel1)
       CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel3,iel2,jel2,jel2)
-      CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel3,iel3,jel3,jel3)
+      CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel3,jel3,jel3)
 
 
       ! Update elements JEL1, JEL2 and JEL3
@@ -8653,17 +8833,19 @@ CONTAINS
 
       
       ! Optionally, invoke callback routine
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA3TRIA2,&
-          (/i1,i2,i3,i4,0,i6,i7,0/),(/e1,e2,e3,e4,e5,e6,e7,e8/))  
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/i1,i2,i3,i4,0,i6,i7,0/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA3TRIA2,&
+            Ivertices,Ielements)
+      END IF
       
 
     CASE(MARK_CRS_4TRIA3TRIA_LEFT)
       ! Update list of neighboring elements
-      CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,iel1,jel3,jel3)
+      CALL update_ElementNeighbors2D(rhadapt,e1,e5,iel1,jel3,jel3)
       CALL update_ElementNeighbors2D(rhadapt,e2,e6,iel2,iel1,jel1,jel1)
       CALL update_ElementNeighbors2D(rhadapt,e3,e7,iel3,iel2,jel2,jel1)
-      CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel3,iel3,jel2,jel2)
+      CALL update_ElementNeighbors2D(rhadapt,e4,e8,iel3,jel2,jel2)
 
       
       ! Update elements JEL1, JEL2 and JEL3
@@ -8748,9 +8930,11 @@ CONTAINS
       CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel3,ipos)
 
       ! Optionally, invoke callback routine
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA3TRIA3,&
-          (/i1,i2,i3,i4,0,i6,i7,0/),(/e1,e2,e3,e4,e5,e6,e7,e8/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/i1,i2,i3,i4,0,i6,i7,0/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA3TRIA3,&
+            Ivertices,Ielements)
+      END IF
 
       
     CASE DEFAULT
@@ -9746,7 +9930,7 @@ CONTAINS
         ! the second vertex of the adjacent element is not locked so that "coarsening"
         ! into three triangles is initiated from that element. If the second vertex
         ! is not locked, then we check if the third vertex is not locked, either.
-        ! in this case, we can makr the element for coarsening into the macro element
+        ! in this case, we can mark the element for coarsening into the macro element
         ! and remove the neighboring element from the list of removable elements.
         jel=rhadapt%p_IneighboursAtElement(2,iel)
         
@@ -9939,6 +10123,8 @@ CONTAINS
     ! local variables
     INTEGER, DIMENSION(:), POINTER :: p_Imarker,p_Imodified
     INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D) :: p_IverticesAtElement
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: Ielements
+    INTEGER(PREC_VERTEXIDX), DIMENSION(1)  :: Ivertices
     INTEGER(PREC_VERTEXIDX)  :: i,nvt
     INTEGER(PREC_ELEMENTIDX) :: nel,iel,jel,kel,lel,iel1,iel2
     INTEGER :: ive,jve,nve,mve,istate,jstate,kstate
@@ -9994,8 +10180,11 @@ CONTAINS
           rhadapt%p_ImidneighboursAtElement)
 
       ! Adjust dimension of solution vector
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_ADJUSTVERTEXDIM,(/nvt/),(/0/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/nvt/); Ielements=(/0/)
+        CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_ADJUSTVERTEXDIM,&
+            Ivertices,Ielements)
+      END IF
 
       ! Create new array for modifier
       CALL storage_new ('redgreen_mark_refinement2D','p_Imodified',nel,&
@@ -10266,17 +10455,17 @@ CONTAINS
           isConform=.FALSE.
 
           ! The new elements NEL0+1 and NEL0+2 have zero markers by construction.
-          ! In addition, we have to transfer some markers from element IEL and JEL
-          ! to the new elements NEL0+1, NEL0+2. As a first step, clear all four
-          ! elements and mark them as quadrilaterals.
+          kel= rhadapt%p_IneighboursAtElement(2,jel)
+          lel= rhadapt%p_IneighboursAtElement(3,iel)
+          
+          ! As a first step, clear all four elements and mark them as quadrilaterals.
           p_Imarker(iel)=ibset(0,0)
           p_Imarker(jel)=ibset(0,0)
           p_Imarker(kel)=ibset(0,0)
           p_Imarker(lel)=ibset(0,0)
           
-          kel= rhadapt%p_IneighboursAtElement(2,jel)
-          lel= rhadapt%p_IneighboursAtElement(3,iel)
-          
+          ! In addition, we have to transfer some markers from element IEL and JEL         
+          ! to the new elements NEL0+1, NEL0+2.           
           iel1=rhadapt%p_IneighboursAtElement(1,iel)
           iel2=rhadapt%p_ImidneighboursAtElement(1,iel)
           IF (ismarked_edge(iel1,iel2,iel)) p_Imarker(iel)=ibset(p_Imarker(iel),1)
@@ -11001,6 +11190,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(1) :: Ielements
+    INTEGER(PREC_VERTEXIDX), DIMENSION(2)  :: Ivertices
     INTEGER,  DIMENSION(:), POINTER :: p_Imarker
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX) :: iel,jel
@@ -11138,9 +11329,11 @@ CONTAINS
       END IF
             
       ! Optionally, invoke callback function
-      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection))&
-          CALL fcb_hadaptCallback(rcollection,&
-          HADAPT_OPR_REMOVEVERTEX,(/ivt,ivtReplace/),(/0/))
+      IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
+        Ivertices=(/ivt,ivtReplace/); Ielements=(/0/)
+        CALL fcb_hadaptCallback(rcollection,&
+            HADAPT_OPR_REMOVEVERTEX,Ivertices,Ielements)
+      END IF
     END DO
         
     ! Increase the number of recoarsening steps by one
@@ -11372,132 +11565,4 @@ CONTAINS
       inewstate=ibclr(inewstate,0)
     END IF
   END FUNCTION redgreen_rotateState
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  SUBROUTINE bisection_refine(rhadapt)
-
-!<description>
-    ! This subroutine performs longest edge bisection as proposed by M. Rivara.
-!</description>
-
-!<inputoutput>
-    ! adaptive structure
-    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
-!</inputoutput>
-!</subroutine>
-        
-!!$      ! Mark elements for refinement
-!!$      SELECT CASE(ind)
-!!$      CASE(NODE)
-!!$         DO iel=1,mg%nel
-!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
-!!$               ipos =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert=TT_elem%kb(ELivert1:ELivert3,ipos)
-!!$               
-!!$               IF (SUM(dind(kvert)) > 3*tol) THEN
-!!$                  d(1)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,2/))),TQ_dcorvg%dcorvg(2,kvert((/1,2/))))
-!!$                  d(2)=seglength(TQ_dcorvg%dcorvg(1,kvert((/2,3/))),TQ_dcorvg%dcorvg(2,kvert((/2,3/))))
-!!$                  d(3)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,3/))),TQ_dcorvg%dcorvg(2,kvert((/1,3/))))
-!!$                  
-!!$                  kref=.FALSE.; kref(MAXLOC(d))=.TRUE.
-!!$                  CALL refine_1to2(kref,iel)
-!!$               END IF
-!!$            END IF
-!!$         END DO
-!!$         
-!!$      CASE(ELEMENT)
-!!$         DO iel=1,mg%nel
-!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
-!!$               ipos =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert=TT_elem%kb(ELivert1:ELivert3,ipos)
-!!$               
-!!$               IF (dind(iel) > tol) THEN
-!!$             !     d(1)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,2/))),TQ_dcorvg%dcorvg(2,kvert((/1,2/))))
-!!$             !     d(2)=seglength(TQ_dcorvg%dcorvg(1,kvert((/2,3/))),TQ_dcorvg%dcorvg(2,kvert((/2,3/))))
-!!$             !     d(3)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,3/))),TQ_dcorvg%dcorvg(2,kvert((/1,3/))))
-!!$                  
-!!$                  IF (search(TT_node,kvert(1),ipred) /= TFOUND) CALL sys_halt()
-!!$                  i1=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$                  IF (search(TT_node,kvert(2),ipred) /= TFOUND) CALL sys_halt()
-!!$                  i2=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$                  IF (search(TT_node,kvert(3),ipred) /= TFOUND) CALL sys_halt()
-!!$                  i3=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$                  
-!!$                  d(1)=ABS(TT_node%db(1,i1)-TT_node%db(1,i2))
-!!$                  d(2)=ABS(TT_node%db(1,i2)-TT_node%db(1,i3))
-!!$                  d(3)=ABS(TT_node%db(1,i3)-TT_node%db(1,i1))
-!!$
-!!$                  kref=.FALSE.; kref(MAXLOC(d))=.TRUE.
-!!$                  CALL refine_1to2(kref,iel)
-!!$               END IF
-!!$            END IF
-!!$         END DO
-!!$      END SELECT
-!!$
-!!$      GOTO 1000
-!!$      
-!!$      DO
-!!$         bmod=.FALSE.
-!!$         mg%nel=TT_elem%na
-!!$         ALLOCATE(r(mg%nel)); r=.FALSE.
-!!$         DO iel=1,mg%nel
-!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
-!!$               ipos   =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert  =TT_elem%kb(ELivert1:ELivert3,ipos)
-!!$               kadj   =TT_elem%kb(ELiadj1:ELiadj3,ipos)
-!!$               kmidadj=TT_elem%kb(ELimidadj1:ELimidadj3,ipos)
-!!$
-!!$               IF (ANY(kadj/=kmidadj)) THEN
-!!$                  r(iel)=.TRUE.; bmod=.TRUE.
-!!$               END IF
-!!$            END IF
-!!$         END DO
-!!$
-!!$         IF (.NOT.bmod) EXIT
-!!$
-!!$         DO iel=1,TT_elem%na
-!!$            IF (.NOT.r(iel)) CYCLE
-!!$
-!!$            IF (search(TT_elem,iel,ipred) .EQ. TFOUND) THEN
-!!$               ipos   =TT_elem%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               kvert  =TT_elem%kb(ELivert1:ELivert3,ipos)
-!!$               kadj   =TT_elem%kb(ELiadj1:ELiadj3,ipos)
-!!$               kmidadj=TT_elem%kb(ELimidadj1:ELimidadj3,ipos)
-!!$
-!!$    !           d(1)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,2/))),TQ_dcorvg%dcorvg(2,kvert((/1,2/))))
-!!$    !           d(2)=seglength(TQ_dcorvg%dcorvg(1,kvert((/2,3/))),TQ_dcorvg%dcorvg(2,kvert((/2,3/))))
-!!$    !           d(3)=seglength(TQ_dcorvg%dcorvg(1,kvert((/1,3/))),TQ_dcorvg%dcorvg(2,kvert((/1,3/))))
-!!$               
-!!$               IF (search(TT_node,kvert(1),ipred) /= TFOUND) CALL sys_halt()
-!!$               i1=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               IF (search(TT_node,kvert(2),ipred) /= TFOUND) CALL sys_halt()
-!!$               i2=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$               IF (search(TT_node,kvert(3),ipred) /= TFOUND) CALL sys_halt()
-!!$               i3=TT_node%kchild(MERGE(TLEFT,TRIGHT,ipred < 0),ABS(ipred))
-!!$
-!!$               d(1)=ABS(TT_node%db(1,i1)-TT_node%db(1,i2))
-!!$               d(2)=ABS(TT_node%db(1,i2)-TT_node%db(1,i3))
-!!$               d(3)=ABS(TT_node%db(1,i3)-TT_node%db(1,i1))
-!!$
-!!$               ipos=ABS(SUM((kadj/=kmidadj)*(/1,2,3/)))
-!!$
-!!$               IF (ipos > 3) THEN
-!!$                  kref=.TRUE.
-!!$                  CALL refine_1to4(kref,iel)
-!!$               ELSE
-!!$                  IF (ABS(d(ipos)-MAXVAL(d))  <= 1e-3) THEN
-!!$                     kref=kadj/=kmidadj
-!!$                     CALL refine_1to2(kref,iel)
-!!$                  ELSE
-!!$                     kref=.FALSE.; kref(MAXLOC(d))=.TRUE.; kref=kref.OR.(kadj/=kmidadj)
-!!$                     CALL refine_1to3(kref,iel)
-!!$                  END IF
-!!$               END IF
-!!$            END IF
-!!$         END DO
-!!$         DEALLOCATE(r)
-  END SUBROUTINE bisection_refine
 END MODULE hadaptivity
