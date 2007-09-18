@@ -7191,7 +7191,7 @@ CONTAINS
 
       ! Optionally, invoke callback routine
       IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
-        Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements(/e1,e2,e3,e4,e5,e6/)
+        Ivertices=(/i1,i2,i3,i4,i5,i6/); Ielements=(/e1,e2,e3,e4,e5,e6/)
         CALL fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA2TRIA2,&
             Ivertices,Ielements)
       END IF
@@ -7391,7 +7391,7 @@ CONTAINS
     ! starts at the oldest vertex. to this end, we check the state of the 
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
     ImacroVertices=(/i1,i2,i3,i4/)
-    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices)
+    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
 
     SELECT CASE(istate)
     CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
