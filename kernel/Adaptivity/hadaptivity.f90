@@ -6652,11 +6652,12 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: Ielements
     INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: Ivertices
     INTEGER(PREC_VERTEXIDX),  DIMENSION(3) :: ImacroVertices
+    INTEGER, DIMENSION(TRIA_NVETRI2D)      :: IvertexAge
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,e1,e2,e3,e4,e5,e6,jel,ielRemove,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4
     INTEGER :: istate
-    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
+    
           
     ! Get right-adjacent green elements
     iel1=rhadapt%p_IneighboursAtElement(2,iel)
@@ -6697,9 +6698,9 @@ CONTAINS
     ! should not appear, that is, local numbering of the resulting triangle starts at the
     ! vertex which is opposite to the inner red triangle. To this end, we check the state of
     ! the provisional triangle (I1,I2,I3) and transform the orientation accordingly.
-    ImacroVertices=(/i1,i2,i3/)
-    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(ImacroVertices)
-    istate = redgreen_getstateTria(IvertexAge(1:TRIA_NVETRI2D))
+    ImacroVertices = (/i1,i2,i3/)
+    IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
+    istate = redgreen_getstateTria(IvertexAge)
     
     SELECT CASE(istate)
     CASE(STATE_TRIA_OUTERINNER,&
@@ -6824,12 +6825,12 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
     INTEGER(PREC_VERTEXIDX),  DIMENSION(6) :: Ivertices
     INTEGER(PREC_VERTEXIDX),  DIMENSION(3) :: ImacroVertices
+    INTEGER, DIMENSION(TRIA_NVETRI2D)      :: IvertexAge
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6
     INTEGER                    :: istate
-    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
-
+    
     ! Retrieve patch of elements
     iel2=rhadapt%p_IneighboursAtElement(1,iel)
     iel3=rhadapt%p_IneighboursAtElement(2,iel)
@@ -6872,9 +6873,9 @@ CONTAINS
     ! numbering of the resulting triangle starts at the vertex which is opposite 
     ! to the inner red triangle. To this end, we check the state of the provisional
     ! triangle (I1,I2,I3) and transform the orientation accordingly.
-    ImacroVertices=(/i1,i2,i3/)
-    IvertexAge(1:TRIA_NVETRI2D) = rhadapt%p_IvertexAge(ImacroVertices)
-    istate=redgreen_getstateTria(IvertexAge(1:TRIA_NVETRI2D))
+    ImacroVertices = (/i1,i2,i3/)
+    IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
+    istate = redgreen_getstateTria(IvertexAge)
     
     SELECT CASE(istate)
     CASE(STATE_TRIA_OUTERINNER,&
@@ -7346,7 +7347,8 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
     INTEGER(PREC_VERTEXIDX),  DIMENSION(9) :: Ivertices
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_NVEQUAD2D) :: ImacroVertices
+    INTEGER, DIMENSION(TRIA_NVEQUAD2D)                  :: IvertexAge
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -7398,8 +7400,9 @@ CONTAINS
     ! should not appear, that is, local numbering of the resulting quadrilateral
     ! starts at the oldest vertex. to this end, we check the state of the 
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-    ImacroVertices=(/i1,i2,i3,i4/)
-    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
+    ImacroVertices = (/i1,i2,i3,i4/)
+    IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
+    istate = redgreen_getstateQuad(IvertexAge)
 
     SELECT CASE(istate)
     CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -8012,8 +8015,9 @@ CONTAINS
 
     ! local variables
     INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
     INTEGER(PREC_VERTEXIDX),  DIMENSION(8) :: Ivertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_NVEQUAD2D) :: ImacroVertices
+    INTEGER, DIMENSION(TRIA_NVEQUAD2D)                  :: IvertexAge
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,e1,e2,e3,e4,e5,e6,e7,e8,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5,i7
@@ -8056,8 +8060,9 @@ CONTAINS
       ! should not appear, that is, local numbering of the resulting quadrilateral
       ! starts at the oldest vertex. to this end, we check the state of the 
       ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-      ImacroVertices=(/i1,i2,i3,i4/)
-      istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
+      ImacroVertices = (/i1,i2,i3,i4/)
+      IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
+      istate = redgreen_getstateQuad(IvertexAge)
       
       SELECT CASE(istate)
       CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -8118,8 +8123,9 @@ CONTAINS
       ! should not appear, that is, local numbering of the resulting quadrilateral
       ! starts at the oldest vertex. to this end, we check the state of the 
       ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-      ImacroVertices=(/i1,i2,i3,i4/)
-      istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
+      ImacroVertices = (/i1,i2,i3,i4/)
+      IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
+      istate = redgreen_getstateQuad(IvertexAge)
       
       SELECT CASE(istate)
       CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -8337,8 +8343,9 @@ CONTAINS
     ! local variables
     INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(3) :: IsortedElements
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
     INTEGER(PREC_VERTEXIDX),  DIMENSION(5) :: Ivertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_NVEQUAD2D) :: ImacroVertices
+    INTEGER, DIMENSION(TRIA_NVEQUAD2D)                  :: IvertexAge
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i5
@@ -8384,8 +8391,9 @@ CONTAINS
     ! should not appear, that is, local numbering of the resulting quadrilateral
     ! starts at the oldest vertex. to this end, we check the state of the 
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-    ImacroVertices=(/i1,i2,i3,i4/)
-    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
+    ImacroVertices = (/i1,i2,i3,i4/)
+    IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
+    istate = redgreen_getstateQuad(IvertexAge)
 
     SELECT CASE(istate)
     CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -8468,8 +8476,8 @@ CONTAINS
 
 
     ! Adjust number of elements
-    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+1
-    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)-1
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
 
 
     ! Optionally, invoke callback routine
@@ -8529,7 +8537,8 @@ CONTAINS
     INTEGER(PREC_ELEMENTIDX), DIMENSION(8) :: Ielements
     INTEGER(PREC_ELEMENTIDX), DIMENSION(4) :: IsortedElements
     INTEGER(PREC_VERTEXIDX),  DIMENSION(8) :: Ivertices
-    INTEGER(PREC_VERTEXIDX),  DIMENSION(4) :: ImacroVertices
+    INTEGER(PREC_VERTEXIDX),  DIMENSION(TRIA_NVEQUAD2D) :: ImacroVertices
+    INTEGER, DIMENSION(TRIA_NVEQUAD2D)                  :: IvertexAge
     INTEGER(PREC_ARRAYLISTIDX) :: ipos
     INTEGER(PREC_ELEMENTIDX)   :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
     INTEGER(PREC_VERTEXIDX)    :: i1,i2,i3,i4,i6,i7
@@ -8579,8 +8588,9 @@ CONTAINS
     ! should not appear, that is, local numbering of the resulting quadrilateral
     ! starts at the oldest vertex. to this end, we check the state of the 
     ! provisional quadrilateral (I1,I2,I3,I4) and transform the orientation.
-    ImacroVertices=(/i1,i2,i3,i4/)
-    istate=redgreen_getstateQuad(rhadapt%p_IvertexAge(ImacroVertices))
+    ImacroVertices = (/i1,i2,i3,i4/)
+    IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
+    istate = redgreen_getstateQuad(IvertexAge)
 
     SELECT CASE(istate)
     CASE(STATE_QUAD_ROOT,STATE_QUAD_RED4)
@@ -8668,8 +8678,8 @@ CONTAINS
     
     
     ! Adjust number of elements
-    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+1
-    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)-1
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
     
 
     ! Optionally, invoke callback routine
@@ -9223,12 +9233,12 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER                    :: p_Dindicator
     INTEGER,  DIMENSION(:), POINTER                    :: p_Imarker
     INTEGER(PREC_VERTEXIDX), DIMENSION(TRIA_MAXNVE2D)  :: p_IverticesAtElement
-    INTEGER(PREC_ELEMENTIDX), DIMENSION(4)             :: p_ImacroElement
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(TRIA_MAXNVE2D) :: p_ImacroElement
+    INTEGER, DIMENSION(TRIA_MAXNVE)                    :: IvertexAge
     INTEGER(PREC_VERTEXIDX)  :: i,j
     INTEGER(PREC_ELEMENTIDX) :: iel,jel,kel
     INTEGER :: ive,nve,istate,jstate,ivertexLock
     LOGICAL :: isModified
-    INTEGER, DIMENSION(TRIA_MAXNVE) :: IvertexAge
 
     ! Check if dynamic data structures are generated and contain data
     IF (IAND(rhadapt%iSpec,HADAPT_HAS_DYNAMICDATA).NE.HADAPT_HAS_DYNAMICDATA .OR.&
