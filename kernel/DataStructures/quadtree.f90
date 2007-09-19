@@ -667,6 +667,7 @@ CONTAINS
     
     ! local variables
     INTEGER :: inode,ipos,jpos,jvt
+    REAL(DP), DIMENSION(2) :: DdataTmp
     
     ! Search for the given coordinates
     f=qtree_searchInQuadtree(rquadtree,Ddata,inode,ipos,ivt)
@@ -683,7 +684,8 @@ CONTAINS
       
       ! If IVT is not last item move last item to position IVT
       IF (ivt .NE. rquadtree%NVT) THEN
-        IF (qtree_searchInQuadtree(rquadtree,rquadtree%p_Ddata(1:2,rquadtree%NVT),inode,ipos,jvt)&
+        DdataTmp(1:2) = rquadtree%p_Ddata(1:2,rquadtree%NVT)
+        IF (qtree_searchInQuadtree(rquadtree,DdataTmp(:),inode,ipos,jvt)&
             .EQ. QTREE_FOUND) THEN
           rquadtree%p_Ddata(:,ivt)      = rquadtree%p_Ddata(:,rquadtree%NVT)
           rquadtree%p_Knode(ipos,inode) = ivt

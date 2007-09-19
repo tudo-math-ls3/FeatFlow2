@@ -708,6 +708,7 @@ CONTAINS
     
     ! local variables
     INTEGER :: inode,ipos,jpos,jvt
+    REAL(DP), DIMENSION(3) :: DdataTmp
     
     ! Search for the given coordinates
     f=otree_searchInOctree(roctree,Ddata,inode,ipos,ivt)
@@ -724,7 +725,8 @@ CONTAINS
       
       ! If IVT is not last item move last item NVT to position IVT
       IF (ivt /= roctree%NVT) THEN
-        IF (otree_searchInOctree(roctree,roctree%p_Ddata(1:3,roctree%NVT),inode,ipos,jvt) == OTREE_FOUND) THEN
+        DdataTmp(1:3) = roctree%p_Ddata(1:3,roctree%NVT)
+        IF (otree_searchInOctree(roctree,DdataTmp(:),inode,ipos,jvt) == OTREE_FOUND) THEN
           roctree%p_Ddata(:,ivt) = roctree%p_Ddata(:,roctree%NVT)
           roctree%p_Knode(ipos,inode) = ivt
         END IF
