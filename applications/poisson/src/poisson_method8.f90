@@ -134,16 +134,16 @@ CONTAINS
     ! 2.) the maximum refinement level of the h-adaptive refinement routines.
     ! This is relative to NLMIN: Starting from level NLMIN, the h-adaptivity
     ! routines refine the mesh up to NLMAXhRefinement times.
-    NLMAXhRefinement = 6
+    NLMAXhRefinement = 3
     
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
     ! Set p_rboundary to NULL to create a new structure on the heap.
     NULLIFY(p_rboundary)
-    CALL boundary_read_prm(p_rboundary, './pre/TRIA.prm')
+    CALL boundary_read_prm(p_rboundary, './pre/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    CALL tria_readTriFile2D (rtriangulation, './pre/TRIA.tri', p_rboundary)
+    CALL tria_readTriFile2D (rtriangulation, './pre/QUAD.tri', p_rboundary)
     
     ! Refine it to get the coarse mesh.
     CALL tria_quickRefine2LevelOrdering (NLMIN-1,rtriangulation,p_rboundary)
@@ -185,7 +185,7 @@ CONTAINS
     
     ! Release the adaptivity structure
     CALL hadapt_releaseAdaptation(rhadapt)
-    
+
     ! Create information about adjacencies and everything one needs from
     ! a triangulation.
     CALL tria_initStandardMeshFromRaw (rtriangulation,p_rboundary)
