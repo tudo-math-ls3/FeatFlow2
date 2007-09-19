@@ -68,6 +68,9 @@
 !# 14.) tria_getNVE = tria_getNVE_direct / tria_getNVE_indirect
 !#      -> Get the number of vertices/edges on an element
 !#
+!# 15.) tria_infoStatistics
+!#      -> Prints out statistics about a mesh.
+!#
 !# Auxiliary routines:
 !#
 !#  1.) tria_readRawTriangulation1D / tria_readRawTriangulation2D
@@ -4028,7 +4031,7 @@ CONTAINS
           rtriangulation%NVBD, ST_INT, &
           rtriangulation%h_IedgesAtBoundary, ST_NEWBLOCK_NOINIT)
     ELSE
-      CALL storage_getsize (rtriangulation%h_IelementsAtBoundary, isize)
+      CALL storage_getsize (rtriangulation%h_IedgesAtBoundary, isize)
       IF (isize .NE. rtriangulation%NVBD) THEN
         ! If the size is wrong, reallocate memory.
         CALL storage_realloc ('tria_genEdgesAtBoundary2D', &
@@ -5704,17 +5707,17 @@ CONTAINS
           IF (PRESENT(ilevel)) THEN
             CALL output_line(&
               'Lv. dim.       NVT        NMT        NEL    NBCT' &
-            //'    NVBD     #trias     #quads')
+            //'    NVBD     #trias      #quads')
             CALL output_line(&
               '------------------------------------------------' &
-            //'------------------------------')
+            //'-------------------------------')
           ELSE
             CALL output_line(&
               'dim.       NVT        NMT        NEL    NBCT' &
-            //'    NVBD     #trias     #quads')
+            //'    NVBD     #trias      #quads')
             CALL output_line(&
               '--------------------------------------------' &
-            //'------------------------------')
+            //'-------------------------------')
           END IF
         END IF
       END IF

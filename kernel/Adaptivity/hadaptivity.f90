@@ -2621,8 +2621,6 @@ CONTAINS
       CALL sys_halt()
     END SELECT
 
-    CALL hadapt_checkConsistency(rhadapt)
-
   CONTAINS
 
     ! Here, some auxiliary routines follow
@@ -4326,7 +4324,7 @@ CONTAINS
 !</subroutine
     
     ! Increase number of elements and number of quadrilaterals
-    rhadapt%NEL  =rhadapt%NEL+1
+    rhadapt%NEL=rhadapt%NEL+1
     rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)+1
 
     rhadapt%p_IverticesAtElement(:,rhadapt%NEL)     =(/i1,i2,i3,i4/)
@@ -5639,6 +5637,11 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+2,ipos)
 
 
+    ! Adjust number of elements
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+1
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
+    
+
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
       Ivertices=(/i1,i2,i3,i4,i5/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -5792,6 +5795,11 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+1,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+2,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i6,nel0+3,ipos)
+
+
+    ! Adjust number of elements
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+1
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
 
 
     ! Optionally, invoke callback routine
@@ -7823,6 +7831,11 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,jel3,ipos)
 
 
+    ! Adjust number of elements
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+3
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-3
+    
+    
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
       Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -7936,7 +7949,10 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,iel2,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i8,iel2,ipos)
     
-
+    ! Adjust number of elements
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+4
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-4
+    
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
       Ivertices=(/i1,i2,i3,i4,i5,i6,i7,i8,i9/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -8263,6 +8279,10 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i5,nel0+1,ipos)
 
 
+    ! Adjust number of elements
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+2
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-2
+
     ! Optionally, invoke callback routine
     IF (PRESENT(fcb_hadaptCallback).AND.PRESENT(rcollection)) THEN
       Ivertices=(/i1,i2,i3,i4,i5,0,i7,0/); Ielements=(/e1,e2,e3,e4,e5,e6,e7,e8/)
@@ -8445,6 +8465,11 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel,ipos)
+
+
+    ! Adjust number of elements
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+1
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
 
 
     ! Optionally, invoke callback routine
@@ -8640,6 +8665,11 @@ CONTAINS
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i2,jel,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i3,jel,ipos)
     CALL arrlst_appendToArraylist(rhadapt%relementsAtVertex,i4,jel,ipos)
+    
+    
+    ! Adjust number of elements
+    rhadapt%InelOfType(TRIA_NVETRI2D)=rhadapt%InelOfType(TRIA_NVETRI2D)+1
+    rhadapt%InelOfType(TRIA_NVEQUAD2D)=rhadapt%InelOfType(TRIA_NVEQUAD2D)-1
     
 
     ! Optionally, invoke callback routine
