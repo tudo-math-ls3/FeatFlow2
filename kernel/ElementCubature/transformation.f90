@@ -393,8 +393,7 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
-        Dcoords (1,1:3) = p_DvertexCoords(1,&
-                                p_IverticesAtElement(1:3,iel))
+        Dcoords (1,1:3) = p_DvertexCoords(1, p_IverticesAtElement(1:3, iel))
                                 
       END SELECT
     
@@ -520,12 +519,14 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
+        !$OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,2
             Dcoords (1,ipoint,iel) = &
               p_DvertexCoords(1,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
+        !$OMP END PARALLEL DO
       
       END SELECT
 
@@ -545,23 +546,27 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 2D simplex -> linear triangular transformation. 
         ! Transfer the corners of the element.
+        !$OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,3
             Dcoords (1:NDIM2D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
+        !$OMP END PARALLEL DO
       
       CASE (TRAFO_ID_MLINCUBE)
         ! Bilinear transformation for cubic-shaped elements 
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
+        !$OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,4
             Dcoords (1:NDIM2D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
+        !$OMP END PARALLEL DO
       
       END SELECT
 
@@ -581,23 +586,27 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 3D simplex -> linear tetrahedral transformation. 
         ! Transfer the corners of the element.
+        !$OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,4
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
+        !$OMP END PARALLEL DO
       
       CASE (TRAFO_ID_MLINCUBE)
         ! Trilinear transformation for cubic-shaped elements 
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
+        !$OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,8
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
+        !$OMP END PARALLEL DO
       
       END SELECT
       
@@ -669,6 +678,21 @@ CONTAINS
   ! What type of transformation do we have? First decide on the dimension,
   ! then on the actual ID.
   SELECT CASE (trafo_igetDimension(ctrafoType))
+  
+  CASE (NDIM1D)
+    
+    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_LINSIMPLEX)
+    
+      ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
+      Djac(1) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))   
+      ddetj = Djac(1)
+      
+      ! Do we need to transform the reference point?
+      IF(PRESENT(DpointReal)) DpointReal(1) = &
+          Dcoords(1,1) + (DpointRef(1)+1.0_DP) * ddetj
+    
+    END SELECT
   
   CASE (NDIM2D)
     ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
@@ -849,6 +873,41 @@ CONTAINS
   ! then on the actual ID.
   SELECT CASE (trafo_igetDimension(ctrafoType))
   
+  CASE (NDIM1D)
+    ! 1D elements: Lines.
+    
+    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_LINSIMPLEX)
+    
+      IF(.NOT. PRESENT(DpointsReal)) THEN
+      	
+        ! Loop over the points
+        DO ipt=1,npointsPerEl
+        
+          ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
+          Djac(1,ipt) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))   
+          ddetj(ipt) = Djac(1,ipt)
+        	
+        END DO
+        
+      ELSE
+      
+        ! Loop over the points
+        DO ipt=1,npointsPerEl
+        
+          ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
+          Djac(1,ipt) = 0.5_DP * (Dcoords(1,2) - Dcoords(1,1))   
+          ddetj(ipt) = Djac(1,ipt)
+          
+          ! Transform the reference point into real coordinates
+          DpointsReal(1,ipt) = Dcoords(1,1) + (DpointsRef(1,ipt)+1.0_DP) * ddetj(ipt)
+        	
+        END DO
+
+      END IF
+    
+    END SELECT
+  
   CASE (NDIM2D)
     ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
     ! ID how to transform.
@@ -953,6 +1012,7 @@ CONTAINS
           CALL trafo_calcJac (Dcoords,DjacPrep,Djac(:,ipt),Ddetj(ipt), &
                                DpointsRef(1,ipt),DpointsRef(2,ipt))
         END DO ! ipt
+        
       
       ELSE
 
@@ -1062,6 +1122,56 @@ CONTAINS
   ! then on the actual ID.
   SELECT CASE (trafo_igetDimension(ctrafoType))
   
+  CASE (NDIM1D)
+    ! 1D elements: Lines.
+    
+    SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+    CASE (TRAFO_ID_LINSIMPLEX)
+    
+      IF(.NOT. PRESENT(DpointsReal)) THEN
+      	
+      	! Loop over the elements
+      	!$OMP PARALLEL DO PRIVATE(ipt)
+        DO iel=1,nelements
+      	
+	        ! Loop over the points
+	        DO ipt=1,npointsPerEl
+  	        
+	          ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
+	          Djac(1,ipt,iel) = 0.5_DP * (Dcoords(1,2,iel) - Dcoords(1,1,iel))
+	          ddetj(ipt,iel) = Djac(1,ipt,iel)
+  	        	
+	        END DO
+	      
+        END DO
+        !$OMP END PARALLEL DO
+        
+      ELSE
+      
+        ! Loop over the elements
+        !$OMP PARALLEL DO PRIVATE(ipt)
+        DO iel=1,nelements
+        	
+          ! Loop over the points
+          DO ipt=1,npointsPerEl
+        
+            ! The Jacobi matrix is simply the length of the interval multiplied by 0.5
+            Djac(1,ipt,iel) = 0.5_DP * (Dcoords(1,2,iel) - Dcoords(1,1,iel))   
+            ddetj(ipt,iel) = Djac(1,ipt,iel)
+          
+            ! Transform the reference point into real coordinates
+            DpointsReal(1,ipt,iel) = Dcoords(1,1,iel) + &
+                (DpointsRef(1,ipt,iel)+1.0_DP) * ddetj(ipt,iel)
+          
+          END DO
+        	
+        END DO
+        !$OMP END PARALLEL DO
+
+      END IF
+    
+    END SELECT
+    
   CASE (NDIM2D)
     ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
     ! ID how to transform.
@@ -1076,6 +1186,7 @@ CONTAINS
       IF (.NOT. PRESENT(DpointsReal)) THEN
       
         ! Loop over the elements
+        !$OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
         DO iel = 1,nelements
           
           ! Loop over the points
@@ -1109,10 +1220,12 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
+        !$OMP END PARALLEL DO
         
       ELSE
 
         ! Loop over the elements
+        !$OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
         DO iel = 1,nelements
           
           ! Loop over the points
@@ -1159,6 +1272,7 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
+        !$OMP END PARALLEL DO
         
       END IF
     
@@ -1171,6 +1285,7 @@ CONTAINS
       IF (.NOT. PRESENT(DpointsReal)) THEN
       
         ! Loop over the elements
+        !$OMP PARALLEL DO PRIVATE(ipt)
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
@@ -1183,10 +1298,12 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
+        !$OMP END PARALLEL DO
       
       ELSE
 
         ! Loop over the elements
+        !$OMP PARALLEL DO PRIVATE(ipt)
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
@@ -1200,6 +1317,7 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
+        !$OMP END PARALLEL DO
 
       END IF
       
@@ -1839,6 +1957,18 @@ CONTAINS
     ! What type of transformation do we have? First decide on the dimension,
     ! then on the actual ID.
     SELECT CASE (trafo_igetDimension(ctrafoType))
+    
+    CASE (NDIM1D)
+      ! 1D elements: Lines.
+      
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+      
+        ! Simple linear transformation of x \in [a,b] -> x' \in [-1,1]
+        DparPoint(1) = -1.0_DP + 0.5_DP * (Dpoint(1) - Dcoord(1,1)) / (Dcoord(2,1)-Dcoord(1,1))
+      
+      END SELECT
     
     CASE (NDIM2D)
       ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
