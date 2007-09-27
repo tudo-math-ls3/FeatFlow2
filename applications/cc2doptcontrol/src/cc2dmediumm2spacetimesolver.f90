@@ -2262,6 +2262,9 @@ CONTAINS
           rmatrixComponents,&
           rtempVectorD,rtempVectorX,bsuccess,rsolverNode%p_rproblem%rcollection)      
     
+      ! Scale by omega
+      CALL lsysbl_scaleVector (rtempVectorD,rsolverNode%domega)
+    
       ! Save back the preconditioned defect.
       CALL sptivec_setTimestepData (rd, isubstep, rtempVectorD)
       
@@ -4822,11 +4825,13 @@ END SUBROUTINE
     ! Save the result
     CALL sptivec_convertVectorToSupervec (rx,rd)
 
+    ! Scale by omega
+    CALL sptivec_scaleVector (rd,rsolverNode%domega)
+                
     ! Release temp vectors
     CALL lsysbl_releaseVector (rx)
     CALL lsysbl_releaseVector (rb)
   
-                
     ! Check the solver status
     SELECT CASE (INT(Dinfo(1)))
     CASE (0) 
@@ -5948,7 +5953,9 @@ END SUBROUTINE
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector, &
                     p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector, &
-                    p_rsubnode%p_Rlevels(ilev)%rprjVector)
+                    p_rsubnode%p_Rlevels(ilev)%rprjVector,&
+                    p_rmatrix,p_rsubnode%p_Rlevels(ilev-1)%rspaceTimeDiscr,&
+                    rsolverNode%p_rproblem)
 
               ! Implement boundary conditions into the vector.
               ! It's still a defect, although a preconditioned one.

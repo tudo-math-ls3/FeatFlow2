@@ -422,6 +422,10 @@ CONTAINS
     ! the dual equation gets independent from the primal one.
     REAL(DP), PARAMETER :: dterminalCondDecoupled = 1.0_DP
     
+    ! If the following parameter is set from 1.0 to 0.0, the time coupling
+    ! is disabled, resulting in a stationary simulation in every timestep.
+    REAL(DP), PARAMETER :: dtimeCoupling = 1.0_DP
+    
     ! This constant defines the type of equation. There are two equivalent
     ! formulations of the dual equation which only differs in the sign
     ! of the dual velocity.
@@ -453,7 +457,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = dtheta
@@ -503,7 +507,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = -1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
@@ -548,7 +552,7 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = -1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
@@ -581,8 +585,8 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = 1.0_DP/rspaceTimeDiscr%dtstep
-        rmatrixComponents%dalpha2 = 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta
@@ -620,7 +624,7 @@ CONTAINS
         rmatrixComponents%dkappa2 = 0.0_DP
         
         rmatrixComponents%dalpha1 = 0.0_DP
-        rmatrixComponents%dalpha2 = -1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = 0.0_DP
         rmatrixComponents%dtheta2 = (1.0_DP-dtheta) 
@@ -744,7 +748,7 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = -1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * (-1.0_DP)/rspaceTimeDiscr%dtstep
         rmatrixComponents%dalpha2 = 0.0_DP
         
         rmatrixComponents%dtheta1 = (1.0_DP-dtheta) 
@@ -777,8 +781,8 @@ CONTAINS
         rmatrixComponents%dkappa1 = 0.0_DP
         rmatrixComponents%dkappa2 = 0.0_DP
         
-        rmatrixComponents%dalpha1 = 1.0_DP/rspaceTimeDiscr%dtstep
-        rmatrixComponents%dalpha2 = 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha1 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
+        rmatrixComponents%dalpha2 = dtimeCoupling * 1.0_DP/rspaceTimeDiscr%dtstep
         
         rmatrixComponents%dtheta1 = dtheta
         rmatrixComponents%dtheta2 = dtheta

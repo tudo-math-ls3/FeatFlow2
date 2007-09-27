@@ -600,6 +600,7 @@ CONTAINS
     
     ! Filter the solution vector to implement discrete BC's.
     CALL vecfil_discreteBCsol (rprjVector)
+    !DEBUG: CALL vecfil_discreteBCdef (rprjVector)
 
     ! Filter the solution vector to implement discrete BC's for fictitious 
     ! boundary components.
@@ -829,6 +830,7 @@ CONTAINS
       
       ! Filter the solution vector to implement discrete BC's.
       CALL vecfil_discreteBCsol (rprjVector)
+      !DEBUG: CALL vecfil_discreteBCdef (rprjVector)
 
       ! Filter the solution vector to implement discrete BC's for fictitious 
       ! boundary components.

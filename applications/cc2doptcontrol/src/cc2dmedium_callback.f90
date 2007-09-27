@@ -458,7 +458,8 @@ CONTAINS
     
     ! Without coupling:
     !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(Dpoints(1,:,:))
-
+    !Dcoefficients (1,:,:) = Dpoints(1,:,:)
+    
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -552,6 +553,7 @@ CONTAINS
     
     ! Without coupling:
     !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(-Dpoints(2,:,:))
+    !Dcoefficients (1,:,:) = -Dpoints(2,:,:)
 
   END SUBROUTINE
 
@@ -889,6 +891,7 @@ CONTAINS
         !IF (dtime .gt. 10._DP) THEN
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
         !END IF
+        Dvalues(:,:) = Dpoints(1,:,:)
       CASE (1:2)
         ! Target flow is specified by a block vector.
         !
@@ -926,7 +929,7 @@ CONTAINS
         ALLOCATE(IelementsAct(npointsPerElement*nelements))
         ALLOCATE(DpointsAct(NDIM2D,npointsPerElement*nelements))
         ALLOCATE(DvaluesAct(npointsPerElement*nelements))
-        NEL = rdiscretisation%p_rtriangulation%NEL
+        NEL = p_rvector%p_rblockDiscretisation%p_rtriangulation%NEL
         DO i=0,nelements-1
           DO j=1,npointsPerElement
             iel = rdomainIntSubset%p_Ielements(i+1)
@@ -1101,6 +1104,7 @@ CONTAINS
         !IF (dtime .gt. 10._DP) THEN
         !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
         !END IF
+        Dvalues(:,:) = (-Dpoints(2,:,:))
       CASE (1:2)
         ! Target flow is specified by a block vector.
         !
@@ -1135,7 +1139,7 @@ CONTAINS
         ALLOCATE(IelementsAct(npointsPerElement*nelements))
         ALLOCATE(DpointsAct(NDIM2D,npointsPerElement*nelements))
         ALLOCATE(DvaluesAct(npointsPerElement*nelements))
-        NEL = rdiscretisation%p_rtriangulation%NEL
+        NEL = p_rvector%p_rblockDiscretisation%p_rtriangulation%NEL
         DO i=0,nelements-1
           DO j=1,npointsPerElement
             iel = rdomainIntSubset%p_Ielements(i+1)

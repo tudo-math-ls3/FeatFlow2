@@ -1984,6 +1984,7 @@ CONTAINS
         CASE (4)
           ! UMFACK Gauss elimination
           CALL sptils_initUMFPACK4 (rproblem,p_rcgrSolver)
+          p_rcgrSolver%domega = domega
 
         CASE DEFAULT
           PRINT *,'Unknown solver: ',ctypeCoarseGridSolver
@@ -2054,6 +2055,11 @@ CONTAINS
         CALL parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
                                   'ipostsmoothing', itemp, 1)
         IF (itemp .EQ. 0) NULLIFY(p_rpostsmoother)
+
+        IF ((.NOT. ASSOCIATED(p_rpresmoother)) .AND. &
+            (.NOT. ASSOCIATED(p_rpostsmoother))) THEN
+          CALL sptils_releaseSolver(p_rsmoother)
+        END IF
 
         ! NULLIFY(p_rsmoother)
         NULLIFY(p_rcgrSolver)

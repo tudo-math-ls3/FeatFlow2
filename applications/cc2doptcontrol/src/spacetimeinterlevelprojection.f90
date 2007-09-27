@@ -40,6 +40,9 @@ MODULE spacetimeinterlevelprojection
   USE spacetimevectors
   USE multilevelprojection
 
+  USE cc2dmediumm2spacetimediscret
+  USE cc2dmediumm2postprocessing
+
   IMPLICIT NONE
 
 !<types>
@@ -148,7 +151,8 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE sptipr_performProlongation (rprojection,rcoarseVector, &
-                                         rfineVector,rtempVecCoarse,rtempVecFine)
+                                         rfineVector,rtempVecCoarse,rtempVecFine,&
+                                         rdiscrFine,rdiscrCoarse,rproblem)
   
 !<description>
   ! Performs a prolongation for a given space/time vector (i.e. a projection
@@ -168,6 +172,13 @@ CONTAINS
   ! Coarse grid vector
   TYPE(t_spacetimeVector), INTENT(INOUT) :: rcoarseVector
 !</input>
+
+  ! A space-time discretisation structure defining the discretisation of
+  ! rfineVector.
+  TYPE(t_ccoptSpaceTimeDiscretisation), INTENT(IN) :: rdiscrFine,rdiscrCoarse
+
+  ! A problem structure saving problem-dependent information.
+  TYPE(t_problem), INTENT(INOUT) :: rproblem
 
 !<inputoutput>
   ! Temporary space-vector, specifying the discretisation and vector shape
@@ -292,6 +303,10 @@ CONTAINS
     CALL lsyssc_releaseVector (rtempVecFineScalar)
     CALL lsysbl_releaseVector (rx3)
     CALL lsysbl_releaseVector (rx1)
+    
+    ! DEBUG!!!
+    !CALL c2d2_postprocSpaceTimeGMV (rproblem,rdiscrFine,rfineVector,'gmv/fine.gmv')
+    !CALL c2d2_postprocSpaceTimeGMV (rproblem,rdiscrCoarse,rcoarseVector,'gmv/coarse.gmv')
     
 !    ! Constant prolongation
 !    !
