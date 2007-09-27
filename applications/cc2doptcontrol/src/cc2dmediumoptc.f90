@@ -35,15 +35,42 @@ PROGRAM cc2dmediumoptc
   
   IMPLICIT NONE
   
+  TYPE(t_parlist) :: rparlist
+  CHARACTER(LEN=SYS_STRLEN) :: slogfile,serrorfile,sstring
+  
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
-  
   CALL system_init()
   
-  ! Initialise log file for output.
-  CALL output_init ('log/output.txt')
+  ! General output init - temporary until we read in the output settings
+  CALL output_init ()
   
-  ! The very second thing in every program: 
+  ! Init parameter list that accepts parameters for output files
+  CALL parlst_init (rparlist)
+
+  ! Read parameters that configure the output
+  CALL parlst_readfromfile (rparlist, './data/output.dat')
+  
+  ! Release output stuff
+  CALL output_done()
+  
+  ! Now the real initialisation of the output including log file stuff!
+  CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+                              'smsgLog',sstring,'')
+  READ(sstring,*) slogfile
+
+  CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+                              'serrorLog',sstring,'')
+  READ(sstring,*) serrorfile
+  
+  ! That temporary parameter list is not needed anymore.
+  CALL parlst_done (rparlist)
+  
+  ! Initialise log file for output.
+  CALL output_init (slogfile,serrorfile)
+  
+  ! Now we can really start!
+  !
   ! Initialise the storage management: 
   CALL storage_init(999, 100)
   

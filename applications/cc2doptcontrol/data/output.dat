@@ -15,3 +15,10 @@ MSHOW_Initialisation = 2
 # =0: no output, =1: basic output; =2: standard output; 
 # >=3: extended output with more and more details
 MT_OutputLevel = 2
+
+# Log file for messages
+smsgLog = 'log/output.log'
+
+# Log file for error messages; usually coincides with smsgLog to print
+# errors into the same log file as standard messages
+serrorLog = 'log/output.log'
