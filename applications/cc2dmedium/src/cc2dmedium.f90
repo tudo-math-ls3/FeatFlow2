@@ -24,15 +24,26 @@ PROGRAM cc2dmedium
   
   IMPLICIT NONE
   
+  CHARACTER(LEN=SYS_STRLEN) :: slogfile,serrorfile
+  
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
-  
   CALL system_init()
   
-  ! Initialise log file for output.
-  CALL output_init ('log/output.txt')
+  ! General output init - temporary until we read in the output settings
+  CALL output_init ()
   
-  ! The very second thing in every program: 
+  ! Read the name of the message and error log file.
+  CALL cc2dmedium2_getLogFiles (slogfile,serrorfile)
+  
+  ! Release output stuff
+  CALL output_done()
+  
+  ! Initialise log file for output.
+  CALL output_init (slogfile,serrorfile)
+  
+  ! Now we can really start!
+  ! 
   ! Initialise the storage management: 
   CALL storage_init(999, 100)
   
