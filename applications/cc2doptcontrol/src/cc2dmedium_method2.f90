@@ -71,6 +71,81 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE cc2dmedium2_getLogFiles (slogfile,serrorfile)
+  
+!<description>
+  ! Temporarily reads the output DAT file to get the names of the output
+  ! files.
+!</description>
+
+!<output>
+  ! Name of the message log file.
+  CHARACTER(LEN=*), INTENT(OUT) :: slogfile
+  
+  ! Name of the error log file.
+  CHARACTER(LEN=*), INTENT(OUT) :: serrorfile
+!</output>
+
+!</subroutine>
+
+    TYPE(t_parlist) :: rparlist
+    CHARACTER(LEN=SYS_STRLEN) :: sstring
+
+    ! Init parameter list that accepts parameters for output files
+    CALL parlst_init (rparlist)
+
+    ! Read parameters that configure the output
+    CALL parlst_readfromfile (rparlist, './data/output.dat')
+    
+    ! Now the real initialisation of the output including log file stuff!
+    CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+                                'smsgLog',sstring,'')
+    READ(sstring,*) slogfile
+
+    CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+                                'serrorLog',sstring,'')
+    READ(sstring,*) serrorfile
+    
+    ! That temporary parameter list is not needed anymore.
+    CALL parlst_done (rparlist)
+    
+    END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE cc2dmedium2_getDAT (rparamList)
+  
+!<description>
+  ! Reads in all DAT files into the parameter list rparlist
+!</description>
+
+!<inputoutput>
+  ! The parameter list where the values of the DAT files should be stored.
+  ! The structure must have been initialised, the parameters are just added
+  ! to the list.
+  TYPE(t_parlist), INTENT(INOUT) :: rparamList
+!</inputoutput>
+
+!</subroutine>
+
+    ! Each 'readfromfile' command adds the parameter of the specified file 
+    ! to the parameter list.
+    CALL parlst_readfromfile (rparamList, './data/discretisation.dat')
+    CALL parlst_readfromfile (rparamList, './data/linsol_cc2d.dat')
+    CALL parlst_readfromfile (rparamList, './data/nonlinsol_cc2d.dat')
+    CALL parlst_readfromfile (rparamList, './data/output.dat')
+    CALL parlst_readfromfile (rparamList, './data/paramtriang.dat')
+    CALL parlst_readfromfile (rparamList, './data/bdconditions.dat')
+    CALL parlst_readfromfile (rparamList, './data/timediscr.dat')
+  
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   SUBROUTINE cc2dmedium2optc
   
 !<description>
@@ -123,15 +198,7 @@ CONTAINS
                                 p_rproblem%rparamList,.TRUE.)
 
     ! Read parameters from the INI/DAT files into the parameter list. 
-    ! Each 'readfromfile' command adds the parameter of the specified file 
-    ! to the parameter list.
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/discretisation.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/linsol_cc2d.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/nonlinsol_cc2d.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/output.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/paramtriang.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/bdconditions.dat')
-    CALL parlst_readfromfile (p_rproblem%rparamList, './data/timediscr.dat')
+    CALL cc2dmedium2_getDAT (p_rproblem%rparamList)
     
     ! Ok, parameters are read in.
     ! Get the output levels during the initialisation phase and during the program.

@@ -42,29 +42,11 @@ PROGRAM cc2dmediumoptc
   ! Initialise system-wide settings:
   CALL system_init()
   
-  ! General output init - temporary until we read in the output settings
-  CALL output_init ()
-  
-  ! Init parameter list that accepts parameters for output files
-  CALL parlst_init (rparlist)
-
-  ! Read parameters that configure the output
-  CALL parlst_readfromfile (rparlist, './data/output.dat')
+  ! Read the name of the message and error log file.
+  CALL cc2dmedium2_getLogFiles (slogfile,serrorfile)
   
   ! Release output stuff
   CALL output_done()
-  
-  ! Now the real initialisation of the output including log file stuff!
-  CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                              'smsgLog',sstring,'')
-  READ(sstring,*) slogfile
-
-  CALL parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                              'serrorLog',sstring,'')
-  READ(sstring,*) serrorfile
-  
-  ! That temporary parameter list is not needed anymore.
-  CALL parlst_done (rparlist)
   
   ! Initialise log file for output.
   CALL output_init (slogfile,serrorfile)
