@@ -89,7 +89,7 @@
 !# 22.) hadapt_performAdaptation
 !#      -> perform one step of grid adaptation
 !#
-!# 23.) hadapt_info
+!# 23.) hadapt_infoStatistics
 !#      -> output information about the adaptivity structure
 !#
 !# 24.) hadapt_writeGridSVG
@@ -388,7 +388,7 @@ MODULE hadaptivity
   PUBLIC :: hadapt_getNodalProperty
   PUBLIC :: hadapt_genElementsAtVertex
   PUBLIC :: hadapt_performAdaptation
-  PUBLIC :: hadapt_info
+  PUBLIC :: hadapt_infoStatistics
   PUBLIC :: hadapt_writeGridSVG
   PUBLIC :: hadapt_writeGridGMV
   PUBLIC :: hadapt_checkConsistency
@@ -2670,7 +2670,7 @@ CONTAINS
 
 !<subroutine>
   
-  SUBROUTINE hadapt_info(rhadapt)
+  SUBROUTINE hadapt_infoStatistics(rhadapt)
 
 !<description>
     ! This subroutine outputs statistical info about the adaptivity data structure
@@ -2685,58 +2685,65 @@ CONTAINS
     ! local variables
     INTEGER :: ibct
     
-    WRITE(*,FMT='(2X,72("+"))')
-    WRITE(*,FMT='(2X,A)') 'Grid adaptivity:'
-    WRITE(*,FMT='(2X,72("-"))')
-    WRITE(*,FMT='(2X,A,T52,I15)') 'Total number of grid refinement steps:', rhadapt%nRefinementSteps
-    WRITE(*,FMT='(2X,A,T52,I15)') 'Total number of grid coarsening steps:', rhadapt%nCoarseningSteps
-    WRITE(*,FMT='(2X,A,T52,I15)') 'Total number of grid smoothing steps:',  rhadapt%nSmoothingSteps
-    WRITE(*,*)
-    WRITE(*,FMT='(2X,A,T52,I3)')  'Strategy for grid refinement:', rhadapt%irefinementStrategy
-    WRITE(*,FMT='(2X,A,T52,I3)')  'Strategy for grid coarsening:', rhadapt%icoarseningStrategy
-    WRITE(*,*)
-    WRITE(*,FMT='(2X,A,T40,I8,1X,A,1X,I8)') 'Number of elements:',          rhadapt%NEL,'initially',rhadapt%NEL0
-    WRITE(*,FMT='(2X,A,T40,I8,1X,A,1X,I8)') 'Number of vertices:',          rhadapt%NVT,'initially',rhadapt%NVT0
-    WRITE(*,FMT='(2X,A,T40,I8,1X,A,1X,I8)') 'Number of boundary vertices:', rhadapt%NVBD,'initially',rhadapt%NVBD0
-    WRITE(*,*)
-    
-    WRITE(*,FMT='(2X,A)') 'Handles:'
-    WRITE(*,FMT='(2X,72("-"))')
-    WRITE(*,FMT='(2X,A,T52,I15)') 'h_Imarker',                rhadapt%h_Imarker
-    WRITE(*,FMT='(2X,A,T52,I15)') 'h_IvertexAge',             rhadapt%h_IvertexAge
-    WRITE(*,FMT='(2X,A,T52,I15)') 'h_InodalProperty',         rhadapt%h_InodalProperty
-    WRITE(*,FMT='(2X,A,T52,I15)') 'h_IverticesAtElement',     rhadapt%h_IverticesAtElement
-    WRITE(*,FMT='(2X,A,T52,I15)') 'h_IneighboursAtElement',   rhadapt%h_IneighboursAtElement
-    WRITE(*,FMT='(2X,A,T52,I15)') 'h_ImidneighboursAtElement',rhadapt%h_ImidneighboursAtElement
-    WRITE(*,*)
+    CALL output_line('Adaptivity statistics:')
+    CALL output_line('----------------------')
+    CALL output_line('Total number of grid refinement steps:       '//&
+        TRIM(sys_siL(rhadapt%nRefinementSteps,3)))
+    CALL output_line('Total number of grid coarsening steps:       '//&
+        TRIM(sys_siL(rhadapt%nCoarseningSteps,3)))
+    CALL output_line('Total number of grid smoothing  steps:       '//&
+        TRIM(sys_siL(rhadapt%nSmoothingSteps,3)))
+    CALL output_line('Strategy for grid refinement:                '//&
+        TRIM(sys_siL(rhadapt%irefinementStrategy,3)))
+    CALL output_line('Strategy for grid coarsening:                '//&
+        TRIM(sys_siL(rhadapt%icoarseningStrategy,3)))
+    CALL output_line('Total/initial number of elements:            '//&
+        TRIM(sys_siL(rhadapt%NEL,15))//"("//TRIM(sys_siL(rhadapt%NEL0,15))//")")
+    CALL output_line('Total/initial number of vertices:            '//&
+        TRIM(sys_siL(rhadapt%NVT,15))//"("//TRIM(sys_siL(rhadapt%NVT0,15))//")")
+    CALL output_line('Total/initial number of vertices at boundary:'//&
+        TRIM(sys_siL(rhadapt%NVBD,15))//"("//TRIM(sys_siL(rhadapt%NVBD0,15))//")")
+    CALL output_lbrk
 
-    WRITE(*,FMT='(2X,A)') 'Coordinates:'
-    WRITE(*,FMT='(2X,72("-"))')
+    CALL output_line('Handles:')
+    CALL output_line('--------')
+    CALL output_line('h_Imarker:                '//&
+        TRIM(sys_siL(rhadapt%h_Imarker,15)))
+    CALL output_line('h_IvertexAge:             '//&
+        TRIM(sys_siL(rhadapt%h_IvertexAge,15)))
+    CALL output_line('h_InodalProperty:         '//&
+        TRIM(sys_siL(rhadapt%h_InodalProperty,15)))
+    CALL output_line('h_IverticesAtElement:     '//&
+        TRIM(sys_siL(rhadapt%h_IverticesAtElement,15)))
+    CALL output_line('h_IneighboursAtelement:   '//&
+        TRIM(sys_siL(rhadapt%h_IneighboursAtElement,15)))
+    CALL output_line('h_ImidneighboursAtelement:'//&
+        TRIM(sys_siL(rhadapt%h_ImidneighboursAtElement,15)))
+    CALL output_lbrk
+
+    CALL output_line('Coordinates:')
+    CALL output_line('------------')
     SELECT CASE(rhadapt%ndim)
     CASE(NDIM2D)
       CALL qtree_infoQuadtree(rhadapt%rVertexCoordinates2D)
-      WRITE(*,*)
     CASE(NDIM3D)
       CALL otree_infoOctree(rhadapt%rVertexCoordinates3D)
-      WRITE(*,*)
     END SELECT
-
-    WRITE(*,FMT='(2X,A)') 'Boundary:'
-    WRITE(*,FMT='(2X,72("-"))')
+    CALL output_lbrk
+    
+    CALL output_line('Boundary:')
+    CALL output_line('---------')
     DO ibct=1,rhadapt%NBCT
-      WRITE(*,FMT='(2X,A,I2,A)') 'Boundary component',ibct,':'
-      WRITE(*,FMT='(2X,72("-"))')
+      CALL output_line('Boundary component '//TRIM(sys_siL(ibct,3))//":")
+      CALL output_line('------------------------')
       CALL btree_infoTree(rhadapt%rBoundary(ibct))
     END DO
-    WRITE(*,*)
+    CALL output_lbrk
 
-    WRITE(*,FMT='(2X,A)') 'Element-at-Vertex:'
-    WRITE(*,FMT='(2X,72("-"))')
+    CALL output_line('Element at vertex structure:')
+    CALL output_line('----------------------------')
     CALL arrlst_infoArraylist(rhadapt%relementsAtVertex)
-    
-    WRITE(*,FMT='(2X,72("+"))')
-    WRITE(*,*)
-  END SUBROUTINE hadapt_info
+  END SUBROUTINE hadapt_infoStatistics
 
   ! ***************************************************************************
 
