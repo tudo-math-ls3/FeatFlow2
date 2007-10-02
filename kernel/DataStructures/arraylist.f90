@@ -3098,14 +3098,17 @@ CONTAINS
     CALL output_line('h_Data:   '//TRIM(sys_siL(rarraylist%h_Data,15)))
     CALL output_lbrk()
     CALL output_line('Current data  memory usage: '//&
-        TRIM(sys_sdL(100*rarraylist%NA/REAL(rarraylist%NNA,DP),2))//'%')
+        TRIM(sys_sdL(100*rarraylist%NA/&
+        REAL(MAX(1,rarraylist%NNA),DP),2))//'%')
     CALL output_line('Current table memory usage: '//&
-        TRIM(sys_sdL(100*rarraylist%NTABLE/REAL(rarraylist%NNTABLE,DP),2))//'%')
-
-    CALL output_line('Total   data  memory usage: '//&
-        TRIM(sys_sdL(100*rarraylist%NNA/REAL(rarraylist%NNA0,DP),2))//'%')
-    CALL output_line('Total   table memory usage: '//&
-        TRIM(sys_sdL(100*rarraylist%NNTABLE/REAL(rarraylist%NNTABLE0,DP),2))//'%')
+        TRIM(sys_sdL(100*rarraylist%NTABLE/&
+        REAL(MAX(1,rarraylist%NNTABLE),DP),2))//'%')
+    CALL output_line('Total data memory usage:    '//&
+        TRIM(sys_sdL(100*rarraylist%NNA/&
+        REAL(MAX(1,rarraylist%NNA0),DP),2))//'%')
+    CALL output_line('Total table memory usage:   '//&
+        TRIM(sys_sdL(100*rarraylist%NNTABLE/&
+        REAL(MAX(1,rarraylist%NNTABLE0),DP),2))//'%')
     CALL output_lbrk()
   END SUBROUTINE arrlst_infoArrayList
 
