@@ -10719,7 +10719,7 @@ CONTAINS
     REAL(SP), DIMENSION(:), POINTER :: p_Fa1,p_Fa2
   
     IF (rsourceMatrix%h_Da .EQ. ST_NOHANDLE) THEN
-      PRINT *,'lsyssc_auxcopy_DA: Source matrux undefined!'
+      PRINT *,'lsyssc_auxcopy_DA: Source matrix undefined!'
       CALL sys_halt()
     END IF
 
@@ -11484,7 +11484,7 @@ CONTAINS
   REAL(DP), DIMENSION(:), POINTER :: p_Ddata
   REAL(SP), DIMENSION(:), POINTER :: p_Fdata
   
-  ! Taje care of the data type!
+  ! Take care of the data type!
   SELECT CASE (rmatrix%cdataType)
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
