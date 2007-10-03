@@ -26,10 +26,6 @@ MODULE heatcond_basic
     
   IMPLICIT NONE
   
-  ! Maximum allowed level in this application; must be =9 for 
-  ! FEAT 1.x compatibility (still)!
-  INTEGER, PARAMETER :: NNLEV = 9
-
 !<types>
 
 !<typeblock description="Type block defining all information about one level">
@@ -119,7 +115,7 @@ MODULE heatcond_basic
     ! An array of t_problem_lvl structures, each corresponding
     ! to one level of the discretisation. There is currently
     ! only one level supported, identified by NLMAX!
-    TYPE(t_problem_lvl), DIMENSION(NNLEV) :: RlevelInfo
+    TYPE(t_problem_lvl), DIMENSION(:), POINTER :: RlevelInfo
     
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 

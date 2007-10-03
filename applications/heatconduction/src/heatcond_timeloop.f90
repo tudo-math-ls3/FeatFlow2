@@ -162,7 +162,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(1:rproblem%ilvmax) :: Rmatrices
     
     ! An interlevel projection structure for changing levels
     TYPE(t_interlevelProjectionBlock) :: rprojection
@@ -352,7 +352,7 @@ CONTAINS
     ! start the postprocessing. 
     ! Start UCD export to GMV file:
     CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-                       'gmv/u.gmv.'//TRIM(sys_si0L(iiteration,5)))
+                       'gmv/u5.gmv.'//TRIM(sys_si0L(iiteration,5)))
     CALL ucd_setSimulationTime (rexport,dtime)
     
     CALL lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)

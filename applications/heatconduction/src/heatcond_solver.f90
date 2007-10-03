@@ -81,7 +81,7 @@ CONTAINS
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    TYPE(t_matrixBlock), DIMENSION(NNLEV) :: Rmatrices
+    TYPE(t_matrixBlock), DIMENSION(1:rproblem%ilvmax) :: Rmatrices
     
     ! One level of multigrid
     TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfo

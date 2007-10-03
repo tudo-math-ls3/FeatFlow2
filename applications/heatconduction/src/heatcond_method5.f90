@@ -86,8 +86,6 @@ CONTAINS
 
   SUBROUTINE heatcond5
   
-  include 'cmem.inc'
-  
 !<description>
   ! This is a 'separated' heatcond solver for solving a nonstationary heat 
   ! conduction problem. The different tasks of the problem are separated into
@@ -139,6 +137,9 @@ CONTAINS
       CALL collct_addlevel_all (rproblem%rcollection)
     END DO
     
+    ! Allocate memory for the level information
+    ALLOCATE (rproblem%RlevelInfo(rproblem%ilvmax))
+    
     ! So now the different steps - one after the other.
     !
     ! Initialisation
@@ -177,6 +178,9 @@ CONTAINS
     CALL hc5_doneBC (rproblem)
     CALL hc5_doneDiscretisation (rproblem)
     CALL hc5_doneParamTriang (rproblem)
+    
+    ! Release memory for level information
+    DEALLOCATE (rproblem%RlevelInfo)
     
     ! Release parameter list
     CALL collct_deletevalue (rproblem%rcollection,'PARAMS')

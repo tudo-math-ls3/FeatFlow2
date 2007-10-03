@@ -7,7 +7,6 @@ Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winheatcond", "winheatcond.
 		{87F5F117-504A-49A3-ABE6-882A88E6B8E9} = {87F5F117-504A-49A3-ABE6-882A88E6B8E9}
 		{DBF26343-133F-449F-966D-436DD8DDED89} = {DBF26343-133F-449F-966D-436DD8DDED89}
 		{1F07EB5A-7D4B-4F54-8BD5-91AE15CF69DD} = {1F07EB5A-7D4B-4F54-8BD5-91AE15CF69DD}
-		{78B8155B-62D2-4EEB-8E84-E764E8097EFA} = {78B8155B-62D2-4EEB-8E84-E764E8097EFA}
 		{AB0D75C1-CDF4-4674-A977-D6280BE59A57} = {AB0D75C1-CDF4-4674-A977-D6280BE59A57}
 	EndProjectSection
 EndProject
@@ -20,10 +19,6 @@ Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winblas", "..\..\..\librari
 	EndProjectSection
 EndProject
 Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winlapack", "..\..\..\libraries\lapack\winlapack\winlapack.vfproj", "{1F07EB5A-7D4B-4F54-8BD5-91AE15CF69DD}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winlibfeat2d", "..\..\..\libraries\feat2d\winlibfeat2d\winlibfeat2d.vfproj", "{78B8155B-62D2-4EEB-8E84-E764E8097EFA}"
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
@@ -48,6 +43,8 @@ Global
 		Debug = Debug
 		Release = Release
 	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Debug.ActiveCfg = Debug|Win32
 		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Debug.Build.0 = Debug|Win32
@@ -65,10 +62,6 @@ Global
 		{1F07EB5A-7D4B-4F54-8BD5-91AE15CF69DD}.Debug.Build.0 = Debug|Win32
 		{1F07EB5A-7D4B-4F54-8BD5-91AE15CF69DD}.Release.ActiveCfg = Release|Win32
 		{1F07EB5A-7D4B-4F54-8BD5-91AE15CF69DD}.Release.Build.0 = Release|Win32
-		{78B8155B-62D2-4EEB-8E84-E764E8097EFA}.Debug.ActiveCfg = Debug|Win32
-		{78B8155B-62D2-4EEB-8E84-E764E8097EFA}.Debug.Build.0 = Debug|Win32
-		{78B8155B-62D2-4EEB-8E84-E764E8097EFA}.Release.ActiveCfg = Release|Win32
-		{78B8155B-62D2-4EEB-8E84-E764E8097EFA}.Release.Build.0 = Release|Win32
 		{87F5F117-504A-49A3-ABE6-882A88E6B8E9}.Debug.ActiveCfg = Debug|Win32
 		{87F5F117-504A-49A3-ABE6-882A88E6B8E9}.Debug.Build.0 = Debug|Win32
 		{87F5F117-504A-49A3-ABE6-882A88E6B8E9}.Release.ActiveCfg = Release|Win32

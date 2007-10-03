@@ -29,32 +29,12 @@
 		<File RelativePath="..\src\heatcond_boundarycondition.f90"/>
 		<File RelativePath="..\src\heatcond_callback.f90"/>
 		<File RelativePath="..\src\heatcond_matvec.f90"/>
+		<File RelativePath="..\src\heatcond_method1.f90"/>
 		<File RelativePath="..\src\heatcond_method5.f90"/>
 		<File RelativePath="..\src\heatcond_partridiscr.f90"/>
 		<File RelativePath="..\src\heatcond_solver.f90"/>
 		<File RelativePath="..\src\heatcond_timeloop.f90"/></Filter></Filter>
-		<Filter Name="Header Files" Filter="fi;fd">
-		<File RelativePath="..\include\arnbmat.inc"/>
-		<File RelativePath="..\include\arnmassmat.inc"/>
-		<File RelativePath="..\include\arnstokes.inc"/>
-		<File RelativePath="..\include\cbasicelem.inc"/>
-		<File RelativePath="..\include\cbasicmg.inc"/>
-		<File RelativePath="..\include\cbasictria.inc"/>
-		<File RelativePath="..\include\ccub.inc"/>
-		<File RelativePath="..\include\cdiscretization.inc"/>
-		<File RelativePath="..\include\celem.inc"/>
-		<File RelativePath="..\include\cerr.inc"/>
-		<File RelativePath="..\include\cfileout.inc"/>
-		<File RelativePath="..\include\clinsol_cc2d.inc"/>
-		<File RelativePath="..\include\cmem.inc"/>
-		<File RelativePath="..\include\cmem2.inc"/>
-		<File RelativePath="..\include\cnonlinsol_cc2d.inc"/>
-		<File RelativePath="..\include\cout.inc"/>
-		<File RelativePath="..\include\cparametrization.inc"/>
-		<File RelativePath="..\include\cparqdata.inc"/>
-		<File RelativePath="..\include\cpostproc.inc"/>
-		<File RelativePath="..\include\ctimediscr.inc"/>
-		<File RelativePath="..\include\ctria.inc"/></Filter>
+		<Filter Name="Header Files" Filter="fi;fd"/>
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		<File RelativePath="..\data\heatcond.dat"/></Filter></Files>
 	<Globals/></VisualStudioProject>

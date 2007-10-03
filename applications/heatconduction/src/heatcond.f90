@@ -10,7 +10,12 @@
 !#
 !# on a 2D domain for a scalar function u=u(x,t).
 !#
-!# The main example (module heatcond_method5) separates the different stages
+!# The first example (module heatcond_method5) is a very simple one-routine
+!# solver for the head condition equation without any specials. The equation
+!# is discretised with explicit Euler for a fixed number of time steps.
+!# Boundary conditions and RHS are constant in time.
+!#
+!# The second example (module heatcond_method5) separates the different steps
 !# of the solution process into different subroutines.
 !# The communication is done using a problem-related structure. For the
 !# communication with callback routines during the assembly, a
@@ -25,23 +30,10 @@
 
 PROGRAM heatcond
 
+  USE heatcond_method1
   USE heatcond_method5
   
   IMPLICIT NONE
-  
-  INCLUDE 'cmem.inc'
-  INCLUDE 'cout.inc'
-  INCLUDE 'cerr.inc'
-  INCLUDE 'cfileout.inc'
-
-  ! As we still use some FEAT 1.x routines, we have to initialise some
-  ! output variables.
-
-  M = 0
-  MT = 2
-  MTERM = 6
-  MFILE = 0
-  ICHECK = 0
 
   ! The very first thing in every application: 
   ! Initialise system-wide settings:
@@ -54,16 +46,18 @@ PROGRAM heatcond
   ! 2.) Initialise FEAT 2.0 storage management:
   CALL storage_init(999, 100)
 
-  ! 3.) Initialise old FEAT 1.x storage management for compatibility.
-  CALL ZINIT(NNWORK,'feat.msg','log/feat1.err','log/feat1.prt',&
-             'log/feat1.sys','log/feat1.trc') 
+  ! Call the problem to solve - method 5 = multigrid
+  CALL output_lbrk()
+  CALL output_line('Calculating heatcond-Problem with method 1')
+  CALL output_line('------------------------------------------')
+  CALL heatcond1
   
   ! Call the problem to solve - method 5 = multigrid
   CALL output_lbrk()
   CALL output_line('Calculating heatcond-Problem with method 5')
   CALL output_line('------------------------------------------')
   CALL heatcond5
-  
+
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
