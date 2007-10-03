@@ -521,6 +521,7 @@ CONTAINS
     CALL lsysbl_releaseVector (rtimeRhsBlock)
     CALL lsysbl_releaseVector (rrhsBlock)
     CALL lsysbl_releaseMatrix (rmatrixBlock)
+    CALL lsysbl_releaseMatrix (rmatrixMassBlock)
 
     ! Release the matrices -- after releasing the block matrices!
     ! These must exist as long as the block matrices exist, as the block 
