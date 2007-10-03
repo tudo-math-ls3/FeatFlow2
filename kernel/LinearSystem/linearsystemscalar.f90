@@ -14638,7 +14638,7 @@ CONTAINS
                   CALL lalg_copyVectorDble (DaB,DaC)
                 END IF
                 
-                CALL lalg_vectorLinearCombDble (DaA,DaB,cA,cB)                
+                CALL lalg_vectorLinearCombDble (DaA,DaC,cA,cB)                
                 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 
@@ -14717,7 +14717,7 @@ CONTAINS
                   CALL lalg_copyVectorSngl (FaB,FaC)
                 END IF
                 
-                CALL lalg_vectorLinearCombSngl (FaA,FaB,REAL(cA,SP),REAL(cB,SP))                
+                CALL lalg_vectorLinearCombSngl (FaA,FaC,REAL(cA,SP),REAL(cB,SP))                
 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) THEN
                 
@@ -15045,7 +15045,7 @@ CONTAINS
                   CALL lalg_copyVectorDble (DaB,DaC)
                 END IF
                 
-                CALL lalg_vectorLinearCombDble (DaA,DaB,cA,cB)                
+                CALL lalg_vectorLinearCombDble (DaA,DaC,cA,cB)                
                 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
                 
@@ -15124,7 +15124,7 @@ CONTAINS
                   CALL lalg_copyVectorSngl (FaB,FaC)
                 END IF
                 
-                CALL lalg_vectorLinearCombSngl (FaA,FaB,REAL(cA,SP),REAL(cB,SP))                
+                CALL lalg_vectorLinearCombSngl (FaA,FaC,REAL(cA,SP),REAL(cB,SP))                
                 
               ELSE IF (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) THEN
                 
