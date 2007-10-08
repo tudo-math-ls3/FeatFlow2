@@ -70,46 +70,46 @@ PROGRAM poisson
   CALL storage_init(999, 100)
 
   ! Call the problem to solve. Poisson 1:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Laplace-Problem with method 1')
-!  CALL output_line ('-----------------------------------------')
-!  CALL poisson1
-!  
-!  ! Call the problem to solve. Poisson 2:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Laplace-Problem with method 2')
-!  CALL output_line ('-----------------------------------------')
-!  CALL poisson2
-!  
-!  ! Call the problem to solve. Poisson 3:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Laplace-Problem with method 3')
-!  CALL output_line ('-----------------------------------------')
-!  CALL poisson3
-!  
-!  ! Call the problem to solve. Poisson 4:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Laplace-Problem with method 4')
-!  CALL output_line ('-----------------------------------------')
-!  CALL poisson4
-!  
-!  ! Call the problem to solve. Poisson 5:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Laplace-Problem with method 5')
-!  CALL output_line ('-----------------------------------------')
-!  CALL poisson5
-!
-!  ! Call the problem to solve. Poisson 6:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Laplace-Problem with method 6')
-!  CALL output_line ('-----------------------------------------')
-!  CALL poisson6
-!
-!  ! Call the problem to solve. Poisson 7:
-!  CALL output_lbrk ()
-!  CALL output_line ('Calculating Laplace-Problem with method 7')
-!  CALL output_line ('-----------------------------------------')
-!  CALL poisson7
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 1')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson1
+  
+  ! Call the problem to solve. Poisson 2:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 2')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson2
+  
+  ! Call the problem to solve. Poisson 3:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 3')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson3
+  
+  ! Call the problem to solve. Poisson 4:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 4')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson4
+  
+  ! Call the problem to solve. Poisson 5:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 5')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson5
+
+  ! Call the problem to solve. Poisson 6:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 6')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson6
+
+  ! Call the problem to solve. Poisson 7:
+  CALL output_lbrk ()
+  CALL output_line ('Calculating Laplace-Problem with method 7')
+  CALL output_line ('-----------------------------------------')
+  CALL poisson7
 
   ! Call the problem to solve. Poisson 8:
   CALL output_lbrk ()
