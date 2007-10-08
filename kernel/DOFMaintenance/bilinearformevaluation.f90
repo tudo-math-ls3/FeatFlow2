@@ -17,6 +17,11 @@
 !#        with bilf_createMatrixStructure before.
 !#
 !# </purpose>
+!#
+!# NOTE:
+!#   In Windows if OpenMP is activated, this source file must not be processed
+!#   with checking for uninitialised variables enabled! The Intel Fortran
+!#   compiler usually gets messed up with that!
 !##############################################################################
 
 MODULE bilinearformevaluation
@@ -156,13 +161,15 @@ CONTAINS
         IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
           CALL bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imem)
         ELSE
-          PRINT *,'bilf_createMatrixStructure: Edge-based matrix constrution only for'//&
-                  ' uniform discr., supported.'
+          CALL output_line ('Edge-based matrix constrution only for'//&
+                  ' uniform discr., supported.', &
+                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
           CALL sys_halt()
         END IF
         
       CASE DEFAULT
-        PRINT *,'Invalid matrix construction method.'
+        CALL output_line ('Invalid matrix construction method.', &
+                OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
         CALL sys_halt()
       END SELECT
       
@@ -180,13 +187,15 @@ CONTAINS
         IF (rdiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
           CALL bilf_createMatStructure9eb_uni (rdiscretisation,rmatrixScalar,imem)
         ELSE
-          PRINT *,'bilf_createMatrixStructure: Edge-based matrix constrution only for'//&
-                  ' uniform discr., supported.'
+          CALL output_line ('Edge-based matrix constrution only for'//&
+                  ' uniform discr., supported.', &
+                  OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
           CALL sys_halt()
         END IF
         
       CASE DEFAULT
-        PRINT *,'bilf_createMatrixStructure: Invalid matrix construction method.'
+        CALL output_line ('Invalid matrix construction method.', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
         CALL sys_halt()
       END SELECT
         
@@ -194,13 +203,14 @@ CONTAINS
       CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
       
     CASE DEFAULT
-      PRINT *,'bilf_createMatrixStructure: Not supported matrix structure!'
+      CALL output_line ('Not supported matrix structure!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
       CALL sys_halt()
     END SELECT
   
   ELSE
-    PRINT *,'bilf_createMatrixStructure: General discretisation &
-            & not implemented!'
+    CALL output_line ('General discretisation not implemented!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure')
     CALL sys_halt()
   END IF
 
@@ -270,12 +280,14 @@ CONTAINS
   ! of a vector, since there's a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   IF (rmatrixScalar%isortStrategy .GT. 0) THEN
-    PRINT *,'bilf_buildMatrixScalar: Matrix-structure must be unsorted!'
+    CALL output_line ('Matrix-structure must be unsorted!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     CALL sys_halt()
   END IF
 
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
-    PRINT *,'bilf_buildMatrixScalar: No discretisation associated!'
+    CALL output_line ('No discretisation associated!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     CALL sys_halt()
   END IF
 
@@ -306,11 +318,13 @@ CONTAINS
         CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
                                        
       CASE DEFAULT
-        PRINT *,'bilf_buildMatrixScalar: Not supported matrix structure!'
+        CALL output_line ('Not supported matrix structure!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
         CALL sys_halt()
       END SELECT
     CASE DEFAULT
-      PRINT *,'bilf_buildMatrixScalar: Single precision matrices currently not supported!'
+      CALL output_line ('Single precision matrices currently not supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
       CALL sys_halt()
     END SELECT
     
@@ -341,15 +355,18 @@ CONTAINS
         CALL lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
       CASE DEFAULT
-        PRINT *,'bilf_buildMatrixScalar: Not supported matrix structure!'
+        CALL output_line ('Not supported matrix structure!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
         CALL sys_halt()
       END SELECT
     CASE DEFAULT
-      PRINT *,'bilf_buildMatrixScalar: Single precision matrices currently not supported!'
+      CALL output_line ('Single precision matrices currently not supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
       CALL sys_halt()
     END SELECT
   CASE DEFAULT
-    PRINT *,'bilf_buildMatrixScalar: General discretisation not implemented!'
+    CALL output_line ('General discretisation not implemented!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     CALL sys_halt()
   END SELECT
 
@@ -481,7 +498,8 @@ CONTAINS
   NEQ = rmatrixScalar%NEQ
   
   IF (NEQ .EQ. 0) THEN
-    PRINT *,'bilf_createMatrixStructure9_uni: Empty matrix!'
+    CALL output_line ('Empty matrix!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatrixStructure9_uni')
     CALL sys_halt()
   END IF
   
@@ -612,7 +630,8 @@ CONTAINS
     ! Get the number of corner vertices of the element
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
-      PRINT *,'bilf_createMatStructure9_conf: element spaces incompatible!'
+      CALL output_line ('Element spaces incompatible!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
       CALL sys_halt()
     END IF
     
@@ -1203,12 +1222,13 @@ CONTAINS
   NEQ = rmatrixScalar%NEQ
   
   IF (NEQ .EQ. 0) THEN
-    PRINT *,'bilf_createMatrixStructure9_uni: Empty matrix!'
+    CALL output_line ('Empty matrix!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
     CALL sys_halt()
   END IF
   
   ! Allocate KLD...
-  CALL storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
+  CALL storage_new1D ('bilf_createMatStructure9_uni', 'KLD', &
                       NEQ+1_I32, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1326,7 +1346,8 @@ CONTAINS
   ! Get the number of corner vertices of the element
   NVE = elem_igetNVE(p_elementDistribution%itrialElement)
   IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
-    PRINT *,'bilf_createMatStructure9_conf: element spaces incompatible!'
+    CALL output_line ('Element spaces incompatible!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_createMatStructure9_conf')
     CALL sys_halt()
   END IF
   
@@ -1997,7 +2018,8 @@ CONTAINS
   !CHARACTER(LEN=20) :: CFILE
   
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
-    PRINT *,'bilf_buildMatrix9d_conf: No discretisation associated!'
+    CALL output_line ('No discretisation associated!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
     CALL sys_halt()
   END IF
 
@@ -2021,7 +2043,8 @@ CONTAINS
     I1=rform%Idescriptors(1,I)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
+      CALL output_line ('Invalid descriptor!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
       CALL sys_halt()
     ENDIF
     
@@ -2031,7 +2054,8 @@ CONTAINS
     I1=rform%Idescriptors(2,I)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
+      CALL output_line ('Invalid descriptor!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
       CALL sys_halt()
     ENDIF
     
@@ -2112,7 +2136,8 @@ CONTAINS
     ! Get the number of corner vertices of the element
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
-      PRINT *,'bilf_buildMatrix9d_conf: element spaces incompatible!'
+      CALL output_line ('Element spaces incompatible!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
       CALL sys_halt()
     END IF
     
@@ -2188,12 +2213,14 @@ CONTAINS
     ! need an additional array to save all the coefficients:
     IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
       IF (rform%ballCoeffConstant) THEN
-        PRINT *,'Error in bilf_buildMatrix9d_conf: Some oefficients are not constant &
-                &although thy should be!'
+        CALL output_line ('Some oefficients are not constant &
+            &although thy should be!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
         CALL sys_halt()
       END IF
       IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-        PRINT *,'Error in bilf_buildMatrix9d_conf: coefficient function not given!'
+        CALL output_line ('Coefficient function not given!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
         CALL sys_halt()
       END IF
       ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
@@ -2811,20 +2838,15 @@ CONTAINS
   ! The discretisation - for easier access
   TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
   
-  !REAL(DP), DIMENSION(11) :: DT
-  
-  !CHARACTER(LEN=20) :: CFILE
-  
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
-    PRINT *,'bilf_buildMatrix9d_conf2: No discretisation associated!'
+    CALL output_line ('No discretisation associated!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
     CALL sys_halt()
   END IF
 
   ! Which derivatives of basis functions are needed?
   ! Check the descriptors of the bilinear form and set BDERxxxx
   ! according to these.
-
-  !CALL ZTIME(DT(1))
 
   BderTrialTempl = .FALSE.
   BderTestTempl = .FALSE.
@@ -2840,7 +2862,8 @@ CONTAINS
     I1=rform%Idescriptors(1,I)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
+      CALL output_line ('Invalid descriptor!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
       CALL sys_halt()
     ENDIF
     
@@ -2850,7 +2873,8 @@ CONTAINS
     I1=rform%Idescriptors(2,I)
     
     IF ((I1 .LE.0) .OR. (I1 .GT. DER_MAXNDER)) THEN
-      PRINT *,'bilf_buildMatrix9d_conf: Invalid descriptor'
+      CALL output_line ('Invalid descriptor!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
       CALL sys_halt()
     ENDIF
     
@@ -2897,7 +2921,8 @@ CONTAINS
   p_rdiscretisation => rmatrixScalar%p_rspatialDiscretisation
   
   IF (.NOT. ASSOCIATED(p_rdiscretisation)) THEN
-    PRINT *,'bilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
+    CALL output_line ('No discretisation attached to the matrix!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
     CALL sys_halt()
   END IF
   
@@ -2926,7 +2951,6 @@ CONTAINS
 
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
-  !CALL ZTIME(DT(2))
 
   DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
   
@@ -2944,13 +2968,26 @@ CONTAINS
     ! form the reference to the real element.
     NVE = elem_igetNVE(p_elementDistribution%itrialElement)
     IF (NVE .NE. elem_igetNVE(p_elementDistribution%itestElement)) THEN
-      PRINT *,'bilf_buildMatrix9d_conf2: element spaces incompatible!'
+      CALL output_line ('Element spaces incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
       CALL sys_halt()
     END IF
     
     ! Initialise the cubature formula,
     ! Get cubature weights and point coordinates on the reference element
     CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
+    
+    ! Open-MP-Extension: Open threads here.
+    ! "j" is declared as private; shared gave errors with the Intel compiler
+    ! in Windows!?!
+    ! Each thread will allocate its own local memory...
+    !
+    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
+    !$OMP   p_Djac,p_Ddetj,p_Dcoords, kentry, dentry,DbasTest,DbasTrial, &
+    !$OMP   IdofsTest,IdofsTrial,bnonparTrial,bnonparTest,p_DcubPtsTrial,&
+    !$OMP   p_DcubPtsTest,Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
+    !$OMP   p_DbasTrial, BderTrial, BderTest, j, ielmax,IEL, idofe,jdofe,jcol0, &
+    !$OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
     
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
@@ -2983,15 +3020,17 @@ CONTAINS
       IB = rform%Idescriptors(2,IALBET)      
       IF ((IA.LT.0) .OR. &
           (IA .GT. elem_getMaxDerivative(p_elementDistribution%itrialElement))) THEN
-        PRINT *,'bilf_buildMatrix9d_conf2: Specified trial-derivative',IA,&
-                ' not available'
+        CALL output_line ('Specified trial-derivative '//TRIM(sys_siL(IA,10))//&
+            ' not available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
         CALL sys_halt()
       END IF
 
       IF ((IB.LT.0) .OR. &
           (IB .GT. elem_getMaxDerivative(p_elementDistribution%itestElement))) THEN
-        PRINT *,'bilf_buildMatrix9d_conf2: Specified test-derivative',IB,&
-                ' not available'
+        CALL output_line ('Specified test-derivative '//TRIM(sys_siL(IA,10))//&
+            ' not available!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
         CALL sys_halt()
       END IF
     END DO
@@ -3045,12 +3084,14 @@ CONTAINS
     ! need an additional array to save all the coefficients:
     IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
       IF (rform%ballCoeffConstant) THEN
-        PRINT *,'Error in bilf_buildMatrix9d_conf: Some oefficients are not constant &
-                &although thy should be!'
+        CALL output_line ('Some oefficients are not constant &
+                &although thy should be!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
         CALL sys_halt()
       END IF
       IF (.NOT. PRESENT(fcoeff_buildMatrixSc_sim)) THEN
-        PRINT *,'Error in bilf_buildMatrix9d_conf: coefficient function not given!'
+        CALL output_line ('Coefficient function not given!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
         CALL sys_halt()
       END IF
       ALLOCATE(Dcoefficients(rform%itermCount,ncubp,nelementsPerBlock))
@@ -3086,13 +3127,20 @@ CONTAINS
       BderTrial = BderTrialTempl
       BderTest = BderTestTempl
     END IF
-    !CALL ZTIME(DT(3))
+    
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
     CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
                               p_IelementList)
                               
     ! Loop over the elements - blockwise.
+    !
+    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
+    ! inner loop(s).
+    ! The blocks have all the same size, so we can use static scheduling.
+    !
+    !$OMP do schedule(static,1)
     DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -3136,7 +3184,6 @@ CONTAINS
         CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                     .FALSE.,IdofsTrial)
       END IF
-      !CALL ZTIME(DT(4))
       
       ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
       
@@ -3221,7 +3268,6 @@ CONTAINS
         END DO ! JDOFE
         
       END DO ! IEL
-      !CALL ZTIME(DT(5))
       
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
@@ -3231,6 +3277,7 @@ CONTAINS
       ! the elements to give us the values of the basis functions
       ! in all the DOF's in all the elements in our set.
       !
+
       ! We have the coordinates of the cubature points saved in the
       ! coordinate array from above. Unfortunately for nonparametric
       ! elements, we need the real coordinate.
@@ -3257,8 +3304,6 @@ CONTAINS
       CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement),&
           p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
 
-      !CALL ZTIME(DT(6))
-      
       ! Depending on the type of transformation, we must now choose
       ! the mapping between the reference and the real element.
       ! In case we use a nonparametric element or a nonconstant coefficient function,
@@ -3279,8 +3324,6 @@ CONTAINS
              
       END IF
       
-      !CALL ZTIME(DT(7))
-      
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
       IF (.NOT. rform%ballCoeffConstant) THEN
         rintSubset%ielementDistribution = icurrentElementDistr
@@ -3292,7 +3335,6 @@ CONTAINS
                   Dcoefficients)
       END IF
       
-      !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
@@ -3309,7 +3351,6 @@ CONTAINS
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
             BderTrial, DbasTrial, ncubp, IELmax-IELset+1, p_DcubPtsTrial)
       END IF
-      !CALL ZTIME(DT(9))
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
@@ -3405,12 +3446,21 @@ CONTAINS
           
           ! Incorporate the local matrices into the global one.
           ! Kentry gives the position of the additive contributions in Dentry.
+          !
+          ! OpenMP-Extension: This is a critical section. Only one thread is
+          ! allowed to write to the matrix, otherwise the matrix may get
+          ! messed up.
+          ! The critical section is put around both loops as indofTest/indofTrial
+          ! are usually small and quickly to handle.
+          !
+          !$OMP CRITICAL
           DO IDOFE=1,indofTest
             DO JDOFE=1,indofTrial
               p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + &
                                               Dentry(JDOFE,IDOFE)
             END DO
           END DO
+          !$OMP END CRITICAL
 
         END DO ! IEL
         
@@ -3486,7 +3536,8 @@ CONTAINS
 
                   !JCOLB = Kentry(JDOFE,IDOFE,IEL)
                   !p_DA(JCOLB) = p_DA(JCOLB) + DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
-                  Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
+                  Dentry(JDOFE,IDOFE) = &
+                      Dentry(JDOFE,IDOFE)+DB*p_DbasTrial(JDOFE,IA,ICUBP,IEL)*AUX
                 
                 END DO
               
@@ -3498,22 +3549,29 @@ CONTAINS
           
           ! Incorporate the local matrices into the global one.
           ! Kentry gives the position of the additive contributions in Dentry.
+          !
+          ! OpenMP-Extension: This is a critical section. Only one thread is
+          ! allowed to write to the matrix, otherwise the matrix may get
+          ! messed up.
+          ! The critical section is put around both loops as indofTest/indofTrial
+          ! are usually small and quickly to handle.
+          !
+          !$OMP CRITICAL
           DO IDOFE=1,indofTest
             DO JDOFE=1,indofTrial
-              p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
+              p_DA(Kentry(JDOFE,IDOFE,IEL)) = &
+                  p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
             END DO
           END DO
+          !$OMP END CRITICAL
 
         END DO ! IEL
 
       END IF ! rform%ballCoeffConstant
 
-      !CALL ZTIME(DT(10))
     END DO ! IELset
+    !$OMP END DO
     
-    ! Release memory
-    CALL domint_doneIntegration(rintSubset)
-
     IF (.NOT. rform%ballCoeffConstant) THEN
       DEALLOCATE(Dcoefficients)
     END IF
@@ -3524,19 +3582,15 @@ CONTAINS
     DEALLOCATE(Kentry)
     DEALLOCATE(Dentry)
 
+    ! Release memory
+    CALL domint_doneIntegration(rintSubset)
+
+    !$OMP END PARALLEL
+
   END DO ! icurrentElementDistr
 
   ! Finish
-  !CALL ZTIME(DT(11))
   
-  !DO i=2,11
-  !  PRINT *,'Time for assembly part ',i,': ',DT(i)-DT(i-1)
-  !END DO
-  
-  !CFILE = 'MATRIX2.TXT'
-  !CALL OWM17(p_DA,p_KCOL,p_KLD,&
-  !           NEQ,NEQ,.TRUE.,0,'MAT1  ',CFILE,'(D20.10)')
-
   END SUBROUTINE
   
 END MODULE
