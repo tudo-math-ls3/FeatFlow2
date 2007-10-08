@@ -2960,7 +2960,7 @@ CONTAINS
   !if function values are desired
   IF (Bder(DER_FUNC)) THEN
   
-    !$OMP PARALLEL DO PRIVATE(i)
+    !%OMP PARALLEL DO PRIVATE(i)
     DO j=1,nelements
     
       DO i=1,npoints
@@ -2969,14 +2969,14 @@ CONTAINS
       END DO
       
     END DO
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
     
   END IF
     
   !if x-derivatives are desired
   IF (Bder(DER_DERIV_X)) THEN
   
-    !$OMP PARALLEL DO PRIVATE(i)
+    !%OMP PARALLEL DO PRIVATE(i)
     DO j=1,nelements
     
       DO i=1,npoints
@@ -2985,7 +2985,7 @@ CONTAINS
       END DO
 
     END DO
-    !$OMP END PARALLEL DO
+    !%OMP END PARALLEL DO
       
   END IF
     
