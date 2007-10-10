@@ -508,6 +508,10 @@ CONTAINS
         ! Use trapezoidal rule
         ccubType = CUB_TRZ_T
 
+      CASE (EL_P2)
+        ! Gauss-3pt
+        ccubType = CUB_G3_T
+
       CASE (EL_Q0)
         ! 1x1 Gauss formula
         ccubType = CUB_G1X1
@@ -516,7 +520,19 @@ CONTAINS
         ! 2x2 Gauss formula
         ccubType = CUB_G2X2
 
+      CASE (EL_Q2)
+        ! 3x3 Gauss formula
+        ccubType = CUB_G3X3
+
+      CASE (EL_Q3)
+        ! 3x3 Gauss formula
+        ccubType = CUB_G3X3
+
       CASE (EL_Q1T)
+        ! 2x2 Gauss formula
+        ccubType = CUB_G2X2
+
+      CASE (EL_QP1)
         ! 2x2 Gauss formula
         ccubType = CUB_G2X2
       
