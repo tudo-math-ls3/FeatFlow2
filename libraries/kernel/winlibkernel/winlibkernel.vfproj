@@ -29,7 +29,7 @@
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration></Configurations>
+				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="Adaptivity">
@@ -57,7 +57,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bcassembly.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\bilinearformevaluation.f90">
 			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="true"/></FileConfiguration>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="false"/></FileConfiguration>
 			<FileConfiguration Name="Debug Parallel|Win32">
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="false"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretebc.f90"/>
@@ -131,6 +131,7 @@
 		<Filter Name="TimeDependence">
 		<File RelativePath="..\..\..\kernel\TimeDependence\timestepping.f90"/></Filter>
 		<Filter Name="Triangulation">
+		<File RelativePath="..\..\..\kernel\Triangulation\meshmodification.f90"/>
 		<File RelativePath="..\..\..\kernel\Triangulation\triangulation.f90"/>
 		<File RelativePath="..\..\..\kernel\Triangulation\triasearch.f90"/></Filter></Filter>
 		<Filter Name="Header Files" Filter="fi;fd">
