@@ -3704,7 +3704,7 @@ CONTAINS
     
     ! Do we have (enough) memory for that array?
     CALL storage_getsize (rtriangulation%h_InodalProperty, isize)
-    IF (isize .NE. rtriangulation%NVT+rtriangulation%NMT) THEN
+    IF (isize .LT. rtriangulation%NVT+rtriangulation%NMT) THEN
       ! If the size is wrong, reallocate memory.
       ! Copy the old content as we mustn't destroy the old nodal property
       ! tags of the vertices.
@@ -4628,8 +4628,21 @@ CONTAINS
           CALL tria_genEdgesAtElement2D      (rtriangulation)
         IF (rtriangulation%h_IverticesAtEdge .EQ. ST_NOHANDLE) &
           CALL tria_genVerticesAtEdge2D      (rtriangulation)
-        CALL storage_getsize (rtriangulation%h_InodalProperty,isize)
-        IF (isize .LE. rtriangulation%NVT) &
+        
+        ! Reallocate the nodal property array if necessary.
+        ! IMPORTANT NOTE:
+        !   Reallocation introduces a very serious trick!
+        !   The reallocated memory contains the old nodal property array
+        !   in the beginning and is filled with zero. Thus all
+        !   new entries (for the new edge/element midpoints) are by
+        !   default set to be inner nodes!
+        !   The successive call to tria_genEdgeNodalProperty2D will
+        !   generate the edge nodal property information for the
+        !   coarse mesh which then defines the vertex nodal property
+        !   for the fine mesh. The nodal property for the vertices
+        !   stemming from element midpoints are not touched, so they
+        !   stay at 0, identifying an inner vertex!
+        IF (reallocRefinedInodalProperty2D (rtriangulation)) &
           CALL tria_genEdgeNodalProperty2D   (rtriangulation)
 
         CALL tria_sortBoundaryVertices2D   (rtriangulation)
@@ -4649,6 +4662,57 @@ CONTAINS
       END DO
       
     END SELECT
+    
+  CONTAINS
+  
+    LOGICAL FUNCTION reallocRefinedInodalProperty2D (rtriangulation)
+    
+    ! Reallocates the InodalProperty-array in rtriangulation such that
+    ! is provides enough space for the refined mesh.
+    
+    TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+    
+    ! Return value: whether the memory was reallocated or not.
+    
+      ! local variables
+      INTEGER(PREC_VERTEXIDX) :: nnodes,isize
+      INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
+      
+      ! Calculate the number of nodes in the mesh.
+      ! This is: #vertices 
+      !         +#edges (as every edge generates a new vertex)
+      !         +#quads (as every quad generates a midpoint)
+      nnodes = rtriangulation%NVT + rtriangulation%NMT + &
+          rtriangulation%InelOfType(TRIA_NVEQUAD2D)
+          
+      ! Reallocate the memory if necessary.
+      ! Copy the old content as we mustn't destroy the old nodal 
+      ! property tags of the vertices.
+      ! New elements are filled with zero = specify inner vertices.
+      CALL storage_getsize (rtriangulation%h_InodalProperty, isize)
+      IF (isize .LT. nnodes) THEN
+        CALL storage_realloc ('tria_genEdgeNodalProperty2D', &
+            nnodes, rtriangulation%h_InodalProperty, &
+            ST_NEWBLOCK_NOINIT, .TRUE.)
+        
+        IF (rtriangulation%InelOfType(TRIA_NVEQUAD2D) .NE. 0) THEN
+          ! Fill the last InelOfType(TRIA_NVEQUAD2D) entries of
+          ! the array by 0. These elements will generate the
+          ! nodal property for the element midpoints.
+          ! Edge midpoints are recomputed anyway, so we don't
+          ! have to initialise that part of the array!
+          CALL storage_getbase_int (&
+            rtriangulation%h_InodalProperty,p_InodalProperty)
+          CALL lalg_clearVectorInt (&
+            p_InodalProperty(nnodes-rtriangulation%InelOfType(TRIA_NVEQUAD2D)+1:))
+        END IF
+        
+        reallocRefinedInodalProperty2D = .TRUE.
+      ELSE
+        reallocRefinedInodalProperty2D = .FALSE.
+      END IF
+      
+    END FUNCTION
     
   END SUBROUTINE
 
