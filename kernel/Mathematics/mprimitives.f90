@@ -31,6 +31,9 @@
 !# 6.) mprim_signum
 !#     -> Signum function
 !# 
+!# 7.) mprim_linearRescale
+!#     -> Scales a coordinate x linearly from the interval [a,b] to the
+!#        interval [c,d]
 !# </purpose>
 !##############################################################################
 
@@ -44,6 +47,11 @@ MODULE mprimitives
     MODULE PROCEDURE mprim_signum_dble
     MODULE PROCEDURE mprim_signum_real
     MODULE PROCEDURE mprim_signum_int32
+  END INTERFACE
+
+  ! Alternative name for backward compatibility
+  INTERFACE mprim_kronecker
+    MODULE PROCEDURE kronecker
   END INTERFACE
 
 CONTAINS

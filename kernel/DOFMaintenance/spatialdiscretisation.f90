@@ -46,7 +46,14 @@
 !# 
 !# 10.) spdiscr_duplicateBlockDiscr
 !#      -> Copies a block discretisation structure to another
+!#
+!# 11.) spdiscr_getLumpCubature
+!#      -> Try to get a cubature formula for an element type that leads to
+!#         diagonal lumping when setting up a mass matrix with that element
 !# 
+!# 12.) spdiscr_getStdCubature
+!#      -> Try to get the typical cubature formula for an element
+!#
 !# </purpose>
 !##############################################################################
 
@@ -78,6 +85,13 @@ MODULE spatialdiscretisation
   
   ! Mixed discretisation: Elements of different FE spaces, arbitrary mixed.
   INTEGER, PARAMETER :: SPDISC_MIXED     = 2
+
+!</constantblock>
+
+!<constantblock description="Additional constants for cubature formulas">
+
+  ! Automatically determine cubature formula for a discretisation.
+  INTEGER, PARAMETER :: SPDISC_CUB_AUTOMATIC = 0
 
 !</constantblock>
 
@@ -344,10 +358,10 @@ CONTAINS
   
 !<function>
 
-  INTEGER FUNCTION spdiscr_getLumpCubature (ielementType,ndim) RESULT (ccubType)
+  INTEGER FUNCTION spdiscr_getLumpCubature (ielementType) RESULT (ccubType)
   
 !<description>
-  ! this routine tries to determine a cubature formula identifier according
+  ! This routine tries to determine a cubature formula identifier according
   ! to a given element type, such that the corresponding mass matrix will
   ! get diagonal (mass lumping). If this is not possible, 0 is returned.
 !</description>
@@ -355,10 +369,6 @@ CONTAINS
 !<input>
   ! An element type identifier
   INTEGER(I32), INTENT(IN)                       :: ielementType
-  
-  ! OPTIONAL: Dimension identifier. NDIM2D=2D, NDIM3D=3D. If not specified,
-  ! 2D is assumed.
-  INTEGER, INTENT(IN), OPTIONAL             :: ndim
 !</input>
 
 !<result>
@@ -368,34 +378,157 @@ CONTAINS
   
 !</function>
 
-    IF (PRESENT(ndim)) THEN
-      IF (ndim .NE. NDIM2D) THEN
-        CALL output_line ('Only 2D supported.', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_getLumpCubature')  
-        CALL sys_halt()
-      END IF
-    END IF
+    SELECT CASE (elem_igetDimension(ielementType))
+    CASE (NDIM1D)
+    
+      SELECT CASE (elem_getPrimaryElement(ielementType))
+      CASE (EL_P0)
+        ! Use Gauss-1
+        ccubType = CUB_G1_1D
 
-    SELECT CASE (elem_getPrimaryElement(ielementType))
-    CASE (EL_P0)
-      ! Use Gauss 1X1
-      ccubType = CUB_G1_T
+      CASE (EL_P1)
+        ! Use trapezoidal rule
+        ccubType = CUB_TRZ_1D
 
-    CASE (EL_P1)
-      ! Use trapezoidal rule
-      ccubType = CUB_TRZ_T
+      CASE (EL_Q0)
+        ! Use Gauss-1
+        ccubType = CUB_G1_1D
 
-    CASE (EL_Q0)
-      ! Use Gauss 1X1
-      ccubType = CUB_G1X1
+      CASE (EL_Q1)
+        ! Use trapezoidal rule
+        ccubType = CUB_TRZ_1D
 
-    CASE (EL_Q1)
-      ! Use trapezoidal rule
-      ccubType = CUB_TRZ
+      CASE (EL_Q1T)
+        ! Use midpoint rule = Gauss-1
+        ccubType = CUB_G1_1D
+      
+      CASE DEFAULT
+        ccubType = 0
+      END SELECT
 
-    CASE (EL_Q1T)
-      ! Use midpoint rule
-      ccubType = CUB_MID
+    CASE (NDIM2D)
+    
+      SELECT CASE (elem_getPrimaryElement(ielementType))
+      CASE (EL_P0)
+        ! Use Gauss 1X1
+        ccubType = CUB_G1_T
+
+      CASE (EL_P1)
+        ! Use trapezoidal rule
+        ccubType = CUB_TRZ_T
+
+      CASE (EL_Q0)
+        ! Use Gauss 1X1
+        ccubType = CUB_G1X1
+
+      CASE (EL_Q1)
+        ! Use trapezoidal rule
+        ccubType = CUB_TRZ
+
+      CASE (EL_Q1T)
+        ! Use midpoint rule
+        ccubType = CUB_MID
+      
+      CASE DEFAULT
+        ccubType = 0
+      END SELECT
+      
+    CASE (NDIM3D)
+
+      CALL output_line ('3D not supported.', &
+        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_getLumpCubature')  
+      CALL sys_halt()
+      
+    CASE DEFAULT
+      ccubType = 0
+    END SELECT
+
+  END FUNCTION
+  
+  ! ***************************************************************************
+  
+!<function>
+
+  INTEGER FUNCTION spdiscr_getStdCubature (ielementType) RESULT (ccubType)
+  
+!<description>
+  ! This routine returns a standard cubature formula for an element which
+  ! can be used as default when setting up matrices/vectors.
+  ! If this is not possible, 0 is returned.
+!</description>
+
+!<input>
+  ! An element type identifier
+  INTEGER(I32), INTENT(IN)                       :: ielementType
+!</input>
+
+!<result>
+  ! A standard cubature formula for the assembly of matrices/vectors
+  ! with the specified element ielementType.
+!</result>
+  
+!</function>
+
+    SELECT CASE (elem_igetDimension(ielementType))
+    CASE (NDIM1D)
+    
+      SELECT CASE (elem_getPrimaryElement(ielementType))
+      CASE (EL_P0)
+        ! 1-point Gauss
+        ccubType = CUB_G1_1D
+
+      CASE (EL_P1)
+        ! 2-point Gauss
+        ccubType = CUB_G2_1D
+
+      CASE (EL_Q0)
+        ! 1-point Gauss
+        ccubType = CUB_G2_1D
+
+      CASE (EL_Q1)
+        ! 2-point Gauss
+        ccubType = CUB_G2_1D
+
+      CASE (EL_Q1T)
+        ! 2-point Gauss
+        ccubType = CUB_G2_1D
+      
+      CASE DEFAULT
+        ccubType = 0
+      END SELECT
+
+    CASE (NDIM2D)
+    
+      SELECT CASE (elem_getPrimaryElement(ielementType))
+      CASE (EL_P0)
+        ! Use Gauss 1X1
+        ccubType = CUB_G1_T
+
+      CASE (EL_P1)
+        ! Use trapezoidal rule
+        ccubType = CUB_TRZ_T
+
+      CASE (EL_Q0)
+        ! 1x1 Gauss formula
+        ccubType = CUB_G1X1
+
+      CASE (EL_Q1)
+        ! 2x2 Gauss formula
+        ccubType = CUB_G2X2
+
+      CASE (EL_Q1T)
+        ! 2x2 Gauss formula
+        ccubType = CUB_G2X2
+      
+      CASE DEFAULT
+        ccubType = 0
+      END SELECT
+      
+    CASE (NDIM3D)
+
+      CALL output_line ('3D not supported.', &
+        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_getStdCubature')  
+      CALL sys_halt()
       
     CASE DEFAULT
       ccubType = 0
@@ -638,7 +771,9 @@ CONTAINS
   ! The element type identifier that is to be used for all elements.
   INTEGER(I32), INTENT(IN)                       :: ieltyp
   
-  ! Cubature formula to use for calculating integrals
+  ! Cubature formula CUB_xxxx to use for calculating integrals.
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! automatically determine cubature formula.
   INTEGER, INTENT(IN)                       :: ccubType
   
   ! The triangulation structure underlying to the discretisation.
@@ -663,6 +798,12 @@ CONTAINS
   INTEGER :: i
   INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
   TYPE(t_elementDistribution), POINTER :: p_relementDistr
+  INTEGER :: ccub
+
+  ! Automatically determine cubature formula if necessary  
+  ccub = ccubType
+  IF (ccub .EQ. SPDISC_CUB_AUTOMATIC) &
+      ccub = spdiscr_getStdCubature(ieltyp)
   
   ! Do we have a structure?
   IF (rspatialDiscr%ndimension .NE. 0) THEN
@@ -700,16 +841,16 @@ CONTAINS
   ! Initialise test and trial space for that block
   p_relementDistr%itrialElement = ieltyp
   p_relementDistr%itestElement = ieltyp
-  p_relementDistr%ccubTypeBilForm = ccubType
-  p_relementDistr%ccubTypeLinForm = ccubType
-  p_relementDistr%ccubTypeEval = ccubType
+  p_relementDistr%ccubTypeBilForm = ccub
+  p_relementDistr%ccubTypeLinForm = ccub
+  p_relementDistr%ccubTypeEval = ccub
   
   ! Get the typical transformation used with the element
   p_relementDistr%ctrafoType = elem_igetTrafoType(ieltyp)
   
   ! Check the cubature formula against the element distribution.
   ! This stops the program if this is not fulfilled.
-  CALL spdiscr_checkCubature(ccubType,ieltyp)
+  CALL spdiscr_checkCubature(ccub,ieltyp)
 
   ! Initialise an 'identity' array containing the numbers of all elements.
   ! This list defines the sequence how elements are processed, e.g. in the
@@ -755,10 +896,16 @@ CONTAINS
   ! The element type identifier that is to be used for all quadrilateral elements.
   INTEGER(I32), INTENT(IN)                       :: ieltypQuad
   
-  ! Cubature formula to use for calculating integrals on triangular elements
+  ! Cubature formula CUB_xxxx to use for calculating integrals 
+  ! on triangular elements
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! automatically determine cubature formula.
   INTEGER, INTENT(IN)                       :: ccubTypeTri
 
-  ! Cubature formula to use for calculating integrals on quadrilateral elements
+  ! Cubature formula CUB_xxxx to use for calculating integrals on 
+  ! quadrilateral elements
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! automatically determine cubature formula.
   INTEGER, INTENT(IN)                       :: ccubTypeQuad
   
   ! The triangulation structure underlying to the discretisation.
@@ -785,6 +932,15 @@ CONTAINS
   INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray,p_IelementCounter
   TYPE(t_elementDistribution), POINTER :: p_relementDistrTria,p_relementDistrQuad
   INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+  INTEGER :: ccubTri,ccubQuad
+  
+  ! Automatically determine cubature formula if necessary  
+  ccubTri = ccubTypeTri
+  IF (ccubTri .EQ. SPDISC_CUB_AUTOMATIC) &
+      ccubTri = spdiscr_getStdCubature(ieltypTri)
+  ccubQuad = ccubTypeQuad
+  IF (ccubQuad .EQ. SPDISC_CUB_AUTOMATIC) &
+      ccubQuad = spdiscr_getStdCubature(ieltypQuad)
   
   ! Do we have a structure?
   IF (rspatialDiscr%ndimension .NE. 0) THEN
@@ -859,15 +1015,15 @@ CONTAINS
   ! Initialise test and trial space for that block
   p_relementDistrTria%itrialElement = ieltypTri
   p_relementDistrTria%itestElement = ieltypTri
-  p_relementDistrTria%ccubTypeBilForm = ccubTypeTri
-  p_relementDistrTria%ccubTypeLinForm = ccubTypeTri
-  p_relementDistrTria%ccubTypeEval = ccubTypeTri
+  p_relementDistrTria%ccubTypeBilForm = ccubTri
+  p_relementDistrTria%ccubTypeLinForm = ccubTri
+  p_relementDistrTria%ccubTypeEval = ccubTri
 
   p_relementDistrQuad%itrialElement = ieltypQuad
   p_relementDistrQuad%itestElement = ieltypQuad
-  p_relementDistrQuad%ccubTypeBilForm = ccubTypeQuad
-  p_relementDistrQuad%ccubTypeLinForm = ccubTypeQuad
-  p_relementDistrQuad%ccubTypeEval = ccubTypeQuad
+  p_relementDistrQuad%ccubTypeBilForm = ccubQuad
+  p_relementDistrQuad%ccubTypeLinForm = ccubQuad
+  p_relementDistrQuad%ccubTypeEval = ccubQuad
   
   ! Get the typical transformation used with the element
   p_relementDistrTria%ctrafoType = elem_igetTrafoType(ieltypTri)
@@ -875,8 +1031,8 @@ CONTAINS
   
   ! Check the cubature formula against the element distribution.
   ! This stops the program if this is not fulfilled.
-  CALL spdiscr_checkCubature(ccubTypeTri,ieltypTri)
-  CALL spdiscr_checkCubature(ccubTypeQuad,ieltypQuad)
+  CALL spdiscr_checkCubature(ccubTri,ieltypTri)
+  CALL spdiscr_checkCubature(ccubQuad,ieltypQuad)
 
   ! Save the number of elements in the two element lists.
   p_relementDistrTria%NEL = rtriangulation%InelOfType(TRIA_NVETRI2D)
@@ -972,6 +1128,8 @@ CONTAINS
   
   ! Cubature formula to use for calculating integrals
   ! in the new discretisation structure
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! automatically determine cubature formula.
   INTEGER, INTENT(IN)                       :: ccubType
 !</input>
   
@@ -987,6 +1145,12 @@ CONTAINS
   ! local variables
   ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
   ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
+  INTEGER :: ccub
+
+  ! Automatically determine cubature formula if necessary  
+  ccub = ccubType
+  IF (ccub .EQ. SPDISC_CUB_AUTOMATIC) &
+      ccub = spdiscr_getStdCubature(ieltyp)
   
   ! Check that the source discretisation structure is valid.
   IF (rsourceDiscr%ndimension .LE. 0) THEN
@@ -1008,7 +1172,7 @@ CONTAINS
   
   ! Check the cubature formula against the element distribution.
   ! This stops the program if this is not fulfilled.
-  CALL spdiscr_checkCubature(ccubType,ieltyp)
+  CALL spdiscr_checkCubature(ccub,ieltyp)
   
   ! Copy the source structure to the destination.
   ! This copies all handles and hence all dynamic information
@@ -1028,9 +1192,9 @@ CONTAINS
     rdestDiscr%RelementDistribution(1)%itestElement
   
   ! Init the cubature rule
-  rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccubType
-  rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccubType
-  rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccubType
+  rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccub
+  rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccub
+  rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccub
   
   ! Get the typical transformation used with the element
   rdestDiscr%RelementDistribution(1)%ctrafoType = elem_igetTrafoType(ieltyp)
@@ -1069,7 +1233,9 @@ CONTAINS
   ! in the test space.
   INTEGER(I32), INTENT(IN)                       :: ieltypTest
 
-  ! Cubature formula to use for calculating integrals
+  ! Cubature formula CUB_xxxx to use for calculating integrals
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! automatically determine cubature formula.
   INTEGER, INTENT(IN)                       :: ccubType
   
   ! The triangulation structure underlying to the discretisation.
@@ -1094,6 +1260,12 @@ CONTAINS
   INTEGER :: i,ctrafoTest
   INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
   TYPE(t_elementDistribution), POINTER :: p_relementDistr
+  INTEGER :: ccub
+
+  ! Automatically determine cubature formula if necessary  
+  ccub = ccubType
+  IF (ccub .EQ. SPDISC_CUB_AUTOMATIC) &
+      ccub = spdiscr_getStdCubature(ieltypTrial)
   
   ! Do we have a structure?
   IF (rspatialDiscr%ndimension .NE. 0) THEN
@@ -1142,9 +1314,9 @@ CONTAINS
   ! Initialise test and trial space for that block
   p_relementDistr%itrialElement = ieltypTrial
   p_relementDistr%itestElement = ieltypTest
-  p_relementDistr%ccubTypeBilForm = ccubType
-  p_relementDistr%ccubTypeLinForm = ccubType
-  p_relementDistr%ccubTypeEval = ccubType
+  p_relementDistr%ccubTypeBilForm = ccub
+  p_relementDistr%ccubTypeLinForm = ccub
+  p_relementDistr%ccubTypeEval = ccub
   
   ! Get the typical transformation used with the element
   p_relementDistr%ctrafoType = elem_igetTrafoType(ieltypTrial)
@@ -1160,8 +1332,8 @@ CONTAINS
   
   ! Check the cubature formula against the element distribution.
   ! This stops the program if this is not fulfilled.
-  CALL spdiscr_checkCubature(ccubType,ieltypTrial)
-  CALL spdiscr_checkCubature(ccubType,ieltypTest)
+  CALL spdiscr_checkCubature(ccub,ieltypTrial)
+  CALL spdiscr_checkCubature(ccub,ieltypTest)
 
   ! Save the number of elements in that element list.
   p_relementDistr%NEL = rtriangulation%NEL
