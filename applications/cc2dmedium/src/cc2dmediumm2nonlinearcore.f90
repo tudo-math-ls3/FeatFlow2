@@ -144,7 +144,7 @@ MODULE cc2dmediumm2nonlinearcore
   USE matrixrestriction
   USE trilinearformevaluation
   USE matrixio
-  
+  USE statistics
   USE collection
   USE convection
   
@@ -347,7 +347,7 @@ MODULE cc2dmediumm2nonlinearcore
   ! This configuration block configures all parameters that are needed
   ! by the callback routines to perform the nonlinear iteration.
   ! On start of the program, a structure of this type is initialised.
-  ! The entries of this structure aresaved to the collection structure.
+  ! The entries of this structure are saved to the collection structure.
   ! When a callback routine is called, the structure is rebuild from
   ! the collection. When he nonlinear iteration is finished, the
   ! parameters are removed from the colletion again.
@@ -427,6 +427,9 @@ MODULE cc2dmediumm2nonlinearcore
     ! Auxiliary variable: Convergence rate of linear solver (if this is
     ! applied as preconditioner).
     REAL(DP) :: drhoLinearSolver = 0.0_DP
+    
+    ! time used for matrix assembly
+    REAL(DP) :: dtimeMatrix = 0.0_DP
     
   END TYPE
 
@@ -674,6 +677,9 @@ CONTAINS
         rnonlinearIteration%domegaNL,.TRUE.)
     CALL collct_setvalue_real(rcollection,'CCNL_RHOMG',&
         rnonlinearIteration%drhoLinearSolver,.TRUE.)
+        
+    CALL collct_setvalue_real(rcollection,'CCNL_TIMEMATRIX', &
+         rnonlinearIteration%dtimeMatrix, .TRUE.)    
 
   END SUBROUTINE
 
@@ -834,6 +840,9 @@ CONTAINS
         collct_getvalue_real(rcollection,'CCNL_OMEGANL')
     rnonlinearIteration%drhoLinearSolver = &
         collct_getvalue_real(rcollection,'CCNL_RHOMG')
+        
+    rnonlinearIteration%dtimeMatrix = &
+        collct_getvalue_real(rcollection,'CCNL_TIMEMATRIX')
   END SUBROUTINE
 
   ! ***************************************************************************
@@ -946,6 +955,9 @@ CONTAINS
       CALL collct_deletevalue (rcollection,'CCNL_MATPREC',ilevel)
       CALL collct_deletevalue (rcollection,'CCNL_TEMPVEC',ilevel)
     END DO
+    
+    ! Release the statistic information
+    CALL collct_deletevalue(rcollection,'CCNL_TIMEMATRIX')
       
   END SUBROUTINE
 
@@ -959,6 +971,7 @@ CONTAINS
   
     USE linearsystemblock
     USE collection
+    
     
   !<description>
     ! FOR NONLINEAR ITERATION:
@@ -991,12 +1004,16 @@ CONTAINS
   
   !</subroutine>
   
+      
       ! The nonlinear iteration structure
       TYPE(t_ccNonlinearIteration) :: rnonlinearIteration
       TYPE(t_ccmatrixComponents) :: rmatrixAssembly
       INTEGER :: ilvmax
       TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
-      
+  
+      ! a timer structure
+      TYPE(t_timer) :: rtimer
+                  
       ! DEBUG!!!
       !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
 
@@ -1031,7 +1048,14 @@ CONTAINS
       rmatrixAssembly%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
+      CALL stat_clearTimer(rtimer)
+      CALL stat_startTimer(rtimer)        
       CALL c2d2_assembleDefect (rmatrixAssembly,rx,rd)        
+      CALL stat_stopTimer(rtimer)
+      rnonlinearIteration%dtimeMatrix = &
+      rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal
+      
+      
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
       IF (ASSOCIATED(p_RfilterChain)) THEN    
@@ -1039,6 +1063,9 @@ CONTAINS
       END IF
     
       CALL vecfil_discreteNLSlipBCdef (rd)
+      
+      ! save to the collection
+      CALL c2d2_saveNonlinearLoop(rnonlinearIteration,p_rcollection)
           
       ! Release the 3nonlinear-iteration structure, that's it.
       CALL c2d2_releaseNonlinearLoop (rnonlinearIteration)
@@ -1109,7 +1136,7 @@ CONTAINS
     INTEGER :: ilvmax
     REAL(DP) :: dskv1,dskv2
     TYPE(t_matrixBlock), POINTER :: p_rmatrix
-
+    TYPE(t_timer) :: rtimer
     ! A filter chain for the linear solver
     TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
     
@@ -1221,10 +1248,15 @@ CONTAINS
       rmatrixAssembly%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
 
+      CALL stat_clearTimer(rtimer)
+      CALL stat_startTimer(rtimer)
       ! Assemble the matrix.        
       CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
           p_rmatrix,rmatrixAssembly,rtemp1)
-
+      CALL stat_stopTimer(rtimer)
+      rnonlinearIteration%dtimeMatrix = &
+      rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal      
+      
       ! We don't have to implement any boundary conditions into the matrix
       ! as we apply an appropriate filter to the defect vector after
       ! each matrix-vector-multiplication below!
@@ -1299,6 +1331,10 @@ CONTAINS
                    min(rnonlinearIteration%domegamax,domega))
       
       ! That's it, we have our new Omega.
+      
+      ! save to the collection
+      CALL c2d2_saveNonlinearLoop(rnonlinearIteration,p_rcollection)
+      
   
     END SUBROUTINE
 
@@ -1375,6 +1411,9 @@ CONTAINS
     ! The nonlinear iteration structure
     TYPE(t_ccNonlinearIteration), TARGET :: rnonlinearIteration
 
+    ! a local timer object
+    TYPE(t_timer) :: rtimer
+
     ! DEBUG!!!
     !real(dp), dimension(:), pointer :: p_vec,p_def,p_da
     !call lsysbl_getbase_double (rd,p_def)
@@ -1438,10 +1477,19 @@ CONTAINS
           
         END IF
         
+        CALL stat_clearTimer(rtimer)
+        CALL stat_startTimer(rtimer)
         ! Assemble the preconditioner matrices in rnonlinearIteration
         ! on all levels that the solver uses.
         CALL assembleLinsolMatrices (rnonlinearIteration,p_rcollection,&
             bassembleNewton,rx,rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX)
+        CALL stat_stopTimer(rtimer)
+        rnonlinearIteration%dtimeMatrix = &
+        rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal  
+        
+        ! save to the collection
+        CALL c2d2_saveNonlinearLoop(rnonlinearIteration,p_rcollection)
+                   
         
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
         ! a preconditioner node for us (a linear solver with symbolically
@@ -1598,7 +1646,7 @@ CONTAINS
       TYPE(t_vectorBlock), POINTER :: p_rvectorFine,p_rvectorCoarse
       TYPE(t_ccmatrixComponents) :: rmatrixAssembly
       TYPE(t_interlevelProjectionBlock), POINTER :: p_rprojection
-
+      TYPE(t_timer) :: rtimer
       ! A filter chain for the linear solver
       TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
       
@@ -1692,6 +1740,9 @@ CONTAINS
           rmatrixAssembly%p_rmatrixMass => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
 
+          ! time the assembly routine
+          CALL stat_clearTimer(rtimer)
+          CALL stat_startTimer(rtimer)
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           IF (ilev .EQ. NLMAX) THEN
@@ -1701,6 +1752,14 @@ CONTAINS
             CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
                 p_rmatrix,rmatrixAssembly,p_rvectorCoarse,p_rmatrixFine)
           END IF
+          ! stop the timer and add to the total computation time
+          CALL stat_stopTimer(rtimer)
+          rnonlinearIteration%dtimeMatrix = &
+          rnonlinearIteration%dtimeMatrix + rtimer%delapsedReal 
+          
+          ! save to the collection
+          CALL c2d2_saveNonlinearLoop(rnonlinearIteration,p_rcollection)
+               
 
           ! Boundary conditions
           ! ---------------------------------------------------
@@ -2134,9 +2193,18 @@ CONTAINS
     CALL nlsol_performSolve(rnlSolver,rvector,rrhs,p_rtempBlock,&
                             c2d2_getDefect,c2d2_precondDefect,c2d2_resNormCheck,&
                             rcollection=rcollection)
+
+    ! transfer values from the collection into the iteration structure
+    CALL c2d2_restoreNonlinearLoop(rnonlinearIteration,rcollection)
+
+    ! display the computation time for performSolve on the screen
+    PRINT *,"Computation time for routine performSolve: ", &
+    rnonlinearIteration%dtimeMatrix
         
     ! Remove parameters of the nonlinear loop from the collection.
     CALL c2d2_removeNonlinearLoop (rnonlinearIteration,rcollection)
+    
+
              
     IF (.NOT. PRESENT(rtempBlock)) THEN
       ! Release the temporary vector
