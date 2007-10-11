@@ -2893,7 +2893,7 @@ CONTAINS
     ! local varables
     REAL(DP), DIMENSION(:), POINTER :: p_Ddata
 
-    IF (PRESENT(DdataMid) .AND. .NOT. PRESENT(DdataElem)) THEN
+    IF (PRESENT(DdataElem) .AND. .NOT. PRESENT(DdataMid)) THEN
       PRINT *,'ucd_addVariableVertexBased: Error in the parameters!'
       CALL sys_halt()
     END IF
