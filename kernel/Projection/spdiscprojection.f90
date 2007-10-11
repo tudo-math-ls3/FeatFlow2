@@ -16,6 +16,9 @@
 !# 2.) spdp_projectSolution
 !#     -> Convert a block solution vector to a new space.
 !#
+!# 3.) spdp_stdProjectionToP1Q1
+!#     -> Project a scalar solution vector to another one discretised by
+!#        $P_1$ and/or $Q_1$ elements.
 !# </purpose>
 !##############################################################################
 
@@ -30,81 +33,6 @@ MODULE spdiscprojection
   IMPLICIT NONE
 
 CONTAINS
-
-  ! ***************************************************************************
-
-!<subroutine>
-  SUBROUTINE spdp_stdProjectionToQ1P1 (rsourceVector,&
-      rdestVector,rdestDiscretisation)
-  
-!<description>
-  ! This routine 'converts' a given scalar solution vector rsourceVector to
-  ! another solution vector rdestVector. If necessary, the destination
-  ! vector is allocated.
-  ! The source vector can be an arbitrary FE solution vector. The destination
-  ! vector will be a solution vector in the $Q_1$ space (for quad
-  ! elements) and in the $P_1$ space (for triangular elements), respectively.
-  ! (Such vertex based solution vectors are typically written out
-  ! to external files like GMV during the postprocessing).
-  !
-  ! If rdestDiscretisation is defined, it must describe a discretisation 
-  ! with $P_1$ and $Q_1$ elements, respectively. 
-  ! If rdestDiscretisation is undefined, the routine automatically 
-  ! creates and returns rdestDiscretisation for the destination vector 
-  ! rdestVector based on the discretisation of the source vector.
-  ! The caller must take care, that this discretisation structure
-  ! is destroyed when rdestVector is destroyed to avoid memory leaks!
-  !
-  ! (-> Can be used to project multiple vectors at once:
-  !  The first call creates rdestDiscretisation, the next calls use it
-  !  and afterwards the application destroys it together with the vector.)
-  !
-  ! Source and destination vector must be unsorted.
-!</description>
-
-!<input>
-  ! The source vector to be projected.
-  TYPE(t_vectorScalar), INTENT(IN) :: rsourceVector
-!</input>
-
-!<inputoutput>
-  ! A scalar vector structure that receives the projected 
-  ! solution vector. If undefined, a vector is created.
-  TYPE(t_vectorScalar), INTENT(INOUT) :: rdestVector
-
-  ! A discretisation structure that defines a discretisation with
-  ! $P_1$ and/or $Q_1$ elements. If undefines, the structure
-  ! is automatically created.  
-  TYPE(t_spatialDiscretisation), INTENT(INOUT) :: rdestDiscretisation
-!</inputoutput>
-
-!</subroutine>
-
-    ! Is the destination discretisation given?
-    IF (rdestDiscretisation%ndimension .EQ. 0) THEN
-    
-      ! Create a discretisation with $P_1$ and/or $Q_1$ elements.
-      ! Derive it from the existing discretisation structure in
-      ! the vector, so the element information does not use too
-      ! much memory...
-      
-      CALL spdiscr_deriveDiscr_triquad(&
-          rsourceVector%p_rspatialDiscretisation,&
-          EL_P1,EL_Q1,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
-          rdestDiscretisation)
-    
-    END IF
-    
-    ! Is the destination vector given?
-    IF (rdestVector%NEQ .EQ. 0) THEN
-      CALL lsyssc_createVecByDiscr (&
-          rdestDiscretisation,rdestVector,.TRUE.)
-    END IF
-    
-    ! Project the solution to the $P_1$ / $Q_1$ space.
-    CALL spdp_projectSolutionScalar (rsourceVector,rdestVector)
-
-  END SUBROUTINE
 
   ! ***************************************************************************
 
@@ -565,6 +493,89 @@ CONTAINS
       CALL spdp_projectSolutionScalar (rsourceVector%RvectorBlock(i),&
                                        rdestVector%RvectorBlock(i))
     END DO
+
+  END SUBROUTINE
+
+  ! ***************************************************************************
+
+!<subroutine>
+  SUBROUTINE spdp_stdProjectionToP1Q1 (rsourceVector,&
+      rdestVector,rdestDiscretisation)
+  
+!<description>
+  ! This routine 'converts' a given scalar solution vector rsourceVector to
+  ! another solution vector rdestVector. If necessary, the destination
+  ! vector is allocated.
+  ! The source vector can be an arbitrary FE solution vector. The destination
+  ! vector will be a solution vector in the $Q_1$ space (for quad
+  ! elements) and in the $P_1$ space (for triangular elements), respectively.
+  ! (Such vertex based solution vectors are typically written out
+  ! to external files like GMV during the postprocessing).
+  !
+  ! If rdestDiscretisation is defined, it must describe a discretisation 
+  ! with $P_1$ and $Q_1$ elements, respectively. 
+  ! If rdestDiscretisation is undefined, the routine automatically 
+  ! creates and returns rdestDiscretisation for the destination vector 
+  ! rdestVector based on the discretisation of the source vector.
+  ! The caller must take care, that this discretisation structure
+  ! is destroyed when rdestVector is destroyed to avoid memory leaks!
+  !
+  ! (-> Can be used to project multiple vectors at once:
+  !  The first call creates rdestDiscretisation, the next calls use it
+  !  and afterwards the application destroys it together with the vector.)
+  !
+  ! Source and destination vector must be unsorted.
+!</description>
+
+!<input>
+  ! The source vector to be projected.
+  TYPE(t_vectorScalar), INTENT(IN) :: rsourceVector
+!</input>
+
+!<inputoutput>
+  ! A scalar vector structure that receives the projected 
+  ! solution vector. If undefined, a vector is created.
+  TYPE(t_vectorScalar), INTENT(INOUT) :: rdestVector
+
+  ! A discretisation structure that defines a discretisation with
+  ! $P_1$ and/or $Q_1$ elements. If undefines, the structure
+  ! is automatically created.  
+  TYPE(t_spatialDiscretisation), INTENT(INOUT) :: rdestDiscretisation
+!</inputoutput>
+
+!</subroutine>
+
+    ! Check that the source discretisation structure is valid.
+    IF (rsourceVector%p_rspatialDiscretisation%ndimension .NE. NDIM2D) THEN
+      CALL output_line ('Only 2D discretisation supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_stdProjectionToP1Q1')  
+      CALL sys_halt()
+    END IF
+
+    ! Is the destination discretisation given?
+    IF (rdestDiscretisation%ndimension .EQ. 0) THEN
+    
+      ! Create a discretisation with $P_1$ and/or $Q_1$ elements.
+      ! Derive it from the existing discretisation structure in
+      ! the vector, so the element information does not use too
+      ! much memory...
+      
+      CALL spdiscr_deriveDiscr_triquad(&
+          rsourceVector%p_rspatialDiscretisation,&
+          EL_P1,EL_Q1,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
+          rdestDiscretisation)
+    
+    END IF
+    
+    ! Is the destination vector given?
+    IF (rdestVector%NEQ .EQ. 0) THEN
+      CALL lsyssc_createVecByDiscr (&
+          rdestDiscretisation,rdestVector,.TRUE.)
+    END IF
+    
+    ! Project the solution to the $P_1$ / $Q_1$ space.
+    CALL spdp_projectSolutionScalar (rsourceVector,rdestVector)
 
   END SUBROUTINE
 
