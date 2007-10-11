@@ -1340,7 +1340,7 @@ CONTAINS
       ! Check the element there. If it's a triangular element,
       ! change the element type to ielTypTri. If it's a quad
       ! element, change the element type to ielTypQuad.
-      nve = elem_igetNVE(rdestDiscr%RelementDistribution(1)%itrialElement)
+      nve = elem_igetNVE(rsourceDiscr%RelementDistribution(1)%itrialElement)
       SELECT CASE (nve)
       CASE (TRIA_NVETRI2D)
         rdestDiscr%RelementDistribution(1)%itrialElement = ieltypTri
