@@ -150,7 +150,8 @@ CONTAINS
     INTEGER :: ierror   
     
     ! Error of FE function to reference function
-    REAL(DP) :: derror
+    REAL(DP) :: derror, dmin, dmax
+    INTEGER :: i
     
     ! Output block for UCD output to GMV file
     TYPE(t_ucdExport) :: rexport
@@ -590,6 +591,8 @@ CONTAINS
     ! start the postprocessing. 
 
     CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
+    dmin = p_Ddata(1)
+    dmax = dmin
 
     ! Start UCD export to GMV file:
     SELECT CASE (ieltype)
@@ -632,7 +635,12 @@ CONTAINS
       CALL lsyssc_getbase_double (rvectorPostProc,p_DdataQ1)
       CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, &
          p_DdataQ1,p_Ddata)
-      
+
+      DO i=1,SIZE(p_DdataQ1)
+        dmin = MIN(dmin,p_DdataQ1(i))
+        dmax = MAX(dmax,p_DdataQ1(i))
+      END DO
+         
       ! Release the allocated information
       CALL lsysbl_releaseVector (rvectorPostProcBlock)
       CALL lsyssc_releaseVector (rvectorPostProc)
@@ -642,6 +650,14 @@ CONTAINS
     ! Write the file to disc, that's it.
     CALL ucd_write (rexport)
     CALL ucd_release (rexport)
+    
+    DO i=1,SIZE(p_Ddata)
+      dmin = MIN(dmin,p_Ddata(i))
+      dmax = MAX(dmax,p_Ddata(i))
+    END DO
+    
+    CALL output_line ("Min: "//sys_sdEL(dmin,10))
+    CALL output_line ("Max: "//sys_sdEL(dmax,10))
     
     ! +------------------------------------------------------------------------
     ! | CLEANUP
