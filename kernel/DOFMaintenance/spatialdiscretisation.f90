@@ -23,35 +23,43 @@
 !#        all geometric elements in the trial space, another element type
 !#        for all geometric elements in the test space
 !#
-!# 4.) spdiscr_deriveBlockDiscr
+!# 4.) spdiscr_initDiscr_triquad
+!#     -> Initialise a scalar discretisation structure for a mixed
+!#        triangle/quad discretisation.
+!#
+!# 5.) spdiscr_deriveBlockDiscr
 !#     -> Creates a block discretisation structure as a subset of
 !#        another block discretisation structure
 !#
-!# 5.) spdiscr_deriveSimpleDiscrSc
+!# 6.) spdiscr_deriveSimpleDiscrSc
 !#     -> Based on an existing discretisation structure, derive a new
 !#        discretisation structure with different trial elements
 !#
-!# 6.) spdiscr_releaseDiscr
+!# 7.) spdiscr_deriveDiscr_triquad
+!#     -> Based on an existing discretisation structure, derive a new
+!#        discretisation structure for a mixed triangular/quad mesh.
+!#
+!# 8.) spdiscr_releaseDiscr
 !#     -> Release a scalar discretisation structure.
 !#
-!# 7.) spdiscr_releaseBlockDiscr
+!# 9.) spdiscr_releaseBlockDiscr
 !#     -> Releases a block discretisation structure from memory
 !#
-!# 8.) spdiscr_checkCubature
-!#     -> Checks if a cubature formula is compatible to an element
-!#        distribution.
+!# 10.) spdiscr_checkCubature
+!#      -> Checks if a cubature formula is compatible to an element
+!#         distribution.
 !#
-!# 9.) spdiscr_duplicateDiscrSc
-!#     -> Copies a spatial discretisation structure to another
+!# 11.) spdiscr_duplicateDiscrSc
+!#      -> Copies a spatial discretisation structure to another
 !# 
-!# 10.) spdiscr_duplicateBlockDiscr
+!# 12.) spdiscr_duplicateBlockDiscr
 !#      -> Copies a block discretisation structure to another
 !#
-!# 11.) spdiscr_getLumpCubature
+!# 13.) spdiscr_getLumpCubature
 !#      -> Try to get a cubature formula for an element type that leads to
 !#         diagonal lumping when setting up a mass matrix with that element
 !# 
-!# 12.) spdiscr_getStdCubature
+!# 14.) spdiscr_getStdCubature
 !#      -> Try to get the typical cubature formula for an element
 !#
 !# </purpose>
@@ -1220,6 +1228,154 @@ CONTAINS
   ! The dynamic information 'belongs' to rdiscrSource and not to the
   ! newly created rdiscrDest!
   rdestDiscr%bisCopy = .TRUE.
+  
+  END SUBROUTINE  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_deriveDiscr_triquad (&
+      rsourceDiscr, ieltypTri, ieltypQuad, ccubTypeTri, ccubTypeQuad,&
+      rdestDiscr)
+  
+!<description>
+  ! This routine derives a discretisation structure from another one.
+  !
+  ! rsourceDiscr is a given uniform discretisation structure. The structure
+  ! will be copied to rdestDiscr and changed in such a way, that the element
+  ! type and cubature formula are changed according to the parameters.
+  !
+  ! The new discretisation will also be a uniform discretisation based
+  ! on the element ieltyp. It's not a complete new structure, but a
+  ! 'derived' structure, i.e. it uses the same dynamic information
+  ! (element lists) as rsourceDiscr.
+!</description>
+
+!<input>
+  ! A source discretisation structure that should be used as template
+  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rsourceDiscr
+
+  ! The element type identifier that is to be used for all triangular
+  ! elements in the new discretisation structure
+  INTEGER(I32), INTENT(IN)                       :: ieltypTri
+
+  ! The element type identifier that is to be used for all quad
+  ! elements in the new discretisation structure
+  INTEGER(I32), INTENT(IN)                       :: ieltypQuad
+  
+  ! Cubature formula to use for calculating integrals on triangular
+  ! elements in the new discretisation structure.
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! automatically determine cubature formula.
+  INTEGER, INTENT(IN)                       :: ccubTypeTri
+
+  ! Cubature formula to use for calculating integrals on quad
+  ! elements in the new discretisation structure.
+  ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
+  ! automatically determine cubature formula.
+  INTEGER, INTENT(IN)                       :: ccubTypeQuad
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  ! Any old existing discretisation information in rdestDiscr
+  ! is released if necessary.
+  TYPE(t_spatialDiscretisation), INTENT(INOUT), TARGET :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
+    ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
+    INTEGER :: ccubTri,ccubQuad,idistr,nve
+
+    ! Automatically determine cubature formula if necessary  
+    ccubTri = ccubTypeTri
+    IF (ccubTri .EQ. SPDISC_CUB_AUTOMATIC) &
+        ccubTri = spdiscr_getStdCubature(ieltypTri)
+    ccubQuad = ccubTypeQuad
+    IF (ccubQuad .EQ. SPDISC_CUB_AUTOMATIC) &
+        ccubQuad = spdiscr_getStdCubature(ieltypQuad)
+    
+    ! Check that the source discretisation structure is valid.
+    IF (rsourceDiscr%ndimension .NE. NDIM2D) THEN
+      CALL output_line ('Source structure invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdiscr_deriveSimpleDiscr_triquad')  
+      CALL sys_halt()
+    END IF
+    
+    ! Check that the discretisation structure is really uniform.
+    ! More complex situations are not supported by this routine.
+    IF ((rsourceDiscr%ccomplexity .NE. SPDISC_UNIFORM) .AND. &
+        (rsourceDiscr%ccomplexity .NE. SPDISC_CONFORMAL)) THEN
+      CALL output_line ('Only uniform discretisations supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdiscr_deriveSimpleDiscr_triquad')  
+      CALL sys_halt()
+    END IF
+    
+    ! Release old information if present
+    CALL spdiscr_releaseDiscr(rdestDiscr)
+    
+    ! Check the cubature formula against the element distribution.
+    ! This stops the program if this is not fulfilled.
+    CALL spdiscr_checkCubature(ccubTri,ieltypTri)
+    CALL spdiscr_checkCubature(ccubQuad,ieltypQuad)
+    
+    ! Copy the source structure to the destination.
+    ! This copies all handles and hence all dynamic information
+    rdestDiscr = rsourceDiscr
+    
+    ! Allocate a new element distribution
+    ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
+    
+    ! Loop through the element distributions...
+    DO idistr = 1,rdestDiscr%inumFESpaces
+      ! We support only identical trial and test functions here.
+      rdestDiscr%bidenticalTrialAndTest = .TRUE.
+    
+      ! Check the element there. If it's a triangular element,
+      ! change the element type to ielTypTri. If it's a quad
+      ! element, change the element type to ielTypQuad.
+      nve = elem_igetNVE(rdestDiscr%RelementDistribution(1)%itrialElement)
+      SELECT CASE (nve)
+      CASE (TRIA_NVETRI2D)
+        rdestDiscr%RelementDistribution(1)%itrialElement = ieltypTri
+        rdestDiscr%RelementDistribution(1)%itestElement = ieltypTri
+
+        ! Init the cubature rule
+        rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccubTri
+        rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccubTri
+        rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccubTri
+
+        ! Get the typical transformation used with the element
+        rdestDiscr%RelementDistribution(1)%ctrafoType = &
+            elem_igetTrafoType(ieltypTri)
+        
+      CASE (TRIA_NVEQUAD2D)
+        rdestDiscr%RelementDistribution(1)%itrialElement = ieltypQuad
+        rdestDiscr%RelementDistribution(1)%itestElement = ieltypQuad
+
+        ! Init the cubature rule
+        rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccubQuad
+        rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccubQuad
+        rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccubQuad
+
+        ! Get the typical transformation used with the element
+        rdestDiscr%RelementDistribution(1)%ctrafoType = &
+            elem_igetTrafoType(ieltypQuad)
+      END SELECT
+      
+    END DO
+  
+    ! Mark the new discretisation structure as 'copy', to prevent
+    ! the dynamic information to be released.
+    ! The dynamic information 'belongs' to rdiscrSource and not to the
+    ! newly created rdiscrDest!
+    rdestDiscr%bisCopy = .TRUE.
   
   END SUBROUTINE  
   
