@@ -1636,6 +1636,8 @@ CONTAINS
   ! An array with local DELTA's, each DELTA for one element
   REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
   
+
+  
     ! Initialise the derivative flags
     Bder = .FALSE.
     Bder(DER_FUNC) = .TRUE.
@@ -2704,6 +2706,12 @@ CONTAINS
 
   ! ***************************************************************************
 
+!                denth = dtheta*Dentry(JDOFE,IDOFE,IEL)         
+!      
+!                JDFG=Idofs(JDOFE,IEL)
+!                Ddef1(IDFG)= Ddef1(IDFG) - denth*Du1(JDFG)
+!                Ddef2(IDFG)= Ddef2(IDFG) - denth*Du2(JDFG)
+
 !<subroutine>
   SUBROUTINE conv_strdiff2dALEblk_double ( &
                   u1Xvel,u1Yvel,u2Xvel,u2Yvel,dweight1,dweight2,&
@@ -2971,6 +2979,10 @@ CONTAINS
   ! An array with local DELTA's, each DELTA for one element
   REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
   
+  !external function
+  INTEGER :: omp_get_thread_num
+  EXTERNAL omp_get_thread_num  
+  
     ! Initialise the derivative flags
     Bder = .FALSE.
     Bder(DER_FUNC) = .TRUE.
@@ -3057,8 +3069,23 @@ CONTAINS
     ! get cubature weights and point coordinates on the reference element
     CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
+    ! Open-MP-Extension: Open threads here.
+    ! "csysTrial" is declared as private; shared gave errors with the Intel compiler
+    ! in Windows!?!
+    ! Each thread will allocate its own local memory...
+    !    
+    !print *,"hello0"
+    !$OMP PARALLEL PRIVATE(csysTrial, p_DcubPtsRef, p_DcubPtsReal, &
+    !$OMP p_Djac, p_Ddetj, p_Dcoords, j,i,k,Dbas,Idofs,DbasALE, &
+    !$OMP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
+    !$OMP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
+    !$OMP DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,& 
+    !$OMP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
+    !$OMP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,& 
+    !$OMP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
+    !$OMP AH22,IELmax,rintSubset,dny,p_DcubPts)
     ! Get from the trial element space the type of coordinate system
-    ! that is used there:
+    ! that is used there:                         
     csysTrial = elem_igetCoordSystem(p_relementDistribution%itrialElement)
 
     ! Allocate memory and get local references to it.
@@ -3077,7 +3104,7 @@ CONTAINS
     DO j=1,SIZE(p_DcubPtsRef,3)
       DO i=1,ncubp
         DO k=1,SIZE(p_DcubPtsRef,1)
-          p_DcubPtsRef(k,i,j) = Dxi(i,k)
+          p_DcubPtsRef(k,i,j) = Dxi(i,k) !keep Dxi as a shared var in the OpenMP context
         END DO
       END DO
     END DO
@@ -3106,6 +3133,7 @@ CONTAINS
     ! Allocate memory for array with local DELTA's
     ALLOCATE(DlocalDelta(nelementsPerBlock))
 
+    
     ! Check if one of the trial/test elements is nonparametric
     bnonpar = elem_isNonparametric(p_relementDistribution%itrialElement)
     
@@ -3169,7 +3197,7 @@ CONTAINS
               ' from being build!'
       CALL sys_halt()
     END IF
-
+    
     ! If ddelta=0, we have to neglect the nonlinearity. In both cases,
     ! set DlocalDelta=0 which disables the nonlinear term in the assembly.
     ! If dupsam=0, we neglect the stabilisation term (central difference like
@@ -3181,35 +3209,48 @@ CONTAINS
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
     ! Round up the norm to 1D-8 if it's too small...
-
+    !$OMP SINGLE
     dumax=0.0_DP
     IF (dweight2 .EQ. 0.0_DP) THEN
+      !%OMP DO PRIVATE(du1loc,du2loc,dunorm) REDUCTION(max:dumax)
+      
       DO IEQ=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(DUMAX,DUNORM)
       END DO
-    ELSE       
+      !%OMP END DO  
+    ELSE
+      !%OMP DO PRIVATE(du1loc,du2loc,dunorm) REDUCTION(max:dumax)       
       DO ieq=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)+dweight2*u2Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)+dweight2*u2Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(dumax,dunorm)
       END DO
-    ENDIF       
-
+      !%OMP END DO  
+    ENDIF
+           
+    !print *,"dumax: ",dumax
     IF (dumax.LT.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
+    !$OMP END SINGLE
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
     CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
                               p_IelementList)
-    
+
     ! Loop over the elements - blockwise.
+    !
+    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
+    ! inner loop(s).
+    ! The blocks have all the same size, so we can use static scheduling.
+    !$OMP DO SCHEDULE(static,1)
     DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
-    
+
       ! We always handle BILF_NELEMSIM elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
@@ -3331,7 +3372,7 @@ CONTAINS
             DO JCOL=JCOL0,rmatrix%RmatrixBlock(1,1)%NA
               IF (p_KCOL(JCOL) .EQ. JDFG) EXIT
             END DO
-
+            
             ! Because columns in the global matrix are sorted 
             ! ascendingly (except for the diagonal element),
             ! the next search can start after the column we just found.
@@ -3453,6 +3494,7 @@ CONTAINS
 !          END DO
 !        END DO
 !      END DO
+      
       CALL trafo_getCoords_sim (elem_igetTrafoType(p_relementDistribution%itrialElement),&
           p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
       
@@ -3474,7 +3516,7 @@ CONTAINS
              p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1))
              
       END IF
-      
+     
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
@@ -3483,6 +3525,21 @@ CONTAINS
       CALL elem_generic_sim (p_relementDistribution%itrialElement, p_Dcoords, &
             p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
             Bder, Dbas, ncubp, IELmax-IELset+1, p_DcubPts)
+      !$OMP CRITICAL (display3)
+!      PRINT *,"Thread ID: ",omp_get_thread_num()
+!      PRINT *,"Dbas(1,1,1,1): ",Dbas(1,1,1,1)                      
+!      READ(*,*)
+!      print *,dbas
+!      READ(*,*)
+!      print *,p_dcoords
+!      READ(*,*)
+!      print *,p_djac
+!      READ(*,*)
+!      print *,p_ddetj
+!      READ(*,*)
+!      print *,p_dcubpts
+!      READ(*,*)
+      !$OMP END CRITICAL (display3)                  
             
       ! We want to set up the nonlinear part of the matrix
       !
@@ -3515,7 +3572,9 @@ CONTAINS
       ! velocities in U1Lx, otherwise we have to sum up
       ! dweight1*u1vel + dweight2*u2vel
       
+      ! only primary velocity field
       IF (dweight2 .EQ. 0.0_DP) THEN
+!      print *,"dweight2 .EQ. 0.0"
       
         ! Loop over all elements in the current set
         DO IEL=1,IELmax-IELset+1
@@ -3531,12 +3590,33 @@ CONTAINS
 
               ! Get the value of the (test) basis function 
               ! phi_i (our "O") in the cubature point:
+              !$OMP CRITICAL (display2)
+!              PRINT *,"Thread ID: ",omp_get_thread_num()
+!              PRINT *,"(JDOFE,1,ICUBP,IEL): ",JDOFE,1,ICUBP,IEL 
+!              PRINT *,"Dbas(JDOFE,1,ICUBP,IEL): ",Dbas(JDOFE,1,ICUBP,IEL)                      
+!              READ(*,*)
+              !$OMP END CRITICAL (display2)                  
+              
               db = Dbas(JDOFE,1,ICUBP,IEL)
               
               ! Sum up to the value in the cubature point
+              
+             !§OMP CRITICAL (display1)
+              !PRINT *,dbas
+              !READ(*,*)
+              !§OMP END CRITICAL (display1)                     
               JDFG = Idofs(JDOFE,IEL)
               du1loc = du1loc +u1Xvel(JDFG)*db
               du2loc = du2loc +u1Yvel(JDFG)*db
+              
+              !$OMP CRITICAL (display0)
+!              PRINT *,"Thread ID: ",omp_get_thread_num()
+!              PRINT *,"Jdfg: ",jdfg,"U1Xvel: ",u1Xvel(jdfg)
+!              PRINT *,"Db: ",db
+!              PRINT *,"Dbas(JDOFE,1,ICUBP,IEL): ",Dbas(JDOFE,1,ICUBP,IEL)                      
+!              PRINT *,"du1loc: ",du1loc
+!              READ(*,*)
+              !$OMP END CRITICAL (display0)                  
 
             END DO ! JDOFE
             
@@ -3547,6 +3627,11 @@ CONTAINS
           END DO ! ICUBP
           
         END DO ! IEL
+        
+        !$OMP CRITICAL (display)
+!        PRINT *,Dvelocity
+!        READ(*,*)
+        !$OMP END CRITICAL (display)            
         
         ! Compute X- and Y-derivative of the velocity?
         IF (dnewton .NE. 0.0_DP) THEN
@@ -3578,6 +3663,7 @@ CONTAINS
 
               END DO ! JDOFE
               
+              
               ! Save the computed velocity derivative
               DvelocityUderiv(1,ICUBP,IEL) = dweight1*du1locx
               DvelocityUderiv(2,ICUBP,IEL) = dweight1*du1locy
@@ -3591,7 +3677,7 @@ CONTAINS
         END IF ! dnewton != 0
         
       ELSE
-
+!        print *,"dweight2 .ne. 0"
         DO IEL=1,IELmax-IELset+1
         
           ! Loop over all cubature points on the current element
@@ -3666,6 +3752,8 @@ CONTAINS
       
       END IF
       
+  
+      
       ! If ALE is not active, calculate 
       !
       !     U * grad(Phi_j)  =  < grad(Phi_j), U >
@@ -3721,6 +3809,8 @@ CONTAINS
           END DO ! ICUBP
           
         END DO ! IEL
+        
+        
         
         ! Subtract the X- and Y-derivative of the mesh velocity to the
         ! velocity derivative field if Newton is active.
@@ -3781,6 +3871,11 @@ CONTAINS
       ELSE
         Dentry = 0.0_DP
       END IF
+      
+      !$OMP CRITICAL (display)
+!      PRINT *,Dvelocity
+!      READ(*,*)
+      !$OMP END CRITICAL (display)
       
       ! If ddelta != 0, set up the nonlinearity U*grad(u), probably with
       ! streamline diffusion stabilisation.
@@ -3931,7 +4026,7 @@ CONTAINS
         END DO ! IEL
         
       END IF
-      
+     
       ! If dny != 0 or dalpha != 0, add the Laplace/Mass matrix to the
       ! local matrices.
       IF ((dalpha .NE. 0.0_DP) .OR. (dny .NE. 0.0_DP)) THEN
@@ -4096,7 +4191,7 @@ CONTAINS
       ! the weighting parameter of the corresponding THETA-scheme of a
       ! nonstationary simulation. For stationary simulations, dtheta is typically
       ! 1.0 which includes the local matrix into the global one directly.)
-        
+
       IF (IAND(cdef,CONV_MODMATRIX) .NE. 0) THEN
       
         ! With or without Newton?
@@ -4104,7 +4199,7 @@ CONTAINS
         
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and (if different from A11) also into A22.
-        
+          !$OMP CRITICAL
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
               DO JDOFE=1,indof
@@ -4113,9 +4208,10 @@ CONTAINS
               END DO
             END DO
           END DO
+          !$OMP END CRITICAL
           
           IF (.NOT. ASSOCIATED(p_Da11,p_Da22)) THEN
-
+            !$OMP CRITICAL
             DO IEL=1,IELmax-IELset+1
               DO IDOFE=1,indof
                 DO JDOFE=1,indof
@@ -4125,6 +4221,7 @@ CONTAINS
                 END DO
               END DO
             END DO
+            !$OMP END CRITICAL
 
           END IF
 
@@ -4133,7 +4230,7 @@ CONTAINS
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and A22 (both must exist and be independent from
           ! each other).
-
+          !$OMP CRITICAL
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
               DO JDOFE=1,indof
@@ -4151,7 +4248,9 @@ CONTAINS
               END DO
             END DO
           END DO
+          !$OMP END CRITICAL
           
+          !$OMP CRITICAL
           ! Include the local Newton matrix parts into A12 and A21.
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
@@ -4168,6 +4267,7 @@ CONTAINS
               END DO
             END DO
           END DO
+          !$OMP END CRITICAL
 
         END IF        
         
@@ -4180,11 +4280,12 @@ CONTAINS
       ! In this case, D=(D1,D2) is expected to be the RHS on      
       ! entry and will be updated to be the defect vector when    
       ! this routine is left.                                     
-        
+
       IF (IAND(cdef,CONV_MODDEFECT) .NE. 0) THEN
         
         ! With or without Newton?
         IF (dnewton .EQ. 0.0_DP) THEN
+          !$OMP CRITICAL
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
 
@@ -4201,9 +4302,9 @@ CONTAINS
               END DO
             END DO
           END DO
-          
+          !$OMP END CRITICAL
         ELSE
-
+          !$OMP CRITICAL
           DO IEL=1,IELmax-IELset+1
             DO IDOFE=1,indof
 
@@ -4228,12 +4329,13 @@ CONTAINS
               END DO
             END DO
           END DO
-
+          !$OMP END CRITICAL          
         END IF
 
       END IF
         
     END DO ! IELset
+    !$OMP END DO 
     
     ! Release memory
     CALL domint_doneIntegration(rintSubset)
@@ -4255,7 +4357,7 @@ CONTAINS
     DEALLOCATE(Idofs)
     DEALLOCATE(DbasALE)
     DEALLOCATE(Dbas)
-
+  !$OMP END PARALLEL
   END SUBROUTINE
 
   ! ----------------------------------------------------------------------
