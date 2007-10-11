@@ -1,0 +1,56 @@
+
+# PRM-file of the domain
+
+sfilePRM = './pre/QUAD2d.prm'
+
+# TRI-file of the mesh
+
+sfileTRI = './pre/QUAD2d.tri'
+
+# Convert quad mesh to triangle mesh
+
+iconvertToTriangleMesh = 0
+
+# Percentage value (0..1) for mesh distortion
+# 0=no distortion. E.g. 0.2=20%
+
+dmeshDistortion=0.0
+
+# Element type to use for the discretisation.
+# 11=Q1, 1=P1, 13=Q2, 2=P2, -30=Q1~ nonparametric
+
+ielementType = 11
+
+# Type of stabilisation.
+# 0=none
+# 1=edge oriented
+
+istabilisation=0
+
+# Parameter for the stabilisation
+
+dgamma = 0.01
+
+# Maximum level of the discretisation
+
+NLMAX = 2
+
+# Rotation angle for the anisotropic diffusion
+
+dtheta = 40
+
+# Entries in the diffusion matrix
+
+ddiffusionA11 = 1.0
+ddiffusionA12 = 0.0
+ddiffusionA21 = 0.0
+ddiffusionA22 = 0.001
+
+# Type of reference solution
+# 0: u=16x(1-x)y(1-y), 1 boundary component
+# 1: u=unknown, oblique flow
+# 2: u=16*x*(1-x)*y*(1-y), 2 boundary components
+# 3: u according to f=32*(y(1-y) + x(1-x))
+# 4: u=unknown, u(outer boundarry component)=0, u(inner BC)=2
+
+isolution = 4
