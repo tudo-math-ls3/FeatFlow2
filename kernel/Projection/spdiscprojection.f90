@@ -16,7 +16,7 @@
 !# 2.) spdp_projectSolution
 !#     -> Convert a block solution vector to a new space.
 !#
-!# 3.) spdp_stdProjectionToP1Q1
+!# 3.) spdp_stdProjectionToP1Q1Scalar
 !#     -> Project a scalar solution vector to another one discretised by
 !#        $P_1$ and/or $Q_1$ elements.
 !# </purpose>
@@ -499,7 +499,7 @@ CONTAINS
   ! ***************************************************************************
 
 !<subroutine>
-  SUBROUTINE spdp_stdProjectionToP1Q1 (rsourceVector,&
+  SUBROUTINE spdp_stdProjectionToP1Q1Scalar (rsourceVector,&
       rdestVector,rdestDiscretisation)
   
 !<description>
