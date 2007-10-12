@@ -2202,21 +2202,21 @@ CONTAINS
       CALL lsysbl_releaseVector(rtempVecFine)
       CALL lsysbl_releaseVector(rtempVecCoarse)
           
-      IF (rproblem%MT_outputLevel .GE. 2) THEN
-        CALL output_line ('Writing solution to file '//&
-            './ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10)))
-        CALL sptivec_saveToFileSequence(&
-            myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
-            '(''./ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10))//'.'',I5.5)',&
-            .TRUE.,rtempVectorX)
-          
-        DO ilev=1,SIZE(RspatialPrecond)
-          CALL c2d2_postprocSpaceTimeGMV(rproblem,myRspaceTimeDiscr(ilev),&
-              myRspaceTimeDiscr(ilev)%p_rsolution,&
-              './gmv/iteration'//TRIM(sys_siL(iglobIter-1,10))//'level'//TRIM(sys_siL(ilev,10))//&
-              '.gmv')
-        END DO
-      END IF
+!      IF (rproblem%MT_outputLevel .GE. 2) THEN
+!        CALL output_line ('Writing solution to file '//&
+!            './ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10)))
+!        CALL sptivec_saveToFileSequence(&
+!            myRspaceTimeDiscr(SIZE(RspatialPrecond))%p_rsolution,&
+!            '(''./ns/tmpsolution'//TRIM(sys_siL(iglobIter-1,10))//'.'',I5.5)',&
+!            .TRUE.,rtempVectorX)
+!          
+!        DO ilev=1,SIZE(RspatialPrecond)
+!          CALL c2d2_postprocSpaceTimeGMV(rproblem,myRspaceTimeDiscr(ilev),&
+!              myRspaceTimeDiscr(ilev)%p_rsolution,&
+!              './gmv/iteration'//TRIM(sys_siL(iglobIter-1,10))//'level'//TRIM(sys_siL(ilev,10))//&
+!              '.gmv')
+!        END DO
+!      END IF
       
       IF (rproblem%MT_outputLevel .GE. 1) THEN
         ! Value of the functional

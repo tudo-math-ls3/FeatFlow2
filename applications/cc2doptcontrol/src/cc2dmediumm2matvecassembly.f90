@@ -485,6 +485,16 @@ CONTAINS
       
         ! Dual equation
         ! ---------------
+        ! In case dgamma2=0, switch off the A45/A54 matrices as we haven't
+        ! assembled them.
+        IF (rmatrixComponents%dgamma2 .NE. 0.0_DP) THEN
+          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
+          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
+        ELSE
+          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
+          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
+        END IF
+        
         ! Assemble rows 1..3 of the block matrix:
         !
         !    (  M    .    .  A44  A45  B1 ) 
@@ -506,16 +516,6 @@ CONTAINS
         CALL assembleVelocityBlocks (.TRUE.,&
             rmatrixComponents,rmatrix,rvector,1.0_DP)
 
-        ! In case dgamma2=0, switch off the A45/A54 matrices as we haven't
-        ! assembled them.
-        IF (rmatrixComponents%dgamma2 .NE. 0.0_DP) THEN
-          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 1.0_DP
-          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 1.0_DP
-        ELSE
-          rmatrix%RmatrixBlock(4,5)%dscaleFactor = 0.0_DP
-          rmatrix%RmatrixBlock(5,4)%dscaleFactor = 0.0_DP
-        END IF
-        
         ! 2.) Include the mass matrix blocks
         !
         !    (  M    .    .    .    .    .  ) 

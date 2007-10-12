@@ -4376,6 +4376,7 @@ CONTAINS
     ! local variables  
     TYPE(t_matrixBlock) :: rblockTemp
     TYPE(t_ccmatrixComponents) :: rmatrixComponents
+    TYPE(t_vectorBlock) :: rvector
     INTEGER :: isubstep,ileft,iright,ix
     INTEGER(PREC_VECIDX), DIMENSION(1) :: Irows
     INTEGER(PREC_VECIDX) :: idiag
@@ -4410,6 +4411,10 @@ CONTAINS
     ! for storing matrix data.
     CALL lsysbl_duplicateMatrix (rsupermatrix%p_rlevelInfo%rpreallocatedSystemMatrix,&
         rblockTemp,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        
+    ! Create a vector for evaluating the nonlinearity.
+    ! (The vector is always created but only used when there is a nonlinearity!)
+    CALL lsysbl_createVecBlockIndMat(rblockTemp,rvector)
     
     ! Loop through the substeps
     DO isubstep = 0,rsupermatrix%niterations
@@ -4438,10 +4443,18 @@ CONTAINS
         ! Set up the matrix weights of that submatrix.
         CALL c2d2_setupMatrixWeights (rproblem,rsupermatrix,rsupermatrix%dtimeStepTheta,&
           isubstep,ix,rmatrixComponents)
+          
+        ! If there is a nonlinearity involved, get the evaluation point.
+        IF ((rmatrixComponents%dgamma1 .NE. 0.0_DP) .OR. &
+            (rmatrixComponents%dgamma2 .NE. 0.0_DP) .OR. &
+            (rmatrixComponents%dnewton1 .NE. 0.0_DP) .OR. &
+            (rmatrixComponents%dnewton2 .NE. 0.0_DP))  THEN
+          CALL sptivec_getTimestepData (rsupermatrix%p_rsolution, isubstep+ix, rvector)
+        END IF
       
         ! Assemble the matrix in rblockTemp
         CALL c2d2_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rblockTemp,rmatrixComponents,ctypePrimalDual=0) 
+            rblockTemp,rmatrixComponents,rvector,ctypePrimalDual=0) 
 
         ! Include the boundary conditions into that matrix.
         ! Switch of matrices that aren't needed.
@@ -4500,6 +4513,9 @@ CONTAINS
       END IF
       
     END DO
+    
+    ! Release the temp vector
+    CALL lsysbl_releaseVector (rvector)
     
     ! Release the temp matrix
     CALL lsysbl_releaseMatrix (rblockTemp)
