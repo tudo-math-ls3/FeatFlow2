@@ -202,6 +202,10 @@ MODULE linearsystemblock
   ! routines for details.
   INTEGER(I32), PARAMETER :: LSYSBS_MSPEC_OFFDIAGSUBMATRIX  =        4
 
+  ! The submatrices in the block matrix all share the same structure.
+  ! Submatrices are allowed to be empty. 
+  INTEGER(I32), PARAMETER :: LSYSBS_MSPEC_GROUPMATRIX       =        5
+
 !</constantblock>
 
 !</constants>
