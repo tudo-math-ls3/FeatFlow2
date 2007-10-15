@@ -258,9 +258,9 @@ CONTAINS
       DcornerCoords(2,ive) = DvertexCoords(2,IverticesAtElement(ive,iel))
     END DO
     IF (ive .EQ. TRIA_NVETRI2D+1) THEN
-      CALL gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
-    ELSE
       CALL gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
+    ELSE
+      CALL gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
     END IF
     
     IF (bcheck) THEN

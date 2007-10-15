@@ -2980,8 +2980,8 @@ CONTAINS
   REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
   
   !external function
-  INTEGER :: omp_get_thread_num
-  EXTERNAL omp_get_thread_num  
+  !INTEGER :: omp_get_thread_num
+  !EXTERNAL omp_get_thread_num  
   
     ! Initialise the derivative flags
     Bder = .FALSE.
