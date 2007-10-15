@@ -466,6 +466,9 @@ MODULE linearsolver
   ! Jin-Wei-Tam iteration
   INTEGER, PARAMETER :: LINSOL_ALG_JINWEITAM     = 12
   
+  ! Multigrid iteration
+  INTEGER, PARAMETER :: LINSOL_ALG_MULTIGRID2    = 13
+
   ! ILU(0) iteration (scalar system)
   INTEGER, PARAMETER :: LINSOL_ALG_ILU01x1       = 50
   
@@ -883,6 +886,9 @@ MODULE linearsolver
     ! Pointer to a structure for the Multigrid solver; NULL() if not set
     TYPE (t_linsolSubnodeMultigrid), POINTER      :: p_rsubnodeMultigrid   => NULL()
 
+    ! Pointer to a structure for the Multigrid solver; NULL() if not set
+    TYPE (t_linsolSubnodeMultigrid2), POINTER     :: p_rsubnodeMultigrid2  => NULL()
+
     ! Pointer to a structure for the ILU0 1x1 solver; NULL() if not set
     TYPE (t_linsolSubnodeILU01x1), POINTER        :: p_rsubnodeILU01x1     => NULL()
     
@@ -1227,6 +1233,13 @@ MODULE linearsolver
     ! t_matrixBlock structure that holds the system matrix.
     TYPE(t_matrixBlock)                :: rsystemMatrix
     
+    ! t_matrixBlock structure for the calculation of the optimal correction.
+    ! Normally, this matrix has not to be set. If not defined, rsystemMatrix is
+    ! used. If defined, the calculation of the optimal defect (guided by
+    ! the parameter rcoarseGridCorrection in the multigrid subnode)
+    ! is done with this matrix instead of the system matrix.
+    TYPE(t_matrixBlock)                :: rsystemMatrixOptCorrection
+    
     ! A temporary vector for that level. The memory for this is allocated
     ! in initStructure and released in doneStructure.
     TYPE(t_vectorBlock)                 :: rtempVector
@@ -1346,6 +1359,155 @@ MODULE linearsolver
     ! to the highest level, i.e. the level where the system should be
     ! solved.
     TYPE(t_linsolMGLevelInfo), POINTER :: p_rlevelInfoTail         => NULL()
+    
+    ! A pointer to a filter chain, as this solver supports filtering.
+    ! The filter chain must be configured for being applied to defect vectors.
+    TYPE(t_filterChain), DIMENSION(:),POINTER :: p_RfilterChain     => NULL()
+  
+    ! A temp vector for the prolongation/restriction.
+    ! Memory for this vector is allocated in initStructure and released
+    ! in doneStructure.
+    TYPE(t_vectorScalar) :: rprjTempVector
+    
+  END TYPE
+  
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! Level data for multigrid. This structure forms an entry in a linked list
+  ! of levels which multigrid uses for solving the given problem.
+  ! The solver subnode t_linsolSubnodeMultigrid holds pointers to the head
+  ! and the tail of the list.
+  
+  TYPE t_linsolMGLevelInfo2
+  
+    ! A level identifier. Can be set to identify the global number of the
+    ! level, this structure refers to. Only for output purposes.
+    INTEGER                        :: ilevel                 = 0
+    
+    ! t_matrixBlock structure that holds the system matrix.
+    TYPE(t_matrixBlock)                :: rsystemMatrix
+    
+    ! t_matrixBlock structure for the calculation of the optimal correction.
+    ! Normally, this matrix has not to be set. If not defined, rsystemMatrix is
+    ! used. If defined, the calculation of the optimal defect (guided by
+    ! the parameter rcoarseGridCorrection in the multigrid subnode)
+    ! is done with this matrix instead of the system matrix.
+    TYPE(t_matrixBlock)                :: rsystemMatrixOptCorrection
+    
+    ! A temporary vector for that level. The memory for this is allocated
+    ! in initStructure and released in doneStructure.
+    TYPE(t_vectorBlock)                 :: rtempVector
+    
+    ! A temporary vector that is used for the calculation of the 
+    ! coarse grid correction. This vector shares its data with the
+    ! rprjTempVector vector in the multigrid solver structure 
+    ! t_linsolSubnodeMultigrid, but has the shape of the RHS vector.
+    ! The structure is initialised in initStructure and cleaned up
+    ! in doneStructure.
+    TYPE(t_vectorBlock)                 :: rcgcorrTempVector
+
+    ! A RHS vector for that level. The memory for this is allocated
+    ! in initStructure and released in doneStructure.
+    TYPE(t_vectorBlock)                 :: rrhsVector
+
+    ! A solution vector for that level. The memory for this is allocated
+    ! in initStructure and released in doneStructure.
+    TYPE(t_vectorBlock)                 :: rsolutionVector
+
+    ! A pointer to the solver node for the presmoothing or NULL(),
+    ! if no presmoother is used.
+    TYPE(t_linsolNode), POINTER         :: p_rpresmoother         => NULL()
+
+    ! A pointer to the solver node for the postsmoothing or NULL(),
+    ! if no presmoother is used.
+    TYPE(t_linsolNode), POINTER         :: p_rpostsmoother        => NULL()
+
+    ! A pointer to the solver node for the coarse grid solver if
+    ! the level corresponding to this structure represents the coarse
+    ! grid. NULL() otherwise.
+    TYPE(t_linsolNode), POINTER         :: p_rcoarseGridSolver    => NULL()
+    
+    ! A pointer to a filter chain, as this solver supports filtering.
+    ! The filter chain must be configured for being applied to defect vectors.
+    TYPE(t_filterChain), DIMENSION(:),POINTER      :: p_RfilterChain => NULL()
+    
+    ! An interlevel projection structure that configures the transport
+    ! of defect/solution vectors from one level to another.
+    ! For the coarse grid, this structure is ignored.
+    ! For a finer grid (e.g. level 4), this defines the grid transfer
+    ! between the current and the lower level (so here between level 3 and
+    ! level 4).
+    TYPE(t_interlevelProjectionBlock)   :: rinterlevelProjection
+    
+    ! STATUS/INTERNAL: MG cycle information.
+    ! Number of cycles to perform on this level.
+    INTEGER                        :: ncycles
+
+    ! STATUS/INTERNAL: MG cycle information.
+    ! Number of remaining cycles to perform on this level.
+    INTEGER                        :: ncyclesRemaining
+    
+    ! STATUS/INTERNAL: initial residuum when a solution is restricted to this
+    ! level. Only used if adaptive cycles are activated by setting 
+    ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
+    REAL(DP)                       :: dinitResCycle = 0.0_DP
+    
+    ! STATUS/INTERNAL: Number of current cycle on that level. 
+    ! Only used if adaptive cycles are activated by setting 
+    ! depsRelCycle < 1E99_DP in t_linsolSubnodeMultigrid.
+    INTEGER                        :: icycleCount   = 0
+    
+  END TYPE
+  
+!</typeblock>
+
+  ! ***************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the Multigrid solver.
+  ! There are pointers to the head and the tail of a linked list of
+  ! t_mgLevelInfo structures which hold the data of all levels.
+  ! The tail of the list corresponds to the maximum level where
+  ! multigrid solves the problem.
+  
+  TYPE t_linsolSubnodeMultigrid2
+  
+    ! INPUT PARAMETER: Cycle identifier. 
+    !  0=F-cycle, 
+    !  1=V-cycle, 
+    !  2=W-cycle.
+    INTEGER                       :: icycle                   = 0
+    
+    ! INPUT PARAMETER: Adaptive cycle convergence criterion for coarse levels.
+    ! This value is usually =1E99_DP which deactivates adaptive cycles.
+    ! The user can set this variable on initialisation of Multigrid to
+    ! a value < 1E99_DP. In this case, the complete multigrid cycle on all 
+    ! levels except for the fine grid is repeated until
+    !  |res. after postsmoothing| < depsRelCycle * |initial res on that level|.
+    ! This allows 'adaptive cycles' which e.g. gain one digit on a coarse
+    ! level before prolongating the solution to the fine grid.
+    ! This is an extension to the usual F/V/W-cycle scheme.
+    REAL(DP)                      :: depsRelCycle             = 1E99_DP
+    
+    ! INPUT PARAMETER: If adaptive cycles are activated by depsRelCycle < 1E99_DP,
+    ! this configures the maximum number of cycles that are performed.
+    ! The value =-1 deactivates this upper bouns, so coarse grid cycles are
+    ! repeated until the convergence criterion given by depsRelCycle is reached.
+    INTEGER                       :: nmaxAdaptiveCycles       = -1
+    
+    ! INPUT PARAMETER: Coarse grid correction structure for step length control. 
+    ! Defines the algorithm for computing the optimal correction as well as the
+    ! minimum and maximum step length ALPHAMIN/ALPHAMAX.
+    ! The standard setting/initialisation is suitable for conforming elements.
+    TYPE(t_coarseGridCorrection)  :: rcoarseGridCorrection
+    
+    ! A pointer to the level info structures for all the levels in multigrid
+    TYPE(t_linsolMGLevelInfo2), DIMENSION(:), POINTER :: p_RlevelInfo
     
     ! A pointer to a filter chain, as this solver supports filtering.
     ! The filter chain must be configured for being applied to defect vectors.
@@ -1585,6 +1747,10 @@ CONTAINS
     ! Ask Multigrid and its subsolvers if the matrices are ok.
     CALL linsol_matCompatMultigrid (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
     
+  CASE (LINSOL_ALG_MULTIGRID2)
+    ! Ask Multigrid and its subsolvers if the matrices are ok.
+    CALL linsol_matCompatMultigrid2 (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
+
   CASE DEFAULT
     ! Nothing special. Let's assume that the matrices are ok.
     ccompatible = LINSOL_COMP_OK
@@ -1707,6 +1873,8 @@ CONTAINS
       CALL linsol_initStructureGMRES (rsolverNode,ierror,isubgroup)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_initStructureMultigrid (rsolverNode,ierror,isubgroup)
+    CASE (LINSOL_ALG_MULTIGRID2)
+      CALL linsol_initStructureMultigrid2 (rsolverNode,ierror,isubgroup)
     END SELECT
   
   END SUBROUTINE
@@ -1779,10 +1947,12 @@ CONTAINS
       CALL linsol_initDataBiCGStab (rsolverNode,ierror,isubgroup)
     CASE (LINSOL_ALG_GMRES)
       CALL linsol_initDataGMRES (rsolverNode,ierror,isubgroup)
-    CASE (LINSOL_ALG_MULTIGRID)
-      CALL linsol_initDataMultigrid (rsolverNode,ierror,isubgroup)
     CASE (LINSOL_ALG_JINWEITAM)
       CALL linsol_initDataJinWeiTam (rsolverNode,ierror,isubgroup)
+    CASE (LINSOL_ALG_MULTIGRID)
+      CALL linsol_initDataMultigrid (rsolverNode,ierror,isubgroup)
+    CASE (LINSOL_ALG_MULTIGRID2)
+      CALL linsol_initDataMultigrid2 (rsolverNode,ierror,isubgroup)
     END SELECT
   
   END SUBROUTINE
@@ -1952,6 +2122,8 @@ CONTAINS
       CALL linsol_doneDataGMRES (rsolverNode,isubgroup)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_doneDataMultigrid (rsolverNode,isubgroup)
+    CASE (LINSOL_ALG_MULTIGRID2)
+      CALL linsol_doneDataMultigrid2 (rsolverNode,isubgroup)
     END SELECT
 
   END SUBROUTINE
@@ -2011,6 +2183,8 @@ CONTAINS
       CALL linsol_doneStructureGMRES (rsolverNode,isubgroup)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_doneStructureMultigrid (rsolverNode,isubgroup)
+    CASE (LINSOL_ALG_MULTIGRID2)
+      CALL linsol_doneStructureMultigrid2 (rsolverNode,isubgroup)
     END SELECT
 
   END SUBROUTINE
@@ -2070,10 +2244,12 @@ CONTAINS
       CALL linsol_doneGMRES (p_rsolverNode)
     CASE (LINSOL_ALG_MILUS1X1)
       CALL linsol_doneMILUs1x1 (p_rsolverNode)
-    CASE (LINSOL_ALG_MULTIGRID)
-      CALL linsol_doneMultigrid (p_rsolverNode)
     CASE (LINSOL_ALG_JINWEITAM)
       CALL linsol_doneJinWeiTam (p_rsolverNode)
+    CASE (LINSOL_ALG_MULTIGRID)
+      CALL linsol_doneMultigrid (p_rsolverNode)
+    CASE (LINSOL_ALG_MULTIGRID2)
+      CALL linsol_doneMultigrid (p_rsolverNode)
     CASE DEFAULT
     END SELECT
     
@@ -2150,6 +2326,8 @@ CONTAINS
       CALL linsol_alterGMRES (rsolverNode, ralterConfig)
     CASE (LINSOL_ALG_MULTIGRID)
       CALL linsol_alterMultigrid (rsolverNode, ralterConfig)
+    CASE (LINSOL_ALG_MULTIGRID2)
+      CALL linsol_alterMultigrid2 (rsolverNode, ralterConfig)
     END SELECT
   
   END SUBROUTINE
@@ -5367,6 +5545,7 @@ CONTAINS
   INTEGER(PREC_VECIDX), DIMENSION(:), POINTER :: p_Kcol
   REAL(DP), DIMENSION(:), POINTER :: p_DA
   TYPE(t_matrixBlock), TARGET :: rmatrixLocal
+  INTEGER(I32) :: idupFlag
 
   ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
   ! of a call to the solver routines.
@@ -5391,37 +5570,47 @@ CONTAINS
   IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
 
   ! Check out that we can handle the matrix.
-  ! Check out that we can handle the matrix.
   IF (rsolverNode%rsystemMatrix%ndiagBlocks .NE. 1) THEN
     ! We have to create a global matrix first!
     CALL glsys_assembleGlobal (rsolverNode%rsystemMatrix,rmatrixLocal, &
                                .TRUE.,.TRUE.)
     p_rmatrix => rmatrixLocal%RmatrixBlock(1,1)
+    
+    ! We can now modify p_rmatrix without harming the original matrix,
+    ! so set the dup-flag for the copy command to rtempMatrix below
+    ! to LSYSSC_DUP_SHARE.
+    idupFlag = LSYSSC_DUP_SHARE
+  
   ELSE
     p_rmatrix => rsolverNode%rsystemMatrix%RmatrixBlock (1,1)
-  END IF
 
-  IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
-    PRINT *,'UMFPACK can only handle double precision matrices!'
-    CALL sys_halt()
+    ! As we work with the original matrix, we set idupFlag
+    ! to LSYSSC_DUP_COPY. This prevents the original matrix from being
+    ! destroyed in the copy-modify-part below.
+    idupFlag = LSYSSC_DUP_COPY
   END IF
 
   SELECT CASE (p_rmatrix%cmatrixFormat)
   CASE (LSYSSC_MATRIX9)
     ! Format 9 is exactly the UMFPACK matrix.
-    ! Make a copy of the matrix structure, but use the same matrix entries.
+    ! Make a copy of the matrix so we can change its content for UMF4SYM.
     CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
-                                  LSYSSC_DUP_COPY,LSYSSC_DUP_SHARE)
+                                 idupFlag,idupFlag)
   CASE (LSYSSC_MATRIX7)
     ! For format 7, we have to modify the matrix slightly.
-    ! Make a copy of the whole matrix:
+    ! Make a copy of the matrix:
     CALL lsyssc_duplicateMatrix (p_rmatrix,rtempMatrix,&
-                                  LSYSSC_DUP_COPY,LSYSSC_DUP_COPY)
+                                 idupFlag,idupFlag)
     ! Resort the entries to put the diagonal entry to the correct position.
     ! This means: Convert the structure-7 matrix to a structure-9 matrix:
     CALL lsyssc_convertMatrix (rtempMatrix,LSYSSC_MATRIX9)
   END SELECT
   
+  IF (p_rmatrix%cdataType .NE. ST_DOUBLE) THEN
+    PRINT *,'UMFPACK can only handle double precision matrices!'
+    CALL sys_halt()
+  END IF
+
   ! Modify Kcol/Kld of the matrix. Subtract 1 to get the 0-based.
   CALL lsyssc_addIndex (rtempMatrix%h_Kcol,-1_I32)
   CALL lsyssc_addIndex (rtempMatrix%h_Kld,-1_I32)
@@ -5430,6 +5619,10 @@ CONTAINS
   CALL lsyssc_getbase_Kcol (rtempMatrix,p_Kcol)
   CALL lsyssc_getbase_Kld (rtempMatrix,p_Kld)
   CALL lsyssc_getbase_double (rtempMatrix,p_DA)
+  
+  ! Fill the matrix content by 1.0. That way, UMFPACK will treat
+  ! all entries as nonzero.
+  CALL lalg_setVectorDble (p_Da,1.0_DP)
   
   ! Perform a symbolic factorization...
   CALL UMF4SYM(rtempMatrix%NEQ,rtempMatrix%NEQ,p_Kld,p_Kcol,p_Da, &
@@ -10196,6 +10389,97 @@ CONTAINS
 
 !<subroutine>
   
+  SUBROUTINE linsol_doneMultigrid2Level (rlevelInfo)
+                    
+!<description>
+  ! Cleans up the multigrid level structure rlevelInfo. All memory allocated
+  ! in this structure is released.
+!</description>
+  
+!<inputoutput>
+  ! The t_levelInfo structure to clean up.
+  TYPE(t_linsolMGLevelInfo2), INTENT(INOUT)     :: rlevelInfo
+!</inputoutput>
+
+!</subroutine>
+  
+    ! Release the temporary vectors of this level. 
+    ! The vector may not exist - if the application has not called
+    ! initStructure!
+    IF (rlevelInfo%rrhsVector%NEQ .NE. 0) &
+      CALL lsysbl_releaseVector(rlevelInfo%rrhsVector)
+
+    IF (rlevelInfo%rtempVector%NEQ .NE. 0) &
+      CALL lsysbl_releaseVector(rlevelInfo%rtempVector)
+
+    IF (rlevelInfo%rsolutionVector%NEQ .NE. 0) &
+      CALL lsysbl_releaseVector(rlevelInfo%rsolutionVector)
+
+    ! Release sub-solvers if associated.
+    !
+    ! Caution: Pre- and postsmoother may be identical!
+    IF (ASSOCIATED(rlevelInfo%p_rpostSmoother) .AND. &
+        (.NOT. ASSOCIATED(rlevelInfo%p_rpreSmoother, rlevelInfo%p_rpostSmoother))) THEN
+      CALL linsol_releaseSolver(rlevelInfo%p_rpostsmoother)
+    END IF
+
+    IF (ASSOCIATED(rlevelInfo%p_rpresmoother)) THEN
+      CALL linsol_releaseSolver(rlevelInfo%p_rpresmoother)
+    END IF
+
+    IF (ASSOCIATED(rlevelInfo%p_rcoarseGridSolver)) THEN
+      CALL linsol_releaseSolver(rlevelInfo%p_rcoarseGridSolver)
+    END IF
+    
+    ! Clean up the associated matrix if there is one.
+    ! Of course, the memory of the matrices will not be deallocated
+    ! because the matrices belong to the application, not to the solver!
+    CALL lsysbl_releaseMatrix(rlevelInfo%rsystemMatrix)
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_cleanMultigrid2Levels (rsolverNode)
+                    
+!<description>
+  ! This routine removes all level information from the MG solver and releases
+  ! all attached solver nodes on all levels (smoothers, coarse grid solvers,
+  ! ...). 
+  !
+  ! The level info array is not released.
+!</description>
+  
+!<inputoutput>
+  ! The solver structure of the multigrid solver.
+  TYPE(t_linsolNode), INTENT(INOUT) :: rsolverNode
+!</inputoutput>
+
+!</subroutine>
+
+  INTEGER :: ilevel
+
+  ! Make sure the solver node is configured for multigrid
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
+      (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+    PRINT *,'Error: Multigrid structure not initialised'
+    CALL sys_halt()
+  END IF
+
+  ! Remove all the levels
+  DO ilevel = 1,SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    CALL linsol_doneMultigrid2Level (&
+        rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel))
+  END DO
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
   SUBROUTINE linsol_initMultigrid (p_rsolverNode,p_Rfilter)
   
 !<description>
@@ -11806,7 +12090,20 @@ CONTAINS
               
               ! Step length control. Get the optimal damping parameter for the
               ! defect correction.
-              CALL cgcor_calcOptimalCorrection (p_rsubnode%rcoarseGridCorrection,&
+              ! Use either the standard system matrix for this purpose or
+              ! the specific matrix for the coarse grid correction if this exists
+              ! in the level info structure.
+              IF (p_rcurrentLevel%rsystemMatrixOptCorrection%NEQ .NE. 0) THEN
+                CALL cgcor_calcOptimalCorrection (p_rsubnode%rcoarseGridCorrection,&
+                                          p_rcurrentLevel%rsystemMatrixOptCorrection,&
+                                          p_rcurrentLevel%rsolutionVector,&
+                                          p_rcurrentLevel%rrhsVector,&
+                                          p_rcurrentLevel%rtempVector,&
+                                          p_rcurrentLevel%rcgcorrTempVector,&
+                                          p_RfilterChain,&
+                                          dstep)
+              ELSE
+                CALL cgcor_calcOptimalCorrection (p_rsubnode%rcoarseGridCorrection,&
                                           p_rcurrentLevel%rsystemMatrix,&
                                           p_rcurrentLevel%rsolutionVector,&
                                           p_rcurrentLevel%rrhsVector,&
@@ -11814,6 +12111,7 @@ CONTAINS
                                           p_rcurrentLevel%rcgcorrTempVector,&
                                           p_RfilterChain,&
                                           dstep)
+              END IF
               
               ! Perform the coarse grid correction by adding the coarse grid
               ! solution (with the calculated step-length parameter) to
@@ -11893,6 +12191,1714 @@ CONTAINS
 
                   IF ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) .AND. &
                       ASSOCIATED(p_rcurrentLevel%p_rnextLevel)) THEN
+                      
+                    ! Adaptive cycles activated. 
+                    !
+                    ! We are on a level < nlmax.
+                    ! At first, calculate the residuum on that level.
+                    CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
+                                            p_rcurrentLevel%rtempVector)
+                    CALL lsysbl_blockMatVec (&
+                        p_rcurrentLevel%rsystemMatrix, &
+                        p_rcurrentLevel%rsolutionVector,&
+                        p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+
+                    dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                        rsolverNode%iresNorm)
+                    IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                              (dres .LE. 1E99_DP))) dres = 0.0_DP
+                              
+                    ! Compare it with the initial residuum. If it's not small enough
+                    ! and if we haven't reached the maximum number of cycles,
+                    ! repeat the complete cycle.
+                    IF ( ((rsolverNode%p_rsubnodeMultigrid%nmaxAdaptiveCycles .LE. -1) &
+                          .OR. &
+                          (p_rcurrentLevel%icycleCount .LT. &
+                           rsolverNode%p_rsubnodeMultigrid%nmaxAdaptiveCycles)) &
+                        .AND. &
+                        (dres .GT. rsolverNode%p_rsubnodeMultigrid%depsRelCycle * &
+                                    p_rcurrentLevel%dinitResCycle) ) THEN
+
+                      IF (rsolverNode%ioutputLevel .GE. 3) THEN
+                        CALL output_line ( &
+                          TRIM( &
+                          sys_siL(p_rcurrentLevel%icycleCount,10)) &
+                          //'''th repetition of cycle on level '// &
+                          TRIM(sys_siL(ilev,5))//'.')
+                      END IF
+
+                      p_rcurrentLevel%icycleCount = p_rcurrentLevel%icycleCount+1
+                      CYCLE cycleloop
+                    END IF
+                    
+                    ! Otherwise: The cycle(s) is/are finished; 
+                    ! the END DO goes up one level.
+                    
+                  END IF
+
+                END IF
+              ELSE
+
+                ! Next cycle; go down starting from the current level
+                CYCLE cycleloop
+
+              END IF
+              
+            END DO ! ilev < nlmax
+            
+            ! We finally reached the maximum level. Quit the cycle loop
+            ! to go on with the next iteration.
+            EXIT cycleloop
+          
+          END DO cycleloop
+          
+          ! We have (hopefully) successfully performed one MG-sweep, starting
+          ! and ending on the finest level. As we are now on the finest level
+          ! again, we can update our defect vector to test the current
+          ! residuum...
+          !
+          ! Calculate the residuum and its norm.
+          CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
+          CALL lsysbl_blockMatVec (&
+                p_rcurrentLevel%rsystemMatrix, &
+                p_rcurrentLevel%rsolutionVector,&
+                p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+          IF (bfilter) THEN
+            ! Apply the filter chain to the vector
+            CALL filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
+                                             p_RfilterChain)
+          END IF
+          dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,rsolverNode%iresNorm)
+          IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                    (dres .LE. 1E99_DP))) dres = 0.0_DP
+          
+          ! Shift the queue with the last residuals and add the new
+          ! residual to it. Check length of ireslength to be larger than
+          ! 0 as some compilers might produce Floating exceptions
+          ! otherwise! (stupid pgf95)
+          IF (ireslength .GT. 0) &
+            dresqueue(1:ireslength) = EOSHIFT(dresqueue(1:ireslength),1,dres)
+
+          rsolverNode%dfinalDefect = dres
+          
+          ! Test if the iteration is diverged
+          IF (linsol_testDivergence(rsolverNode,dres)) THEN
+            CALL output_line ('Multigrid: Solution diverging!')
+            rsolverNode%iresult = 1
+            EXIT
+          END IF
+       
+          ! At least perform nminIterations iterations
+          IF (ite .GE. nminIterations) THEN
+          
+            ! Check if the iteration converged
+            IF (linsol_testConvergence(rsolverNode,dres)) EXIT
+            
+          END IF
+
+          ! print out the current residuum
+
+          IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+              (MOD(ite,niteResOutput).EQ.0)) THEN
+            CALL output_line ('Multigrid: Iteration '// &
+                TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+                TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+          END IF
+          
+        END DO  ! ite
+        
+        ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+        ! completed
+
+        IF (ite .GT. rsolverNode%nmaxIterations) &
+          ite = rsolverNode%nmaxIterations
+
+        ! Finish - either with an error or if converged.
+        ! Print the last residuum.
+
+        IF ((rsolverNode%ioutputLevel .GE. 2) .AND. &
+            (ite .GE. 1) .AND. (ITE .LT. rsolverNode%nmaxIterations) .AND. &
+            (rsolverNode%iresult .GE. 0)) THEN
+          CALL output_line ('Multigrid: Iteration '// &
+              TRIM(sys_siL(ITE,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        END IF
+        
+        ! Final number of iterations
+        rsolverNode%iiterations = ite
+      
+      END IF
+
+      ! Finally, we look at some statistics:
+      !
+      ! Don't calculate anything if the final residuum is out of bounds -
+      ! would result in NaN's,...
+        
+      IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+      
+        ! Calculate asymptotic convergence rate
+      
+        IF (dresqueue(1) .GE. 1E-70_DP) THEN
+          I = MAX(1,MIN(rsolverNode%iiterations,ireslength-1))
+          rsolverNode%dasymptoticConvergenceRate = &
+            (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/REAL(I,DP))
+        END IF
+
+        ! If the initial defect was zero, the solver immediately
+        ! exits - and so the final residuum is zero and we performed
+        ! no steps; so the resulting multigrid convergence rate stays zero.
+        ! In the other case the multigrid convergence rate computes as
+        ! (final defect/initial defect) ** 1/nit :
+
+        IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN
+          rsolverNode%dconvergenceRate = &
+                      (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                      (1.0_DP/REAL(rsolverNode%iiterations,DP))
+        END IF
+      END IF
+    
+    END IF
+
+    ! As the solution vector on the finest level shared its memory with rd,
+    ! we just calculated the new correction vector!
+      
+    IF (rsolverNode%dfinalDefect .LT. 1E99_DP) THEN
+      
+      IF (rsolverNode%ioutputLevel .GE. 2) THEN
+        CALL output_lbrk()
+        CALL output_line ('Multigrid statistics:')
+        CALL output_lbrk()
+        CALL output_line ('Iterations              : '//&
+             TRIM(sys_siL(rsolverNode%iiterations,10)) )
+        CALL output_line ('!!INITIAL RES!!         : '//&
+             TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        CALL output_line ('!!RES!!                 : '//&
+             TRIM(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        IF (rsolverNode%dinitialDefect .GT. rsolverNode%drhsZero) THEN     
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            TRIM(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
+        ELSE
+          CALL output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               TRIM(sys_sdEL(0.0_DP,15)) )
+        END IF
+        CALL output_lbrk ()
+        CALL output_line ('Rate of convergence     : '//&
+             TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+
+      END IF
+
+      IF (rsolverNode%ioutputLevel .EQ. 1) THEN
+        CALL output_line (&
+              'MG: Iterations/Rate of convergence: '//&
+              TRIM(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              TRIM(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+      END IF
+
+    ELSE
+      ! DEF=Infinity; RHO=Infinity, set to 1
+      rsolverNode%dconvergenceRate = 1.0_DP
+      rsolverNode%dasymptoticConvergenceRate = 1.0_DP
+    END IF  
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE linsol_initMultigrid2 (p_rsolverNode,nlevels,p_Rfilter)
+  
+!<description>
+  
+  ! Creates a t_linsolNode solver structure for the Multigrid solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+  ! Before the solver can used for solving the problem, the caller must add
+  ! information about all levels (matrices,...) to the solver. 
+  ! This can be done by linsol_setMultigridLevel.
+  
+!</description>
+  
+!<input>
+
+  ! Number of levels supported by this solver.
+  INTEGER, INTENT(IN) :: nlevels
+  
+  ! Optional: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! structures) if filtering should be applied to the vector during the 
+  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! The filter chain (i.e. the array) must exist until the system is solved!
+  ! The filter chain must be configured for being applied to defect vectors.
+  TYPE(t_filterChain), DIMENSION(:), POINTER, OPTIONAL   :: p_Rfilter
+  
+!</input>
+  
+!<output>
+  
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  TYPE(t_linsolNode), POINTER             :: p_rsolverNode
+   
+!</output>
+  
+!</subroutine>
+
+  ! Create a default solver structure
+  CALL linsol_initSolverGeneral(p_rsolverNode)
+  
+  ! Initialise the type of the solver
+  p_rsolverNode%calgorithm = LINSOL_ALG_MULTIGRID2
+  
+  ! Initialise the ability bitfield with the ability of this solver:
+  p_rsolverNode%ccapability = LINSOL_ABIL_SCALAR     + LINSOL_ABIL_BLOCK        + &
+                              LINSOL_ABIL_MULTILEVEL + LINSOL_ABIL_CHECKDEF     + &
+                              LINSOL_ABIL_USESUBSOLVER + &
+                              LINSOL_ABIL_USEFILTER
+  
+  ! Allocate the subnode for Multigrid.
+  ! This initialises most of the variables with default values appropriate
+  ! to this solver.
+  ALLOCATE(p_rsolverNode%p_rsubnodeMultigrid2)
+  
+  ! Allocate level information data
+  ALLOCATE(p_rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlevels))
+  
+  ! Attach the filter if given. 
+  IF (PRESENT(p_Rfilter)) THEN
+    p_rsolverNode%p_rsubnodeMultigrid2%p_RfilterChain => p_Rfilter
+  END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_alterMultigrid2 (rsolverNode, ralterConfig)
+  
+!<description>
+  ! This routine allows on-line modification of the Multigrid solver.
+  ! ralterConfig%ccommand is analysed and depending on the configuration 
+  ! in this structure, the solver reacts.
+!</description>
+  
+!<inputoutput>
+  ! The solver node which should be initialised
+  TYPE(t_linsolNode), INTENT(INOUT), TARGET             :: rsolverNode
+
+  ! A command/configuration block that specifies a command which is given
+  ! to the solver.
+  TYPE(t_linsol_alterSolverConfig), INTENT(INOUT)       :: ralterConfig
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    INTEGER :: i
+    TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel
+
+    ! Pass the command structure to all subsolvers and smoothers
+    ! on all levels.
+    DO i=1,SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
+      
+      IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+        CALL linsol_alterSolver (p_rcurrentLevel%p_rpreSmoother, &
+                                 ralterConfig)
+      END IF
+      ! Pre- and postsmoother may be identical!
+      ! Take care not to alter the same smoother twice!
+      IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+          (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                            p_rcurrentLevel%p_rpostSmoother))) THEN
+        CALL linsol_alterSolver (p_rcurrentLevel%p_rpostSmoother, &
+                                 ralterConfig)
+      END IF
+      IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+        CALL linsol_alterSolver (p_rcurrentLevel%p_rcoarseGridSolver, &
+                                 ralterConfig)
+      END IF
+      
+    END DO
+    
+  END SUBROUTINE
+
+! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_setMatrixMultigrid2 (rsolverNode,Rmatrices)
+  
+!<description>
+  
+  ! Assigns the system matrix rsystemMatrix to the Multigrid solver on 
+  ! all levels.
+  
+!</description>
+  
+!<input>
+  
+  ! An array of system matrices on all levels.
+  ! Each level in multigrid is initialised separately.
+  TYPE(t_matrixBlock), DIMENSION(:), INTENT(IN)   :: Rmatrices
+
+!</input>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the Multigrid solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel
+  INTEGER                       :: ilevel,nlmax
+  
+  ! Make sure the solver node is configured for multigrid
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
+      (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+    PRINT *,'Error: Multigrid structure not initialised'
+    CALL sys_halt()
+  END IF
+  
+  ! Make sure we have the right amount of matrices
+  IF (SIZE(Rmatrices) .NE. rsolverNode%p_rsubnodeMultigrid%nlevels) THEN
+    PRINT *,'Error: Wrong number of matrices'
+    CALL sys_halt()
+  END IF
+
+  ! Check for every level, if there's a presmoother, postsmoother or
+  ! coarse grid solver structure attached. If yes, attach the matrix
+  ! to it.
+  ! For this purpose, call the general initialisation routine, but
+  ! pass only that part of the Rmatrices array that belongs
+  ! to the range of levels between the coarse grid and the current grid.
+  
+  nlmax = SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+  DO ilevel = 1,nlmax
+  
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+      CALL linsol_setMatrices (p_rcurrentLevel%p_rpreSmoother, &
+                                Rmatrices(1:ilevel))
+    END IF
+    ! Pre- and postsmoother may be identical!
+    ! Take care not to initialise the same smoother twice!
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+        (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                          p_rcurrentLevel%p_rpostSmoother))) THEN
+      CALL linsol_setMatrices (p_rcurrentLevel%p_rpostSmoother, &
+                                Rmatrices(1:ilevel))
+    END IF
+    IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+      CALL linsol_setMatrices (p_rcurrentLevel%p_rcoarseGridSolver, &
+                                Rmatrices(1:ilevel))
+    END IF
+    
+    ! Write a link to the matrix into the level-structure.
+    CALL lsysbl_duplicateMatrix (Rmatrices(ilevel), &
+        p_rcurrentLevel%rsystemMatrix,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_matCompatMultigrid2 (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  TYPE(t_linsolNode), INTENT(IN)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  TYPE(t_matrixBlock), DIMENSION(:), INTENT(IN)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  ! More precisely, ccompatible returns always the status of the highest
+  ! level where there is an error -- or LINSOL_COMP_OK if there is no error.
+  INTEGER, INTENT(OUT) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  INTEGER, DIMENSION(:), INTENT(INOUT), OPTIONAL :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel
+    INTEGER                       :: ilevel,ccompatLevel
+    
+    ! Normally, we can handle the matrix.
+    ccompatible = LINSOL_COMP_OK
+    
+    ! Reset all compatibility flags
+    IF (PRESENT(CcompatibleDetail)) CcompatibleDetail (:) = ccompatible    
+
+    ! Make sure the solver node is configured for multigrid
+    IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
+        (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+      PRINT *,'Error: Multigrid structure not initialised'
+      CALL sys_halt()
+    END IF
+    
+    ! Make sure we have the right amount of matrices
+    IF (SIZE(Rmatrices) .NE. SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)) THEN
+      PRINT *,'Error: Wrong number of matrices'
+      CALL sys_halt()
+    END IF
+
+    ! Check for every level, if there's a presmoother, postsmoother or
+    ! coarse grid solver structure attached. If yes, it must check
+    ! the matrices!
+    ! For this purpose, call the general check routine, but
+    ! pass only that part of the Rmatrices array that belongs
+    ! to the range of levels between the coarse grid and the current grid.
+    
+    DO ilevel = 1,SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+    
+      p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+    
+      ! Compatibility flag for that level
+      ccompatLevel = LINSOL_COMP_OK
+    
+      ! Check presmoother
+      IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+      
+        IF (PRESENT(CcompatibleDetail)) THEN
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
+              Rmatrices(1:ilevel),ccompatLevel,CcompatibleDetail(1:ilevel))
+        ELSE
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpreSmoother, &
+              Rmatrices(1:ilevel),ccompatLevel)
+        END IF
+      
+        IF (ccompatLevel .NE. LINSOL_COMP_OK) THEN
+          ccompatible = ccompatLevel
+          CYCLE
+        END IF
+        
+      END IF
+      
+      ! Pre- and postsmoother may be identical!
+      ! Take care not to initialise the same smoother twice!
+      IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+          (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                            p_rcurrentLevel%p_rpostSmoother))) THEN
+        
+        IF (PRESENT(CcompatibleDetail)) THEN
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
+              Rmatrices(1:ilevel),ccompatLevel,CcompatibleDetail(1:ilevel))
+        ELSE
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rpostSmoother, &
+              Rmatrices(1:ilevel),ccompatLevel)
+        END IF
+        
+        IF (ccompatLevel .NE. LINSOL_COMP_OK) THEN
+          ccompatible = ccompatLevel
+          CYCLE
+        END IF
+        
+      END IF
+      
+      ! Check coarse grid solver
+      IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+        
+        IF (PRESENT(CcompatibleDetail)) THEN
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
+              Rmatrices(1:ilevel),ccompatLevel,CcompatibleDetail(1:ilevel))
+        ELSE
+          CALL linsol_matricesCompatible (p_rcurrentLevel%p_rcoarseGridSolver, &
+              Rmatrices(1:ilevel),ccompatLevel)
+        END IF
+        
+        IF (ccompatLevel .NE. LINSOL_COMP_OK) THEN
+          ccompatible = ccompatLevel
+          CYCLE
+        END IF
+        
+      END IF
+      
+    END DO
+    
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_initStructureMultigrid2 (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Multigrid solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel,p_rprevLevel
+  INTEGER :: isubgroup,nlmax,ilevel
+  INTEGER(PREC_VECIDX) :: imemmax
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  TYPE(t_vectorBlock), POINTER :: p_rtemplVect
+  
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the init routine of the preconditioner.
+
+  ! Make sure the solver node is configured for multigrid
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
+      (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+    PRINT *,'Error: Multigrid structure not initialised'
+    CALL sys_halt()
+  END IF
+
+  nlmax = SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+
+  ! Check for every level, if there's a presmoother, postsmoother or
+  ! coarse grid solver structure attached. 
+  
+  DO ilevel = 1,nlmax
+  
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+      CALL linsol_initStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
+    END IF
+    ! Pre- and postsmoother may be identical!
+    ! Take care not to initialise the same smoother twice!
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+        (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                          p_rcurrentLevel%p_rpostSmoother))) THEN
+      CALL linsol_initStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
+    END IF
+    IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+      CALL linsol_initStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
+    END IF
+
+  END DO
+  
+  ! Cancel here, if we don't belong to the subgroup to be initialised
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+
+  imemmax = 0
+
+  ! Multigrid needs temporary vectors for the RHS, solution and general
+  ! data. Memory for that is allocated on all levels for temporary, RHS and 
+  ! solution vectors.
+  DO ilevel = 1,nlmax
+  
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+
+    p_rmatrix => p_rcurrentLevel%rsystemMatrix
+    NULLIFY(p_rtemplVect)
+    IF (ilevel .LT. nlmax) THEN
+      ! On the maximum level we don't need additional memory for the 
+      ! solution vector - as solution vector on the fine grid, 
+      ! the vector which comes as parameter
+      ! to the multigrid  preconditioner is used.
+      CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%rsolutionVector,.FALSE.,&
+            rsolverNode%cdefaultDataType)
+      p_rtemplVect => p_rcurrentLevel%rsolutionVector
+    END IF
+    ! On the coarse grid, we don't need memory for temporary/RHS
+    ! vectors. The RHS on the coarse grid is replaced in-situ
+    ! by the solution vector.
+    IF (ilevel .GT. 1) THEN
+      CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%rrhsVector,.FALSE.,&
+            rsolverNode%cdefaultDataType)
+      CALL lsysbl_createVecBlockIndMat (p_rmatrix, &
+            p_rcurrentLevel%rtempVector,.FALSE.,&
+            rsolverNode%cdefaultDataType)
+      p_rtemplVect => p_rcurrentLevel%rtempVector
+    END IF
+
+    ! Calculate the memory that is probably necessary for resorting
+    ! vectors during the iteration.
+    IF (ASSOCIATED(p_rtemplVect)) THEN
+      imemmax = MAX(imemmax,p_rtemplVect%NEQ)
+    END IF
+       
+    ! Ask the prolongation/restriction routines how much memory is necessary
+    ! for prolongation/restriction on that level.
+    IF (ilevel .GT. 1) THEN ! otherwise coarse grid
+      p_rprevLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel-1)
+   
+      ! Calculate the memory that is necessary for prolongation/restriction -
+      ! in case there is temporary memory needed.
+      ! The system matrix on the fine/coarse grid specifies the discretisation.
+      imemmax = MAX(imemmax,mlprj_getTempMemoryMat ( &
+                    p_rcurrentLevel%rinterlevelProjection, &
+                    p_rprevLevel%rsystemMatrix,&
+                    p_rcurrentLevel%rsystemMatrix))
+    END IF
+
+    ! All temporary vectors are marked as 'unsorted'. We can set the
+    ! sorting flag directly here without using the resorting routines
+    ! as the vectors have just been created.
+    !
+    ! Don't do anything to the RHS/temp vectors on the coarse grid
+    ! and the solution vector on the fine grid -- they don't exist!
+    IF (ilevel .GT. 1) THEN
+      p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy = &
+        -ABS(p_rcurrentLevel%rrhsVector%RvectorBlock%isortStrategy)
+      p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy = &
+        -ABS(p_rcurrentLevel%rtempVector%RvectorBlock%isortStrategy)
+    END IF
+    
+    IF (ilevel .LT. NLMAX) THEN
+      p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy = &
+        -ABS(p_rcurrentLevel%rsolutionVector%RvectorBlock%isortStrategy)
+    END IF
+    
+    ! And the next level...
+  END DO
+  
+  ! Do we have to allocate memory for prolongation/restriction/resorting?
+  IF (imemmax .GT. 0) THEN
+    CALL lsyssc_createVector (rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
+                              imemmax,.FALSE.,rsolverNode%cdefaultDataType)
+                              
+    ! Use this vector also for the coarse grid correction.
+    ! Create a block vector on every level (except for the coarse grid)
+    ! with the structure of the RHS that shares the memory with rprjTempVector. 
+    DO ilevel = 2,nlmax
+  
+      p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+    
+      CALL lsysbl_createVecFromScalar (&
+          rsolverNode%p_rsubnodeMultigrid%rprjTempVector,&
+          p_rcurrentLevel%rcgcorrTempVector)
+    
+      CALL lsysbl_enforceStructure (&
+          p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rcgcorrTempVector)
+
+    END DO
+  ELSE
+    rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ = 0
+  END IF
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_initDataMultigrid2 (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initData.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Multigrid solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  INTEGER, INTENT(OUT) :: ierror
+!</output>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel
+  INTEGER :: isubgroup,ilevel
+  
+  ! A-priori we have no error...
+  ierror = LINSOL_ERR_NOERROR
+
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+  
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the init routine of the preconditioner.
+  
+  ! Make sure the solver node is configured for multigrid
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID) .OR. &
+      (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+    PRINT *,'Error: Multigrid structure not initialised'
+    CALL sys_halt()
+  END IF
+
+  ! Check for every level, if there's a presmoother, postsmoother or
+  ! coarse grid solver structure attached. 
+  
+  DO ilevel = 1,SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+  
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+      CALL linsol_initData(p_rcurrentLevel%p_rpreSmoother,isubgroup,ierror)
+    END IF
+    
+    ! Pre- and postsmoother may be identical!
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+        (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                          p_rcurrentLevel%p_rpostSmoother))) THEN
+      CALL linsol_initData(p_rcurrentLevel%p_rpostSmoother,isubgroup,ierror)
+    END IF
+    
+    IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+      CALL linsol_initData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup,ierror)
+    END IF
+
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneDataMultigrid2 (rsolverNode,isolverSubgroup)
+  
+!<description>
+  
+  ! Calls the doneData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneData.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the Multigrid solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel
+  INTEGER :: isubgroup,ilevel
+  
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the init routine of the preconditioner.
+  
+  ! Make sure the solver node is configured for multigrid
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
+      (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+    PRINT *,'Error: Multigrid structure not initialised'
+    CALL sys_halt()
+  END IF
+
+  ! Check for every level, if there's a presmoother, postsmoother or
+  ! coarse grid solver structure attached. 
+  
+  DO ilevel = SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo),1,-1
+  
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+    
+    IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+      CALL linsol_doneData(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
+    END IF
+    
+    ! Pre- and postsmoother may be identical!
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+        (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                          p_rcurrentLevel%p_rpostSmoother))) THEN
+      CALL linsol_doneData(p_rcurrentLevel%p_rpostSmoother,isubgroup)
+    END IF
+    
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+      CALL linsol_doneData(p_rcurrentLevel%p_rpreSmoother,isubgroup)
+    END IF
+    
+  END DO
+  
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneStructureMultigrid2 (rsolverNode,isolverSubgroup)
+  
+!<description>
+  
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_doneStructure.
+  
+!</description>
+  
+!<inputoutput>
+  
+  ! The t_linsolNode structure of the Multigrid solver
+  TYPE(t_linsolNode), INTENT(INOUT)         :: rsolverNode
+   
+!</inputoutput>
+  
+!<input>
+  
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  INTEGER, OPTIONAL, INTENT(IN)                    :: isolverSubgroup
+
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel
+  INTEGER :: isubgroup,ilevel,nlmax
+  
+  ! by default, initialise solver subroup 0
+  isubgroup = 0
+  IF (PRESENT(isolversubgroup)) isubgroup = isolverSubgroup
+
+  ! We simply pass isubgroup to the subsolvers when calling them.
+  ! Inside of this routine, there's not much to do with isubgroup,
+  ! as there is no special information (like a factorisation)
+  ! associated with this type of solver, which has to be allocated,
+  ! released or updated...
+
+  ! Call the init routine of the preconditioner.
+  
+  ! Make sure the solver node is configured for multigrid
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
+      (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+    PRINT *,'Error: Multigrid structure not initialised'
+    CALL sys_halt()
+  END IF
+  
+  nlmax = SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+
+  ! Check for every level, if there's a presmoother, postsmoother or
+  ! coarse grid solver structure attached. 
+  
+  DO ilevel = 1,nlmax
+  
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+  
+    ! Release the coarse grid solver
+    IF (ASSOCIATED(p_rcurrentLevel%p_rcoarseGridSolver)) THEN
+      CALL linsol_doneStructure(p_rcurrentLevel%p_rcoarseGridSolver,isubgroup)
+    END IF
+    
+    ! Pre- and postsmoother may be identical! If not, first release the 
+    ! postsmoother.
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother) .AND. &
+        (.NOT. ASSOCIATED(p_rcurrentLevel%p_rpreSmoother, &
+                          p_rcurrentLevel%p_rpostSmoother))) THEN
+      CALL linsol_doneStructure(p_rcurrentLevel%p_rpostSmoother,isubgroup)
+    END IF
+    
+    ! Release the presmoother
+    IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+      CALL linsol_doneStructure(p_rcurrentLevel%p_rpreSmoother,isubgroup)
+    END IF
+    
+  END DO
+
+  ! Cancel here, if we don't belong to the subgroup to be initialised
+  IF (isubgroup .NE. rsolverNode%isolverSubgroup) RETURN
+
+  ! Release temporary memory.
+  DO ilevel = 1,nlmax
+  
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilevel)
+  
+    IF (ilevel .GT. 1) THEN
+    
+      IF (p_rcurrentLevel%rtempVector%NEQ .NE. 0) THEN
+        CALL lsysbl_releaseVector (p_rcurrentLevel%rtempVector)
+      END IF
+      
+      IF (p_rcurrentLevel%rrhsVector%NEQ .NE. 0) THEN
+        CALL lsysbl_releaseVector (p_rcurrentLevel%rrhsVector)
+      END IF
+
+      ! Release the temp vector for the coarse grid correction.
+      ! The vector shares its memory with the 'global' projection
+      ! vector, so only release it if the other vector exists.
+      IF (rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ .GT. 0) THEN
+        CALL lsysbl_releaseVector (p_rcurrentLevel%rcgcorrTempVector)
+      END IF
+
+    END IF
+
+    IF (ilevel .LT. nlmax) THEN
+      IF (p_rcurrentLevel%rsolutionVector%NEQ .NE. 0) THEN
+        CALL lsysbl_releaseVector (p_rcurrentLevel%rsolutionVector)
+      END IF
+    END IF
+
+  END DO
+
+  ! Check if we have to release our temporary vector for prolongation/
+  ! restriction.
+  ! Do we have to allocate memory for prolongation/restriction?
+  IF (rsolverNode%p_rsubnodeMultigrid%rprjTempVector%NEQ .GT. 0) THEN
+    CALL lsyssc_releaseVector (rsolverNode%p_rsubnodeMultigrid%rprjTempVector)
+  END IF
+
+  END SUBROUTINE
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_doneMultigrid2 (rsolverNode)
+  
+!<description>
+  
+  ! This routine releases all temporary memory for the multigrid solver from
+  ! the heap. In particular, this releases the solver structures of all
+  ! subsolvers (smoother, coarse grid solver).
+  ! This DONE routine is declared as RECURSIVE to permit a clean
+  ! interaction with linsol_releaseSolver.
+  
+!</description>
+  
+!<inputoutput>
+  ! A pointer to a t_linsolNode structure of the Multigrid solver.
+  TYPE(t_linsolNode), INTENT(INOUT)                :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! Make sure the solver node is configured for multigrid
+  IF ((rsolverNode%calgorithm .NE. LINSOL_ALG_MULTIGRID2) .OR. &
+      (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2))) THEN
+    PRINT *,'Error: Multigrid structure not initialised'
+    CALL sys_halt()
+  END IF
+
+  ! Release data and structure if this has not happened yet.
+  CALL linsol_doneDataMultigrid2(rsolverNode)
+  CALL linsol_doneStructureMultigrid2(rsolverNode)
+  
+  ! Remove all the levels
+  CALL linsol_cleanMultigrid2Levels (rsolverNode)
+  DEALLOCATE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+  
+  ! Release MG substructure, that's it.
+  DEALLOCATE(rsolverNode%p_rsubnodeMultigrid2)
+
+  END SUBROUTINE
+    
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  RECURSIVE SUBROUTINE linsol_precMultigrid2 (rsolverNode,rd)
+  
+!<description>
+  ! Applies Multigrid preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The structure of the levels (pre/postsmoothers, interlevel projection
+  ! structures) must have been prepared with linsol_addMultigridLevel
+  ! before calling this routine.
+  ! The matrices $A$ on all levels must be attached to the solver previously 
+  ! by linsol_setMatrices.
+  
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the Multigrid solver
+  TYPE(t_linsolNode), INTENT(INOUT), TARGET :: rsolverNode
+   
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  TYPE(t_vectorBlock), INTENT(INOUT)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  INTEGER :: nminIterations,nmaxIterations,ireslength,niteResOutput
+  INTEGER :: ite,ilev,nlmax,i,nblocks
+  REAL(DP) :: dres,dstep
+  LOGICAL :: bfilter,bsort
+  TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
+  
+  ! The queue saves the current residual and the two previous residuals.
+  REAL(DP), DIMENSION(32) :: Dresqueue
+  
+  ! The system matrix on the current level
+  TYPE(t_matrixBlock), POINTER :: p_rmatrix
+  
+  ! Our MG structure
+  TYPE(t_linsolSubnodeMultigrid2), POINTER :: p_rsubnode
+  
+  ! The current level and the next lower one.
+  TYPE(t_linsolMGLevelInfo2), POINTER :: p_rcurrentLevel,p_rlowerLevel
+  
+    ! Solve the system!
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeMultigrid2
+    
+    bfilter = ASSOCIATED(p_rsubnode%p_RfilterChain)
+    p_RfilterChain => p_rsubnode%p_RfilterChain
+    
+    ! Get the system matrix on the finest level:
+    p_rmatrix => rsolverNode%rsystemMatrix
+    
+    ! Check the parameters
+    IF ((rd%NEQ .EQ. 0) .OR. (p_rmatrix%NEQ .EQ. 0) .OR. &
+        (p_rmatrix%NEQ .NE. rd%NEQ) ) THEN
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+
+    IF (p_rsubnode%icycle .LT. 0) THEN
+      ! Wrong cycle
+      PRINT *,'Multigrid: Wrong cycle!'
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+    
+    IF (.NOT. ASSOCIATED(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)) THEN
+      PRINT *,'Multigrid: No levels attached!'
+      rsolverNode%iresult = 2
+      RETURN
+    END IF
+
+    ! Maximum level
+    nlmax = SIZE(rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo)
+
+    ! Length of the queue of last residuals for the computation of
+    ! the asymptotic convergence rate
+    ireslength = MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
+
+    ! Minimum/maximum number of iterations
+    nminIterations = MAX(rsolverNode%nminIterations,0)
+    nmaxIterations = MAX(rsolverNode%nmaxIterations,0)
+      
+    ! Iteration when the residuum is printed:
+    niteResOutput = MAX(1,rsolverNode%niteResOutput)
+
+    ! Status reset
+    rsolverNode%iresult = 0
+    rsolverNode%icurrentIteration = 0
+    rsolverNode%dinitialDefect = 0.0_DP
+    rsolverNode%dfinalDefect = 0.0_DP
+    rsolverNode%dconvergenceRate = 0.0_DP
+    rsolverNode%dasymptoticConvergenceRate = 0.0_DP
+    
+    ! Number of blocks in the current equation
+    nblocks = rd%nblocks
+    
+    ! We start on the maximum level. 
+    p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(nlmax)
+    
+    ! Is there only one level? Can be seen if the current level
+    ! already contains a coarse grid solver.
+    IF (nlmax .GT. 1) THEN
+    
+      IF (rsolverNode%ioutputLevel .GT. 1) THEN
+        CALL output_line ('Multigrid: Only one level. '//&
+             'Switching back to standard solver.')
+      END IF
+      CALL linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,rd)
+      
+      ! Take the statistics from the coarse grid solver.
+      rsolverNode%dinitialDefect = p_rcurrentLevel%p_rcoarseGridSolver%dinitialDefect
+      rsolverNode%dfinalDefect = p_rcurrentLevel%p_rcoarseGridSolver%dfinalDefect
+      rsolverNode%dconvergenceRate = p_rcurrentLevel%p_rcoarseGridSolver%dconvergenceRate
+      rsolverNode%iiterations = p_rcurrentLevel%p_rcoarseGridSolver%iiterations
+      rsolverNode%dasymptoticConvergenceRate = p_rcurrentLevel% &
+        p_rcoarseGridSolver%dasymptoticConvergenceRate
+      
+    ELSE
+      ! True multigrid.
+      !    
+      ! Get the norm of the initial residuum.
+      ! As the initial iteration vector is zero, this is the norm
+      ! of the RHS:
+      dres = lsysbl_vectorNorm (rd,rsolverNode%iresNorm)
+      IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                (dres .LE. 1E99_DP))) dres = 0.0_DP
+
+      ! Initialize starting residuum
+      rsolverNode%dinitialDefect = dres
+
+      ! initialize the queue of the last residuals with RES
+      Dresqueue = dres
+
+      ! Check if out initial defect is zero. This may happen if the filtering
+      ! routine filters "everything out"!
+      ! In that case we can directly stop our computation.
+
+      IF ( rsolverNode%dinitialDefect .LT. rsolverNode%drhsZero ) THEN
+      
+        ! final defect is 0, as initialised in the output variable above
+        CALL lsysbl_clearVector(rd)
+        rsolverNode%dfinalDefect = dres
+        rsolverNode%dfinalDefect = dres
+        rsolverNode%dconvergenceRate = 0.0_DP
+        rsolverNode%iiterations = 0
+        rsolverNode%dasymptoticConvergenceRate = 0.0_DP
+        
+      ELSE
+        
+        ! Ok, we can start with multigrid.
+        ! At first check the sorting state of the vector.
+        bsort = lsysbl_isVectorSorted(rd)
+        
+        ! To deal with sorted vectors is a bit tricky! Here a small summary
+        ! how sorted vectors is dealed with, in case sorting is activated:
+        !
+        ! 1.) At the beginning of the algorithm, RHS, solution and temp vector
+        !     on the finest level are set up as 'sorted'. The whole algorithm
+        !     here deals with sorted vectors, so that matrix/vector multiplication
+        !     works.
+        ! 2.) At the beginning of the algorithm, all temporary vectors on the
+        !     lower levels are set up as 'unsorted'.
+        ! 3.) When restricting the defect,
+        !     - the defect is unsorted on level l
+        !     - the unsorted defect is restricted to level l-1
+        !     - the restricted defect on level l-1 is sorted
+        ! 4.) When prolongating a correction vector,
+        !     - the correction vector on level l-1 is unsorted
+        !     - the unsorted vector is prolongated to level l
+        !     - the unsorted vector on level l is sorted
+        ! So at the end of the MG sweep, we have the same situation as at the start
+        ! of the algorithm.
+        
+        ! At first, reset the cycle counters of all levels
+        DO i=1,nlmax-1
+          p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
+          IF (p_rsubnode%icycle .EQ. 0) THEN
+            p_rcurrentLevel%ncycles = 2
+          ELSE
+            p_rcurrentLevel%ncycles = p_rsubnode%icycle
+          END IF  
+        END DO
+        
+        ! We start at the maximum level.        
+        ilev = nlmax
+
+        ! Get current and next lower level.
+        p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
+        p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
+               
+        ! On the current (max.) level we set ncycles to 1.
+        p_rcurrentLevel%ncycles = 1
+        
+        ! Print out the initial residuum
+
+        IF (rsolverNode%ioutputLevel .GE. 2) THEN
+          CALL output_line ('Multigrid: Iteration '// &
+              TRIM(sys_siL(0,10))//',  !!RES!! = '//&
+              TRIM(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        END IF
+
+        ! Copy the initial RHS to the RHS vector on the maximum level.
+        CALL lsysbl_copyVector(rd,p_rcurrentLevel%rrhsVector)
+        
+        ! Replace the solution vector on the finest level by rd.
+        ! Afterwards, rd and the solution vector on the finest level
+        ! share the same memory location, so we use rd as iteration
+        ! vector directly.
+        ! We set bisCopy to true to indicate that this vector is
+        ! actually does not belong to us. This is just to be sure that
+        ! an accidently performed releaseVector does not release a handle
+        ! (although this should not happen).
+        p_rcurrentLevel%rsolutionVector = rd
+        p_rcurrentLevel%rsolutionVector%bisCopy = .TRUE.
+        
+        ! Clear the initial solution vector.
+        CALL lsysbl_clearVector (p_rcurrentLevel%rsolutionVector)
+        
+        ! Start multigrid iteration; perform at most nmaxiterations iterations.
+        DO ite = 1, nmaxiterations
+        
+          rsolverNode%icurrentIteration = ite
+          
+          ! Initialize cycle counters for all levels.
+          DO i=1,nlmax
+            p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(i)
+            p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
+          END DO
+        
+          ! p_rcurrentLevel now points to the maximum level again!
+          !
+          ! Build the defect...
+          CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,p_rcurrentLevel%rtempVector)
+          IF (ite .NE. 1) THEN   ! initial solution vector is zero!
+            CALL lsysbl_blockMatVec (&
+                 p_rcurrentLevel%rsystemMatrix, &
+                 p_rcurrentLevel%rsolutionVector,&
+                 p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+          END IF
+          IF (bfilter) THEN
+            ! Apply the filter chain to the vector
+            CALL filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
+                                             p_RfilterChain)
+          END IF
+          
+          cycleloop: DO  ! Loop for the cycles
+          
+            ! On the maximum level we already built out defect vector. If we are    
+            ! on a lower level than NLMAX, perform smoothing+restriction down to the
+            ! coarse level. We identify the coarse level by checking if
+            ! the current level has a coarse grid solver.
+            
+            DO WHILE (ilev .GT. 1)
+            
+              ! Perform the pre-smoothing with the current solution vector
+              IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother)) THEN
+                CALL linsol_smoothCorrection (p_rcurrentLevel%p_rpreSmoother,&
+                          p_rcurrentLevel%rsystemMatrix,&
+                          p_rcurrentLevel%rsolutionVector,&
+                          p_rcurrentLevel%rrhsVector,&
+                          p_rcurrentLevel%rtempVector,p_RfilterChain)
+              END IF
+            
+              ! Build the defect vector
+              CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
+                                      p_rcurrentLevel%rtempVector)
+              CALL lsysbl_blockMatVec (&
+                  p_rcurrentLevel%rsystemMatrix, &
+                  p_rcurrentLevel%rsolutionVector,&
+                  p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+              IF (bfilter) THEN
+                ! Apply the filter chain to the vector
+                CALL filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
+                                                p_RfilterChain)
+              END IF
+              
+              ! Extended output
+              IF (ASSOCIATED(p_rcurrentLevel%p_rpreSmoother) .AND. &
+                  (rsolverNode%ioutputLevel .GE. 3) .AND. &
+                  (MOD(ite,niteResOutput).EQ.0)) THEN
+                  
+                dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                    rsolverNode%iresNorm)
+                IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                          (dres .LE. 1E99_DP))) dres = 0.0_DP
+                          
+                CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                    ' after presm.:     !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+              END IF
+
+              ! Restriction of the defect. The restricted defect is placed
+              ! in the right hand side vector of the lower level.
+              ! The projection parameters from level ilev to level
+              ! ilev-1 is configured in the rprojection structure of the
+              ! current level.
+              !
+              ! Make sure the vector is unsorted before the restriction!
+              ! We can use the 'global' temporary array p_rprjTempVector
+              ! as temporary memory during the resorting process.
+              IF (bsort) THEN
+                CALL lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
+                      p_rsubnode%rprjTempVector,.FALSE.)
+              END IF
+              
+              ! When restricting to the coarse grid, we directy restrict into
+              ! the solution vector. It's used there as RHS and replaced in-situ
+              ! by the solution by the coarse grid solver. So don't need the RHS vector
+              ! on the coarse grid and save one vector-copy.
+              ! 
+              ! Otherwise, we restrict to the RHS on the lower level and continue
+              ! the smoothing process there.
+              IF (ilev .GT. 2) THEN
+              
+                ! We don't project to the coarse grid
+                CALL mlprj_performRestriction (p_rcurrentLevel%rinterlevelProjection,&
+                      p_rlowerLevel%rrhsVector, &
+                      p_rcurrentLevel%rtempVector, &
+                      p_rsubnode%rprjTempVector)
+
+                ! Apply the filter chain (e.g. to implement boundary conditions)
+                ! on just calculated right hand side
+                ! (which is a defect vector against the 0-vector).
+                IF (bfilter) THEN
+                  ! Apply the filter chain to the vector.
+                  ! We are in 'unsorted' state; applying the filter here is
+                  ! supposed to be a bit faster...
+                  CALL filter_applyFilterChainVec (p_rlowerLevel%rrhsVector, &
+                                                   p_RfilterChain)
+                END IF
+
+                IF (bsort) THEN
+                  ! Resort the RHS on the lower level.
+                  CALL lsysbl_sortVectorInSitu (p_rlowerLevel%rrhsVector,&
+                        p_rsubnode%rprjTempVector,.TRUE.)
+
+                  ! Temp-vector and solution vector there are yet uninitialised,
+                  ! therefore we can mark them as sorted without calling the
+                  ! resorting routine.
+                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
+                  ABS(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy) 
+                  
+                  p_rlowerLevel%rsolutionVector%RvectorBlock(1:nblocks)% &
+                    isortStrategy = ABS(p_rlowerLevel%rsolutionVector% &
+                    RvectorBlock(1:nblocks)%isortStrategy)
+                END IF
+
+                ! Choose zero as initial vector on lower level. 
+                CALL lsysbl_clearVector (p_rlowerLevel%rsolutionVector)
+                
+                ! Extended output and/or adaptive cycles
+                IF ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) .OR.&
+                    (rsolverNode%ioutputLevel .GE. 3)) THEN
+                
+                  dres = lsysbl_vectorNorm (p_rlowerLevel%rrhsVector,&
+                      rsolverNode%iresNorm)
+                  IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                            (dres .LE. 1E99_DP))) dres = 0.0_DP
+                            
+                  ! In case adaptive cycles are activated, save the 'initial' residual
+                  ! of that level into the level structure. Then we can later check
+                  ! if we have to repeat the cycle on the coarse mesh.
+                  IF (rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) THEN
+                    p_rlowerLevel%dinitResCycle = dres
+                    p_rlowerLevel%icycleCount = 1
+                  END IF
+                         
+                  ! If the output level is high enough, print that residuum norm.   
+                  IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                      (MOD(ite,niteResOutput).EQ.0)) THEN
+                    CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
+                        ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+                  END IF
+                  
+                END IF
+
+              ELSE
+              
+                ! The vector is to be restricted to the coarse grid.
+                CALL mlprj_performRestriction (p_rcurrentLevel%rinterlevelProjection,&
+                      p_rlowerLevel%rsolutionVector, &
+                      p_rcurrentLevel%rtempVector, &
+                      p_rsubnode%rprjTempVector)
+
+                ! Apply the filter chain (e.g. to implement boundary conditions)
+                ! on just calculated right hand side
+                ! (which is a defect vector against the 0-vector).
+                IF (bfilter) THEN
+                  ! Apply the filter chain to the vector.
+                  ! We are in 'unsorted' state; applying the filter here is
+                  ! supposed to be a bit faster...
+                  CALL filter_applyFilterChainVec (p_rlowerLevel%rsolutionVector, &
+                                                   p_RfilterChain)
+                END IF
+
+                IF (bsort) THEN
+                  ! Resort the RHS on the lower level.
+                  CALL lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
+                        p_rsubnode%rprjTempVector,.TRUE.)
+
+                  ! Temp-vector and RHS can be ignored on the coarse grid.
+                END IF
+
+                ! Extended output
+                IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                    (MOD(ite,niteResOutput).EQ.0)) THEN
+                    
+                  dres = lsysbl_vectorNorm (p_rlowerLevel%rsolutionVector,&
+                      rsolverNode%iresNorm)
+                  IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                            (dres .LE. 1E99_DP))) dres = 0.0_DP
+                            
+                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev-1,5))//&
+                      ' after restrict.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+                END IF
+
+              END IF              
+            
+              ! Go down one level
+              ilev = ilev - 1
+              p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
+              
+              IF (ilev .NE. 1) &
+                p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
+              
+              ! If we are not on the lowest level, repeat the smoothing of 
+              ! the solution/restriction of the new defect in the next loop 
+              ! pass...
+            END DO   ! ilev > minimum level
+            
+            ! Now we reached the coarse grid.
+            ! Apply the filter chain (e.g. to implement boundary conditions)
+            ! on the just calculated right hand side,
+            ! which is currently located in rsolutionVector.
+            IF (bfilter) THEN
+              ! Apply the filter chain to the vector
+              CALL filter_applyFilterChainVec (p_rcurrentLevel%rsolutionVector, &
+                                               p_RfilterChain)
+            END IF
+            
+            ! Solve the system on lowest level by preconditioning
+            ! of the RHS=defect vector.
+            CALL linsol_precondDefect(p_rcurrentLevel%p_rcoarseGridSolver,&
+                                      p_rcurrentLevel%rsolutionVector)
+            
+            ! Now we have the solution vector on the lowest level - we have to go
+            ! upwards now... but probably not to NLMAX! That depends on the cycle.
+            !
+            DO WHILE(ilev .LT. nlmax)
+            
+              ilev = ilev + 1
+              p_rcurrentLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev)
+              p_rlowerLevel => rsolverNode%p_rsubnodeMultigrid2%p_RlevelInfo(ilev-1)
+              
+              ! Prolongate the solution vector from the coarser level
+              ! to the temp vector on the finer level.
+              !
+              ! Make sure the vector is unsorted before the prolongation!
+              ! We can use the 'global' temporary array p_rprjTempVector
+              ! as temporary memory during the resorting process.
+              IF (bsort) THEN
+                CALL lsysbl_sortVectorInSitu (p_rlowerLevel%rsolutionVector,&
+                      p_rsubnode%rprjTempVector,.FALSE.)
+                
+                ! Temp-vector and RHS vector there unused now,
+                ! therefore we can mark them as not sorted without calling the
+                ! resorting routine.
+                ! This prepares these vectors for the next sweep, when an unsorted
+                ! vector comes 'from above'.
+                !
+                ! Note that this shall not be done on the coarse grid as there is
+                ! no temp/rhs vector!
+                IF (ilev .GT. 2) THEN
+                  p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)%isortStrategy = &
+                    -ABS(p_rlowerLevel%rtempVector%RvectorBlock(1:nblocks)% &
+                    isortStrategy) 
+                  p_rlowerLevel%rrhsVector%RvectorBlock(1:nblocks)% &
+                    isortStrategy = -ABS(p_rlowerLevel%rrhsVector% &
+                    RvectorBlock(1:nblocks)%isortStrategy) 
+                END IF
+              END IF
+              CALL mlprj_performProlongation (p_rcurrentLevel%rinterlevelProjection,&
+                    p_rlowerLevel%rsolutionVector, &
+                    p_rcurrentLevel%rtempVector, &
+                    p_rsubnode%rprjTempVector)
+
+              IF (bfilter) THEN
+                ! Apply the filter chain to the vector.
+                CALL filter_applyFilterChainVec (p_rcurrentLevel%rtempVector, &
+                                                 p_RfilterChain)
+              END IF
+
+              IF (bsort) THEN
+                ! Resort the temp vector on the current level so that it fits
+                ! to the RHS, solution vector and matrix again
+                CALL lsysbl_sortVectorInSitu (p_rcurrentLevel%rtempVector,&
+                      p_rsubnode%rprjTempVector,.TRUE.)
+              END IF
+              
+              ! Step length control. Get the optimal damping parameter for the
+              ! defect correction.
+              ! Use either the standard system matrix for this purpose or
+              ! the specific matrix for the coarse grid correction if this exists
+              ! in the level info structure.
+              IF (p_rcurrentLevel%rsystemMatrixOptCorrection%NEQ .NE. 0) THEN
+                CALL cgcor_calcOptimalCorrection (p_rsubnode%rcoarseGridCorrection,&
+                                          p_rcurrentLevel%rsystemMatrixOptCorrection,&
+                                          p_rcurrentLevel%rsolutionVector,&
+                                          p_rcurrentLevel%rrhsVector,&
+                                          p_rcurrentLevel%rtempVector,&
+                                          p_rcurrentLevel%rcgcorrTempVector,&
+                                          p_RfilterChain,&
+                                          dstep)
+              ELSE
+                CALL cgcor_calcOptimalCorrection (p_rsubnode%rcoarseGridCorrection,&
+                                          p_rcurrentLevel%rsystemMatrix,&
+                                          p_rcurrentLevel%rsolutionVector,&
+                                          p_rcurrentLevel%rrhsVector,&
+                                          p_rcurrentLevel%rtempVector,&
+                                          p_rcurrentLevel%rcgcorrTempVector,&
+                                          p_RfilterChain,&
+                                          dstep)
+              END IF
+              
+              ! Perform the coarse grid correction by adding the coarse grid
+              ! solution (with the calculated step-length parameter) to
+              ! the current solution.
+              
+              CALL lsysbl_vectorLinearComb (p_rcurrentLevel%rtempVector,&
+                                            p_rcurrentLevel%rsolutionVector,&
+                                            dstep,1.0_DP)
+                            
+              ! Extended output
+              IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                  (MOD(ite,niteResOutput).EQ.0)) THEN
+                  
+                CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
+                                        p_rcurrentLevel%rtempVector)
+                CALL lsysbl_blockMatVec (&
+                    p_rcurrentLevel%rsystemMatrix, &
+                    p_rcurrentLevel%rsolutionVector,&
+                    p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+
+                dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                    rsolverNode%iresNorm)
+                IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                          (dres .LE. 1E99_DP))) dres = 0.0_DP
+                          
+                CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                    ' after c.g.corr.:  !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+              END IF
+                                            
+              ! Perform the post-smoothing with the current solution vector
+              IF (ASSOCIATED(p_rcurrentLevel%p_rpostSmoother)) THEN
+                CALL linsol_smoothCorrection (p_rcurrentLevel%p_rpostSmoother,&
+                          p_rcurrentLevel%rsystemMatrix,&
+                          p_rcurrentLevel%rsolutionVector,&
+                          p_rcurrentLevel%rrhsVector,&
+                          p_rcurrentLevel%rtempVector,p_RfilterChain)
+
+                ! Extended output
+                IF ((rsolverNode%ioutputLevel .GE. 3) .AND. &
+                    (MOD(ite,niteResOutput).EQ.0)) THEN
+                    
+                  CALL lsysbl_copyVector (p_rcurrentLevel%rrhsVector,&
+                                          p_rcurrentLevel%rtempVector)
+                  CALL lsysbl_blockMatVec (&
+                      p_rcurrentLevel%rsystemMatrix, &
+                      p_rcurrentLevel%rsolutionVector,&
+                      p_rcurrentLevel%rtempVector, -1.0_DP,1.0_DP)
+
+                  dres = lsysbl_vectorNorm (p_rcurrentLevel%rtempVector,&
+                      rsolverNode%iresNorm)
+                  IF (.NOT.((dres .GE. 1E-99_DP) .AND. &
+                            (dres .LE. 1E99_DP))) dres = 0.0_DP
+                            
+                  CALL output_line ('Multigrid: Level '//TRIM(sys_siL(ilev,5))//&
+                      ' after postsm.:    !!RES!! = '//TRIM(sys_sdEL(dres,15)) )
+                END IF
+                                              
+              END IF
+
+              ! Update the iteration counter(s) for realising the MG-cycle(s).
+              ! Then either repeat this loop to perform the next prolongation or   
+              ! repeat the cycleloop to do perform a next MG sweep on the current      
+              ! level.                                                        
+              !                                                               
+              ! Here icycle defines how the cycle-counters are updated.           
+              ! For a W-cycle the cycle counter is resetted to 2 if the sweep is 
+              ! fulfilled on the current level, for F-cycle it's set to 1 to not
+              ! perform more that 1 cycle on the current level anymore.       
+              
+              p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncyclesRemaining-1
+              IF (p_rcurrentLevel%ncyclesRemaining .LE. 0) THEN
+                IF (p_rsubnode%icycle .EQ. 0) THEN
+                  p_rcurrentLevel%ncyclesRemaining = 1
+                ELSE
+                  ! Cycle finished. Reset counter for next cycle.
+                  p_rcurrentLevel%ncyclesRemaining = p_rcurrentLevel%ncycles
+
+                  IF ((rsolverNode%p_rsubnodeMultigrid%depsRelCycle .NE. 1E99_DP) .AND. &
+                      (ilev .LT. NLMAX)) THEN
                       
                     ! Adaptive cycles activated. 
                     !
