@@ -35,7 +35,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE fevl_evaluate (iderType, Dvalues, rvectorScalar, Dpoints, &
-      Ielements, IelementsHint)
+      Ielements, IelementsHint, bnonmeshPoints)
                                       
 !<description>
   ! This is the most general (and completely slowest) finite element evaluation
@@ -65,6 +65,14 @@ CONTAINS
   ! This gives only a hint where to start searching for the actual elements
   ! containing the points. This is ignored if Ielements is specified!
   INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN), OPTIONAL :: IelementsHint
+  
+  ! OPTIONAL: Whether some points in Dpoint may be outside of the mesh.
+  ! =FALSE: All points must be in cells of the mesh (standard).
+  ! =TRUE: Some points may be outside of the mesh. May happen e.g. in
+  !        nonconvex domains. The evaluation of the FE function then takes
+  !        place in the element that is nearest to the point.
+  LOGICAL, INTENT(IN), OPTIONAL :: bnonmeshPoints
+  
 !</input>
 
 !<output>
@@ -75,7 +83,7 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    LOGICAL :: bnonpar
+    LOGICAL :: bnonpar,bnonmesh
     INTEGER :: ipoint,ieltype,indof,nve,ibas
     INTEGER(PREC_ELEMENTIDX) :: iel
     INTEGER(I32), DIMENSION(:), POINTER :: p_ItrialElements
@@ -154,6 +162,9 @@ CONTAINS
     Bder = .FALSE.
     Bder(iderType) = .TRUE.
     
+    bnonmesh = .FALSE.
+    IF (PRESENT(bnonmeshPoints)) bnonmesh = bnonmeshPoints
+    
     ! We loop over all points.
 
     iel = 1
@@ -181,6 +192,20 @@ CONTAINS
         IF (iel .EQ. 0) THEN
           CALL tsrch_getElem_BruteForce (Dpoints(:,ipoint), &
             rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel)
+        END IF
+        
+        IF (iel .EQ. 0) THEN
+        
+          ! We really have not luck here... Are nonmesh-points allowed?=
+          IF (bnonmesh) THEN
+            ! Yes. Find the closest element!
+            CALL tsrch_getNearestElem_BruteForce (Dpoints(:,ipoint), &
+              rvectorScalar%p_rspatialDiscretisation%p_rtriangulation,iel)
+              
+            ! The evaluation routine then evaluates the FE function
+            ! outside of the element...
+          END IF
+          
         END IF
 
       END IF

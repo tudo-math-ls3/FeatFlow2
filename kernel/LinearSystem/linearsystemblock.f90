@@ -158,6 +158,10 @@
 !#
 !# 46.) lsysbl_infoMatrix
 !#      -> Outputs information about the matrix (mostly used for debugging)
+!#
+!# 47.) lsysbl_clearMatrix
+!#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or 
+!#         with a defined value
 !# </purpose>
 !##############################################################################
 
@@ -2861,16 +2865,21 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_clearMatrix (rmatrix)
+  SUBROUTINE lsysbl_clearMatrix (rmatrix,dvalue)
   
 !<description>
   ! Clears the entries in all submatrices of a block matrix. 
-  ! All entries are overwritten with 0.0.
+  ! All entries are overwritten with 0.0 or with dvalue (if specified).
 !</description>
   
 !<inputoutput>
   ! The block matrix which is to be updated.
   TYPE(t_matrixBlock), INTENT(INOUT) :: rmatrix
+
+  ! OPTIONAL: Value to write into the matrix.
+  ! If not specified, all matrix entries are set to 0.0.
+  ! If specified, all matrix entries are set to dvalue.
+  REAL(DP), INTENT(IN), OPTIONAL :: dvalue
 !</inputoutput>
 
 !</subroutine>
@@ -2881,7 +2890,8 @@ CONTAINS
   ! block matrix
   DO i=1,rmatrix%ndiagBlocks
     DO j=1,rmatrix%ndiagBlocks
-      CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j))
+      IF (lsysbl_isSubmatrixPresent (rmatrix,i,j)) &
+        CALL lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j),dvalue)
     END DO
   END DO
 

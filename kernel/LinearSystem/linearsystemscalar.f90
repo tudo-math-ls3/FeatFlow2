@@ -106,7 +106,8 @@
 !#         matrix
 !#
 !# 27.) lsyssc_clearMatrix
-!#      -> Clears a matrix, i.e. overwrites all entries with 0.0
+!#      -> Clears a matrix, i.e. overwrites all entries with 0.0 or 
+!#         with a defined value
 !#
 !# 28.) lsyssc_initialiseIdentityMatrix
 !#      -> Initialises the content of a matrix to an identity matrix
@@ -5317,16 +5318,22 @@ CONTAINS
   
 !<subroutine>
   
-  SUBROUTINE lsyssc_clearMatrix (rmatrix)
+  SUBROUTINE lsyssc_clearMatrix (rmatrix,dvalue)
   
 !<description>
-  ! Clears the entries in a matrix. All entries are overwritten with 0.0.
+  ! Clears the entries in a matrix. All entries are overwritten with 0.0 or
+  ! with dvalue (if specified).
 !</description>
   
 !<inputoutput>
   
-  ! Matrix to release.
+  ! Matrix to clear.
   TYPE(t_matrixScalar), INTENT(INOUT)               :: rmatrix
+  
+  ! OPTIONAL: Value to write into the matrix.
+  ! If not specified, all matrix entries are set to 0.0.
+  ! If specified, all matrix entries are set to dvalue.
+  REAL(DP), INTENT(IN), OPTIONAL :: dvalue
   
 !</inputoutput>
 
@@ -5343,10 +5350,18 @@ CONTAINS
     SELECT CASE (rmatrix%cdataType)
     CASE (ST_DOUBLE)
       CALL lsyssc_getbase_double (rmatrix,p_Ddata)
-      CALL lalg_clearVectorDble (p_Ddata)
+      IF (.NOT. PRESENT(dvalue)) THEN
+        CALL lalg_clearVectorDble (p_Ddata)
+      ELSE
+        CALL lalg_setVectorDble (p_Ddata,dvalue)
+      END IF
     CASE (ST_SINGLE)
       CALL lsyssc_getbase_single (rmatrix,p_Fdata)
-      CALL lalg_clearVectorSngl (p_Fdata)
+      IF (.NOT. PRESENT(dvalue)) THEN
+        CALL lalg_clearVectorSngl (p_Fdata)
+      ELSE
+        CALL lalg_setVectorSngl (p_Fdata,REAL(dvalue,SP))
+      END IF
     CASE DEFAULT
       PRINT *,'lsyssc_clearMatrix: Unsupported Data type!'
       CALL sys_halt()
