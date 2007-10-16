@@ -27,6 +27,7 @@
 PROGRAM anisotropicdiffusion
 
   USE anisotropicdiffusion_method1
+  USE anisotropicdiffusion_method2
   
   IMPLICIT NONE
   
@@ -48,6 +49,12 @@ PROGRAM anisotropicdiffusion
   CALL output_line ('Calculating anisotropic diffusion problem with method 1')
   CALL output_line ('-------------------------------------------------------')
   CALL anisotropicdiffusion1
+
+  ! Call the problem to solve. 
+  CALL output_lbrk ()
+  CALL output_line ('Calculating anisotropic diffusion problem with method 2')
+  CALL output_line ('-------------------------------------------------------')
+  CALL anisotropicdiffusion2
   
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

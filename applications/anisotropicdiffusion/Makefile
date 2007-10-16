@@ -29,7 +29,7 @@ vpath %.inc include \
       src/geometry src/misc src/parametrization src/triangulation src
 
 # The name of the final executable
-EXEC=poisson-$(ID)
+EXEC=anisotropicdiffusion-$(ID)
 
 # used libraries
 FEATLIB= minisplib sysutils umfpack4 amd

@@ -1,11 +1,11 @@
 
 # PRM-file of the domain
 
-sfilePRM = './pre/QUAD2d.prm'
+sfilePRM = './pre/tria2d.prm'
 
 # TRI-file of the mesh
 
-sfileTRI = './pre/QUAD2d.tri'
+sfileTRI = './pre/tria2d.tri'
 
 # Convert quad mesh to triangle mesh
 
@@ -19,7 +19,7 @@ dmeshDistortion=0.0
 # Element type to use for the discretisation.
 # 11=Q1, 1=P1, 13=Q2, 2=P2, -30=Q1~ nonparametric
 
-ielementType = 11
+ielementType = 1
 
 # Type of stabilisation.
 # 0=none
@@ -35,9 +35,15 @@ dgamma = 0.01
 
 NLMAX = 2
 
+# Maximum refinement level for h-adaptivity
+NLMAXhRefinement = 10
+
+# Maximum number of refinement steps
+MAXhRefinementSteps = 10
+
 # Rotation angle for the anisotropic diffusion
 
-dtheta = 40
+dtheta = 10
 
 # Entries in the diffusion matrix
 

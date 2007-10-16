@@ -44,6 +44,11 @@
 !#     -> Is only used for the postprocessing to calculate the $L_2$- and
 !#        $H_1$-error of the FE function in comparison to the analytic
 !#        function
+!#
+!# 6.) getMonitorFunction
+!#
+!#     -> Returns the values of the monitor function which is used to
+!#        perform h-adaptivity
 !# </purpose>
 !##############################################################################
 
@@ -570,5 +575,123 @@ CONTAINS
     analyticalFunction = dvalue
   
   END FUNCTION
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE getMonitorFunction(rtriangulation,rsolution,rindicator)
+  
+    USE pprocgradients
+
+!<description>
+  ! This routine defines a 'monitor function' for the adaptive grid refinement
+  ! with the h-adaptivity refinement strategy. rindicator is a vector with
+  ! NEL entries for all the elements in the triangulation. The routine must
+  ! fill each entry with a value that tells the h-adaptivity routines whether
+  ! to refine that element or not.
+!</descrition>
+  
+!<input>
+    ! The triangulation structure of the underlying mesh which is to be refined
+    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+
+    ! The solution vector
+    TYPE(t_vectorScalar), INTENT(IN)  :: rsolution
+!</input>
+    
+!</inputoutput>
+    ! An indicator vector. Entry i in the vector rindicatir that tells the 
+    ! mesh adaption routines whether to refine element i or to do coarsening
+    ! with it. A value > 1.0 will refine element i, a value < 0.01 will result
+    ! in coarsening -- as specified during the initialisation of the
+    ! mesh refinement in the main program.
+    TYPE(t_vectorScalar), INTENT(INOUT) :: rindicator
+
+!</subroutine>
+
+    ! local variables
+    TYPE(t_vectorBlock) :: rgradient0,rgradient1
+    TYPE(t_blockDiscretisation) :: rdiscrBlock0,rdiscrBlock1
+    
+    REAL(DP), DIMENSION(:), POINTER   :: p_Dindicator
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+    REAL(DP), DIMENSION(:), POINTER   :: p_Dgradient0X,p_Dgradient0Y
+    REAL(DP), DIMENSION(:), POINTER   :: p_Dgradient1X,p_Dgradient1Y
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+    INTEGER(PREC_ELEMENTIDX) :: iel
+    INTEGER(PREC_VERTEXIDX)  :: i,j,k
+    REAL(DP) :: derror
+    
+    ! Initialise block discretisations
+    CALL spdiscr_initBlockDiscr2D (rdiscrBlock0,2,&
+        rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
+    CALL spdiscr_initBlockDiscr2D (rdiscrBlock1,2,&
+        rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
+
+    ! Initialise spatial discretisations for first block
+    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+        EL_P0, SPDISC_CUB_AUTOMATIC, rdiscrBlock0%Rspatialdiscretisation(1))
+    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+        EL_P1, SPDISC_CUB_AUTOMATIC, rdiscrBlock1%Rspatialdiscretisation(1))
+
+    ! Initialise spatial discretisations for second block
+    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+        EL_P0, SPDISC_CUB_AUTOMATIC, rdiscrBlock0%Rspatialdiscretisation(2))
+    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+        EL_P1, SPDISC_CUB_AUTOMATIC, rdiscrBlock1%Rspatialdiscretisation(2))
+
+    ! Create block vector for gradient values
+    CALL lsysbl_createVecBlockByDiscr (rdiscrBlock0,rgradient0, .TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (rdiscrBlock1,rgradient1, .TRUE.)
+
+    ! Recover gradients
+    CALL ppgrd_calcGradient (rsolution, rgradient0)
+    CALL ppgrd_calcGradient (rsolution, rgradient1)
+
+    ! Set pointers
+    CALL storage_getbase_int2D(&
+        rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    CALL storage_getbase_double2D (&
+        rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    CALL lsyssc_getbase_double(rindicator,p_Dindicator)
+    CALL lsyssc_getbase_double(rgradient0%RvectorBlock(1),p_Dgradient0X)
+    CALL lsyssc_getbase_double(rgradient0%RvectorBlock(2),p_Dgradient0Y)
+    CALL lsyssc_getbase_double(rgradient1%RvectorBlock(1),p_Dgradient1X)    
+    CALL lsyssc_getbase_double(rgradient1%RvectorBlock(2),p_Dgradient1Y)
+
+    DO iel=1,rtriangulation%NEL
+
+      ! Initialize the error
+      derror = 0
+
+      i = p_IverticesAtElement(1,iel)
+      j = p_IverticesAtElement(2,iel)
+      k = p_IverticesAtElement(3,iel)
+      
+      derror = SQRT(&
+          ABS(0.5*(p_Dgradient1X(i)+p_Dgradient1X(j))-p_Dgradient0X(iel))**2+&
+          ABS(0.5*(p_Dgradient1X(j)+p_Dgradient1X(k))-p_Dgradient0X(iel))**2+&
+          ABS(0.5*(p_Dgradient1X(k)+p_Dgradient1X(i))-p_Dgradient0X(iel))**2+&
+          ABS(0.5*(p_Dgradient1Y(i)+p_Dgradient1Y(j))-p_Dgradient0Y(iel))**2+&
+          ABS(0.5*(p_Dgradient1Y(j)+p_Dgradient1Y(k))-p_Dgradient0Y(iel))**2+&
+          ABS(0.5*(p_Dgradient1Y(k)+p_Dgradient1Y(i))-p_Dgradient0Y(iel))**2)
+
+      derror = derror*&
+          ABS(gaux_getArea_tria2D(&
+              p_DvertexCoords(1:2,p_IverticesAtElement(:,iel))))/3._DP
+
+      p_Dindicator(iel) = derror
+    END DO
+    
+    ! Release temporal discretisation structure
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlock0)
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlock1)
+
+    ! Release vectors
+    CALL lsysbl_releaseVector(rgradient0)
+    CALL lsysbl_releaseVector(rgradient1)
+
+  END SUBROUTINE
 
 END MODULE
