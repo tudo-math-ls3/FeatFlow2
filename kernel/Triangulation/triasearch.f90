@@ -20,6 +20,10 @@
 !# 3.) tsrch_getElem_hierarch
 !#     -> Search for an element containing a specific point.
 !#        Hierarchical method.
+!#
+!# 4.) tsrch_getNearestElem_BruteForce
+!#     -> Find the element with the nearest midpoint to a specific point.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -37,6 +41,11 @@ MODULE triasearch
   INTERFACE tsrch_getElem_BruteForce
     MODULE PROCEDURE tsrch_getElem_BruteForce_dir
     MODULE PROCEDURE tsrch_getElem_BruteForce_ind
+  END INTERFACE
+
+  INTERFACE tsrch_getNearestElem_BruteForce
+    MODULE PROCEDURE tsrch_getNearestMPElem_BF_dir
+    MODULE PROCEDURE tsrch_getNearestMPElem_BF_ind
   END INTERFACE
 
   INTERFACE tsrch_getElem_raytrace2D
@@ -83,7 +92,7 @@ CONTAINS
 !</subroutine>
     
     ! local variables
-    REAL(DP), DIMENSION(2,4) :: Dcorners
+    REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE) :: Dcorners
     LOGICAL :: binside
   
     SELECT CASE (UBOUND(Dpoint,1))
@@ -155,6 +164,120 @@ CONTAINS
     CALL storage_getbase_int2d (rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     
     CALL tsrch_getElem_BruteForce_dir (Dpoint,p_DvertexCoords,p_IverticesAtElement,iel)
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE tsrch_getNearestMPElem_BF_dir (&
+      Dpoint,DvertexCoords,IverticesAtElement,iel)
+  
+!<description>
+  ! Searches for an element in the triangulation which element midpoint
+  ! is closest to the point Dpoint.
+  ! Brute force method (very slow on large triangulations!).
+!</description>
+  
+!<input>
+  ! The coordinate of a point where the routine should check which element
+  ! contains the point.
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  
+  ! Vertex coordinates of the triangulation
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: DvertexCoords
+  
+  ! Vertices Adjacent to the elements in the triangulation.
+  INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), INTENT(IN) :: IverticesAtElement
+!</input>
+  
+!<output>
+  ! Number of the element which midpoint is closest to Dpoint.
+  INTEGER(PREC_ELEMENTIDX), INTENT(OUT) :: iel
+!</output>
+  
+!</subroutine>
+    
+    ! local variables
+    REAL(DP), DIMENSION(UBOUND(DvertexCoords,1)) :: Dmidpoint
+    INTEGER :: ive
+    INTEGER(PREC_ELEMENTIDX) :: ielcur
+    REAL(DP) :: ddist,dmindist
+  
+    SELECT CASE (UBOUND(Dpoint,1))
+    CASE (NDIM2D) 
+      
+      dmindist = -1.0_DP
+      
+      ! Loop through all elements. 
+      DO ielcur=1,UBOUND(IverticesAtElement,2)
+      
+        ! Get the element midpoint
+        Dmidpoint(:) = 0.0_DP
+        DO ive = 1,UBOUND(IverticesAtElement,1)
+          IF (IverticesAtElement(ive,ielcur) .EQ. 0) EXIT ! Triangle in a quad mesh
+          Dmidpoint(:) = Dmidpoint(:) + &
+            DvertexCoords(:,IverticesAtElement(ive,ielcur))
+        END DO
+        Dmidpoint(:) = Dmidpoint(:) / REAL(ive-1,DP)
+        
+        ! Get the distance
+        ddist = SQRT((Dmidpoint(1)-Dpoint(1))**2 + &
+                (Dmidpoint(2)-Dpoint(2))**2)
+        
+        ! Chech if the distance is smaller than the current one.
+        IF ((dmindist .LT. 0.0_DP) .OR. (ddist .LT. dmindist)) THEN 
+          dmindist = ddist
+          iel = ielcur
+        END IF
+        
+      END DO
+      
+    END SELECT
+  
+  END SUBROUTINE
+
+!************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE tsrch_getNearestMPElem_BF_ind (Dpoint,rtriangulation,iel)
+  
+!<description>
+  ! Searches for an element in the triangulation which element midpoint
+  ! is closest to the point Dpoint.
+  ! Brute force method (very slow on large triangulations!).
+!</description>
+  
+!<input>
+  ! The coordinate of a point where the routine should check which element
+  ! contains the point.
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Dpoint
+  
+  ! Triangulation structure.
+  TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+!</input>
+  
+!<output>
+  ! Number of the element containing the point Dpoint.
+  ! =0 if no element contains the point.
+  INTEGER(PREC_ELEMENTIDX), INTENT(OUT) :: iel
+!</output>
+  
+!</subroutine>
+    
+    ! local variables
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+
+    CALL storage_getbase_double2d (&
+        rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    CALL storage_getbase_int2d (&
+        rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    
+    CALL tsrch_getNearestMPElem_BF_dir (&
+        Dpoint,p_DvertexCoords,p_IverticesAtElement,iel)
   
   END SUBROUTINE
 
