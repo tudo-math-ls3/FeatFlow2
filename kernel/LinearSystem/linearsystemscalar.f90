@@ -5226,7 +5226,7 @@ CONTAINS
   END IF
   rvector%NEQ = 0
   rvector%NVAR = 1
-  rvector%cdataType = ST_NOHANDLE
+  rvector%cdataType = ST_DOUBLE
   rvector%iidxFirstEntry = 1
   rvector%bisCopy = .FALSE.
   rvector%isortStrategy = 0

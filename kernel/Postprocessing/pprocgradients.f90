@@ -70,17 +70,17 @@ CONTAINS
   SUBROUTINE ppgrd_calcGradient (rvectorScalar,rvectorGradient,cgradType)
 
 !<description>
-  ! Calculates the recvered gradient of a scalar finite element function.
-  ! cgradType decides about the method to use tfor the calculation.
+  ! Calculates the recovered gradient of a scalar finite element function.
+  ! cgradType decides about the method to use for the calculation.
   ! This parameter is optional; if not specified, a standard method
   ! will be taken.
   !
-  ! rectorGradient receives the reonstructed gradient. For a 2D discretisation,
+  ! rvectorGradient receives the reconstructed gradient. For a 2D discretisation,
   ! this must be a 2D vector. For a 3D discretisation, this must be a 3D vector.
   ! The vector must provide a discretisation structure that defines the
   ! finite element space the reconstructed gradient should be calculated in.
   !
-  ! Note: Currently, rvectorGradient must be prepared as $P_1$ or $Q_1$
+  ! Note: Currently, rvectorGradient must be prepared as $P_0,P_1$ or $Q_0,Q_1$
   ! vector, respectively, other types of destination vectors are not allowed! 
 !</description>
 
@@ -108,7 +108,7 @@ CONTAINS
 
     ! local variables
     INTEGER :: i,j
-    LOGICAL :: bisQ1, bisP1, bisQ2, bisP2, bisDifferent
+    LOGICAL :: bisP0,bisQ0,bisQ1, bisP1, bisQ2, bisP2, bisDifferent
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscr
     INTEGER :: imethod
 
@@ -157,6 +157,8 @@ CONTAINS
     CASE (NDIM2D)
       ! Currently, the destinatino vector must be either pure Q1 or pure P1 or
       ! mixed Q1/P1 -- everything else is currently not supported.
+      bisQ0 = .FALSE.
+      bisP0 = .FALSE.
       bisQ1 = .FALSE.
       bisP1 = .FALSE.
       bisQ2 = .FALSE.
@@ -169,6 +171,10 @@ CONTAINS
         DO j=1,p_rdiscr%inumFESpaces
           SELECT CASE (&
               elem_getPrimaryElement (p_rdiscr%RelementDistribution(j)%itrialElement))
+          CASE (EL_Q0)
+            bisQ0 = .TRUE.
+          CASE (EL_P0)
+            bisP0 = .TRUE.
           CASE (EL_Q1)
             bisQ1 = .TRUE.
           CASE (EL_P1)
@@ -184,8 +190,8 @@ CONTAINS
       END DO
       
       IF (bisDifferent) THEN
-        CALL output_line ('Only Q1, P1, Q2 and P2 supported as discretisation for the &
-            &destination vector!',&
+        CALL output_line ('Only Q0, Q1, P0, P1, Q2 and P2 supported as&
+            & discretisation for the destination vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradient')
         CALL sys_halt()
       END IF
@@ -399,6 +405,10 @@ CONTAINS
       ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
       ! on each element indofDest!
       SELECT CASE (elem_getPrimaryElement(p_elementDistrDest%itrialElement))
+      CASE (EL_P0)
+        CALL cub_getCubPoints(CUB_G1_T, nlocalDOFsDest, Dxi, Domega)
+      CASE (EL_Q0)
+        CALL cub_getCubPoints(CUB_G1X1, nlocalDOFsDest, Dxi, Domega)
       CASE (EL_P1)
         CALL cub_getCubPoints(CUB_TRZ_T, nlocalDOFsDest, Dxi, Domega)
       CASE (EL_Q1)
