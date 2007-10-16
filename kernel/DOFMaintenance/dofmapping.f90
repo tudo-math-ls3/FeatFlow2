@@ -414,12 +414,6 @@ CONTAINS
     INTEGER(I32) :: ieltype
     INTEGER(I32), DIMENSION(2) :: IelTypes
 
-    ! 3D currently not supported
-    IF (rdiscretisation%ndimension .NE. NDIM2D) THEN
-      PRINT *,'dof_locGlobMapping_mult: Only 2D supported at the moment!'
-      CALL sys_halt()
-    END IF
-
     p_rtriangulation => rdiscretisation%p_rtriangulation
     
     SELECT CASE(rdiscretisation%ndimension)

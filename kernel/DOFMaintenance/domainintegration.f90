@@ -148,7 +148,7 @@ CONTAINS
       ALLOCATE(rintSubset%p_DcubPtsRef(3,npointsPerElement,nelements))
       
     CASE (TRAFO_CS_REF2DTRI,TRAFO_CS_REF2DQUAD,&
-          TRAFO_CS_REAL2DTRI,TRAFO_CS_REAL2DQUAD)
+          TRAFO_CS_REAL2DTRI,TRAFO_CS_REAL2DQUAD,TRAFO_CS_REF1D)
       ALLOCATE(rintSubset%p_DcubPtsRef(ndimSpace,npointsPerElement,nelements))
       
     CASE DEFAULT
