@@ -177,7 +177,7 @@ MODULE spatialdiscretisation
   TYPE t_spatialDiscretisation
   
     ! Dimension of the discretisation. 0=not initialised, 
-    ! 2=2D discretisation, 3=3D discretisation
+    ! 1=1D discretisation, 2=2D discretisation, 3=3D discretisation
     INTEGER                          :: ndimension             = 0
     
     ! Whether the discretisation structure is a copy of another discretisation
@@ -258,7 +258,7 @@ MODULE spatialdiscretisation
   TYPE t_blockDiscretisation
   
     ! Dimension of the discretisation. 0=not initialised, 
-    ! 2=2D discretisation, 3=3D discretisation
+    ! 1=1D discretisation, 2=2D discretisation, 3=3D discretisation
     INTEGER                          :: ndimension             = 0
 
     ! Complexity of the discretisation. One of the SPDISC_xxxx constants.
@@ -390,25 +390,25 @@ CONTAINS
     CASE (NDIM1D)
     
       SELECT CASE (elem_getPrimaryElement(ielementType))
-      CASE (EL_P0)
+      CASE (EL_P0_1D)
         ! Use Gauss-1
         ccubType = CUB_G1_1D
 
-      CASE (EL_P1)
+      CASE (EL_P1_1D)
         ! Use trapezoidal rule
         ccubType = CUB_TRZ_1D
 
-      CASE (EL_Q0)
-        ! Use Gauss-1
-        ccubType = CUB_G1_1D
-
-      CASE (EL_Q1)
-        ! Use trapezoidal rule
-        ccubType = CUB_TRZ_1D
-
-      CASE (EL_Q1T)
-        ! Use midpoint rule = Gauss-1
-        ccubType = CUB_G1_1D
+!      CASE (EL_Q0)
+!        ! Use Gauss-1
+!        ccubType = CUB_G1_1D
+!
+!      CASE (EL_Q1)
+!        ! Use trapezoidal rule
+!        ccubType = CUB_TRZ_1D
+!
+!      CASE (EL_Q1T)
+!        ! Use midpoint rule = Gauss-1
+!        ccubType = CUB_G1_1D
       
       CASE DEFAULT
         ccubType = 0
@@ -481,25 +481,25 @@ CONTAINS
     CASE (NDIM1D)
     
       SELECT CASE (elem_getPrimaryElement(ielementType))
-      CASE (EL_P0)
+      CASE (EL_P0_1D)
         ! 1-point Gauss
         ccubType = CUB_G1_1D
 
-      CASE (EL_P1)
+      CASE (EL_P1_1D)
         ! 2-point Gauss
         ccubType = CUB_G2_1D
 
-      CASE (EL_Q0)
-        ! 1-point Gauss
-        ccubType = CUB_G2_1D
-
-      CASE (EL_Q1)
-        ! 2-point Gauss
-        ccubType = CUB_G2_1D
-
-      CASE (EL_Q1T)
-        ! 2-point Gauss
-        ccubType = CUB_G2_1D
+!      CASE (EL_Q0)
+!        ! 1-point Gauss
+!        ccubType = CUB_G2_1D
+!
+!      CASE (EL_Q1)
+!        ! 2-point Gauss
+!        ccubType = CUB_G2_1D
+!
+!      CASE (EL_Q1T)
+!        ! 2-point Gauss
+!        ccubType = CUB_G2_1D
       
       CASE DEFAULT
         ccubType = 0
@@ -559,6 +559,70 @@ CONTAINS
     END SELECT
 
   END FUNCTION
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE spdiscr_initBlockDiscr (rblockDiscr,ncomponents,&
+                                     rtriangulation, rboundary, rboundaryConditions)
+  
+!<description>
+  
+  ! This routine initialises a block discretisation structure accept ncomponents
+  ! solution components. Pointers to the triangulation, domain and boundary
+  ! conditions are saved in the structure.
+  !
+  ! The routine performs only basic initialisation. The caller must
+  ! separately initialise the the specific scalar discretisation structures 
+  ! of each solution component (as collected in the RspatialDiscretisation
+  ! array of the rblockDiscr structure).
+  
+!</description>
+
+!<input>
+  
+  ! The triangulation structure underlying to the discretisation.
+  TYPE(t_triangulation), INTENT(IN), TARGET    :: rtriangulation
+  
+  ! The underlying domain.
+  TYPE(t_boundary), INTENT(IN), TARGET         :: rboundary
+  
+  ! Number of solution components maintained by the block structure
+  INTEGER, INTENT(IN)                          :: ncomponents
+  
+  ! OPTIONAL: The analytical description of the boundary conditions.
+  ! Parameter can be ommitted if boundary conditions are not defined.
+  TYPE(t_boundaryConditions), TARGET, OPTIONAL :: rboundaryConditions
+  
+!</input>
+  
+!<output>
+  
+  ! The block discretisation structure to be initialised.
+  TYPE(t_blockDiscretisation), INTENT(OUT) :: rblockDiscr
+  
+!</output>
+  
+!</subroutine>
+
+  ! Initialise the variables of the structure for the simple discretisation
+  rblockDiscr%ndimension             = rtriangulation%ndim
+  rblockDiscr%ccomplexity            = SPDISC_UNIFORM
+  rblockDiscr%p_rtriangulation       => rtriangulation
+  rblockDiscr%p_rboundary            => rboundary
+  IF (PRESENT(rboundaryConditions)) THEN
+    rblockDiscr%p_rboundaryConditions  => rboundaryConditions
+  ELSE
+    NULLIFY(rblockDiscr%p_rboundaryConditions)
+  END IF
+
+  rblockDiscr%ncomponents            = ncomponents
+  ALLOCATE(rblockDiscr%RspatialDiscretisation(ncomponents))
+
+  ! That's it.  
+  
+  END SUBROUTINE  
   
   ! ***************************************************************************
   
@@ -836,7 +900,8 @@ CONTAINS
   END IF
 
   ! Initialise the variables of the structure for the simple discretisation
-  rspatialDiscr%ndimension             = NDIM2D
+  !rspatialDiscr%ndimension             = NDIM2D
+  rspatialDiscr%ndimension             = rtriangulation%ndim
   rspatialDiscr%p_rtriangulation       => rtriangulation
   rspatialDiscr%p_rboundary            => rboundary
   rspatialDiscr%ccomplexity            = SPDISC_UNIFORM
