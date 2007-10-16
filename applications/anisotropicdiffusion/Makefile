@@ -12,7 +12,9 @@ INCDIR= -I./src/geometry -I./src/misc -I./src/parametrization \
 
 # The source files 
 SRC =   anisotropicdiffusion_callback.f90 \
-        anisotropicdiffusion_method1.f90 anisotropicdiffusion.f90
+        anisotropicdiffusion_method1.f90 \
+	anisotropicdiffusion_method2.f90 \
+	anisotropicdiffusion.f90
 
 # include the standart kernel sources
 include $(FEATFLOW)/kernel/kernel.mk
