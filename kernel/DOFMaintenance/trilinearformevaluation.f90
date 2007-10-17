@@ -47,7 +47,7 @@ MODULE trilinearformevaluation
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
-  INTEGER, PARAMETER :: TRILF_NELEMSIM   = 1000
+  INTEGER, PARAMETER :: TRILF_NELEMSIM   = 1
   
 !</constantblock>
 !</constants>
@@ -386,10 +386,6 @@ CONTAINS
   TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
   TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationFunc
   
-  !REAL(DP), DIMENSION(11) :: DT
-  
-  !CHARACTER(LEN=20) :: CFILE
-  
   IF (.NOT. ASSOCIATED(rmatrixScalar%p_rspatialDiscretisation)) THEN
     PRINT *,'trilf_buildMatrix9d_conf2: No discretisation associated!'
     CALL sys_halt()
@@ -398,8 +394,6 @@ CONTAINS
   ! Which derivatives of basis functions are needed?
   ! Check the descriptors of the bilinear form and set BDERxxxx
   ! according to these.
-
-  !CALL ZTIME(DT(1))
 
   BderTrialTempl = .FALSE.
   BderTestTempl = .FALSE.
@@ -515,7 +509,6 @@ CONTAINS
 
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
-  !CALL ZTIME(DT(2))
 
   DO icurrentElementDistr = 1,p_rdiscretisation%inumFESpaces
   
@@ -549,6 +542,20 @@ CONTAINS
     ! Get cubature weights and point coordinates on the reference element
     CALL cub_getCubPoints(p_elementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
     
+    ! Open-MP-Extension: Open threads here.
+    ! "j" is declared as private; shared gave errors with the Intel compiler
+    ! in Windows!?!
+    ! Each thread will allocate its own local memory...
+    !
+    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
+    !$OMP   p_Djac,p_Ddetj,p_Dcoords, kentry, dentry,DbasTest,DbasTrial, &
+    !$OMP   IdofsTest,IdofsTrial,bnonparTrial,bnonparTest,p_DcubPtsTrial,&
+    !$OMP   p_DcubPtsTest,Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
+    !$OMP   p_DbasTrial, BderTrial, BderTest, j, ielmax,IEL, idofe,jdofe,jcol0, &
+    !$OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,ifunc,aux, db,IdofsFunc,DbasFunc, &
+    !$OMP   bnonparFunc,p_DcubPtsFunc,bIdenticalFuncAndTrial,p_IdofsFunc, &
+    !$OMP   p_DbasFunc,iderType,p_IelementList,p_Ddata)    
+    
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
@@ -575,6 +582,7 @@ CONTAINS
     END DO
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
+    !$OMP SINGLE
     DO IALBET = 1,rform%itermcount
       ifunc = rform%Idescriptors(1,IALBET)
       IA = rform%Idescriptors(2,IALBET)
@@ -601,6 +609,7 @@ CONTAINS
         CALL sys_halt()
       END IF
     END DO
+    !$OMP END SINGLE
     
     ! Allocate an array saving the coordinates of corner vertices of elements
     
@@ -718,7 +727,6 @@ CONTAINS
       p_DbasFunc  => DbasFunc
     END IF
 
-    !CALL ZTIME(DT(3))
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
     CALL storage_getbase_int (p_elementDistribution%h_IelementList, &
@@ -731,6 +739,13 @@ CONTAINS
     NEL = p_elementDistribution%NEL
 
     ! Loop over the elements - blockwise.
+    !
+    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! so TRILF_NELEMSIM local matrices are simultaneously calculated in the
+    ! inner loop(s).
+    ! The blocks have all the same size, so we can use static scheduling.
+    !
+    !$OMP do schedule(static,1)
     DO IELset = 1, NEL, TRILF_NELEMSIM
     
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -781,8 +796,6 @@ CONTAINS
         CALL dof_locGlobMapping_mult(p_rdiscretisationFunc, p_IelementList(IELset:IELmax), &
                                      .FALSE.,IdofsFunc)
       END IF
-      
-      !CALL ZTIME(DT(4))
       
       ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
       
@@ -867,7 +880,6 @@ CONTAINS
         END DO ! JDOFE
         
       END DO ! IEL
-      !CALL ZTIME(DT(5))
       
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
@@ -902,8 +914,6 @@ CONTAINS
 
       CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement),&
           p_rtriangulation,p_IelementList(IELset:IELmax),p_Dcoords)
-
-      !CALL ZTIME(DT(6))
       
       ! Depending on the type of transformation, we must now choose
       ! the mapping between the reference and the real element.
@@ -926,8 +936,6 @@ CONTAINS
              
       END IF
       
-      !CALL ZTIME(DT(7))
-      
       ! If the matrix has nonconstant coefficients c(x,y) , calculate the 
       ! coefficients now.
       IF (.NOT. rform%ballCoeffConstant) THEN
@@ -940,7 +948,6 @@ CONTAINS
                   Dcoefficients)
       END IF
       
-      !CALL ZTIME(DT(8))                              
       ! Calculate the values of the basis functions.
       ! Pass p_DcubPts as point coordinates, which point either to the
       ! coordinates on the reference element (the same for all elements)
@@ -966,15 +973,12 @@ CONTAINS
             BderFunc, DbasFunc, ncubp, IELmax-IELset+1, p_DcubPtsFunc)
       END IF
       
-      !CALL ZTIME(DT(9))
-
       ! ----------------- COEFFICIENT EVALUATION PHASE ---------------------
       
       ! Now its time to form the actual coefficients for the integral:
       ! Dcoefficients = c(x,y) f(u(x,y)). So we must evaluate f(u(x,y))
       ! and multiply it with the coefficients in Dcoefficient to get the
       ! correct coefficients for later use.
-      
       IF (rform%ballCoeffConstant) THEN
         ! Constant coefficients. Take the coefficients from the bilinear form
         ! and multiply with the values of f(u).
@@ -1027,12 +1031,10 @@ CONTAINS
       ! loop here in comparison to the standard bilinear form.
       !
       ! Loop over the elements in the current set.
-
       DO IEL=1,IELmax-IELset+1
         
         ! Clear the local matrix
         Dentry = 0.0_DP
-        
         ! Loop over all cubature points on the current element
         DO ICUBP = 1, ncubp
 
@@ -1062,7 +1064,7 @@ CONTAINS
             ! function value with before summing up to the integral.
             ! Get the precalculated coefficient from the coefficient array.
             AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
-          
+            
             ! Now loop through all possible combinations of DOF's
             ! in the current cubature point. The outer loop
             ! loops through the "O" in the above picture,
@@ -1105,16 +1107,18 @@ CONTAINS
         
         ! Incorporate the local matrices into the global one.
         ! Kentry gives the position of the additive contributions in Dentry.
+        !$OMP CRITICAL
         DO IDOFE=1,indofTest
           DO JDOFE=1,indofTrial
             p_DA(Kentry(JDOFE,IDOFE,IEL)) = p_DA(Kentry(JDOFE,IDOFE,IEL)) + Dentry(JDOFE,IDOFE)
           END DO
         END DO
+        !$OMP END CRITICAL
 
       END DO ! IEL
 
-      !CALL ZTIME(DT(10))
     END DO ! IELset
+    !$OMP END DO
     
     ! Release memory
     CALL domint_doneIntegration(rintSubset)
@@ -1126,20 +1130,13 @@ CONTAINS
     DEALLOCATE(DbasTest)
     DEALLOCATE(Kentry)
     DEALLOCATE(Dentry)
+    
+    !$OMP END PARALLEL
 
   END DO ! icurrentElementDistr
 
   ! Finish
-  !CALL ZTIME(DT(11))
   
-  !DO i=2,11
-  !  PRINT *,'Time for assembly part ',i,': ',DT(i)-DT(i-1)
-  !END DO
-  
-  !CFILE = 'MATRIX2.TXT'
-  !CALL OWM17(p_DA,p_KCOL,p_KLD,&
-  !           NEQ,NEQ,.TRUE.,0,'MAT1  ',CFILE,'(D20.10)')
-
   END SUBROUTINE
   
 END MODULE

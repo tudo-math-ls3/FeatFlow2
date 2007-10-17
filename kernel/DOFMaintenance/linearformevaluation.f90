@@ -894,6 +894,18 @@ CONTAINS
     ! Get cubature weights and point coordinates on the reference element
     CALL cub_getCubPoints(p_elementDistribution%ccubTypeLinForm, ncubp, Dxi, Domega)
     
+    ! Open-MP-Extension: Open threads here.
+    ! "j" is declared as private; shared gave errors with the Intel compiler
+    ! in Windows!?!
+    ! Each thread will allocate its own local memory...
+    !
+    !$OMP PARALLEL PRIVATE(rintSubset, p_DcubPtsRef,p_DcubPtsReal, &
+    !$OMP   p_Djac,p_Ddetj,p_Dcoords,DbasTest, &
+    !$OMP   IdofsTest,bnonparTest,&
+    !$OMP   p_DcubPtsTest,Dcoefficients, &
+    !$OMP   j, ielmax,IEL, idofe, &
+    !$OMP   ICUBP, IALBET,OM,IA,aux)    
+    
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     j = elem_igetCoordSystem(p_elementDistribution%itrialElement)
@@ -968,7 +980,9 @@ CONTAINS
     ! Get the number of elements there.
     NEL = p_elementDistribution%NEL
   
+  
     ! Loop over the elements - blockwise.
+    !$OMP do schedule(static,1)
     DO IELset = 1, NEL, LINF_NELEMSIM
     
       ! We always handle LINF_NELEMSIM elements simultaneously.
@@ -1133,6 +1147,7 @@ CONTAINS
 
       !CALL ZTIME(DT(10))
     END DO ! IELset
+    !$OMP END DO
     
     ! Release memory
     CALL domint_doneIntegration(rintSubset)
@@ -1140,6 +1155,8 @@ CONTAINS
     DEALLOCATE(Dcoefficients)
     DEALLOCATE(IdofsTest)
     DEALLOCATE(DbasTest)
+    
+    !$OMP END PARALLEL
 
   END DO ! icurrentElementDistr
 
@@ -1148,6 +1165,8 @@ CONTAINS
   !DO i=2,11
   !  PRINT *,'Time for assembly part ',i,': ',DT(i)-DT(i-1)
   !END DO
+  
+  
   
   END SUBROUTINE
 
