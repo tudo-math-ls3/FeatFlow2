@@ -519,14 +519,14 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 1D simplex -> linear line transformation. 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !%OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,2
             Dcoords (1,ipoint,iel) = &
               p_DvertexCoords(1,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
       END SELECT
 
@@ -546,27 +546,27 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 2D simplex -> linear triangular transformation. 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !%OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,3
             Dcoords (1:NDIM2D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
       CASE (TRAFO_ID_MLINCUBE)
         ! Bilinear transformation for cubic-shaped elements 
         ! -> Bilinear quadrilateral transformation.
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !%OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,4
             Dcoords (1:NDIM2D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM2D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
       END SELECT
 
@@ -586,27 +586,27 @@ CONTAINS
       CASE (TRAFO_ID_LINSIMPLEX)
         ! 3D simplex -> linear tetrahedral transformation. 
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !%OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,4
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
       CASE (TRAFO_ID_MLINCUBE)
         ! Trilinear transformation for cubic-shaped elements 
         ! -> Trilinear hexahedral transformation.
         ! Transfer the corners of the element.
-        !$OMP PARALLEL DO PRIVATE(ipoint)
+        !%OMP PARALLEL DO PRIVATE(ipoint)
         DO iel=1,SIZE(Ielements)
           DO ipoint = 1,8
             Dcoords (1:NDIM3D,ipoint,iel) = &
               p_DvertexCoords(1:NDIM3D,p_IverticesAtElement(ipoint,Ielements(iel)))
           END DO
         END DO
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
       END SELECT
       
@@ -1131,7 +1131,7 @@ CONTAINS
       IF(.NOT. PRESENT(DpointsReal)) THEN
         
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt)
+        !%OMP PARALLEL DO PRIVATE(ipt)
         DO iel=1,nelements
         
           ! Loop over the points
@@ -1144,12 +1144,12 @@ CONTAINS
           END DO
         
         END DO
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
         
       ELSE
       
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt)
+        !%OMP PARALLEL DO PRIVATE(ipt)
         DO iel=1,nelements
           
           ! Loop over the points
@@ -1166,7 +1166,7 @@ CONTAINS
           END DO
           
         END DO
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
 
       END IF
     
@@ -1186,7 +1186,7 @@ CONTAINS
       IF (.NOT. PRESENT(DpointsReal)) THEN
       
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
+        !%OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
         DO iel = 1,nelements
           
           ! Loop over the points
@@ -1220,12 +1220,12 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
         
       ELSE
 
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
+        !%OMP PARALLEL DO PRIVATE(ipt,dax,day,dbx,dby,dcx,dcy)
         DO iel = 1,nelements
           
           ! Loop over the points
@@ -1272,7 +1272,7 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
         
       END IF
     
@@ -1285,7 +1285,7 @@ CONTAINS
       IF (.NOT. PRESENT(DpointsReal)) THEN
       
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt)
+        !%OMP PARALLEL DO PRIVATE(ipt)
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
@@ -1298,12 +1298,12 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
       
       ELSE
 
         ! Loop over the elements
-        !$OMP PARALLEL DO PRIVATE(ipt)
+        !%OMP PARALLEL DO PRIVATE(ipt)
         DO iel = 1,nelements
           ! Prepare the calculation of the Jacobi determinants
           CALL trafo_calcJacPrepare(Dcoords(:,:,iel), DjacPrep)
@@ -1317,7 +1317,7 @@ CONTAINS
           END DO ! ipt
           
         END DO ! iel
-        !$OMP END PARALLEL DO
+        !%OMP END PARALLEL DO
 
       END IF
       

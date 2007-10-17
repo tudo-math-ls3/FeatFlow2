@@ -157,13 +157,13 @@ CONTAINS
 !</subroutine>
   INTEGER(I32) :: i
   
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i=1,SIZE(Fx)
     Dy(i) = REAL(Fx(i),DP)
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
 
   END SUBROUTINE
 
@@ -194,13 +194,13 @@ CONTAINS
 !</subroutine>
   INTEGER(I32) :: i
   
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i=1,SIZE(Dx)
     Fy(i) = REAL(Dx(i),SP)
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
 
   END SUBROUTINE
 
@@ -233,13 +233,13 @@ CONTAINS
   INTEGER(I32) :: i
   
   ! Does not exist in BLAS!
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i=1,SIZE(Ix)
     Iy(i) = Ix(i)
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   
   END SUBROUTINE
   
@@ -332,13 +332,13 @@ CONTAINS
   INTEGER(I32) :: i
   
   ! Does not exist in BLAS
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i=1,SIZE(Ix)
     Ix(i) = ic*Ix(i)
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
 
   END SUBROUTINE
   
@@ -370,13 +370,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i = 1,SIZE(Dx)
     Dx(i) = 0.0_DP
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   
   END SUBROUTINE
   
@@ -410,13 +410,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i = 1,SIZE(Fx)
     Fx(i) = 0.0_SP
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   
   END SUBROUTINE
   
@@ -450,13 +450,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i = 1,SIZE(Ix)
     Ix(i) = 0
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   
   END SUBROUTINE
   
@@ -493,13 +493,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i = 1,SIZE(Dx)
     Dx(i) = dvalue
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   
   END SUBROUTINE
   
@@ -536,13 +536,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i = 1,SIZE(Fx)
     Fx(i) = fvalue
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   
   END SUBROUTINE
   
@@ -579,13 +579,13 @@ CONTAINS
   ! But if the compiler does not support that, maybe we have to go back
   ! to the standard DO loop...
 
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
   DO i = 1,SIZE(Ix)
     Ix(i) = ivalue
   END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   
   END SUBROUTINE
   
@@ -722,39 +722,39 @@ CONTAINS
   REAL(DP) :: c
   
   IF (dcy .EQ. 0.0_DP) THEN
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
     DO i=1,SIZE(Fx)
       Dy(i) = Fx(i)
     END DO
-!$omp  end parallel do
+!%OMP  end parallel do
     IF (scx .NE. 1.0_SP) THEN
-!$omp  parallel do &
-!$omp& default(shared) & 
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) & 
+!%OMP& private(i)
       DO i=1,SIZE(Fx)
         Dy(i) = scx*Fx(i)
       END DO
-!$omp  end parallel do
+!%OMP  end parallel do
     END IF
   ELSE IF (dcy .EQ. 1.0_DP) THEN
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
     DO i=1,SIZE(Fx)
       Dy(i) = Dy(i) + scx*Fx(i)
     END DO
-!$omp  end parallel do
+!%OMP  end parallel do
   ELSE
     c=scx/dcy
-!$omp  parallel do &
-!$omp& default(shared) &
-!$omp& private(i)
+!%OMP  parallel do &
+!%OMP& default(shared) &
+!%OMP& private(i)
     DO i=1,SIZE(Fx)
       Dy(i) = Dy(i) + c*Fx(i)
     END DO
-!$omp  end parallel do
+!%OMP  end parallel do
     CALL DSCAL(SIZE(Dy),dcy,Dy,1)
   ENDIF
   
