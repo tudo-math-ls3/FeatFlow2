@@ -92,7 +92,8 @@
 !#      -> Scale a block vector by a constant
 !#
 !# 25.) lsysbl_clearVector
-!#      -> Clear a block vector
+!#      -> Clear a block vector, i.e. overwrites all entries with 0.0 or 
+!#         with a defined value
 !#
 !# 26.) lsysbl_vectorLinearComb
 !#      -> Linear combination of two block vectors
@@ -1767,8 +1768,6 @@ CONTAINS
   INTEGER(I32) :: isize,NEQ,i
   INTEGER(PREC_VECIDX) :: ioffset
   LOGICAL :: bisCopy
-  REAL(DP), DIMENSION(:), POINTER :: p_Dsource,p_Ddest
-  REAL(SP), DIMENSION(:), POINTER :: p_Fsource,p_Fdest
   TYPE(t_vectorScalar), DIMENSION(:), POINTER :: p_rblocks
   
   ! If the destination vector does not exist, create a new one
@@ -2002,15 +2001,20 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsysbl_clearVector (rx)
+  SUBROUTINE lsysbl_clearVector (rx,dvalue)
   
 !<description>
-  ! Clears the block vector dx: Dx = 0
+  ! Clears the block vector dx: Dx = 0 (or Dx = dvalue if dvalue is specified)
 !</description>
 
 !<inputoutput>
   ! Destination vector to be cleared
   TYPE(t_vectorBlock), INTENT(INOUT) :: rx
+
+  ! OPTIONAL: Value to write into the matrix.
+  ! If not specified, all matrix entries are set to 0.0.
+  ! If specified, all matrix entries are set to dvalue.
+  REAL(DP), INTENT(IN), OPTIONAL :: dvalue
 !</inputoutput>
   
 !</subroutine>
@@ -2024,12 +2028,20 @@ CONTAINS
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     CALL lsysbl_getbase_double(rx,p_Dsource)
-    CALL lalg_clearVectorDble (p_Dsource)
-  
+    IF (.NOT. PRESENT(dvalue)) THEN
+      CALL lalg_clearVectorDble (p_Dsource)
+    ELSE
+      CALL lalg_setVectorDble (p_Dsource,dvalue)
+    END IF
+
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     CALL lsysbl_getbase_single(rx,p_Ssource)
-    CALL lalg_clearVectorSngl (p_Ssource)
+    IF (.NOT. PRESENT(dvalue)) THEN
+      CALL lalg_clearVectorSngl (p_Ssource)
+    ELSE
+      CALL lalg_setVectorSngl (p_Ssource,REAL(dvalue,SP))
+    END IF
 
   CASE DEFAULT
     PRINT *,'lsysbl_clearVector: Unsupported data type!'

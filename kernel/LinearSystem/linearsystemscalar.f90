@@ -122,7 +122,8 @@
 !#      -> Scale a vector by a constant
 !#
 !# 32.) lsyssc_clearVector
-!#      -> Clear a vector
+!#      -> Clear a vector, i.e. overwrites all entries with 0.0 or 
+!#         with a defined value
 !#
 !# 33.) lsyssc_vectorLinearComb
 !#      -> Linear combination of two vectors
@@ -9681,15 +9682,20 @@ CONTAINS
   
 !<subroutine>
 
-  SUBROUTINE lsyssc_clearVector (rx)
+  SUBROUTINE lsyssc_clearVector (rx,dvalue)
   
 !<description>
-  ! Clears the block vector dx: Dx = 0
+  ! Clears the block vector dx: Dx = 0 (or Dx = dvalue if dvalue is specified)
 !</description>
   
 !<inputoutput>
   ! Destination vector to be cleared
   TYPE(t_vectorScalar), INTENT(INOUT) :: rx
+
+  ! OPTIONAL: Value to write into the matrix.
+  ! If not specified, all matrix entries are set to 0.0.
+  ! If specified, all matrix entries are set to dvalue.
+  REAL(DP), INTENT(IN), OPTIONAL :: dvalue
 !</inputoutput>
   
 !</subroutine>
@@ -9703,12 +9709,20 @@ CONTAINS
   CASE (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     CALL lsyssc_getbase_double(rx,p_Dsource)
-    CALL lalg_clearVectorDble (p_Dsource)
+    IF (.NOT. PRESENT(dvalue)) THEN
+      CALL lalg_clearVectorDble (p_Dsource)
+    ELSE
+      CALL lalg_setVectorDble (p_Dsource,dvalue)
+    END IF
   
   CASE (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     CALL lsyssc_getbase_single(rx,p_Ssource)
-    CALL lalg_clearVectorSngl (p_Ssource)
+    IF (.NOT. PRESENT(dvalue)) THEN
+      CALL lalg_clearVectorSngl (p_Ssource)
+    ELSE
+      CALL lalg_setVectorSngl (p_Ssource,REAL(dvalue,SP))
+    END IF
 
   CASE DEFAULT
     PRINT *,'lsyssc_clearVector: Unsupported data type!'
