@@ -1,0 +1,71 @@
+  ! This file describes the interface for a coefficient function that is called
+  ! during the matrix assembly of scalar vectors.
+  
+  INTERFACE
+  
+  !<subroutine>
+
+    SUBROUTINE ffunctionReference (cderivative,rdiscretisation, &
+                  DpointsRef, Dpoints, Ielements, p_rcollection, Dvalues)
+    
+    USE basicgeometry
+    USE triangulation
+    USE collection
+    USE scalarpde
+    USE domainintegration
+    
+  !<description>
+    ! This subroutine is called during the calculation of errors with boundary
+    ! integrals. It has to compute the (analytical) values of a 
+    ! function in a couple of points Dpoints on a couple of elements
+    ! Ielements. These values are either used as coefficient function in
+    ! front of a FE function or they are compared to those of a computed FE 
+    ! function and used to calculate an error.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! It has to to simultaneously compute the desired values for all these points.
+  !</description>
+    
+  !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    INTEGER, INTENT(IN)                                         :: cderivative
+  
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    TYPE(t_spatialDiscretisation), INTENT(IN)                   :: rdiscretisation
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
+    
+    ! This is a list of elements (corresponding to Dpoints) where information
+    ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
+    ! specifies the points where information is needed.
+    ! DIMENSION(nelements)
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), INTENT(IN) :: Ielements
+
+    ! A pointer to a collection structure to provide additional 
+    ! information to the coefficient routine. May point to NULL() if not defined.
+    TYPE(t_collection), POINTER                      :: p_rcollection
+  !</input>
+  
+  !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:), INTENT(OUT)                      :: Dvalues
+  !</output>
+    
+  !</subroutine>
+  
+    END SUBROUTINE
+    
+  END INTERFACE
+  

@@ -54,15 +54,24 @@
 !#      (so performing the same task as trafo_calcJac and trafo_calcRealCoords
 !#       in one routine)
 !#
-!# 13.) trafo_mapCubPts1Dto2DRefQuad
+!# 13.) trafo_mapCubPts1Dto2D
+!#      -> Maps a set of 1D cubature point coordinates on the reference 
+!#         interval to an edge of a reference element.
+!#
+!# 14.) trafo_mapCubPts1Dto2DRefQuad
 !#      -> Maps a set of 1D cubature point coordinates on the reference 
 !#         interval to an edge of the 2D reference quadrilateral.
 !#
-!# 14.) trafo_calcBackTrafo_quad2d
+!# 15.) trafo_mapCubPts1Dto2DTriBary
+!#      -> Maps a set of 1D cubature point coordinates on the reference 
+!#         interval to an edge of the 2D reference triangle; barycentric
+!#         coordinates.
+!# 
+!# 16.) trafo_calcBackTrafo_quad2d
 !#      -> Find the coordinates on the reference element 
 !#         for a given point in real world coordinates
 !# 
-!# 15.) trafo_calcRefCoords
+!# 17.) trafo_calcRefCoords
 !#      -> For a given point in world coordinates and an element, this 
 !#         routine calculates the coordinates of the point on the reference
 !#         element.
@@ -129,6 +138,7 @@ MODULE transformation
   USE fsystem
   USE basicgeometry
   USE triangulation
+  USE genoutput
 
   IMPLICIT NONE
   
@@ -137,6 +147,12 @@ MODULE transformation
 
   ! Number of entries in the array with the auxiliary Jacobian factors in 2D
   INTEGER, PARAMETER :: TRAFO_NAUXJAC2D = 4
+
+  ! Number of entries in the array with the auxiliary Jacobian factors in 3D
+  INTEGER, PARAMETER :: TRAFO_NAUXJAC3D = 9
+
+  ! Max. Number of entries in the array, dimension independent
+  INTEGER, PARAMETER :: TRAFO_NAUXJACMAX = TRAFO_NAUXJAC3D
 
 !</constantblock>
 
@@ -218,6 +234,15 @@ MODULE transformation
 !</constantblock>
 
 !</constants>
+
+  INTERFACE trafo_calcJac
+    MODULE PROCEDURE trafo_calcJac2D
+  END INTERFACE
+
+  INTERFACE trafo_calcRealCoords
+    MODULE PROCEDURE trafo_calcRealCoords2D
+    MODULE PROCEDURE trafo_calcRealCoords_general
+  END INTERFACE
 
 CONTAINS
 
@@ -618,8 +643,8 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE trafo_calctrafo (ctrafoType,Dcoords,&
-                              DpointRef,Djac,Ddetj,DpointReal)
+  PURE SUBROUTINE trafo_calctrafo (ctrafoType,Dcoords,&
+                              DpointRef,Djac,ddetj,DpointReal)
 !<description>
   ! General transformation.
   !
@@ -1533,7 +1558,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcJac (Dcoord,DjacPrep,Djac,ddetj,dparx,dpary)
+  PURE SUBROUTINE trafo_calcJac2D (Dcoord,DjacPrep,Djac,ddetj,dparx,dpary)
 
 !<description>
   ! Calculate Jacobian determinant of mapping from reference- to
@@ -1600,7 +1625,7 @@ CONTAINS
 
 !<subroutine>
 
-  PURE SUBROUTINE trafo_calcRealCoords (Dcoord,DjacPrep,dparx,dpary,dxreal,dyreal)
+  PURE SUBROUTINE trafo_calcRealCoords2D (Dcoord,DjacPrep,dparx,dpary,dxreal,dyreal)
 
 !<description>
   ! This subroutine computes the real coordinates of a point which 
@@ -1782,6 +1807,74 @@ CONTAINS
       END DO
     END IF
   
+  END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE trafo_mapCubPts1Dto2D(icoordSystem, iedge, ncubp, Dxi1D, Dxi2D)
+
+!<description>
+  ! This routine maps the coordinates of the cubature points 
+  ! (given by Dxi1D(1..ncubp,1)) on the 1D reference interval [-1,1] 
+  ! to an edge on the 2D reference element.
+  ! iedge specifies the edge where to map the cubature points to.
+  !
+  ! ctrafoType specifies the type of transformation that is necessary
+  ! to transform coordinates from the 2D reference element to the 2D
+  ! real element. This constant also specifies the type of reference element
+  ! and the coordinate system there.
+!</description>
+
+!<input>
+  ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
+  ! the type of the coordinate system that is used for specifying the coordinates
+  ! on the reference element.
+  INTEGER, INTENT(IN) :: icoordSystem
+  
+  ! Number of the local edge of the element where to map the points to.
+  INTEGER, INTENT(IN) :: iedge
+
+  ! number of cubature points
+  INTEGER , INTENT(IN) :: ncubp
+  
+  ! Cubature point coordinates on 1D reference interval [-1,1]
+  !     Dxi(1..ncubp,1)=coordinates
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dxi1D
+!</input>
+  
+!<output>
+  ! Coordinates of the cubature points on the edge in 2D.
+  ! For 2D triangles with barycentric coordinates:
+  !        Dxi2D(1..ncubp,1)=1st barycentric coordinate, 
+  !        Dxi2D(1..ncubp,2)=2nd barycentric coordinate,
+  !        Dxi2D(1..ncubp,3)=3rd barycentric coordinate
+  ! For 2D quads with standard coordinates:
+  !        Dxi2D(1..ncubp,1)=x-coord, 
+  !        Dxi2D(1..ncubp,2)=y-coord.
+  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dxi2D
+!</output>
+
+!</subroutine>    
+
+  ! What type of transformation do we have? First decide on the dimension,
+  ! then on the actual ID.
+  SELECT CASE (icoordSystem)
+  
+  CASE (TRAFO_CS_BARY2DTRI)
+    ! Triangle, barycentric coordinates
+    CALL trafo_mapCubPts1Dto2DTriBary(iedge, ncubp, Dxi1D, Dxi2D)
+  
+  CASE (TRAFO_CS_REF2DQUAD,TRAFO_CS_REAL2DQUAD)
+    ! Quadrilateral, [-1,1]^2
+    CALL trafo_mapCubPts1Dto2DRefQuad(iedge, ncubp, Dxi1D, Dxi2D)
+  
+  CASE DEFAULT
+    CALL output_line ('Unsupported coordinate system.', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'trafo_mapCubPts1Dto2D')  
+  END SELECT    
+
   END SUBROUTINE
 
   !************************************************************************
@@ -1993,6 +2086,96 @@ CONTAINS
         ! Call the back transformation routine from above.
         CALL trafo_calcBackTrafo_quad2d (Dcoord, &
             Dpoint(1),Dpoint(2),DparPoint(1),DparPoint(2))
+        
+      END SELECT ! actual ID
+    
+    END SELECT ! Dimension
+  
+  END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE trafo_calcRealCoords_general (ctrafoType,Dcoord,&
+    DpointRef,Dpoint)
+
+!<description>
+  ! This subroutine maps the coordinates of a point DpointRef on the
+  ! reference element to a point Dpoint in world coordinates.
+!</description>  
+
+!<input>
+  ! ID of transformation to calculate. This specifies the format of the
+  ! destination array DparPoint (dimension, if to use barycentric 
+  ! coordinates etc.)
+  INTEGER(I32), INTENT(IN) :: ctrafoType
+  
+  ! Coordinates of the points forming the element.
+  ! DIMENSION(1..ndim,1..nve)
+  REAL(DP), DIMENSION(:,:), INTENT(IN) :: Dcoord
+
+  ! Coordinates of the point in coordinates on there reference element.
+  ! (The format depends on the type of coordinate on the reference element
+  !  and is specified via ctrafoType.)
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DpointRef
+!</input>
+  
+!<output>
+  ! Coordinates of the point in world coordinates.
+  REAL(DP), DIMENSION(:), INTENT(OUT) :: Dpoint
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(TRAFO_NAUXJACMAX) :: Djac
+    REAL(DP) :: ddetj
+
+    ! What type of transformation do we have? First decide on the dimension,
+    ! then on the actual ID.
+    SELECT CASE (trafo_igetDimension(ctrafoType))
+    
+    CASE (NDIM1D)
+      ! 1D elements: Lines.
+      
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+      
+        ! Simple linear transformation of x \in [-1,1] -> x' \in [a,b]
+        Dpoint(1) = 0.5_DP*(Dcoord(2,1)-Dcoord(1,1))*(DpointRef(1)+1.0_DP)
+      
+      END SELECT
+    
+    CASE (NDIM2D)
+      ! 2D elements. Triangles, Quadrilaterals. Check the actual transformation
+      ! ID how to transform.
+    
+      SELECT CASE (IAND(ctrafoType,TRAFO_DIM_IDMASK))
+      
+      CASE (TRAFO_ID_LINSIMPLEX)
+      
+        ! 2D simplex -> linear triangular transformation.
+        !
+        ! The world coordinates can be obtained by simple
+        ! linear combination.
+        Dpoint(1) = Dcoord(1,1)*DpointRef(1) + &
+                    Dcoord(1,2)*DpointRef(2) + &
+                    Dcoord(1,3)*DpointRef(3)
+        Dpoint(2) = Dcoord(2,1)*DpointRef(1) + &
+                    Dcoord(2,2)*DpointRef(2) + &
+                    Dcoord(2,3)*DpointRef(3)
+          
+      CASE (TRAFO_ID_MLINCUBE)
+      
+        ! Bilinear transformation for cubic-shaped elements 
+        ! -> Bilinear quadrilateral transformation.
+        !
+        ! This is a little bit more complicated, we need the whole 
+        ! transformation. The Djac / Ddetj information is ignored.
+        CALL trafo_calctrafo (ctrafoType,Dcoord,&
+                              DpointRef,Djac,Ddetj,Dpoint)
         
       END SELECT ! actual ID
     
