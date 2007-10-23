@@ -1,5 +1,5 @@
-  ! This file describes the interface for a coefficient function that is called
-  ! during the matrix assembly of scalar vectors.
+  ! This file describes the interface for a reference function that
+  ! is used in pperr_scalarBoundary2D to calculate errors on the boundary.
   
   INTERFACE
   
