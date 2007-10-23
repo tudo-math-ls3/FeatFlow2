@@ -18,12 +18,11 @@
     ! This subroutine is called during the calculation of errors with boundary
     ! integrals. It has to compute the (analytical) values of a 
     ! function in a couple of points Dpoints on a couple of elements
-    ! Ielements. These values are either used as coefficient function in
-    ! front of a FE function or they are compared to those of a computed FE 
-    ! function and used to calculate an error.
+    ! Ielements. These values are compared to those of a computed FE 
+    ! function to calculate an error.
     !
     ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in in real coordinates.
+    ! elements (cubature points) in in real and reference coordinates.
     ! It has to to simultaneously compute the desired values for all these points.
   !</description>
     
