@@ -1018,7 +1018,7 @@ CONTAINS
         
         ! Evaluate the reference function on the boundary
         CALL ffunctionReference (DER_FUNC,rdiscretisation, &
-                  Dpoints, Ielements, p_rcollection, Dvalues(:,:,2))
+            DpointsRef,Dpoints, Ielements, p_rcollection, Dvalues(:,:,2))
             
       END IF
       
@@ -1084,11 +1084,11 @@ CONTAINS
         !
         ! X-derivative
         CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
-                  Dpoints, Ielements, p_rcollection, Dvalues(:,:,3))
+            DpointsRef,Dpoints, Ielements, p_rcollection, Dvalues(:,:,3))
 
         ! Y-derivative
         CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
-                  Dpoints, Ielements, p_rcollection, Dvalues(:,:,4))
+            DpointsRef,Dpoints, Ielements, p_rcollection, Dvalues(:,:,4))
             
       END IF
 

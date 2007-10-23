@@ -40,7 +40,15 @@
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
-    ! information is needed.
+    ! information is needed. These coordinates correspond to the reference
+    ! element.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: DpointsRef
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed. It specifies the coordinates of the points where
+    ! information is needed. These coordinates are world coordinates,
+    ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
     
