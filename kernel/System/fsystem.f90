@@ -829,6 +829,9 @@ CONTAINS
 !************************************************************************
 ! Main conversion routines:
 !
+! sys_sl  :  logical   => string
+! First parameter: logical value to convert,
+
 ! sys_sd  :  real      => string,
 ! sys_sdE :  real      => string (scientific notation)
 ! First parameter: real value to convert,
@@ -844,6 +847,27 @@ CONTAINS
 ! All routines exist also in a *L version which do basically the same,
 ! but return a left-adjusted string (fixed length of 32 characters)
 !************************************************************************
+
+!<function>
+  character (len=32) function sys_sl(lvalue) result(soutput)
+
+!<description>
+    ! This routine converts a logical value to a string.
+!</description>
+
+!<input>
+
+    ! value to be converted
+    logical, INTENT(IN) :: lvalue
+!</input>
+!</function>
+
+    if (lvalue) then
+      soutput = 'true'
+    else
+      soutput = 'false'
+    end if
+  end function sys_sl
 
 !<function>
   character (len=32) function sys_sd(dvalue, idigits) result(soutput)
