@@ -977,7 +977,8 @@ CONTAINS
         bcompatible = .FALSE.
         RETURN
       ELSE
-        PRINT *,'Vector not compatible to discretisation, different NEQ!'
+        CALL output_line('Vector not compatible to discretisation, different NEQ!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_checkDiscretisation')
         CALL sys_halt()
       END IF
     END IF
