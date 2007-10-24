@@ -62,6 +62,17 @@
 !# 14.) spdiscr_getStdCubature
 !#      -> Try to get the typical cubature formula for an element
 !#
+!# 15.) spdiscr_infoBlockDiscr
+!#      -> Outputs information about the block discretisation
+!#         (mostly for debugging)
+!#
+!# 16.) spdiscr_infoDiscr
+!#      -> Outputs information about the spatial discretisation
+!#         (mostly for debugging)
+!#
+!# 17.) spdiscr_infoElementDistr
+!#      -> Outputs information about the element distribution
+!#         (mostly for debugging)
 !# </purpose>
 !##############################################################################
 
@@ -197,7 +208,7 @@ MODULE spatialdiscretisation
     INTEGER                          :: ccomplexity            = SPDISC_UNIFORM
     
     ! Flag: Trial and Test functions in all element distributions
-    ! are the same. If FALSE, there's at öeast one element distribution
+    ! are the same. If FALSE, there's at least one element distribution
     ! with different trial and test functions.
     LOGICAL                          :: bidenticalTrialAndTest = .TRUE.
     
@@ -231,7 +242,7 @@ MODULE spatialdiscretisation
     INTEGER                          :: h_IelementCounter      = ST_NOHANDLE
     
     ! Number of different FE spaces mixed in this discretisation.
-    ! This is the number of elements occupied in RelementDisttribution.
+    ! This is the number of elements occupied in RelementDistibution.
     INTEGER                          :: inumFESpaces           = 0
     
     ! List of element distribution structures for every element type
@@ -1267,9 +1278,11 @@ CONTAINS
   ! This copies all handles and hence all dynamic information
   rdestDiscr = rsourceDiscr
   
-  ! Allocate a new element distribution
+  ! Allocate a new element distribution and copy content from source
   ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
-  
+  rdestDiscr%RelementDistribution(1:rdestDiscr%inumFESpaces) = &
+      rsourceDiscr%RelementDistribution(1:rsourceDiscr%inumFESpaces)
+
   ! Change the element type of all trial functions to ieltyp
   rdestDiscr%RelementDistribution(1)%itrialElement = ieltyp
   
@@ -1811,5 +1824,115 @@ CONTAINS
     END IF
 
   END SUBROUTINE  
+
+  ! ***************************************************************************
   
+!<subroutine>
+
+  SUBROUTINE spdiscr_infoBlockDiscr (rdiscr)
+  
+!<description>
+    ! This subroutine outputs information about the block discretisation
+!</description>
+
+!<input>
+    ! block discretisation
+    TYPE(t_blockDiscretisation), INTENT(IN) :: rdiscr
+!</input>
+!</subroutine>
+
+    ! local variables
+    INTEGER :: icomponent
+
+    CALL output_lbrk()
+    CALL output_line ('BlockDiscretisation:')
+    CALL output_line ('--------------------')
+    CALL output_line ('ndimension:  '//TRIM(sys_siL(rdiscr%ndimension,1)))
+    CALL output_line ('ccomplexity: '//TRIM(sys_siL(rdiscr%ccomplexity,1)))
+    CALL output_line ('ncomponents: '//TRIM(sys_siL(rdiscr%ncomponents,3)))
+
+    IF (ASSOCIATED(rdiscr%RspatialDiscretisation)) THEN
+      DO icomponent=1,rdiscr%ncomponents
+        CALL spdiscr_infoDiscr(rdiscr%RspatialDiscretisation(icomponent))
+      END DO
+    END IF
+
+  END SUBROUTINE spdiscr_infoBlockDiscr
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+   SUBROUTINE spdiscr_infoDiscr (rspatialDiscr)
+
+!<description>
+     ! This subroutine outputs information about the spatial discretisation
+!</description>
+
+!<input>
+     ! spatial discretisation
+     TYPE(t_spatialDiscretisation), INTENT(IN) :: rspatialDiscr
+!</input>
+!</subroutine>
+
+     ! local variable
+     INTEGER :: inumFESpace
+
+     CALL output_lbrk()
+     CALL output_line ('SpatialDiscretisation:')
+     CALL output_line ('----------------------')
+     CALL output_line ('ndimension:             '&
+         //TRIM(sys_siL(rspatialDiscr%ndimension,1)))
+     CALL output_line ('bisCopy:                '&
+         //TRIM(sys_sl(rspatialDiscr%bisCopy)))
+     CALL output_line ('ccomplexity:            '&
+         //TRIM(sys_siL(rspatialDiscr%ccomplexity,1)))
+     CALL output_line ('bidenticalTrialAndTest: '&
+         //TRIM(sys_sl(rspatialDiscr%bidenticalTrialAndTest)))
+     CALL output_line ('inumFESpaces:           '&
+         //TRIM(sys_siL(rspatialDiscr%inumFESpaces,15)))
+     CALL output_line ('h_ItrialElements:       '&
+         //TRIM(sys_siL(rspatialDiscr%h_ItrialElements,15)))
+     CALL output_line ('h_ItestElements:        '&
+         //TRIM(sys_siL(rspatialDiscr%h_ItestElements,15)))
+     CALL output_line ('h_IelementCounter:      '&
+         //TRIM(sys_siL(rspatialDiscr%h_IelementCounter,15)))
+
+     IF (ASSOCIATED(rspatialDiscr%RelementDistribution)) THEN
+       DO inumFESpace=1,rspatialDiscr%inumFESpaces
+         CALL spdisc_infoElementDistr(rspatialDiscr%RelementDistribution(inumFESpace))
+       END DO
+     END IF
+
+   END SUBROUTINE spdiscr_infoDiscr
+
+   ! ***************************************************************************
+
+!<subroutine>
+   
+   SUBROUTINE spdisc_infoElementDistr (relementDistr)
+
+!<description>
+     ! This subroutine outputs information about the spatial discretisation
+!</description>
+
+!<input>
+     ! element distribution
+     TYPE(t_elementDistribution), INTENT(IN) :: relementDistr
+!</input>
+!</subroutine>
+
+     CALL output_lbrk()
+     CALL output_line ('ElementDistribution:')
+     CALL output_line ('--------------------')
+     CALL output_line ('itrialElement:   '//TRIM(sys_siL(relementDistr%itrialElement,15)))
+     CALL output_line ('iteastElement:   '//TRIM(sys_siL(relementDistr%itestElement,15)))
+     CALL output_line ('ccubTypeBilForm: '//TRIM(sys_siL(relementDistr%ccubTypeBilForm,15)))
+     CALL output_line ('ccubTypeLinForm: '//TRIM(sys_siL(relementDistr%ccubTypeLinForm,15)))
+     CALL output_line ('ccubTypeEval:    '//TRIM(sys_siL(relementDistr%ccubTypeEval,15)))
+     CALL output_line ('ctrafoType:      '//TRIM(sys_siL(relementDistr%ctrafoType,15)))
+     CALL output_line ('NEL:             '//TRIM(sys_siL(relementDistr%NEL,15)))
+     CALL output_line ('h_IelementList:  '//TRIM(sys_siL(relementDistr%h_IelementList,15)))
+
+   END SUBROUTINE spdisc_infoElementDistr
 END MODULE
