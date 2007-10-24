@@ -815,7 +815,7 @@ CONTAINS
     ! local variables
     INTEGER(I32), DIMENSION(:), ALLOCATABLE :: IelementOrientation
     INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE :: Ielements
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DedgeParameterValue
+    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DedgePosition
     
     INTEGER :: ibdc,ibdcoffset,iedge,ilocaledge
     INTEGER(PREC_ELEMENTIDX) :: NEL,NELbdc,iel
@@ -881,7 +881,7 @@ CONTAINS
     
     ! Allocate an array saving the start- and end-parameter values
     ! of the edges on the boundary.
-    ALLOCATE(DedgeParameterValue(2,NELbdc))
+    ALLOCATE(DedgePosition(2,NELbdc))
     
     ! Loop through the edges on the boundary component ibdc.
     ! If the edge is inside, remember the element number and figure out
@@ -916,11 +916,11 @@ CONTAINS
             rdiscretisation%p_rboundary,ibdc)
         END IF
         
-        DedgeParameterValue(1,NEL) = &
+        DedgePosition(1,NEL) = &
           boundary_convertParameter(rdiscretisation%p_rboundary, &
             ibdc, dpar1, rboundaryRegion%cparType, BDR_PAR_LENGTH)
             
-        DedgeParameterValue(2,NEL) = &
+        DedgePosition(2,NEL) = &
           boundary_convertParameter(rdiscretisation%p_rboundary, &
             ibdc, dpar2, rboundaryRegion%cparType, BDR_PAR_LENGTH)
          
@@ -1040,7 +1040,7 @@ CONTAINS
         
         ! Evaluate the reference function on the boundary
         CALL ffunctionReference (DER_FUNC,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements, p_rcollection, Dvalues(:,:,2))
+            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,2))
             
       END IF
       
@@ -1070,7 +1070,7 @@ CONTAINS
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
         ! the unit inverval [-1,1] has length 2.
-        dlen = 0.5_DP*(DedgeParameterValue(2,iel)-DedgeParameterValue(1,iel))
+        dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         DO ipoint = 1,ncubp
           derror = derror + dlen * Domega1D(ipoint) * (Dvalues(ipoint,iel,1)**2)
@@ -1106,11 +1106,11 @@ CONTAINS
         !
         ! X-derivative
         CALL ffunctionReference (DER_DERIV_X,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements, p_rcollection, Dvalues(:,:,3))
+            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,3))
 
         ! Y-derivative
         CALL ffunctionReference (DER_DERIV_Y,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements, p_rcollection, Dvalues(:,:,4))
+            DpointsRef,Dpoints, Ielements(1:NEL), p_rcollection, Dvalues(:,:,4))
             
       END IF
 
@@ -1140,7 +1140,7 @@ CONTAINS
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
         ! the unit inverval [-1,1] has length 2.
-        dlen = 0.5_DP*(DedgeParameterValue(2,iel)-DedgeParameterValue(1,iel))
+        dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         DO ipoint = 1,ncubp
           derror = derror + dlen * Domega1D(ipoint) * (Dvalues(ipoint,iel,1)**2)
@@ -1155,7 +1155,7 @@ CONTAINS
 
     IF (PRESENT(ffunctionReference)) DEALLOCATE(Dpoints)
       
-    DEALLOCATE(DedgeParameterValue)
+    DEALLOCATE(DedgePosition)
     DEALLOCATE(Ielements, IelementOrientation)
     
   END SUBROUTINE
@@ -1511,7 +1511,7 @@ CONTAINS
               p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
               p_elementDistribution%itrialElement, IdofsTrial, &
               ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC,&
-              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
+              Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
 
           ! solution reference vector
           CALL fevl_evaluate_sim (rvectorRef%RvectorBlock(iblock), &

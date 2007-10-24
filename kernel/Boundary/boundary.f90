@@ -148,6 +148,21 @@ MODULE boundary
 
 !</constantblock>
 
+!<constantblock description="Type constants for cnormalMean in the calculation of normal vectors.">
+
+  ! Calculate the mean of the left and right normal.
+  INTEGER, PARAMETER :: BDR_NORMAL_MEAN         = 0
+
+  ! Calculate the right normal (i.e. from the point to the interval with
+  ! increasing parameter value).
+  INTEGER, PARAMETER :: BDR_NORMAL_RIGHT        = 1
+
+  ! Calculate the left normal (i.e. from the point to the interval with
+  ! decreasing parameter value).
+  INTEGER, PARAMETER :: BDR_NORMAL_LEFT         = 2
+
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -222,6 +237,8 @@ MODULE boundary
   
 !</typeblock>
 ! </types>
+
+  PRIVATE :: boundary_getSegmentInfo2D
 
   CONTAINS
 
@@ -824,6 +841,204 @@ MODULE boundary
   END IF
 
   ! That's it...
+
+  END SUBROUTINE
+
+  !************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE boundary_normaliseParValue2D(IsegCount,DmaxPar,iboundCompIdx,dpar)
+
+!<description>
+  ! INTERNAL SUBROUTINE.
+  ! Normalises the parameter value dpar into the range [0,max.par. value).
+!</description>
+
+!<input>
+    ! 
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IsegCount
+
+  SELECT CASE (cpar)
+  CASE (BDR_PAR_01)
+    IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
+      dpar = 0.0_DP
+    ELSE
+      dpar = dt
+    ENDIF
+  CASE (BDR_PAR_LENGTH)
+    IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
+      dpar = 0.0_DP
+    ELSE
+      dpar = dt
+    ENDIF
+  END SELECT
+
+  !************************************************************************
+
+!<subroutine>
+
+  PURE SUBROUTINE boundary_getSegmentInfo2D(&
+      IsegCount,DmaxPar,IsegInfo,DsegInfo,iboundCompIdx,dpar,cparType,iorientation,&
+      iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
+
+!<description>
+  ! INTERNAL SUBROUTINE.
+  ! From a given parameter value dpar in a given parametrisation cpar,
+  ! this routine calculates information about the corresponding boundary
+  ! segment that contains the point.
+!</description>
+
+!<input>
+    ! Integer segment array for segment counter
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IsegCount
+
+    ! Double precision array defining the maximum parameter values
+    ! of each boundary component
+    REAL(DP), DIMENSION(:), INTENT(IN) :: DmaxPar
+
+    ! Integer segment info array
+    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IsegInfo
+    
+    ! Double precision segment info array
+    REAL(DP), DIMENSION(:), INTENT(IN) :: DsegInfo
+    
+    ! Number of the boundary component
+    INTEGER, INTENT(IN) :: iboundCompIdx
+    
+    ! Parameter value of the point of interest
+    REAL(DP), INTENT(IN) :: dpar
+    
+    ! Type of parametrisation of dpar (BDR_PAR_01, BDR_PAR_LENGTH,...)
+    INTEGER, INTENT(IN) :: cparType
+    
+    ! How to orient if the boundary segment is not unique (e.g. on
+    ! corner points of the discretisation).
+    ! =0: return the segment following the point
+    ! =1: return the segment previous to the point
+    INTEGER, INTENT(IN) :: iorientation
+!</input>
+
+!<output>
+    ! Segment number of the segment that contains dpar
+    INTEGER, INTENT(OUT) :: iseg
+
+    ! Start index of the segment in IsegInfo that contains dpar
+    INTEGER, INTENT(OUT) :: istartidx
+    
+    ! Start parameter value of the segment that contains dpar
+    REAL(DP), INTENT(OUT) :: dcurrentpar
+
+    ! End parameter value of the segment that contains dpar
+    REAL(DP), INTENT(OUT) :: dendpar
+    
+    ! Segment length of the segment that contains dpar
+    REAL(DP), INTENT(OUT) :: dseglength
+    
+    ! Local parameter value of dpar inside of the segment
+    REAL(DP), INTENT(OUT) :: dparloc
+
+    ! Type of the segment
+    INTEGER, INTENT(OUT) :: isegtype
+!</output>
+
+!</subroutine>
+
+    ! Determine the segment
+    SELECT CASE (cparType)
+    CASE (BDR_PAR_01)
+
+      ! Easy case: 0-1 parametrisation
+      !
+      ! Standard case: point somewhere in the inner of the segment
+      iseg = AINT(dpar)
+      dcurrentpar = REAL(iseg,DP)
+
+      ! Subtract the start position of the current boundary component
+      ! from the parameter value to get the 'local' parameter value
+      ! (0 .le. dparloc .le. length(segment))
+      dparloc = dpar - dcurrentpar
+      
+      IF ((iorientation .NE. 0.0_DP) .AND. (dparloc .EQ. 0.0_DP)) THEN
+        ! We are in a point where the segment is not unique and
+        ! the caller wants to have the 'previous' segment. Find it!
+
+        iseg = AINT(dpar)-1
+        IF (iseg .EQ. 0) THEN
+          ! Get the last segment!
+          iseg = AINT(DmaxPar(iboundCompIdx))-1
+        END IF
+        
+        dcurrentpar = REAL(iseg,DP)
+        dparloc = dpar - dcurrentpar
+        
+      END IF
+
+      ! Determine Start index of the segment in the double-prec. block
+      istartidx = IsegInfo(1+2*iseg+1) 
+
+      dendpar     = iseg + 1.0_DP
+      dseglength  = DsegInfo(2+istartidx)
+
+    CASE (BDR_PAR_LENGTH)
+
+      ! In the length-parametrisation, we have to search.
+      ! The orientation flag tells us whether to search for "<" or
+      ! "<="!
+      IF (iorientation .NE. 0) THEN
+        DO iseg = 0,IsegCount(iboundCompIdx)-1
+
+          ! Determine Start index of the segment in the double-prec. block
+          istartidx = IsegInfo(1+2*iseg+1) 
+
+          ! Get the start and end parameter value
+          dcurrentpar = DsegInfo(1+istartidx)
+          dendpar = dcurrentpar + DsegInfo(2+istartidx)
+          dseglength = DsegInfo(2+istartidx)
+
+          ! At least one of the IF-commands in the loop will activate
+          ! the exit - because of the 'dt' check above!
+          IF (dpar .LE. dendpar) EXIT
+
+        END DO
+      ELSE
+        DO iseg = 0,IsegCount(iboundCompIdx)-1
+
+          ! Determine Start index of the segment in the double-prec. block
+          istartidx = IsegInfo(1+2*iseg+1) 
+
+          ! Get the start and end parameter value
+          dcurrentpar = DsegInfo(1+istartidx)
+          dendpar = dcurrentpar + DsegInfo(2+istartidx)
+          dseglength = DsegInfo(2+istartidx)
+
+          ! At least one of the IF-commands in the loop will activate
+          ! the exit - because of the 'dt' check above!
+          IF (dpar .LT. dendpar) EXIT
+
+        END DO
+      END IF
+
+      ! Subtract the start position of the current boundary component
+      ! from the parameter value to get the 'local' parameter value
+      ! (0 .le. dparloc .le. length(segment))
+      dparloc = dpar - dcurrentpar
+
+    CASE DEFAULT
+      iseg = 0
+      istartidx = 0
+      dcurrentpar = 0.0_DP
+      dendpar = 0.0_DP
+      dseglength = 0.0_DP
+      dparloc = 0.0_DP
+      isegtype = 0
+      RETURN
+    END SELECT
+
+    ! Use the segment type to determine how to calculate
+    ! the coordinate. Remember that the segment type is noted
+    ! in the first element of the integer block of each segment!
+    isegtype = IsegInfo(1+2*iseg)
 
   END SUBROUTINE
 
@@ -1634,41 +1849,42 @@ MODULE boundary
 !<subroutine>
 
   SUBROUTINE boundary_getNormalVec(rboundary, iboundCompIdx, dt, &
-      dtstep, dtmin, dtmax, dnx, dny, cparType)
+      dnx, dny, cnormalMean, cparType)
 
 !<description>
   ! This routine returns for a given parameter value dt the
   ! the outward unit normal vector of the point on the boundary component 
   ! iboundCompIdx.\\
-  ! dt is bounded by the maximum parameter value, i.e. when dt is
-  ! larger than the maximum parameter value, dt=0 is taken.
-  ! If the normal vector is not unique, i.e., at corner nodes, then it
-  ! is averaged from the two boundary segments connected to the point
-  ! defined by the parameter value dt. The two parameters dtmin and dtmax
-  ! are used to define the width of the interval on which averaging is 
-  ! performed. It is also possible to compute one-sided normal vectors 
-  ! by setting either dtmin=0 or dtmax=0.
+  ! dt is truncated to the interval [0,max. par. value of iboundCompIdx).
+  !
+  ! The parameters cnormalMean are optional. This parameters
+  ! define the behaviour of the function if dt specifies the parameter
+  ! value of a corner point on the boundary where the normal vector
+  ! is usually not unique. It allows to choose whether to calculate the
+  ! 'right', 'left' or averaged normal vector.
 !</description>
 
 !<input>
 
-    !boundary structure
+    ! boundary structure
     TYPE(t_boundary), INTENT(IN) :: rboundary
 
-    !index of boundary component
+    ! index of boundary component
     INTEGER, INTENT(IN) :: iboundCompIdx
     
-    !parametric value of boundary point
+    ! parametric value of boundary point
     REAL(DP), INTENT(IN) :: dt
     
-    !de-/increment of parametric value 
-    REAL(DP), INTENT(IN) :: dtstep
-    
-    !minimum parametric value of boundary interval, i.e., dtmin <= dt-dtstep
-    REAL(DP), INTENT(IN) :: dtmin
-    
-    !maximum parametric value of boundary interval, i.e., dt+dtstep <= dtmax
-    REAL(DP), INTENT(IN) :: dtmax
+    ! OPTIONAL: For points with non-unique normal vectors, this decides
+    ! how to calculate the normal vector. One of the BDR_NORMAL_xxxx
+    ! constants.
+    ! BDR_NORMAL_MEAN calculates the mean of the 'right' and 'left'
+    !   normal vector. This is the standard setting
+    ! BDR_NORMAL_LEFT calculates the 'left' normal vector (which arises
+    !   in the limit when appoximating dt by 0->dt).
+    ! BDR-NORMAL_RIGHT calculates the 'right' normal vector (which arises
+    !   in the limit when approximating dt by dtmax->dt).
+    INTEGER, INTENT(IN), OPTIONAL :: cnormalMean
     
     ! OPTIONAL: Type of parametrisation to use.
     ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
@@ -1693,12 +1909,16 @@ MODULE boundary
     INTEGER(I32), DIMENSION(:), POINTER :: p_IsegInfo, p_IsegCount
     REAL(DP), DIMENSION(:), POINTER     :: p_DsegInfo, p_DmaxPar
     INTEGER :: cpar ! local copy of cparType
+    INTEGER :: cnormalMeanCalc
 
-    REAL(DP) :: dpar, dcurrentpar, dparloc, dphi, dendpar, dseglength, dnorm, dt0, dnx0, dny0
+    REAL(DP) :: dpar, dcurrentpar, dparloc, dendpar, dseglength, dnorm, dnx0, dny0
     INTEGER :: iseg,isegtype,istartidx
 
     cpar = BDR_PAR_01
     IF (PRESENT(cparType)) cpar = cparType
+
+    cnormalMeanCalc = BDR_NORMAL_MEAN
+    IF (PRESENT(cnormalMean)) cnormalMeanCalc = cnormalMean
 
     if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
       PRINT *,'Error in boundary_getNormalVec'
@@ -1721,230 +1941,147 @@ MODULE boundary
     ! component, truncate the parameter value!
     SELECT CASE (cpar)
     CASE (BDR_PAR_01)
-      IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
-        dpar = 0.0_DP
-      ELSE
-        dpar = dt
-      ENDIF
+      dpar = MOD(dt,REAL(p_IsegCount(iboundCompIdx),DP))
+!      IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
+!        dpar = 0.0_DP
+!      ELSE
+!        dpar = dt
+!      ENDIF
     CASE (BDR_PAR_LENGTH)
-      IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
-        dpar = 0.0_DP
-      ELSE
-        dpar = dt
-      ENDIF
+      dpar = MOD(dt,p_DmaxPar(iboundCompIdx))
+!      IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
+!        dpar = 0.0_DP
+!      ELSE
+!        dpar = dt
+!      ENDIF
     END SELECT
 
     ! Find segment iseg the parameter value belongs to.
     ! Remember that in the first element in the double precision block of
     ! each segment, the length of the segment is noted!
 
-    dcurrentpar = 0.0_DP
-
-    ! Determine the segment
-    SELECT CASE (cpar)
-    CASE (BDR_PAR_01)
-
-      ! Easy case: 0-1 parametrisation
-      iseg = AINT(dpar)
-
-      ! Determine Start index of the segment in the double-prec. block
-      istartidx = p_IsegInfo(1+2*iseg+1) 
-
-      dcurrentpar = iseg
-      dendpar     = iseg + 1.0_DP
-      dseglength  = p_DsegInfo(2+istartidx)
-
-    CASE (BDR_PAR_LENGTH)
-
-      ! In the length-parametrisation, we have to search.
-      DO iseg = 0,p_IsegCount(iboundCompIdx)-1
-
-        ! Determine Start index of the segment in the double-prec. block
-        istartidx = p_IsegInfo(1+2*iseg+1) 
-
-        ! Get the start and end parameter value
-        dcurrentpar = p_DsegInfo(1+istartidx)
-        dendpar = dcurrentpar + p_DsegInfo(2+istartidx)
-        dseglength = p_DsegInfo(2+istartidx)
-
-        ! At least one of the IF-commands in the loop will activate
-        ! the exit - because of the 'dt' check above!
-        IF (dpar .LT. dendpar) EXIT
-
-      END DO
-    END SELECT
-
+    CALL boundary_getSegmentInfo2D(&
+      p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
+      iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
+    
     IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
 
-    ! Subtract the start position of the current boundary component
-    ! from the parameter value to get the 'local' parameter value
-    ! (0 .le. dparloc .le. length(segment))
-    dparloc = dpar - dcurrentpar
-
-    ! Use the segment type to determine how to calculate
-    ! the coordinate. Remember that the segment type is noted
-    ! in the first element of the integer block of each segment!
-
-    isegtype = p_IsegInfo(1+2*iseg)
-
-    ! If the parametric value dt is "inside" the interval (floor(dt),ceil(dt))
-    ! then the normal vector can be computed uniquely at boundary point dt.
+    ! If the local parameter value of dt is <> 0, then the normal vector can 
+    ! be computed uniquely at boundary point dt.
     ! Otherwise, we have to average the (two) normal vector(s) of the adjacent
     ! boundary components. Check if we are in the simple case.
-    IF (dparloc > dtstep) THEN
-
-      SELECT CASE (isegType)
-
-        ! case of line
-      CASE (BOUNDARY_TYPE_LINE)
-
-        ! As we save the parametrisation in 0-1 parametrisation,
-        ! when we have length-parametrisation, we have to normalise
-        ! dparloc to 0 <= dparloc <= 1.
-        IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-
-        ! Calculate the x/y components of the normal vector from the 
-        ! startpoint and the uni direction vector.
-        dnx = -p_DsegInfo(istartidx+6)
-        dny =  p_DsegInfo(istartidx+5)
-
-        ! case of circle segment
-      CASE (BOUNDARY_TYPE_CIRCLE)
-
-        ! Rescale dparloc with the length of the arc to get a value
-        ! between 0 and 1; important for sin/cos functions later.
-        ! In the 0-1 parametrisation, this is already the case.
-        IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-
-        ! Get the rotation angle.
-        ! Use the initial rotation angle, saved at position 6 of the double
-        ! precision data block
-        dphi = p_DsegInfo(istartidx+7) &
-            + dparloc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
-
-        ! And calculate the x/y components of the normal vector with sin/cos;
-        ! the radius is to be found in element 5 of the double precision data block
-        dnx = p_DsegInfo(istartidx+5)*cos(dphi)
-        dny = p_DsegInfo(istartidx+5)*sin(dphi)
-
-      CASE DEFAULT
-        PRINT *,'boundary_getCoords: Wrong segment type'
-        CALL sys_halt()
-      END SELECT
-
-      ! Normalize the vector
-      dnorm = SQRT(dnx*dnx+dny*dny)
-      dnx = dnx/dnorm
-      dny = dny/dnorm
+    IF (dparloc .NE. 0.0_DP) THEN
+    
+      CALL getNormal (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx,dny)
 
     ELSE
 
-      ! Ok, we are at the endpoint of the interval. Then we have to evaluate the
-      ! normal vector for dt+dtstep and dt-dtstep and compute the average. Note that
-      ! we have to take care, that the parametric values are in the admissible
-      ! interval [dtmin,dtmax].
+      ! Ok, we are at the endpoint of the interval. Now, cnormalMean decides on
+      ! what to do.
+      dnx = 0.0_DP
+      dny = 0.0_DP
+      IF ((cnormalMeanCalc .EQ. BDR_NORMAL_MEAN) .OR. &
+          (cnormalMeanCalc .EQ. BDR_NORMAL_RIGHT)) THEN
+          
+        ! Calculate the 'right' normal into dnx/dny.
+        !
+        ! We already have the segment 'right' to the point.
+        ! Get the corresponding normal vector.
+        
+        CALL getNormal (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx,dny)
+        
+      END IF
 
-      ! Set parametric value dt0 to the minimum of dt+step and dtmax-dtstep
-      dt0 = MIN(dt+dtstep,dtmax-dtstep)
+      IF ((cnormalMeanCalc .EQ. BDR_NORMAL_MEAN) .OR. &
+          (cnormalMeanCalc .EQ. BDR_NORMAL_LEFT)) THEN
+          
+        ! Calculate the 'left' normal into dnx/dny.
+        !
+        ! Find segment iseg previous to the parameter value belongs to.
+        ! Remember that in the first element in the double precision block of
+        ! each segment, the length of the segment is noted!
 
-      ! If the parameter value exceeds the parameter interval on the boundary 
-      ! component, truncate the parameter value!
-      SELECT CASE (cpar)
-      CASE (BDR_PAR_01)
-        IF (dt0 .GT. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
-          dpar = dt0 - REAL(p_IsegCount(iboundCompIdx),DP)
-        ELSE
-          dpar = dt0
-        ENDIF
-      CASE (BDR_PAR_LENGTH)
-        IF (dt0 .GT. p_DmaxPar(iboundCompIdx) ) THEN
-          dpar = dt0 - p_DmaxPar(iboundCompIdx)
-        ELSE
-          dpar = dt0
-        ENDIF
-      END SELECT
+        CALL boundary_getSegmentInfo2D(&
+          p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,1,&
+          iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
+        
+        ! Calculate the normal into dnx0/dny0
+        CALL getNormal (isegType,cpar,dparLoc,dseglength,istartidx,p_DsegInfo,dnx0,dny0)
+        
+        ! and add it to dnx/dny
+        dnx = dnx+dnx0
+        dny = dny+dny0
+      END IF
 
-      ! Find segment iseg the parameter value belongs to.
-      ! Remember that in the first element in the double precision block of
-      ! each segment, the length of the segment is noted!
+      ! Normalise the vector -- in case two vectors are summed up.      
+      dnorm = SQRT(dnx*dnx+dny*dny)
+      dnx = dnx/dnorm
+      dny = dny/dnorm
+    END IF
 
-      dcurrentpar = 0.0_DP
-
-      ! Determine the segment
-      SELECT CASE (cpar)
-      CASE (BDR_PAR_01)
-
-        ! Easy case: 0-1 parametrisation
-        iseg = AINT(dpar)
-
-        ! Determine Start index of the segment in the double-prec. block
-        istartidx = p_IsegInfo(1+2*iseg+1) 
-
-        dcurrentpar = iseg
-        dendpar     = iseg + 1.0_DP
-        dseglength  = p_DsegInfo(2+istartidx)
-
-      CASE (BDR_PAR_LENGTH)
-
-        ! In the length-parametrisation, we have to search.
-        DO iseg = 0,p_IsegCount(iboundCompIdx)-1
-
-          ! Determine Start index of the segment in the double-prec. block
-          istartidx = p_IsegInfo(1+2*iseg+1) 
-
-          ! Get the start and end parameter value
-          dcurrentpar = p_DsegInfo(1+istartidx)
-          dendpar = dcurrentpar + p_DsegInfo(2+istartidx)
-          dseglength = p_DsegInfo(2+istartidx)
-
-          ! At least one of the IF-commands in the loop will activate
-          ! the exit - because of the 'dt' check above!
-          IF (dpar .LT. dendpar) EXIT
-
-        END DO
-      END SELECT
-
-      IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-
-      ! Subtract the start position of the current boundary component
-      ! from the parameter value to get the 'local' parameter value
-      ! (0 .le. dparloc .le. length(segment))
-      dparloc = dpar - dcurrentpar
-
-      ! Use the segment type to determine how to calculate
-      ! the coordinate. Remember that the segment type is noted
-      ! in the first element of the integer block of each segment!
-
-      isegtype = p_IsegInfo(1+2*iseg)
-
+  CONTAINS
+  
+    SUBROUTINE getNormal (isegType,cpar,dparLoc,dseglength,istartidx,DsegInfo,dnx,dny)
+      
+    ! Calculates the normal of a point on a specific boundary segment.
+    
+    !<input>
+    
+    ! Segment type
+    INTEGER, INTENT(IN) :: isegType
+    
+    ! Type of the parameter value (0-1, length par.,...)
+    INTEGER, INTENT(IN) :: cpar
+    
+    ! Local parameter value of the point in the boundary segment
+    REAL(DP), INTENT(IN) :: dparLoc
+    
+    ! Length of the segment
+    REAL(DP), INTENT(IN) :: dseglength
+    
+    ! Start index of the segment in DsegInfo
+    INTEGER, INTENT(IN) :: istartIdx
+    
+    ! Double precision segment info array
+    REAL(DP), DIMENSION(:), INTENT(IN) :: DsegInfo
+    
+    !</input>
+    
+    !<output>
+    
+    ! Normal vector
+    REAL(DP), INTENT(OUT) :: dnx,dny
+    
+    !</output>
+    
+      ! local variables
+      REAL(DP) :: dploc,dphi,dnorm
+      
+      dploc = dparloc
+  
       SELECT CASE (isegType)
 
-        ! case of line
+      ! case of line
       CASE (BOUNDARY_TYPE_LINE)
-
-        ! As we save the parametrisation in 0-1 parametrisation,
-        ! when we have length-parametrisation, we have to normalise
-        ! dparloc to 0 <= dparloc <= 1.
-        IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
 
         ! Calculate the x/y components of the normal vector from the 
         ! startpoint and the uni direction vector.
         dnx0 = -p_DsegInfo(istartidx+6)
         dny0 =  p_DsegInfo(istartidx+5)
 
-        ! case of circle segment
+      ! case of circle segment
       CASE (BOUNDARY_TYPE_CIRCLE)
 
         ! Rescale dparloc with the length of the arc to get a value
         ! between 0 and 1; important for sin/cos functions later.
         ! In the 0-1 parametrisation, this is already the case.
-        IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
+        IF (cpar .EQ. BDR_PAR_LENGTH) dploc = dploc / dseglength
 
         ! Get the rotation angle.
         ! Use the initial rotation angle, saved at position 6 of the double
         ! precision data block
         dphi = p_DsegInfo(istartidx+7) &
-            + dparloc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
+            + dploc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
 
         ! And calculate the x/y components of the normal vector with sin/cos;
         ! the radius is to be found in element 5 of the double precision data block
@@ -1958,132 +2095,11 @@ MODULE boundary
 
       ! Normalize the vector
       dnorm = SQRT(dnx0*dnx0+dny0*dny0)
-      dnx0 = dnx0/dnorm
-      dny0 = dny0/dnorm
-
-      ! Now, set the parametric value dt0 to the maximum of dt-dtstep and dtmin+dtstep
-      dt0=MAX(dt-dtstep,dtmin+dtstep)
-
-      ! If the parameter value is smaller then the parameter interval on the boundary 
-      ! component, truncate the parameter value!
-      SELECT CASE (cpar)
-      CASE (BDR_PAR_01)
-        IF (dt0 .LT. 0._DP) THEN
-          dpar = dt0 + REAL(p_IsegCount(iboundCompIdx),DP)
-        ELSE
-          dpar = dt0
-        ENDIF
-      CASE (BDR_PAR_LENGTH)
-        IF (dt0 .LT. 0._DP) THEN
-          dpar = dt0 + p_DmaxPar(iboundCompIdx)
-        ELSE
-          dpar = dt0
-        ENDIF
-      END SELECT
-
-      ! Find segment iseg the parameter value belongs to.
-      ! Remember that in the first element in the double precision block of
-      ! each segment, the length of the segment is noted!
-
-      dcurrentpar = 0.0_DP
-
-      ! Determine the segment
-      SELECT CASE (cpar)
-      CASE (BDR_PAR_01)
-
-        ! Easy case: 0-1 parametrisation
-        iseg = AINT(dpar)
-
-        ! Determine Start index of the segment in the double-prec. block
-        istartidx = p_IsegInfo(1+2*iseg+1) 
-
-        dcurrentpar = iseg
-        dendpar     = iseg + 1.0_DP
-        dseglength  = p_DsegInfo(2+istartidx)
-
-      CASE (BDR_PAR_LENGTH)
-
-        ! In the length-parametrisation, we have to search.
-        DO iseg = 0,p_IsegCount(iboundCompIdx)-1
-
-          ! Determine Start index of the segment in the double-prec. block
-          istartidx = p_IsegInfo(1+2*iseg+1) 
-
-          ! Get the start and end parameter value
-          dcurrentpar = p_DsegInfo(1+istartidx)
-          dendpar = dcurrentpar + p_DsegInfo(2+istartidx)
-          dseglength = p_DsegInfo(2+istartidx)
-
-          ! At least one of the IF-commands in the loop will activate
-          ! the exit - because of the 'dt' check above!
-          IF (dpar .LT. dendpar) EXIT
-
-        END DO
-      END SELECT
-
-      IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-
-      ! Subtract the start position of the current boundary component
-      ! from the parameter value to get the 'local' parameter value
-      ! (0 .le. dparloc .le. length(segment))
-      dparloc = dpar - dcurrentpar
-
-      ! Use the segment type to determine how to calculate
-      ! the coordinate. Remember that the segment type is noted
-      ! in the first element of the integer block of each segment!
-
-      isegtype = p_IsegInfo(1+2*iseg)
-
-      SELECT CASE (isegType)
-
-        ! case of line
-      CASE (BOUNDARY_TYPE_LINE)
-
-        ! As we save the parametrisation in 0-1 parametrisation,
-        ! when we have length-parametrisation, we have to normalise
-        ! dparloc to 0 <= dparloc <= 1.
-        IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-
-        ! Calculate the x/y components of the normal vector from the 
-        ! startpoint and the uni direction vector.
-        dnx = -p_DsegInfo(istartidx+6)
-        dny =  p_DsegInfo(istartidx+5)
-
-        ! case of circle segment
-      CASE (BOUNDARY_TYPE_CIRCLE)
-
-        ! Rescale dparloc with the length of the arc to get a value
-        ! between 0 and 1; important for sin/cos functions later.
-        ! In the 0-1 parametrisation, this is already the case.
-        IF (cpar .EQ. BDR_PAR_LENGTH) dparloc = dparloc / dseglength
-
-        ! Get the rotation angle.
-        ! Use the initial rotation angle, saved at position 6 of the double
-        ! precision data block
-        dphi = p_DsegInfo(istartidx+7) &
-            + dparloc * (p_DsegInfo(istartidx+8)-p_DsegInfo(istartidx+7))
-
-        ! And calculate the x/y components of the normal vector with sin/cos;
-        ! the radius is to be found in element 5 of the double precision data block
-        dnx = p_DsegInfo(istartidx+5)*cos(dphi)
-        dny = p_DsegInfo(istartidx+5)*sin(dphi)
-
-      CASE DEFAULT
-        PRINT *,'boundary_getCoords: Wrong segment type'
-        CALL sys_halt()
-      END SELECT
-
-      ! Normalize the vector
-      dnorm = SQRT(dnx*dnx+dny*dny)
-      dnx = dnx/dnorm + dnx0
-      dny = dny/dnorm + dny0
-
-      dnorm = SQRT(dnx*dnx+dny*dny)
-      dnx = dnx/dnorm
-      dny = dny/dnorm
-    END IF
+      dnx = dnx0/dnorm
+      dny = dny0/dnorm
+      
+    END SUBROUTINE  
 
   END SUBROUTINE boundary_getNormalVec
 
-  END MODULE 
-
+END MODULE 

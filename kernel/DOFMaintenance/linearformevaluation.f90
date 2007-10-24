@@ -116,7 +116,7 @@ CONTAINS
       CALL linf_buildVectord_conf2 (rdiscretisation,rform,bclear,rVectorScalar,&  
                                    fcoeff_buildVectorSc_sim,p_rcollection)
     ELSE
-      PRINT *,'linf_buildVectorScalar: Single precision matrices currently not supported!'
+      PRINT *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
     END IF
   
   ! Do we have a uniform triangulation? Would simplify a lot...
@@ -127,7 +127,7 @@ CONTAINS
       CALL linf_buildVectord_conf2 (rdiscretisation,rform,bclear,rVectorScalar,&  
                                    fcoeff_buildVectorSc_sim,p_rcollection)
     ELSE
-      PRINT *,'linf_buildVectorScalar: Single precision matrices currently not supported!'
+      PRINT *,'linf_buildVectorScalar: Single precision vectors currently not supported!'
     END IF
   
   ELSE
