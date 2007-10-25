@@ -322,6 +322,9 @@ CONTAINS
     ! Pointers to the X- and Y-derivative vector
     REAL(DP), DIMENSION(:), POINTER :: p_DxDeriv, p_DyDeriv
     
+    ! Number of elements in the current element distribution
+    INTEGER(PREC_ELEMENTIDX) :: NEL
+
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
     ! Ok, there's the same information in the triangulation, but that's not
     ! based on DOF's! Actually, we'll calculate how often we touch each DOF 
@@ -382,6 +385,9 @@ CONTAINS
       ! Activate the current element distribution
       p_elementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
       p_elementDistrDest => p_rdiscrDest%RelementDistribution(icurrentElementDistr)
+    
+      ! If the element distribution is empty, skip it
+      IF (p_elementDistribution%NEL .EQ. 0) CYCLE
     
       ! Get the number of local DOF's for trial functions
       ! in the source and destination vector.
@@ -527,6 +533,9 @@ CONTAINS
       ELSE
         p_DcubPtsTrial => p_DcubPtsRef
       END IF
+
+      ! Get the number of elements in the element distribution.
+      NEL = p_elementDistribution%NEL
       
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that combination of trial functions
@@ -534,14 +543,14 @@ CONTAINS
                                 p_IelementList)
                      
       ! Loop over the elements - blockwise.
-      DO IELset = 1, p_rtriangulation%NEL, PPGRD_NELEMSIM
+      DO IELset = 1, NEL, PPGRD_NELEMSIM
       
         ! We always handle LINF_NELEMSIM elements simultaneously.
         ! How many elements have we actually here?
         ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
         ! elements simultaneously.
         
-        IELmax = MIN(p_rtriangulation%NEL,IELset-1+PPGRD_NELEMSIM)
+        IELmax = MIN(NEL,IELset-1+PPGRD_NELEMSIM)
       
         ! Calculate the global DOF's into IdofsTrial.
         !

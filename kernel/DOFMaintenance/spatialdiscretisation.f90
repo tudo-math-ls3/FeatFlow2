@@ -166,7 +166,8 @@ MODULE spatialdiscretisation
     INTEGER(PREC_ELEMENTIDX) :: NEL = 0
     
     ! Handle to list of element numbers that are discretised with this 
-    ! combination of trial/test functions
+    ! combination of trial/test functions.
+    ! If NEL=0, the element list is empty, i.e. h_IelementList = ST_NOHANDLE!
     INTEGER :: h_IelementList       = ST_NOHANDLE
 
   END TYPE
@@ -1420,32 +1421,32 @@ CONTAINS
       ! Check the element there. If it's a triangular element,
       ! change the element type to ielTypTri. If it's a quad
       ! element, change the element type to ielTypQuad.
-      nve = elem_igetNVE(rsourceDiscr%RelementDistribution(1)%itrialElement)
+      nve = elem_igetNVE(rsourceDiscr%RelementDistribution(idistr)%itrialElement)
       SELECT CASE (nve)
       CASE (TRIA_NVETRI2D)
-        rdestDiscr%RelementDistribution(1)%itrialElement = ieltypTri
-        rdestDiscr%RelementDistribution(1)%itestElement = ieltypTri
+        rdestDiscr%RelementDistribution(idistr)%itrialElement = ieltypTri
+        rdestDiscr%RelementDistribution(idistr)%itestElement = ieltypTri
 
         ! Init the cubature rule
-        rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccubTri
-        rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccubTri
-        rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccubTri
+        rdestDiscr%RelementDistribution(idistr)%ccubTypeBilForm = ccubTri
+        rdestDiscr%RelementDistribution(idistr)%ccubTypeLinForm = ccubTri
+        rdestDiscr%RelementDistribution(idistr)%ccubTypeEval = ccubTri
 
         ! Get the typical transformation used with the element
-        rdestDiscr%RelementDistribution(1)%ctrafoType = &
+        rdestDiscr%RelementDistribution(idistr)%ctrafoType = &
             elem_igetTrafoType(ieltypTri)
         
       CASE (TRIA_NVEQUAD2D)
-        rdestDiscr%RelementDistribution(1)%itrialElement = ieltypQuad
-        rdestDiscr%RelementDistribution(1)%itestElement = ieltypQuad
+        rdestDiscr%RelementDistribution(idistr)%itrialElement = ieltypQuad
+        rdestDiscr%RelementDistribution(idistr)%itestElement = ieltypQuad
 
         ! Init the cubature rule
-        rdestDiscr%RelementDistribution(1)%ccubTypeBilForm = ccubQuad
-        rdestDiscr%RelementDistribution(1)%ccubTypeLinForm = ccubQuad
-        rdestDiscr%RelementDistribution(1)%ccubTypeEval = ccubQuad
+        rdestDiscr%RelementDistribution(idistr)%ccubTypeBilForm = ccubQuad
+        rdestDiscr%RelementDistribution(idistr)%ccubTypeLinForm = ccubQuad
+        rdestDiscr%RelementDistribution(idistr)%ccubTypeEval = ccubQuad
 
         ! Get the typical transformation used with the element
-        rdestDiscr%RelementDistribution(1)%ctrafoType = &
+        rdestDiscr%RelementDistribution(idistr)%ctrafoType = &
             elem_igetTrafoType(ieltypQuad)
       END SELECT
       
@@ -1631,16 +1632,23 @@ CONTAINS
   NULLIFY(rspatialDiscr%p_rtriangulation)
   NULLIFY(rspatialDiscr%p_rboundary)
   
-  ! Release element identifier lists.
-  ! The element identifier list is never a copy of another structure!
-  IF (rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
-    ! The handles may coincide, so release them only once!
-    IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
-      CALL storage_free (rspatialDiscr%h_ItestElements)
-    ELSE
-      rspatialDiscr%h_ItestElements = ST_NOHANDLE
+  IF (.NOT. rspatialDiscr%bisCopy) THEN
+  
+    ! Release element identifier lists.
+    ! The element identifier list is never a copy of another structure!
+    IF (rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
+      ! The handles may coincide, so release them only once!
+      IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
+        CALL storage_free (rspatialDiscr%h_ItestElements)
+      ELSE
+        rspatialDiscr%h_ItestElements = ST_NOHANDLE
+      END IF
+      CALL storage_free (rspatialDiscr%h_ItrialElements)
     END IF
-    CALL storage_free (rspatialDiscr%h_ItrialElements)
+    
+  ELSE
+    rspatialDiscr%h_ItrialElements = ST_NOHANDLE
+    rspatialDiscr%h_ItestElements = ST_NOHANDLE
   END IF
   
   ! Loop through all element distributions
@@ -1648,15 +1656,20 @@ CONTAINS
   
     p_relementDistr => rspatialDiscr%RelementDistribution(i)
     
-    ! Release the element list there.
-    ! Take care: If the current structure is a copy of another one, the
-    ! element list 'belongs' to another structure, and so we mustn't
-    ! delete it from memory!
-    IF (.NOT. rspatialDiscr%bisCopy) THEN
-      IF (p_relementDistr%h_IelementList .NE. ST_NOHANDLE) &
-        CALL storage_free (p_relementDistr%h_IelementList)
-    ELSE
-      p_relementDistr%h_IelementList = ST_NOHANDLE
+    ! If the element distribution is empty, skip it
+    IF (p_relementDistr%NEL .NE. 0) THEN
+    
+      ! Release the element list there.
+      ! Take care: If the current structure is a copy of another one, the
+      ! element list 'belongs' to another structure, and so we mustn't
+      ! delete it from memory!
+      IF (.NOT. rspatialDiscr%bisCopy) THEN
+        IF (p_relementDistr%h_IelementList .NE. ST_NOHANDLE) &
+          CALL storage_free (p_relementDistr%h_IelementList)
+      ELSE
+        p_relementDistr%h_IelementList = ST_NOHANDLE
+      END IF
+      
     END IF
     
     p_relementDistr%itrialElement = EL_UNDEFINED
