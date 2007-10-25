@@ -580,9 +580,10 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getMonitorFunction(rtriangulation,rsolution,rindicator)
+  SUBROUTINE getMonitorFunction(rtriangulation,rsolution,ieltype,rindicator)
   
     USE pprocgradients
+    USE pprocerror
 
 !<description>
   ! This routine defines a 'monitor function' for the adaptive grid refinement
@@ -597,7 +598,10 @@ CONTAINS
     TYPE(t_triangulation), INTENT(IN) :: rtriangulation
 
     ! The solution vector
-    TYPE(t_vectorScalar), INTENT(IN)  :: rsolution
+    TYPE(t_vectorScalar), INTENT(INOUT)  :: rsolution
+
+    ! The type of element used for the FE solution
+    INTEGER(I32), INTENT(IN) :: ieltype
 !</input>
     
 !</inputoutput>
@@ -611,87 +615,121 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    TYPE(t_vectorBlock) :: rgradient0,rgradient1
-    TYPE(t_blockDiscretisation) :: rdiscrBlock0,rdiscrBlock1
-    
-    REAL(DP), DIMENSION(:), POINTER   :: p_Dindicator
-    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
-    REAL(DP), DIMENSION(:), POINTER   :: p_Dgradient0X,p_Dgradient0Y
-    REAL(DP), DIMENSION(:), POINTER   :: p_Dgradient1X,p_Dgradient1Y
-    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
-    INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(PREC_VERTEXIDX)  :: i,j,k
-    REAL(DP) :: derror
-    
+    TYPE(t_vectorBlock)         :: rgradient,rgradientRef
+    TYPE(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
+    REAL(DP)                    :: dsolutionError,dgradientError,daux
+
     ! Initialise block discretisations
-    CALL spdiscr_initBlockDiscr2D (rdiscrBlock0,2,&
+    CALL spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
         rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
-    CALL spdiscr_initBlockDiscr2D (rdiscrBlock1,2,&
+    CALL spdiscr_initBlockDiscr2D (rdiscrBlockRef,2,&
         rtriangulation, rsolution%p_rspatialdiscretisation%p_rboundary)
 
-    ! Initialise spatial discretisations for first block
-    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-        EL_P0, SPDISC_CUB_AUTOMATIC, rdiscrBlock0%Rspatialdiscretisation(1))
-    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-        EL_P1, SPDISC_CUB_AUTOMATIC, rdiscrBlock1%Rspatialdiscretisation(1))
-
-    ! Initialise spatial discretisations for second block
-    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-        EL_P0, SPDISC_CUB_AUTOMATIC, rdiscrBlock0%Rspatialdiscretisation(2))
-    CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
-        EL_P1, SPDISC_CUB_AUTOMATIC, rdiscrBlock1%Rspatialdiscretisation(2))
-
-    ! Create block vector for gradient values
-    CALL lsysbl_createVecBlockByDiscr (rdiscrBlock0,rgradient0, .TRUE.)
-    CALL lsysbl_createVecBlockByDiscr (rdiscrBlock1,rgradient1, .TRUE.)
-
-    ! Recover gradients
-    CALL ppgrd_calcGradient (rsolution, rgradient0)
-    CALL ppgrd_calcGradient (rsolution, rgradient1)
-
-    ! Set pointers
-    CALL storage_getbase_int2D(&
-        rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
-    CALL storage_getbase_double2D (&
-        rtriangulation%h_DvertexCoords,p_DvertexCoords)
-    CALL lsyssc_getbase_double(rindicator,p_Dindicator)
-    CALL lsyssc_getbase_double(rgradient0%RvectorBlock(1),p_Dgradient0X)
-    CALL lsyssc_getbase_double(rgradient0%RvectorBlock(2),p_Dgradient0Y)
-    CALL lsyssc_getbase_double(rgradient1%RvectorBlock(1),p_Dgradient1X)    
-    CALL lsyssc_getbase_double(rgradient1%RvectorBlock(2),p_Dgradient1Y)
-
-    DO iel=1,rtriangulation%NEL
-
-      ! Initialize the error
-      derror = 0
-
-      i = p_IverticesAtElement(1,iel)
-      j = p_IverticesAtElement(2,iel)
-      k = p_IverticesAtElement(3,iel)
+    ! What kind of element type is used for the FE solution
+    SELECT CASE(ieltype)
+    CASE(1)
+      ! Initialise spatial discretisations for gradient with P0-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E000, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
       
-      derror = SQRT(&
-          ABS(0.5*(p_Dgradient1X(i)+p_Dgradient1X(j))-p_Dgradient0X(iel))**2+&
-          ABS(0.5*(p_Dgradient1X(j)+p_Dgradient1X(k))-p_Dgradient0X(iel))**2+&
-          ABS(0.5*(p_Dgradient1X(k)+p_Dgradient1X(i))-p_Dgradient0X(iel))**2+&
-          ABS(0.5*(p_Dgradient1Y(i)+p_Dgradient1Y(j))-p_Dgradient0Y(iel))**2+&
-          ABS(0.5*(p_Dgradient1Y(j)+p_Dgradient1Y(k))-p_Dgradient0Y(iel))**2+&
-          ABS(0.5*(p_Dgradient1Y(k)+p_Dgradient1Y(i))-p_Dgradient0Y(iel))**2)
+      ! Initialise spatial discretisations for reference gradient with P1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+      
+    CASE(2)
+      ! Initialise spatial discretisations for gradient with P1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E001, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with P2-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E002, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
 
-      derror = derror*&
-          ABS(gaux_getArea_tria2D(&
-              p_DvertexCoords(1:2,p_IverticesAtElement(:,iel))))/3._DP
+    CASE(11)
+      ! Initialise spatial discretisations for gradient with Q0-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E010, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with Q1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
 
-      p_Dindicator(iel) = derror
-    END DO
+    CASE(13)
+      ! Initialise spatial discretisations for gradient with Q1-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E011, SPDISC_CUB_AUTOMATIC, rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with Q2-elements
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveSimpleDiscrSc (rsolution%p_rspatialdiscretisation,&
+          EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
+
+    CASE(-1)
+      ! Initialise spatial discretisations for gradient with Q1-elements
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlock%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlock%Rspatialdiscretisation(2))
+      
+      ! Initialise spatial discretisations for reference gradient with Q2-elements
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlockRef%Rspatialdiscretisation(1))
+      CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
+          EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          rdiscrBlockRef%Rspatialdiscretisation(2))
+      
+    CASE DEFAULT
+      CALL output_line('Unsupproted element type!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
+      CALL sys_halt()
+    END SELECT
     
+    ! Create block vector for gradient values
+    CALL lsysbl_createVecBlockByDiscr (rdiscrBlock,   rgradient,    .TRUE.)
+    CALL lsysbl_createVecBlockByDiscr (rdiscrBlockRef,rgradientRef, .TRUE.)
+
+    ! Recover gradients by means of L2-projection
+    CALL ppgrd_calcGradient (rsolution, rgradient)
+    CALL ppgrd_calcGradient (rsolution, rgradientRef)
+
+    ! Compute gradient error
+    CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
+        dgradientError,relementError=rindicator)
+
+    ! Compute L2-norm of solution
+    CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError)
+
+    ! Prepare indicator for grid refinement/coarsening
+    daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
+    CALL lsyssc_scaleVector(rindicator,1._DP/daux)
+
+    PRINT *, "!!gradient error!! = ",dgradientError
+  
     ! Release temporal discretisation structure
-    CALL spdiscr_releaseBlockDiscr(rdiscrBlock0)
-    CALL spdiscr_releaseBlockDiscr(rdiscrBlock1)
-
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlockRef)
+    
     ! Release vectors
-    CALL lsysbl_releaseVector(rgradient0)
-    CALL lsysbl_releaseVector(rgradient1)
-
+    CALL lsysbl_releaseVector(rgradient)
+    CALL lsysbl_releaseVector(rgradientRef)
   END SUBROUTINE
 
 END MODULE
