@@ -31,6 +31,7 @@
 PROGRAM heatcond
 
   USE heatcond_method1
+  USE heatcond_method2
   USE heatcond_method5
   
   IMPLICIT NONE
@@ -46,11 +47,17 @@ PROGRAM heatcond
   ! 2.) Initialise FEAT 2.0 storage management:
   CALL storage_init(999, 100)
 
-  ! Call the problem to solve - method 5 = multigrid
+  ! Call the problem to solve - method 1 = very basic
   CALL output_lbrk()
   CALL output_line('Calculating heatcond-Problem with method 1')
   CALL output_line('------------------------------------------')
   CALL heatcond1
+  
+  ! Call the problem to solve - method 2 = very basic with precalculation
+  CALL output_lbrk()
+  CALL output_line('Calculating heatcond-Problem with method 2')
+  CALL output_line('------------------------------------------')
+  CALL heatcond2
   
   ! Call the problem to solve - method 5 = multigrid
   CALL output_lbrk()
