@@ -1409,7 +1409,9 @@ CONTAINS
     
     ! Allocate a new element distribution
     ALLOCATE(rdestDiscr%RelementDistribution(rdestDiscr%inumFESpaces))
-    
+    rdestDiscr%RelementDistribution(1:rdestDiscr%inumFESpaces) = &
+        rsourceDiscr%RelementDistribution(1:rsourceDiscr%inumFESpaces)
+
     ! Loop through the element distributions...
     DO idistr = 1,rdestDiscr%inumFESpaces
       ! We support only identical trial and test functions here.
