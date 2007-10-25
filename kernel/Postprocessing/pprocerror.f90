@@ -20,12 +20,21 @@
 !#        $H_1$-norm of a FE function.
 !#   $$ int_\Gamma u-cu_h dx , \qquad int_\Gamma \nabla u-c\nabla u_h dx $$
 !#
-!# 3.) pperr_blockL2ErrorEstimate
-!#     -> Calculate $L_2$-error to two different vectors of a FE function:
+!# 3.) pperr_scalarL2ErrorEstimate
+!#     -> Calculate $L_2$-error to two different scalar vectors of a 
+!#        FE function:
 !#   $$ int_\Omega u_h-u_ref dx $$
-!#     where $u_h$ denotes the FE solution vector and $u_ref$ is some 
-!#     reference solution vector which is supposed to be a better 
-!#     approximation of the true solution.
+!#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
+!#        some reference solution vector which is supposed to be a 
+!#        better approximation of the true solution.
+!#
+!# 4.) pperr_blockL2ErrorEstimate
+!#     -> Calculate $L_2$-error to two different block vectors of a 
+!#        FE function:
+!#   $$ int_\Omega u_h-u_ref dx $$
+!#        where $u_h$ denotes the FE solution vector and $u_ref$ is
+!#        some reference solution vector which is supposed to be a 
+!#        better approximation of the true solution.
 !#     
 !# </purpose>
 !#########################################################################
@@ -1164,6 +1173,68 @@ CONTAINS
 
 !<subroutine>
 
+  SUBROUTINE pperr_scalarL2ErrorEstimate (rvector,rvectorRef,derror,&
+                                          rdiscretisationRef,relementError)
+
+!<description>
+  ! This routine calculates the L2-error of a given FE function in rvector
+  ! and a reference vector given in rvectorRef. Both vectors must have the
+  ! same number of blocks. As an example, one can think of the consistent
+  ! FE gradient and some recovered reference gradient, c.f. ZZ-technique.
+  !
+  ! Note: For the evaluation of the integrals, ccubTypeEval from the
+  ! element distributions in the discretisation structure specifies the 
+  ! cubature formula to use for each element distribution.
+!</description>
+
+!<input>
+    ! FE solution vector
+    TYPE(t_vectorScalar), INTENT(IN), TARGET                    :: rvector
+
+    ! FE reference solution vector
+    TYPE(t_vectorScalar), INTENT(IN), TARGET                    :: rvectorRef
+            
+    ! OPTIONAL: A discretisation structure specifying how to compute the error.
+    ! If not specified, the discretisation structure in the reference gradient 
+    ! is used. If specified, the discretisation structure must be 'compatible'
+    ! to the two gradient vectors (concerning NEQ,...). pperr_gradient uses the
+    ! cubature formula specifier of the linear form in rdiscretisation to 
+    ! compute the integrals for the error.
+    TYPE(t_spatialDiscretisation), INTENT(IN), TARGET, OPTIONAL :: rdiscretisationRef
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: Scalar vector that stores the calculated error on each element.
+    TYPE(t_vectorScalar), INTENT(INOUT), OPTIONAL               :: relementError
+!</inputoutput>
+
+!<output>
+    ! The calculated error.
+    REAL(DP), INTENT(OUT)                                       :: derror 
+!</output>
+!</subroutine>
+
+    ! local variables
+    TYPE(t_vectorBlock) :: rvectorBlock,rvectorBlockRef
+
+    ! Create block vectors with one block
+    CALL lsysbl_createVecFromScalar(rvector,rvectorBlock)
+    CALL lsysbl_createVecFromScalar(rvectorRef,rvectorBlockRef)
+
+    ! Call block version
+    CALL pperr_blockL2ErrorEstimate(rvectorBlock,rvectorBlockRef,derror,&
+        rdiscretisationRef,relementError)
+
+    ! Release auxiliary block vectors
+    CALL lsysbl_releaseVector(rvectorBlock)
+    CALL lsysbl_releaseVector(rvectorBlockRef)
+
+  END SUBROUTINE pperr_scalarL2ErrorEstimate
+
+  !****************************************************************************
+
+!<subroutine>
+
   SUBROUTINE pperr_blockL2ErrorEstimate (rvector,rvectorRef,derror,&
                                          rdiscretisationRef,relementError)
 
@@ -1203,14 +1274,15 @@ CONTAINS
     ! The calculated error.
     REAL(DP), INTENT(OUT)                                       :: derror 
 !</output>
+!</subroutine>
 
     ! local variables
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisation
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscretisationRef
-    INTEGER :: i,j,k,icurrentElementDistr,iblock,ICUBP,NVE
-    LOGICAL :: bnonparTrial,bnonparTrialRef
+    INTEGER      :: i,j,k,icurrentElementDistr,iblock,ICUBP,NVE
+    LOGICAL      :: bnonparTrial,bnonparTrialRef
     INTEGER(I32) :: IEL, IELmax, IELset,IELGlobal
-    REAL(DP) :: OM,delementError
+    REAL(DP)     :: OM,delementError
 
     ! Array to tell the element which derivatives to calculate
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
@@ -1264,8 +1336,7 @@ CONTAINS
     REAL(DP), DIMENSION(:), POINTER :: p_DelementError
     
     ! Current element distribution
-    TYPE(t_elementDistribution), POINTER :: p_elementDistribution
-    TYPE(t_elementDistribution), POINTER :: p_elementDistributionRef
+    TYPE(t_elementDistribution), POINTER :: p_elementDistribution,p_elementDistributionRef
     
     ! Number of elements in the current element distribution
     INTEGER(PREC_ELEMENTIDX) :: NEL
@@ -1387,7 +1458,7 @@ CONTAINS
       indofTrialRef = elem_igetNDofLoc(p_elementDistributionRef%itrialElement)
 
       ! Get the number of corner vertices of the element
-      NVE    = elem_igetNVE(p_elementDistribution%itrialElement)
+      NVE = elem_igetNVE(p_elementDistribution%itrialElement)
      
       ! Initialise the cubature formula.
       ! Get cubature weights and point coordinates on the reference element
@@ -1430,7 +1501,6 @@ CONTAINS
     
       ! Check if one of the trial/test elements is nonparametric
       bnonparTrial    = elem_isNonparametric(p_elementDistribution%itestElement)
-      bnonparTrialRef = elem_isNonparametric(p_elementDistributionRef%itestElement)                      
 
       ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
       ! p_DcubPtsRef - depending on whether the space is parametric or not.
@@ -1439,7 +1509,12 @@ CONTAINS
       ELSE
         p_DcubPtsTrial => p_DcubPtsRef
       END IF
+      
+      ! Check if one of the trial/test elements is nonparametric
+      bnonparTrialRef = elem_isNonparametric(p_elementDistributionRef%itestElement)
 
+      ! Let p_DcubPtsTrialRef point either to p_DcubPtsReal or
+      ! p_DcubPtsRef - depending on whether the space is parametric or not.
       IF (bnonparTrialRef) THEN
         p_DcubPtsTrialRef => p_DcubPtsReal
       ELSE
@@ -1494,7 +1569,8 @@ CONTAINS
         ! anyway for the function - so calculate them all.
         CALL trafo_calctrafo_sim (p_elementDistributionRef%ctrafoType,&
             IELmax-IELset+1,ncubp,p_Dcoords,&
-            p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),p_Ddetj(:,1:IELmax-IELset+1),&
+            p_DcubPtsRef,p_Djac(:,:,1:IELmax-IELset+1),&
+            p_Ddetj(:,1:IELmax-IELset+1),&
             p_DcubPtsReal)
             
         ! L2-error uses only the values of the function.
@@ -1508,16 +1584,20 @@ CONTAINS
           
           ! solution vector
           CALL fevl_evaluate_sim (rvector%RvectorBlock(iblock), &
-              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_elementDistribution%itrialElement, IdofsTrial, &
-              ncubp, INT(IELmax-IELset+1), p_DcubPtsTrial, DER_FUNC,&
+              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1), &
+              p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistribution%itrialElement, &
+              IdofsTrial, ncubp, INT(IELmax-IELset+1), &
+              p_DcubPtsTrial, DER_FUNC,&
               Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock))
 
           ! solution reference vector
           CALL fevl_evaluate_sim (rvectorRef%RvectorBlock(iblock), &
-              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1), p_Ddetj(:,1:IELmax-IELset+1), &
-              p_elementDistributionRef%itrialElement, IdofsTrialRef, &
-              ncubp, INT(IELmax-IELset+1), p_DcubPtsTrialRef, DER_FUNC,&
+              p_Dcoords, p_Djac(:,:,1:IELmax-IELset+1),&
+              p_Ddetj(:,1:IELmax-IELset+1), &
+              p_elementDistributionRef%itrialElement, &
+              IdofsTrialRef, ncubp, INT(IELmax-IELset+1), &
+              p_DcubPtsTrialRef, DER_FUNC,&
               Dcoefficients(:,1:IELmax-IELset+1_I32,2*iblock-1))
 
         END DO
