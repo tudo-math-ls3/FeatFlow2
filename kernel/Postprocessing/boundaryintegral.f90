@@ -16,6 +16,11 @@
 !#     -> Calculates the boundary integral
 !#            $$ int_{\Gamma} f_h(x) dx $$
 !#        for an arbitrary scalar FE function $f_h(x)$.
+!#
+!# 3.) bdint_normalDerivativeInt2D
+!#     -> Calculates the integral of the normal derivative
+!#            $$ int_{\Gamma} \partial_n f_h(x) dx $$
+!#        for an arbitrary scalar FE function $f_h(x)$.
 !# </purpose>
 !#########################################################################
 
