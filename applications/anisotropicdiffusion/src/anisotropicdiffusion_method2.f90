@@ -179,6 +179,9 @@ CONTAINS
     ! Maximum number of h-adaptivity cycles
     INTEGER :: MAXhRefinementSteps
 
+    ! Set halt mode for debugging
+    sys_haltmode = SYS_HALT_THROWFPE
+
     ! Ok, let's start. 
     !
     ! +------------------------------------------------------------------------
@@ -315,8 +318,8 @@ CONTAINS
     ! gethadaptMonitorFunction below. If this monitor function returns a value
     ! > drefinementTolerance to an element, that element is refined.
     ! A value < dcoarseningTolerance on the other hand results in coarsening.
-    rhadapt%drefinementTolerance = 1e-4
-    rhadapt%dcoarseningTolerance = 1e-12
+    rhadapt%drefinementTolerance = 1
+    rhadapt%dcoarseningTolerance = 1e-10
     CALL hadapt_initFromTriangulation(rhadapt,rtriangulation)
 
     ! +------------------------------------------------------------------------
@@ -341,6 +344,9 @@ CONTAINS
       CASE (1)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
             EL_E001,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
+      CASE (2)
+        CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
+            EL_E002,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
       CASE (11)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
             EL_E011,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
@@ -350,8 +356,16 @@ CONTAINS
       CASE (-30)
         CALL spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscretisation(1), &
             EL_EM30,SPDISC_CUB_AUTOMATIC,rtriangulation, p_rboundary)
-      END SELECT
-      
+      CASE (-1)
+        CALL spdiscr_initDiscr_triquad (rdiscretisation%RspatialDiscretisation(1), &
+            EL_E001,EL_E011,SPDISC_CUB_AUTOMATIC,SPDISC_CUB_AUTOMATIC,&
+            rtriangulation,p_rboundary)
+      CASE DEFAULT
+        CALL output_line('Unsupproted element type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'anisotropicdiffusion')
+        CALL sys_halt()
+      END SELECT     
+
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
       ! We create a scalar matrix, based on the discretisation structure
@@ -632,8 +646,15 @@ CONTAINS
       ! +----------------------------------------------------------------------     
       CALL lsyssc_createVector(rindicator,rtriangulation%NEL,.TRUE.)
       CALL getMonitorFunction(rtriangulation,&
-          rvectorBlock%RvectorBlock(1),rindicator)
+          rvectorBlock%RvectorBlock(1),ieltype,rindicator)
       
+      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/err'//&
+          TRIM(sys_siL(rhadapt%nRefinementSteps,3))//'.gmv')
+      CALL lsyssc_getbase_double (rindicator,p_Ddata)
+      CALL ucd_addVariableElementBased (rexport,'err',UCD_VAR_STANDARD, p_Ddata)
+      CALL ucd_write (rexport)
+      CALL ucd_release (rexport)
+
       ! Perform one step h-adaptivity
       CALL hadapt_performAdaptation(rhadapt,rindicator)
       
