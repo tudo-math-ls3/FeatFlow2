@@ -847,15 +847,19 @@ CONTAINS
     REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega1D
     REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dvalues
     REAL(DP), DIMENSION(NDIM2D,TRIA_MAXNVE) :: Dcoord
-    INTEGER :: ncubp,ipoint
+    INTEGER :: ncubp,ipoint,ieltype
     INTEGER(I32) :: icoordSystem
     REAL(DP) :: dlen,dpar1,dpar2
     
-    ! Arrays for element identifier
-    INTEGER(I32), DIMENSION(:), POINTER :: p_ItrialElements
+    ! Arrays for element distributions for every element
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
+
+    ! List of element distributions in the discretisation structure
+    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
 
     ! Get some pointers and arrays for quicker access
     p_rtriangulation => rdiscretisation%p_rtriangulation
+    p_RelementDistribution => rdiscretisation%RelementDistribution
     
     CALL storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
         p_IboundaryCpIdx)
@@ -955,10 +959,11 @@ CONTAINS
       ! The type of the coordinate system may change with every element.
       ! So we may have to switch... ItrialElements in the discretisation
       ! structure informs us about the element type.
-      CALL storage_getbase_int (rdiscretisation%h_ItrialElements,&
-          p_ItrialElements)
+      CALL storage_getbase_int (rdiscretisation%h_IelementDistr,&
+          p_IelementDistr)
       DO iel = 1,NEL
-        icoordSystem = elem_igetCoordSystem(p_ItrialElements(iel))
+        ieltype = p_RelementDistribution(p_IelementDistr(Ielements(iel)))%itrialElement
+        icoordSystem = elem_igetCoordSystem(ieltype)
         CALL trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
             ncubp, Dxi1D, Dxi2D(:,:,iel))
       END DO
@@ -1015,7 +1020,9 @@ CONTAINS
 
           ! Transform the cubature points
           DO ipoint = 1,ncubp
-            ctrafoType = elem_igetTrafoType(p_ItrialElements(iel))
+            ieltype = p_RelementDistribution(&
+                p_IelementDistr(Ielements(iel)))%itrialElement
+            ctrafoType = elem_igetTrafoType(ieltype)
             CALL trafo_calcRealCoords (ctrafoType,Dcoord,&
                 DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
           END DO

@@ -97,7 +97,7 @@ CONTAINS
     LOGICAL :: bnonpar,bnonmesh
     INTEGER :: ipoint,ieltype,indof,nve,ibas
     INTEGER(PREC_ELEMENTIDX) :: iel
-    INTEGER(I32), DIMENSION(:), POINTER :: p_ItrialElements
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
     REAL(DP) :: dval
     
@@ -121,6 +121,9 @@ CONTAINS
     
     ! Coordinates of the corners of one element
     REAL(DP), DIMENSION(UBOUND(Dpoints,1),TRIA_MAXNVE) :: Dcoord
+    
+    ! List of element distributions in the discretisation structure
+    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
 
     ! Ok, slow but general.
     
@@ -131,6 +134,8 @@ CONTAINS
     CALL storage_getbase_int2d (&
         rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
+        
+    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
     
     ! For uniform discretisations, we get the element type in advance...
     IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
@@ -151,10 +156,10 @@ CONTAINS
       ! Element nonparametric?
       bnonpar = elem_isNonparametric(ieltype)
       
-      NULLIFY(p_ItrialElements)
+      NULLIFY(p_IelementDistr)
     ELSE
-      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_ItrialElements,&
-          p_ItrialElements)
+      CALL storage_getbase_int (&
+          rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,p_IelementDistr)
     END IF
     
     ! Get the data vector
@@ -228,8 +233,8 @@ CONTAINS
       END IF
     
       ! Get the type of the element iel
-      IF (ASSOCIATED(p_ItrialElements)) THEN
-        ieltype = p_ItrialElements(iel)
+      IF (ASSOCIATED(p_IelementDistr)) THEN
+        ieltype = p_RelementDistribution(p_IelementDistr(iel))%itrialElement
 
         ! Get the number of local DOF's for trial and test functions
         indof = elem_igetNDofLoc(ieltype)
@@ -354,7 +359,7 @@ CONTAINS
     ! local variables
     LOGICAL :: bnonpar
     INTEGER :: ipoint,ieltype,indof,nve,ibas,npoints
-    INTEGER(I32), DIMENSION(:), POINTER :: p_ItrialElements
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
     REAL(DP) :: dval
     
@@ -379,6 +384,9 @@ CONTAINS
     ! Coordinates of the corners of one element
     REAL(DP), DIMENSION(NDIM3D,TRIA_MAXNVE) :: Dcoord
 
+    ! List of element distributions in the discretisation structure
+    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+
     ! Ok, slow but general.
     
     ! Are points given?
@@ -401,18 +409,19 @@ CONTAINS
         rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
     
+    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
+    
     ! For uniform discretisations, we get the element type in advance...
     IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
       
       ! Element type
-      ieltype = rvectorScalar%p_rspatialDiscretisation%&
-          RelementDistribution(1)%itrialElement
+      ieltype = p_RelementDistribution(1)%itrialElement
 
     ELSE
-      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_ItrialElements,&
-          p_ItrialElements)
+      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,&
+          p_IelementDistr)
 
-      ieltype = p_ItrialElements(ielement)
+      ieltype = p_RelementDistribution(p_IelementDistr(ielement))%itrialElement
     END IF
 
     ! Get the number of local DOF's for trial and test functions
@@ -568,7 +577,7 @@ CONTAINS
     ! local variables
     LOGICAL :: bnonpar
     INTEGER :: ipoint,ieltype,indof,nve,ibas,iel,ndim
-    INTEGER(I32), DIMENSION(:), POINTER :: p_ItrialElements
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IelementDistr
     LOGICAL, DIMENSION(EL_MAXNDER) :: Bder
     REAL(DP) :: dval
     REAL(DP), DIMENSION(:,:,:), POINTER :: p_DpointsRef
@@ -592,6 +601,9 @@ CONTAINS
     ! Coordinates of the corners of one element
     REAL(DP), DIMENSION(:,:,:),ALLOCATABLE :: Dcoord
 
+    ! List of element distributions in the discretisation structure
+    TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
+
     ! Ok, slow but general.
     
     ! Get triangulation information
@@ -602,12 +614,13 @@ CONTAINS
         rvectorScalar%p_rspatialDiscretisation%p_rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
     
+    p_RelementDistribution => rvectorScalar%p_rspatialDiscretisation%RelementDistribution
+
     ! For uniform discretisations, we get the element type in advance...
     IF (rvectorScalar%p_rspatialDiscretisation%ccomplexity .EQ. SPDISC_UNIFORM) THEN
       
       ! Element type
-      ieltype = rvectorScalar%p_rspatialDiscretisation%&
-          RelementDistribution(1)%itrialElement
+      ieltype = p_RelementDistribution(1)%itrialElement
 
       ! Get the number of local DOF's for trial and test functions
       indof = elem_igetNDofLoc(ieltype)
@@ -621,10 +634,10 @@ CONTAINS
       ! Element nonparametric?
       bnonpar = elem_isNonparametric(ieltype)
       
-      NULLIFY(p_ItrialElements)
+      NULLIFY(p_IelementDistr)
     ELSE
-      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_ItrialElements,&
-          p_ItrialElements)
+      CALL storage_getbase_int (rvectorScalar%p_rspatialDiscretisation%h_IelementDistr,&
+          p_IelementDistr)
     END IF
     
     ! Get the data vector
@@ -644,10 +657,10 @@ CONTAINS
     Bder(iderType) = .TRUE.
     
     ! Get the type of the element ielement
-    IF (ASSOCIATED(p_ItrialElements)) THEN
+    IF (ASSOCIATED(p_IelementDistr)) THEN
       ! As all elements have the same type, we get the element
       ! characteristics by checking the first element.
-      ieltype = p_ItrialElements(Ielements(1))
+      ieltype = p_RelementDistribution(p_IelementDistr(Ielements(1)))%itrialElement
 
       ! Get the number of local DOF's for trial and test functions
       indof = elem_igetNDofLoc(ieltype)

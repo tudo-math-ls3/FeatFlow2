@@ -1031,7 +1031,7 @@ CONTAINS
   TYPE(t_spatialDiscretisation), POINTER      :: p_rspatialDiscretisation
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementsAtBoundary,p_IverticesAtBoundary
   INTEGER(I32), DIMENSION(:), POINTER         :: p_IedgesAtBoundary
-  INTEGER(I32), DIMENSION(:), POINTER         :: p_ItrialElements
+  INTEGER(I32), DIMENSION(:), POINTER         :: p_IelementDistr
   INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE :: Idofs
   REAL(DP), DIMENSION(:,:), ALLOCATABLE       :: DdofValue
   REAL(DP), DIMENSION(:), POINTER             :: p_DedgeParameterValue,p_DvertexParameterValue
@@ -1043,6 +1043,9 @@ CONTAINS
   
   REAL(DP) :: dpar
   INTEGER :: nve,nnve
+  
+  ! List of element distributions in the discretisation structure
+  TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution
   
   ! Which component is to be discretised?
   icomponent = rbcRegion%Iequations(1)
@@ -1056,6 +1059,8 @@ CONTAINS
   CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
   CALL storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
 
+  p_RelementDistribution => p_rspatialDiscretisation%RelementDistribution
+  
   ! The parameter value arrays may not be initialised.
   IF (p_rtriangulation%h_DedgeParameterValue .NE. ST_NOHANDLE) THEN
     CALL storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
@@ -1076,7 +1081,8 @@ CONTAINS
 
   IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
     ! Every element can be of different type.
-    CALL storage_getbase_int(p_rspatialDiscretisation%h_ItrialElements,p_ItrialElements)
+    CALL storage_getbase_int(p_rspatialDiscretisation%h_IelementDistr,&
+        p_IelementDistr)
   ELSE
     ! All elements are of the samne type. Get it in advance.
     ieltype = p_rspatialDiscretisation%RelementDistribution(1)%itrialElement
@@ -1239,7 +1245,8 @@ CONTAINS
       ! Get the element type in case we don't have a uniform triangulation.
       ! Otherwise, ieltype was set to the trial element type above.
       IF (p_rspatialDiscretisation%ccomplexity .NE. SPDISC_UNIFORM) THEN
-        ieltype = p_ItrialElements(p_IelementsAtBoundary(I))
+        ieltype = p_RelementDistribution(&
+                      p_IelementDistr(p_IelementsAtBoundary(I)))%itrialElement
         nve = elem_igetNVE (ieltype)
       END IF
       

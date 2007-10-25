@@ -213,18 +213,16 @@ MODULE spatialdiscretisation
     ! with different trial and test functions.
     LOGICAL                          :: bidenticalTrialAndTest = .TRUE.
     
-    ! Handle to trial function identifier list: For every geometric element, 
-    ! an element identifier about which element to use.
+    ! Handle to the element distribution identifier list.
+    ! For every geometric element i, IelementDistr(i) specifies the
+    ! number of the element distribution that contains that element.
+    ! That way one can easily access information; e.g. retrieving the
+    ! element type would be possible as follows:
+    !   RelementDistribution(IelementDistr(i))%itrialElement
     ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
-    ! handle is ST_NOHANDLE as all elements are of the same type.
-    INTEGER                          :: h_ItrialElements       = ST_NOHANDLE
-
-    ! Handle to test function identifier list: For every geometric element, 
-    ! an element identifier about which element to use.
-    ! Coincides with p_DtrialElements if bidenticalTrialAndTest=true!
-    ! In a uniform discretisation (ccomplexity=SPDISC_UNIFORM), this
-    ! handle is ST_NOHANDLE as all elements are of the same type.
-    INTEGER                          :: h_ItestElements        = ST_NOHANDLE
+    ! handle is ST_NOHANDLE as all elements are in the
+    ! element distribution 1.
+    INTEGER                          :: h_IelementDistr       = ST_NOHANDLE
     
     ! Handle to an 'element counter' array. For every element of every
     ! type, there is a unique running number given to that element in the
@@ -927,12 +925,10 @@ CONTAINS
 !  DO i=1,rtriangulation%NEL
 !    p_Iarray(i) = ieltyp
 !  END DO
-  rspatialDiscr%h_ItrialElements = ST_NOHANDLE
+  rspatialDiscr%h_IelementDistr = ST_NOHANDLE
   
   ! All test elements are ieltyp.
-  ! Use the same handle for trial and test functions to save memory!
   rspatialDiscr%bidenticalTrialAndTest = .TRUE.
-  rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements  
   
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces           = 1
@@ -1055,11 +1051,11 @@ CONTAINS
   rspatialDiscr%p_rboundary            => rboundary
   rspatialDiscr%ccomplexity            = SPDISC_CONFORMAL
   
-  ! Allocate an array containing the element type for each element
+  ! Allocate an array containing the element distribution for each element
   CALL storage_new1D ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
-        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
+        rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementDistr,   &
         ST_NEWBLOCK_NOINIT)
-  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
+  CALL storage_getbase_int (rspatialDiscr%h_IelementDistr,p_Iarray)
 
   ! Allocate an array with an element counter for every element type.
   CALL storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
@@ -1075,15 +1071,15 @@ CONTAINS
     ! There are quads and probably triangles in the mesh
     DO i=1,rtriangulation%NEL
       IF (p_IverticesAtElement (4,i) .EQ. 0) THEN
-        ! Triangular element
-        p_Iarray(i) = ieltypTri
+        ! Triangular elements are in element distribution 1
+        p_Iarray(i) = 1
         
         ! This is the IelemCount(1)'th triangle
         IelemCount(1) = IelemCount(1)+1
         p_IelementCounter(i) = IelemCount(1)
       ELSE
-        ! Quad element
-        p_Iarray(i) = ieltypQuad
+        ! Quad elements are in element distribution 2
+        p_Iarray(i) = 2
 
         ! This is the IelemCount(2)'th quad
         IelemCount(2) = IelemCount(2)+1
@@ -1093,8 +1089,8 @@ CONTAINS
   ELSE
     ! Pure triangular mesh
     DO i=1,rtriangulation%NEL
-      ! Triangular element
-      p_Iarray(i) = ieltypTri
+      ! Triangular elements are in element distribution 1
+      p_Iarray(i) = 1
       
       ! This is the IelemCount(1)'th triangle
       IelemCount(1) = IelemCount(1)+1
@@ -1105,7 +1101,6 @@ CONTAINS
   ! Trial and test element coincide.
   ! Use the same handle for trial and test functions to save memory!
   rspatialDiscr%bidenticalTrialAndTest = .TRUE.
-  rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements  
   
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces           = 2
@@ -1534,31 +1529,6 @@ CONTAINS
   
   rspatialDiscr%bidenticalTrialAndTest = ieltypTrial .EQ. ieltypTest
   
-!  ! All trial elements are ieltypTrial:
-!  CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItrialElements', &
-!        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
-!        ST_NEWBLOCK_NOINIT)
-!  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
-!  DO i=1,rtriangulation%NEL
-!    p_Iarray(i) = ieltypTrial
-!  END DO
-!
-!  ! All test elements are ieltypTest:
-!  IF (.NOT. rspatialDiscr%bidenticalTrialAndTest)
-!    ! All test elements are ieltypTest.
-!    CALL storage_new1D ('spdiscr_initDiscr_combined', 'h_ItestElements', &
-!          rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItestElements,   &
-!          ST_NEWBLOCK_NOINIT)
-!    CALL storage_getbase_int (rspatialDiscr%h_ItestElements,p_Iarray)
-!    DO i=1,rtriangulation%NEL
-!      p_Iarray(i) = ieltypTest
-!    END DO
-!  ELSE
-!    rspatialDiscr%h_ItestElements = rspatialDiscr%h_ItrialElements
-!  END IF
-  rspatialDiscr%h_ItrialElements = ST_NOHANDLE
-  rspatialDiscr%h_ItestElements = ST_NOHANDLE
-
   ! Initialise the first element distribution
   rspatialDiscr%inumFESpaces = 1
   ALLOCATE(rspatialDiscr%RelementDistribution(rspatialDiscr%inumFESpaces))
@@ -1634,21 +1604,13 @@ CONTAINS
   
   IF (.NOT. rspatialDiscr%bisCopy) THEN
   
-    ! Release element identifier lists.
-    ! The element identifier list is never a copy of another structure!
+    ! Release element distribution lists.
     IF (rspatialDiscr%ccomplexity .NE. SPDISC_UNIFORM) THEN
-      ! The handles may coincide, so release them only once!
-      IF (rspatialDiscr%h_ItestElements .NE. rspatialDiscr%h_ItrialElements) THEN
-        CALL storage_free (rspatialDiscr%h_ItestElements)
-      ELSE
-        rspatialDiscr%h_ItestElements = ST_NOHANDLE
-      END IF
-      CALL storage_free (rspatialDiscr%h_ItrialElements)
+      CALL storage_free (rspatialDiscr%h_IelementDistr)
     END IF
     
   ELSE
-    rspatialDiscr%h_ItrialElements = ST_NOHANDLE
-    rspatialDiscr%h_ItestElements = ST_NOHANDLE
+    rspatialDiscr%h_IelementDistr = ST_NOHANDLE
   END IF
   
   ! Loop through all element distributions
@@ -1906,10 +1868,8 @@ CONTAINS
          //TRIM(sys_sl(rspatialDiscr%bidenticalTrialAndTest)))
      CALL output_line ('inumFESpaces:           '&
          //TRIM(sys_siL(rspatialDiscr%inumFESpaces,15)))
-     CALL output_line ('h_ItrialElements:       '&
-         //TRIM(sys_siL(rspatialDiscr%h_ItrialElements,15)))
-     CALL output_line ('h_ItestElements:        '&
-         //TRIM(sys_siL(rspatialDiscr%h_ItestElements,15)))
+     CALL output_line ('h_IelementDistr:       '&
+         //TRIM(sys_siL(rspatialDiscr%h_IelementDistr,15)))
      CALL output_line ('h_IelementCounter:      '&
          //TRIM(sys_siL(rspatialDiscr%h_IelementCounter,15)))
 
