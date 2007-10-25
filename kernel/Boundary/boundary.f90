@@ -59,6 +59,7 @@ MODULE boundary
   USE fsystem
   USE error
   USE io
+  USE genoutput
 
   IMPLICIT NONE
 
@@ -306,8 +307,10 @@ MODULE boundary
     REAL(DP) :: dx1,dx2,dy1,dy2,dbl,dtmax
     INTEGER :: ip2,ip1,i
 
-    IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) THEN
-      PRINT *,'Warning in boundary_dgetLength'
+    IF ((iboundCompIdx .gt. rboundary%iboundarycount) .or.&
+        (iboundCompIdx.lt.0)) THEN
+      CALL output_line ('iboundCompIdx out of bounds!', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'boundary_dgetLength')
       dresult = -1
       RETURN
     ENDIF
@@ -404,7 +407,8 @@ MODULE boundary
 
   !if iboundCompIdx exceeds the total number of boundary components or is negative, abort
   if ((iboundCompIdx .gt. rboundary%iboundarycount) .or. (iboundCompIdx.lt.0)) then
-    PRINT *,'Warning in boundary_dgetMaxParVal'
+    CALL output_line ('iboundCompIdx out of bounds!', &
+                      OU_CLASS_WARNING,OU_MODE_STD,'boundary_dgetMaxParVal')
     boundary_dgetMaxParVal = -1
     RETURN
   ENDIF
@@ -462,7 +466,8 @@ MODULE boundary
 
   !if iboundCompIdx exceeds the total number of boundary components or is negative, abort
   if ((iboundCompIdx .gt. rboundary%iboundarycount) .or. (iboundCompIdx.lt.0)) then
-    PRINT *,'Warning in boundary_dgetNsegments'
+    CALL output_line ('iboundCompIdx out of bounds!', &
+                      OU_CLASS_WARNING,OU_MODE_STD,'boundary_dgetNsegments')
     boundary_dgetNsegments = -1
     RETURN
   ENDIF
@@ -848,7 +853,7 @@ MODULE boundary
 
 !<subroutine>
 
-  PURE SUBROUTINE boundary_normaliseParValue2D(IsegCount,DmaxPar,iboundCompIdx,dpar)
+  PURE SUBROUTINE boundary_normaliseParValue2D(IsegCount,DmaxPar,iboundCompIdx,cpar,dpar)
 
 !<description>
   ! INTERNAL SUBROUTINE.
@@ -856,23 +861,43 @@ MODULE boundary
 !</description>
 
 !<input>
-    ! 
-    INTEGER(I32), DIMENSION(:), INTENT(IN) :: IsegCount
+  ! Segment-count array
+  INTEGER(I32), DIMENSION(:), INTENT(IN) :: IsegCount
 
-  SELECT CASE (cpar)
-  CASE (BDR_PAR_01)
-    IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
-      dpar = 0.0_DP
-    ELSE
-      dpar = dt
-    ENDIF
-  CASE (BDR_PAR_LENGTH)
-    IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
-      dpar = 0.0_DP
-    ELSE
-      dpar = dt
-    ENDIF
-  END SELECT
+  ! Array wirth maximum parameter values for all BC's
+  REAL(DP), DIMENSION(:), INTENT(IN) :: DmaxPar
+  
+  ! Number of the boundary component that is under consideration
+  INTEGER, INTENT(IN) :: iboundCompIdx
+  
+  ! Type of parametrisation, format of dpar (0-1, length par.,...)
+  INTEGER(I32), INTENT(IN) :: cpar
+!</input>
+
+!<inputoutput>
+  ! Parameter value to be normalised. Is replaced by the normalised
+  ! parameter value.
+  REAL(DP), INTENT(INOUT) :: dpar
+!</inputoutput>
+
+    SELECT CASE (cpar)
+    CASE (BDR_PAR_01)
+      dpar = MOD(dpar,REAL(IsegCount(iboundCompIdx),DP))
+      !IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
+      !  dpar = 0.0_DP
+      !ELSE
+      !  dpar = dt
+      !ENDIF
+    CASE (BDR_PAR_LENGTH)
+      dpar = MOD(dpar,DmaxPar(iboundCompIdx))
+      !IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
+      !  dpar = 0.0_DP
+      !ELSE
+      !  dpar = dt
+      !ENDIF
+    END SELECT
+    
+  END SUBROUTINE
 
   !************************************************************************
 
@@ -1051,9 +1076,7 @@ MODULE boundary
 !<description>
   ! This routine returns for a given parameter value dt the
   ! cartesian coordinates of the point on the boundary component 
-  ! iboundCompIdx.\\
-  ! dt is bounded by the maximum parameter value, i.e. when dt is
-  ! larger than the maximum parameter value, dt=0 is taken.
+  ! iboundCompIdx.
 !</description>
 
 !<input>
@@ -1098,7 +1121,8 @@ MODULE boundary
   IF (PRESENT(cparType)) cpar = cparType
 
   if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
-    PRINT *,'Error in boundary_getCoords'
+    CALL output_line ('iboundCompIdx out of bounds!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
     CALL sys_halt()
   ENDIF
 
@@ -1114,69 +1138,16 @@ MODULE boundary
   CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
   CALL storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
 
-  ! If the parameter value exceeds the parameter interval on the boundary 
-  ! component, truncate the parameter value!
-  SELECT CASE (cpar)
-  CASE (BDR_PAR_01)
-    IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
-      dpar = 0.0_DP
-    ELSE
-      dpar = dt
-    ENDIF
-  CASE (BDR_PAR_LENGTH)
-    IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
-      dpar = 0.0_DP
-    ELSE
-      dpar = dt
-    ENDIF
-  END SELECT
+  ! Normalise the parameter value to the range [0,TMAX)
+  dpar = dt
+  CALL boundary_normaliseParValue2D(p_IsegCount,p_DmaxPar,iboundCompIdx,cpar,dpar)
 
-  ! Find segment iseg the parameter value belongs to.
-  ! Remember that in the first element in the double precision block of
-  ! each segment, the length of the segment is noted!
-  
-  dcurrentpar = 0.0_DP
-  
-  ! Determine the segment
-  SELECT CASE (cpar)
-  CASE (BDR_PAR_01)
-  
-    ! Easy case: 0-1 parametrisation
-    iseg = AINT(dpar)
-
-    ! Determine Start index of the segment in the double-prec. block
-    istartidx = p_IsegInfo(1+2*iseg+1) 
-
-    dcurrentpar = iseg
-    dendpar     = iseg + 1.0_DP
-    dseglength  = p_DsegInfo(2+istartidx)
-    
-  CASE (BDR_PAR_LENGTH)
-  
-    ! In the length-parametrisation, we have to search.
-    DO iseg = 0,p_IsegCount(iboundCompIdx)-1
-      
-      ! Determine Start index of the segment in the double-prec. block
-      istartidx = p_IsegInfo(1+2*iseg+1) 
-      
-      ! Get the start and end parameter value
-      dcurrentpar = p_DsegInfo(1+istartidx)
-      dendpar = dcurrentpar + p_DsegInfo(2+istartidx)
-      dseglength = p_DsegInfo(2+istartidx)
-      
-      ! At least one of the IF-commands in the loop will activate
-      ! the exit - because of the 'dt' check above!
-      IF (dpar .LT. dendpar) EXIT
-      
-    END DO
-  END SELECT
+  ! Get information about the segment that contains the point
+  CALL boundary_getSegmentInfo2D(&
+      p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
+      iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
   
   IF (dseglength .EQ. 0.0_DP) dseglength = 1.0_DP ! trick to avoid div/0
-
-  ! Subtract the start position of the current boundary component
-  ! from the parameter value to get the 'local' parameter value
-  ! (0 .le. dparloc .le. length(segment))
-  dparloc = dpar - dcurrentpar
 
   ! Use the segment type to determine how to calculate
   ! the coordinate. Remember that the segment type is noted
@@ -1220,7 +1191,8 @@ MODULE boundary
     dy = p_DsegInfo(istartidx+4) + p_DsegInfo(istartidx+5)*sin(dphi)
 
   CASE DEFAULT
-    PRINT *,'boundary_getCoords: Wrong segment type'
+    CALL output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
+                      OU_CLASS_ERROR,OU_MODE_STD,'boundary_getCoords')
     CALL sys_halt()
   END SELECT
 
@@ -1279,7 +1251,8 @@ MODULE boundary
 
     ! Small check
     IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
-      PRINT *,'Error in boundary_convertParameter'
+      CALL output_line ('iboundCompIdx out of bounds!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'boundary_convertParameter')
       CALL sys_halt()
     ENDIF
 
@@ -1444,7 +1417,8 @@ MODULE boundary
 
     ! Small check
     IF ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
-      PRINT *,'Error in boundary_convertParameterList'
+      CALL output_line ('iboundCompIdx out of bounds!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'boundary_convertParameterList')
       CALL sys_halt()
     ENDIF
 
@@ -1618,7 +1592,8 @@ MODULE boundary
   IF (PRESENT(cparType)) cpar = cparType
 
   IF ((iboundCompIdx .GT. rboundary%iboundarycount) .OR. (iboundCompIdx.lt.0)) THEN
-    PRINT *,'boundary_createregion: iboundCompIdx out of bounds'
+    CALL output_line ('iboundCompIdx out of bounds!', &
+                      OU_CLASS_ERROR,OU_MODE_STD,'boundary_createregion')
     CALL sys_halt()
   ENDIF
 
@@ -1637,7 +1612,8 @@ MODULE boundary
   IF (iboundSegIdx .NE. 0) THEN
 
     IF ((iboundSegIdx .GT. p_IsegCount(iboundCompIdx)) .OR. (iboundSegIdx.lt.0)) THEN
-      PRINT *,'Error in boundary_createregion: iboundSegIdx out of bounds.'
+      CALL output_line ('iboundSegIdx out of bounds!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'boundary_createregion')
       CALL sys_halt()
     ENDIF
 
@@ -1921,7 +1897,8 @@ MODULE boundary
     IF (PRESENT(cnormalMean)) cnormalMeanCalc = cnormalMean
 
     if ((iboundCompIdx.gt.rboundary%iboundarycount).or.(iboundCompIdx.lt.0)) then
-      PRINT *,'Error in boundary_getNormalVec'
+      CALL output_line ('iboundCompIdx out of bounds!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'boundary_getNormalVec')
       CALL sys_halt()
     ENDIF
 
@@ -1937,29 +1914,13 @@ MODULE boundary
     CALL storage_getbase_int(rboundary%h_IsegCount,p_IsegCount)
     CALL storage_getbase_double(rboundary%h_DmaxPar,p_DmaxPar)
 
-    ! If the parameter value exceeds the parameter interval on the boundary 
-    ! component, truncate the parameter value!
-    SELECT CASE (cpar)
-    CASE (BDR_PAR_01)
-      dpar = MOD(dt,REAL(p_IsegCount(iboundCompIdx),DP))
-!      IF (dt .GE. REAL(p_IsegCount(iboundCompIdx),DP) ) THEN
-!        dpar = 0.0_DP
-!      ELSE
-!        dpar = dt
-!      ENDIF
-    CASE (BDR_PAR_LENGTH)
-      dpar = MOD(dt,p_DmaxPar(iboundCompIdx))
-!      IF (dt .GE. p_DmaxPar(iboundCompIdx) ) THEN
-!        dpar = 0.0_DP
-!      ELSE
-!        dpar = dt
-!      ENDIF
-    END SELECT
+    ! Normalise the parameter value to the range [0,TMAX)
+    dpar = dt
+    CALL boundary_normaliseParValue2D(p_IsegCount,p_DmaxPar,iboundCompIdx,cpar,dpar)
 
     ! Find segment iseg the parameter value belongs to.
     ! Remember that in the first element in the double precision block of
     ! each segment, the length of the segment is noted!
-
     CALL boundary_getSegmentInfo2D(&
       p_IsegCount,p_DmaxPar,p_IsegInfo,p_DsegInfo,iboundCompIdx,dpar,cpar,0,&
       iseg,istartidx,dcurrentpar,dendpar,dseglength,dparloc,isegtype)
@@ -2089,7 +2050,8 @@ MODULE boundary
         dny0 = p_DsegInfo(istartidx+5)*sin(dphi)
 
       CASE DEFAULT
-        PRINT *,'boundary_getCoords: Wrong segment type'
+        CALL output_line ('Wrong segment type: isegType='//sys_siL(isegType,10), &
+                          OU_CLASS_ERROR,OU_MODE_STD,'boundary_getNormalVec')
         CALL sys_halt()
       END SELECT
 

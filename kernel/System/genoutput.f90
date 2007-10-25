@@ -94,6 +94,7 @@
 !#       or even simpler:
 !#
 !#        CALL output_line ('This is an error message.',OU_CLASS_ERROR)
+!#        CALL output_line ('This is an warning message.',OU_CLASS_WARNING)
 !#
 !#     f) CALL output_line_sep (OU_SEP_MINUS)
 !#
@@ -143,7 +144,7 @@ MODULE genoutput
 !<constantblock description="Output mode. Decides on where the output is written to.">
 
   ! Output mode: Write to main log file / error log file (depending on whether
-  ! a message is considered as an error or not by OU_CLASS_ERROR)
+  ! a message is considered as an error or not by OU_CLASS_ERROR/OU_CLASS_WARNING)
   INTEGER, PARAMETER :: OU_MODE_LOG      = 2**0
   
   ! Output mode: Write to terminal
@@ -174,6 +175,9 @@ MODULE genoutput
   
   ! Output classification: Error message.
   INTEGER, PARAMETER :: OU_CLASS_ERROR    = 5
+
+  ! Output classification: Warning message.
+  INTEGER, PARAMETER :: OU_CLASS_WARNING  = 6
 
 !</constantblock>
 
@@ -434,6 +438,8 @@ CONTAINS
         s = '* System: '//smessage
       CASE (OU_CLASS_ERROR)
         s = '* Error: '//smessage
+      CASE (OU_CLASS_WARNING)
+        s = '* Warning: '//smessage
       CASE DEFAULT
         s = smessage
       END SELECT
@@ -451,6 +457,8 @@ CONTAINS
         s = '* System ('//trim(ssubroutine)//'): '//smessage
       CASE (OU_CLASS_ERROR)
         s = '* Error ('//trim(ssubroutine)//'): '//smessage
+      CASE (OU_CLASS_WARNING)
+        s = '* Warning ('//trim(ssubroutine)//'): '//smessage
       CASE DEFAULT
         s = smessage
       END SELECT
@@ -525,13 +533,16 @@ CONTAINS
     
     ! Get the file and terminal output channel
     iotChannel = OU_TERMINAL
-    IF (coClass .EQ. OU_CLASS_ERROR) iofChannel = OU_ERROR
+    IF ((coClass .EQ. OU_CLASS_ERROR) .OR. &
+        (coClass .EQ. OU_CLASS_WARNING)) iofChannel = OU_ERROR
 
     iofChannel = OU_LOG
-    IF (coClass .EQ. OU_CLASS_ERROR) iofChannel = OU_ERRORLOG
+    IF ((coClass .EQ. OU_CLASS_ERROR) .OR. &
+        (coClass .EQ. OU_CLASS_WARNING)) iofChannel = OU_ERRORLOG
     
     IF (bntrim .AND. &
         ((coClass .EQ. OU_CLASS_MSG) .OR. &
+         (coClass .EQ. OU_CLASS_WARNING) .OR. &
          (coClass .EQ. OU_CLASS_ERROR)) ) THEN
          
       ! Where to write the message to?
