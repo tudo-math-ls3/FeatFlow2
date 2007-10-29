@@ -985,7 +985,7 @@ CONTAINS
 !<subroutine>
 
   SUBROUTINE sptivec_loadFromFileSequence (rx,sfilename,istart,iend,idelta,&
-      bformatted,sdirectory)
+      bformatted,brepeatLast,sdirectory)
 
 !<description>
   ! This routine loads a space-time vector from a sequence of files on the
@@ -1023,9 +1023,22 @@ CONTAINS
   ! Whether to read formatted or unformatted data from disc.
   LOGICAL, INTENT(IN) :: bformatted
 
+  ! OPTIONAL: Repetition of last solution.
+  ! If this value is set to TRUE and there are not enough solutions
+  ! saved on disc for all timesteps, the last available solution is used
+  ! to fill up the missing solutions.
+  ! Can be used to continue a quasi-stationary solution if only the
+  ! first couple of solutions up to a point in time are saved while
+  ! the remaining (not available on disc) solutions are identical
+  ! to the last one.
+  !
+  ! Standard value = false = missing solutions are set to zero.
+  LOGICAL, OPTIONAL :: brepeatLast
+
   ! OPTIONAL: Directory name where to save temporary data. If not present,
   ! the current directory './' is the default.
   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: sdirectory
+  
 !</input>
 
 !<inputoutput>
@@ -1039,8 +1052,13 @@ CONTAINS
     ! Local variables
     TYPE(t_vectorScalar) :: rvector
     CHARACTER(SYS_STRLEN) :: sfile,sarray
-    INTEGER :: i
-    LOGICAL :: bexists
+    INTEGER :: i,ilast
+    LOGICAL :: bexists,brepeat
+    
+    brepeat = .FALSE.
+    IF (PRESENT(brepeatLast)) brepeat = brepeatLast
+    
+    ilast = 0
 
     ! Loop over the files
     DO i=istart,iend
@@ -1052,6 +1070,9 @@ CONTAINS
       INQUIRE(file=trim(sfile), exist=bexists)
       
       IF (bexists) THEN
+        ! Remember this solution as the last available one
+        ilast = i
+      
         ! Read the file into rvector. The first read command creates rvector
         ! in the correct size.
         CALL vecio_readVectorHR (rvector, sarray, .FALSE.,&
@@ -1065,11 +1086,27 @@ CONTAINS
         ! Save the data
         CALL storage_copy (rvector%h_Ddata,rx%p_IdataHandleList(i))
       ELSE
-        CALL output_line ('Warning: Unable to load file "'//TRIM(sfile) &
-            //'". Assuming zero!', ssubroutine='sptivec_loadFromFileSequence')
-      
-        ! Clear that array. Zero solution.
-        CALL storage_clear (rx%p_IdataHandleList(i))
+        IF (i .EQ. istart) THEN
+          ! At the first file, create a space-time vector holding the data.
+          CALL sptivec_initVector (rx,rvector%NEQ,iend-istart+1,sdirectory)
+        END IF         
+
+        IF (brepeat) THEN
+          CALL output_line ('Warning: Unable to load file "'//TRIM(sfile) &
+              //'". Repeating last solution!', &
+              ssubroutine='sptivec_loadFromFileSequence')
+        
+          ! Copy the data from the last known solution to the current one.
+          CALL storage_copy (&
+              rx%p_IdataHandleList(ilast),&
+              rx%p_IdataHandleList(i))
+        ELSE
+          CALL output_line ('Warning: Unable to load file "'//TRIM(sfile) &
+              //'". Assuming zero!', ssubroutine='sptivec_loadFromFileSequence')
+        
+          ! Clear that array. Zero solution.
+          CALL storage_clear (rx%p_IdataHandleList(i))
+        END IF
       END IF
     
     END DO

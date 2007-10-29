@@ -1476,7 +1476,7 @@ CONTAINS
       CALL sptivec_loadFromFileSequence (&
           rproblem%roptcontrol%rtargetFlowNonstat,&
           '('''//TRIM(rproblem%roptcontrol%stargetFlow)//'.'',I5.5)',&
-          0,ntimesteps,rproblem%roptcontrol%itargetFlowDelta,.TRUE.)
+          0,ntimesteps,rproblem%roptcontrol%itargetFlowDelta,.TRUE.,.TRUE.)
 
     END SELECT
 

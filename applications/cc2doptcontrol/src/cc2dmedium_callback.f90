@@ -252,7 +252,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in trial space,nelements)
@@ -331,7 +332,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in trial space,nelements)
@@ -412,7 +414,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
@@ -507,7 +510,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
@@ -603,7 +607,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
@@ -700,7 +705,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
@@ -951,7 +957,7 @@ CONTAINS
         
         ! Evaluate at the given points - X-coordinate
         CALL fevl_evaluate (DER_FUNC, DvaluesAct, p_rvector%RvectorBlock(1), &
-          DpointsAct, IelementsHint=IelementsAct)
+          DpointsAct, IelementsHint=IelementsAct,bnonmeshPoints=.FALSE.)
           
         DO i=0,nelements-1
           DO j=1,npointsPerElement
@@ -1161,7 +1167,7 @@ CONTAINS
         
         ! Evaluate at the given points - Y-coordinate
         CALL fevl_evaluate (DER_FUNC, DvaluesAct, p_rvector%RvectorBlock(2), &
-          DpointsAct, IelementsHint=IelementsAct)
+          DpointsAct, IelementsHint=IelementsAct,bnonmeshPoints=.FALSE.)
           
         DO i=0,nelements-1
           DO j=1,npointsPerElement
