@@ -42,6 +42,7 @@ MODULE convection
   USE matrixio
   USE domainintegration
   USE bilinearformevaluation
+  USE statistics
   
   IMPLICIT NONE
 
@@ -653,9 +654,9 @@ CONTAINS
     !    Weighted Samarski upwind
     ! 
     !    This implementation follows the documentation of
-    !    [F. Schieweck, Parallele Lösung der stationären inkompressiblen
-    !     Navier-Stokes Gleichungen, Habilitation, Fakultät für
-    !     Mathematik, Otto-von-Guericke-Universität Magdeburg]
+    !    [F. Schieweck, Parallele Lï¿½sung der stationï¿½ren inkompressiblen
+    !     Navier-Stokes Gleichungen, Habilitation, Fakultï¿½t fï¿½r
+    !     Mathematik, Otto-von-Guericke-Universitï¿½t Magdeburg]
     ! 
     !********************************************************************
     !
@@ -2507,6 +2508,9 @@ CONTAINS
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
   REAL(DP), DIMENSION(:,:), INTENT(IN), OPTIONAL :: DmeshVelocity
+
+
+
 !</input>
 
 !<inputoutput>
@@ -2836,6 +2840,8 @@ CONTAINS
   
   ! Weighting factor for the nonlinear term
   REAL(DP), INTENT(IN) :: ddelta
+
+  
   
   ! Weighting factor of the Newton matrix. A value of 0.0 deactivates the
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
@@ -2978,11 +2984,8 @@ CONTAINS
   
   ! An array with local DELTA's, each DELTA for one element
   REAL(DP), DIMENSION(:), ALLOCATABLE :: DlocalDelta
-  
-  !external function
-  !INTEGER :: omp_get_thread_num
-  !EXTERNAL omp_get_thread_num  
-  
+
+ 
     ! Initialise the derivative flags
     Bder = .FALSE.
     Bder(DER_FUNC) = .TRUE.
@@ -3073,8 +3076,7 @@ CONTAINS
     ! "csysTrial" is declared as private; shared gave errors with the Intel compiler
     ! in Windows!?!
     ! Each thread will allocate its own local memory...
-    !    
-    !print *,"hello0"
+        
     !$OMP PARALLEL PRIVATE(csysTrial, p_DcubPtsRef, p_DcubPtsReal, &
     !$OMP p_Djac, p_Ddetj, p_Dcoords, j,i,k,Dbas,Idofs,DbasALE, &
     !$OMP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
@@ -3087,6 +3089,7 @@ CONTAINS
     ! Get from the trial element space the type of coordinate system
     ! that is used there:                         
     csysTrial = elem_igetCoordSystem(p_relementDistribution%itrialElement)
+
 
     ! Allocate memory and get local references to it.
     CALL domint_initIntegration (rintSubset,nelementsPerBlock,ncubp,csysTrial,&
@@ -3212,7 +3215,7 @@ CONTAINS
     !$OMP SINGLE
     dumax=0.0_DP
     IF (dweight2 .EQ. 0.0_DP) THEN
-      !%OMP DO PRIVATE(du1loc,du2loc,dunorm) REDUCTION(max:dumax)
+
       
       DO IEQ=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)
@@ -3220,16 +3223,16 @@ CONTAINS
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(DUMAX,DUNORM)
       END DO
-      !%OMP END DO  
+  
     ELSE
-      !%OMP DO PRIVATE(du1loc,du2loc,dunorm) REDUCTION(max:dumax)       
+
       DO ieq=1,SIZE(u1Xvel)
         du1loc = dweight1*u1Xvel(IEQ)+dweight2*u2Xvel(IEQ)
         du2loc = dweight1*u1Yvel(IEQ)+dweight2*u2Yvel(IEQ)
         dunorm = SQRT(du1loc**2+du2loc**2)
         dumax = MAX(dumax,dunorm)
       END DO
-      !%OMP END DO  
+
     ENDIF
            
     !print *,"dumax: ",dumax
@@ -3242,13 +3245,14 @@ CONTAINS
     CALL storage_getbase_int (p_relementDistribution%h_IelementList, &
                               p_IelementList)
 
+
     ! Loop over the elements - blockwise.
     !
     ! Open-MP-Extension: Each loop cycle is executed in a different thread,
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
-    !$OMP DO SCHEDULE(static,1)
+    !$OMP DO SCHEDULE(dynamic,1)
     DO IELset = 1, SIZE(p_IelementList), BILF_NELEMSIM
 
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -3465,6 +3469,7 @@ CONTAINS
         END IF
       
       END IF ! dnewton != 0
+
       
       ! Ok, we found the positions of the local matrix entries
       ! that we have to change.
@@ -3572,6 +3577,8 @@ CONTAINS
       ! velocities in U1Lx, otherwise we have to sum up
       ! dweight1*u1vel + dweight2*u2vel
       
+
+
       ! only primary velocity field
       IF (dweight2 .EQ. 0.0_DP) THEN
 !      print *,"dweight2 .EQ. 0.0"
@@ -3590,33 +3597,14 @@ CONTAINS
 
               ! Get the value of the (test) basis function 
               ! phi_i (our "O") in the cubature point:
-              !$OMP CRITICAL (display2)
-!              PRINT *,"Thread ID: ",omp_get_thread_num()
-!              PRINT *,"(JDOFE,1,ICUBP,IEL): ",JDOFE,1,ICUBP,IEL 
-!              PRINT *,"Dbas(JDOFE,1,ICUBP,IEL): ",Dbas(JDOFE,1,ICUBP,IEL)                      
-!              READ(*,*)
-              !$OMP END CRITICAL (display2)                  
               
               db = Dbas(JDOFE,1,ICUBP,IEL)
               
               ! Sum up to the value in the cubature point
               
-             !§OMP CRITICAL (display1)
-              !PRINT *,dbas
-              !READ(*,*)
-              !§OMP END CRITICAL (display1)                     
               JDFG = Idofs(JDOFE,IEL)
               du1loc = du1loc +u1Xvel(JDFG)*db
               du2loc = du2loc +u1Yvel(JDFG)*db
-              
-              !$OMP CRITICAL (display0)
-!              PRINT *,"Thread ID: ",omp_get_thread_num()
-!              PRINT *,"Jdfg: ",jdfg,"U1Xvel: ",u1Xvel(jdfg)
-!              PRINT *,"Db: ",db
-!              PRINT *,"Dbas(JDOFE,1,ICUBP,IEL): ",Dbas(JDOFE,1,ICUBP,IEL)                      
-!              PRINT *,"du1loc: ",du1loc
-!              READ(*,*)
-              !$OMP END CRITICAL (display0)                  
 
             END DO ! JDOFE
             
@@ -3627,11 +3615,6 @@ CONTAINS
           END DO ! ICUBP
           
         END DO ! IEL
-        
-        !$OMP CRITICAL (display)
-!        PRINT *,Dvelocity
-!        READ(*,*)
-        !$OMP END CRITICAL (display)            
         
         ! Compute X- and Y-derivative of the velocity?
         IF (dnewton .NE. 0.0_DP) THEN
@@ -3754,6 +3737,7 @@ CONTAINS
       
   
       
+
       ! If ALE is not active, calculate 
       !
       !     U * grad(Phi_j)  =  < grad(Phi_j), U >
@@ -3871,11 +3855,6 @@ CONTAINS
       ELSE
         Dentry = 0.0_DP
       END IF
-      
-      !$OMP CRITICAL (display)
-!      PRINT *,Dvelocity
-!      READ(*,*)
-      !$OMP END CRITICAL (display)
       
       ! If ddelta != 0, set up the nonlinearity U*grad(u), probably with
       ! streamline diffusion stabilisation.
@@ -4026,6 +4005,8 @@ CONTAINS
         END DO ! IEL
         
       END IF
+
+
      
       ! If dny != 0 or dalpha != 0, add the Laplace/Mass matrix to the
       ! local matrices.
@@ -4175,6 +4156,8 @@ CONTAINS
         END DO ! IEL
 
       END IF
+
+
         
       ! Now we have set up "local" system matrices. We can either    
       ! include it into the real matrix or we can use it to simply   
@@ -4333,7 +4316,8 @@ CONTAINS
         END IF
 
       END IF
-        
+            
+
     END DO ! IELset
     !$OMP END DO 
     
@@ -6383,3 +6367,4 @@ CONTAINS
   END SUBROUTINE
 
 END MODULE
+ 
