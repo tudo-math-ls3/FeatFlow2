@@ -113,7 +113,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
@@ -192,7 +193,8 @@ CONTAINS
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    REAL(DP), DIMENSION(NDIM2D,npointsPerElement,nelements), INTENT(IN)  :: Dpoints
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    REAL(DP), DIMENSION(:,:,:), INTENT(IN)  :: Dpoints
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
@@ -687,6 +689,10 @@ CONTAINS
       CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
           EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlock%Rspatialdiscretisation(2))
+
+      PRINT *,rsolution%p_rspatialdiscretisation%RelementDistribution(:)%NEL
+      PRINT *,rsolution%p_rspatialdiscretisation%RelementDistribution(:)%h_IelementList
+      PRINT *,rdiscrBlock%Rspatialdiscretisation(1)%RelementDistribution(:)%h_IelementList
       
       ! Initialise spatial discretisations for reference gradient with Q2-elements
       CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
