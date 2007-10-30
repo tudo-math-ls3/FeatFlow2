@@ -587,6 +587,8 @@ CONTAINS
     USE pprocgradients
     USE pprocerror
 
+    USE ucd
+
 !<description>
   ! This routine defines a 'monitor function' for the adaptive grid refinement
   ! with the h-adaptivity refinement strategy. rindicator is a vector with
@@ -620,6 +622,10 @@ CONTAINS
     TYPE(t_vectorBlock)         :: rgradient,rgradientRef
     TYPE(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
     REAL(DP)                    :: dsolutionError,dgradientError,daux
+
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    TYPE(t_ucdExport) :: rexport
+    
 
     ! Initialise block discretisations
     CALL spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
@@ -714,7 +720,20 @@ CONTAINS
 
     ! Recover gradients by means of L2-projection
     CALL ppgrd_calcGradient (rsolution, rgradient)
-    CALL ppgrd_calcGradient (rsolution, rgradientRef)
+!    CALL ppgrd_calcGradient (rsolution, rgradientRef)
+!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
+    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
+!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
+
+
+
+    CALL lsyssc_getbase_double (rgradientRef%RvectorBlock(1),p_Ddata)
+    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/test.gmv')
+    CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    CALL ucd_write (rexport)
+    CALL ucd_release (rexport)
+
+    STOP
 
     ! Compute gradient error
     CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
@@ -728,14 +747,35 @@ CONTAINS
     CALL lsyssc_scaleVector(rindicator,1._DP/daux)
 
     PRINT *, "!!gradient error!! = ",dgradientError
-  
-    ! Release temporal discretisation structure
-    CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
-    CALL spdiscr_releaseBlockDiscr(rdiscrBlockRef)
     
-    ! Release vectors
-    CALL lsysbl_releaseVector(rgradient)
-    CALL lsysbl_releaseVector(rgradientRef)
+    
+
+!!$!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
+!!$!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
+!!$    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
+!!$
+!!$    ! Compute gradient error
+!!$    CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
+!!$        dgradientError,relementError=rindicator)
+!!$
+!!$    ! Compute L2-norm of solution
+!!$    CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError)
+!!$
+!!$    ! Prepare indicator for grid refinement/coarsening
+!!$    daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
+!!$    CALL lsyssc_scaleVector(rindicator,1._DP/daux)
+!!$
+!!$    PRINT *, "!!gradient error!! = ",dgradientError
+!!$  
+!!$    ! Release temporal discretisation structure
+!!$    CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
+!!$    CALL spdiscr_releaseBlockDiscr(rdiscrBlockRef)
+!!$    
+!!$    ! Release vectors
+!!$    CALL lsysbl_releaseVector(rgradient)
+!!$    CALL lsysbl_releaseVector(rgradientRef)
+!!$
+!!$    PAUSE
   END SUBROUTINE
 
 END MODULE
