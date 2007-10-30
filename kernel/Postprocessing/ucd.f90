@@ -4437,6 +4437,8 @@ CONTAINS
         CALL tria_initStandardMeshFromRaw(rtriangulation)
 
       CASE DEFAULT
+        ! For an (efficient) implementation of reconstructing InodalProperty
+        ! in 3D, see [Jens Acker, Diploma Thesis].
         CALL output_line ('Only 2D supported! Cannot reconstruct InodalProperty!', &
                           OU_CLASS_ERROR,OU_MODE_STD,'read_triangulation')
         CALL sys_halt()
