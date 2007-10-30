@@ -34,12 +34,21 @@
 !# 7.) mprim_linearRescale
 !#     -> Scales a coordinate x linearly from the interval [a,b] to the
 !#        interval [c,d]
+!#
+!# 8.) mprim_SVD_factorise
+!#     -> Compute the factorisation for a singular value decomposition
+!#
+!# 9.) mprim_SVD_backsubst
+!#     -> Perform back substitution for a singular value decomposition
+!#
 !# </purpose>
 !##############################################################################
 
 MODULE mprimitives
 
   USE fsystem
+  USE linearalgebra
+  USE genoutput
   
   IMPLICIT NONE
   
@@ -915,7 +924,7 @@ CONTAINS
     kron=MERGE(1,0,i==j)
   END FUNCTION kronecker
 
-!************************************************************************
+  !************************************************************************
 
 !<subroutine>
   
@@ -963,4 +972,642 @@ CONTAINS
 
   END SUBROUTINE
 
+  !************************************************************************
+
+  SUBROUTINE mprim_SVD_factorise(Da,mdim,ndim,Dd,Db,btransposedOpt)
+
+!<description>
+    ! This subroutine computes the factorisation for a singular value
+    ! decomposition. Given an ndim-by-mdim matrix Da, the routine
+    ! decomposes it into the product $$ A = U * D * B^T$$
+    ! where $U$ overwrites the matrix A and is returned in its memory
+    ! position, $D$ is a diagonal matrix returned as vector Dd and
+    ! $B$ is an n-by-n square matrix which is returned (instead
+    ! of its transpose) as matrix Db.
+    !
+    ! The optional parameter btransposedOpt can be used to indicate 
+    ! that matrix A is stored in transposed format. Note that 
+    ! matrices D and B are not affected by this fact.
+    !
+    ! The details of this algorithm are given in numerical recipes in F90
+!</description>
+
+!<input>
+    ! Dimensions of the rectangular matrix
+    INTEGER, INTENT(IN)                           :: ndim,mdim
+
+    ! OPTIONAL: Flag to indicate if the matrix A is transposed
+    LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
+!</input>
+    
+!<inputoutput>
+    ! Matrix that should be factorized on input.
+    ! Matrix U on output.
+    REAL(DP), DIMENSION(mdim,ndim), INTENT(INOUT) :: Da
+!</inputoutput>
+
+!<output>
+    ! Diagonal matrix
+    REAL(DP), DIMENSION(:), INTENT(OUT)           :: Dd
+
+    ! Square matrix
+    REAL(DP), DIMENSION(:,:), INTENT(OUT)         :: Db
+!</output>
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(SIZE(Dd)) :: rv1
+    REAL(DP) :: g, scale, anorm, s, f, h, c, x, y, z
+    INTEGER  :: its, i, j, jj, k, l, nm, n, m
+    INTEGER, PARAMETER :: MAX_ITS = 30
+    LOGICAL :: btransposed
+
+    ! Do we have an optional transposed flag?
+    IF (PRESENT(btransposedOpt)) THEN
+      btransposed = btransposedOpt
+    ELSE
+      btransposed = .FALSE.
+    END IF
+
+    ! Is the matrix transposed?
+    IF (btransposed) THEN
+      n=mdim; m=ndim
+    ELSE
+      n=ndim; m=mdim
+    END IF
+
+    ! Check if number of equations is larger than number of unknowns
+    IF (m < n) THEN
+      CALL output_line('Fewer equations than unknowns!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
+      CALL sys_halt()
+    END IF
+    
+    
+    IF (btransposed) THEN
+
+      ! Householder reduction to bidiagonal form
+      g     = 0.0_DP
+      scale = 0.0_DP
+      anorm = 0.0_DP
+      
+      DO i = 1, n
+        
+        l      = i+1
+        rv1(i) = scale*g
+        g      = 0.0_DP
+        scale  = 0.0_DP
+        
+        IF (i .LE. m) THEN
+          scale = SUM(ABS(Da(i,i:m)))
+          IF (scale .GT. SYS_EPSREAL) THEN
+            Da(i,i:m) = Da(i,i:m)/scale
+            s = lalg_scalarProductDble (Da(i,i:m), Da(i,i:m))
+            f = Da(i,i)
+            g = -SIGN(SQRT(s),f)
+            h = f*g-s
+            Da(i,i) = f-g
+            IF (i .NE. n) THEN
+              DO j = l, n
+                s = 0.0_DP
+                DO k = i, m
+                  s = s+Da(i,k)*Da(j,k)
+                END DO
+                f = s/h
+                DO k = i, m
+                  Da(j,k) = Da(j,k)+f*Da(i,k)
+                END DO
+              END DO
+            END IF
+            DO k = i, m
+              Da(i,k) = scale*Da(i,k)
+            END DO
+          END IF
+        END IF
+        
+        Dd(i) = scale*g
+        g     = 0.0_DP
+        s     = 0.0_DP
+        scale = 0.0_DP
+
+        IF ((i .LE. m) .AND. (i .NE. n)) THEN
+          scale = SUM(ABS(Da(l:n,i)))
+          IF (scale .NE. 0.0_DP) THEN
+            DO k = l, n
+              Da(k,i) = Da(k,i)/scale
+              s = s+Da(k,i)*Da(k,i)
+            END DO
+            f = Da(l,i)
+            g = -SIGN(SQRT(s),f)
+            h = f*g-s
+            Da(l,i) = f-g
+            DO k = l, n
+              rv1(k) = Da(k,i)/h
+            END DO
+            
+            IF (i .NE. m) THEN
+              DO j = l, m
+                s = 0.0_DP
+                DO k = l, n
+                  s = s+Da(k,j)*Da(k,i)
+                END DO
+                DO k = l, n
+                  Da(k,j) = Da(k,j)+s*rv1(k)
+                END DO
+              END DO
+            END IF
+            
+            DO k = l, n
+              Da(k,i) = scale*Da(k,i)
+            END DO
+          END IF
+        END IF
+        anorm = MAX(anorm,(ABS(Dd(i))+ABS(rv1(i))))
+      END DO
+      
+      ! Accumulation of right-hand transformations
+      DO i = n, 1, -1
+        IF (i .LT. n) THEN
+          IF (g .NE. 0.0_DP) THEN
+            DO j = l, n
+              Db(j,i) = (Da(j,i)/Da(l,i))/g
+            END DO
+            DO j = l, n
+              s = 0.0_DP
+              DO k = l, n
+                s = s+Da(k,i)*Db(k,j)
+              END DO
+              DO k = l, n
+                Db(k,j) = Db(k,j)+s*Db(k,i)
+              END DO
+            END DO
+          END IF
+          DO j = l, n
+            Db(i,j) = 0.0_DP
+            Db(j,i) = 0.0_DP
+          END DO
+        END IF
+        Db(i,i) = 1.0_DP
+        g = rv1(i)
+        l = i
+      END DO
+
+      ! Accumulation of left-hand transformations
+      DO i = n, 1, -1
+        l = i+1
+        g = Dd(i)
+        IF (i .LT. n) THEN
+          DO j = l, n
+            Da(j,i) = 0.0_DP
+          END DO
+        END IF
+        IF (g .NE. 0.0_DP) THEN
+          g = 1.0_DP/g
+          IF (i .NE. n) THEN
+            DO j = l, n
+              s = 0.0_DP
+              DO k = l, m
+                s = s+Da(i,k)*Da(j,k)
+              END DO
+              f = (s/Da(i,i))*g
+              DO k = i, m
+                Da(j,k) = Da(j,k)+f*Da(i,k)
+              END DO
+            END DO
+          END IF
+          DO j = i, m
+            Da(i,j) = Da(i,j)*g
+          END DO
+        ELSE
+          DO j = i, m
+            Da(i,j) = 0.0_DP
+          END DO
+        END IF
+        Da(i,i) = Da(i,i)+1.0_DP
+      END DO
+
+      ! Diagonalization of the bidiagonal form
+      DO k = n, 1, -1
+        DO its = 1, MAX_ITS
+          DO l = k, 1, -1
+            nm = l-1
+            IF ((ABS(rv1(l))+anorm) .EQ. anorm) GOTO 5
+            IF ((ABS(Dd(nm))+anorm) .EQ. anorm) GOTO 4
+          END DO
+4         CONTINUE
+          c = 0.0_DP
+          s = 1.0_DP
+          DO i = l, k
+            f = s*rv1(i)
+            rv1(i) = c*rv1(i)
+            IF ((ABS(f)+anorm) .EQ. anorm) GOTO 5
+            g = Dd(i)
+            h = SQRT(f*f+g*g)
+            Dd(i) = h
+            h = 1.0_DP/h
+            c = g*h
+            s = -(f*h)
+            DO j = 1, m
+              y = Da(nm,j)
+              z = Da(i,j)
+              Da(nm,j) = (y*c)+(z*s)
+              Da(i,j) = -(y*s)+(z*c)
+            END DO
+          END DO
+5         CONTINUE
+          z = Dd(k)
+          IF (l .EQ. k) THEN
+            IF (z .LT. 0.0_DP) THEN
+              Dd(k) = -z
+              DO j = 1, n
+                Db(j,k) = -Db(j,k)
+              END DO
+            END IF
+            GOTO 6
+          END IF
+          IF (its .EQ. MAX_ITS) THEN
+            CALL output_line('Convergence failed!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
+            CALL sys_halt()
+          END IF
+          x = Dd(l)
+          nm = k-1
+          y = Dd(nm)
+          g = rv1(nm)
+          h = rv1(k)
+          f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_DP*h*y)
+          g = SQRT(f*f+1.0_DP)
+          f = ((x-z)*(x+z)+h*((y/(f+SIGN(g,f)))-h))/x
+          
+          ! Next QR transformation
+          c = 1.0_DP
+          s = 1.0_DP
+          DO j = l, nm
+            i = j+1
+            g = rv1(i)
+            y = Dd(i)
+            h = s*g
+            g = c*g
+            z = SQRT(f*f+h*h)
+            rv1(j) = z
+            c = f/z
+            s = h/z
+            f = (x*c)+(g*s)
+            g = -(x*s)+(g*c)
+            h = y*s
+            y = y*c
+            DO jj = 1, n
+              x = Db(jj,j)
+              z = Db(jj,i)
+              Db(jj,j) = (x*c)+(z*s)
+              Db(jj,i) = -(x*s)+(z*c)
+            END DO
+            z = SQRT(f*f+h*h)
+            Dd(j) = z
+            IF (z .NE. 0.0_DP) THEN
+              z = 1.0_DP/z
+              c = f*z
+              s = h*z
+            END IF
+            f = (c*g)+(s*y)
+            x = -(s*g)+(c*y)
+            DO jj = 1, m
+              y = Da(j,jj)
+              z = Da(i,jj)
+              Da(j,jj) = (y*c)+(z*s)
+              Da(i,jj) = -(y*s)+(z*c)
+            END DO
+          END DO
+          rv1(l) = 0.0_DP
+          rv1(k) = f
+          Dd(k) = x
+        END DO
+6       CONTINUE
+      END DO
+
+    ELSE
+
+      ! Householder reduction to bidiagonal form
+      g     = 0.0_DP
+      scale = 0.0_DP
+      anorm = 0.0_DP
+      
+      DO i = 1, n
+        
+        l      = i+1
+        rv1(i) = scale*g
+        g      = 0.0_DP
+        scale  = 0.0_DP
+        
+        IF (i .LE. m) THEN
+          scale = SUM(ABS(Da(i:m,i)))
+          IF (scale .GT. SYS_EPSREAL) THEN
+            Da(i:m,i) = Da(i:m,i)/scale
+            s = lalg_scalarProductDble (Da(i:m,i), Da(i:m,i))
+            f = Da(i,i)
+            g = -SIGN(SQRT(s),f)
+            h = f*g-s
+            Da(i,i) = f-g
+            IF (i .NE. n) THEN
+              DO j = l, n
+                s = 0.0_DP
+                DO k = i, m
+                  s = s+Da(k,i)*Da(k,j)
+                END DO
+                f = s/h
+                DO k = i, m
+                  Da(k,j) = Da(k,j)+f*Da(k,i)
+                END DO
+              END DO
+            END IF
+            DO k = i, m
+              Da(k,i) = scale*Da(k,i)
+            END DO
+          END IF
+        END IF
+        
+        Dd(i) = scale*g
+        g     = 0.0_DP
+        s     = 0.0_DP
+        scale = 0.0_DP
+        
+        IF ((i .LE. m) .AND. (i .NE. n)) THEN
+          scale = SUM(ABS(Da(i,l:n)))
+          IF (scale .NE. 0.0_DP) THEN
+            DO k = l, n
+              Da(i,k) = Da(i,k)/scale
+              s = s+Da(i,k)*Da(i,k)
+            END DO
+            f = Da(i,l)
+            g = -SIGN(SQRT(s),f)
+            h = f*g-s
+            Da(i,l) = f-g
+            DO k = l, n
+              rv1(k) = Da(i,k)/h
+            END DO
+            
+            IF (i .NE. m) THEN
+              DO j = l, m
+                s = 0.0_DP
+                DO k = l, n
+                  s = s+Da(j,k)*Da(i,k)
+                END DO
+                DO k = l, n
+                  Da(j,k) = Da(j,k)+s*rv1(k)
+                END DO
+              END DO
+            END IF
+            
+            DO k = l, n
+              Da(i,k) = scale*Da(i,k)
+            END DO
+          END IF
+        END IF
+        anorm = MAX(anorm,(ABS(Dd(i))+ABS(rv1(i))))
+      END DO
+
+      ! Accumulation of right-hand transformations
+      DO i = n, 1, -1
+        IF (i .LT. n) THEN
+          IF (g .NE. 0.0_DP) THEN
+            DO j = l, n
+              Db(j,i) = (Da(i,j)/Da(i,l))/g
+            END DO
+            DO j = l, n
+              s = 0.0_DP
+              DO k = l, n
+                s = s+Da(i,k)*Db(k,j)
+              END DO
+              DO k = l, n
+                Db(k,j) = Db(k,j)+s*Db(k,i)
+              END DO
+            END DO
+          END IF
+          DO j = l, n
+            Db(i,j) = 0.0_DP
+            Db(j,i) = 0.0_DP
+          END DO
+        END IF
+        Db(i,i) = 1.0_DP
+        g = rv1(i)
+        l = i
+      END DO
+
+      ! Accumulation of left-hand transformations
+      DO i = n, 1, -1
+        l = i+1
+        g = Dd(i)
+        IF (i .LT. n) THEN
+          DO j = l, n
+            Da(i,j) = 0.0_DP
+          END DO
+        END IF
+        IF (g .NE. 0.0_DP) THEN
+          g = 1.0_DP/g
+          IF (i .NE. n) THEN
+            DO j = l, n
+              s = 0.0_DP
+              DO k = l, m
+                s = s+Da(k,i)*Da(k,j)
+              END DO
+              f = (s/Da(i,i))*g
+              DO k = i, m
+                Da(k,j) = Da(k,j)+f*Da(k,i)
+              END DO
+            END DO
+          END IF
+          DO j = i, m
+            Da(j,i) = Da(j,i)*g
+          END DO
+        ELSE
+          DO j = i, m
+            Da(j,i) = 0.0_DP
+          END DO
+        END IF
+        Da(i,i) = Da(i,i)+1.0_DP
+      END DO
+
+      ! Diagonalization of the bidiagonal form
+      DO k = n, 1, -1
+        DO its = 1, MAX_ITS
+          DO l = k, 1, -1
+            nm = l-1
+            IF ((ABS(rv1(l))+anorm) .EQ. anorm) GOTO 2
+            IF ((ABS(Dd(nm))+anorm) .EQ. anorm) GOTO 1
+          END DO
+1         CONTINUE
+          c = 0.0_DP
+          s = 1.0_DP
+          DO i = l, k
+            f = s*rv1(i)
+            rv1(i) = c*rv1(i)
+            IF ((ABS(f)+anorm) .EQ. anorm) GOTO 2
+            g = Dd(i)
+            h = SQRT(f*f+g*g)
+            Dd(i) = h
+            h = 1.0_DP/h
+            c = g*h
+            s = -(f*h)
+            DO j = 1, m
+              y = Da(j,nm)
+              z = Da(j,i)
+              Da(j,nm) = (y*c)+(z*s)
+              Da(j,i) = -(y*s)+(z*c)
+            END DO
+          END DO
+2         CONTINUE
+          z = Dd(k)
+          IF (l .EQ. k) THEN
+            IF (z .LT. 0.0_DP) THEN
+              Dd(k) = -z
+              DO j = 1, n
+                Db(j,k) = -Db(j,k)
+              END DO
+            END IF
+            GOTO 3
+          END IF
+          IF (its .EQ. MAX_ITS) THEN
+            CALL output_line('Convergence failed!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_factorise')
+            CALL sys_halt()
+          END IF
+          x = Dd(l)
+          nm = k-1
+          y = Dd(nm)
+          g = rv1(nm)
+          h = rv1(k)
+          f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0_DP*h*y)
+          g = SQRT(f*f+1.0_DP)
+          f = ((x-z)*(x+z)+h*((y/(f+SIGN(g,f)))-h))/x
+          
+          ! Next QR transformation
+          c = 1.0_DP
+          s = 1.0_DP
+          DO j = l, nm
+            i = j+1
+            g = rv1(i)
+            y = Dd(i)
+            h = s*g
+            g = c*g
+            z = SQRT(f*f+h*h)
+            rv1(j) = z
+            c = f/z
+            s = h/z
+            f = (x*c)+(g*s)
+            g = -(x*s)+(g*c)
+            h = y*s
+            y = y*c
+            DO jj = 1, n
+              x = Db(jj,j)
+              z = Db(jj,i)
+              Db(jj,j) = (x*c)+(z*s)
+              Db(jj,i) = -(x*s)+(z*c)
+            END DO
+            z = SQRT(f*f+h*h)
+            Dd(j) = z
+            IF (z .NE. 0.0_DP) THEN
+              z = 1.0_DP/z
+              c = f*z
+              s = h*z
+            END IF
+            f = (c*g)+(s*y)
+            x = -(s*g)+(c*y)
+            DO jj = 1, m
+              y = Da(jj,j)
+              z = Da(jj,i)
+              Da(jj,j) = (y*c)+(z*s)
+              Da(jj,i) = -(y*s)+(z*c)
+            END DO
+          END DO
+          rv1(l) = 0.0_DP
+          rv1(k) = f
+          Dd(k) = x
+        END DO
+3       CONTINUE
+      END DO
+      
+    END IF
+  END SUBROUTINE mprim_SVD_factorise
+
+  !************************************************************************
+
+  SUBROUTINE mprim_SVD_backsubst(Da,mdim,ndim,Dd,Db,Dx,kdim,Df,btransposedOpt)
+
+!<description>
+    ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
+    ! matrix $A$ has been decomposed into $Da$, $Dd$ and $Db$ by the routine
+    ! mprim_SVD_factorise. The optional parameter btransposedOpt can be used
+    ! to indicate that matrix A is stored in transposed format.
+!</description>
+
+!<input>
+    ! Dimensions of the rectangular matrix
+    INTEGER, INTENT(IN)                           :: kdim,ndim,mdim
+
+    ! OPTIONAL: Flag to indicate if the matrix A is transposed
+    LOGICAL, INTENT(IN), OPTIONAL                 :: btransposedOpt
+
+    ! Factorised matrux U
+    REAL(DP), DIMENSION(mdim,ndim), INTENT(IN)    :: Da
+
+    ! Diagonal matrix D
+    REAL(DP), DIMENSION(:), INTENT(IN)            :: Dd
+
+    ! Square matrix B
+    REAL(DP), DIMENSION(:,:), INTENT(IN)          :: Db
+
+    ! Right-hand side vector
+    REAL(DP), DIMENSION(kdim), INTENT(IN)         :: Df
+!</input>
+
+!<output>
+    ! Solution vector
+    REAL(DP), DIMENSION(:), INTENT(OUT)           :: Dx
+!</output>
+!</subroutine>
+
+    ! local variables
+    REAL(DP), DIMENSION(SIZE(Dd)) :: Daux
+    INTEGER :: i,n,m
+    LOGICAL :: btransposed
+
+    ! Do we have an optional transposed flag?
+    IF (PRESENT(btransposedOpt)) THEN
+      btransposed = btransposedOpt
+    ELSE
+      btransposed = .FALSE.
+    END IF
+
+    ! Is the matrix transposed?
+    IF (btransposed) THEN
+      n=mdim; m=ndim
+    ELSE
+      n=ndim; m=mdim
+    END IF
+    
+    ! Check if number of equations is larger than number of unknowns
+    IF (m < n) THEN
+      CALL output_line('Fewer equations than unknowns!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'mprim_SVD_backsubst')
+      CALL sys_halt()
+    END IF
+    
+    ! Compute aux = (U^T * f)/D where D_i /= 0
+    IF (btransposed) THEN
+      CALL DGEMV('n', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    ELSE
+      CALL DGEMV('t', mdim, ndim, 1.0_DP, Da, mdim, Df, 1, 0.0_DP, Daux, 1)
+    END IF
+
+    DO i =1, SIZE(Dd)
+      IF (ABS(Dd(i) .GT. SYS_EPSREAL)) THEN
+        Daux(i) = Daux(i)/Dd(i)
+      ELSE
+        Daux(i) = 0.0_DP
+      END IF
+    END DO
+    
+    ! Compute x = B * aux
+    CALL DGEMV('n', n, n, 1.0_DP, Db, n, Daux, 1, 0.0_DP, Dx, 1)    
+  END SUBROUTINE mprim_SVD_backsubst
 END MODULE mprimitives
