@@ -644,16 +644,24 @@ CONTAINS
       ! +----------------------------------------------------------------------
       ! | COMPUTE INDICATOR FOR H-ADAPTIVITY
       ! +----------------------------------------------------------------------     
+      CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
+      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u2.gmv')
+      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+      CALL ucd_write (rexport)
+      CALL ucd_release (rexport)
+      
       CALL lsyssc_createVector(rindicator,rtriangulation%NEL,.TRUE.)
       CALL getMonitorFunction(rtriangulation,&
           rvectorBlock%RvectorBlock(1),ieltype,rindicator)
-      
+
       CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/err'//&
           TRIM(sys_siL(rhadapt%nRefinementSteps,3))//'.gmv')
       CALL lsyssc_getbase_double (rindicator,p_Ddata)
       CALL ucd_addVariableElementBased (rexport,'err',UCD_VAR_STANDARD, p_Ddata)
       CALL ucd_write (rexport)
       CALL ucd_release (rexport)
+
+      STOP
 
       ! Perform one step h-adaptivity
       CALL hadapt_performAdaptation(rhadapt,rindicator)
