@@ -19,6 +19,13 @@
 !#     -> Calculate the reconstructed gradient as P1, Q1, P2 or Q2
 !#        vector for an arbitrary conformal discretisation, 2D.
 !#        Uses 1st order interpolation to reconstruct the gradient.
+!#
+!# 2.) ppgrd_calcGrad2DSuperPatchRecov
+!#     -> Calculate the reconstructed gradient as P1, Q1, P2 or Q2
+!#        vector for an arbitrary conformal discretisation in 2D.
+!#        Uses the superconvergent patch recovery technique suggested
+!#        by Zienkiewicz and Zhu.
+!#
 !# </purpose>
 !#########################################################################
 
@@ -52,10 +59,26 @@ MODULE pprocgradients
   
 !</constantblock>
 
+!<constantblock description = "Identifiers for the type of patch used to recover the gradient vector.">
+
+  ! Node-based patch: Use elements surrounding a particular node
+  INTEGER, PARAMETER :: PPGRD_NODEPATCH = 0
+
+  ! Element-based patch: Use elements surrounding a particular element
+  INTEGER, PARAMETER :: PPGRD_ELEMPATCH = 1
+
+  ! Face-based patch: Use subset of element-based patch which has common face
+  INTEGER, PARAMETER :: PPGRD_FACEPATCH = 2
+
+!</constantblock>
+
 !<constantblock description="Constants defining the blocking of the error calculation.">
 
   ! Number of elements to handle simultaneously when building vectors
   INTEGER :: PPGRD_NELEMSIM   = 1000
+
+  ! Number of patches to handle simultaneously when performing gradient recovery
+  INTEGER :: PPGRD_NPATCHSIM  = 1
   
 !</constantblock>
 
@@ -224,7 +247,7 @@ CONTAINS
   SUBROUTINE ppgrd_calcGrad2DInterpP12Q12cnf (rvector,rvectorGradient)
 
 !<description>
-  ! Calculates the recvered gradient of a scalar finite element function
+  ! Calculates the recovered gradient of a scalar finite element function
   ! by standard interpolation. Supports conformal 2D discretisations
   ! with $P_1$, $Q_1$, $P_2$ and $Q_2$ mixed in the destination vector.
 !</description>
@@ -334,7 +357,7 @@ CONTAINS
     
     ! Discretisation structures for the source- and destination vector(s)
     TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrSource, p_rdiscrDest
-    
+  
     ! Evaluate the first derivative of the FE functions.
 
     Bder = .FALSE.
@@ -398,11 +421,11 @@ CONTAINS
       NVE = elem_igetNVE(p_elementDistribution%itrialElement)
       
       ! Initialise the cubature formula,
-      ! That's a speciat trick here! The FE space of the destination vector
+      ! That's a special trick here! The FE space of the destination vector
       ! is either P1 or Q1. We create the gradients in the corners of these points
       ! by taking the mean of the gradients of the source vector!
       !
-      ! Gor this purpose, we initialise the 'trapezoidal rule' as cubature
+      ! For this purpose, we initialise the 'trapezoidal rule' as cubature
       ! formula. Ok, we are not using cubature at all here (thus ignoring
       ! the cubature weights completely), but that way we get the
       ! coordinates of the corners on the reference element automatically --
@@ -651,5 +674,1222 @@ CONTAINS
     CALL storage_free (h_IcontributionsAtDOF)
 
   END SUBROUTINE
+
+  !****************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE ppgrd_calcGrad2DSuperPatchRecov (rvectorScalar,rvectorGradient,cpatchType)
+
+!<description>
+    ! Calculates the recovered gradient of a scalar finite element function
+    ! by means of the superconvergent patch recovery technique suggested
+    ! by Zienkiewicz and Zhu. Supports conformal 2D discretisations
+    ! with $P_1$, $Q_1$, $P_2$ and $Q_2$ mixed in the destination vector.
+!</description>
+
+!<input>
+    ! The FE solution vector. Represents a scalar FE function.
+    TYPE(t_vectorScalar), INTENT(IN)         :: rvectorScalar
+    
+    ! The type of patch used to recover the gradient values
+    INTEGER, INTENT(IN)                      :: cpatchType
+!</input>
+
+!<inputoutput>
+    ! A block vector receiving the gradient.
+    ! The first subvector receives the X-gradient.
+    ! In 2D/3D discretisations, the 2nd subvector recevies the Y-gradient.
+    ! In 3D discretisations, the 3rd subvector receives the Z-gradient.
+    ! The vector must be prepared with a discretisation structure that defines
+    ! the destination finite element space for the gradient field.
+    TYPE(t_vectorBlock), INTENT(INOUT) :: rvectorGradient
+!</inputoutput>
+
+!</subroutine>
+    
+    ! local variables
+    INTEGER :: icurrentElementDistr,ilastElementDistr,ipoint
+    INTEGER :: i,j,k,idx,NNVE,IVE,NVE,NVEmax,ICUBP,icoordSystem
+    INTEGER :: IPATCH,NPATCH,PATCHset,PATCHmax,PATCHGlobal
+    LOGICAL :: bnonparTrial
+    INTEGER(PREC_ELEMENTIDX)    :: IEL,JEL,KEL
+    INTEGER(PREC_VERTEXIDX)     :: IVT
+    REAL(DP)                    :: dval
+
+    ! Array to tell the element which derivatives to calculate
+    LOGICAL, DIMENSION(EL_MAXNDER) :: Bder,BderDest
+
+    ! Cubature point coordinates on the reference element
+    REAL(DP), DIMENSION(CUB_MAXCUBP, NDIM3D) :: Dxi
+
+    ! For every cubature point on the reference element,
+    ! the corresponding cubature weight
+    REAL(DP), DIMENSION(CUB_MAXCUBP) :: Domega
+
+    ! Value/derivative of basis functions
+    REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
+
+    ! Flag if discretisation is uniform
+    LOGICAL :: bisuniform
+    
+    ! Number of cubature points on the reference element
+    INTEGER :: ncubp
+
+    ! Maximum number of cubature points on the reference element in the block
+    INTEGER :: ncubpMax
+    
+    ! Number of local degees of freedom for test functions
+    INTEGER :: indofTrial,indofDest
+
+    ! Maximum numer of local degrees of freedom for test functiions in the block
+    INTEGER :: indofTrialMax
+
+    ! Number of 'cubature points'. As we acutally don't do cubature
+    ! here, this coincides with the number of DOF's on each element
+    ! in the destination space.
+    INTEGER :: nlocalDOFsDest
+
+    ! The triangulation structure - to shorten some things...
+    TYPE(t_triangulation), POINTER :: p_rtriangulation
+
+    ! The spatial discretisation structure - to shorten some things...
+    TYPE(t_spatialDiscretisation), POINTER :: p_rdiscrSource,p_rdiscrDest
+
+    ! Current element distribution in use
+    TYPE(t_elementDistribution), POINTER :: p_elementDistribution
+    TYPE(t_elementDistribution), POINTER :: p_elementDistrDest
+
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    TYPE(t_domainIntSubset) :: rintSubset,rintSubsetDest
+
+    ! An allocatable array accepting the starting positions of each patch
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE, TARGET :: IelementsInPatchIdx
+
+    ! An allocatable array accepting the element numbers of each patch
+    ! Note that the first member for each patch defines the patch details, i.e.,
+    ! the cubature formular that should be used for this patch, etc.
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), ALLOCATABLE, TARGET :: IelementsInPatch
+
+    ! An allocatable array accepting the DOF's of a set of elements.
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTrial
+    INTEGER(PREC_DOFIDX), DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsDest
+
+    ! An allocatable array accepting the coordinates of the patch bounding group
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE, TARGET :: DpatchBound
+
+    ! An allocatable array accepting the polynomial's of the set of elements.
+    REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE, TARGET :: Dpolynomials
+
+    ! An allocatable array accepting the values of the function 
+    ! that are computed by the callback routine.
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dcoefficients
+
+    ! An allocatable array accepting the averaged gradient values
+    REAL(DP), DIMENSION(:,:,:), ALLOCATABLE :: Dderivatives
+
+    ! Pointer to element-at-vertex index array of the triangulation
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
+
+    ! Pointer to element-at-vertex list of the triangulation
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
+
+    ! Pointer to elements-at-element list of the triangulation
+    INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
+
+     ! Pointer to vertices-at-element list of the triangulation
+    INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+
+    ! Pointer to vertex coordinates of the triangulation
+    REAL(DP), DIMENSION(:,:), POINTER :: p_DvertexCoords
+
+    ! Pointer to element distribution identifier list.
+    INTEGER, DIMENSION(:), POINTER :: p_IelementDistr
+
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsRef
+
+    ! An array receiving the coordinates of cubature points on
+    ! the real element for all elements in a set.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsReal
+
+    ! Pointer to the point coordinates to pass to the element function.
+    ! Point either to p_DcubPtsRef or to p_DcubPtsReal, depending on whether
+    ! the trial element is parametric or not.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_DcubPtsTrial
+
+    ! Array with coordinates of the corners that form the real element.
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Dcoords
+    
+    ! Arrays for saving Jacobian determinants and matrices
+    REAL(DP), DIMENSION(:,:), POINTER :: p_Ddetj
+    REAL(DP), DIMENSION(:,:,:), POINTER :: p_Djac      
+
+    ! Number of patches in a block
+    INTEGER :: npatchesPerBlock
+
+    ! Number of patches currently blocked
+    INTEGER :: npatchesInCurrentBlock
+
+    ! Number of elements in a block
+    INTEGER :: nelementsPerBlock
+
+    ! Pointer to an array that counts the number of elements adjacent to a vertex.
+    ! Ok, there's the same information in the triangulation, but that's not
+    ! based on DOF's! Actually, we'll calculate how often we touch each DOF 
+    ! in the destination space.
+    INTEGER :: h_IcontributionsAtDOF
+    INTEGER(I32), DIMENSION(:), POINTER :: p_IcontributionsAtDOF
+    
+    ! Pointers to the X- and Y-derivative vector
+    REAL(DP), DIMENSION(:), POINTER :: p_DxDeriv, p_DyDeriv
+
+   
+    ! Get the discretisation structures of the source- and destination space.
+    ! Note that we assume here that the X- and Y-derivative is discretised
+    ! the same way!
+    p_rdiscrSource => rvectorScalar%p_rspatialDiscretisation
+    p_rdiscrDest   => rvectorGradient%p_rblockDiscretisation%RspatialDiscretisation(1)
+    
+    ! Check if we have a non-uniform discretisation structure and if nodal 
+    ! patches should be used. This does not make too much sense since it is
+    ! not clear which type of element should be adopted for the patch elements.
+    IF ((p_rdiscrSource%ccomplexity .NE. SPDISC_UNIFORM .OR. &
+         p_rdiscrDest%ccomplexity .NE. SPDISC_UNIFORM) .AND. &
+         cpatchType .EQ. PPGRD_NODEPATCH) THEN 
+      CALL output_line('Nodal patches are not available for non-uniform discretisations!!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+      CALL sys_halt()
+    END IF
+
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => p_rdiscrSource%p_rtriangulation
+    
+    ! Get a pointer to the vertices-at-element and vertex coordinates array
+    CALL storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement, &
+                               p_IverticesAtElement)
+    CALL storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, &
+                               p_DvertexCoords)
+
+    ! Get pointetrs to the X- and Y-derivative destination vector.
+    CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(1),p_DxDeriv)
+    CALL lsyssc_getbase_double (rvectorGradient%RvectorBlock(2),p_DyDeriv)
+    
+    ! Array that allows the calculation about the number of elements
+    ! meeting in a vertex, based onm DOF's.
+    CALL storage_new ('ppgrd_calcGrad2DSuperPatchRecov','DOFContrAtVertex',&
+                      dof_igetNDofGlob(p_rdiscrDest),&
+                      ST_INT, h_IcontributionsAtDOF, ST_NEWBLOCK_ZERO)
+    CALL storage_getbase_int (h_IcontributionsAtDOF,p_IcontributionsAtDOF)
+    
+    ! Clear the destination vectors.
+    CALL lalg_clearVectorDble (p_DxDeriv)
+    CALL lalg_clearVectorDble (p_DyDeriv)
+    
+    ! We only need the derivatives of trial functions
+    Bder = .FALSE.
+    SELECT CASE (p_rtriangulation%ndim)
+    CASE (NDIM1D)
+      Bder(DER_DERIV1D_X) = .TRUE.
+    CASE (NDIM2D)
+      Bder(DER_DERIV2D_X) = .TRUE.
+      Bder(DER_DERIV2D_Y) = .TRUE.
+    CASE (NDIM3D)
+      Bder(DER_DERIV3D_X) = .TRUE.
+      Bder(DER_DERIV3D_Y) = .TRUE.
+      Bder(DER_DERIV3D_Z) = .TRUE.
+    CASE DEFAULT
+      CALL output_line('Invalid spatial dimension!!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+      CALL sys_halt()
+    END SELECT
+    
+    ! For the recovery, we only need the function values of trial functions
+    BderDest = .FALSE.
+    BderDest(DER_FUNC) = .TRUE.
+    
+    ! Do we have a uniform triangulation? Would simplify a lot...
+    IF (p_rdiscrSource%ccomplexity .EQ. SPDISC_UNIFORM) THEN 
+      bisUniform           = .TRUE.
+      ilastElementDistr    = 0
+      icurrentElementDistr = 1
+      NULLIFY(p_IelementDistr)
+    ELSE
+      bisUniform           = .FALSE.
+      ilastElementDistr    = 0
+      CALL storage_getbase_int(p_rdiscrSource%h_IelementDistr,p_IelementDistr)
+      
+      ! Things are more complicated in this case, since we have to consider the 
+      ! maximum number of quadrature points, the largest number of local DOF's, etc.
+      indofTrialMax = 0
+      NVEmax        = 0
+      ncubpMax      = 0
+      
+      ! Loop over all element distributions
+      DO icurrentElementDistr = 1,p_rdiscrSource%inumFESpaces
+        
+        ! Activate the current element distribution
+        p_elementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
+        
+        ! Cancel if this element distribution is empty.
+        IF (p_elementDistribution%NEL .EQ. 0) CYCLE
+        
+        ! Get the number of local DOF's for trial functions
+        indofTrial    = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+        indofTrialMax = MAX(indofTrialMax,indofTrial)
+        
+        ! Get the number of corner vertices of the element
+        NVE    = elem_igetNVE(p_elementDistribution%itrialElement)
+        NVEmax = MAX (NVEmax,NVE)
+        
+        ! Initialise the cubature formula,
+        ! Get cubature weights and point coordinates on the reference element
+        CALL cub_getCubPoints(p_elementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+        ncubpMax = MAX(ncubpMax,ncubp)
+      END DO
+      
+      ! Reset current element distribution
+      icurrentElementDistr = 1
+    END IF
+        
+
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of patches per block. For smaller triangulations, this is 
+    ! NVT/NEL/NMT depending on the adopted patch type. This is only used 
+    ! for allocating some arrays.
+    ! In addition, we set pointers to all memory blocks which will be
+    ! used during the gradient recovery procedure.
+    SELECT CASE(cpatchType)
+    CASE (PPGRD_NODEPATCH)
+      ! Get the elements-at-vertex index array.
+      CALL storage_getbase_int (p_rtriangulation%h_IelementsAtVertexIdx,&
+                                p_IelementsAtVertexIdx)
+      ! Get the elements-at-vertex array.
+      CALL storage_getbase_int (p_rtriangulation%h_IelementsAtVertex,&
+                                p_IelementsAtVertex)
+      
+      ! The number of patches equals the number of vertices.
+      NPATCH = p_rtriangulation%NVT
+      
+    CASE (PPGRD_ELEMPATCH)
+      ! Get the elements-at-vertex index array.
+      CALL storage_getbase_int (p_rtriangulation%h_IelementsAtVertexIdx,&
+                                p_IelementsAtVertexIdx)
+      ! Get the elements-at-vertex array.
+      CALL storage_getbase_int (p_rtriangulation%h_IelementsAtVertex,&
+                                p_IelementsAtVertex)
+
+      ! Get the elements-at-element array.
+      CALL storage_getbase_int2D (p_rtriangulation%h_IneighboursAtElement,&
+                                  p_IneighboursAtElement)
+
+      ! Get the vertices-at-element array.
+      CALL storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,&
+                                  p_IverticesAtElement)
+
+      ! The number of patches equals the number of elements.
+      NPATCH = p_rtriangulation%NEL
+
+    CASE (PPGRD_FACEPATCH)
+      ! Get the elements-at-element array.
+      CALL storage_getbase_int2D (p_rtriangulation%h_IneighboursAtElement,&
+                                  p_IneighboursAtElement)
+
+      ! The number of patches equals the number of elements.
+      NPATCH = p_rtriangulation%NEL
+
+    CASE DEFAULT
+      CALL output_line('Invalid patch type!!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+      CALL sys_halt()
+    END SELECT
+    npatchesPerBlock = MIN(PPGRD_NPATCHSIM,NPATCH)
+
+    ! Allocate memory for element numbers in patch index array
+    ALLOCATE(IelementsInPatchIdx(npatchesPerBlock+1))
+
+    ! Allocate memory for coordinates of patch bounding groups
+    ALLOCATE(DpatchBound(p_rtriangulation%ndim,2,npatchesPerBlock))
+
+    ! Loop over the patches - blockwise.
+    DO PATCHset = 1, NPATCH , PPGRD_NPATCHSIM
+
+      !-------------------------------------------------------------------------
+      ! Phase (1)  Determine all elements in the set of patches
+      !-------------------------------------------------------------------------
+
+      ! We always handle PPGRD_NPATCHSIM patches simultaneously.
+      ! How many patches have we actually here?
+      ! Get the maximum patch number, such that we handle at most 
+      ! PPGRD_NPATCHSIM patches simultaneously.
+      PATCHmax = MIN(NPATCH,PATCHset-1+PPGRD_NPATCHSIM)
+
+      ! Calculate the number of patches currently blocked
+      npatchesInCurrentblock = PATCHmax-PATCHset+1
+
+      ! Depending on the patch type, the element numbers that are contained in
+      ! each patch are different and must be determined from different structures
+      SELECT CASE(cpatchType)
+      CASE (PPGRD_NODEPATCH)
+        
+        ! We actually know how many elements are adjacent to each node, so we can
+        ! allocate memory for element numbers in patch without 'dummy' loop
+        nelementsPerBlock = p_IelementsAtVertexIdx(PATCHmax+1)-p_IelementsAtVertexIdx(PATCHset)
+        ALLOCATE(IelementsInPatch(nelementsPerBlock))
+
+        ! Initialise number of elements in block
+        nelementsPerBlock = 0
+
+        ! Loop over the patches in the set
+        DO IPATCH = 1, npatchesInCurrentBlock
+
+          ! Store index of first element in this patch
+          IelementsInPatchIdx(IPATCH) = nelementsPerBlock + 1
+          
+          ! Get vertex number
+          IVT = PATCHset-1+IPATCH
+          
+          ! Loop over elements adjacent to vertex
+          DO idx = p_IelementsAtVertexIdx(IVT),p_IelementsAtVertexIdx(IVT+1)-1
+
+            ! Get element number
+            IEL = p_IelementsAtVertex(idx)
+
+            ! Increase element counter
+            nelementsPerBlock = nelementsPerBlock + 1
+            IelementsInPatch(nelementsPerBlock) = IEL
+          END DO
+        END DO
+
+        ! Store index of last element in last patch increased by one
+        IelementsInPatchIdx(npatchesInCurrentBlock+1) = nelementsPerBlock + 1
+        
+
+      CASE (PPGRD_ELEMPATCH)
+
+        ! Unfortunately, we do not directly know how many elements are in the neighbourhood
+        ! of each element. But we know, how many elements are adjacent to each corner of
+        ! a particular element. If we sum up these numbers we get an upper bound for the
+        ! number of elements present in each patch. Obviously, the center element is multiply
+        ! counted. Moreover, all edge/face neighbours are also counted twice.
+
+        ! Initialise number of elements in block
+        nelementsPerBlock = 0
+
+        ! Ok, let's do a dummy loop to determine the number of elements in the block
+        DO IPATCH = 1, npatchesInCurrentBlock
+          
+          ! Get element number
+          IEL = PATCHset-1+IPATCH
+
+          ! Get number of adjacent elements
+          NVE = tria_getNVE(p_rtriangulation,IEL)
+
+          ! Loop over corner nodes
+          DO ive=1,NVE
+            
+            ! Get vertex number
+            IVT = p_IverticesAtElement(ive,IEL)
+
+            ! Count number of elements surrounding corner node
+            nelementsPerBlock = nelementsPerBlock + &
+                (p_IelementsAtVertexIdx(IVT+1)-p_IelementsAtVertexIdx(IVT))
+          END DO
+
+          ! Ok, we counted element IEL NVE-times but it is only required once
+          nelementsPerBlock = nelementsPerBlock - (NVE-1)
+
+          ! Moreover, each adjacent element is counted twice if it is not the boundary
+          nelementsPerBlock = nelementsPerBlock - COUNT(p_IneighboursAtElement(1:NVE,IEL) > 0)
+        END DO
+
+        ! That's it, we can allocate memory for elements numbers
+        ALLOCATE(IelementsInPatch(nelementsPerBlock))
+
+        ! Now, we have to fill it with the element numbers
+        ! Initialise number of elements in block
+        nelementsPerBlock = 0
+
+        ! Loop over the patches in the set
+        DO IPATCH = 1, npatchesInCurrentBlock
+
+          ! Store index of first element in this patch
+          IelementsInPatchIdx(IPATCH) = nelementsPerBlock + 1
+          
+          ! Get element number
+          IEL = PATCHset-1+IPATCH
+
+          ! Do not forget to store the element itself
+          nelementsPerBlock = nelementsPerBlock + 1
+          IelementsInPatch(nelementsPerBlock) = IEL
+
+          ! Get number of adjacent elements
+          NVE = tria_getNVE(p_rtriangulation,IEL)
+
+          ! Loop over corner nodes
+          DO ive=1,NVE
+            
+            ! Get vertex number
+            IVT = p_IverticesAtElement(ive,IEL)
+
+            ! Get element number adjacent to element IEL
+            JEL = p_IneighboursAtElement(ive,IEL)
+
+            ! Loop over elements adjacent to vertex
+            DO idx = p_IelementsAtVertexIdx(IVT),p_IelementsAtVertexIdx(IVT+1)-1
+              
+              ! Get element number
+              KEL = p_IelementsAtVertex(idx)
+              
+              ! Do not consider KEL = IEL and KEL = JEL to prevent the same
+              ! element number to be present in a patch multiple times
+              IF (KEL .EQ. IEL .OR. KEL .EQ. JEL) CYCLE
+              
+              ! Increase element counter
+              nelementsPerBlock = nelementsPerBlock + 1
+              IelementsInPatch(nelementsPerBlock) = KEL
+            END DO
+          END DO
+        END DO
+
+        ! Store index of last element in last patch increased by one
+        IelementsInPatchIdx(npatchesInCurrentBlock+1) = nelementsPerBlock + 1
+        
+
+      CASE (PPGRD_FACEPATCH)
+        
+        ! We actually knwo how many elements are at most adjacent to each element, so we
+        ! can allocate memory for element numbers in patch without 'dummy' loop
+        NNVE = tria_getNNVE(p_rtriangulation)
+        nelementsPerBlock = (NNVE+1)*npatchesPerBlock
+        ALLOCATE(IelementsInPatch(nelementsPerBlock))
+        
+        ! Initialise number of elements in block
+        nelementsPerBlock = 0
+
+        ! Loop over the patches in the set
+        DO IPATCH = 1, npatchesInCurrentBlock
+          
+          ! Store index of first element in this patch
+          IelementsInPatchIdx(IPATCH) = nelementsPerBlock + 1
+          
+          ! Get element number
+          IEL = PATCHset-1+IPATCH
+
+          ! Do not forget to store the element itself
+          nelementsPerBlock = nelementsPerBlock + 1
+          IelementsInPatch(nelementsPerBlock) = IEL
+
+          ! Get number of adjacent elements
+          NVE = tria_getNVE(p_rtriangulation,IEL)
+
+          ! Loop over adjacent elements
+          DO ive=1,NVE
+            
+            JEL = p_IneighboursAtElement(ive,IEL)
+            
+            ! Check if element neighbour is the boundary, then skip it
+            IF (JEL .EQ. 0) CYCLE
+            
+            ! Increase element counter
+            nelementsPerBlock = nelementsPerBlock + 1
+            IelementsInPatch(nelementsPerBlock) = JEL
+          END DO
+        END DO
+
+        ! Store index of last element in last patch increased by one
+        IelementsInPatchIdx(npatchesInCurrentBlock+1) = nelementsPerBlock + 1
+
+        
+      CASE DEFAULT
+        CALL output_line('Invalid patch type!!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+        CALL sys_halt()
+      END SELECT
+
+      
+      ! Now we have all elements numbers present in the patches to be 
+      ! handled simultaneously. Them let's start recovery ;-)
+      
+      ! Do we have a uniform triangulation? Would simplify a lot...
+      IF (bisUniform) THEN
+        
+        ! Active element distribution
+        p_elementDistribution => p_rdiscrSource%RelementDistribution(icurrentElementDistr)
+        p_elementDistrDest    => p_rdiscrDest%RelementDistribution(icurrentElementDistr)
+
+        ! Get the number of local DOF's for trial functions
+        indofTrial = elem_igetNDofLoc(p_elementDistribution%itrialElement)
+        indofDest  = elem_igetNDofLoc(p_elementDistrDest%itrialElement)
+
+        ! Get the number of corner vertices of the element
+        NVE = elem_igetNVE(p_elementDistribution%itrialElement)
+
+
+        !-----------------------------------------------------------------------
+        ! Phase (2)  Prepare the source FE space
+        !-----------------------------------------------------------------------
+
+        ! Allocate memory for the DOF's of all the elements
+        ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
+        
+        ! Calculate the global DOF's into IdofsTrial.
+        CALL dof_locGlobMapping_mult(p_rdiscrSource, &
+            IelementsInPatch(1:nelementsPerBlock), .FALSE., IdofsTrial)
+
+        ! Initialise the cubature formula for the source element distribution
+        ! Get cubature weights and point coordinates on the reference element
+        CALL cub_getCubPoints(p_elementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+
+        ! Get from the trial element space the type of coordinate system
+        ! that is used there:
+        icoordSystem = elem_igetCoordSystem(p_elementDistribution%itrialElement)
+        
+        ! Allocate memory and get local references to it. This domain integration 
+        ! structure stores all information of the source FE space. 
+        CALL domint_initIntegration (rintSubset, nelementsPerBlock, &
+            ncubp, icoordSystem, p_rtriangulation%ndim, NVE)
+        p_DcubPtsRef =>  rintSubset%p_DcubPtsRef
+        p_DcubPtsReal => rintSubset%p_DcubPtsReal
+        p_Djac =>        rintSubset%p_Djac
+        p_Ddetj =>       rintSubset%p_Ddetj
+        p_Dcoords =>     rintSubset%p_DCoords
+
+        ! Put the cubature point coordinates in the right format to the
+        ! cubature-point array.
+        ! Initialise all entries in p_DcubPtsRef with the same coordinates -
+        ! as the cubature point coordinates are identical on all elements
+        DO j=1,SIZE(p_DcubPtsRef,3)
+          DO i=1,ncubp
+            DO k=1,SIZE(p_DcubPtsRef,1)
+              ! Could be solved using the TRANSPOSE operator - but often is's 
+              ! faster this way...
+              p_DcubPtsRef(k,i,j) = Dxi(i,k)
+            END DO
+          END DO
+        END DO
+        
+        ! Check if one of the trial/test elements is nonparametric
+        bnonparTrial = elem_isNonparametric(p_elementDistribution%itestElement)
+
+        ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
+        ! p_DcubPtsRef - depending on whether the space is parametric or not.
+        IF (bnonparTrial) THEN
+          p_DcubPtsTrial => p_DcubPtsReal
+        ELSE
+          p_DcubPtsTrial => p_DcubPtsRef
+        END IF
+
+        ! We have the coordinates of the cubature points saved in the
+        ! coordinate array from above. Unfortunately for nonparametric
+        ! elements, we need the real coordinate.
+        ! Furthermore, we anyway need the coordinates of the element
+        ! corners and the Jacobian determinants corresponding to
+        ! all the points.
+        
+        ! At first, get the coordinates of the corners of all the
+        ! elements in the current set of elements.
+        CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistribution%itrialElement), &
+            p_rtriangulation, IelementsInPatch(1:nelementsPerBlock), p_Dcoords)
+        
+        ! Depending on the type of transformation, we must now choose
+        ! the mapping between the reference and the real element.
+        ! In case we use a nonparametric element as test function, we need the 
+        ! coordinates of the points on the real element, too.
+        ! Unfortunately, we need the real coordinates of the cubature points
+        ! anyway for the function - so calculate them all.
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType, nelementsPerBlock, &
+            ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj, p_DcubPtsReal)
+
+
+        !-----------------------------------------------------------------------
+        ! Phase (3)  Perform sampling of consistent gradient values
+        !-----------------------------------------------------------------------
+
+        ! Allocate memory for the values of the derivaties in the corners
+        ALLOCATE(Dcoefficients(ncubp,nelementsPerBlock,p_rtriangulation%ndim))
+
+        ! Calculate the X/Y-derivative of the FE function in the
+        ! cubature points: u_h(x,y) and save the result to Dcoefficients(:,:,1..2)
+        CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
+            nelementsPerBlock, p_DcubPtsTrial, DER_DERIV_X, Dcoefficients(:,:,1))
+        
+        CALL fevl_evaluate_sim (rvectorScalar, p_Dcoords, p_Djac, p_Ddetj, &
+            p_elementDistribution%itrialElement, IdofsTrial, ncubp, &
+            nelementsPerBlock, p_DcubPtsTrial, DER_DERIV_Y, Dcoefficients(:,:,2))
+
+
+        !-----------------------------------------------------------------------
+        ! Phase (4)  Prepare least-squares fitting
+        !-----------------------------------------------------------------------
+
+        ! First, get the coordinates of the bounding group for the set of
+        ! elements present in each patch. In addition, calculate the coordinates
+        ! of the corners of the constant Jacobian  patch "elements".
+        CALL calc_patchBoundingGroup(IelementsInPatchIdx, npatchesInCurrentBlock, &
+            NVE, p_Dcoords, DpatchBound(:,:,1:npatchesInCurrentBlock))
+
+        ! Next, we need to convert the physical coordinates of the curvature points
+        ! to the local coordinates of the constant Jacobian "patch" elements
+        CALL calc_localTrafo(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
+            NVE, p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
+
+        DO idx=1,nelementsPerBlock
+          DO i=1,ncubp
+            p_DcubPtsRef(:,i,idx) = (/-1._DP,-1._DP/)
+          END DO
+        END DO
+
+        ! Depending on the type of transformation, we must now choose
+        ! the mapping between the reference and the real element.
+        ! In case we use a nonparametric element as test function, we need the 
+        ! coordinates of the points on the real element, too.
+        ! Unfortunately, we need the real coordinates of the cubature points
+        ! anyway for the function - so calculate them all.
+        CALL trafo_calctrafo_sim (p_elementDistribution%ctrafoType, nelementsPerBlock, &
+            ncubp, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj)
+               
+        ! Allocate memory for the patch interpolants matrices
+        ALLOCATE(Dpolynomials(indofTrial,1,ncubp,nelementsPerBlock))
+
+        ! Evaluate the trial functions of the constant Jacobian patch "element" for all
+        ! cubature points of the elements present in the patch and store each polynomial 
+        ! interpolation in the rectangular patch matrix used for least-squares fitting.
+        CALL elem_generic_sim(p_elementDistribution%itrialElement,&
+            p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
+            nelementsPerBlock, p_DcubPtsTrial)
+        
+
+        PRINT *, Dpolynomials(:,1,1,1)
+        STOP
+
+
+        !-----------------------------------------------------------------------
+        ! Phase (5)  Perform least-squares fitting
+        !-----------------------------------------------------------------------
+        
+        ! Allocate memory for the derivative values
+        ALLOCATE(Dderivatives(indofTrial,npatchesInCurrentBlock,p_rtriangulation%ndim))
+        
+        ! Theoretically, we could compute $S=P^transp * P$ and $b=P^transp * RHS$ and solve
+        ! the linear system $S*a=b$ directly to obtain the least-squares fit. This standard
+        ! procedure is prune to be ill-conditioned so that an alternative technique is used.
+        CALL calc_patchAverages(IelementsInPatchIdx, npatchesInCurrentBlock, ncubp, &
+            indofTrial, Dpolynomials, Dcoefficients, Dderivatives)
+        
+        !-----------------------------------------------------------------------
+        ! Phase (6)  Prepare the destination FE space
+        !-----------------------------------------------------------------------
+
+        ! Allocate memory for the DOF's of all the elements
+        ALLOCATE(IdofsDest(indofDest,nelementsPerBlock))
+
+        ! Also calculate the global DOF's in our destination vector(s)
+        CALL dof_locGlobMapping_mult(p_rdiscrDest, &
+            IelementsInPatch(1:nelementsPerBlock), .FALSE., IdofsDest)
+
+        ! Initialise the cubature formula. That's a special trick here!
+        ! In particular, we only need the physical coordinates of the
+        ! nodal evaluation points in the source vectors.
+        ! For this purpose, we initialise the 'trapezoidal rule' as cubature
+        ! formula. Ok, we are not using cubature at all here (thus ignoring
+        ! the cubature weights completely), but that way we get the
+        ! coordinates of the corners on the reference element automatically --
+        ! which coincide with the points where we want to create the gradients!
+        !
+        ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
+        ! on each element indofDest!
+        SELECT CASE (elem_getPrimaryElement(p_elementDistrDest%itrialElement))
+        CASE (EL_P0)
+          CALL cub_getCubPoints(CUB_G1_T, nlocalDOFsDest, Dxi, Domega)
+        CASE (EL_Q0)
+          CALL cub_getCubPoints(CUB_G1X1, nlocalDOFsDest, Dxi, Domega)
+        CASE (EL_P1)
+          CALL cub_getCubPoints(CUB_TRZ_T, nlocalDOFsDest, Dxi, Domega)
+        CASE (EL_Q1)
+          CALL cub_getCubPoints(CUB_TRZ, nlocalDOFsDest, Dxi, Domega)
+        CASE DEFAULT
+          CALL output_line ('Unsupported FE space in destination vector!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGrad2DSuperPatchRecov')
+          CALL sys_halt()
+        END SELECT
+
+        ! Get from the trial element space the type of coordinate system
+        ! that is used there:
+        icoordSystem = elem_igetCoordSystem(p_elementDistrDest%itrialElement)
+        
+         ! Allocate memory and get local references to it. This domain integration 
+        ! structure stores all information of the destination FE space.
+        CALL domint_initIntegration (rintSubsetDest, nelementsPerBlock, &
+            nlocalDOFsDest, icoordSystem, p_rtriangulation%ndim, NVE)
+        p_DcubPtsRef =>  rintSubsetDest%p_DcubPtsRef
+        p_DcubPtsReal => rintSubsetDest%p_DcubPtsReal
+        p_Djac =>        rintSubsetDest%p_Djac
+        p_Ddetj =>       rintSubsetDest%p_Ddetj
+        p_Dcoords =>     rintSubsetDest%p_DCoords
+        
+        ! Put the cubature point coordinates in the right format to the
+        ! cubature-point array.
+        ! Initialise all entries in p_DcubPtsRef with the same coordinates -
+        ! as the cubature point coordinates are identical on all elements
+        DO j=1,SIZE(p_DcubPtsRef,3)
+          DO i=1,nlocalDOFsDest
+            DO k=1,SIZE(p_DcubPtsRef,1)
+              ! Could be solved using the TRANSPOSE operator - but often is's 
+              ! faster this way...
+              p_DcubPtsRef(k,i,j) = Dxi(i,k)
+            END DO
+          END DO
+        END DO
+
+        ! Check if one of the trial/test elements is nonparametric
+        bnonparTrial = elem_isNonparametric(p_elementDistrDest%itestElement)
+
+        ! Let p_DcubPtsTrial point either to p_DcubPtsReal or
+        ! p_DcubPtsRef - depending on whether the space is parametric or not.
+        IF (bnonparTrial) THEN
+          p_DcubPtsTrial => p_DcubPtsReal
+        ELSE
+          p_DcubPtsTrial => p_DcubPtsRef
+        END IF
+
+        ! We have the coordinates of the cubature points saved in the
+        ! coordinate array from above. Unfortunately for nonparametric
+        ! elements, we need the real coordinate.
+        ! Furthermore, we anyway need the coordinates of the element
+        ! corners and the Jacobian determinants corresponding to
+        ! all the points.
+        
+        ! At first, get the coordinates of the corners of all the
+        ! elements in the current set of elements.
+        CALL trafo_getCoords_sim (elem_igetTrafoType(p_elementDistrDest%itrialElement), &
+            p_rtriangulation, IelementsInPatch(1:nelementsPerBlock), p_Dcoords)
+        
+        ! Depending on the type of transformation, we must now choose
+        ! the mapping between the reference and the real element.
+        ! In case we use a nonparametric element as test function, we need the 
+        ! coordinates of the points on the real element, too.
+        ! Unfortunately, we need the real coordinates of the cubature points
+        ! anyway for the function - so calculate them all.
+        CALL trafo_calctrafo_sim (p_elementDistrDest%ctrafoType, nelementsPerBlock, &
+            nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj, p_DcubPtsReal)
+
+        ! Next, we need to convert the physical coordinates of the curvature points
+        ! to the local coordinates of the constant Jacobian "patch" elements
+        CALL calc_localTrafo(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
+            NVE,  p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
+        
+        ! We do not need the corner coordinates of the elements in the destination
+        ! FE space but that of the "patch" elements in the source FE space
+        p_Dcoords => rintSubset%p_Dcoords
+        CALL trafo_calctrafo_sim (p_elementDistrDest%ctrafoType, nelementsPerBlock, &
+            nlocalDOFsDest, p_Dcoords, p_DcubPtsRef, p_Djac, p_Ddetj, p_DcubPtsReal)
+        
+        CALL elem_generic_sim(p_elementDistrDest%itrialElement,&
+            p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, &
+            nlocalDOFsDest, nelementsPerBlock, p_DcubPtsTrial)
+        
+        ! Loop over the patches in the set
+        DO ipatch = 1, npatchesInCurrentBlock
+          
+          ! Loop over elements in patch
+          DO idx = IelementsInPatchIdx(ipatch),IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Loop over local degrees of freedom
+            DO j= 1, nlocalDOFsDest
+            
+              dval = 0.0_DP
+              DO ipoint = 1, indofTrial
+                dval = dval + Dderivatives(j,ipatch,1) * Dpolynomials(ipoint,DER_FUNC,j,idx)
+              END DO
+              p_DxDeriv(IdofsDest(j,idx)) = p_DxDeriv(IdofsDest(j,idx)) + dval
+
+              dval = 0.0_DP
+              DO ipoint = 1, indofTrial
+                dval = dval + Dderivatives(j,ipatch,2) * Dpolynomials(ipoint,DER_FUNC,j,idx)
+              END DO
+              p_DyDeriv(IdofsDest(j,idx)) = p_DyDeriv(IdofsDest(j,idx)) + dval
+
+              ! Count how often a DOF was touched.
+              p_IcontributionsAtDOF(IdofsDest(j,idx)) = &
+                  p_IcontributionsAtDOF(IdofsDest(j,idx))+1
+            END DO
+          END DO
+        END DO
+        
+        ! Release memory
+        CALL domint_doneIntegration(rintSubset)
+        CALL domint_doneIntegration(rintSubsetDest)
+        
+        ! Deallocate auxiliary memory
+        DEALLOCATE(Dderivatives)
+        DEALLOCATE(Dpolynomials)
+        DEALLOCATE(Dcoefficients)
+        DEALLOCATE(IdofsTrial)
+        DEALLOCATE(IdofsDest)
+        
+      ELSE
+        PRINT *, "Not implemented"
+        STOP
+      END IF
+      
+      ! Deallocate auxiliary memory
+      DEALLOCATE(IelementsInPatch)
+    END DO
+    
+    ! We are nearly done. The final thing: divide the calculated derivatives by the
+    ! number of elements adjacent to each vertex. That closes the calculation
+    ! of the 'mean' of the derivatives.
+    DO i=1,SIZE(p_DxDeriv)
+      ! Div/0 should not occur, otherwise the triangulation is crap as there's a point
+      ! not connected to any element!
+      p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
+      p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
+    END DO
+
+    ! Deallocate memory
+    DEALLOCATE(DpatchBound)
+    DEALLOCATE(IelementsInPatchIdx)
+    CALL storage_free(h_IcontributionsAtDOF)
+    
+  CONTAINS
+    
+    ! Here, some auxiliary working routines follow
+    
+    !**************************************************************
+    ! Calculate the "bounding group" for a set of patches
+    !
+    ! Each patch consists of multiple elements which are adjacent to 
+    ! each other so that they cover some connected part of the domain.
+    ! This routine determines the physical coordinates of the constant
+    ! Jacobian patch "element" that has its local axes parallel to the
+    ! global axes and completely surrounds the elements of the patch.
+    ! Moreover, this routine converts the physical coordinates of the
+    ! evaluation points in the destination space to the local coordinates
+    ! in the constant Jacobian patch "element".
+
+    SUBROUTINE calc_patchBoundingGroup(IelementsInPatchIdx, &
+        npatches, NVE, DpointsReal, DpointsBound)
+      
+      ! Index vector and list of elements in patch
+      INTEGER, DIMENSION(:), INTENT(IN)         :: IelementsInPatchIdx
+
+      ! Number of elements in patch
+      INTEGER, INTENT(IN)                       :: npatches
+
+      ! Number of vertices per element
+      INTEGER, INTENT(IN)                       :: NVE
+
+      ! Physical coordinates of the corner nodes of all elements in the patch
+      REAL(DP), DIMENSION(:,:,:), INTENT(INOUT) :: DpointsReal
+
+      ! Physical coordinates of the bounds of all "patch" elements
+      REAL(DP), DIMENSION(:,:,:), INTENT(OUT)   :: DpointsBound
+
+      ! local variables
+      INTEGER :: ipatch,idxFirst,idxLast
+      REAL(DP) :: xmin,ymin,xmax,ymax
+
+      SELECT CASE (NVE)
+
+      CASE (TRIA_NVELINE1D)
+
+        ! Simple: Just find minimal/maximal value
+        
+        ! Loop over all patches
+        DO ipatch = 1, npatches
+          idxFirst = IelementsInPatchIdx(ipatch)
+          idxLast  = IelementsInPatchIdx(ipatch+1)-1
+
+          ! Determine minimum/maximum coordinates of the patch
+          xmin = MINVAL(DpointsReal(1,:,idxFirst:idxLast))
+          xmax = MAXVAL(DpointsReal(1,:,idxFirst:idxLast))
+
+          ! Store minimum/maximum coordinates
+          DpointsBound(1,1,ipatch) = xmin
+          DpointsBound(1,2,ipatch) = xmax
+
+          ! Store physical coordinates of patch element corners
+          DpointsReal(1,1,idxFirst:idxLast) = xmin
+          DpointsReal(1,2,idxFirst:idxLast) = xmax
+        END DO
+
+      CASE(TRIA_NVETRI2D)
+        
+        ! Tricky: Find minimal/maximal value and compute the lower-right
+        ! and upper-left corner by hand.
+
+        ! Loop over all patches
+        DO ipatch = 1, npatches
+          idxFirst = IelementsInPatchIdx(ipatch)
+          idxLast  = IelementsInPatchIdx(ipatch+1)-1
+
+          ! Determine minimum/maximum coordinates of the patch
+          xmin = MINVAL(DpointsReal(1,:,idxFirst:idxLast))
+          xmax = MAXVAL(DpointsReal(1,:,idxFirst:idxLast))
+          ymin = MINVAL(DpointsReal(2,:,idxFirst:idxLast))
+          ymax = MAXVAL(DpointsReal(2,:,idxFirst:idxLast))
+          
+          ! Store minimum/maximum coordinates
+          DpointsBound(1,1,ipatch) = xmin
+          DpointsBound(2,1,ipatch) = ymin
+          DpointsBound(1,2,ipatch) = xmax
+          DpointsBound(2,2,ipatch) = ymax
+
+          ! Store physical coordinates of patch element corners
+          DpointsReal(1,1,idxFirst:idxLast) = xmin
+          DpointsReal(2,1,idxFirst:idxLast) = ymin
+          DpointsReal(1,2,idxFirst:idxLast) = xmax+ymax-ymin
+          DpointsReal(2,2,idxFirst:idxLast) = ymin
+          DpointsReal(1,3,idxFirst:idxLast) = xmin
+          DpointsReal(2,3,idxFirst:idxLast) = xmax+ymax-xmin
+        END DO
+        
+      CASE (TRIA_NVEQUAD2D)
+        
+        ! Simple: Just find minimal/maximal value
+
+        ! Loop over all patches
+        DO ipatch = 1, npatches
+          idxFirst = IelementsInPatchIdx(ipatch)
+          idxLast  = IelementsInPatchIdx(ipatch+1)-1
+
+          ! Determine minimum/maximum coordinates of the patch
+          xmin = MINVAL(DpointsReal(1,:,idxFirst:idxLast))
+          xmax = MAXVAL(DpointsReal(1,:,idxFirst:idxLast))
+          ymin = MINVAL(DpointsReal(2,:,idxFirst:idxLast))
+          ymax = MAXVAL(DpointsReal(2,:,idxFirst:idxLast))
+                  
+          ! Store minimum/maximum coordinates
+          DpointsBound(1,1,ipatch) = xmin
+          DpointsBound(2,1,ipatch) = ymin
+          DpointsBound(1,2,ipatch) = xmax
+          DpointsBound(2,2,ipatch) = ymax
+
+          ! Store physical coordinates of patch element corners
+          DpointsReal(1,1,idxFirst:idxLast) = xmin
+          DpointsReal(2,1,idxFirst:idxLast) = ymin
+          DpointsReal(1,2,idxFirst:idxLast) = xmax
+          DpointsReal(2,2,idxFirst:idxLast) = ymin
+          DpointsReal(1,3,idxFirst:idxLast) = xmax
+          DpointsReal(2,3,idxFirst:idxLast) = ymax
+          DpointsReal(1,4,idxFirst:idxLast) = xmin
+          DpointsReal(2,4,idxFirst:idxLast) = ymax
+        END DO
+        
+      CASE DEFAULT
+        CALL output_line ('Invalid number of vertices per elements!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'calc_patchBoundingGroup')
+        CALL sys_halt()
+      END SELECT
+    END SUBROUTINE calc_patchBoundingGroup
+
+    !**************************************************************
+    ! Transform physical coordinates to local coordinates of the 
+    ! constant Jacobian "patch" elements which is uniquely 
+    ! determined by its minimum/maximum values.
+    ! 
+    ! Note that for quadrilateral/hexahedral elements the x-, y- and
+    ! z-coordinates are stored whereas for triangular/tetrahedral
+    ! elements barycentric coordinates are adopted.
+    
+    SUBROUTINE calc_localTrafo(IelementsInPatchIdx, icoordSystem, &
+        npatches, NVE, DpointsReal, DpointsBound, DpointsRef)
+
+      ! Index vector and list of elements in patch
+      INTEGER, DIMENSION(:), INTENT(IN)         :: IelementsInPatchIdx
+
+      ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
+      ! the type of the coordinate system that is used for specifying the coordinates
+      ! on the reference element.
+      INTEGER, INTENT(IN)                       :: icoordSystem
+      
+      ! Number of elements in patch
+      INTEGER, INTENT(IN)                       :: npatches
+
+      ! Number of vertices per element
+      INTEGER, INTENT(IN)                       :: NVE
+      
+      ! Coordinates of the points on the physical element.
+      REAL(DP), DIMENSION(:,:,:), INTENT(IN)    :: DpointsReal
+
+      ! Coordinates of the bounding group of each patch
+      REAL(DP), DIMENSION(:,:,:), INTENT(IN)    :: DpointsBound
+
+      ! Coordinates of the points on the reference elements.
+      REAL(DP), DIMENSION(:,:,:), INTENT(INOUT) :: DpointsRef
+      
+      ! local variables
+      INTEGER :: ipatch,idxFirst,idxLast
+      REAL(DP) :: xmin,ymin,xmax,ymax,daux
+
+      ! Which coordinate system should be applied
+      SELECT CASE (icoordSystem)
+
+      CASE (TRAFO_CS_BARY2DTRI)
+        ! This coordinate system can only be applied if NVE=TRIA_NVETRI2D
+        IF (NVE .NE. TRIA_NVETRI2D) THEN
+          CALL output_line('Invalid number of corner vertices per element!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'calc_localTrafo')
+          CALL sys_halt()
+        END IF
+        
+        ! Loop over all patches
+        DO ipatch = 1, npatches
+          idxFirst = IelementsInPatchIdx(ipatch)
+          idxLast  = IelementsInPatchIdx(ipatch+1)-1
+
+          ! Get minimum/maximum coordinates of the patch
+          xmin = DpointsBound(1,1,ipatch)
+          ymin = DpointsBound(2,1,ipatch)
+          xmax = DpointsBound(1,2,ipatch)
+          ymax = DpointsBound(2,2,ipatch)
+
+          daux = xmax-xmin+ymax-ymin
+
+          ! Transform physical coordinates to local ones by means
+          ! of a unit coordinate transformation
+          DpointsRef(3,:,idxFirst:idxLast) = (DpointsReal(2,:,idxFirst:idxLast)-ymin)/daux
+          DpointsRef(2,:,idxFirst:idxLast) = (DpointsReal(1,:,idxFirst:idxLast)-xmin)/daux
+          DpointsRef(1,:,idxFirst:idxLast) = 1._DP-DpointsRef(2,:,idxFirst:idxLast) &
+                                                  -DpointsRef(3,:,idxFirst:idxLast)
+        END DO
+        
+      CASE (TRAFO_CS_REF2DTRI,TRAFO_CS_REF2DQUAD,&
+            TRAFO_CS_REAL2DTRI,TRAFO_CS_REAL2DQUAD,TRAFO_CS_REF1D)
+        
+        ! How many corner vertices do we have?
+        SELECT CASE (NVE)
+        CASE (TRIA_NVELINE1D)
+          
+          ! Loop over all patches
+          DO ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Get minimum/maximum coordinates of the patch
+            xmin = DpointsBound(1,1,ipatch)
+            xmax = DpointsBound(1,2,ipatch)
+            
+            ! Transform physical coordinates to local ones by means
+            ! of a natural coordinate transformation
+            DpointsRef(1,:,idxFirst:idxLast) = &
+                (2.0_DP*DpointsReal(1,:,idxFirst:idxLast)-(xmax+xmin))/(xmax-xmin)
+          END DO
+
+        CASE(TRIA_NVETRI2D)
+          
+          ! Loop over all patches
+          DO ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Get minimum/maximum coordinates of the patch
+            xmin = DpointsBound(1,1,ipatch)
+            ymin = DpointsBound(2,1,ipatch)
+            xmax = DpointsBound(1,2,ipatch)
+            ymax = DpointsBound(2,2,ipatch)
+            
+            ! Transform physical coordinates to local ones by means
+            ! of a unit coordinate transformation
+            DpointsRef(1,:,idxFirst:idxLast) = &
+                (DpointsReal(1,:,idxFirst:idxLast)-(xmax+ymax-ymin))/(xmax-xmin+ymax-ymin)
+            DpointsRef(2,:,idxFirst:idxLast) = &
+                (DpointsReal(2,:,idxFirst:idxLast)-(xmax+ymax-xmin))/(xmax-xmin+ymax-ymin)
+          END DO
+          
+        CASE (TRIA_NVEQUAD2D)
+          
+          ! Loop over all patches
+          DO ipatch = 1, npatches
+            idxFirst = IelementsInPatchIdx(ipatch)
+            idxLast  = IelementsInPatchIdx(ipatch+1)-1
+            
+            ! Get minimum/maximum coordinates of the patch
+            xmin = DpointsBound(1,1,ipatch)
+            ymin = DpointsBound(2,1,ipatch)
+            xmax = DpointsBound(1,2,ipatch)
+            ymax = DpointsBound(2,2,ipatch)
+            
+            ! Transform physical coordinates to local ones by means
+            ! of a natural coordinate transformation
+            DpointsRef(1,:,idxFirst:idxLast) = &
+                (2.0_DP*DpointsReal(1,:,idxFirst:idxLast)-(xmax+xmin))/(xmax-xmin)
+            DpointsRef(2,:,idxFirst:idxLast) = &
+                (2.0_DP*DpointsReal(2,:,idxFirst:idxLast)-(ymax+ymin))/(ymax-ymin)
+          END DO
+          
+        CASE DEFAULT
+          CALL output_line ('Invalid number of vertices per elements!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'calc_localTrafo')
+          CALL sys_halt()
+        END SELECT
+        
+      CASE DEFAULT
+        CALL output_line('Unknown coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'calc_localTrafo')
+        CALL sys_halt()
+      END SELECT
+    END SUBROUTINE calc_localTrafo
+    
+    !**************************************************************    
+    ! Calculate the averaged gradient values
+    ! 
+    
+    SUBROUTINE calc_patchAverages(IelementsInPatchIdx, npatches, ncubp, &
+        indofTrial, Dpolynomials, Dcoefficients, Dderivatives)
+
+      ! Index vector and list of elements in patch
+      INTEGER, DIMENSION(:), INTENT(IN)           :: IelementsInPatchIdx
+
+      ! Number of elements in patch
+      INTEGER, INTENT(IN)                         :: npatches
+
+      ! Number of cubature points
+      INTEGER, INTENT(IN)                         :: ncubp
+
+      ! Number of local degrees of freedom for test functions
+      INTEGER, INTENT(IN)                         :: indofTrial
+
+      ! Rectangular matrix with polynomial interpolants
+      REAL(DP), DIMENSION(:,:,:,:), INTENT(INOUT) :: Dpolynomials
+
+      ! Vector with consistent gradient values
+      REAL(DP), DIMENSION(:,:,:), INTENT(IN)      :: Dcoefficients
+
+      ! Smoothe gradient values
+      REAL(DP), DIMENSION(:,:,:), INTENT(OUT)     :: Dderivatives
+
+      ! local variables
+      INTEGER  :: ipatch,idxFirst,idxLast,idim
+      REAL(DP), DIMENSION(indofTrial,indofTrial)  :: Dv
+      REAL(DP), DIMENSION(indofTrial)             :: Dd
+
+      ! Loop over all patches
+      DO ipatch = 1, npatches
+        
+        ! Get first and last element index of patch
+        idxFirst = IelementsInPatchIdx(ipatch)
+        idxLast  = IelementsInPatchIdx(ipatch+1)-1
+        
+        ! Compute factorisation for the singular value decomposition
+        CALL mprim_SVD_factorise(Dpolynomials(:,:,:,idxFirst:idxLast),&
+            indofTrial,ncubp*(idxLast-idxFirst+1), Dd, Dv, .TRUE.)
+        
+        ! Perform back substitution for all componenets
+        DO idim = 1, SIZE(Dderivatives,3)
+          CALL mprim_SVD_backsubst(Dpolynomials(:,:,:,idxFirst:idxLast), &
+              indofTrial,ncubp*(idxLast-idxFirst+1), Dd, Dv, &
+              Dderivatives(:,ipatch,idim), &
+              ncubp*(idxLast-idxFirst+1), &
+              Dcoefficients(:,idxFirst:idxLast,idim),.TRUE.)
+        END DO
+
+      END DO
+    END SUBROUTINE calc_patchAverages
+  END SUBROUTINE ppgrd_calcGrad2DSuperPatchRecov
 
 END MODULE
