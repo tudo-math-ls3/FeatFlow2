@@ -30,8 +30,8 @@
 !#  5.) ucd_addVariableVertexBased / ucd_addVariableElementBased
 !#      -> Add a vertex- or element-based data vector to the output.
 !#
-!#  6.) ucd_addVarVertBasedVec
-!#      -> Add a vertex-based vector to the output.
+!#  6.) ucd_addVarVertBasedVec / ucd_addVarElemBasedVec
+!#      -> Add a vertex/element-based vector to the output.
 !#
 !#  7.) ucd_setVertexMaterial
 !#      -> Allows to specify for every vertex/node (corner vertex, edge 
@@ -75,6 +75,15 @@
 !#
 !# 19.) ucd_release
 !#      -> Releases a UCD export structure that was created by ucd_startXXXX.
+!#
+!# 20.) ucd_setFilename
+!#      -> Change the filename of the output file.
+!#
+!# 21.) ucd_readGMV
+!#      -> Read a GMV file.
+!#
+!# 22.) ucd_getVariable
+!#      -> Get a data / information of a variable.
 !#
 !# To write a file (GMV, AVS, VTK, MATLAB or what else), one has to use the
 !# following sequence of commands:
@@ -135,6 +144,16 @@ MODULE ucd
   
   ! Visualization Toolkit (VTK) file format (ASCII)
   INTEGER, PARAMETER :: UCD_FORMAT_VTK  = 3
+  
+!</constantblock>
+
+!<constantblock description="Data type flags">
+
+  ! Element-based data
+  INTEGER, PARAMETER :: UCD_BASE_ELEMENT = 0
+  
+  ! Vertex-based data
+  INTEGER, PARAMETER :: UCD_BASE_VERTEX  = 1
   
 !</constantblock>
 
@@ -1282,6 +1301,12 @@ CONTAINS
         CALL sys_halt()
       END IF
     END IF
+    
+    IF (rexport%iunit .EQ. 0) THEN
+      CALL output_line ('Cannot write UCD output: No output channel/filename!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_write')
+      CALL sys_halt()
+    END IF
 
     ! Start the output
     SELECT CASE(rexport%coutputFormat)
@@ -1761,7 +1786,7 @@ CONTAINS
         ! Look for cell based velocity.
         DO i=1,rexport%nvariables
           IF ((IAND(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .NE. 0) .AND. &
-              (rexport%p_IvariableBase(i) .EQ. 0)) THEN
+              (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT)) THEN
               
             ! Found it. Write it out.
             WRITE (mfile,'(A)') 'velocity 0'
@@ -1777,7 +1802,7 @@ CONTAINS
             ! Find the Y-velocity
             DO j=1,rexport%nvariables
               IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .NE. 0) .AND. &
-                  (rexport%p_IvariableBase(j) .EQ. 0)) THEN
+                  (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT)) THEN
                   
                 ! Found it. Write it out.
                 CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
@@ -1798,7 +1823,7 @@ CONTAINS
             ! Find the Z-velocity
             DO j=1,rexport%nvariables
               IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .NE. 0) .AND. &
-                  (rexport%p_IvariableBase(j) .EQ. 0)) THEN
+                  (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT)) THEN
                   
                 ! Found it. Write it out.
                 CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
@@ -1822,7 +1847,7 @@ CONTAINS
         ! Look for vertex based velocity.
         DO i=1,rexport%nvariables
           IF ((IAND(rexport%p_IvariableSpec(i),UCD_VAR_XVELOCITY) .NE. 0) .AND. &
-              (rexport%p_IvariableBase(i) .EQ. 1)) THEN
+              (rexport%p_IvariableBase(i) .EQ. UCD_BASE_VERTEX)) THEN
               
             ! Found it. Write it out.
             WRITE (mfile,'(A)') 'velocity 1'
@@ -1835,7 +1860,7 @@ CONTAINS
             ! Find the Y-velocity
             DO j=1,rexport%nvariables
               IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_YVELOCITY) .NE. 0) .AND. &
-                  (rexport%p_IvariableBase(j) .EQ. 1)) THEN
+                  (rexport%p_IvariableBase(j) .EQ. UCD_BASE_VERTEX)) THEN
                   
                 ! Found it. Write it out.
                 CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
@@ -1856,7 +1881,7 @@ CONTAINS
             ! Find the Z-velocity
             DO j=1,rexport%nvariables
               IF ((IAND(rexport%p_IvariableSpec(j),UCD_VAR_ZVELOCITY) .NE. 0) .AND. &
-                  (rexport%p_IvariableBase(j) .EQ. 0)) THEN
+                  (rexport%p_IvariableBase(j) .EQ. UCD_BASE_VERTEX)) THEN
                   
                 ! Found it. Write it out.
                 CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
@@ -1885,7 +1910,7 @@ CONTAINS
           
             WRITE (MFILE,'(A)') 'variable'  
             
-            IF (rexport%p_IvariableBase(i) .EQ. 0) THEN
+            IF (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT) THEN
               ! Cell based variable
               WRITE (MFILE,'(A,I5)') TRIM(rexport%p_SvariableNames(i)),0
               CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
@@ -1934,11 +1959,11 @@ CONTAINS
           DO k=1,NDIM3D
             IF (UBOUND(p_Ddata2D,1) .GE. k) THEN
               DO j=1,UBOUND(p_Ddata2D,2)
-                WRITE (MFILE,'(3E15.7)') p_Ddata2D(k,j)
+                WRITE (MFILE,'(E15.7)') p_Ddata2D(k,j)
               END DO
             ELSE
               DO j=1,UBOUND(p_Ddata2D,2)
-                WRITE (MFILE,'(3E15.7)') 0.0_DP
+                WRITE (MFILE,'(E15.7)') 0.0_DP
               END DO
             END IF
           END DO
@@ -2058,7 +2083,7 @@ CONTAINS
       num_cdata = 0
       DO i = 1, rexport%nvariables
       
-        IF (rexport%p_IvariableBase(i) .EQ. 0) THEN
+        IF (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT) THEN
           num_cdata = num_cdata + 1
         ELSE
           num_ndata = num_ndata + 1
@@ -2160,7 +2185,7 @@ CONTAINS
       DO i=1, rexport%nvariables
       
         ! If this is a node variable, write its name
-        IF (rexport%p_IvariableBase(i) .EQ. 1) THEN
+        IF (rexport%p_IvariableBase(i) .EQ. UCD_BASE_VERTEX) THEN
           WRITE(mfile, '(A,A)') &
              sys_charreplace(TRIM(rexport%p_SvariableNames(i)), ' ', '_'), &
              ", nounit"
@@ -2182,7 +2207,7 @@ CONTAINS
           ! Write all variable values
           DO j=1, rexport%nvariables
             
-            IF (rexport%p_IvariableBase(j) .EQ. 1) THEN
+            IF (rexport%p_IvariableBase(j) .EQ. UCD_BASE_VERTEX) THEN
               CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
               WRITE(mfile, sdl, ADVANCE='NO') p_Ddata(i)
             END IF
@@ -2211,7 +2236,7 @@ CONTAINS
       DO i=1, rexport%nvariables
       
         ! If this is a element variable, write its name
-        IF (rexport%p_IvariableBase(i) .EQ. 0) THEN
+        IF (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT) THEN
           WRITE(mfile, '(A,A)') &
              sys_charreplace(TRIM(rexport%p_SvariableNames(i)), ' ', '_'), &
              ", nounit"
@@ -2233,7 +2258,7 @@ CONTAINS
           ! Write all variable values
           DO j=1, rexport%nvariables
             
-            IF (rexport%p_IvariableBase(j) .EQ. 0) THEN
+            IF (rexport%p_IvariableBase(j) .EQ. UCD_BASE_ELEMENT) THEN
               CALL storage_getbase_double (rexport%p_Hvariables(j),p_Ddata)
               WRITE(mfile, sdl, ADVANCE='NO') p_Ddata(i)
             END IF
@@ -2346,7 +2371,7 @@ CONTAINS
       num_cdata = 0
       DO i = 1, rexport%nvariables
       
-        IF (rexport%p_IvariableBase(i) .EQ. 0) THEN
+        IF (rexport%p_IvariableBase(i) .EQ. UCD_BASE_ELEMENT) THEN
           num_cdata = num_cdata + 1
         ELSE
           num_ndata = num_ndata + 1
@@ -2545,7 +2570,7 @@ CONTAINS
         DO j=1, rexport%nvariables
         
           ! Is it vertex- or element-based?
-          IF (rexport%p_IvariableBase(j) .NE. 1) CYCLE
+          IF (rexport%p_IvariableBase(j) .NE. UCD_BASE_VERTEX) CYCLE
             
           ! Is the value scalar?
           IF ((rexport%p_IvariableSpec(j) .NE. UCD_VAR_STANDARD) .AND. &
@@ -2648,7 +2673,7 @@ CONTAINS
         DO j=1, rexport%nvariables
         
           ! Is it vertex- or element-based?
-          IF (rexport%p_IvariableBase(j) .NE. 0) CYCLE
+          IF (rexport%p_IvariableBase(j) .NE. UCD_BASE_ELEMENT) CYCLE
           
           ! Print some stuff
           WRITE(mfile,'(A,A,A)') "SCALARS ", &
@@ -2916,7 +2941,7 @@ CONTAINS
     
     rexport%p_IvariableSpec(rexport%nvariables) = cvarSpec
     
-    rexport%p_IvariableBase(rexport%nvariables) = 1
+    rexport%p_IvariableBase(rexport%nvariables) = UCD_BASE_VERTEX
     
     rexport%p_SvariableNames(rexport%nvariables) = sname
     
@@ -2961,6 +2986,7 @@ CONTAINS
     END IF    
 
   END SUBROUTINE
+  
 !************************************************************************
   
 !<subroutine>
@@ -2983,13 +3009,13 @@ CONTAINS
   ! Name of the vector.
   CHARACTER(LEN=*), INTENT(IN) :: sname
   
-  ! The variable for the X-component of the corner vertices.
+  ! The variable for the X-component of the velocities.
   REAL(DP), DIMENSION(:), INTENT(IN) :: DdataVert_X
   
-  ! OPTIONAL: The data array for the Y-component of the corner vertices.
+  ! OPTIONAL: The data array for the Y-component of the velocities.
   REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataVert_Y
 
-  ! OPTIONAL: The data array for the Z-component of the corner vertices.
+  ! OPTIONAL: The data array for the Z-component of the velocities.
   REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: DdataVert_Z
 
   ! OPTIONAL: DdataMid_X/Y/Z(I) is the X/Y/Z-coordinate of the variable in
@@ -3062,6 +3088,95 @@ CONTAINS
     ! That's it
   
   END SUBROUTINE
+
+!************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ucd_addVarElemBasedVec (rexport, sname, Ddata_X, Ddata_Y, Ddata_Z)
+
+!<description>
+  ! Adds variable vector data to the ouput file identified by rexport, based
+  ! on elements.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+!</inputoutput>
+
+!<input>
+  ! Name of the vector.
+  CHARACTER(LEN=*), INTENT(IN) :: sname
+  
+  ! The variable for the X-component of the velocities.
+  REAL(DP), DIMENSION(:), INTENT(IN) :: Ddata_X
+  
+  ! OPTIONAL: The data array for the Y-component of the velocities.
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Ddata_Y
+
+  ! OPTIONAL: The data array for the Z-component of the velocities.
+  REAL(DP), DIMENSION(:), INTENT(IN), OPTIONAL :: Ddata_Z
+
+!</input>
+
+!</subroutine>
+
+    IF (rexport%coutputFormat .EQ. UCD_FORMAT_NONE) THEN
+      PRINT *,'ucd_addVariableVertexBased: Export structure not initialised!'
+      CALL sys_halt()
+    END IF
+    
+    ! Let's create a new vector first
+    IF (.NOT. ASSOCIATED(rexport%p_Ivectors)) THEN
+      CALL ucd_moreVectors(rexport)
+    ENDIF
+    
+    IF (rexport%nvectors .GE. SIZE(rexport%p_Ivectors, 2)) THEN
+      CALL ucd_moreVectors(rexport)
+    END IF
+    
+    ! Increment vector count and store its name
+    rexport%nvectors = rexport%nvectors + 1
+    rexport%p_SvarVecNames(rexport%nvectors) = sname
+    
+    ! This vector is vertex-based
+    rexport%p_Ivectors(1,rexport%nvectors) = 1
+    
+    ! There must be an X-component, so add it first
+    CALL ucd_addVariableElementBased(rexport, TRIM(sname)//'_X', &
+        UCD_VAR_XVELOCITY, Ddata_X)
+    
+    rexport%p_Ivectors(2,rexport%nvectors) = rexport%nvariables
+    
+    ! Is there an Y-component?
+    IF (PRESENT(Ddata_Y)) THEN
+
+      CALL ucd_addVariableElementBased(rexport, TRIM(sname)//'_Y', &
+          UCD_VAR_YVELOCITY, Ddata_Y)
+      
+      rexport%p_Ivectors(3,rexport%nvectors) = rexport%nvariables
+   
+    ELSE
+      rexport%p_Ivectors(3,rexport%nvectors) = 0
+    END IF
+    
+    ! Is there an Z-component?
+    IF (PRESENT(Ddata_Z)) THEN
+
+      CALL ucd_addVariableElementBased(rexport, TRIM(sname)//'_Z', &
+          UCD_VAR_ZVELOCITY, Ddata_Z)
+      
+      rexport%p_Ivectors(4,rexport%nvectors) = rexport%nvariables
+   
+    ELSE
+      rexport%p_Ivectors(4,rexport%nvectors) = 0
+    END IF
+    
+    ! That's it
+  
+  END SUBROUTINE
+
 !************************************************************************
   
 !<subroutine>
@@ -3108,7 +3223,7 @@ CONTAINS
     END IF
     rexport%nvariables = rexport%nvariables+1
     rexport%p_IvariableSpec(rexport%nvariables) = cvarSpec
-    rexport%p_IvariableBase(rexport%nvariables) = 0
+    rexport%p_IvariableBase(rexport%nvariables) = UCD_BASE_ELEMENT
     rexport%p_SvariableNames(rexport%nvariables) = sname
     
     ! Allocate a new vector for the data
@@ -3601,5 +3716,1049 @@ CONTAINS
   END SUBROUTINE
 
 !************************************************************************
+
+!<subroutine>
+
+  SUBROUTINE ucd_readGMV (sfilename,rexport,rtriangulation)
+
+!<description>
+  ! Reads a GMV file from the hard disc and creates a rexport structure
+  ! containing the GMV data. The structure can be used to attach
+  ! more data if desired. The filename for the export can be changed 
+  ! by ucd_setFilename. Using ucd_write, the data can be written out
+  ! to another output file.
+  !
+  ! If rtriangulation is undefined, the mesh in the GMV is read and
+  ! a new triangulation based on the GMV data is created in
+  ! rtriangulation.
+  ! If rtriangulation is defined, rtriangulation must specify the mesh
+  ! that corresponds to the one in the GMV file.
+!</description>
+
+!<input>
+  ! Name of the GMV file.
+  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+!</input>
+
+!<output>
+  ! The export structure where the GMV data is saved to.
+  ! The structure can be used to attach more data. The filename for the
+  ! export can be changed by ucd_setFilename.
+  TYPE(t_ucdExport), INTENT(OUT) :: rexport
+!</output>
+
+!<inputoutput>
+  ! Triangulation structure.
+  ! If this triangulation structure is empty, the mesh is read from the GMV 
+  ! and a new triangulation is created in rtriangulation.
+  ! If this contains a valid mesh, the mesh is assumed to correspond to
+  ! the one in the GMV file and based on that, vector data is read.
+  ! The mesh in the GMV file is skipped.
+  TYPE(t_triangulation), INTENT(INOUT), TARGET :: rtriangulation
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    INTEGER :: mfile,ilinelen,ios
+    LOGICAL :: biscomment
+    CHARACTER(LEN=SYS_STRLEN) :: sline,skey,sdummy
+  
+    ! Try to open the file
+    IF (sfilename .NE. '') THEN
+      CALL io_openFileForReading(sfilename, mfile, .TRUE.)
+      IF (mfile .LT. 0) THEN
+        PRINT *,'ucd_readGMV: Cannot open file "'//TRIM(sfilename)&
+                //'" for writing!'
+        CALL sys_halt()
+      END IF
+    END IF
+
+    !----------------------------------------------------
+    ! Read the GMV header
+    CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+
+    ! The triangulation in rexport will be rtriangulation --
+    ! regardless whether we build it or have it
+    rexport%p_rtriangulation => rtriangulation
+
+    ! Set the other flags in rexport to standard values
+    rexport%coutputFormat = UCD_FORMAT_GMV
+    rexport%cflags = UCD_FLAG_STANDARD
+
+    rexport%nvertices = rtriangulation%NVT
+    rexport%ncells = rtriangulation%NEL
+
+    ! Read each line and interpret it
+    DO WHILE (ios .EQ. 0)
+      CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+      
+      ! Get the key word from the line
+      CALL sys_tolower (sline)
+      READ(sline,*) skey
+      
+      IF (skey .EQ. 'probtime') THEN
+        
+        !----------------------------------------------------
+        ! Read the simulation time
+        READ(sline,*) sdummy,rexport%dsimulationTime
+        
+      ELSE IF (skey .EQ. 'comments') THEN
+      
+        !----------------------------------------------------
+        ! Read comments
+        biscomment = .TRUE.
+        DO WHILE ((ios .EQ. 0) .AND. biscomment)
+          CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+          CALL sys_tolower (sline)
+          READ(sline,'(A)') skey
+          biscomment = (skey .NE. 'endcomm')
+          IF (biscomment) THEN
+            ! Add each comment line to our comment variable in rexport
+            CALL ucd_addCommentLine (rexport,sline)
+          END IF
+        END DO
+        
+      ELSE IF (skey .EQ. 'nodes') THEN
+        
+        !----------------------------------------------------
+        ! Read triangulation (or ignore it if alread given in rtriangulation)
+        CALL read_triangulation (mfile,sline,rtriangulation)
+        
+        ! NEL/NVT has changed
+        rexport%nvertices = rtriangulation%NVT
+        rexport%ncells = rtriangulation%NEL
+        
+      ELSE IF (skey .EQ. 'material') THEN
+      
+        !----------------------------------------------------
+        ! Read materials
+        CALL read_materials (mfile,sline,rexport)
+        
+      ELSE IF (skey .EQ. 'velocity') THEN
+
+        !----------------------------------------------------
+        ! Read velocity data
+        CALL read_velocity (mfile,sline,rexport)
+        
+      ELSE IF (skey .EQ. 'variable') THEN
+      
+        !----------------------------------------------------
+        ! Read general variable data
+        CALL read_variables (mfile,sline,rexport)
+        
+      ELSE IF (skey .EQ. 'polygons') THEN
+      
+        !----------------------------------------------------
+        ! Read polygon data
+        CALL read_polygondata (mfile,sline,rexport)
+        
+      ELSE IF (skey .EQ. 'tracers') THEN
+      
+        !----------------------------------------------------
+        ! Read tracer data
+        CALL read_tracerdata (mfile,sline,rexport)
+        
+      ELSE IF (skey .EQ. 'endgmv') THEN
+        
+        ! GMV finish
+        ios = 1
+        
+      END IF
+    END DO
+    
+    ! Close the file, finish.
+    CLOSE (mfile)
+    
+  CONTAINS
+  
+    ! ---------------------------------------------------------------
+    
+    SUBROUTINE read_tracerdata (mfile,scommand,rexport)
+    
+    ! Reads data about tracers from the GMV file mfile.
+    
+    ! Handle to the GMV file
+    INTEGER, INTENT(IN) :: mfile
+    
+    ! Command line in the GMV file with information about the tracers
+    CHARACTER(LEN=*), INTENT(IN) :: scommand
+    
+    ! UCD structure where tracer data is saved to.
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+      ! Local variables
+      INTEGER :: ilinelen,ios,ntracers
+      CHARACTER(LEN=SYS_STRLEN) :: skey,sline
+      REAL(DP), DIMENSION(:,:), ALLOCATABLE :: DtracerCoordinates
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: DtracerTemp
+
+      ! Interpret the command line, how many tracers do we have?
+      READ (scommand,*) skey,ntracers
+      
+      ! Allocate memory for X/Y or X/Y/Z coordinates
+      ALLOCATE (DtracerCoordinates(rexport%p_rtriangulation%ndim,ntracers))
+      ALLOCATE (DtracerTemp(ntracers))
+      
+      ! Read all X-coordinates
+      READ(mfile,*) DtracerCoordinates(1,:)
+      
+      ! Read all Y-coordinates
+      READ(mfile,*) DtracerCoordinates(2,:)
+      
+      ! Probably read all Z-coordinates -- or ignore them
+      IF (rexport%p_rtriangulation%ndim .EQ. NDIM3D) THEN
+        READ(mfile,*) DtracerCoordinates(3,:)
+      ELSE 
+        READ(mfile,*) DtracerTemp(:)
+      END IF
+      
+      ! There must be an 'endtrace' at the end
+      CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+      CALL sys_tolower (sline)
+      READ(sline,*) skey
+      IF (skey .NE. 'endtrace') THEN
+        CALL output_line ('Error reading GMV data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_tracerdata')
+        CALL sys_halt() 
+      END IF
+      
+      ! Add the tracer data
+      CALL ucd_setTracers (rexport,DtracerCoordinates)
+      
+      DEALLOCATE(DtracerTemp,DtracerCoordinates)
+
+    END SUBROUTINE
+    
+    ! ---------------------------------------------------------------
+    
+    SUBROUTINE read_polygondata (mfile,scommand,rexport)
+    
+    ! Reads data about polygons from the GMV file mfile.
+    
+    ! Handle to the GMV file
+    INTEGER, INTENT(IN) :: mfile
+    
+    ! Last command line in the GMV file 
+    CHARACTER(LEN=*), INTENT(IN) :: scommand
+    
+    ! UCD structure where data is saved to.
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+      ! Local variables
+      INTEGER :: ilinelen,ios,npoints,imaterial
+      LOGICAL :: bfinish
+      CHARACTER(LEN=SYS_STRLEN) :: skey,sline
+      REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Dcoordinates
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: Dtemp
+
+      ! Read the next line specifying basic data about the polygon
+      CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+      CALL sys_tolower (sline)
+      
+      READ(sline,*) skey
+      bfinish = (skey .NE. 'endtrace') 
+      DO WHILE ((ios .EQ. 0) .AND. (.NOT. bfinish))
+        
+        ! Read material, #points
+        WRITE (mfile,*) imaterial,npoints
+        
+        ! Allocate memory for the polygon
+        ALLOCATE (Dcoordinates(rexport%p_rtriangulation%ndim,npoints))
+        ALLOCATE (Dtemp(npoints))
+        
+        ! Read the polygon. All X-coordinates
+        READ(mfile,*) Dcoordinates(1,:)
+        
+        ! Y-coordinates
+        READ(mfile,*) Dcoordinates(2,:)
+        
+        ! Probably Z-coordinates
+        IF (rexport%p_rtriangulation%ndim .EQ. 3) THEN
+          READ(mfile,*) Dcoordinates(3,:)
+        ELSE 
+          READ(mfile,*) Dtemp(:)
+        END IF
+        
+        ! Add the polygon
+        CALL ucd_addPolygon (rexport,Dcoordinates,imaterial)
+        
+        ! Deallocate data
+        DEALLOCATE (Dtemp,Dcoordinates)
+      
+        ! Read the next line specifying basic data about the next polygon
+        CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+        CALL sys_tolower (sline)
+        
+        READ(sline,*) skey
+        bfinish = (skey .NE. 'endtrace') 
+      END DO
+      
+      IF (ios .NE. 0) THEN
+        CALL output_line ('Error reading GMV data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_polygondata')
+        CALL sys_halt()
+      END IF
+      
+    END SUBROUTINE
+    
+    ! ---------------------------------------------------------------
+    
+    SUBROUTINE read_variables (mfile,scommand,rexport)
+    
+    ! Reads data about variables from the GMV file mfile.
+    
+    ! Handle to the GMV file
+    INTEGER, INTENT(IN) :: mfile
+    
+    ! Last command line in the GMV file 
+    CHARACTER(LEN=*), INTENT(IN) :: scommand
+    
+    ! UCD structure where data is saved to.
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+      ! Local variables
+      INTEGER :: ilinelen,ios,itype,imaterial
+      LOGICAL :: bfinish
+      CHARACTER(LEN=SYS_STRLEN) :: skey,sline,sname
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: Dcell
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: Dnode
+
+      ! Allocate memory for cell- and node-based data
+      ALLOCATE(Dcell(rexport%p_rtriangulation%NEL))
+      ALLOCATE(Dnode(rexport%p_rtriangulation%NVT))
+
+      ! Read the next line specifying basic data about the variable
+      CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+      CALL sys_tolower (sline)
+      
+      READ(sline,*) skey
+      bfinish = (skey .EQ. 'endvars') 
+      DO WHILE ((ios .EQ. 0) .AND. (.NOT. bfinish))
+        
+        ! Read variable name, type
+        READ (sline,*) sname,itype
+        
+        SELECT CASE (itype)
+        CASE (0) 
+          ! Cell based data. Read and remember
+          READ(mfile,*) Dcell
+          
+          CALL ucd_addVariableElementBased (rexport,sname,UCD_VAR_STANDARD,Dcell)
+              
+        CASE (1)
+          ! Node/Vertex based data.
+          READ(mfile,*) Dnode
+          
+          CALL ucd_addVariableVertexBased (rexport,sname,UCD_VAR_STANDARD,Dnode)
+          
+        CASE DEFAULT
+          CALL output_line ('Error reading GMV data! Unknown variable type!', &
+                  OU_CLASS_ERROR,OU_MODE_STD,'read_variables')
+          CALL sys_halt()
+  
+        END SELECT
+        
+        ! Read the next line specifying basic data about the next variable
+        CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+        CALL sys_tolower (sline)
+        
+        READ(sline,*) skey
+        bfinish = (skey .EQ. 'endvars') 
+        
+      END DO
+      
+      IF (ios .NE. 0) THEN
+        CALL output_line ('Error reading GMV data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_variables')
+        CALL sys_halt()
+      END IF
+      
+    END SUBROUTINE
+
+    ! ---------------------------------------------------------------
+    
+    SUBROUTINE read_materials (mfile,scommand,rexport)
+    
+    ! Reads data about materials from the GMV file mfile.
+    
+    ! Handle to the GMV file
+    INTEGER, INTENT(IN) :: mfile
+    
+    ! Last read command line in the GMV file 
+    CHARACTER(LEN=*), INTENT(IN) :: scommand
+    
+    ! UCD structure where tracer data is saved to.
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+      ! Local variables
+      INTEGER :: ilinelen,ios,nmats,itype,i
+      CHARACTER(LEN=SYS_STRLEN) :: skey,sline
+      CHARACTER(LEN=32), DIMENSION(:), ALLOCATABLE :: Snames
+      INTEGER, DIMENSION(:), ALLOCATABLE :: Imat
+
+      ! Interpret the command line, how many materials do we have? Type?
+      READ (scommand,*) skey,nmats,itype
+      
+      ! Allocate memory for the variable names
+      ALLOCATE(Snames(nmats))
+      
+      ! Read the material names
+      DO i=1,nmats
+        READ(mfile,*) Snames(i)
+      END DO
+      
+      ! Allocate memory for vertex/element material classification
+      SELECT CASE (itype)
+      CASE (0) 
+        ! Cell based data. 
+        ALLOCATE(Imat(rexport%p_rtriangulation%NEL))
+            
+      CASE (1)
+        ! Node/Vertex based data.
+        ALLOCATE(Imat(rexport%p_rtriangulation%NVT))
+        
+      CASE DEFAULT
+        CALL output_line ('Error reading GMV data! Unknown variable type!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'read_materials')
+        CALL sys_halt()
+
+      END SELECT
+      
+      ! Read material data of each cell / vertex
+      READ(mfile,*) Imat(:)
+      
+      ! GMV supports only the same material names for both, cells and
+      ! vertices. Inform the rexport structure about the material names:
+      CALL ucd_setMaterials (rexport,Snames)
+
+      ! Specify the material for vertices / elements
+      SELECT CASE (itype)
+      CASE (0) 
+        ! Cell based data. 
+        CALL ucd_setVertexMaterial (rexport,Imat)
+            
+      CASE (1)
+        ! Node/Vertex based data.
+        CALL ucd_setVertexMaterial (rexport,Imat)
+        
+      END SELECT
+
+      ! Deallocate memory      
+      DEALLOCATE(Imat,Snames)
+
+    END SUBROUTINE
+    
+    ! ---------------------------------------------------------------
+    
+    SUBROUTINE read_velocity(mfile,scommand,rexport)
+    
+    ! Reads data about velocity from the GMV file mfile.
+    
+    ! Handle to the GMV file
+    INTEGER, INTENT(IN) :: mfile
+    
+    ! Last command line in the GMV file 
+    CHARACTER(LEN=*), INTENT(IN) :: scommand
+    
+    ! UCD structure where data is saved to.
+    TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+    
+      ! Local variables
+      INTEGER :: ilinelen,ios,itype
+      LOGICAL :: bfinish
+      CHARACTER(LEN=SYS_STRLEN) :: skey,sline,sname
+      REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Ddata
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: Dtemp
+
+      ! Type of velocity data? Vertex or element based?
+      READ(scommand,*) skey,itype
+      
+      SELECT CASE (itype)
+      CASE (0) 
+            
+        ! Node based velocity data. Allocate memory.
+        ALLOCATE(Ddata(rexport%p_rtriangulation%NEL,rexport%p_rtriangulation%ndim))
+        ALLOCATE(Dtemp(rexport%p_rtriangulation%NEL))
+        
+        ! Read the data. X-velocity
+        READ(mfile,*) Ddata(:,1)
+        
+        ! Y-velocity
+        READ(mfile,*) Ddata(:,2)
+        
+        ! Probably Z-velocity.
+        ! Put the data to the rexport structure
+        IF (rexport%p_rtriangulation%ndim .EQ. NDIM3D) THEN
+          READ(mfile,*) Ddata(:,3)
+          CALL ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1), Ddata(:,NDIM3D))
+        ELSE 
+          READ(mfile,*) Dtemp(:)
+          CALL ucd_addVarElemBasedVec (rexport, sname, Ddata(:,1), Ddata(:,NDIM2D))
+        END IF
+        
+        ! Deallocate memory
+        DEALLOCATE(Dtemp,Ddata)
+            
+      CASE (1)
+        
+        ! Node based velocity data. Allocate memory.
+        ALLOCATE(Ddata(rexport%p_rtriangulation%NVT,rexport%p_rtriangulation%ndim))
+        ALLOCATE(Dtemp(rexport%p_rtriangulation%NVT))
+        
+        ! Read the data. X-velocity
+        READ(mfile,*) Ddata(:,1)
+        
+        ! Y-velocity
+        READ(mfile,*) Ddata(:,2)
+        
+        ! Probably Z-velocity.
+        ! Put the data to the rexport structure
+        IF (rexport%p_rtriangulation%ndim .EQ. NDIM3D) THEN
+          READ(mfile,*) Ddata(:,3)
+          CALL ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,NDIM3D))
+        ELSE 
+          READ(mfile,*) Dtemp(:)
+          CALL ucd_addVarVertBasedVec (rexport, sname, Ddata(:,1), Ddata(:,NDIM2D))
+        END IF
+        
+        ! Deallocate memory
+        DEALLOCATE(Dtemp,Ddata)
+        
+      CASE DEFAULT
+        CALL output_line ('Error reading GMV data! Unknown variable type!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'read_velocity')
+        CALL sys_halt()
+
+      END SELECT
+      
+
+      ! Read the next line specifying basic data about the variable
+      CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+      CALL sys_tolower (sline)
+      
+      READ(sline,*) skey
+      bfinish = (skey .NE. 'endvars') 
+      DO WHILE ((ios .EQ. 0) .AND. (.NOT. bfinish))
+        
+        ! Read variable name, type
+        WRITE (mfile,*) sname,itype
+        
+        
+        ! Read the next line specifying basic data about the next variable
+        CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+        CALL sys_tolower (sline)
+        
+        READ(sline,*) skey
+        bfinish = (skey .NE. 'endvars') 
+        
+      END DO
+      
+      IF (ios .NE. 0) THEN
+        CALL output_line ('Error reading GMV data!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_variables')
+        CALL sys_halt()
+      END IF
+      
+    END SUBROUTINE
+
+    ! ---------------------------------------------------------------
+    
+    SUBROUTINE read_triangulation (mfile,scommand,rtriangulation)
+    
+    ! Reads data about tracers from the GMV file mfile.
+    
+    ! Handle to the GMV file
+    INTEGER, INTENT(IN) :: mfile
+    
+    ! Last read command line in the GMV file
+    CHARACTER(LEN=*), INTENT(IN) :: scommand
+    
+    ! Triangulation structure. If this contains a valid triangulation,
+    ! the mesh data in the GMV file is skipped.
+    ! If rtriangulation is empty, a new triangulation with mesh data
+    ! from the GMV file is set up.
+    TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+    
+      ! Local variables
+      INTEGER :: ilinelen,ios,ntracers,n,i,nve,ive
+      INTEGER(I32) :: nmaxnve
+      CHARACTER(LEN=SYS_STRLEN) :: skey,sdummy,sline
+      REAL(DP), DIMENSION(:), ALLOCATABLE :: Dx,Dy,Dz
+      INTEGER(I32), DIMENSION(:,:), ALLOCATABLE :: IverticesAtElement
+      REAL(DP), DIMENSION(:,:), POINTER :: p_Ddata2D
+      INTEGER(I32), DIMENSION(:,:), POINTER :: p_Idata2D
+      INTEGER(I32), DIMENSION(2) :: Isize
+
+      ! Do we have a "nodes x" or a "nodes fromfile" command?
+      READ(scommand,*) skey,sdummy
+      
+      IF ((rtriangulation%ndim .NE. 0) .AND. (skey .EQ. 'fromfile')) THEN
+        CALL output_line ('Cross reference to mesh not supported!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_triangulation')
+        CALL sys_halt()
+      END IF
+      
+      ! Quit if this is just this line that contains triangulation info
+      IF ((rtriangulation%ndim .NE. 0) .AND. (skey .EQ. 'fromfile')) RETURN
+      
+      ! Get the number of vertices
+      READ(scommand,*) skey,n
+      
+      ! What is this for a command?
+      IF (skey .NE. 'nodes') THEN
+        CALL output_line ('Unsupported GMV file structure!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_triangulation')
+        CALL sys_halt()
+      END IF
+      
+      rtriangulation%NVT = n
+      
+      ! Read point position data
+      ALLOCATE(Dx(n),Dy(n),Dz(n))
+      READ(mfile,*) Dx(:)
+      READ(mfile,*) Dy(:)
+      READ(mfile,*) Dz(:)
+      
+      ! 2D or 3D mesh? It's 3D as soon as one Z-coordinate is <> 0
+      rtriangulation%ndim = NDIM2D
+      DO i=1,n
+        IF (Dz(i) .NE. 0.0_DP) THEN
+          rtriangulation%ndim = NDIM3D
+          EXIT
+        END IF
+      END DO
+      
+      ! Allocate memory for the coordinates with the storage-system
+      Isize = (/rtriangulation%ndim,INT(rtriangulation%NVT,I32)/)
+      CALL storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+          rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
+      
+      ! Get the pointers to the coordinate array
+      CALL storage_getbase_double2D(&
+          rtriangulation%h_DvertexCoords,p_Ddata2D)
+      
+      ! Copy the coordinates
+      DO i=1,n
+        p_Ddata2D(NDIM1D,i) = Dx(i)
+      END DO
+      IF (rtriangulation%ndim .GE. NDIM2D) THEN
+        DO i=1,n
+          p_Ddata2D(NDIM2D,i) = Dy(i)
+        END DO
+      END IF
+      IF (rtriangulation%ndim .GE. NDIM3D) THEN
+        DO i=1,n
+          p_Ddata2D(NDIM3D,i) = Dz(i)
+        END DO
+      END IF
+      
+      ! Deallocate memory
+      DEALLOCATE(Dz,Dy,Dx)
+      
+      ! At next we need KVERT = IverticesAtElement.
+      CALL io_readlinefromfile (mfile, sline, ilinelen, ios)
+      
+      ! Do we have a "nodes x" or a "nodes fromfile" command?
+      READ(sline,*) skey,sdummy
+      
+      IF (skey .EQ. 'fromfile') THEN
+        CALL output_line ('Cross reference to mesh not supported!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_triangulation')
+        CALL sys_halt()
+      END IF
+      
+      ! Get the number of cells
+      READ(sline,*) skey,n
+      
+      ! What is this for a command?
+      IF (skey .NE. 'cells') THEN
+        CALL output_line ('Unsupported GMV file structure!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_triangulation')
+        CALL sys_halt()
+      END IF
+      
+      rtriangulation%NEL = n
+      
+      rtriangulation%InelOfType(:) = 0
+      
+      ! Allocate memory for connectivity. We support up to TRIA_MAXNVE
+      ! vertices per element and don't know a-priori
+      ALLOCATE(IverticesAtElement(TRIA_MAXNVE,n))
+      
+      ! Read the next n cell data tags.
+      ! Format: Line 1: "type" NVE. Line 2: Vertex numbers.
+      nmaxnve = 0
+      DO i=1,n
+        IverticesAtElement(:,i) = 0
+        READ(mfile,*) sdummy,nve
+        
+        ! Increase the number of elements of that type
+        rtriangulation%InelOfType(nve) = rtriangulation%InelOfType(nve)+1
+        
+        ! Figure out the size of the first dimension of KVERT
+        nmaxnve = MAX(nve,nmaxnve)
+        
+        ! Read the vertex numbers
+        READ(mfile,*) IverticesAtElement(1:nve,i)
+      END DO
+      
+      ! All elements read in. Create the actual IverticesAtElement.
+
+      Isize = (/nmaxnve,INT(rtriangulation%NEL,I32)/)
+      CALL storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+          rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
+          
+      ! Get the pointer to the IverticesAtElement array and read the array
+      CALL storage_getbase_int2D(&
+          rtriangulation%h_IverticesAtElement,p_Idata2D)
+      
+      ! Copy the data.
+      DO i=1,n
+        p_Idata2D(1:nmaxnve,i) = IverticesAtElement(1:nmaxnve,i)
+      END DO
+      
+      ! We don't need IverticesAtElement anymore...
+      DEALLOCATE(IverticesAtElement)
+      
+      SELECT CASE (rtriangulation%ndim)
+      CASE (NDIM2D)
+        ! Create some standard mesh information
+        CALL tria_genElementsAtVertex2D    (rtriangulation)
+        CALL tria_genNeighboursAtElement2D (rtriangulation)
+        CALL tria_genEdgesAtElement2D      (rtriangulation)
+        CALL tria_genElementsAtEdge2D      (rtriangulation)
+        
+        ! Reconstruct InodalProperty
+        CALL reconstruct_InodalProperty_2D (rtriangulation)
+        
+        ! Now generate a standard mesh from the raw mesh.
+        ! Generate all missing information.
+        CALL tria_initStandardMeshFromRaw(rtriangulation)
+
+      CASE DEFAULT
+        CALL output_line ('Only 2D supported! Cannot reconstruct InodalProperty!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'read_triangulation')
+        CALL sys_halt()
+      END SELECT
+
+    END SUBROUTINE
+    
+    SUBROUTINE reconstruct_InodalProperty_2D (rtriangulation)
+    
+      ! Reconstructs the InodalProperty, IboundaryCpIdx and 
+      ! IverticesAtBoundary arrays. Sets NBCT!
+      ! DvertexParameterValue is cleared.
+      
+      ! Triangulation structure. InodalProperty and NBCT are initialised here.
+      ! InodalProperty must be allocated and initialised with 0.
+      TYPE(t_triangulation), INTENT(INOUT) :: rtriangulation
+    
+      ! local variables
+      INTEGER(I32), DIMENSION(:), POINTER :: p_InodalProperty
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:,:), POINTER :: p_IverticesAtElement
+      INTEGER(PREC_EDGEIDX), DIMENSION(:,:), POINTER :: p_IedgesAtElement
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:,:), POINTER :: p_IneighboursAtElement
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertex
+      INTEGER(PREC_ELEMENTIDX), DIMENSION(:), POINTER :: p_IelementsAtVertexIdx
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), POINTER :: p_IverticesAtBoundary
+      INTEGER(PREC_VERTEXIDX), DIMENSION(:), ALLOCATABLE :: IverticesAtBoundary
+      INTEGER(I32), DIMENSION(:), POINTER :: p_IboundaryCpIdx
+      INTEGER(PREC_VERTEXIDX) :: ivt,ivt2
+      INTEGER(PREC_ELEMENTIDX) :: iel,ielidx
+      INTEGER :: ive,iveprevious,ivenext,nbct,nve,nvbd,ivbd,ibctidx,icurrentbc
+      REAL(DP), DIMENSION(:), POINTER :: p_DvertexParameterValue
+      
+      ! Allocate memory for the arrays 
+      CALL storage_new ('tria_read_tri2D', 'KNPR', &
+          INT(rtriangulation%NVT,I32), ST_INT, &
+          rtriangulation%h_InodalProperty, ST_NEWBLOCK_ZERO)
+      
+      ! Get the pointer to some arrays
+      CALL storage_getbase_int(&
+          rtriangulation%h_InodalProperty,p_InodalProperty)
+      CALL storage_getbase_int2d(&
+          rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+      CALL storage_getbase_int2d(&
+          rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+      CALL storage_getbase_int2d(&
+          rtriangulation%h_IneighboursAtElement,p_IneighboursAtElement)
+      CALL storage_getbase_int(&
+          rtriangulation%h_IelementsAtVertex,p_IelementsAtVertex)
+      CALL storage_getbase_int(&
+          rtriangulation%h_IelementsAtVertexIdx,p_IelementsAtVertexIdx)
+          
+      ! In a first loop find the edges with no neighbour element. These are
+      ! boundary edges.
+      ! Count the number of boundary vertices.
+      nvbd = 0
+      DO iel=1,rtriangulation%NEL
+        DO ive=1,UBOUND(p_IverticesAtElement,1)
+          IF (p_IverticesAtElement(ive,iel) .EQ. 0) EXIT ! Triangle in a quad mesh
+          IF (p_IneighboursAtElement (ive,iel) .EQ. 0) THEN
+            
+            ! Both vertices on the edge are boundary vertices
+            ivenext = MOD(ive,UBOUND(p_IverticesAtElement,1))+1
+            IF (p_IverticesAtElement(ivenext,iel) .EQ. 0) ivenext = ivenext-1
+            
+            IF (p_InodalProperty(p_IverticesAtElement(ive,iel)) .NE. -1) THEN
+              p_InodalProperty(p_IverticesAtElement(ive,iel))     = -1
+              nvbd = nvbd+1
+            END IF
+            IF (p_InodalProperty(p_IverticesAtElement(ivenext,iel)) .NE. -1) THEN
+              p_InodalProperty(p_IverticesAtElement(ivenext,iel)) = -1
+              nvbd = nvbd+1
+            END IF
+          END IF
+        END DO
+      END DO
+      
+      rtriangulation%NVBD = nvbd
+      
+      ! Allocate memory for IverticesAtBoundary.
+      CALL storage_new ('tria_generateBasicBoundary', &
+          'KVBD', INT(rtriangulation%NVBD,I32), &
+          ST_INT, rtriangulation%h_IverticesAtBoundary, ST_NEWBLOCK_NOINIT)
+
+      CALL storage_getbase_int(&
+          rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+      
+      ! Now loop through all vertices. Whenever we find a vertex with InodalProperty=-1,
+      ! we start going from vertex to vertex until we found all vertices of
+      ! that boundary component.
+      ! We save all boundary vertices in IverticesAtBoundary.
+      nbct = 0
+      ivbd = 0
+      DO ivt = 1,rtriangulation%NVT
+        IF (p_InodalProperty(ivt) .EQ. -1) THEN
+          ! New boundary component found
+          nbct = nbct+1
+          
+          ! Go from edge to edge until we hit ivt again. This must happen as the 
+          ! boundary component must be closed.
+          ivt2 = ivt
+          
+          ivt2loop: DO
+            p_InodalProperty(ivt2) = nbct
+            
+            ! Save the vertex.
+            ivbd = ivbd+1
+            p_IverticesAtBoundary(ivbd) = ivt2
+            
+            ! Check the edges adjacent to the vertex...for this purpose, we must 
+            ! find them.
+            DO ielidx = p_IelementsAtVertexIdx(ivt2),p_IelementsAtVertexIdx(ivt2+1)-1
+
+              iel = p_IelementsAtVertex(ielidx)
+            
+              ! Where is the point in the element
+              DO ive=1,UBOUND(p_IverticesAtElement,1)
+                IF (p_IverticesAtElement(ive,iel) .EQ. ivt2) EXIT 
+              END DO
+              
+              ! Triangle or quad?
+              nve = UBOUND(p_IverticesAtElement,1)
+              IF (p_IverticesAtElement(nve,iel) .EQ. 0) nve = nve-1
+
+              iveprevious = MOD(ive+nve-2,nve)+1
+              ivenext = MOD(ive,nve)+1
+              
+              ! On that element, check the edge following the vertex if it's a boundary edge.
+              IF (p_IneighboursAtElement(ive,iel) .EQ. 0) THEN
+              
+                ! Yes, that's a boundary edge. does it lead to a vertex that we haven't had?
+                IF (p_InodalProperty(p_IverticesAtElement(ivenext,iel)) .EQ. -1) THEN
+                  ! Yes! That node is now a boundary node. We continue with it.
+                  ivt2 = p_IverticesAtElement(ivenext,iel)
+                  CYCLE ivt2loop
+                END IF
+              
+              END IF
+                
+              ! No, it's not. Check the previous edge
+              IF (p_IneighboursAtElement(iveprevious,iel) .EQ. 0) THEN
+              
+                ! Yes, that's a boundary edge. does it lead to a vertex that we haven't had?
+                IF (p_InodalProperty(p_IverticesAtElement(iveprevious,iel)) .EQ. -1) THEN
+                  ! Yes! That node is now a boundary node. We continue with it.
+                  ivt2 = p_IverticesAtElement(iveprevious,iel)
+                  CYCLE ivt2loop
+                END IF
+              
+              END IF
+                
+            END DO
+          
+            ! Ok, there is no edge found starting from the vertex ivt2 that leads to 
+            ! another vertex on the boundary. That means we found all vertices
+            ! on the boundary component!
+            ! So we quit the loop here and continue to find the next non-classified
+            ! vertex ivt.
+            EXIT ivt2loop
+            
+          END DO ivt2loop
+          
+        END IF
+      END DO
+    
+      ! nbct is the number of boundary components we found.
+      rtriangulation%NBCT = nbct
+    
+      ! Allocate memory for the boundary component index vector.
+      ! Initialise that with zero!
+      CALL storage_new ('tria_generateBasicBoundary', &
+          'KBCT', INT(rtriangulation%NBCT+1,I32), &
+          ST_INT, rtriangulation%h_IboundaryCpIdx, ST_NEWBLOCK_ZERO)
+    
+      CALL storage_getbase_int (&
+          rtriangulation%h_IboundaryCpIdx,p_IboundaryCpIdx)
+    
+      ! Figure out the IboundaryCpIdx array but once checking the BC
+      ! number of all vertices on the boundary
+      ibctidx = 0
+      icurrentbc = 0
+      DO ivbd = 1,nvbd
+        IF (p_InodalProperty(p_IverticesAtBoundary(ivbd)) .NE. icurrentbc) THEN
+          ibctidx = ibctidx+1
+          p_IboundaryCpIdx(ibctidx) = ivbd
+          icurrentbc = p_InodalProperty(p_IverticesAtBoundary(ivbd))
+        END IF
+      END DO
+      
+      p_IboundaryCpIdx(nbct+1) = nvbd+1
+      
+      ! Allocate memory for  and DvertexParameterValue
+      CALL storage_new ('tria_generateBasicBoundary', &
+          'DVBDP', INT(rtriangulation%NVBD,I32), &
+          ST_DOUBLE, rtriangulation%h_DvertexParameterValue, ST_NEWBLOCK_NOINIT)
+      
+      ! Get the array where to store boundary parameter values.
+      CALL storage_getbase_double (&
+          rtriangulation%h_DvertexParameterValue,p_DvertexParameterValue)
+
+      ! Clear the array -- we have no parameter values!
+      CALL lalg_clearVectorDble (p_DvertexParameterValue)
+    
+      ! InodalProperty is completely classified -- that's it.
+    
+    END SUBROUTINE
+
+  END SUBROUTINE
+
+!************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ucd_setFilename(rexport,sfilename)
+
+!<description>
+  ! This routine allows to change the filename of an output file.
+  ! Whether or not this is possible depends on the file format of the
+  ! output file.
+  ! Changing the filename is possible as long as no data is written
+  ! to the file, e.g. for all file formats that buffer the output
+  ! in memory before writing the file.
+!</description>
+
+!<input>
+  ! New filename for output file.
+  CHARACTER(LEN=*), INTENT(IN) :: sfilename
+!</input>
+
+!<inputoutput>
+  ! The ucd export structure that specifies the output.
+  TYPE(t_ucdExport), INTENT(INOUT) :: rexport
+!</inputoutput>
+
+!</subroutine>
+
+    ! Start the output
+    SELECT CASE(rexport%coutputFormat)
+    CASE (UCD_FORMAT_GMV,UCD_FORMAT_AVS,UCD_FORMAT_VTK)
+      ! Here it's ok to change the filename
+      rexport%sfilename = sfilename
+    CASE DEFAULT
+      CALL output_line ('Cannot change filename', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'ucd_setFilename')
+      CALL sys_halt()
+    END SELECT
+    
+  END SUBROUTINE
+
+!************************************************************************
+  
+!<subroutine>
+
+  SUBROUTINE ucd_getVariable(rexport,svarName,Ddata,nlength,itype)
+
+!<description>
+  ! Reads the data of the variable svarName. If Ddata is specified,
+  ! the variable data is written to Ddata. If nlength is specified,
+  ! the length of the variable is returned in nlength.
+!</description>
+
+!<input>
+  ! The ucd export structure containing data.
+  TYPE(t_ucdExport), INTENT(IN) :: rexport
+
+  ! Name of the variable whose data should be retrieved.
+  CHARACTER(LEN=*), INTENT(IN) :: svarName
+!</input>
+
+!<output>
+  ! OPTIONAL: Data array. Must be large enough to hold all data.
+  ! The data of variable svarName is transferred to Ddata.
+  !
+  ! If the variable is unknown, Ddata is not changed.
+  REAL(DP), DIMENSION(:), INTENT(INOUT), OPTIONAL :: Ddata
+  
+  ! OPTIONAL: Length qualifier.
+  ! If specified, nlength is set to the number of elements in
+  ! the variable svarName, thus to the minimum length Ddata must
+  ! have to accept the data of the variable.
+  !
+  ! If the variable is unknown, -1 is returned.
+  INTEGER(I32), INTENT(OUT), OPTIONAL :: nlength
+  
+  ! OPTIONAL: Type of data. One of the UCD_BASE_xxxx flags.
+  ! =UCD_BASE_ELEMENT: element based data.
+  ! =UCD_BASE_VERTEX: vertex based data.
+  !
+  ! Is set to -1 if the variable is unknown.
+  INTEGER, INTENT(OUT), OPTIONAL :: itype
+!</output>
+
+!</subroutine>
+
+    INTEGER :: i
+    CHARACTER(LEN=SYS_NAMELEN) :: sname
+    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
+    
+    sname = svarName
+    CALL sys_toupper_replace (sname)
+    
+    ! Find the variable
+    DO i=1,SIZE(rexport%p_SvariableNames)
+    
+      IF (sys_upcase(rexport%p_SvariableNames(i)) .EQ. sname) THEN
+        ! Variable found! Return data as desired.
+        
+        CALL storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
+        
+        IF (PRESENT(nlength)) nlength = SIZE(p_Ddata)
+        IF (PRESENT(itype)) itype = rexport%p_IvariableBase(i)
+        IF (PRESENT(Ddata)) THEN
+          CALL lalg_copyVectorDble (p_Ddata,Ddata(1:SIZE(p_Ddata)))
+        END IF
+        
+      END IF
+    
+    END DO
+    
+    ! Variable not found.
+    IF (PRESENT(nlength)) nlength = -1
+    IF (PRESENT(itype)) itype = -1
+    
+  END SUBROUTINE
 
 END MODULE
