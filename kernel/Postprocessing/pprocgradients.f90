@@ -1337,12 +1337,6 @@ CONTAINS
         CALL calc_localTrafo(IelementsInPatchIdx, icoordSystem, npatchesInCurrentBlock, &
             NVE, p_DcubPtsReal, DpatchBound, p_DcubPtsRef)
 
-        DO idx=1,nelementsPerBlock
-          DO i=1,ncubp
-            p_DcubPtsRef(:,i,idx) = (/-1._DP,-1._DP/)
-          END DO
-        END DO
-
         ! Depending on the type of transformation, we must now choose
         ! the mapping between the reference and the real element.
         ! In case we use a nonparametric element as test function, we need the 
@@ -1362,11 +1356,6 @@ CONTAINS
             p_Dcoords, p_Djac, p_Ddetj, BderDest, Dpolynomials, ncubp,&
             nelementsPerBlock, p_DcubPtsTrial)
         
-
-        PRINT *, Dpolynomials(:,1,1,1)
-        STOP
-
-
         !-----------------------------------------------------------------------
         ! Phase (5)  Perform least-squares fitting
         !-----------------------------------------------------------------------
@@ -1499,23 +1488,23 @@ CONTAINS
           DO idx = IelementsInPatchIdx(ipatch),IelementsInPatchIdx(ipatch+1)-1
             
             ! Loop over local degrees of freedom
-            DO j= 1, nlocalDOFsDest
+            DO ipoint= 1, nlocalDOFsDest
             
               dval = 0.0_DP
-              DO ipoint = 1, indofTrial
-                dval = dval + Dderivatives(j,ipatch,1) * Dpolynomials(ipoint,DER_FUNC,j,idx)
+              DO j = 1, indofTrial
+                dval = dval + Dderivatives(j,ipatch,1) * Dpolynomials(j,DER_FUNC,ipoint,idx)
               END DO
-              p_DxDeriv(IdofsDest(j,idx)) = p_DxDeriv(IdofsDest(j,idx)) + dval
+              p_DxDeriv(IdofsDest(ipoint,idx)) = p_DxDeriv(IdofsDest(ipoint,idx)) + dval
 
               dval = 0.0_DP
-              DO ipoint = 1, indofTrial
-                dval = dval + Dderivatives(j,ipatch,2) * Dpolynomials(ipoint,DER_FUNC,j,idx)
+              DO j = 1, indofTrial
+                dval = dval + Dderivatives(j,ipatch,2) * Dpolynomials(j,DER_FUNC,ipoint,idx)
               END DO
-              p_DyDeriv(IdofsDest(j,idx)) = p_DyDeriv(IdofsDest(j,idx)) + dval
+              p_DyDeriv(IdofsDest(ipoint,idx)) = p_DyDeriv(IdofsDest(ipoint,idx)) + dval
 
               ! Count how often a DOF was touched.
-              p_IcontributionsAtDOF(IdofsDest(j,idx)) = &
-                  p_IcontributionsAtDOF(IdofsDest(j,idx))+1
+              p_IcontributionsAtDOF(IdofsDest(ipoint,idx)) = &
+                  p_IcontributionsAtDOF(IdofsDest(ipoint,idx))+1
             END DO
           END DO
         END DO
