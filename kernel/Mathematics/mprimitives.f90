@@ -1600,7 +1600,7 @@ CONTAINS
     END IF
 
     DO i =1, SIZE(Dd)
-      IF (ABS(Dd(i) .GT. SYS_EPSREAL)) THEN
+      IF (ABS(Dd(i)) .GT. SYS_EPSREAL) THEN
         Daux(i) = Daux(i)/Dd(i)
       ELSE
         Daux(i) = 0.0_DP
