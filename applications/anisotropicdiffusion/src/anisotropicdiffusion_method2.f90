@@ -136,6 +136,9 @@ CONTAINS
     
     ! Element type of the discretisation
     INTEGER :: ieltype
+
+    ! Type of error estimator
+    INTEGER :: ierrorestimator
     
     ! Whether to convert to triangle mesh
     INTEGER :: iconvertToTriangleMesh
@@ -215,6 +218,10 @@ CONTAINS
     ! Element type
     CALL parlst_getvalue_int (rparams, '', &
                               'ielementType', ieltype, 7)
+
+    ! Type of error estimator
+    CALL parlst_getvalue_int (rparams, '', &
+                              'ierrorestimator', ierrorestimator, 1)
 
     ! Type of stabilisation
     CALL parlst_getvalue_int (rparams, '', &
@@ -318,7 +325,7 @@ CONTAINS
     ! gethadaptMonitorFunction below. If this monitor function returns a value
     ! > drefinementTolerance to an element, that element is refined.
     ! A value < dcoarseningTolerance on the other hand results in coarsening.
-    rhadapt%drefinementTolerance = 1
+    rhadapt%drefinementTolerance = 1e-1
     rhadapt%dcoarseningTolerance = 1e-10
     CALL hadapt_initFromTriangulation(rhadapt,rtriangulation)
 
@@ -644,24 +651,11 @@ CONTAINS
       ! +----------------------------------------------------------------------
       ! | COMPUTE INDICATOR FOR H-ADAPTIVITY
       ! +----------------------------------------------------------------------     
-      CALL lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u2.gmv')
-      CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
-      CALL ucd_write (rexport)
-      CALL ucd_release (rexport)
-      
+
+      ! Perform a posteriori error estimation
       CALL lsyssc_createVector(rindicator,rtriangulation%NEL,.TRUE.)
-      CALL getMonitorFunction(rtriangulation,&
-          rvectorBlock%RvectorBlock(1),ieltype,rindicator)
-
-      CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/err'//&
-          TRIM(sys_siL(rhadapt%nRefinementSteps,3))//'.gmv')
-      CALL lsyssc_getbase_double (rindicator,p_Ddata)
-      CALL ucd_addVariableElementBased (rexport,'err',UCD_VAR_STANDARD, p_Ddata)
-      CALL ucd_write (rexport)
-      CALL ucd_release (rexport)
-
-      STOP
+      CALL getMonitorFunction(rtriangulation,rvectorBlock%RvectorBlock(1),&
+          ieltype,ierrorestimator,rindicator)
 
       ! Perform one step h-adaptivity
       CALL hadapt_performAdaptation(rhadapt,rindicator)
@@ -724,7 +718,7 @@ CONTAINS
 
     ! Start UCD export to GMV file:
     SELECT CASE (ieltype)
-    CASE (1,11)
+    CASE (-1,1,11)
       CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u2.gmv')
       CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     CASE (2)
