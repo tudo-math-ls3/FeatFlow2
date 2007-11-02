@@ -582,12 +582,10 @@ CONTAINS
 
 !<subroutine>
 
-  SUBROUTINE getMonitorFunction(rtriangulation,rsolution,ieltype,rindicator)
+  SUBROUTINE getMonitorFunction(rtriangulation,rsolution,ieltype,ierrorestimator,rindicator)
   
     USE pprocgradients
     USE pprocerror
-
-    USE ucd
 
 !<description>
   ! This routine defines a 'monitor function' for the adaptive grid refinement
@@ -606,6 +604,9 @@ CONTAINS
 
     ! The type of element used for the FE solution
     INTEGER(I32), INTENT(IN) :: ieltype
+
+    ! The type of error estimator
+    INTEGER, INTENT(IN) :: ierrorestimator
 !</input>
     
 !</inputoutput>
@@ -622,10 +623,6 @@ CONTAINS
     TYPE(t_vectorBlock)         :: rgradient,rgradientRef
     TYPE(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
     REAL(DP)                    :: dsolutionError,dgradientError,daux
-
-    REAL(DP), DIMENSION(:), POINTER :: p_Ddata
-    TYPE(t_ucdExport) :: rexport
-    
 
     ! Initialise block discretisations
     CALL spdiscr_initBlockDiscr2D (rdiscrBlock,2,&
@@ -688,24 +685,20 @@ CONTAINS
           EL_E013, SPDISC_CUB_AUTOMATIC, rdiscrBlockRef%Rspatialdiscretisation(2))
 
     CASE(-1)
-      ! Initialise spatial discretisations for gradient with Q1-elements
+      ! Initialise spatial discretisations for gradient with P0/Q0-elements
       CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
           EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlock%Rspatialdiscretisation(1))
       CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
           EL_E000, EL_E010, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlock%Rspatialdiscretisation(2))
-
-      PRINT *,rsolution%p_rspatialdiscretisation%RelementDistribution(:)%NEL
-      PRINT *,rsolution%p_rspatialdiscretisation%RelementDistribution(:)%h_IelementList
-      PRINT *,rdiscrBlock%Rspatialdiscretisation(1)%RelementDistribution(:)%h_IelementList
       
-      ! Initialise spatial discretisations for reference gradient with Q2-elements
+      ! Initialise spatial discretisations for reference gradient with P1/Q1-elements
       CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
-          EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlockRef%Rspatialdiscretisation(1))
       CALL spdiscr_deriveDiscr_triquad (rsolution%p_rspatialdiscretisation,&
-          EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
+          EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
           rdiscrBlockRef%Rspatialdiscretisation(2))
       
     CASE DEFAULT
@@ -718,22 +711,28 @@ CONTAINS
     CALL lsysbl_createVecBlockByDiscr (rdiscrBlock,   rgradient,    .TRUE.)
     CALL lsysbl_createVecBlockByDiscr (rdiscrBlockRef,rgradientRef, .TRUE.)
 
-    ! Recover gradients by means of L2-projection
+    ! Recover consistent gradient
     CALL ppgrd_calcGradient (rsolution, rgradient)
-!    CALL ppgrd_calcGradient (rsolution, rgradientRef)
-!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
-    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
-!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
 
+    ! Recover smoothed gradient
+    SELECT CASE(ierrorestimator)
+    CASE (1)
+      CALL ppgrd_calcGradient (rsolution, rgradientRef)
 
+    CASE (2)
+      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
 
-    CALL lsyssc_getbase_double (rgradientRef%RvectorBlock(1),p_Ddata)
-    CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/test.gmv')
-    CALL ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
-    CALL ucd_write (rexport)
-    CALL ucd_release (rexport)
+    CASE (3)
+      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
 
-    STOP
+    CASE (4)
+      CALL ppgrd_calcGradSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
+
+    CASE DEFAULT
+      CALL output_line('Invalid type of error estimator!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'getMonitorFunction')
+      CALL sys_halt()
+    END SELECT
 
     ! Compute gradient error
     CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
@@ -748,34 +747,13 @@ CONTAINS
 
     PRINT *, "!!gradient error!! = ",dgradientError
     
+    ! Release temporal discretisation structure
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
+    CALL spdiscr_releaseBlockDiscr(rdiscrBlockRef)
     
-
-!!$!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_NODEPATCH)
-!!$!    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_ELEMPATCH)
-!!$    CALL ppgrd_calcGrad2DSuperPatchRecov (rsolution, rgradientRef, PPGRD_FACEPATCH)
-!!$
-!!$    ! Compute gradient error
-!!$    CALL pperr_blockL2ErrorEstimate(rgradient,rgradientRef,&
-!!$        dgradientError,relementError=rindicator)
-!!$
-!!$    ! Compute L2-norm of solution
-!!$    CALL pperr_scalar(rsolution,PPERR_L2ERROR,dsolutionError)
-!!$
-!!$    ! Prepare indicator for grid refinement/coarsening
-!!$    daux=SQRT((dsolutionError**2+dgradientError**2)/REAL(rindicator%NEQ,DP))
-!!$    CALL lsyssc_scaleVector(rindicator,1._DP/daux)
-!!$
-!!$    PRINT *, "!!gradient error!! = ",dgradientError
-!!$  
-!!$    ! Release temporal discretisation structure
-!!$    CALL spdiscr_releaseBlockDiscr(rdiscrBlock)
-!!$    CALL spdiscr_releaseBlockDiscr(rdiscrBlockRef)
-!!$    
-!!$    ! Release vectors
-!!$    CALL lsysbl_releaseVector(rgradient)
-!!$    CALL lsysbl_releaseVector(rgradientRef)
-!!$
-!!$    PAUSE
+    ! Release vectors
+    CALL lsysbl_releaseVector(rgradient)
+    CALL lsysbl_releaseVector(rgradientRef)
   END SUBROUTINE
 
 END MODULE
