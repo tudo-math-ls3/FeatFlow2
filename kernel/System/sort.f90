@@ -25,15 +25,15 @@
 !#
 !# 5.) arraySort_sortByIndex_int
 !#     -> Sorts an array of integer arrays. One of the positions in the
-!#        arrays os chosen as a key for the sorting process.
+!#        arrays is chosen as a key for the sorting process.
 !#
 !# 6.) arraySort_sortByIndex_dp
 !#     -> Sorts an array of double precision arrays. One of the positions in
-!#        the arrays os chosen as a key for the sorting process.
+!#        the arrays is chosen as a key for the sorting process.
 !#
-!# 6.) arraySort_sortByIndex_sp
+!# 7.) arraySort_sortByIndex_sp
 !#     -> Sorts an array of single precision arrays. One of the positions in
-!#        the arrays os chosen as a key for the sorting process.
+!#        the arrays is chosen as a key for the sorting process.
 !#
 !# Auxiliary subroutines:
 !#
@@ -74,7 +74,7 @@ MODULE sort
   ! of Dortmund.
   ! For small field sizes, insertsort is used
   INTEGER, PARAMETER :: SORT_MERGE      = 4
-
+  
   ! Stable sorting algorithm
   ! Defaults to mergesort, but this can change in the future
   INTEGER, PARAMETER :: SORT_STABLE = 10
