@@ -101,6 +101,9 @@
 !# 26.) hadapt_checkConsistency
 !#      -> check the internal consistency of dynamic data structures
 !#
+!# 27.) hadapt_refreshAdaptation
+!#      -> Refresh pointers of adaptation structure
+!#
 !# The following internal routines are available:
 !#
 !#  1.) add_vertex2D = add_vertex_atEdgeMidpoint2D /
@@ -392,6 +395,7 @@ MODULE hadaptivity
   PUBLIC :: hadapt_writeGridSVG
   PUBLIC :: hadapt_writeGridGMV
   PUBLIC :: hadapt_checkConsistency
+  PUBLIC :: hadapt_refreshAdaptation
 
 !<constants>
 
@@ -1196,7 +1200,7 @@ CONTAINS
 
     ! Check if boundary structure exists
     IF (ASSOCIATED(rhadapt%rBoundary)) THEN
-      DO ibct=1,SIZE(rhadapt%rBoundary)
+      DO ibct=1,SIZE(rhadapt%rBoundary,1)
         CALL btree_releaseTree(rhadapt%rBoundary(ibct))
       END DO
       DEALLOCATE(rhadapt%rBoundary)
@@ -2153,7 +2157,7 @@ CONTAINS
 
     ! Check if boundary structure exists and remove it
     IF (ASSOCIATED(rhadapt%rBoundary)) THEN
-      DO ibct=1,SIZE(rhadapt%rBoundary)
+      DO ibct=1,SIZE(rhadapt%rBoundary,1)
         CALL btree_releaseTree(rhadapt%rBoundary(ibct))
       END DO
       DEALLOCATE(rhadapt%rBoundary)
@@ -3408,10 +3412,10 @@ CONTAINS
     WRITE(UNIT=iunit,FMT=*) 'variable'
     WRITE(UNIT=iunit,FMT=*) 'vert_age 1'
 
-    DO ivt=1,SIZE(rhadapt%p_IvertexAge)
+    DO ivt=1,SIZE(rhadapt%p_IvertexAge,1)
       WRITE(UNIT=iunit,FMT=40) rhadapt%p_IvertexAge(ivt)
     END DO
-    DO ivt=SIZE(rhadapt%p_IvertexAge)+1,rhadapt%NVT
+    DO ivt=SIZE(rhadapt%p_IvertexAge,1)+1,rhadapt%NVT
       WRITE(UNIT=iunit,FMT=40) -99999
     END DO
 
@@ -3715,6 +3719,91 @@ CONTAINS
           MERGE('PASSED','FAILED',btest))
     END IF
   END SUBROUTINE hadapt_checkConsistency
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  SUBROUTINE hadapt_refreshAdaptation(rhadapt,rtriangulation)
+
+!<description>
+    ! This subroutine refreshes the pointers and internal structure of the 
+    ! adaptation structure.
+    ! NOTE: The triangulation structure must be compatible with the adaptivity 
+    ! structure. This CANNOT be checked by the routine and must be guaranteed
+    ! by the used. The philosophy behind this adaptivity structure is to not
+    ! modify the triangulation externally. If external modifications are performed
+    ! then all adaptivity structures must be released and rebuild from scratch.
+    ! This is quite time-consuming, and moreover, the deletion of vertices is
+    ! not possible since all vertices will be considered as initial vertices.
+!</description>
+
+!<input>
+    ! Triangulation structure
+    TYPE(t_triangulation), INTENT(IN) :: rtriangulation
+!</input>
+
+!<inputoutput>
+    ! Adaptivity structure
+    TYPE(t_hadapt), INTENT(INOUT) :: rhadapt
+!</inputoutput>
+!</subroutine>
+
+
+    ! Get pointer to InodalProperty
+    IF (rhadapt%h_InodalProperty .EQ. &
+        rtriangulation%h_InodalProperty) THEN
+      CALL storage_getbase_int(rhadapt%h_InodalProperty,&
+          rhadapt%p_InodalProperty)
+    ELSE
+      CALL output_line('Inconsistent handle h_InodalProperty',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
+      CALL sys_halt()
+    END IF
+
+    ! Get pointer to IverticesAtElement
+    IF (rhadapt%h_IverticesAtElement .EQ. &
+        rtriangulation%h_IverticesAtElement) THEN
+      CALL storage_getbase_int2D(rhadapt%h_IverticesAtElement,&
+          rhadapt%p_IverticesAtElement)
+    ELSE
+      CALL output_line('Inconsistent handle h_IverticesAtElement',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
+      CALL sys_halt()
+    END IF
+
+    ! Get pointer to IneighboursAtElement
+    IF (rhadapt%h_IneighboursAtElement .EQ. &
+        rtriangulation%h_IneighboursAtElement) THEN
+      CALL storage_getbase_int2D(rhadapt%h_IneighboursAtElement,&
+          rhadapt%p_IneighboursAtElement)
+    ELSE
+      CALL output_line('Inconsistent handle h_IneighboursAtElement',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
+      CALL sys_halt()
+    END IF
+
+    ! Get pointer to ImidneighboursAtElement
+    IF (rhadapt%h_ImidneighboursAtElement .NE. ST_NOHANDLE) THEN
+      CALL storage_getbase_int2D(rhadapt%h_ImidneighboursAtElement,&
+          rhadapt%p_ImidneighboursAtElement)
+    ELSE
+      CALL output_line('Inconsistent handle h_ImidneighboursAtElement',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
+      CALL sys_halt()
+    END IF
+
+    ! Get pointer to IvertexAge
+     IF (rhadapt%h_IvertexAge .NE. ST_NOHANDLE) THEN
+      CALL storage_getbase_int(rhadapt%h_IvertexAge,&
+          rhadapt%p_IvertexAge)
+    ELSE
+      CALL output_line('Inconsistent handle h_ImidneighboursAtElement',&
+          OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refreshAdaptation')
+      CALL sys_halt()
+    END IF
+
+  END SUBROUTINE hadapt_refreshAdaptation
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -9023,13 +9112,13 @@ CONTAINS
 
     ! Set state of all vertices to "free". Note that vertices of the
     ! initial triangulation are always "locked", i.e. have no positive age.
-    DO ivt=1,SIZE(rhadapt%p_IvertexAge)
+    DO ivt=1,SIZE(rhadapt%p_IvertexAge,1)
       rhadapt%p_IvertexAge(ivt)=ABS(rhadapt%p_IvertexAge(ivt))
     END DO
 
     ! Loop over all elements and mark those for which
     ! the indicator is greater than the prescribed treshold
-    mark: DO iel=1,SIZE(p_Dindicator)
+    mark: DO iel=1,SIZE(p_Dindicator,1)
 
       IF (p_Dindicator(iel) .GT. rhadapt%drefinementTolerance) THEN
         
@@ -9248,7 +9337,7 @@ CONTAINS
     ! All nodes of the initial triangulation have age-0 and, hence, will
     ! never be deleted. Loop over all elements and "lock" nodes which 
     ! should not be removed from the triangulation due to the indicator.
-    DO iel=1,SIZE(p_Dindicator)
+    DO iel=1,SIZE(p_Dindicator,1)
 
 
       ! Check if the current element is marked for refinement. Then
@@ -10952,7 +11041,7 @@ CONTAINS
     ! As a last step, lock all vertices of those elements which are marked 
     ! for refinement and increase the number of new vertices by the number
     ! of quadrilateral elements which are marked for red refinement
-    DO iel=1,SIZE(p_Imarker)
+    DO iel=1,SIZE(p_Imarker,1)
       
       ! What type of element are we?
       SELECT CASE(p_Imarker(iel))
@@ -11128,7 +11217,7 @@ CONTAINS
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
         
     ! Perform red-green refinement
-    DO iel=1,SIZE(p_Imarker)
+    DO iel=1,SIZE(p_Imarker,1)
       
       SELECT CASE(p_Imarker(iel))
       CASE(MARK_ASIS_TRIA,MARK_ASIS_QUAD)
@@ -11237,7 +11326,7 @@ CONTAINS
     CALL storage_getbase_int(rhadapt%h_Imarker,p_Imarker)
     
     ! Perform hierarchical red-green recoarsening
-    DO iel=SIZE(p_Imarker),1,-1
+    DO iel=SIZE(p_Imarker,1),1,-1
 
       SELECT CASE(p_Imarker(iel))
       CASE(MARK_CRS_GENERIC:)
