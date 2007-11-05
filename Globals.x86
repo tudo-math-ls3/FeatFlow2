@@ -314,9 +314,10 @@ CC=suncc
 CPP=suncc
 FC=sunf90
 OPTFLAGS  = -fast -O5 
+OPTFLAGSFDEBUG = -w1 -xcheck=%all -xcommonchk=yes
 FCFLAGS   = -moddir=$(MODDIR)
 CCFLAGS   =
-CPPFLAGS   =
+CPPFLAGS  =
 BLASLIB   = 
 LAPACKLIB = 
 GENERIC   = 0
