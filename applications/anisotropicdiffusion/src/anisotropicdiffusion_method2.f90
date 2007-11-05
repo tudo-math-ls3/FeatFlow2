@@ -140,6 +140,9 @@ CONTAINS
     ! Type of error estimator
     INTEGER :: ierrorestimator
     
+    ! Output error as GMV file
+    INTEGER :: ioutputerror
+
     ! Whether to convert to triangle mesh
     INTEGER :: iconvertToTriangleMesh
     
@@ -219,6 +222,10 @@ CONTAINS
     ! Type of error estimator
     CALL parlst_getvalue_int (rparams, '', &
                               'ierrorestimator', ierrorestimator, 1)
+    
+    ! Output error as GMV file
+    CALL parlst_getvalue_int (rparams, '', &
+                              'ioutputerror', ioutputerror, 0)
 
     ! Type of stabilisation
     CALL parlst_getvalue_int (rparams, '', &
@@ -639,6 +646,16 @@ CONTAINS
       CALL lsyssc_createVector(rindicator,rtriangulation%NEL,.TRUE.)
       CALL getMonitorFunction(rtriangulation,rvectorBlock%RvectorBlock(1),&
           ieltype,ierrorestimator,rindicator)
+
+      ! Should the error be written to GMV file
+      IF (ioutputerror .GT. 0) THEN
+        CALL lsyssc_getbase_double(rindicator,p_Ddata)
+        CALL ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,'gmv/u2.'//&
+            TRIM(sys_siL(rhadapt%nRefinementSteps,3))//'.gmv')
+        CALL ucd_addVariableElementBased (rexport,'error',UCD_VAR_STANDARD, p_Ddata)
+        CALL ucd_write (rexport)
+        CALL ucd_release (rexport)
+      END IF
 
       ! Perform one step h-adaptivity
       CALL hadapt_refreshAdaptation(rhadapt,rtriangulation)
