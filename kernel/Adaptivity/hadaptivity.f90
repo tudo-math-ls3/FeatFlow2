@@ -9078,7 +9078,8 @@ CONTAINS
           ! refinement previously. Hence, a new vertex is only added, if the edge
           ! is connected to the boundary or if the adjacent element has not been marked.
           DO ive=1,TRIA_NVETRI2D
-            IF (p_IneighboursAtElement(ive).EQ.0) THEN
+            IF (p_IneighboursAtElement(ive).EQ.0 .OR.&
+                p_IneighboursAtElement(ive).GT.rhadapt%NEL0) THEN
               rhadapt%increaseNVT=rhadapt%increaseNVT+1
             ELSEIF((p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_TRIA4TRIA) .AND.&
                    (p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_QUAD4QUAD)) THEN
@@ -9116,7 +9117,8 @@ CONTAINS
           
           ! Update number of new vertices
           DO ive=1,TRIA_NVEQUAD2D
-            IF (p_IneighboursAtElement(ive).EQ.0) THEN
+            IF (p_IneighboursAtElement(ive).EQ.0 .OR. &
+                p_IneighboursAtElement(ive).GT.rhadapt%NEL0) THEN
               rhadapt%increaseNVT=rhadapt%increaseNVT+1
             ELSEIF((p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_TRIA4TRIA) .AND.&
                    (p_Imarker(p_IneighboursAtElement(ive)).NE.MARK_REF_QUAD4QUAD)) THEN
